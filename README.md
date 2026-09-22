@@ -48,7 +48,7 @@ Deployment requires PostgreSQL `DATABASE_URL`, provisioned Clerk server/public c
 
 ## Starting with real accounts
 
-There are no seeded doctor, patient, receptionist, or administrator accounts.
+The system seed does not create doctor, patient, receptionist, or administrator accounts. Separate development-only test accounts were subsequently created through the explicit preview-account provisioning script; their passwords are not stored in repository documentation.
 
 1. Register and verify an email through the application. Doctor registration has a separate onboarding path; existing users cannot switch roles themselves.
 2. To establish the first administrator, create a verified Clerk identity but do not finish patient/doctor onboarding. An authorized project operator runs:
@@ -56,6 +56,16 @@ There are no seeded doctor, patient, receptionist, or administrator accounts.
 3. The administrator can invite staff and assign clinics/branches. Doctors can create their clinics, branches and schedules. Patient bookings use those actual schedules.
 
 System master values can be initialized idempotently with `pnpm --filter @workspace/scripts seed-system`. See `docs/backend-interface.md` for server operations and `docs/otp-operations.md` for development verification versus real SMS.
+
+## Complete documentation
+
+See [ClinicFlow System Documentation](docs/ClinicFlow-System-Documentation.md) for the full role-by-role guide, screen/field reference, backend rules, database dictionary, operations manual, requirements comparison, and exact API contract. The [offline HTML edition](docs/ClinicFlow-System-Documentation.html) includes a table of contents and print/Save as PDF styling.
+
+Source chapters are maintained in `docs/manual/`. Regenerate both editions with:
+
+```sh
+node scripts/export-documentation.mjs
+```
 
 ## Release boundaries
 

@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "BEOAM6pZ_JbrTslA5aw7Q"
+uri = "file://docs/ClinicFlow-System-Documentation.html"
+type = "html"
+title = "ClinicFlow — Complete System Documentation"
+description = "Approximately 25,800 words covering all roles, screens and fields, workflows, API, database, security, setup, operations, known gaps, and the complete OpenAPI contract. Includes a clickable contents menu and Print / Save as PDF."
+logical_id = "0a3bdcad-69db-4496-bca0-6094a7de093c"
+content_hash = "sha256:72db19c0cab028b4336192ccb000b4e437d444016945a4c0dd73f8fb7b0827a3"
+size = 260219
+mtime_ms = 1790065696365
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/0a3bdcad-69db-4496-bca0-6094a7de093c/ddd1dc41-eff6-41ab-b920-f04336b18c21"
+storage_version_token = "1790065706315194"
+content_type = "text/html"
