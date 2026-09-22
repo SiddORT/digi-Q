@@ -35,7 +35,7 @@ paths:
   /onboarding:
     post:
       operationId: onboard
-      description: Atomically creates the first profile only. Default intent patient; doctor requires explicit intent. Existing profiles return 409; no admin self-claim or role switching.
+      description: Atomically creates the first patient profile only. Staff and doctors must use authorized invitation flows with complete ownership and assignments. Existing profiles return 409; no admin self-claim or role switching.
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OnboardingInput" } } } }
       responses:
         "201": { description: Onboarded, content: { application/json: { schema: { $ref: "#/components/schemas/Identity" } } } }
@@ -148,7 +148,7 @@ paths:
   /doctors:
     get:
       operationId: listDoctors
-      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/Status" }, { name: specializationId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: managingAdminId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Status" }, { name: specializationId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Doctors only, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorList" } } } }
     post:
@@ -176,7 +176,7 @@ paths:
   /users:
     get:
       operationId: listUsers
-      parameters: [{ $ref: "#/components/parameters/Search" }, { name: role, in: query, schema: { $ref: "#/components/schemas/Role" } }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ $ref: "#/components/parameters/Search" }, { name: role, in: query, schema: { $ref: "#/components/schemas/Role" } }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: managingAdminId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Authorized user administration, content: { application/json: { schema: { $ref: "#/components/schemas/UserList" } } } }
     post:
@@ -207,6 +207,23 @@ paths:
       description: Requests Clerk-managed password recovery; never returns credentials.
       responses:
         "202": { description: Recovery requested, content: { application/json: { schema: { $ref: "#/components/schemas/Message" } } } }
+  /users/{id}/resend-invitation:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: resendUserInvitation
+      description: Retries the existing Clerk invitation flow for a scoped unlinked staff profile. Database role and assignments already exist and are not changed.
+      responses:
+        "200": { description: Invitation outcome updated, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+  /staff-assignment-options:
+    get:
+      operationId: getStaffAssignmentOptions
+      description: Management catalog only. It does not grant clinical or operational access. Doctors may request receptionist options only.
+      parameters:
+        - { name: targetRole, in: query, required: true, schema: { type: string, enum: [doctor, receptionist] } }
+        - { name: doctorId, in: query, schema: { type: string }, description: Existing doctor being edited. }
+        - { name: userId, in: query, schema: { type: string }, description: Existing receptionist being edited. }
+      responses:
+        "200": { description: Server-scoped assignment catalog, content: { application/json: { schema: { $ref: "#/components/schemas/StaffAssignmentOptions" } } } }
   /patients:
     get:
       operationId: listPatients
@@ -501,7 +518,7 @@ components:
       type: object
       required: [fullName]
       properties:
-        intent: { type: string, enum: [patient, doctor], default: patient }
+        intent: { type: string, enum: [patient], default: patient }
         fullName: { type: string, minLength: 1 }
         mobile: { type: string }
         termsAccepted: { type: boolean }
@@ -525,15 +542,19 @@ components:
         status: { $ref: "#/components/schemas/RecordStatus" }
         clinicIds: { type: array, minItems: 1, items: { type: string }, description: Required by the server for clinic-scoped roles. }
         branchIds: { type: array, items: { type: string } }
+        managingAdminId: { type: string, description: Backward-compatible only. If supplied it must match the managing admin derived by the server. }
     User:
       allOf:
         - { $ref: "#/components/schemas/UserInput" }
         - type: object
-          required: [id, clerkId, status, clinicIds, branchIds, createdAt]
+          required: [id, clerkId, status, clinicIds, branchIds, managingAdminId, managingAdminName, invitationStatus, createdAt]
           properties:
             id: { type: string }
             clerkId: { type: [string, "null"] }
-            createdAt: { type: string, format: date-time }
+            managingAdminId: { type: [string, "null"] }
+            managingAdminName: { type: [string, "null"] }
+            invitationStatus: { type: string, enum: [sent, failed, notRequired] }
+            createdAt: { type: [string, "null"], format: date-time }
             lastLoginAt: { type: [string, "null"], format: date-time }
     OtpRequest:
       type: object
@@ -584,11 +605,12 @@ components:
       allOf:
         - { $ref: "#/components/schemas/ClinicInput" }
         - type: object
-          required: [id, code, adminId, status, createdAt]
+          required: [id, code, adminId, adminName, status, createdAt]
           properties:
             id: { type: string }
             code: { type: string }
-            createdAt: { type: string, format: date-time }
+            adminName: { type: string }
+            createdAt: { type: [string, "null"], format: date-time }
             doctorCount: { type: integer }
             branchCount: { type: integer }
     BranchInput:
@@ -608,16 +630,17 @@ components:
       allOf:
         - { $ref: "#/components/schemas/BranchInput" }
         - type: object
-          required: [id, code, status]
+          required: [id, code, status, createdAt]
           properties:
             id: { type: string }
             code: { type: string }
             clinicName: { type: string }
+            createdAt: { type: [string, "null"], format: date-time }
     DoctorInput:
       type: object
       required: [fullName, email]
       properties:
-        ownerAdminId: { type: string, description: Optional owning clinic administrator; authorization and derivation are enforced by the server. }
+        ownerAdminId: { type: string, description: Backward-compatible only. If supplied it must match the managing admin derived by the server. }
         fullName: { type: string, minLength: 1 }
         email: { type: string, format: email }
         mobile: { type: string }
@@ -638,13 +661,30 @@ components:
       allOf:
         - { $ref: "#/components/schemas/DoctorInput" }
         - type: object
-          required: [id, userId, code, ownerAdminId, status]
+          required: [id, userId, code, ownerAdminId, managingAdminId, managingAdminName, invitationStatus, status, createdAt]
           properties:
             id: { type: string }
             userId: { type: string }
             code: { type: string }
+            managingAdminId: { type: string }
+            managingAdminName: { type: string }
+            invitationStatus: { type: string, enum: [sent, failed, notRequired] }
+            createdAt: { type: [string, "null"], format: date-time }
             specializationName: { type: string }
             qualificationNames: { type: array, items: { type: string } }
+    ManagingAdminOption:
+      type: object
+      required: [id, fullName]
+      properties:
+        id: { type: string }
+        fullName: { type: string }
+    StaffAssignmentOptions:
+      type: object
+      required: [clinics, branches, managingAdmins]
+      properties:
+        clinics: { type: array, items: { $ref: "#/components/schemas/Clinic" } }
+        branches: { type: array, items: { $ref: "#/components/schemas/Branch" } }
+        managingAdmins: { type: array, items: { $ref: "#/components/schemas/ManagingAdminOption" } }
     PublicDoctor:
       type: object
       required: [id, fullName, clinicIds, branchIds]

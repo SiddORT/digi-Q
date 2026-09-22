@@ -36,7 +36,7 @@ export async function getSettings(conn: any = db) {
 }
 export function filtered(rows: any[], q: any) {
   return rows.filter(r => {
-    for (const k of ["clinicId", "branchId", "doctorId", "patientId", "status", "role", "category", "parentId", "gender", "city", "specializationId", "source", "entityType", "actorId", "date"]) {
+    for (const k of ["clinicId", "branchId", "doctorId", "patientId", "managingAdminId", "status", "role", "category", "parentId", "gender", "city", "specializationId", "source", "entityType", "actorId", "date"]) {
       if (q[k] !== undefined && r[k] !== q[k] && !(k === "clinicId" && r.clinicIds?.includes(q[k])) && !(k === "branchId" && r.branchIds?.includes(q[k]))) return false;
     }
     const date = r.date || new Date(r.createdAt || 0).toISOString().slice(0, 10);
@@ -47,7 +47,8 @@ export function filtered(rows: any[], q: any) {
 export function paginate(rows: any[], q: any) {
   const sort = q.sort || "-createdAt", key = sort.replace(/^-/, "");
   assert(["createdAt", "name", "fullName", "date", "status", "code", "tokenNumber", "sortOrder", "email"].includes(key), 400, "Unsupported sort field");
-  rows.sort((a, b) => String(a[key] ?? "").localeCompare(String(b[key] ?? ""), undefined, { numeric: true }) * (sort.startsWith("-") ? -1 : 1));
+  const direction = sort.startsWith("-") ? -1 : 1;
+  rows.sort((a, b) => String(a[key] ?? "").localeCompare(String(b[key] ?? ""), undefined, { numeric: true }) * direction || String(a.id ?? "").localeCompare(String(b.id ?? "")) * direction);
   const page = q.page || 1, pageSize = q.pageSize || 20;
   return { items: rows.slice((page - 1) * pageSize, page * pageSize), total: rows.length, page, pageSize };
 }

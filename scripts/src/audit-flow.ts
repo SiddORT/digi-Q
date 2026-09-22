@@ -149,6 +149,7 @@ async function createIdentitiesAndProfiles(): Promise<Fixture> {
           id: account.userId, clerkId: account.clerkId, email: account.email,
           fullName: `${marker} ${account.role}`, mobile: account.mobile, role: appRole,
           data: { auditOnly: true, marker },
+          ...(account.role === "receptionist" ? { managingAdminId: clinicAdminAccount.userId } : {}),
         });
         if (account.doctorId) await tx.insert(doctors).values({
           id: account.doctorId, userId: account.userId, ownerAdminId: clinicAdminAccount.userId,

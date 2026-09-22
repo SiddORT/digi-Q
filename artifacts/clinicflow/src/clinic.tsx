@@ -3,8 +3,9 @@ import { useAuth, useClerk, useUser } from "@clerk/react";
 import { Link, Redirect, useLocation } from "wouter";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
-import { Activity, LayoutDashboard, CalendarDays, Users, Building2, Stethoscope, Settings, LogOut, ChevronRight, ArrowUpRight, Clock3, Check, Menu, QrCode, SlidersHorizontal, FileText, UserRound, Plus, X } from "lucide-react";
+import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2, Stethoscope, Settings, LogOut, ChevronRight, ArrowUpRight, Clock3, Check, Menu, QrCode, SlidersHorizontal, FileText, UserRound, Plus, X } from "lucide-react";
 import { Logo } from "./App";
+import { Users } from "./Users";
 import { Editor, Empty, ErrorNotice, ResourcePage, resources, profileFields, settingsFields, title, today, allPages } from "./resources";
 
 import { useGetAppointmentQr } from "@workspace/api-client-react";
@@ -44,7 +45,22 @@ export function Onboarding(){
  if(!isLoaded||me.isLoading)return <div className="page-loading">Connecting your account…</div>;
  if(!isSignedIn)return <Redirect to="/login"/>;
  const intent=sessionStorage.getItem("clinicflow-intent")==="doctor"?"doctor":"patient";
- return <div className="onboarding"><Logo/><section className="panel"><span className="eyebrow">LET'S GET ACQUAINTED</span><h1>Welcome to your {intent==="doctor"?"practice":"care"} workspace.</h1><p>Complete your profile to get started. Your account is being registered as a {intent}.</p><ErrorNotice error={me.error||onboard.error}/><Editor initial={{fullName:user?.fullName||"",termsAccepted:false}} fields={[{key:"fullName",required:true},{key:"mobile",type:"tel"},{key:"termsAccepted",label:"I consent to the use of my information for appointment management",type:"checkbox",required:true}]} submitLabel="Complete my profile" busy={onboard.isPending} onSave={data=>onboard.mutate({data:{...data,intent}})}/></section></div>;
+
+ if (intent === "doctor") {
+   return (
+     <div className="onboarding">
+       <Logo/>
+       <section className="panel">
+         <span className="eyebrow">PROVIDER ACCOUNT</span>
+         <h1>Care begins with an invitation.</h1>
+         <p>Healthcare providers cannot self-register directly. Please contact your clinic administrator to be invited to their workspace.</p>
+         <Link href="/" className="button" onClick={() => sessionStorage.removeItem("clinicflow-intent")}>Return home</Link>
+       </section>
+     </div>
+   );
+ }
+
+ return <div className="onboarding"><Logo/><section className="panel"><span className="eyebrow">LET'S GET ACQUAINTED</span><h1>Welcome to your care workspace.</h1><p>Complete your profile to get started. Your account is being registered as a patient.</p><ErrorNotice error={me.error||onboard.error}/><Editor initial={{fullName:user?.fullName||"",termsAccepted:false}} fields={[{key:"fullName",required:true},{key:"mobile",type:"tel"},{key:"termsAccepted",label:"I consent to the use of my information for appointment management",type:"checkbox",required:true}]} submitLabel="Complete my profile" busy={onboard.isPending} onSave={data=>onboard.mutate({data:{...data,intent: "patient"}})}/></section></div>;
 }
 export function PublicBooking({reference}:{reference:string}){
   const auth=useAuth();const qr=api.useResolveQr(reference,{query:{queryKey:api.getResolveQrQueryKey(reference),refetchInterval:30000}}); const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!auth.isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
@@ -53,19 +69,19 @@ export function PublicBooking({reference}:{reference:string}){
   return <div className="public-book"><Logo/><div className="panel"><span className="eyebrow">YOUR DIRECT LINK TO CARE</span><h1>{qr.data?.clinicName||"Book a visit"}</h1><ErrorNotice error={qr.error||me.error}/>{qr.data&&!qr.error&&<><p>{[qr.data.branchName,qr.data.doctorName].filter(Boolean).join(" · ")}</p>{!auth.isSignedIn?<><p>Sign in securely to continue booking at this location.</p><Link className="button" href="/login">Sign in to book <ArrowUpRight size={18}/></Link></>:me.data?.needsOnboarding?<Redirect to="/onboarding"/>:me.data?.user?<Booking key={reference} identity={me.data} context={qr.data}/>:<p>Loading your profile…</p>}</>}</div></div>;
 }
 const navConfig:Record<string,string[]>={
-  admin:["dashboard","appointments","queue","clinics","branches","doctors","patients","users","availability","exceptions","qrs","reports","masters","audit","settings"],
+  admin:["dashboard","appointments","queue","clinics","branches","patients","users","availability","exceptions","qrs","reports","masters","audit","settings"],
  doctor:["dashboard","appointments","queue","patients","users","clinics","branches","availability","exceptions","qrs","profile"],
   receptionist:["dashboard","appointments","queue","patients","availability","exceptions","qrs"],
  patient:["dashboard","book","appointments","queue","profile"],
 };
 const labels:Record<string,string>={dashboard:"Overview",availability:"Weekly schedule",exceptions:"Date exceptions",qrs:"Booking QR codes",audit:"Audit log",book:"Book appointment",queue:"Live queue",masters:"Master data"};
-const icons:Record<string,any>={dashboard:LayoutDashboard,appointments:CalendarDays,queue:Activity,clinics:Building2,branches:Building2,doctors:Stethoscope,patients:Users,users:Users,settings:Settings,reports:FileText,audit:FileText,availability:Clock3,exceptions:CalendarDays,qrs:QrCode,masters:SlidersHorizontal,profile:UserRound,book:Plus};
+const icons:Record<string,any>={dashboard:LayoutDashboard,appointments:CalendarDays,queue:Activity,clinics:Building2,branches:Building2,doctors:Stethoscope,patients:UsersIcon,users:UsersIcon,settings:Settings,reports:FileText,audit:FileText,availability:Clock3,exceptions:CalendarDays,qrs:QrCode,masters:SlidersHorizontal,profile:UserRound,book:Plus};
 export function Portal({identity,role,page}:{identity:api.Identity;role:string;page:string}){
  const {signOut}=useClerk();const client=useQueryClient();const [open,setOpen]=useState(false);
  const name=identity.user!.fullName;
  const navigation=navConfig[role].filter(p=>identity.user!.role!=="clinicAdmin"||!["masters","settings","audit"].includes(p));
  return <div className="workspace"><aside className={`sidebar ${open?"open":""}`}><Logo/><div className="workspace-label">{role==="patient"?"YOUR CARE":"WORKSPACE"}<span>{title(role)}</span></div><nav>{navigation.map(p=>{const Icon=icons[p]||FileText;return <Link key={p} href={`/${role}/${p}`} className={p===page?"active":""} onClick={()=>setOpen(false)} data-testid={`nav-${p}`}><Icon size={19}/>{labels[p]||title(p)}{p===page&&<ChevronRight size={15}/>}</Link>;})}</nav><div className="sidebar-bottom"><div className="help-card"><span className="live-dot"/>Care, in sync.<p>Your workspace stays connected with live queue updates.</p></div><button className="logout" onClick={()=>{client.clear();signOut({redirectUrl:import.meta.env.BASE_URL});}} data-testid="button-signout"><LogOut size={18}/> Sign out</button></div></aside><div className="workspace-main"><header className="topbar"><button className="mobile-menu" onClick={()=>setOpen(!open)} aria-label="Toggle navigation"><Menu/></button><div className="breadcrumb">Workspace <ChevronRight size={13}/> <strong>{labels[page]||title(page)}</strong></div><div className="topbar-right"><span className="secure-label"><span className="live-dot"/> Secure workspace</span><span className="avatar">{name.split(" ").map(n=>n[0]).slice(0,2).join("")}</span><div><strong>{name}</strong><small>{title(identity.user!.role)}</small></div></div></header><main className="content"><div className="page-heading"><div><span className="eyebrow">{new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</span><h1>{page==="dashboard"?`Good ${new Date().getHours()<12?"morning":new Date().getHours()<18?"afternoon":"evening"}, ${name.split(" ")[0]}.`:labels[page]||title(page)}</h1><p>{page==="dashboard"?"Here's what's happening with your care workspace today.":page==="queue"?"A clearer view of the day. Automatically refreshed every 30 seconds.":`Manage your ${labels[page]?.toLowerCase()||page} in one place.`}</p></div>{!["book","profile","settings"].includes(page)&&<Link className="button small" href={`/${role}/book`}><Plus size={17}/> Book appointment</Link>}</div>
- {page==="dashboard"?<Dashboard role={role}/>:page==="book"?<Booking identity={identity}/>:page==="appointments"?<Appointments/>:page==="queue"?<Queue identity={identity}/>:page==="profile"?<Profile identity={identity}/>:page==="settings"?<PlatformSettings/>:page==="reports"?<Reports/>:resources[page]?<ResourcePage key={page} resource={page} identity={identity} allowCreate={!(identity.user!.role==="doctor"&&page==="patients")} defaults={identity.doctorId?{doctorId:identity.doctorId,isOpen:true}:{}}/>:<Empty label="available modules"/>}
+ {page==="dashboard"?<Dashboard role={role}/>:page==="users"?<Users identity={identity}/>:page==="clinics"&&role==="doctor"?<DoctorClinics identity={identity}/>:page==="book"?<Booking identity={identity}/>:page==="appointments"?<Appointments/>:page==="queue"?<Queue identity={identity}/>:page==="profile"?<Profile identity={identity}/>:page==="settings"?<PlatformSettings/>:page==="reports"?<Reports/>:resources[page]?<ResourcePage key={page} resource={page} identity={identity} allowCreate={!(identity.user!.role==="doctor"&&page==="patients")} defaults={identity.doctorId?{doctorId:identity.doctorId,isOpen:true}:{}}/>:<Empty label="available modules"/>}
  <div className="content-footer"><span>ClinicFlow · Care, connected.</span><span>All times follow your clinic's configured timezone.</span></div></main></div></div>;
 }
 function Dashboard({role}:{role:string}){
@@ -176,8 +192,81 @@ function Profile({identity}:{identity:api.Identity}){
  const client=useQueryClient();const doctor=api.useGetDoctor(identity.doctorId||"",{query:{queryKey:api.getGetDoctorQueryKey(identity.doctorId||""),enabled:!!identity.doctorId}});const patient=api.useGetPatient(identity.patientId||"",{query:{queryKey:api.getGetPatientQueryKey(identity.patientId||""),enabled:!!identity.patientId}});
  const mutation=useMutation<api.Patient|api.Doctor|api.User,Error,any>({mutationFn:(data:any)=>identity.doctorId?api.updateDoctor(identity.doctorId,data):identity.patientId?api.updatePatient(identity.patientId,data):api.updateMe(data),onSuccess:()=>client.invalidateQueries()});
  const data=identity.doctorId?doctor.data:identity.patientId?patient.data:identity.user;
- return <section className="panel padded"><h2>Your profile</h2><p className="muted">Keep your contact and care details up to date. Changing a mobile number resets its verification.</p><ErrorNotice error={doctor.error||patient.error||mutation.error}/>{mutation.isSuccess&&<p className="notice">Your profile has been saved.</p>}{data?<Editor key={JSON.stringify(data)} initial={data} fields={identity.doctorId?resources.doctors.fields.filter(f=>f.key!=="status"):identity.patientId?resources.patients.fields.filter(f=>!["clinicId","branchId","status"].includes(f.key)):profileFields} busy={mutation.isPending} onSave={d=>mutation.mutate(d)}/>:<p>Loading profile…</p>}</section>;
+ return <section className="panel padded"><h2>Your profile</h2><p className="muted">Keep your contact and care details up to date. Changing a mobile number resets its verification.</p><ErrorNotice error={doctor.error||patient.error||mutation.error}/>{mutation.isSuccess&&<p className="notice">Your profile has been saved.</p>}{data?<Editor key={JSON.stringify(data)} initial={data} fields={identity.doctorId?resources.doctors.fields.filter(f=>!["status","ownerAdminId","clinicIds","branchIds"].includes(f.key)):identity.patientId?resources.patients.fields.filter(f=>!["clinicId","branchId","status"].includes(f.key)):profileFields} busy={mutation.isPending} onSave={d=>mutation.mutate(d)}/>:<p>Loading profile…</p>}</section>;
 }
+export function DoctorClinics({ identity }: { identity: api.Identity }) {
+  const assigned = api.useListClinics({ page: 1, pageSize: 100, status: "active" }, { query: { queryKey: ["doctor-clinics-assigned"] } });
+
+  const optionsParams = { targetRole: "receptionist" as const };
+  const options = api.useGetStaffAssignmentOptions(optionsParams, {
+    query: {
+      queryKey: api.getGetStaffAssignmentOptionsQueryKey(optionsParams),
+      staleTime: 60000,
+      enabled: !!identity.doctorId
+    }
+  });
+
+  const assignedClinics = assigned.data?.items || [];
+  const assignedIds = new Set(assignedClinics.map((c: any) => c.id));
+  const availableClinics = (options.data?.clinics || []).filter((c: any) => !assignedIds.has(c.id));
+
+  return (
+    <div className="doctor-clinics-page">
+      <ErrorNotice error={assigned.error || options.error} />
+      <section className="panel table-panel" style={{ marginBottom: '2rem' }}>
+        <div className="panel-heading">
+          <div>
+            <h2>Currently Assigned Clinics</h2>
+            <p>Clinics where you actively practice and manage appointments.</p>
+          </div>
+        </div>
+        {assigned.isLoading ? <div className="skeleton">Loading assigned clinics…</div> : assignedClinics.length ? (
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>City</th><th>Phone</th><th>Status</th></tr></thead>
+              <tbody>
+                {assignedClinics.map((c: any) => (
+                  <tr key={c.id}>
+                    <td><strong>{c.name}</strong></td>
+                    <td>{c.city || "—"}</td>
+                    <td>{c.phone || "—"}</td>
+                    <td><span className={`badge ${c.status}`}>{title(c.status || "")}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : <Empty label="assigned clinics" />}
+      </section>
+
+      <section className="panel table-panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Available in Network</h2>
+            <p>Other clinics managed by your administrator. Contact your Clinic Admin for clinical assignments.</p>
+          </div>
+        </div>
+        {options.isLoading ? <div className="skeleton">Loading available clinics…</div> : options.error ? null : availableClinics.length ? (
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>City</th><th>Phone</th></tr></thead>
+              <tbody>
+                {availableClinics.map((c: any) => (
+                  <tr key={c.id}>
+                    <td><strong>{c.name}</strong></td>
+                    <td>{c.city || "—"}</td>
+                    <td>{c.phone || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : <div className="empty" style={{ padding: '2rem', textAlign: 'center' }}><p className="muted">No additional clinics available in your network.</p></div>}
+      </section>
+    </div>
+  );
+}
+
 function PlatformSettings(){
  const q=api.useGetSettings();const client=useQueryClient();const mutation=api.useUpdateSettings({mutation:{onSuccess:()=>client.invalidateQueries()}});
  return <section className="panel padded"><h2>Platform preferences</h2><ErrorNotice error={q.error||mutation.error}/><div className="notice"><strong>Integration boundaries</strong><p>General notifications are not connected. Session timeout is managed by Clerk; platform preferences do not change your authentication session.</p><p>SMS provider: {q.data?.otpProviderConfigured?"Configured":"Not connected"} · Queue refresh: 30 seconds</p></div>{mutation.isSuccess&&<p className="notice">Settings saved.</p>}{q.data&&<Editor initial={q.data} fields={settingsFields} busy={mutation.isPending} onSave={data=>mutation.mutate({data})}/>}</section>;

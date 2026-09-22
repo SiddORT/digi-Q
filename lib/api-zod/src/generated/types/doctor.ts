@@ -13,17 +13,28 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { DoctorInput } from './doctorInput';
+import type { DoctorInvitationStatus } from './doctorInvitationStatus';
 
-export type Doctor = DoctorInput & {
+export type Doctor = DoctorInput & ({
   id: string;
   userId: string;
   code: string;
+  managingAdminId: string;
+  managingAdminName: string;
+  invitationStatus: DoctorInvitationStatus;
+  /** @nullable */
+  createdAt: Date | null;
   specializationName?: string;
   qualificationNames?: string[];
-} & Required<Pick<DoctorInput & {
+}) & Required<Pick<DoctorInput & ({
   id: string;
   userId: string;
   code: string;
+  managingAdminId: string;
+  managingAdminName: string;
+  invitationStatus: DoctorInvitationStatus;
+  /** @nullable */
+  createdAt: Date | null;
   specializationName?: string;
   qualificationNames?: string[];
-}, 'ownerAdminId' | 'status'>>;
+}), 'ownerAdminId' | 'status'>>;

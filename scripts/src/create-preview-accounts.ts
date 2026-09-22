@@ -40,6 +40,7 @@ async function main() {
         await tx.insert(users).values({
           id: a.id, clerkId: a.clerkId, email: a.email, fullName: a.fullName,
           role: a.role, data: { previewOnly: true },
+          ...(a.role === "receptionist" ? { managingAdminId: previewClinicAdmin.id } : {}),
         });
         if (a.role === "doctor") await tx.insert(doctors).values({
           id: randomUUID(), userId: a.id, ownerAdminId: previewClinicAdmin.id,

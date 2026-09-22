@@ -2,6 +2,8 @@
   "generatedAt": "2026-09-22T13:30:18.519Z",
   "startedAt": "2026-09-22T13:15:18.927Z",
   "mode": "resumed-executed",
+  "historical": true,
+  "historicalNote": "This report predates the canonical managing-admin owner boundary. It was not rerun; the ownership-tabs regression is the current contract evidence.",
   "marker": "CF-ASSIGN-20260922131518-807f59",
   "baseUrl": "http://localhost:80/api",
   "credentialsPath": "/tmp/clinicflow-assignment-audit-credentials.json",

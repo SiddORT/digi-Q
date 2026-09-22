@@ -26,6 +26,7 @@ search?: SearchParameter;
 role?: Role;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
+managingAdminId?: string;
 status?: StatusParameter;
 /**
  * @minimum 1

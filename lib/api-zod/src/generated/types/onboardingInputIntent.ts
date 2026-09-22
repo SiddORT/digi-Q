@@ -18,5 +18,4 @@ export type OnboardingInputIntent = typeof OnboardingInputIntent[keyof typeof On
 
 export const OnboardingInputIntent = {
   patient: 'patient',
-  doctor: 'doctor',
 } as const;

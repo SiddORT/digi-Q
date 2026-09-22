@@ -42,7 +42,29 @@ function AuthPage({signup = false}: {signup?: boolean}) {
   const redirect = qs.get("redirect") || "/onboarding";
   return <div className="auth-layout"><aside><Logo/><div><span className="eyebrow">WELCOME TO CLINICFLOW</span><h1>Good care starts<br/>with a connection.</h1><p>Your appointments, your care team, and a clearer path to your next visit.</p><ShieldCheck size={36}/></div><small>Secure identity. Personal care.</small></aside><main><Link href="/" className="back-link">← Back to home</Link>{signup ? <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} fallbackRedirectUrl={`${basePath}${redirect}`}/> : <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} fallbackRedirectUrl={`${basePath}${redirect}`}/>}</main></div>;
 }
-function RegisterDoctor(){ useEffect(()=>{sessionStorage.setItem("clinicflow-intent","doctor");},[]); return <Redirect to="/sign-up"/>; }
+function RegisterDoctor(){
+  useEffect(()=>{sessionStorage.setItem("clinicflow-intent","doctor");},[]);
+  return (
+    <div className="auth-layout">
+      <aside>
+        <Logo/>
+        <div>
+          <span className="eyebrow">PROVIDER ACCOUNT</span>
+          <h1>Care begins with an invitation.</h1>
+          <p>Healthcare providers cannot self-register directly. Please contact your clinic administrator to be invited to their workspace.</p>
+        </div>
+      </aside>
+      <main style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', textAlign: 'center' }}>
+        <h2>Already invited?</h2>
+        <p className="muted" style={{ marginBottom: '2rem' }}>If your administrator has already set up your account, sign in to connect it.</p>
+        <Link href="/login" className="button">Sign in to your account</Link>
+        <div style={{ marginTop: '2rem' }}>
+          <Link href="/" className="text-link">← Return to home</Link>
+        </div>
+      </main>
+    </div>
+  );
+}
 function Guard({role, page}: {role:string;page:string}) {
   const { isLoaded, isSignedIn } = useAuth();
   const me = api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
@@ -56,7 +78,7 @@ function Guard({role, page}: {role:string;page:string}) {
   return <Portal identity={me.data} role={role} page={page}/>;
 }
 const routes: Record<string,string[]> = {
-   admin:["dashboard","clinics","branches","doctors","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions"],
+   admin:["dashboard","clinics","branches","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions"],
   doctor:["dashboard","profile","clinics","branches","availability","exceptions","appointments","queue","patients","qrs","book","users"],
    receptionist:["dashboard","appointments","queue","patients","book","qrs","availability","exceptions"],
   patient:["dashboard","book","appointments","queue","profile"],
@@ -66,6 +88,6 @@ function Providers(){
  return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} routerPush={to=>setLocation(stripBase(to))} routerReplace={to=>setLocation(stripBase(to),{replace:true})}
  appearance={{options:{logoImageUrl:`${window.location.origin}${basePath}/logo.svg`,logoLinkUrl:basePath||"/"},variables:{colorPrimary:"#13786f",colorForeground:"#173332",colorMutedForeground:"#617471",colorBackground:"#ffffff",colorInput:"#ffffff",colorInputForeground:"#173332",colorDanger:"#b33636",fontFamily:"'DM Sans', sans-serif",borderRadius:"12px"},elements:{cardBox:{width:"420px",maxWidth:"100%",background:"#fff"},headerTitle:{color:"#173332"},headerSubtitle:{color:"#617471"},formFieldLabel:{color:"#173332"},footerActionLink:{color:"#13786f"}}}}
  localization={{signIn:{start:{title:"Welcome back",subtitle:"Sign in to your ClinicFlow workspace"}},signUp:{start:{title:"Your care, connected",subtitle:"Create your secure ClinicFlow account"}}}}>
- <QueryClientProvider client={queryClient}><CacheReset/><Switch><Route path="/" component={Home}/><Route path="/sign-in/*?">{()=> <AuthPage/>}</Route><Route path="/sign-up/*?">{()=> <AuthPage signup/>}</Route><Route path="/login"><Redirect to="/sign-in"/></Route><Route path="/register"><Redirect to="/sign-up"/></Route><Route path="/forgot-password"><Redirect to="/sign-in"/></Route><Route path="/register-doctor" component={RegisterDoctor}/><Route path="/onboarding" component={Onboarding}/><Route path="/check-in" component={CheckInScanner}/><Route path="/book/:reference">{p=><PublicBooking reference={p.reference}/>}</Route>{Object.entries(routes).flatMap(([role,pages])=>[<Route key={role} path={`/${role}`}><Redirect to={`/${role}/dashboard`}/></Route>,...pages.map(page=><Route key={`${role}/${page}`} path={`/${role}/${page}`}><Guard role={role} page={page}/></Route>)])}<Route><div className="empty"><h1>Page not found</h1><Link href="/">Return home</Link></div></Route></Switch></QueryClientProvider></ClerkProvider>;
+ <QueryClientProvider client={queryClient}><CacheReset/><Switch><Route path="/" component={Home}/><Route path="/sign-in/*?">{()=> <AuthPage/>}</Route><Route path="/sign-up/*?">{()=> <AuthPage signup/>}</Route><Route path="/login"><Redirect to="/sign-in"/></Route><Route path="/register"><Redirect to="/sign-up"/></Route><Route path="/forgot-password"><Redirect to="/sign-in"/></Route><Route path="/register-doctor" component={RegisterDoctor}/><Route path="/onboarding" component={Onboarding}/><Route path="/check-in" component={CheckInScanner}/><Route path="/admin/doctors"><Redirect to="/admin/users?tab=doctors"/></Route><Route path="/book/:reference">{p=><PublicBooking reference={p.reference}/>}</Route>{Object.entries(routes).flatMap(([role,pages])=>[<Route key={role} path={`/${role}`}><Redirect to={`/${role}/dashboard`}/></Route>,...pages.map(page=><Route key={`${role}/${page}`} path={`/${role}/${page}`}><Guard role={role} page={page}/></Route>)])}<Route><div className="empty"><h1>Page not found</h1><Link href="/">Return home</Link></div></Route></Switch></QueryClientProvider></ClerkProvider>;
 }
 export default function App(){ return <Router base={basePath}><Providers/></Router>; }

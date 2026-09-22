@@ -15,7 +15,7 @@
 import type { RecordStatus } from './recordStatus';
 
 export interface DoctorInput {
-  /** Optional owning clinic administrator; authorization and derivation are enforced by the server. */
+  /** Backward-compatible only. If supplied it must match the managing admin derived by the server. */
   ownerAdminId?: string;
   /** @minLength 1 */
   fullName: string;

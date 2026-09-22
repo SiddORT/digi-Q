@@ -48,7 +48,19 @@ function MasterTextInput({field,register}:any){
 }
 import { SearchableMultiSelect } from "./components/SearchableMultiSelect";
 
-function RelationInput({field,register,defaultValue,form,fields}:any){
+function RelationInput({field,register,defaultValue,form,fields,resourceName}:any){
+  const me = api.useGetMe({query:{queryKey:api.getGetMeQueryKey(), staleTime: 60000}});
+  const isDoctorBranchClinic = me.data?.user?.role === "doctor" && resourceName === "branches" && field.resource === "clinics";
+
+  const optionsParams = { targetRole: "receptionist" as const };
+  const assignmentOptions = api.useGetStaffAssignmentOptions(optionsParams, {
+    query: {
+      queryKey: api.getGetStaffAssignmentOptionsQueryKey(optionsParams),
+      staleTime: 60000,
+      enabled: !!(isDoctorBranchClinic && me.data?.doctorId)
+    }
+  });
+
   const values=form.watch();
   const clinicIds=values.clinicIds || (values.clinicId?[values.clinicId]:[]);
   const hasClinic=fields.some((f:Field)=>["clinicId","clinicIds"].includes(f.key));
@@ -58,7 +70,9 @@ function RelationInput({field,register,defaultValue,form,fields}:any){
   const q=useQuery({queryKey:["lookup",field.resource,params],queryFn:()=>allPages<any>(resources[field.resource].list,params)});
   const assignedDoctor=useQuery({queryKey:["lookup-doctor-branches",values.doctorId],queryFn:()=>api.getDoctor(values.doctorId),enabled:field.resource==="branches"&&!hasClinic&&!!values.doctorId});
  const many=field.key.endsWith("Ids");
-  const rows=(q.data?.items||[]).filter((r:any)=>{
+
+  const baseItems = isDoctorBranchClinic && assignmentOptions.data ? assignmentOptions.data.clinics : (q.data?.items||[]);
+  const rows=baseItems.filter((r:any)=>{
     const isSelected = many ? (defaultValue?.includes(r.id) || form.watch(field.key)?.includes(r.id)) : (defaultValue === r.id || form.watch(field.key) === r.id);
     if (r.status === "inactive" && !isSelected) return false;
     if(field.resource==="branches"){
@@ -106,7 +120,7 @@ function RelationInput({field,register,defaultValue,form,fields}:any){
 
   return <><select {...register(field.key,{required:field.required})} defaultValue={defaultValue} data-testid={`input-${field.key}`}><option value="">{q.isLoading?"Loading all available records…":"Select…"}</option>{rows.map((r:any)=><option key={r.id} value={r.id}>{r.name||r.fullName} {r.code?`· ${r.code}`:""}</option>)}</select><ErrorNotice error={q.error}/></>;
 }
-export function Editor({fields,initial={},onSave,busy=false,submitLabel="Save changes"}:{fields:Field[];initial?:any;onSave:(data:any)=>void;busy?:boolean;submitLabel?:string}){
+export function Editor({fields,initial={},onSave,busy=false,submitLabel="Save changes",resourceName}:{fields:Field[];initial?:any;onSave:(data:any)=>void;busy?:boolean;submitLabel?:string;resourceName?:string}){
  const form=useForm({defaultValues:initial});
  const currentRole = form.watch("role");
  const activeFields = useMemo(() => {
@@ -145,7 +159,7 @@ export function Editor({fields,initial={},onSave,busy=false,submitLabel="Save ch
 
     body[field.key]=value;
   });onSave(body);})}>
-  {activeFields.map(field=><label className={field.type==="textarea"?"wide":""} key={field.key}>{field.label||title(field.key.replace(/Ids?$/,""))}{field.required&&<span className="required"> *</span>}{field.resource?<RelationInput field={field} register={form.register} defaultValue={initial[field.key]} form={form} fields={fields}/>:field.type==="masterText"?<MasterTextInput field={field} register={form.register}/>:field.type==="select"?<select data-testid={`input-${field.key}`} {...form.register(field.key,{required:field.required})}><option value="">Select…</option>{field.options?.map(v=><option key={v} value={v}>{field.key==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][Number(v)]:title(v)}</option>)}</select>:field.type==="textarea"?<textarea data-testid={`input-${field.key}`} {...form.register(field.key,{required:field.required})}/>:<input data-testid={`input-${field.key}`} type={field.type==="array"?"text":field.type} {...form.register(field.key,{required:field.required})}/>} {form.formState.errors[field.key]&&<small className="field-error">Please complete this field.</small>}</label>)}
+  {activeFields.map(field=><label className={field.type==="textarea"?"wide":""} key={field.key}>{field.label||title(field.key.replace(/Ids?$/,""))}{field.required&&<span className="required"> *</span>}{field.resource?<RelationInput field={field} register={form.register} defaultValue={initial[field.key]} form={form} fields={fields} resourceName={resourceName}/>:field.type==="masterText"?<MasterTextInput field={field} register={form.register}/>:field.type==="select"?<select data-testid={`input-${field.key}`} {...form.register(field.key,{required:field.required})}><option value="">Select…</option>{field.options?.map(v=><option key={v} value={v}>{field.key==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][Number(v)]:title(v)}</option>)}</select>:field.type==="textarea"?<textarea data-testid={`input-${field.key}`} {...form.register(field.key,{required:field.required})}/>:<input data-testid={`input-${field.key}`} type={field.type==="array"?"text":field.type} {...form.register(field.key,{required:field.required})}/>} {form.formState.errors[field.key]&&<small className="field-error">Please complete this field.</small>}</label>)}
  <div className="wide form-footer"><button className="button" disabled={busy} data-testid="button-save">{busy?"Saving…":submitLabel}</button></div></form></Form>;
 }
 function QrCard({row}:{row:any}){
@@ -192,7 +206,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
  {resource==="users"&&identity?.user?.role!=="doctor"&&<section className="panel padded" style={{marginBottom:20}}><h3>Account recovery</h3><p className="muted">Select a user from the current results to request secure recovery instructions. This action does not itself send a recovery email.</p><div className="inline-form"><select aria-label="User for password recovery" value={recoveryId} onChange={e=>{setRecoveryId(e.target.value);recovery.reset();}} data-testid="select-recovery-user"><option value="">Select user from this page…</option>{query.data?.items.map((u:any)=><option key={u.id} value={u.id}>{u.fullName} · {u.email}</option>)}</select><button disabled={!recoveryId||recovery.isPending} onClick={()=>recovery.mutate({id:recoveryId})} data-testid="button-password-reset">{recovery.isPending?"Requesting…":"Request recovery instructions"}</button></div><ErrorNotice error={recovery.error}/>{recovery.data&&<div className="notice" data-testid="status-password-recovery"><p>{recovery.data.message}</p><Link href="/sign-in" className="text-link" data-testid="link-password-recovery">Open secure sign-in and select Forgot password</Link></div>}</section>}
  <section className="panel table-panel">{query.isLoading?<div className="skeleton">Loading {config.name}…</div>:query.data?.items?.length?<><div className="table-scroll"><table><thead><tr>{config.columns.map(c=><th key={c}>{title(c)}</th>)}{config.update&&<th>Actions</th>}</tr></thead><tbody>{query.data.items.map((row:any)=><tr key={row.id} data-testid={`row-${resource}-${row.id}`}>{config.columns.map(c=><td key={c} style={c === "clinicNames" || c === "branchNames" ? { maxWidth: 200, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } : undefined} title={c === "clinicNames" || c === "branchNames" ? (Array.isArray(row[c]) ? row[c].join(", ") : row[c]) : undefined}>{c==="status"?<span className={`badge ${row[c]}`}>{title(row[c]||"")}</span>:c==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][row[c]]:typeof row[c]==="boolean"?(row[c]?"Yes":"No"):(c === "clinicNames" || c === "branchNames") ? (Array.isArray(row[c]) ? row[c].join(", ") : row[c] || "—") : row[c]??"—"}</td>)}{config.update&&<td><div className="row-actions"><button aria-label="Edit" onClick={()=>{save.reset();setEditing(row);}}><Pencil size={15}/></button><button aria-label="Delete or deactivate" disabled={remove.isPending} onClick={()=>{if(confirm("Delete or deactivate this record? Records with history are preserved."))remove.mutate(row.id);}}><Trash2 size={15}/></button></div></td>}</tr>)}</tbody></table></div><div className="pagination"><span>{query.data.total} records</span><button disabled={page===1} onClick={()=>setPage(page-1)}>Previous</button><span>Page {page}</span><button disabled={page*10>=query.data.total} onClick={()=>setPage(page+1)}>Next</button></div></>:<Empty label={config.name}/>}</section>
  {resource==="qrs"&&<div className="qr-grid">{query.data?.items?.filter((r:any)=>r.status==="active").map((r:any)=><QrCard row={r} key={r.id}/>)}</div>}
- {editing&&<div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true"><div className="panel-heading"><div><span className="eyebrow">{editing.id?"UPDATE RECORD":"NEW RECORD"}</span><h2>{title(config.name)}</h2></div><button onClick={()=>setEditing(null)} aria-label="Close"><X/></button></div>{resource==="availability"&&<p className="notice">One session and optional break per branch/day. Overnight sessions are not supported.</p>}<ErrorNotice error={save.error}/><Editor fields={effectiveFields} initial={editing} onSave={data=>save.mutate(data)} busy={save.isPending}/></section></div>}
+ {editing&&<div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true"><div className="panel-heading"><div><span className="eyebrow">{editing.id?"UPDATE RECORD":"NEW RECORD"}</span><h2>{title(config.name)}</h2></div><button onClick={()=>setEditing(null)} aria-label="Close"><X/></button></div>{resource==="availability"&&<p className="notice">One session and optional break per branch/day. Overnight sessions are not supported.</p>}<ErrorNotice error={save.error}/><Editor fields={effectiveFields} initial={editing} onSave={data=>save.mutate(data)} busy={save.isPending} resourceName={resource}/></section></div>}
  </>;
 }
 export const profileFields = [f("fullName","text",true),f("mobile","tel"),f("photoUrl","url")];

@@ -14,16 +14,20 @@
  */
 import type { ClinicInput } from './clinicInput';
 
-export type Clinic = ClinicInput & {
+export type Clinic = ClinicInput & ({
   id: string;
   code: string;
-  createdAt: Date;
+  adminName: string;
+  /** @nullable */
+  createdAt: Date | null;
   doctorCount?: number;
   branchCount?: number;
-} & Required<Pick<ClinicInput & {
+}) & Required<Pick<ClinicInput & ({
   id: string;
   code: string;
-  createdAt: Date;
+  adminName: string;
+  /** @nullable */
+  createdAt: Date | null;
   doctorCount?: number;
   branchCount?: number;
-}, 'adminId' | 'status'>>;
+}), 'adminId' | 'status'>>;

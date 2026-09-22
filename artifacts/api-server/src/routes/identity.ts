@@ -18,12 +18,12 @@ identityRouter.post("/onboarding", async (req, res) => {
   const email = identity.emailAddresses.find(e => e.id === identity.primaryEmailAddressId && e.verification?.status === "verified");
   assert(email, 400, "A verified primary email is required");
   assert(!await findUser(clerkId), 409, "Profile already exists");
+  assert((body.intent || "patient") === "patient", 409, "Doctors must be invited with clinic assignments by an authorized administrator");
   await db.transaction(async tx => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${clerkId}))`);
     const id = uid(), role = body.intent || "patient";
-    const user = await put(users, { id, clerkId, email: email.emailAddress.toLowerCase(), fullName: body.fullName, mobile: body.mobile, role }, tx);
-    if (role === "doctor") await put(doctors, { id: uid(), userId: id, data: { fullName: body.fullName, email: user.email, code: `DOC-${id.slice(0,8)}`, clinicIds: [], branchIds: [] } }, tx);
-    else await put(patients, { id: uid(), userId: id, mobile: body.mobile || "", data: { fullName: body.fullName, email: user.email, code: `PAT-${id.slice(0,8)}` } }, tx);
+    const user = await put(users, { id, clerkId, email: email.emailAddress.toLowerCase(), fullName: body.fullName, mobile: body.mobile, role, invitationStatus: "notRequired" }, tx);
+    await put(patients, { id: uid(), userId: id, mobile: body.mobile || "", data: { fullName: body.fullName, email: user.email, code: `PAT-${id.slice(0,8)}` } }, tx);
     await audit(user, "onboard", "users", user, tx);
   });
   const user = await findUser(clerkId);

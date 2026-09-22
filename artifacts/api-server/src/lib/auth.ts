@@ -15,7 +15,7 @@ export async function findUser(clerkId: string) {
     for (const email of verified) {
       const [invited] = await db.select().from(users).where(eq(users.email, email));
       if (invited && !invited.clerkId) {
-        const [linked] = await db.update(users).set({ clerkId }).where(eq(users.id, invited.id)).returning(); row = linked; break;
+        const [linked] = await db.update(users).set({ clerkId, invitationStatus: "notRequired" }).where(eq(users.id, invited.id)).returning(); row = linked; break;
       }
     }
   }
@@ -26,7 +26,7 @@ export async function findUser(clerkId: string) {
   const links = (await all(assignments)).filter(a => a.userId === user.id && activeClinics.has(a.clinicId) && (!a.branchId || activeBranches.has(a.branchId)));
   const [doctor] = await db.select().from(doctors).where(eq(doctors.userId, user.id));
   const [patient] = await db.select().from(patients).where(eq(patients.userId, user.id));
-  return { ...user, mobile: user.mobile || "", clinicIds: [...new Set(links.map(a => a.clinicId))], branchIds: [...new Set(links.filter(a => a.branchId).map(a => a.branchId))], doctorId: doctor?.id || null, patientId: patient?.id || null };
+  return { ...user, mobile: user.mobile || "", managingAdminId: user.role === "doctor" ? doctor?.ownerAdminId || null : user.managingAdminId || null, clinicIds: [...new Set(links.map(a => a.clinicId))], branchIds: [...new Set(links.filter(a => a.branchId).map(a => a.branchId))], doctorId: doctor?.id || null, patientId: patient?.id || null };
 }
 export async function requireUser(req: Request) {
   const user = await findUser(requireIdentity(req)); assert(user, 403, "Complete onboarding first"); assert(user.status === "active", 403, "Account inactive"); return user;
@@ -39,7 +39,11 @@ export function scope(user: any, clinicId?: string | null, branchId?: string | n
 }
 export async function canRead(user: any, kind: string, row: any): Promise<boolean> {
   if (user.role === "superAdmin" || kind === "masters") return true;
-  if (kind === "users") return user.id === row.id || row.role !== "superAdmin" && row.clinicIds?.some((id: string) => scope(user, id)) && (!["doctor", "receptionist"].includes(user.role) || row.branchIds?.some((id: string) => user.branchIds.includes(id)));
+  if (kind === "users") {
+    if (user.id === row.id) return true;
+    if (row.role === "receptionist" && ["clinicAdmin", "doctor"].includes(user.role)) return row.managingAdminId === (user.role === "clinicAdmin" ? user.id : user.managingAdminId);
+    return row.role !== "superAdmin" && row.clinicIds?.some((id: string) => scope(user, id)) && (!["doctor", "receptionist"].includes(user.role) || row.branchIds?.some((id: string) => user.branchIds.includes(id)));
+  }
   if (kind === "doctors") return user.doctorId === row.id || ["clinicAdmin", "doctor", "receptionist"].includes(user.role) && row.clinicIds?.some((id: string) => scope(user, id)) && (!["doctor", "receptionist"].includes(user.role) || row.branchIds?.some((id: string) => user.branchIds.includes(id)));
   if (kind === "patients") {
     if (user.role === "patient") return row.id === user.patientId;
@@ -66,8 +70,9 @@ export async function projectAssignmentScope(user: any, kind: string, row: any) 
   if (!["users", "doctors"].includes(kind)) return row;
   const own = kind === "users" ? row.id === user.id : row.id === user.doctorId;
   const clinicRows = await all(clinics), branchRows = await all(branches);
-  const clinicIds = user.role === "superAdmin" || own ? row.clinicIds || [] : (row.clinicIds || []).filter((clinicId: string) => scope(user, clinicId));
-  const branchIds = user.role === "superAdmin" || own ? row.branchIds || [] : (row.branchIds || []).filter((branchId: string) => {
+  const managementPeer = kind === "users" && row.role === "receptionist" && ["clinicAdmin", "doctor"].includes(user.role) && row.managingAdminId === (user.role === "clinicAdmin" ? user.id : user.managingAdminId);
+  const clinicIds = user.role === "superAdmin" || own || managementPeer ? row.clinicIds || [] : (row.clinicIds || []).filter((clinicId: string) => scope(user, clinicId));
+  const branchIds = user.role === "superAdmin" || own || managementPeer ? row.branchIds || [] : (row.branchIds || []).filter((branchId: string) => {
     const branch = branchRows.find(b => b.id === branchId);
     return branch && scope(user, branch.clinicId, branch.id);
   });
@@ -80,16 +85,14 @@ export async function projectAssignmentScope(user: any, kind: string, row: any) 
     branchNames: branchRows.filter(b => visibleBranches.has(b.id)).map(b => b.name),
   };
 }
-export async function setAssignments(userId: string, clinicIds: string[], branchIds: string[], actor: any, conn: any = db) {
+export async function setAssignments(userId: string, clinicIds: string[], branchIds: string[], actor: any, managingAdminId: string, conn: any = db) {
   clinicIds = [...new Set(clinicIds)];
   branchIds = [...new Set(branchIds)];
   const target = await one(users, userId, conn);
   assert(target.role !== "clinicAdmin", 409, "Clinic administrator access is changed only by transferring clinic ownership");
   const existing = (await all(assignments, conn)).filter(a => a.userId === userId);
-  const editable = existing.filter(a => actor.role === "superAdmin" || scope(actor, a.clinicId, a.branchId));
-  const retained = existing.filter(a => !editable.includes(a));
-  const finalClinicIds = new Set([...clinicIds, ...retained.map(a => a.clinicId)]);
-  for (const link of editable) await conn.delete(assignments).where(eq(assignments.id, link.id));
+  const finalClinicIds = new Set(clinicIds);
+  for (const link of existing) await conn.delete(assignments).where(eq(assignments.id, link.id));
   for (const clinicId of clinicIds) await conn.insert(assignments).values({ id: uid(), userId, clinicId }).onConflictDoNothing();
   for (const branchId of branchIds) {
     const branch = await one(branches, branchId, conn);
@@ -97,8 +100,21 @@ export async function setAssignments(userId: string, clinicIds: string[], branch
     await conn.insert(assignments).values({ id: uid(), userId, clinicId: branch.clinicId, branchId }).onConflictDoNothing();
   }
 }
-export async function validateAssignments(actor: any, clinicIds: string[], branchIds: string[]) {
+export async function validateAssignments(actor: any, clinicIds: string[], branchIds: string[], targetRole: string, expectedManagingAdminId?: string, conn: any = db) {
   clinicIds = [...new Set(clinicIds)]; branchIds = [...new Set(branchIds)];
-  for (const id of clinicIds) { const c = await one(clinics, id); assert(c.status === "active" && scope(actor, id), 403, "Clinic assignment forbidden"); }
-  for (const id of branchIds) { const b = await one(branches, id); assert(b.status === "active" && clinicIds.includes(b.clinicId) && scope(actor, b.clinicId, id), 403, "Branch assignment forbidden"); }
+  assert(clinicIds.length, 400, "Please select a clinic");
+  const clinicRows = [];
+  for (const id of clinicIds) { const c = await one(clinics, id, conn); assert(c.status === "active", 403, "Clinic assignment forbidden"); clinicRows.push(c); }
+  const owners = [...new Set(clinicRows.map(c => c.adminId))];
+  assert(owners.length === 1, 409, "All selected clinics must have the same Clinic Admin owner");
+  const managingAdminId = owners[0];
+  const manager = await one(users, managingAdminId, conn);
+  assert(manager.role === "clinicAdmin" && manager.status === "active", 409, "Selected clinics do not have a valid active Clinic Admin owner");
+  if (actor.role === "clinicAdmin") assert(managingAdminId === actor.id, 403, "Clinic assignment forbidden");
+  if (actor.role === "doctor") assert(targetRole === "receptionist" && managingAdminId === actor.managingAdminId, 403, "Clinic assignment forbidden");
+  if (expectedManagingAdminId) assert(managingAdminId === expectedManagingAdminId, 409, "Changing clinic mappings cannot implicitly transfer the managing Clinic Admin");
+  const branchClinics = new Set<string>();
+  for (const id of branchIds) { const b = await one(branches, id, conn); assert(b.status === "active" && clinicIds.includes(b.clinicId), 403, "Branch assignment forbidden"); branchClinics.add(b.clinicId); }
+  if (targetRole === "receptionist") for (const clinicId of clinicIds) assert(branchClinics.has(clinicId), 400, "Select at least one valid branch for every receptionist clinic");
+  return managingAdminId;
 }

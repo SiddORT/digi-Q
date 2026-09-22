@@ -14,12 +14,16 @@
  */
 import type { BranchInput } from './branchInput';
 
-export type Branch = BranchInput & {
+export type Branch = BranchInput & ({
   id: string;
   code: string;
   clinicName?: string;
-} & Required<Pick<BranchInput & {
+  /** @nullable */
+  createdAt: Date | null;
+}) & Required<Pick<BranchInput & ({
   id: string;
   code: string;
   clinicName?: string;
-}, 'status'>>;
+  /** @nullable */
+  createdAt: Date | null;
+}), 'status'>>;

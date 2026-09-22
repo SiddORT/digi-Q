@@ -12,22 +12,8 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { RecordStatus } from './recordStatus';
-import type { Role } from './role';
 
-export interface UserInput {
-  /** @minLength 1 */
+export interface ManagingAdminOption {
+  id: string;
   fullName: string;
-  email: string;
-  mobile?: string;
-  role: Role;
-  status?: RecordStatus;
-  /**
-     * Required by the server for clinic-scoped roles.
-     * @minItems 1
-     */
-  clinicIds?: string[];
-  branchIds?: string[];
-  /** Backward-compatible only. If supplied it must match the managing admin derived by the server. */
-  managingAdminId?: string;
 }

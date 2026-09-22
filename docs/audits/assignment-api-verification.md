@@ -3,6 +3,7 @@
 **Executed:** 2026-09-22T13:30:18.519Z
 **Marker:** CF-ASSIGN-20260922131518-807f59
 **Result:** 141 passed, 0 failed, 0 skipped.
+**Historical:** This report predates the canonical managing-admin owner boundary. It is retained as historical evidence and was not rerun; use the ownership-tabs regression for the current contract.
 
 ## Evidence
 

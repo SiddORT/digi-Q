@@ -14,3 +14,9 @@ New Clinic Admin identities may be staged without clinic access until an explici
 **Why:** Requiring an already-owned clinic when creating the first admin identity creates a circular onboarding dependency under the single-owner rule. The staged identity has no existing clinic scope.
 
 **How to apply:** Keep this staging limitation visible in onboarding and audit reports. An atomic admin-plus-first-clinic onboarding flow could remove the intermediate state without weakening ownership constraints.
+
+Doctors and receptionists must each have one managing admin, and every assigned clinic must be owned by that admin—even when Super Admin makes the assignment. For new staff, derive the manager from the selected clinics only when all selected clinics share one valid owner; do not ask for a separate manager selection.
+
+**Why:** The user's revised user-management specification on 2026-09-22 makes the managing admin an ownership boundary, not merely a record of who created a doctor. It also extends this relationship to receptionists.
+
+**How to apply:** Reject mixed-owner assignments and ownership changes that would invalidate existing staff mappings. Distinguish the doctor's management catalog (clinics owned by their managing admin) from operational access (actual clinic/branch assignments and own clinical relationships). A wider staff-assignment catalog must not grant wider appointment or queue access.

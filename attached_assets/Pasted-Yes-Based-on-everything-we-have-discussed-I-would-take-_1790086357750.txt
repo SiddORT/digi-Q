@@ -1,0 +1,2118 @@
+Yes. Based on everything we have discussed, I would take the single “Users” parent menu with three role tabs — Admins, Doctors, Receptionists approach rather than putting three separate items in the left navigation.
+
+This keeps the navigation clean while making user creation completely role-specific. More importantly, the clinic ownership relationship becomes the central rule, which removes a lot of the ambiguity currently present in the system.
+
+Below is a complete Replit AI implementation/audit prompt. I have intentionally made it implementation-focused and included the edge cases so Replit does not make assumptions.
+
+# CLINICFLOW — USER MANAGEMENT, ROLE TABS, CLINIC OWNERSHIP & ACCESS CONTROL
+# FINAL IMPLEMENTATION / AUDIT / CORRECTION PROMPT
+
+## IMPORTANT
+
+We are making a system-wide improvement to the existing ClinicFlow application.
+
+The purpose of this change is to simplify user management while making the relationship between:
+
+- Super Admin
+- Clinic Admin
+- Doctor
+- Receptionist
+- Clinic
+- Branch
+
+completely deterministic.
+
+DO NOT rebuild the application from scratch.
+
+DO NOT replace working functionality unnecessarily.
+
+DO NOT break existing:
+
+- Authentication
+- Authorisation
+- Clinics
+- Branches
+- Doctors
+- Receptionists
+- Patients
+- Appointments
+- Availability
+- QR functionality
+- Queue/check-in functionality
+- Dashboards
+- Notifications
+- Reports
+- Existing APIs
+- Existing database relationships
+
+First inspect the existing implementation, database schema, API layer, frontend routes/components, permissions and current data.
+
+Then implement the changes below in a way that integrates with the existing architecture.
+
+The final result must have NO logical gaps, NO ambiguous ownership rules, NO cross-clinic data leakage and NO dead or misleading UI.
+
+---
+
+# 1. PRIMARY OBJECTIVE
+
+The current system has a single "Users" page where all users are displayed together.
+
+The current UI should be simplified.
+
+Instead of displaying all roles together on one large Users page, create a single parent navigation item:
+
+> Users
+
+When the user clicks Users, the page should contain three clearly separated tabs:
+
+1. Admins
+2. Doctors
+3. Receptionists
+
+The system should NOT have separate unrelated user-management pages scattered throughout the application.
+
+The Users section should become the central place for managing these three operational roles.
+
+Patients remain managed through the existing Patients section and should NOT be mixed into Admins / Doctors / Receptionists.
+
+---
+
+# 2. RECOMMENDED NAVIGATION STRUCTURE
+
+Use:
+
+```text
+Users
+   ├── Admins
+   ├── Doctors
+   └── Receptionists
+
+Do NOT add three separate top-level sidebar items such as:
+
+Admins
+Doctors
+Receptionists
+
+unless the existing architecture makes the tab approach technically impossible.
+
+The preferred UX is:
+
+Sidebar
+   Users
+      ↓
+Users Page
+   [ Admins ] [ Doctors ] [ Receptionists ]
+
+This keeps the sidebar clean and makes it immediately obvious that these are three user-management categories.
+
+3. USERS PAGE UX
+
+When Users is opened:
+
+Show:
+
+Users
+
+[ Admins ] [ Doctors ] [ Receptionists ]
+
+Only the selected role's records should be displayed.
+
+Each tab should have:
+
+Search
+Filters
+Add button
+Table/list
+Edit action
+Activate/deactivate action where supported
+Appropriate mapping information
+Pagination if required
+Latest records first
+
+Do not show unrelated roles in the selected tab.
+
+For example:
+
+Admins tab
+
+Show only Clinic Admin users.
+
+Doctors tab
+
+Show only Doctors.
+
+Receptionists tab
+
+Show only Receptionists.
+
+Super Admin should NOT be treated as a normal record in these tabs.
+
+Super Admin remains the platform-level role.
+
+4. ROLE MODEL
+
+The system has these roles:
+
+Super Admin
+Clinic Admin
+Doctor
+Receptionist
+Patient
+
+Do not introduce additional roles.
+
+5. DEFINITIVE CLINIC OWNERSHIP MODEL
+
+This is extremely important.
+
+A clinic can have EXACTLY ONE Clinic Admin.
+
+The system must enforce:
+
+ONE CLINIC → EXACTLY ONE CLINIC ADMIN
+
+ONE ADMIN → MANY CLINICS
+
+ONE CLINIC → MANY DOCTORS
+
+ONE CLINIC → MANY RECEPTIONISTS
+
+ONE DOCTOR → MANY CLINICS
+
+ONE RECEPTIONIST → MANY CLINICS
+
+ONE RECEPTIONIST → MANY BRANCHES
+
+ONE BRANCH → EXACTLY ONE CLINIC
+
+There can NEVER be two Clinic Admins owning the same clinic.
+
+Do not implement multiple-admin ownership for one clinic.
+
+Do not create an "admin priority" mechanism.
+
+Do not randomly choose an admin.
+
+Do not infer clinic ownership from shared doctor/receptionist access.
+
+Clinic ownership must be explicit and persisted.
+
+6. MANAGING ADMIN RELATIONSHIP
+
+Each Doctor and Receptionist must have a deterministic managing Clinic Admin relationship.
+
+The managing Clinic Admin determines which clinics that Doctor or Receptionist can work with.
+
+The fundamental rule is:
+
+A Doctor or Receptionist can only be mapped to clinics that are owned by their managing Clinic Admin.
+
+Therefore:
+
+Doctor → Managing Admin → Admin's Clinics
+Receptionist → Managing Admin → Admin's Clinics
+
+A Doctor or Receptionist must NEVER be allowed to access or be mapped to a clinic outside the clinic set belonging to their managing Clinic Admin.
+
+7. MULTIPLE CLINICS
+
+A Clinic Admin can own multiple clinics.
+
+Example:
+
+Admin A
+   ├── Clinic 1
+   ├── Clinic 2
+   └── Clinic 3
+
+Admin A can therefore create/map a Doctor to:
+
+Doctor X
+   ├── Clinic 1
+   ├── Clinic 2
+   └── Clinic 3
+
+provided all selected clinics are owned by Admin A.
+
+Similarly:
+
+Receptionist X
+   ├── Clinic 1
+   ├── Clinic 2
+   └── Clinic 3
+
+is valid if the receptionist is managed by Admin A and those clinics belong to Admin A.
+
+8. INVALID MULTI-ADMIN SCENARIO
+
+Do NOT allow:
+
+Clinic 1
+   ├── Admin A
+   └── Admin B
+
+This is invalid.
+
+There must always be one owner:
+
+Clinic 1
+   └── Admin A
+
+If the application currently contains conflicting data, inspect it before changing anything.
+
+Do not silently assign ownership.
+
+Do not delete valid existing data.
+
+If an existing record cannot be resolved safely, surface the ambiguity instead of guessing.
+
+9. ADMINS TAB
+
+The Admins tab is used to create and manage Clinic Admins.
+
+The Add Admin action should open an Admin-specific form.
+
+Example:
+
+Add Admin
+
+Full Name
+Email
+Mobile
+...
+
+Clinic Mapping
+[ Select one or more clinics ]
+
+[ Create & Invite Admin ]
+
+An Admin can own multiple clinics.
+
+When a Clinic Admin is assigned/created for a clinic:
+
+Clinic → Admin
+
+must be persisted.
+
+However, if a clinic already has another Clinic Admin, the system must NOT allow another admin to be assigned to that same clinic.
+
+Show a clear validation message.
+
+Example:
+
+This clinic is already assigned to another Clinic Admin.
+
+10. ADMIN CREATION
+
+Super Admin can create Clinic Admins.
+
+Super Admin has platform-wide access.
+
+When Super Admin creates an Admin:
+
+Create the user account.
+Assign the Clinic Admin role.
+Map the Admin to one or more clinics.
+Those clinics become owned by that Admin.
+The relationship must be persisted.
+The Admin should immediately see those clinics after login.
+Existing permissions must update immediately.
+
+Do not allow an Admin to be created without required clinic ownership/mapping unless the existing business rules explicitly require a temporary unassigned state.
+
+11. DOCTORS TAB
+
+The Doctors tab should show only Doctor users.
+
+Example:
+
+Doctors
+
+Search doctors...
+
+[ + Add Doctor ]
+
+Doctor Table
+-----------------------------------------
+Name
+Email
+Mobile
+Clinics
+Branches
+Status
+Actions
+-----------------------------------------
+
+The Add Doctor form should be Doctor-specific.
+
+12. ADD DOCTOR — SUPER ADMIN
+
+Super Admin can create a Doctor.
+
+The Doctor creation flow must include Clinic Mapping.
+
+Example:
+
+Add Doctor
+
+Doctor Details
+----------------
+Full Name
+Email
+Mobile
+...
+
+Clinic Mapping
+----------------
+Select Clinic(s)
+
+[ Create & Invite Doctor ]
+
+The clinic dropdown must show valid clinics according to the Super Admin's platform-wide access.
+
+When a Doctor is mapped to a clinic:
+
+Doctor → Clinic
+
+must be persisted.
+
+The Doctor's managing Clinic Admin must also be established automatically from the selected clinic ownership.
+
+13. ADD DOCTOR — CLINIC ADMIN
+
+A Clinic Admin can add Doctors.
+
+The Admin must only be able to see clinics that the Admin owns.
+
+Example:
+
+Admin A owns:
+
+Clinic 1
+Clinic 2
+Clinic 3
+
+When Admin A adds a Doctor:
+
+Select Clinic(s)
+
+☑ Clinic 1
+☑ Clinic 2
+☐ Clinic 4
+
+Clinic 4 must NOT be available because Admin A does not own it.
+
+The Doctor's managing Admin becomes:
+
+Admin A
+
+The selected clinics become the Doctor's clinic mappings.
+
+Therefore:
+
+Doctor X
+Managing Admin → Admin A
+
+Clinic mappings:
+Clinic 1
+Clinic 2
+Clinic 3
+
+if selected.
+
+14. AUTOMATIC DOCTOR → ADMIN MAPPING
+
+When a Doctor is added and mapped to a clinic:
+
+The system must automatically identify the Clinic Admin who owns that clinic.
+
+Example:
+
+Clinic A → owned by Admin A
+
+Doctor X is added to Clinic A.
+
+The system automatically establishes:
+
+Doctor X
+   ↓
+Admin A
+   ↓
+Clinic A
+
+The user should NOT have to separately select the managing Admin.
+
+The Admin relationship should be derived from clinic ownership and persisted explicitly.
+
+15. MULTIPLE CLINICS FOR DOCTOR
+
+A Doctor may be mapped to multiple clinics.
+
+Example:
+
+Admin A owns:
+
+Clinic 1
+Clinic 2
+Clinic 3
+
+Doctor X:
+
+☑ Clinic 1
+☑ Clinic 2
+☐ Clinic 3
+
+Valid.
+
+But:
+
+Clinic 4 → Admin B
+
+must NOT be selectable for Doctor X.
+
+The Doctor cannot be mapped to a clinic that is not owned by the Doctor's managing Admin.
+
+16. DOCTOR VISIBILITY
+
+A Doctor should only see clinics that belong to the Doctor's managing Admin.
+
+Example:
+
+Admin A owns:
+Clinic 1
+Clinic 2
+Clinic 3
+
+Doctor X belongs to Admin A.
+
+Doctor X can see:
+Clinic 1
+Clinic 2
+Clinic 3
+
+If Doctor X is only mapped to Clinic 1 and Clinic 2 for operational purposes, the UI should distinguish between:
+
+Clinics owned/available through the managing Admin
+Clinics currently assigned to the Doctor
+
+Do not allow Doctor X to access Clinic 4 if:
+
+Clinic 4 → Admin B
+17. DOCTOR CREATES A NEW CLINIC
+
+A Doctor can create a new clinic if the existing Doctor permissions support clinic creation.
+
+Example:
+
+Doctor X
+Managing Admin → Admin A
+
+Doctor X creates:
+
+Clinic New
+
+The system MUST automatically create:
+
+Clinic New → Admin A
+Clinic New → Doctor X
+
+Therefore:
+
+Doctor X
+   ↓
+Admin A
+   ↓
+Clinic New
+
+Doctor X
+   ↓
+Clinic New
+
+The Doctor does NOT manually choose another Admin.
+
+The new clinic must automatically be owned by the Doctor's managing Clinic Admin.
+
+The new clinic must NOT become unowned.
+
+The new clinic must NOT be assigned to multiple Clinic Admins.
+
+Super Admin must immediately be able to see the new clinic.
+
+18. DOCTOR CREATES NEW BRANCH
+
+When a Doctor creates a branch:
+
+The branch must belong to a clinic that:
+
+Is visible to that Doctor.
+Belongs to the Doctor's managing Admin.
+
+The branch relationship must be:
+
+Branch → Exactly One Clinic
+
+Do not allow a branch to belong to multiple clinics.
+
+19. RECEPTIONISTS TAB
+
+The Receptionists tab should show only Receptionist users.
+
+Example:
+
+Receptionists
+
+Search receptionists...
+
+[ + Add Receptionist ]
+
+Receptionist Table
+-----------------------------------------
+Name
+Email
+Mobile
+Clinics
+Branches
+Status
+Actions
+-----------------------------------------
+20. ADD RECEPTIONIST — CLINIC ADMIN
+
+A Clinic Admin can add a Receptionist.
+
+The Admin should only see clinics owned by that Admin.
+
+The flow should be:
+
+Add Receptionist
+
+Receptionist Details
+
+Clinic
+[ Select one or more clinics ]
+
+Branch
+[ Select branch based on selected clinic ]
+
+[ Create & Invite Receptionist ]
+
+The receptionist may be mapped to multiple clinics.
+
+For each selected clinic, the appropriate branches can be selected.
+
+21. RECEPTIONIST BRANCH MAPPING
+
+Branch selection MUST depend on the selected clinic.
+
+Example:
+
+Clinic A
+   ├── Branch A1
+   ├── Branch A2
+
+Clinic B
+   ├── Branch B1
+   └── Branch B2
+
+If Clinic A is selected:
+
+Only:
+
+Branch A1
+Branch A2
+
+should be selectable.
+
+Never show Branch B1 or Branch B2.
+
+If multiple clinics are selected, the UI should clearly associate branches with their respective clinics.
+
+Avoid an ambiguous global branch dropdown.
+
+22. RECEPTIONIST → ADMIN AUTOMATIC MAPPING
+
+When a Receptionist is created and mapped to a clinic:
+
+The system automatically identifies the Clinic Admin who owns that clinic.
+
+Example:
+
+Clinic A → Admin A
+
+Receptionist X is mapped to Clinic A.
+
+Automatically:
+
+Receptionist X → Admin A
+Receptionist X → Clinic A
+
+The Admin should NOT need to be manually selected.
+
+23. RECEPTIONIST MULTI-CLINIC MAPPING
+
+A Receptionist may be mapped to multiple clinics.
+
+Example:
+
+Admin A owns:
+
+Clinic 1
+Clinic 2
+Clinic 3
+
+Receptionist X:
+
+Clinic 1 → Branch 1A
+Clinic 1 → Branch 1B
+
+Clinic 2 → Branch 2A
+
+This is valid.
+
+But:
+
+Clinic 4 → Admin B
+
+must never be selectable for Receptionist X.
+
+24. DOCTOR CREATES RECEPTIONIST
+
+A Doctor can create a Receptionist.
+
+The flow must follow the same ownership rules.
+
+Example:
+
+Doctor X
+Managing Admin → Admin A
+
+Doctor X creates Receptionist Y.
+
+Receptionist Y must automatically become associated with:
+
+Admin A
+
+The Doctor should only be able to map Receptionist Y to clinics owned by Admin A.
+
+The Doctor must NOT be able to map Receptionist Y to a clinic owned by another Admin.
+
+The branch selection must only contain branches belonging to the selected valid clinics.
+
+25. DOCTOR PERMISSIONS FOR RECEPTIONISTS
+
+Doctor can:
+
+Add Receptionist
+Map Receptionist to valid clinics
+Map Receptionist to valid branches
+View/manage Receptionists within authorised scope
+
+Doctor cannot:
+
+Create another Clinic Admin
+Assign a Receptionist to another Admin's clinic
+Transfer clinic ownership
+Create multiple Clinic Admin ownership
+Override Super Admin permissions
+26. ADMIN PERMISSIONS
+
+Clinic Admin should have similar operational capabilities to Super Admin, but strictly within the Admin's ownership scope.
+
+Clinic Admin can:
+
+Manage their clinics
+Manage branches belonging to their clinics
+Add Doctors
+Add Receptionists
+Map Doctors to their clinics
+Map Receptionists to their clinics
+Manage appropriate doctor availability within authorised clinics
+View appointments within authorised clinics
+View queues within authorised clinics
+View relevant patients/data according to existing business rules
+Manage operational data within their scope
+
+Clinic Admin cannot:
+
+Access another Admin's clinics
+Assign users to another Admin's clinics
+Change another Admin's clinic ownership
+Create another Clinic Admin for an already-owned clinic
+Access platform-wide Super Admin functionality
+27. SUPER ADMIN PERMISSIONS
+
+Super Admin remains platform-wide.
+
+Super Admin can:
+
+Create/manage Clinic Admins
+Create/manage Doctors
+Create/manage Receptionists
+Create/manage Clinics
+Create/manage Branches
+View all users
+View all clinics
+View all branches
+Manage platform-wide settings
+Manage ownership/mappings where authorised
+Resolve data integrity issues
+
+Super Admin is the only role with unrestricted platform-wide visibility.
+
+28. CLINIC OWNERSHIP MUST BE THE SOURCE OF TRUTH
+
+Do NOT determine permissions only from:
+
+Doctor → Clinic
+
+or:
+
+Receptionist → Clinic
+
+because shared clinic access does not itself prove ownership.
+
+The system must know:
+
+Clinic → Owner Admin
+
+explicitly.
+
+Then:
+
+Doctor → Managing Admin
+Doctor → Allowed Clinics
+
+Receptionist → Managing Admin
+Receptionist → Allowed Clinics/Branches
+
+must be validated against the Admin's clinic ownership.
+
+29. CRITICAL VALIDATION RULE
+
+The following must ALWAYS be true:
+
+Doctor's Clinic ⊆ Doctor's Managing Admin's Clinics
+
+and:
+
+Receptionist's Clinic ⊆ Receptionist's Managing Admin's Clinics
+
+If this condition is false, the system must reject the mapping.
+
+Do not rely only on frontend filtering.
+
+Enforce it at:
+
+Frontend
+API
+Service/business layer
+Database where practical
+30. CLINIC DROPDOWN FILTERING
+
+When adding/editing a Doctor:
+
+Only show valid clinics.
+
+For Clinic Admin:
+
+Available Clinics =
+Clinics owned by logged-in Admin
+
+For Doctor creating a Receptionist:
+
+Available Clinics =
+Clinics owned by Doctor's Managing Admin
+
+For Super Admin:
+
+Available Clinics =
+All active clinics
+
+Never send all clinics to the frontend and simply hide invalid ones.
+
+The backend must enforce the same rule.
+
+31. BRANCH DROPDOWN FILTERING
+
+Branch options must always be filtered by:
+
+Selected Clinic
++
+Authorised Admin ownership
+
+Never allow:
+
+Clinic A + Branch B
+
+when Branch B belongs to Clinic B.
+
+32. EDIT USER MAPPING
+
+When editing a Doctor:
+
+Show their current:
+
+Managing Admin
+Clinics
+Branches where applicable
+
+Do not allow the user to select an invalid clinic.
+
+If the user changes clinic mappings, validate the new mappings.
+
+If removing a clinic mapping would violate an existing required relationship, show a clear validation message.
+
+Do not silently create an orphaned Doctor.
+
+33. EDIT RECEPTIONIST MAPPING
+
+When editing a Receptionist:
+
+Show:
+
+Managing Admin
+Clinics
+Branches
+
+Branch mappings must remain associated with the correct clinic.
+
+If Clinic A is removed:
+
+Any branch mapping belonging exclusively to Clinic A must also be removed/deactivated appropriately.
+
+Do not leave orphaned branch assignments.
+
+34. ADMIN OWNERSHIP CHANGE
+
+Clinic ownership is sensitive.
+
+Do not introduce arbitrary Admin transfer functionality just to support this change.
+
+If the existing application already supports ownership transfer:
+
+Only authorised Super Admin should perform it.
+A clinic must always have exactly one owner.
+Transfer must update dependent access consistently.
+Doctors and Receptionists mapped to that clinic must be revalidated.
+Historical records must not be destroyed.
+
+If ownership transfer does not currently exist, do not invent a complex transfer workflow.
+
+35. EXISTING DATA MIGRATION
+
+Before changing the database or relationships:
+
+Inspect the existing database.
+
+Identify:
+
+Clinics without an Admin
+Doctors without a managing Admin
+Receptionists without a managing Admin
+Doctors mapped to clinics outside their Admin's scope
+Receptionists mapped to clinics outside their Admin's scope
+Clinics with multiple Admin relationships
+Invalid branch mappings
+Orphaned mappings
+
+Do NOT silently guess ownership.
+
+Do NOT delete records.
+
+Do NOT assign random Admins.
+
+For ambiguous existing data, preserve the data and surface the ambiguity for resolution.
+
+New records must follow the new deterministic rules.
+
+36. EXISTING FUNCTIONALITY MUST REMAIN INTACT
+
+This change is primarily a User Management and Access Control restructuring.
+
+Do not unnecessarily change:
+
+Appointment booking
+Appointment QR generation
+Appointment QR scanning
+Patient check-in
+Queue management
+No-show/skip logic
+Doctor availability
+Session configuration
+Notifications
+Reports
+Dashboards
+
+If these existing features depend on user/clinic mappings, update their authorisation scope carefully without changing their business logic.
+
+37. AVAILABILITY
+
+Existing availability rules must continue to work.
+
+Availability is location-specific where applicable:
+
+Doctor
++
+Clinic
++
+Branch
++
+Day/date
++
+Session configuration
+
+A Doctor must only be able to create/manage availability for clinics and branches that are authorised for that Doctor.
+
+Admin and authorised operational users must only manage availability within their authorised clinic scope.
+
+Do not convert the existing session-based model into a fixed-slot model.
+
+38. DASHBOARD SCOPING
+
+All dashboards must respect the same ownership rules.
+
+Super Admin
+
+Can see platform-wide data.
+
+Clinic Admin
+
+Can see data for clinics owned by that Admin.
+
+Doctor
+
+Can see data for clinics available to that Doctor through their managing Admin and current valid Doctor mappings.
+
+Receptionist
+
+Can see data for authorised clinics and branches.
+
+Never expose another Admin's clinic data.
+
+39. NO CROSS-CLINIC DATA LEAKAGE
+
+This must be enforced server-side.
+
+Do not rely on:
+
+Hidden UI controls
+Dropdown filtering
+Route restrictions alone
+Frontend state
+Query parameters supplied by the browser
+
+A malicious request such as:
+
+GET /api/clinics/{another-admin-clinic-id}
+
+must still be rejected if the current user does not have access.
+
+The server must derive authorised scope from the authenticated user.
+
+Never trust client-supplied Admin ID, Clinic ID or Branch ID.
+
+40. USER TABLE DESIGN
+Admins
+
+Recommended columns:
+
+Full Name
+Email
+Mobile
+Owned Clinics
+Status
+Created Date
+Actions
+Doctors
+
+Recommended columns:
+
+Full Name
+Email
+Mobile
+Managing Admin
+Clinics
+Branches
+Status
+Created Date
+Actions
+Receptionists
+
+Recommended columns:
+
+Full Name
+Email
+Mobile
+Managing Admin
+Clinics
+Branches
+Status
+Created Date
+Actions
+
+Do not overcrowd the table.
+
+Use readable clinic/branch labels and expandable details where required.
+
+41. ADD USER BUTTONS
+
+The buttons should become role-specific.
+
+Instead of:
+
++ Add User
+
+use:
+
+Admins
+   + Add Admin
+
+Doctors
+   + Add Doctor
+
+Receptionists
+   + Add Receptionist
+
+This removes ambiguity.
+
+The user should immediately know what they are creating.
+
+42. CREATE & INVITE
+
+The existing invitation mechanism should be reused.
+
+When creating a user:
+
+Validate form.
+Validate role.
+Validate clinic ownership.
+Validate branch ownership.
+Create/update user.
+Create role relationship.
+Create clinic mapping.
+Create branch mapping where applicable.
+Establish managing Admin relationship.
+Commit transaction.
+Trigger existing invitation flow.
+Refresh relevant UI.
+
+Do not create the user first and leave mappings incomplete.
+
+Use a transaction where appropriate so the system does not create partially configured users.
+
+43. DUPLICATE USER PROTECTION
+
+Do not create duplicate accounts if the same user already exists.
+
+Check existing identity fields according to the application's current authentication model.
+
+If an existing user is found:
+
+Clearly inform the operator.
+Allow the appropriate existing user to be mapped/updated if supported.
+Do not create duplicate Doctor/Receptionist/Admin records.
+44. ROLE INTEGRITY
+
+A user must not accidentally receive multiple operational roles through the new forms.
+
+For example:
+
+Do not allow:
+
+Doctor
++
+Clinic Admin
+
+unless the existing system explicitly supports multi-role accounts.
+
+Do not invent multi-role behaviour.
+
+Respect the current authentication architecture.
+
+45. RESPONSIVE UI
+
+The new Users page and role tabs must work properly on:
+
+Desktop
+Laptop
+Tablet
+Mobile
+
+The tables should remain usable.
+
+Forms should be clean and simple.
+
+Do not create excessively complicated mapping interfaces.
+
+46. UX PRINCIPLE
+
+The entire redesign should follow this principle:
+
+The user should never have to understand the underlying database relationships.
+
+For example, when Admin A adds Doctor X:
+
+The Admin should simply:
+
+Add Doctor
+   ↓
+Enter Doctor details
+   ↓
+Select Clinic(s)
+   ↓
+Create & Invite
+
+The system handles:
+
+Doctor → Admin A
+Doctor → Selected Clinics
+
+automatically.
+
+Similarly:
+
+Add Receptionist
+   ↓
+Enter details
+   ↓
+Select Clinic(s)
+   ↓
+Select Branch(es)
+   ↓
+Create & Invite
+
+The system automatically handles:
+
+Receptionist → Admin A
+Receptionist → Clinics
+Receptionist → Branches
+47. NO UNNECESSARY ADMIN SELECTION
+
+When an Admin creates a Doctor or Receptionist, DO NOT ask:
+
+Select Managing Admin
+
+because the logged-in Admin is already the managing Admin.
+
+When a Doctor creates a Receptionist, DO NOT ask:
+
+Select Managing Admin
+
+because the Doctor already belongs to a managing Admin.
+
+The system should derive this relationship automatically.
+
+Super Admin may select/establish the appropriate managing Admin based on the selected clinic ownership, but there must still be exactly one deterministic managing Admin.
+
+48. MULTI-CLINIC MAPPING UX
+
+If an Admin owns multiple clinics, make multi-selection easy.
+
+Example:
+
+Select Clinics
+
+☑ Clinic A
+☑ Clinic B
+☐ Clinic C
+☐ Clinic D
+
+Show the selected clinics clearly.
+
+For Receptionists, branches should be grouped under their clinic:
+
+Clinic A
+   ☑ Branch A1
+   ☑ Branch A2
+
+Clinic B
+   ☑ Branch B1
+
+This is much clearer than one large unrelated Branch dropdown.
+
+49. CLINIC OWNERSHIP DISPLAY
+
+Where useful, display:
+
+Clinic
+Owner Admin
+
+For example:
+
+Clinic A
+Owner: Admin A
+
+This will make ownership transparent to Super Admin.
+
+Do not display unnecessary internal IDs.
+
+50. NO LOGICAL GAP — DOCTOR CREATES CLINIC
+
+Test this exact scenario:
+
+Admin A owns Clinic 1.
+
+Doctor X belongs to Admin A
+and is mapped to Clinic 1.
+
+Doctor X creates Clinic 2.
+
+Expected:
+
+Clinic 2 owner = Admin A
+
+Doctor X mapped to Clinic 2
+
+Admin A mapped to Clinic 2
+
+Super Admin can see Clinic 2
+
+Clinic 2 must NOT:
+
+Be unowned
+Have multiple Admins
+Be owned by another Admin
+Be invisible to Admin A
+Be invisible to Doctor X
+51. NO LOGICAL GAP — ADMIN CREATES DOCTOR
+
+Test:
+
+Admin A owns:
+Clinic 1
+Clinic 2
+
+Admin A creates Doctor X.
+
+Admin selects:
+Clinic 1
+Clinic 2
+
+Expected:
+
+Doctor X → Admin A
+
+Doctor X → Clinic 1
+Doctor X → Clinic 2
+
+Doctor X must NOT receive access to:
+
+Clinic 3 → Admin B
+52. NO LOGICAL GAP — ADMIN CREATES RECEPTIONIST
+
+Test:
+
+Admin A owns:
+Clinic 1
+Clinic 2
+
+Clinic 1:
+Branch A
+Branch B
+
+Clinic 2:
+Branch C
+Branch D
+
+Admin creates Receptionist X.
+
+Select:
+
+Clinic 1
+Clinic 2
+
+Branch A
+Branch C
+
+Expected:
+
+Receptionist X → Admin A
+
+Receptionist X → Clinic 1
+Receptionist X → Branch A
+
+Receptionist X → Clinic 2
+Receptionist X → Branch C
+
+No unrelated branch mapping should exist.
+
+53. NO LOGICAL GAP — DOCTOR CREATES RECEPTIONIST
+
+Test:
+
+Doctor X
+Managing Admin = Admin A
+
+Admin A owns:
+Clinic 1
+Clinic 2
+
+Doctor X creates Receptionist Y.
+
+Doctor X must only be able to select:
+
+Clinic 1
+Clinic 2
+
+Receptionist Y becomes:
+
+Receptionist Y → Admin A
+
+and can only be mapped to branches belonging to Admin A's clinics.
+
+54. INVALID CROSS-ADMIN TEST
+
+Create:
+
+Admin A → Clinic A
+Admin B → Clinic B
+
+Doctor X belongs to Admin A.
+
+Attempt:
+
+Doctor X → Clinic B
+
+Expected:
+
+REJECTED
+
+The backend must reject it even if the request is manually manipulated.
+
+Same test must be performed for Receptionists.
+
+55. ADMIN VISIBILITY TEST
+
+Admin A owns:
+
+Clinic A
+Clinic B
+
+Admin B owns:
+
+Clinic C
+
+When Admin A logs in:
+
+Must see:
+
+Clinic A
+Clinic B
+
+Must NOT see:
+
+Clinic C
+
+This must apply consistently across:
+
+Users
+Doctors
+Receptionists
+Clinics
+Branches
+Appointments
+Queue
+Availability
+Dashboards
+Reports
+
+where applicable.
+
+56. DOCTOR VISIBILITY TEST
+
+Doctor X belongs to Admin A.
+
+Admin A owns:
+
+Clinic A
+Clinic B
+
+Doctor X must not see:
+
+Clinic C → Admin B
+
+even if:
+
+Clinic C exists
+Doctor X knows the ID
+Doctor X manually changes a request
+Doctor X calls the API directly
+57. RECEPTIONIST VISIBILITY TEST
+
+Receptionist X belongs to Admin A.
+
+Admin A owns:
+
+Clinic A
+Clinic B
+
+Receptionist X must not see or operate against:
+
+Clinic C → Admin B
+
+and must not access branches under Clinic C.
+
+58. DATA CONSISTENCY
+
+Whenever a user mapping changes, update all relevant views immediately.
+
+For example:
+
+If Doctor X is added to Clinic B:
+
+Then after refresh/logout/login:
+
+Doctor X sees Clinic B where authorised.
+Admin sees Doctor X under Clinic B.
+Super Admin sees the relationship.
+Availability can use the valid clinic.
+Appointment/queue access follows the new scope.
+
+Do not rely on stale frontend state.
+
+59. REMOVE OLD ALL-USERS EXPERIENCE
+
+The current page that mixes:
+
+Patient
+Doctor
+Receptionist
+Admin
+
+should no longer be the primary operational user-management experience.
+
+Replace it with the role-specific Users section.
+
+Do not delete patient functionality.
+
+Patients remain in:
+
+Patients
+60. ACCOUNT RECOVERY
+
+The current account recovery functionality shown on the Users page must be reviewed.
+
+Do not lose it.
+
+Move it into the new Users structure in the cleanest appropriate place.
+
+Possible approach:
+
+Keep account recovery available within the relevant Admin/Doctor/Receptionist tab.
+Or provide a clearly scoped recovery action within the Users section.
+
+Do not leave a broken account recovery flow after removing the old combined Users table.
+
+61. SEARCH AND FILTERS
+
+Every role table should support appropriate search/filter functionality.
+
+At minimum:
+
+Admins
+
+Search by:
+
+Name
+Email
+Mobile
+
+Filter by:
+
+Status
+Clinic
+Doctors
+
+Search by:
+
+Name
+Email
+Mobile
+
+Filter by:
+
+Clinic
+Managing Admin
+Status
+Receptionists
+
+Search by:
+
+Name
+Email
+Mobile
+
+Filter by:
+
+Clinic
+Branch
+Managing Admin
+Status
+
+Only show filters appropriate for the role.
+
+62. LATEST DATA FIRST
+
+All user tables should display the latest relevant records first according to the application's established sorting convention.
+
+Do not randomly sort records.
+
+Pagination/filtering/searching must not break the ordering.
+
+63. BACKEND SECURITY
+
+Every relevant API must verify:
+
+Authenticated User
++
+Role
++
+Managing Admin
++
+Clinic Ownership
++
+Clinic Mapping
++
+Branch Mapping
+
+where applicable.
+
+Do not trust:
+
+adminId
+clinicId
+branchId
+doctorId
+receptionistId
+
+supplied by the client without server-side validation.
+
+64. DATABASE INTEGRITY
+
+Inspect the existing schema before modifying it.
+
+Ensure relationships support:
+
+Clinic → Exactly One Admin
+
+Admin → Many Clinics
+
+Doctor → Managing Admin
+
+Receptionist → Managing Admin
+
+Doctor → Many Clinics
+
+Receptionist → Many Clinics
+
+Receptionist → Many Branches
+
+Branch → Exactly One Clinic
+
+Use appropriate foreign keys/constraints/indexes where compatible with the existing architecture.
+
+Do not introduce redundant relationships that can contradict each other.
+
+65. TRANSACTION SAFETY
+
+Creating a Doctor or Receptionist may require multiple database operations.
+
+For example:
+
+Create User
+Create Role
+Create Managing Admin relationship
+Create Clinic mapping
+Create Branch mapping
+Create invitation
+
+Use a safe transactional approach where appropriate.
+
+If a critical mapping fails:
+
+Do not leave a partially configured user.
+
+66. AUDIT EXISTING CODE FIRST
+
+Before implementation, inspect:
+
+User models
+Role models
+Clinic models
+Branch models
+Doctor models
+Receptionist models
+Admin relationships
+User-clinic mapping tables
+User-branch mapping tables
+Authentication
+Authorisation middleware
+API endpoints
+Frontend routes
+User forms
+Existing Users page
+Clinic forms
+Doctor forms
+Receptionist forms
+Dashboard queries
+Availability queries
+Appointment queries
+Queue queries
+
+Reuse existing infrastructure wherever possible.
+
+67. DO NOT CREATE DUPLICATE SYSTEMS
+
+If a user-clinic mapping already exists:
+
+Reuse it if it correctly represents the required relationship.
+
+If a managing-admin relationship already exists:
+
+Reuse it if it can support the required deterministic ownership model.
+
+Do not create duplicate mapping tables simply because a new UI is being introduced.
+
+Only modify the data model where necessary.
+
+68. DO NOT BREAK EXISTING QR / QUEUE
+
+The existing ClinicFlow QR and queue functionality must remain functional.
+
+In particular, preserve:
+
+Appointment QR generation
+Appointment QR validation
+Patient check-in
+Queue position
+Next patient
+Skip/no-show
+Automatic previous patient checkout where already implemented
+Session/availability model
+
+The user-management change must not introduce regressions.
+
+69. ERROR MESSAGES
+
+Use clear human-readable errors.
+
+Examples:
+
+Invalid clinic
+
+You can only assign users to clinics owned by their managing Clinic Admin.
+
+Duplicate clinic owner
+
+This clinic is already assigned to another Clinic Admin.
+
+Invalid branch
+
+The selected branch does not belong to the selected clinic.
+
+Invalid mapping
+
+This user cannot be mapped to the selected clinic because it belongs to another Clinic Admin.
+
+Missing ownership
+
+This clinic does not have a valid Clinic Admin owner. Please resolve the clinic ownership before continuing.
+
+Do not show raw database errors to users.
+
+70. TESTING REQUIREMENTS
+
+After implementation, test all combinations.
+
+Super Admin
+
+Test:
+
+Create Admin
+Assign one clinic
+Assign multiple clinics
+Create Doctor
+Map Doctor to one clinic
+Map Doctor to multiple clinics
+Create Receptionist
+Map Receptionist to one clinic
+Map Receptionist to multiple clinics
+Map branches correctly
+Invalid clinic mapping
+Invalid branch mapping
+Clinic Admin
+
+Test:
+
+Login
+View owned clinics
+Create Doctor
+Create Doctor for multiple owned clinics
+Attempt another Admin's clinic
+Create Receptionist
+Create Receptionist for multiple owned clinics
+Select branches
+Attempt another Admin's branch
+Dashboard scope
+Appointment scope
+Availability scope
+Doctor
+
+Test:
+
+Login
+View authorised clinics
+Create Receptionist
+Map Receptionist to valid clinic
+Map Receptionist to valid branch
+Attempt invalid clinic
+Attempt invalid branch
+Create Clinic
+Verify new clinic automatically belongs to Doctor
+Verify new clinic automatically belongs to Doctor's Managing Admin
+Receptionist
+
+Test:
+
+Login
+View authorised clinics
+View authorised branches
+Appointment operations
+Queue operations
+Check-in operations
+Attempt cross-admin access
+71. CRITICAL END-TO-END TEST
+
+Perform this exact test:
+
+Create Admin A.
+
+Admin A creates:
+Clinic A
+Clinic B
+
+Admin A creates:
+Doctor X
+
+Doctor X is mapped to:
+Clinic A
+Clinic B
+
+Verify:
+Doctor X → Admin A
+
+Admin A creates:
+Receptionist X
+
+Receptionist X mapped to:
+Clinic A → Branch A1
+Clinic B → Branch B1
+
+Verify:
+Receptionist X → Admin A
+
+Doctor X creates:
+Clinic C
+
+Verify automatically:
+Clinic C → Admin A
+Clinic C → Doctor X
+
+Doctor X creates:
+Receptionist Y
+
+Verify:
+Receptionist Y → Admin A
+
+Attempt to map Doctor X or Receptionist Y to:
+Clinic Z → Admin B
+
+Expected:
+REJECTED
+72. REFRESH / LOGOUT / LOGIN TEST
+
+After every important mapping operation:
+
+Refresh.
+Logout.
+Login again.
+Verify relationships remain correct.
+
+No relationship should depend only on frontend state.
+
+73. CONCURRENCY TEST
+
+Test two users attempting to modify clinic ownership simultaneously.
+
+Example:
+
+Admin A attempts to own Clinic X
+Admin B attempts to own Clinic X
+
+Only one ownership relationship may succeed.
+
+The database/API must prevent duplicate ownership.
+
+74. NO ORPHAN DATA
+
+After creating/editing/deactivating users:
+
+Check for:
+
+Users without required role relationship
+Doctors without managing Admin
+Receptionists without managing Admin
+Clinics without owner where owner is required
+Clinics with multiple owners
+Receptionists with invalid branches
+Branches without valid clinics
+User mappings outside Admin scope
+75. UI QUALITY
+
+The final Users section should feel significantly simpler than the current combined page shown in the screenshots.
+
+Avoid:
+
+Huge forms
+Repeated fields
+Confusing dropdowns
+Showing unrelated users
+Showing irrelevant clinic data
+Showing all branches in every dropdown
+Technical IDs
+Raw relationship IDs
+Excessive confirmation dialogs
+
+Use:
+
+Clear tabs
+Role-specific Add buttons
+Search
+Filters
+Clean forms
+Multi-select where required
+Clinic-grouped branch selection
+Clear validation messages
+76. IMPORTANT — DO NOT OVERENGINEER
+
+The objective is simplification.
+
+Do not introduce:
+
+Additional roles
+Complex organisation hierarchies
+Multiple admin ownership
+Role switching
+Complex permission matrices
+Unnecessary approval workflows
+Duplicate user-management modules
+Unnecessary microservices
+Unnecessary database tables
+
+Keep the implementation aligned with the existing ClinicFlow architecture.
+
+77. FINAL BUSINESS MODEL
+
+The final relationship model must effectively behave as follows:
+
+SUPER ADMIN
+     │
+     ├── Admin A
+     │      ├── Clinic A
+     │      │      ├── Branch A1
+     │      │      └── Branch A2
+     │      │
+     │      ├── Clinic B
+     │      │      ├── Branch B1
+     │      │      └── Branch B2
+     │      │
+     │      ├── Doctor X
+     │      │      ├── Clinic A
+     │      │      └── Clinic B
+     │      │
+     │      └── Receptionist X
+     │             ├── Clinic A → Branch A1
+     │             └── Clinic B → Branch B2
+     │
+     └── Admin B
+            └── Clinic C
+
+Doctor X cannot access Clinic C.
+
+Receptionist X cannot access Clinic C.
+
+Admin A cannot access Clinic C.
+
+Admin B cannot access Clinic A or Clinic B.
+
+Super Admin can access everything.
+
+78. FINAL OWNERSHIP RULE
+
+The single most important rule is:
+
+ONE CLINIC = ONE CLINIC ADMIN OWNER.
+
+And:
+
+DOCTORS AND RECEPTIONISTS CAN ONLY BE MAPPED TO CLINICS OWNED BY THEIR MANAGING CLINIC ADMIN.
+
+And:
+
+WHEN A DOCTOR CREATES A NEW CLINIC, THAT CLINIC IS AUTOMATICALLY OWNED BY THE DOCTOR'S MANAGING CLINIC ADMIN AND AUTOMATICALLY MAPPED TO THE DOCTOR.
+
+And:
+
+A RECEPTIONIST CREATED BY A DOCTOR OR CLINIC ADMIN AUTOMATICALLY BELONGS TO THE SAME MANAGING CLINIC ADMIN, subject to the existing role and authorisation rules.
+
+These rules must be enforced consistently across:
+
+UI
+API
+Business logic
+Database
+Dashboards
+Reports
+Availability
+Appointments
+Queue
+Clinics
+Branches
+Users
+79. FINAL IMPLEMENTATION CHECKLIST
+
+Before declaring this work complete, verify:
+
+ Single Users parent navigation exists
+ Admins tab exists
+ Doctors tab exists
+ Receptionists tab exists
+ Old combined operational Users list is removed/replaced
+ Patients remain in Patients
+ Add Admin is role-specific
+ Add Doctor is role-specific
+ Add Receptionist is role-specific
+ Admin can own multiple clinics
+ Each clinic has exactly one Clinic Admin
+ Doctor has deterministic managing Admin
+ Receptionist has deterministic managing Admin
+ Doctor can map to multiple clinics
+ Receptionist can map to multiple clinics
+ Receptionist branch mapping is clinic-dependent
+ Admin only sees/uses owned clinics
+ Doctor only uses clinics belonging to managing Admin
+ Receptionist only uses clinics belonging to managing Admin
+ Doctor cannot access another Admin's clinic
+ Receptionist cannot access another Admin's clinic
+ Admin cannot access another Admin's clinic
+ Doctor-created clinic automatically maps to Doctor
+ Doctor-created clinic automatically maps to Doctor's Managing Admin
+ New clinic has exactly one Admin owner
+ Doctor-created Receptionist gets correct managing Admin
+ Admin-created Doctor gets correct managing Admin
+ Admin-created Receptionist gets correct managing Admin
+ Super Admin retains platform-wide access
+ Server-side authorization is enforced
+ Database integrity is enforced
+ No frontend-only security
+ No duplicate users
+ No orphan mappings
+ No invalid branch mappings
+ Existing appointment functionality works
+ Existing QR functionality works
+ Existing queue functionality works
+ Existing availability works
+ Existing dashboards work
+ Existing notifications work
+ Existing reports work
+ Account recovery remains functional
+ Search works
+ Filters work
+ Pagination works
+ Latest data is shown correctly
+ Refresh preserves mappings
+ Logout/login preserves mappings
+ Cross-admin security tests pass
+ Concurrent ownership tests pass
+ No dead buttons
+ No broken routes
+ No broken API calls
+ No console errors caused by this change
+ No unnecessary complexity has been introduced
+80. FINAL INSTRUCTION TO REPLIT AI
+
+Do not simply modify the visible Users page.
+
+Treat this as a system-wide user-management and authorisation consistency change.
+
+First inspect the existing ClinicFlow implementation and determine how the current relationships are represented.
+
+Then:
+
+Identify what already works.
+Identify what conflicts with the rules above.
+Implement the minimum necessary architectural changes.
+Preserve working functionality.
+Update frontend and backend together.
+Update database relationships/migrations where required.
+Validate every mapping server-side.
+Test every role and ownership scenario.
+Test cross-clinic and cross-admin security.
+Test refresh/logout/login persistence.
+Test existing QR, appointment and queue functionality.
+Fix any issues discovered during testing.
+Do not declare completion until the entire flow is internally consistent.
+
+If existing data contains an ambiguous ownership relationship, DO NOT guess.
+
+If an existing implementation conflicts with the rules above, explain the conflict, resolve it safely without destructive data loss, and ensure all newly created records follow the definitive model.
+
+The final ClinicFlow experience should be:
+
+SIMPLE FOR THE USER, STRICT IN THE BACKEND, DETERMINISTIC IN OWNERSHIP, AND CONSISTENT ACROSS THE ENTIRE SYSTEM.
+
+
+### My recommendation on the approach
+
+I would **definitely go with one `Users` menu → three tabs** rather than three separate sidebar items.
+
+The important improvement isn't really the tabs themselves. It's this model:
+
+**Admin owns clinics → users inherit their valid clinic scope.**
+
+So the person creating a Doctor doesn't have to think about the Admin relationship at all:
+
+> **Select Doctor → Select valid clinics → Create & Invite**
+
+And for a Receptionist:
+
+> **Select Receptionist → Select valid clinics → Select branches → Create & Invite**
+
+The system automatically derives the Admin relationship.
+
+That makes the system much more "dumb-proof" while still keeping the backend strict.
+
+The most important rule I would **not compromise on** is:
+
+```text
+Clinic → Exactly ONE Admin Owner
+
+Doctor → ONE Managing Admin → Only that Admin's Clinics
+
+Receptionist → ONE Managing Admin → Only that Admin's Clinics/Branches
+
+This also makes your Doctor-created-clinic scenario very clean:
+
+Admin A
+   ↓ owns
+Clinic A
+   ↓
+Doctor X
+
+Doctor X creates Clinic B
+
+Automatically:
+
+Clinic B → Admin A
+Clinic B → Doctor X
+
+No extra Admin selection, no ambiguity, and no possibility of accidentally attaching the new clinic to the wrong Admin.

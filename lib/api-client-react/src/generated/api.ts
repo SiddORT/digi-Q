@@ -56,6 +56,7 @@ import type {
   GetPublicAvailabilityParams,
   GetQueueParams,
   GetReportsParams,
+  GetStaffAssignmentOptionsParams,
   HealthStatus,
   Identity,
   ListAppointmentsParams,
@@ -98,6 +99,7 @@ import type {
   ScheduleList,
   Settings,
   SettingsInput,
+  StaffAssignmentOptions,
   User,
   UserInput,
   UserList
@@ -366,7 +368,7 @@ export const getOnboardUrl = () => {
 }
 
 /**
- * Atomically creates the first profile only. Default intent patient; doctor requires explicit intent. Existing profiles return 409; no admin self-claim or role switching.
+ * Atomically creates the first patient profile only. Staff and doctors must use authorized invitation flows with complete ownership and assignments. Existing profiles return 409; no admin self-claim or role switching.
  */
 export const onboard = async (onboardingInput: OnboardingInput, options?: Parameters<typeof customFetch>[1]): Promise<Identity> => {
 
@@ -2599,6 +2601,158 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getRequestUserPasswordResetMutationOptions(options));
     }
+
+export const getResendUserInvitationUrl = (id: string,) => {
+
+
+
+
+  return `/api/users/${id}/resend-invitation`
+}
+
+/**
+ * Retries the existing Clerk invitation flow for a scoped unlinked staff profile. Database role and assignments already exist and are not changed.
+ */
+export const resendUserInvitation = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<User> => {
+
+  return customFetch<User>(getResendUserInvitationUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getResendUserInvitationMutationKey = () => ['resendUserInvitation'] as const;
+
+export const getResendUserInvitationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendUserInvitation>>, TError,ResendUserInvitationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendUserInvitation>>, TError,ResendUserInvitationMutationVariables, TContext> => {
+
+const mutationKey = getResendUserInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendUserInvitation>>, ResendUserInvitationMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  resendUserInvitation(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendUserInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof resendUserInvitation>>>
+
+    export type ResendUserInvitationMutationError = ErrorType<unknown>
+    export type ResendUserInvitationMutationVariables = {id: string}
+
+    export const useResendUserInvitation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendUserInvitation>>, TError,ResendUserInvitationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendUserInvitation>>,
+        TError,
+        ResendUserInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResendUserInvitationMutationOptions(options));
+    }
+
+export const getGetStaffAssignmentOptionsUrl = (params: GetStaffAssignmentOptionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/staff-assignment-options?${stringifiedParams}` : `/api/staff-assignment-options`
+}
+
+/**
+ * Management catalog only. It does not grant clinical or operational access. Doctors may request receptionist options only.
+ */
+export const getStaffAssignmentOptions = async (params: GetStaffAssignmentOptionsParams, options?: Parameters<typeof customFetch>[1]): Promise<StaffAssignmentOptions> => {
+
+  return customFetch<StaffAssignmentOptions>(getGetStaffAssignmentOptionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffAssignmentOptionsQueryKey = (params?: GetStaffAssignmentOptionsParams,) => {
+    return [
+    `/api/staff-assignment-options`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetStaffAssignmentOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getStaffAssignmentOptions>>, TError = ErrorType<unknown>>(params: GetStaffAssignmentOptionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffAssignmentOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffAssignmentOptionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffAssignmentOptions>>> = ({ signal }) => getStaffAssignmentOptions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffAssignmentOptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffAssignmentOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffAssignmentOptions>>>
+export type GetStaffAssignmentOptionsQueryError = ErrorType<unknown>
+
+
+
+export function useGetStaffAssignmentOptions<TData = Awaited<ReturnType<typeof getStaffAssignmentOptions>>, TError = ErrorType<unknown>>(
+ params: GetStaffAssignmentOptionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffAssignmentOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffAssignmentOptionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListPatientsUrl = (params?: ListPatientsParams,) => {
   const normalizedParams = new URLSearchParams();

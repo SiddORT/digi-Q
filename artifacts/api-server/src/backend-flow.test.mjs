@@ -12,8 +12,15 @@ process.env.SESSION_SECRET = "unit-test-only-appointment-qr-secret";
 mock.timers.enable({apis:["Date"],now:Date.UTC(2030,0,7,12)});
 const tables = ["appointments", "patients", "appointmentHistory", "doctors", "clinics", "branches", "masters", "schedules", "availabilityExceptions", "assignments", "users", "qrs", "auditLogs", "settings", "otpChallenges"];
 const fixture = `
-export const state = { rows: {}, config: {}, actor: null };
-export const reset = () => { state.rows = {}; state.config = { bookingHorizonDays: 30, cancellationCutoffMinutes: 0 }; };
+ export const state = { rows: {}, config: {}, actor: null, clerk: {} };
+ export const reset = () => {
+   state.rows = {};
+   state.config = { bookingHorizonDays: 30, cancellationCutoffMinutes: 0 };
+   state.clerk = {
+     getUserList: async () => ({data:[]}),
+     createInvitation: async () => ({id:"invitation"}),
+   };
+ };
 export const all = async table => state.rows[table.name] || [];
 export const flatten = row => row;
 export const one = async (table, id) => { const row = (await all(table)).find(r => r.id === id); if (!row) throw Object.assign(new Error("Not found"), {status:404}); return {...row}; };
@@ -49,12 +56,57 @@ await build({
       b.onResolve({ filter: /\/store$/ }, () => ({path:"audit-fixture",namespace:"fixture"}));
       b.onLoad({ filter: /.*/, namespace: "fixture" }, a => {
         if (a.path === "audit-fixture") return {contents:fixture};
-        if (a.path === "@clerk/express") return {contents:"export const clerkClient = {}; export const getAuth = () => ({});"};
-        if (a.path === "drizzle-orm") return {contents:"export const eq = (field,value) => ({field,value}); export const sql = () => ({});"};
+         if (a.path === "@clerk/express") return {contents:`
+           import {state} from "audit-fixture";
+           export const clerkClient = {
+             users:{getUserList:value=>state.clerk.getUserList(value)},
+             invitations:{createInvitation:value=>state.clerk.createInvitation(value)},
+           };
+           export const getAuth = () => ({});
+         `};
+         if (a.path === "drizzle-orm") return {contents:"export const eq = (field,value) => ({field,value}); export const sql = (strings,...values) => ({strings,values});"};
         return {contents: `
           import {state,all} from "audit-fixture";
           ${tables.map(t => `export const ${t} = {name:"${t}",id:"id",status:"status",clinicId:"clinicId",branchId:"branchId",doctorId:"doctorId",publicReference:"publicReference"};`).join("\n")}
-          export const db = {execute:async()=>{},transaction:async fn=>fn(db),select:()=>({from:table=>({where:condition=>({for:async()=> (await all(table)).filter(r=>r[condition.field]===condition.value)})})})};
+           const locks = new Map();
+           async function acquire(key) {
+             const previous = locks.get(key) || Promise.resolve();
+             let release;
+             const held = new Promise(resolve => { release = resolve; });
+             const queued = previous.then(() => held);
+             locks.set(key, queued);
+             await previous;
+             return () => { release(); if (locks.get(key) === queued) locks.delete(key); };
+           }
+           const select = () => ({from:table=>({where:condition=>({for:async()=> (await all(table)).filter(r=>r[condition.field]===condition.value)})})});
+           const remove = table => ({where:async condition => {
+             const rows = state.rows[table.name] || [];
+             state.rows[table.name] = rows.filter(row=>row[condition.field]!==condition.value);
+           }});
+           const insert = table => ({values:value => {
+             const row={...value};
+             (state.rows[table.name] ||= []).push(row);
+             return {onConflictDoNothing:async()=>row,returning:async()=>[row]};
+           }});
+           export const db = {
+             execute:async()=>{},
+             select,
+             delete:remove,
+             insert,
+             transaction:async fn => {
+               const releases = [];
+               const tx = {
+                 select,
+                 delete:remove,
+                 insert,
+                 execute:async statement => {
+                   const key = statement?.values?.find(value => typeof value === "string" && /^(staff-invitation|doctors|clinics|users):/.test(value));
+                   if (key) releases.push(await acquire(key));
+                 },
+               };
+               try { return await fn(tx); } finally { for (const release of releases.reverse()) release(); }
+             },
+           };
         `};
       });
       b.onLoad({ filter: /lib\/auth\.ts$/ }, async a => ({
@@ -78,21 +130,21 @@ function seed() {
   api.reset(); api.state.actor = staff;
   const now = api.localNow("UTC");
   api.state.rows = {
-    clinics:[{id:"c",status:"active",name:"Clinic"}],
+    clinics:[{id:"c",adminId:"admin",status:"active",name:"Clinic"}],
     branches:[{id:"b",clinicId:"c",status:"active",timezone:"UTC"}],
-    doctors:[{id:"d",userId:"du",status:"active"}],
-    users:[{id:"du",role:"doctor",fullName:"Doctor",status:"active"}],
+    doctors:[{id:"d",userId:"du",ownerAdminId:"admin",status:"active"}],
+    users:[{id:"du",role:"doctor",fullName:"Doctor",status:"active",invitationStatus:"notRequired"},{id:"admin",role:"clinicAdmin",fullName:"Admin",status:"active",invitationStatus:"notRequired"}],
     assignments:[{userId:"du",clinicId:"c",branchId:"b"}],
     patients:[{id:"p",clinicId:"c",branchId:"b",fullName:"Patient",mobile:"+15555550123",status:"active",mobileVerified:true}],
     schedules:[{id:"s",doctorId:"d",branchId:"b",dayOfWeek:new Date(now.date+"T12:00:00Z").getUTCDay(),status:"active",isOpen:true,startTime:"00:00",endTime:"23:59",queueOpenTime:"00:00",timezone:"UTC",maxTokens:10,tokenPrefix:"A"}],
   };
   return {patientId:"p",doctorId:"d",clinicId:"c",branchId:"b",date:now.date,source:"online",requestId:crypto.randomUUID()};
 }
-async function route(router, method, path, body = {}, query = {}) {
+async function route(router, method, path, body = {}, query = {}, params = {}) {
   const layer = router.stack.find(l => l.route?.path === path && l.route.methods[method]);
   let result;
   const res = {status(){return this;},json(value){result=value;return this;}};
-  await layer.route.stack[0].handle({body,query,params:{}},res);
+  await layer.route.stack[0].handle({body,query,params},res);
   return result;
 }
 const book = body => route(api.appointmentsRouter,"post","/appointments",body);
@@ -266,7 +318,7 @@ test("wrapped database integrity errors return a sanitized conflict", () => {
 test("shared staff responses project assignments to the actor scope", async () => {
   seed();
   api.state.rows.branches[0].name="Branch";
-  api.state.rows.clinics.push({id:"other-clinic",status:"active",name:"Other Clinic"});
+  api.state.rows.clinics.push({id:"other-clinic",adminId:"admin",status:"active",name:"Other Clinic"});
   api.state.rows.branches.push({id:"other-branch",clinicId:"other-clinic",status:"active",name:"Other Branch"});
   const peer={id:"peer",role:"receptionist",clinicIds:["c","other-clinic"],branchIds:["b","other-branch"]};
   const admin={id:"admin",role:"clinicAdmin",clinicIds:["c"],branchIds:[]};
@@ -279,12 +331,48 @@ test("shared staff responses project assignments to the actor scope", async () =
   assert.deepEqual(own.clinicIds,peer.clinicIds);
   assert.deepEqual(own.branchIds,peer.branchIds);
 });
+test("doctor management catalog follows managing admin without broadening operational scope", async () => {
+  seed();
+  api.state.actor={id:"du",role:"doctor",doctorId:"d",managingAdminId:"admin",clinicIds:["c"],branchIds:["b"]};
+  api.state.rows.clinics.push(
+    {id:"catalog-clinic",adminId:"admin",status:"active",name:"Catalog Clinic"},
+    {id:"foreign-clinic",adminId:"admin2",status:"active",name:"Foreign Clinic"},
+  );
+  api.state.rows.branches.push(
+    {id:"catalog-branch",clinicId:"catalog-clinic",status:"active",name:"Catalog Branch"},
+    {id:"foreign-branch",clinicId:"foreign-clinic",status:"active",name:"Foreign Branch"},
+  );
+  api.state.rows.users.push(
+    {id:"admin2",role:"clinicAdmin",fullName:"Other Admin",status:"active",invitationStatus:"notRequired"},
+    {id:"managed-rec",role:"receptionist",fullName:"Managed",status:"active",managingAdminId:"admin",clinicIds:["catalog-clinic"],branchIds:["catalog-branch"],invitationStatus:"failed"},
+  );
+  const before=api.state.rows.assignments.length;
+  const options=await route(api.resourcesRouter,"get","/staff-assignment-options",{}, {targetRole:"receptionist"});
+  assert.deepEqual(options.clinics.map(c=>c.id).sort(),["c","catalog-clinic"]);
+  assert.deepEqual(options.branches.map(b=>b.id).sort(),["b","catalog-branch"]);
+  assert.deepEqual(options.managingAdmins,[{id:"admin",fullName:"Admin"}]);
+  assert.equal(api.state.rows.assignments.length,before);
+  assert.equal(await api.canRead(api.state.actor,"clinics",api.state.rows.clinics[1]),false);
+  assert.equal(await api.canRead(api.state.actor,"users",api.state.rows.users.find(u=>u.id==="managed-rec")),true);
+});
+test("assignment validation derives one owner for both staff roles, including Super Admin", async () => {
+  seed();
+  api.state.rows.users.push({id:"admin2",role:"clinicAdmin",fullName:"Other Admin",status:"active"});
+  api.state.rows.clinics.push({id:"c2",adminId:"admin2",status:"active",name:"Other"});
+  api.state.rows.branches.push({id:"b2",clinicId:"c2",status:"active",name:"Other Branch"});
+  const superAdmin={id:"sa",role:"superAdmin",clinicIds:[],branchIds:[]};
+  assert.equal(await api.validateAssignments(superAdmin,["c"],[],"doctor"),"admin");
+  assert.equal(await api.validateAssignments(superAdmin,["c"],["b"],"receptionist"),"admin");
+  await assert.rejects(api.validateAssignments(superAdmin,["c","c2"],["b","b2"],"receptionist"),/same Clinic Admin/);
+  await assert.rejects(api.validateAssignments(superAdmin,["c"],[],"receptionist"),/at least one valid branch/);
+  await assert.rejects(api.validateAssignments(superAdmin,["c"],["b"],"receptionist","admin2"),/implicitly transfer/);
+});
 test("dashboard rejects revoked explicit scope and excludes unrelated doctors", async () => {
   seed();
   api.state.actor={id:"revoked",role:"receptionist",clinicIds:[],branchIds:[]};
   await assert.rejects(route(api.reportingRouter,"get","/dashboard",{}, {clinicId:"c",branchId:"b",date:"2030-01-07"}),/outside your scope/);
   api.state.actor=staff;
-  api.state.rows.clinics.push({id:"other-clinic",status:"active",name:"Other Clinic"});
+  api.state.rows.clinics.push({id:"other-clinic",adminId:"admin",status:"active",name:"Other Clinic"});
   api.state.rows.branches.push({id:"other-branch",clinicId:"other-clinic",status:"active",name:"Other Branch"});
   api.state.rows.assignments=[{userId:"du",clinicId:"other-clinic",branchId:"other-branch"}];
   const dashboard=await route(api.reportingRouter,"get","/dashboard",{}, {clinicId:"c",branchId:"b",date:"2030-01-07"});
@@ -294,6 +382,118 @@ test("unchanged serialized ownership is not treated as a transfer", () => {
   assert.equal(api.ownershipChangeRequested(undefined,"admin-a"),false);
   assert.equal(api.ownershipChangeRequested("admin-a","admin-a"),false);
   assert.equal(api.ownershipChangeRequested("admin-b","admin-a"),true);
+});
+test("doctor self demographic edits preserve ownership and assignments", async () => {
+  seed();
+  api.state.actor={id:"du",role:"doctor",doctorId:"d",managingAdminId:"admin",clinicIds:["c"],branchIds:["b"]};
+  Object.assign(api.state.rows.users.find(user=>user.id==="du"),{email:"doctor@example.com",mobile:"+15555550100"});
+  const assignments=structuredClone(api.state.rows.assignments);
+  const updated=await route(api.resourcesRouter,"patch","/doctors/:id",{
+    fullName:"Doctor Updated",email:"doctor.updated@example.com",mobile:"+15555550101",
+  },{}, {id:"d"});
+  assert.equal(updated.fullName,"Doctor Updated");
+  assert.equal(updated.ownerAdminId,"admin");
+  assert.deepEqual(api.state.rows.assignments,assignments);
+  await assert.rejects(route(api.resourcesRouter,"patch","/doctors/:id",{
+    fullName:"Doctor Updated",email:"doctor.updated@example.com",clinicIds:["c"],branchIds:["b"],
+  },{}, {id:"d"}),error=>error.status===403);
+});
+test("serialized competing doctor ownership claims reject the stale edit", async () => {
+  seed();
+  api.state.actor={id:"sa",role:"superAdmin",clinicIds:[],branchIds:[]};
+  Object.assign(api.state.rows.users.find(user=>user.id==="du"),{email:"doctor@example.com"});
+  api.state.rows.users.push(
+    {id:"admin2",role:"clinicAdmin",fullName:"Admin 2",email:"admin2@example.com",status:"active",invitationStatus:"notRequired"},
+    {id:"admin3",role:"clinicAdmin",fullName:"Admin 3",email:"admin3@example.com",status:"active",invitationStatus:"notRequired"},
+  );
+  api.state.rows.clinics.push(
+    {id:"c2",adminId:"admin2",status:"active",name:"Clinic 2"},
+    {id:"c3",adminId:"admin3",status:"active",name:"Clinic 3"},
+  );
+  const transfer = (ownerAdminId,clinicId) => route(api.resourcesRouter,"patch","/doctors/:id",{
+    fullName:"Doctor",email:"doctor@example.com",ownerAdminId,clinicIds:[clinicId],branchIds:[],
+  },{}, {id:"d"});
+  const outcomes=await Promise.allSettled([transfer("admin2","c2"),transfer("admin3","c3")]);
+  assert.equal(outcomes.filter(result=>result.status==="fulfilled").length,1);
+  const rejected=outcomes.find(result=>result.status==="rejected");
+  assert.equal(rejected.reason.status,409);
+  assert.match(rejected.reason.message,/ownership changed/);
+});
+test("ownership migration keeps commit-time guards for assignments and concurrent transfers", async () => {
+  const migration=await readFile(resolve(root,"../../../lib/db/drizzle/0005_ancient_ultron.sql"),"utf8");
+  for (const trigger of ["assignment_owner_guard","receptionist_manager_guard","doctor_manager_guard","clinic_owner_guard"]) {
+    assert.match(migration,new RegExp(`CREATE CONSTRAINT TRIGGER ${trigger}[\\s\\S]*?DEFERRABLE INITIALLY DEFERRED`));
+  }
+  assert.match(migration,/HAVING count\(DISTINCT c\.admin_id\) = 1/);
+  const repair=await readFile(resolve(root,"../../../lib/db/drizzle/0006_safe_staff_manager_guard.sql"),"utf8");
+  assert.match(repair,/IF TG_TABLE_NAME = 'doctors' THEN[\s\S]*NEW\.user_id/);
+  assert.match(repair,/ELSIF TG_TABLE_NAME = 'users' THEN[\s\S]*NEW\.id/);
+  assert.doesNotMatch(repair,/CASE[\s\S]*NEW\.user_id/);
+});
+test("invitation delivery is attempted after profile commit", async () => {
+  const source=await readFile(resolve(root,"routes/resources.ts"),"utf8");
+  const committed=source.indexOf("const saved = await db.transaction");
+  const delivered=source.indexOf("await deliverInvitation",committed);
+  assert.ok(committed>=0 && delivered>committed);
+});
+test("concurrent invitation retries serialize per user and remain sent", async () => {
+  seed();
+  api.state.rows.users.push({id:"invitee",role:"receptionist",fullName:"Invitee",email:"invitee@example.com",status:"active",invitationStatus:"failed"});
+  let active=0, maximum=0, calls=0;
+  api.state.clerk.createInvitation=async input => {
+    calls++; active++; maximum=Math.max(maximum,active);
+    assert.equal(input.ignoreExisting,true);
+    await new Promise(resolve=>setTimeout(resolve,10));
+    active--;
+    return {id:"existing-or-new"};
+  };
+  await Promise.all([api.deliverInvitation("invitee"),api.deliverInvitation("invitee")]);
+  assert.equal(calls,2);
+  assert.equal(maximum,1);
+  assert.equal(api.state.rows.users.find(user=>user.id==="invitee").invitationStatus,"sent");
+});
+test("invitation outcomes are idempotent and identity conflicts remain 409", async () => {
+  seed();
+  const target={id:"invitee",role:"doctor",fullName:"Invitee",email:"invitee@example.com",status:"active",invitationStatus:"sent"};
+  api.state.rows.users.push(target,{id:"other-profile",role:"patient",email:"other@example.com",clerkId:"clerk-existing",status:"active"});
+  api.state.clerk.getUserList=async()=>({data:[{
+    id:"clerk-existing",
+    emailAddresses:[{emailAddress:"INVITEE@example.com",verification:{status:"verified"}}],
+  }]});
+  await assert.rejects(api.deliverInvitation("invitee"),error=>error.status===409 && /already has a profile/.test(error.message));
+  assert.equal(target.invitationStatus,"sent");
+
+  api.state.rows.users=api.state.rows.users.filter(user=>user.id!=="other-profile");
+  target.clerkId=undefined;
+  api.state.clerk.getUserList=async()=>({data:[{
+    id:"unverified-identity",
+    emailAddresses:[{emailAddress:"invitee@example.com",verification:{status:"unverified"}}],
+  }]});
+  let invitations=0;
+  api.state.clerk.createInvitation=async input => {
+    invitations++;
+    assert.equal(input.ignoreExisting,true);
+    return {id:"existing-invitation"};
+  };
+  await api.deliverInvitation("invitee");
+  assert.equal(invitations,1);
+  assert.equal(target.clerkId,undefined);
+  assert.equal(target.invitationStatus,"sent");
+
+  api.state.clerk.getUserList=async()=>({data:[{
+    id:"verified-identity",
+    emailAddresses:[{emailAddress:"invitee@example.com",verification:{status:"verified"}}],
+  }]});
+  await api.deliverInvitation("invitee");
+  assert.equal(invitations,1);
+  assert.equal(target.clerkId,"verified-identity");
+  assert.equal(target.invitationStatus,"notRequired");
+
+  target.clerkId=undefined;
+  api.state.clerk.getUserList=async()=>({data:[]});
+  api.state.clerk.createInvitation=async()=>{ throw new Error("provider unavailable"); };
+  await api.deliverInvitation("invitee");
+  assert.equal(target.invitationStatus,"failed");
 });
 test("schedule overlap compares real instants across timezones and closed exceptions", () => {
   const india={isOpen:true,startTime:"09:00",endTime:"10:00",timezone:"Asia/Kolkata"};

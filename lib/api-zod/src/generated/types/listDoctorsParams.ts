@@ -24,6 +24,7 @@ export type ListDoctorsParams = {
 search?: SearchParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
+managingAdminId?: string;
 status?: StatusParameter;
 specializationId?: string;
 /**

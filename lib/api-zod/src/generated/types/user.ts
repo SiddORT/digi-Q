@@ -13,19 +13,32 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { UserInput } from './userInput';
+import type { UserInvitationStatus } from './userInvitationStatus';
 
 export type User = UserInput & ({
   id: string;
   /** @nullable */
   clerkId: string | null;
-  createdAt: Date;
+  /** @nullable */
+  managingAdminId: string | null;
+  /** @nullable */
+  managingAdminName: string | null;
+  invitationStatus: UserInvitationStatus;
+  /** @nullable */
+  createdAt: Date | null;
   /** @nullable */
   lastLoginAt?: Date | null;
 }) & Required<Pick<UserInput & ({
   id: string;
   /** @nullable */
   clerkId: string | null;
-  createdAt: Date;
+  /** @nullable */
+  managingAdminId: string | null;
+  /** @nullable */
+  managingAdminName: string | null;
+  invitationStatus: UserInvitationStatus;
+  /** @nullable */
+  createdAt: Date | null;
   /** @nullable */
   lastLoginAt?: Date | null;
 }), 'status' | 'clinicIds' | 'branchIds'>>;

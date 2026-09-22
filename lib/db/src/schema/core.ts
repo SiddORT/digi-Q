@@ -7,8 +7,15 @@ const created = () => timestamp("created_at", { withTimezone: true }).notNull().
 export const users = pgTable("users", {
   id: id(), clerkId: text("clerk_id").unique(), email: text("email").notNull().unique(),
   fullName: text("full_name").notNull(), mobile: text("mobile"), role: text("role").notNull(),
+  managingAdminId: text("managing_admin_id").references((): AnyPgColumn => users.id),
+  invitationStatus: text("invitation_status").notNull().default("failed"),
   status: text("status").notNull().default("active"), data: data(), createdAt: created(),
-}, t => [check("users_role", sql`${t.role} in ('superAdmin','clinicAdmin','doctor','receptionist','patient')`)]);
+}, t => [
+  index("user_managing_admin_idx").on(t.managingAdminId),
+  check("users_role", sql`${t.role} in ('superAdmin','clinicAdmin','doctor','receptionist','patient')`),
+  check("users_managing_admin_role", sql`${t.managingAdminId} is null or ${t.role} = 'receptionist'`),
+  check("users_invitation_status", sql`${t.invitationStatus} in ('sent','failed','notRequired')`),
+]);
 export const clinics = pgTable("clinics", {
   id: id(), ownerId: text("owner_id").references(() => users.id), adminId: text("admin_id").notNull().references(() => users.id),
   status: text("status").notNull().default("active"), data: data(), createdAt: created(),
@@ -37,6 +44,7 @@ export const doctors = pgTable("doctors", {
   id: id(), userId: text("user_id").notNull().unique().references(() => users.id),
   ownerAdminId: text("owner_admin_id").notNull().references(() => users.id),
   specializationId: text("specialization_id").references(() => masters.id), status: text("status").notNull().default("active"), data: data(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 }, t => [index("doctor_owner_admin_idx").on(t.ownerAdminId)]);
 export const patients = pgTable("patients", {
   id: id(), userId: text("user_id").unique().references(() => users.id), clinicId: text("clinic_id").references(() => clinics.id),

@@ -87,7 +87,6 @@ export type OnboardingInputIntent = typeof OnboardingInputIntent[keyof typeof On
 
 export const OnboardingInputIntent = {
   patient: 'patient',
-  doctor: 'doctor',
 } as const;
 
 export interface OnboardingInput {
@@ -111,20 +110,43 @@ export interface UserInput {
      */
   clinicIds?: string[];
   branchIds?: string[];
+  /** Backward-compatible only. If supplied it must match the managing admin derived by the server. */
+  managingAdminId?: string;
 }
+
+export type UserInvitationStatus = typeof UserInvitationStatus[keyof typeof UserInvitationStatus];
+
+
+export const UserInvitationStatus = {
+  sent: 'sent',
+  failed: 'failed',
+  notRequired: 'notRequired',
+} as const;
 
 export type User = UserInput & ({
   id: string;
   /** @nullable */
   clerkId: string | null;
-  createdAt: string;
+  /** @nullable */
+  managingAdminId: string | null;
+  /** @nullable */
+  managingAdminName: string | null;
+  invitationStatus: UserInvitationStatus;
+  /** @nullable */
+  createdAt: string | null;
   /** @nullable */
   lastLoginAt?: string | null;
 }) & Required<Pick<UserInput & ({
   id: string;
   /** @nullable */
   clerkId: string | null;
-  createdAt: string;
+  /** @nullable */
+  managingAdminId: string | null;
+  /** @nullable */
+  managingAdminName: string | null;
+  invitationStatus: UserInvitationStatus;
+  /** @nullable */
+  createdAt: string | null;
   /** @nullable */
   lastLoginAt?: string | null;
 }), 'status' | 'clinicIds' | 'branchIds'>>;
@@ -192,19 +214,23 @@ export interface ClinicInput {
   status?: RecordStatus;
 }
 
-export type Clinic = ClinicInput & {
+export type Clinic = ClinicInput & ({
   id: string;
   code: string;
-  createdAt: string;
+  adminName: string;
+  /** @nullable */
+  createdAt: string | null;
   doctorCount?: number;
   branchCount?: number;
-} & Required<Pick<ClinicInput & {
+}) & Required<Pick<ClinicInput & ({
   id: string;
   code: string;
-  createdAt: string;
+  adminName: string;
+  /** @nullable */
+  createdAt: string | null;
   doctorCount?: number;
   branchCount?: number;
-}, 'adminId' | 'status'>>;
+}), 'adminId' | 'status'>>;
 
 export interface BranchInput {
   clinicId: string;
@@ -219,18 +245,22 @@ export interface BranchInput {
   status?: RecordStatus;
 }
 
-export type Branch = BranchInput & {
+export type Branch = BranchInput & ({
   id: string;
   code: string;
   clinicName?: string;
-} & Required<Pick<BranchInput & {
+  /** @nullable */
+  createdAt: string | null;
+}) & Required<Pick<BranchInput & ({
   id: string;
   code: string;
   clinicName?: string;
-}, 'status'>>;
+  /** @nullable */
+  createdAt: string | null;
+}), 'status'>>;
 
 export interface DoctorInput {
-  /** Optional owning clinic administrator; authorization and derivation are enforced by the server. */
+  /** Backward-compatible only. If supplied it must match the managing admin derived by the server. */
   ownerAdminId?: string;
   /** @minLength 1 */
   fullName: string;
@@ -257,19 +287,49 @@ export interface DoctorInput {
   status?: RecordStatus;
 }
 
-export type Doctor = DoctorInput & {
+export type DoctorInvitationStatus = typeof DoctorInvitationStatus[keyof typeof DoctorInvitationStatus];
+
+
+export const DoctorInvitationStatus = {
+  sent: 'sent',
+  failed: 'failed',
+  notRequired: 'notRequired',
+} as const;
+
+export type Doctor = DoctorInput & ({
   id: string;
   userId: string;
   code: string;
+  managingAdminId: string;
+  managingAdminName: string;
+  invitationStatus: DoctorInvitationStatus;
+  /** @nullable */
+  createdAt: string | null;
   specializationName?: string;
   qualificationNames?: string[];
-} & Required<Pick<DoctorInput & {
+}) & Required<Pick<DoctorInput & ({
   id: string;
   userId: string;
   code: string;
+  managingAdminId: string;
+  managingAdminName: string;
+  invitationStatus: DoctorInvitationStatus;
+  /** @nullable */
+  createdAt: string | null;
   specializationName?: string;
   qualificationNames?: string[];
-}, 'ownerAdminId' | 'status'>>;
+}), 'ownerAdminId' | 'status'>>;
+
+export interface ManagingAdminOption {
+  id: string;
+  fullName: string;
+}
+
+export interface StaffAssignmentOptions {
+  clinics: Clinic[];
+  branches: Branch[];
+  managingAdmins: ManagingAdminOption[];
+}
 
 export interface PublicDoctor {
   id: string;
@@ -904,6 +964,7 @@ export type ListDoctorsParams = {
 search?: SearchParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
+managingAdminId?: string;
 status?: StatusParameter;
 specializationId?: string;
 /**
@@ -926,6 +987,7 @@ search?: SearchParameter;
 role?: Role;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
+managingAdminId?: string;
 status?: StatusParameter;
 /**
  * @minimum 1
@@ -941,6 +1003,26 @@ pageSize?: PageSizeParameter;
  */
 sort?: SortParameter;
 };
+
+export type GetStaffAssignmentOptionsParams = {
+targetRole: GetStaffAssignmentOptionsTargetRole;
+/**
+ * Existing doctor being edited.
+ */
+doctorId?: string;
+/**
+ * Existing receptionist being edited.
+ */
+userId?: string;
+};
+
+export type GetStaffAssignmentOptionsTargetRole = typeof GetStaffAssignmentOptionsTargetRole[keyof typeof GetStaffAssignmentOptionsTargetRole];
+
+
+export const GetStaffAssignmentOptionsTargetRole = {
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+} as const;
 
 export type ListPatientsParams = {
 search?: SearchParameter;
