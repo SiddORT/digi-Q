@@ -1,5 +1,9 @@
 # ClinicFlow authentication update — incomplete pending Clerk configuration
 
+> Historical implementation report. Superseded for current verification results by
+> `auth-regression-final.md`. Development Device Trust has since been disabled by
+> the owner, and all four staff password-only browser logins have passed.
+
 ## Scope
 
 This update implements the authentication-only request in

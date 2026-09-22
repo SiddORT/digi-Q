@@ -27,8 +27,8 @@ Check Clerk Device Trust independently from MFA when a requirement forbids staff
 
 **How to apply:** Inspect the live sign-in status without logging identifiers or credentials. Explain the security tradeoff before changing Device Trust; do not offer staff OTP against the requirement, bypass the challenge, or claim browser completion from API-only evidence.
 
-The owner explicitly approved disabling only Device Trust for password-only staff login on 2026-09-22; this approval is not evidence the setting has been applied.
+The owner chose password-only staff login and reported disabling only Development Device Trust on 2026-09-22. Subsequent fresh browser logins for all four staff roles completed without OTP. Do not infer the Production setting from this.
 
 **Why:** Normal staff login must require email/password without OTP, while patients retain email OTP. The owner accepted the Device Trust tradeoff but prohibited any other security or architecture changes.
 
-**How to apply:** Preserve server-side password proof, authorization, session security and CAPTCHA. Use the supported managed-Clerk dashboard configuration path, and verify actual staff browser login before declaring completion.
+**How to apply:** Preserve server-side password proof, authorization, session security, CAPTCHA, lockout and enumeration protection. Do not make additional tenant configuration changes. Verify actual staff browser login, not only backend proof, before declaring completion.

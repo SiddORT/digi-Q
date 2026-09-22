@@ -1,14 +1,14 @@
 {
   "suite": "auth-flows-live-audit",
   "status": "cleaned",
-  "generatedAt": "2026-09-22T17:58:40.696Z",
-  "marker": "CF-AUTH-20260922172911-bff641a9",
+  "generatedAt": "2026-09-22T19:27:35.706Z",
+  "marker": "CF-AUTH-20260922190457-1ef3b271",
   "baseUrl": "http://localhost:80/api",
   "privateManifestPath": "/tmp/clinicflow-auth-flows-audit.json",
   "privateManifestMode": "0600",
   "summary": {
-    "passed": 104,
-    "failed": 1
+    "passed": 158,
+    "failed": 0
   },
   "completedUnits": [
     "setup-01-super-bootstrap",
@@ -23,7 +23,7 @@
     "run-03-patient-and-role-authorization",
     "run-04-invariance",
     "run-05-clinical-regression",
-    "run-01b-corrected-limiter-negative"
+    "run-06-expanded-live-regression"
   ],
   "providerFeasibility": {
     "completedAt": "2026-09-22T17:24:39.000Z",
@@ -135,8 +135,23 @@
       "outcome": "pass",
       "detail": "Expected 200 and received 200.",
       "method": "PATCH",
-      "route": "/users/67f6a14f-4230-4180-832f-0a0650db2ac6",
+      "route": "/users/ea374489-ab91-4c1a-8142-2984fcfc08e5",
       "status": 200
+    },
+    {
+      "unit": "setup-04-reserved-patient",
+      "name": "Provision reserved patient identity through live patient entry",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/patient-entry",
+      "status": 200
+    },
+    {
+      "unit": "setup-04-reserved-patient",
+      "name": "Patient provider identity is unique",
+      "outcome": "pass",
+      "detail": "Exactly one development Clerk identity was provisioned."
     },
     {
       "unit": "setup-04-reserved-patient",
@@ -164,6 +179,30 @@
       "name": "Non-delivery invitation fixture created",
       "outcome": "pass",
       "detail": "Clerk accepted an invitation with notify:false. This is link/state evidence only; no mailbox delivery is claimed."
+    },
+    {
+      "unit": "browser-fixture-refresh",
+      "name": "clinicAdmin establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "browser-fixture-refresh",
+      "name": "Create scoped invited Receptionist through authorized app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/users",
+      "status": 201
+    },
+    {
+      "unit": "browser-fixture-refresh",
+      "name": "Latest invited Receptionist ticket is non-delivery",
+      "outcome": "pass",
+      "detail": "The app profile is persisted and every older pending ticket was revoked before storing a fresh notify:false URL privately."
     },
     {
       "unit": "run-01-entry-separation",
@@ -267,35 +306,11 @@
     {
       "unit": "run-01-entry-separation",
       "name": "Staff entry rejects reserved OTP patient",
-      "outcome": "fail",
-      "detail": "Checkpoint retained: the original global 10-per-10-minute IP bucket blocked the final negative after all preceding entry assertions passed. It is not retried.",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
       "method": "POST",
       "route": "/auth/staff-entry",
-      "status": 429
-    },
-    {
-      "unit": "browser-fixture-refresh",
-      "name": "clinicAdmin establishes session-bound password proof",
-      "outcome": "pass",
-      "detail": "Expected 200 and received 200.",
-      "method": "POST",
-      "route": "/auth/staff-verify",
-      "status": 200
-    },
-    {
-      "unit": "browser-fixture-refresh",
-      "name": "Create scoped invited Receptionist through authorized app API",
-      "outcome": "pass",
-      "detail": "Expected 201 and received 201.",
-      "method": "POST",
-      "route": "/users",
-      "status": 201
-    },
-    {
-      "unit": "browser-fixture-refresh",
-      "name": "Latest invited Receptionist ticket is non-delivery",
-      "outcome": "pass",
-      "detail": "The app profile is persisted and every older pending ticket was revoked before storing a fresh notify:false URL privately."
+      "status": 403
     },
     {
       "unit": "run-02-session-proof",
@@ -693,7 +708,7 @@
       "outcome": "pass",
       "detail": "Expected 200 and received 200.",
       "method": "GET",
-      "route": "/doctors/1daa7f1e-c699-4244-800b-d60867336b64",
+      "route": "/doctors/3fb372b1-0c87-44d9-9bfb-40d67ac82bfb",
       "status": 200
     },
     {
@@ -735,7 +750,7 @@
       "outcome": "pass",
       "detail": "Expected 202 and received 202.",
       "method": "POST",
-      "route": "/users/d5f3e1db-c15e-4569-9e0d-95a06a524d4f/password-reset",
+      "route": "/users/d5c5579f-4203-4525-ba25-5ceb1e0d674f/password-reset",
       "status": 202
     },
     {
@@ -776,18 +791,36 @@
     },
     {
       "unit": "run-05-clinical-regression",
-      "name": "Reload verified patient mobile checkpoint",
+      "name": "Patient requests configured development mobile verification",
       "outcome": "pass",
-      "detail": "The live patient master retains successful mobile verification."
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/otp/request",
+      "status": 200
     },
     {
       "unit": "run-05-clinical-regression",
-      "name": "Reload guarded Doctor availability checkpoint",
+      "name": "Development mobile OTP provider is explicit",
+      "outcome": "pass",
+      "detail": "The live API supplied its configured development challenge."
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Patient verifies fixture mobile through live API",
       "outcome": "pass",
       "detail": "Expected 200 and received 200.",
-      "method": "GET",
-      "route": "/schedules/bda7d5d3-37dc-4bc0-801a-5d25c1d5e6dc",
+      "method": "POST",
+      "route": "/otp/verify",
       "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Doctor creates guarded availability in assigned clinic and branch",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 201
     },
     {
       "unit": "run-05-clinical-regression",
@@ -800,12 +833,12 @@
     },
     {
       "unit": "run-05-clinical-regression",
-      "name": "Reload signed booking QR resource",
+      "name": "Doctor creates signed booking QR resource",
       "outcome": "pass",
-      "detail": "Expected 200 and received 200.",
-      "method": "GET",
-      "route": "/qrs/0e4202a1-c636-4931-b4b4-0e92b6926572",
-      "status": 200
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/qrs",
+      "status": 201
     },
     {
       "unit": "run-05-clinical-regression",
@@ -818,11 +851,20 @@
     },
     {
       "unit": "run-05-clinical-regression",
+      "name": "Patient books appointment through live guarded API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201
+    },
+    {
+      "unit": "run-05-clinical-regression",
       "name": "Patient reads own clinical appointment",
       "outcome": "pass",
       "detail": "Expected 200 and received 200.",
       "method": "GET",
-      "route": "/appointments/6a4dd597-f6a3-4834-ac42-ff6a543dc495",
+      "route": "/appointments/86767c93-aed6-4311-b43e-3889ddefdfa2",
       "status": 200
     },
     {
@@ -830,6 +872,51 @@
       "name": "Owned clinical booking mapping is exact",
       "outcome": "pass",
       "detail": "The retained appointment maps the fixture Patient, Doctor, Clinic A, and Branch A exactly."
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Patient reads signed appointment QR",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/86767c93-aed6-4311-b43e-3889ddefdfa2/qr",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Receptionist checks patient in with signed QR",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointment-qr/check-in",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Doctor calls next queued patient",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/queue/call-next",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Doctor starts consultation",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/86767c93-aed6-4311-b43e-3889ddefdfa2/actions",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Doctor completes consultation",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/86767c93-aed6-4311-b43e-3889ddefdfa2/actions",
+      "status": 200
     },
     {
       "unit": "run-05-clinical-regression",
@@ -849,7 +936,7 @@
       "outcome": "pass",
       "detail": "Expected 200 and received 200.",
       "method": "GET",
-      "route": "/queue?doctorId=1daa7f1e-c699-4244-800b-d60867336b64&branchId=edcf37a5-7cbd-4e98-a42d-43aee76c48d9&date=2026-09-22",
+      "route": "/queue?doctorId=3fb372b1-0c87-44d9-9bfb-40d67ac82bfb&branchId=73487ccc-d59a-4427-8fc8-d589acac5d23&date=2026-09-23",
       "status": 200
     },
     {
@@ -871,7 +958,16 @@
       "status": 200
     },
     {
-      "unit": "browser-fixture-refresh",
+      "unit": "run-06-expanded-live-regression",
+      "name": "superAdmin establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
       "name": "clinicAdmin establishes session-bound password proof",
       "outcome": "pass",
       "detail": "Expected 200 and received 200.",
@@ -880,47 +976,455 @@
       "status": 200
     },
     {
-      "unit": "browser-fixture-refresh",
-      "name": "Latest invited Receptionist ticket is non-delivery",
+      "unit": "run-06-expanded-live-regression",
+      "name": "doctor establishes session-bound password proof",
       "outcome": "pass",
-      "detail": "The app profile is persisted and every older pending ticket was revoked before storing a fresh notify:false URL privately."
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
     },
     {
-      "unit": "run-01b-corrected-limiter-negative",
-      "name": "Corrected limiter permits authoritative patient-to-staff rejection",
+      "unit": "run-06-expanded-live-regression",
+      "name": "receptionist establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Patient reads own patient master",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/patients/9db44f9d-9cbe-41f8-9883-c249f00f3934",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Patient master identity and verification mapping is exact",
+      "outcome": "pass",
+      "detail": "The owned patient master retains its exact app user linkage and verified mobile state."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Patient cannot tamper with registration scope or status fields",
       "outcome": "pass",
       "detail": "Expected 403 and received 403.",
-      "method": "POST",
-      "route": "/auth/staff-entry",
+      "method": "PATCH",
+      "route": "/patients/9db44f9d-9cbe-41f8-9883-c249f00f3934",
       "status": 403
     },
     {
-      "unit": "run-01b-corrected-limiter-negative",
-      "name": "Historical limiter failure remains provenance only",
+      "unit": "run-06-expanded-live-regression",
+      "name": "Patient onboarding cannot be tampered into a staff role",
       "outcome": "pass",
-      "detail": "The pre-restart 429 is retained unchanged; this separate post-restart request reached role enforcement and returned 403."
+      "detail": "Expected 400/409 and received 400.",
+      "method": "POST",
+      "route": "/onboarding",
+      "status": 400
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Patient identity is readable before client-field tampering",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Unknown client privilege fields do not grant access",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/me",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Patient identity is readable after client-field tampering",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Client-supplied privilege fields are ignored",
+      "outcome": "pass",
+      "detail": "Role and patient linkage remain server-owned after a payload containing privilege-shaped fields."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Patient cannot substitute another patient identity",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 403
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Clinic Admin cannot grant Super Admin through role-field tampering",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/users",
+      "status": 403
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Existing staff role cannot be switched by client payload",
+      "outcome": "pass",
+      "detail": "Expected 403/409 and received 403.",
+      "method": "PATCH",
+      "route": "/users/ac2cc23b-ae99-43a9-b6e1-9e07e5a4fcec",
+      "status": 403
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Doctor cannot substitute another Doctor identity",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 403
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Public clinic QR resolves active clinic and branch context",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/public/qr/yFUHb4nM2PXvE9S7b_6MndpSE-uRLXq_puKLdLP7wQw",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Clinic QR mapping is exact",
+      "outcome": "pass",
+      "detail": "The clinic QR resolves the owned clinic and branch while leaving Doctor selection unbound."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Clinic QR rejects client-tampered clinic and branch context",
+      "outcome": "pass",
+      "detail": "Expected 400/403 and received 400.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 400
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Patient reads own clinic-QR appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/e372ca90-d42c-40b9-ad64-4ef1310b9380",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Clinic-QR appointment ownership and mapping is exact",
+      "outcome": "pass",
+      "detail": "The QR appointment maps the owned Patient, Doctor, Clinic, and Branch exactly."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Skip/no-show transition persists",
+      "outcome": "pass",
+      "detail": "The guarded waiting-to-noShow transition is persisted on the appointment."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Receptionist requeues no-show appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/e372ca90-d42c-40b9-ad64-4ef1310b9380/actions",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "No-show requeue transition persists",
+      "outcome": "pass",
+      "detail": "The guarded noShow-to-waiting transition is persisted."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Receptionist marks requeued patient no-show again",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/e372ca90-d42c-40b9-ad64-4ef1310b9380/actions",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Skip/no-show and requeue history is persisted",
+      "outcome": "pass",
+      "detail": "Appointment history contains both no-show transitions and the intervening requeue."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Scoped queue reports no-show state",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/queue?doctorId=3fb372b1-0c87-44d9-9bfb-40d67ac82bfb&branchId=73487ccc-d59a-4427-8fc8-d589acac5d23&date=2026-09-23",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Queue no-show aggregate and entry are exact",
+      "outcome": "pass",
+      "detail": "The scoped queue includes the owned no-show appointment and increments its no-show aggregate."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Super Admin reads role-scoped dashboard",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Clinic Admin reads role-scoped dashboard",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Doctor reads role-scoped dashboard",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Receptionist reads role-scoped dashboard",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Patient reads role-scoped dashboard",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Report rejects mismatched clinic and branch scope",
+      "outcome": "pass",
+      "detail": "Expected 400/403 and received 400.",
+      "method": "GET",
+      "route": "/reports?clinicId=8018a6db-c1a7-4770-8350-36bc9cfbca92&branchId=73487ccc-d59a-4427-8fc8-d589acac5d23",
+      "status": 400
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Notification configuration is readable",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/settings",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Notification preference is persisted consistently",
+      "outcome": "pass",
+      "detail": "The API value matches persisted platform configuration; no email, SMS, push, or in-app delivery is claimed."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "General notification delivery is not implemented",
+      "outcome": "pass",
+      "detail": "Static implementation review: notification configuration is persisted only; there is no notification table, dispatcher, or in-app inbox. Real delivery was not claimed or attempted."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Browser invitation remains pending before separate resend probe",
+      "outcome": "pass",
+      "detail": "The browser inviteProbe ticket is still pending and is not reused by the resend test."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Prime separate set-password invitation after failed local-origin delivery",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/users/ba563a90-8d8c-4ef4-bff2-d28de903b8cd/resend-invitation",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Separate resend probe accepts HTTPS app redirect",
+      "outcome": "pass",
+      "detail": "The invitation endpoint records sent when invoked with the DEVELOPMENT HTTPS app origin."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Separate resend probe has initial pending invitation",
+      "outcome": "pass",
+      "detail": "Live Clerk provider state contains a pending invitation for only the separate resend probe."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Clinic Admin resends separate set-password invitation",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/users/ba563a90-8d8c-4ef4-bff2-d28de903b8cd/resend-invitation",
+      "status": 200
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Resend persists sent invitation status",
+      "outcome": "pass",
+      "detail": "The separate app profile remains unchanged in role/scope and records invitationStatus sent."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Resend creates a fresh live set-password ticket",
+      "outcome": "pass",
+      "detail": "Clerk exposes a fresh pending ticket for the separate probe; its private URL is not reported."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Resend revokes the prior separate invitation",
+      "outcome": "pass",
+      "detail": "Live Clerk provider state reports the prior separate-probe ticket as revoked."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Browser invitation is untouched by separate resend probe",
+      "outcome": "pass",
+      "detail": "The original browser inviteProbe ticket remains pending with the same provider ID."
+    },
+    {
+      "unit": "run-06-expanded-live-regression",
+      "name": "Expired and used invitation states are not live-tested",
+      "outcome": "pass",
+      "detail": "No clock manipulation, invitation acceptance, browser-session interference, or Clerk setting change was attempted. Revoked state is live provider evidence; expired/used semantics remain static provider behavior only."
     }
   ],
   "fatal": null,
   "cleanup": {
-    "completedAt": "2026-09-22T17:58:40.696Z",
+    "completedAt": "2026-09-22T19:27:35.705Z",
     "preExistingSnapshotRestoredExactly": true,
     "markerRowsRemaining": 0,
     "providerFixturesRemoved": true,
-    "manifestRemoved": true
+    "manifestRemoved": true,
+    "independentDatabaseMarkerRows": 0,
+    "independentProviderUsers": 0,
+    "independentPendingInvitations": 0
+  },
+  "cleanupReadiness": {
+    "completedAt": "2026-09-22T19:27:07.001Z",
+    "accountLinkageReconciled": true,
+    "latestActiveSessionProofByRole": {
+      "superAdmin": true,
+      "clinicAdmin": true,
+      "doctor": true,
+      "receptionist": true
+    },
+    "passwordEnabled": {
+      "superAdmin": true,
+      "recoveryStaff": true
+    },
+    "patientPasswordDisabled": true
+  },
+  "historicalAudit": {
+    "generatedAt": "2026-09-22T17:58:40.696Z",
+    "status": "cleaned",
+    "passed": 104,
+    "failed": 1,
+    "retainedFailure": "The original pre-fix global-IP limiter returned 429 for the final patient-to-staff negative; a separate post-fix request reached role enforcement and returned 403."
   },
   "truthfulLimitations": [
     "The notify:false Clerk invitation is provider state/link evidence only. No mailbox delivery is claimed.",
     "The API runner did not simulate browser OTP verification. The parent-observed browser pass completed real Clerk development email-code verification and patient onboarding.",
     "The guarded clinical regression uses only this suite's owned fixture graph; the separate ownership runner and its manifest are never reused.",
     "No authentication method is faked; API requests use real Clerk development sessions and the live staff password verification endpoint.",
-    "Patient browser OTP and onboarding passed. Staff browser login is not yet claimed because the genuine tenant required Clerk Device Trust (needs_client_trust) after the verified password."
+    "After the user disabled DEVELOPMENT Device Trust, the parent browser verified password-only dashboards for all four staff roles, invalid-password and wrong-role denial, reset-password logins, and authenticated reload persistence.",
+    "General notifications are persisted configuration only. No notification dispatcher, notification table, in-app inbox, or real message delivery is implemented or claimed.",
+    "Invitation resend and revoked states use a separate owned probe. Expired and used states are not live-tested because doing so would require time manipulation or acceptance that could interfere with the browser pass."
+  ],
+  "invitationStateEvidence": [
+    {
+      "state": "pending/resend",
+      "classification": "live",
+      "outcome": "passed",
+      "detail": "Separate resendProbe created a fresh pending Clerk set-password ticket."
+    },
+    {
+      "state": "revoked",
+      "classification": "live",
+      "outcome": "passed",
+      "detail": "Clerk reported the prior separate resendProbe ticket revoked."
+    },
+    {
+      "state": "browser acceptance/reuse",
+      "classification": "untested",
+      "outcome": "blocked",
+      "detail": "Browser acceptance was CAPTCHA-blocked; setup and reuse are not claimed."
+    },
+    {
+      "state": "expired",
+      "classification": "static-only",
+      "outcome": "untested",
+      "detail": "A one-day expiry was configured, but no clock manipulation or elapsed expiry test was performed."
+    },
+    {
+      "state": "mocked invitation behavior",
+      "classification": "mocked",
+      "outcome": "not-used",
+      "detail": "No mocked invitation state is counted as live evidence."
+    }
+  ],
+  "notificationEvidence": [
+    {
+      "behavior": "configuration persistence",
+      "classification": "live",
+      "outcome": "passed"
+    },
+    {
+      "behavior": "in-app notification inbox",
+      "classification": "static",
+      "outcome": "not-implemented"
+    },
+    {
+      "behavior": "real email/SMS/push delivery",
+      "classification": "untested",
+      "outcome": "not-claimed"
+    }
   ],
   "browserReadiness": {
-    "patientOtpAndOnboarding": "passed-in-parent-browser",
-    "staffLogin": "not-yet-passed-needs_client_trust",
+    "patientOtpAndOnboarding": "new-and-existing-patient-otp-onboarding-and-relogin-passed-in-parent-browser",
+    "staffLogin": "all-four-password-only-role-dashboards-and-denial-cases-passed-in-parent-browser",
+    "passwordRecovery": "recoveryStaff-passwordless-reset-and-superAdmin-reset-password-logins-passed-in-parent-browser",
+    "authenticatedReload": "superAdmin-reload-after-75-seconds-kept-me-200-without-password-reprompt",
     "invitation": "revoked-or-consumed-and-provider-fixture-removed",
     "invitationUrlStoredOnlyInPrivateManifest": false,
-    "passwordResetProviderCheck": "Before cleanup, Clerk reported passwordEnabled true for recoveryStaff and every ordinary password staff fixture."
+    "passwordResetProviderCheck": "Immediately before cleanup, Clerk reported passwordEnabled true for superAdmin and recoveryStaff and false for the OTP patient."
   }
 }

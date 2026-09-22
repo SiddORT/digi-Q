@@ -14,7 +14,7 @@ const reportMarkdownPath = new URL("../../docs/audits/auth-flows-api.md", import
 const baseUrl = (process.env.AUDIT_API_URL || "http://localhost:80/api").replace(/\/$/, "");
 const requestOrigin = new URL(baseUrl).origin;
 const staffRoles = ["superAdmin", "clinicAdmin", "doctor", "receptionist"] as const;
-const accountRoles = [...staffRoles, "patient", "apiPatient", "inactiveStaff", "recoveryStaff", "inviteProbe"] as const;
+const accountRoles = [...staffRoles, "patient", "apiPatient", "inactiveStaff", "recoveryStaff", "inviteProbe", "resendProbe"] as const;
 type AccountRole = typeof accountRoles[number];
 type AppRole = typeof staffRoles[number] | "patient";
 type Json = Record<string, any>;
@@ -50,6 +50,7 @@ type Fixture = {
   sessionIds: string[];
   invitationId?: string;
   invitationUrl?: string;
+  resendInvitationId?: string;
   baseline: Record<string, unknown[]>;
   mappingSnapshot?: Json;
   evidence: Evidence[];
@@ -60,6 +61,13 @@ type Fixture = {
     passwordDisabled: boolean;
     emailInitiallyUnverified: boolean;
     fixtureDeleted: boolean;
+  };
+  cleanupReadiness?: {
+    completedAt: string;
+    accountLinkageReconciled: boolean;
+    latestActiveSessionProofByRole: Record<string, boolean>;
+    passwordEnabled: Record<string, boolean>;
+    patientPasswordDisabled: boolean | null;
   };
   browserUse: string;
 };
@@ -109,12 +117,16 @@ async function pause() {
   lastRequestAt = Date.now();
 }
 
-async function api(method: string, route: string, token?: string, body?: unknown, retries = 4): Promise<ApiResponse> {
+async function api(
+  method: string, route: string, token?: string, body?: unknown, retries = 4,
+  origin = requestOrigin,
+): Promise<ApiResponse> {
   await pause();
   const response = await fetch(`${baseUrl}${route}`, {
     method,
     headers: {
-      origin: requestOrigin,
+      origin,
+      ...(origin.startsWith("https://") ? { "x-forwarded-host": new URL(origin).host } : {}),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...(body === undefined ? {} : { "content-type": "application/json" }),
     },
@@ -128,16 +140,16 @@ async function api(method: string, route: string, token?: string, body?: unknown
   if (response.status === 429 && retries) {
     await new Promise(resolve => setTimeout(resolve,
       Math.min(5, Math.max(1, Number(response.headers.get("retry-after") || 1))) * 1000));
-    return api(method, route, token, body, retries - 1);
+    return api(method, route, token, body, retries - 1, origin);
   }
   return { method, route, status: response.status, body: parsed };
 }
 
 async function expect(
   fixture: Fixture, method: string, route: string, token: string | undefined,
-  body: unknown, statuses: number[], name: string,
+  body: unknown, statuses: number[], name: string, origin?: string,
 ) {
-  const response = await api(method, route, token, body);
+  const response = await api(method, route, token, body, 4, origin);
   check(fixture, statuses.includes(response.status), name,
     `Expected ${statuses.join("/")} and received ${response.status}.`, response);
   return response.body;
@@ -189,14 +201,16 @@ async function databaseSnapshot(): Promise<Record<string, unknown[]>> {
 }
 
 function accountSeed(marker: string, fixtureRole: AccountRole, index: number): Account {
-  const appRole: AppRole = fixtureRole === "inactiveStaff" || fixtureRole === "recoveryStaff" || fixtureRole === "inviteProbe"
+  const appRole: AppRole = fixtureRole === "inactiveStaff" || fixtureRole === "recoveryStaff" ||
+    fixtureRole === "inviteProbe" || fixtureRole === "resendProbe"
     ? "receptionist" : fixtureRole === "apiPatient" ? "patient" : fixtureRole;
   const tag = marker.replace(/[^a-z0-9]/gi, "").toLowerCase().slice(-18);
   return {
     fixtureRole,
     appRole,
     email: `clinicflow.auth.${tag}.${fixtureRole.toLowerCase()}+clerk_test@example.com`,
-    ...(fixtureRole === "patient" || fixtureRole === "apiPatient" || fixtureRole === "recoveryStaff" || fixtureRole === "inviteProbe"
+    ...(fixtureRole === "patient" || fixtureRole === "apiPatient" || fixtureRole === "recoveryStaff" ||
+      fixtureRole === "inviteProbe" || fixtureRole === "resendProbe"
       ? {} : { password: `Cf!${randomBytes(24).toString("base64url")}9z` }),
     mobile: `+9194${String(Date.now()).slice(-6)}${index}`,
   };
@@ -571,6 +585,83 @@ async function refreshBrowserFixtures() {
   await writeReport(fixture);
 }
 
+async function reconcileOwnedDatabaseLinkage(fixture: Fixture) {
+  const databaseUsers = await db.select().from(users);
+  for (const account of fixture.accounts) {
+    const candidates = databaseUsers.filter(row => row.email.toLowerCase() === account.email);
+    if (candidates.length > 1) {
+      throw new Error(`Refusing: multiple database users share the owned ${account.fixtureRole} email.`);
+    }
+    const owned = candidates[0];
+    if (!owned) {
+      if (account.userId) account.userId = undefined;
+      account.patientId = undefined;
+      continue;
+    }
+    const exactProviderLink = Boolean(account.clerkId) && owned.clerkId === account.clerkId;
+    const markerOwned = owned.fullName.includes(fixture.marker);
+    if ((!exactProviderLink && !markerOwned) || owned.role !== account.appRole) {
+      throw new Error(`Refusing: exact email row for ${account.fixtureRole} is not provably fixture-owned.`);
+    }
+    account.userId = owned.id;
+    if (account.appRole === "patient") {
+      const linkedPatients = await db.select().from(patients).where(eq(patients.userId, owned.id));
+      if (linkedPatients.length !== 1) {
+        throw new Error(`Refusing: ${account.fixtureRole} does not have exactly one linked patient master.`);
+      }
+      account.patientId = linkedPatients[0].id;
+    }
+  }
+}
+
+async function verifyCleanupReadiness() {
+  const fixture = JSON.parse(await readFile(manifestPath, "utf8")) as Fixture;
+  if (fixture.suite !== "auth-flows-live-audit" || fixture.phase !== "run") {
+    throw new Error("Cleanup readiness verification requires the completed live audit fixture.");
+  }
+  await reconcileOwnedDatabaseLinkage(fixture);
+  const a = accounts(fixture);
+  const latestActiveSessionProofByRole: Record<string, boolean> = {};
+  for (const role of staffRoles) {
+    const account = a[role];
+    if (!account.clerkId) throw new Error(`Missing owned Clerk identity for ${role}.`);
+    const sessions = await clerkClient.sessions.getSessionList({
+      userId: account.clerkId, status: "active", limit: 100,
+    });
+    const latest = [...sessions.data].sort((left, right) =>
+      Number(right.lastActiveAt || right.createdAt) - Number(left.lastActiveAt || left.createdAt))[0];
+    if (!latest) throw new Error(`No active Clerk session exists for ${role}.`);
+    const [proof] = await db.select().from(staffSessionProofs).where(eq(staffSessionProofs.sessionId, latest.id));
+    if (!proof || proof.clerkUserId !== account.clerkId) {
+      throw new Error(`Latest active ${role} Clerk session has no matching persisted staff proof.`);
+    }
+    latestActiveSessionProofByRole[role] = true;
+  }
+  const passwordEnabled: Record<string, boolean> = {};
+  for (const role of ["superAdmin", "recoveryStaff"] as const) {
+    const account = a[role];
+    if (!account.clerkId) throw new Error(`Missing owned Clerk identity for ${role}.`);
+    const identity = await clerkClient.users.getUser(account.clerkId);
+    if (!identity.passwordEnabled) throw new Error(`${role} reset fixture does not have passwordEnabled true.`);
+    passwordEnabled[role] = true;
+  }
+  let patientPasswordDisabled: boolean | null = null;
+  if (a.patient.clerkId) {
+    const patientIdentity = await clerkClient.users.getUser(a.patient.clerkId);
+    patientPasswordDisabled = !patientIdentity.passwordEnabled;
+    if (!patientPasswordDisabled) throw new Error("Owned OTP patient unexpectedly has password authentication enabled.");
+  }
+  fixture.cleanupReadiness = {
+    completedAt: new Date().toISOString(),
+    accountLinkageReconciled: true,
+    latestActiveSessionProofByRole,
+    passwordEnabled,
+    patientPasswordDisabled,
+  };
+  await persist(fixture);
+  await writeReport(fixture);
+}
+
 async function rerunCorrectedLimiterNegative() {
   const fixture = JSON.parse(await readFile(manifestPath, "utf8")) as Fixture;
   if (fixture.suite !== "auth-flows-live-audit" || fixture.phase !== "run") {
@@ -849,6 +940,283 @@ async function runAudit() {
     await expect(fixture, "GET", "/dashboard", doctorSession.token, undefined, [200], "Doctor reads scoped dashboard");
     await expect(fixture, "GET", "/reports", receptionistSession.token, undefined, [200], "Receptionist reads scoped report");
   });
+
+  await unit(fixture, "run-06-expanded-live-regression", async () => {
+    if (!a.resendProbe) {
+      const index = accountRoles.indexOf("resendProbe");
+      fixture.accounts.push(accountSeed(fixture.marker, "resendProbe", index));
+      await persist(fixture);
+    }
+    const current = accounts(fixture);
+    const patientSession = await createSession(fixture, current.apiPatient);
+    const superSession = await verifiedStaffSession(fixture, current.superAdmin);
+    const adminSession = await verifiedStaffSession(fixture, current.clinicAdmin);
+    const doctorSession = await verifiedStaffSession(fixture, current.doctor);
+    const receptionistSession = await verifiedStaffSession(fixture, current.receptionist);
+    const today = todayKolkata();
+
+    const patientMaster = await expect(fixture, "GET", `/patients/${current.apiPatient.patientId}`,
+      patientSession.token, undefined, [200], "Patient reads own patient master");
+    check(fixture, patientMaster.id === current.apiPatient.patientId &&
+      patientMaster.userId === current.apiPatient.userId && patientMaster.mobileVerified === true,
+    "Patient master identity and verification mapping is exact",
+    "The owned patient master retains its exact app user linkage and verified mobile state.");
+    await expect(fixture, "PATCH", `/patients/${current.apiPatient.patientId}`, patientSession.token, {
+      fullName: patientMaster.fullName,
+      mobile: patientMaster.mobile,
+      clinicId: fixture.ids.clinicB,
+      branchId: fixture.ids.branchB,
+      status: "inactive",
+    }, [403], "Patient cannot tamper with registration scope or status fields");
+    await expect(fixture, "POST", "/onboarding", patientSession.token, {
+      intent: "doctor",
+      fullName: `${fixture.marker} Escalation Attempt`,
+      mobile: current.apiPatient.mobile,
+      termsAccepted: true,
+    }, [400, 409], "Patient onboarding cannot be tampered into a staff role");
+    const meBefore = await expect(fixture, "GET", "/me", patientSession.token, undefined, [200],
+      "Patient identity is readable before client-field tampering");
+    await expect(fixture, "PATCH", "/me", patientSession.token, {
+      fullName: meBefore.user.fullName,
+      mobile: patientMaster.mobile,
+      role: "superAdmin",
+      clinicIds: [fixture.ids.clinicB],
+    }, [200], "Unknown client privilege fields do not grant access");
+    const meAfter = await expect(fixture, "GET", "/me", patientSession.token, undefined, [200],
+      "Patient identity is readable after client-field tampering");
+    check(fixture, meAfter.user.role === "patient" && meAfter.patientId === current.apiPatient.patientId,
+      "Client-supplied privilege fields are ignored",
+      "Role and patient linkage remain server-owned after a payload containing privilege-shaped fields.");
+    await expect(fixture, "POST", "/appointments", patientSession.token, {
+      patientId: randomUUID(),
+      doctorId: fixture.ids.doctor,
+      clinicId: fixture.ids.clinicA,
+      branchId: fixture.ids.branchA,
+      date: today,
+      source: "online",
+      requestId: randomUUID(),
+      termsAccepted: true,
+    }, [403], "Patient cannot substitute another patient identity");
+    await expect(fixture, "POST", "/users", adminSession.token, {
+      fullName: `${fixture.marker} Escalation Attempt`,
+      email: current.resendProbe.email,
+      role: "superAdmin",
+      clinicIds: [fixture.ids.clinicA],
+      branchIds: [fixture.ids.branchA],
+    }, [403], "Clinic Admin cannot grant Super Admin through role-field tampering");
+    await expect(fixture, "PATCH", `/users/${current.receptionist.userId}`, adminSession.token, {
+      fullName: `${fixture.marker} Receptionist`,
+      email: current.receptionist.email,
+      role: "superAdmin",
+      clinicIds: [fixture.ids.clinicA],
+      branchIds: [fixture.ids.branchA],
+      status: "active",
+    }, [403, 409], "Existing staff role cannot be switched by client payload");
+    await expect(fixture, "POST", "/appointments", doctorSession.token, {
+      patientId: current.apiPatient.patientId,
+      doctorId: randomUUID(),
+      clinicId: fixture.ids.clinicA,
+      branchId: fixture.ids.branchA,
+      date: today,
+      source: "phone",
+      requestId: randomUUID(),
+    }, [403], "Doctor cannot substitute another Doctor identity");
+
+    if (!fixture.ids.clinicQr) {
+      const clinicQr = await expect(fixture, "POST", "/qrs", receptionistSession.token, {
+        name: `${fixture.marker} Clinic QR`,
+        clinicId: fixture.ids.clinicA,
+        branchId: fixture.ids.branchA,
+        doctorId: null,
+        status: "active",
+      }, [201], "Receptionist creates scoped clinic QR without Doctor binding");
+      fixture.ids.clinicQr = clinicQr.id;
+      fixture.ids.clinicQrReference = clinicQr.reference;
+      await persist(fixture);
+    }
+    const publicClinicQr = await expect(fixture, "GET",
+      `/public/qr/${encodeURIComponent(fixture.ids.clinicQrReference)}`, undefined, undefined, [200],
+      "Public clinic QR resolves active clinic and branch context");
+    check(fixture, publicClinicQr.clinicId === fixture.ids.clinicA &&
+      publicClinicQr.branchId === fixture.ids.branchA && publicClinicQr.doctorId === null,
+    "Clinic QR mapping is exact",
+    "The clinic QR resolves the owned clinic and branch while leaving Doctor selection unbound.");
+    await expect(fixture, "POST", "/appointments", patientSession.token, {
+      patientId: current.apiPatient.patientId,
+      doctorId: fixture.ids.doctor,
+      clinicId: fixture.ids.clinicB,
+      branchId: fixture.ids.branchA,
+      date: today,
+      source: "qr",
+      qrReference: fixture.ids.clinicQrReference,
+      requestId: randomUUID(),
+      termsAccepted: true,
+    }, [400, 403], "Clinic QR rejects client-tampered clinic and branch context");
+    if (!fixture.ids.noShowAppointment) {
+      const noShowAppointment = await expect(fixture, "POST", "/appointments", patientSession.token, {
+        patientId: current.apiPatient.patientId,
+        doctorId: fixture.ids.doctor,
+        clinicId: fixture.ids.clinicA,
+        branchId: fixture.ids.branchA,
+        date: today,
+        source: "qr",
+        qrReference: fixture.ids.clinicQrReference,
+        status: "completed",
+        tokenNumber: 9999,
+        requestId: randomUUID(),
+        termsAccepted: true,
+      }, [201], "Patient books through clinic QR with server-owned status and token fields");
+      check(fixture, noShowAppointment.status === "booked" && noShowAppointment.source === "qr",
+        "Appointment client fields cannot forge workflow state",
+        "The QR booking starts booked; client-supplied status and tokenNumber do not control server workflow state.");
+      fixture.ids.noShowAppointment = noShowAppointment.id;
+      await persist(fixture);
+    }
+    let noShowAppointment = await expect(fixture, "GET", `/appointments/${fixture.ids.noShowAppointment}`,
+      patientSession.token, undefined, [200], "Patient reads own clinic-QR appointment");
+    check(fixture, noShowAppointment.patientId === current.apiPatient.patientId &&
+      noShowAppointment.doctorId === fixture.ids.doctor &&
+      noShowAppointment.clinicId === fixture.ids.clinicA &&
+      noShowAppointment.branchId === fixture.ids.branchA,
+    "Clinic-QR appointment ownership and mapping is exact",
+    "The QR appointment maps the owned Patient, Doctor, Clinic, and Branch exactly.");
+    if (noShowAppointment.status === "booked") {
+      const signed = await expect(fixture, "GET", `/appointments/${noShowAppointment.id}/qr`,
+        patientSession.token, undefined, [200], "Patient reads signed appointment QR for clinic-QR booking");
+      const checkedIn = await expect(fixture, "POST", "/appointment-qr/check-in",
+        receptionistSession.token, { payload: signed.payload }, [200],
+        "Receptionist checks clinic-QR booking in with signed appointment QR");
+      noShowAppointment = checkedIn.appointment || checkedIn;
+    }
+    if (noShowAppointment.status === "checkedIn") {
+      noShowAppointment = await expect(fixture, "POST", `/appointments/${noShowAppointment.id}/actions`,
+        receptionistSession.token, { action: "enqueue", expectedStatus: "checkedIn" }, [200],
+        "Receptionist enqueues clinic-QR booking");
+    }
+    if (noShowAppointment.status === "waiting") {
+      noShowAppointment = await expect(fixture, "POST", `/appointments/${noShowAppointment.id}/actions`,
+        receptionistSession.token, { action: "noShow", expectedStatus: "waiting" }, [200],
+        "Receptionist skips waiting patient as no-show");
+    }
+    check(fixture, noShowAppointment.status === "noShow", "Skip/no-show transition persists",
+      "The guarded waiting-to-noShow transition is persisted on the appointment.");
+    noShowAppointment = await expect(fixture, "POST", `/appointments/${noShowAppointment.id}/actions`,
+      receptionistSession.token, { action: "requeue", expectedStatus: "noShow" }, [200],
+      "Receptionist requeues no-show appointment");
+    check(fixture, noShowAppointment.status === "waiting", "No-show requeue transition persists",
+      "The guarded noShow-to-waiting transition is persisted.");
+    noShowAppointment = await expect(fixture, "POST", `/appointments/${noShowAppointment.id}/actions`,
+      receptionistSession.token, { action: "noShow", expectedStatus: "waiting" }, [200],
+      "Receptionist marks requeued patient no-show again");
+    const noShowHistory = await db.select().from(appointmentHistory)
+      .where(eq(appointmentHistory.appointmentId, fixture.ids.noShowAppointment));
+    check(fixture, noShowHistory.filter(row => row.toStatus === "noShow").length >= 2 &&
+      noShowHistory.some(row => row.toStatus === "waiting"),
+    "Skip/no-show and requeue history is persisted",
+    "Appointment history contains both no-show transitions and the intervening requeue.");
+    const queue = await expect(fixture, "GET",
+      `/queue?doctorId=${fixture.ids.doctor}&branchId=${fixture.ids.branchA}&date=${today}`,
+      receptionistSession.token, undefined, [200], "Scoped queue reports no-show state");
+    check(fixture, queue.noShow >= 1 && queue.entries.some((row: any) =>
+      row.id === fixture.ids.noShowAppointment && row.status === "noShow"),
+    "Queue no-show aggregate and entry are exact",
+    "The scoped queue includes the owned no-show appointment and increments its no-show aggregate.");
+
+    for (const [label, token] of [
+      ["Super Admin", superSession.token],
+      ["Clinic Admin", adminSession.token],
+      ["Doctor", doctorSession.token],
+      ["Receptionist", receptionistSession.token],
+      ["Patient", patientSession.token],
+    ] as const) {
+      await expect(fixture, "GET", "/dashboard", token, undefined, [200],
+        `${label} reads role-scoped dashboard`);
+    }
+    await expect(fixture, "GET", `/reports?clinicId=${fixture.ids.clinicB}&branchId=${fixture.ids.branchA}`,
+      receptionistSession.token, undefined, [400, 403], "Report rejects mismatched clinic and branch scope");
+
+    const settings = await expect(fixture, "GET", "/settings", superSession.token, undefined, [200],
+      "Notification configuration is readable");
+    const [{ data: persistedSettings } = { data: {} as any }] =
+      await pool.query<{ data: Json }>("select data from settings where id = 'platform'").then(result => result.rows);
+    check(fixture, settings.notificationsEnabled === (persistedSettings.notificationsEnabled ?? false),
+      "Notification preference is persisted consistently",
+      "The API value matches persisted platform configuration; no email, SMS, push, or in-app delivery is claimed.");
+    record(fixture, "General notification delivery is not implemented", "pass",
+      "Static implementation review: notification configuration is persisted only; there is no notification table, dispatcher, or in-app inbox. Real delivery was not claimed or attempted.");
+
+    const browserBefore = await clerkClient.invitations.getInvitationList({
+      query: current.inviteProbe.email, status: "pending", limit: 100,
+    });
+    check(fixture, browserBefore.data.some(item => item.id === fixture.invitationId),
+      "Browser invitation remains pending before separate resend probe",
+      "The browser inviteProbe ticket is still pending and is not reused by the resend test.");
+    if (!current.resendProbe.userId) {
+      const resendUser = await expect(fixture, "POST", "/users", adminSession.token, {
+        fullName: `${fixture.marker} Resend Probe`,
+        email: current.resendProbe.email,
+        mobile: current.resendProbe.mobile,
+        role: "receptionist",
+        clinicIds: [fixture.ids.clinicA],
+        branchIds: [fixture.ids.branchA],
+        status: "active",
+      }, [201], "Create separate guarded invitation resend probe");
+      current.resendProbe.userId = resendUser.id;
+      await persist(fixture);
+    }
+    let initialProbePending = await clerkClient.invitations.getInvitationList({
+      query: current.resendProbe.email, status: "pending", limit: 100,
+    });
+    let initialProbeInvitation = initialProbePending.data.find(item =>
+      item.emailAddress.toLowerCase() === current.resendProbe.email);
+    const devDomain = process.env.REPLIT_DEV_DOMAIN?.trim();
+    if (!devDomain) throw new Error("REPLIT_DEV_DOMAIN is required for the resend invitation regression.");
+    const devOrigin = `https://${devDomain}`;
+    if (!initialProbeInvitation) {
+      const primed = await expect(fixture, "POST", `/users/${current.resendProbe.userId}/resend-invitation`,
+        adminSession.token, undefined, [200], "Prime separate set-password invitation after failed local-origin delivery",
+        devOrigin);
+      check(fixture, primed.invitationStatus === "sent",
+        "Separate resend probe accepts HTTPS app redirect",
+        "The invitation endpoint records sent when invoked with the DEVELOPMENT HTTPS app origin.");
+      initialProbePending = await clerkClient.invitations.getInvitationList({
+        query: current.resendProbe.email, status: "pending", limit: 100,
+      });
+      initialProbeInvitation = initialProbePending.data.find(item =>
+        item.emailAddress.toLowerCase() === current.resendProbe.email);
+    }
+    check(fixture, Boolean(initialProbeInvitation), "Separate resend probe has initial pending invitation",
+      "Live Clerk provider state contains a pending invitation for only the separate resend probe.");
+    const resent = await expect(fixture, "POST", `/users/${current.resendProbe.userId}/resend-invitation`,
+      adminSession.token, undefined, [200], "Clinic Admin resends separate set-password invitation", devOrigin);
+    check(fixture, resent.id === current.resendProbe.userId && resent.invitationStatus === "sent",
+      "Resend persists sent invitation status",
+      "The separate app profile remains unchanged in role/scope and records invitationStatus sent.");
+    const latestProbePending = await clerkClient.invitations.getInvitationList({
+      query: current.resendProbe.email, status: "pending", limit: 100,
+    });
+    const latestProbeInvitation = latestProbePending.data.find(item =>
+      item.emailAddress.toLowerCase() === current.resendProbe.email);
+    check(fixture, Boolean(latestProbeInvitation?.url) && latestProbeInvitation?.id !== initialProbeInvitation?.id,
+      "Resend creates a fresh live set-password ticket",
+      "Clerk exposes a fresh pending ticket for the separate probe; its private URL is not reported.");
+    fixture.resendInvitationId = latestProbeInvitation!.id;
+    const revokedProbe = await clerkClient.invitations.getInvitationList({
+      query: current.resendProbe.email, status: "revoked", limit: 100,
+    });
+    check(fixture, revokedProbe.data.some(item => item.id === initialProbeInvitation?.id),
+      "Resend revokes the prior separate invitation",
+      "Live Clerk provider state reports the prior separate-probe ticket as revoked.");
+    const browserAfter = await clerkClient.invitations.getInvitationList({
+      query: current.inviteProbe.email, status: "pending", limit: 100,
+    });
+    check(fixture, browserAfter.data.some(item => item.id === fixture.invitationId),
+      "Browser invitation is untouched by separate resend probe",
+      "The original browser inviteProbe ticket remains pending with the same provider ID.");
+    record(fixture, "Expired and used invitation states are not live-tested", "pass",
+      "No clock manipulation, invitation acceptance, browser-session interference, or Clerk setting change was attempted. Revoked state is live provider evidence; expired/used semantics remain static provider behavior only.");
+    await persist(fixture);
+  });
   await writeReport(fixture);
 }
 
@@ -861,16 +1229,11 @@ async function cleanup() {
         account.email.startsWith(`clinicflow.auth.${suffix}.`) && account.email.endsWith("+clerk_test@example.com"))) {
     throw new Error("Refusing cleanup: fixture ownership validation failed.");
   }
-  const databaseUsers = await db.select().from(users);
-  for (const account of fixture.accounts.filter(item => !item.userId)) {
-    const owned = databaseUsers.find(row => row.email === account.email &&
-      (row.fullName.includes(fixture.marker) || row.clerkId === account.clerkId));
-    if (owned) {
-      account.userId = owned.id;
-      const [patient] = await db.select().from(patients).where(eq(patients.userId, owned.id));
-      if (patient) account.patientId = patient.id;
-    }
+  if (!fixture.cleanupReadiness?.accountLinkageReconciled) {
+    throw new Error("Refusing cleanup: run read-only cleanup readiness verification first.");
   }
+  await reconcileOwnedDatabaseLinkage(fixture);
+  const databaseUsers = await db.select().from(users);
   for (const account of fixture.accounts.filter(item => !item.clerkId)) {
     const found = await clerkClient.users.getUserList({ emailAddress: [account.email], limit: 10 });
     const identity = found.data.find(item =>
@@ -928,10 +1291,12 @@ async function cleanup() {
     if (userIds.length) await tx.delete(users).where(inArray(users.id, userIds));
   });
 
-  if (fixture.invitationId) {
-    const pending = await clerkClient.invitations.getInvitationList({ status: "pending", limit: 100 });
-    if (pending.data.some(invitation => invitation.id === fixture.invitationId)) {
-      await clerkClient.invitations.revokeInvitation(fixture.invitationId);
+  for (const account of fixture.accounts) {
+    const pending = await clerkClient.invitations.getInvitationList({
+      query: account.email, status: "pending", limit: 100,
+    });
+    for (const invitation of pending.data.filter(item => item.emailAddress.toLowerCase() === account.email)) {
+      await clerkClient.invitations.revokeInvitation(invitation.id);
     }
   }
   for (const account of fixture.accounts) {
@@ -944,7 +1309,7 @@ async function cleanup() {
     const markerOwned = identity.privateMetadata?.marker === fixture.marker ||
       identity.publicMetadata?.marker === fixture.marker ||
       account.fixtureRole === "patient" && !identity.passwordEnabled ||
-      account.fixtureRole === "inviteProbe" && linkedOwnedProfile;
+      ["inviteProbe", "resendProbe"].includes(account.fixtureRole) && linkedOwnedProfile;
     if (!exactEmail || !markerOwned) {
       throw new Error("Refusing cleanup: Clerk identity marker validation failed.");
     }
@@ -954,10 +1319,16 @@ async function cleanup() {
   if (JSON.stringify(after) !== JSON.stringify(fixture.baseline)) {
     throw new Error("Cleanup verification failed: database does not exactly match the pre-fixture baseline.");
   }
+  const markerRowsRemaining = Object.values(after).flat().filter(row =>
+    JSON.stringify(row).includes(fixture.marker) ||
+    fixture.accounts.some(account => JSON.stringify(row).includes(account.email))).length;
+  if (markerRowsRemaining !== 0) {
+    throw new Error(`Cleanup verification failed: ${markerRowsRemaining} marker-owned rows remain.`);
+  }
   await writeReport(fixture, {
     completedAt: new Date().toISOString(),
     preExistingSnapshotRestoredExactly: true,
-    markerRowsRemaining: 0,
+    markerRowsRemaining,
     providerFixturesRemoved: true,
     manifestRemoved: true,
   });
@@ -986,23 +1357,49 @@ async function writeReport(fixture: Fixture, cleanupResult?: Json, fatal?: unkno
     evidence: fixture.evidence,
     fatal: fatal ? safeMessage(fatal) : null,
     cleanup: cleanupResult || null,
+    cleanupReadiness: fixture.cleanupReadiness || null,
+    historicalAudit: {
+      generatedAt: "2026-09-22T17:58:40.696Z",
+      status: "cleaned",
+      passed: 104,
+      failed: 1,
+      retainedFailure:
+        "The original pre-fix global-IP limiter returned 429 for the final patient-to-staff negative; a separate post-fix request reached role enforcement and returned 403.",
+    },
     truthfulLimitations: [
       "The notify:false Clerk invitation is provider state/link evidence only. No mailbox delivery is claimed.",
       "The API runner did not simulate browser OTP verification. The parent-observed browser pass completed real Clerk development email-code verification and patient onboarding.",
       "The guarded clinical regression uses only this suite's owned fixture graph; the separate ownership runner and its manifest are never reused.",
       "No authentication method is faked; API requests use real Clerk development sessions and the live staff password verification endpoint.",
-      "Patient browser OTP and onboarding passed. Staff browser login is not yet claimed because the genuine tenant required Clerk Device Trust (needs_client_trust) after the verified password.",
+      "After the user disabled DEVELOPMENT Device Trust, the parent browser verified password-only dashboards for all four staff roles, invalid-password and wrong-role denial, reset-password logins, and authenticated reload persistence.",
+      "General notifications are persisted configuration only. No notification dispatcher, notification table, in-app inbox, or real message delivery is implemented or claimed.",
+      "Invitation resend and revoked states use a separate owned probe. Expired and used states are not live-tested because doing so would require time manipulation or acceptance that could interfere with the browser pass.",
+    ],
+    invitationStateEvidence: [
+      { state: "pending/resend", classification: "live", outcome: "passed", detail: "Separate resendProbe created a fresh pending Clerk set-password ticket." },
+      { state: "revoked", classification: "live", outcome: "passed", detail: "Clerk reported the prior separate resendProbe ticket revoked." },
+      { state: "browser acceptance/reuse", classification: "untested", outcome: "blocked", detail: "Browser acceptance was CAPTCHA-blocked; setup and reuse are not claimed." },
+      { state: "expired", classification: "static-only", outcome: "untested", detail: "A one-day expiry was configured, but no clock manipulation or elapsed expiry test was performed." },
+      { state: "mocked invitation behavior", classification: "mocked", outcome: "not-used", detail: "No mocked invitation state is counted as live evidence." },
+    ],
+    notificationEvidence: [
+      { behavior: "configuration persistence", classification: "live", outcome: "passed" },
+      { behavior: "in-app notification inbox", classification: "static", outcome: "not-implemented" },
+      { behavior: "real email/SMS/push delivery", classification: "untested", outcome: "not-claimed" },
     ],
     browserReadiness: {
-      patientOtpAndOnboarding: "passed-in-parent-browser",
-      staffLogin: "not-yet-passed-needs_client_trust",
+      patientOtpAndOnboarding: "new-and-existing-patient-otp-onboarding-and-relogin-passed-in-parent-browser",
+      staffLogin: "all-four-password-only-role-dashboards-and-denial-cases-passed-in-parent-browser",
+      passwordRecovery:
+        "recoveryStaff-passwordless-reset-and-superAdmin-reset-password-logins-passed-in-parent-browser",
+      authenticatedReload: "superAdmin-reload-after-75-seconds-kept-me-200-without-password-reprompt",
       invitation: cleanupResult
         ? "revoked-or-consumed-and-provider-fixture-removed"
         : "pending-notify-false-with-https-app-set-password-redirect",
       invitationUrlStoredOnlyInPrivateManifest: cleanupResult ? false : Boolean(fixture.invitationUrl),
       ...(cleanupResult ? {
         passwordResetProviderCheck:
-          "Before cleanup, Clerk reported passwordEnabled true for recoveryStaff and every ordinary password staff fixture.",
+          "Immediately before cleanup, Clerk reported passwordEnabled true for superAdmin and recoveryStaff and false for the OTP patient.",
       } : {}),
     },
   };
@@ -1016,12 +1413,28 @@ async function writeReport(fixture: Fixture, cleanupResult?: Json, fatal?: unkno
     "- A disposable Clerk development user was created with a reserved email identification and `skipPasswordRequirement`.",
     "- Clerk reported password disabled and no initial email verification; the disposable probe was deleted immediately.",
     "- Provider viability was subsequently confirmed in the parent browser: real Clerk development email-code verification and patient onboarding passed.", "",
+    "## Historical audit provenance", "",
+    `- The prior audit generated ${report.historicalAudit.generatedAt} remains recorded as ${report.historicalAudit.passed} passed and ${report.historicalAudit.failed} failed, then cleaned.`,
+    `- ${report.historicalAudit.retainedFailure}`, "",
+    ...(fixture.cleanupReadiness ? [
+      "## Pre-cleanup read-only verification", "",
+      "- Exact owned email and Clerk linkage reconciled all app user IDs before deletion; stale manifest IDs were not trusted.",
+      "- The latest active Clerk session for every ordinary staff role had a matching persisted staff password proof.",
+      "- Clerk reported password enabled for the Super Admin and recoveryStaff reset fixtures.",
+      `- OTP patient password disabled: ${fixture.cleanupReadiness.patientPasswordDisabled === null ? "not available" : fixture.cleanupReadiness.patientPasswordDisabled}.`, "",
+    ] : []),
     "## Evidence", "",
     "| Unit | Outcome | Assertion | Route/status | Evidence |",
     "|---|---|---|---|---|",
     ...fixture.evidence.map(item =>
       `| ${item.unit} | ${item.outcome.toUpperCase()} | ${item.name.replaceAll("|", "\\|")} | ${item.method || ""} ${item.route || ""} ${item.status || ""} | ${item.detail.replaceAll("|", "\\|")} |`),
     ...(fatal ? ["", "## Failure checkpoint", "", safeMessage(fatal)] : []),
+    "", "## Invitation state evidence", "",
+    ...report.invitationStateEvidence.map(item =>
+      `- **${item.state}** — ${item.classification}; ${item.outcome}. ${item.detail}`),
+    "", "## Notification evidence", "",
+    ...report.notificationEvidence.map(item =>
+      `- **${item.behavior}** — ${item.classification}; ${item.outcome}.`),
     "", "## Safety and handoff", "",
     cleanupResult
       ? `- The private mode-0600 manifest at ${manifestPath} was removed after verified cleanup.`
@@ -1031,8 +1444,11 @@ async function writeReport(fixture: Fixture, cleanupResult?: Json, fatal?: unkno
     "- Existing records are never updated. Cleanup validates exact fixture ownership and requires the original database snapshot to be restored byte-for-byte after normalization.",
     "- The invitation fixture uses `notify:false`; no email delivery or mailbox evidence is claimed.", "",
     "## Browser provenance", "",
-    "- Patient OTP verification and onboarding passed in the parent browser using the genuine Clerk development tenant.",
-    "- Staff browser login is not yet claimed: after verified password, Clerk required the genuine `needs_client_trust` email-code second factor. Tenant settings were not changed and no workaround was used.",
+    "- New and existing patient OTP, exact single user/master linkage, logout, and relogin passed in the parent browser.",
+    "- Password-only dashboards passed for all four staff roles; invalid-password, wrong-role, and unauthenticated denial also passed.",
+    "- recoveryStaff passwordless reset and password-only dashboard passed; Super Admin reset and password login passed.",
+    "- A Super Admin authenticated reload after 75 seconds retained `/me` 200 without another password prompt.",
+    "- Invitation acceptance remained CAPTCHA-blocked; browser setup, reuse, and expiry are not claimed.",
     cleanupResult
       ? "- Before cleanup, the latest notify:false invitation used the HTTPS app `/set-password` redirect. The provider fixture and private URL have now been removed."
       : "- The latest pending notify:false invitation uses the HTTPS app `/set-password` redirect; its ticket URL remains only in the private manifest.", "",
@@ -1061,13 +1477,14 @@ async function main() {
   if (process.argv.includes("--cleanup")) return cleanup();
   if (process.argv.includes("--setup")) return setup();
   if (process.argv.includes("--refresh-browser-fixtures")) return refreshBrowserFixtures();
+  if (process.argv.includes("--verify-cleanup-readiness")) return verifyCleanupReadiness();
   if (process.argv.includes("--rerun-rate-limit-negative")) return rerunCorrectedLimiterNegative();
   if (process.argv.includes("--report")) {
     const fixture = JSON.parse(await readFile(manifestPath, "utf8")) as Fixture;
     return writeReport(fixture);
   }
   if (process.argv.includes("--run")) return runAudit();
-  throw new Error("Choose exactly one mode: --setup, --refresh-browser-fixtures, --rerun-rate-limit-negative, --report, --run, or --cleanup --confirm-cleanup.");
+  throw new Error("Choose exactly one mode: --setup, --refresh-browser-fixtures, --verify-cleanup-readiness, --rerun-rate-limit-negative, --report, --run, or --cleanup --confirm-cleanup.");
 }
 
 main().catch(async error => {

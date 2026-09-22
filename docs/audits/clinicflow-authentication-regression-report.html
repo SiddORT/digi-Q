@@ -1,0 +1,35 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ClinicFlow Authentication and Regression Verification</title><style>body{margin:0;background:#f4f7f6;color:#183532;font:15px/1.6 system-ui,sans-serif}main{max-width:1100px;margin:36px auto;padding:36px;background:white;border:1px solid #d9e5e1;border-radius:12px}h1{font-size:30px;line-height:1.2}h2{margin-top:38px;border-top:1px solid #d9e5e1;padding-top:22px;color:#117970}p{margin:10px 0}.table{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}td,th{border:1px solid #d9e5e1;padding:10px;text-align:left;vertical-align:top}th{background:#eaf4f0}td:nth-child(2){min-width:110px;font-weight:600}tr:nth-child(even){background:#fafcfb}@media(max-width:600px){main{margin:0;padding:20px;border:0;border-radius:0}h1{font-size:25px}}@media print{body{background:white}main{margin:0;padding:0;border:0}table{font-size:10px}h2{break-after:avoid}tr{break-inside:avoid}}</style></head><body><main><h1>ClinicFlow authentication and regression verification</h1>
+<h2>Verdict</h2>
+<p><strong>Password-only staff login is verified for all four staff roles. Full authentication sign-off remains incomplete because invitation acceptance and invitation reuse/expiry browser checks are unverified.</strong></p>
+<p>Environment: Development only. Audit completed 2026-09-22, 19:27 UTC.</p>
+<p>The owner disabled Development Device Trust before this run. The agent made no further Clerk configuration changes and no application-functionality or architecture changes during this verification. CAPTCHA, lockout, enumeration protection, Clerk session security, server-side password verification, and authorization were not disabled or bypassed.</p>
+<h2>Evidence totals and meaning</h2>
+<p>- Current live API audit: <strong>158 passing assertions, zero failures</strong>.</p>
+<p>- Local regression tests: <strong>35 passed</strong> (28 backend regressions plus 7 authentication source-contract checks; these are not browser tests).</p>
+<p>- Browser results appear individually below; no aggregate browser-test count is claimed.</p>
+<p>- PASS means the stated behavior was observed using the stated method. BLOCKED means the environment prevented completion. UNVERIFIED means the behavior was not exercised, not that it passed.</p>
+<p>- Clerk development test email codes were used. Successful code verification does not prove delivery to a real inbox.</p>
+<p>- Historical pre-fix results are retained separately and are not counted in this run.</p>
+<h2>Authentication results</h2>
+<h2>Security results</h2>
+<h2>ClinicFlow regression results</h2>
+<p>These are live API/database regressions unless explicitly stated otherwise; they do not claim that every clinical UI interaction was retested.</p>
+<h2>Cleanup and data safety</h2>
+<p>- Read-only ownership reconciliation corrected a stale patient fixture identifier before deletion; exact email/Clerk/role linkage was used rather than trusting the stale identifier.</p>
+<p>- All test application records, clinical fixtures, audits, patient masters, staff proofs, and owned Clerk users/sessions were removed.</p>
+<p>- Independent scans found zero database fixture markers, zero owned Clerk users, and zero pending owned invitations.</p>
+<p>- Clerk may retain revoked invitation history as provider audit state; no pending usable fixture invitation remains.</p>
+<p>- The normalized database snapshot exactly matched the pre-fixture baseline.</p>
+<p>- The private credential manifest was removed. No credentials, session tokens, invitation tickets, or personal details are included in this report.</p>
+<h2>Remaining sign-off requirements</h2>
+<p>1. A human must complete the invitation CAPTCHA in an approved test browser/inbox and finish password setup.</p>
+<p>2. Verify that this newly invited account can sign in with password only and reach its assigned dashboard.</p>
+<p>3. Open the consumed ticket again and confirm rejection without duplicate user/mapping creation.</p>
+<p>4. Open a revoked ticket and a naturally expired ticket and verify safe rejection.</p>
+<p>5. Verify actual invitation and patient-code email receipt if real-mail delivery is part of acceptance.</p>
+<p>These outstanding items are not marked passed. No publishing or production configuration/migration was performed.</p>
+<h2>Detailed evidence files</h2>
+<p>- docs/audits/auth-flows-api.json</p>
+<p>- docs/audits/auth-flows-api.md</p>
+<p>- docs/audits/auth-flows-browser.md</p>
+<p>- artifacts/api-server/src/auth-flow.test.mjs</p></main></body></html>
