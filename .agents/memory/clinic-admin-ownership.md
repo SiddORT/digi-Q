@@ -9,11 +9,11 @@ Each clinic must have exactly one Clinic Admin. Each doctor has one explicitly r
 
 **How to apply:** Never infer doctor ownership merely from shared clinic assignments or grant multiple admins access to a clinic. Legacy records without provable ownership require an explicit user-approved assignment before enforcing complete ownership constraints.
 
-New Clinic Admin identities may be staged without clinic access until an explicit clinic creation or ownership transfer assigns their first clinic. Do not silently take ownership from another admin to complete provisioning.
+New Clinic Admin onboarding should create a new first clinic atomically rather than stage an identity without access. Do not silently take ownership from another admin to complete provisioning.
 
-**Why:** Requiring an already-owned clinic when creating the first admin identity creates a circular onboarding dependency under the single-owner rule. The staged identity has no existing clinic scope.
+**Why:** Requiring an already-owned clinic creates a circular onboarding dependency under the single-owner rule. Creating both records together resolves that dependency without taking another admin's clinic.
 
-**How to apply:** Keep this staging limitation visible in onboarding and audit reports. An atomic admin-plus-first-clinic onboarding flow could remove the intermediate state without weakening ownership constraints.
+**How to apply:** Preserve the atomic new-clinic path for new admins. Treat transfers of existing clinics as a separate explicit ownership decision, never an automatic onboarding fallback.
 
 Doctors and receptionists must each have one managing admin, and every assigned clinic must be owned by that admin—even when Super Admin makes the assignment. For new staff, derive the manager from the selected clinics only when all selected clinics share one valid owner; do not ask for a separate manager selection.
 

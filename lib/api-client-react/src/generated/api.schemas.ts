@@ -161,6 +161,12 @@ export interface Identity {
   needsOnboarding: boolean;
 }
 
+export type ClinicAdminOnboardingInputAdmin = {
+  /** @minLength 1 */
+  fullName: string;
+  email: string;
+  mobile?: string;
+};
 export interface OtpRequest {
   /** @pattern ^\+[1-9][0-9]{7,14}$ */
   mobile: string;
@@ -194,7 +200,6 @@ export interface OtpResult {
   mobile: string;
   verifiedAt?: string;
 }
-
 export interface ClinicInput {
   /** Super admins may select the owning clinic administrator; other roles are assigned by the server. */
   adminId?: string;
@@ -232,6 +237,10 @@ export type Clinic = ClinicInput & ({
   branchCount?: number;
 }), 'adminId' | 'status'>>;
 
+export interface ClinicAdminOnboardingResult {
+  admin: User;
+  clinic: Clinic;
+}
 export interface BranchInput {
   clinicId: string;
   /** @minLength 1 */
@@ -1187,3 +1196,21 @@ page?: PageParameter;
 pageSize?: PageSizeParameter;
 };
 
+
+export type ClinicAdminOnboardingInputClinic = {
+  /** @minLength 1 */
+  name: string;
+  code?: string;
+  phone?: string;
+  email?: string;
+  address: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  timezone?: string;
+};
+
+export interface ClinicAdminOnboardingInput {
+  admin: ClinicAdminOnboardingInputAdmin;
+  clinic: ClinicAdminOnboardingInputClinic;
+}

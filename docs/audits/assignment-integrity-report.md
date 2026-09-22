@@ -97,7 +97,10 @@ Preserved:
 ## G. Remaining limitations and operational notes
 
 - One pre-existing Preview Doctor had no clinic assignment. Its approved owning admin is now recorded, but a real location must be selected before it can operate there. Existing ownership approval did not authorize guessing its clinic/branch.
-- A newly provisioned Clinic Admin identity has no clinic access until an explicit clinic creation/ownership assignment. This avoids silently replacing an existing clinic's sole admin.
+- The staged Clinic Admin onboarding exception is closed by Super Admin's **Set up Clinic Admin** flow on Users. It creates an active admin and a new first clinic together, with persisted scope immediately. Generic user creation no longer creates unassigned Clinic Admins. This flow never replaces an existing clinic's owner or changes doctor ownership; existing admins and explicit ownership transfers remain supported.
+  - Focused verification: backend tests and workspace typechecks passed. An authenticated Super Admin browser pass confirmed required-field validation, duplicate-email rejection without partial records, successful setup, refreshed user listing, and persistence after reload.
+  - Direct development database checks confirmed the new active admin, the new clinic's sole `adminId`, and exactly one matching clinic assignment immediately after creation. Existing doctor ownership was unchanged. New-admin sign-in was not separately tested.
+  - Isolated test records and their audit event were removed afterward; the external Clerk invitation was separately found and revoked. No production changes were made.
 - Production SMS delivery is not configured or verified; development OTP is not proof of phone ownership.
 - Physical camera/device compatibility and production browser permissions require device-specific checks. Image decoding and pasted payload are supported alternatives.
 - These are bounded functional/regression checks, not a production load test, penetration test, healthcare-compliance certification, or exhaustive timezone/DST proof.

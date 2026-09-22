@@ -12,20 +12,32 @@ process.env.SESSION_SECRET = "unit-test-only-appointment-qr-secret";
 mock.timers.enable({apis:["Date"],now:Date.UTC(2030,0,7,12)});
 const tables = ["appointments", "patients", "appointmentHistory", "doctors", "clinics", "branches", "masters", "schedules", "availabilityExceptions", "assignments", "users", "qrs", "auditLogs", "settings", "otpChallenges"];
 const fixture = `
- export const state = { rows: {}, config: {}, actor: null, clerk: {} };
- export const reset = () => {
-   state.rows = {};
-   state.config = { bookingHorizonDays: 30, cancellationCutoffMinutes: 0 };
-   state.clerk = {
-     getUserList: async () => ({data:[]}),
-     createInvitation: async () => ({id:"invitation"}),
-   };
- };
+export const state = { rows: {}, config: {}, actor: null, clerk: {} };
+export const reset = () => {
+  state.rows = {};
+  state.config = { bookingHorizonDays: 30, cancellationCutoffMinutes: 0 };
+  state.clerk = {
+    users: [],
+    invitations: [],
+    getUserList: async () => ({data:[]}),
+    createInvitation: async input => {
+      const invitation={id:"inv-"+crypto.randomUUID(),...input};
+      state.clerk.invitations.push(invitation);
+      return invitation;
+    },
+  };
+};
 export const all = async table => state.rows[table.name] || [];
 export const flatten = row => row;
 export const one = async (table, id) => { const row = (await all(table)).find(r => r.id === id); if (!row) throw Object.assign(new Error("Not found"), {status:404}); return {...row}; };
 export const uid = () => crypto.randomUUID();
-export const put = async (table, value) => { const row = {status:table.name === "appointments" ? "booked" : "active", createdAt:new Date().toISOString(), ...value.data, ...value}; delete row.data; (state.rows[table.name] ||= []).push(row); return {...row}; };
+export const put = async (table, value) => {
+  if (table.name === "clinics" && state.config.failClinicInsert) throw new Error("forced clinic insert failure");
+  const row = {status:table.name === "appointments" ? "booked" : "active", createdAt:new Date().toISOString(), ...value.data, ...value}; delete row.data;
+  (state.rows[table.name] ||= []).push(row);
+  if (table.name === "clinics") (state.rows.assignments ||= []).push({id:crypto.randomUUID(),userId:row.adminId,clinicId:row.id,branchId:null});
+  return {...row};
+};
 export const change = async (table,id,value) => { const row = (await all(table)).find(r=>r.id===id); Object.assign(row,value.data,value); delete row.data; return {...row}; };
 export const audit = async () => {};
 export const getSettings = async () => state.config;
@@ -56,15 +68,15 @@ await build({
       b.onResolve({ filter: /\/store$/ }, () => ({path:"audit-fixture",namespace:"fixture"}));
       b.onLoad({ filter: /.*/, namespace: "fixture" }, a => {
         if (a.path === "audit-fixture") return {contents:fixture};
-         if (a.path === "@clerk/express") return {contents:`
-           import {state} from "audit-fixture";
-           export const clerkClient = {
-             users:{getUserList:value=>state.clerk.getUserList(value)},
-             invitations:{createInvitation:value=>state.clerk.createInvitation(value)},
-           };
-           export const getAuth = () => ({});
-         `};
-         if (a.path === "drizzle-orm") return {contents:"export const eq = (field,value) => ({field,value}); export const sql = (strings,...values) => ({strings,values});"};
+        if (a.path === "@clerk/express") return {contents:`
+          import {state} from "audit-fixture";
+          export const clerkClient = {
+            users:{getUserList:value=>state.clerk.getUserList(value)},
+            invitations:{createInvitation:value=>state.clerk.createInvitation(value)},
+          };
+          export const getAuth = () => ({});
+        `};
+        if (a.path === "drizzle-orm") return {contents:"export const eq = (field,value) => ({field,value}); export const sql = (strings,...values) => ({strings,values});"};
         return {contents: `
           import {state,all} from "audit-fixture";
           ${tables.map(t => `export const ${t} = {name:"${t}",id:"id",status:"status",clinicId:"clinicId",branchId:"branchId",doctorId:"doctorId",publicReference:"publicReference"};`).join("\n")}
@@ -94,6 +106,7 @@ await build({
              delete:remove,
              insert,
              transaction:async fn => {
+                const snapshot=structuredClone(state.rows);
                const releases = [];
                const tx = {
                  select,
@@ -104,7 +117,9 @@ await build({
                    if (key) releases.push(await acquire(key));
                  },
                };
-               try { return await fn(tx); } finally { for (const release of releases.reverse()) release(); }
+                try { return await fn(tx); }
+                catch (error) { state.rows=snapshot; throw error; }
+                finally { for (const release of releases.reverse()) release(); }
              },
            };
         `};
@@ -454,13 +469,14 @@ test("concurrent invitation retries serialize per user and remain sent", async (
 });
 test("invitation outcomes are idempotent and identity conflicts remain 409", async () => {
   seed();
-  const target={id:"invitee",role:"doctor",fullName:"Invitee",email:"invitee@example.com",status:"active",invitationStatus:"sent"};
+  let target={id:"invitee",role:"doctor",fullName:"Invitee",email:"invitee@example.com",status:"active",invitationStatus:"sent"};
   api.state.rows.users.push(target,{id:"other-profile",role:"patient",email:"other@example.com",clerkId:"clerk-existing",status:"active"});
   api.state.clerk.getUserList=async()=>({data:[{
     id:"clerk-existing",
     emailAddresses:[{emailAddress:"INVITEE@example.com",verification:{status:"verified"}}],
   }]});
   await assert.rejects(api.deliverInvitation("invitee"),error=>error.status===409 && /already has a profile/.test(error.message));
+  target=api.state.rows.users.find(user=>user.id==="invitee");
   assert.equal(target.invitationStatus,"sent");
 
   api.state.rows.users=api.state.rows.users.filter(user=>user.id!=="other-profile");
@@ -494,6 +510,50 @@ test("invitation outcomes are idempotent and identity conflicts remain 409", asy
   api.state.clerk.createInvitation=async()=>{ throw new Error("provider unavailable"); };
   await api.deliverInvitation("invitee");
   assert.equal(target.invitationStatus,"failed");
+});
+test("Super Admin onboarding atomically persists the new Clinic Admin's first clinic scope", async () => {
+  seed();
+  api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
+  const result=await route(api.resourcesRouter,"post","/clinic-admin-onboarding",{
+    admin:{fullName:"New Admin",email:"NEW.ADMIN@example.com",mobile:"+15555550999"},
+    clinic:{name:"New Clinic",address:"1 Main Street",timezone:"UTC"}
+  });
+  assert.equal(result.admin.role,"clinicAdmin");
+  assert.equal(result.admin.status,"active");
+  assert.equal(result.admin.email,"new.admin@example.com");
+  assert.equal(result.admin.invitationStatus,"sent");
+  assert.equal(result.clinic.adminId,result.admin.id);
+  assert.equal(result.clinic.status,"active");
+  assert.deepEqual(result.admin.clinicIds,[result.clinic.id]);
+  assert.equal(api.state.rows.assignments.some(a => a.userId === result.admin.id && a.clinicId === result.clinic.id && a.branchId === null),true);
+  assert.equal(api.state.rows.clinics.length,2);
+  assert.equal(api.state.rows.clinics[0].id,"c");
+});
+test("clinic admin onboarding denies non-Super Admins and duplicate profiles without side effects", async () => {
+  seed();
+  const body={admin:{fullName:"Denied",email:"denied@example.com"},clinic:{name:"Denied Clinic",address:"Address"}};
+  api.state.actor={id:"ca",role:"clinicAdmin",clinicIds:["c"],branchIds:[]};
+  await assert.rejects(route(api.resourcesRouter,"post","/clinic-admin-onboarding",body),/Permission denied/);
+  assert.equal(api.state.clerk.invitations.length,0);
+  api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
+  api.state.rows.users.push({id:"existing",fullName:"Existing",email:"denied@example.com",role:"patient",status:"active"});
+  await assert.rejects(route(api.resourcesRouter,"post","/clinic-admin-onboarding",body),/already belongs/);
+  assert.equal(api.state.clerk.invitations.length,0);
+  await assert.rejects(route(api.resourcesRouter,"post","/users",{fullName:"Staged",email:"staged@example.com",role:"clinicAdmin"}),/clinic admin onboarding/i);
+  assert.equal(api.state.clerk.invitations.length,0);
+});
+test("clinic admin onboarding rolls database changes back before durable invitation delivery", async () => {
+  seed();
+  api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
+  api.state.config.failClinicInsert=true;
+  const usersBefore=api.state.rows.users.length, clinicsBefore=api.state.rows.clinics.length;
+  await assert.rejects(route(api.resourcesRouter,"post","/clinic-admin-onboarding",{
+    admin:{fullName:"Rollback Admin",email:"rollback@example.com"},
+    clinic:{name:"Rollback Clinic",address:"Address"}
+  }),/forced clinic insert failure/);
+  assert.equal(api.state.rows.users.length,usersBefore);
+  assert.equal(api.state.rows.clinics.length,clinicsBefore);
+  assert.equal(api.state.clerk.invitations.length,0);
 });
 test("schedule overlap compares real instants across timezones and closed exceptions", () => {
   const india={isOpen:true,startTime:"09:00",endTime:"10:00",timezone:"Asia/Kolkata"};

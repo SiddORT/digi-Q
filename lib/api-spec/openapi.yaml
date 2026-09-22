@@ -185,6 +185,16 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/UserInput" } } } }
       responses:
         "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+  /clinic-admin-onboarding:
+    post:
+      operationId: onboardClinicAdmin
+      description: Super Admin only. Atomically creates an active Clinic Admin and their first active clinic, with ownership persisted through clinic.adminId. Existing clinics and doctor ownership are never changed.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicAdminOnboardingInput" } } } }
+      responses:
+        "201": { description: Clinic Admin and clinic created, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicAdminOnboardingResult" } } } }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
   /users/{id}:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     get:
@@ -556,6 +566,36 @@ components:
             invitationStatus: { type: string, enum: [sent, failed, notRequired] }
             createdAt: { type: [string, "null"], format: date-time }
             lastLoginAt: { type: [string, "null"], format: date-time }
+    ClinicAdminOnboardingInput:
+      type: object
+      required: [admin, clinic]
+      properties:
+        admin:
+          type: object
+          required: [fullName, email]
+          properties:
+            fullName: { type: string, minLength: 1 }
+            email: { type: string, format: email }
+            mobile: { type: string }
+        clinic:
+          type: object
+          required: [name, address]
+          properties:
+            name: { type: string, minLength: 1 }
+            code: { type: string }
+            phone: { type: string }
+            email: { type: string, format: email }
+            address: { type: string }
+            city: { type: string }
+            state: { type: string }
+            pincode: { type: string }
+            timezone: { type: string, default: Asia/Kolkata }
+    ClinicAdminOnboardingResult:
+      type: object
+      required: [admin, clinic]
+      properties:
+        admin: { $ref: "#/components/schemas/User" }
+        clinic: { $ref: "#/components/schemas/Clinic" }
     OtpRequest:
       type: object
       required: [mobile]

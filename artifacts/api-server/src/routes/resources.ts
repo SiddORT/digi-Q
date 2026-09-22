@@ -32,6 +32,7 @@ const governed: Record<string, string[]> = {
 export function ownershipChangeRequested(value: unknown, current: unknown) {
   return value !== undefined && value !== current;
 }
+
 async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
   const context = { ...old, ...body };
   if (body.timezone) localNow(body.timezone);
@@ -44,6 +45,7 @@ async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
     if (user.role === "clinicAdmin") assert(["doctor", "receptionist", "patient"].includes(body.role || old?.role), 403, "Cannot grant administrator roles");
     if (old) assert(!body.role || body.role === old.role, 409, "Existing account roles cannot be switched");
     if (!old) assert(body.role !== "doctor", 400, "Create doctors through the doctor resource so an owning Clinic Admin is recorded");
+    if (!old) assert(body.role !== "clinicAdmin", 409, "Create Clinic Admins together with their first clinic through clinic admin onboarding");
   } else if (kind === "doctors") {
     roles(user, ["superAdmin", "clinicAdmin", ...(old?.id === user.doctorId ? ["doctor"] : [])]);
     if (old && ownershipChangeRequested(body.ownerAdminId, old.ownerAdminId)) {
@@ -147,6 +149,49 @@ export async function deliverInvitation(userId: string) {
     }
     await change(users, userId, { invitationStatus: "sent" }, tx);
   });
+}
+export async function createClinicAdminOnboarding(actor: any, body: any) {
+  roles(actor, ["superAdmin"]);
+  const email = body.admin.email.toLowerCase();
+  if (body.clinic.timezone) localNow(body.clinic.timezone);
+  assert(!(await all(users)).some(u => u.email === email), 409, "Email already belongs to an existing profile; roles cannot be silently changed");
+  const result = await db.transaction(async tx => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"user-email:" + email}))`);
+    assert(!(await all(users, tx)).some(u => u.email === email), 409, "Email already belongs to an existing profile; roles cannot be silently changed");
+    const adminId = uid();
+    const admin = await put(users, {
+      id: adminId,
+      fullName: body.admin.fullName,
+      email,
+      mobile: body.admin.mobile,
+      role: "clinicAdmin",
+      status: "active",
+      invitationStatus: "failed",
+    }, tx);
+    const clinicId = uid();
+    const clinic = await put(clinics, {
+      id: clinicId,
+      ownerId: actor.id,
+      adminId,
+      status: "active",
+      data: {
+        ...body.clinic,
+        code: body.clinic.code || `CLN-${clinicId.slice(0, 8)}`,
+        timezone: body.clinic.timezone || "Asia/Kolkata",
+      },
+    }, tx);
+    await audit(actor, "create", "users", admin, tx);
+    await audit(actor, "create", "clinics", clinic, tx);
+    return {
+      admin: await enrich("users", admin, tx),
+      clinic: await enrich("clinics", clinic, tx),
+    };
+  });
+  await deliverInvitation(result.admin.id);
+  return {
+    ...result,
+    admin: await enrich("users", await one(users, result.admin.id)),
+  };
 }
 async function save(kind: string, table: any, user: any, body: any, old?: any) {
   await authorizeWrite(user, kind, body, old);
@@ -285,6 +330,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any) {
       }
       if (role === "clinicAdmin") {
         assert(user.role === "superAdmin", 403, "Only Super Admin can create Clinic Admins");
+        assert(old, 409, "Create Clinic Admins through clinic admin onboarding");
         assert(!requestedClinics.length && !requestedBranches.length, 409, "Create the Clinic Admin as pending, then transfer clinic ownership explicitly");
       }
       const row = old ? await change(table, id, fields, tx) : await put(table, { id, ...fields }, tx);
@@ -312,6 +358,147 @@ async function save(kind: string, table: any, user: any, body: any, old?: any) {
   }
   return saved;
 }
+/* Historical incoming save implementation intentionally excluded during conflict resolution.
+function discardedIncomingSave(kind: string, table: any, user: any, body: any, old?: any) {
+  await authorizeWrite(user, kind, body, old);
+  if (kind === "users" || kind === "doctors") body.email = body.email.toLowerCase();
+  let provisionedClerkId: string | undefined;
+  if (!old && (kind === "users" || kind === "doctors")) {
+    const existing = (await all(users)).find(u => u.email === body.email);
+    assert(!existing, 409, "Email already belongs to an existing profile; roles cannot be silently changed");
+    provisionedClerkId = (await provisionIdentity(body.email)).clerkId;
+  }
+  return db.transaction(async tx => {
+    const proposed = { ...old, ...body };
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${kind + ":" + (proposed.doctorId || old?.id || body.email || "create")}))`);
+    if (["schedules", "availability-exceptions"].includes(kind)) await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"doctor-schedules:" + proposed.doctorId}))`);
+    if (kind === "users" && old?.role === "superAdmin" && body.status === "inactive") {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext('super-admin-protection'))`);
+      assert((await all(users, tx)).filter(u => u.role === "superAdmin" && u.status === "active" && u.id !== old.id).length, 409, "Cannot deactivate last active super administrator");
+    }
+    if (kind === "users" && old?.role === "clinicAdmin" && body.status === "inactive") {
+      assert(!(await all(clinics, tx)).some(c => c.adminId === old.id) && !(await all(doctors, tx)).some(d => d.ownerAdminId === old.id), 409, "Transfer clinic and doctor ownership before deactivating this administrator");
+    }
+    if (kind === "schedules") {
+      validateTimes(proposed);
+      const branch = await one(branches, proposed.branchId, tx);
+      const candidate = { ...proposed, timezone: proposed.timezone || branch.timezone || "Asia/Kolkata" };
+      const collisions = (await all(schedules, tx)).filter(s => s.id !== old?.id && s.status === "active" && s.doctorId === proposed.doctorId);
+      for (const session of collisions) {
+        const otherBranch = await one(branches, session.branchId, tx);
+        const other = { ...session, timezone: session.timezone || otherBranch.timezone || "Asia/Kolkata" };
+        assert(!(session.branchId === proposed.branchId && session.dayOfWeek === proposed.dayOfWeek) && !weeklySessionsOverlap(candidate, other), 409, "This schedule overlaps with an existing schedule");
+      }
+    }
+    if (kind === "availability-exceptions" && !proposed.isClosed) {
+      const weekday = new Date(proposed.date + "T12:00:00Z").getUTCDay();
+      const base = (await all(schedules, tx)).find(s => s.doctorId === proposed.doctorId && s.branchId === proposed.branchId && s.dayOfWeek === weekday && s.status === "active");
+      assert(base, 409, "Create a weekly schedule before overriding its timing");
+      const baseBranch = await one(branches, base.branchId, tx);
+      const effective = { ...base, ...Object.fromEntries(Object.entries(proposed).filter(([k,v]) => v !== null || k.startsWith("break"))), timezone: proposed.timezone || base.timezone || baseBranch.timezone || "Asia/Kolkata" };
+      validateTimes(effective);
+      const otherSchedules = (await all(schedules, tx)).filter(s => s.doctorId === proposed.doctorId && s.branchId !== proposed.branchId && s.status === "active" && s.isOpen);
+      const exceptions = (await all(availabilityExceptions, tx)).filter(e => e.id !== old?.id && e.doctorId === proposed.doctorId && e.status === "active");
+      for (const session of otherSchedules) {
+        const otherBranch = await one(branches, session.branchId, tx);
+        for (const offset of [-1, 0, 1]) {
+          const otherDate = datePlus(proposed.date, offset);
+          if (new Date(otherDate + "T12:00:00Z").getUTCDay() !== session.dayOfWeek) continue;
+          const exception = exceptions.find(e => e.branchId === session.branchId && e.date === otherDate);
+          const other = { ...session, ...exception, timezone: exception?.timezone || session.timezone || otherBranch.timezone || "Asia/Kolkata" };
+          assert(!sessionsOverlap(effective, proposed.date, other, otherDate), 409, "This schedule overlaps with an existing schedule");
+        }
+      }
+    }
+    const id = old?.id || uid(), merged = { ...old, ...body }, fields: any = { data: merged };
+    delete fields.data.data;
+    if ("status" in table) fields.status = body.status || old?.status || "active";
+    for (const key of ["clinicId", "branchId", "doctorId", "dayOfWeek", "date", "category", "parentId", "specializationId"]) if (key in table && merged[key] !== undefined) fields[key] = merged[key];
+    if (kind === "clinics") {
+      fields.ownerId = old?.ownerId || user.id;
+      if (old) fields.adminId = body.adminId || old.adminId;
+      else if (user.role === "clinicAdmin") fields.adminId = user.id;
+      else if (user.role === "doctor") {
+        const self = await one(doctors, user.doctorId, tx); fields.adminId = self.ownerAdminId;
+      } else fields.adminId = body.adminId;
+      assert(fields.adminId, 400, "Please select a Clinic Admin");
+      const admin = await one(users, fields.adminId, tx);
+      assert(admin.role === "clinicAdmin" && admin.status === "active", 400, "Please select an active Clinic Admin");
+      fields.data.code ||= `CLN-${id.slice(0,8)}`;
+    }
+    if (kind === "branches") fields.data.code ||= `BR-${id.slice(0,8)}`;
+    if (kind === "masters") fields.code = body.code;
+    if (kind === "patients") {
+      assert(body.mobile, 400, "Patient mobile is required");
+      if (!old && body.clinicId) {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"patient-mobile:" + body.clinicId + ":" + body.mobile}))`);
+        const matches = (await all(patients, tx)).filter(p => p.clinicId === body.clinicId && p.mobile === body.mobile);
+        for (const match of matches) assert(!await canRead(user, "patients", match), 409, "A patient with this mobile already exists in this clinic. Search by mobile and select the existing patient; contact your clinic administrator if this is a different household member.");
+      }
+      fields.mobile = body.mobile; fields.mobileVerified = old?.mobile === body.mobile ? old.mobileVerified : false;
+      fields.data.code ||= `PAT-${id.slice(0,8)}`;
+    }
+    if (kind === "qrs") {
+      fields.publicReference = old?.publicReference || randomBytes(32).toString("base64url");
+      fields.data.bookingUrl = `/book/${fields.publicReference}`;
+    }
+    if (kind === "users" || kind === "doctors") {
+      const userId = kind === "users" ? id : old?.userId || uid();
+      const uf: any = { fullName: body.fullName, email: body.email, mobile: body.mobile, role: kind === "users" ? body.role : "doctor", status: fields.status, ...(!old && provisionedClerkId ? { clerkId: provisionedClerkId } : {}) };
+      if (kind === "doctors") {
+        fields.ownerAdminId = old?.ownerAdminId || (user.role === "clinicAdmin" ? user.id : body.ownerAdminId);
+        assert(fields.ownerAdminId, 400, "Please select a Clinic Admin");
+        const owner = await one(users, fields.ownerAdminId, tx);
+        assert(owner.role === "clinicAdmin" && owner.status === "active", 400, "Please select an active Clinic Admin");
+        if (old) await change(users, userId, uf, tx); else await put(users, { id: userId, ...uf }, tx);
+        fields.userId = userId; fields.data.code ||= `DOC-${id.slice(0,8)}`;
+      } else Object.assign(fields, uf);
+      if (kind === "users" && old) {
+        const linkedPatient = (await all(patients, tx)).find(p => p.userId === old.id);
+        if (linkedPatient && body.mobile !== undefined && body.mobile !== linkedPatient.mobile) await change(patients, linkedPatient.id, { mobile: body.mobile, mobileVerified: false }, tx);
+        const linkedDoctor = (await all(doctors, tx)).find(d => d.userId === old.id);
+        if (linkedDoctor && body.status) await change(doctors, linkedDoctor.id, { status: body.status }, tx);
+      }
+      const requestedClinics = body.clinicIds === undefined ? old?.clinicIds || [] : body.clinicIds;
+      const requestedBranches = body.branchIds === undefined ? old?.branchIds || [] : body.branchIds;
+      const role = kind === "doctors" ? "doctor" : body.role || old?.role;
+      const priorLinks = old ? (await all(tables.assignments, tx)).filter(a => a.userId === userId) : [];
+      const retainedLinks = priorLinks.filter(a => user.role !== "superAdmin" && !scope(user, a.clinicId, a.branchId));
+      const finalClinics = new Set([...requestedClinics, ...retainedLinks.map(a => a.clinicId)]);
+      const finalBranches = new Set([...requestedBranches, ...retainedLinks.filter(a => a.branchId).map(a => a.branchId)]);
+      if (["doctor", "receptionist"].includes(role)) assert(finalClinics.size, 400, "Please select a clinic");
+      if (role === "receptionist") assert(finalBranches.size, 400, "Please select a branch");
+      if (role === "clinicAdmin") {
+        assert(user.role === "superAdmin", 403, "Only Super Admin can create Clinic Admins");
+        assert(!requestedClinics.length && !requestedBranches.length, 409, "Create the Clinic Admin as pending, then transfer clinic ownership explicitly");
+      }
+      const row = old ? await change(table, id, fields, tx) : await put(table, { id, ...fields }, tx);
+      if (role !== "clinicAdmin") await setAssignments(userId, requestedClinics, requestedBranches, user, tx);
+      // User administration also creates the corresponding typed profile.
+      if (kind === "users" && !old && body.role === "doctor") await put(doctors, { id: uid(), userId, data: { fullName: body.fullName, email: body.email, code: `DOC-${id.slice(0,8)}` } }, tx);
+      if (kind === "users" && !old && body.role === "patient") await put(patients, { id: uid(), userId, mobile: body.mobile || "", data: { fullName: body.fullName, email: body.email, code: `PAT-${id.slice(0,8)}` } }, tx);
+      await audit(user,
+        old && kind === "doctors" && ownershipChangeRequested(body.ownerAdminId, old.ownerAdminId) ? "ownershipTransfer"
+          : old && (body.clinicIds !== undefined || body.branchIds !== undefined) ? "assignmentChange"
+            : old ? "update" : "create",
+        kind, row, tx);
+      return enrich(kind, row, tx);
+    }
+    const row = old ? await change(table, id, fields, tx) : await put(table, { id, ...fields }, tx);
+    if (kind === "clinics" && !old && user.role === "doctor") {
+      await tx.insert(tables.assignments).values({ id: uid(), userId: user.id, clinicId: id }).onConflictDoNothing();
+    }
+    if (kind === "branches" && !old && user.role === "doctor") await tx.insert(tables.assignments).values({ id: uid(), userId: user.id, clinicId: body.clinicId, branchId: id }).onConflictDoNothing();
+    await audit(user, old && kind === "clinics" && ownershipChangeRequested(body.adminId, old.adminId) ? "ownershipTransfer" : old ? "update" : "create", kind, row, tx);
+    return enrich(kind, row, tx);
+  });
+}
+*/
+resourcesRouter.post("/clinic-admin-onboarding", async (req, res) => {
+  const user = await requireUser(req);
+  const row = await createClinicAdminOnboarding(user, parse(z.OnboardClinicAdminBody, req.body));
+  res.status(201).json(row);
+});
 for (const [kind, table, schema, listSchema] of definitions) {
   resourcesRouter.get(`/${kind}`, async (req, res) => {
     const user = await requireUser(req), q = query(listSchema, req);
@@ -323,7 +510,8 @@ for (const [kind, table, schema, listSchema] of definitions) {
   });
   resourcesRouter.get(`/${kind}/:id`, async (req, res) => {
     const user = await requireUser(req), row = await enrich(kind, await one(table, req.params.id as string));
-    assert(await canRead(user, kind, row), 403, "Record outside your scope"); res.json(await projectAssignmentScope(user, kind, row));
+    assert(await canRead(user, kind, row), 403, "Record outside your scope");
+    res.json(await projectAssignmentScope(user, kind, row));
   });
   resourcesRouter.post(`/${kind}`, async (req, res) => {
     const user = await requireUser(req), row = await save(kind, table, user, parse(schema, req.body));
@@ -383,7 +571,8 @@ resourcesRouter.get("/staff-assignment-options", async (req, res) => {
 });
 resourcesRouter.post("/users/:id/password-reset", async (req, res) => {
   const user = await requireUser(req), target = await enrich("users", await one(users, req.params.id as string));
-  roles(user, ["superAdmin", "clinicAdmin"]); assert(await canRead(user, "users", target), 403, "User outside your scope");
+  roles(user, ["superAdmin", "clinicAdmin"]);
+  assert(await canRead(user, "users", target), 403, "User outside your scope");
   await audit(user, "recoveryInstructions", "users", target);
   res.status(202).json({ message: "Open /sign-in and select Forgot password to start secure Clerk recovery. No recovery email has been sent by this action." });
 });
