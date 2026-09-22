@@ -26,6 +26,7 @@ export * from './availability';
 export * from './availabilityException';
 export * from './availabilityExceptionInput';
 export * from './availabilityExceptionList';
+export * from './availabilityQueueMode';
 export * from './bookingSource';
 export * from './branch';
 export * from './branchIdParameter';

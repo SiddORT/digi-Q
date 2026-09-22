@@ -59,6 +59,8 @@ System master values can be initialized idempotently with `pnpm --filter @worksp
 
 ## Complete documentation
 
+For the subsequent controlled business-flow corrections and current verification evidence, see [Business Flow and Role Integration Audit](docs/audits/flow-integrity-report.md). It distinguishes the 92 live API checks, isolated regression tests, actual browser observations, and remaining verification gaps. Earlier system-manual statements describe the pre-audit snapshot where they differ.
+
 See [ClinicFlow System Documentation](docs/ClinicFlow-System-Documentation.md) for the full role-by-role guide, screen/field reference, backend rules, database dictionary, operations manual, requirements comparison, and exact API contract. The [offline HTML edition](docs/ClinicFlow-System-Documentation.html) includes a table of contents and print/Save as PDF styling.
 
 Source chapters are maintained in `docs/manual/`. Regenerate both editions with:

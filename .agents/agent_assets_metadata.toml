@@ -28,3 +28,10 @@ mtime_ms = 1790065843976
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/a98a078d-4eb4-4a0e-a8e1-15ff4de7d043/355cc0be-abe5-4433-bc81-898dca8515c9"
 storage_version_token = "1790070521611328"
 content_type = "application/pdf"
+
+[[outputs]]
+id = "5_XY45WvoWD3i9iJ_CsTk"
+uri = "file://docs/audits/ClinicFlow-Flow-Integrity-Audit.pdf"
+type = "pdf"
+title = "ClinicFlow — Business Flow Audit & Verification Report"
+description = "24-page report with issues found and fixed, preserved logic, 92 live API checks, browser evidence, cleanup results, remaining limitations, and no-change items."

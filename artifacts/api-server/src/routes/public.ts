@@ -40,6 +40,7 @@ export async function resolveQr(reference: string, conn: any = db, lock = false)
   const branch = qr.branchId ? await one(branches, qr.branchId, conn) : null;
   const doctor = qr.doctorId ? await enrich("doctors", await one(doctors, qr.doctorId, conn), conn) : null;
   assert(clinic.status === "active" && (!branch || branch.status === "active") && (!doctor || doctor.status === "active"), 404, "Booking link unavailable");
+  assert((!branch || branch.clinicId === clinic.id) && (!doctor || doctor.clinicIds.includes(clinic.id) && (!branch || doctor.branchIds.includes(branch.id))), 404, "Booking link context is no longer available");
   return { reference, clinicId: clinic.id, clinicName: clinic.name, branchId: branch?.id || null, branchName: branch?.name || null, doctorId: doctor?.id || null, doctorName: doctor?.fullName || null };
 }
 publicRouter.get("/public/qr/:reference", async (req, res) => { res.json(await resolveQr(req.params.reference as string)); });

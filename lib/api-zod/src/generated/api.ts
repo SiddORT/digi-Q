@@ -298,7 +298,10 @@ export const GetPublicAvailabilityResponse = zod.object({
   "bookedTokens": zod.number().int(),
   "remainingTokens": zod.number().int(),
   "consultationMinutes": zod.number().int().optional(),
-  "tokenPrefix": zod.string().optional()
+  "tokenPrefix": zod.string().optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional(),
+  "queueOpenTime": zod.string().optional(),
+  "queueCloseTime": zod.string().optional()
 })
 
 

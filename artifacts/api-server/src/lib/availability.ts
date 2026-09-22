@@ -45,6 +45,7 @@ export async function availability(doctorId: string, branchId: string, date: str
   if (!schedule || !schedule.isOpen) reason = "No open weekly session";
   if (exception?.isClosed) reason = exception.reason || "Closed for this date";
   if (date < now.date || date === now.date && effective.endTime && now.minute >= minutes(effective.endTime)) reason = "Session is in the past";
+   if (!reason && date === now.date && effective.queueCloseTime && now.minute >= minutes(effective.queueCloseTime)) reason = "Queue booking has closed";
   if ((Date.parse(date) - Date.parse(now.date)) / 86400000 > config.bookingHorizonDays) reason = "Outside booking horizon";
   const maxTokens = effective.maxTokens || 0, remainingTokens = Math.max(0, maxTokens - bookedTokens);
   if (!remainingTokens) reason ||= "Session capacity reached";

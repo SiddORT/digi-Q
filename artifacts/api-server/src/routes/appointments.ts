@@ -27,7 +27,7 @@ appointmentsRouter.post("/appointments", async (req, res) => {
     const existing = await all(appointments, tx);
     if (body.requestId) {
       const original = existing.find(a => a.requestId === body.requestId && a.actorId === user.id);
-      if (original) { assert(original.patientId === body.patientId && original.doctorId === body.doctorId && original.branchId === body.branchId && original.date === body.date, 409, "Idempotency key already used for another booking"); return original; }
+      if (original) { assert(original.patientId === body.patientId && original.doctorId === body.doctorId && original.clinicId === body.clinicId && original.branchId === body.branchId && original.date === body.date && original.source === body.source, 409, "Idempotency key already used for another booking"); return original; }
     }
     assert(!existing.some(a => a.patientId === body.patientId && a.doctorId === body.doctorId && a.branchId === body.branchId && a.date === body.date && !["cancelled", "completed", "noShow"].includes(a.status)), 409, "Patient already has an active booking for this session");
     const patient = await one(patients, body.patientId, tx);
@@ -62,7 +62,12 @@ appointmentsRouter.post("/appointments", async (req, res) => {
     const id = uid(), timestamp = new Date().toISOString();
     const result = await put(appointments, { id, patientId: body.patientId, doctorId: body.doctorId, clinicId: body.clinicId, branchId: body.branchId, date: body.date, tokenNumber, requestId: body.requestId, actorId: user.id, data: { ...body, reference: `CF-${uid().replaceAll("-", "").toUpperCase().slice(0,16)}`, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, patientName: patient.fullName, patientCode: patient.code, doctorName: doctor.fullName, clinicName: clinic.name, branchName: branch.name, timezone: available.timezone, startTime: available.startTime, endTime: available.endTime, history: [{ status: "booked", occurredAt: timestamp }] } }, tx);
     await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, toStatus: "booked" }, tx);
-    await audit(user, "book", "appointments", result, tx); return result;
+    await audit(user, "book", "appointments", result, tx);
+    if (body.source === "walkIn") {
+      await transition(user, id, { action: "checkIn", expectedStatus: "booked" }, tx, true);
+      return transition(user, id, { action: "enqueue", expectedStatus: "checkedIn" }, tx, true);
+    }
+    return result;
   });
   res.status(201).json(appointmentView(row, user));
 });

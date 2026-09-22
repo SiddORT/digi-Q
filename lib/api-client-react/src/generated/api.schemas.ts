@@ -423,6 +423,15 @@ export type AvailabilityException = AvailabilityExceptionInput & {
   id: string;
 };
 
+export type AvailabilityQueueMode = typeof AvailabilityQueueMode[keyof typeof AvailabilityQueueMode];
+
+
+export const AvailabilityQueueMode = {
+  mixed: 'mixed',
+  appointmentsOnly: 'appointmentsOnly',
+  walkInsOnly: 'walkInsOnly',
+} as const;
+
 export interface Availability {
   doctorId: string;
   clinicId: string;
@@ -445,6 +454,9 @@ export interface Availability {
   remainingTokens: number;
   consultationMinutes?: number;
   tokenPrefix?: string;
+  queueMode?: AvailabilityQueueMode;
+  queueOpenTime?: string;
+  queueCloseTime?: string;
 }
 
 export interface AppointmentInput {

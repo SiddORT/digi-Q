@@ -63,6 +63,14 @@ async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
     if (user.role === "doctor") assert(body.doctorId === user.doctorId, 403, "Only your own doctor profile is allowed");
     if (body.branchId) await doctorContext(body.doctorId, body.branchId);
   }
+  if (kind === "qrs") {
+    const context = { ...old, ...body };
+    if (user.role === "doctor") assert(context.doctorId === user.doctorId, 403, "Doctor booking links must use your own doctor profile");
+    if (context.doctorId) {
+      const doctor = await enrich("doctors", await one(doctors, context.doctorId));
+      assert(doctor.status === "active" && doctor.clinicIds.includes(context.clinicId), 409, "Doctor is not active and assigned to this clinic");
+    }
+  }
   if (body.clinicIds || body.branchIds) {
     await validateAssignments(user, body.clinicIds || old?.clinicIds || [], body.branchIds || old?.branchIds || []);
     if (user.role === "doctor") {
@@ -126,6 +134,11 @@ async function save(kind: string, table: any, user: any, body: any, old?: any) {
     if (kind === "masters") fields.code = body.code;
     if (kind === "patients") {
       assert(body.mobile, 400, "Patient mobile is required");
+      if (!old && body.clinicId) {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"patient-mobile:" + body.clinicId + ":" + body.mobile}))`);
+        const matches = (await all(patients, tx)).filter(p => p.clinicId === body.clinicId && p.mobile === body.mobile);
+        for (const match of matches) assert(!await canRead(user, "patients", match), 409, "A patient with this mobile already exists in this clinic. Search by mobile and select the existing patient; contact your clinic administrator if this is a different household member.");
+      }
       fields.mobile = body.mobile; fields.mobileVerified = old?.mobile === body.mobile ? old.mobileVerified : false;
       fields.data.code ||= `PAT-${id.slice(0,8)}`;
     }

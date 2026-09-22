@@ -12,31 +12,12 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { AvailabilityQueueMode } from './availabilityQueueMode';
 
-export interface Availability {
-  doctorId: string;
-  clinicId: string;
-  branchId: string;
-  date: Date;
-  available: boolean;
-  /** @nullable */
-  reason?: string | null;
-  /** @nullable */
-  startTime?: string | null;
-  /** @nullable */
-  endTime?: string | null;
-  /** @nullable */
-  breakStart?: string | null;
-  /** @nullable */
-  breakEnd?: string | null;
-  timezone?: string;
-  maxTokens: number;
-  bookedTokens: number;
-  remainingTokens: number;
-  consultationMinutes?: number;
-  tokenPrefix?: string;
-  queueMode?: AvailabilityQueueMode;
-  queueOpenTime?: string;
-  queueCloseTime?: string;
-}
+export type AvailabilityQueueMode = typeof AvailabilityQueueMode[keyof typeof AvailabilityQueueMode];
+
+
+export const AvailabilityQueueMode = {
+  mixed: 'mixed',
+  appointmentsOnly: 'appointmentsOnly',
+  walkInsOnly: 'walkInsOnly',
+} as const;

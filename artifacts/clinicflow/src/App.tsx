@@ -52,9 +52,9 @@ function Guard({role, page}: {role:string;page:string}) {
   return <Portal identity={me.data} role={role} page={page}/>;
 }
 const routes: Record<string,string[]> = {
-  admin:["dashboard","clinics","branches","doctors","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book"],
+   admin:["dashboard","clinics","branches","doctors","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions"],
   doctor:["dashboard","profile","clinics","branches","availability","exceptions","appointments","queue","patients","qrs","book"],
-  receptionist:["dashboard","appointments","queue","patients","book"],
+   receptionist:["dashboard","appointments","queue","patients","book","qrs"],
   patient:["dashboard","book","appointments","queue","profile"],
 };
 function Providers(){

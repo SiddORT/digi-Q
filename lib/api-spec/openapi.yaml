@@ -752,6 +752,9 @@ components:
         remainingTokens: { type: integer }
         consultationMinutes: { type: integer }
         tokenPrefix: { type: string }
+        queueMode: { type: string, enum: [mixed, appointmentsOnly, walkInsOnly] }
+        queueOpenTime: { type: string }
+        queueCloseTime: { type: string }
     AppointmentInput:
       type: object
       required: [patientId, doctorId, clinicId, branchId, date, source]

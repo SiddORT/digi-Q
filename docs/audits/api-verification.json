@@ -1,0 +1,2445 @@
+{
+  "generatedAt": "2026-09-22T11:18:08.586Z",
+  "startedAt": "2026-09-22T11:17:29.654Z",
+  "mode": "executed",
+  "marker": "CF-AUDIT-20260922111729-42a323",
+  "baseUrl": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api",
+  "credentialsPath": "/tmp/clinicflow-audit-credentials.json",
+  "credentialsRetainedForBrowserAudit": true,
+  "summary": {
+    "passed": 92,
+    "failed": 0,
+    "skipped": 0
+  },
+  "fatal": null,
+  "evidence": [
+    {
+      "name": "Create isolated Clinic A through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/clinics",
+      "status": 201,
+      "payload": {
+        "city": "Pune",
+        "code": "CLN-98a427cd",
+        "name": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "status": "active",
+        "address": "CF-AUDIT-20260922111729-42a323 Audit Address A",
+        "id": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "ownerId": "feb26302-0fbc-4915-a0bd-48eca1c4f131",
+        "createdAt": "2026-09-22T11:17:39.746Z"
+      }
+    },
+    {
+      "name": "Create isolated Clinic B through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/clinics",
+      "status": 201,
+      "payload": {
+        "city": "Pune",
+        "code": "CLN-51d14b70",
+        "name": "CF-AUDIT-20260922111729-42a323 Clinic B",
+        "status": "active",
+        "address": "CF-AUDIT-20260922111729-42a323 Audit Address B",
+        "id": "51d14b70-0135-43cd-8896-9dfe98e8c88e",
+        "ownerId": "feb26302-0fbc-4915-a0bd-48eca1c4f131",
+        "createdAt": "2026-09-22T11:17:40.127Z"
+      }
+    },
+    {
+      "name": "Create Branch A through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/branches",
+      "status": 201,
+      "payload": {
+        "code": "BR-f3e0c3cb",
+        "name": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "status": "active",
+        "address": "CF-AUDIT-20260922111729-42a323 Branch Address A",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "timezone": "Asia/Kolkata",
+        "id": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "createdAt": "2026-09-22T11:17:40.528Z",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A"
+      }
+    },
+    {
+      "name": "Create Branch B through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/branches",
+      "status": 201,
+      "payload": {
+        "code": "BR-0e29a20c",
+        "name": "CF-AUDIT-20260922111729-42a323 Branch B1",
+        "status": "active",
+        "address": "CF-AUDIT-20260922111729-42a323 Branch Address B",
+        "clinicId": "51d14b70-0135-43cd-8896-9dfe98e8c88e",
+        "timezone": "Asia/Kolkata",
+        "id": "0e29a20c-b154-425c-83fa-07fb7a450f72",
+        "createdAt": "2026-09-22T11:17:40.927Z",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic B"
+      }
+    },
+    {
+      "name": "Create inactive validation branch through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/branches",
+      "status": 201,
+      "payload": {
+        "code": "BR-a6e16b00",
+        "name": "CF-AUDIT-20260922111729-42a323 Inactive Branch",
+        "status": "inactive",
+        "address": "CF-AUDIT-20260922111729-42a323 Inactive",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "timezone": "Asia/Kolkata",
+        "id": "a6e16b00-1732-4617-a98a-1cfc1fed9cda",
+        "createdAt": "2026-09-22T11:17:41.327Z",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A"
+      }
+    },
+    {
+      "name": "Assign clinicAdmin scope through API",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/users/ffa08483-49bd-459f-afe4-333c3db19efe",
+      "status": 200,
+      "payload": {
+        "id": "ffa08483-49bd-459f-afe4-333c3db19efe",
+        "role": "clinicAdmin",
+        "email": "clinicflow.audit.cf-audit-20260922111729-42a323.clinicadmin@example.com",
+        "marker": "CF-AUDIT-20260922111729-42a323",
+        "mobile": "",
+        "status": "active",
+        "clerkId": "user_3JgHa7Hdv6BUgAlDnKVxDbVHbee",
+        "fullName": "CF-AUDIT-20260922111729-42a323 clinicAdmin",
+        "auditOnly": true,
+        "branchIds": [],
+        "clinicIds": [
+          "98a427cd-4bc3-47c7-9ba8-a73e754779f4"
+        ],
+        "createdAt": "2026-09-22T11:17:35.202Z"
+      }
+    },
+    {
+      "name": "Assign receptionist scope through API",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/users/f1c26a78-a6f9-47d0-9b48-1ef956e83ce2",
+      "status": 200,
+      "payload": {
+        "id": "f1c26a78-a6f9-47d0-9b48-1ef956e83ce2",
+        "role": "receptionist",
+        "email": "clinicflow.audit.cf-audit-20260922111729-42a323.receptionist@example.com",
+        "marker": "CF-AUDIT-20260922111729-42a323",
+        "mobile": "",
+        "status": "active",
+        "clerkId": "user_3JgHaAlaHtIYMs584xL51fKGIaC",
+        "fullName": "CF-AUDIT-20260922111729-42a323 receptionist",
+        "auditOnly": true,
+        "branchIds": [
+          "f3e0c3cb-4265-428a-a703-e0cb6eb4116d"
+        ],
+        "clinicIds": [
+          "98a427cd-4bc3-47c7-9ba8-a73e754779f4"
+        ],
+        "createdAt": "2026-09-22T11:17:35.202Z"
+      }
+    },
+    {
+      "name": "Assign doctorA through doctor API",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/doctors/96a3e935-d884-4833-a7ce-feac84d50c4a",
+      "status": 200,
+      "payload": {
+        "id": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "code": "AUD-42a323-doctorA",
+        "email": "clinicflow.audit.cf-audit-20260922111729-42a323.doctora@example.com",
+        "mobile": "",
+        "status": "active",
+        "userId": "5f2477cf-77a6-48fb-b0cc-ef73bf5b2a18",
+        "fullName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "branchIds": [
+          "f3e0c3cb-4265-428a-a703-e0cb6eb4116d"
+        ],
+        "clinicIds": [
+          "98a427cd-4bc3-47c7-9ba8-a73e754779f4"
+        ],
+        "specializationId": null,
+        "qualificationNames": []
+      }
+    },
+    {
+      "name": "Assign doctorB through doctor API",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/doctors/6d1b164c-7121-4f8f-8ae2-e6d2cfe3410e",
+      "status": 200,
+      "payload": {
+        "id": "6d1b164c-7121-4f8f-8ae2-e6d2cfe3410e",
+        "code": "AUD-42a323-doctorB",
+        "email": "clinicflow.audit.cf-audit-20260922111729-42a323.doctorb@example.com",
+        "mobile": "",
+        "status": "active",
+        "userId": "1366e28c-a8b5-4ca7-b685-2e310442eb25",
+        "fullName": "CF-AUDIT-20260922111729-42a323 doctorB",
+        "branchIds": [
+          "0e29a20c-b154-425c-83fa-07fb7a450f72"
+        ],
+        "clinicIds": [
+          "51d14b70-0135-43cd-8896-9dfe98e8c88e"
+        ],
+        "specializationId": null,
+        "qualificationNames": []
+      }
+    },
+    {
+      "name": "Create full-day doctorA schedule through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 201,
+      "payload": {
+        "isOpen": true,
+        "endTime": "23:59",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "dayOfWeek": 2,
+        "maxTokens": "[REDACTED]",
+        "queueMode": "mixed",
+        "startTime": "00:00",
+        "tokenPrefix": "[REDACTED]",
+        "bufferMinutes": 0,
+        "queueOpenTime": "00:00",
+        "queueCloseTime": "23:59",
+        "consultationMinutes": 10,
+        "id": "81a21785-6f99-44dc-a816-9bacd437b332",
+        "status": "active"
+      }
+    },
+    {
+      "name": "Create full-day doctorB schedule through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 201,
+      "payload": {
+        "isOpen": true,
+        "endTime": "23:59",
+        "branchId": "0e29a20c-b154-425c-83fa-07fb7a450f72",
+        "clinicId": "51d14b70-0135-43cd-8896-9dfe98e8c88e",
+        "doctorId": "6d1b164c-7121-4f8f-8ae2-e6d2cfe3410e",
+        "timezone": "Asia/Kolkata",
+        "dayOfWeek": 2,
+        "maxTokens": "[REDACTED]",
+        "queueMode": "mixed",
+        "startTime": "00:00",
+        "tokenPrefix": "[REDACTED]",
+        "bufferMinutes": 0,
+        "queueOpenTime": "00:00",
+        "queueCloseTime": "23:59",
+        "consultationMinutes": 10,
+        "id": "20a05dc8-fe68-4980-b400-0d7e701e7516",
+        "status": "active"
+      }
+    },
+    {
+      "name": "Create next-day schedule for closed-date validation",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 201,
+      "payload": {
+        "isOpen": true,
+        "endTime": "23:59",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "dayOfWeek": 3,
+        "maxTokens": "[REDACTED]",
+        "queueMode": "mixed",
+        "startTime": "00:00",
+        "tokenPrefix": "[REDACTED]",
+        "bufferMinutes": 0,
+        "queueOpenTime": "00:00",
+        "queueCloseTime": "23:59",
+        "consultationMinutes": 10,
+        "id": "6e664cf6-1c1d-499c-83d1-d30c89e86748",
+        "status": "active"
+      }
+    },
+    {
+      "name": "Create future schedule for cancellation validation",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 201,
+      "payload": {
+        "isOpen": true,
+        "endTime": "23:59",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "dayOfWeek": 4,
+        "maxTokens": "[REDACTED]",
+        "queueMode": "mixed",
+        "startTime": "00:00",
+        "tokenPrefix": "[REDACTED]",
+        "bufferMinutes": 0,
+        "queueOpenTime": "00:00",
+        "queueCloseTime": "23:59",
+        "consultationMinutes": 10,
+        "id": "5f8a17ac-8c77-4207-998b-6391a58776ba",
+        "status": "active"
+      }
+    },
+    {
+      "name": "Create closed-date exception through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/availability-exceptions",
+      "status": 201,
+      "payload": {
+        "date": "2026-09-23",
+        "reason": "CF-AUDIT-20260922111729-42a323 closed-date regression",
+        "endTime": null,
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "breakEnd": null,
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "isClosed": true,
+        "maxTokens": "[REDACTED]",
+        "startTime": null,
+        "breakStart": null,
+        "id": "58f9a6f3-c873-4e6a-b77e-80d3f9bc10d8",
+        "status": "active"
+      }
+    },
+    {
+      "name": "patientA request mobile OTP",
+      "outcome": "pass",
+      "detail": "Existing development OTP endpoint accepted request.",
+      "method": "POST",
+      "route": "/otp/request",
+      "status": 200,
+      "payload": {
+        "challengeId": "78f5a26a-2671-4a72-86fb-a31c4a8f9cd1",
+        "expiresAt": "2026-09-22T11:22:45.337Z",
+        "resendAfterSeconds": 60,
+        "provider": "development",
+        "developmentCode": "[REDACTED]"
+      }
+    },
+    {
+      "name": "patientA development OTP delivery",
+      "outcome": "pass",
+      "detail": "Development provider returned an in-band code without changing global settings.",
+      "method": "POST",
+      "route": "/otp/request",
+      "status": 200,
+      "payload": {
+        "challengeId": "78f5a26a-2671-4a72-86fb-a31c4a8f9cd1",
+        "expiresAt": "2026-09-22T11:22:45.337Z",
+        "resendAfterSeconds": 60,
+        "provider": "development",
+        "developmentCode": "[REDACTED]"
+      }
+    },
+    {
+      "name": "patientA verify mobile OTP",
+      "outcome": "pass",
+      "detail": "Patient mobile verified via existing OTP flow.",
+      "method": "POST",
+      "route": "/otp/verify",
+      "status": 200,
+      "payload": {
+        "verified": true,
+        "mobile": "+91978496545",
+        "verifiedAt": "2026-09-22T11:17:45.739Z"
+      }
+    },
+    {
+      "name": "patientB request mobile OTP",
+      "outcome": "pass",
+      "detail": "Existing development OTP endpoint accepted request.",
+      "method": "POST",
+      "route": "/otp/request",
+      "status": 200,
+      "payload": {
+        "challengeId": "0b35e874-4361-4cba-ab4c-ae6dfaa69546",
+        "expiresAt": "2026-09-22T11:22:46.136Z",
+        "resendAfterSeconds": 60,
+        "provider": "development",
+        "developmentCode": "[REDACTED]"
+      }
+    },
+    {
+      "name": "patientB development OTP delivery",
+      "outcome": "pass",
+      "detail": "Development provider returned an in-band code without changing global settings.",
+      "method": "POST",
+      "route": "/otp/request",
+      "status": 200,
+      "payload": {
+        "challengeId": "0b35e874-4361-4cba-ab4c-ae6dfaa69546",
+        "expiresAt": "2026-09-22T11:22:46.136Z",
+        "resendAfterSeconds": 60,
+        "provider": "development",
+        "developmentCode": "[REDACTED]"
+      }
+    },
+    {
+      "name": "patientB verify mobile OTP",
+      "outcome": "pass",
+      "detail": "Patient mobile verified via existing OTP flow.",
+      "method": "POST",
+      "route": "/otp/verify",
+      "status": 200,
+      "payload": {
+        "verified": true,
+        "mobile": "+91978496546",
+        "verifiedAt": "2026-09-22T11:17:46.540Z"
+      }
+    },
+    {
+      "name": "Create scoped QR through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/qrs",
+      "status": 201,
+      "payload": {
+        "name": "CF-AUDIT-20260922111729-42a323 Doctor A QR",
+        "status": "active",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "bookingUrl": "/book/pH2j00Rnljt_UN7DiUduE5zmVKn6u57ecd2xs98P2-o",
+        "id": "60a7ebe2-eb42-4488-b4e6-dad231961914",
+        "publicReference": "pH2j00Rnljt_UN7DiUduE5zmVKn6u57ecd2xs98P2-o",
+        "createdAt": "2026-09-22T11:17:46.943Z",
+        "reference": "pH2j00Rnljt_UN7DiUduE5zmVKn6u57ecd2xs98P2-o"
+      }
+    },
+    {
+      "name": "Resolve active public QR without patient data",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/public/qr/pH2j00Rnljt_UN7DiUduE5zmVKn6u57ecd2xs98P2-o",
+      "status": 200,
+      "payload": {
+        "reference": "pH2j00Rnljt_UN7DiUduE5zmVKn6u57ecd2xs98P2-o",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA"
+      }
+    },
+    {
+      "name": "Regenerate QR",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/qrs/60a7ebe2-eb42-4488-b4e6-dad231961914/regenerate",
+      "status": 200,
+      "payload": {
+        "id": "60a7ebe2-eb42-4488-b4e6-dad231961914",
+        "name": "CF-AUDIT-20260922111729-42a323 Doctor A QR",
+        "status": "active",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "createdAt": "2026-09-22T11:17:46.943Z",
+        "bookingUrl": "/book/3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+        "publicReference": "3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+        "reference": "3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478"
+      }
+    },
+    {
+      "name": "Reject stale regenerated QR reference",
+      "outcome": "pass",
+      "detail": "Expected 404 and received 404.",
+      "method": "GET",
+      "route": "/public/qr/pH2j00Rnljt_UN7DiUduE5zmVKn6u57ecd2xs98P2-o",
+      "status": 404,
+      "payload": {
+        "error": "Booking link expired or revoked",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Resolve regenerated QR reference",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/public/qr/3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+      "status": 200,
+      "payload": {
+        "reference": "3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA"
+      }
+    },
+    {
+      "name": "Patient online booking remains booked",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "termsAccepted": true,
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "allowedActions": [
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Online booking initial state",
+      "outcome": "pass",
+      "detail": "Advance online booking is booked, not waiting."
+    },
+    {
+      "name": "Idempotent booking replay",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "termsAccepted": true,
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "allowedActions": [
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Idempotent replay identity",
+      "outcome": "pass",
+      "detail": "Same actor/requestId returned the original appointment."
+    },
+    {
+      "name": "Reject idempotency key semantic mutation",
+      "outcome": "pass",
+      "detail": "Expected 409 and received 409.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 409,
+      "payload": {
+        "error": "Idempotency key already used for another booking",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "patientA sees connected appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da",
+      "status": 200,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "termsAccepted": true,
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "allowedActions": [
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "receptionist sees connected appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da",
+      "status": 200,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "termsAccepted": true,
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "allowedActions": [
+          "checkIn",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "doctorA sees connected appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da",
+      "status": 200,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "termsAccepted": true,
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "allowedActions": [
+          "checkIn",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "clinicAdmin sees connected appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da",
+      "status": 200,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "termsAccepted": true,
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "allowedActions": [
+          "checkIn",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "superAdmin sees connected appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da",
+      "status": 200,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "termsAccepted": true,
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "allowedActions": [
+          "checkIn",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Doctor B cannot read Doctor A appointment",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da",
+      "status": 403,
+      "payload": {
+        "error": "Appointment outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Patient A cannot read Patient B profile",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/patients/98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+      "status": 403,
+      "payload": {
+        "error": "Record outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Clinic admin cannot mutate platform settings",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "PATCH",
+      "route": "/settings",
+      "status": 403,
+      "payload": {
+        "error": "Permission denied",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Clinic A receptionist cannot operate Clinic B queue",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/queue/call-next",
+      "status": 403,
+      "payload": {
+        "error": "Queue outside assigned scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "checkIn 8a0863ba",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da/actions",
+      "status": 200,
+      "payload": {
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "status": "checkedIn",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:17:53.765Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:17:53.765Z",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "tokenNumber": "[REDACTED]",
+        "termsAccepted": true,
+        "allowedActions": [
+          "enqueue",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "enqueue 8a0863ba",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da/actions",
+      "status": 200,
+      "payload": {
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "status": "waiting",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:17:53.765Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 enqueue",
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:54.166Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:17:54.166Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:17:53.765Z",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "tokenNumber": "[REDACTED]",
+        "termsAccepted": true,
+        "allowedActions": [
+          "call",
+          "noShow",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Patient live queue",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/queue?doctorId=96a3e935-d884-4833-a7ce-feac84d50c4a&branchId=f3e0c3cb-4265-428a-a703-e0cb6eb4116d&date=2026-09-22&appointmentId=8a0863ba-2630-4a03-b419-cc265d58b3da",
+      "status": 200,
+      "payload": {
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "date": "2026-09-22",
+        "currentToken": "[REDACTED]",
+        "nextToken": "[REDACTED]",
+        "waiting": 1,
+        "inConsultation": 0,
+        "completed": 0,
+        "noShow": 0,
+        "total": 1,
+        "pollIntervalSeconds": 30,
+        "updatedAt": "2026-09-22T11:17:54.557Z",
+        "ownEntry": {
+          "appointmentId": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+          "token": "[REDACTED]",
+          "status": "waiting",
+          "patientsAhead": 0,
+          "estimatedWaitMinutes": 0
+        }
+      }
+    },
+    {
+      "name": "Patient queue privacy",
+      "outcome": "pass",
+      "detail": "Patient response contains own/aggregate data and omits staff entries."
+    },
+    {
+      "name": "Call oldest waiting appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/queue/call-next",
+      "status": 200,
+      "payload": {
+        "appointment": {
+          "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+          "date": "2026-09-22",
+          "notes": "CF-AUDIT-20260922111729-42a323 online",
+          "token": "[REDACTED]",
+          "source": "online",
+          "status": "called",
+          "endTime": "23:59",
+          "history": [
+            {
+              "status": "booked",
+              "occurredAt": "2026-09-22T11:17:48.952Z"
+            },
+            {
+              "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+              "status": "checkedIn",
+              "occurredAt": "2026-09-22T11:17:53.765Z"
+            },
+            {
+              "reason": "CF-AUDIT-20260922111729-42a323 enqueue",
+              "status": "waiting",
+              "occurredAt": "2026-09-22T11:17:54.166Z"
+            },
+            {
+              "status": "called",
+              "occurredAt": "2026-09-22T11:17:54.969Z"
+            }
+          ],
+          "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+          "calledAt": "2026-09-22T11:17:54.969Z",
+          "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+          "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+          "timezone": "Asia/Kolkata",
+          "createdAt": "2026-09-22T11:17:48.940Z",
+          "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+          "reference": "CF-93042A04F70A4278",
+          "startTime": "00:00",
+          "waitingAt": "2026-09-22T11:17:54.166Z",
+          "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+          "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+          "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+          "checkedInAt": "2026-09-22T11:17:53.765Z",
+          "patientCode": "AUD-42a323-patientA",
+          "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+          "tokenNumber": "[REDACTED]",
+          "termsAccepted": true,
+          "allowedActions": [
+            "start",
+            "noShow"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Call-next consistency",
+      "outcome": "pass",
+      "detail": "Call-next selected the expected waiting appointment."
+    },
+    {
+      "name": "start 8a0863ba",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da/actions",
+      "status": 200,
+      "payload": {
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "status": "inConsultation",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:17:53.765Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 enqueue",
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:54.166Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T11:17:54.969Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 start",
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T11:17:55.365Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "calledAt": "2026-09-22T11:17:54.969Z",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:17:54.166Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:17:53.765Z",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.019983333333333332,
+        "termsAccepted": true,
+        "consultationStartedAt": "2026-09-22T11:17:55.365Z",
+        "allowedActions": [
+          "complete"
+        ]
+      }
+    },
+    {
+      "name": "complete 8a0863ba",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da/actions",
+      "status": 200,
+      "payload": {
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "status": "completed",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:17:53.765Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 enqueue",
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:54.166Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T11:17:54.969Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 start",
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T11:17:55.365Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 complete",
+            "status": "completed",
+            "occurredAt": "2026-09-22T11:17:55.758Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "calledAt": "2026-09-22T11:17:54.969Z",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:17:54.166Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:17:53.765Z",
+        "completedAt": "2026-09-22T11:17:55.758Z",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.019983333333333332,
+        "termsAccepted": true,
+        "consultationStartedAt": "2026-09-22T11:17:55.365Z",
+        "consultationMinutesActual": 0.00655,
+        "allowedActions": []
+      }
+    },
+    {
+      "name": "Completed appointment history remains readable",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/8a0863ba-2630-4a03-b419-cc265d58b3da",
+      "status": 200,
+      "payload": {
+        "id": "8a0863ba-2630-4a03-b419-cc265d58b3da",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "status": "completed",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:48.952Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:17:53.765Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 enqueue",
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:54.166Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T11:17:54.969Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 start",
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T11:17:55.365Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 complete",
+            "status": "completed",
+            "occurredAt": "2026-09-22T11:17:55.758Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "calledAt": "2026-09-22T11:17:54.969Z",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:17:48.940Z",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-93042A04F70A4278",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:17:54.166Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:17:53.765Z",
+        "completedAt": "2026-09-22T11:17:55.758Z",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.019983333333333332,
+        "termsAccepted": true,
+        "consultationStartedAt": "2026-09-22T11:17:55.365Z",
+        "consultationMinutesActual": 0.00655,
+        "allowedActions": []
+      }
+    },
+    {
+      "name": "Lifecycle history preserved",
+      "outcome": "pass",
+      "detail": "All connected lifecycle states persisted in order."
+    },
+    {
+      "name": "superAdmin dashboard reads persisted state",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard?date=2026-09-22",
+      "status": 200,
+      "payload": "{\"totalDoctors\":4,\"totalClinics\":6,\"totalBranches\":5,\"totalPatients\":4,\"appointments\":1,\"waiting\":0,\"checkedIn\":0,\"completed\":1,\"noShow\":0,\"cancelled\":0,\"averageWaitMinutes\":0.019983333333333332,\"averageConsultationMinutes\":0.00655,\"todayAppointments\":1,\"activeQueues\":0,\"currentToken\":\"[REDACTED]\",\"recentAppointments\":[{\"id\":\"8a0863ba-2630-4a03-b419-cc265d58b3da\",\"date\":\"2026-09-22\",\"notes\":\"CF-AUDIT-20260922111729-42a323 online\",\"token\":\"[REDACTED]\",\"source\":\"online\",\"status\":\"completed\",\"endTime\":\"23:59\",\"history\":[{\"status\":\"booked\",\"occurredAt\":\"2026-09-22T11:17:48.952Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 checkIn\",\"status\":\"checkedIn\",\"occurredAt\":\"2026-09-22T11:17:53.765Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 enqueue\",\"status\":\"waiting\",\"occurredAt\":\"2026-09-22T11:17:54.166Z\"},{\"status\":\"called\",\"occurredAt\":\"2026-09-22T11:17:54.969Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 start\",\"status\":\"inConsultation\",\"occurredAt\":\"2026-09-22T11:17:55.365Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 complete\",\"status\":\"completed\",\"occurredAt\":\"2026-09-22T11:17:55.758Z\"}],\"branchId\":\"f3e0c3cb-4265-428a-a703-e0cb6eb4116d\",\"calledAt\":\"2026-09-22T11:17:54.969Z\",\"clinicId\":\"98a427cd-4bc3-47c7-9ba8-a73e754779f4\",\"doctorId\":\"96a3e935-d884-4833-a7ce-feac84d50c4a\",\"timezone\":\"Asia/Kolkata\",\"createdAt\":\"2026-09-22T11:17:48.940Z\",\"patientId\":\"0d0e412d-5bd4-4d67-8596-845d467dd45f\",\"reference\":\"CF-93042A04F70A4278\",\"startTime\":\"00:00\",\"waitingAt\":\"2026-09-22T11:17:54.166Z\",\"branchName\":\"CF-AUDIT-20260922111729-42a323 Branch A1\",\"clinicName\":\"CF-AUDIT-20260922111729-42a323 Clinic A\",\"doctorName\":\"CF-AUDIT-20260922111729-42a323 doctorA\",\"checkedInAt\":\"2026-09-22T11:17:53.765Z\",\"completedAt\":\"2026-09-22T11:17:55.758Z\",\"patient…[truncated]"
+    },
+    {
+      "name": "superAdmin dashboard completion count",
+      "outcome": "pass",
+      "detail": "Completed flow is reflected in dashboard metrics."
+    },
+    {
+      "name": "clinicAdmin dashboard reads persisted state",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard?date=2026-09-22",
+      "status": 200,
+      "payload": "{\"totalDoctors\":1,\"totalClinics\":1,\"totalBranches\":1,\"totalPatients\":2,\"appointments\":1,\"waiting\":0,\"checkedIn\":0,\"completed\":1,\"noShow\":0,\"cancelled\":0,\"averageWaitMinutes\":0.019983333333333332,\"averageConsultationMinutes\":0.00655,\"todayAppointments\":1,\"activeQueues\":0,\"currentToken\":\"[REDACTED]\",\"recentAppointments\":[{\"id\":\"8a0863ba-2630-4a03-b419-cc265d58b3da\",\"date\":\"2026-09-22\",\"notes\":\"CF-AUDIT-20260922111729-42a323 online\",\"token\":\"[REDACTED]\",\"source\":\"online\",\"status\":\"completed\",\"endTime\":\"23:59\",\"history\":[{\"status\":\"booked\",\"occurredAt\":\"2026-09-22T11:17:48.952Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 checkIn\",\"status\":\"checkedIn\",\"occurredAt\":\"2026-09-22T11:17:53.765Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 enqueue\",\"status\":\"waiting\",\"occurredAt\":\"2026-09-22T11:17:54.166Z\"},{\"status\":\"called\",\"occurredAt\":\"2026-09-22T11:17:54.969Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 start\",\"status\":\"inConsultation\",\"occurredAt\":\"2026-09-22T11:17:55.365Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 complete\",\"status\":\"completed\",\"occurredAt\":\"2026-09-22T11:17:55.758Z\"}],\"branchId\":\"f3e0c3cb-4265-428a-a703-e0cb6eb4116d\",\"calledAt\":\"2026-09-22T11:17:54.969Z\",\"clinicId\":\"98a427cd-4bc3-47c7-9ba8-a73e754779f4\",\"doctorId\":\"96a3e935-d884-4833-a7ce-feac84d50c4a\",\"timezone\":\"Asia/Kolkata\",\"createdAt\":\"2026-09-22T11:17:48.940Z\",\"patientId\":\"0d0e412d-5bd4-4d67-8596-845d467dd45f\",\"reference\":\"CF-93042A04F70A4278\",\"startTime\":\"00:00\",\"waitingAt\":\"2026-09-22T11:17:54.166Z\",\"branchName\":\"CF-AUDIT-20260922111729-42a323 Branch A1\",\"clinicName\":\"CF-AUDIT-20260922111729-42a323 Clinic A\",\"doctorName\":\"CF-AUDIT-20260922111729-42a323 doctorA\",\"checkedInAt\":\"2026-09-22T11:17:53.765Z\",\"completedAt\":\"2026-09-22T11:17:55.758Z\",\"patient…[truncated]"
+    },
+    {
+      "name": "clinicAdmin dashboard completion count",
+      "outcome": "pass",
+      "detail": "Completed flow is reflected in dashboard metrics."
+    },
+    {
+      "name": "receptionist dashboard reads persisted state",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard?date=2026-09-22",
+      "status": 200,
+      "payload": "{\"totalDoctors\":1,\"totalClinics\":1,\"totalBranches\":1,\"totalPatients\":2,\"appointments\":1,\"waiting\":0,\"checkedIn\":0,\"completed\":1,\"noShow\":0,\"cancelled\":0,\"averageWaitMinutes\":0.019983333333333332,\"averageConsultationMinutes\":0.00655,\"todayAppointments\":1,\"activeQueues\":0,\"currentToken\":\"[REDACTED]\",\"recentAppointments\":[{\"id\":\"8a0863ba-2630-4a03-b419-cc265d58b3da\",\"date\":\"2026-09-22\",\"notes\":\"CF-AUDIT-20260922111729-42a323 online\",\"token\":\"[REDACTED]\",\"source\":\"online\",\"status\":\"completed\",\"endTime\":\"23:59\",\"history\":[{\"status\":\"booked\",\"occurredAt\":\"2026-09-22T11:17:48.952Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 checkIn\",\"status\":\"checkedIn\",\"occurredAt\":\"2026-09-22T11:17:53.765Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 enqueue\",\"status\":\"waiting\",\"occurredAt\":\"2026-09-22T11:17:54.166Z\"},{\"status\":\"called\",\"occurredAt\":\"2026-09-22T11:17:54.969Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 start\",\"status\":\"inConsultation\",\"occurredAt\":\"2026-09-22T11:17:55.365Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 complete\",\"status\":\"completed\",\"occurredAt\":\"2026-09-22T11:17:55.758Z\"}],\"branchId\":\"f3e0c3cb-4265-428a-a703-e0cb6eb4116d\",\"calledAt\":\"2026-09-22T11:17:54.969Z\",\"clinicId\":\"98a427cd-4bc3-47c7-9ba8-a73e754779f4\",\"doctorId\":\"96a3e935-d884-4833-a7ce-feac84d50c4a\",\"timezone\":\"Asia/Kolkata\",\"createdAt\":\"2026-09-22T11:17:48.940Z\",\"patientId\":\"0d0e412d-5bd4-4d67-8596-845d467dd45f\",\"reference\":\"CF-93042A04F70A4278\",\"startTime\":\"00:00\",\"waitingAt\":\"2026-09-22T11:17:54.166Z\",\"branchName\":\"CF-AUDIT-20260922111729-42a323 Branch A1\",\"clinicName\":\"CF-AUDIT-20260922111729-42a323 Clinic A\",\"doctorName\":\"CF-AUDIT-20260922111729-42a323 doctorA\",\"checkedInAt\":\"2026-09-22T11:17:53.765Z\",\"completedAt\":\"2026-09-22T11:17:55.758Z\",\"patient…[truncated]"
+    },
+    {
+      "name": "receptionist dashboard completion count",
+      "outcome": "pass",
+      "detail": "Completed flow is reflected in dashboard metrics."
+    },
+    {
+      "name": "doctorA dashboard reads persisted state",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard?date=2026-09-22",
+      "status": 200,
+      "payload": "{\"totalDoctors\":1,\"totalClinics\":1,\"totalBranches\":1,\"totalPatients\":1,\"appointments\":1,\"waiting\":0,\"checkedIn\":0,\"completed\":1,\"noShow\":0,\"cancelled\":0,\"averageWaitMinutes\":0.019983333333333332,\"averageConsultationMinutes\":0.00655,\"todayAppointments\":1,\"activeQueues\":0,\"currentToken\":\"[REDACTED]\",\"recentAppointments\":[{\"id\":\"8a0863ba-2630-4a03-b419-cc265d58b3da\",\"date\":\"2026-09-22\",\"notes\":\"CF-AUDIT-20260922111729-42a323 online\",\"token\":\"[REDACTED]\",\"source\":\"online\",\"status\":\"completed\",\"endTime\":\"23:59\",\"history\":[{\"status\":\"booked\",\"occurredAt\":\"2026-09-22T11:17:48.952Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 checkIn\",\"status\":\"checkedIn\",\"occurredAt\":\"2026-09-22T11:17:53.765Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 enqueue\",\"status\":\"waiting\",\"occurredAt\":\"2026-09-22T11:17:54.166Z\"},{\"status\":\"called\",\"occurredAt\":\"2026-09-22T11:17:54.969Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 start\",\"status\":\"inConsultation\",\"occurredAt\":\"2026-09-22T11:17:55.365Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 complete\",\"status\":\"completed\",\"occurredAt\":\"2026-09-22T11:17:55.758Z\"}],\"branchId\":\"f3e0c3cb-4265-428a-a703-e0cb6eb4116d\",\"calledAt\":\"2026-09-22T11:17:54.969Z\",\"clinicId\":\"98a427cd-4bc3-47c7-9ba8-a73e754779f4\",\"doctorId\":\"96a3e935-d884-4833-a7ce-feac84d50c4a\",\"timezone\":\"Asia/Kolkata\",\"createdAt\":\"2026-09-22T11:17:48.940Z\",\"patientId\":\"0d0e412d-5bd4-4d67-8596-845d467dd45f\",\"reference\":\"CF-93042A04F70A4278\",\"startTime\":\"00:00\",\"waitingAt\":\"2026-09-22T11:17:54.166Z\",\"branchName\":\"CF-AUDIT-20260922111729-42a323 Branch A1\",\"clinicName\":\"CF-AUDIT-20260922111729-42a323 Clinic A\",\"doctorName\":\"CF-AUDIT-20260922111729-42a323 doctorA\",\"checkedInAt\":\"2026-09-22T11:17:53.765Z\",\"completedAt\":\"2026-09-22T11:17:55.758Z\",\"patient…[truncated]"
+    },
+    {
+      "name": "doctorA dashboard completion count",
+      "outcome": "pass",
+      "detail": "Completed flow is reflected in dashboard metrics."
+    },
+    {
+      "name": "patientA dashboard reads persisted state",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard?date=2026-09-22",
+      "status": 200,
+      "payload": "{\"totalDoctors\":0,\"totalClinics\":0,\"totalBranches\":0,\"totalPatients\":1,\"appointments\":1,\"waiting\":0,\"checkedIn\":0,\"completed\":1,\"noShow\":0,\"cancelled\":0,\"averageWaitMinutes\":0.019983333333333332,\"averageConsultationMinutes\":0.00655,\"todayAppointments\":1,\"activeQueues\":0,\"currentToken\":\"[REDACTED]\",\"recentAppointments\":[{\"id\":\"8a0863ba-2630-4a03-b419-cc265d58b3da\",\"date\":\"2026-09-22\",\"notes\":\"CF-AUDIT-20260922111729-42a323 online\",\"token\":\"[REDACTED]\",\"source\":\"online\",\"status\":\"completed\",\"endTime\":\"23:59\",\"history\":[{\"status\":\"booked\",\"occurredAt\":\"2026-09-22T11:17:48.952Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 checkIn\",\"status\":\"checkedIn\",\"occurredAt\":\"2026-09-22T11:17:53.765Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 enqueue\",\"status\":\"waiting\",\"occurredAt\":\"2026-09-22T11:17:54.166Z\"},{\"status\":\"called\",\"occurredAt\":\"2026-09-22T11:17:54.969Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 start\",\"status\":\"inConsultation\",\"occurredAt\":\"2026-09-22T11:17:55.365Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 complete\",\"status\":\"completed\",\"occurredAt\":\"2026-09-22T11:17:55.758Z\"}],\"branchId\":\"f3e0c3cb-4265-428a-a703-e0cb6eb4116d\",\"calledAt\":\"2026-09-22T11:17:54.969Z\",\"clinicId\":\"98a427cd-4bc3-47c7-9ba8-a73e754779f4\",\"doctorId\":\"96a3e935-d884-4833-a7ce-feac84d50c4a\",\"timezone\":\"Asia/Kolkata\",\"createdAt\":\"2026-09-22T11:17:48.940Z\",\"patientId\":\"0d0e412d-5bd4-4d67-8596-845d467dd45f\",\"reference\":\"CF-93042A04F70A4278\",\"startTime\":\"00:00\",\"waitingAt\":\"2026-09-22T11:17:54.166Z\",\"branchName\":\"CF-AUDIT-20260922111729-42a323 Branch A1\",\"clinicName\":\"CF-AUDIT-20260922111729-42a323 Clinic A\",\"doctorName\":\"CF-AUDIT-20260922111729-42a323 doctorA\",\"checkedInAt\":\"2026-09-22T11:17:53.765Z\",\"completedAt\":\"2026-09-22T11:17:55.758Z\",\"patient…[truncated]"
+    },
+    {
+      "name": "patientA dashboard completion count",
+      "outcome": "pass",
+      "detail": "Completed flow is reflected in dashboard metrics."
+    },
+    {
+      "name": "Receptionist creates walk-in",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "id": "c939a6a5-1158-477d-96ed-8b4eae4d0418",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 walkIn",
+        "token": "[REDACTED]",
+        "source": "walkIn",
+        "status": "waiting",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:58.568Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:17:58.575Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:58.580Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:17:58.555Z",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-2A8E70FAE3C14307",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:17:58.580Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:17:58.575Z",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": [
+          "call",
+          "noShow",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Walk-in immediate queue state",
+      "outcome": "pass",
+      "detail": "Walk-in traversed check-in and enqueue atomically."
+    },
+    {
+      "name": "noShow c939a6a5",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/c939a6a5-1158-477d-96ed-8b4eae4d0418/actions",
+      "status": 200,
+      "payload": {
+        "id": "c939a6a5-1158-477d-96ed-8b4eae4d0418",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 walkIn",
+        "token": "[REDACTED]",
+        "source": "walkIn",
+        "status": "noShow",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:58.568Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:17:58.575Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:58.580Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 noShow",
+            "status": "noShow",
+            "occurredAt": "2026-09-22T11:17:58.959Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:17:58.555Z",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-2A8E70FAE3C14307",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:17:58.580Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:17:58.575Z",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": [
+          "requeue"
+        ]
+      }
+    },
+    {
+      "name": "requeue c939a6a5",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/c939a6a5-1158-477d-96ed-8b4eae4d0418/actions",
+      "status": 200,
+      "payload": {
+        "id": "c939a6a5-1158-477d-96ed-8b4eae4d0418",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 walkIn",
+        "token": "[REDACTED]",
+        "source": "walkIn",
+        "status": "waiting",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:58.568Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:17:58.575Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:58.580Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 noShow",
+            "status": "noShow",
+            "occurredAt": "2026-09-22T11:17:58.959Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 requeue",
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:59.361Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:17:58.555Z",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-2A8E70FAE3C14307",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:17:59.361Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:17:58.575Z",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": [
+          "call",
+          "noShow",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Call requeued no-show",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/queue/call-next",
+      "status": 200,
+      "payload": {
+        "appointment": {
+          "id": "c939a6a5-1158-477d-96ed-8b4eae4d0418",
+          "date": "2026-09-22",
+          "notes": "CF-AUDIT-20260922111729-42a323 walkIn",
+          "token": "[REDACTED]",
+          "source": "walkIn",
+          "status": "called",
+          "endTime": "23:59",
+          "history": [
+            {
+              "status": "booked",
+              "occurredAt": "2026-09-22T11:17:58.568Z"
+            },
+            {
+              "status": "checkedIn",
+              "occurredAt": "2026-09-22T11:17:58.575Z"
+            },
+            {
+              "status": "waiting",
+              "occurredAt": "2026-09-22T11:17:58.580Z"
+            },
+            {
+              "reason": "CF-AUDIT-20260922111729-42a323 noShow",
+              "status": "noShow",
+              "occurredAt": "2026-09-22T11:17:58.959Z"
+            },
+            {
+              "reason": "CF-AUDIT-20260922111729-42a323 requeue",
+              "status": "waiting",
+              "occurredAt": "2026-09-22T11:17:59.361Z"
+            },
+            {
+              "status": "called",
+              "occurredAt": "2026-09-22T11:17:59.765Z"
+            }
+          ],
+          "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+          "calledAt": "2026-09-22T11:17:59.765Z",
+          "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+          "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+          "timezone": "Asia/Kolkata",
+          "createdAt": "2026-09-22T11:17:58.555Z",
+          "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+          "reference": "CF-2A8E70FAE3C14307",
+          "startTime": "00:00",
+          "waitingAt": "2026-09-22T11:17:59.361Z",
+          "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+          "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+          "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+          "checkedInAt": "2026-09-22T11:17:58.575Z",
+          "patientCode": "AUD-42a323-patientB",
+          "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+          "tokenNumber": "[REDACTED]",
+          "allowedActions": [
+            "start",
+            "noShow"
+          ]
+        }
+      }
+    },
+    {
+      "name": "start c939a6a5",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/c939a6a5-1158-477d-96ed-8b4eae4d0418/actions",
+      "status": 200,
+      "payload": {
+        "id": "c939a6a5-1158-477d-96ed-8b4eae4d0418",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 walkIn",
+        "token": "[REDACTED]",
+        "source": "walkIn",
+        "status": "inConsultation",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:17:58.568Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:17:58.575Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:58.580Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 noShow",
+            "status": "noShow",
+            "occurredAt": "2026-09-22T11:17:58.959Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 requeue",
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:17:59.361Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T11:17:59.765Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 start",
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T11:18:00.167Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "calledAt": "2026-09-22T11:17:59.765Z",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:17:58.555Z",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-2A8E70FAE3C14307",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:17:59.361Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:17:58.575Z",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.013433333333333334,
+        "consultationStartedAt": "2026-09-22T11:18:00.167Z",
+        "allowedActions": [
+          "complete"
+        ]
+      }
+    },
+    {
+      "name": "complete c939a6a5",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/c939a6a5-1158-477d-96ed-8b4eae4d0418/actions",
+      "status": 200,
+      "payload": "{\"id\":\"c939a6a5-1158-477d-96ed-8b4eae4d0418\",\"date\":\"2026-09-22\",\"notes\":\"CF-AUDIT-20260922111729-42a323 walkIn\",\"token\":\"[REDACTED]\",\"source\":\"walkIn\",\"status\":\"completed\",\"endTime\":\"23:59\",\"history\":[{\"status\":\"booked\",\"occurredAt\":\"2026-09-22T11:17:58.568Z\"},{\"status\":\"checkedIn\",\"occurredAt\":\"2026-09-22T11:17:58.575Z\"},{\"status\":\"waiting\",\"occurredAt\":\"2026-09-22T11:17:58.580Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 noShow\",\"status\":\"noShow\",\"occurredAt\":\"2026-09-22T11:17:58.959Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 requeue\",\"status\":\"waiting\",\"occurredAt\":\"2026-09-22T11:17:59.361Z\"},{\"status\":\"called\",\"occurredAt\":\"2026-09-22T11:17:59.765Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 start\",\"status\":\"inConsultation\",\"occurredAt\":\"2026-09-22T11:18:00.167Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 complete\",\"status\":\"completed\",\"occurredAt\":\"2026-09-22T11:18:00.564Z\"}],\"branchId\":\"f3e0c3cb-4265-428a-a703-e0cb6eb4116d\",\"calledAt\":\"2026-09-22T11:17:59.765Z\",\"clinicId\":\"98a427cd-4bc3-47c7-9ba8-a73e754779f4\",\"doctorId\":\"96a3e935-d884-4833-a7ce-feac84d50c4a\",\"timezone\":\"Asia/Kolkata\",\"createdAt\":\"2026-09-22T11:17:58.555Z\",\"patientId\":\"98f1cd7f-eacf-47a8-aaf0-8ed9a022b736\",\"reference\":\"CF-2A8E70FAE3C14307\",\"startTime\":\"00:00\",\"waitingAt\":\"2026-09-22T11:17:59.361Z\",\"branchName\":\"CF-AUDIT-20260922111729-42a323 Branch A1\",\"clinicName\":\"CF-AUDIT-20260922111729-42a323 Clinic A\",\"doctorName\":\"CF-AUDIT-20260922111729-42a323 doctorA\",\"checkedInAt\":\"2026-09-22T11:17:58.575Z\",\"completedAt\":\"2026-09-22T11:18:00.564Z\",\"patientCode\":\"AUD-42a323-patientB\",\"patientName\":\"CF-AUDIT-20260922111729-42a323 patientB\",\"tokenNumber\":\"[REDACTED]\",\"waitMinutes\":0.013433333333333334,\"consultationStartedAt\":\"2026-09-22T11:18:00.167Z\",\"con…[truncated]"
+    },
+    {
+      "name": "Receptionist creates phone booking",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "date": "2026-09-24",
+        "notes": "CF-AUDIT-20260922111729-42a323 phone",
+        "token": "[REDACTED]",
+        "source": "phone",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:00.977Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-6816005602534AFF",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "id": "994988af-a501-4575-b320-bf83591f06ea",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:18:00.964Z",
+        "allowedActions": [
+          "checkIn",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Phone advance state",
+      "outcome": "pass",
+      "detail": "Phone booking remains booked until explicit check-in."
+    },
+    {
+      "name": "Cancel booked appointment",
+      "outcome": "pass",
+      "detail": "Cancellation succeeded under configured cutoff.",
+      "method": "POST",
+      "route": "/appointments/994988af-a501-4575-b320-bf83591f06ea/actions",
+      "status": 200,
+      "payload": {
+        "id": "994988af-a501-4575-b320-bf83591f06ea",
+        "date": "2026-09-24",
+        "notes": "CF-AUDIT-20260922111729-42a323 phone",
+        "token": "[REDACTED]",
+        "source": "phone",
+        "status": "cancelled",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:00.977Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 cancellation",
+            "status": "cancelled",
+            "occurredAt": "2026-09-22T11:18:01.365Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:18:00.964Z",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-6816005602534AFF",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "cancelledAt": "2026-09-22T11:18:01.365Z",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": []
+      }
+    },
+    {
+      "name": "Cancelled appointment rejects consultation",
+      "outcome": "pass",
+      "detail": "Expected 409 and received 409.",
+      "method": "POST",
+      "route": "/appointments/994988af-a501-4575-b320-bf83591f06ea/actions",
+      "status": 409,
+      "payload": {
+        "error": "Invalid appointment state transition",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Patient books through regenerated QR",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 qr",
+        "token": "[REDACTED]",
+        "source": "qr",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:02.192Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-DC7F2E06C5634590",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "qrReference": "3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+        "termsAccepted": true,
+        "id": "4784e5c8-6038-4a73-b39f-9928f817e7ce",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:18:02.165Z",
+        "allowedActions": [
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "QR converges to normal appointment",
+      "outcome": "pass",
+      "detail": "QR entry produced a standard booked appointment."
+    },
+    {
+      "name": "checkIn 4784e5c8",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/4784e5c8-6038-4a73-b39f-9928f817e7ce/actions",
+      "status": 200,
+      "payload": {
+        "id": "4784e5c8-6038-4a73-b39f-9928f817e7ce",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 qr",
+        "token": "[REDACTED]",
+        "source": "qr",
+        "status": "checkedIn",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:02.192Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:18:02.571Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:18:02.165Z",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-DC7F2E06C5634590",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:18:02.571Z",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "qrReference": "3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+        "tokenNumber": "[REDACTED]",
+        "termsAccepted": true,
+        "allowedActions": [
+          "enqueue",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "enqueue 4784e5c8",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/4784e5c8-6038-4a73-b39f-9928f817e7ce/actions",
+      "status": 200,
+      "payload": {
+        "id": "4784e5c8-6038-4a73-b39f-9928f817e7ce",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 qr",
+        "token": "[REDACTED]",
+        "source": "qr",
+        "status": "waiting",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:02.192Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:18:02.571Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 enqueue",
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:18:02.972Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:18:02.165Z",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-DC7F2E06C5634590",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:18:02.972Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:18:02.571Z",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "qrReference": "3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+        "tokenNumber": "[REDACTED]",
+        "termsAccepted": true,
+        "allowedActions": [
+          "call",
+          "noShow",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Call QR appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/queue/call-next",
+      "status": 200,
+      "payload": {
+        "appointment": {
+          "id": "4784e5c8-6038-4a73-b39f-9928f817e7ce",
+          "date": "2026-09-22",
+          "notes": "CF-AUDIT-20260922111729-42a323 qr",
+          "token": "[REDACTED]",
+          "source": "qr",
+          "status": "called",
+          "endTime": "23:59",
+          "history": [
+            {
+              "status": "booked",
+              "occurredAt": "2026-09-22T11:18:02.192Z"
+            },
+            {
+              "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+              "status": "checkedIn",
+              "occurredAt": "2026-09-22T11:18:02.571Z"
+            },
+            {
+              "reason": "CF-AUDIT-20260922111729-42a323 enqueue",
+              "status": "waiting",
+              "occurredAt": "2026-09-22T11:18:02.972Z"
+            },
+            {
+              "status": "called",
+              "occurredAt": "2026-09-22T11:18:03.374Z"
+            }
+          ],
+          "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+          "calledAt": "2026-09-22T11:18:03.374Z",
+          "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+          "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+          "timezone": "Asia/Kolkata",
+          "createdAt": "2026-09-22T11:18:02.165Z",
+          "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+          "reference": "CF-DC7F2E06C5634590",
+          "startTime": "00:00",
+          "waitingAt": "2026-09-22T11:18:02.972Z",
+          "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+          "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+          "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+          "checkedInAt": "2026-09-22T11:18:02.571Z",
+          "patientCode": "AUD-42a323-patientB",
+          "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+          "qrReference": "3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+          "tokenNumber": "[REDACTED]",
+          "termsAccepted": true,
+          "allowedActions": [
+            "start",
+            "noShow"
+          ]
+        }
+      }
+    },
+    {
+      "name": "start 4784e5c8",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/4784e5c8-6038-4a73-b39f-9928f817e7ce/actions",
+      "status": 200,
+      "payload": {
+        "id": "4784e5c8-6038-4a73-b39f-9928f817e7ce",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 qr",
+        "token": "[REDACTED]",
+        "source": "qr",
+        "status": "inConsultation",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:02.192Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:18:02.571Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 enqueue",
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:18:02.972Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T11:18:03.374Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 start",
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T11:18:03.773Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "calledAt": "2026-09-22T11:18:03.374Z",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:18:02.165Z",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-DC7F2E06C5634590",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:18:02.972Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:18:02.571Z",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "qrReference": "3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.01335,
+        "termsAccepted": true,
+        "consultationStartedAt": "2026-09-22T11:18:03.773Z",
+        "allowedActions": [
+          "complete"
+        ]
+      }
+    },
+    {
+      "name": "complete 4784e5c8",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/4784e5c8-6038-4a73-b39f-9928f817e7ce/actions",
+      "status": 200,
+      "payload": {
+        "id": "4784e5c8-6038-4a73-b39f-9928f817e7ce",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 qr",
+        "token": "[REDACTED]",
+        "source": "qr",
+        "status": "completed",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:02.192Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 checkIn",
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:18:02.571Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 enqueue",
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:18:02.972Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T11:18:03.374Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 start",
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T11:18:03.773Z"
+          },
+          {
+            "reason": "CF-AUDIT-20260922111729-42a323 complete",
+            "status": "completed",
+            "occurredAt": "2026-09-22T11:18:04.169Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "calledAt": "2026-09-22T11:18:03.374Z",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:18:02.165Z",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-DC7F2E06C5634590",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:18:02.972Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:18:02.571Z",
+        "completedAt": "2026-09-22T11:18:04.169Z",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "qrReference": "3aAUs6AirCNC5DLI6U_MhKSDRfx7YvEaJwIBZC1H478",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.01335,
+        "termsAccepted": true,
+        "consultationStartedAt": "2026-09-22T11:18:03.773Z",
+        "consultationMinutesActual": 0.0066,
+        "allowedActions": []
+      }
+    },
+    {
+      "name": "Book sole Doctor B capacity",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:04.586Z"
+          }
+        ],
+        "branchId": "0e29a20c-b154-425c-83fa-07fb7a450f72",
+        "clinicId": "51d14b70-0135-43cd-8896-9dfe98e8c88e",
+        "doctorId": "6d1b164c-7121-4f8f-8ae2-e6d2cfe3410e",
+        "timezone": "Asia/Kolkata",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-A4C10A8583A34DF1",
+        "startTime": "00:00",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch B1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic B",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorB",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "termsAccepted": true,
+        "id": "ccf44158-b2b4-4a34-b950-e3fc754be4c9",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T11:18:04.571Z",
+        "allowedActions": [
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Reject full session",
+      "outcome": "pass",
+      "detail": "Expected 409 and received 409.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 409,
+      "payload": {
+        "error": "Session capacity reached",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Closed-date availability",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/public/availability?doctorId=96a3e935-d884-4833-a7ce-feac84d50c4a&branchId=f3e0c3cb-4265-428a-a703-e0cb6eb4116d&date=2026-09-23",
+      "status": 200,
+      "payload": {
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "date": "2026-09-23",
+        "available": false,
+        "reason": "CF-AUDIT-20260922111729-42a323 closed-date regression",
+        "startTime": "00:00",
+        "endTime": "23:59",
+        "breakStart": null,
+        "breakEnd": null,
+        "timezone": "Asia/Kolkata",
+        "maxTokens": "[REDACTED]",
+        "bookedTokens": "[REDACTED]",
+        "remainingTokens": "[REDACTED]",
+        "consultationMinutes": 10,
+        "tokenPrefix": "[REDACTED]",
+        "queueMode": "mixed",
+        "queueOpenTime": "00:00",
+        "queueCloseTime": "23:59",
+        "bufferMinutes": 0
+      }
+    },
+    {
+      "name": "Closed date rejected",
+      "outcome": "pass",
+      "detail": "Availability reports the configured closure."
+    },
+    {
+      "name": "Past availability",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/public/availability?doctorId=96a3e935-d884-4833-a7ce-feac84d50c4a&branchId=f3e0c3cb-4265-428a-a703-e0cb6eb4116d&date=2026-09-21",
+      "status": 200,
+      "payload": {
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "date": "2026-09-21",
+        "available": false,
+        "reason": "Session is in the past",
+        "startTime": null,
+        "endTime": null,
+        "breakStart": null,
+        "breakEnd": null,
+        "timezone": "Asia/Kolkata",
+        "maxTokens": "[REDACTED]",
+        "bookedTokens": "[REDACTED]",
+        "remainingTokens": "[REDACTED]",
+        "consultationMinutes": 10,
+        "tokenPrefix": "[REDACTED]",
+        "queueMode": "mixed",
+        "bufferMinutes": 0
+      }
+    },
+    {
+      "name": "Past date rejected",
+      "outcome": "pass",
+      "detail": "Past date is unavailable."
+    },
+    {
+      "name": "Booking horizon availability",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/public/availability?doctorId=96a3e935-d884-4833-a7ce-feac84d50c4a&branchId=f3e0c3cb-4265-428a-a703-e0cb6eb4116d&date=2027-09-27",
+      "status": 200,
+      "payload": {
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "date": "2027-09-27",
+        "available": false,
+        "reason": "Outside booking horizon",
+        "startTime": null,
+        "endTime": null,
+        "breakStart": null,
+        "breakEnd": null,
+        "timezone": "Asia/Kolkata",
+        "maxTokens": "[REDACTED]",
+        "bookedTokens": "[REDACTED]",
+        "remainingTokens": "[REDACTED]",
+        "consultationMinutes": 10,
+        "tokenPrefix": "[REDACTED]",
+        "queueMode": "mixed",
+        "bufferMinutes": 0
+      }
+    },
+    {
+      "name": "Beyond-horizon date rejected",
+      "outcome": "pass",
+      "detail": "Date outside configured booking horizon is unavailable."
+    },
+    {
+      "name": "Reject invalid doctor/branch/clinic combination",
+      "outcome": "pass",
+      "detail": "Expected 403/409 and received 403.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 403,
+      "payload": {
+        "error": "Booking outside assigned scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Reject inactive or unassigned branch",
+      "outcome": "pass",
+      "detail": "Expected 403/409 and received 403.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 403,
+      "payload": {
+        "error": "Booking outside assigned scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Create race queue entry A",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "id": "b449d711-bcbb-4b7b-842d-3393ef6cf090",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 walkIn",
+        "token": "[REDACTED]",
+        "source": "walkIn",
+        "status": "waiting",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:07.383Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:18:07.391Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:18:07.398Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:18:07.373Z",
+        "patientId": "0d0e412d-5bd4-4d67-8596-845d467dd45f",
+        "reference": "CF-85AD7E845F024E4C",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:18:07.398Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:18:07.391Z",
+        "patientCode": "AUD-42a323-patientA",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientA",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": [
+          "call",
+          "noShow",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Create race queue entry B",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "id": "56a3f50f-3c35-4a9f-b7fc-29deca3f7488",
+        "date": "2026-09-22",
+        "notes": "CF-AUDIT-20260922111729-42a323 walkIn",
+        "token": "[REDACTED]",
+        "source": "walkIn",
+        "status": "waiting",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T11:18:07.792Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T11:18:07.797Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T11:18:07.806Z"
+          }
+        ],
+        "branchId": "f3e0c3cb-4265-428a-a703-e0cb6eb4116d",
+        "clinicId": "98a427cd-4bc3-47c7-9ba8-a73e754779f4",
+        "doctorId": "96a3e935-d884-4833-a7ce-feac84d50c4a",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T11:18:07.776Z",
+        "patientId": "98f1cd7f-eacf-47a8-aaf0-8ed9a022b736",
+        "reference": "CF-7416E33B601B47A5",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T11:18:07.806Z",
+        "branchName": "CF-AUDIT-20260922111729-42a323 Branch A1",
+        "clinicName": "CF-AUDIT-20260922111729-42a323 Clinic A",
+        "doctorName": "CF-AUDIT-20260922111729-42a323 doctorA",
+        "checkedInAt": "2026-09-22T11:18:07.797Z",
+        "patientCode": "AUD-42a323-patientB",
+        "patientName": "CF-AUDIT-20260922111729-42a323 patientB",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": [
+          "call",
+          "noShow",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Concurrent call-next serialization",
+      "outcome": "pass",
+      "detail": "Exactly one caller activated an appointment; the competing caller received 409.",
+      "method": "POST",
+      "route": "/queue/call-next",
+      "status": 409,
+      "payload": {
+        "error": "Another patient is already called or in consultation",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Queue after call-next race",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/queue?doctorId=96a3e935-d884-4833-a7ce-feac84d50c4a&branchId=f3e0c3cb-4265-428a-a703-e0cb6eb4116d&date=2026-09-22",
+      "status": 200,
+      "payload": "{\"doctorId\":\"96a3e935-d884-4833-a7ce-feac84d50c4a\",\"branchId\":\"f3e0c3cb-4265-428a-a703-e0cb6eb4116d\",\"date\":\"2026-09-22\",\"currentToken\":\"[REDACTED]\",\"nextToken\":\"[REDACTED]\",\"waiting\":1,\"inConsultation\":0,\"completed\":3,\"noShow\":0,\"total\":5,\"pollIntervalSeconds\":30,\"updatedAt\":\"2026-09-22T11:18:08.582Z\",\"ownEntry\":null,\"entries\":[{\"id\":\"8a0863ba-2630-4a03-b419-cc265d58b3da\",\"date\":\"2026-09-22\",\"notes\":\"CF-AUDIT-20260922111729-42a323 online\",\"token\":\"[REDACTED]\",\"source\":\"online\",\"status\":\"completed\",\"endTime\":\"23:59\",\"history\":[{\"status\":\"booked\",\"occurredAt\":\"2026-09-22T11:17:48.952Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 checkIn\",\"status\":\"checkedIn\",\"occurredAt\":\"2026-09-22T11:17:53.765Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 enqueue\",\"status\":\"waiting\",\"occurredAt\":\"2026-09-22T11:17:54.166Z\"},{\"status\":\"called\",\"occurredAt\":\"2026-09-22T11:17:54.969Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 start\",\"status\":\"inConsultation\",\"occurredAt\":\"2026-09-22T11:17:55.365Z\"},{\"reason\":\"CF-AUDIT-20260922111729-42a323 complete\",\"status\":\"completed\",\"occurredAt\":\"2026-09-22T11:17:55.758Z\"}],\"branchId\":\"f3e0c3cb-4265-428a-a703-e0cb6eb4116d\",\"calledAt\":\"2026-09-22T11:17:54.969Z\",\"clinicId\":\"98a427cd-4bc3-47c7-9ba8-a73e754779f4\",\"doctorId\":\"96a3e935-d884-4833-a7ce-feac84d50c4a\",\"timezone\":\"Asia/Kolkata\",\"createdAt\":\"2026-09-22T11:17:48.940Z\",\"patientId\":\"0d0e412d-5bd4-4d67-8596-845d467dd45f\",\"reference\":\"CF-93042A04F70A4278\",\"startTime\":\"00:00\",\"waitingAt\":\"2026-09-22T11:17:54.166Z\",\"branchName\":\"CF-AUDIT-20260922111729-42a323 Branch A1\",\"clinicName\":\"CF-AUDIT-20260922111729-42a323 Clinic A\",\"doctorName\":\"CF-AUDIT-20260922111729-42a323 doctorA\",\"checkedInAt\":\"2026-09-22T11:17:53.765Z\",\"completedAt\":\"2026-09-22T11:17:55.758Z…[truncated]"
+    },
+    {
+      "name": "Single active called/consultation invariant",
+      "outcome": "pass",
+      "detail": "Queue contains exactly one active called/consultation record."
+    }
+  ],
+  "limitations": [
+    "Browser/mobile responsive checks are intentionally outside this API runner.",
+    "Production SMS delivery is not tested; only the existing explicitly enabled development OTP provider is exercised.",
+    "Fixtures remain for the separate browser audit until explicit confirmed cleanup."
+  ]
+}

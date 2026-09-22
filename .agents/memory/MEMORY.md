@@ -1,1 +1,2 @@
 - [Worker execution failures](worker-isolation.md) — helper tool disconnections can be isolated; preserve healthy backend work rather than treating them as project-wide failures.
+- [Role test isolation](role-test-isolation.md) — verify actual browser identity and mapped role in fresh contexts; a helper handshake alone does not prove sign-in.
