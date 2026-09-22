@@ -108,7 +108,7 @@ Actual browser observations:
 - The patient queue displayed the patient's own token and aggregate progress without other patients' names/mobile numbers.
 - Receptionist booking exposed Phone/advance and Walk-in choices in the same form; Clinic A offered only Branch A1 and its assigned doctor.
 - Mobile controls used in the booking, confirmation, appointment, and queue checks remained usable. Wide tables intentionally have internal horizontal scrolling.
-- The optional authenticated Clinic Admin settings-redirect check remained **unverified**: its test context ended at sign-in. The live API test separately confirmed that Clinic Admin cannot mutate platform settings.
+- The previously unverified Clinic Admin browser check **passed on 2026-09-22** in a fresh isolated context. Browser Clerk identity matched the new fixture and authenticated `/api/me` returned the active `clinicAdmin` role before navigation. `/admin/settings`, `/admin/masters`, `/admin/users`, and `/admin/audit` each redirected to `/admin/dashboard`; the fixture clinic and branch records remained reachable. See `browser-verification.md` for identity, route, screenshot, and cleanup evidence. The earlier live API platform-settings mutation denial remains separate evidence; its suite was not rerun.
 
 The newly created QR appointment was not also run through doctor completion in the browser: that portion had already been exercised on another isolated fixture, and the API run covered the complete lifecycle. Browser password-entry/email-delivery behavior was not tested; the browser helper established real test identities programmatically.
 
