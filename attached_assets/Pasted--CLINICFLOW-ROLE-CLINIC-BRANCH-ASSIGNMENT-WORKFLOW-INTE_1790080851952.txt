@@ -1,0 +1,2394 @@
+# CLINICFLOW — ROLE, CLINIC, BRANCH, ASSIGNMENT & WORKFLOW INTEGRITY
+# FINAL IMPLEMENTATION / AUDIT / CORRECTION PROMPT
+
+## IMPORTANT — READ THIS ENTIRE PROMPT BEFORE CHANGING ANY CODE
+
+You are working on the ALREADY DEVELOPED ClinicFlow application.
+
+This is NOT a request to build a new application from scratch.
+
+ClinicFlow already contains:
+
+- Authentication
+- Super Admin
+- Clinic Admin
+- Doctor
+- Receptionist
+- Patient
+- Clinics
+- Branches
+- Doctor profiles
+- Receptionist functionality
+- Availability / schedules
+- Appointments
+- Queue management
+- QR functionality
+- Patient booking
+- Staff booking
+- Check-in
+- Live queue
+- Dashboards
+- Reports
+- Database
+- APIs
+- Role-based authorization
+- Existing UI
+
+Your first responsibility is to INSPECT the CURRENT IMPLEMENTATION.
+
+Do not blindly rebuild anything.
+
+Do not create duplicate:
+
+- Tables
+- Pages
+- Routes
+- APIs
+- Components
+- Assignment systems
+- Clinic-management modules
+- Availability systems
+- QR systems
+- Queue systems
+
+Preserve working functionality.
+
+Only modify/refactor existing functionality where necessary to satisfy the requirements below.
+
+The primary goal is:
+
+SIMPLE
++
+LOGICAL
++
+CONSISTENT
++
+SECURE
++
+RELIABLE
++
+EASY TO USE
+
+Do NOT make the system unnecessarily complicated.
+
+---
+
+# 1. EXISTING SYSTEM MUST BE UNDERSTOOD FIRST
+
+Before making changes, inspect:
+
+1. Existing database schema
+2. Existing migrations
+3. Existing user/role model
+4. Existing clinic model
+5. Existing branch model
+6. Existing user-clinic assignment logic
+7. Existing user-branch assignment logic
+8. Existing doctor assignment logic
+9. Existing receptionist assignment logic
+10. Existing authorization middleware
+11. Existing dashboard filtering
+12. Existing availability/schedule logic
+13. Existing appointment logic
+14. Existing QR logic
+15. Existing check-in logic
+16. Existing queue logic
+17. Existing audit logging
+18. Existing frontend forms
+19. Existing dropdown logic
+20. Existing APIs
+21. Existing tests
+
+Do not assume that the documentation or previous implementation is completely correct.
+
+Verify the actual code.
+
+The latest requirements in THIS PROMPT are the authoritative business requirements for the assignment and role-management behaviour.
+
+Where an older implementation conflicts with this prompt, modify the implementation to follow this prompt.
+
+Do not break unrelated functionality.
+
+---
+
+# 2. CORE BUSINESS PRINCIPLE
+
+ClinicFlow is a multi-clinic, multi-branch doctor appointment and queue management platform.
+
+The most important relationship in the platform is:
+
+USER
+↓
+CLINIC
+↓
+BRANCH
+↓
+DOCTOR / RECEPTIONIST / APPOINTMENTS / QUEUE / AVAILABILITY
+
+Everything must respect these relationships.
+
+There must never be accidental cross-clinic or cross-branch data visibility.
+
+---
+
+# 3. ROLE STRUCTURE
+
+The system has the following roles:
+
+1. Super Admin
+2. Clinic Admin
+3. Doctor
+4. Receptionist
+5. Patient
+
+Do NOT add unnecessary roles.
+
+Do NOT create role-switching functionality.
+
+The authenticated user's stored role determines the available capabilities.
+
+Server-side authorization is mandatory.
+
+Hiding a button is NOT security.
+
+Every API must enforce authorization independently.
+
+---
+
+# 4. IMPORTANT NEW ASSIGNMENT MODEL
+
+ClinicFlow must support many-to-many relationships between users and clinics.
+
+A user may belong to:
+
+- One clinic
+- Multiple clinics
+
+A clinic may contain:
+
+- Multiple admins
+- Multiple doctors
+- Multiple receptionists
+
+A doctor may work at:
+
+- Multiple clinics
+- Multiple branches
+
+A receptionist may work at:
+
+- Multiple clinics
+- Multiple branches
+
+Clinic and branch assignments must be represented consistently.
+
+Do NOT create duplicate assignment records.
+
+Do NOT create separate competing assignment systems.
+
+Use one clear source of truth for user assignment.
+
+---
+
+# 5. CLINIC AND BRANCH RELATIONSHIP
+
+Every branch belongs to exactly ONE clinic.
+
+Example:
+
+Clinic A
+├── Branch A1
+├── Branch A2
+└── Branch A3
+
+Clinic B
+├── Branch B1
+└── Branch B2
+
+Branch A1 MUST NEVER appear as a branch option when Clinic B is selected.
+
+This rule must be enforced:
+
+### FRONTEND
+AND
+### BACKEND
+
+Never rely only on frontend filtering.
+
+---
+
+# 6. USER → CLINIC MAPPING
+
+Every Clinic Admin, Doctor and Receptionist must be mapped to one or more clinics.
+
+Example:
+
+Doctor A:
+
+Clinic A
+Clinic B
+
+Receptionist A:
+
+Clinic A
+Clinic C
+
+Clinic Admin A:
+
+Clinic A
+Clinic B
+
+The user dashboard and available data must always be calculated from the user's active assignments.
+
+---
+
+# 7. RECEPTIONIST → CLINIC → BRANCH MAPPING
+
+This is mandatory.
+
+Whenever a Receptionist is created or assigned:
+
+Clinic selection is REQUIRED.
+
+Branch selection is REQUIRED.
+
+A receptionist cannot be created without at least:
+
+Clinic
++
+Branch
+
+Example:
+
+Receptionist:
+
+Priya Sharma
+
+Clinic:
+HealthCare Clinic
+
+Branch:
+Main Branch
+
+OR
+
+Clinic:
+HealthCare Clinic
+
+Branch:
+City Centre
+
+A receptionist may have multiple mappings:
+
+HealthCare Clinic → Main Branch
+HealthCare Clinic → City Centre
+City Care Clinic → Main Branch
+
+The system must support this correctly.
+
+---
+
+# 8. BRANCH DROPDOWN DEPENDENCY
+
+Whenever assigning branches:
+
+1. User selects Clinic.
+2. System loads only active branches belonging to that Clinic.
+3. User selects one or more branches.
+4. The selected branches must belong to the selected clinic.
+
+Example:
+
+Selected Clinic:
+HealthCare Clinic
+
+Branch dropdown:
+
+Main Branch
+City Centre
+North Branch
+
+Do NOT display:
+
+City Care Clinic → Main Branch
+
+Do NOT allow invalid combinations through API manipulation.
+
+---
+
+# 9. ADMIN CREATES A CLINIC
+
+When a Clinic Admin creates a new clinic:
+
+Example:
+
+Clinic Admin:
+Admin A
+
+Creates:
+
+Clinic B
+
+Immediately after successful creation:
+
+Admin A MUST automatically be mapped to Clinic B.
+
+Do not require the admin to manually map themselves.
+
+The clinic should immediately appear in:
+
+- Admin dashboard
+- Admin clinic list
+- Admin clinic selector
+- Admin branch management
+- Admin doctor management
+- Admin receptionist management
+- Admin availability management
+- Admin reports where applicable
+
+The newly created clinic must also become visible to Super Admin.
+
+No stale session state should hide the new clinic.
+
+Refresh/re-fetch the appropriate data automatically.
+
+---
+
+# 10. ADMIN CREATES A BRANCH
+
+When a Clinic Admin creates a branch:
+
+Example:
+
+Clinic:
+HealthCare Clinic
+
+New Branch:
+Airport Road Branch
+
+The branch must immediately:
+
+- Belong to the selected clinic
+- Appear under that clinic
+- Be visible to Super Admin
+- Be visible to the creating Admin
+- Be available for authorized doctor/receptionist mapping
+- Be available for authorized availability configuration
+
+The branch must not accidentally appear under another clinic.
+
+---
+
+# 11. ADMIN CREATES A DOCTOR
+
+When a Clinic Admin creates a Doctor:
+
+The Clinic Admin must only see clinics to which the Admin is already mapped.
+
+Example:
+
+Admin A is mapped to:
+
+Clinic A
+Clinic B
+
+The Doctor creation form may display:
+
+Clinic A
+Clinic B
+
+It MUST NOT display:
+
+Clinic C
+
+if Admin A has no assignment to Clinic C.
+
+After selecting a clinic:
+
+Only branches belonging to that selected clinic may be displayed.
+
+The Admin may assign the Doctor to one or more authorized clinics/branches according to the existing Doctor assignment model.
+
+The backend MUST independently validate every selected clinic and branch.
+
+---
+
+# 12. ADMIN CREATES A RECEPTIONIST
+
+When a Clinic Admin creates a Receptionist:
+
+The Admin can only assign clinics that belong to the Admin.
+
+For each selected clinic:
+
+Only branches belonging to that clinic may be selected.
+
+Clinic:
+HealthCare Clinic
+
+Branches:
+Main Branch
+City Centre
+
+The Receptionist must be mapped before the creation operation is considered successful.
+
+Do not allow:
+
+Receptionist created without assignment.
+
+Do not allow:
+
+Receptionist created with invalid clinic/branch mapping.
+
+---
+
+# 13. SUPER ADMIN CREATES DOCTORS / RECEPTIONISTS
+
+Super Admin has platform-wide scope.
+
+Therefore Super Admin can create:
+
+- Doctors
+- Receptionists
+- Clinic Admins where supported by existing system
+
+When Super Admin creates a Doctor or Receptionist:
+
+Clinic assignment is mandatory for Doctor and Receptionist.
+
+For Receptionist:
+
+Clinic + Branch assignment is mandatory.
+
+For Doctor:
+
+Clinic assignment is mandatory, and branch assignment must follow the existing Doctor assignment model and actual business rules.
+
+After creation:
+
+The new assignments must immediately appear wherever authorized.
+
+For example:
+
+Super Admin creates:
+
+Doctor A
+
+Clinic:
+HealthCare Clinic
+
+Branch:
+Main Branch
+
+The Doctor must see the assignment in Doctor login.
+
+The Clinic Admin responsible for that clinic must see the Doctor in their clinic.
+
+The assignment must be visible in the appropriate Super Admin management screen.
+
+There must be only ONE underlying assignment.
+
+Do not duplicate the relationship separately for each role.
+
+---
+
+# 14. DOCTOR CREATES RECEPTIONIST
+
+Doctors must have the ability to create a Receptionist.
+
+However, this capability MUST be scoped.
+
+A Doctor can only assign the new Receptionist to clinics/branches to which the Doctor is already mapped.
+
+Example:
+
+Doctor A is mapped to:
+
+HealthCare Clinic → Main Branch
+HealthCare Clinic → City Centre
+City Care Clinic → Park Street
+
+Doctor A creates Receptionist A.
+
+The Doctor can only assign Receptionist A to those authorized clinic/branch combinations.
+
+Doctor A MUST NOT be able to assign:
+
+Clinic B / Branch B1
+
+if Doctor A does not have access to it.
+
+This must be enforced on the server.
+
+---
+
+# 15. DOCTOR CREATES RECEPTIONIST — ADMIN VISIBILITY
+
+If Doctor A creates Receptionist A and maps the Receptionist to:
+
+HealthCare Clinic
+Main Branch
+
+then the Clinic Admin who has access to:
+
+HealthCare Clinic
+Main Branch
+
+must immediately be able to see the Receptionist.
+
+The receptionist must appear in:
+
+- Admin receptionist list
+- Admin clinic/branch staff view
+- Appropriate dashboard counts
+- Appropriate staff assignment views
+
+There must NOT be a separate "Doctor-created receptionist" hidden from Admin.
+
+The assignment is global within the authorized platform scope.
+
+---
+
+# 16. DOCTOR CREATES A CLINIC
+
+A Doctor may create a new clinic.
+
+Example:
+
+Doctor A is currently mapped to:
+
+Clinic A
+
+Doctor A creates:
+
+Clinic B
+
+After successful creation:
+
+Doctor A MUST automatically be mapped to Clinic B.
+
+The Admin who originally created/owns/manages Doctor A must also be mapped to Clinic B according to the ownership relationship defined below.
+
+Super Admin must also see Clinic B.
+
+Clinic B must appear in:
+
+- Doctor login
+- Admin login
+- Super Admin login
+
+where appropriate.
+
+There must be no manual synchronization step.
+
+---
+
+# 17. IMPORTANT — ORIGINAL ADMIN RELATIONSHIP
+
+The system must preserve the relationship between:
+
+Doctor
+and
+the Clinic Admin who created/managed that Doctor.
+
+Do NOT guess this relationship later.
+
+Store the necessary ownership/creator relationship in a proper way.
+
+Example:
+
+Admin A creates Doctor A.
+
+Doctor A later creates Clinic B.
+
+The system must know:
+
+Doctor A was created/managed by Admin A.
+
+Therefore:
+
+Doctor A creates Clinic B
+↓
+Doctor A automatically receives Clinic B mapping
+↓
+Admin A automatically receives Clinic B mapping
+↓
+Super Admin can see Clinic B
+
+This relationship must survive login/logout and application refresh.
+
+Do NOT store this only in frontend state.
+
+---
+
+# 18. WHAT IF MULTIPLE ADMINS ARE ASSOCIATED?
+
+Do not implement a fragile "single admin" assumption if the existing database supports multiple administrators.
+
+Before changing the schema, inspect the current ownership model.
+
+If a Doctor can legitimately be managed by multiple Clinic Admins, then the new clinic created by that Doctor must be shared with the appropriate admins according to their existing authorized relationship.
+
+If the existing system has exactly one creator/owning Admin relationship, preserve that relationship explicitly.
+
+Do not silently invent a different ownership model.
+
+The important requirement is:
+
+THE SYSTEM MUST ALWAYS KNOW WHICH AUTHORIZED ADMIN RELATIONSHIP SHOULD RECEIVE THE NEW CLINIC MAPPING.
+
+---
+
+# 19. DOCTOR CREATES A BRANCH
+
+When a Doctor creates a branch:
+
+The branch must belong to a clinic to which the Doctor has access.
+
+Example:
+
+Doctor A
+↓
+HealthCare Clinic
+↓
+creates:
+Airport Branch
+
+Immediately:
+
+Doctor A can see Airport Branch.
+
+The authorized Admin relationship can see Airport Branch.
+
+Super Admin can see Airport Branch.
+
+The branch must be selectable for appropriate doctors/receptionists.
+
+No duplicate branch should be created because of repeated clicks or retries.
+
+---
+
+# 20. ADMIN AND DOCTOR MANAGEMENT RIGHTS
+
+The Admin and Doctor should have broadly similar operational management capabilities where explicitly required by this prompt.
+
+Both should be able to manage relevant:
+
+- Clinics
+- Branches
+- Receptionists
+- Doctors/schedules where authorized
+- Availability
+- Operational staff relationships
+
+However:
+
+Their access must still be scope-controlled.
+
+"Similar rights" does NOT mean "unrestricted platform access."
+
+Super Admin remains the platform-wide authority.
+
+Doctors and Admins must never be able to access unrelated clinics.
+
+---
+
+# 21. AVAILABILITY / SCHEDULE MANAGEMENT
+
+The system must allow:
+
+- Clinic Admin
+- Doctor
+- Receptionist
+
+to configure/manage doctor availability for doctors who share an authorized clinic mapping.
+
+However, every request must be scope-validated.
+
+Example:
+
+Receptionist A is assigned to:
+
+HealthCare Clinic
+Main Branch
+
+Doctor A works at:
+
+HealthCare Clinic
+Main Branch
+
+Receptionist A may manage Doctor A's availability for that authorized location.
+
+Receptionist A MUST NOT modify:
+
+Doctor B at another unauthorized clinic.
+
+---
+
+# 22. AVAILABILITY MUST BE LOCATION-SPECIFIC
+
+Availability must always be associated with:
+
+Doctor
++
+Clinic
++
+Branch
++
+Day/date
++
+Session configuration
+
+Do not create a global doctor availability record that accidentally applies to every clinic.
+
+Example:
+
+Doctor A:
+
+HealthCare Clinic / Main Branch
+09:00–13:00
+
+City Care Clinic / Park Street
+17:00–21:00
+
+These are independent schedules.
+
+Changing one must not change the other.
+
+---
+
+# 23. DOCTOR CANNOT HAVE ILLOGICAL OVERLAPPING SCHEDULES
+
+The system must prevent a Doctor from being scheduled at two locations at the same time.
+
+Example:
+
+Doctor A:
+
+Clinic A / Branch A
+09:00–13:00
+
+Attempt:
+
+Clinic B / Branch B
+11:00–15:00
+
+This must be rejected because the doctor cannot physically be in both places simultaneously.
+
+Show a simple user-friendly message.
+
+Do not allow the database to reach an inconsistent state.
+
+---
+
+# 24. PRESERVE THE EXISTING SESSION-BASED APPOINTMENT MODEL
+
+Do NOT convert ClinicFlow into a fixed appointment-slot system.
+
+The current business model is based on consultation sessions / availability windows and capacity rather than promises such as:
+
+09:00
+09:10
+09:20
+09:30
+
+etc.
+
+Preserve this model.
+
+Availability may define:
+
+Start Time
+End Time
+Maximum Tokens/Capacity
+Consultation Duration
+Buffer
+Queue Mode
+Break
+Exception/Leave
+
+Do not introduce unnecessary slot complexity.
+
+---
+
+# 25. PRESERVE EXISTING QUEUE LOGIC
+
+Do not rewrite the queue engine unless the current implementation is actually broken.
+
+Preserve:
+
+- Appointment
+- Check-in
+- Queue token
+- Waiting
+- Called
+- Consultation
+- Completed
+- Skip / No-show
+- Recall / Return to waiting where currently supported
+- Queue ordering
+- Concurrency protection
+- Token uniqueness
+
+A user from one clinic/branch must never modify another clinic's queue.
+
+---
+
+# 26. PRESERVE ALL QR FUNCTIONALITY
+
+QR functionality is an important part of ClinicFlow.
+
+Do NOT remove or simplify away the existing QR functionality.
+
+Verify the entire QR flow:
+
+### Clinic QR
+
+Clinic/branch QR context must resolve correctly.
+
+### Appointment QR
+
+Appointment QR must contain secure reference information and must not expose unnecessary patient information.
+
+### QR scanning
+
+Authorized receptionist/staff should be able to scan the QR.
+
+### QR validation
+
+The system must validate:
+
+- QR validity
+- Clinic
+- Branch
+- Appointment
+- Appointment status
+- Date/time rules
+- Check-in state
+- Authorization
+
+### QR check-in
+
+A valid appointment QR should allow the appropriate check-in flow.
+
+Repeated scanning must not create duplicate check-ins or duplicate queue tokens.
+
+Invalid/cancelled/expired/already-used QR must produce a clear message.
+
+Preserve the current secure QR implementation rather than replacing it with a simplistic identifier.
+
+---
+
+# 27. NO CROSS-CLINIC DATA LEAKAGE
+
+This is mandatory.
+
+Example:
+
+Receptionist A:
+
+Clinic A / Branch A1
+
+Receptionist A MUST NOT see:
+
+Clinic B
+Branch B1
+Doctor B
+Appointments B
+Patients B
+Queue B
+Availability B
+
+even if the frontend URL or API request is manually modified.
+
+The backend must reject unauthorized access.
+
+---
+
+# 28. DASHBOARDS MUST FOLLOW ASSIGNMENTS
+
+Dashboards must NEVER show platform-wide data to scoped users.
+
+If Admin A is mapped to:
+
+Clinic A
+Clinic B
+
+the Admin dashboard may show data for:
+
+Clinic A
+Clinic B
+
+but NOT:
+
+Clinic C
+
+If Doctor A is mapped to:
+
+Clinic A / Branch A1
+Clinic B / Branch B1
+
+the Doctor dashboard must only show relevant data for those assignments.
+
+If Receptionist A is mapped to:
+
+Clinic A / Branch A1
+
+the Receptionist dashboard must show:
+
+Clinic A / Branch A1
+
+only.
+
+---
+
+# 29. MULTI-CLINIC SWITCHING
+
+Where the existing UI supports a clinic/branch selector:
+
+Only authorized clinics and branches must be displayed.
+
+Example:
+
+Admin A:
+
+Clinic A
+Clinic B
+
+Clinic selector should contain:
+
+Clinic A
+Clinic B
+
+After selecting Clinic A:
+
+Branch selector must show only:
+
+Branch A1
+Branch A2
+
+After selecting Clinic B:
+
+Branch selector must show only:
+
+Branch B1
+Branch B2
+
+Do not retain an invalid branch selection when the clinic changes.
+
+Reset dependent selections when necessary.
+
+---
+
+# 30. USER CREATION FORM UX
+
+Keep the forms extremely simple.
+
+For Doctor creation:
+
+Basic information
+↓
+Clinic assignment
+↓
+Branch assignment where applicable
+↓
+Save
+
+For Receptionist creation:
+
+Basic information
+↓
+Clinic
+↓
+Branch
+↓
+Save
+
+Use searchable multi-select controls where multiple mappings are supported.
+
+Do NOT display every clinic/branch in the entire system to a scoped Admin or Doctor.
+
+---
+
+# 31. MAPPING UX MUST BE EASY
+
+Do not make users manually manage complicated relationship IDs.
+
+The UI should communicate relationships naturally.
+
+Example:
+
+### Add Receptionist
+
+Name
+Mobile
+Email
+
+Clinic:
+[ HealthCare Clinic ▼ ]
+
+Branch:
+[ Main Branch ▼ ]
+
+[ + Add another clinic ]
+
+Clinic:
+[ City Care Clinic ▼ ]
+
+Branch:
+[ Park Street ▼ ]
+
+[ Create Receptionist ]
+
+The user should not need to understand database relationships.
+
+---
+
+# 32. VALIDATION RULES
+
+Validate on frontend AND backend.
+
+Examples:
+
+- Clinic required
+- Branch required where required
+- Branch must belong to selected clinic
+- Clinic must be authorized for current user
+- Doctor must be authorized for selected clinic
+- Receptionist must be authorized for selected clinic/branch
+- No duplicate mappings
+- No inactive clinic assignment
+- No inactive branch assignment
+- No duplicate clinic
+- No duplicate branch under same clinic
+- No invalid schedule
+- No overlapping doctor schedule
+- No unauthorized schedule modification
+
+---
+
+# 33. INACTIVE CLINIC / BRANCH BEHAVIOUR
+
+If a clinic becomes inactive:
+
+Do not delete historical:
+
+- Appointments
+- Queue records
+- Audit records
+- Historical reports
+
+Do not allow new operational bookings against an inactive clinic.
+
+Do not show inactive clinics in normal assignment dropdowns.
+
+Existing historical records must remain accessible to appropriately authorized users.
+
+Same principle applies to branches.
+
+---
+
+# 34. REMOVING A USER ASSIGNMENT
+
+If a Doctor or Receptionist is removed from a clinic/branch:
+
+The user should immediately lose access to NEW operational data for that scope.
+
+However:
+
+Historical appointments and records must not be destroyed simply because an assignment was removed.
+
+Existing historical records should remain available only according to the appropriate historical-access rules.
+
+Do not casually hard-delete historical data.
+
+---
+
+# 35. REMOVING RECEPTIONIST FROM BRANCH
+
+Example:
+
+Receptionist A:
+
+Clinic A / Branch A1
+Clinic A / Branch A2
+
+Remove:
+
+Branch A1
+
+After removal:
+
+Receptionist A can access:
+
+Branch A2
+
+Receptionist A cannot access:
+
+Branch A1
+
+The change must affect:
+
+- Dashboard
+- Appointments
+- Queue
+- Patient registration
+- QR check-in
+- Reports
+- Availability management
+- Staff management
+
+where applicable.
+
+---
+
+# 36. DOCTOR CREATED CLINIC — COMPLETE CASCADE
+
+Test this exact scenario:
+
+1. Admin A creates Doctor A.
+2. Doctor A is mapped to Clinic A.
+3. Doctor A logs in.
+4. Doctor A creates Clinic B.
+5. Clinic B is successfully created.
+6. Doctor A automatically receives Clinic B assignment.
+7. The appropriate Admin relationship automatically receives Clinic B assignment.
+8. Super Admin can see Clinic B.
+9. Doctor A sees Clinic B after refresh/re-fetch.
+10. Admin sees Clinic B after refresh/re-fetch.
+11. Doctor A creates Branch B1 under Clinic B.
+12. Admin sees Branch B1.
+13. Super Admin sees Branch B1.
+14. Doctor A can configure availability at Clinic B / Branch B1.
+15. Authorized receptionist can be mapped to Clinic B / Branch B1.
+16. Appointment booking works.
+17. QR works.
+18. Check-in works.
+19. Queue works.
+
+There must be no broken link in this chain.
+
+---
+
+# 37. ADMIN CREATED CLINIC — COMPLETE CASCADE
+
+Test:
+
+1. Admin A logs in.
+2. Admin A creates Clinic B.
+3. Admin A is automatically mapped to Clinic B.
+4. Admin A creates Branch B1.
+5. Admin A creates Doctor B.
+6. Admin maps Doctor B to Clinic B / Branch B1.
+7. Admin creates Receptionist B.
+8. Admin maps Receptionist B to Clinic B / Branch B1.
+9. Doctor B sees Clinic B / Branch B1.
+10. Receptionist B sees Clinic B / Branch B1.
+11. Super Admin sees all relationships.
+12. Doctor availability can be configured.
+13. Receptionist can operate appointments.
+14. QR check-in works.
+15. Queue works.
+
+---
+
+# 38. SUPER ADMIN CREATED USER — COMPLETE CASCADE
+
+Test:
+
+1. Super Admin creates Doctor A.
+2. Super Admin maps Doctor A to Clinic A / appropriate branch.
+3. Doctor A sees the mapping.
+4. Clinic Admin with access to Clinic A sees Doctor A.
+5. Super Admin creates Receptionist A.
+6. Super Admin maps Receptionist A to Clinic A / Branch A1.
+7. Receptionist A sees the correct branch.
+8. Clinic Admin sees Receptionist A.
+9. Doctor A sees Receptionist A where operationally relevant.
+10. Availability can be managed by authorized roles.
+11. Appointment flow works.
+12. QR flow works.
+13. Queue flow works.
+
+---
+
+# 39. DOCTOR CREATED RECEPTIONIST — COMPLETE CASCADE
+
+Test:
+
+Doctor A has:
+
+Clinic A / Branch A1
+Clinic A / Branch A2
+
+Doctor A creates:
+
+Receptionist B
+
+Doctor A maps:
+
+Clinic A / Branch A1
+
+Verify:
+
+Doctor sees Receptionist B.
+
+Admin with Clinic A access sees Receptionist B.
+
+Super Admin sees Receptionist B.
+
+Receptionist B sees only authorized data.
+
+Receptionist B does NOT see Clinic B.
+
+---
+
+# 40. IMPORTANT: DO NOT CREATE FRONTEND-ONLY MAPPINGS
+
+Every mapping must be persisted.
+
+Do not rely on:
+
+- localStorage
+- sessionStorage
+- React state
+- browser state
+- temporary frontend arrays
+
+for authorization.
+
+The database must be the source of truth.
+
+After logout/login, the mappings must still work.
+
+After browser refresh, the mappings must still work.
+
+After another authorized user logs in, the same shared mapping must be visible.
+
+---
+
+# 41. DATABASE INTEGRITY
+
+Inspect the existing assignment schema.
+
+If the current assignment table/model cannot safely support the new many-to-many behaviour, modify it carefully.
+
+Requirements:
+
+- Foreign keys
+- Unique assignment constraint
+- Clinic/branch consistency
+- No duplicate mapping
+- Safe migration
+- Preserve existing data
+- Do not destroy production-like data
+
+A branch assignment must always resolve to the same clinic represented by the mapping.
+
+Do not permit:
+
+user → Clinic A + Branch belonging to Clinic B
+
+---
+
+# 42. MIGRATIONS
+
+Before changing schema:
+
+1. Inspect existing migrations.
+2. Determine existing data.
+3. Design the smallest safe migration.
+4. Preserve existing relationships.
+5. Backfill where necessary.
+6. Add constraints.
+7. Test migration.
+8. Verify existing users still work.
+
+Do NOT drop tables simply because the current model is imperfect.
+
+Do NOT reset the database.
+
+Do NOT destroy existing data.
+
+---
+
+# 43. API AUTHORIZATION
+
+Every relevant API must validate:
+
+- Current user
+- Role
+- Clinic assignment
+- Branch assignment
+- Doctor assignment
+- Target resource
+- Target clinic
+- Target branch
+
+Examples:
+
+CREATE RECEPTIONIST
+→ user must be authorized for target clinic.
+
+ASSIGN RECEPTIONIST
+→ selected clinic must be authorized.
+
+ASSIGN RECEPTIONIST TO BRANCH
+→ branch must belong to selected clinic.
+
+CREATE CLINIC
+→ authorized role only.
+
+CREATE BRANCH
+→ clinic must be authorized.
+
+UPDATE AVAILABILITY
+→ actor must be authorized for that doctor + clinic + branch.
+
+QUEUE ACTION
+→ actor must be authorized for that queue's clinic + branch.
+
+QR CHECK-IN
+→ actor must be authorized for the QR's clinic + branch.
+
+---
+
+# 44. DO NOT TRUST IDs FROM THE CLIENT
+
+Never assume that because frontend submits:
+
+clinicId = XYZ
+
+the user is authorized.
+
+Always verify server-side.
+
+Same for:
+
+branchId
+doctorId
+receptionistId
+appointmentId
+queueId
+qrId
+
+---
+
+# 45. DASHBOARD DATA MUST BE SERVER-SCOPED
+
+Do not fetch all data and filter it only in the frontend.
+
+Server/API should return only authorized records wherever practical.
+
+This is especially important for:
+
+- Patients
+- Appointments
+- Queue
+- Staff
+- Doctors
+- Clinics
+- Branches
+- Reports
+
+---
+
+# 46. AUDIT LOGGING
+
+Record important assignment and management changes.
+
+At minimum:
+
+- Clinic created
+- Clinic updated
+- Branch created
+- Branch updated
+- Doctor created
+- Doctor assignment changed
+- Receptionist created
+- Receptionist assignment changed
+- User mapping changed
+- Availability changed
+- QR regenerated
+- Appointment created
+- Appointment cancelled
+- Check-in
+- Queue action
+
+Audit should identify:
+
+- Actor
+- Action
+- Entity
+- Entity ID
+- Clinic context where applicable
+- Branch context where applicable
+- Timestamp
+
+---
+
+# 47. DO NOT BREAK EXISTING QR / APPOINTMENT / QUEUE FUNCTIONALITY
+
+Before changing assignment logic, identify all existing dependencies.
+
+Check:
+
+- Appointment creation
+- Appointment QR
+- Clinic QR
+- QR scanner
+- QR check-in
+- Token generation
+- Queue
+- Patient dashboard
+- Doctor dashboard
+- Receptionist dashboard
+- Reports
+
+After changes, run regression tests.
+
+A role/assignment change is NOT considered complete if QR, appointment or queue functionality stops working.
+
+---
+
+# 48. USER-FACING ERROR MESSAGES
+
+Use simple messages.
+
+Examples:
+
+"Please select a clinic."
+
+"Please select a branch."
+
+"This branch does not belong to the selected clinic."
+
+"You do not have access to this clinic."
+
+"You do not have access to this branch."
+
+"This doctor is not assigned to the selected clinic."
+
+"This receptionist is not assigned to the selected branch."
+
+"This schedule overlaps with an existing schedule."
+
+"Unable to save the assignment. Please try again."
+
+Never expose:
+
+- SQL errors
+- Stack traces
+- Internal database details
+- Secrets
+- API internals
+
+---
+
+# 49. RESPONSIVE UI
+
+Do not compromise the existing responsive design.
+
+Verify:
+
+- Desktop
+- Tablet
+- Mobile
+
+especially:
+
+- Clinic selector
+- Branch selector
+- Multi-select mapping
+- Doctor forms
+- Receptionist forms
+- Availability forms
+- QR scanning
+- Queue screen
+
+Do not make the forms unnecessarily large or complicated.
+
+---
+
+# 50. TABLES
+
+All major tables should remain easy to use.
+
+Where applicable provide:
+
+- Search
+- Filters
+- Pagination
+- Status
+- Clinic
+- Branch
+- Doctor
+- Date
+
+Do not show irrelevant columns.
+
+Use consistent layouts across:
+
+- Doctors
+- Receptionists
+- Clinics
+- Branches
+- Appointments
+- Patients
+- Queue
+- Reports
+
+---
+
+# 51. NO DEAD BUTTONS
+
+Every visible button must work.
+
+Do not leave:
+
+- Placeholder actions
+- Fake Save buttons
+- Fake Add buttons
+- Dead Edit buttons
+- Dead Delete/Deactivate buttons
+- Broken View buttons
+- Broken QR buttons
+- Broken mapping controls
+
+If an action is not supported, do not present it as available.
+
+---
+
+# 52. NO DUPLICATE DATA
+
+When creating:
+
+- Clinic
+- Branch
+- Doctor
+- Receptionist
+- Mapping
+- Schedule
+
+prevent duplicate records caused by:
+
+- Double clicks
+- Browser retries
+- API retries
+- Refresh
+- Concurrent requests
+
+Use appropriate database constraints and transactional operations.
+
+---
+
+# 53. CONCURRENCY
+
+Pay special attention to:
+
+- Two admins assigning the same user
+- Two users creating the same mapping
+- Two people creating the same branch
+- Two people booking the last capacity
+- Two people checking in the same appointment
+- Two users changing availability simultaneously
+- Two users modifying queue state simultaneously
+
+The database must remain consistent.
+
+---
+
+# 54. DATA VISIBILITY RULE
+
+Always think in terms of:
+
+WHO
++
+WHAT
++
+WHICH CLINIC
++
+WHICH BRANCH
+
+before returning data.
+
+Example:
+
+Doctor A
+
+Clinic A / Branch A1
+Clinic B / Branch B2
+
+Doctor A can see relevant data for those locations.
+
+Doctor A cannot see:
+
+Clinic C / Branch C1
+
+unless explicitly assigned.
+
+---
+
+# 55. DO NOT OVERENGINEER
+
+This requirement is extremely important.
+
+Do NOT introduce:
+
+- Complex workflow engines
+- Unnecessary microservices
+- Unnecessary event buses
+- Excessive abstractions
+- Duplicate permission frameworks
+- Complicated inheritance structures
+- Multiple assignment tables doing the same thing
+- Overly complicated UI
+- Unnecessary configuration screens
+
+Use the existing architecture wherever possible.
+
+Make the simplest design that correctly satisfies the requirements.
+
+---
+
+# 56. EXISTING BUSINESS RULES MUST REMAIN INTACT
+
+Do not accidentally change:
+
+- Appointment model
+- Queue model
+- Token logic
+- QR security
+- Patient privacy
+- Existing role authentication
+- Existing availability principles
+- Existing reporting behaviour
+
+unless this prompt explicitly requires a change.
+
+The new requirement is primarily about:
+
+USER
+→ CLINIC
+→ BRANCH
+→ STAFF
+→ AVAILABILITY
+→ MANAGEMENT VISIBILITY
+
+---
+
+# 57. FULL ROLE TEST MATRIX
+
+Test the following.
+
+## SUPER ADMIN
+
+- Login
+- View all clinics
+- Create clinic
+- View all branches
+- Create branch
+- Create Admin
+- Create Doctor
+- Create Receptionist
+- Assign clinic
+- Assign branch
+- View all mappings
+- View all staff
+- View all appointments
+- View reports
+- Verify QR functionality
+
+---
+
+## CLINIC ADMIN
+
+Test:
+
+- Login
+- View assigned clinics
+- Switch clinic
+- View correct branches
+- Create clinic
+- Automatic self-mapping
+- Create branch
+- Create doctor
+- Assign doctor
+- Create receptionist
+- Assign receptionist
+- Modify staff mappings
+- Configure doctor availability
+- View appointments
+- View queue
+- View relevant reports
+
+Attempt unauthorized access to another clinic.
+
+It MUST fail.
+
+---
+
+## DOCTOR
+
+Test:
+
+- Login
+- View own profile
+- View assigned clinics
+- View assigned branches
+- Switch clinic
+- Switch branch
+- Create receptionist
+- Assign receptionist
+- Create clinic
+- Automatic self-mapping
+- Admin relationship propagation
+- Create branch
+- Manage availability
+- Manage authorized doctors' availability
+- View appointments
+- View relevant patients
+- View queue
+- Perform consultation workflow
+
+Attempt unauthorized access.
+
+It MUST fail.
+
+---
+
+## RECEPTIONIST
+
+Test:
+
+- Login
+- View assigned clinics
+- View assigned branches
+- Search patient
+- Create patient where allowed
+- Book appointment
+- Phone booking
+- Walk-in
+- QR scan
+- QR validation
+- Check-in
+- Queue
+- Call/queue operations according to permission
+- Manage authorized doctor availability
+- View relevant appointments
+- View relevant patients
+
+Attempt unauthorized clinic access.
+
+It MUST fail.
+
+---
+
+## PATIENT
+
+Test existing patient flow:
+
+- Login/OTP
+- Profile
+- Clinic selection
+- Branch selection
+- Doctor selection
+- Availability
+- Booking
+- Appointment reference
+- Appointment QR
+- Appointment details
+- Cancellation where allowed
+- Live queue
+- Own appointment history
+
+Do not expose other patients' information.
+
+---
+
+# 58. CRITICAL END-TO-END TEST
+
+Run this exact scenario:
+
+### STEP 1
+
+Super Admin creates:
+
+Clinic A
+
+Branch A1
+
+### STEP 2
+
+Clinic Admin A is mapped to Clinic A.
+
+### STEP 3
+
+Clinic Admin A creates:
+
+Doctor A
+
+Doctor A → Clinic A → Branch A1
+
+### STEP 4
+
+Clinic Admin A creates:
+
+Receptionist A
+
+Receptionist A → Clinic A → Branch A1
+
+### STEP 5
+
+Doctor A logs in.
+
+Verify:
+
+Doctor A sees Clinic A / Branch A1.
+
+### STEP 6
+
+Doctor A creates:
+
+Receptionist B
+
+Receptionist B → Clinic A / Branch A1
+
+Verify:
+
+Doctor sees Receptionist B.
+
+Admin sees Receptionist B.
+
+Super Admin sees Receptionist B.
+
+### STEP 7
+
+Doctor A creates:
+
+Clinic B
+
+Verify:
+
+Doctor A automatically mapped to Clinic B.
+
+Original authorized Admin relationship also receives the required Clinic B mapping.
+
+Super Admin sees Clinic B.
+
+### STEP 8
+
+Doctor A creates:
+
+Clinic B / Branch B1
+
+Verify:
+
+Doctor sees Branch B1.
+
+Admin sees Branch B1.
+
+Super Admin sees Branch B1.
+
+### STEP 9
+
+Doctor configures availability:
+
+Clinic B
+Branch B1
+
+### STEP 10
+
+Authorized Receptionist is mapped:
+
+Clinic B
+Branch B1
+
+### STEP 11
+
+Patient books appointment.
+
+### STEP 12
+
+Appointment QR is generated.
+
+### STEP 13
+
+Receptionist scans QR.
+
+### STEP 14
+
+Patient is checked in.
+
+### STEP 15
+
+Queue token is generated.
+
+### STEP 16
+
+Doctor/receptionist manages queue.
+
+### STEP 17
+
+Consultation starts.
+
+### STEP 18
+
+Consultation completes.
+
+### STEP 19
+
+Patient sees completed appointment/history.
+
+If ANY step fails, investigate the underlying relationship and fix it.
+
+Do not patch the UI only.
+
+---
+
+# 59. CROSS-CLINIC SECURITY TEST
+
+Create:
+
+Clinic A
+Branch A1
+
+Clinic B
+Branch B1
+
+Doctor A → Clinic A / Branch A1
+
+Receptionist A → Clinic A / Branch A1
+
+Now attempt:
+
+Doctor A accessing Clinic B.
+
+Receptionist A accessing Clinic B.
+
+Doctor A accessing Branch B1.
+
+Receptionist A accessing Branch B1.
+
+Doctor A accessing Clinic B appointments.
+
+Receptionist A accessing Clinic B queue.
+
+All unauthorized attempts must fail server-side.
+
+---
+
+# 60. BRANCH FILTER TEST
+
+Create:
+
+Clinic A:
+A1
+A2
+
+Clinic B:
+B1
+B2
+
+When Clinic A is selected:
+
+Show:
+A1
+A2
+
+Do NOT show:
+B1
+B2
+
+When Clinic B is selected:
+
+Show:
+B1
+B2
+
+Do NOT show:
+A1
+A2
+
+Test through UI AND direct API request manipulation.
+
+---
+
+# 61. MAPPING CONSISTENCY TEST
+
+Create:
+
+Doctor A
+Clinic A / Branch A1
+
+Then edit Doctor A.
+
+Add:
+
+Clinic B / Branch B1
+
+Verify:
+
+Old mapping remains.
+
+New mapping is added.
+
+No duplicate mapping.
+
+Doctor sees both.
+
+Admin scope is correct.
+
+Super Admin sees both.
+
+Then remove:
+
+Clinic A / Branch A1
+
+Verify:
+
+Doctor no longer has operational access to Clinic A / Branch A1.
+
+Clinic B / Branch B1 remains available.
+
+Historical records are not deleted.
+
+---
+
+# 62. REFRESH / LOGOUT TEST
+
+After every major mapping operation:
+
+1. Save.
+2. Refresh browser.
+3. Logout.
+4. Login again.
+5. Verify mapping.
+6. Verify dashboard.
+7. Verify clinic selector.
+8. Verify branch selector.
+9. Verify permissions.
+
+Nothing should depend on stale frontend state.
+
+---
+
+# 63. TEST DATABASE DIRECTLY
+
+After implementing the changes, inspect database records.
+
+Verify:
+
+- No duplicate assignment rows
+- Valid foreign keys
+- Branch belongs to correct clinic
+- User mappings are persisted
+- Clinic creation mapping exists
+- Doctor creation mapping exists
+- Receptionist creation mapping exists
+- Doctor-created clinic mapping exists
+- Admin propagation exists where required
+- Super Admin can see records
+- Historical appointments remain intact
+
+---
+
+# 64. TEST API DIRECTLY
+
+Do not rely only on UI testing.
+
+Test:
+
+- Authorized request
+- Unauthorized clinic
+- Unauthorized branch
+- Unauthorized doctor
+- Invalid branch/clinic combination
+- Duplicate mapping
+- Missing clinic
+- Missing branch
+- Inactive clinic
+- Inactive branch
+- Invalid schedule
+- Overlapping schedule
+
+---
+
+# 65. FINAL REGRESSION TEST
+
+After implementation, verify that the following still work:
+
+### Authentication
+- Super Admin
+- Clinic Admin
+- Doctor
+- Receptionist
+- Patient
+
+### Clinics
+- Create
+- Edit
+- View
+- Deactivate
+
+### Branches
+- Create
+- Edit
+- View
+- Deactivate
+
+### Users
+- Create
+- Edit
+- Assign
+- Deactivate
+
+### Doctors
+- Profile
+- Clinic mapping
+- Branch mapping
+- Availability
+
+### Receptionists
+- Clinic mapping
+- Branch mapping
+- Patient management
+- Appointment management
+- Queue management
+
+### Patients
+- Registration
+- Search
+- Booking
+- Appointment history
+
+### Appointments
+- Online
+- Staff
+- Phone
+- Walk-in
+
+### QR
+- Generate
+- Display
+- Scan
+- Validate
+- Check-in
+- Invalid QR
+- Already used QR
+
+### Queue
+- Token
+- Waiting
+- Call
+- Start
+- Complete
+- Skip
+- No-show
+- Recall where supported
+
+### Dashboard
+- Correct clinic scope
+- Correct branch scope
+- Correct counts
+
+### Reports
+- Correct clinic scope
+- Correct branch scope
+- Correct totals
+
+---
+
+# 66. FINAL UX REQUIREMENT
+
+The application should feel extremely simple.
+
+A receptionist should not need technical knowledge.
+
+A doctor should immediately understand:
+
+"My Clinics"
+"My Branches"
+"My Availability"
+"My Appointments"
+"My Queue"
+
+An Admin should immediately understand:
+
+"My Clinics"
+"My Branches"
+"My Doctors"
+"My Receptionists"
+"My Availability"
+"My Appointments"
+"My Queue"
+
+A patient should immediately understand:
+
+"Select Clinic"
+"Select Branch"
+"Select Doctor"
+"Select Session"
+"Book"
+"Get Appointment QR"
+"Check Queue"
+
+Do not expose unnecessary technical complexity to users.
+
+---
+
+# 67. FINAL RULE — NO LOGICAL GAPS
+
+Before declaring this task complete, actively ask:
+
+1. Who created this user?
+2. Which clinics can this user access?
+3. Which branches can this user access?
+4. Can this branch actually belong to the selected clinic?
+5. Who can see the newly created clinic?
+6. Who can see the newly created branch?
+7. Who can see a doctor created by another authorized user?
+8. Who can see a receptionist created by a doctor?
+9. What happens if a doctor creates a clinic?
+10. Which Admin receives access?
+11. Does Super Admin see the new clinic?
+12. Does the Doctor see the new clinic?
+13. Does the Admin see the new clinic?
+14. What happens after logout/login?
+15. What happens after browser refresh?
+16. What happens if a mapping is removed?
+17. What happens to historical appointments?
+18. Can an unauthorized user manipulate IDs?
+19. Can two users create duplicate mappings?
+20. Can a doctor be scheduled at two clinics at the same time?
+21. Can a receptionist manage an unauthorized doctor's availability?
+22. Can an invalid branch be assigned to a clinic?
+23. Can an inactive clinic receive a new booking?
+24. Does QR still work?
+25. Does queue still work?
+26. Does patient privacy remain intact?
+
+If any answer is unclear, inspect the code and fix the underlying logic before declaring completion.
+
+---
+
+# 68. IMPORTANT IMPLEMENTATION PRINCIPLE
+
+Do not solve logical problems with UI-only restrictions.
+
+For every rule:
+
+Frontend validation
++
+Backend authorization
++
+Database integrity
+
+must work together.
+
+---
+
+# 69. DO NOT DECLARE SUCCESS PREMATURELY
+
+Do not simply say:
+
+"Implemented."
+
+You must actually inspect and test the application.
+
+After completing the work, provide a concise implementation report containing:
+
+### A. What was changed
+
+List actual changes.
+
+### B. Database changes
+
+List actual schema/migration changes.
+
+### C. API changes
+
+List actual authorization/endpoint changes.
+
+### D. Frontend changes
+
+List actual form/dashboard/mapping changes.
+
+### E. Existing functionality verified
+
+List:
+
+- Appointment
+- QR
+- Check-in
+- Queue
+- Availability
+- Patient flow
+
+### F. Tests performed
+
+List the important end-to-end and authorization tests.
+
+### G. Any unresolved issue
+
+If something cannot be completed because of an actual technical limitation, state it clearly.
+
+DO NOT pretend something is working if it was not verified.
+
+---
+
+# 70. FINAL SUCCESS CRITERIA
+
+ClinicFlow is considered complete for this task only when:
+
+- User-clinic mapping is reliable.
+- User-branch mapping is reliable.
+- Many-to-many relationships work correctly.
+- Receptionist clinic + branch mapping is mandatory.
+- Branch dropdown depends on selected clinic.
+- Admin can only assign users to authorized clinics.
+- Doctor can only assign receptionists within authorized clinic/branch scope.
+- Admin can create clinics and automatically receive mapping.
+- Doctor can create clinics and automatically receive mapping.
+- Appropriate Admin relationship receives the new clinic mapping.
+- Super Admin sees newly created clinics/branches.
+- Doctor sees newly created clinics/branches.
+- Admin sees newly created clinics/branches.
+- Shared mappings are visible consistently across authorized logins.
+- Admin, Doctor and Receptionist can manage doctor availability according to their authorized scope.
+- No unauthorized cross-clinic access exists.
+- No duplicate mappings exist.
+- No invalid clinic/branch combinations exist.
+- Existing appointments continue working.
+- Existing QR functionality continues working.
+- Existing check-in functionality continues working.
+- Existing queue functionality continues working.
+- Existing patient functionality continues working.
+- Historical data is preserved.
+- Database integrity is maintained.
+- UI remains simple.
+- No dead buttons exist.
+- No incomplete flow exists.
+- No known logical gap remains in the implemented workflows.
+
+MOST IMPORTANTLY:
+
+DO NOT MAKE THE SYSTEM MORE COMPLICATED THAN NECESSARY.
+
+The objective is NOT to add more features.
+
+The objective is to make the existing ClinicFlow system:
+
+SIMPLE
++
+CORRECT
++
+CONNECTED
++
+SECURE
++
+RELIABLE
++
+EASY TO USE
+
+Before finishing, test the complete system end-to-end and fix anything that is broken.
