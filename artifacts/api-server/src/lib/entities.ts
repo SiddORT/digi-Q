@@ -4,8 +4,10 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
   row = { ...row };
   if (kind === "doctors" || kind === "users") {
     if (kind === "users") row.mobile ||= "";
-    const links = (await all(assignments, conn)).filter(a => a.userId === (kind === "doctors" ? row.userId : row.id));
-    row.clinicIds = [...new Set(links.map(a => a.clinicId))]; row.branchIds = links.filter(a => a.branchId).map(a => a.branchId);
+    const activeClinics = new Set((await all(clinics, conn)).filter(c => c.status === "active").map(c => c.id));
+    const activeBranches = new Set((await all(branches, conn)).filter(b => b.status === "active" && activeClinics.has(b.clinicId)).map(b => b.id));
+    const links = (await all(assignments, conn)).filter(a => a.userId === (kind === "doctors" ? row.userId : row.id) && activeClinics.has(a.clinicId) && (!a.branchId || activeBranches.has(a.branchId)));
+    row.clinicIds = [...new Set(links.map(a => a.clinicId))]; row.branchIds = [...new Set(links.filter(a => a.branchId).map(a => a.branchId))];
   }
   if (kind === "doctors") {
     const account = await one(users, row.userId, conn); row.fullName = account.fullName; row.email = account.email; row.mobile = account.mobile || "";

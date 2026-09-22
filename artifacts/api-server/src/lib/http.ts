@@ -34,10 +34,22 @@ export function query(schema: any, req: Request) {
   for (const [key, value] of Object.entries(result)) assert(value !== "undefined", 400, `${key} is required`);
   return result;
 }
+const integrityCodes = new Set(["23505", "23503", "23514", "23P01"]);
+export function databaseIntegrityCode(error: unknown): string | null {
+  const seen = new Set<unknown>();
+  let current: any = error;
+  for (let depth = 0; current && typeof current === "object" && depth < 8 && !seen.has(current); depth++) {
+    seen.add(current);
+    if (typeof current.code === "string" && integrityCodes.has(current.code)) return current.code;
+    current = current.cause;
+  }
+  return null;
+}
 export function errors(err: any, req: Request, res: Response, _next: NextFunction) {
   const validation = err instanceof ZodError || err.name === "ZodError";
-  const conflict = ["23505", "23503", "23514"].includes(err.code);
+  const conflictCode = databaseIntegrityCode(err);
+  const conflict = Boolean(conflictCode);
   const status = err.status || (validation ? 400 : conflict ? 409 : 500);
   if (status >= 500) req.log.error({ err }, "Request failed");
-  res.status(status).json({ error: validation ? "Invalid input: " + err.issues.map((i: any) => `${i.path.join(".")} ${i.message}`).join("; ") : conflict ? "Record conflicts with existing data or references" : status >= 500 ? "Service unavailable. Please retry." : err.message, code: validation ? "VALIDATION_ERROR" : err.code || "REQUEST_FAILED" });
+  res.status(status).json({ error: validation ? "Invalid input: " + err.issues.map((i: any) => `${i.path.join(".")} ${i.message}`).join("; ") : conflict ? "Record conflicts with existing data or references" : status >= 500 ? "Service unavailable. Please retry." : err.message, code: validation ? "VALIDATION_ERROR" : conflict ? "CONFLICT" : err.code || "REQUEST_FAILED" });
 }

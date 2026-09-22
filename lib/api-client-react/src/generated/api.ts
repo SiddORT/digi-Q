@@ -31,6 +31,10 @@ import type {
   AppointmentAction,
   AppointmentInput,
   AppointmentList,
+  AppointmentQr,
+  AppointmentQrCheckInResult,
+  AppointmentQrPayload,
+  AppointmentQrResolution,
   AuditLogList,
   Availability,
   AvailabilityException,
@@ -4221,6 +4225,250 @@ export function useGetAppointment<TData = Awaited<ReturnType<typeof getAppointme
 
 
 
+
+export const getGetAppointmentQrUrl = (id: string,) => {
+
+
+
+
+  return `/api/appointments/${id}/qr`
+}
+
+/**
+ * Returns a signed, appointment-specific QR payload to the appointment owner or authorized scoped staff.
+ */
+export const getAppointmentQr = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<AppointmentQr> => {
+
+  return customFetch<AppointmentQr>(getGetAppointmentQrUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAppointmentQrQueryKey = (id: string,) => {
+    return [
+    `/api/appointments/${id}/qr`
+    ] as const;
+    }
+
+
+export const getGetAppointmentQrQueryOptions = <TData = Awaited<ReturnType<typeof getAppointmentQr>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointmentQr>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAppointmentQrQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAppointmentQr>>> = ({ signal }) => getAppointmentQr(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAppointmentQr>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAppointmentQrQueryResult = NonNullable<Awaited<ReturnType<typeof getAppointmentQr>>>
+export type GetAppointmentQrQueryError = ErrorType<unknown>
+
+
+
+export function useGetAppointmentQr<TData = Awaited<ReturnType<typeof getAppointmentQr>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointmentQr>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAppointmentQrQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getResolveAppointmentQrUrl = () => {
+
+
+
+
+  return `/api/appointment-qr/resolve`
+}
+
+/**
+ * Resolves an appointment QR for authorized operational staff without changing appointment state.
+ */
+export const resolveAppointmentQr = async (appointmentQrPayload: AppointmentQrPayload, options?: Parameters<typeof customFetch>[1]): Promise<AppointmentQrResolution> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AppointmentQrResolution>(getResolveAppointmentQrUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(appointmentQrPayload)
+  }
+);}
+
+
+
+
+
+export const getResolveAppointmentQrMutationKey = () => ['resolveAppointmentQr'] as const;
+
+export const getResolveAppointmentQrMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveAppointmentQr>>, TError,ResolveAppointmentQrMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveAppointmentQr>>, TError,ResolveAppointmentQrMutationVariables, TContext> => {
+
+const mutationKey = getResolveAppointmentQrMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveAppointmentQr>>, ResolveAppointmentQrMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  resolveAppointmentQr(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveAppointmentQrMutationResult = NonNullable<Awaited<ReturnType<typeof resolveAppointmentQr>>>
+    export type ResolveAppointmentQrMutationBody = BodyType<AppointmentQrPayload>
+    export type ResolveAppointmentQrMutationError = ErrorType<unknown>
+    export type ResolveAppointmentQrMutationVariables = {data: BodyType<AppointmentQrPayload>}
+
+    export const useResolveAppointmentQr = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveAppointmentQr>>, TError,ResolveAppointmentQrMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resolveAppointmentQr>>,
+        TError,
+        ResolveAppointmentQrMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResolveAppointmentQrMutationOptions(options));
+    }
+
+export const getCheckInAppointmentQrUrl = () => {
+
+
+
+
+  return `/api/appointment-qr/check-in`
+}
+
+/**
+ * Idempotently checks in and enqueues an eligible appointment for authorized operational staff.
+ */
+export const checkInAppointmentQr = async (appointmentQrPayload: AppointmentQrPayload, options?: Parameters<typeof customFetch>[1]): Promise<AppointmentQrCheckInResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AppointmentQrCheckInResult>(getCheckInAppointmentQrUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(appointmentQrPayload)
+  }
+);}
+
+
+
+
+
+export const getCheckInAppointmentQrMutationKey = () => ['checkInAppointmentQr'] as const;
+
+export const getCheckInAppointmentQrMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInAppointmentQr>>, TError,CheckInAppointmentQrMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkInAppointmentQr>>, TError,CheckInAppointmentQrMutationVariables, TContext> => {
+
+const mutationKey = getCheckInAppointmentQrMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkInAppointmentQr>>, CheckInAppointmentQrMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  checkInAppointmentQr(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckInAppointmentQrMutationResult = NonNullable<Awaited<ReturnType<typeof checkInAppointmentQr>>>
+    export type CheckInAppointmentQrMutationBody = BodyType<AppointmentQrPayload>
+    export type CheckInAppointmentQrMutationError = ErrorType<unknown>
+    export type CheckInAppointmentQrMutationVariables = {data: BodyType<AppointmentQrPayload>}
+
+    export const useCheckInAppointmentQr = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkInAppointmentQr>>, TError,CheckInAppointmentQrMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkInAppointmentQr>>,
+        TError,
+        CheckInAppointmentQrMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCheckInAppointmentQrMutationOptions(options));
+    }
 
 export const getTransitionAppointmentUrl = (id: string,) => {
 

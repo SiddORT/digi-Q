@@ -22,6 +22,10 @@ export interface UserInput {
   mobile?: string;
   role: Role;
   status?: RecordStatus;
+  /**
+     * Required by the server for clinic-scoped roles.
+     * @minItems 1
+     */
   clinicIds?: string[];
   branchIds?: string[];
 }

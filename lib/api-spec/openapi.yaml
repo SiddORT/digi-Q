@@ -324,6 +324,27 @@ paths:
       operationId: getAppointment
       responses:
         "200": { description: Confirmation and lifecycle, content: { application/json: { schema: { $ref: "#/components/schemas/Appointment" } } } }
+  /appointments/{id}/qr:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getAppointmentQr
+      description: Returns a signed, appointment-specific QR payload to the appointment owner or authorized scoped staff.
+      responses:
+        "200": { description: Appointment QR payload, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentQr" } } } }
+  /appointment-qr/resolve:
+    post:
+      operationId: resolveAppointmentQr
+      description: Resolves an appointment QR for authorized operational staff without changing appointment state.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentQrPayload" } } } }
+      responses:
+        "200": { description: Appointment QR eligibility, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentQrResolution" } } } }
+  /appointment-qr/check-in:
+    post:
+      operationId: checkInAppointmentQr
+      description: Idempotently checks in and enqueues an eligible appointment for authorized operational staff.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentQrPayload" } } } }
+      responses:
+        "200": { description: Appointment QR check-in result, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentQrCheckInResult" } } } }
   /appointments/{id}/actions:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
@@ -502,7 +523,7 @@ components:
         mobile: { type: string }
         role: { $ref: "#/components/schemas/Role" }
         status: { $ref: "#/components/schemas/RecordStatus" }
-        clinicIds: { type: array, items: { type: string } }
+        clinicIds: { type: array, minItems: 1, items: { type: string }, description: Required by the server for clinic-scoped roles. }
         branchIds: { type: array, items: { type: string } }
     User:
       allOf:
@@ -545,6 +566,7 @@ components:
       type: object
       required: [name, address]
       properties:
+        adminId: { type: string, description: Super admins may select the owning clinic administrator; other roles are assigned by the server. }
         name: { type: string, minLength: 1 }
         address: { type: string }
         country: { type: string }
@@ -562,7 +584,7 @@ components:
       allOf:
         - { $ref: "#/components/schemas/ClinicInput" }
         - type: object
-          required: [id, code, status, createdAt]
+          required: [id, code, adminId, status, createdAt]
           properties:
             id: { type: string }
             code: { type: string }
@@ -595,6 +617,7 @@ components:
       type: object
       required: [fullName, email]
       properties:
+        ownerAdminId: { type: string, description: Optional owning clinic administrator; authorization and derivation are enforced by the server. }
         fullName: { type: string, minLength: 1 }
         email: { type: string, format: email }
         mobile: { type: string }
@@ -608,14 +631,14 @@ components:
         about: { type: string }
         consultationFee: { type: number, minimum: 0 }
         languages: { type: array, items: { type: string } }
-        clinicIds: { type: array, items: { type: string } }
+        clinicIds: { type: array, minItems: 1, items: { type: string }, description: Required by the server for doctor assignment. }
         branchIds: { type: array, items: { type: string } }
         status: { $ref: "#/components/schemas/RecordStatus" }
     Doctor:
       allOf:
         - { $ref: "#/components/schemas/DoctorInput" }
         - type: object
-          required: [id, userId, code, status]
+          required: [id, userId, code, ownerAdminId, status]
           properties:
             id: { type: string }
             userId: { type: string }
@@ -796,6 +819,33 @@ components:
             completedAt: { type: [string, "null"], format: date-time }
             allowedActions: { type: array, items: { $ref: "#/components/schemas/AppointmentActionType" } }
             history: { type: array, items: { $ref: "#/components/schemas/StatusEvent" } }
+    AppointmentQr:
+      type: object
+      required: [appointmentId, payload, checkInUrl]
+      properties:
+        appointmentId: { type: string }
+        payload: { type: string }
+        checkInUrl: { type: string }
+    AppointmentQrPayload:
+      type: object
+      required: [payload]
+      properties:
+        payload: { type: string, minLength: 1 }
+    AppointmentQrResolution:
+      type: object
+      required: [appointment, eligible, alreadyCheckedIn, message]
+      properties:
+        appointment: { $ref: "#/components/schemas/Appointment" }
+        eligible: { type: boolean }
+        alreadyCheckedIn: { type: boolean }
+        message: { type: string }
+    AppointmentQrCheckInResult:
+      type: object
+      required: [appointment, alreadyCheckedIn, message]
+      properties:
+        appointment: { $ref: "#/components/schemas/Appointment" }
+        alreadyCheckedIn: { type: boolean }
+        message: { type: string }
     AppointmentActionType: { type: string, enum: [checkIn, enqueue, call, start, complete, noShow, requeue, cancel] }
     AppointmentAction:
       type: object

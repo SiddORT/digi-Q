@@ -26,4 +26,4 @@ export type Clinic = ClinicInput & {
   createdAt: Date;
   doctorCount?: number;
   branchCount?: number;
-}, 'status'>>;
+}, 'adminId' | 'status'>>;

@@ -15,6 +15,8 @@
 import type { RecordStatus } from './recordStatus';
 
 export interface DoctorInput {
+  /** Optional owning clinic administrator; authorization and derivation are enforced by the server. */
+  ownerAdminId?: string;
   /** @minLength 1 */
   fullName: string;
   email: string;
@@ -31,6 +33,10 @@ export interface DoctorInput {
   /** @minimum 0 */
   consultationFee?: number;
   languages?: string[];
+  /**
+     * Required by the server for doctor assignment.
+     * @minItems 1
+     */
   clinicIds?: string[];
   branchIds?: string[];
   status?: RecordStatus;

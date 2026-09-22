@@ -20,6 +20,7 @@ async function main() {
     password: `Cf!${randomBytes(15).toString("base64url")}9a`,
     clerkId: "",
   }));
+  const previewClinicAdmin = accounts.find(account => account.role === "clinicAdmin")!;
   const existing = await db.select({ id: users.id }).from(users).where(inArray(users.email, accounts.map(a => a.email)));
   if (existing.length) throw new Error("Preview profiles already exist; no existing accounts were modified.");
   for (const a of accounts) {
@@ -41,7 +42,7 @@ async function main() {
           role: a.role, data: { previewOnly: true },
         });
         if (a.role === "doctor") await tx.insert(doctors).values({
-          id: randomUUID(), userId: a.id,
+          id: randomUUID(), userId: a.id, ownerAdminId: previewClinicAdmin.id,
           data: { fullName: a.fullName, email: a.email, code: `DOC-${a.id.slice(0, 8)}`, clinicIds: [], branchIds: [] },
         });
         if (a.role === "patient") await tx.insert(patients).values({

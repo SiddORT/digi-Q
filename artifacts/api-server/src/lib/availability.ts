@@ -22,6 +22,41 @@ export function validateTimes(body: any) {
   if (body.queueOpenTime) assert(minutes(body.queueOpenTime) < end, 400, "Queue opening must precede session end");
   if (body.queueCloseTime) assert(minutes(body.queueCloseTime) <= end && minutes(body.queueCloseTime) > minutes(body.queueOpenTime || body.startTime), 400, "Invalid queue closing time");
 }
+function datePlus(date: string, days: number) {
+  const value = new Date(date + "T12:00:00Z"); value.setUTCDate(value.getUTCDate() + days); return value.toISOString().slice(0, 10);
+}
+function zonedInstant(date: string, time: string, timezone: string) {
+  localNow(timezone);
+  const [year, month, day] = date.split("-").map(Number), [hour, minute] = time.split(":").map(Number);
+  let guess = Date.UTC(year, month - 1, day, hour, minute);
+  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  for (let i = 0; i < 3; i++) {
+    const p = Object.fromEntries(formatter.formatToParts(new Date(guess)).map(part => [part.type, part.value]));
+    const represented = Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour), Number(p.minute));
+    const correction = Date.UTC(year, month - 1, day, hour, minute) - represented;
+    if (!correction) break;
+    guess += correction;
+  }
+  return guess;
+}
+export function sessionsOverlap(a: any, aDate: string, b: any, bDate: string) {
+  if (!a.isOpen || !b.isOpen || a.isClosed || b.isClosed) return false;
+  const aStart = zonedInstant(aDate, a.startTime, a.timezone), aEnd = zonedInstant(aDate, a.endTime, a.timezone);
+  const bStart = zonedInstant(bDate, b.startTime, b.timezone), bEnd = zonedInstant(bDate, b.endTime, b.timezone);
+  return aStart < bEnd && bStart < aEnd;
+}
+export function weeklySessionsOverlap(a: any, b: any) {
+  const sunday = "2030-01-06";
+  for (let week = 0; week < 3; week++) {
+    const aDate = datePlus(sunday, week * 7 + a.dayOfWeek);
+    for (let adjacent = -1; adjacent <= 1; adjacent++) {
+      const bDate = datePlus(sunday, week * 7 + b.dayOfWeek + adjacent * 7);
+      if (sessionsOverlap(a, aDate, b, bDate)) return true;
+    }
+  }
+  return false;
+}
+export { datePlus };
 export async function doctorContext(doctorId: string, branchId: string, conn: any = db) {
   const doctor = await one(doctors, doctorId, conn), branch = await one(branches, branchId, conn), clinic = await one(clinics, branch.clinicId, conn);
   const account = await one(users, doctor.userId, conn);

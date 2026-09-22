@@ -105,6 +105,10 @@ export interface UserInput {
   mobile?: string;
   role: Role;
   status?: RecordStatus;
+  /**
+     * Required by the server for clinic-scoped roles.
+     * @minItems 1
+     */
   clinicIds?: string[];
   branchIds?: string[];
 }
@@ -170,6 +174,8 @@ export interface OtpResult {
 }
 
 export interface ClinicInput {
+  /** Super admins may select the owning clinic administrator; other roles are assigned by the server. */
+  adminId?: string;
   /** @minLength 1 */
   name: string;
   address: string;
@@ -198,7 +204,7 @@ export type Clinic = ClinicInput & {
   createdAt: string;
   doctorCount?: number;
   branchCount?: number;
-}, 'status'>>;
+}, 'adminId' | 'status'>>;
 
 export interface BranchInput {
   clinicId: string;
@@ -224,6 +230,8 @@ export type Branch = BranchInput & {
 }, 'status'>>;
 
 export interface DoctorInput {
+  /** Optional owning clinic administrator; authorization and derivation are enforced by the server. */
+  ownerAdminId?: string;
   /** @minLength 1 */
   fullName: string;
   email: string;
@@ -240,6 +248,10 @@ export interface DoctorInput {
   /** @minimum 0 */
   consultationFee?: number;
   languages?: string[];
+  /**
+     * Required by the server for doctor assignment.
+     * @minItems 1
+     */
   clinicIds?: string[];
   branchIds?: string[];
   status?: RecordStatus;
@@ -257,7 +269,7 @@ export type Doctor = DoctorInput & {
   code: string;
   specializationName?: string;
   qualificationNames?: string[];
-}, 'status'>>;
+}, 'ownerAdminId' | 'status'>>;
 
 export interface PublicDoctor {
   id: string;
@@ -521,6 +533,30 @@ export type Appointment = AppointmentInput & ({
   allowedActions: AppointmentActionType[];
   history?: StatusEvent[];
 });
+
+export interface AppointmentQr {
+  appointmentId: string;
+  payload: string;
+  checkInUrl: string;
+}
+
+export interface AppointmentQrPayload {
+  /** @minLength 1 */
+  payload: string;
+}
+
+export interface AppointmentQrResolution {
+  appointment: Appointment;
+  eligible: boolean;
+  alreadyCheckedIn: boolean;
+  message: string;
+}
+
+export interface AppointmentQrCheckInResult {
+  appointment: Appointment;
+  alreadyCheckedIn: boolean;
+  message: string;
+}
 
 export interface AppointmentAction {
   action: AppointmentActionType;

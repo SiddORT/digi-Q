@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "schedule_active_location_day_unique" ON "schedules" USING btree ("doctor_id","branch_id","day_of_week") WHERE "schedules"."status" = 'active';

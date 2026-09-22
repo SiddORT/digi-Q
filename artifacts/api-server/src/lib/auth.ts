@@ -21,10 +21,12 @@ export async function findUser(clerkId: string) {
   }
   if (!row) return null;
   const user = flatten(row);
-  const links = (await all(assignments)).filter(a => a.userId === user.id);
+  const activeClinics = new Set((await all(clinics)).filter(c => c.status === "active").map(c => c.id));
+  const activeBranches = new Set((await all(branches)).filter(b => b.status === "active" && activeClinics.has(b.clinicId)).map(b => b.id));
+  const links = (await all(assignments)).filter(a => a.userId === user.id && activeClinics.has(a.clinicId) && (!a.branchId || activeBranches.has(a.branchId)));
   const [doctor] = await db.select().from(doctors).where(eq(doctors.userId, user.id));
   const [patient] = await db.select().from(patients).where(eq(patients.userId, user.id));
-  return { ...user, mobile: user.mobile || "", clinicIds: [...new Set(links.map(a => a.clinicId))], branchIds: links.filter(a => a.branchId).map(a => a.branchId), doctorId: doctor?.id || null, patientId: patient?.id || null };
+  return { ...user, mobile: user.mobile || "", clinicIds: [...new Set(links.map(a => a.clinicId))], branchIds: [...new Set(links.filter(a => a.branchId).map(a => a.branchId))], doctorId: doctor?.id || null, patientId: patient?.id || null };
 }
 export async function requireUser(req: Request) {
   const user = await findUser(requireIdentity(req)); assert(user, 403, "Complete onboarding first"); assert(user.status === "active", 403, "Account inactive"); return user;
@@ -33,20 +35,25 @@ export function roles(user: any, allowed: string[]) { assert(allowed.includes(us
 export function scope(user: any, clinicId?: string | null, branchId?: string | null) {
   if (user.role === "superAdmin") return true;
   if (!clinicId || !user.clinicIds.includes(clinicId)) return false;
-  return !branchId || user.role !== "receptionist" || user.branchIds.includes(branchId);
+  return !branchId || !["doctor", "receptionist"].includes(user.role) || user.branchIds.includes(branchId);
 }
 export async function canRead(user: any, kind: string, row: any): Promise<boolean> {
   if (user.role === "superAdmin" || kind === "masters") return true;
-  if (kind === "users") return user.id === row.id || user.role === "clinicAdmin" && row.role !== "superAdmin" && row.clinicIds?.length > 0 && row.clinicIds.every((id: string) => user.clinicIds.includes(id));
-  if (kind === "doctors") return user.doctorId === row.id || ["clinicAdmin", "receptionist"].includes(user.role) && row.clinicIds?.some((id: string) => scope(user, id)) && (user.role !== "receptionist" || row.branchIds?.some((id: string) => user.branchIds.includes(id)));
+  if (kind === "users") return user.id === row.id || row.role !== "superAdmin" && row.clinicIds?.some((id: string) => scope(user, id)) && (!["doctor", "receptionist"].includes(user.role) || row.branchIds?.some((id: string) => user.branchIds.includes(id)));
+  if (kind === "doctors") return user.doctorId === row.id || ["clinicAdmin", "doctor", "receptionist"].includes(user.role) && row.clinicIds?.some((id: string) => scope(user, id)) && (!["doctor", "receptionist"].includes(user.role) || row.branchIds?.some((id: string) => user.branchIds.includes(id)));
   if (kind === "patients") {
     if (user.role === "patient") return row.id === user.patientId;
     if (user.role !== "doctor" && scope(user, row.clinicId, row.branchId)) return true;
-    return (await all(appointments)).some(a => a.patientId === row.id && (user.role === "doctor" ? a.doctorId === user.doctorId : scope(user, a.clinicId, a.branchId)));
+    return (await all(appointments)).some(a => a.patientId === row.id && (user.role === "doctor" ? a.doctorId === user.doctorId && scope(user, a.clinicId, a.branchId) : scope(user, a.clinicId, a.branchId)));
   }
-  if (kind === "clinics") return row.ownerId === user.id || scope(user, row.id);
+  if (kind === "clinics") return scope(user, row.id);
   if (user.role === "patient") return kind === "appointments" && row.patientId === user.patientId;
-  if (user.role === "doctor" && ["appointments", "schedules", "availability-exceptions", "qrs"].includes(kind)) return row.doctorId === user.doctorId;
+  if (user.role === "doctor" && ["appointments", "qrs"].includes(kind)) return row.doctorId === user.doctorId && scope(user, row.clinicId, row.branchId);
+  if (["schedules", "availability-exceptions"].includes(kind)) {
+    const doctor = await one(doctors, row.doctorId);
+    const doctorAssigned = (await all(assignments)).some(a => a.userId === doctor.userId && a.branchId === row.branchId);
+    if (!doctorAssigned) return false;
+  }
   let clinicId = row.clinicId;
   if (!clinicId && row.branchId) clinicId = (await one(branches, row.branchId)).clinicId;
   return scope(user, clinicId, row.branchId || (kind === "branches" ? row.id : null));
@@ -55,16 +62,43 @@ export async function scoped(user: any, kind: string, rows: any[]) {
   const flags = await Promise.all(rows.map(r => canRead(user, kind, r)));
   return rows.filter((_, i) => flags[i]);
 }
-export async function setAssignments(userId: string, clinicIds: string[], branchIds: string[], conn: any = db) {
-  await conn.delete(assignments).where(eq(assignments.userId, userId));
-  for (const clinicId of clinicIds) await conn.insert(assignments).values({ id: uid(), userId, clinicId });
+export async function projectAssignmentScope(user: any, kind: string, row: any) {
+  if (!["users", "doctors"].includes(kind)) return row;
+  const own = kind === "users" ? row.id === user.id : row.id === user.doctorId;
+  const clinicRows = await all(clinics), branchRows = await all(branches);
+  const clinicIds = user.role === "superAdmin" || own ? row.clinicIds || [] : (row.clinicIds || []).filter((clinicId: string) => scope(user, clinicId));
+  const branchIds = user.role === "superAdmin" || own ? row.branchIds || [] : (row.branchIds || []).filter((branchId: string) => {
+    const branch = branchRows.find(b => b.id === branchId);
+    return branch && scope(user, branch.clinicId, branch.id);
+  });
+  const visibleClinics = new Set(clinicIds), visibleBranches = new Set(branchIds);
+  return {
+    ...row,
+    clinicIds,
+    branchIds,
+    clinicNames: clinicRows.filter(c => visibleClinics.has(c.id)).map(c => c.name),
+    branchNames: branchRows.filter(b => visibleBranches.has(b.id)).map(b => b.name),
+  };
+}
+export async function setAssignments(userId: string, clinicIds: string[], branchIds: string[], actor: any, conn: any = db) {
+  clinicIds = [...new Set(clinicIds)];
+  branchIds = [...new Set(branchIds)];
+  const target = await one(users, userId, conn);
+  assert(target.role !== "clinicAdmin", 409, "Clinic administrator access is changed only by transferring clinic ownership");
+  const existing = (await all(assignments, conn)).filter(a => a.userId === userId);
+  const editable = existing.filter(a => actor.role === "superAdmin" || scope(actor, a.clinicId, a.branchId));
+  const retained = existing.filter(a => !editable.includes(a));
+  const finalClinicIds = new Set([...clinicIds, ...retained.map(a => a.clinicId)]);
+  for (const link of editable) await conn.delete(assignments).where(eq(assignments.id, link.id));
+  for (const clinicId of clinicIds) await conn.insert(assignments).values({ id: uid(), userId, clinicId }).onConflictDoNothing();
   for (const branchId of branchIds) {
     const branch = await one(branches, branchId, conn);
-    assert(clinicIds.includes(branch.clinicId), 400, "Branch must belong to assigned clinic");
-    await conn.insert(assignments).values({ id: uid(), userId, clinicId: branch.clinicId, branchId });
+    assert(finalClinicIds.has(branch.clinicId), 400, "Branch must belong to assigned clinic");
+    await conn.insert(assignments).values({ id: uid(), userId, clinicId: branch.clinicId, branchId }).onConflictDoNothing();
   }
 }
 export async function validateAssignments(actor: any, clinicIds: string[], branchIds: string[]) {
+  clinicIds = [...new Set(clinicIds)]; branchIds = [...new Set(branchIds)];
   for (const id of clinicIds) { const c = await one(clinics, id); assert(c.status === "active" && scope(actor, id), 403, "Clinic assignment forbidden"); }
   for (const id of branchIds) { const b = await one(branches, id); assert(b.status === "active" && clinicIds.includes(b.clinicId) && scope(actor, b.clinicId, id), 403, "Branch assignment forbidden"); }
 }

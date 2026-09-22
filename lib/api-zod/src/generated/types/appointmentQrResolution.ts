@@ -12,18 +12,11 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { DoctorInput } from './doctorInput';
+import type { Appointment } from './appointment';
 
-export type Doctor = DoctorInput & {
-  id: string;
-  userId: string;
-  code: string;
-  specializationName?: string;
-  qualificationNames?: string[];
-} & Required<Pick<DoctorInput & {
-  id: string;
-  userId: string;
-  code: string;
-  specializationName?: string;
-  qualificationNames?: string[];
-}, 'ownerAdminId' | 'status'>>;
+export interface AppointmentQrResolution {
+  appointment: Appointment;
+  eligible: boolean;
+  alreadyCheckedIn: boolean;
+  message: string;
+}

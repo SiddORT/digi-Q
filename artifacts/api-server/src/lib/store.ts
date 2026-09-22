@@ -23,7 +23,7 @@ export async function change(table: any, id: string, fields: any, conn: any = db
   assert(row, 404, "Record not found"); return flatten(row);
 }
 export async function audit(user: any, action: string, type: string, row: any, conn: any = db) {
-  await conn.insert(auditLogs).values({ id: uid(), actorId: user.id, clinicId: row.clinicId || (type === "clinics" ? row.id : null), action, entityType: type, entityId: row.id, summary: `${action} ${type} record` });
+  await conn.insert(auditLogs).values({ id: uid(), actorId: user.id, clinicId: row.clinicId || (type === "clinics" ? row.id : null), branchId: row.branchId || (type === "branches" ? row.id : null), action, entityType: type, entityId: row.id, summary: `${action} ${type} record` });
 }
 export const defaultSettings = {
   platformName: "ClinicFlow", timezone: "Asia/Kolkata", bookingHorizonDays: 60, cancellationCutoffMinutes: 0,

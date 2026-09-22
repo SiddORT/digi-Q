@@ -15,6 +15,8 @@
 import type { RecordStatus } from './recordStatus';
 
 export interface ClinicInput {
+  /** Super admins may select the owning clinic administrator; other roles are assigned by the server. */
+  adminId?: string;
   /** @minLength 1 */
   name: string;
   address: string;

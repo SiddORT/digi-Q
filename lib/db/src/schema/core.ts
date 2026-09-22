@@ -1,4 +1,4 @@
-import { pgTable, text, jsonb, timestamp, integer, boolean, index, uniqueIndex, check, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTable, text, jsonb, timestamp, integer, boolean, index, uniqueIndex, check, foreignKey, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 const id = () => text("id").primaryKey();
@@ -10,22 +10,34 @@ export const users = pgTable("users", {
   status: text("status").notNull().default("active"), data: data(), createdAt: created(),
 }, t => [check("users_role", sql`${t.role} in ('superAdmin','clinicAdmin','doctor','receptionist','patient')`)]);
 export const clinics = pgTable("clinics", {
-  id: id(), ownerId: text("owner_id").references(() => users.id), status: text("status").notNull().default("active"), data: data(), createdAt: created(),
-}, t => [index("clinic_owner_idx").on(t.ownerId)]);
+  id: id(), ownerId: text("owner_id").references(() => users.id), adminId: text("admin_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("active"), data: data(), createdAt: created(),
+}, t => [index("clinic_owner_idx").on(t.ownerId), index("clinic_admin_idx").on(t.adminId), uniqueIndex("clinic_name_unique").on(sql`lower(${t.data}->>'name')`)]);
 export const branches = pgTable("branches", {
   id: id(), clinicId: text("clinic_id").notNull().references(() => clinics.id), status: text("status").notNull().default("active"), data: data(), createdAt: created(),
-}, t => [index("branch_clinic_idx").on(t.clinicId)]);
+}, t => [
+  index("branch_clinic_idx").on(t.clinicId),
+  uniqueIndex("branch_id_clinic_unique").on(t.id, t.clinicId),
+  uniqueIndex("branch_name_clinic_unique").on(t.clinicId, sql`lower(${t.data}->>'name')`),
+]);
 export const assignments = pgTable("assignments", {
   id: id(), userId: text("user_id").notNull().references(() => users.id), clinicId: text("clinic_id").notNull().references(() => clinics.id),
   branchId: text("branch_id").references(() => branches.id),
-}, t => [index("assignment_user_idx").on(t.userId), index("assignment_scope_idx").on(t.clinicId, t.branchId)]);
+}, t => [
+  index("assignment_user_idx").on(t.userId),
+  index("assignment_scope_idx").on(t.clinicId, t.branchId),
+  uniqueIndex("assignment_user_clinic_only_unique").on(t.userId, t.clinicId).where(sql`${t.branchId} is null`),
+  uniqueIndex("assignment_user_branch_unique").on(t.userId, t.branchId).where(sql`${t.branchId} is not null`),
+  foreignKey({ columns: [t.branchId, t.clinicId], foreignColumns: [branches.id, branches.clinicId], name: "assignment_branch_clinic_fk" }),
+]);
 export const masters = pgTable("masters", {
   id: id(), category: text("category").notNull(), code: text("code").notNull(), parentId: text("parent_id").references((): AnyPgColumn => masters.id), status: text("status").notNull().default("active"), data: data(),
 }, t => [uniqueIndex("master_category_code").on(t.category, t.code)]);
 export const doctors = pgTable("doctors", {
   id: id(), userId: text("user_id").notNull().unique().references(() => users.id),
+  ownerAdminId: text("owner_admin_id").notNull().references(() => users.id),
   specializationId: text("specialization_id").references(() => masters.id), status: text("status").notNull().default("active"), data: data(),
-});
+}, t => [index("doctor_owner_admin_idx").on(t.ownerAdminId)]);
 export const patients = pgTable("patients", {
   id: id(), userId: text("user_id").unique().references(() => users.id), clinicId: text("clinic_id").references(() => clinics.id),
   branchId: text("branch_id").references(() => branches.id), mobile: text("mobile").notNull().default(""),
@@ -34,7 +46,11 @@ export const patients = pgTable("patients", {
 export const schedules = pgTable("schedules", {
   id: id(), doctorId: text("doctor_id").notNull().references(() => doctors.id), clinicId: text("clinic_id").notNull().references(() => clinics.id),
   branchId: text("branch_id").notNull().references(() => branches.id), dayOfWeek: integer("day_of_week").notNull(), status: text("status").notNull().default("active"), data: data(),
-}, t => [index("schedule_lookup_idx").on(t.doctorId, t.branchId, t.dayOfWeek), check("schedule_weekday", sql`${t.dayOfWeek} between 0 and 6`)]);
+}, t => [
+  index("schedule_lookup_idx").on(t.doctorId, t.branchId, t.dayOfWeek),
+  uniqueIndex("schedule_active_location_day_unique").on(t.doctorId, t.branchId, t.dayOfWeek).where(sql`${t.status} = 'active'`),
+  check("schedule_weekday", sql`${t.dayOfWeek} between 0 and 6`),
+]);
 export const availabilityExceptions = pgTable("availability_exceptions", {
   id: id(), doctorId: text("doctor_id").notNull().references(() => doctors.id), branchId: text("branch_id").notNull().references(() => branches.id),
   date: text("date").notNull(), status: text("status").notNull().default("active"), data: data(),
@@ -65,8 +81,9 @@ export const qrs = pgTable("qrs", {
 }, t => [index("qr_scope_idx").on(t.clinicId, t.branchId)]);
 export const auditLogs = pgTable("audit_logs", {
   id: id(), actorId: text("actor_id").references(() => users.id), clinicId: text("clinic_id").references(() => clinics.id),
+  branchId: text("branch_id").references(() => branches.id),
   action: text("action").notNull(), entityType: text("entity_type").notNull(), entityId: text("entity_id").notNull(), summary: text("summary").notNull(), createdAt: created(),
-}, t => [index("audit_scope_idx").on(t.clinicId, t.createdAt)]);
+}, t => [index("audit_scope_idx").on(t.clinicId, t.branchId, t.createdAt)]);
 export const settings = pgTable("settings", { id: id(), data: data() });
 export const otpChallenges = pgTable("otp_challenges", {
   id: id(), userId: text("user_id").notNull().references(() => users.id), mobile: text("mobile").notNull(),

@@ -7,9 +7,38 @@ import { Activity, LayoutDashboard, CalendarDays, Users, Building2, Stethoscope,
 import { Logo } from "./App";
 import { Editor, Empty, ErrorNotice, ResourcePage, resources, profileFields, settingsFields, title, today, allPages } from "./resources";
 
+import { useGetAppointmentQr } from "@workspace/api-client-react";
+import QRCode from "qrcode";
+
+export function AppointmentQr({ id, name }: { id: string; name: string }) {
+  const qr = useGetAppointmentQr(id);
+  const [image, setImage] = useState("");
+
+  useEffect(() => {
+    if (qr.data?.checkInUrl) {
+      let url = qr.data.checkInUrl;
+      if (url.startsWith("/")) {
+        url = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}${url}`;
+      }
+      QRCode.toDataURL(url, { width: 300, margin: 2 }).then(setImage).catch(console.error);
+    }
+  }, [qr.data?.checkInUrl]);
+
+  if (qr.isLoading) return <div className="skeleton">Loading QR code...</div>;
+  if (qr.error || !qr.data) return null;
+
+  return (
+    <div className="appointment-qr-box" style={{ margin: "20px 0", padding: "16px", background: "var(--color-input)", borderRadius: "var(--radius)", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+      <small><strong>FAST CHECK-IN</strong></small>
+      {image && <img src={image} alt={`Check-in QR for ${name}`} style={{ borderRadius: "8px", width: "200px" }} />}
+      <a className="button secondary small" href={image} download={`appointment-${id}-qr.png`}><QrCode size={15}/> Download QR</a>
+    </div>
+  );
+}
+
 export function Onboarding(){
  const {isLoaded,isSignedIn}=useAuth(); const {user}=useUser();const [,navigate]=useLocation();const client=useQueryClient();
- const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn}});
+ const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
  const onboard=api.useOnboard({mutation:{onSuccess:()=>{sessionStorage.removeItem("clinicflow-intent");client.invalidateQueries();}}});
  useEffect(()=>{if(me.data?.user&&!me.data.needsOnboarding){const role=me.data.user.role; const root=["superAdmin","clinicAdmin"].includes(role)?"admin":role;const reference=sessionStorage.getItem("clinicflow-qr");navigate(reference?`/book/${reference}`:`/${root}/dashboard`);}},[me.data,navigate]);
  if(!isLoaded||me.isLoading)return <div className="page-loading">Connecting your account…</div>;
@@ -18,15 +47,15 @@ export function Onboarding(){
  return <div className="onboarding"><Logo/><section className="panel"><span className="eyebrow">LET'S GET ACQUAINTED</span><h1>Welcome to your {intent==="doctor"?"practice":"care"} workspace.</h1><p>Complete your profile to get started. Your account is being registered as a {intent}.</p><ErrorNotice error={me.error||onboard.error}/><Editor initial={{fullName:user?.fullName||"",termsAccepted:false}} fields={[{key:"fullName",required:true},{key:"mobile",type:"tel"},{key:"termsAccepted",label:"I consent to the use of my information for appointment management",type:"checkbox",required:true}]} submitLabel="Complete my profile" busy={onboard.isPending} onSave={data=>onboard.mutate({data:{...data,intent}})}/></section></div>;
 }
 export function PublicBooking({reference}:{reference:string}){
-  const auth=useAuth();const qr=api.useResolveQr(reference,{query:{queryKey:api.getResolveQrQueryKey(reference),refetchInterval:30000}}); const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!auth.isSignedIn}});
+  const auth=useAuth();const qr=api.useResolveQr(reference,{query:{queryKey:api.getResolveQrQueryKey(reference),refetchInterval:30000}}); const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!auth.isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
  useEffect(()=>{sessionStorage.setItem("clinicflow-qr",reference);},[reference]);
  if(qr.isLoading)return <div className="page-loading">Finding your clinic…</div>;
   return <div className="public-book"><Logo/><div className="panel"><span className="eyebrow">YOUR DIRECT LINK TO CARE</span><h1>{qr.data?.clinicName||"Book a visit"}</h1><ErrorNotice error={qr.error||me.error}/>{qr.data&&!qr.error&&<><p>{[qr.data.branchName,qr.data.doctorName].filter(Boolean).join(" · ")}</p>{!auth.isSignedIn?<><p>Sign in securely to continue booking at this location.</p><Link className="button" href="/login">Sign in to book <ArrowUpRight size={18}/></Link></>:me.data?.needsOnboarding?<Redirect to="/onboarding"/>:me.data?.user?<Booking key={reference} identity={me.data} context={qr.data}/>:<p>Loading your profile…</p>}</>}</div></div>;
 }
 const navConfig:Record<string,string[]>={
   admin:["dashboard","appointments","queue","clinics","branches","doctors","patients","users","availability","exceptions","qrs","reports","masters","audit","settings"],
- doctor:["dashboard","appointments","queue","patients","clinics","branches","availability","exceptions","qrs","profile"],
-  receptionist:["dashboard","appointments","queue","patients","qrs"],
+ doctor:["dashboard","appointments","queue","patients","users","clinics","branches","availability","exceptions","qrs","profile"],
+  receptionist:["dashboard","appointments","queue","patients","availability","exceptions","qrs"],
  patient:["dashboard","book","appointments","queue","profile"],
 };
 const labels:Record<string,string>={dashboard:"Overview",availability:"Weekly schedule",exceptions:"Date exceptions",qrs:"Booking QR codes",audit:"Audit log",book:"Book appointment",queue:"Live queue",masters:"Master data"};
@@ -34,9 +63,9 @@ const icons:Record<string,any>={dashboard:LayoutDashboard,appointments:CalendarD
 export function Portal({identity,role,page}:{identity:api.Identity;role:string;page:string}){
  const {signOut}=useClerk();const client=useQueryClient();const [open,setOpen]=useState(false);
  const name=identity.user!.fullName;
- const navigation=navConfig[role].filter(p=>identity.user!.role!=="clinicAdmin"||!["users","masters","settings","audit"].includes(p));
+ const navigation=navConfig[role].filter(p=>identity.user!.role!=="clinicAdmin"||!["masters","settings","audit"].includes(p));
  return <div className="workspace"><aside className={`sidebar ${open?"open":""}`}><Logo/><div className="workspace-label">{role==="patient"?"YOUR CARE":"WORKSPACE"}<span>{title(role)}</span></div><nav>{navigation.map(p=>{const Icon=icons[p]||FileText;return <Link key={p} href={`/${role}/${p}`} className={p===page?"active":""} onClick={()=>setOpen(false)} data-testid={`nav-${p}`}><Icon size={19}/>{labels[p]||title(p)}{p===page&&<ChevronRight size={15}/>}</Link>;})}</nav><div className="sidebar-bottom"><div className="help-card"><span className="live-dot"/>Care, in sync.<p>Your workspace stays connected with live queue updates.</p></div><button className="logout" onClick={()=>{client.clear();signOut({redirectUrl:import.meta.env.BASE_URL});}} data-testid="button-signout"><LogOut size={18}/> Sign out</button></div></aside><div className="workspace-main"><header className="topbar"><button className="mobile-menu" onClick={()=>setOpen(!open)} aria-label="Toggle navigation"><Menu/></button><div className="breadcrumb">Workspace <ChevronRight size={13}/> <strong>{labels[page]||title(page)}</strong></div><div className="topbar-right"><span className="secure-label"><span className="live-dot"/> Secure workspace</span><span className="avatar">{name.split(" ").map(n=>n[0]).slice(0,2).join("")}</span><div><strong>{name}</strong><small>{title(identity.user!.role)}</small></div></div></header><main className="content"><div className="page-heading"><div><span className="eyebrow">{new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</span><h1>{page==="dashboard"?`Good ${new Date().getHours()<12?"morning":new Date().getHours()<18?"afternoon":"evening"}, ${name.split(" ")[0]}.`:labels[page]||title(page)}</h1><p>{page==="dashboard"?"Here's what's happening with your care workspace today.":page==="queue"?"A clearer view of the day. Automatically refreshed every 30 seconds.":`Manage your ${labels[page]?.toLowerCase()||page} in one place.`}</p></div>{!["book","profile","settings"].includes(page)&&<Link className="button small" href={`/${role}/book`}><Plus size={17}/> Book appointment</Link>}</div>
- {page==="dashboard"?<Dashboard role={role}/>:page==="book"?<Booking identity={identity}/>:page==="appointments"?<Appointments/>:page==="queue"?<Queue identity={identity}/>:page==="profile"?<Profile identity={identity}/>:page==="settings"?<PlatformSettings/>:page==="reports"?<Reports/>:resources[page]?<ResourcePage key={page} resource={page} allowCreate={!(identity.user!.role==="doctor"&&page==="patients")} defaults={identity.doctorId?{doctorId:identity.doctorId,isOpen:true}:{}}/>:<Empty label="available modules"/>}
+ {page==="dashboard"?<Dashboard role={role}/>:page==="book"?<Booking identity={identity}/>:page==="appointments"?<Appointments/>:page==="queue"?<Queue identity={identity}/>:page==="profile"?<Profile identity={identity}/>:page==="settings"?<PlatformSettings/>:page==="reports"?<Reports/>:resources[page]?<ResourcePage key={page} resource={page} identity={identity} allowCreate={!(identity.user!.role==="doctor"&&page==="patients")} defaults={identity.doctorId?{doctorId:identity.doctorId,isOpen:true}:{}}/>:<Empty label="available modules"/>}
  <div className="content-footer"><span>ClinicFlow · Care, connected.</span><span>All times follow your clinic's configured timezone.</span></div></main></div></div>;
 }
 function Dashboard({role}:{role:string}){
@@ -47,7 +76,25 @@ function Dashboard({role}:{role:string}){
 }
 function AppointmentRows({appointments}:{appointments:api.Appointment[]}){
  const client=useQueryClient();const action=api.useTransitionAppointment({mutation:{onSuccess:()=>client.invalidateQueries()}});
- return <><ErrorNotice error={action.error}/><div className="table-scroll"><table><thead><tr><th>Patient / reference</th><th>Doctor & location</th><th>Date / token</th><th>Status</th><th>Next step</th></tr></thead><tbody>{appointments.map(a=><tr key={a.id} data-testid={`appointment-${a.id}`}><td><strong>{a.patientName}</strong><small>{a.reference}</small></td><td>{a.doctorName}<small>{a.clinicName} · {a.branchName}</small></td><td>{a.date}<small>Token {a.token}</small></td><td><span className={`badge ${a.status}`}>{title(a.status)}</span></td><td><div className="row-actions">{a.allowedActions.map(next=><button key={next} disabled={action.isPending} data-testid={`action-${next}-${a.id}`} onClick={()=>{let reason:string|undefined;if(next==="cancel"||next==="noShow"){const result=prompt("Please provide a reason");if(result===null)return;reason=result;}action.mutate({id:a.id,data:{action:next,expectedStatus:a.status,reason}});}}>{title(next)}</button>)}</div></td></tr>)}</tbody></table></div></>;
+ const [viewQr, setViewQr] = useState<api.Appointment | null>(null);
+ return <><ErrorNotice error={action.error}/><div className="table-scroll"><table><thead><tr><th>Patient / reference</th><th>Doctor & location</th><th>Date / token</th><th>Status</th><th>Next step</th></tr></thead><tbody>{appointments.map(a=><tr key={a.id} data-testid={`appointment-${a.id}`}><td><strong>{a.patientName}</strong><small>{a.reference}</small></td><td>{a.doctorName}<small>{a.clinicName} · {a.branchName}</small></td><td>{a.date}<small>Token {a.token}</small></td><td><span className={`badge ${a.status}`}>{title(a.status)}</span></td><td><div className="row-actions"><button onClick={() => setViewQr(a)}><QrCode size={15}/></button>{a.allowedActions.map(next=><button key={next} disabled={action.isPending} data-testid={`action-${next}-${a.id}`} onClick={()=>{let reason:string|undefined;if(next==="cancel"||next==="noShow"){const result=prompt("Please provide a reason");if(result===null)return;reason=result;}action.mutate({id:a.id,data:{action:next,expectedStatus:a.status,reason}});}}>{title(next)}</button>)}</div></td></tr>)}</tbody></table></div>
+ {viewQr && (
+   <div className="modal-backdrop">
+     <section className="modal" role="dialog">
+       <div className="panel-heading">
+         <div>
+           <span className="eyebrow">APPOINTMENT</span>
+           <h2>Check-in QR Code</h2>
+         </div>
+         <button onClick={() => setViewQr(null)} aria-label="Close"><X /></button>
+       </div>
+       <div style={{ textAlign: "center" }}>
+         <AppointmentQr id={viewQr.id} name={viewQr.patientName} />
+       </div>
+     </section>
+   </div>
+ )}
+ </>;
 }
 function Appointments(){
  const [search,setSearch]=useState("");const [date,setDate]=useState("");const [status,setStatus]=useState("");const [page,setPage]=useState(1);
@@ -102,7 +149,7 @@ function Booking({identity,context}:{identity:api.Identity;context?:api.QrContex
   const createPatient=api.useCreatePatient({mutation:{onSuccess:p=>{setPatientSearch("");setPatient(p.id);setNewPatient(false);client.invalidateQueries();}}});
  const otp=api.useRequestOtp(); const verify=api.useVerifyOtp({mutation:{onSuccess:()=>client.invalidateQueries()}});
  const book=api.useCreateAppointment({mutation:{onSuccess:()=>{sessionStorage.removeItem("clinicflow-qr");client.invalidateQueries();}}});
-  if(book.data)return <section className="panel confirmation"><span className="confirmation-check"><Check size={34}/></span><span className="eyebrow">APPOINTMENT CONFIRMED</span><h2>Your next step to better care.</h2><p>{book.data.doctorName} · {book.data.clinicName} · {book.data.branchName}</p><div className="confirmation-token"><small>YOUR TOKEN</small><strong>{book.data.token}</strong><span>{book.data.date} · {title(book.data.status)}</span></div><p>Booking reference <strong>{book.data.reference}</strong></p><p className="notice">{book.data.status==="booked"?"Booking and check-in are separate. Please check in at the clinic when you arrive.":"The patient has entered the normal appointment queue."}</p><Link className="text-link" href={`/${["superAdmin","clinicAdmin"].includes(identity.user!.role)?"admin":identity.user!.role}/appointments`}>View appointments</Link><Queue identity={identity} initial={book.data}/></section>;
+  if(book.data)return <section className="panel confirmation"><span className="confirmation-check"><Check size={34}/></span><span className="eyebrow">APPOINTMENT CONFIRMED</span><h2>Your next step to better care.</h2><p>{book.data.doctorName} · {book.data.clinicName} · {book.data.branchName}</p><div className="confirmation-token"><small>YOUR TOKEN</small><strong>{book.data.token}</strong><span>{book.data.date} · {title(book.data.status)}</span></div><p>Booking reference <strong>{book.data.reference}</strong></p><AppointmentQr id={book.data.id} name={book.data.patientName}/><p className="notice">{book.data.status==="booked"?"Booking and check-in are separate. Please check in at the clinic when you arrive.":"The patient has entered the normal appointment queue."}</p><Link className="text-link" href={`/${["superAdmin","clinicAdmin"].includes(identity.user!.role)?"admin":identity.user!.role}/appointments`}>View appointments</Link><Queue identity={identity} initial={book.data}/></section>;
  return <section className="panel booking-panel"><div className="booking-steps">{["Choose your care","Your details","Review & book"].map((s,i)=><div className={step===i+1?"active":step>i+1?"done":""} key={s}><span>{step>i+1?<Check size={15}/>:i+1}</span>{s}</div>)}</div><ErrorNotice error={clinics.error||branches.error||doctors.error||availability.error||book.error||patients.error}/>
   {step===1?<><div className="section-heading"><h2>Where would you like to visit?</h2><p>Choose from real clinics and available consulting sessions.</p></div>
   {!isPatient&&!context&&<label>Booking source<select value={source} onChange={e=>setSource(e.target.value as "phone"|"walkIn")}><option value="phone">Phone / advance booking</option><option value="walkIn">Walk-in — today</option></select></label>}

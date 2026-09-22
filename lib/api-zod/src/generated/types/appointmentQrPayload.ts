@@ -12,18 +12,8 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { DoctorInput } from './doctorInput';
 
-export type Doctor = DoctorInput & {
-  id: string;
-  userId: string;
-  code: string;
-  specializationName?: string;
-  qualificationNames?: string[];
-} & Required<Pick<DoctorInput & {
-  id: string;
-  userId: string;
-  code: string;
-  specializationName?: string;
-  qualificationNames?: string[];
-}, 'ownerAdminId' | 'status'>>;
+export interface AppointmentQrPayload {
+  /** @minLength 1 */
+  payload: string;
+}

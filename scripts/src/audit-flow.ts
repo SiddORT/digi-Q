@@ -127,6 +127,7 @@ function accountSeed(role: Role, index: number): Account {
 
 async function createIdentitiesAndProfiles(): Promise<Fixture> {
   const accounts = roles.map((role, index) => accountSeed(role, index));
+  const clinicAdminAccount = accounts.find(account => account.role === "clinicAdmin")!;
   const createdClerkIds: string[] = [];
   try {
     for (const account of accounts) {
@@ -150,7 +151,7 @@ async function createIdentitiesAndProfiles(): Promise<Fixture> {
           data: { auditOnly: true, marker },
         });
         if (account.doctorId) await tx.insert(doctors).values({
-          id: account.doctorId, userId: account.userId,
+          id: account.doctorId, userId: account.userId, ownerAdminId: clinicAdminAccount.userId,
           data: { fullName: `${marker} ${account.role}`, email: account.email, code: `AUD-${marker.slice(-6)}-${account.role}` },
         });
         if (account.patientId) await tx.insert(patients).values({
@@ -185,11 +186,14 @@ async function updateFixture(fixture: Fixture) {
 
 async function provisionBusinessFixtures(fixture: Fixture, tokens: Record<Role, string>) {
   const admin = tokens.superAdmin;
+  const clinicAdminId = fixture.accounts.find(account => account.role === "clinicAdmin")!.userId;
   const clinicA = await expect("POST", "/clinics", admin, {
-    name: `${marker} Clinic A`, address: `${marker} Audit Address A`, city: "Pune", status: "active",
+    name: `${marker} Clinic A`, address: `${marker} Audit Address A`, city: "Pune",
+    adminId: clinicAdminId, status: "active",
   }, [201], "Create isolated Clinic A through API");
   const clinicB = await expect("POST", "/clinics", admin, {
-    name: `${marker} Clinic B`, address: `${marker} Audit Address B`, city: "Pune", status: "active",
+    name: `${marker} Clinic B`, address: `${marker} Audit Address B`, city: "Pune",
+    adminId: clinicAdminId, status: "active",
   }, [201], "Create isolated Clinic B through API");
   const branchA = await expect("POST", "/branches", admin, {
     clinicId: clinicA.id, name: `${marker} Branch A1`, address: `${marker} Branch Address A`,
@@ -215,7 +219,7 @@ async function provisionBusinessFixtures(fixture: Fixture, tokens: Record<Role, 
       fullName: `${marker} ${role}`, email: a.email, role, status: "active", clinicIds, branchIds,
     }, [200], `Assign ${role} scope through API`);
   };
-  await patchUser("clinicAdmin", [clinicA.id], []);
+  await patchUser("clinicAdmin", [clinicA.id, clinicB.id], []);
   await patchUser("receptionist", [clinicA.id], [branchA.id]);
   for (const [role, clinicId, branchId] of [
     ["doctorA", clinicA.id, branchA.id], ["doctorB", clinicB.id, branchB.id],

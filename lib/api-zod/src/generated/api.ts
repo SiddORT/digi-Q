@@ -26,6 +26,7 @@ export const HealthCheckResponse = zod.object({
 
 
 
+
 export const GetMeResponse = zod.object({
   "clerkId": zod.string(),
   "user": zod.union([zod.object({
@@ -34,7 +35,7 @@ export const GetMeResponse = zod.object({
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
-  "clinicIds": zod.array(zod.string()),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
   "branchIds": zod.array(zod.string())
 }).and(zod.object({
   "id": zod.string(),
@@ -60,13 +61,14 @@ export const UpdateMeBody = zod.object({
 
 
 
+
 export const UpdateMeResponse = zod.object({
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
-  "clinicIds": zod.array(zod.string()),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
   "branchIds": zod.array(zod.string())
 }).and(zod.object({
   "id": zod.string(),
@@ -92,6 +94,7 @@ export const OnboardBody = zod.object({
 
 
 
+
 export const OnboardResponse = zod.object({
   "clerkId": zod.string(),
   "user": zod.union([zod.object({
@@ -100,7 +103,7 @@ export const OnboardResponse = zod.object({
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
-  "clinicIds": zod.array(zod.string()),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
   "branchIds": zod.array(zod.string())
 }).and(zod.object({
   "id": zod.string(),
@@ -172,6 +175,7 @@ export const ListPublicClinicsResponse = zod.object({
   "pageSize": zod.number().int()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
   "address": zod.string(),
   "country": zod.string().optional(),
@@ -347,6 +351,7 @@ export const ListClinicsResponse = zod.object({
   "pageSize": zod.number().int()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
   "address": zod.string(),
   "country": zod.string().optional(),
@@ -374,6 +379,7 @@ export const ListClinicsResponse = zod.object({
 
 
 export const CreateClinicBody = zod.object({
+  "adminId": zod.string().optional().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
   "address": zod.string(),
   "country": zod.string().optional(),
@@ -393,6 +399,7 @@ export const CreateClinicBody = zod.object({
 
 
 export const CreateClinicResponse = zod.object({
+  "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
   "address": zod.string(),
   "country": zod.string().optional(),
@@ -423,6 +430,7 @@ export const GetClinicParams = zod.object({
 
 
 export const GetClinicResponse = zod.object({
+  "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
   "address": zod.string(),
   "country": zod.string().optional(),
@@ -453,6 +461,7 @@ export const UpdateClinicParams = zod.object({
 
 
 export const UpdateClinicBody = zod.object({
+  "adminId": zod.string().optional().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
   "address": zod.string(),
   "country": zod.string().optional(),
@@ -472,6 +481,7 @@ export const UpdateClinicBody = zod.object({
 
 
 export const UpdateClinicResponse = zod.object({
+  "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
   "address": zod.string(),
   "country": zod.string().optional(),
@@ -677,12 +687,14 @@ export const listDoctorsResponseTwoItemsItemOneConsultationFeeMin = 0;
 
 
 
+
 export const ListDoctorsResponse = zod.object({
   "total": zod.number().int().min(listDoctorsResponseOneTotalMin),
   "page": zod.number().int(),
   "pageSize": zod.number().int()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "ownerAdminId": zod.string().describe('Optional owning clinic administrator; authorization and derivation are enforced by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -696,7 +708,7 @@ export const ListDoctorsResponse = zod.object({
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(listDoctorsResponseTwoItemsItemOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
-  "clinicIds": zod.array(zod.string()).optional(),
+  "clinicIds": zod.array(zod.string()).min(1).optional().describe('Required by the server for doctor assignment.'),
   "branchIds": zod.array(zod.string()).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
@@ -719,7 +731,9 @@ export const createDoctorBodyConsultationFeeMin = 0;
 
 
 
+
 export const CreateDoctorBody = zod.object({
+  "ownerAdminId": zod.string().optional().describe('Optional owning clinic administrator; authorization and derivation are enforced by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -733,7 +747,7 @@ export const CreateDoctorBody = zod.object({
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(createDoctorBodyConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
-  "clinicIds": zod.array(zod.string()).optional(),
+  "clinicIds": zod.array(zod.string()).min(1).optional().describe('Required by the server for doctor assignment.'),
   "branchIds": zod.array(zod.string()).optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
@@ -745,7 +759,9 @@ export const createDoctorResponseOneConsultationFeeMin = 0;
 
 
 
+
 export const CreateDoctorResponse = zod.object({
+  "ownerAdminId": zod.string().describe('Optional owning clinic administrator; authorization and derivation are enforced by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -759,7 +775,7 @@ export const CreateDoctorResponse = zod.object({
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(createDoctorResponseOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
-  "clinicIds": zod.array(zod.string()).optional(),
+  "clinicIds": zod.array(zod.string()).min(1).optional().describe('Required by the server for doctor assignment.'),
   "branchIds": zod.array(zod.string()).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
@@ -782,7 +798,9 @@ export const getDoctorResponseOneConsultationFeeMin = 0;
 
 
 
+
 export const GetDoctorResponse = zod.object({
+  "ownerAdminId": zod.string().describe('Optional owning clinic administrator; authorization and derivation are enforced by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -796,7 +814,7 @@ export const GetDoctorResponse = zod.object({
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(getDoctorResponseOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
-  "clinicIds": zod.array(zod.string()).optional(),
+  "clinicIds": zod.array(zod.string()).min(1).optional().describe('Required by the server for doctor assignment.'),
   "branchIds": zod.array(zod.string()).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
@@ -822,7 +840,9 @@ export const updateDoctorBodyConsultationFeeMin = 0;
 
 
 
+
 export const UpdateDoctorBody = zod.object({
+  "ownerAdminId": zod.string().optional().describe('Optional owning clinic administrator; authorization and derivation are enforced by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -836,7 +856,7 @@ export const UpdateDoctorBody = zod.object({
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(updateDoctorBodyConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
-  "clinicIds": zod.array(zod.string()).optional(),
+  "clinicIds": zod.array(zod.string()).min(1).optional().describe('Required by the server for doctor assignment.'),
   "branchIds": zod.array(zod.string()).optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
@@ -848,7 +868,9 @@ export const updateDoctorResponseOneConsultationFeeMin = 0;
 
 
 
+
 export const UpdateDoctorResponse = zod.object({
+  "ownerAdminId": zod.string().describe('Optional owning clinic administrator; authorization and derivation are enforced by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -862,7 +884,7 @@ export const UpdateDoctorResponse = zod.object({
   "about": zod.string().optional(),
   "consultationFee": zod.number().min(updateDoctorResponseOneConsultationFeeMin).optional(),
   "languages": zod.array(zod.string()).optional(),
-  "clinicIds": zod.array(zod.string()).optional(),
+  "clinicIds": zod.array(zod.string()).min(1).optional().describe('Required by the server for doctor assignment.'),
   "branchIds": zod.array(zod.string()).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
@@ -904,6 +926,7 @@ export const listUsersResponseOneTotalMin = 0;
 
 
 
+
 export const ListUsersResponse = zod.object({
   "total": zod.number().int().min(listUsersResponseOneTotalMin),
   "page": zod.number().int(),
@@ -915,7 +938,7 @@ export const ListUsersResponse = zod.object({
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
-  "clinicIds": zod.array(zod.string()),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
   "branchIds": zod.array(zod.string())
 }).and(zod.object({
   "id": zod.string(),
@@ -932,15 +955,17 @@ export const ListUsersResponse = zod.object({
 
 
 
+
 export const CreateUserBody = zod.object({
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']).optional(),
-  "clinicIds": zod.array(zod.string()).optional(),
+  "clinicIds": zod.array(zod.string()).min(1).optional().describe('Required by the server for clinic-scoped roles.'),
   "branchIds": zod.array(zod.string()).optional()
 })
+
 
 
 
@@ -951,7 +976,7 @@ export const CreateUserResponse = zod.object({
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
-  "clinicIds": zod.array(zod.string()),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
   "branchIds": zod.array(zod.string())
 }).and(zod.object({
   "id": zod.string(),
@@ -968,13 +993,14 @@ export const GetUserParams = zod.object({
 
 
 
+
 export const GetUserResponse = zod.object({
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
-  "clinicIds": zod.array(zod.string()),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
   "branchIds": zod.array(zod.string())
 }).and(zod.object({
   "id": zod.string(),
@@ -991,15 +1017,17 @@ export const UpdateUserParams = zod.object({
 
 
 
+
 export const UpdateUserBody = zod.object({
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']).optional(),
-  "clinicIds": zod.array(zod.string()).optional(),
+  "clinicIds": zod.array(zod.string()).min(1).optional().describe('Required by the server for clinic-scoped roles.'),
   "branchIds": zod.array(zod.string()).optional()
 })
+
 
 
 
@@ -1010,7 +1038,7 @@ export const UpdateUserResponse = zod.object({
   "mobile": zod.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
   "status": zod.enum(['active', 'inactive']),
-  "clinicIds": zod.array(zod.string()),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
   "branchIds": zod.array(zod.string())
 }).and(zod.object({
   "id": zod.string(),
@@ -1902,6 +1930,137 @@ export const GetAppointmentResponse = zod.object({
   "reason": zod.string().optional()
 })).optional()
 }))
+
+
+/**
+ * Returns a signed, appointment-specific QR payload to the appointment owner or authorized scoped staff.
+ */
+export const GetAppointmentQrParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetAppointmentQrResponse = zod.object({
+  "appointmentId": zod.string(),
+  "payload": zod.string(),
+  "checkInUrl": zod.string()
+})
+
+
+/**
+ * Resolves an appointment QR for authorized operational staff without changing appointment state.
+ */
+
+
+
+export const ResolveAppointmentQrBody = zod.object({
+  "payload": zod.string().min(1)
+})
+
+export const resolveAppointmentQrResponseAppointmentOneNotesMax = 1000;
+
+
+
+export const ResolveAppointmentQrResponse = zod.object({
+  "appointment": zod.object({
+  "patientId": zod.string(),
+  "doctorId": zod.string(),
+  "clinicId": zod.string(),
+  "branchId": zod.string(),
+  "date": zod.coerce.date(),
+  "source": zod.enum(['online', 'walkIn', 'phone', 'qr']),
+  "appointmentTypeId": zod.string().optional(),
+  "consultationTypeId": zod.string().optional(),
+  "qrReference": zod.string().optional(),
+  "requestId": zod.string().optional().describe('Client-generated idempotency key'),
+  "termsAccepted": zod.boolean().optional(),
+  "notes": zod.string().max(resolveAppointmentQrResponseAppointmentOneNotesMax).optional()
+}).and(zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "token": zod.string(),
+  "tokenNumber": zod.number().int().optional(),
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
+  "patientName": zod.string(),
+  "patientCode": zod.string().optional(),
+  "doctorName": zod.string(),
+  "clinicName": zod.string(),
+  "branchName": zod.string(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "createdAt": zod.coerce.date(),
+  "checkedInAt": zod.coerce.date().nullish(),
+  "calledAt": zod.coerce.date().nullish(),
+  "consultationStartedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel'])),
+  "history": zod.array(zod.object({
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
+  "occurredAt": zod.coerce.date(),
+  "reason": zod.string().optional()
+})).optional()
+})),
+  "eligible": zod.boolean(),
+  "alreadyCheckedIn": zod.boolean(),
+  "message": zod.string()
+})
+
+
+/**
+ * Idempotently checks in and enqueues an eligible appointment for authorized operational staff.
+ */
+
+
+
+export const CheckInAppointmentQrBody = zod.object({
+  "payload": zod.string().min(1)
+})
+
+export const checkInAppointmentQrResponseAppointmentOneNotesMax = 1000;
+
+
+
+export const CheckInAppointmentQrResponse = zod.object({
+  "appointment": zod.object({
+  "patientId": zod.string(),
+  "doctorId": zod.string(),
+  "clinicId": zod.string(),
+  "branchId": zod.string(),
+  "date": zod.coerce.date(),
+  "source": zod.enum(['online', 'walkIn', 'phone', 'qr']),
+  "appointmentTypeId": zod.string().optional(),
+  "consultationTypeId": zod.string().optional(),
+  "qrReference": zod.string().optional(),
+  "requestId": zod.string().optional().describe('Client-generated idempotency key'),
+  "termsAccepted": zod.boolean().optional(),
+  "notes": zod.string().max(checkInAppointmentQrResponseAppointmentOneNotesMax).optional()
+}).and(zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "token": zod.string(),
+  "tokenNumber": zod.number().int().optional(),
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
+  "patientName": zod.string(),
+  "patientCode": zod.string().optional(),
+  "doctorName": zod.string(),
+  "clinicName": zod.string(),
+  "branchName": zod.string(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "createdAt": zod.coerce.date(),
+  "checkedInAt": zod.coerce.date().nullish(),
+  "calledAt": zod.coerce.date().nullish(),
+  "consultationStartedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel'])),
+  "history": zod.array(zod.object({
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
+  "occurredAt": zod.coerce.date(),
+  "reason": zod.string().optional()
+})).optional()
+})),
+  "alreadyCheckedIn": zod.boolean(),
+  "message": zod.string()
+})
 
 
 /**

@@ -1,0 +1,3059 @@
+{
+  "generatedAt": "2026-09-22T13:30:18.519Z",
+  "startedAt": "2026-09-22T13:15:18.927Z",
+  "mode": "resumed-executed",
+  "marker": "CF-ASSIGN-20260922131518-807f59",
+  "baseUrl": "http://localhost:80/api",
+  "credentialsPath": "/tmp/clinicflow-assignment-audit-credentials.json",
+  "credentialsRetainedForBrowserAudit": true,
+  "resume": {
+    "previousGeneratedAt": "2026-09-22T13:25:02.283Z",
+    "previousFatal": "Revoked receptionist cannot read Branch B dashboard: Expected 403 and received 200.",
+    "preservedPasses": 100
+  },
+  "summary": {
+    "passed": 141,
+    "failed": 0,
+    "skipped": 0
+  },
+  "fatal": null,
+  "evidence": [
+    {
+      "name": "SuperAdmin creates Clinic A with Admin A",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/clinics",
+      "status": 201,
+      "payload": {
+        "city": "Pune",
+        "code": "CLN-9cabfba9",
+        "name": "CF-ASSIGN-20260922131518-807f59 Clinic A",
+        "status": "active",
+        "address": "CF-ASSIGN-20260922131518-807f59 Address A",
+        "adminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "description": "CF-ASSIGN-20260922131518-807f59 owned audit fixture",
+        "id": "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+        "ownerId": "b0720041-c686-48f9-86e2-89cfdc370f14",
+        "createdAt": "2026-09-22T13:15:31.285Z"
+      }
+    },
+    {
+      "name": "SuperAdmin creates Branch A1",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/branches",
+      "status": 201,
+      "payload": {
+        "code": "BR-28555741",
+        "name": "CF-ASSIGN-20260922131518-807f59 Branch A1",
+        "status": "active",
+        "address": "CF-ASSIGN-20260922131518-807f59 A1",
+        "clinicId": "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+        "timezone": "Asia/Kolkata",
+        "id": "28555741-951d-4b3b-bda9-f8f2c13d8617",
+        "createdAt": "2026-09-22T13:15:31.684Z",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic A"
+      }
+    },
+    {
+      "name": "adminA re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVuQj8st9vSSurPXI8gYvf27V",
+        "user": {
+          "marker": "CF-ASSIGN-20260922131518-807f59",
+          "auditOnly": true,
+          "fixtureKind": "minimal-identity-profile",
+          "id": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+          "clerkId": "user_3JgVuQj8st9vSSurPXI8gYvf27V",
+          "email": "cfa.0260922131518-807f59.admina@example.com",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 adminA",
+          "mobile": "",
+          "role": "clinicAdmin",
+          "status": "active",
+          "createdAt": "2026-09-22T13:15:25.982Z",
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+          ],
+          "branchIds": [],
+          "doctorId": null,
+          "patientId": null
+        },
+        "doctorId": null,
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Admin A reads assigned Clinic A after re-auth",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/clinics?pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "city": "Pune",
+            "code": "CLN-9cabfba9",
+            "name": "CF-ASSIGN-20260922131518-807f59 Clinic A",
+            "status": "active",
+            "address": "CF-ASSIGN-20260922131518-807f59 Address A",
+            "adminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+            "description": "CF-ASSIGN-20260922131518-807f59 owned audit fixture",
+            "id": "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+            "ownerId": "b0720041-c686-48f9-86e2-89cfdc370f14",
+            "createdAt": "2026-09-22T13:15:31.285Z"
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "Admin A Clinic A projection",
+      "outcome": "pass",
+      "detail": "Clinic A is immediately in Admin A scope."
+    },
+    {
+      "name": "Admin A creates Doctor A through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/doctors",
+      "status": 201,
+      "payload": {
+        "code": "DOC-b5de426a",
+        "email": "cfa.0260922131518-807f59.doctora@example.com",
+        "status": "active",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+        ],
+        "id": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "userId": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+        "ownerAdminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "specializationId": null,
+        "mobile": "",
+        "qualificationNames": []
+      }
+    },
+    {
+      "name": "Admin A creates Receptionist A with mandatory branch",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/users",
+      "status": 201,
+      "payload": {
+        "role": "receptionist",
+        "email": "cfa.0260922131518-807f59.receptionista@example.com",
+        "status": "active",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist A",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+        ],
+        "id": "76c8337f-04c2-40a4-babc-8dd4952a9775",
+        "clerkId": "user_3JgVuz5kZGNHa6zJbWtWaKW1dh1",
+        "mobile": "",
+        "createdAt": "2026-09-22T13:15:33.900Z"
+      }
+    },
+    {
+      "name": "doctorA re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+        "user": {
+          "id": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+          "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+          "email": "cfa.0260922131518-807f59.doctora@example.com",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+          "mobile": "",
+          "role": "doctor",
+          "status": "active",
+          "createdAt": "2026-09-22T13:15:33.502Z",
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+          ],
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617"
+          ],
+          "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+          "patientId": null
+        },
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "receptionistA re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVuz5kZGNHa6zJbWtWaKW1dh1",
+        "user": {
+          "role": "receptionist",
+          "email": "cfa.0260922131518-807f59.receptionista@example.com",
+          "status": "active",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist A",
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617"
+          ],
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+          ],
+          "id": "76c8337f-04c2-40a4-babc-8dd4952a9775",
+          "clerkId": "user_3JgVuz5kZGNHa6zJbWtWaKW1dh1",
+          "mobile": "",
+          "createdAt": "2026-09-22T13:15:33.900Z",
+          "doctorId": null,
+          "patientId": null
+        },
+        "doctorId": null,
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Doctor A reads persisted Clinic A and Branch A1",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+        "user": {
+          "id": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+          "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+          "email": "cfa.0260922131518-807f59.doctora@example.com",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+          "mobile": "",
+          "role": "doctor",
+          "status": "active",
+          "createdAt": "2026-09-22T13:15:33.502Z",
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+          ],
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617"
+          ],
+          "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+          "patientId": null
+        },
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Doctor A initial assignment",
+      "outcome": "pass",
+      "detail": "Re-authenticated identity contains Clinic A / Branch A1."
+    },
+    {
+      "name": "Doctor A creates Receptionist B in own scope",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/users",
+      "status": 201,
+      "payload": {
+        "role": "receptionist",
+        "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+        "status": "active",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+        ],
+        "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+        "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+        "mobile": "",
+        "createdAt": "2026-09-22T13:15:36.421Z"
+      }
+    },
+    {
+      "name": "receptionistB re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+        "user": {
+          "role": "receptionist",
+          "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+          "status": "active",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617"
+          ],
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+          ],
+          "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+          "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+          "mobile": "",
+          "createdAt": "2026-09-22T13:15:36.421Z",
+          "doctorId": null,
+          "patientId": null
+        },
+        "doctorId": null,
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "superAdmin reads Doctor-created Receptionist B",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/users?role=receptionist&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "role": "receptionist",
+            "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+            "status": "active",
+            "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+            "branchIds": [
+              "28555741-951d-4b3b-bda9-f8f2c13d8617"
+            ],
+            "clinicIds": [
+              "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+            ],
+            "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+            "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+            "mobile": "",
+            "createdAt": "2026-09-22T13:15:36.421Z"
+          },
+          {
+            "role": "receptionist",
+            "email": "cfa.0260922131518-807f59.receptionista@example.com",
+            "status": "active",
+            "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist A",
+            "branchIds": [
+              "28555741-951d-4b3b-bda9-f8f2c13d8617"
+            ],
+            "clinicIds": [
+              "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+            ],
+            "id": "76c8337f-04c2-40a4-babc-8dd4952a9775",
+            "clerkId": "user_3JgVuz5kZGNHa6zJbWtWaKW1dh1",
+            "mobile": "",
+            "createdAt": "2026-09-22T13:15:33.900Z"
+          },
+          {
+            "id": "1a93edcb-f318-47f7-a08d-0d0192fc6d04",
+            "role": "receptionist",
+            "email": "clinicflow.receptionist+clerk_test@example.com",
+            "mobile": "",
+            "status": "active",
+            "clerkId": "user_3JfrjtHKYtnG22eTQ2XX4FcFN7B",
+            "fullName": "Preview Receptionist",
+            "branchIds": [
+              "6758292f-5523-4aeb-9a93-05b7959325d6",
+              "120da8cb-b642-4759-99aa-97eeea3d73d5"
+            ],
+            "clinicIds": [
+              "f7912911-cf2d-48c1-934c-e10d8e0f13b4"
+            ],
+            "createdAt": "2026-09-22T07:45:02.610Z",
+            "previewOnly": true
+          }
+        ],
+        "total": 3,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "superAdmin Receptionist B visibility",
+      "outcome": "pass",
+      "detail": "Shared persisted staff mapping is visible."
+    },
+    {
+      "name": "adminA reads Doctor-created Receptionist B",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/users?role=receptionist&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "role": "receptionist",
+            "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+            "status": "active",
+            "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+            "branchIds": [
+              "28555741-951d-4b3b-bda9-f8f2c13d8617"
+            ],
+            "clinicIds": [
+              "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+            ],
+            "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+            "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+            "mobile": "",
+            "createdAt": "2026-09-22T13:15:36.421Z"
+          },
+          {
+            "role": "receptionist",
+            "email": "cfa.0260922131518-807f59.receptionista@example.com",
+            "status": "active",
+            "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist A",
+            "branchIds": [
+              "28555741-951d-4b3b-bda9-f8f2c13d8617"
+            ],
+            "clinicIds": [
+              "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+            ],
+            "id": "76c8337f-04c2-40a4-babc-8dd4952a9775",
+            "clerkId": "user_3JgVuz5kZGNHa6zJbWtWaKW1dh1",
+            "mobile": "",
+            "createdAt": "2026-09-22T13:15:33.900Z"
+          }
+        ],
+        "total": 2,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "adminA Receptionist B visibility",
+      "outcome": "pass",
+      "detail": "Shared persisted staff mapping is visible."
+    },
+    {
+      "name": "doctorA reads Doctor-created Receptionist B",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/users?role=receptionist&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "role": "receptionist",
+            "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+            "status": "active",
+            "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+            "branchIds": [
+              "28555741-951d-4b3b-bda9-f8f2c13d8617"
+            ],
+            "clinicIds": [
+              "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+            ],
+            "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+            "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+            "mobile": "",
+            "createdAt": "2026-09-22T13:15:36.421Z"
+          },
+          {
+            "role": "receptionist",
+            "email": "cfa.0260922131518-807f59.receptionista@example.com",
+            "status": "active",
+            "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist A",
+            "branchIds": [
+              "28555741-951d-4b3b-bda9-f8f2c13d8617"
+            ],
+            "clinicIds": [
+              "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+            ],
+            "id": "76c8337f-04c2-40a4-babc-8dd4952a9775",
+            "clerkId": "user_3JgVuz5kZGNHa6zJbWtWaKW1dh1",
+            "mobile": "",
+            "createdAt": "2026-09-22T13:15:33.900Z"
+          }
+        ],
+        "total": 2,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "doctorA Receptionist B visibility",
+      "outcome": "pass",
+      "detail": "Shared persisted staff mapping is visible."
+    },
+    {
+      "name": "Doctor A creates Clinic B",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/clinics",
+      "status": 201,
+      "payload": {
+        "city": "Pune",
+        "code": "CLN-2d0bc73e",
+        "name": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "status": "active",
+        "address": "CF-ASSIGN-20260922131518-807f59 Address B",
+        "description": "CF-ASSIGN-20260922131518-807f59 doctor-created owned audit fixture",
+        "id": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "ownerId": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+        "adminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "createdAt": "2026-09-22T13:15:38.700Z"
+      }
+    },
+    {
+      "name": "Doctor A creates Branch B1",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/branches",
+      "status": 201,
+      "payload": {
+        "code": "BR-45e1f561",
+        "name": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "status": "active",
+        "address": "CF-ASSIGN-20260922131518-807f59 B1",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "timezone": "Asia/Kolkata",
+        "id": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "createdAt": "2026-09-22T13:15:39.101Z",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B"
+      }
+    },
+    {
+      "name": "doctorA re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+        "user": {
+          "id": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+          "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+          "email": "cfa.0260922131518-807f59.doctora@example.com",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+          "mobile": "",
+          "role": "doctor",
+          "status": "active",
+          "createdAt": "2026-09-22T13:15:33.502Z",
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+            "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13"
+          ],
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617",
+            "45e1f561-de37-45d6-a0ab-27e91326a6d9"
+          ],
+          "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+          "patientId": null
+        },
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "doctorA refreshes doctor-created clinic scope",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/clinics?pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "city": "Pune",
+            "code": "CLN-2d0bc73e",
+            "name": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+            "status": "active",
+            "address": "CF-ASSIGN-20260922131518-807f59 Address B",
+            "description": "CF-ASSIGN-20260922131518-807f59 doctor-created owned audit fixture",
+            "id": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+            "ownerId": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+            "adminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+            "createdAt": "2026-09-22T13:15:38.700Z"
+          },
+          {
+            "city": "Pune",
+            "code": "CLN-9cabfba9",
+            "name": "CF-ASSIGN-20260922131518-807f59 Clinic A",
+            "status": "active",
+            "address": "CF-ASSIGN-20260922131518-807f59 Address A",
+            "adminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+            "description": "CF-ASSIGN-20260922131518-807f59 owned audit fixture",
+            "id": "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+            "ownerId": "b0720041-c686-48f9-86e2-89cfdc370f14",
+            "createdAt": "2026-09-22T13:15:31.285Z"
+          }
+        ],
+        "total": 2,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "doctorA sees Clinic B",
+      "outcome": "pass",
+      "detail": "Doctor-created clinic cascade is persisted."
+    },
+    {
+      "name": "doctorA reads Branch B1",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/branches?clinicId=2d0bc73e-21b8-409c-b7ce-b1a65ee67c13&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "code": "BR-45e1f561",
+            "name": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+            "status": "active",
+            "address": "CF-ASSIGN-20260922131518-807f59 B1",
+            "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+            "timezone": "Asia/Kolkata",
+            "id": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+            "createdAt": "2026-09-22T13:15:39.101Z",
+            "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B"
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "doctorA sees Branch B1",
+      "outcome": "pass",
+      "detail": "Doctor-created branch is visible to the cascade."
+    },
+    {
+      "name": "adminA re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVuQj8st9vSSurPXI8gYvf27V",
+        "user": {
+          "marker": "CF-ASSIGN-20260922131518-807f59",
+          "auditOnly": true,
+          "fixtureKind": "minimal-identity-profile",
+          "id": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+          "clerkId": "user_3JgVuQj8st9vSSurPXI8gYvf27V",
+          "email": "cfa.0260922131518-807f59.admina@example.com",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 adminA",
+          "mobile": "",
+          "role": "clinicAdmin",
+          "status": "active",
+          "createdAt": "2026-09-22T13:15:25.982Z",
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+            "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13"
+          ],
+          "branchIds": [],
+          "doctorId": null,
+          "patientId": null
+        },
+        "doctorId": null,
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "adminA refreshes doctor-created clinic scope",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/clinics?pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "city": "Pune",
+            "code": "CLN-2d0bc73e",
+            "name": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+            "status": "active",
+            "address": "CF-ASSIGN-20260922131518-807f59 Address B",
+            "description": "CF-ASSIGN-20260922131518-807f59 doctor-created owned audit fixture",
+            "id": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+            "ownerId": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+            "adminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+            "createdAt": "2026-09-22T13:15:38.700Z"
+          },
+          {
+            "city": "Pune",
+            "code": "CLN-9cabfba9",
+            "name": "CF-ASSIGN-20260922131518-807f59 Clinic A",
+            "status": "active",
+            "address": "CF-ASSIGN-20260922131518-807f59 Address A",
+            "adminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+            "description": "CF-ASSIGN-20260922131518-807f59 owned audit fixture",
+            "id": "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+            "ownerId": "b0720041-c686-48f9-86e2-89cfdc370f14",
+            "createdAt": "2026-09-22T13:15:31.285Z"
+          }
+        ],
+        "total": 2,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "adminA sees Clinic B",
+      "outcome": "pass",
+      "detail": "Doctor-created clinic cascade is persisted."
+    },
+    {
+      "name": "adminA reads Branch B1",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/branches?clinicId=2d0bc73e-21b8-409c-b7ce-b1a65ee67c13&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "code": "BR-45e1f561",
+            "name": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+            "status": "active",
+            "address": "CF-ASSIGN-20260922131518-807f59 B1",
+            "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+            "timezone": "Asia/Kolkata",
+            "id": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+            "createdAt": "2026-09-22T13:15:39.101Z",
+            "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B"
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "adminA sees Branch B1",
+      "outcome": "pass",
+      "detail": "Doctor-created branch is visible to the cascade."
+    },
+    {
+      "name": "superAdmin re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVuLp2aELD7jJoimHg02ib0dZ",
+        "user": {
+          "marker": "CF-ASSIGN-20260922131518-807f59",
+          "auditOnly": true,
+          "fixtureKind": "minimal-identity-profile",
+          "id": "b0720041-c686-48f9-86e2-89cfdc370f14",
+          "clerkId": "user_3JgVuLp2aELD7jJoimHg02ib0dZ",
+          "email": "cfa.0260922131518-807f59.superadmin@example.com",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 superAdmin",
+          "mobile": "",
+          "role": "superAdmin",
+          "status": "active",
+          "createdAt": "2026-09-22T13:15:25.976Z",
+          "clinicIds": [],
+          "branchIds": [],
+          "doctorId": null,
+          "patientId": null
+        },
+        "doctorId": null,
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "superAdmin refreshes doctor-created clinic scope",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/clinics?pageSize=100",
+      "status": 200,
+      "payload": "{\"items\":[{\"city\":\"Pune\",\"code\":\"CLN-2d0bc73e\",\"name\":\"CF-ASSIGN-20260922131518-807f59 Clinic B\",\"status\":\"active\",\"address\":\"CF-ASSIGN-20260922131518-807f59 Address B\",\"description\":\"CF-ASSIGN-20260922131518-807f59 doctor-created owned audit fixture\",\"id\":\"2d0bc73e-21b8-409c-b7ce-b1a65ee67c13\",\"ownerId\":\"64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09\",\"adminId\":\"b71fe17b-a2e0-4be8-9be4-eb47179d660c\",\"createdAt\":\"2026-09-22T13:15:38.700Z\"},{\"city\":\"Pune\",\"code\":\"CLN-9cabfba9\",\"name\":\"CF-ASSIGN-20260922131518-807f59 Clinic A\",\"status\":\"active\",\"address\":\"CF-ASSIGN-20260922131518-807f59 Address A\",\"adminId\":\"b71fe17b-a2e0-4be8-9be4-eb47179d660c\",\"description\":\"CF-ASSIGN-20260922131518-807f59 owned audit fixture\",\"id\":\"9cabfba9-d5ab-4b64-868f-daed88400d0b\",\"ownerId\":\"b0720041-c686-48f9-86e2-89cfdc370f14\",\"createdAt\":\"2026-09-22T13:15:31.285Z\"},{\"id\":\"b2b51bb2-c74a-45fc-bf2d-1cb635169fb1\",\"area\":\"Baner\",\"city\":\"Pune\",\"code\":\"CLN-b2b51bb2\",\"name\":\"Harmony Health Clinic\",\"email\":\"care@harmonyhealth.in\",\"phone\":\"9765432108\",\"state\":\"Maharashtra\",\"status\":\"active\",\"address\":\"42 Baner Road, Baner\",\"country\":\"India\",\"ownerId\":\"ac9abf11-b5f0-4912-afa6-94a4d5efc1f1\",\"pincode\":\"411007\",\"createdAt\":\"2026-09-22T08:04:29.899Z\",\"categoryId\":\"1ec31d9b-b0bf-4ad8-943a-13954550bc3a\",\"description\":\"A modern healthcare clinic providing general medicine, family healthcare, specialist consultations, preventive health check-ups, and diagnostic support.\",\"clinicTypeId\":\"e797b8e1-febd-4989-a0cb-5302be29c10b\",\"adminId\":\"ce7bb2fa-a30b-4016-83f4-cbb0ed271a79\"},{\"area\":\"Andheri East\",\"city\":\"Mumbai\",\"code\":\"CLN-3017b34d\",\"name\":\"Sunshine Multispeciality Clinic\",\"email\":\"info@sunshineclinic.in\",\"phone\":\"9820123456\",\"state\":\"Maharashtra\",\"status\":\"active\",\"address…[truncated]"
+    },
+    {
+      "name": "superAdmin sees Clinic B",
+      "outcome": "pass",
+      "detail": "Doctor-created clinic cascade is persisted."
+    },
+    {
+      "name": "superAdmin reads Branch B1",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/branches?clinicId=2d0bc73e-21b8-409c-b7ce-b1a65ee67c13&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "code": "BR-45e1f561",
+            "name": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+            "status": "active",
+            "address": "CF-ASSIGN-20260922131518-807f59 B1",
+            "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+            "timezone": "Asia/Kolkata",
+            "id": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+            "createdAt": "2026-09-22T13:15:39.101Z",
+            "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B"
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "superAdmin sees Branch B1",
+      "outcome": "pass",
+      "detail": "Doctor-created branch is visible to the cascade."
+    },
+    {
+      "name": "Second admin ownership conflict",
+      "outcome": "pass",
+      "detail": "A second ClinicAdmin cannot take over Clinic B.",
+      "method": "PATCH",
+      "route": "/clinics/2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+      "status": 403,
+      "payload": {
+        "error": "Record outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Ownership preserved after conflict",
+      "outcome": "pass",
+      "detail": "Rejected second-admin request did not alter Clinic B adminId or assignments."
+    },
+    {
+      "name": "Admin A maps Doctor A to Branch B1",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/doctors/b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+      "status": 200,
+      "payload": {
+        "id": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "code": "DOC-b5de426a",
+        "email": "cfa.0260922131518-807f59.doctora@example.com",
+        "mobile": "",
+        "status": "active",
+        "userId": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617",
+          "45e1f561-de37-45d6-a0ab-27e91326a6d9"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+          "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13"
+        ],
+        "ownerAdminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "specializationId": null,
+        "qualificationNames": []
+      }
+    },
+    {
+      "name": "Admin A maps Receptionist B to Branch B1",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/users/33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+      "status": 200,
+      "payload": {
+        "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+        "role": "receptionist",
+        "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+        "mobile": "",
+        "status": "active",
+        "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617",
+          "45e1f561-de37-45d6-a0ab-27e91326a6d9"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+          "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13"
+        ],
+        "createdAt": "2026-09-22T13:15:36.421Z"
+      }
+    },
+    {
+      "name": "Concurrent duplicate mapping requests are bounded",
+      "outcome": "pass",
+      "detail": "Both requests completed or conflicted without a server error."
+    },
+    {
+      "name": "Concurrent mapping leaves one Branch B1 row",
+      "outcome": "pass",
+      "detail": "Database uniqueness preserved exactly one receptionist/branch mapping."
+    },
+    {
+      "name": "Resume checkpoint is complete",
+      "outcome": "pass",
+      "detail": "Existing fixture contains every ID required after the assignment phase."
+    },
+    {
+      "name": "Concurrent branch creation is unique",
+      "outcome": "pass",
+      "detail": "Expected one 201 and one 409; received 201/409."
+    },
+    {
+      "name": "Doctor A creates Branch B1 schedule",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 201,
+      "payload": {
+        "isOpen": true,
+        "endTime": "23:59",
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "dayOfWeek": 2,
+        "maxTokens": "[REDACTED]",
+        "queueMode": "mixed",
+        "startTime": "00:00",
+        "tokenPrefix": "[REDACTED]",
+        "bufferMinutes": 0,
+        "queueOpenTime": "00:00",
+        "queueCloseTime": "23:59",
+        "consultationMinutes": 10,
+        "id": "7aed2779-cfb0-4ac3-99e9-2dc1bfb87c31",
+        "status": "active"
+      }
+    },
+    {
+      "name": "Reject cross-location overlapping schedule",
+      "outcome": "pass",
+      "detail": "Expected 409 and received 409.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 409,
+      "payload": {
+        "error": "This schedule overlaps with an existing schedule",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Create future Branch B schedule for exception collision",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 201,
+      "payload": {
+        "isOpen": true,
+        "endTime": "12:00",
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "dayOfWeek": 3,
+        "maxTokens": "[REDACTED]",
+        "queueMode": "mixed",
+        "startTime": "09:00",
+        "tokenPrefix": "[REDACTED]",
+        "bufferMinutes": 0,
+        "consultationMinutes": 10,
+        "id": "d95b9dd4-a008-40f6-9e9d-903cfddc2314",
+        "status": "active"
+      }
+    },
+    {
+      "name": "Create non-overlapping Branch A schedule",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 201,
+      "payload": {
+        "isOpen": true,
+        "endTime": "17:00",
+        "branchId": "28555741-951d-4b3b-bda9-f8f2c13d8617",
+        "clinicId": "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "dayOfWeek": 3,
+        "maxTokens": "[REDACTED]",
+        "queueMode": "mixed",
+        "startTime": "13:00",
+        "tokenPrefix": "[REDACTED]",
+        "bufferMinutes": 0,
+        "consultationMinutes": 10,
+        "id": "3e3a4145-3c20-4955-8949-f301621acc81",
+        "status": "active"
+      }
+    },
+    {
+      "name": "Receptionist exception cannot overlap another location",
+      "outcome": "pass",
+      "detail": "Expected 409 and received 409.",
+      "method": "POST",
+      "route": "/availability-exceptions",
+      "status": 409,
+      "payload": {
+        "error": "This schedule overlaps with an existing schedule",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Receptionist manages authorized Doctor A availability",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/availability-exceptions",
+      "status": 201,
+      "payload": {
+        "date": "2026-10-01",
+        "reason": "CF-ASSIGN-20260922131518-807f59 scoped closure",
+        "endTime": null,
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "breakEnd": null,
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "isClosed": true,
+        "maxTokens": "[REDACTED]",
+        "startTime": null,
+        "breakStart": null,
+        "id": "af2d4b16-77e5-4958-8a4a-2796584c949c",
+        "status": "active"
+      }
+    },
+    {
+      "name": "Admin A creates peer doctor through API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/doctors",
+      "status": 201,
+      "payload": {
+        "code": "DOC-17040ed9",
+        "email": "cfa.0260922131518-807f59.peerdoctor@example.com",
+        "status": "active",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Peer Doctor",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+        ],
+        "id": "17040ed9-0f3d-4069-8691-ea6730c92591",
+        "userId": "9cf07e12-b647-40f2-bb8d-b5a480c11148",
+        "ownerAdminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "specializationId": null,
+        "mobile": "",
+        "qualificationNames": [],
+        "clinicNames": [
+          "CF-ASSIGN-20260922131518-807f59 Clinic A"
+        ],
+        "branchNames": [
+          "CF-ASSIGN-20260922131518-807f59 Branch A1"
+        ]
+      }
+    },
+    {
+      "name": "peerDoctor re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVuqa5Sg2LtSmxNMkng0CzQcG",
+        "user": {
+          "id": "9cf07e12-b647-40f2-bb8d-b5a480c11148",
+          "clerkId": "user_3JgVuqa5Sg2LtSmxNMkng0CzQcG",
+          "email": "cfa.0260922131518-807f59.peerdoctor@example.com",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Peer Doctor",
+          "mobile": "",
+          "role": "doctor",
+          "status": "active",
+          "createdAt": "2026-09-22T13:22:36.629Z",
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+          ],
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617"
+          ],
+          "doctorId": "17040ed9-0f3d-4069-8691-ea6730c92591",
+          "patientId": null
+        },
+        "doctorId": "17040ed9-0f3d-4069-8691-ea6730c92591",
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Peer doctor cannot manage Doctor A availability",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/availability-exceptions",
+      "status": 403,
+      "payload": {
+        "error": "Branch outside assigned scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Patient creates minimal self profile through onboarding API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/onboarding",
+      "status": 201,
+      "payload": {
+        "clerkId": "user_3JgVv8mAIZrMvbiG4Bd1EpbYlYK",
+        "user": {
+          "id": "cc9f59a0-846a-4111-a770-820896d0fe7b",
+          "clerkId": "user_3JgVv8mAIZrMvbiG4Bd1EpbYlYK",
+          "email": "cfa.0260922131518-807f59.patient@example.com",
+          "fullName": "CF-ASSIGN-20260922132227-06143e Patient",
+          "mobile": "+91969189277",
+          "role": "patient",
+          "status": "active",
+          "createdAt": "2026-09-22T13:22:38.713Z",
+          "clinicIds": [],
+          "branchIds": [],
+          "doctorId": null,
+          "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea"
+        },
+        "doctorId": null,
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Patient requests development mobile OTP",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/otp/request",
+      "status": 200,
+      "payload": {
+        "challengeId": "6e4c513d-9198-4a98-9b13-ed103864b0a1",
+        "expiresAt": "2026-09-22T13:27:38.738Z",
+        "resendAfterSeconds": 60,
+        "provider": "development",
+        "developmentCode": "[REDACTED]"
+      }
+    },
+    {
+      "name": "Development OTP is explicitly enabled",
+      "outcome": "pass",
+      "detail": "Development-only provider returned an in-band code; report redaction suppresses it."
+    },
+    {
+      "name": "Patient verifies mobile OTP",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/otp/verify",
+      "status": 200,
+      "payload": {
+        "verified": true,
+        "mobile": "+91969189277",
+        "verifiedAt": "2026-09-22T13:22:39.141Z"
+      }
+    },
+    {
+      "name": "Doctor creates Branch B booking QR",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/qrs",
+      "status": 201,
+      "payload": {
+        "name": "CF-ASSIGN-20260922131518-807f59 Clinic B booking QR",
+        "status": "active",
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "bookingUrl": "/book/XKvorTn8uqJCuMMGnWWieO1r08KPeLXTx3gyZyUM1JY",
+        "id": "f5b8e473-9d38-48ed-ab54-6c02a215a57e",
+        "publicReference": "XKvorTn8uqJCuMMGnWWieO1r08KPeLXTx3gyZyUM1JY",
+        "createdAt": "2026-09-22T13:22:39.551Z",
+        "reference": "XKvorTn8uqJCuMMGnWWieO1r08KPeLXTx3gyZyUM1JY"
+      }
+    },
+    {
+      "name": "Public booking QR resolves without identity data",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/public/qr/XKvorTn8uqJCuMMGnWWieO1r08KPeLXTx3gyZyUM1JY",
+      "status": 200,
+      "payload": {
+        "reference": "XKvorTn8uqJCuMMGnWWieO1r08KPeLXTx3gyZyUM1JY",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A"
+      }
+    },
+    {
+      "name": "Patient online booking",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:22:40.351Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-CA87C370AFB841C7",
+        "startTime": "00:00",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "termsAccepted": true,
+        "id": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T13:22:40.336Z",
+        "allowedActions": [
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Patient gets signed appointment QR",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/eb81fc07-e4d2-4e9d-9962-85f401fafa97/qr",
+      "status": 200,
+      "payload": {
+        "appointmentId": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+        "payload": "[REDACTED]",
+        "checkInUrl": "/check-in?payload=v1.Q0YtQ0E4N0MzNzBBRkI4NDFDNw.ADp6kFMWUXQD1lxKT69z2jP9R9-tuSkFHmunf9Rx0-I"
+      }
+    },
+    {
+      "name": "Receptionist resolves appointment QR",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointment-qr/resolve",
+      "status": 200,
+      "payload": {
+        "appointment": {
+          "date": "2026-09-22",
+          "notes": "CF-ASSIGN-20260922131518-807f59 online",
+          "token": "[REDACTED]",
+          "source": "online",
+          "endTime": "23:59",
+          "history": [
+            {
+              "status": "booked",
+              "occurredAt": "2026-09-22T13:22:40.351Z"
+            }
+          ],
+          "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+          "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+          "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+          "timezone": "Asia/Kolkata",
+          "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+          "reference": "CF-CA87C370AFB841C7",
+          "startTime": "00:00",
+          "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+          "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+          "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+          "patientCode": "PAT-cc9f59a0",
+          "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+          "termsAccepted": true,
+          "id": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+          "tokenNumber": "[REDACTED]",
+          "status": "booked",
+          "createdAt": "2026-09-22T13:22:40.336Z",
+          "allowedActions": [
+            "checkIn",
+            "cancel"
+          ]
+        },
+        "eligible": true,
+        "alreadyCheckedIn": false,
+        "message": "Appointment is eligible for check-in."
+      }
+    },
+    {
+      "name": "Receptionist QR check-in uses queue engine",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointment-qr/check-in",
+      "status": 200,
+      "payload": {
+        "appointment": {
+          "id": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+          "date": "2026-09-22",
+          "notes": "CF-ASSIGN-20260922131518-807f59 online",
+          "token": "[REDACTED]",
+          "source": "online",
+          "status": "waiting",
+          "endTime": "23:59",
+          "history": [
+            {
+              "status": "booked",
+              "occurredAt": "2026-09-22T13:22:40.351Z"
+            },
+            {
+              "status": "checkedIn",
+              "occurredAt": "2026-09-22T13:22:41.548Z"
+            },
+            {
+              "status": "waiting",
+              "occurredAt": "2026-09-22T13:22:41.555Z"
+            }
+          ],
+          "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+          "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+          "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+          "timezone": "Asia/Kolkata",
+          "createdAt": "2026-09-22T13:22:40.336Z",
+          "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+          "reference": "CF-CA87C370AFB841C7",
+          "startTime": "00:00",
+          "waitingAt": "2026-09-22T13:22:41.555Z",
+          "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+          "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+          "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+          "checkedInAt": "2026-09-22T13:22:41.548Z",
+          "patientCode": "PAT-cc9f59a0",
+          "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+          "tokenNumber": "[REDACTED]",
+          "termsAccepted": true,
+          "allowedActions": [
+            "call",
+            "noShow",
+            "cancel"
+          ]
+        },
+        "alreadyCheckedIn": false,
+        "message": "Appointment checked in and added to the queue."
+      }
+    },
+    {
+      "name": "QR check-in enqueues atomically",
+      "outcome": "pass",
+      "detail": "Appointment reached waiting through signed QR flow."
+    },
+    {
+      "name": "Appointment QR remains retrievable after check-in",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/eb81fc07-e4d2-4e9d-9962-85f401fafa97/qr",
+      "status": 200,
+      "payload": {
+        "appointmentId": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+        "payload": "[REDACTED]",
+        "checkInUrl": "/check-in?payload=v1.Q0YtQ0E4N0MzNzBBRkI4NDFDNw.ADp6kFMWUXQD1lxKT69z2jP9R9-tuSkFHmunf9Rx0-I"
+      }
+    },
+    {
+      "name": "Appointment QR preserved",
+      "outcome": "pass",
+      "detail": "Signed QR payload remains stable through lifecycle changes."
+    },
+    {
+      "name": "Doctor calls QR-checked-in patient",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/queue/call-next",
+      "status": 200,
+      "payload": {
+        "appointment": {
+          "id": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+          "date": "2026-09-22",
+          "notes": "CF-ASSIGN-20260922131518-807f59 online",
+          "token": "[REDACTED]",
+          "source": "online",
+          "status": "called",
+          "endTime": "23:59",
+          "history": [
+            {
+              "status": "booked",
+              "occurredAt": "2026-09-22T13:22:40.351Z"
+            },
+            {
+              "status": "checkedIn",
+              "occurredAt": "2026-09-22T13:22:41.548Z"
+            },
+            {
+              "status": "waiting",
+              "occurredAt": "2026-09-22T13:22:41.555Z"
+            },
+            {
+              "status": "called",
+              "occurredAt": "2026-09-22T13:22:42.353Z"
+            }
+          ],
+          "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+          "calledAt": "2026-09-22T13:22:42.353Z",
+          "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+          "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+          "timezone": "Asia/Kolkata",
+          "createdAt": "2026-09-22T13:22:40.336Z",
+          "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+          "reference": "CF-CA87C370AFB841C7",
+          "startTime": "00:00",
+          "waitingAt": "2026-09-22T13:22:41.555Z",
+          "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+          "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+          "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+          "checkedInAt": "2026-09-22T13:22:41.548Z",
+          "patientCode": "PAT-cc9f59a0",
+          "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+          "tokenNumber": "[REDACTED]",
+          "termsAccepted": true,
+          "allowedActions": [
+            "start",
+            "noShow"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Queue calls expected QR appointment",
+      "outcome": "pass",
+      "detail": "Call-next selected the connected online booking."
+    },
+    {
+      "name": "Doctor starts consultation",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/eb81fc07-e4d2-4e9d-9962-85f401fafa97/actions",
+      "status": 200,
+      "payload": {
+        "id": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "status": "inConsultation",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:22:40.351Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T13:22:41.548Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T13:22:41.555Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T13:22:42.353Z"
+          },
+          {
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T13:22:42.748Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "calledAt": "2026-09-22T13:22:42.353Z",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:22:40.336Z",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-CA87C370AFB841C7",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T13:22:41.555Z",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "checkedInAt": "2026-09-22T13:22:41.548Z",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.019883333333333333,
+        "termsAccepted": true,
+        "consultationStartedAt": "2026-09-22T13:22:42.748Z",
+        "allowedActions": [
+          "complete"
+        ]
+      }
+    },
+    {
+      "name": "Doctor completes consultation",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/eb81fc07-e4d2-4e9d-9962-85f401fafa97/actions",
+      "status": 200,
+      "payload": {
+        "id": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "status": "completed",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:22:40.351Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T13:22:41.548Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T13:22:41.555Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T13:22:42.353Z"
+          },
+          {
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T13:22:42.748Z"
+          },
+          {
+            "status": "completed",
+            "occurredAt": "2026-09-22T13:22:43.145Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "calledAt": "2026-09-22T13:22:42.353Z",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:22:40.336Z",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-CA87C370AFB841C7",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T13:22:41.555Z",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "checkedInAt": "2026-09-22T13:22:41.548Z",
+        "completedAt": "2026-09-22T13:22:43.145Z",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.019883333333333333,
+        "termsAccepted": true,
+        "consultationStartedAt": "2026-09-22T13:22:42.748Z",
+        "consultationMinutesActual": 0.0066166666666666665,
+        "allowedActions": []
+      }
+    },
+    {
+      "name": "Patient reads completed history",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+      "status": 200,
+      "payload": {
+        "id": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 online",
+        "token": "[REDACTED]",
+        "source": "online",
+        "status": "completed",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:22:40.351Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T13:22:41.548Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T13:22:41.555Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T13:22:42.353Z"
+          },
+          {
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T13:22:42.748Z"
+          },
+          {
+            "status": "completed",
+            "occurredAt": "2026-09-22T13:22:43.145Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "calledAt": "2026-09-22T13:22:42.353Z",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:22:40.336Z",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-CA87C370AFB841C7",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T13:22:41.555Z",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "checkedInAt": "2026-09-22T13:22:41.548Z",
+        "completedAt": "2026-09-22T13:22:43.145Z",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.019883333333333333,
+        "termsAccepted": true,
+        "consultationStartedAt": "2026-09-22T13:22:42.748Z",
+        "consultationMinutesActual": 0.0066166666666666665,
+        "allowedActions": []
+      }
+    },
+    {
+      "name": "Connected lifecycle history is complete",
+      "outcome": "pass",
+      "detail": "Patient history contains every queue transition in order."
+    },
+    {
+      "name": "Receptionist creates phone booking",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 phone",
+        "token": "[REDACTED]",
+        "source": "phone",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:22:43.969Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-6490C6FD7BB348A0",
+        "startTime": "00:00",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "id": "9959f0c7-4d1e-4bf6-92cd-963e1158fbff",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T13:22:43.944Z",
+        "allowedActions": [
+          "checkIn",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Resume checkpoint is complete",
+      "outcome": "pass",
+      "detail": "Existing fixture contains every ID required after the assignment phase."
+    },
+    {
+      "name": "Advanced resume checkpoint is complete",
+      "outcome": "pass",
+      "detail": "Schedules, peer doctor, patient, booking QR, and completed online flow remain persisted."
+    },
+    {
+      "name": "Reload signed appointment QR at advanced checkpoint",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/eb81fc07-e4d2-4e9d-9962-85f401fafa97/qr",
+      "status": 200,
+      "payload": {
+        "appointmentId": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+        "payload": "[REDACTED]",
+        "checkInUrl": "/check-in?payload=v1.Q0YtQ0E4N0MzNzBBRkI4NDFDNw.ADp6kFMWUXQD1lxKT69z2jP9R9-tuSkFHmunf9Rx0-I"
+      }
+    },
+    {
+      "name": "Phone booking checks in",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/9959f0c7-4d1e-4bf6-92cd-963e1158fbff/actions",
+      "status": 200,
+      "payload": {
+        "id": "9959f0c7-4d1e-4bf6-92cd-963e1158fbff",
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 phone",
+        "token": "[REDACTED]",
+        "source": "phone",
+        "status": "checkedIn",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:22:43.969Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T13:24:54.511Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:22:43.944Z",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-6490C6FD7BB348A0",
+        "startTime": "00:00",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "checkedInAt": "2026-09-22T13:24:54.511Z",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": [
+          "enqueue",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Phone booking enters queue",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/9959f0c7-4d1e-4bf6-92cd-963e1158fbff/actions",
+      "status": 200,
+      "payload": {
+        "id": "9959f0c7-4d1e-4bf6-92cd-963e1158fbff",
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 phone",
+        "token": "[REDACTED]",
+        "source": "phone",
+        "status": "waiting",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:22:43.969Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T13:24:54.511Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T13:24:54.908Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:22:43.944Z",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-6490C6FD7BB348A0",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T13:24:54.908Z",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "checkedInAt": "2026-09-22T13:24:54.511Z",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": [
+          "call",
+          "noShow",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Doctor calls phone booking",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/queue/call-next",
+      "status": 200,
+      "payload": {
+        "appointment": {
+          "id": "9959f0c7-4d1e-4bf6-92cd-963e1158fbff",
+          "date": "2026-09-22",
+          "notes": "CF-ASSIGN-20260922131518-807f59 phone",
+          "token": "[REDACTED]",
+          "source": "phone",
+          "status": "called",
+          "endTime": "23:59",
+          "history": [
+            {
+              "status": "booked",
+              "occurredAt": "2026-09-22T13:22:43.969Z"
+            },
+            {
+              "status": "checkedIn",
+              "occurredAt": "2026-09-22T13:24:54.511Z"
+            },
+            {
+              "status": "waiting",
+              "occurredAt": "2026-09-22T13:24:54.908Z"
+            },
+            {
+              "status": "called",
+              "occurredAt": "2026-09-22T13:24:55.313Z"
+            }
+          ],
+          "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+          "calledAt": "2026-09-22T13:24:55.313Z",
+          "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+          "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+          "timezone": "Asia/Kolkata",
+          "createdAt": "2026-09-22T13:22:43.944Z",
+          "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+          "reference": "CF-6490C6FD7BB348A0",
+          "startTime": "00:00",
+          "waitingAt": "2026-09-22T13:24:54.908Z",
+          "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+          "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+          "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+          "checkedInAt": "2026-09-22T13:24:54.511Z",
+          "patientCode": "PAT-cc9f59a0",
+          "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+          "tokenNumber": "[REDACTED]",
+          "allowedActions": [
+            "start",
+            "noShow"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Doctor starts phone consultation",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/9959f0c7-4d1e-4bf6-92cd-963e1158fbff/actions",
+      "status": 200,
+      "payload": {
+        "id": "9959f0c7-4d1e-4bf6-92cd-963e1158fbff",
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 phone",
+        "token": "[REDACTED]",
+        "source": "phone",
+        "status": "inConsultation",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:22:43.969Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T13:24:54.511Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T13:24:54.908Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T13:24:55.313Z"
+          },
+          {
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T13:24:55.709Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "calledAt": "2026-09-22T13:24:55.313Z",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:22:43.944Z",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-6490C6FD7BB348A0",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T13:24:54.908Z",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "checkedInAt": "2026-09-22T13:24:54.511Z",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.01335,
+        "consultationStartedAt": "2026-09-22T13:24:55.709Z",
+        "allowedActions": [
+          "complete"
+        ]
+      }
+    },
+    {
+      "name": "Doctor completes phone consultation",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/9959f0c7-4d1e-4bf6-92cd-963e1158fbff/actions",
+      "status": 200,
+      "payload": {
+        "id": "9959f0c7-4d1e-4bf6-92cd-963e1158fbff",
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 phone",
+        "token": "[REDACTED]",
+        "source": "phone",
+        "status": "completed",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:22:43.969Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T13:24:54.511Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T13:24:54.908Z"
+          },
+          {
+            "status": "called",
+            "occurredAt": "2026-09-22T13:24:55.313Z"
+          },
+          {
+            "status": "inConsultation",
+            "occurredAt": "2026-09-22T13:24:55.709Z"
+          },
+          {
+            "status": "completed",
+            "occurredAt": "2026-09-22T13:24:56.106Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "calledAt": "2026-09-22T13:24:55.313Z",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:22:43.944Z",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-6490C6FD7BB348A0",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T13:24:54.908Z",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "checkedInAt": "2026-09-22T13:24:54.511Z",
+        "completedAt": "2026-09-22T13:24:56.106Z",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "tokenNumber": "[REDACTED]",
+        "waitMinutes": 0.01335,
+        "consultationStartedAt": "2026-09-22T13:24:55.709Z",
+        "consultationMinutesActual": 0.0066166666666666665,
+        "allowedActions": []
+      }
+    },
+    {
+      "name": "Receptionist creates walk-in booking",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "id": "79115748-e10a-463d-9534-1e153dace092",
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 walkIn",
+        "token": "[REDACTED]",
+        "source": "walkIn",
+        "status": "waiting",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:24:56.535Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T13:24:56.545Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T13:24:56.553Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:24:56.505Z",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-A045A3E387A441E5",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T13:24:56.553Z",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "checkedInAt": "2026-09-22T13:24:56.545Z",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": [
+          "call",
+          "noShow",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Walk-in enters same queue engine",
+      "outcome": "pass",
+      "detail": "Walk-in atomically reached waiting."
+    },
+    {
+      "name": "Walk-in no-show transition",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/appointments/79115748-e10a-463d-9534-1e153dace092/actions",
+      "status": 200,
+      "payload": {
+        "id": "79115748-e10a-463d-9534-1e153dace092",
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 walkIn",
+        "token": "[REDACTED]",
+        "source": "walkIn",
+        "status": "noShow",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:24:56.535Z"
+          },
+          {
+            "status": "checkedIn",
+            "occurredAt": "2026-09-22T13:24:56.545Z"
+          },
+          {
+            "status": "waiting",
+            "occurredAt": "2026-09-22T13:24:56.553Z"
+          },
+          {
+            "status": "noShow",
+            "occurredAt": "2026-09-22T13:24:56.908Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:24:56.505Z",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-A045A3E387A441E5",
+        "startTime": "00:00",
+        "waitingAt": "2026-09-22T13:24:56.553Z",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "checkedInAt": "2026-09-22T13:24:56.545Z",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "tokenNumber": "[REDACTED]",
+        "allowedActions": [
+          "requeue"
+        ]
+      }
+    },
+    {
+      "name": "Patient books from clinic QR source",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 201,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 qr",
+        "token": "[REDACTED]",
+        "source": "qr",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:24:57.325Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-98866068BFAC4182",
+        "startTime": "00:00",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "qrReference": "XKvorTn8uqJCuMMGnWWieO1r08KPeLXTx3gyZyUM1JY",
+        "termsAccepted": true,
+        "id": "00be430f-c4d0-402c-be20-a13e3430e60f",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T13:24:57.308Z",
+        "allowedActions": [
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Prepare booked appointment QR for browser scanning",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/00be430f-c4d0-402c-be20-a13e3430e60f/qr",
+      "status": 200,
+      "payload": {
+        "appointmentId": "00be430f-c4d0-402c-be20-a13e3430e60f",
+        "payload": "[REDACTED]",
+        "checkInUrl": "/check-in?payload=v1.Q0YtOTg4NjYwNjhCRkFDNDE4Mg.mMa6d5VN6N8RW-47u41jvsPmkNirYsY2OEdTDPt4KEk"
+      }
+    },
+    {
+      "name": "All four booking sources persisted",
+      "outcome": "pass",
+      "detail": "Online, phone, walk-in, and QR all used the live appointment API."
+    },
+    {
+      "name": "Receptionist A requests out-of-scope appointments filter",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments?clinicId=2d0bc73e-21b8-409c-b7ce-b1a65ee67c13&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [],
+        "total": 0,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "Appointments response has no Clinic B leakage",
+      "outcome": "pass",
+      "detail": "Response omitted out-of-scope IDs and marker names."
+    },
+    {
+      "name": "Receptionist A requests out-of-scope doctor projection",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/doctors?clinicId=2d0bc73e-21b8-409c-b7ce-b1a65ee67c13&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [],
+        "total": 0,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "Shared doctor projection hides out-of-scope mappings",
+      "outcome": "pass",
+      "detail": "Response omitted out-of-scope IDs and marker names."
+    },
+    {
+      "name": "Receptionist A reads shared Doctor A projection",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/doctors?clinicId=9cabfba9-d5ab-4b64-868f-daed88400d0b&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "code": "DOC-17040ed9",
+            "email": "cfa.0260922131518-807f59.peerdoctor@example.com",
+            "status": "active",
+            "fullName": "CF-ASSIGN-20260922131518-807f59 Peer Doctor",
+            "branchIds": [
+              "28555741-951d-4b3b-bda9-f8f2c13d8617"
+            ],
+            "clinicIds": [
+              "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+            ],
+            "id": "17040ed9-0f3d-4069-8691-ea6730c92591",
+            "userId": "9cf07e12-b647-40f2-bb8d-b5a480c11148",
+            "ownerAdminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+            "specializationId": null,
+            "mobile": "",
+            "qualificationNames": [],
+            "clinicNames": [
+              "CF-ASSIGN-20260922131518-807f59 Clinic A"
+            ],
+            "branchNames": [
+              "CF-ASSIGN-20260922131518-807f59 Branch A1"
+            ]
+          },
+          {
+            "id": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+            "code": "DOC-b5de426a",
+            "email": "cfa.0260922131518-807f59.doctora@example.com",
+            "mobile": "",
+            "status": "active",
+            "userId": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+            "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+            "branchIds": [
+              "28555741-951d-4b3b-bda9-f8f2c13d8617"
+            ],
+            "clinicIds": [
+              "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+            ],
+            "ownerAdminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+            "specializationId": null,
+            "qualificationNames": [],
+            "clinicNames": [
+              "CF-ASSIGN-20260922131518-807f59 Clinic A"
+            ],
+            "branchNames": [
+              "CF-ASSIGN-20260922131518-807f59 Branch A1"
+            ]
+          }
+        ],
+        "total": 2,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "Shared doctor mapping projection is scoped",
+      "outcome": "pass",
+      "detail": "Receptionist A sees the shared doctor with only Clinic A / Branch A1 mappings."
+    },
+    {
+      "name": "Non-assignment doctor edit preserves omitted mappings",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/doctors/b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+      "status": 200,
+      "payload": {
+        "id": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "code": "DOC-b5de426a",
+        "email": "cfa.0260922131518-807f59.doctora@example.com",
+        "mobile": "",
+        "status": "active",
+        "userId": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617",
+          "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+          "7836d241-6b5e-45fa-afe2-5146fe4435a0",
+          "7cd08385-7154-4652-8876-a7bcb800fee1",
+          "8395a7f5-9067-4b9c-85da-76c4af862b0e"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+          "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13"
+        ],
+        "ownerAdminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "specializationId": null,
+        "qualificationNames": [],
+        "clinicNames": [
+          "CF-ASSIGN-20260922131518-807f59 Clinic A",
+          "CF-ASSIGN-20260922131518-807f59 Clinic B"
+        ],
+        "branchNames": [
+          "CF-ASSIGN-20260922131518-807f59 Branch A1",
+          "CF-ASSIGN-20260922131518-807f59 Branch B1",
+          "CF-ASSIGN-20260922131518-807f59 Concurrent Branch",
+          "CF-ASSIGN-20260922131518-807f59 Concurrent Probe",
+          "CF-ASSIGN-20260922131518-807f59 Concurrent Branch 25a4"
+        ]
+      }
+    },
+    {
+      "name": "Hidden doctor mapping survives profile edit",
+      "outcome": "pass",
+      "detail": "Clinic B / Branch B1 remained persisted when assignment arrays were omitted."
+    },
+    {
+      "name": "Receptionist A cannot read Branch B queue",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/queue?doctorId=b5de426a-74fe-4595-bf5e-a10ce6edc0b5&branchId=45e1f561-de37-45d6-a0ab-27e91326a6d9&date=2026-09-22",
+      "status": 403,
+      "payload": {
+        "error": "Queue outside assigned scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Receptionist A cannot resolve Branch B appointment QR",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/appointment-qr/resolve",
+      "status": 403,
+      "payload": {
+        "error": "Appointment outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Receptionist A cannot read Branch B patient",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/patients/9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+      "status": 403,
+      "payload": {
+        "error": "Record outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Admin revokes Receptionist B Branch B scope only",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/users/33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+      "status": 200,
+      "payload": {
+        "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+        "role": "receptionist",
+        "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+        "mobile": "",
+        "status": "active",
+        "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+        ],
+        "createdAt": "2026-09-22T13:15:36.421Z",
+        "clinicNames": [
+          "CF-ASSIGN-20260922131518-807f59 Clinic A"
+        ],
+        "branchNames": [
+          "CF-ASSIGN-20260922131518-807f59 Branch A1"
+        ]
+      }
+    },
+    {
+      "name": "receptionistB re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+        "user": {
+          "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+          "role": "receptionist",
+          "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+          "mobile": "",
+          "status": "active",
+          "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617"
+          ],
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+          ],
+          "createdAt": "2026-09-22T13:15:36.421Z",
+          "doctorId": null,
+          "patientId": null
+        },
+        "doctorId": null,
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Resume checkpoint is complete",
+      "outcome": "pass",
+      "detail": "Existing fixture contains every ID required after the assignment phase."
+    },
+    {
+      "name": "Advanced resume checkpoint is complete",
+      "outcome": "pass",
+      "detail": "Schedules, peer doctor, patient, booking QR, and completed online flow remain persisted."
+    },
+    {
+      "name": "Reload signed appointment QR at advanced checkpoint",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/eb81fc07-e4d2-4e9d-9962-85f401fafa97/qr",
+      "status": 200,
+      "payload": {
+        "appointmentId": "eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+        "payload": "[REDACTED]",
+        "checkInUrl": "/check-in?payload=v1.Q0YtQ0E4N0MzNzBBRkI4NDFDNw.ADp6kFMWUXQD1lxKT69z2jP9R9-tuSkFHmunf9Rx0-I"
+      }
+    },
+    {
+      "name": "Revocation resume checkpoint is complete",
+      "outcome": "pass",
+      "detail": "Booked browser QR appointment remains persisted."
+    },
+    {
+      "name": "receptionistB re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+        "user": {
+          "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+          "role": "receptionist",
+          "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+          "mobile": "",
+          "status": "active",
+          "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617"
+          ],
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+          ],
+          "createdAt": "2026-09-22T13:15:36.421Z",
+          "doctorId": null,
+          "patientId": null
+        },
+        "doctorId": null,
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Revoked receptionist cannot read Branch B dashboard",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/dashboard?clinicId=2d0bc73e-21b8-409c-b7ce-b1a65ee67c13&branchId=45e1f561-de37-45d6-a0ab-27e91326a6d9&date=2026-09-22",
+      "status": 403,
+      "payload": {
+        "error": "Dashboard context outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Revoked receptionist cannot read Branch B appointment",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/appointments/eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+      "status": 403,
+      "payload": {
+        "error": "Appointment outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Revoked receptionist cannot read Branch B patient",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/patients/9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+      "status": 403,
+      "payload": {
+        "error": "Record outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Revoked receptionist cannot resolve Branch B QR",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/appointment-qr/resolve",
+      "status": 403,
+      "payload": {
+        "error": "Appointment outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Revoked receptionist retains Branch A scope",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/branches?clinicId=9cabfba9-d5ab-4b64-868f-daed88400d0b&pageSize=100",
+      "status": 200,
+      "payload": {
+        "items": [
+          {
+            "code": "BR-28555741",
+            "name": "CF-ASSIGN-20260922131518-807f59 Branch A1",
+            "status": "active",
+            "address": "CF-ASSIGN-20260922131518-807f59 A1",
+            "clinicId": "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+            "timezone": "Asia/Kolkata",
+            "id": "28555741-951d-4b3b-bda9-f8f2c13d8617",
+            "createdAt": "2026-09-22T13:15:31.684Z",
+            "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic A"
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "pageSize": 100
+      }
+    },
+    {
+      "name": "Exact-branch revocation preserves other branch",
+      "outcome": "pass",
+      "detail": "Branch A remains available after Branch B revocation."
+    },
+    {
+      "name": "Revocation preserves DB history",
+      "outcome": "pass",
+      "detail": "Appointment history rows remain unchanged."
+    },
+    {
+      "name": "Admin revokes Doctor A Branch B scope",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/doctors/b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+      "status": 200,
+      "payload": {
+        "id": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "code": "DOC-b5de426a",
+        "email": "cfa.0260922131518-807f59.doctora@example.com",
+        "mobile": "",
+        "status": "active",
+        "userId": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+        ],
+        "ownerAdminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "specializationId": null,
+        "qualificationNames": [],
+        "clinicNames": [
+          "CF-ASSIGN-20260922131518-807f59 Clinic A"
+        ],
+        "branchNames": [
+          "CF-ASSIGN-20260922131518-807f59 Branch A1"
+        ]
+      }
+    },
+    {
+      "name": "doctorA re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+        "user": {
+          "id": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+          "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+          "email": "cfa.0260922131518-807f59.doctora@example.com",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+          "mobile": "",
+          "role": "doctor",
+          "status": "active",
+          "createdAt": "2026-09-22T13:15:33.502Z",
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b"
+          ],
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617"
+          ],
+          "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+          "patientId": null
+        },
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Revoked doctor cannot read Branch B appointment",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/appointments/eb81fc07-e4d2-4e9d-9962-85f401fafa97",
+      "status": 403,
+      "payload": {
+        "error": "Appointment outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Revoked doctor cannot read Branch B patient",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/patients/9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+      "status": 403,
+      "payload": {
+        "error": "Record outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Revoked doctor cannot read Branch B booking QR",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/qrs/f5b8e473-9d38-48ed-ab54-6c02a215a57e",
+      "status": 403,
+      "payload": {
+        "error": "Record outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Revoked doctor cannot resolve Branch B appointment QR",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/appointment-qr/resolve",
+      "status": 403,
+      "payload": {
+        "error": "Appointment outside your scope",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Doctor revocation preserves DB history",
+      "outcome": "pass",
+      "detail": "Doctor assignment revocation removed access without deleting lifecycle history."
+    },
+    {
+      "name": "Restore Doctor A scope for browser fixture",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/doctors/b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+      "status": 200,
+      "payload": {
+        "id": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "code": "DOC-b5de426a",
+        "email": "cfa.0260922131518-807f59.doctora@example.com",
+        "mobile": "",
+        "status": "active",
+        "userId": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617",
+          "45e1f561-de37-45d6-a0ab-27e91326a6d9"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+          "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13"
+        ],
+        "ownerAdminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "specializationId": null,
+        "qualificationNames": [],
+        "clinicNames": [
+          "CF-ASSIGN-20260922131518-807f59 Clinic A",
+          "CF-ASSIGN-20260922131518-807f59 Clinic B"
+        ],
+        "branchNames": [
+          "CF-ASSIGN-20260922131518-807f59 Branch A1",
+          "CF-ASSIGN-20260922131518-807f59 Branch B1"
+        ]
+      }
+    },
+    {
+      "name": "doctorA re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+        "user": {
+          "id": "64a7fa27-a8f0-4dd2-b34d-6e47c2b53e09",
+          "clerkId": "user_3JgVukGgvWFnl2SbbadZB6FnmgT",
+          "email": "cfa.0260922131518-807f59.doctora@example.com",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+          "mobile": "",
+          "role": "doctor",
+          "status": "active",
+          "createdAt": "2026-09-22T13:15:33.502Z",
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+            "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13"
+          ],
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617",
+            "45e1f561-de37-45d6-a0ab-27e91326a6d9"
+          ],
+          "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+          "patientId": null
+        },
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Create test-only clinic for CRUD deactivation",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/clinics",
+      "status": 201,
+      "payload": {
+        "code": "CLN-a438fb2d",
+        "name": "CF-ASSIGN-20260922131518-807f59 Deactivation Clinic",
+        "status": "active",
+        "address": "CF-ASSIGN-20260922131518-807f59 deactivate",
+        "adminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "description": "CF-ASSIGN-20260922131518-807f59 deactivation-only",
+        "id": "a438fb2d-8af5-4d8d-b6a9-5963da652328",
+        "ownerId": "b0720041-c686-48f9-86e2-89cfdc370f14",
+        "createdAt": "2026-09-22T13:30:13.916Z"
+      }
+    },
+    {
+      "name": "Create test-only branch for CRUD deactivation",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/branches",
+      "status": 201,
+      "payload": {
+        "code": "BR-ddeacc30",
+        "name": "CF-ASSIGN-20260922131518-807f59 Deactivation Branch",
+        "status": "active",
+        "address": "CF-ASSIGN-20260922131518-807f59 deactivate",
+        "clinicId": "a438fb2d-8af5-4d8d-b6a9-5963da652328",
+        "timezone": "Asia/Kolkata",
+        "id": "ddeacc30-9fc8-4f63-9665-a1650b49dc29",
+        "createdAt": "2026-09-22T13:30:14.331Z",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Deactivation Clinic"
+      }
+    },
+    {
+      "name": "Branch update CRUD",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/branches/ddeacc30-9fc8-4f63-9665-a1650b49dc29",
+      "status": 200,
+      "payload": {
+        "id": "ddeacc30-9fc8-4f63-9665-a1650b49dc29",
+        "code": "BR-ddeacc30",
+        "name": "CF-ASSIGN-20260922131518-807f59 Deactivation Branch Edited",
+        "status": "active",
+        "address": "CF-ASSIGN-20260922131518-807f59 edited",
+        "clinicId": "a438fb2d-8af5-4d8d-b6a9-5963da652328",
+        "timezone": "Asia/Kolkata",
+        "createdAt": "2026-09-22T13:30:14.331Z",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Deactivation Clinic"
+      }
+    },
+    {
+      "name": "Branch deactivation CRUD",
+      "outcome": "pass",
+      "detail": "Expected 204 and received 204.",
+      "method": "DELETE",
+      "route": "/branches/ddeacc30-9fc8-4f63-9665-a1650b49dc29",
+      "status": 204,
+      "payload": null
+    },
+    {
+      "name": "Clinic update CRUD",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/clinics/a438fb2d-8af5-4d8d-b6a9-5963da652328",
+      "status": 200,
+      "payload": {
+        "id": "a438fb2d-8af5-4d8d-b6a9-5963da652328",
+        "code": "CLN-a438fb2d",
+        "name": "CF-ASSIGN-20260922131518-807f59 Deactivation Clinic Edited",
+        "status": "active",
+        "address": "CF-ASSIGN-20260922131518-807f59 edited",
+        "adminId": "b71fe17b-a2e0-4be8-9be4-eb47179d660c",
+        "ownerId": "b0720041-c686-48f9-86e2-89cfdc370f14",
+        "createdAt": "2026-09-22T13:30:13.916Z",
+        "description": "CF-ASSIGN-20260922131518-807f59 deactivation-only"
+      }
+    },
+    {
+      "name": "Clinic deactivation CRUD",
+      "outcome": "pass",
+      "detail": "Expected 204 and received 204.",
+      "method": "DELETE",
+      "route": "/clinics/a438fb2d-8af5-4d8d-b6a9-5963da652328",
+      "status": 204,
+      "payload": null
+    },
+    {
+      "name": "Doctor deactivation CRUD",
+      "outcome": "pass",
+      "detail": "Expected 204 and received 204.",
+      "method": "DELETE",
+      "route": "/doctors/17040ed9-0f3d-4069-8691-ea6730c92591",
+      "status": 204,
+      "payload": null
+    },
+    {
+      "name": "Deactivated doctor login rejected",
+      "outcome": "pass",
+      "detail": "Fresh authenticated request was rejected after doctor deactivation.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403,
+      "payload": {
+        "error": "Account inactive",
+        "code": "REQUEST_FAILED"
+      }
+    },
+    {
+      "name": "Restore Receptionist B scope for browser QR verification",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/users/33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+      "status": 200,
+      "payload": {
+        "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+        "role": "receptionist",
+        "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+        "mobile": "",
+        "status": "active",
+        "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+        "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+        "branchIds": [
+          "28555741-951d-4b3b-bda9-f8f2c13d8617",
+          "45e1f561-de37-45d6-a0ab-27e91326a6d9"
+        ],
+        "clinicIds": [
+          "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+          "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13"
+        ],
+        "createdAt": "2026-09-22T13:15:36.421Z",
+        "clinicNames": [
+          "CF-ASSIGN-20260922131518-807f59 Clinic A",
+          "CF-ASSIGN-20260922131518-807f59 Clinic B"
+        ],
+        "branchNames": [
+          "CF-ASSIGN-20260922131518-807f59 Branch A1",
+          "CF-ASSIGN-20260922131518-807f59 Branch B1"
+        ]
+      }
+    },
+    {
+      "name": "receptionistB re-authenticates with current persisted claims",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200,
+      "payload": {
+        "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+        "user": {
+          "id": "33f58ffd-0e83-4f6a-b252-7eae2190ed21",
+          "role": "receptionist",
+          "email": "cfa.0260922131518-807f59.receptionistb@example.com",
+          "mobile": "",
+          "status": "active",
+          "clerkId": "user_3JgVv11pTLY4tPmzVitYfLOfELl",
+          "fullName": "CF-ASSIGN-20260922131518-807f59 Receptionist B",
+          "branchIds": [
+            "28555741-951d-4b3b-bda9-f8f2c13d8617",
+            "45e1f561-de37-45d6-a0ab-27e91326a6d9"
+          ],
+          "clinicIds": [
+            "9cabfba9-d5ab-4b64-868f-daed88400d0b",
+            "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13"
+          ],
+          "createdAt": "2026-09-22T13:15:36.421Z",
+          "doctorId": null,
+          "patientId": null
+        },
+        "doctorId": null,
+        "patientId": null,
+        "needsOnboarding": false
+      }
+    },
+    {
+      "name": "Browser fixture receptionist can read booked QR appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/00be430f-c4d0-402c-be20-a13e3430e60f",
+      "status": 200,
+      "payload": {
+        "date": "2026-09-22",
+        "notes": "CF-ASSIGN-20260922131518-807f59 qr",
+        "token": "[REDACTED]",
+        "source": "qr",
+        "endTime": "23:59",
+        "history": [
+          {
+            "status": "booked",
+            "occurredAt": "2026-09-22T13:24:57.325Z"
+          }
+        ],
+        "branchId": "45e1f561-de37-45d6-a0ab-27e91326a6d9",
+        "clinicId": "2d0bc73e-21b8-409c-b7ce-b1a65ee67c13",
+        "doctorId": "b5de426a-74fe-4595-bf5e-a10ce6edc0b5",
+        "timezone": "Asia/Kolkata",
+        "patientId": "9e581d0f-cbfe-416c-b84a-a841c5e873ea",
+        "reference": "CF-98866068BFAC4182",
+        "startTime": "00:00",
+        "branchName": "CF-ASSIGN-20260922131518-807f59 Branch B1",
+        "clinicName": "CF-ASSIGN-20260922131518-807f59 Clinic B",
+        "doctorName": "CF-ASSIGN-20260922131518-807f59 Doctor A",
+        "patientCode": "PAT-cc9f59a0",
+        "patientName": "CF-ASSIGN-20260922132227-06143e Patient",
+        "qrReference": "XKvorTn8uqJCuMMGnWWieO1r08KPeLXTx3gyZyUM1JY",
+        "termsAccepted": true,
+        "id": "00be430f-c4d0-402c-be20-a13e3430e60f",
+        "tokenNumber": "[REDACTED]",
+        "status": "booked",
+        "createdAt": "2026-09-22T13:24:57.308Z",
+        "allowedActions": [
+          "checkIn",
+          "cancel"
+        ]
+      }
+    },
+    {
+      "name": "Browser QR fixture remains booked",
+      "outcome": "pass",
+      "detail": "A current marker-owned booked appointment is retained for browser scanning."
+    },
+    {
+      "name": "Exactly one ClinicAdmin owns each clinic",
+      "outcome": "pass",
+      "detail": "Clinic A and doctor-created Clinic B both persist Admin A as their single adminId."
+    },
+    {
+      "name": "Doctor has one persisted owner admin",
+      "outcome": "pass",
+      "detail": "Doctor A ownerAdminId is the creating ClinicAdmin A."
+    },
+    {
+      "name": "Admin cascade mappings are exact",
+      "outcome": "pass",
+      "detail": "Admin A has exactly one clinic-level mapping for Clinic A and Clinic B."
+    },
+    {
+      "name": "Doctor Branch B mapping is exact",
+      "outcome": "pass",
+      "detail": "Doctor A has exactly one persisted Clinic B / Branch B1 mapping."
+    },
+    {
+      "name": "No duplicate assignment rows",
+      "outcome": "pass",
+      "detail": "Persisted user/clinic/branch mappings are unique."
+    },
+    {
+      "name": "All branch assignments match clinic",
+      "outcome": "pass",
+      "detail": "Every persisted branch assignment resolves to its own clinic."
+    },
+    {
+      "name": "Composite assignment FK rejects clinic mismatch",
+      "outcome": "pass",
+      "detail": "Rollback-only direct SQL received PostgreSQL foreign-key violation 23503."
+    },
+    {
+      "name": "Invalid SQL probe rolled back",
+      "outcome": "pass",
+      "detail": "No invalid assignment survived the rollback transaction."
+    }
+  ],
+  "notTested": [
+    "Frontend layout, responsive behavior, selectors, and browser refresh rendering are reserved for the parent browser audit.",
+    "Production SMS is not exercised; the runner requires the existing development OTP provider.",
+    "Production Clerk and deployed environments are deliberately refused.",
+    "Legacy PreviewClinicAdmin clinics/doctors are inspected only indirectly for non-mutation and are never used as fixtures."
+  ],
+  "cleanup": {
+    "completedAt": "2026-09-22T13:45:49.415Z",
+    "marker": "CF-ASSIGN-20260922131518-807f59",
+    "clerkAccountsRemoved": 8,
+    "markerRowsRemaining": 0,
+    "preExistingRowsPreserved": true,
+    "preExistingClinicOwnershipPreserved": true,
+    "preExistingDoctorOwnershipPreserved": true,
+    "originalClerkAccountSetPreserved": true,
+    "credentialFileRemoved": true
+  }
+}

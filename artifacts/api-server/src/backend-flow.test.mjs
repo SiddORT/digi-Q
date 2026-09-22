@@ -8,6 +8,7 @@ import { join, resolve } from "node:path";
 
 const directory = await mkdtemp(join(tmpdir(), "clinicflow-audit-"));
 const root = resolve(import.meta.dirname);
+process.env.SESSION_SECRET = "unit-test-only-appointment-qr-secret";
 mock.timers.enable({apis:["Date"],now:Date.UTC(2030,0,7,12)});
 const tables = ["appointments", "patients", "appointmentHistory", "doctors", "clinics", "branches", "masters", "schedules", "availabilityExceptions", "assignments", "users", "qrs", "auditLogs", "settings", "otpChallenges"];
 const fixture = `
@@ -29,11 +30,13 @@ await build({
     export * from "./lib/appointments";
     export * from "./lib/availability";
     export * from "./lib/auth";
+    export * from "./lib/appointment-qr";
     export * from "./lib/http";
     export * from "./routes/appointments";
     export * from "./routes/queue";
     export * from "./routes/resources";
     export * from "./routes/public";
+    export * from "./routes/reporting";
     export { state, reset } from "audit-fixture";
   `, resolveDir: root },
   outfile: join(directory, "suite.mjs"), bundle: true, platform: "node", format: "esm",
@@ -157,6 +160,12 @@ test("queue lifecycle, oldest waiting, active consultation guard and patient pri
   assert.equal(await api.canRead(api.state.actor,"appointments",first),false);
   const doctor={role:"doctor",doctorId:"other",clinicIds:["c"],branchIds:["b"]};
   assert.equal(await api.canRead(doctor,"appointments",first),false);
+  api.state.actor=doctor;
+  await assert.rejects(route(api.queueRouter,"get","/queue",{},q),/Queue outside/);
+  const revokedDoctor={id:"du",role:"doctor",doctorId:"d",clinicIds:[],branchIds:[]};
+  assert.equal(await api.canRead(revokedDoctor,"appointments",first),false);
+  assert.equal(await api.canRead(revokedDoctor,"patients",api.state.rows.patients[0]),false);
+  assert.equal(await api.canRead(revokedDoctor,"clinics",{id:"c",ownerId:"du"}),false);
   assert.equal(api.scope({...staff,branchIds:["other"]},"c","b"),false);
   await assert.rejects(api.transition(doctor,first.id,{action:"start"}),/scope/);
   api.state.actor=staff;
@@ -183,6 +192,44 @@ test("QR booking converges on booked and rejects revoked or reassigned reference
   api.state.rows.qrs[0].status="active"; api.state.rows.assignments=[];
   await assert.rejects(api.resolveQr("new"),/context/);
 });
+test("appointment QR signatures reject tampering and check-in is transactionally idempotent", async () => {
+  const body=seed();
+  const booked=await book(body);
+  const payload=api.createAppointmentQrPayload(booked.reference);
+  assert.equal(api.readAppointmentQrPayload(payload),booked.reference);
+  const pieces=payload.split(".");
+  pieces[2]=(pieces[2][0]==="A"?"B":"A")+pieces[2].slice(1);
+  const tampered=pieces.join(".");
+  assert.throws(()=>api.readAppointmentQrPayload(tampered),/Invalid appointment QR/);
+
+  const resolved=await api.resolveAppointmentQr(staff,payload);
+  assert.equal(resolved.eligible,true);
+  assert.equal(resolved.alreadyCheckedIn,false);
+  const checkedIn=await api.checkInAppointmentQr(staff,payload);
+  assert.equal(checkedIn.appointment.status,"waiting");
+  assert.equal(checkedIn.appointment.token,booked.token);
+  assert.equal(checkedIn.alreadyCheckedIn,false);
+  const historyCount=api.state.rows.appointmentHistory.length;
+  const repeated=await api.checkInAppointmentQr(staff,payload);
+  assert.equal(repeated.alreadyCheckedIn,true);
+  assert.equal(repeated.appointment.token,booked.token);
+  assert.equal(api.state.rows.appointmentHistory.length,historyCount);
+
+  const outsider={id:"outsider",role:"receptionist",clinicIds:["other"],branchIds:["other"]};
+  await assert.rejects(api.resolveAppointmentQr(outsider,payload),/outside your scope/);
+});
+test("appointment QR check-in rejects terminal states and non-current branch dates", async () => {
+  const body=seed();
+  const booked=await book(body);
+  const payload=api.createAppointmentQrPayload(booked.reference);
+  for (const status of ["cancelled","completed","noShow"]) {
+    api.state.rows.appointments[0].status=status;
+    await assert.rejects(api.resolveAppointmentQr(staff,payload),new RegExp(`Cannot check in a ${status}`));
+  }
+  api.state.rows.appointments[0].status="booked";
+  api.state.rows.appointments[0].date="2030-01-08";
+  await assert.rejects(api.resolveAppointmentQr(staff,payload),/appointment date/);
+});
 test("staff duplicate mobile rejects same accessible clinic without modifying household records", async () => {
   seed();
   await assert.rejects(route(api.resourcesRouter,"post","/patients",{fullName:"Duplicate",mobile:"+15555550123",clinicId:"c",branchId:"b"}),/already exists/);
@@ -206,4 +253,52 @@ test("unexpected and database errors never expose internal messages", () => {
     api.errors(error,{log:{error(){}}},{status(){return this;},json(value){response=value;}},()=>{});
     assert.doesNotMatch(response.error,/secret|SQL|stack|sensitive/);
   }
+});
+test("wrapped database integrity errors return a sanitized conflict", () => {
+  const nested=Object.assign(new Error("duplicate branch_name_clinic_unique detail"),{code:"23505"});
+  const wrapped=Object.assign(new Error("Failed query: insert into branches"),{cause:nested});
+  let status,response;
+  api.errors(wrapped,{log:{error(){throw new Error("conflicts must not be logged as server failures");}}},{status(value){status=value;return this;},json(value){response=value;}},()=>{});
+  assert.equal(status,409);
+  assert.deepEqual(response,{error:"Record conflicts with existing data or references",code:"CONFLICT"});
+  assert.equal(api.databaseIntegrityCode(wrapped),"23505");
+});
+test("shared staff responses project assignments to the actor scope", async () => {
+  seed();
+  api.state.rows.branches[0].name="Branch";
+  api.state.rows.clinics.push({id:"other-clinic",status:"active",name:"Other Clinic"});
+  api.state.rows.branches.push({id:"other-branch",clinicId:"other-clinic",status:"active",name:"Other Branch"});
+  const peer={id:"peer",role:"receptionist",clinicIds:["c","other-clinic"],branchIds:["b","other-branch"]};
+  const admin={id:"admin",role:"clinicAdmin",clinicIds:["c"],branchIds:[]};
+  const projected=await api.projectAssignmentScope(admin,"users",peer);
+  assert.deepEqual(projected.clinicIds,["c"]);
+  assert.deepEqual(projected.branchIds,["b"]);
+  assert.deepEqual(projected.clinicNames,["Clinic"]);
+  assert.deepEqual(projected.branchNames,["Branch"]);
+  const own=await api.projectAssignmentScope({...peer,doctorId:null},"users",peer);
+  assert.deepEqual(own.clinicIds,peer.clinicIds);
+  assert.deepEqual(own.branchIds,peer.branchIds);
+});
+test("dashboard rejects revoked explicit scope and excludes unrelated doctors", async () => {
+  seed();
+  api.state.actor={id:"revoked",role:"receptionist",clinicIds:[],branchIds:[]};
+  await assert.rejects(route(api.reportingRouter,"get","/dashboard",{}, {clinicId:"c",branchId:"b",date:"2030-01-07"}),/outside your scope/);
+  api.state.actor=staff;
+  api.state.rows.clinics.push({id:"other-clinic",status:"active",name:"Other Clinic"});
+  api.state.rows.branches.push({id:"other-branch",clinicId:"other-clinic",status:"active",name:"Other Branch"});
+  api.state.rows.assignments=[{userId:"du",clinicId:"other-clinic",branchId:"other-branch"}];
+  const dashboard=await route(api.reportingRouter,"get","/dashboard",{}, {clinicId:"c",branchId:"b",date:"2030-01-07"});
+  assert.equal(dashboard.totalDoctors,0);
+});
+test("unchanged serialized ownership is not treated as a transfer", () => {
+  assert.equal(api.ownershipChangeRequested(undefined,"admin-a"),false);
+  assert.equal(api.ownershipChangeRequested("admin-a","admin-a"),false);
+  assert.equal(api.ownershipChangeRequested("admin-b","admin-a"),true);
+});
+test("schedule overlap compares real instants across timezones and closed exceptions", () => {
+  const india={isOpen:true,startTime:"09:00",endTime:"10:00",timezone:"Asia/Kolkata"};
+  const london={isOpen:true,startTime:"03:30",endTime:"04:30",timezone:"Europe/London"};
+  assert.equal(api.sessionsOverlap(india,"2030-01-07",london,"2030-01-07"),true);
+  assert.equal(api.sessionsOverlap(india,"2030-01-07",{...london,startTime:"05:00",endTime:"06:00"},"2030-01-07"),false);
+  assert.equal(api.sessionsOverlap(india,"2030-01-07",{...london,isClosed:true},"2030-01-07"),false);
 });
