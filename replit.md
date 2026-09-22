@@ -1,6 +1,6 @@
-# [Project name]
+# ClinicFlow
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A new multi-clinic appointment and live queue platform. See README.md for the entity model, role matrix, and implementation architecture.
 
 ## Run & Operate
 
@@ -34,7 +34,10 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- This is a new system, not a cosmetic update to any previous ClinicFlow demo.
+- No role-switching dropdown or demo authentication. Roles belong to authenticated accounts and permissions must be enforced by the API.
+- Availability → appointment → token → staff live queue → patient live queue is the core acceptance flow.
+- The referenced visual wireframe was not supplied here. The attached text specification is the available journey reference; do not claim pixel-level wireframe conformance.
 
 ## Gotchas
 

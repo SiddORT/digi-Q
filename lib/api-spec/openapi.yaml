@@ -1,36 +1,1010 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 1.0.0
+  description: |
+    ClinicFlow REST contract. Clerk identity is mapped to a database role.
+    Super admins access all; clinic admins and receptionists are assignment-scoped;
+    doctors access their own resources and relevant patients; patients access self only.
+    All filters narrow authorized scope, never expand it. DELETE deactivates records
+    with history. Lists contain real persisted data only. Queue clients poll every 30 seconds.
+    Invalid input returns 400, unauthenticated 401, forbidden 403, missing 404,
+    state/capacity conflicts 409, rate limiting 429, unavailable integrations 503.
 servers:
   - url: /api
-    description: Base API path
-tags:
-  - name: health
-    description: Health operations
+security:
+  - ClerkBearer: []
 paths:
   /healthz:
     get:
       operationId: healthCheck
-      tags: [health]
-      summary: Health check
-      description: Returns server health status
+      security: []
       responses:
-        "200":
-          description: Healthy
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthStatus"
+        "200": { description: Healthy, content: { application/json: { schema: { $ref: "#/components/schemas/HealthStatus" } } } }
+  /me:
+    get:
+      operationId: getMe
+      description: Returns database identity; user is null before onboarding. Never accepts a role from the client.
+      responses:
+        "200": { description: Identity, content: { application/json: { schema: { $ref: "#/components/schemas/Identity" } } } }
+    patch:
+      operationId: updateMe
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ProfileInput" } } } }
+      responses:
+        "200": { description: Profile updated, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+  /onboarding:
+    post:
+      operationId: onboard
+      description: Atomically creates the first profile only. Default intent patient; doctor requires explicit intent. Existing profiles return 409; no admin self-claim or role switching.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OnboardingInput" } } } }
+      responses:
+        "201": { description: Onboarded, content: { application/json: { schema: { $ref: "#/components/schemas/Identity" } } } }
+        "409": { $ref: "#/components/responses/Error" }
+  /otp/request:
+    post:
+      operationId: requestOtp
+      description: Rate-limited mobile challenge bound to authenticated identity. External SMS provider required in production. Never returns the code in production; an explicitly enabled provider with NODE_ENV=development returns developmentCode only in development.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OtpRequest" } } } }
+      responses:
+        "200": { description: Challenge sent, content: { application/json: { schema: { $ref: "#/components/schemas/OtpChallenge" } } } }
+        "503": { $ref: "#/components/responses/Error" }
+  /otp/verify:
+    post:
+      operationId: verifyOtp
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OtpVerification" } } } }
+      responses:
+        "200": { description: Mobile verified, content: { application/json: { schema: { $ref: "#/components/schemas/OtpResult" } } } }
+  /public/clinics:
+    get:
+      operationId: listPublicClinics
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: Active public clinics, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicList" } } } }
+  /public/branches:
+    get:
+      operationId: listPublicBranches
+      security: []
+      parameters: [{ $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: Active branches, content: { application/json: { schema: { $ref: "#/components/schemas/BranchList" } } } }
+  /public/doctors:
+    get:
+      operationId: listPublicDoctors
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: specializationId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: Public professional profiles only, content: { application/json: { schema: { $ref: "#/components/schemas/PublicDoctorList" } } } }
+  /public/availability:
+    get:
+      operationId: getPublicAvailability
+      security: []
+      parameters:
+        - { name: doctorId, in: query, required: true, schema: { type: string } }
+        - { name: branchId, in: query, required: true, schema: { type: string } }
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200": { description: Computed availability including exceptions and remaining capacity, content: { application/json: { schema: { $ref: "#/components/schemas/Availability" } } } }
+  /public/qr/{reference}:
+    get:
+      operationId: resolveQr
+      security: []
+      parameters: [{ name: reference, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: Active booking context without personal data, content: { application/json: { schema: { $ref: "#/components/schemas/QrContext" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /clinics:
+    get:
+      operationId: listClinics
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { name: city, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      responses:
+        "200": { description: Scoped clinics, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicList" } } } }
+    post:
+      operationId: createClinic
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Clinic" } } } }
+  /clinics/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getClinic
+      responses:
+        "200": { description: Clinic, content: { application/json: { schema: { $ref: "#/components/schemas/Clinic" } } } }
+    patch:
+      operationId: updateClinic
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Clinic" } } } }
+    delete:
+      operationId: deleteClinic
+      responses:
+        "204": { description: Deactivated }
+  /branches:
+    get:
+      operationId: listBranches
+      parameters: [{ $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      responses:
+        "200": { description: Branches, content: { application/json: { schema: { $ref: "#/components/schemas/BranchList" } } } }
+    post:
+      operationId: createBranch
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/BranchInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Branch" } } } }
+  /branches/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getBranch
+      responses:
+        "200": { description: Branch, content: { application/json: { schema: { $ref: "#/components/schemas/Branch" } } } }
+    patch:
+      operationId: updateBranch
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/BranchInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Branch" } } } }
+    delete:
+      operationId: deleteBranch
+      responses:
+        "204": { description: Deactivated }
+  /doctors:
+    get:
+      operationId: listDoctors
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/Status" }, { name: specializationId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      responses:
+        "200": { description: Doctors only, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorList" } } } }
+    post:
+      operationId: createDoctor
+      description: Authorized administrator creates doctor and identity invitation; never silently promotes an unrelated existing patient.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Doctor" } } } }
+  /doctors/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getDoctor
+      responses:
+        "200": { description: Doctor, content: { application/json: { schema: { $ref: "#/components/schemas/Doctor" } } } }
+    patch:
+      operationId: updateDoctor
+      description: Own professional profile or authorized administration; clinic assignments are authorization-checked.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Doctor" } } } }
+    delete:
+      operationId: deleteDoctor
+      responses:
+        "204": { description: Deactivated }
+  /users:
+    get:
+      operationId: listUsers
+      parameters: [{ $ref: "#/components/parameters/Search" }, { name: role, in: query, schema: { $ref: "#/components/schemas/Role" } }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      responses:
+        "200": { description: Authorized user administration, content: { application/json: { schema: { $ref: "#/components/schemas/UserList" } } } }
+    post:
+      operationId: createUser
+      description: Admin-only identity invitation and database role assignment; clinic admins cannot grant platform administration.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/UserInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+  /users/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getUser
+      responses:
+        "200": { description: User, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+    patch:
+      operationId: updateUser
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/UserInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
+    delete:
+      operationId: deleteUser
+      responses:
+        "204": { description: Deactivated; last active super admin cannot be removed }
+  /users/{id}/password-reset:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: requestUserPasswordReset
+      description: Requests Clerk-managed password recovery; never returns credentials.
+      responses:
+        "202": { description: Recovery requested, content: { application/json: { schema: { $ref: "#/components/schemas/Message" } } } }
+  /patients:
+    get:
+      operationId: listPatients
+      description: Patients visible only through authorized clinic registration or appointment relationship.
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: gender, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      responses:
+        "200": { description: Scoped patients, content: { application/json: { schema: { $ref: "#/components/schemas/PatientList" } } } }
+    post:
+      operationId: createPatient
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PatientInput" } } } }
+      responses:
+        "201": { description: Registered, content: { application/json: { schema: { $ref: "#/components/schemas/Patient" } } } }
+  /patients/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getPatient
+      responses:
+        "200": { description: Patient, content: { application/json: { schema: { $ref: "#/components/schemas/Patient" } } } }
+    patch:
+      operationId: updatePatient
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PatientInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Patient" } } } }
+    delete:
+      operationId: deletePatient
+      responses:
+        "204": { description: Deactivated preserving medical visit history }
+  /masters:
+    get:
+      operationId: listMasters
+      description: Authenticated dropdown reads; only super admins mutate. Workflow statuses and roles are governed codes, not arbitrary new privileges.
+      parameters: [{ name: category, in: query, schema: { type: string } }, { name: parentId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      responses:
+        "200": { description: Dynamic masters, content: { application/json: { schema: { $ref: "#/components/schemas/MasterList" } } } }
+    post:
+      operationId: createMaster
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/MasterInput" } } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Master" } } } }
+  /masters/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getMaster
+      responses:
+        "200": { description: Master, content: { application/json: { schema: { $ref: "#/components/schemas/Master" } } } }
+    patch:
+      operationId: updateMaster
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/MasterInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Master" } } } }
+    delete:
+      operationId: deleteMaster
+      responses:
+        "204": { description: Deactivated }
+  /schedules:
+    get:
+      operationId: listSchedules
+      parameters: [{ $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: Weekly schedules, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleList" } } } }
+    post:
+      operationId: createSchedule
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleInput" } } } }
+      responses:
+        "201": { description: Saved, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+  /schedules/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    patch:
+      operationId: updateSchedule
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
+    delete:
+      operationId: deleteSchedule
+      responses:
+        "204": { description: Removed without altering historical visits }
+  /availability-exceptions:
+    get:
+      operationId: listAvailabilityExceptions
+      parameters: [{ $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: Date overrides, content: { application/json: { schema: { $ref: "#/components/schemas/AvailabilityExceptionList" } } } }
+    post:
+      operationId: createAvailabilityException
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AvailabilityExceptionInput" } } } }
+      responses:
+        "201": { description: Saved, content: { application/json: { schema: { $ref: "#/components/schemas/AvailabilityException" } } } }
+  /availability-exceptions/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    patch:
+      operationId: updateAvailabilityException
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AvailabilityExceptionInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/AvailabilityException" } } } }
+    delete:
+      operationId: deleteAvailabilityException
+      responses:
+        "204": { description: Removed }
+  /appointments:
+    get:
+      operationId: listAppointments
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { name: patientId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Date" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { name: status, in: query, schema: { $ref: "#/components/schemas/AppointmentStatus" } }, { name: source, in: query, schema: { $ref: "#/components/schemas/BookingSource" } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      responses:
+        "200": { description: Scoped history and upcoming visits, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentList" } } } }
+    post:
+      operationId: createAppointment
+      description: Atomically checks assignment, computed availability, OTP policy and capacity, allocates reference/token. Patients can book only self; staff may create walk-in and phone bookings. Duplicate requestId returns original booking.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentInput" } } } }
+      responses:
+        "201": { description: Booking confirmation, content: { application/json: { schema: { $ref: "#/components/schemas/Appointment" } } } }
+        "409": { $ref: "#/components/responses/Error" }
+  /appointments/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getAppointment
+      responses:
+        "200": { description: Confirmation and lifecycle, content: { application/json: { schema: { $ref: "#/components/schemas/Appointment" } } } }
+  /appointments/{id}/actions:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: transitionAppointment
+      description: |
+        checkIn booked→checkedIn; enqueue checkedIn→waiting; call waiting→called;
+        start called→inConsultation; complete inConsultation→completed;
+        noShow waiting/called→noShow; requeue noShow→waiting;
+        cancel booked/checkedIn/waiting→cancelled where policy allows.
+        Patients may cancel only self. All other actions require scoped staff.
+        Concurrent state conflicts return 409. Every transition is audited.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentAction" } } } }
+      responses:
+        "200": { description: Updated lifecycle, content: { application/json: { schema: { $ref: "#/components/schemas/Appointment" } } } }
+        "409": { $ref: "#/components/responses/Error" }
+  /queue:
+    get:
+      operationId: getQueue
+      description: Poll every 30 seconds. Patients get aggregate tokens/counts and own entry only; entries are omitted for patients. Staff receive scoped identifiable entries.
+      parameters:
+        - { name: doctorId, in: query, required: true, schema: { type: string } }
+        - { name: branchId, in: query, required: true, schema: { type: string } }
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: appointmentId, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Live queue, content: { application/json: { schema: { $ref: "#/components/schemas/LiveQueue" } } } }
+  /queue/call-next:
+    post:
+      operationId: callNext
+      description: Scoped staff only. Locks doctor/branch/date queue; calls oldest waiting entry, rejecting another active consultation. Empty queue returns appointment null.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/QueueSelection" } } } }
+      responses:
+        "200": { description: Called next, content: { application/json: { schema: { $ref: "#/components/schemas/CallNextResult" } } } }
+        "409": { $ref: "#/components/responses/Error" }
+  /qrs:
+    get:
+      operationId: listQrs
+      parameters: [{ $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: Scoped QR configurations, content: { application/json: { schema: { $ref: "#/components/schemas/QrList" } } } }
+    post:
+      operationId: createQr
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/QrInput" } } } }
+      responses:
+        "201": { description: Secure public URL for QR rendering/download/print, content: { application/json: { schema: { $ref: "#/components/schemas/Qr" } } } }
+  /qrs/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getQr
+      responses:
+        "200": { description: QR, content: { application/json: { schema: { $ref: "#/components/schemas/Qr" } } } }
+    patch:
+      operationId: updateQr
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/QrInput" } } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Qr" } } } }
+    delete:
+      operationId: deleteQr
+      responses:
+        "204": { description: Deactivated public reference }
+  /qrs/{id}/regenerate:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      operationId: regenerateQr
+      description: Revokes previous reference and generates a cryptographically random replacement.
+      responses:
+        "200": { description: New reference, content: { application/json: { schema: { $ref: "#/components/schemas/Qr" } } } }
+  /dashboard:
+    get:
+      operationId: getDashboard
+      parameters: [{ $ref: "#/components/parameters/Date" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }]
+      responses:
+        "200": { description: Role-scoped database aggregates, content: { application/json: { schema: { $ref: "#/components/schemas/Dashboard" } } } }
+  /reports:
+    get:
+      operationId: getReports
+      parameters: [{ $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { name: groupBy, in: query, schema: { type: string, enum: [clinic, doctor, date], default: date } }]
+      responses:
+        "200": { description: Scoped appointment/registration/queue performance report, content: { application/json: { schema: { $ref: "#/components/schemas/Report" } } } }
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      description: Admin-only scoped summaries; sensitive old/new values are redacted.
+      parameters: [{ $ref: "#/components/parameters/Search" }, { name: entityType, in: query, schema: { type: string } }, { name: actorId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: Immutable audit summaries, content: { application/json: { schema: { $ref: "#/components/schemas/AuditLogList" } } } }
+  /settings:
+    get:
+      operationId: getSettings
+      description: Authenticated safe configuration only; provider credentials never returned.
+      responses:
+        "200": { description: Settings, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
+    patch:
+      operationId: updateSettings
+      description: Super admin only.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/SettingsInput" } } } }
+      responses:
+        "200": { description: Saved, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
 components:
+  securitySchemes:
+    ClerkBearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  responses:
+    Error:
+      description: Request failed
+      content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } }
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string } }
+    Search: { name: search, in: query, schema: { type: string } }
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    Sort: { name: sort, in: query, description: Allowlisted field with optional minus prefix for descending order, schema: { type: string } }
+    Status: { name: status, in: query, schema: { type: string, enum: [active, inactive] } }
+    ClinicId: { name: clinicId, in: query, schema: { type: string } }
+    BranchId: { name: branchId, in: query, schema: { type: string } }
+    DoctorId: { name: doctorId, in: query, schema: { type: string } }
+    Date: { name: date, in: query, schema: { type: string, format: date } }
+    From: { name: from, in: query, schema: { type: string, format: date } }
+    To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        status: { type: string }
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        code: { type: string }
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    Role: { type: string, enum: [superAdmin, clinicAdmin, doctor, receptionist, patient] }
+    RecordStatus: { type: string, enum: [active, inactive] }
+    AppointmentStatus: { type: string, enum: [booked, checkedIn, waiting, called, inConsultation, completed, noShow, cancelled] }
+    BookingSource: { type: string, enum: [online, walkIn, phone, qr] }
+    PageMeta:
+      type: object
+      required: [total, page, pageSize]
+      properties:
+        total: { type: integer, minimum: 0 }
+        page: { type: integer }
+        pageSize: { type: integer }
+    ProfileInput:
+      type: object
+      properties:
+        fullName: { type: string, minLength: 1 }
+        mobile: { type: string }
+        photoUrl: { type: string }
+    OnboardingInput:
+      type: object
+      required: [fullName]
+      properties:
+        intent: { type: string, enum: [patient, doctor], default: patient }
+        fullName: { type: string, minLength: 1 }
+        mobile: { type: string }
+        termsAccepted: { type: boolean }
+    Identity:
+      type: object
+      required: [clerkId, user, needsOnboarding]
+      properties:
+        clerkId: { type: string }
+        user: { oneOf: [{ $ref: "#/components/schemas/User" }, { type: "null" }] }
+        doctorId: { type: [string, "null"] }
+        patientId: { type: [string, "null"] }
+        needsOnboarding: { type: boolean }
+    UserInput:
+      type: object
+      required: [fullName, email, role]
+      properties:
+        fullName: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        mobile: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+        clinicIds: { type: array, items: { type: string } }
+        branchIds: { type: array, items: { type: string } }
+    User:
+      allOf:
+        - { $ref: "#/components/schemas/UserInput" }
+        - type: object
+          required: [id, clerkId, status, clinicIds, branchIds, createdAt]
+          properties:
+            id: { type: string }
+            clerkId: { type: [string, "null"] }
+            createdAt: { type: string, format: date-time }
+            lastLoginAt: { type: [string, "null"], format: date-time }
+    OtpRequest:
+      type: object
+      required: [mobile]
+      properties:
+        mobile: { type: string, pattern: '^\+[1-9][0-9]{7,14}$' }
+    OtpChallenge:
+      type: object
+      required: [challengeId, expiresAt, resendAfterSeconds, provider]
+      properties:
+        challengeId: { type: string }
+        expiresAt: { type: string, format: date-time }
+        resendAfterSeconds: { type: integer }
+        provider: { type: string, enum: [sms, development] }
+        developmentCode: { type: string, description: Returned only by the explicitly enabled development provider when NODE_ENV=development. Never present in production. }
+    OtpVerification:
+      type: object
+      required: [challengeId, code]
+      properties:
+        challengeId: { type: string }
+        code: { type: string, pattern: '^[0-9]{4,8}$' }
+    OtpResult:
+      type: object
+      required: [verified, mobile]
+      properties:
+        verified: { type: boolean }
+        mobile: { type: string }
+        verifiedAt: { type: string, format: date-time }
+    ClinicInput:
+      type: object
+      required: [name, address]
+      properties:
+        name: { type: string, minLength: 1 }
+        address: { type: string }
+        country: { type: string }
+        state: { type: string }
+        city: { type: string }
+        area: { type: string }
+        pincode: { type: string }
+        phone: { type: string }
+        email: { type: string, format: email }
+        description: { type: string }
+        clinicTypeId: { type: string }
+        categoryId: { type: string }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+    Clinic:
+      allOf:
+        - { $ref: "#/components/schemas/ClinicInput" }
+        - type: object
+          required: [id, code, status, createdAt]
+          properties:
+            id: { type: string }
+            code: { type: string }
+            createdAt: { type: string, format: date-time }
+            doctorCount: { type: integer }
+            branchCount: { type: integer }
+    BranchInput:
+      type: object
+      required: [clinicId, name, address]
+      properties:
+        clinicId: { type: string }
+        name: { type: string, minLength: 1 }
+        address: { type: string }
+        city: { type: string }
+        state: { type: string }
+        pincode: { type: string }
+        phone: { type: string }
+        timezone: { type: string, default: Asia/Kolkata }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+    Branch:
+      allOf:
+        - { $ref: "#/components/schemas/BranchInput" }
+        - type: object
+          required: [id, code, status]
+          properties:
+            id: { type: string }
+            code: { type: string }
+            clinicName: { type: string }
+    DoctorInput:
+      type: object
+      required: [fullName, email]
+      properties:
+        fullName: { type: string, minLength: 1 }
+        email: { type: string, format: email }
+        mobile: { type: string }
+        photoUrl: { type: string }
+        gender: { type: string }
+        dateOfBirth: { type: string, format: date }
+        specializationId: { type: string }
+        qualificationIds: { type: array, items: { type: string } }
+        registrationNumber: { type: string }
+        experienceYears: { type: integer, minimum: 0 }
+        about: { type: string }
+        consultationFee: { type: number, minimum: 0 }
+        languages: { type: array, items: { type: string } }
+        clinicIds: { type: array, items: { type: string } }
+        branchIds: { type: array, items: { type: string } }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+    Doctor:
+      allOf:
+        - { $ref: "#/components/schemas/DoctorInput" }
+        - type: object
+          required: [id, userId, code, status]
+          properties:
+            id: { type: string }
+            userId: { type: string }
+            code: { type: string }
+            specializationName: { type: string }
+            qualificationNames: { type: array, items: { type: string } }
+    PublicDoctor:
+      type: object
+      required: [id, fullName, clinicIds, branchIds]
+      properties:
+        id: { type: string }
+        fullName: { type: string }
+        photoUrl: { type: string }
+        specializationName: { type: string }
+        qualificationNames: { type: array, items: { type: string } }
+        about: { type: string }
+        experienceYears: { type: integer }
+        consultationFee: { type: number }
+        clinicIds: { type: array, items: { type: string } }
+        branchIds: { type: array, items: { type: string } }
+    PatientInput:
+      type: object
+      required: [fullName, mobile]
+      properties:
+        fullName: { type: string, minLength: 1 }
+        mobile: { type: string }
+        email: { type: string, format: email }
+        dateOfBirth: { type: string, format: date }
+        age: { type: integer, minimum: 0, maximum: 130 }
+        gender: { type: string }
+        address: { type: string }
+        emergencyContactName: { type: string }
+        emergencyContactPhone: { type: string }
+        clinicId: { type: string }
+        branchId: { type: string }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+    Patient:
+      allOf:
+        - { $ref: "#/components/schemas/PatientInput" }
+        - type: object
+          required: [id, code, createdAt, mobileVerified]
+          properties:
+            id: { type: string }
+            code: { type: string }
+            userId: { type: [string, "null"] }
+            mobileVerified: { type: boolean }
+            createdAt: { type: string, format: date-time }
+    MasterInput:
+      type: object
+      required: [category, name, code]
+      properties:
+        category: { type: string, enum: [country, state, city, area, pincode, clinicType, clinicCategory, clinicStatus, specialization, qualification, department, consultationType, appointmentStatus, appointmentType, bookingSource, cancellationReason, queueStatus, tokenPrefix, queueType, queuePriority, userRole, userStatus] }
+        name: { type: string, minLength: 1 }
+        code: { type: string, minLength: 1 }
+        parentId: { type: [string, "null"] }
+        sortOrder: { type: integer }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+    Master:
+      allOf:
+        - { $ref: "#/components/schemas/MasterInput" }
+        - type: object
+          required: [id, status]
+          properties:
+            id: { type: string }
+    ScheduleInput:
+      type: object
+      required: [doctorId, clinicId, branchId, dayOfWeek, isOpen, startTime, endTime, tokenPrefix, maxTokens, consultationMinutes]
+      properties:
+        doctorId: { type: string }
+        clinicId: { type: string }
+        branchId: { type: string }
+        dayOfWeek: { type: integer, minimum: 0, maximum: 6, description: Sunday is 0 }
+        isOpen: { type: boolean }
+        startTime: { type: string, pattern: '^[0-2][0-9]:[0-5][0-9]$' }
+        endTime: { type: string }
+        breakStart: { type: [string, "null"] }
+        breakEnd: { type: [string, "null"] }
+        timezone: { type: string, default: Asia/Kolkata }
+        tokenPrefix: { type: string, minLength: 1, maxLength: 8 }
+        maxTokens: { type: integer, minimum: 1 }
+        consultationMinutes: { type: integer, minimum: 1 }
+        bufferMinutes: { type: integer, minimum: 0, default: 0 }
+        queueMode: { type: string, enum: [mixed, appointmentsOnly, walkInsOnly], default: mixed }
+        queueOpenTime: { type: string }
+        queueCloseTime: { type: string }
+    Schedule:
+      allOf:
+        - { $ref: "#/components/schemas/ScheduleInput" }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string }
+            doctorName: { type: string }
+            clinicName: { type: string }
+            branchName: { type: string }
+    AvailabilityExceptionInput:
+      type: object
+      required: [doctorId, branchId, date, isClosed, reason]
+      properties:
+        doctorId: { type: string }
+        branchId: { type: string }
+        date: { type: string, format: date }
+        isClosed: { type: boolean }
+        reason: { type: string }
+        startTime: { type: [string, "null"] }
+        endTime: { type: [string, "null"] }
+        breakStart: { type: [string, "null"] }
+        breakEnd: { type: [string, "null"] }
+        maxTokens: { type: [integer, "null"], minimum: 1 }
+    AvailabilityException:
+      allOf:
+        - { $ref: "#/components/schemas/AvailabilityExceptionInput" }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string }
+    Availability:
+      type: object
+      required: [doctorId, clinicId, branchId, date, available, maxTokens, bookedTokens, remainingTokens]
+      properties:
+        doctorId: { type: string }
+        clinicId: { type: string }
+        branchId: { type: string }
+        date: { type: string, format: date }
+        available: { type: boolean }
+        reason: { type: [string, "null"] }
+        startTime: { type: [string, "null"] }
+        endTime: { type: [string, "null"] }
+        breakStart: { type: [string, "null"] }
+        breakEnd: { type: [string, "null"] }
+        timezone: { type: string }
+        maxTokens: { type: integer }
+        bookedTokens: { type: integer }
+        remainingTokens: { type: integer }
+        consultationMinutes: { type: integer }
+        tokenPrefix: { type: string }
+    AppointmentInput:
+      type: object
+      required: [patientId, doctorId, clinicId, branchId, date, source]
+      properties:
+        patientId: { type: string }
+        doctorId: { type: string }
+        clinicId: { type: string }
+        branchId: { type: string }
+        date: { type: string, format: date }
+        source: { $ref: "#/components/schemas/BookingSource" }
+        appointmentTypeId: { type: string }
+        consultationTypeId: { type: string }
+        qrReference: { type: string }
+        requestId: { type: string, description: Client-generated idempotency key }
+        termsAccepted: { type: boolean }
+        notes: { type: string, maxLength: 1000 }
+    Appointment:
+      allOf:
+        - { $ref: "#/components/schemas/AppointmentInput" }
+        - type: object
+          required: [id, reference, token, status, createdAt, patientName, doctorName, clinicName, branchName, allowedActions]
+          properties:
+            id: { type: string }
+            reference: { type: string }
+            token: { type: string }
+            tokenNumber: { type: integer }
+            status: { $ref: "#/components/schemas/AppointmentStatus" }
+            patientName: { type: string }
+            patientCode: { type: string }
+            doctorName: { type: string }
+            clinicName: { type: string }
+            branchName: { type: string }
+            startTime: { type: string }
+            endTime: { type: string }
+            createdAt: { type: string, format: date-time }
+            checkedInAt: { type: [string, "null"], format: date-time }
+            calledAt: { type: [string, "null"], format: date-time }
+            consultationStartedAt: { type: [string, "null"], format: date-time }
+            completedAt: { type: [string, "null"], format: date-time }
+            allowedActions: { type: array, items: { $ref: "#/components/schemas/AppointmentActionType" } }
+            history: { type: array, items: { $ref: "#/components/schemas/StatusEvent" } }
+    AppointmentActionType: { type: string, enum: [checkIn, enqueue, call, start, complete, noShow, requeue, cancel] }
+    AppointmentAction:
+      type: object
+      required: [action]
+      properties:
+        action: { $ref: "#/components/schemas/AppointmentActionType" }
+        reason: { type: string }
+        cancellationReasonId: { type: string }
+        expectedStatus: { $ref: "#/components/schemas/AppointmentStatus" }
+    StatusEvent:
+      type: object
+      required: [status, occurredAt]
+      properties:
+        status: { $ref: "#/components/schemas/AppointmentStatus" }
+        occurredAt: { type: string, format: date-time }
+        reason: { type: string }
+    QueueSelection:
+      type: object
+      required: [doctorId, branchId, date]
+      properties:
+        doctorId: { type: string }
+        branchId: { type: string }
+        date: { type: string, format: date }
+    OwnQueueEntry:
+      type: object
+      required: [appointmentId, token, status, patientsAhead, estimatedWaitMinutes]
+      properties:
+        appointmentId: { type: string }
+        token: { type: string }
+        status: { $ref: "#/components/schemas/AppointmentStatus" }
+        patientsAhead: { type: integer }
+        estimatedWaitMinutes: { type: integer }
+    LiveQueue:
+      type: object
+      required: [doctorId, branchId, date, currentToken, nextToken, waiting, inConsultation, completed, noShow, total, pollIntervalSeconds, updatedAt]
+      properties:
+        doctorId: { type: string }
+        branchId: { type: string }
+        date: { type: string, format: date }
+        currentToken: { type: [string, "null"] }
+        nextToken: { type: [string, "null"] }
+        waiting: { type: integer }
+        inConsultation: { type: integer }
+        completed: { type: integer }
+        noShow: { type: integer }
+        total: { type: integer }
+        ownEntry: { oneOf: [{ $ref: "#/components/schemas/OwnQueueEntry" }, { type: "null" }] }
+        entries: { type: array, description: Omitted for patients, items: { $ref: "#/components/schemas/Appointment" } }
+        pollIntervalSeconds: { type: integer, const: 30 }
+        updatedAt: { type: string, format: date-time }
+    CallNextResult:
+      type: object
+      required: [appointment]
+      properties:
+        appointment: { oneOf: [{ $ref: "#/components/schemas/Appointment" }, { type: "null" }] }
+    QrInput:
+      type: object
+      required: [name, clinicId]
+      properties:
+        name: { type: string }
+        clinicId: { type: string }
+        branchId: { type: [string, "null"] }
+        doctorId: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+    Qr:
+      allOf:
+        - { $ref: "#/components/schemas/QrInput" }
+        - type: object
+          required: [id, reference, bookingUrl, status, createdAt]
+          properties:
+            id: { type: string }
+            reference: { type: string }
+            bookingUrl: { type: string }
+            createdAt: { type: string, format: date-time }
+    QrContext:
+      type: object
+      required: [reference, clinicId, clinicName]
+      properties:
+        reference: { type: string }
+        clinicId: { type: string }
+        clinicName: { type: string }
+        branchId: { type: [string, "null"] }
+        branchName: { type: [string, "null"] }
+        doctorId: { type: [string, "null"] }
+        doctorName: { type: [string, "null"] }
+    Dashboard:
+      type: object
+      required: [todayAppointments, waiting, completed, noShow, checkedIn, cancelled, averageWaitMinutes]
+      properties:
+        totalDoctors: { type: integer }
+        totalClinics: { type: integer }
+        totalBranches: { type: integer }
+        totalPatients: { type: integer }
+        todayAppointments: { type: integer }
+        activeQueues: { type: integer }
+        waiting: { type: integer }
+        checkedIn: { type: integer }
+        completed: { type: integer }
+        cancelled: { type: integer }
+        noShow: { type: integer }
+        averageWaitMinutes: { type: number }
+        currentToken: { type: [string, "null"] }
+        recentAppointments: { type: array, items: { $ref: "#/components/schemas/Appointment" } }
+        recentActivity: { type: array, items: { $ref: "#/components/schemas/AuditLog" } }
+    ReportRow:
+      type: object
+      required: [key, label, appointments, completed, cancelled, noShow, registrations, averageWaitMinutes]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        appointments: { type: integer }
+        checkedIn: { type: integer }
+        waiting: { type: integer }
+        completed: { type: integer }
+        cancelled: { type: integer }
+        noShow: { type: integer }
+        registrations: { type: integer }
+        averageWaitMinutes: { type: number }
+        averageConsultationMinutes: { type: number }
+    Report:
+      type: object
+      required: [from, to, groupBy, rows]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        groupBy: { type: string }
+        rows: { type: array, items: { $ref: "#/components/schemas/ReportRow" } }
+    AuditLog:
+      type: object
+      required: [id, actorId, action, entityType, entityId, summary, createdAt]
+      properties:
+        id: { type: string }
+        actorId: { type: string }
+        actorName: { type: string }
+        actorRole: { $ref: "#/components/schemas/Role" }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: string }
+        clinicId: { type: [string, "null"] }
+        summary: { type: string }
+        createdAt: { type: string, format: date-time }
+    SettingsInput:
+      type: object
+      properties:
+        platformName: { type: string }
+        supportEmail: { type: string, format: email }
+        supportPhone: { type: string }
+        timezone: { type: string }
+        bookingHorizonDays: { type: integer, minimum: 1 }
+        cancellationCutoffMinutes: { type: integer, minimum: 0 }
+        requireMobileVerification: { type: boolean }
+        otpExpirySeconds: { type: integer, minimum: 60, maximum: 900 }
+        otpMaxAttempts: { type: integer, minimum: 1, maximum: 10 }
+        sessionTimeoutMinutes: { type: integer, minimum: 5 }
+        notificationsEnabled: { type: boolean }
+        logoUrl: { type: string }
+        primaryColor: { type: string }
+        termsUrl: { type: string }
+        privacyUrl: { type: string }
+    Settings:
+      allOf:
+        - { $ref: "#/components/schemas/SettingsInput" }
+        - type: object
+          required: [platformName, requireMobileVerification, otpProviderConfigured, queuePollSeconds]
+          properties:
+            otpProviderConfigured: { type: boolean }
+            queuePollSeconds: { type: integer, const: 30 }
+    ClinicList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Clinic" } } } }
+    BranchList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Branch" } } } }
+    DoctorList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Doctor" } } } }
+    PublicDoctorList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/PublicDoctor" } } } }
+    UserList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/User" } } } }
+    PatientList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Patient" } } } }
+    MasterList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Master" } } } }
+    ScheduleList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Schedule" } } } }
+    AvailabilityExceptionList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/AvailabilityException" } } } }
+    AppointmentList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Appointment" } } } }
+    QrList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Qr" } } } }
+    AuditLogList:
+      allOf:
+        - { $ref: "#/components/schemas/PageMeta" }
+        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/AuditLog" } } } }

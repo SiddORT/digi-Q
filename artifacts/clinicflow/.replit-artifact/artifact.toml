@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "ClinicFlow"
+description = "Authenticated multi-clinic appointment booking and live queue management for doctors, receptionists, patients, and administrators."
+version = "1.0.0"
+id = "artifacts/clinicflow"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25283
+
+[services.development]
+run = "pnpm --filter @workspace/clinicflow run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/clinicflow", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/clinicflow/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25283"
+BASE_PATH = "/"

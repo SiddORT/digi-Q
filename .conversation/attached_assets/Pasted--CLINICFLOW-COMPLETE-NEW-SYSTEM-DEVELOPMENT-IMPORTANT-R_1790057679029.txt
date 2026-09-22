@@ -1,0 +1,2691 @@
+# CLINICFLOW — COMPLETE NEW SYSTEM DEVELOPMENT
+
+## IMPORTANT — READ THIS FIRST
+
+We are NOT asking you to modify, patch, redesign, or cosmetically improve the existing ClinicFlow application.
+
+The existing implementation is NOT to be treated as the functional baseline.
+
+The system must be developed as a COMPLETELY NEW, PRODUCTION-READY WEB APPLICATION from the ground up.
+
+The attached document/image:
+
+**ClinicFlow WireFrame - Ver 1.0 - 21st Sept, 2026**
+
+is the primary reference for the required user journeys, screens, navigation, workflow, and overall UI/UX direction.
+
+The wireframe contains approximately 21 key screens covering:
+
+- Doctor Flow
+- Receptionist Flow
+- Patient Flow
+- Admin / Platform Flow
+- Doctor registration and profile
+- Clinic management
+- Doctor availability
+- Doctor dashboard
+- Receptionist login/dashboard
+- Appointment booking
+- Live queue management
+- Patient search
+- QR/link based patient booking
+- Patient details and OTP
+- Booking confirmation
+- Patient dashboard
+- Patient live queue
+- Platform administration
+- Doctor management
+- Clinic management
+- Platform settings
+- Responsive/mobile experience
+
+DO NOT simply reproduce static screens.
+
+Every screen must be connected to real functionality, real database entities, real authentication, real role permissions, real workflows, and real state changes.
+
+---
+
+# 1. PRODUCT OBJECTIVE
+
+ClinicFlow is a multi-clinic doctor appointment and queue management platform.
+
+The system must allow:
+
+1. Doctors to register and manage their profiles.
+2. Doctors to create/manage clinics.
+3. Doctors to define clinic-wise availability.
+4. Doctors to configure consultation hours.
+5. Doctors to configure queue/token settings.
+6. Receptionists to manage appointments and walk-ins.
+7. Receptionists to search existing patients.
+8. Receptionists to create new patients.
+9. Receptionists to book appointments.
+10. Receptionists to manage live queues.
+11. Patients to book appointments.
+12. Patients to book through QR/link-based flows.
+13. Patients to receive OTP verification.
+14. Patients to view upcoming appointments.
+15. Patients to view live queue status.
+16. Doctors to call/manage patients from their queue.
+17. Administrators to manage doctors.
+18. Administrators to manage clinics.
+19. Administrators to manage users.
+20. Administrators to manage masters/configuration.
+21. Administrators to view platform-level information.
+22. The system to maintain proper role-based access control.
+23. The system to maintain appointment and queue history.
+24. The system to work across multiple clinics and branches.
+25. The system to be responsive for desktop, tablet and mobile.
+
+---
+
+# 2. ABSOLUTELY NO STATIC / DEMO IMPLEMENTATION
+
+This is critical.
+
+DO NOT:
+
+- hardcode appointment records
+- hardcode doctor records
+- hardcode patients
+- hardcode clinics
+- hardcode queue numbers
+- hardcode dashboard statistics
+- create fake role switching
+- create fake login screens
+- create UI-only dropdowns
+- create buttons that do nothing
+- create screens disconnected from the database
+- use mock data after the database is implemented
+- show all users in every user dropdown
+- allow every role to see every screen
+- create a frontend-only application
+- create placeholder functionality and consider the project complete
+
+Every major action must work end-to-end.
+
+Example:
+
+Create Doctor
+→ Doctor database record created
+→ Doctor user account created
+→ Doctor assigned correct role
+→ Doctor can log in
+→ Doctor sees Doctor Dashboard
+→ Doctor can configure profile
+→ Doctor can create/select clinics
+→ Doctor can configure availability
+→ Doctor becomes available for appointment booking
+→ Receptionist can see the doctor
+→ Patient can see the doctor
+→ Appointment can be created
+→ Queue/token is generated
+→ Doctor sees patient in queue
+→ Receptionist sees queue update
+→ Patient sees queue update.
+
+The same principle must apply throughout the entire system.
+
+---
+
+# 3. TECHNOLOGY / ARCHITECTURE
+
+Use a proper production-ready architecture.
+
+Preferred approach:
+
+Frontend:
+- React
+- TypeScript
+- Responsive UI
+- Component-based architecture
+
+Backend:
+- Proper REST API
+- TypeScript/Node.js or another maintainable backend supported by Replit
+- Clear separation between frontend and backend
+
+Database:
+- PostgreSQL
+
+Authentication:
+- Secure authentication
+- Password hashing
+- Session/JWT based authentication
+- Role-based authorization
+
+The exact technology can be adapted to the Replit environment, but the architecture must remain production-oriented.
+
+DO NOT build the application as one giant frontend file.
+
+Use:
+
+- reusable components
+- services
+- API layer
+- database models
+- validation
+- authentication middleware
+- authorization middleware
+- proper error handling
+- audit logging
+- configuration management
+
+---
+
+# 4. USER ROLES
+
+The system MUST have genuine role-based access control.
+
+The following roles are required:
+
+## 4.1 Super Admin
+
+Platform-level administrator.
+
+Responsibilities:
+
+- Manage all clinics
+- Manage all branches
+- Manage doctors
+- Manage receptionists
+- Manage patients
+- Manage users
+- Manage platform masters
+- Manage system settings
+- View platform dashboard
+- View platform reports
+- Configure system-level settings
+- Activate/deactivate users
+- Activate/deactivate clinics
+- Manage permissions/configuration
+
+---
+
+## 4.2 Doctor
+
+Responsibilities:
+
+- Register/login
+- Complete profile
+- Manage professional details
+- Manage clinics
+- Configure clinic availability
+- Configure consultation hours
+- Configure queue settings
+- View appointments
+- View today's appointments
+- View waiting patients
+- View current consultation
+- Call next patient
+- Start consultation
+- Complete consultation
+- Mark no-show
+- View patient details
+- View appointment history
+
+---
+
+## 4.3 Receptionist
+
+Responsibilities:
+
+- Login
+- Select assigned clinic/branch
+- View receptionist dashboard
+- Search patients
+- Register patients
+- Create appointments
+- Create walk-in appointments
+- Phone bookings
+- Check patients in
+- Generate queue/token
+- Manage live queue
+- Call/start queue
+- Mark no-show
+- View appointment history
+- View patient history
+
+Receptionist access must be restricted to assigned clinic/branch.
+
+---
+
+## 4.4 Patient
+
+Responsibilities:
+
+- Register/login
+- OTP verification
+- Manage profile
+- Search/select clinic
+- Search/select doctor
+- View doctor availability
+- Book appointment
+- Book using QR/link
+- View booking confirmation
+- View upcoming appointments
+- View past appointments
+- View live queue
+- View token number
+- View currently serving token
+- View patients ahead
+- View estimated waiting time
+- Cancel appointment where permitted
+
+---
+
+# 5. AUTHENTICATION
+
+Authentication must be real.
+
+Create:
+
+## Login
+
+Fields:
+
+- Email / Mobile Number
+- Password
+
+Actions:
+
+- Login
+- Forgot Password
+- Reset Password
+
+---
+
+## Doctor Registration
+
+As shown in the wireframe:
+
+- Full Name
+- Email Address
+- Mobile Number
+- Password
+- Confirm Password
+
+After registration:
+
+Doctor account should be created with:
+
+`Role = Doctor`
+
+The doctor must then complete their profile.
+
+---
+
+## Receptionist Login
+
+Dedicated role-based login.
+
+Receptionists must NOT be able to access doctor/admin screens.
+
+---
+
+## Patient Authentication
+
+Patient flow should support:
+
+- Mobile number
+- OTP
+- OTP verification
+- Patient profile
+
+OTP must have:
+
+- expiry
+- resend mechanism
+- attempt limitation
+- verification status
+
+For development, provide a configurable development OTP mechanism without compromising the production architecture.
+
+---
+
+# 6. USER MANAGEMENT
+
+Create a proper User Management module.
+
+Fields should include:
+
+- User ID
+- First Name
+- Last Name
+- Email
+- Mobile
+- Role
+- Status
+- Clinic
+- Branch
+- Created Date
+- Last Login
+- Actions
+
+Actions:
+
+- View
+- Edit
+- Activate
+- Deactivate
+- Reset Password
+- Assign Role
+- Assign Clinic
+- Assign Branch
+
+Use proper role filtering.
+
+DO NOT show Patients in Doctor dropdowns.
+
+DO NOT show all system users when selecting a Doctor.
+
+Doctor dropdown must contain ONLY users having:
+
+`Role = Doctor`
+
+Receptionist dropdown must contain ONLY users having:
+
+`Role = Receptionist`
+
+---
+
+# 7. MASTER MANAGEMENT
+
+A complete Masters module is REQUIRED.
+
+The previous implementation completely missed this.
+
+Create a Master Management section for Super Admin.
+
+At minimum:
+
+## Location Masters
+
+- Country
+- State
+- City
+- Area / Locality
+- Pincode
+
+## Clinic Masters
+
+- Clinic Type
+- Clinic Category
+- Clinic Status
+
+## Medical Masters
+
+- Specialization
+- Qualification
+- Department
+- Consultation Type
+
+## Appointment Masters
+
+- Appointment Status
+- Appointment Type
+- Booking Source
+- Cancellation Reason
+
+## Queue Masters
+
+- Queue Status
+- Token Prefix
+- Queue Type
+- Queue Priority
+
+## User Masters
+
+- User Role
+- User Status
+
+Every master should support:
+
+- Add
+- Edit
+- Activate
+- Deactivate
+- Search
+- Filter
+- Pagination
+
+Use master records dynamically throughout the application.
+
+Do NOT hardcode master dropdown values.
+
+---
+
+# 8. CLINIC MANAGEMENT
+
+Super Admin must be able to create clinics.
+
+Clinic fields:
+
+- Clinic Name
+- Clinic Code
+- Address
+- Country
+- State
+- City
+- Area
+- Pincode
+- Contact Number
+- Email
+- Status
+- Description
+
+A clinic can have multiple branches.
+
+---
+
+# 9. BRANCH MANAGEMENT
+
+Create proper Branch Management.
+
+Branch fields:
+
+- Branch Name
+- Branch Code
+- Clinic
+- Address
+- City
+- State
+- Pincode
+- Contact Number
+- Status
+
+A branch must belong to a clinic.
+
+A branch can have:
+
+- Doctors
+- Receptionists
+- Queues
+- Appointments
+- Patients/visits
+
+---
+
+# 10. DOCTOR MANAGEMENT
+
+Super Admin must have:
+
+`Manage Doctors`
+
+as shown in the wireframe.
+
+Doctor listing:
+
+Columns:
+
+- Doctor Name
+- Specialization
+- Qualification
+- Clinics
+- Branches
+- Status
+- Availability
+- Actions
+
+Actions:
+
+- View
+- Edit
+- Activate/Deactivate
+- Assign Clinic
+- Assign Branch
+- Manage Schedule
+- Manage Availability
+
+---
+
+# 11. DOCTOR PROFILE
+
+Doctor profile must contain:
+
+- Full Name
+- Profile Photo
+- Mobile
+- Email
+- Gender
+- Date of Birth
+- Specialization
+- Qualification
+- Registration Number
+- Experience
+- About Doctor
+- Consultation Fee
+- Languages
+- Clinics
+- Branches
+
+Profile must be editable.
+
+---
+
+# 12. DOCTOR → MANAGE CLINICS
+
+Doctor dashboard must contain:
+
+`My Clinics`
+
+as shown in the wireframe.
+
+Doctor can:
+
+- View assigned clinics
+- Add clinic where permitted
+- Edit clinic details where permitted
+- View branches
+- View availability
+- Configure consultation settings
+
+---
+
+# 13. DOCTOR AVAILABILITY — CRITICAL
+
+This is one of the most important modules.
+
+Do NOT implement fixed hardcoded slots only.
+
+The wireframe specifically requires:
+
+`Set Availability (No Fixed Slots)`
+
+The doctor must be able to define availability by day.
+
+Example:
+
+Monday:
+09:00 AM – 01:00 PM
+
+Tuesday:
+09:00 AM – 01:00 PM
+
+Wednesday:
+09:00 AM – 01:00 PM
+
+Thursday:
+09:00 AM – 01:00 PM
+
+Friday:
+09:00 AM – 01:00 PM
+
+Saturday:
+Closed
+
+Sunday:
+Closed
+
+Each day must support:
+
+- Open/Closed
+- Start Time
+- End Time
+- Break Start
+- Break End
+- Consultation duration/configuration where applicable
+- Maximum patients/tokens
+- Queue configuration
+
+Availability must be clinic/branch specific.
+
+A doctor can have different availability at different clinics.
+
+Example:
+
+Dr. Rahul
+
+HealthCare Clinic:
+Monday 09:00–13:00
+
+City Care Clinic:
+Tuesday 14:00–18:00
+
+This must be supported.
+
+---
+
+# 14. DOCTOR QUEUE SETTINGS
+
+Doctor must be able to configure:
+
+- Total Tokens Per Day
+- Queue Prefix
+- Appointment + Walk-in
+- Only Appointments
+- Only Walk-ins
+- Maximum daily patients
+- Consultation duration
+- Buffer time
+- Queue opening time
+- Queue closing time
+
+Example:
+
+Token Prefix:
+
+`A`
+
+Total tokens:
+
+`40`
+
+Result:
+
+A-01
+A-02
+A-03
+...
+
+---
+
+# 15. APPOINTMENT TYPES
+
+Support:
+
+1. Appointment
+2. Walk-in
+3. Phone Booking
+4. QR Booking
+5. Online Patient Booking
+
+Every appointment must record its source.
+
+Example:
+
+`Booking Source = QR`
+
+---
+
+# 16. APPOINTMENT BOOKING FLOW
+
+The wireframe shows a multi-step booking process.
+
+Implement the flow:
+
+### Step 1 — Select Location
+
+Select:
+
+- Clinic
+- Branch
+
+### Step 2 — Select Doctor
+
+Show ONLY doctors available at the selected branch.
+
+### Step 3 — Select Date / Availability
+
+Show only dates when the doctor is available.
+
+### Step 4 — Patient Details
+
+For existing patient:
+
+- Search patient
+- Select patient
+
+For new patient:
+
+- Full Name
+- Mobile
+- Age / DOB
+- Gender
+- Other configured patient fields
+
+### Step 5 — Confirmation
+
+Display:
+
+- Clinic
+- Branch
+- Doctor
+- Date
+- Time/availability
+- Appointment type
+- Patient
+- Token/appointment reference
+
+Then create the appointment.
+
+---
+
+# 17. QR CODE BOOKING — REQUIRED
+
+The system MUST have QR functionality.
+
+This was completely missing in the previous implementation.
+
+Every clinic/branch/doctor should be capable of having a QR booking link.
+
+Example:
+
+Clinic QR
+
+Branch QR
+
+Doctor QR
+
+The QR should encode a secure booking URL/reference.
+
+Patient scans QR.
+
+Flow:
+
+QR Scan
+→ Clinic/Branch/Doctor identified
+→ Booking page opens
+→ Patient details
+→ OTP verification
+→ Appointment booking
+→ Confirmation
+→ Token generated according to configured queue rules.
+
+Super Admin/Doctor/Clinic Admin should be able to:
+
+- Generate QR
+- View QR
+- Download/print QR
+- Regenerate QR if required
+- Deactivate QR
+
+QR must not simply be a decorative image.
+
+It must lead to a functional booking flow.
+
+---
+
+# 18. PATIENT SEARCH
+
+Receptionist must have:
+
+`Search Patient`
+
+Search by:
+
+- Mobile Number
+- Patient Name
+- Patient ID
+- Email where applicable
+
+Search results must show:
+
+- Name
+- Mobile
+- Age
+- Gender
+- Patient ID
+- Appointment history
+
+---
+
+# 19. LIVE QUEUE
+
+Live Queue is a CORE MODULE.
+
+Create a dedicated Live Queue screen.
+
+Display:
+
+- Current Token
+- Next Token
+- Waiting
+- In Consultation
+- Completed
+- No Show
+- Total Patients
+
+Example:
+
+Currently Serving:
+
+`A-12`
+
+Next:
+
+`A-13`
+
+Waiting:
+
+6
+
+The queue must update dynamically.
+
+---
+
+# 20. QUEUE STATUS FLOW
+
+Implement a proper state machine.
+
+Appointment/queue statuses:
+
+`Booked`
+
+→ `Checked In`
+
+→ `Waiting`
+
+→ `Called`
+
+→ `In Consultation`
+
+→ `Completed`
+
+Alternative:
+
+`Waiting`
+
+→ `No Show`
+
+Alternative:
+
+`Booked`
+
+→ `Cancelled`
+
+Do not allow invalid status transitions.
+
+---
+
+# 21. RECEPTIONIST QUEUE MANAGEMENT
+
+Receptionist should be able to:
+
+- View waiting patients
+- View current token
+- Call next
+- Start consultation
+- Mark no-show
+- Requeue patient where permitted
+- Complete queue entry
+- Search patient
+- View patient details
+
+---
+
+# 22. DOCTOR DASHBOARD
+
+Follow the wireframe.
+
+Dashboard should show:
+
+### Today's Appointments
+
+Dynamic count.
+
+### Currently Serving
+
+Example:
+
+`A-12`
+
+### Waiting
+
+Example:
+
+`6`
+
+### Completed
+
+Example:
+
+`20`
+
+### Average Wait Time
+
+Calculated from actual queue data.
+
+### No Shows
+
+Actual count.
+
+---
+
+## Quick Actions
+
+Include:
+
+- New Booking / Walk-in
+- Manage Live Queue
+- Search Patient
+- Today's Appointments
+
+---
+
+# 23. DOCTOR APPOINTMENT SCREEN
+
+Show:
+
+- Patient
+- Patient ID
+- Date
+- Time
+- Appointment Type
+- Clinic
+- Branch
+- Token
+- Status
+
+Actions based on current state.
+
+---
+
+# 24. PATIENT FLOW
+
+Patient booking flow should closely follow the wireframe.
+
+### Patient Booking via QR / Link
+
+Step 1:
+
+Select Clinic
+
+Display:
+
+- Clinic Name
+- Branch
+- Doctor
+- Specialization
+- Consultation Hours
+- Tokens Today
+- Tokens Booked
+
+Then:
+
+`Continue`
+
+---
+
+# 25. PATIENT DETAILS + OTP
+
+Fields:
+
+- Full Name
+- Mobile Number
+- OTP
+- Age
+- Gender
+
+OTP verification is mandatory where configured.
+
+Also include:
+
+`I agree to the Terms & Privacy Policy`
+
+---
+
+# 26. BOOKING CONFIRMATION
+
+Display:
+
+`Appointment Confirmed`
+
+Show:
+
+- Doctor
+- Clinic
+- Branch
+- Date
+- Time
+- Appointment Reference
+- Token
+- Booking source
+
+Actions:
+
+- View My Appointments
+- Book Another
+
+---
+
+# 27. PATIENT DASHBOARD
+
+Patient dashboard should contain:
+
+### Upcoming Appointments
+
+Display:
+
+- Date
+- Doctor
+- Clinic
+- Branch
+- Time
+- Status
+- Token
+
+Actions:
+
+- View Details
+- Cancel where allowed
+- View Live Queue
+
+### Past Appointments
+
+Display historical appointments.
+
+---
+
+# 28. PATIENT LIVE QUEUE
+
+The wireframe specifically shows:
+
+`Patient Live Queue View`
+
+Display:
+
+### Your Token
+
+`A-18`
+
+### Currently Serving
+
+`A-14`
+
+### Patients Ahead
+
+`4`
+
+### Estimated Waiting Time
+
+`~35 minutes`
+
+This must be calculated dynamically.
+
+Also display:
+
+`Auto-updates every 30 seconds`
+
+or use WebSocket/SSE/live polling.
+
+Do not hardcode these values.
+
+---
+
+# 29. ADMIN DASHBOARD
+
+Super Admin dashboard should contain platform-level information.
+
+Example metrics:
+
+- Total Doctors
+- Total Clinics
+- Total Branches
+- Total Patients
+- Today's Appointments
+- Active Queues
+- Completed Appointments
+- No Shows
+
+Recent signups/activity can be displayed.
+
+All values must come from the database.
+
+---
+
+# 30. MANAGE DOCTORS
+
+Admin screen based on wireframe.
+
+Table:
+
+| Doctor | Specialization | Clinics | Status | Actions |
+|---|---|---|---|---|
+
+Actions:
+
+- View
+- Edit
+- Assign Clinic
+- Assign Branch
+- Availability
+- Activate/Deactivate
+
+---
+
+# 31. MANAGE CLINICS
+
+Admin screen based on wireframe.
+
+Table:
+
+| Clinic | Location | Doctors | Status | Actions |
+|---|---|---|---|---|
+
+Actions:
+
+- View
+- Edit
+- Manage Branches
+- Manage Doctors
+- Activate/Deactivate
+- Generate QR
+
+---
+
+# 32. RESPONSIVE DESIGN
+
+The wireframe includes responsive/mobile views.
+
+The web application MUST be responsive.
+
+Desktop:
+
+- Sidebar navigation
+- Multi-column dashboard
+- Tables
+
+Tablet:
+
+- Responsive layout
+- Collapsible navigation
+
+Mobile:
+
+- Mobile-friendly navigation
+- Cards instead of oversized tables where appropriate
+- Booking flow optimized for mobile
+- Queue display optimized for mobile
+- QR booking optimized for mobile
+
+Do not simply shrink the desktop UI.
+
+---
+
+# 33. NAVIGATION BY ROLE
+
+Do NOT show the same sidebar to every role.
+
+## Super Admin
+
+Dashboard
+- Dashboard
+- Clinics
+- Branches
+- Doctors
+- Receptionists
+- Patients
+- Appointments
+- Live Queue
+- Masters
+- Users
+- Reports
+- Settings
+
+## Doctor
+
+- Dashboard
+- My Clinics
+- Availability
+- Appointments
+- Live Queue
+- Patients
+- Profile
+- Settings
+
+## Receptionist
+
+- Dashboard
+- Appointments
+- Book Appointment
+- Live Queue
+- Patients
+- Reports/Profile as permitted
+
+## Patient
+
+- Dashboard
+- Book Appointment
+- My Appointments
+- Live Queue
+- Profile
+
+The role determines the accessible routes.
+
+---
+
+# 34. NO ROLE SWITCHER IN PRODUCTION
+
+The current implementation has a top-right dropdown:
+
+`Role: Super Admin`
+`Role: Clinic Admin`
+`Role: Doctor`
+`Role: Receptionist`
+`Role: Patient`
+
+This is NOT an acceptable production authentication mechanism.
+
+DO NOT allow users to change their own role from a dropdown.
+
+The role must come from the authenticated user's database record.
+
+The role switcher may ONLY exist in a controlled development/demo environment if explicitly required for testing.
+
+Production:
+
+User Login
+→ Backend identifies user
+→ Backend returns authorized role
+→ Application loads correct dashboard/navigation.
+
+---
+
+# 35. CLINIC ADMIN
+
+If Clinic Admin is required by the business model, implement it as a REAL role.
+
+Clinic Admin should be assigned to specific clinics.
+
+Clinic Admin should be able to manage:
+
+- Assigned clinic
+- Branches
+- Doctors
+- Receptionists
+- Clinic availability/configuration
+- Appointments
+- Queue
+- Clinic-level reports
+- QR configuration
+
+Clinic Admin must NOT see unrelated clinics.
+
+---
+
+# 36. DATA SECURITY / TENANCY
+
+The system is multi-clinic.
+
+Data must respect ownership.
+
+Example:
+
+Super Admin:
+Can see all clinics.
+
+Clinic Admin:
+Can see assigned clinic(s).
+
+Doctor:
+Can see assigned clinic(s), patients and appointments relevant to them.
+
+Receptionist:
+Can see assigned branch/clinic.
+
+Patient:
+Can see only their own patient information and appointments.
+
+Never rely only on frontend hiding.
+
+Backend authorization must enforce these rules.
+
+---
+
+# 37. DATABASE DESIGN
+
+Create a proper relational database.
+
+At minimum consider entities:
+
+- Users
+- Roles
+- Permissions
+- UserRoles
+- Clinics
+- Branches
+- ClinicDoctors
+- ClinicReceptionists
+- DoctorProfiles
+- DoctorAvailability
+- DoctorAvailabilityExceptions
+- QueueSettings
+- Patients
+- PatientOTP
+- Appointments
+- AppointmentStatusHistory
+- QueueEntries
+- QueueStatusHistory
+- QRConfigurations
+- Specializations
+- Qualifications
+- Departments
+- AppointmentTypes
+- AppointmentSources
+- AppointmentStatuses
+- QueueStatuses
+- Locations
+- Notifications
+- AuditLogs
+- SystemSettings
+
+Use proper foreign keys.
+
+Use indexes on:
+
+- Mobile
+- Email
+- Patient ID
+- Appointment Date
+- Doctor ID
+- Clinic ID
+- Branch ID
+- Queue Status
+
+---
+
+# 38. APPOINTMENT ID
+
+Every appointment must have a unique reference.
+
+Example:
+
+`CF-20260922-000123`
+
+Patient ID should also be unique.
+
+Example:
+
+`PAT-000001`
+
+Doctor ID:
+
+`DOC-000001`
+
+Clinic:
+
+`CLN-000001`
+
+Branch:
+
+`BRN-000001`
+
+Token:
+
+`A-001`
+
+These must be generated by the backend.
+
+---
+
+# 39. AUDIT LOG
+
+Maintain audit logs for important operations.
+
+Record:
+
+- User
+- Role
+- Action
+- Entity
+- Entity ID
+- Old Value
+- New Value
+- Timestamp
+- IP where appropriate
+
+Examples:
+
+Doctor availability changed.
+
+Appointment cancelled.
+
+Queue status changed.
+
+User activated.
+
+Clinic created.
+
+QR regenerated.
+
+---
+
+# 40. VALIDATION
+
+All forms must have proper validation.
+
+Examples:
+
+Mobile:
+
+- Valid Indian mobile number format where India configuration is used.
+
+Email:
+
+- Valid email format.
+
+Required fields:
+
+- Clearly marked.
+
+Password:
+
+- Minimum strength requirements.
+
+Dates:
+
+- Valid date.
+
+Availability:
+
+- End time must be after start time.
+
+Appointment:
+
+- Cannot book unavailable doctor.
+
+Queue:
+
+- Cannot exceed configured daily capacity.
+
+Do not rely only on frontend validation.
+
+Backend validation is mandatory.
+
+---
+
+# 41. SEARCH, FILTER, SORT AND PAGINATION
+
+ALL major data tables must support:
+
+- Search
+- Filters
+- Sorting
+- Pagination
+
+Examples:
+
+Doctors:
+- Name
+- Specialization
+- Clinic
+- Status
+
+Patients:
+- Name
+- Mobile
+- Patient ID
+- Gender
+
+Appointments:
+- Date
+- Doctor
+- Clinic
+- Branch
+- Status
+- Booking Source
+
+Clinics:
+- Name
+- City
+- Status
+
+Do not create static tables with unlimited rows.
+
+---
+
+# 42. EMPTY STATES
+
+Every list/table must have proper empty states.
+
+Example:
+
+`No appointments found.`
+
+`No doctors available.`
+
+`No patients found.`
+
+`No clinics configured.`
+
+Do not show broken layouts.
+
+---
+
+# 43. LOADING STATES
+
+Every API-driven page must have:
+
+- Loading state
+- Skeleton/loading indicator
+- Error state
+- Retry option
+
+---
+
+# 44. ERROR HANDLING
+
+Use proper user-friendly errors.
+
+Examples:
+
+Doctor unavailable:
+
+`This doctor is not available at the selected clinic on this date.`
+
+Queue full:
+
+`Today's queue capacity has been reached.`
+
+Appointment conflict:
+
+`This appointment slot is no longer available.`
+
+Invalid OTP:
+
+`The OTP entered is invalid or expired.`
+
+Never expose raw backend/database errors to users.
+
+---
+
+# 45. NOTIFICATIONS
+
+Design the system so notifications can be integrated.
+
+Notification events should include:
+
+- Appointment booked
+- Appointment cancelled
+- Appointment reminder
+- Token generated
+- Queue approaching
+- Doctor delayed where applicable
+- Appointment completed
+
+Architecture should allow:
+
+- SMS
+- Email
+- WhatsApp
+- In-app notifications
+
+The first implementation can use configurable/mock notification providers for development, but the service architecture must be real.
+
+---
+
+# 46. QR ARCHITECTURE
+
+QR codes must not expose sensitive information directly.
+
+Use a secure public booking identifier/token.
+
+Example:
+
+QR
+→ Public booking URL
+→ Secure clinic/doctor reference
+→ Booking page
+→ Patient verification
+→ Appointment creation
+
+Do not put patient information in the QR code.
+
+---
+
+# 47. REAL-TIME QUEUE
+
+Queue updates should be near real-time.
+
+Preferred:
+
+WebSocket / Server-Sent Events.
+
+If that is not practical in the Replit environment:
+
+Use controlled polling.
+
+Patient live queue should refresh automatically.
+
+Receptionist and Doctor queue should stay synchronized.
+
+Example:
+
+Doctor calls A-14.
+
+Immediately:
+
+Doctor:
+`Currently Serving A-14`
+
+Receptionist:
+`A-14 In Consultation`
+
+Patient:
+`Currently Serving A-14`
+
+Patients ahead should update accordingly.
+
+---
+
+# 48. APPOINTMENT + QUEUE LOGIC
+
+Do not assume appointment time equals queue order.
+
+The system must maintain:
+
+- Appointment booking
+- Check-in
+- Queue entry
+- Token generation
+- Queue position
+- Current serving token
+- Status
+
+Walk-ins and appointments must coexist according to configured queue rules.
+
+---
+
+# 49. DOCTOR AVAILABILITY LOGIC
+
+Availability should determine whether booking is possible.
+
+For a selected:
+
+Clinic
++
+Branch
++
+Doctor
++
+Date
+
+the system must calculate whether the doctor is available.
+
+Consider:
+
+- Weekly schedule
+- Holidays
+- Leave
+- Availability exceptions
+- Clinic closure
+- Maximum tokens
+- Existing bookings
+
+Do not display doctors as available when they are actually unavailable.
+
+---
+
+# 50. DOCTOR LEAVE / EXCEPTION
+
+Doctors should be able to create availability exceptions.
+
+Examples:
+
+- Leave
+- Holiday
+- Clinic closure
+- Modified timing
+
+Example:
+
+Normally:
+
+Monday 09:00–13:00
+
+Exception:
+
+Monday 22 Sept
+Closed
+
+Booking must not be permitted for that date.
+
+---
+
+# 51. PATIENT REGISTRATION
+
+Patient registration should capture appropriate information.
+
+Minimum:
+
+- Patient ID
+- Full Name
+- Mobile
+- Email where applicable
+- DOB/Age
+- Gender
+- Address
+- Emergency Contact where configured
+
+Avoid collecting unnecessary information.
+
+---
+
+# 52. DOCTOR-PATIENT RELATIONSHIP
+
+Do not create a global unrestricted relationship.
+
+Patient appointment should establish the relevant:
+
+Patient
+→ Appointment
+→ Doctor
+→ Clinic
+→ Branch
+
+This relationship should be available for history and reporting.
+
+---
+
+# 53. REPORTING
+
+Provide basic reports.
+
+Super Admin:
+
+- Appointments by clinic
+- Appointments by doctor
+- Patient registrations
+- Completed appointments
+- Cancelled appointments
+- No-shows
+- Queue performance
+
+Doctor:
+
+- Today's appointments
+- Completed
+- No-show
+- Average wait time
+
+Receptionist:
+
+- Today's appointments
+- Check-ins
+- Waiting
+- Completed
+- No-show
+
+---
+
+# 54. SETTINGS
+
+Platform settings should include configurable values.
+
+Examples:
+
+- Platform Name
+- Support Email
+- Support Phone
+- Appointment configuration
+- Queue configuration
+- OTP expiry
+- Session timeout
+- Notification settings
+- Branding
+- Terms & Privacy URLs
+
+Do not hardcode configurable business settings.
+
+---
+
+# 55. UI/UX REQUIREMENTS
+
+Use the attached wireframe as the visual direction.
+
+The interface should be:
+
+- Clean
+- Professional
+- Medical/healthcare oriented
+- Modern
+- Spacious
+- Consistent
+- Responsive
+- Accessible
+
+Use consistent:
+
+- Typography
+- Buttons
+- Cards
+- Tables
+- Form controls
+- Status badges
+- Icons
+- Spacing
+- Colours
+
+The wireframe should be followed for the overall information architecture and user journeys.
+
+Do not blindly copy every pixel if doing so harms usability.
+
+---
+
+# 56. FORM DESIGN
+
+All forms must be professionally designed.
+
+Do not create giant unstructured forms.
+
+Group fields logically.
+
+Example:
+
+## Personal Information
+
+- Name
+- Mobile
+- Email
+- DOB
+- Gender
+
+## Professional Information
+
+- Specialization
+- Qualification
+- Registration Number
+- Experience
+
+## Clinic Information
+
+- Clinic
+- Branch
+- Consultation Settings
+
+Use clear labels.
+
+Do not use unclear placeholder-only labels.
+
+---
+
+# 57. ACCESSIBILITY
+
+Implement basic WCAG-conscious practices:
+
+- Proper labels
+- Keyboard navigation
+- Focus states
+- Accessible buttons
+- Sufficient contrast
+- Error messages
+- Semantic HTML
+- ARIA only where appropriate
+
+---
+
+# 58. SECURITY
+
+Implement:
+
+- Password hashing
+- Secure sessions/tokens
+- Authorization middleware
+- Input validation
+- SQL injection protection
+- XSS protection
+- CSRF protection where applicable
+- Rate limiting
+- OTP rate limiting
+- Secure QR references
+- Audit logs
+- Environment variables for secrets
+
+NEVER hardcode:
+
+- passwords
+- API keys
+- database passwords
+- JWT secrets
+- OTP secrets
+
+---
+
+# 59. DEVELOPMENT DATA
+
+Create a proper database seed mechanism.
+
+Seed ONLY development/demo data.
+
+Example:
+
+Super Admin
+Doctor
+Clinic Admin
+Receptionist
+Patient
+
+Create sample:
+
+- Clinics
+- Branches
+- Doctors
+- Availability
+- Patients
+- Appointments
+
+But make it obvious that this is seed data.
+
+The application must work correctly if all demo data is removed.
+
+---
+
+# 60. NO FAKE ROLE DROPDOWN
+
+Again, this is critical.
+
+DO NOT implement:
+
+Role:
+[Super Admin ▼]
+
+as the method of switching users.
+
+Instead:
+
+Login as Super Admin
+→ Super Admin dashboard.
+
+Logout.
+
+Login as Doctor
+→ Doctor dashboard.
+
+Logout.
+
+Login as Receptionist
+→ Receptionist dashboard.
+
+Logout.
+
+Login as Patient
+→ Patient dashboard.
+
+For development, a seed account list may be documented separately.
+
+---
+
+# 61. ROUTING
+
+Implement protected routes.
+
+Examples:
+
+`/login`
+
+`/register`
+
+`/forgot-password`
+
+`/admin/dashboard`
+
+`/admin/doctors`
+
+`/admin/clinics`
+
+`/admin/branches`
+
+`/admin/users`
+
+`/admin/masters`
+
+`/doctor/dashboard`
+
+`/doctor/profile`
+
+`/doctor/clinics`
+
+`/doctor/availability`
+
+`/doctor/appointments`
+
+`/doctor/queue`
+
+`/receptionist/dashboard`
+
+`/receptionist/appointments`
+
+`/receptionist/queue`
+
+`/receptionist/patients`
+
+`/patient/dashboard`
+
+`/patient/book`
+
+`/patient/appointments`
+
+`/patient/queue`
+
+`/book/:publicReference`
+
+Routes must be protected by backend authorization.
+
+---
+
+# 62. ROLE ACCESS MATRIX
+
+Create and enforce a permission matrix.
+
+| Module | Super Admin | Clinic Admin | Doctor | Receptionist | Patient |
+|---|---|---|---|---|---|
+| Platform Dashboard | Yes | No | No | No | No |
+| Clinics | All | Assigned | Assigned | View Assigned | View |
+| Branches | All | Assigned | Assigned | Assigned | View |
+| Doctors | All | Assigned | Own | View | View |
+| Availability | All | Assigned | Own | View | View |
+| Users | All | Assigned | No | No | No |
+| Masters | Yes | No/limited | No | No | No |
+| Appointments | All | Assigned | Own | Assigned | Own |
+| Queue | All | Assigned | Own | Assigned | Own |
+| Patients | All | Assigned | Relevant | Assigned | Own |
+| Reports | All | Assigned | Own | Assigned | Own/limited |
+| Settings | All | Clinic | Own | Own | Own |
+
+Backend must enforce this matrix.
+
+---
+
+# 63. ACCEPTANCE CRITERIA
+
+The project is NOT complete simply because the screens are visible.
+
+The project is complete only when the following end-to-end test passes.
+
+---
+
+## TEST 1 — SUPER ADMIN
+
+Login as Super Admin.
+
+Verify:
+
+- Dashboard works.
+- Clinics module works.
+- Branch module works.
+- Doctor module works.
+- User management works.
+- Masters work.
+- Settings work.
+- Search/filter/pagination work.
+- CRUD operations work.
+
+---
+
+## TEST 2 — CREATE CLINIC
+
+Super Admin:
+
+Create:
+
+City Care Clinic
+
+Add:
+
+Main Branch
+
+Verify branch belongs to clinic.
+
+---
+
+## TEST 3 — CREATE DOCTOR
+
+Create:
+
+Dr. Rahul Mehta
+
+Specialization:
+
+Cardiology
+
+Assign:
+
+City Care Clinic
+Main Branch
+
+Doctor must be able to log in.
+
+---
+
+## TEST 4 — DOCTOR AVAILABILITY
+
+Login as Doctor.
+
+Configure:
+
+Monday:
+09:00–13:00
+
+Tuesday:
+09:00–13:00
+
+Wednesday:
+09:00–13:00
+
+Thursday:
+09:00–13:00
+
+Friday:
+09:00–13:00
+
+Saturday:
+Closed
+
+Sunday:
+Closed
+
+Set:
+
+Token capacity = 40
+
+Save.
+
+Logout.
+
+---
+
+## TEST 5 — RECEPTIONIST
+
+Login as Receptionist.
+
+Verify:
+
+Doctor appears only if assigned to the selected clinic/branch.
+
+Book appointment.
+
+Create token.
+
+---
+
+## TEST 6 — PATIENT
+
+Login/register as Patient.
+
+Select:
+
+Clinic
+→ Branch
+→ Doctor
+→ Date
+
+Complete OTP.
+
+Book appointment.
+
+Receive appointment reference.
+
+Receive token.
+
+---
+
+## TEST 7 — QR
+
+Generate clinic/doctor QR.
+
+Scan/open public URL.
+
+Verify booking page opens.
+
+Complete patient booking.
+
+Verify appointment is created.
+
+---
+
+## TEST 8 — LIVE QUEUE
+
+Receptionist checks patient in.
+
+Patient enters queue.
+
+Doctor sees patient.
+
+Doctor calls patient.
+
+Verify:
+
+Receptionist updates.
+
+Doctor updates.
+
+Patient live queue updates.
+
+---
+
+## TEST 9 — COMPLETE CONSULTATION
+
+Doctor starts consultation.
+
+Status:
+
+`In Consultation`
+
+Doctor completes consultation.
+
+Status:
+
+`Completed`
+
+Dashboard counters update.
+
+Queue moves to next patient.
+
+---
+
+# 64. DEMO ACCOUNT REQUIREMENT
+
+Create development accounts.
+
+Example:
+
+Super Admin:
+`admin@clinicflow.com`
+
+Doctor:
+`doctor@clinicflow.com`
+
+Receptionist:
+`reception@clinicflow.com`
+
+Patient:
+`patient@clinicflow.com`
+
+Use secure development passwords and document them in the README.
+
+Do not expose these credentials in production.
+
+---
+
+# 65. README REQUIREMENT
+
+Create a complete README containing:
+
+- Project overview
+- Architecture
+- Technology stack
+- Database setup
+- Environment variables
+- Migration instructions
+- Seed instructions
+- Development accounts
+- Running frontend
+- Running backend
+- API documentation
+- Build instructions
+- Deployment instructions
+
+---
+
+# 66. API DOCUMENTATION
+
+Document all major APIs.
+
+Examples:
+
+Authentication:
+
+POST `/api/auth/login`
+
+POST `/api/auth/register`
+
+POST `/api/auth/forgot-password`
+
+POST `/api/auth/verify-otp`
+
+Clinics:
+
+GET `/api/clinics`
+
+POST `/api/clinics`
+
+PUT `/api/clinics/:id`
+
+DELETE/deactivate `/api/clinics/:id`
+
+Doctors:
+
+GET `/api/doctors`
+
+POST `/api/doctors`
+
+PUT `/api/doctors/:id`
+
+Availability:
+
+GET `/api/doctors/:id/availability`
+
+POST `/api/doctors/:id/availability`
+
+Appointments:
+
+GET `/api/appointments`
+
+POST `/api/appointments`
+
+PUT `/api/appointments/:id/status`
+
+Queue:
+
+GET `/api/queue`
+
+POST `/api/queue/:id/call`
+
+POST `/api/queue/:id/start`
+
+POST `/api/queue/:id/complete`
+
+QR:
+
+POST `/api/qr/generate`
+
+GET `/api/qr/:reference`
+
+Use appropriate REST conventions.
+
+---
+
+# 67. DATABASE MIGRATIONS
+
+Do not manually create database tables only through temporary runtime scripts.
+
+Use proper migrations.
+
+The application must be reproducible from a clean database.
+
+---
+
+# 68. CODE QUALITY
+
+Follow:
+
+- TypeScript strict typing where applicable
+- Reusable components
+- Clean naming
+- No unnecessary duplication
+- No giant files
+- Proper service separation
+- Proper error handling
+- Proper API responses
+- Environment-based configuration
+
+Do not leave:
+
+- TODO placeholders
+- "Coming Soon"
+- dummy buttons
+- fake counters
+- fake records
+- console-only implementations
+
+unless explicitly documented as a future integration.
+
+---
+
+# 69. DEVELOPMENT PHASES
+
+Build in the following order.
+
+## PHASE 1 — FOUNDATION
+
+- Project setup
+- Database
+- Authentication
+- Roles
+- Permissions
+- User management
+- Masters
+
+## PHASE 2 — PLATFORM
+
+- Clinics
+- Branches
+- Doctors
+- Receptionists
+- Clinic assignment
+- Doctor assignment
+
+## PHASE 3 — DOCTOR
+
+- Doctor profile
+- Clinics
+- Availability
+- Exceptions
+- Queue settings
+- Doctor dashboard
+
+## PHASE 4 — APPOINTMENTS
+
+- Appointment booking
+- Walk-ins
+- Phone booking
+- Patient registration
+- Appointment management
+
+## PHASE 5 — QUEUE
+
+- Queue generation
+- Check-in
+- Live queue
+- Call next
+- Consultation
+- Completion
+- No-show
+- Requeue
+
+## PHASE 6 — PATIENT
+
+- Patient registration
+- OTP
+- Booking
+- Appointment history
+- Live queue
+- QR booking
+
+## PHASE 7 — ADMIN
+
+- Dashboard
+- Reports
+- Settings
+- Audit logs
+
+## PHASE 8 — UI/UX
+
+- Wireframe alignment
+- Responsive design
+- Accessibility
+- Error states
+- Loading states
+- Empty states
+
+## PHASE 9 — TESTING
+
+Test every role independently.
+
+Test every workflow end-to-end.
+
+Test authorization.
+
+Test invalid access.
+
+Test appointment conflicts.
+
+Test queue conflicts.
+
+Test QR.
+
+Test availability.
+
+---
+
+# 70. MOST IMPORTANT DEVELOPMENT RULE
+
+DO NOT START BY CREATING STATIC SCREENS.
+
+First establish:
+
+1. Database schema
+2. Authentication
+3. Roles
+4. Permissions
+5. Core entities
+6. APIs
+7. Business logic
+8. Then UI
+
+The UI must consume real APIs.
+
+---
+
+# 71. WIRE FRAME REFERENCE
+
+The attached ClinicFlow wireframe must be treated as the functional reference.
+
+The following major screens shown in the wireframe must be represented in the final application:
+
+### DOCTOR FLOW
+
+1. Doctor Sign Up
+2. Doctor Profile Setup
+3. Manage Clinics
+4. Set Availability
+5. Doctor Dashboard
+
+### RECEPTIONIST FLOW
+
+6. Receptionist Login
+7. Receptionist Dashboard
+8. Book Appointment — Manual / Walk-in / Phone
+9. Live Queue Management
+10. Patient Search
+
+### PATIENT FLOW
+
+11. Patient Booking via QR / Link
+12. Patient Details + OTP
+13. Booking Confirmation
+14. Patient Dashboard
+15. Patient Live Queue
+
+### ADMIN FLOW
+
+16. Admin Dashboard
+17. Manage Doctors
+18. Manage Clinics
+19. Platform Settings
+
+### RESPONSIVE
+
+20. Responsive Web Views
+21. Future Mobile App / Mobile Experience
+
+These flows must be implemented as functional workflows rather than screenshots.
+
+---
+
+# 72. FINAL QUALITY GATE
+
+Before considering the project complete, verify:
+
+[ ] Real login exists
+[ ] Real logout exists
+[ ] Password authentication works
+[ ] OTP flow works
+[ ] Role-based access works
+[ ] Super Admin works
+[ ] Clinic Admin works if enabled
+[ ] Doctor works
+[ ] Receptionist works
+[ ] Patient works
+[ ] Clinics CRUD works
+[ ] Branch CRUD works
+[ ] Doctor CRUD works
+[ ] Receptionist CRUD works
+[ ] Patient CRUD works
+[ ] Masters exist
+[ ] Master values are used dynamically
+[ ] Doctor availability exists
+[ ] Doctor exceptions exist
+[ ] Queue settings exist
+[ ] Appointment booking works
+[ ] Walk-in works
+[ ] Phone booking works
+[ ] QR booking works
+[ ] Token generation works
+[ ] Check-in works
+[ ] Live queue works
+[ ] Call next works
+[ ] Consultation status works
+[ ] Completion works
+[ ] No-show works
+[ ] Patient live queue works
+[ ] Dashboard statistics are dynamic
+[ ] Search works
+[ ] Filters work
+[ ] Sorting works
+[ ] Pagination works
+[ ] Audit logs exist
+[ ] Responsive UI exists
+[ ] API validation exists
+[ ] Backend authorization exists
+[ ] Database migrations exist
+[ ] Seed data exists
+[ ] README exists
+[ ] No fake role switcher exists
+[ ] No hardcoded production data exists
+[ ] No dead buttons exist
+[ ] No placeholder modules exist
+
+---
+
+# 73. CRITICAL INSTRUCTION TO REPLIT AI
+
+If the existing project contains code that conflicts with this specification, DO NOT preserve that implementation merely because it already exists.
+
+Treat the existing implementation as disposable.
+
+You may completely restructure or replace the application.
+
+The target is a NEW ClinicFlow system.
+
+Do not optimize for "making the current demo look better".
+
+Optimize for:
+
+REAL FUNCTIONALITY
++
+REAL DATABASE
++
+REAL AUTHENTICATION
++
+REAL ROLE MANAGEMENT
++
+REAL BUSINESS LOGIC
++
+REAL APPOINTMENTS
++
+REAL DOCTOR AVAILABILITY
++
+REAL QUEUE MANAGEMENT
++
+REAL QR BOOKING
++
+REAL ADMINISTRATION
++
+WIRE-FRAME-ALIGNED UX
+
+The final application should behave like an actual clinic management and appointment/queue platform, not like a clickable prototype.
+
+---
+
+# 74. FIRST ACTION BEFORE CODING
+
+Before writing implementation code:
+
+1. Analyse the complete wireframe.
+2. Create the database/entity model.
+3. Create the role and permission matrix.
+4. Create the navigation structure.
+5. Create the appointment lifecycle.
+6. Create the queue lifecycle.
+7. Create the doctor availability model.
+8. Create the QR booking architecture.
+9. Create the API structure.
+10. Then start implementation.
+
+Provide a concise implementation plan in the project README and proceed with development.
+
+DO NOT ask me to manually recreate functionality that is already explicitly described in this specification.
+
+Build the system end-to-end.

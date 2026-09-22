@@ -1,0 +1,17 @@
+# Backend integration interface
+
+OTP router is owned by the parent agent. Import `requireUser(req)` from `artifacts/api-server/src/lib/auth.ts`: async, returns the active database user with `id`, `clerkId`, `role`, `patientId`, `doctorId`, `clinicIds`, `branchIds`. It throws `HttpError` (shared error middleware handles it). `requireIdentity(req)` returns authenticated Clerk ID without requiring onboarding. Import `HttpError` from `lib/http.ts`.
+
+Database exports `db`, `pool`, `users`, `patients`, `otpChallenges` from `@workspace/db`. Patients have relational `id`, nullable `userId`, `mobile`, `mobileVerified` columns plus `data` JSON for demographic fields. OTP success must update `patients.mobile`, `patients.mobileVerified=true` by `userId` and `users.mobile` by user ID in one transaction. Profile mobile changes reset verification.
+
+OTP challenges columns: `id` text PK, `userId` FK users, `mobile` text, `codeHash` text, `expiresAt` timestamptz (Date), `attempts` integer default 0, `consumedAt` nullable timestamptz, `createdAt` timestamptz default now. Parent may extend schema if provider metadata is needed. Settings are exported `settings` table with `id` text PK and `data` JSON; singleton id `platform`. `getSettings()` exported from `lib/store.ts` returns safe settings.
+
+All main API routers will mount in routes/index.ts; parent may mount OTP there after implementation. No OTP endpoint is implemented by backend subagent.
+
+Implementation completed: OTP router is mounted. Its one TS union-narrowing error was fixed with fallback status/message, without changing delivery or verification semantics. Settings use parent-owned `otpDeliveryConfigured()`. Generated Orval schemas coerce body dates to Date and require query Date objects; shared `parse`/`query` validate real calendar dates and normalize them back to contract YYYY-MM-DD strings.
+
+Development DB schema pushed and system-only seed applied. Migration artifacts live in `lib/db/drizzle/`. Never run startup DDL or production migration scripts: Replit Publish manages production schema.
+
+Commands: `pnpm --filter @workspace/db push` (development only); `pnpm --filter @workspace/scripts seed-system`; `pnpm --filter @workspace/scripts bootstrap-admin --clerk-id user_...` (or `--email verified@example.com`). Bootstrap only works without an active super admin and refuses silent promotion of an existing non-admin DB profile. It fetches Clerk identity and requires its verified primary email; no credentials are generated.
+
+Implementation limitations to communicate accurately: collection reads currently load persisted rows then authorize/filter/paginate in server memory (functional, but SQL-side pagination/aggregation should precede large-scale deployments). Core relations, identities, scope keys, queue state and tokens are relational; optional demographics/configuration are JSONB. One weekly session per doctor/branch/weekday, with a single optional break; overnight sessions rejected. Cross-branch differing-timezone overlap checks are conservative. Clerk invitations cannot be transactional with PostgreSQL, so failed database writes after a successful invitation can leave an unassigned invitation. Notifications beyond OTP and Clerk invitations are not implemented; configuration is persisted only. Session lifetime is governed by Clerk, not the informational platform sessionTimeoutMinutes field.

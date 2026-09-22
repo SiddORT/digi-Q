@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1790058752679,
+      "tag": "0000_clinicflow_initial",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790058918928,
+      "tag": "0001_clinicflow_integrity",
+      "breakpoints": true
+    }
+  ]
+}

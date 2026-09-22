@@ -1,0 +1,1 @@
+- [Worker execution failures](worker-isolation.md) — helper tool disconnections can be isolated; preserve healthy backend work rather than treating them as project-wide failures.
