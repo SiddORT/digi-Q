@@ -24,6 +24,11 @@ export type User = UserInput & ({
   /** @nullable */
   managingAdminName: string | null;
   invitationStatus: UserInvitationStatus;
+  /**
+     * Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.
+     * @nullable
+     */
+  passwordEnabled?: boolean | null;
   /** @nullable */
   createdAt: Date | null;
   /** @nullable */
@@ -37,6 +42,11 @@ export type User = UserInput & ({
   /** @nullable */
   managingAdminName: string | null;
   invitationStatus: UserInvitationStatus;
+  /**
+     * Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.
+     * @nullable
+     */
+  passwordEnabled?: boolean | null;
   /** @nullable */
   createdAt: Date | null;
   /** @nullable */

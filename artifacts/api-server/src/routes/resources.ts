@@ -33,6 +33,36 @@ export function ownershipChangeRequested(value: unknown, current: unknown) {
   return value !== undefined && value !== current;
 }
 
+function invitationRedirectUrl(req: any) {
+  const configured = process.env.CLINICFLOW_PUBLIC_ORIGIN?.trim();
+  const requestOrigin = req?.get?.("origin")?.trim();
+  const candidate = configured || requestOrigin;
+  if (!candidate) return undefined;
+  try {
+    const url = new URL(candidate);
+    const forwardedHost = String(req?.get?.("x-forwarded-host") || req?.get?.("host") || "").split(",")[0].trim().toLowerCase();
+    const isRequestOrigin = !configured;
+    const localHost = ["localhost", "127.0.0.1", "::1"].includes(url.hostname.toLowerCase()) || url.hostname.endsWith(".localhost");
+    if (url.protocol !== "https:" || localHost || (isRequestOrigin && forwardedHost && url.host.toLowerCase() !== forwardedHost)) return undefined;
+    url.search = "";
+    url.hash = "";
+    url.pathname = `${url.pathname.replace(/\/+$/, "")}/set-password`;
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
+async function withPasswordState(row: any) {
+  if (!row?.clerkId || !["superAdmin", "clinicAdmin", "doctor", "receptionist"].includes(row.role)) return row;
+  try {
+    const identity = await clerkClient.users.getUser(row.clerkId);
+    return { ...row, passwordEnabled: identity.passwordEnabled };
+  } catch {
+    return { ...row, passwordEnabled: null };
+  }
+}
+
 async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
   const context = { ...old, ...body };
   if (body.timezone) localNow(body.timezone);
@@ -101,7 +131,7 @@ async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
     if (body.parentId) { assert(body.parentId !== old?.id, 400, "Master cannot parent itself"); await one(masters, body.parentId); }
   }
 }
-export async function deliverInvitation(userId: string) {
+export async function deliverInvitation(userId: string, redirectUrl?: string) {
   return db.transaction(async tx => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"staff-invitation:" + userId}))`);
     const account = await one(users, userId, tx);
@@ -130,8 +160,27 @@ export async function deliverInvitation(userId: string) {
       await linkIdentity(identity);
       return;
     }
+    if (!redirectUrl) {
+      await change(users, userId, { invitationStatus: "failed" }, tx);
+      return;
+    }
     try {
-      await clerkClient.invitations.createInvitation({ emailAddress: account.email.toLowerCase(), ignoreExisting: true });
+      const emailAddress = account.email.toLowerCase();
+      const pending = await clerkClient.invitations.getInvitationList({ query: emailAddress, status: "pending", limit: 100 });
+      for (const invitation of pending.data.filter(item => item.emailAddress.toLowerCase() === emailAddress)) {
+        await clerkClient.invitations.revokeInvitation(invitation.id);
+      }
+      const enriched = await enrich("users", account, tx);
+      await clerkClient.invitations.createInvitation({
+        emailAddress,
+        expiresInDays: Math.min(30, Math.max(1, Number.parseInt(process.env.CLERK_INVITATION_EXPIRES_IN_DAYS || "7", 10) || 7)),
+        ignoreExisting: false,
+        ...(redirectUrl ? { redirectUrl } : {}),
+        publicMetadata: {
+          clinicFlowRole: account.role,
+          clinicFlowClinicNames: Array.isArray(enriched.clinicNames) ? enriched.clinicNames : [],
+        },
+      });
     } catch {
       // A Clerk identity can be completed between the lookup and invitation call.
       // Only a verified matching address is safe to link.
@@ -150,7 +199,7 @@ export async function deliverInvitation(userId: string) {
     await change(users, userId, { invitationStatus: "sent" }, tx);
   });
 }
-export async function createClinicAdminOnboarding(actor: any, body: any) {
+export async function createClinicAdminOnboarding(actor: any, body: any, redirectUrl?: string) {
   roles(actor, ["superAdmin"]);
   const email = body.admin.email.toLowerCase();
   if (body.clinic.timezone) localNow(body.clinic.timezone);
@@ -187,13 +236,13 @@ export async function createClinicAdminOnboarding(actor: any, body: any) {
       clinic: await enrich("clinics", clinic, tx),
     };
   });
-  await deliverInvitation(result.admin.id);
+  await deliverInvitation(result.admin.id, redirectUrl);
   return {
     ...result,
     admin: await enrich("users", await one(users, result.admin.id)),
   };
 }
-async function save(kind: string, table: any, user: any, body: any, old?: any) {
+async function save(kind: string, table: any, user: any, body: any, old?: any, redirectUrl?: string) {
   await authorizeWrite(user, kind, body, old);
   if (kind === "users" || kind === "doctors") body.email = body.email.toLowerCase();
   if (!old && (kind === "users" || kind === "doctors")) {
@@ -352,8 +401,8 @@ async function save(kind: string, table: any, user: any, body: any, old?: any) {
     await audit(user, old && kind === "clinics" && ownershipChangeRequested(body.adminId, old.adminId) ? "ownershipTransfer" : old ? "update" : "create", kind, row, tx);
     return enrich(kind, row, tx);
   });
-  if (!old && (kind === "users" || kind === "doctors")) {
-    await deliverInvitation(kind === "users" ? saved.id : saved.userId);
+  if (!old && (kind === "doctors" || (kind === "users" && ["clinicAdmin", "doctor", "receptionist"].includes(saved.role)))) {
+    await deliverInvitation(kind === "users" ? saved.id : saved.userId, redirectUrl);
     return enrich(kind, await one(table, saved.id));
   }
   return saved;
@@ -496,7 +545,7 @@ function discardedIncomingSave(kind: string, table: any, user: any, body: any, o
 */
 resourcesRouter.post("/clinic-admin-onboarding", async (req, res) => {
   const user = await requireUser(req);
-  const row = await createClinicAdminOnboarding(user, parse(z.OnboardClinicAdminBody, req.body));
+  const row = await createClinicAdminOnboarding(user, parse(z.OnboardClinicAdminBody, req.body), invitationRedirectUrl(req));
   res.status(201).json(row);
 });
 for (const [kind, table, schema, listSchema] of definitions) {
@@ -505,16 +554,17 @@ for (const [kind, table, schema, listSchema] of definitions) {
     if (kind === "users") roles(user, ["superAdmin", "clinicAdmin", "doctor"]);
     const rows = await Promise.all((await all(table)).map(r => enrich(kind, r)));
     const visible = await scoped(user, kind, rows);
-    const projected = await Promise.all(visible.map(row => projectAssignmentScope(user, kind, row)));
+    const projected = await Promise.all(visible.map(async row =>
+      withPasswordState(await projectAssignmentScope(user, kind, row))));
     res.json(paginate(filtered(projected, q), q));
   });
   resourcesRouter.get(`/${kind}/:id`, async (req, res) => {
     const user = await requireUser(req), row = await enrich(kind, await one(table, req.params.id as string));
     assert(await canRead(user, kind, row), 403, "Record outside your scope");
-    res.json(await projectAssignmentScope(user, kind, row));
+    res.json(await withPasswordState(await projectAssignmentScope(user, kind, row)));
   });
   resourcesRouter.post(`/${kind}`, async (req, res) => {
-    const user = await requireUser(req), row = await save(kind, table, user, parse(schema, req.body));
+    const user = await requireUser(req), row = await save(kind, table, user, parse(schema, req.body), undefined, invitationRedirectUrl(req));
     res.status(201).json(await projectAssignmentScope(user, kind, row));
   });
   resourcesRouter.patch(`/${kind}/:id`, async (req, res) => {
@@ -572,16 +622,19 @@ resourcesRouter.get("/staff-assignment-options", async (req, res) => {
 resourcesRouter.post("/users/:id/password-reset", async (req, res) => {
   const user = await requireUser(req), target = await enrich("users", await one(users, req.params.id as string));
   roles(user, ["superAdmin", "clinicAdmin"]);
+  assert(["clinicAdmin", "doctor", "receptionist", "superAdmin"].includes(target.role), 400, "Password recovery assistance is available for staff profiles only");
   assert(await canRead(user, "users", target), 403, "User outside your scope");
+  assert(target.clerkId, 409, "This staff account has not completed invitation setup. Resend the set-password invitation instead.");
   await audit(user, "recoveryInstructions", "users", target);
-  res.status(202).json({ message: "Open /sign-in and select Forgot password to start secure Clerk recovery. No recovery email has been sent by this action." });
+  res.status(202).json({ message: "Open /forgot-password to start Clerk's secure email-code password flow. No recovery email has been sent by this action." });
 });
 resourcesRouter.post("/users/:id/resend-invitation", async (req, res) => {
   const actor = await requireUser(req), target = await enrich("users", await one(users, req.params.id as string));
   roles(actor, ["superAdmin", "clinicAdmin", "doctor"]);
   assert(["clinicAdmin", "doctor", "receptionist"].includes(target.role), 400, "Invitations are available for staff profiles only");
   assert(await canRead(actor, "users", target), 403, "User outside your management scope");
-  await deliverInvitation(target.id);
+  assert(!target.clerkId, 409, "This staff account is already linked. Use password recovery assistance instead.");
+  await deliverInvitation(target.id, invitationRedirectUrl(req));
   const updated = await enrich("users", await one(users, target.id));
   await audit(actor,
     updated.invitationStatus === "sent" ? "invitationResent"

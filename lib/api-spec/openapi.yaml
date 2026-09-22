@@ -21,6 +21,43 @@ paths:
       security: []
       responses:
         "200": { description: Healthy, content: { application/json: { schema: { $ref: "#/components/schemas/HealthStatus" } } } }
+  /auth/patient-entry:
+    post:
+      operationId: preparePatientEntry
+      security: []
+      description: Validates the normalized email against authoritative ClinicFlow records before preparing a Clerk email-code identity. Staff and inactive patients are rejected before Clerk is called. No OTP is generated or stored by ClinicFlow.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthEmailInput" } } } }
+      responses:
+        "200": { description: Patient entry may continue through Clerk email-code verification, content: { application/json: { schema: { $ref: "#/components/schemas/AuthEmailResult" } } } }
+        "403": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+  /auth/staff-entry:
+    post:
+      operationId: prepareStaffEntry
+      security: []
+      description: Confirms that the normalized email belongs to an active authoritative staff record before client-side Clerk password sign-in.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthEmailInput" } } } }
+      responses:
+        "200": { description: Staff entry may continue through Clerk password sign-in, content: { application/json: { schema: { $ref: "#/components/schemas/AuthEmailResult" } } } }
+        "403": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+  /auth/staff-verify:
+    post:
+      operationId: verifyStaffPassword
+      description: Re-verifies the authenticated active staff user's password with Clerk and binds a short-lived proof to the current signed Clerk session. ClinicFlow never stores the password.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/StaffPasswordInput" } } } }
+      responses:
+        "200": { description: Session-bound staff proof persisted, content: { application/json: { schema: { $ref: "#/components/schemas/AuthStatus" } } } }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+  /auth/status:
+    get:
+      operationId: getAuthStatus
+      description: Returns only role and session-bound staff password-proof state for the signed-in Clerk context. It exposes no clinical data.
+      responses:
+        "200": { description: Authentication status, content: { application/json: { schema: { $ref: "#/components/schemas/AuthStatus" } } } }
+        "401": { $ref: "#/components/responses/Error" }
   /me:
     get:
       operationId: getMe
@@ -496,6 +533,30 @@ components:
       required: [status]
       properties:
         status: { type: string }
+    AuthEmailInput:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+    AuthEmailResult:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email }
+    StaffPasswordInput:
+      type: object
+      required: [password]
+      additionalProperties: false
+      properties:
+        password: { type: string, minLength: 1, maxLength: 1024 }
+    AuthStatus:
+      type: object
+      required: [role, staffPasswordVerified, requiresStaffPassword]
+      properties:
+        role: { type: [string, "null"] }
+        staffPasswordVerified: { type: boolean }
+        requiresStaffPassword: { type: boolean }
     ApiError:
       type: object
       required: [error]
@@ -564,6 +625,7 @@ components:
             managingAdminId: { type: [string, "null"] }
             managingAdminName: { type: [string, "null"] }
             invitationStatus: { type: string, enum: [sent, failed, notRequired] }
+            passwordEnabled: { type: [boolean, "null"], description: Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable. }
             createdAt: { type: [string, "null"], format: date-time }
             lastLoginAt: { type: [string, "null"], format: date-time }
     ClinicAdminOnboardingInput:

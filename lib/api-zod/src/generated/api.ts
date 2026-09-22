@@ -21,8 +21,70 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * Validates the normalized email against authoritative ClinicFlow records before preparing a Clerk email-code identity. Staff and inactive patients are rejected before Clerk is called. No OTP is generated or stored by ClinicFlow.
+ */
+export const preparePatientEntryBodyEmailMax = 254;
+
+
+
+export const PreparePatientEntryBody = zod.object({
+  "email": zod.string().email().max(preparePatientEntryBodyEmailMax)
+})
+
+export const PreparePatientEntryResponse = zod.object({
+  "email": zod.string().email()
+})
+
+
+/**
+ * Confirms that the normalized email belongs to an active authoritative staff record before client-side Clerk password sign-in.
+ */
+export const prepareStaffEntryBodyEmailMax = 254;
+
+
+
+export const PrepareStaffEntryBody = zod.object({
+  "email": zod.string().email().max(prepareStaffEntryBodyEmailMax)
+})
+
+export const PrepareStaffEntryResponse = zod.object({
+  "email": zod.string().email()
+})
+
+
+/**
+ * Re-verifies the authenticated active staff user's password with Clerk and binds a short-lived proof to the current signed Clerk session. ClinicFlow never stores the password.
+ */
+export const verifyStaffPasswordBodyPasswordMax = 1024;
+
+
+
+export const VerifyStaffPasswordBody = zod.object({
+  "password": zod.string().min(1).max(verifyStaffPasswordBodyPasswordMax)
+})
+
+export const VerifyStaffPasswordResponse = zod.object({
+  "role": zod.string().nullable(),
+  "staffPasswordVerified": zod.boolean(),
+  "requiresStaffPassword": zod.boolean()
+})
+
+
+/**
+ * Returns only role and session-bound staff password-proof state for the signed-in Clerk context. It exposes no clinical data.
+ */
+export const GetAuthStatusResponse = zod.object({
+  "role": zod.string().nullable(),
+  "staffPasswordVerified": zod.boolean(),
+  "requiresStaffPassword": zod.boolean()
+})
+
+
+/**
  * Returns database identity; user is null before onboarding. Never accepts a role from the client.
  */
+
+
 
 
 export const GetMeResponse = zod.object({
@@ -42,6 +104,7 @@ export const GetMeResponse = zod.object({
   "managingAdminId": zod.string().nullable(),
   "managingAdminName": zod.string().nullable(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().nullish().describe('Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.'),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 })),zod.null()]),
@@ -51,11 +114,17 @@ export const GetMeResponse = zod.object({
 })
 
 
+
+
+
 export const UpdateMeBody = zod.object({
   "fullName": zod.string().min(1).optional(),
   "mobile": zod.string().optional(),
   "photoUrl": zod.string().optional()
 })
+
+
+
 
 
 export const UpdateMeResponse = zod.object({
@@ -73,6 +142,7 @@ export const UpdateMeResponse = zod.object({
   "managingAdminId": zod.string().nullable(),
   "managingAdminName": zod.string().nullable(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().nullish().describe('Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.'),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))
@@ -92,6 +162,9 @@ export const OnboardBody = zod.object({
 })
 
 
+
+
+
 export const OnboardResponse = zod.object({
   "clerkId": zod.string(),
   "user": zod.union([zod.object({
@@ -109,6 +182,7 @@ export const OnboardResponse = zod.object({
   "managingAdminId": zod.string().nullable(),
   "managingAdminName": zod.string().nullable(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().nullish().describe('Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.'),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 })),zod.null()]),
@@ -158,6 +232,7 @@ export const listPublicClinicsQueryPageSizeDefault = 20;
 export const listPublicClinicsQueryPageSizeMax = 100;
 
 
+
 export const ListPublicClinicsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "page": zod.coerce.number().int().min(1).default(listPublicClinicsQueryPageDefault),
@@ -165,6 +240,8 @@ export const ListPublicClinicsQueryParams = zod.object({
 })
 
 export const listPublicClinicsResponseOneTotalMin = 0;
+
+
 
 
 export const ListPublicClinicsResponse = zod.object({
@@ -202,6 +279,7 @@ export const listPublicBranchesQueryPageDefault = 1;
 
 export const listPublicBranchesQueryPageSizeDefault = 20;
 export const listPublicBranchesQueryPageSizeMax = 100;
+
 
 
 export const ListPublicBranchesQueryParams = zod.object({
@@ -245,6 +323,7 @@ export const listPublicDoctorsQueryPageSizeDefault = 20;
 export const listPublicDoctorsQueryPageSizeMax = 100;
 
 
+
 export const ListPublicDoctorsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -255,6 +334,7 @@ export const ListPublicDoctorsQueryParams = zod.object({
 })
 
 export const listPublicDoctorsResponseOneTotalMin = 0;
+
 
 
 export const ListPublicDoctorsResponse = zod.object({
@@ -327,6 +407,7 @@ export const listClinicsQueryPageSizeDefault = 20;
 export const listClinicsQueryPageSizeMax = 100;
 
 
+
 export const ListClinicsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "status": zod.enum(['active', 'inactive']).optional(),
@@ -337,6 +418,8 @@ export const ListClinicsQueryParams = zod.object({
 })
 
 export const listClinicsResponseOneTotalMin = 0;
+
+
 
 
 export const ListClinicsResponse = zod.object({
@@ -370,6 +453,9 @@ export const ListClinicsResponse = zod.object({
 }))
 
 
+
+
+
 export const CreateClinicBody = zod.object({
   "adminId": zod.string().optional().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
@@ -386,6 +472,8 @@ export const CreateClinicBody = zod.object({
   "categoryId": zod.string().optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
+
+
 
 
 export const CreateClinicResponse = zod.object({
@@ -418,6 +506,8 @@ export const GetClinicParams = zod.object({
 })
 
 
+
+
 export const GetClinicResponse = zod.object({
   "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
@@ -448,6 +538,8 @@ export const UpdateClinicParams = zod.object({
 })
 
 
+
+
 export const UpdateClinicBody = zod.object({
   "adminId": zod.string().optional().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
   "name": zod.string().min(1),
@@ -464,6 +556,8 @@ export const UpdateClinicBody = zod.object({
   "categoryId": zod.string().optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
+
+
 
 
 export const UpdateClinicResponse = zod.object({
@@ -504,6 +598,7 @@ export const listBranchesQueryPageSizeDefault = 20;
 export const listBranchesQueryPageSizeMax = 100;
 
 
+
 export const ListBranchesQueryParams = zod.object({
   "clinicId": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
@@ -540,6 +635,7 @@ export const ListBranchesResponse = zod.object({
   "createdAt": zod.coerce.date().nullable()
 })))
 }))
+
 
 
 export const createBranchBodyTimezoneDefault = `Asia/Kolkata`;
@@ -655,6 +751,7 @@ export const listDoctorsQueryPageSizeDefault = 20;
 export const listDoctorsQueryPageSizeMax = 100;
 
 
+
 export const ListDoctorsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -673,6 +770,8 @@ export const listDoctorsResponseOneTotalMin = 0;
 export const listDoctorsResponseTwoItemsItemOneExperienceYearsMin = 0;
 
 export const listDoctorsResponseTwoItemsItemOneConsultationFeeMin = 0;
+
+
 
 
 export const ListDoctorsResponse = zod.object({
@@ -721,6 +820,8 @@ export const createDoctorBodyExperienceYearsMin = 0;
 export const createDoctorBodyConsultationFeeMin = 0;
 
 
+
+
 export const CreateDoctorBody = zod.object({
   "ownerAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
@@ -745,6 +846,8 @@ export const CreateDoctorBody = zod.object({
 export const createDoctorResponseOneExperienceYearsMin = 0;
 
 export const createDoctorResponseOneConsultationFeeMin = 0;
+
+
 
 
 export const CreateDoctorResponse = zod.object({
@@ -786,6 +889,8 @@ export const GetDoctorParams = zod.object({
 export const getDoctorResponseOneExperienceYearsMin = 0;
 
 export const getDoctorResponseOneConsultationFeeMin = 0;
+
+
 
 
 export const GetDoctorResponse = zod.object({
@@ -832,6 +937,8 @@ export const updateDoctorBodyExperienceYearsMin = 0;
 export const updateDoctorBodyConsultationFeeMin = 0;
 
 
+
+
 export const UpdateDoctorBody = zod.object({
   "ownerAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
@@ -856,6 +963,8 @@ export const UpdateDoctorBody = zod.object({
 export const updateDoctorResponseOneExperienceYearsMin = 0;
 
 export const updateDoctorResponseOneConsultationFeeMin = 0;
+
+
 
 
 export const UpdateDoctorResponse = zod.object({
@@ -902,6 +1011,7 @@ export const listUsersQueryPageSizeDefault = 20;
 export const listUsersQueryPageSizeMax = 100;
 
 
+
 export const ListUsersQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']).optional(),
@@ -915,6 +1025,9 @@ export const ListUsersQueryParams = zod.object({
 })
 
 export const listUsersResponseOneTotalMin = 0;
+
+
+
 
 
 export const ListUsersResponse = zod.object({
@@ -937,6 +1050,7 @@ export const ListUsersResponse = zod.object({
   "managingAdminId": zod.string().nullable(),
   "managingAdminName": zod.string().nullable(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().nullish().describe('Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.'),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 })))
@@ -946,6 +1060,8 @@ export const ListUsersResponse = zod.object({
 /**
  * Admin-only identity invitation and database role assignment; clinic admins cannot grant platform administration.
  */
+
+
 
 
 export const CreateUserBody = zod.object({
@@ -958,6 +1074,9 @@ export const CreateUserBody = zod.object({
   "branchIds": zod.array(zod.string()).optional(),
   "managingAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
 })
+
+
+
 
 
 export const CreateUserResponse = zod.object({
@@ -975,14 +1094,95 @@ export const CreateUserResponse = zod.object({
   "managingAdminId": zod.string().nullable(),
   "managingAdminName": zod.string().nullable(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().nullish().describe('Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.'),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))
 
+
+/**
+ * Super Admin only. Atomically creates an active Clinic Admin and their first active clinic, with ownership persisted through clinic.adminId. Existing clinics and doctor ownership are never changed.
+ */
+
+
 export const onboardClinicAdminBodyClinicTimezoneDefault = `Asia/Kolkata`;
+
+export const OnboardClinicAdminBody = zod.object({
+  "admin": zod.object({
+  "fullName": zod.string().min(1),
+  "email": zod.string().email(),
+  "mobile": zod.string().optional()
+}),
+  "clinic": zod.object({
+  "name": zod.string().min(1),
+  "code": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "email": zod.string().email().optional(),
+  "address": zod.string(),
+  "city": zod.string().optional(),
+  "state": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "timezone": zod.string().default(onboardClinicAdminBodyClinicTimezoneDefault)
+})
+})
+
+
+
+
+
+
+export const OnboardClinicAdminResponse = zod.object({
+  "admin": zod.object({
+  "fullName": zod.string().min(1),
+  "email": zod.string().email(),
+  "mobile": zod.string().optional(),
+  "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
+  "status": zod.enum(['active', 'inactive']),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
+  "branchIds": zod.array(zod.string()),
+  "managingAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
+}).and(zod.object({
+  "id": zod.string(),
+  "clerkId": zod.string().nullable(),
+  "managingAdminId": zod.string().nullable(),
+  "managingAdminName": zod.string().nullable(),
+  "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().nullish().describe('Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.'),
+  "createdAt": zod.coerce.date().nullable(),
+  "lastLoginAt": zod.coerce.date().nullish()
+})),
+  "clinic": zod.object({
+  "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
+  "name": zod.string().min(1),
+  "address": zod.string(),
+  "country": zod.string().optional(),
+  "state": zod.string().optional(),
+  "city": zod.string().optional(),
+  "area": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "email": zod.string().email().optional(),
+  "description": zod.string().optional(),
+  "clinicTypeId": zod.string().optional(),
+  "categoryId": zod.string().optional(),
+  "status": zod.enum(['active', 'inactive'])
+}).and(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "adminName": zod.string(),
+  "createdAt": zod.coerce.date().nullable(),
+  "doctorCount": zod.number().int().optional(),
+  "branchCount": zod.number().int().optional()
+}))
+})
+
+
 export const GetUserParams = zod.object({
   "id": zod.coerce.string()
 })
+
+
+
 
 
 export const GetUserResponse = zod.object({
@@ -1000,6 +1200,7 @@ export const GetUserResponse = zod.object({
   "managingAdminId": zod.string().nullable(),
   "managingAdminName": zod.string().nullable(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().nullish().describe('Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.'),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))
@@ -1008,6 +1209,9 @@ export const GetUserResponse = zod.object({
 export const UpdateUserParams = zod.object({
   "id": zod.coerce.string()
 })
+
+
+
 
 
 export const UpdateUserBody = zod.object({
@@ -1020,6 +1224,9 @@ export const UpdateUserBody = zod.object({
   "branchIds": zod.array(zod.string()).optional(),
   "managingAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
 })
+
+
+
 
 
 export const UpdateUserResponse = zod.object({
@@ -1037,6 +1244,7 @@ export const UpdateUserResponse = zod.object({
   "managingAdminId": zod.string().nullable(),
   "managingAdminName": zod.string().nullable(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().nullish().describe('Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.'),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))
@@ -1069,6 +1277,9 @@ export const ResendUserInvitationParams = zod.object({
 })
 
 
+
+
+
 export const ResendUserInvitationResponse = zod.object({
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
@@ -1084,6 +1295,7 @@ export const ResendUserInvitationResponse = zod.object({
   "managingAdminId": zod.string().nullable(),
   "managingAdminName": zod.string().nullable(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().nullish().describe('Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.'),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))
@@ -1097,6 +1309,7 @@ export const GetStaffAssignmentOptionsQueryParams = zod.object({
   "doctorId": zod.coerce.string().optional().describe('Existing doctor being edited.'),
   "userId": zod.coerce.string().optional().describe('Existing receptionist being edited.')
 })
+
 
 
 export const getStaffAssignmentOptionsResponseBranchesItemOneTimezoneDefault = `Asia/Kolkata`;
@@ -1157,6 +1370,7 @@ export const listPatientsQueryPageSizeDefault = 20;
 export const listPatientsQueryPageSizeMax = 100;
 
 
+
 export const ListPatientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -1172,6 +1386,7 @@ export const listPatientsResponseOneTotalMin = 0;
 
 export const listPatientsResponseTwoItemsItemOneAgeMin = 0;
 export const listPatientsResponseTwoItemsItemOneAgeMax = 130;
+
 
 
 export const ListPatientsResponse = zod.object({
@@ -1202,8 +1417,10 @@ export const ListPatientsResponse = zod.object({
 }))
 
 
+
 export const createPatientBodyAgeMin = 0;
 export const createPatientBodyAgeMax = 130;
+
 
 
 export const CreatePatientBody = zod.object({
@@ -1224,6 +1441,7 @@ export const CreatePatientBody = zod.object({
 
 export const createPatientResponseOneAgeMin = 0;
 export const createPatientResponseOneAgeMax = 130;
+
 
 
 export const CreatePatientResponse = zod.object({
@@ -1257,6 +1475,7 @@ export const getPatientResponseOneAgeMin = 0;
 export const getPatientResponseOneAgeMax = 130;
 
 
+
 export const GetPatientResponse = zod.object({
   "fullName": zod.string().min(1),
   "mobile": zod.string(),
@@ -1288,6 +1507,7 @@ export const updatePatientBodyAgeMin = 0;
 export const updatePatientBodyAgeMax = 130;
 
 
+
 export const UpdatePatientBody = zod.object({
   "fullName": zod.string().min(1),
   "mobile": zod.string(),
@@ -1306,6 +1526,7 @@ export const UpdatePatientBody = zod.object({
 
 export const updatePatientResponseOneAgeMin = 0;
 export const updatePatientResponseOneAgeMax = 130;
+
 
 
 export const UpdatePatientResponse = zod.object({
@@ -1346,6 +1567,7 @@ export const listMastersQueryPageSizeDefault = 20;
 export const listMastersQueryPageSizeMax = 100;
 
 
+
 export const ListMastersQueryParams = zod.object({
   "category": zod.coerce.string().optional(),
   "parentId": zod.coerce.string().optional(),
@@ -1357,6 +1579,9 @@ export const ListMastersQueryParams = zod.object({
 })
 
 export const listMastersResponseOneTotalMin = 0;
+
+
+
 
 
 export const ListMastersResponse = zod.object({
@@ -1377,6 +1602,10 @@ export const ListMastersResponse = zod.object({
 }))
 
 
+
+
+
+
 export const CreateMasterBody = zod.object({
   "category": zod.enum(['country', 'state', 'city', 'area', 'pincode', 'clinicType', 'clinicCategory', 'clinicStatus', 'specialization', 'qualification', 'department', 'consultationType', 'appointmentStatus', 'appointmentType', 'bookingSource', 'cancellationReason', 'queueStatus', 'tokenPrefix', 'queueType', 'queuePriority', 'userRole', 'userStatus']),
   "name": zod.string().min(1),
@@ -1385,6 +1614,9 @@ export const CreateMasterBody = zod.object({
   "sortOrder": zod.number().int().optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
+
+
+
 
 
 export const CreateMasterResponse = zod.object({
@@ -1404,6 +1636,9 @@ export const GetMasterParams = zod.object({
 })
 
 
+
+
+
 export const GetMasterResponse = zod.object({
   "category": zod.enum(['country', 'state', 'city', 'area', 'pincode', 'clinicType', 'clinicCategory', 'clinicStatus', 'specialization', 'qualification', 'department', 'consultationType', 'appointmentStatus', 'appointmentType', 'bookingSource', 'cancellationReason', 'queueStatus', 'tokenPrefix', 'queueType', 'queuePriority', 'userRole', 'userStatus']),
   "name": zod.string().min(1),
@@ -1421,6 +1656,9 @@ export const UpdateMasterParams = zod.object({
 })
 
 
+
+
+
 export const UpdateMasterBody = zod.object({
   "category": zod.enum(['country', 'state', 'city', 'area', 'pincode', 'clinicType', 'clinicCategory', 'clinicStatus', 'specialization', 'qualification', 'department', 'consultationType', 'appointmentStatus', 'appointmentType', 'bookingSource', 'cancellationReason', 'queueStatus', 'tokenPrefix', 'queueType', 'queuePriority', 'userRole', 'userStatus']),
   "name": zod.string().min(1),
@@ -1429,6 +1667,9 @@ export const UpdateMasterBody = zod.object({
   "sortOrder": zod.number().int().optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
+
+
+
 
 
 export const UpdateMasterResponse = zod.object({
@@ -1456,6 +1697,7 @@ export const listSchedulesQueryPageSizeDefault = 20;
 export const listSchedulesQueryPageSizeMax = 100;
 
 
+
 export const ListSchedulesQueryParams = zod.object({
   "doctorId": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -1472,6 +1714,7 @@ export const listSchedulesResponseTwoItemsItemOneDayOfWeekMax = 6;
 export const listSchedulesResponseTwoItemsItemOneStartTimeRegExp = new RegExp('^[0-2][0-9]:[0-5][0-9]$');
 export const listSchedulesResponseTwoItemsItemOneTimezoneDefault = `Asia/Kolkata`;
 export const listSchedulesResponseTwoItemsItemOneTokenPrefixMax = 8;
+
 
 
 export const listSchedulesResponseTwoItemsItemOneBufferMinutesDefault = 0;
@@ -1519,6 +1762,7 @@ export const createScheduleBodyTimezoneDefault = `Asia/Kolkata`;
 export const createScheduleBodyTokenPrefixMax = 8;
 
 
+
 export const createScheduleBodyBufferMinutesDefault = 0;
 export const createScheduleBodyBufferMinutesMin = 0;
 
@@ -1550,6 +1794,7 @@ export const createScheduleResponseOneDayOfWeekMax = 6;
 export const createScheduleResponseOneStartTimeRegExp = new RegExp('^[0-2][0-9]:[0-5][0-9]$');
 export const createScheduleResponseOneTimezoneDefault = `Asia/Kolkata`;
 export const createScheduleResponseOneTokenPrefixMax = 8;
+
 
 
 export const createScheduleResponseOneBufferMinutesDefault = 0;
@@ -1595,6 +1840,7 @@ export const updateScheduleBodyTimezoneDefault = `Asia/Kolkata`;
 export const updateScheduleBodyTokenPrefixMax = 8;
 
 
+
 export const updateScheduleBodyBufferMinutesDefault = 0;
 export const updateScheduleBodyBufferMinutesMin = 0;
 
@@ -1626,6 +1872,7 @@ export const updateScheduleResponseOneDayOfWeekMax = 6;
 export const updateScheduleResponseOneStartTimeRegExp = new RegExp('^[0-2][0-9]:[0-5][0-9]$');
 export const updateScheduleResponseOneTimezoneDefault = `Asia/Kolkata`;
 export const updateScheduleResponseOneTokenPrefixMax = 8;
+
 
 
 export const updateScheduleResponseOneBufferMinutesDefault = 0;
@@ -1672,6 +1919,7 @@ export const listAvailabilityExceptionsQueryPageSizeDefault = 20;
 export const listAvailabilityExceptionsQueryPageSizeMax = 100;
 
 
+
 export const ListAvailabilityExceptionsQueryParams = zod.object({
   "doctorId": zod.coerce.string().optional(),
   "branchId": zod.coerce.string().optional(),
@@ -1682,6 +1930,8 @@ export const ListAvailabilityExceptionsQueryParams = zod.object({
 })
 
 export const listAvailabilityExceptionsResponseOneTotalMin = 0;
+
+
 
 
 export const ListAvailabilityExceptionsResponse = zod.object({
@@ -1706,6 +1956,9 @@ export const ListAvailabilityExceptionsResponse = zod.object({
 }))
 
 
+
+
+
 export const CreateAvailabilityExceptionBody = zod.object({
   "doctorId": zod.string(),
   "branchId": zod.string(),
@@ -1718,6 +1971,8 @@ export const CreateAvailabilityExceptionBody = zod.object({
   "breakEnd": zod.string().nullish(),
   "maxTokens": zod.number().int().min(1).nullish()
 })
+
+
 
 
 export const CreateAvailabilityExceptionResponse = zod.object({
@@ -1741,6 +1996,8 @@ export const UpdateAvailabilityExceptionParams = zod.object({
 })
 
 
+
+
 export const UpdateAvailabilityExceptionBody = zod.object({
   "doctorId": zod.string(),
   "branchId": zod.string(),
@@ -1753,6 +2010,8 @@ export const UpdateAvailabilityExceptionBody = zod.object({
   "breakEnd": zod.string().nullish(),
   "maxTokens": zod.number().int().min(1).nullish()
 })
+
+
 
 
 export const UpdateAvailabilityExceptionResponse = zod.object({
@@ -1784,6 +2043,7 @@ export const listAppointmentsQueryPageSizeDefault = 20;
 export const listAppointmentsQueryPageSizeMax = 100;
 
 
+
 export const ListAppointmentsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -1803,6 +2063,7 @@ export const ListAppointmentsQueryParams = zod.object({
 export const listAppointmentsResponseOneTotalMin = 0;
 
 export const listAppointmentsResponseTwoItemsItemOneNotesMax = 1000;
+
 
 
 export const ListAppointmentsResponse = zod.object({
@@ -1857,6 +2118,7 @@ export const ListAppointmentsResponse = zod.object({
 export const createAppointmentBodyNotesMax = 1000;
 
 
+
 export const CreateAppointmentBody = zod.object({
   "patientId": zod.string(),
   "doctorId": zod.string(),
@@ -1873,6 +2135,7 @@ export const CreateAppointmentBody = zod.object({
 })
 
 export const createAppointmentResponseOneNotesMax = 1000;
+
 
 
 export const CreateAppointmentResponse = zod.object({
@@ -1920,6 +2183,7 @@ export const GetAppointmentParams = zod.object({
 })
 
 export const getAppointmentResponseOneNotesMax = 1000;
+
 
 
 export const GetAppointmentResponse = zod.object({
@@ -1981,11 +2245,13 @@ export const GetAppointmentQrResponse = zod.object({
  */
 
 
+
 export const ResolveAppointmentQrBody = zod.object({
   "payload": zod.string().min(1)
 })
 
 export const resolveAppointmentQrResponseAppointmentOneNotesMax = 1000;
+
 
 
 export const ResolveAppointmentQrResponse = zod.object({
@@ -2038,11 +2304,13 @@ export const ResolveAppointmentQrResponse = zod.object({
  */
 
 
+
 export const CheckInAppointmentQrBody = zod.object({
   "payload": zod.string().min(1)
 })
 
 export const checkInAppointmentQrResponseAppointmentOneNotesMax = 1000;
+
 
 
 export const CheckInAppointmentQrResponse = zod.object({
@@ -2111,6 +2379,7 @@ export const TransitionAppointmentBody = zod.object({
 export const transitionAppointmentResponseOneNotesMax = 1000;
 
 
+
 export const TransitionAppointmentResponse = zod.object({
   "patientId": zod.string(),
   "doctorId": zod.string(),
@@ -2162,6 +2431,7 @@ export const GetQueueQueryParams = zod.object({
 })
 
 export const getQueueResponseEntriesItemOneNotesMax = 1000;
+
 
 
 export const GetQueueResponse = zod.object({
@@ -2237,6 +2507,7 @@ export const CallNextBody = zod.object({
 export const callNextResponseAppointmentOneOneNotesMax = 1000;
 
 
+
 export const CallNextResponse = zod.object({
   "appointment": zod.union([zod.object({
   "patientId": zod.string(),
@@ -2285,6 +2556,7 @@ export const listQrsQueryPageSizeDefault = 20;
 export const listQrsQueryPageSizeMax = 100;
 
 
+
 export const ListQrsQueryParams = zod.object({
   "clinicId": zod.coerce.string().optional(),
   "branchId": zod.coerce.string().optional(),
@@ -2295,6 +2567,7 @@ export const ListQrsQueryParams = zod.object({
 })
 
 export const listQrsResponseOneTotalMin = 0;
+
 
 
 export const ListQrsResponse = zod.object({
@@ -2421,6 +2694,7 @@ export const GetDashboardQueryParams = zod.object({
 export const getDashboardResponseRecentAppointmentsItemOneNotesMax = 1000;
 
 
+
 export const GetDashboardResponse = zod.object({
   "totalDoctors": zod.number().int().optional(),
   "totalClinics": zod.number().int().optional(),
@@ -2528,6 +2802,7 @@ export const listAuditLogsQueryPageSizeDefault = 20;
 export const listAuditLogsQueryPageSizeMax = 100;
 
 
+
 export const ListAuditLogsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "entityType": zod.coerce.string().optional(),
@@ -2540,6 +2815,7 @@ export const ListAuditLogsQueryParams = zod.object({
 })
 
 export const listAuditLogsResponseOneTotalMin = 0;
+
 
 
 export const ListAuditLogsResponse = zod.object({
@@ -2574,6 +2850,7 @@ export const getSettingsResponseOneOtpExpirySecondsMax = 900;
 export const getSettingsResponseOneOtpMaxAttemptsMax = 10;
 
 export const getSettingsResponseOneSessionTimeoutMinutesMin = 5;
+
 
 
 export const GetSettingsResponse = zod.object({
@@ -2612,6 +2889,7 @@ export const updateSettingsBodyOtpMaxAttemptsMax = 10;
 export const updateSettingsBodySessionTimeoutMinutesMin = 5;
 
 
+
 export const UpdateSettingsBody = zod.object({
   "platformName": zod.string().optional(),
   "supportEmail": zod.string().email().optional(),
@@ -2641,6 +2919,7 @@ export const updateSettingsResponseOneOtpMaxAttemptsMax = 10;
 export const updateSettingsResponseOneSessionTimeoutMinutesMin = 5;
 
 
+
 export const UpdateSettingsResponse = zod.object({
   "platformName": zod.string(),
   "supportEmail": zod.string().email().optional(),
@@ -2663,60 +2942,3 @@ export const UpdateSettingsResponse = zod.object({
 }))
 
 
-export const OnboardClinicAdminResponse = zod.object({
-  "admin": zod.object({
-  "fullName": zod.string().min(1),
-  "email": zod.string().email(),
-  "mobile": zod.string().optional(),
-  "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
-  "status": zod.enum(['active', 'inactive']),
-  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
-  "branchIds": zod.array(zod.string())
-}).and(zod.object({
-  "id": zod.string(),
-  "clerkId": zod.string().nullable(),
-  "createdAt": zod.coerce.date(),
-  "lastLoginAt": zod.coerce.date().nullish()
-})),
-  "clinic": zod.object({
-  "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
-  "name": zod.string().min(1),
-  "address": zod.string(),
-  "country": zod.string().optional(),
-  "state": zod.string().optional(),
-  "city": zod.string().optional(),
-  "area": zod.string().optional(),
-  "pincode": zod.string().optional(),
-  "phone": zod.string().optional(),
-  "email": zod.string().email().optional(),
-  "description": zod.string().optional(),
-  "clinicTypeId": zod.string().optional(),
-  "categoryId": zod.string().optional(),
-  "status": zod.enum(['active', 'inactive'])
-}).and(zod.object({
-  "id": zod.string(),
-  "code": zod.string(),
-  "createdAt": zod.coerce.date(),
-  "doctorCount": zod.number().int().optional(),
-  "branchCount": zod.number().int().optional()
-}))
-})
-
-export const OnboardClinicAdminBody = zod.object({
-  "admin": zod.object({
-  "fullName": zod.string().min(1),
-  "email": zod.string().email(),
-  "mobile": zod.string().optional()
-}),
-  "clinic": zod.object({
-  "name": zod.string().min(1),
-  "code": zod.string().optional(),
-  "phone": zod.string().optional(),
-  "email": zod.string().email().optional(),
-  "address": zod.string(),
-  "city": zod.string().optional(),
-  "state": zod.string().optional(),
-  "pincode": zod.string().optional(),
-  "timezone": zod.string().default(onboardClinicAdminBodyClinicTimezoneDefault)
-})
-})

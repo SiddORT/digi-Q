@@ -16,6 +16,30 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface AuthEmailInput {
+  /** @maxLength 254 */
+  email: string;
+}
+
+export interface AuthEmailResult {
+  email: string;
+}
+
+export interface StaffPasswordInput {
+  /**
+     * @minLength 1
+     * @maxLength 1024
+     */
+  password: string;
+}
+
+export interface AuthStatus {
+  /** @nullable */
+  role: string | null;
+  staffPasswordVerified: boolean;
+  requiresStaffPassword: boolean;
+}
+
 export interface ApiError {
   error: string;
   code?: string;
@@ -132,6 +156,11 @@ export type User = UserInput & ({
   /** @nullable */
   managingAdminName: string | null;
   invitationStatus: UserInvitationStatus;
+  /**
+     * Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.
+     * @nullable
+     */
+  passwordEnabled?: boolean | null;
   /** @nullable */
   createdAt: string | null;
   /** @nullable */
@@ -145,6 +174,11 @@ export type User = UserInput & ({
   /** @nullable */
   managingAdminName: string | null;
   invitationStatus: UserInvitationStatus;
+  /**
+     * Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable.
+     * @nullable
+     */
+  passwordEnabled?: boolean | null;
   /** @nullable */
   createdAt: string | null;
   /** @nullable */
@@ -167,39 +201,25 @@ export type ClinicAdminOnboardingInputAdmin = {
   email: string;
   mobile?: string;
 };
-export interface OtpRequest {
-  /** @pattern ^\+[1-9][0-9]{7,14}$ */
-  mobile: string;
+
+export type ClinicAdminOnboardingInputClinic = {
+  /** @minLength 1 */
+  name: string;
+  code?: string;
+  phone?: string;
+  email?: string;
+  address: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  timezone?: string;
+};
+
+export interface ClinicAdminOnboardingInput {
+  admin: ClinicAdminOnboardingInputAdmin;
+  clinic: ClinicAdminOnboardingInputClinic;
 }
 
-export type OtpChallengeProvider = typeof OtpChallengeProvider[keyof typeof OtpChallengeProvider];
-
-
-export const OtpChallengeProvider = {
-  sms: 'sms',
-  development: 'development',
-} as const;
-
-export interface OtpChallenge {
-  challengeId: string;
-  expiresAt: string;
-  resendAfterSeconds: number;
-  provider: OtpChallengeProvider;
-  /** Returned only by the explicitly enabled development provider when NODE_ENV=development. Never present in production. */
-  developmentCode?: string;
-}
-
-export interface OtpVerification {
-  challengeId: string;
-  /** @pattern ^[0-9]{4,8}$ */
-  code: string;
-}
-
-export interface OtpResult {
-  verified: boolean;
-  mobile: string;
-  verifiedAt?: string;
-}
 export interface ClinicInput {
   /** Super admins may select the owning clinic administrator; other roles are assigned by the server. */
   adminId?: string;
@@ -241,6 +261,41 @@ export interface ClinicAdminOnboardingResult {
   admin: User;
   clinic: Clinic;
 }
+
+export interface OtpRequest {
+  /** @pattern ^\+[1-9][0-9]{7,14}$ */
+  mobile: string;
+}
+
+export type OtpChallengeProvider = typeof OtpChallengeProvider[keyof typeof OtpChallengeProvider];
+
+
+export const OtpChallengeProvider = {
+  sms: 'sms',
+  development: 'development',
+} as const;
+
+export interface OtpChallenge {
+  challengeId: string;
+  expiresAt: string;
+  resendAfterSeconds: number;
+  provider: OtpChallengeProvider;
+  /** Returned only by the explicitly enabled development provider when NODE_ENV=development. Never present in production. */
+  developmentCode?: string;
+}
+
+export interface OtpVerification {
+  challengeId: string;
+  /** @pattern ^[0-9]{4,8}$ */
+  code: string;
+}
+
+export interface OtpResult {
+  verified: boolean;
+  mobile: string;
+  verifiedAt?: string;
+}
+
 export interface BranchInput {
   clinicId: string;
   /** @minLength 1 */
@@ -1196,21 +1251,3 @@ page?: PageParameter;
 pageSize?: PageSizeParameter;
 };
 
-
-export type ClinicAdminOnboardingInputClinic = {
-  /** @minLength 1 */
-  name: string;
-  code?: string;
-  phone?: string;
-  email?: string;
-  address: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  timezone?: string;
-};
-
-export interface ClinicAdminOnboardingInput {
-  admin: ClinicAdminOnboardingInputAdmin;
-  clinic: ClinicAdminOnboardingInputClinic;
-}

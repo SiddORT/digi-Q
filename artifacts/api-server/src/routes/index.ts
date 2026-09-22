@@ -8,11 +8,13 @@ import { queueRouter } from "./queue";
 import { reportingRouter } from "./reporting";
 import otpRouter from "./otp";
 import { appointmentQrRouter } from "./appointment-qr";
+import { authRouter } from "./auth";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(publicRouter);
+router.use(authRouter);
 router.use(identityRouter);
 router.use(otpRouter);
 router.use(resourcesRouter);

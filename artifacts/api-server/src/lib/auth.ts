@@ -1,11 +1,51 @@
 import type { Request } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
-import { db, users, doctors, patients, assignments, branches, clinics, appointments } from "@workspace/db";
-import { eq } from "drizzle-orm";
-import { assert } from "./http";
+import { db, users, doctors, patients, assignments, branches, clinics, appointments, staffSessionProofs } from "@workspace/db";
+import { and, eq, gt } from "drizzle-orm";
+import { assert, HttpError } from "./http";
 import { all, flatten, one, uid } from "./store";
+export const STAFF_ROLES = ["superAdmin", "clinicAdmin", "doctor", "receptionist"] as const;
+export function isStaffRole(role: string | null | undefined): boolean {
+  return Boolean(role && STAFF_ROLES.includes(role as (typeof STAFF_ROLES)[number]));
+}
 export function requireIdentity(req: Request): string {
   const id = getAuth(req).userId; assert(id, 401, "Sign in required"); return id;
+}
+export function requireSessionIdentity(req: Request) {
+  const auth = getAuth(req);
+  if (!auth.userId || !auth.sessionId) throw new HttpError(401, "Sign in required", "SIGN_IN_REQUIRED");
+  return { clerkId: auth.userId, sessionId: auth.sessionId, sessionClaims: auth.sessionClaims };
+}
+export async function hasStaffSessionProof(sessionId: string, clerkUserId: string): Promise<boolean> {
+  const [proof] = await db.select({ sessionId: staffSessionProofs.sessionId }).from(staffSessionProofs).where(and(
+    eq(staffSessionProofs.sessionId, sessionId),
+    eq(staffSessionProofs.clerkUserId, clerkUserId),
+    gt(staffSessionProofs.expiresAt, new Date()),
+  ));
+  return Boolean(proof);
+}
+export async function requireStaffSessionProof(req: Request): Promise<void> {
+  const { clerkId, sessionId } = requireSessionIdentity(req);
+  if (!await hasStaffSessionProof(sessionId, clerkId)) {
+    throw new HttpError(403, "Staff password verification is required", "STAFF_PASSWORD_REQUIRED");
+  }
+}
+export async function authoritativeStaffSessionExpiry(
+  sessionId: string,
+  clerkUserId: string,
+  now = Date.now(),
+): Promise<Date> {
+  const session = await clerkClient.sessions.getSession(sessionId);
+  if (
+    session.id !== sessionId ||
+    session.userId !== clerkUserId ||
+    session.status !== "active" ||
+    !Number.isFinite(session.expireAt) ||
+    session.expireAt <= now
+  ) {
+    throw new HttpError(401, "Session is not active", "SESSION_INVALID");
+  }
+  return new Date(session.expireAt);
 }
 export async function findUser(clerkId: string) {
   let [row] = await db.select().from(users).where(eq(users.clerkId, clerkId));
@@ -29,7 +69,14 @@ export async function findUser(clerkId: string) {
   return { ...user, mobile: user.mobile || "", managingAdminId: user.role === "doctor" ? doctor?.ownerAdminId || null : user.managingAdminId || null, clinicIds: [...new Set(links.map(a => a.clinicId))], branchIds: [...new Set(links.filter(a => a.branchId).map(a => a.branchId))], doctorId: doctor?.id || null, patientId: patient?.id || null };
 }
 export async function requireUser(req: Request) {
-  const user = await findUser(requireIdentity(req)); assert(user, 403, "Complete onboarding first"); assert(user.status === "active", 403, "Account inactive"); return user;
+  const user = await findUser(requireIdentity(req));
+  assert(user, 403, "Complete onboarding first");
+  assert(user.status === "active", 403, "Account inactive");
+  // A signed Clerk session proves identity but not which factor created it. Staff
+  // access therefore requires a server-side proof produced only by Clerk's
+  // verifyPassword API and bound to this signed session ID.
+  if (isStaffRole(user.role)) await requireStaffSessionProof(req);
+  return user;
 }
 export function roles(user: any, allowed: string[]) { assert(allowed.includes(user.role), 403, "Permission denied"); }
 export function scope(user: any, clinicId?: string | null, branchId?: string | null) {

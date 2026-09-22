@@ -10,7 +10,7 @@ const directory = await mkdtemp(join(tmpdir(), "clinicflow-audit-"));
 const root = resolve(import.meta.dirname);
 process.env.SESSION_SECRET = "unit-test-only-appointment-qr-secret";
 mock.timers.enable({apis:["Date"],now:Date.UTC(2030,0,7,12)});
-const tables = ["appointments", "patients", "appointmentHistory", "doctors", "clinics", "branches", "masters", "schedules", "availabilityExceptions", "assignments", "users", "qrs", "auditLogs", "settings", "otpChallenges"];
+const tables = ["appointments", "patients", "appointmentHistory", "doctors", "clinics", "branches", "masters", "schedules", "availabilityExceptions", "assignments", "users", "qrs", "auditLogs", "settings", "otpChallenges", "staffSessionProofs"];
 const fixture = `
 export const state = { rows: {}, config: {}, actor: null, clerk: {} };
 export const reset = () => {
@@ -19,9 +19,26 @@ export const reset = () => {
   state.clerk = {
     users: [],
     invitations: [],
+     sessions: new Map(),
     getUserList: async () => ({data:[]}),
+     getSession: async id => {
+       const session = state.clerk.sessions.get(id);
+       if (!session) throw Object.assign(new Error("Session not found"), {status:404});
+       return session;
+     },
+    getUser: async id => state.clerk.users.find(user => user.id === id) || {id,passwordEnabled:false},
+    getInvitationList: async ({query,status} = {}) => ({
+      data: state.clerk.invitations.filter(invitation =>
+        (!query || invitation.emailAddress === query) && (!status || invitation.status === status)),
+    }),
+    revokeInvitation: async id => {
+      const invitation=state.clerk.invitations.find(item => item.id === id);
+      if (!invitation || invitation.status !== "pending") throw new Error("Invitation is not pending");
+      invitation.status="revoked";
+      return invitation;
+    },
     createInvitation: async input => {
-      const invitation={id:"inv-"+crypto.randomUUID(),...input};
+      const invitation={id:"inv-"+crypto.randomUUID(),status:"pending",...input};
       state.clerk.invitations.push(invitation);
       return invitation;
     },
@@ -71,12 +88,20 @@ await build({
         if (a.path === "@clerk/express") return {contents:`
           import {state} from "audit-fixture";
           export const clerkClient = {
-            users:{getUserList:value=>state.clerk.getUserList(value)},
-            invitations:{createInvitation:value=>state.clerk.createInvitation(value)},
+            users:{
+              getUserList:value=>state.clerk.getUserList(value),
+              getUser:value=>state.clerk.getUser(value),
+            },
+             sessions:{getSession:id=>state.clerk.getSession(id)},
+            invitations:{
+              getInvitationList:value=>state.clerk.getInvitationList(value),
+              createInvitation:value=>state.clerk.createInvitation(value),
+              revokeInvitation:value=>state.clerk.revokeInvitation(value),
+            },
           };
           export const getAuth = () => ({});
         `};
-        if (a.path === "drizzle-orm") return {contents:"export const eq = (field,value) => ({field,value}); export const sql = (strings,...values) => ({strings,values});"};
+        if (a.path === "drizzle-orm") return {contents:"export const eq = (field,value) => ({field,value}); export const gt = (field,value) => ({field,value,operator:'gt'}); export const and = (...conditions) => ({conditions}); export const sql = (strings,...values) => ({strings,values});"};
         return {contents: `
           import {state,all} from "audit-fixture";
           ${tables.map(t => `export const ${t} = {name:"${t}",id:"id",status:"status",clinicId:"clinicId",branchId:"branchId",doctorId:"doctorId",publicReference:"publicReference"};`).join("\n")}
@@ -159,7 +184,13 @@ async function route(router, method, path, body = {}, query = {}, params = {}) {
   const layer = router.stack.find(l => l.route?.path === path && l.route.methods[method]);
   let result;
   const res = {status(){return this;},json(value){result=value;return this;}};
-  await layer.route.stack[0].handle({body,query,params},res);
+  await layer.route.stack[0].handle({
+    body,query,params,
+    get(name) {
+      if (name.toLowerCase() === "origin") return "https://clinicflow.example";
+      if (["host","x-forwarded-host"].includes(name.toLowerCase())) return "clinicflow.example";
+    },
+  },res);
   return result;
 }
 const book = body => route(api.appointmentsRouter,"post","/appointments",body);
@@ -457,14 +488,23 @@ test("concurrent invitation retries serialize per user and remain sent", async (
   let active=0, maximum=0, calls=0;
   api.state.clerk.createInvitation=async input => {
     calls++; active++; maximum=Math.max(maximum,active);
-    assert.equal(input.ignoreExisting,true);
+    assert.equal(input.ignoreExisting,false);
+    assert.equal(input.redirectUrl,"https://clinicflow.example/set-password");
+    assert.equal(input.expiresInDays,7);
     await new Promise(resolve=>setTimeout(resolve,10));
     active--;
-    return {id:"existing-or-new"};
+    const invitation={id:"inv-"+calls,emailAddress:input.emailAddress,status:"pending"};
+    api.state.clerk.invitations.push(invitation);
+    return invitation;
   };
-  await Promise.all([api.deliverInvitation("invitee"),api.deliverInvitation("invitee")]);
+  await Promise.all([
+    api.deliverInvitation("invitee","https://clinicflow.example/set-password"),
+    api.deliverInvitation("invitee","https://clinicflow.example/set-password"),
+  ]);
   assert.equal(calls,2);
   assert.equal(maximum,1);
+  assert.equal(api.state.clerk.invitations.filter(invitation=>invitation.status==="pending").length,1);
+  assert.equal(api.state.clerk.invitations.filter(invitation=>invitation.status==="revoked").length,1);
   assert.equal(api.state.rows.users.find(user=>user.id==="invitee").invitationStatus,"sent");
 });
 test("invitation outcomes are idempotent and identity conflicts remain 409", async () => {
@@ -475,7 +515,7 @@ test("invitation outcomes are idempotent and identity conflicts remain 409", asy
     id:"clerk-existing",
     emailAddresses:[{emailAddress:"INVITEE@example.com",verification:{status:"verified"}}],
   }]});
-  await assert.rejects(api.deliverInvitation("invitee"),error=>error.status===409 && /already has a profile/.test(error.message));
+  await assert.rejects(api.deliverInvitation("invitee","https://clinicflow.example/set-password"),error=>error.status===409 && /already has a profile/.test(error.message));
   target=api.state.rows.users.find(user=>user.id==="invitee");
   assert.equal(target.invitationStatus,"sent");
 
@@ -488,10 +528,11 @@ test("invitation outcomes are idempotent and identity conflicts remain 409", asy
   let invitations=0;
   api.state.clerk.createInvitation=async input => {
     invitations++;
-    assert.equal(input.ignoreExisting,true);
+    assert.equal(input.ignoreExisting,false);
+    assert.equal(input.redirectUrl,"https://clinicflow.example/set-password");
     return {id:"existing-invitation"};
   };
-  await api.deliverInvitation("invitee");
+  await api.deliverInvitation("invitee","https://clinicflow.example/set-password");
   assert.equal(invitations,1);
   assert.equal(target.clerkId,undefined);
   assert.equal(target.invitationStatus,"sent");
@@ -500,7 +541,7 @@ test("invitation outcomes are idempotent and identity conflicts remain 409", asy
     id:"verified-identity",
     emailAddresses:[{emailAddress:"invitee@example.com",verification:{status:"verified"}}],
   }]});
-  await api.deliverInvitation("invitee");
+  await api.deliverInvitation("invitee","https://clinicflow.example/set-password");
   assert.equal(invitations,1);
   assert.equal(target.clerkId,"verified-identity");
   assert.equal(target.invitationStatus,"notRequired");
@@ -508,8 +549,25 @@ test("invitation outcomes are idempotent and identity conflicts remain 409", asy
   target.clerkId=undefined;
   api.state.clerk.getUserList=async()=>({data:[]});
   api.state.clerk.createInvitation=async()=>{ throw new Error("provider unavailable"); };
-  await api.deliverInvitation("invitee");
+  await api.deliverInvitation("invitee","https://clinicflow.example/set-password");
   assert.equal(target.invitationStatus,"failed");
+});
+test("staff resource reports Clerk password state without guessing on provider failure", async () => {
+  seed();
+  api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
+  Object.assign(api.state.rows.users.find(user=>user.id==="du"),{clerkId:"clerk-password",email:"doctor@example.com"});
+  Object.assign(api.state.rows.users.find(user=>user.id==="admin"),{clerkId:"clerk-passwordless",email:"admin@example.com"});
+  api.state.clerk.users=[
+    {id:"clerk-password",passwordEnabled:true},
+    {id:"clerk-passwordless",passwordEnabled:false},
+  ];
+  let result=await route(api.resourcesRouter,"get","/users");
+  assert.equal(result.items.find(user=>user.id==="du").passwordEnabled,true);
+  assert.equal(result.items.find(user=>user.id==="admin").passwordEnabled,false);
+
+  api.state.clerk.getUser=async()=>{ throw new Error("provider unavailable"); };
+  result=await route(api.resourcesRouter,"get","/users");
+  assert.equal(result.items.find(user=>user.id==="du").passwordEnabled,null);
 });
 test("Super Admin onboarding atomically persists the new Clinic Admin's first clinic scope", async () => {
   seed();
@@ -561,4 +619,27 @@ test("schedule overlap compares real instants across timezones and closed except
   assert.equal(api.sessionsOverlap(india,"2030-01-07",london,"2030-01-07"),true);
   assert.equal(api.sessionsOverlap(india,"2030-01-07",{...london,startTime:"05:00",endTime:"06:00"},"2030-01-07"),false);
   assert.equal(api.sessionsOverlap(india,"2030-01-07",{...london,isClosed:true},"2030-01-07"),false);
+});
+test("staff proof follows Clerk session expiry across access-token refreshes", async () => {
+  api.reset();
+  const now = Date.now();
+  const originalJwtExpiry = now - 60_000;
+  const clerkSessionExpiry = now + 30 * 60_000;
+  api.state.clerk.sessions.set("sess-staff", {
+    id:"sess-staff", userId:"clerk-staff", status:"active", expireAt:clerkSessionExpiry,
+  });
+  assert.ok(originalJwtExpiry < now, "the original access-token JWT is already expired");
+  const expiresAt = await api.authoritativeStaffSessionExpiry("sess-staff","clerk-staff",now);
+  assert.equal(expiresAt.getTime(),clerkSessionExpiry);
+});
+test("staff proof rejects a Clerk session belonging to another user", async () => {
+  api.reset();
+  const now = Date.now();
+  api.state.clerk.sessions.set("sess-staff", {
+    id:"sess-staff", userId:"different-clerk-user", status:"active", expireAt:now + 30 * 60_000,
+  });
+  await assert.rejects(
+    () => api.authoritativeStaffSessionExpiry("sess-staff","clerk-staff",now),
+    error => error.status === 401 && error.code === "SESSION_INVALID",
+  );
 });

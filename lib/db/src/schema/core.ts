@@ -98,3 +98,12 @@ export const otpChallenges = pgTable("otp_challenges", {
   codeHash: text("code_hash").notNull(), expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   attempts: integer("attempts").notNull().default(0), consumedAt: timestamp("consumed_at", { withTimezone: true }), createdAt: created(),
 }, t => [index("otp_user_idx").on(t.userId, t.createdAt)]);
+export const staffSessionProofs = pgTable("staff_session_proofs", {
+  sessionId: text("session_id").primaryKey(),
+  clerkUserId: text("clerk_user_id").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: created(),
+}, t => [
+  index("staff_session_proof_user_idx").on(t.clerkUserId),
+  index("staff_session_proof_expiry_idx").on(t.expiresAt),
+]);

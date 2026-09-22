@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { assignmentTargetRole, staffInput, type StaffTab } from "./staff-input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
-import { Search, Plus, Pencil, Trash2, X, Send } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, X, Send, KeyRound } from "lucide-react";
 import { Link } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { ErrorNotice, Empty, title } from "./resources";
@@ -154,8 +154,8 @@ export function Users({ identity }: { identity: api.Identity }) {
 
       {(!isDoctor) && (
         <section className="panel padded" style={{ marginBottom: 20 }}>
-          <h3>Account recovery</h3>
-          <p className="muted">Select a {tab.replace(/s$/, "")} to request secure recovery instructions.</p>
+          <h3>Account recovery assistance</h3>
+          <p className="muted">Select a linked staff account to view the secure Clerk recovery steps. This action does not send an email.</p>
           <div className="inline-form">
             <select aria-label="User for password recovery" value={recoveryId} onChange={e => { setRecoveryId(e.target.value); recovery.reset(); }}>
               <option value="">Select user from this page…</option>
@@ -163,15 +163,15 @@ export function Users({ identity }: { identity: api.Identity }) {
                 <option key={u.id} value={tab === "doctors" ? u.userId : u.id}>{u.fullName} · {u.email}</option>
               ))}
             </select>
-            <button disabled={!recoveryId || recovery.isPending} onClick={() => recovery.mutate({ id: recoveryId })}>
-              {recovery.isPending ? "Requesting…" : "Request recovery"}
+            <button disabled={!recoveryId || recovery.isPending} onClick={() => recovery.mutate({ id: recoveryId })} data-testid="button-password-help">
+              {recovery.isPending ? "Loading…" : "Get recovery steps"}
             </button>
           </div>
           <ErrorNotice error={recovery.error} />
           {recovery.data && (
             <div className="notice">
               <p>{recovery.data.message}</p>
-              <Link href="/sign-in" className="text-link">Open secure sign-in</Link>
+              <Link href="/forgot-password" className="text-link">Open secure password recovery</Link>
             </div>
           )}
         </section>
@@ -211,18 +211,29 @@ export function Users({ identity }: { identity: api.Identity }) {
                         {row.branchNames ? (Array.isArray(row.branchNames) ? row.branchNames.join(", ") : row.branchNames) : "—"}
                       </td>
                       <td>
-                        {row.invitationStatus === "notRequired" ? (row.clerkId ? <span className="muted">Linked</span> : "—") :
-                         row.invitationStatus === "sent" ? <span className="badge active">Sent</span> :
-                         row.invitationStatus === "failed" ? <span className="badge inactive" style={{color: "var(--color-danger)"}}>Failed</span> : "—"}
+                        {row.invitationStatus === "notRequired" ? (row.clerkId ? (
+                          row.passwordEnabled === true ? <span className="badge active">Password set</span> :
+                          row.passwordEnabled === false ? <span className="badge inactive">Needs password setup</span> :
+                          <span className="muted">Linked · state unavailable</span>
+                        ) : "—") :
+                          row.invitationStatus === "sent" ? <span className="badge active" title="Invitation sent; account has not linked yet">Pending setup</span> :
+                          row.invitationStatus === "failed" ? <span className="badge inactive" style={{color: "var(--color-danger)"}}>Delivery failed</span> : "—"}
                       </td>
                       <td><span className={`badge ${row.status}`}>{title(row.status || "")}</span></td>
                       <td>{row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "—"}</td>
                       <td>
                         <div className="row-actions">
-                          {row.invitationStatus === "failed" && (
-                            <button aria-label="Resend invitation" disabled={resendInvitation.isPending} onClick={() => {
-                              if (confirm("Resend the invitation email to this user?")) resendInvitation.mutate({ id: tab === "doctors" ? row.userId : row.id });
+                          {row.invitationStatus !== "notRequired" && (
+                            <button aria-label="Resend set-password invitation" data-testid={`button-resend-invitation-${row.id}`} disabled={resendInvitation.isPending} onClick={() => {
+                              if (confirm("Revoke any pending invitation and send a new set-password invitation?")) resendInvitation.mutate({ id: tab === "doctors" ? row.userId : row.id });
                             }}><Send size={15} /></button>
+                          )}
+                          {!isDoctor && row.invitationStatus === "notRequired" && (
+                            <button aria-label="Password recovery assistance" data-testid={`button-password-help-${row.id}`} disabled={recovery.isPending} onClick={() => {
+                              const id = tab === "doctors" ? row.userId : row.id;
+                              setRecoveryId(id);
+                              recovery.mutate({ id });
+                            }}><KeyRound size={15} /></button>
                           )}
                           <button aria-label="Edit" onClick={() => setEditing(row)}><Pencil size={15} /></button>
                           <button aria-label="Delete or deactivate" disabled={remove.isPending} onClick={() => {

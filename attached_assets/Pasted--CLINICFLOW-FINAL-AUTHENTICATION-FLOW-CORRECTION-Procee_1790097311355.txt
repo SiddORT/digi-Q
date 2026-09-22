@@ -1,0 +1,612 @@
+# CLINICFLOW — FINAL AUTHENTICATION FLOW CORRECTION
+
+Proceed with the authentication implementation, but DO NOT change the existing ClinicFlow business logic, role/clinic/branch mappings, appointment workflows, queue, QR functionality, dashboards, or any other functionality.
+
+The only purpose of this task is to correctly implement the authentication experience for Staff users versus Patients.
+
+## 1. FINAL AUTHENTICATION RULE
+
+ClinicFlow has two completely different authentication flows.
+
+### STAFF USERS
+
+The following roles are Staff:
+
+- Super Admin
+- Clinic Admin
+- Doctor
+- Receptionist
+
+Staff users MUST authenticate using:
+
+**Email Address + Password**
+
+Staff users MUST NOT use the Patient Email OTP login flow.
+
+### PATIENT USERS
+
+Patients MUST authenticate using:
+
+**Email Address + OTP**
+
+Patients do NOT need to create or maintain a password.
+
+Do not apply the staff password/invitation flow to Patients.
+
+---
+
+# 2. DO NOT REPLACE CLERK
+
+Continue using the existing Clerk authentication implementation.
+
+Do not introduce another authentication provider.
+
+Do not create a second authentication system unless it is absolutely required by the existing Clerk architecture.
+
+First inspect the current Clerk implementation and existing authentication code.
+
+Reuse the existing Clerk configuration and SDK wherever possible.
+
+The objective is to correctly separate the application flows by role without breaking the existing system.
+
+---
+
+# 3. STAFF INVITATION FLOW
+
+Whenever any of the following users is created:
+
+- Clinic Admin
+- Doctor
+- Receptionist
+
+the system already captures their email address.
+
+After the user is successfully created and the required role + clinic/branch mapping is successfully persisted:
+
+1. Send an invitation email to the user's email address.
+2. The email must clearly state that the user has been invited to ClinicFlow.
+3. Clearly mention their role:
+   - Admin
+   - Doctor
+   - Receptionist
+4. Mention the clinic/clinic(s) they have been associated with where appropriate.
+5. Provide a secure link:
+   **Set Your Password**
+6. The link should take the user to the ClinicFlow password setup page.
+7. The user sets their password.
+8. Password setup must be completed successfully before the account can use normal staff login.
+9. After successful password setup, redirect the user to the Staff Login page.
+10. The user logs in using:
+    - Email
+    - Newly created password
+11. After successful authentication, redirect the user to the correct dashboard based on their role.
+
+Do not automatically log the user into the application after setting the password unless the existing Clerk flow requires it and it is secure.
+
+The expected UX should be simple and predictable:
+
+**Invitation Email → Set Password → Staff Login → Role Dashboard**
+
+---
+
+# 4. STAFF LOGIN
+
+Create/maintain a clear Staff Login experience.
+
+Staff login should request:
+
+- Email
+- Password
+
+Do not show Email OTP as the normal staff login option.
+
+After successful authentication:
+
+- Super Admin → Super Admin workspace
+- Clinic Admin → Admin workspace
+- Doctor → Doctor workspace
+- Receptionist → Receptionist workspace
+
+Use the existing role resolution and authorization system.
+
+Do not duplicate or redefine the existing role model.
+
+---
+
+# 5. PATIENT LOGIN
+
+Patients are different.
+
+Patient authentication MUST remain:
+
+**Enter Email → Send OTP → Verify OTP → Login**
+
+Patients should NOT be asked to:
+
+- Create a password
+- Set a password
+- Reset a password
+- Use staff invitation links
+
+Do not apply the staff password onboarding flow to Patients.
+
+The patient should be able to enter their email address, receive the OTP, verify it, and enter the Patient experience.
+
+---
+
+# 6. VERY IMPORTANT — ROLE-BASED AUTHENTICATION SEPARATION
+
+Do not rely only on hiding/showing different buttons or screens.
+
+The application must enforce the role-specific authentication flow server-side as well.
+
+Before initiating the Patient OTP flow:
+
+- Resolve the ClinicFlow user associated with the email.
+- If that account belongs to:
+  - Super Admin
+  - Clinic Admin
+  - Doctor
+  - Receptionist
+
+then DO NOT initiate the Patient OTP login flow for that account.
+
+Show a clear message such as:
+
+"This account is registered as a staff account. Please use Staff Login with your email and password."
+
+Likewise, staff login must authenticate using the password flow.
+
+Do not allow a Staff account to be accidentally treated as a Patient account simply because the same email address was entered into a patient login screen.
+
+The application must determine the user's ClinicFlow role from the authoritative user record.
+
+Do not trust a role supplied by the browser/client.
+
+---
+
+# 7. IMPORTANT CLERK CONSTRAINT
+
+The current Clerk configuration supports both Email OTP and Password authentication, but Clerk's normal session information does not by itself provide a reliable application-level distinction that should be treated as "this session was created using password" versus "this session was created using email OTP."
+
+Therefore:
+
+DO NOT implement an insecure check such as:
+
+- checking only whether a user has a password
+- checking only the frontend login page used
+- trusting a client-side flag saying "password login"
+- storing an untrusted authentication-method value in local storage
+- assuming the authentication method based only on the URL
+
+Instead, enforce the role-specific authentication entry points and server-side authorization.
+
+If the current Clerk setup provides a documented and secure mechanism to distinguish the authentication method, use it.
+
+If it does not, do NOT invent or simulate such a mechanism.
+
+The most important security rule remains:
+
+**Staff roles must only be granted Staff application access through the Staff authentication flow, and Patient OTP must not be offered to Staff accounts.**
+
+---
+
+# 8. SET PASSWORD LINK
+
+The invitation/set-password link must be:
+
+- Secure
+- Single-purpose
+- Time-limited/expiring
+- Invalid after successful password setup
+- Invalid after being revoked/replaced
+- Not reusable indefinitely
+- Not expose the user's password
+- Not contain sensitive information unnecessarily
+
+Use Clerk's supported password setup/reset mechanisms wherever possible.
+
+Do not create a custom password storage mechanism.
+
+Passwords must never be stored in the ClinicFlow database in plaintext.
+
+---
+
+# 9. EXPIRED INVITATION / SET-PASSWORD LINK
+
+If the original invitation/set-password link expires:
+
+the user should see a clear message that the link has expired.
+
+They should not be stuck.
+
+Provide the appropriate option to request/send a new set-password link.
+
+The new link must invalidate or supersede the previous invitation where appropriate.
+
+---
+
+# 10. RESET PASSWORD
+
+Super Admin and Clinic Admin must have the ability to initiate password reset assistance for applicable Staff users according to their existing authorization scope.
+
+Where the current system already has the user management table/actions:
+
+provide an action such as:
+
+**Reset Password / Send Reset Password Link**
+
+The reset flow should use Clerk's supported password reset functionality.
+
+Do not create or store passwords inside ClinicFlow.
+
+---
+
+# 11. RESEND SET-PASSWORD INVITATION
+
+Super Admin and authorized Clinic Admin users should also have the ability to resend the initial:
+
+**Set Your Password**
+
+invitation to applicable Staff users.
+
+This is different from a password reset.
+
+Support both concepts where appropriate:
+
+### Set Password Invitation
+Used when the Staff user has never completed initial password setup.
+
+### Reset Password
+Used when the Staff user already has an account/password and needs to change it.
+
+Do not confuse these two flows.
+
+---
+
+# 12. STAFF ACCOUNT STATES
+
+Handle Staff account lifecycle clearly.
+
+At minimum, the application should correctly handle:
+
+- Invited / password not yet configured
+- Active
+- Password reset requested
+- Inactive/deactivated
+
+Do not allow an incomplete invited account to bypass the intended onboarding flow.
+
+Do not break existing user activation/deactivation functionality.
+
+---
+
+# 13. ROLE SECURITY
+
+After authentication, continue using the existing ClinicFlow role authorization.
+
+Authentication and authorization are separate:
+
+Authentication:
+"Who is this user?"
+
+Authorization:
+"What is this user allowed to access?"
+
+Do not grant access merely because authentication succeeded.
+
+Continue enforcing:
+
+- Super Admin permissions
+- Clinic Admin permissions
+- Doctor permissions
+- Receptionist permissions
+- Patient permissions
+
+using the existing server-side authorization logic.
+
+---
+
+# 14. DO NOT CHANGE CLINIC / BRANCH / USER MAPPING
+
+This task MUST NOT change the previously implemented ClinicFlow ownership and mapping rules.
+
+Keep these rules exactly as they currently are:
+
+- One Clinic → Exactly one Clinic Admin
+- One Clinic Admin → Many Clinics
+- One Clinic → Many Doctors
+- One Clinic → Many Receptionists
+- One Doctor → Many Clinics
+- One Receptionist → Many Clinics
+- One Receptionist → Many Branches
+- One Branch → Exactly one Clinic
+
+A Doctor or Receptionist can only be mapped to clinics owned/mapped to their Admin.
+
+If an Admin owns multiple clinics, the Admin can map a Doctor or Receptionist to multiple of those clinics.
+
+The Doctor/Receptionist must never be mapped to a clinic outside their Admin's clinic ownership scope.
+
+If Doctor X creates a new Clinic and Admin A is the Clinic Admin/owner associated with Doctor X:
+
+- New Clinic → Doctor X automatically mapped
+- New Clinic → Admin A automatically mapped as its single Clinic Admin
+
+Do not change any of these rules.
+
+---
+
+# 15. DO NOT CHANGE USER MANAGEMENT STRUCTURE
+
+Do not undo or redesign the existing simplified user-management approach.
+
+The intended structure is:
+
+- Admins
+- Doctors
+- Receptionists
+
+Patients remain separate.
+
+Do not bring Patients into the Staff user creation/invitation flow.
+
+---
+
+# 16. EMAIL CONTENT
+
+The Staff invitation email should be professional and simple.
+
+Example structure:
+
+Subject:
+**You've been invited to ClinicFlow**
+
+Body:
+
+Hello [Name],
+
+You have been invited to join ClinicFlow as a [Role].
+
+Clinic:
+[Clinic Name]
+
+Please click the button below to set your password and activate your account.
+
+[Set Your Password]
+
+After setting your password, you can sign in to ClinicFlow using your email address and password.
+
+Regards,
+ClinicFlow
+
+Use the actual assigned clinic information from the database.
+
+Do not fabricate clinic names.
+
+---
+
+# 17. PATIENT EMAIL OTP
+
+Patient OTP emails should remain separate from Staff invitation emails.
+
+Patient flow:
+
+**Patient enters email**
+→
+**System verifies/creates patient account as appropriate**
+→
+**OTP sent**
+→
+**Patient enters OTP**
+→
+**OTP verified**
+→
+**Patient logged in**
+
+Do not send patients password setup emails.
+
+---
+
+# 18. EXISTING PATIENT ACCOUNT BEHAVIOUR
+
+Do not break existing patient functionality.
+
+Preserve:
+
+- Patient master creation
+- First-login patient creation
+- Appointment booking
+- Clinic selection
+- Branch selection
+- Doctor selection
+- Session/availability selection
+- Appointment number
+- Appointment QR
+- Clinic QR
+- Check-in
+- Queue
+- Existing/follow-up patient identification
+
+Authentication changes must not alter these workflows.
+
+---
+
+# 19. DO NOT BREAK EXISTING SYSTEM
+
+Before making changes:
+
+1. Inspect the existing authentication implementation.
+2. Inspect the Clerk configuration.
+3. Inspect the user database model.
+4. Inspect role resolution.
+5. Inspect invitation/user creation logic.
+6. Inspect existing login routes.
+7. Inspect existing middleware/server authorization.
+8. Inspect patient OTP implementation.
+9. Inspect all existing user-management screens.
+
+Then implement the smallest safe change required.
+
+Do not rewrite unrelated functionality.
+
+Do not replace working ClinicFlow features.
+
+---
+
+# 20. IMPORTANT — DO NOT MAKE UNSUPPORTED CLERK ASSUMPTIONS
+
+If Clerk cannot support a specific requirement exactly through its documented APIs/configuration:
+
+STOP before implementing an insecure workaround.
+
+Do not:
+
+- create fake authentication-method claims
+- trust browser/local-storage flags
+- store passwords yourself
+- bypass Clerk security
+- create an insecure parallel authentication system
+- weaken authorization
+
+Instead, identify the exact limitation and explain it.
+
+However, first determine whether the requirement can be achieved by controlling the application authentication entry points and role authorization while continuing to use Clerk.
+
+---
+
+# 21. TEST THE COMPLETE FLOWS
+
+After implementation, test all of the following.
+
+### Staff Invitation
+
+- Create Admin
+- Invitation email generated
+- Set-password link works
+- Password created
+- Login using email + password
+- Correct Admin dashboard opens
+
+### Doctor
+
+- Create Doctor
+- Invitation email generated
+- Set password
+- Login using email + password
+- Correct Doctor dashboard opens
+- Doctor's clinic access is correct
+
+### Receptionist
+
+- Create Receptionist
+- Invitation email generated
+- Set password
+- Login using email + password
+- Correct Receptionist dashboard opens
+- Clinic/branch access is correct
+
+### Patient
+
+- Enter patient email
+- Receive OTP
+- Verify OTP
+- Login successfully
+- No password required
+- Existing patient workflow remains intact
+
+### Security
+
+Test that:
+
+- Staff email cannot be used through the Patient OTP flow.
+- Patient cannot access Staff dashboards.
+- Doctor cannot access Admin-only functionality.
+- Receptionist cannot access Doctor/Admin-only functionality.
+- Clinic Admin cannot access another Admin's clinics.
+- Clinic mappings remain correctly enforced.
+- Browser/client cannot manipulate the role.
+- Logout works.
+- Refresh works.
+- Expired invitation links fail safely.
+- Used invitation links cannot be reused.
+- Password reset works.
+- Resend invitation works.
+
+---
+
+# 22. NO REGRESSION
+
+After authentication changes, verify that these continue working:
+
+- Login/logout
+- Role routing
+- User creation
+- User invitations
+- Clinic creation
+- Branch creation
+- Clinic mapping
+- Branch mapping
+- Doctor mapping
+- Receptionist mapping
+- Availability
+- Appointments
+- QR codes
+- Queue
+- Check-in
+- Patient master
+- Dashboards
+- Notifications
+- Existing data
+
+Do not declare completion until the full regression check has passed.
+
+---
+
+# 23. FINAL IMPLEMENTATION PRINCIPLE
+
+Keep the authentication experience extremely simple:
+
+### Staff
+
+**Invitation Email**
+→
+**Set Password**
+→
+**Staff Login**
+→
+**Email + Password**
+→
+**Role Dashboard**
+
+### Patient
+
+**Patient Login**
+→
+**Email**
+→
+**OTP**
+→
+**Patient Dashboard**
+
+There should be no unnecessary authentication complexity visible to the user.
+
+Most importantly:
+
+**Do not change anything outside this authentication requirement.**
+
+Preserve all existing ClinicFlow functionality, data, mappings, business rules, QR workflows, queue workflows, appointment workflows and UI unless a small change is strictly necessary to make this authentication flow work correctly.
+
+Before finishing, verify there are:
+
+- No broken flows
+- No dead buttons
+- No incorrect redirects
+- No authentication loops
+- No role leakage
+- No clinic/branch access leakage
+- No duplicate users
+- No duplicate invitations
+- No reusable expired links
+- No insecure password handling
+- No logical gaps

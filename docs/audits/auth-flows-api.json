@@ -1,0 +1,926 @@
+{
+  "suite": "auth-flows-live-audit",
+  "status": "cleaned",
+  "generatedAt": "2026-09-22T17:58:40.696Z",
+  "marker": "CF-AUTH-20260922172911-bff641a9",
+  "baseUrl": "http://localhost:80/api",
+  "privateManifestPath": "/tmp/clinicflow-auth-flows-audit.json",
+  "privateManifestMode": "0600",
+  "summary": {
+    "passed": 104,
+    "failed": 1
+  },
+  "completedUnits": [
+    "setup-01-super-bootstrap",
+    "setup-02-staff-identities",
+    "setup-03-app-owned-scope",
+    "setup-04-reserved-patient",
+    "setup-04b-api-patient",
+    "setup-05-non-delivery-invitation",
+    "setup-06-mapping-baseline",
+    "run-01-entry-separation",
+    "run-02-session-proof",
+    "run-03-patient-and-role-authorization",
+    "run-04-invariance",
+    "run-05-clinical-regression",
+    "run-01b-corrected-limiter-negative"
+  ],
+  "providerFeasibility": {
+    "completedAt": "2026-09-22T17:24:39.000Z",
+    "reservedPasswordlessUserCreated": true,
+    "passwordDisabled": true,
+    "emailInitiallyUnverified": true,
+    "fixtureDeleted": true
+  },
+  "evidence": [
+    {
+      "unit": "setup-01-super-bootstrap",
+      "name": "superAdmin establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Create Clinic Admin and first clinic through guarded app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/clinic-admin-onboarding",
+      "status": 201
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "clinicAdmin establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Clinic Admin creates second owned clinic through app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/clinics",
+      "status": 201
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Create scoped Branch A through app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/branches",
+      "status": 201
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Create scoped Branch B through app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/branches",
+      "status": 201
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Create Doctor with both owned clinics through app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/doctors",
+      "status": 201
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Create Receptionist with both owned branches through app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/users",
+      "status": 201
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Create inactive-state probe through app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/users",
+      "status": 201
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Create linked passwordless staff recovery fixture through app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/users",
+      "status": 201
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Recovery fixture links the owned Clerk identity",
+      "outcome": "pass",
+      "detail": "The app profile is linked to the exact passwordless development identity."
+    },
+    {
+      "unit": "setup-03-app-owned-scope",
+      "name": "Deactivate fixture staff through app API",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "PATCH",
+      "route": "/users/67f6a14f-4230-4180-832f-0a0650db2ac6",
+      "status": 200
+    },
+    {
+      "unit": "setup-04-reserved-patient",
+      "name": "Reserved patient has no password",
+      "outcome": "pass",
+      "detail": "Clerk reports passwordEnabled false."
+    },
+    {
+      "unit": "setup-04-reserved-patient",
+      "name": "Reserved patient awaits real email-code verification",
+      "outcome": "pass",
+      "detail": "The provider identity remains reserved/unverified until Clerk's email-code factor is completed."
+    },
+    {
+      "unit": "setup-04b-api-patient",
+      "name": "Patient first-login onboarding remains available",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/onboarding",
+      "status": 201
+    },
+    {
+      "unit": "setup-05-non-delivery-invitation",
+      "name": "Non-delivery invitation fixture created",
+      "outcome": "pass",
+      "detail": "Clerk accepted an invitation with notify:false. This is link/state evidence only; no mailbox delivery is claimed."
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Unauthenticated auth status is denied",
+      "outcome": "pass",
+      "detail": "Expected 401 and received 401.",
+      "method": "GET",
+      "route": "/auth/status",
+      "status": 401
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Unauthenticated identity is denied",
+      "outcome": "pass",
+      "detail": "Expected 401 and received 401.",
+      "method": "GET",
+      "route": "/me",
+      "status": 401
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Patient entry accepts reserved OTP patient",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/patient-entry",
+      "status": 200
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Patient entry rejects superAdmin",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/auth/patient-entry",
+      "status": 403
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Staff entry accepts superAdmin",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-entry",
+      "status": 200
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Patient entry rejects clinicAdmin",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/auth/patient-entry",
+      "status": 403
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Staff entry accepts clinicAdmin",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-entry",
+      "status": 200
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Patient entry rejects doctor",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/auth/patient-entry",
+      "status": 403
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Staff entry accepts doctor",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-entry",
+      "status": 200
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Patient entry rejects receptionist",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/auth/patient-entry",
+      "status": 403
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Staff entry accepts receptionist",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-entry",
+      "status": 200
+    },
+    {
+      "unit": "run-01-entry-separation",
+      "name": "Staff entry rejects reserved OTP patient",
+      "outcome": "fail",
+      "detail": "Checkpoint retained: the original global 10-per-10-minute IP bucket blocked the final negative after all preceding entry assertions passed. It is not retried.",
+      "method": "POST",
+      "route": "/auth/staff-entry",
+      "status": 429
+    },
+    {
+      "unit": "browser-fixture-refresh",
+      "name": "clinicAdmin establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "browser-fixture-refresh",
+      "name": "Create scoped invited Receptionist through authorized app API",
+      "outcome": "pass",
+      "detail": "Expected 201 and received 201.",
+      "method": "POST",
+      "route": "/users",
+      "status": 201
+    },
+    {
+      "unit": "browser-fixture-refresh",
+      "name": "Latest invited Receptionist ticket is non-delivery",
+      "outcome": "pass",
+      "detail": "The app profile is persisted and every older pending ticket was revoked before storing a fresh notify:false URL privately."
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "superAdmin direct Clerk session has auth status",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/auth/status",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "superAdmin direct session lacks proof",
+      "outcome": "pass",
+      "detail": "Status requires a session-bound staff password proof."
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "superAdmin direct Clerk session cannot access /me",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "superAdmin wrong password is rejected",
+      "outcome": "pass",
+      "detail": "Expected 401 and received 401.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 401
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "superAdmin correct password establishes proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "superAdmin proof is reported",
+      "outcome": "pass",
+      "detail": "Auth status reports the expected role and verified session proof."
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "superAdmin proof survives token refresh in the same session",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "superAdmin proof does not transfer to a new Clerk session",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "clinicAdmin direct Clerk session has auth status",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/auth/status",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "clinicAdmin direct session lacks proof",
+      "outcome": "pass",
+      "detail": "Status requires a session-bound staff password proof."
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "clinicAdmin direct Clerk session cannot access /me",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "clinicAdmin wrong password is rejected",
+      "outcome": "pass",
+      "detail": "Expected 401 and received 401.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 401
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "clinicAdmin correct password establishes proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "clinicAdmin proof is reported",
+      "outcome": "pass",
+      "detail": "Auth status reports the expected role and verified session proof."
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "clinicAdmin proof survives token refresh in the same session",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "clinicAdmin proof does not transfer to a new Clerk session",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "doctor direct Clerk session has auth status",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/auth/status",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "doctor direct session lacks proof",
+      "outcome": "pass",
+      "detail": "Status requires a session-bound staff password proof."
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "doctor direct Clerk session cannot access /me",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "doctor wrong password is rejected",
+      "outcome": "pass",
+      "detail": "Expected 401 and received 401.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 401
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "doctor correct password establishes proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "doctor proof is reported",
+      "outcome": "pass",
+      "detail": "Auth status reports the expected role and verified session proof."
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "doctor proof survives token refresh in the same session",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "doctor proof does not transfer to a new Clerk session",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "receptionist direct Clerk session has auth status",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/auth/status",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "receptionist direct session lacks proof",
+      "outcome": "pass",
+      "detail": "Status requires a session-bound staff password proof."
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "receptionist direct Clerk session cannot access /me",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "receptionist wrong password is rejected",
+      "outcome": "pass",
+      "detail": "Expected 401 and received 401.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 401
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "receptionist correct password establishes proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "receptionist proof is reported",
+      "outcome": "pass",
+      "detail": "Auth status reports the expected role and verified session proof."
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "receptionist proof survives token refresh in the same session",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "receptionist proof does not transfer to a new Clerk session",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "Inactive staff cannot establish proof",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 403
+    },
+    {
+      "unit": "run-02-session-proof",
+      "name": "Inactive staff cannot access /me",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/me",
+      "status": 403
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Patient auth status resolves",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/auth/status",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Patient never requires staff password proof",
+      "outcome": "pass",
+      "detail": "Patient status remains independent of the staff proof flow."
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Patient accesses /me",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/me",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Patient onboarding identity is preserved",
+      "outcome": "pass",
+      "detail": "The original patient user and patient master remain linked."
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Patient cannot enter staff verification",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 403
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Patient cannot access staff assignment APIs",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/staff-assignment-options?targetRole=receptionist",
+      "status": 403
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "superAdmin establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "clinicAdmin establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "doctor establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "receptionist establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Super Admin reaches platform settings API",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/settings",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Clinic Admin reaches owned clinic API",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/clinics?pageSize=100",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Clinic Admin dashboard identity has both owned clinics",
+      "outcome": "pass",
+      "detail": "Both fixture clinic IDs are visible."
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Doctor reaches own dashboard identity API",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/doctors/1daa7f1e-c699-4244-800b-d60867336b64",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Doctor dashboard identity is exact",
+      "outcome": "pass",
+      "detail": "Doctor profile and app user remain linked."
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Doctor cannot access platform audit logs",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/audit-logs?pageSize=1",
+      "status": 403
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Receptionist cannot access platform audit logs",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "GET",
+      "route": "/audit-logs?pageSize=1",
+      "status": 403
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Receptionist reaches scoped operational API",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments?pageSize=1",
+      "status": 200
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Clinic Admin can initiate supported recovery instructions for linked passwordless staff",
+      "outcome": "pass",
+      "detail": "Expected 202 and received 202.",
+      "method": "POST",
+      "route": "/users/d5f3e1db-c15e-4569-9e0d-95a06a524d4f/password-reset",
+      "status": 202
+    },
+    {
+      "unit": "run-03-patient-and-role-authorization",
+      "name": "Recovery response directs to Clerk secure flow",
+      "outcome": "pass",
+      "detail": "The endpoint returns the supported Clerk forgot-password path without credentials or a server-generated password."
+    },
+    {
+      "unit": "run-04-invariance",
+      "name": "Authentication leaves role and clinic mappings invariant",
+      "outcome": "pass",
+      "detail": "Clinic ownership, branches, staff assignments, and Doctor ownership exactly match the post-setup snapshot."
+    },
+    {
+      "unit": "run-04-invariance",
+      "name": "Patient master remains intact",
+      "outcome": "pass",
+      "detail": "Authentication checks did not recreate or alter patient identity linkage."
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "doctor establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "receptionist establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Reload verified patient mobile checkpoint",
+      "outcome": "pass",
+      "detail": "The live patient master retains successful mobile verification."
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Reload guarded Doctor availability checkpoint",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/schedules/bda7d5d3-37dc-4bc0-801a-5d25c1d5e6dc",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Mismatched cross-clinic branch availability is rejected",
+      "outcome": "pass",
+      "detail": "Expected 400/403/409 and received 400.",
+      "method": "POST",
+      "route": "/schedules",
+      "status": 400
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Reload signed booking QR resource",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/qrs/0e4202a1-c636-4931-b4b4-0e92b6926572",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Mismatched cross-clinic appointment branch is rejected",
+      "outcome": "pass",
+      "detail": "Expected 400/403/409 and received 400.",
+      "method": "POST",
+      "route": "/appointments",
+      "status": 400
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Patient reads own clinical appointment",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/appointments/6a4dd597-f6a3-4834-ac42-ff6a543dc495",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Owned clinical booking mapping is exact",
+      "outcome": "pass",
+      "detail": "The retained appointment maps the fixture Patient, Doctor, Clinic A, and Branch A exactly."
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Clinical journey reaches completed",
+      "outcome": "pass",
+      "detail": "Availability, booking, signed QR check-in, queue, and consultation state transitions completed once."
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Persisted clinical history proves QR and queue journey",
+      "outcome": "pass",
+      "detail": "Appointment history contains checked-in, waiting, called, in-consultation, and completed transitions."
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Receptionist reads scoped queue",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/queue?doctorId=1daa7f1e-c699-4244-800b-d60867336b64&branchId=edcf37a5-7cbd-4e98-a42d-43aee76c48d9&date=2026-09-22",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Doctor reads scoped dashboard",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/dashboard",
+      "status": 200
+    },
+    {
+      "unit": "run-05-clinical-regression",
+      "name": "Receptionist reads scoped report",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "GET",
+      "route": "/reports",
+      "status": 200
+    },
+    {
+      "unit": "browser-fixture-refresh",
+      "name": "clinicAdmin establishes session-bound password proof",
+      "outcome": "pass",
+      "detail": "Expected 200 and received 200.",
+      "method": "POST",
+      "route": "/auth/staff-verify",
+      "status": 200
+    },
+    {
+      "unit": "browser-fixture-refresh",
+      "name": "Latest invited Receptionist ticket is non-delivery",
+      "outcome": "pass",
+      "detail": "The app profile is persisted and every older pending ticket was revoked before storing a fresh notify:false URL privately."
+    },
+    {
+      "unit": "run-01b-corrected-limiter-negative",
+      "name": "Corrected limiter permits authoritative patient-to-staff rejection",
+      "outcome": "pass",
+      "detail": "Expected 403 and received 403.",
+      "method": "POST",
+      "route": "/auth/staff-entry",
+      "status": 403
+    },
+    {
+      "unit": "run-01b-corrected-limiter-negative",
+      "name": "Historical limiter failure remains provenance only",
+      "outcome": "pass",
+      "detail": "The pre-restart 429 is retained unchanged; this separate post-restart request reached role enforcement and returned 403."
+    }
+  ],
+  "fatal": null,
+  "cleanup": {
+    "completedAt": "2026-09-22T17:58:40.696Z",
+    "preExistingSnapshotRestoredExactly": true,
+    "markerRowsRemaining": 0,
+    "providerFixturesRemoved": true,
+    "manifestRemoved": true
+  },
+  "truthfulLimitations": [
+    "The notify:false Clerk invitation is provider state/link evidence only. No mailbox delivery is claimed.",
+    "The API runner did not simulate browser OTP verification. The parent-observed browser pass completed real Clerk development email-code verification and patient onboarding.",
+    "The guarded clinical regression uses only this suite's owned fixture graph; the separate ownership runner and its manifest are never reused.",
+    "No authentication method is faked; API requests use real Clerk development sessions and the live staff password verification endpoint.",
+    "Patient browser OTP and onboarding passed. Staff browser login is not yet claimed because the genuine tenant required Clerk Device Trust (needs_client_trust) after the verified password."
+  ],
+  "browserReadiness": {
+    "patientOtpAndOnboarding": "passed-in-parent-browser",
+    "staffLogin": "not-yet-passed-needs_client_trust",
+    "invitation": "revoked-or-consumed-and-provider-fixture-removed",
+    "invitationUrlStoredOnlyInPrivateManifest": false,
+    "passwordResetProviderCheck": "Before cleanup, Clerk reported passwordEnabled true for recoveryStaff and every ordinary password staff fixture."
+  }
+}

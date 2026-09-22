@@ -50,6 +50,13 @@
       "when": 1790087798000,
       "tag": "0006_safe_staff_manager_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790097311355,
+      "tag": "0007_staff_session_proofs",
+      "breakpoints": true
     }
   ]
 }
