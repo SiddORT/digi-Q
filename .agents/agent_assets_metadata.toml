@@ -14,3 +14,17 @@ mtime_ms = 1790065696365
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/0a3bdcad-69db-4496-bca0-6094a7de093c/ddd1dc41-eff6-41ab-b920-f04336b18c21"
 storage_version_token = "1790065706315194"
 content_type = "text/html"
+
+[[outputs]]
+id = "pVHa9eU5hUiNs-atq9VT3"
+uri = "file://docs/ClinicFlow-System-Documentation.pdf"
+type = "pdf"
+title = "ClinicFlow — Complete Documentation (PDF)"
+description = "Direct-download, 97-page A4 PDF containing the complete system documentation and full API contract. No print button required."
+logical_id = "a98a078d-4eb4-4a0e-a8e1-15ff4de7d043"
+content_hash = "sha256:1d256ec9fd33aa5e5cc87ce2397db88b96846d26f7ebff26be960667cb00cea5"
+size = 2147581
+mtime_ms = 1790065843976
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/a98a078d-4eb4-4a0e-a8e1-15ff4de7d043/14ef70f8-c954-4f37-81ee-7a6823d44803"
+storage_version_token = "1790065860716387"
+content_type = "application/pdf"
