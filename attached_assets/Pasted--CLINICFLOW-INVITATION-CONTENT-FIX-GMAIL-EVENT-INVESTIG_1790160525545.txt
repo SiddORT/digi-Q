@@ -1,0 +1,239 @@
+# CLINICFLOW — INVITATION CONTENT FIX + GMAIL EVENT INVESTIGATION
+
+The controlled Development delivery test has now established that Clerk can successfully deliver a ClinicFlow invitation email to a real Gmail mailbox.
+
+Do NOT modify the authentication architecture.
+
+Do NOT change:
+
+- Staff email + password authentication
+- Patient email + OTP authentication
+- Device Trust
+- CAPTCHA
+- OTP configuration
+- Password configuration
+- Clerk email verification settings
+- Invitation expiry defaults globally
+- Production Clerk settings
+
+Do NOT resend the original Outlook invitation.
+
+Do NOT revoke the original Outlook invitation.
+
+---
+
+# PART A — INVESTIGATE THE GMAIL `invitation.accepted` EVENT
+
+The controlled Gmail invitation:
+
+- was created at approximately 23 September 2026, 3:46:58 PM IST
+- was received successfully
+- has a 7-day expiry
+- currently appears as `pending`
+- has no matching Clerk user
+
+However, Clerk logs show:
+
+`invitation.accepted`
+23 September 2026, 3:56:57.551 PM IST
+
+Perform a READ-ONLY investigation.
+
+Determine:
+
+1. What exactly does Clerk mean by `invitation.accepted`?
+2. What action caused this event?
+3. Does opening/clicking the invitation link trigger `invitation.accepted`?
+4. Does `invitation.accepted` necessarily mean:
+   - a Clerk user was created?
+   - password was set?
+   - onboarding completed?
+5. Why can the invitation resource still show `pending`?
+6. Is this expected Clerk behaviour or an inconsistency?
+7. Is there any evidence that the Gmail test user actually completed account creation?
+
+Do not create a user.
+
+Do not accept the invitation again.
+
+Do not click the invitation link.
+
+Do not modify anything.
+
+Return the documented/observed explanation only.
+
+---
+
+# PART B — FIX INVITATION METADATA
+
+We have confirmed a separate code defect.
+
+Current invitation metadata contains:
+
+`clinicFlowRole: "receptionist"`
+
+but:
+
+`clinicFlowClinicNames: []`
+
+No branch information is included.
+
+Investigation already established that:
+
+`artifacts/api-server/src/lib/entities.ts`
+
+derives clinic IDs and branch IDs, not clinic names.
+
+The invitation helper currently reads `enriched.clinicNames`, which therefore becomes an empty array.
+
+A separate function:
+
+`projectAssignmentScope()`
+
+already derives the relevant assignment names.
+
+## Required implementation
+
+Update the invitation creation logic so that it resolves the actual clinic and branch names from the user's valid ClinicFlow assignments.
+
+For a receptionist invitation, the metadata should contain the actual assigned:
+
+- role
+- clinic name(s)
+- branch name(s)
+
+Do NOT derive these values from untrusted frontend input.
+
+Use the authenticated/server-side ClinicFlow assignment data.
+
+Do NOT change the underlying role/clinic/branch authorization model.
+
+Do NOT alter database mappings.
+
+Do NOT change how assignments themselves are stored.
+
+---
+
+# PART C — INVITATION EMAIL TEMPLATE
+
+The current Clerk invitation template only uses:
+
+- app.name
+- action_url
+- invitation.expires_in_days
+
+It does not currently render:
+
+- role
+- clinic
+- branch
+
+Update the invitation email template so that the recipient can clearly understand:
+
+1. They have been invited to ClinicFlow.
+2. Their assigned role.
+3. The clinic they are associated with.
+4. The branch they are associated with, where applicable.
+5. The invitation/set-password action.
+6. Invitation expiry.
+
+For the receptionist test case, the email should communicate information equivalent to:
+
+"You have been invited to ClinicFlow as a Receptionist for Sunshine Multispeciality Clinic — Baner Branch."
+
+Use the actual metadata values dynamically.
+
+Do not hard-code Sunshine Multispeciality Clinic or Baner Branch.
+
+---
+
+# PART D — DO NOT CHANGE DELIVERY MECHANISM
+
+Keep the existing Clerk invitation mechanism.
+
+Keep:
+
+`createInvitation()`
+
+Keep:
+
+`notify: true`
+
+Do not introduce SMTP.
+
+Do not introduce a custom email provider.
+
+Do not introduce a second invitation system.
+
+Do not use the experimental transactional email endpoint.
+
+---
+
+# PART E — VALIDATION
+
+Before implementation, show the exact files/functions that will be modified.
+
+Then implement only the required metadata/template changes.
+
+After implementation, verify:
+
+1. Existing authentication tests remain intact.
+2. Staff login remains email + password.
+3. Patient login remains email + OTP.
+4. Existing clinic/branch authorization remains intact.
+5. Existing pending Outlook invitation is NOT revoked or replaced.
+6. No additional invitation is sent automatically.
+7. No production Clerk settings are changed.
+
+For the invitation content test, do NOT automatically send another invitation.
+
+Instead, report:
+
+- metadata now generated
+- clinic names resolved
+- branch names resolved
+- template variables available
+- template content updated
+
+Then stop.
+
+Do not send another email until explicitly approved.
+
+---
+
+# FINAL REPORT
+
+Return:
+
+## A. Gmail accepted-event explanation
+
+- What `invitation.accepted` means
+- Why the invitation can still show pending
+- Whether a user was actually created
+- Whether onboarding occurred
+
+## B. Invitation metadata
+
+Before:
+- Role:
+- Clinic:
+- Branch:
+
+After:
+- Role:
+- Clinic:
+- Branch:
+
+## C. Template
+
+- Role displayed:
+- Clinic displayed:
+- Branch displayed:
+- Expiry displayed:
+- Set-password action displayed:
+
+## D. Changes
+
+List every file changed.
+
+Do not perform any additional unrelated changes.

@@ -33,8 +33,10 @@ The owner chose password-only staff login and reported disabling only Developmen
 
 **How to apply:** Preserve server-side password proof, authorization, session security, CAPTCHA, lockout and enumeration protection. Do not make additional tenant configuration changes. Verify actual staff browser login, not only backend proof, before declaring completion.
 
-Treat invitation creation, email dispatch, and inbox receipt as separate evidence.
+Treat invitation creation, email dispatch, inbox receipt, ticket processing, and completed signup as separate evidence.
 
 **Why:** Clerk returned a pending invitation with delivery enabled, but the recipient reported no receipt; the invitation response had no correlated email-delivery status. An omitted `notify` relies on Clerk's documented true default, not an explicitly recorded true field.
+
+A separate live observation produced an `invitation.accepted` client-API event while the invitation remained pending and no Clerk user or app profile existed. The destination processed the ticket on page load. Do not treat this event alone as proof of password setup or onboarding; the exact event/resource transition is not fully documented.
 
 **How to apply:** Never report a pending invitation or application `sent` state as delivered. Check live template delivery flags and seek message/quota/bounce evidence before attributing the failure. SDK absence does not establish API absence: Clerk's public OpenAPI still documented deprecated read-only template endpoints omitted from the installed SDK, and the template-list GET succeeded. Recheck current documentation before reuse.

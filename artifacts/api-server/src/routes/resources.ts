@@ -8,6 +8,7 @@ import { requireUser, roles, scope, scoped, canRead, projectAssignmentScope, set
 import { all, one, put, change, uid, audit, filtered, paginate } from "../lib/store";
 import { assert, parse, query } from "../lib/http";
 import { enrich } from "../lib/entities";
+import { invitationMetadata } from "../lib/invitation-metadata";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus } from "../lib/availability";
 const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs } = tables;
 export const resourcesRouter = Router();
@@ -171,15 +172,20 @@ export async function deliverInvitation(userId: string, redirectUrl?: string) {
         await clerkClient.invitations.revokeInvitation(invitation.id);
       }
       const enriched = await enrich("users", account, tx);
+      const metadata = invitationMetadata(
+        account.role,
+        enriched.clinicIds,
+        enriched.branchIds,
+        await all(clinics, tx),
+        await all(branches, tx),
+      );
       await clerkClient.invitations.createInvitation({
         emailAddress,
         expiresInDays: Math.min(30, Math.max(1, Number.parseInt(process.env.CLERK_INVITATION_EXPIRES_IN_DAYS || "7", 10) || 7)),
         ignoreExisting: false,
+        notify: true,
         ...(redirectUrl ? { redirectUrl } : {}),
-        publicMetadata: {
-          clinicFlowRole: account.role,
-          clinicFlowClinicNames: Array.isArray(enriched.clinicNames) ? enriched.clinicNames : [],
-        },
+        publicMetadata: metadata,
       });
     } catch {
       // A Clerk identity can be completed between the lookup and invitation call.
