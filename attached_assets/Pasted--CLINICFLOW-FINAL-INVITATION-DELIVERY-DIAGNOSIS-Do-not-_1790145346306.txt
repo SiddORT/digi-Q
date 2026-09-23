@@ -1,0 +1,134 @@
+# CLINICFLOW — FINAL INVITATION DELIVERY DIAGNOSIS
+
+Do not modify the existing invitation, resend it, revoke it, or change the authentication architecture yet.
+
+The investigation established:
+
+- Clerk invitation record exists
+- Recipient is correct
+- Role is correct
+- Clinic/branch mapping is correct
+- Invitation API request was accepted
+- Invitation template is enabled
+- Clerk delivery is enabled
+- No custom SMTP/email sender exists
+- Actual email delivery is not verified
+
+Before making any changes, perform a READ-ONLY investigation of the Development Clerk email delivery state.
+
+## 1. CHECK DEVELOPMENT EMAIL USAGE / QUOTA
+
+Determine whether the Development Clerk instance has reached or is close to the documented development email delivery limit.
+
+Do not assume the limit was reached.
+
+Report the actual available evidence.
+
+Specifically determine whether the invitation created at approximately:
+
+23 September 2026, 11:33:48 AM IST
+
+could have been affected by the Development email allowance.
+
+## 2. CHECK CLERK EVENTS / DELIVERY EVIDENCE
+
+Look for any available Clerk event, webhook, log, or delivery evidence associated with the invitation/email.
+
+Determine whether there is evidence of:
+
+- email created
+- email accepted for delivery
+- email attempted
+- email delivered
+- email bounced
+- email rejected
+- email suppressed
+- email failed
+- email generated but not sent because of Development limits
+
+Do not claim any status unless there is actual evidence.
+
+## 3. DO NOT EXPOSE SECRETS
+
+Do not output:
+
+- API keys
+- Clerk secret keys
+- passwords
+- OTPs
+- invitation URLs
+- authentication tokens
+- private credentials
+
+Only report status and non-sensitive identifiers where safe.
+
+## 4. DO NOT CHANGE ANYTHING
+
+Do NOT:
+
+- resend the invitation
+- revoke the invitation
+- change Clerk email settings
+- change email templates
+- change SMTP
+- change authentication
+- disable CAPTCHA
+- change Device Trust
+- change OTP settings
+- change invitation expiry
+- modify ClinicFlow business logic
+
+This is a diagnostic step only.
+
+---
+
+# SEPARATE ISSUE — CLINIC INFORMATION
+
+Also inspect the existing invitation creation code and determine why the Clerk invitation's clinic metadata is empty even though ClinicFlow's database correctly contains:
+
+- Sunshine Multispeciality Clinic
+- Sunshine Multispeciality Clinic – Baner Branch
+
+Do not change the code yet.
+
+Simply identify:
+
+1. What invitation metadata is currently being sent to Clerk?
+2. Whether clinic ID/name is included.
+3. Whether branch ID/name is included.
+4. Where the invitation email gets its clinic information.
+5. Whether the current invitation template has access to that information.
+6. Whether the current email can actually display the clinic name.
+
+Do not invent a solution yet.
+
+---
+
+# REPORT
+
+Return two independent findings:
+
+## A. Email Delivery Diagnosis
+
+- Development email usage/quota:
+- Invitation event:
+- Email creation event:
+- Delivery evidence:
+- Failure/bounce evidence:
+- Most likely explanation:
+- Confidence:
+- What remains unknown:
+
+## B. Invitation Content Diagnosis
+
+- Clinic metadata supplied:
+- Branch metadata supplied:
+- Role metadata supplied:
+- Template access to clinic information:
+- Expected email content:
+- Missing information:
+- Required change, if any:
+
+Do not mark the invitation flow as passed.
+
+Do not modify anything during this investigation.
