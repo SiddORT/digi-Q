@@ -1,0 +1,109 @@
+{
+  "suite": "manual-real-invitation-audit",
+  "status": "pending-manual-acceptance",
+  "generatedAt": "2026-09-23T06:03:49.217Z",
+  "marker": "CF-MANUAL-INVITE-20260923060332-fafc943e",
+  "summary": {
+    "passed": 12,
+    "failed": 0
+  },
+  "expectedAssignment": {
+    "role": "receptionist",
+    "clinic": "Sunshine Multispeciality Clinic",
+    "branch": "Sunshine Multispeciality Clinic – Baner Branch",
+    "onlyExactNamedScope": true
+  },
+  "evidence": [
+    {
+      "name": "Exact clinic uniquely matched and active",
+      "outcome": "pass",
+      "classification": "read-only",
+      "detail": "Exactly one active clinic matched the approved name."
+    },
+    {
+      "name": "Exact branch uniquely matched and active",
+      "outcome": "pass",
+      "classification": "read-only",
+      "detail": "Exactly one active branch matched inside the exact clinic."
+    },
+    {
+      "name": "Existing Clinic Admin ownership is valid",
+      "outcome": "pass",
+      "classification": "read-only",
+      "detail": "The exact clinic has one active Clinic Admin owner; no owner or mapping was changed."
+    },
+    {
+      "name": "Approved inbox absent from app users",
+      "outcome": "pass",
+      "classification": "read-only",
+      "detail": "No app user matched the private approved inbox."
+    },
+    {
+      "name": "Approved inbox absent from Clerk identities",
+      "outcome": "pass",
+      "classification": "read-only",
+      "detail": "No Clerk identity matched the private approved inbox."
+    },
+    {
+      "name": "Approved inbox has no pending invitation",
+      "outcome": "pass",
+      "classification": "read-only",
+      "detail": "No pending Clerk invitation matched the private approved inbox."
+    },
+    {
+      "name": "Pre-write scope and inbox guard revalidated",
+      "outcome": "pass",
+      "classification": "read-only",
+      "detail": "Immediately before writes, exact scope remained active/unique and the approved inbox remained unused."
+    },
+    {
+      "name": "Temporary isolated actor established guarded proof",
+      "outcome": "pass",
+      "classification": "live-api",
+      "detail": "A synthetic Super Admin bootstrap was used only to authorize the existing creation path; no real account session or mapping was touched.",
+      "status": 200
+    },
+    {
+      "name": "Existing app creation/invitation path accepted temporary Receptionist",
+      "outcome": "pass",
+      "classification": "live-api",
+      "detail": "POST /users returned 201 with role Receptionist, invitationStatus sent, and only the exact approved clinic and branch.",
+      "status": 201
+    },
+    {
+      "name": "Persisted assignment scope is exact",
+      "outcome": "pass",
+      "classification": "read-only",
+      "detail": "Only the approved clinic membership and approved branch assignment exist for the temporary Receptionist."
+    },
+    {
+      "name": "Clerk accepted exactly one real invitation",
+      "outcome": "pass",
+      "classification": "live-provider",
+      "detail": "The supported helper used notify:true, app role/clinic metadata, bounded configured expiry, and the current DEVELOPMENT /set-password redirect."
+    },
+    {
+      "name": "Provider reports invitation pending",
+      "outcome": "pass",
+      "classification": "live-provider",
+      "detail": "Exactly one provider invitation is pending. This proves accepted send state only; inbox delivery is not claimed."
+    }
+  ],
+  "invitation": {
+    "mechanism": "Existing POST /users → deliverInvitation → Clerk createInvitation",
+    "notify": true,
+    "redirectPath": "/set-password",
+    "configuredExpiryDays": 7,
+    "providerStatus": "pending"
+  },
+  "providerClaim": "Clerk accepted one notify:true invitation and reports it pending. Inbox receipt is not yet claimed.",
+  "browserStatus": "No browser automation was performed. CAPTCHA, password setup, login, and used-link behavior await the user.",
+  "privacy": "The approved inbox, credentials, provider IDs, and invitation URL are retained only in the mode-0600 private manifest.",
+  "cleanupPlan": [
+    "After the user completes receipt, CAPTCHA, password setup, login, and used-link checks, discover the target only by exact private-manifest email and Clerk linkage.",
+    "Revoke only a still-pending owned invitation; Clerk may retain revoked/used invitation history.",
+    "Remove only the temporary target assignments, target user and linked owned Clerk identity, temporary actor proof/session/user/identity, and audit rows created by their owned IDs.",
+    "Require the normalized database snapshot to exactly equal the private pre-write baseline and independently verify zero marker rows before removing the manifest."
+  ],
+  "fatal": null
+}
