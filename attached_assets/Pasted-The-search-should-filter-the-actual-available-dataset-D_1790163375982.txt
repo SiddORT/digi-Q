@@ -1,0 +1,1191 @@
+The search should filter the actual available dataset.
+Do NOT implement fake frontend filtering over incomplete data if the source is paginated/server-side.
+6. MULTI-SELECT CONTROLS
+For multi-select fields:
+- Clearly show that multiple values can be selected.
+- Selected items must remain visible.
+- Provide Select All only where logically appropriate.
+- Provide Clear All where useful.
+- Search must work.
+- Avoid extremely tall uncontrolled dropdowns.
+- Selected values should appear as compact chips/tags where appropriate.
+- Long selections must not destroy the form layout.
+- The control must remain usable on smaller screens.
+Example:
+Clinics *
+
+[ Sunshine Multispeciality Clinic × ]
+[ Apollo Care Clinic × ]
+
+Search clinics...
+
+Do not allow selected values to create horizontal overflow.
+7. DEPENDENT DROPDOWNS
+Audit every dependent selection.
+Examples:
+Clinic
+   ↓
+Branch
+
+Clinic
+   ↓
+Doctors
+
+Clinic + Branch
+   ↓
+Available Doctors
+
+Doctor + Clinic
+   ↓
+Available Branches / Sessions
+
+Dependent fields must:
+- Load only valid options.
+- Reset invalid downstream selections when the parent changes.
+- Never show unrelated records.
+- Never show records outside the current user's authorization scope.
+- Clearly indicate loading.
+- Clearly indicate when no valid options exist.
+Do not allow stale selections to remain silently after a parent value changes.
+8. ROLE-BASED DATA SCOPING
+This is extremely important.
+UI improvements must NOT weaken existing authorization.
+The system must continue enforcing the established ClinicFlow relationship model:
+ONE CLINIC → ONE CLINIC ADMIN
+ONE ADMIN → MANY CLINICS
+ONE CLINIC → MANY DOCTORS
+ONE CLINIC → MANY RECEPTIONISTS
+ONE DOCTOR → MANY CLINICS
+ONE RECEPTIONIST → MANY CLINICS
+ONE RECEPTIONIST → MANY BRANCHES
+ONE BRANCH → EXACTLY ONE CLINIC
+ONE CLINIC → EXACTLY ONE ADMIN
+
+Super Admin:
+- Platform-wide access.
+Clinic Admin:
+- Only clinics owned/managed by that admin.
+- Only doctors/receptionists/branches within permitted scope.
+Doctor:
+- Only clinics and branches within their valid assignment scope.
+- Can perform only actions allowed by the existing business rules.
+Receptionist:
+- Only mapped clinics and branches.
+- Only mapped doctors/appointments/queue data.
+Patient:
+- Patient-specific access only.
+IMPORTANT
+Never use frontend filtering as the only security boundary.
+All authorization and scope restrictions must remain enforced server-side.
+9. FORMS — SYSTEM-WIDE QUALITY
+Audit every form in the application.
+Forms must have:
+- Clear section structure
+- Consistent labels
+- Consistent spacing
+- Required indicators
+- Helpful validation
+- Proper field types
+- Searchable dropdowns
+- Proper error messages
+- Proper loading states
+- Proper submit states
+- Proper cancel behaviour
+- Confirmation where destructive
+- No duplicate fields
+- No unnecessary fields
+- No confusing labels
+10. FORM LAYOUT
+The current forms have a good overall structure but need better visual hierarchy.
+Use a consistent pattern such as:
+NEW RECORD
+
+Receptionist
+
+Basic Information
+────────────────────────────
+
+Full Name *          Email *
+[____________]       [____________]
+
+Mobile
+[____________]
+
+Assignment
+────────────────────────────
+
+Clinics *
+[ Search / Select ........ ]
+
+Branches *
+[ Search / Select ........ ]
+
+Status
+[ Active ▼ ]
+
+              Cancel    Create Receptionist
+
+Do not blindly apply this exact layout to every form.
+Use logical sections according to the form.
+11. FORM VALIDATION
+Every form must have robust validation.
+Validate:
+- Required fields
+- Email format
+- Mobile format
+- Duplicate records
+- Invalid assignments
+- Invalid clinic/branch combinations
+- Invalid doctor mappings
+- Invalid receptionist mappings
+- Invalid date ranges
+- Invalid time ranges
+- Duplicate schedule entries
+- Business-rule conflicts
+Validation must be understandable.
+Bad:
+Invalid input
+
+Better:
+Please select at least one clinic.
+
+or:
+The selected branch does not belong to the selected clinic.
+
+12. SUBMIT BUTTON BEHAVIOUR
+Every form submission must:
+- Prevent duplicate submission
+- Show loading state
+- Disable the submit action while processing
+- Show success feedback
+- Show meaningful failure feedback
+- Preserve entered values when safe
+- Close the form only after successful completion
+- Refresh affected data automatically
+- Not create duplicate records on double-click
+Example:
+Create Receptionist
+        ↓
+Creating...
+        ↓
+Success
+        ↓
+Close modal
+        ↓
+Refresh receptionist list
+
+Do not show success before the server confirms success.
+13. ALL TABLES MUST BE PAGINATED
+This is a SYSTEM-WIDE requirement.
+Every table/data listing must support pagination.
+Audit all modules, including but not limited to:
+- Clinic Admins
+- Doctors
+- Receptionists
+- Patients
+- Clinics
+- Branches
+- Appointments
+- Queue
+- Availability
+- Schedules
+- Date exceptions
+- Reports
+- Activity logs
+- Any master-data table
+- Any administrative listing
+- Any history/audit listing
+Do not load unlimited records into the browser.
+Where appropriate, use server-side pagination.
+14. PAGINATION UX
+Use one consistent pagination component.
+Example:
+Showing 21–40 of 247
+
+[ Previous ]  1  2  3  4  5  ... 13  [ Next ]
+
+Rows per page:
+[ 20 ▼ ]
+
+Support sensible page sizes such as:
+- 10
+- 20
+- 50
+- 100
+Do not automatically use 1000+ records.
+Pagination should preserve:
+- Current filters
+- Search
+- Sorting
+- Selected page size
+Changing filters should normally reset to page 1.
+15. TABLE FILTERS — VERY STRONG AND LOGICAL
+Every meaningful table must have useful filters.
+Do NOT add meaningless filters simply to satisfy this requirement.
+Filters must reflect the actual data and business use case.
+Examples:
+Receptionists
+Search
+Status
+Clinic
+Branch
+Managing Admin
+
+Doctors
+Search
+Status
+Clinic
+Branch
+Specialization
+Managing Admin
+
+Patients
+Search
+Status
+Patient type
+Clinic
+Registration date
+
+Appointments
+Search
+Date
+Date range
+Clinic
+Branch
+Doctor
+Appointment status
+Patient type
+Session
+
+Queue
+Date
+Clinic
+Branch
+Doctor
+Session
+Queue status
+
+Clinics
+Search
+Status
+Clinic Admin
+City
+State
+
+Use only filters that are actually relevant to the specific dataset.
+16. FILTER DEPENDENCY
+Filters must be intelligent.
+Example:
+Clinic: Sunshine Multispeciality Clinic
+        ↓
+Branch filter should show only branches
+belonging to Sunshine Multispeciality Clinic.
+
+Likewise:
+Clinic
+   ↓
+Doctor
+
+should only show doctors mapped to that clinic.
+Do not present unrelated values.
+17. SEARCH + FILTER + PAGINATION MUST WORK TOGETHER
+This is critical.
+The combination must behave correctly:
+Search
++
+Filters
++
+Sorting
++
+Pagination
+
+Example:
+Search: Rahul
+Clinic: Sunshine
+Branch: Baner
+Status: Active
+
+Then pagination must operate on the filtered dataset, not the original unfiltered dataset.
+Changing any filter must refresh the correct result set.
+No stale records.
+No incorrect page counts.
+No records from other clinics appearing because of frontend pagination.
+18. TABLES MUST NOT HAVE HORIZONTAL SCROLL
+This is a hard requirement.
+Do NOT create tables where users have to horizontally scroll to understand normal operational information.
+Avoid:
+← ------------------------------------------ →
+
+for standard desktop use.
+Instead:
+- Optimise column widths.
+- Wrap long text.
+- Use compact metadata.
+- Use badges.
+- Use stacked information where appropriate.
+- Combine related information into one readable cell where logical.
+- Move secondary actions into a compact action menu.
+- Use responsive layouts for smaller screens.
+Example:
+Instead of:
+Name | Email | Mobile | Admin | Clinic | Branch | Status | Created | Updated | Actions
+
+consider logical cells such as:
+Name
+Email
+Mobile
+
+Clinic
+Branch
+
+Status
+
+Actions
+
+where appropriate.
+Do not remove important information merely to eliminate horizontal scrolling.
+The information must remain accessible.
+19. RESPONSIVE TABLE BEHAVIOUR
+On smaller screens, tables should transform intelligently.
+Possible approaches:
+- Responsive rows
+- Stacked cards
+- Expandable row details
+- Priority columns
+- Details drawer
+Do not simply shrink text until it becomes unreadable.
+Do not force horizontal scrolling as the default solution.
+20. TABLE READABILITY
+Improve:
+- Header contrast
+- Row spacing
+- Cell padding
+- Typography
+- Status badges
+- Date formatting
+- Alignment
+- Long text wrapping
+- Empty states
+- Loading states
+- Hover state
+- Selected state
+Primary information should be visually stronger than metadata.
+21. TABLE ACTIONS
+Actions should be consistent.
+Use a predictable approach:
+View
+Edit
+Deactivate
+Delete
+More
+
+depending on the actual permissions and business rules.
+Do not show actions that the current role cannot perform.
+Do not show buttons that do nothing.
+Do not show disabled-looking actions that users cannot understand.
+Destructive actions must require confirmation.
+22. STATUS BADGES
+Standardise status presentation.
+Examples:
+Active
+Inactive
+Pending
+Confirmed
+Checked In
+Waiting
+In Consultation
+Completed
+Skipped
+Cancelled
+No Show
+
+Status colours should be meaningful and consistent throughout the application.
+Do not use different colours for the same status in different modules.
+23. EMPTY STATES
+Every table and data section must have a proper empty state.
+Avoid:
+No data
+
+Prefer context-aware messages:
+No receptionists found.
+
+Try changing your filters or add a new receptionist.
+
+For filtered results:
+No receptionists match the current filters.
+
+Clear one or more filters to see more results.
+
+Provide an appropriate action where useful.
+24. LOADING STATES
+Every async data operation must have a clear loading state.
+Avoid:
+- Blank screen
+- Frozen UI
+- Unresponsive button
+- Sudden content replacement
+Use:
+- Skeleton
+- Spinner
+- Loading text
+- Disabled submit state
+depending on context.
+25. ERROR HANDLING
+Errors must be:
+- Human-readable
+- Actionable
+- Consistent
+- Non-technical where shown to users
+Do not expose:
+- Stack traces
+- SQL errors
+- Internal IDs
+- API implementation details
+- Sensitive information
+Log technical details appropriately on the server.
+26. SEARCH UX
+All major listing screens should have a consistent search experience.
+Search should:
+- Have clear placeholder text
+- Debounce appropriately
+- Search relevant fields
+- Provide clear/reset option
+- Preserve filters
+- Reset pagination appropriately
+- Show result count where useful
+Do not make users guess what the search field searches.
+Example:
+Search by name, email or mobile...
+
+rather than:
+Search...
+
+when multiple searchable fields exist.
+27. FILTER RESET
+Every complex filter area should provide:
+Clear filters
+
+or equivalent.
+When no filters are active, the control should not look misleadingly active.
+The filter state must be obvious.
+28. DATE AND TIME CONSISTENCY
+Standardise:
+- Date format
+- Time format
+- Date range selectors
+- Relative dates
+- Appointment times
+- Created/updated timestamps
+Use the application's configured timezone consistently.
+Do not display conflicting timezone interpretations across modules.
+29. ROLE CONSISTENCY
+All roles must experience the same underlying design language.
+This includes:
+- Super Admin
+- Clinic Admin
+- Doctor
+- Receptionist
+- Patient
+Role-specific permissions may differ.
+Role-specific data may differ.
+But the interaction patterns should remain consistent.
+For example:
+If filtering is implemented one way for Super Admin and another way for Clinic Admin for the same type of table, standardise the interaction unless there is a genuine reason not to.
+30. ROLE-SPECIFIC DATA MUST STILL BE SCOPED
+Do NOT solve UI consistency by displaying additional data to roles that are not authorised to see it.
+UI improvements must never bypass:
+- Clinic scope
+- Branch scope
+- Doctor scope
+- Receptionist scope
+- Patient scope
+- Admin ownership
+Server-side authorization remains authoritative.
+31. USERS MODULE
+Pay special attention to the Users screen shown in the reference screenshot.
+The tabs:
+Clinic Admins
+Doctors
+Receptionists
+
+should use a consistent design.
+Each tab should provide:
+- Search
+- Appropriate filters
+- Pagination
+- Clear primary action
+- Consistent table
+- Consistent status
+- Consistent actions
+The Receptionists screen currently has:
+Search
+Status
+Clinic
+Branch
+Managing Admin
+
+Keep this concept, but make the controls visually stronger and ensure all dropdowns are searchable.
+32. RECEPTIONIST FORM
+The Receptionist form shown in the screenshot must be polished.
+Current fields include:
+- Full Name
+- Email
+- Mobile
+- Clinics
+- Status
+Audit the complete form against the actual ClinicFlow business rules.
+For receptionist assignment, ensure the existing business rule is respected:
+Receptionist
+    ↓
+Clinic
+    ↓
+Branch
+
+A receptionist must only be associated with valid clinic/branch combinations.
+Do NOT infer that a field is missing simply because it is below the visible portion of the screenshot. Inspect the complete implementation first.
+If branch assignment already exists elsewhere in the form, improve it.
+If it is genuinely absent from the implemented workflow, report it before changing the business logic.
+33. DOCTOR FORMS
+Audit Doctor forms with the same standards.
+Ensure:
+- Searchable clinic selection
+- Valid clinic mappings
+- No unrelated users in user dropdowns
+- Proper assignment scope
+- Pagination wherever lists are involved
+- Consistent validation
+- Consistent modal design
+A Doctor dropdown must never show patients or unrelated users simply because they exist in the global user table.
+Filter datasets by the correct entity type and authorization scope.
+34. CLINIC AND BRANCH FORMS
+Audit:
+- Clinic creation
+- Clinic editing
+- Branch creation
+- Branch editing
+- Clinic Admin assignment
+- Doctor assignment
+- Receptionist assignment
+Respect:
+ONE CLINIC → ONE CLINIC ADMIN
+ONE BRANCH → EXACTLY ONE CLINIC
+
+Do not introduce multiple-admin-per-clinic behaviour.
+35. DO NOT BREAK DOCTOR-CREATED CLINICS
+Preserve the established rule:
+When a Doctor creates a Clinic:
+- Doctor is automatically mapped to the clinic.
+- The single Clinic Admin associated with that Doctor becomes the Clinic Admin for the new clinic.
+- The clinic has exactly one Clinic Admin.
+- The relationship persists after refresh/logout/login.
+- Super Admin can see the clinic.
+- Relevant mappings update correctly.
+Do not alter this logic during the UI overhaul.
+36. DO NOT BREAK RECEPTIONIST/DOCTOR MAPPING
+Preserve the established mapping rules.
+A Receptionist may be mapped to:
+- Multiple clinics
+- Multiple branches
+but every branch must belong to the selected clinic.
+A Doctor may be mapped to:
+- Multiple clinics
+All assignment controls must respect these rules.
+37. NO GLOBAL USER DROPDOWNS
+Audit every user-selection field.
+Never populate a Doctor selector using:
+all users
+
+and then expect the frontend to filter them.
+Use the appropriate backend entity and authorization scope.
+Examples:
+Doctor dropdown
+→ Doctors only
+
+Receptionist dropdown
+→ Receptionists only
+
+Clinic Admin dropdown
+→ Clinic Admins only
+
+Patient dropdown
+→ Patients only
+
+This is both a usability and data-integrity requirement.
+38. PERFORMANCE
+Do not solve pagination by loading the entire database into the browser and slicing the array.
+Where datasets can grow:
+- Use server-side pagination.
+- Use server-side filtering where appropriate.
+- Use server-side search where appropriate.
+- Return only required fields.
+- Avoid N+1 API/database calls.
+- Avoid repeated identical requests.
+- Debounce search.
+- Cache only where safe.
+The application should remain responsive as data grows.
+39. NO HORIZONTAL OVERFLOW
+Perform a system-wide audit for:
+- Tables
+- Modals
+- Forms
+- Dropdowns
+- Cards
+- Tabs
+- Filters
+- Long emails
+- Long clinic names
+- Long branch names
+- Long patient names
+- Long doctor names
+Long text must wrap gracefully.
+Do not allow long names to break the layout.
+Do not allow modals to exceed the viewport.
+Do not allow dropdowns to extend beyond the viewport.
+40. ACCESSIBILITY
+Improve accessibility throughout the application.
+Audit:
+- Colour contrast
+- Focus states
+- Keyboard navigation
+- Labels
+- Form association
+- Buttons
+- Dropdown controls
+- Error messages
+- Modal focus
+- Escape behaviour
+- Screen-reader labels
+- Interactive elements
+Do not rely only on colour to communicate status.
+41. MODALS AND DRAWERS
+All modals should follow the same structure:
+Header
+Title
+Description if needed
+────────────────────
+
+Form/content
+
+────────────────────
+Cancel        Primary Action
+
+Ensure:
+- Proper scrolling
+- Sticky header where useful
+- Sticky footer/action area where useful
+- No nested unnecessary scrollbars
+- No content hidden below viewport
+- Escape closes when appropriate
+- Clicking outside behaves consistently
+- Unsaved changes are not silently lost
+42. NO DOUBLE SCROLLBARS
+Avoid situations where:
+- Page scrolls
+- Modal scrolls
+- Table scrolls
+- Dropdown scrolls
+all at the same time.
+Scrolling behaviour must feel intentional.
+43. DASHBOARD READABILITY
+The dashboard shown in the screenshots is visually clean.
+Keep its overall aesthetic.
+Improve:
+- Metric readability
+- Card contrast
+- Supporting text
+- Date context
+- Empty states
+- Table/list readability
+- Activity feed readability
+Do not unnecessarily redesign the dashboard.
+44. WORKSPACE ACTIVITY
+The activity feed should be readable and useful.
+Standardise:
+- Event title
+- Timestamp
+- Entity name
+- User/actor information where appropriate
+- Spacing
+- Iconography
+Avoid presenting raw technical event names to end users unless that is intentionally part of the product.
+For example, if an internal activity currently displays:
+verifyStaffPassword users record
+
+determine whether this is intended user-facing content.
+If it is an internal technical log accidentally exposed in the dashboard, do not simply rename it blindly.
+Audit the purpose and source first.
+45. FILTER STATE PERSISTENCE
+Within a listing screen:
+- Search
+- Filters
+- Sort
+- Page size
+should remain consistent while navigating where logically expected.
+Avoid resetting everything unexpectedly after editing one record.
+After successful create/edit/delete:
+- Refresh relevant data.
+- Preserve useful filters where appropriate.
+- Keep the user context.
+46. SORTING
+Where sorting is meaningful, provide it.
+Typical sortable fields:
+- Name
+- Date
+- Created date
+- Updated date
+- Appointment date
+- Status where meaningful
+Sorting must be server-side for large datasets.
+Clearly indicate:
+Name ↑
+Name ↓
+
+Do not introduce sorting where it has no meaningful business value.
+47. DATA INTEGRITY
+Every UI improvement must preserve data integrity.
+Never allow:
+- Duplicate records
+- Duplicate mappings
+- Invalid clinic/branch relationships
+- Invalid doctor/clinic relationships
+- Invalid receptionist/branch relationships
+- Orphan assignments
+- Stale selections
+- Unauthorized records
+- Duplicate appointment records
+- Duplicate queue entries
+48. TRANSACTIONAL SAFETY
+For multi-step operations:
+- Use transactions where appropriate.
+- Do not partially create records.
+- Roll back failed operations.
+- Do not show success if only part of the operation succeeded.
+Example:
+Creating a receptionist may involve:
+ClinicFlow user/profile
++
+Clinic assignment
++
+Branch assignment
++
+Clerk invitation
+
+Do not leave the database in a misleading partial state if a required operation fails.
+49. NO DEAD BUTTONS
+Audit every visible button.
+Every button must either:
+- Perform its intended action,
+- Navigate somewhere meaningful,
+- Open an appropriate dialog,
+- Or be removed.
+Do not leave:
+- Placeholder buttons
+- Fake buttons
+- Buttons that silently do nothing
+- Buttons with incomplete functionality
+50. NO ILLOGICAL FLOWS
+Perform a workflow audit for:
+Super Admin
+Login
+→ Dashboard
+→ Manage Admins
+→ Manage Clinics
+→ Manage Doctors
+→ Manage Receptionists
+→ Manage Patients
+→ Reports
+
+Clinic Admin
+Login
+→ Own clinics
+→ Branches
+→ Doctors
+→ Receptionists
+→ Schedules
+→ Appointments
+→ Queue
+→ Reports
+
+Doctor
+Login
+→ Own appointments
+→ Queue
+→ Availability
+→ Patients
+→ Clinics
+→ Receptionists
+
+Receptionist
+Login
+→ Appointments
+→ Book appointment
+→ Patient
+→ Check-in
+→ Queue
+→ Doctor schedule
+
+Patient
+Email
+→ OTP
+→ Patient dashboard
+→ Select clinic
+→ Branch
+→ Doctor
+→ Session
+→ Slot
+→ Appointment
+→ QR
+→ Check-in
+
+Do not redesign these workflows unless the existing implementation contains a genuine logical defect.
+51. GLOBAL QUALITY AUDIT
+After implementing the improvements, inspect EVERY major screen.
+Do not only verify the Receptionist page.
+Audit:
+- Dashboard
+- Users
+- Clinics
+- Branches
+- Doctors
+- Receptionists
+- Patients
+- Appointments
+- Queue
+- Weekly schedule
+- Date exceptions
+- Reports
+- Any masters
+- Any settings
+- Any modal/drawer
+- Any administrative listing
+52. AUTOMATED REGRESSION TESTING
+After changes, run comprehensive tests.
+At minimum verify:
+Authentication
+- Super Admin password login
+- Clinic Admin password login
+- Doctor password login
+- Receptionist password login
+- Patient OTP login
+Authorization
+- Role isolation
+- Clinic isolation
+- Branch isolation
+- Unauthorized record access rejection
+Users
+- Create
+- Edit
+- Search
+- Filter
+- Pagination
+- Mapping
+Clinics
+- Create
+- Edit
+- Mapping
+- Admin ownership
+Branches
+- Create
+- Edit
+- Clinic relationship
+Doctors
+- Create
+- Edit
+- Clinic mapping
+- Availability
+Receptionists
+- Create
+- Edit
+- Clinic mapping
+- Branch mapping
+- Admin relationship
+Patients
+- New patient
+- Returning patient
+- Search
+- Appointment
+Appointments
+- Booking
+- Rescheduling
+- Cancellation
+- Status changes
+Queue
+- Check-in
+- Queue number
+- Calling
+- Skip/no-show
+- Completion
+QR
+- Appointment QR
+- Clinic QR
+- Check-in
+53. TEST PAGINATION AND FILTER COMBINATIONS
+Do not merely test that pagination visually exists.
+Test:
+Search
++
+Filter
++
+Pagination
++
+Sorting
+
+together.
+Example:
+Receptionists
+Search: Rahul
+Clinic: Sunshine
+Branch: Baner
+Status: Active
+Page size: 20
+
+Verify that:
+- Correct records appear.
+- Page count is correct.
+- No unrelated records appear.
+- Moving to page 2 works.
+- Clearing filters works.
+- Editing a record refreshes correctly.
+54. TEST SEARCHABLE DROPDOWNS
+For every major searchable dropdown:
+1. Open dropdown.
+2. Search.
+3. Verify result.
+4. Select.
+5. Clear.
+6. Search another value.
+7. Verify no unrelated values.
+8. Verify keyboard navigation where supported.
+9. Verify empty state.
+55. TEST RESPONSIVENESS
+Test at minimum:
+- Desktop
+- Laptop
+- Tablet
+- Mobile
+Verify:
+- No horizontal page scrolling
+- No broken tables
+- No clipped modals
+- No dropdown overflow
+- No overlapping buttons
+- No unreadable text
+- No hidden primary actions
+56. DO NOT OVER-DESIGN
+Do not add:
+- Unnecessary animations
+- Excessive gradients
+- Excessive shadows
+- Excessive icons
+- Decorative elements that reduce usability
+- Complex navigation
+- Unnecessary cards around everything
+- Unnecessary popups
+ClinicFlow is an operational healthcare application.
+Clarity and reliability are more important than visual effects.
+57. DO NOT CHANGE BUSINESS LOGIC WITHOUT EVIDENCE
+This is critical.
+Do NOT change existing business rules simply because a UI element appears different from the expected design.
+If a workflow appears potentially incorrect:
+1. Inspect the implementation.
+2. Inspect the relevant API.
+3. Inspect the data model.
+4. Identify the actual behaviour.
+5. Determine whether it violates an established ClinicFlow requirement.
+6. Only then propose a correction.
+Do not invent requirements.
+58. DO NOT CHANGE AUTHENTICATION
+The existing authentication architecture has already been extensively tested.
+Preserve:
+STAFF
+Super Admin
+Clinic Admin
+Doctor
+Receptionist
+
+Email + Password
+
+and:
+PATIENT
+
+Email + OTP
+
+Do not change this during the UI overhaul.
+59. DO NOT CHANGE QUEUE LOGIC
+The existing queue system and availability/session/capacity model must remain intact.
+Do not replace it with fixed 10-minute slots or any other invented model.
+Only improve presentation and usability where necessary.
+60. IMPLEMENTATION APPROACH
+Do NOT immediately modify hundreds of files.
+First perform an audit.
+Return:
+Phase 1 — Audit
+Identify:
+- Existing design-system components
+- Existing table components
+- Existing dropdown components
+- Existing form components
+- Existing pagination
+- Existing filter components
+- Duplicate implementations
+- Screens lacking pagination
+- Screens lacking filters
+- Non-searchable dropdowns
+- Tables causing horizontal overflow
+- Low-contrast controls
+- Inconsistent role-specific UI
+- Potential workflow gaps
+- Potential authorization/scoping issues
+Categorise findings:
+CRITICAL
+HIGH
+MEDIUM
+LOW
+
+Phase 2 — Standardisation Plan
+Before implementation, propose:
+- Global design tokens
+- Form component strategy
+- Searchable dropdown strategy
+- Table strategy
+- Filter strategy
+- Pagination strategy
+- Responsive strategy
+Phase 3 — Implementation
+Implement reusable improvements first.
+Then migrate screens to those reusable components.
+Phase 4 — Validation
+Run comprehensive regression tests.
+61. IMPORTANT — DO NOT BREAK EXISTING FUNCTIONALITY
+Before modifying any component:
+Understand its current consumers.
+If a component is used across multiple roles/modules, improve it centrally where possible.
+Do not make a local change that fixes one screen and breaks another.
+62. FINAL ACCEPTANCE CRITERIA
+The task is NOT complete until:
+UI
+- [ ] Forms have adequate contrast.
+- [ ] Inputs are clearly visible.
+- [ ] Dropdowns are clearly visible.
+- [ ] Table headers are readable.
+- [ ] Primary/secondary text has appropriate contrast.
+- [ ] UI follows one design system.
+- [ ] All roles follow consistent interaction patterns.
+Dropdowns
+- [ ] All meaningful dropdowns are searchable.
+- [ ] Multi-selects are usable.
+- [ ] Dependent dropdowns work correctly.
+- [ ] Unauthorized values never appear.
+- [ ] No unrelated user types appear.
+Tables
+- [ ] Every applicable table is paginated.
+- [ ] Filters are meaningful.
+- [ ] Search works.
+- [ ] Sorting works where meaningful.
+- [ ] Search + filters + pagination work together.
+- [ ] Tables do not require horizontal scrolling.
+- [ ] Responsive behaviour works.
+- [ ] Empty/loading/error states exist.
+Forms
+- [ ] Validation is consistent.
+- [ ] Required fields are clear.
+- [ ] Duplicate submission is prevented.
+- [ ] Errors are understandable.
+- [ ] Success states are accurate.
+- [ ] Assignment rules are enforced.
+Security
+- [ ] Server-side authorization remains intact.
+- [ ] Clinic isolation remains intact.
+- [ ] Branch isolation remains intact.
+- [ ] Role isolation remains intact.
+- [ ] No frontend-only authorization has been introduced.
+Reliability
+- [ ] No dead buttons.
+- [ ] No broken navigation.
+- [ ] No incomplete workflows.
+- [ ] No duplicate submissions.
+- [ ] No duplicate mappings.
+- [ ] No stale data after mutations.
+- [ ] No partial failed operations.
+- [ ] No unhandled obvious errors.
+Performance
+- [ ] Large datasets use pagination.
+- [ ] Large datasets do not load unnecessarily into the browser.
+- [ ] Search is appropriately debounced.
+- [ ] Filters do not cause excessive API requests.
+- [ ] No obvious N+1 request patterns introduced.
+Responsive
+- [ ] Desktop works.
+- [ ] Laptop works.
+- [ ] Tablet works.
+- [ ] Mobile works.
+- [ ] No horizontal page scrolling.
+- [ ] No clipped modals.
+- [ ] No dropdown overflow.
+- [ ] No overlapping controls.
+63. FINAL REPORT REQUIRED
+After implementation, provide a structured report:
+1. UI Improvements
+List the reusable UI improvements made.
+2. Forms
+List forms audited and improved.
+3. Dropdowns
+List dropdowns converted to searchable controls.
+4. Tables
+List tables audited.
+For each:
+Table:
+Pagination:
+Search:
+Filters:
+Sorting:
+Responsive:
+Horizontal scroll:
+
+5. Role Consistency
+Confirm Super Admin, Clinic Admin, Doctor, Receptionist and Patient experiences were audited.
+6. Authorization
+Confirm no authorization/scoping regression.
+7. Performance
+Confirm pagination/filter/search implementation approach.
+8. Testing
+Report:
+- Tests passed
+- Tests failed
+- Issues discovered
+- Issues fixed
+- Issues intentionally not changed
+9. Remaining Issues
+Do NOT hide unresolved issues.
+If anything remains incomplete, explicitly state:
+Issue
+Impact
+Reason not completed
+Recommended next step
+
+FINAL PRINCIPLE
+ClinicFlow should feel like ONE coherent product.
+A user should not feel that:
+- one page was designed differently from another,
+- one role uses a different interaction pattern,
+- one dropdown behaves differently from another,
+- one table has filters while another has none,
+- one screen is highly readable while another is pale,
+- one workflow is polished while another is incomplete.
+The final system must be:
+Consistent + Readable + Searchable + Filterable + Paginated + Responsive + Secure + Reliable + Predictable.
+Do not optimise for merely "looks good."
+Optimise for:
+"A real clinic staff member can use this system all day without confusion, unnecessary scrolling, accidental actions, missing data, or logical surprises."
+
+### One important point from your screenshots
+
+I would also specifically ask Replit to audit the **`Users → Receptionists` screen** shown in your screenshot. The filter bar is actually a good starting structure:
+
+> Search → Status → Clinic → Branch → Managing Admin
+
+But it needs to become a **standard reusable filter pattern**, with searchable controls, stronger contrast, correct dependent filtering, pagination, and server-side data handling.
+
+Also, the screenshot showing the activity feed with entries such as **`verifyStaffPassword users record`** deserves a separate audit. I would **not tell Replit to rename or remove those yet**. The prompt correctly asks it to first determine whether those are intended user-facing activities or internal technical events accidentally exposed in the dashboard.
+
+The biggest thing is: **don't let Replit treat this as a cosmetic exercise.** The prompt makes it audit the underlying table/query/filter/pagination behaviour as well as the UI, which is what you need for ClinicFlow to remain robust when the amount of clinic, doctor, receptionist, patient and appointment data grows.
