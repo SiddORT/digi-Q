@@ -7,17 +7,14 @@ import { all, one, getSettings, filtered, paginate, audit } from "../lib/store";
 import { enrich } from "../lib/entities";
 import { appointmentView } from "../lib/appointments";
 import { localNow } from "../lib/availability";
+import { sql } from "drizzle-orm";
+import { queryPage, queryMetrics, sourceSql, filterSql, pageParams, metricSql } from "../lib/list-query";
 export const reportingRouter = Router();
-function metrics(rows: any[]) {
-  const count = (status: string) => rows.filter(a => a.status === status).length;
-  const waits = rows.filter(a => typeof a.waitMinutes === "number"), consultations = rows.filter(a => typeof a.consultationMinutesActual === "number");
-  return { appointments: rows.length, waiting: count("waiting"), checkedIn: count("checkedIn"), completed: count("completed"), noShow: count("noShow"), cancelled: count("cancelled"), averageWaitMinutes: waits.length ? waits.reduce((s,a) => s + a.waitMinutes, 0) / waits.length : 0, averageConsultationMinutes: consultations.length ? consultations.reduce((s,a) => s + a.consultationMinutesActual, 0) / consultations.length : 0 };
-}
 async function authorizeReportContext(user: any, q: any) {
   if (user.role === "patient") {
     if (q.clinicId || q.branchId || q.doctorId) {
-      const own = (await all(appointments)).some(a => a.patientId === user.patientId && (!q.clinicId || a.clinicId === q.clinicId) && (!q.branchId || a.branchId === q.branchId) && (!q.doctorId || a.doctorId === q.doctorId));
-      assert(own, 403, "Dashboard context outside your scope");
+      const own = await queryPage(user, "appointments", { ...q, date: undefined, pageSize: 1 });
+      assert(own.total, 403, "Dashboard context outside your scope");
     }
     return;
   }
@@ -32,54 +29,62 @@ async function authorizeReportContext(user: any, q: any) {
     assert(scope(user, clinicId, q.branchId), 403, "Dashboard context outside your scope");
   }
   if (q.doctorId) {
-    const doctor = await enrich("doctors", await one(doctors, q.doctorId));
-    assert(await canRead(user, "doctors", doctor), 403, "Doctor outside your scope");
+    const doctor = (await queryPage(user, "doctors", { selectedIds: q.doctorId, pageSize: 1 })).items[0];
+    assert(doctor, 403, "Doctor outside your scope");
     if (q.branchId) assert(doctor.branchIds.includes(q.branchId), 400, "This doctor is not assigned to the selected branch");
     else if (clinicId) assert(doctor.clinicIds.includes(clinicId), 400, "This doctor is not assigned to the selected clinic");
   }
-}
-function matchesContext(kind: string, row: any, q: any) {
-  if (kind === "doctors") return (!q.doctorId || row.id === q.doctorId) && (!q.clinicId || row.clinicIds?.includes(q.clinicId)) && (!q.branchId || row.branchIds?.includes(q.branchId));
-  if (kind === "clinics") return !q.clinicId || row.id === q.clinicId;
-  if (kind === "branches") return (!q.clinicId || row.clinicId === q.clinicId) && (!q.branchId || row.id === q.branchId);
-  return (!q.clinicId || row.clinicId === q.clinicId) && (!q.branchId || row.branchId === q.branchId);
 }
 reportingRouter.get("/dashboard", async (req, res) => {
   const user = await requireUser(req), q = query(z.GetDashboardQueryParams, req), config = await getSettings();
   await authorizeReportContext(user, q);
   q.date ||= localNow(config.timezone).date;
-  const rows = filtered(await scoped(user, "appointments", await all(appointments)), q), stats = metrics(rows);
+  const stats = await queryMetrics(user, q);
+  const recent = await queryPage(user, "appointments", { ...q, pageSize: 8, sort: "-createdAt" });
   const counts: any = {};
   for (const [kind, table, key] of [["doctors", doctors, "totalDoctors"], ["clinics", clinics, "totalClinics"], ["branches", branches, "totalBranches"], ["patients", patients, "totalPatients"]] as const) {
-    const data = await Promise.all((await all(table)).filter(r => r.status === "active").map(r => enrich(kind, r)));
-    const visible = await scoped(user, kind, data);
-    const projected = await Promise.all(visible.map(row => projectAssignmentScope(user, kind, row)));
-    counts[key] = projected.filter(row => matchesContext(kind, row, q) && (kind !== "patients" || !q.doctorId || rows.some(a => a.patientId === row.id))).length;
+    const filters: any = { status: "active", clinicId: q.clinicId, branchId: q.branchId, pageSize: 1 };
+    if (kind === "clinics") { delete filters.clinicId; delete filters.branchId; }
+    if (kind === "branches") delete filters.branchId;
+    let extra = sql`true`;
+    if (kind === "clinics" && q.clinicId) extra = sql`r.id=${q.clinicId}`;
+    if (kind === "branches" && q.branchId) extra = sql`r.id=${q.branchId}`;
+    if (kind === "doctors" && q.doctorId) extra = sql`r.id=${q.doctorId}`;
+    if (kind === "patients" && q.doctorId) extra = sql`r.id in (select doc->>'patientId' from (${sourceSql(user, "appointments")}) v where ${filterSql(q)})`;
+    counts[key] = (await queryPage(user, kind, filters, extra)).total;
   }
   const recentActivity = ["superAdmin", "clinicAdmin"].includes(user.role)
-    ? filtered((await all(auditLogs)).filter(a => scope(user, a.clinicId, a.branchId)), { clinicId: q.clinicId, branchId: q.branchId }).sort((a,b) => +new Date(b.createdAt) - +new Date(a.createdAt)).slice(0,8)
+    ? (await queryPage(user, "audit-logs", { clinicId: q.clinicId, branchId: q.branchId, activityType: "operational", pageSize: 8 })).items
     : [];
-  res.json({ ...counts, ...stats, todayAppointments: rows.length, activeQueues: new Set(rows.filter(a => ["waiting", "called", "inConsultation"].includes(a.status)).map(a => `${a.doctorId}:${a.branchId}`)).size, currentToken: rows.find(a => ["called", "inConsultation"].includes(a.status))?.token || null, recentAppointments: rows.sort((a,b) => +new Date(b.createdAt) - +new Date(a.createdAt)).slice(0,8).map(a => appointmentView(a,user)), recentActivity });
+  res.json({ ...counts, ...stats, todayAppointments: stats.appointments, recentAppointments: recent.items.map((a: any) => appointmentView(a,user)), recentActivity });
 });
 reportingRouter.get("/reports", async (req, res) => {
   const user = await requireUser(req); roles(user, ["superAdmin", "clinicAdmin", "doctor", "receptionist"]);
   const q = query(z.GetReportsQueryParams, req), config = await getSettings(), today = localNow(config.timezone).date;
   await authorizeReportContext(user, q);
   q.from ||= today.slice(0,7) + "-01"; q.to ||= today; assert(q.from <= q.to, 400, "Invalid report date range");
-  const data = filtered(await scoped(user, "appointments", await all(appointments)), q);
-  const registrations = filtered(await scoped(user, "patients", await all(patients)), { from: q.from, to: q.to, clinicId: q.clinicId, branchId: q.branchId });
-  const groupBy = q.groupBy || "date", groups = new Map<string, any[]>();
-  for (const row of data) { const key = groupBy === "date" ? row.date : row[groupBy + "Id"]; groups.set(key, [...(groups.get(key) || []), row]); }
-  if (groupBy !== "doctor") for (const p of registrations) { const key = groupBy === "date" ? new Date(p.createdAt).toISOString().slice(0,10) : p.clinicId; if (key && !groups.has(key)) groups.set(key, []); }
-  const rows = [...groups].map(([key, records]) => ({ key, label: groupBy === "date" ? key : records[0]?.[groupBy + "Name"] || key, ...metrics(records), registrations: registrations.filter(p => groupBy === "date" ? new Date(p.createdAt).toISOString().slice(0,10) === key : groupBy === "clinic" ? p.clinicId === key : records.some(a => a.patientId === p.id)).length })).sort((a,b) => a.key.localeCompare(b.key));
-  res.json({ from: q.from, to: q.to, groupBy, rows });
+  const groupBy = q.groupBy || "date", { page, pageSize } = pageParams(q);
+  const group = groupBy === "date" ? sql`doc->>'date'` : sql`doc->>${groupBy + "Id"}`;
+  const registrationGroup = groupBy === "date" ? sql`left(doc->>'createdAt',10)` : sql`doc->>'clinicId'`;
+  const result = await db.execute(sql`with appointments_scoped as (${sourceSql(user, "appointments")}),
+    records as (select doc from appointments_scoped where ${filterSql(q)}),
+    patients_scoped as (${sourceSql(user, "patients")}),
+    registrations as (select doc from patients_scoped where ${filterSql({ from: q.from, to: q.to, clinicId: q.clinicId, branchId: q.branchId })}),
+    grouped as (select ${group} as key, coalesce(min(doc->>${groupBy + "Name"}),${group}) as label, ${metricSql} from records group by ${group}),
+    keys as (select key from grouped union select ${registrationGroup} from registrations where ${groupBy !== "doctor"} and ${registrationGroup} is not null),
+    results as (select k.key, coalesce(g.label,k.key) as label, coalesce(g.appointments,0) as appointments, coalesce(g.waiting,0) as waiting, coalesce(g."checkedIn",0) as "checkedIn", coalesce(g.completed,0) as completed, coalesce(g."noShow",0) as "noShow", coalesce(g.cancelled,0) as cancelled, coalesce(g."averageWaitMinutes",0) as "averageWaitMinutes", coalesce(g."averageConsultationMinutes",0) as "averageConsultationMinutes",
+      (select count(*)::int from registrations p where ${groupBy === "doctor" ? sql`exists(select 1 from records a where a.doc->>'doctorId'=k.key and a.doc->>'patientId'=p.doc->>'id')` : groupBy === "date" ? sql`left(p.doc->>'createdAt',10)=k.key` : sql`p.doc->>'clinicId'=k.key`}) as registrations
+      from keys k left join grouped g using(key)),
+    page_rows as (select * from results order by key limit ${pageSize} offset ${(page - 1) * pageSize})
+    select (select count(*)::int from results) as total, coalesce((select jsonb_agg(to_jsonb(p)) from page_rows p),'[]'::jsonb) as rows`);
+  const { rows, total } = result.rows[0] as any;
+  res.json({ from: q.from, to: q.to, groupBy, rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 });
 reportingRouter.get("/audit-logs", async (req, res) => {
   const user = await requireUser(req); roles(user, ["superAdmin", "clinicAdmin"]);
-  const q = query(z.ListAuditLogsQueryParams, req), accounts = await all(users);
+  const q = query(z.ListAuditLogsQueryParams, req);
   await authorizeReportContext(user, q);
-  const rows = (await all(auditLogs)).filter(a => scope(user, a.clinicId)).map(a => { const actor = accounts.find(u => u.id === a.actorId); return { ...a, actorName: actor?.fullName, actorRole: actor?.role }; });
-  res.json(paginate(filtered(rows, q), q));
+  res.json(await queryPage(user, "audit-logs", q));
 });
 reportingRouter.get("/settings", async (req, res) => { await requireUser(req); res.json(await getSettings()); });
 reportingRouter.patch("/settings", async (req, res) => {

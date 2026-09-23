@@ -95,21 +95,21 @@ paths:
     get:
       operationId: listPublicClinics
       security: []
-      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      parameters: [{ $ref: "#/components/parameters/SelectedIds" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
       responses:
         "200": { description: Active public clinics, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicList" } } } }
   /public/branches:
     get:
       operationId: listPublicBranches
       security: []
-      parameters: [{ $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      parameters: [{ $ref: "#/components/parameters/SelectedIds" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
       responses:
         "200": { description: Active branches, content: { application/json: { schema: { $ref: "#/components/schemas/BranchList" } } } }
   /public/doctors:
     get:
       operationId: listPublicDoctors
       security: []
-      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: specializationId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      parameters: [{ $ref: "#/components/parameters/SelectedIds" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: specializationId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
       responses:
         "200": { description: Public professional profiles only, content: { application/json: { schema: { $ref: "#/components/schemas/PublicDoctorList" } } } }
   /public/availability:
@@ -133,7 +133,7 @@ paths:
   /clinics:
     get:
       operationId: listClinics
-      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { name: city, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { name: adminId, in: query, schema: { type: string } }, { name: city, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Scoped clinics, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicList" } } } }
     post:
@@ -159,7 +159,7 @@ paths:
   /branches:
     get:
       operationId: listBranches
-      parameters: [{ $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Branches, content: { application/json: { schema: { $ref: "#/components/schemas/BranchList" } } } }
     post:
@@ -213,7 +213,7 @@ paths:
   /users:
     get:
       operationId: listUsers
-      parameters: [{ $ref: "#/components/parameters/Search" }, { name: role, in: query, schema: { $ref: "#/components/schemas/Role" } }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: managingAdminId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ name: linkedOnly, in: query, schema: { type: boolean } }, { $ref: "#/components/parameters/Search" }, { name: role, in: query, schema: { $ref: "#/components/schemas/Role" } }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: managingAdminId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Authorized user administration, content: { application/json: { schema: { $ref: "#/components/schemas/UserList" } } } }
     post:
@@ -269,13 +269,20 @@ paths:
         - { name: targetRole, in: query, required: true, schema: { type: string, enum: [doctor, receptionist] } }
         - { name: doctorId, in: query, schema: { type: string }, description: Existing doctor being edited. }
         - { name: userId, in: query, schema: { type: string }, description: Existing receptionist being edited. }
+        - { name: managingAdminId, in: query, schema: { type: string }, description: Narrows the catalog owner; cannot override an actor or edited staff owner. }
+        - { $ref: "#/components/parameters/Search" }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { $ref: "#/components/parameters/ClinicId" }
+        - { $ref: "#/components/parameters/BranchId" }
+        - { name: selectedIds, in: query, schema: { type: string, maxLength: 10000 }, description: Comma-separated IDs to resolve within the authorized catalog (maximum 100). }
       responses:
         "200": { description: Server-scoped assignment catalog, content: { application/json: { schema: { $ref: "#/components/schemas/StaffAssignmentOptions" } } } }
   /patients:
     get:
       operationId: listPatients
       description: Patients visible only through authorized clinic registration or appointment relationship.
-      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: gender, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { name: gender, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Scoped patients, content: { application/json: { schema: { $ref: "#/components/schemas/PatientList" } } } }
     post:
@@ -328,7 +335,7 @@ paths:
   /schedules:
     get:
       operationId: listSchedules
-      parameters: [{ $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Sort" }, { name: dayOfWeek, in: query, schema: { type: integer, minimum: 0, maximum: 6 } }, { name: weekday, in: query, description: Alias for dayOfWeek, schema: { type: integer, minimum: 0, maximum: 6 } }, { $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
       responses:
         "200": { description: Weekly schedules, content: { application/json: { schema: { $ref: "#/components/schemas/ScheduleList" } } } }
     post:
@@ -350,7 +357,7 @@ paths:
   /availability-exceptions:
     get:
       operationId: listAvailabilityExceptions
-      parameters: [{ $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Sort" }, { $ref: "#/components/parameters/Date" }, { $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
       responses:
         "200": { description: Date overrides, content: { application/json: { schema: { $ref: "#/components/schemas/AvailabilityExceptionList" } } } }
     post:
@@ -433,6 +440,11 @@ paths:
         - { name: branchId, in: query, required: true, schema: { type: string } }
         - { name: date, in: query, required: true, schema: { type: string, format: date } }
         - { name: appointmentId, in: query, schema: { type: string } }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { $ref: "#/components/parameters/Search" }
+        - { $ref: "#/components/parameters/Sort" }
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/AppointmentStatus" } }
       responses:
         "200": { description: Live queue, content: { application/json: { schema: { $ref: "#/components/schemas/LiveQueue" } } } }
   /queue/call-next:
@@ -446,7 +458,7 @@ paths:
   /qrs:
     get:
       operationId: listQrs
-      parameters: [{ $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Sort" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
       responses:
         "200": { description: Scoped QR configurations, content: { application/json: { schema: { $ref: "#/components/schemas/QrList" } } } }
     post:
@@ -485,14 +497,14 @@ paths:
   /reports:
     get:
       operationId: getReports
-      parameters: [{ $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { name: groupBy, in: query, schema: { type: string, enum: [clinic, doctor, date], default: date } }]
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { name: groupBy, in: query, schema: { type: string, enum: [clinic, doctor, date], default: date } }]
       responses:
         "200": { description: Scoped appointment/registration/queue performance report, content: { application/json: { schema: { $ref: "#/components/schemas/Report" } } } }
   /audit-logs:
     get:
       operationId: listAuditLogs
       description: Admin-only scoped summaries; sensitive old/new values are redacted.
-      parameters: [{ $ref: "#/components/parameters/Search" }, { name: entityType, in: query, schema: { type: string } }, { name: actorId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Sort" }, { name: activityType, in: query, schema: { type: string, enum: [all, operational, security], default: all } }, { name: entityType, in: query, schema: { type: string } }, { name: actorId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
       responses:
         "200": { description: Immutable audit summaries, content: { application/json: { schema: { $ref: "#/components/schemas/AuditLogList" } } } }
   /settings:
@@ -515,6 +527,7 @@ components:
       description: Request failed
       content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } }
   parameters:
+    SelectedIds: { name: selectedIds, in: query, description: Comma-separated exact IDs within existing scope (maximum 100)., schema: { type: string, maxLength: 10000 } }
     Id: { name: id, in: path, required: true, schema: { type: string } }
     Search: { name: search, in: query, schema: { type: string } }
     Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
@@ -579,6 +592,7 @@ components:
         total: { type: integer, minimum: 0 }
         page: { type: integer }
         pageSize: { type: integer }
+        totalPages: { type: integer }
     ProfileInput:
       type: object
       properties:
@@ -787,6 +801,11 @@ components:
         clinics: { type: array, items: { $ref: "#/components/schemas/Clinic" } }
         branches: { type: array, items: { $ref: "#/components/schemas/Branch" } }
         managingAdmins: { type: array, items: { $ref: "#/components/schemas/ManagingAdminOption" } }
+        pagination:
+          type: object
+          properties:
+            clinics: { $ref: "#/components/schemas/PageMeta" }
+            branches: { $ref: "#/components/schemas/PageMeta" }
     PublicDoctor:
       type: object
       required: [id, fullName, clinicIds, branchIds]
@@ -1024,6 +1043,10 @@ components:
       type: object
       required: [doctorId, branchId, date, currentToken, nextToken, waiting, inConsultation, completed, noShow, total, pollIntervalSeconds, updatedAt]
       properties:
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalPages: { type: integer }
+        entriesTotal: { type: integer }
         doctorId: { type: string }
         branchId: { type: string }
         date: { type: string, format: date }
@@ -1111,6 +1134,10 @@ components:
       type: object
       required: [from, to, groupBy, rows]
       properties:
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalPages: { type: integer }
+        total: { type: integer }
         from: { type: string, format: date }
         to: { type: string, format: date }
         groupBy: { type: string }

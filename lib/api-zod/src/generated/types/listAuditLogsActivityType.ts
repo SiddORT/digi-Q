@@ -12,15 +12,12 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { ReportRow } from './reportRow';
 
-export interface Report {
-  page?: number;
-  pageSize?: number;
-  totalPages?: number;
-  total?: number;
-  from: Date;
-  to: Date;
-  groupBy: string;
-  rows: ReportRow[];
-}
+export type ListAuditLogsActivityType = typeof ListAuditLogsActivityType[keyof typeof ListAuditLogsActivityType];
+
+
+export const ListAuditLogsActivityType = {
+  all: 'all',
+  operational: 'operational',
+  security: 'security',
+} as const;

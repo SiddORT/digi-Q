@@ -21,6 +21,7 @@ import type { StatusParameter } from './statusParameter';
 export type ListClinicsParams = {
 search?: SearchParameter;
 status?: StatusParameter;
+adminId?: string;
 city?: string;
 /**
  * @minimum 1

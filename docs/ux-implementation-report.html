@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ClinicFlow UX implementation report</title>
+  <style>
+    :root{--ink:#17212b;--muted:#526273;--line:#d9e1e8;--soft:#f5f8fa;--blue:#145da0;--teal:#0b766e;--amber:#9a6100;--red:#a33a32}
+    *{box-sizing:border-box} body{margin:0;color:var(--ink);background:#eef2f5;font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    .page{max-width:1220px;margin:0 auto;background:#fff;min-height:100vh;padding:42px 54px 70px}
+    header{border-bottom:4px solid var(--blue);padding-bottom:28px;margin-bottom:28px}.eyebrow{color:var(--blue);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+    h1{font-size:38px;line-height:1.12;margin:8px 0 10px;letter-spacing:-.03em} h2{font-size:25px;border-bottom:1px solid var(--line);padding-bottom:8px;margin:40px 0 15px;color:#123c63} h3{font-size:18px;margin:25px 0 8px}
+    p{margin:8px 0 13px}.lede{font-size:18px;color:var(--muted);max-width:890px}.meta{display:flex;flex-wrap:wrap;gap:10px 28px;color:var(--muted);font-size:13px;margin-top:18px}
+    nav{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:15px 20px;margin:25px 0} nav strong{display:block;margin-bottom:5px} nav a{color:var(--blue);margin-right:18px;white-space:nowrap}
+    table{width:100%;border-collapse:collapse;margin:10px 0 18px;font-size:13px} th,td{border:1px solid var(--line);padding:9px 10px;vertical-align:top;text-align:left} th{background:#eaf1f6;color:#183d5b;font-weight:700} tr:nth-child(even) td{background:#fbfcfd}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);border-radius:8px;padding:15px;background:#fff}.card h3{margin-top:0;color:#174d72}
+    .pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:12px;font-weight:700;margin:2px 4px 2px 0}.done{color:#075c55;background:#dcf3ef}.pending{color:#7a5000;background:#fff0c9}.limit{color:#853b32;background:#f9e2df}.note{border-left:4px solid var(--blue);background:#f2f7fb;padding:12px 15px;margin:14px 0}.warning{border-left-color:var(--amber);background:#fff9e9}
+    ul{margin:7px 0 14px;padding-left:23px} li{margin:4px 0}.small{font-size:13px;color:var(--muted)}code{background:#f0f3f5;padding:1px 4px;border-radius:3px;font-size:.92em}
+    footer{border-top:1px solid var(--line);margin-top:45px;padding-top:15px;color:var(--muted);font-size:12px}
+    @media(max-width:760px){.page{padding:25px 18px 45px}h1{font-size:30px}h2{font-size:22px}.grid{grid-template-columns:1fr}table{display:block;overflow-x:auto;white-space:normal}nav a{display:inline-block;margin:3px 12px 3px 0}}
+    @media print{body{background:white}.page{max-width:none;padding:0}nav{display:none}h2{break-before:page}.grid{break-inside:avoid}}
+  </style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="eyebrow">ClinicFlow · UX delivery record</div>
+    <h1>UX implementation report</h1>
+    <p class="lede">A bounded, evidence-based record of the administration and operations migration: shared controls, migrated screens, list and dropdown contracts, data-loading behavior, and verification status.</p>
+    <div class="meta"><span><strong>Report date:</strong> 2026-09-23</span><span><strong>Scope:</strong> current changed files and migration notes</span><span><strong>Disposition:</strong> implementation report; not a blanket production-readiness declaration</span></div>
+  </header>
+
+  <nav aria-label="Report contents"><strong>Sections</strong>
+    <a href="#a">A. Executive summary</a><a href="#b">B. Shared components</a><a href="#c">C. Screens</a><a href="#d">D. Dropdown matrix</a><a href="#e">E. Tables</a><a href="#f">F. Performance &amp; contract</a><a href="#g">G. Verification</a><a href="#h">H. Limits &amp; next steps</a>
+  </nav>
+
+  <section id="a"><h2>A. Executive summary</h2>
+    <p>The changed frontend and API contract implement server-backed, bounded listings and searchable relation controls across administration and clinic operations. The work preserves existing authentication, role/navigation rules, invitation delivery, OTP architecture, session capacity and appointment business rules. Authorization remains a server responsibility; UI filters are query constraints, not access control.</p>
+    <div class="grid">
+      <div class="card"><h3>Delivered</h3><ul><li>Reusable dialog, lookup, selection and listing-control primitives.</li><li>Debounced remote search, dependent scopes, selected-record retention, retry/error/empty states.</li><li>Real pagination metadata and responsive table presentation.</li><li>API schemas and SQL routes updated for bounded search, sorting and pagination.</li></ul></div>
+      <div class="card"><h3>Read this carefully</h3><ul><li><span class="pill done">Completed</span> Browser UI-only fixture evidence is recorded in section G; it is mocked-API render/interaction evidence, not backend integration proof.</li><li>Live authenticated browser coverage was blocked by HTTP 403 <code>STAFF_PASSWORD_REQUIRED</code>; no password was available and no actual role login was proven.</li><li>Remaining caveats are documented in section H; this report does not claim blanket production readiness.</li></ul></div>
+    </div>
+  </section>
+
+  <section id="b"><h2>B. Shared components and consumers</h2>
+    <p>The following inventory distinguishes newly shared behavior from previous consumer patterns. “New consumers” means consumers in the current migration, not a claim that every application screen was redesigned.</p>
+    <table><thead><tr><th>Shared component / utility</th><th>Previous pattern</th><th>New consumers</th><th>Behavior now provided</th></tr></thead><tbody>
+      <tr><td><code>AppDialog</code></td><td>Screen-local dialogs with inconsistent close and pending behavior.</td><td>Generic forms, staff forms, Clinic Admin onboarding, registration and appointment actions.</td><td>Focus management, Escape, dirty-close confirmation, busy-close protection, retained errors.</td></tr>
+      <tr><td><code>ResourceLookup</code> / <code>ResourceMultiLookup</code></td><td>Unbounded or table-page-derived relation choices.</td><td>Staff assignment, staff booking, operational clinic/branch/doctor/patient relations and recovery picker.</td><td>Debounced remote search, 20-record pages, incremental loading, selected-record retention, visible retryable errors.</td></tr>
+      <tr><td><code>SearchableSelect</code></td><td>Native or static option lists for remote entities.</td><td>Patient-facing public catalog controls, own-appointment queue lookup and fixed status/sort/grouping controls.</td><td>Searchable remote options, infinite-query paging and exact selected-ID hydration.</td></tr>
+      <tr><td><code>ListingControls</code> and list-query helpers</td><td>Ad hoc search/filter/page state and client-side list manipulation.</td><td>Users, resource listings, appointments, queue, reports and audit.</td><td>Debounce, page-size choices (10/20/50/100), filter/sort page reset and consistent loading/error/empty states.</td></tr>
+      <tr><td><code>CareLookup</code></td><td>Operational and public-care selectors coupled to screen data.</td><td>Public care and own-appointment lookups; staff entity selection delegates to shared lookup.</td><td>Bounded public catalogs and ownership-scoped appointment selection.</td></tr>
+      <tr><td>Date/time utility and shared table CSS</td><td>Screen-specific timestamp display and narrow desktop tables.</td><td>Dashboard, queue, shell, resource and operational tables.</td><td>Configured settings timezone (with explicit ISO fallback), <code>data-label</code> mobile cells, desktop wrapping and stacked mobile rows.</td></tr>
+    </tbody></table>
+  </section>
+
+  <section id="c"><h2>C. Screens actually migrated</h2>
+    <p>This is the implemented inventory from the migration records. Ownership boundaries are explicit: screens not listed below must not be inferred as completed by this report.</p>
+    <table><thead><tr><th>Screen / surface</th><th>Actual migrated behavior</th><th>Important boundary</th></tr></thead><tbody>
+      <tr><td>Dashboard (all roles)</td><td>Bounded metrics and appointment previews; loading/failure/retry; operational-activity label.</td><td><strong>8-item summary/dashboard behavior, not a full paginated audit.</strong> Security events are excluded from activity display but retained.</td></tr>
+      <tr><td>Appointments (all roles)</td><td>Debounced server search, date range, status, dependent clinic → branch → doctor, stable sort, 20-row default pagination, page size selection and retry/filtered-empty states.</td><td>Patient relations use public catalogs; appointment results remain ownership-scoped.</td></tr>
+      <tr><td>Appointment actions and QR</td><td>Server allowed-actions and expected-status concurrency; accessible reason dialog; mutation lock; QR generation loading/error/retry and safe download.</td><td>Original QR URL/check-in behavior preserved.</td></tr>
+      <tr><td>Public QR booking</td><td>Existing sign-in/onboarding handoff with context/profile loading, errors and retry.</td><td>No live booking or OTP request was executed.</td></tr>
+      <tr><td>Staff/patient booking and registration</td><td>Bounded searchable relations, selected-record lookup, parent clearing, scoped patient lookup, registration dialog and feedback; capacity, token, queue, consent and idempotency rules retained.</td><td>No fixed time slots or new patient-type behavior introduced.</td></tr>
+      <tr><td>Queue (staff and patients)</td><td>Staff clinic → branch → doctor/date/status filters and server-paged entries; session-wide counters and next token preserved. Patients see bounded own-appointment lookup and own wait estimate.</td><td>Staff entries are not a client slice of a full queue; patient view exposes no staff entries.</td></tr>
+      <tr><td>Doctor clinics</td><td>Assigned clinics and administrator-network clinics independently searched and paged; existing assignments included without first-100 truncation.</td><td>Relationship authorization remains backend-owned.</td></tr>
+      <tr><td>Profile and settings</td><td>Explicit loading/error/retry, save feedback and duplicate guards.</td><td>Clerk-owned session behavior and integration boundaries unchanged.</td></tr>
+      <tr><td>Reports</td><td>Server-paged date/clinic/doctor grouping with dependent scopes, responsive grouped columns and explicit full-result CSV export on demand.</td><td>Export is separate from the displayed page and is not a transactionally frozen snapshot.</td></tr>
+      <tr><td>Administration listings</td><td>Users/Clinic Admins, Doctors, Receptionists, Clinics, Branches, Doctors resource, Patients, Masters, schedules, exceptions, booking QR codes and Audit use bounded listings and responsive rows.</td><td>Staff tables group identity/contact, assignment and account state; each tab retains list state.</td></tr>
+    </tbody></table>
+    <div class="note warning"><strong>Not claimed by this inventory:</strong> redesign of authentication/onboarding architecture, invitation delivery, generic resource ownership beyond the listed migration, CheckIn completion, or unverified live authorization/visual behavior.</div>
+  </section>
+
+  <section id="d"><h2>D. Dropdown matrix</h2>
+    <p>All remote entity pickers are bounded and searchable. Selected values are retained across search/page changes; exact selected records use <code>selectedIds</code> where supported. A missing or unauthorized selected record is an explicit error, not a silent substitution.</p>
+    <table><thead><tr><th>Surface</th><th>Control / cardinality</th><th>Search &amp; paging</th><th>Dependent / scope rules</th></tr></thead><tbody>
+      <tr><td>Staff appointments, booking, queue, reports</td><td>Clinic, branch, doctor — single</td><td><code>ResourceLookup</code>, debounced remote 20-row pages</td><td>Authorized endpoints; branch and doctor reset when parent changes.</td></tr>
+      <tr><td>Patient appointment filters and booking</td><td>Public clinic, branch, doctor — single</td><td><code>SearchableSelect</code>, remote 20-row pages</td><td>Active public catalog; exact selected IDs; clinic/branch/doctor dependencies.</td></tr>
+      <tr><td>Staff booking</td><td>Patient — single</td><td><code>ResourceLookup</code>, remote search/paging</td><td>Active patients in selected clinic and branch.</td></tr>
+      <tr><td>Patient queue</td><td>Own appointment — single</td><td>Remote searchable paging</td><td>Ownership enforced by appointment API; selected date.</td></tr>
+      <tr><td>Staff assignment editor</td><td>Clinics and branches — multi</td><td><code>ResourceMultiLookup</code>; bounded request per selected clinic, incremental pages</td><td>Management assignment catalog, edited identity and authorized scope; removed clinic clears known branches; search-page absence never clears assignments.</td></tr>
+      <tr><td>Recovery</td><td>Staff account — single</td><td>Role-specific remote picker</td><td>Not a picker over the current table page; <code>linkedOnly</code> support is backend contract.</td></tr>
+      <tr><td>Appointments / queue / reports</td><td>Status, sort, grouping — single</td><td>Shared searchable select over fixed backend enumerations</td><td>No invented session selector or patient-type filter.</td></tr>
+      <tr><td>Booking source</td><td>Phone/advance or walk-in — single</td><td>Small fixed native enumeration</td><td>Existing workflow and source rules retained.</td></tr>
+    </tbody></table>
+    <div class="note"><strong>Dependent scope:</strong> a session remains the existing doctor/branch/date combination. Patient type is not an independently persisted/queryable field. Assignment option search is active-only in ordinary use; selected-ID hydration may retain an authorized inactive assignment under its owning-admin restrictions.</div>
+  </section>
+
+  <section id="e"><h2>E. Table capabilities matrix</h2>
+    <p>Unless noted otherwise, migrated listings provide debounced search, server-side filters and sort, exact totals, a 20-row default, 10/20/50/100 page sizes, filter/sort page reset, retryable query errors, and distinct unfiltered versus filtered empty states. Rows use mobile labels and responsive stacked presentation.</p>
+    <table><thead><tr><th>Table / listing</th><th>Search</th><th>Filters</th><th>Sort / pagination</th></tr></thead><tbody>
+      <tr><td>Clinic Admins / Doctors / Receptionists</td><td>Debounced</td><td>Status; clinic/branch/specialization and managing admin where role permits</td><td>Name or created date; server page and preserved tab state</td></tr>
+      <tr><td>Clinics / Branches</td><td>Debounced</td><td>Status; Clinic Admin or clinic</td><td>Name or created date; server page</td></tr>
+      <tr><td>Doctors resource / Patients</td><td>Debounced</td><td>Status, clinic, branch, specialization/admin; patients add registration range</td><td>Name or created date; server page</td></tr>
+      <tr><td>Masters</td><td>Debounced</td><td>Status, category</td><td>Name or created date; server page</td></tr>
+      <tr><td>Weekly schedules / date exceptions</td><td>Debounced</td><td>Clinic/branch/doctor/weekday; branch/doctor/date</td><td>Created date; server page</td></tr>
+      <tr><td>Booking QR codes</td><td>Debounced</td><td>Status, clinic, branch, doctor</td><td>Name or created date; server page</td></tr>
+      <tr><td>Audit</td><td>Debounced</td><td>Operational, security or all; date range</td><td>Created date; server page. Security records are retained.</td></tr>
+      <tr><td>Appointments</td><td>Debounced</td><td>Date range, status, dependent clinic/branch/doctor</td><td>Stable server sort; server page</td></tr>
+      <tr><td>Queue entries</td><td>Server search</td><td>Date, status, clinic/branch/doctor</td><td>Server entries page; counters and next token remain session-wide</td></tr>
+      <tr><td>Reports</td><td>Server-backed scope</td><td>Date range, clinic, doctor and dependent scope</td><td>Grouped server page; separate user-requested all-results CSV</td></tr>
+    </tbody></table>
+    <div class="note"><strong>Dashboard versus audit:</strong> dashboard activity is an 8-item operational summary/preview and intentionally excludes security events from its display. Audit is the full paginated listing with an operational/security/all activity selector. Exclusion from dashboard presentation is not deletion or retention loss.</div>
+  </section>
+
+  <section id="f"><h2>F. Performance, SQL and API contract</h2>
+    <div class="grid">
+      <div class="card"><h3>Bounded options and pages</h3><ul><li>Default page size is 20; maximum is 100.</li><li>Filtering, authorization, sorting and stable ID tie-breakers occur before SQL LIMIT/OFFSET.</li><li>No frontend <code>allPages</code> callers remain; no operational list loads every page to filter or sort client-side.</li><li>Public option lists support exact selected IDs while retaining active, public and parent scope.</li></ul></div>
+      <div class="card"><h3>SQL and API additions</h3><ul><li>Schedules: search/sort and numeric <code>dayOfWeek</code> (weekday alias).</li><li>Exceptions: search/sort/date; QR lists: search/sort.</li><li>Recovery: boolean <code>linkedOnly</code>; branches: actual assignment-based <code>doctorId</code>.</li><li>Reports expose total/page/pageSize/totalPages; queue exposes entriesTotal and page metadata.</li></ul></div>
+      <div class="card"><h3>Batching and export</h3><ul><li>Multi-clinic assignment catalogs make bounded requests per selected clinic.</li><li>CSV export is page-only batched: it sequentially fetches matching bounded report pages only after explicit user demand.</li><li>Export guards duplicate clicks, changed totals, duplicate grouping keys and incomplete pages; quotes fields and neutralizes spreadsheet formulas.</li></ul></div>
+      <div class="card"><h3>Authentication and mutation boundary</h3><ul><li>Clerk historical auth/session behavior is unchanged; no new authentication query was introduced.</li><li>Server authorization and save-time assignment validation remain authoritative.</li><li>Mutation locks, expected-status concurrency, idempotency and pending feedback prevent duplicate actions.</li><li>No invitations, emails, recovery mutations, OTPs or live booking requests were executed.</li></ul></div>
+    </div>
+  </section>
+
+  <section id="g"><h2>G. Verification record</h2>
+    <table><thead><tr><th>Check</th><th>Result / evidence</th><th>Interpretation</th></tr></thead><tbody>
+      <tr><td>Frontend typecheck</td><td><span class="pill done">Passed</span> <code>pnpm --filter @workspace/clinicflow typecheck</code></td><td>Current frontend TypeScript check passed.</td></tr>
+      <tr><td>Backend typecheck</td><td><span class="pill done">Passed</span></td><td>Backend typecheck passed in the reported verification set.</td></tr>
+      <tr><td>Backend tests</td><td><span class="pill done">Passed</span> 49 backend tests passed previously; 41 affected tests passed after the last manager guard.</td><td>Do not add these as 90 tests: the sets overlap.</td></tr>
+      <tr><td>Existing staff-input test</td><td><span class="pill done">Passed</span> 4 passed, 0 failed</td><td>Existing allowlist coverage retained.</td></tr>
+      <tr><td>Real SQL fixtures</td><td><span class="pill done">Available</span> 120 clinics, 120 doctors, 120 receptionists, 600 patients, 600 appointments</td><td>Scale-fixture evidence is real SQL data, not placeholder rows.</td></tr>
+      <tr><td>Browser UI-only fixture test</td><td><span class="pill done">Completed</span> Super Admin fixture with mocked API; read-only checks. 120 users paginated 20 → 50; accurate ranges; single-hit search; filtered-empty and clear. Dirty cancel with native confirm restored the value; clean Escape closed. Searchable clinic showed no-results and Escape behavior. Five multiselect chips wrapped and retained selection through dirty discard.</td><td>At 1440, 768 and 390px there was no document horizontal overflow; mobile cards rendered. Dashboard, appointments, queue, reports, settings, booking and CheckIn rendered. Fixtures were mostly empty: this demonstrates render resilience, not backend integration proof.</td></tr>
+      <tr><td>Browser findings corrected</td><td><span class="pill done">Code fixes applied</span> Recovery actions now stack on mobile, tables use cards through tablet widths, and dropdown surfaces are opaque. Original page layouts were restored; missing color aliases and stronger input borders were retained.</td><td>Typecheck passed. These final CSS fixes were source-checked, not a repeat of the authenticated browser suite. Complete all-role coverage remains outstanding.</td></tr>
+      <tr><td>Browser live-auth test</td><td><span class="pill limit">Blocked</span> HTTP 403 <code>STAFF_PASSWORD_REQUIRED</code>; no password was available.</td><td>No actual role login proof or other-role proof; live authenticated behavior and full role visual regression remain unverified.</td></tr>
+      <tr><td>Email/auth mutation behavior</td><td><span class="pill done">Unchanged / not executed</span></td><td>No production mutations or messages; no emails sent; authentication architecture unchanged; no live invitation, OTP, recovery or booking mutation was run.</td></tr>
+    </tbody></table>
+  </section>
+
+  <section id="h"><h2>H. Limits and next steps</h2>
+    <ul>
+      <li><strong>CSV concurrency caveat:</strong> full export is bounded page-by-page, not a transactionally frozen snapshot. Concurrent changes that preserve grouping keys/totals cannot be detected client-side.</li>
+      <li><strong>Browser evidence gap:</strong> live authentication was blocked by HTTP 403 <code>STAFF_PASSWORD_REQUIRED</code>; there is no actual role-login proof or proof for other roles. Direct screen checks, contrast, and complete all-role visual regression remain incomplete.</li>
+      <li><strong>Fixture evidence boundary:</strong> the completed mocked-API Super Admin run proves interaction and render resilience only. Mostly empty fixtures do not prove backend integration. Mobile recovery clipping, tablet table compression and dropdown layering have code fixes applied; they have not received a second full browser pass.</li>
+      <li><strong>Acceptance follow-up:</strong> with approved isolated credentials, complete live-auth, responsive, contrast, direct-screen and role-isolation checks. No fully verified checkbox should be inferred from this fixture run.</li>
+      <li><strong>Scope discipline:</strong> retain backend authorization as the source of truth. Do not infer access safety from hidden or disabled controls, and do not call the implementation blanket production-ready without the outstanding evidence.</li>
+    </ul>
+    <div class="note warning"><strong>Owner-only report:</strong> this document records the implementation and verification boundary. It makes no application edits and does not represent that unverified screens, roles or external delivery flows passed.</div>
+  </section>
+
+  <footer>ClinicFlow UX implementation report · 2026-09-23 · Source records: ux-admin-migration.md, ux-operations-migration.md, ux-api-contract.md, and the current changed-file set.</footer>
+</main>
+</body>
+</html>

@@ -29,7 +29,11 @@ export function query(schema: any, req: Request) {
   const q: Record<string, any> = { ...req.query };
   validateDates(q);
   for (const k of ["date", "from", "to"]) if (q[k] !== undefined) q[k] = new Date(q[k]);
-  for (const k of ["page", "pageSize"]) if (q[k] !== undefined) q[k] = Number(q[k]);
+  for (const k of ["page", "pageSize", "dayOfWeek", "weekday"]) if (q[k] !== undefined) q[k] = Number(q[k]);
+  if (q.linkedOnly !== undefined) {
+    assert(["true", "false"].includes(String(q.linkedOnly)), 400, "linkedOnly must be true or false");
+    q.linkedOnly = String(q.linkedOnly) === "true";
+  }
   const result = normalizeDates(schema.parse(q));
   for (const [key, value] of Object.entries(result)) assert(value !== "undefined", 400, `${key} is required`);
   return result;

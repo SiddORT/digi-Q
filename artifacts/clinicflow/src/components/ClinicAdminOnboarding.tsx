@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { onboardClinicAdmin } from "@workspace/api-client-react";
 import { Plus, X } from "lucide-react";
+import { AppDialog } from "./AppDialog";
 
 type SetupFields = {
   fullName: string;
@@ -17,9 +18,11 @@ type SetupFields = {
 export function ClinicAdminOnboarding() {
   const [open, setOpen] = useState(false);
   const [success, setSuccess] = useState("");
+  const locked = useRef(false);
   const client = useQueryClient();
   const form = useForm<SetupFields>();
   const setup = useMutation({
+    onSettled: () => { locked.current = false; },
     mutationFn: (values: SetupFields) => onboardClinicAdmin({
       admin: {
         fullName: values.fullName.trim(),
@@ -58,13 +61,10 @@ export function ClinicAdminOnboarding() {
         form.reset(); setup.reset(); setSuccess(""); setOpen(true);
       }}><Plus size={17} /> Set up Clinic Admin</button>
       {success && <p className="notice" role="status" data-testid="onboarding-success">{success}</p>}
-      {open && <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-labelledby="onboarding-title">
-        <div className="panel-heading"><h2 id="onboarding-title">Set up Clinic Admin &amp; first clinic</h2>
-          <button disabled={setup.isPending} onClick={() => setOpen(false)} aria-label="Close"><X /></button>
-        </div>
+      {open && <AppDialog open onClose={() => setOpen(false)} title="Set up Clinic Admin & first clinic" dirty={form.formState.isDirty} busy={setup.isPending}>
         <p className="notice">Both records are saved together. The new admin will be the clinic’s only Clinic Admin. No existing ownership will be transferred.</p>
         {setup.error && <div className="error-box" role="alert">{setup.error.message}</div>}
-        <form className="form-grid" onSubmit={form.handleSubmit(values => setup.mutate(values))}>
+        <form className="form-grid" onSubmit={form.handleSubmit(values => { if (!setup.isPending && !locked.current) { locked.current = true; setup.mutate(values); } })}>
           <h3 className="wide">Administrator</h3>
           {input("fullName", "Full name", true)}
           {input("email", "Admin email", true, "email")}
@@ -80,7 +80,7 @@ export function ClinicAdminOnboarding() {
             </button>
           </div>
         </form>
-      </section></div>}
+      </AppDialog>}
     </section>
   );
 }

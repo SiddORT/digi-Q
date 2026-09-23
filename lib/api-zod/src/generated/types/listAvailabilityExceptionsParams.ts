@@ -13,13 +13,22 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { BranchIdParameter } from './branchIdParameter';
+import type { DateParameter } from './dateParameter';
 import type { DoctorIdParameter } from './doctorIdParameter';
 import type { FromParameter } from './fromParameter';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
+import type { SearchParameter } from './searchParameter';
+import type { SortParameter } from './sortParameter';
 import type { ToParameter } from './toParameter';
 
 export type ListAvailabilityExceptionsParams = {
+search?: SearchParameter;
+/**
+ * Allowlisted field with optional minus prefix for descending order
+ */
+sort?: SortParameter;
+date?: DateParameter;
 doctorId?: DoctorIdParameter;
 branchId?: BranchIdParameter;
 from?: FromParameter;

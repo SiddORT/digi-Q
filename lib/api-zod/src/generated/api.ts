@@ -226,6 +226,8 @@ export const VerifyOtpResponse = zod.object({
 })
 
 
+export const listPublicClinicsQuerySelectedIdsMax = 10000;
+
 export const listPublicClinicsQueryPageDefault = 1;
 
 export const listPublicClinicsQueryPageSizeDefault = 20;
@@ -234,6 +236,7 @@ export const listPublicClinicsQueryPageSizeMax = 100;
 
 
 export const ListPublicClinicsQueryParams = zod.object({
+  "selectedIds": zod.coerce.string().max(listPublicClinicsQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
   "search": zod.coerce.string().optional(),
   "page": zod.coerce.number().int().min(1).default(listPublicClinicsQueryPageDefault),
   "pageSize": zod.coerce.number().int().min(1).max(listPublicClinicsQueryPageSizeMax).default(listPublicClinicsQueryPageSizeDefault)
@@ -247,7 +250,8 @@ export const listPublicClinicsResponseOneTotalMin = 0;
 export const ListPublicClinicsResponse = zod.object({
   "total": zod.number().int().min(listPublicClinicsResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
@@ -275,6 +279,8 @@ export const ListPublicClinicsResponse = zod.object({
 }))
 
 
+export const listPublicBranchesQuerySelectedIdsMax = 10000;
+
 export const listPublicBranchesQueryPageDefault = 1;
 
 export const listPublicBranchesQueryPageSizeDefault = 20;
@@ -283,6 +289,9 @@ export const listPublicBranchesQueryPageSizeMax = 100;
 
 
 export const ListPublicBranchesQueryParams = zod.object({
+  "selectedIds": zod.coerce.string().max(listPublicBranchesQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
+  "search": zod.coerce.string().optional(),
+  "doctorId": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
   "page": zod.coerce.number().int().min(1).default(listPublicBranchesQueryPageDefault),
   "pageSize": zod.coerce.number().int().min(1).max(listPublicBranchesQueryPageSizeMax).default(listPublicBranchesQueryPageSizeDefault)
@@ -296,7 +305,8 @@ export const listPublicBranchesResponseTwoItemsItemOneTimezoneDefault = `Asia/Ko
 export const ListPublicBranchesResponse = zod.object({
   "total": zod.number().int().min(listPublicBranchesResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "clinicId": zod.string(),
@@ -317,6 +327,8 @@ export const ListPublicBranchesResponse = zod.object({
 }))
 
 
+export const listPublicDoctorsQuerySelectedIdsMax = 10000;
+
 export const listPublicDoctorsQueryPageDefault = 1;
 
 export const listPublicDoctorsQueryPageSizeDefault = 20;
@@ -325,6 +337,7 @@ export const listPublicDoctorsQueryPageSizeMax = 100;
 
 
 export const ListPublicDoctorsQueryParams = zod.object({
+  "selectedIds": zod.coerce.string().max(listPublicDoctorsQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
   "search": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
   "branchId": zod.coerce.string().optional(),
@@ -340,7 +353,8 @@ export const listPublicDoctorsResponseOneTotalMin = 0;
 export const ListPublicDoctorsResponse = zod.object({
   "total": zod.number().int().min(listPublicDoctorsResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),
@@ -411,6 +425,7 @@ export const listClinicsQueryPageSizeMax = 100;
 export const ListClinicsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "status": zod.enum(['active', 'inactive']).optional(),
+  "adminId": zod.coerce.string().optional(),
   "city": zod.coerce.string().optional(),
   "page": zod.coerce.number().int().min(1).default(listClinicsQueryPageDefault),
   "pageSize": zod.coerce.number().int().min(1).max(listClinicsQueryPageSizeMax).default(listClinicsQueryPageSizeDefault),
@@ -425,7 +440,8 @@ export const listClinicsResponseOneTotalMin = 0;
 export const ListClinicsResponse = zod.object({
   "total": zod.number().int().min(listClinicsResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
@@ -600,6 +616,7 @@ export const listBranchesQueryPageSizeMax = 100;
 
 
 export const ListBranchesQueryParams = zod.object({
+  "doctorId": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
   "status": zod.enum(['active', 'inactive']).optional(),
@@ -616,7 +633,8 @@ export const listBranchesResponseTwoItemsItemOneTimezoneDefault = `Asia/Kolkata`
 export const ListBranchesResponse = zod.object({
   "total": zod.number().int().min(listBranchesResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "clinicId": zod.string(),
@@ -777,7 +795,8 @@ export const listDoctorsResponseTwoItemsItemOneConsultationFeeMin = 0;
 export const ListDoctorsResponse = zod.object({
   "total": zod.number().int().min(listDoctorsResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
@@ -1013,6 +1032,7 @@ export const listUsersQueryPageSizeMax = 100;
 
 
 export const ListUsersQueryParams = zod.object({
+  "linkedOnly": zod.coerce.boolean().optional(),
   "search": zod.coerce.string().optional(),
   "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']).optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -1033,7 +1053,8 @@ export const listUsersResponseOneTotalMin = 0;
 export const ListUsersResponse = zod.object({
   "total": zod.number().int().min(listUsersResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "fullName": zod.string().min(1),
@@ -1304,15 +1325,36 @@ export const ResendUserInvitationResponse = zod.object({
 /**
  * Management catalog only. It does not grant clinical or operational access. Doctors may request receptionist options only.
  */
+export const getStaffAssignmentOptionsQueryPageDefault = 1;
+
+export const getStaffAssignmentOptionsQueryPageSizeDefault = 20;
+export const getStaffAssignmentOptionsQueryPageSizeMax = 100;
+
+export const getStaffAssignmentOptionsQuerySelectedIdsMax = 10000;
+
+
+
 export const GetStaffAssignmentOptionsQueryParams = zod.object({
   "targetRole": zod.enum(['doctor', 'receptionist']),
   "doctorId": zod.coerce.string().optional().describe('Existing doctor being edited.'),
-  "userId": zod.coerce.string().optional().describe('Existing receptionist being edited.')
+  "userId": zod.coerce.string().optional().describe('Existing receptionist being edited.'),
+  "managingAdminId": zod.coerce.string().optional().describe('Narrows the catalog owner; cannot override an actor or edited staff owner.'),
+  "search": zod.coerce.string().optional(),
+  "page": zod.coerce.number().int().min(1).default(getStaffAssignmentOptionsQueryPageDefault),
+  "pageSize": zod.coerce.number().int().min(1).max(getStaffAssignmentOptionsQueryPageSizeMax).default(getStaffAssignmentOptionsQueryPageSizeDefault),
+  "clinicId": zod.coerce.string().optional(),
+  "branchId": zod.coerce.string().optional(),
+  "selectedIds": zod.coerce.string().max(getStaffAssignmentOptionsQuerySelectedIdsMax).optional().describe('Comma-separated IDs to resolve within the authorized catalog (maximum 100).')
 })
 
 
 
 export const getStaffAssignmentOptionsResponseBranchesItemOneTimezoneDefault = `Asia/Kolkata`;
+export const getStaffAssignmentOptionsResponsePaginationClinicsTotalMin = 0;
+
+export const getStaffAssignmentOptionsResponsePaginationBranchesTotalMin = 0;
+
+
 
 export const GetStaffAssignmentOptionsResponse = zod.object({
   "clinics": zod.array(zod.object({
@@ -1357,7 +1399,21 @@ export const GetStaffAssignmentOptionsResponse = zod.object({
   "managingAdmins": zod.array(zod.object({
   "id": zod.string(),
   "fullName": zod.string()
-}))
+})),
+  "pagination": zod.object({
+  "clinics": zod.object({
+  "total": zod.number().int().min(getStaffAssignmentOptionsResponsePaginationClinicsTotalMin),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
+}).optional(),
+  "branches": zod.object({
+  "total": zod.number().int().min(getStaffAssignmentOptionsResponsePaginationBranchesTotalMin),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
+}).optional()
+}).optional()
 })
 
 
@@ -1375,6 +1431,9 @@ export const ListPatientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
   "branchId": zod.coerce.string().optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
   "gender": zod.coerce.string().optional(),
   "page": zod.coerce.number().int().min(1).default(listPatientsQueryPageDefault),
   "pageSize": zod.coerce.number().int().min(1).max(listPatientsQueryPageSizeMax).default(listPatientsQueryPageSizeDefault),
@@ -1392,7 +1451,8 @@ export const listPatientsResponseTwoItemsItemOneAgeMax = 130;
 export const ListPatientsResponse = zod.object({
   "total": zod.number().int().min(listPatientsResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "fullName": zod.string().min(1),
@@ -1587,7 +1647,8 @@ export const listMastersResponseOneTotalMin = 0;
 export const ListMastersResponse = zod.object({
   "total": zod.number().int().min(listMastersResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "category": zod.enum(['country', 'state', 'city', 'area', 'pincode', 'clinicType', 'clinicCategory', 'clinicStatus', 'specialization', 'qualification', 'department', 'consultationType', 'appointmentStatus', 'appointmentType', 'bookingSource', 'cancellationReason', 'queueStatus', 'tokenPrefix', 'queueType', 'queuePriority', 'userRole', 'userStatus']),
@@ -1691,6 +1752,12 @@ export const DeleteMasterParams = zod.object({
 export const DeleteMasterResponse = zod.void()
 
 
+export const listSchedulesQueryDayOfWeekMin = 0;
+export const listSchedulesQueryDayOfWeekMax = 6;
+
+export const listSchedulesQueryWeekdayMin = 0;
+export const listSchedulesQueryWeekdayMax = 6;
+
 export const listSchedulesQueryPageDefault = 1;
 
 export const listSchedulesQueryPageSizeDefault = 20;
@@ -1699,6 +1766,10 @@ export const listSchedulesQueryPageSizeMax = 100;
 
 
 export const ListSchedulesQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "sort": zod.coerce.string().optional().describe('Allowlisted field with optional minus prefix for descending order'),
+  "dayOfWeek": zod.coerce.number().int().min(listSchedulesQueryDayOfWeekMin).max(listSchedulesQueryDayOfWeekMax).optional(),
+  "weekday": zod.coerce.number().int().min(listSchedulesQueryWeekdayMin).max(listSchedulesQueryWeekdayMax).optional().describe('Alias for dayOfWeek'),
   "doctorId": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
   "branchId": zod.coerce.string().optional(),
@@ -1725,7 +1796,8 @@ export const listSchedulesResponseTwoItemsItemOneQueueModeDefault = `mixed`;
 export const ListSchedulesResponse = zod.object({
   "total": zod.number().int().min(listSchedulesResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "doctorId": zod.string(),
@@ -1921,6 +1993,9 @@ export const listAvailabilityExceptionsQueryPageSizeMax = 100;
 
 
 export const ListAvailabilityExceptionsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "sort": zod.coerce.string().optional().describe('Allowlisted field with optional minus prefix for descending order'),
+  "date": zod.date().optional(),
   "doctorId": zod.coerce.string().optional(),
   "branchId": zod.coerce.string().optional(),
   "from": zod.date().optional(),
@@ -1937,7 +2012,8 @@ export const listAvailabilityExceptionsResponseOneTotalMin = 0;
 export const ListAvailabilityExceptionsResponse = zod.object({
   "total": zod.number().int().min(listAvailabilityExceptionsResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "doctorId": zod.string(),
@@ -2069,7 +2145,8 @@ export const listAppointmentsResponseTwoItemsItemOneNotesMax = 1000;
 export const ListAppointmentsResponse = zod.object({
   "total": zod.number().int().min(listAppointmentsResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "patientId": zod.string(),
@@ -2423,11 +2500,23 @@ export const TransitionAppointmentResponse = zod.object({
 /**
  * Poll every 30 seconds. Patients get aggregate tokens/counts and own entry only; entries are omitted for patients. Staff receive scoped identifiable entries.
  */
+export const getQueueQueryPageDefault = 1;
+
+export const getQueueQueryPageSizeDefault = 20;
+export const getQueueQueryPageSizeMax = 100;
+
+
+
 export const GetQueueQueryParams = zod.object({
   "doctorId": zod.coerce.string(),
   "branchId": zod.coerce.string(),
   "date": zod.date(),
-  "appointmentId": zod.coerce.string().optional()
+  "appointmentId": zod.coerce.string().optional(),
+  "page": zod.coerce.number().int().min(1).default(getQueueQueryPageDefault),
+  "pageSize": zod.coerce.number().int().min(1).max(getQueueQueryPageSizeMax).default(getQueueQueryPageSizeDefault),
+  "search": zod.coerce.string().optional(),
+  "sort": zod.coerce.string().optional().describe('Allowlisted field with optional minus prefix for descending order'),
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']).optional()
 })
 
 export const getQueueResponseEntriesItemOneNotesMax = 1000;
@@ -2435,6 +2524,10 @@ export const getQueueResponseEntriesItemOneNotesMax = 1000;
 
 
 export const GetQueueResponse = zod.object({
+  "page": zod.number().int().optional(),
+  "pageSize": zod.number().int().optional(),
+  "totalPages": zod.number().int().optional(),
+  "entriesTotal": zod.number().int().optional(),
   "doctorId": zod.string(),
   "branchId": zod.string(),
   "date": zod.coerce.date(),
@@ -2558,6 +2651,8 @@ export const listQrsQueryPageSizeMax = 100;
 
 
 export const ListQrsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "sort": zod.coerce.string().optional().describe('Allowlisted field with optional minus prefix for descending order'),
   "clinicId": zod.coerce.string().optional(),
   "branchId": zod.coerce.string().optional(),
   "doctorId": zod.coerce.string().optional(),
@@ -2573,7 +2668,8 @@ export const listQrsResponseOneTotalMin = 0;
 export const ListQrsResponse = zod.object({
   "total": zod.number().int().min(listQrsResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "name": zod.string(),
@@ -2762,9 +2858,16 @@ export const GetDashboardResponse = zod.object({
 })
 
 
+export const getReportsQueryPageDefault = 1;
+
+export const getReportsQueryPageSizeDefault = 20;
+export const getReportsQueryPageSizeMax = 100;
+
 export const getReportsQueryGroupByDefault = `date`;
 
 export const GetReportsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).default(getReportsQueryPageDefault),
+  "pageSize": zod.coerce.number().int().min(1).max(getReportsQueryPageSizeMax).default(getReportsQueryPageSizeDefault),
   "from": zod.date().optional(),
   "to": zod.date().optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -2774,6 +2877,10 @@ export const GetReportsQueryParams = zod.object({
 })
 
 export const GetReportsResponse = zod.object({
+  "page": zod.number().int().optional(),
+  "pageSize": zod.number().int().optional(),
+  "totalPages": zod.number().int().optional(),
+  "total": zod.number().int().optional(),
   "from": zod.coerce.date(),
   "to": zod.coerce.date(),
   "groupBy": zod.string(),
@@ -2796,6 +2903,7 @@ export const GetReportsResponse = zod.object({
 /**
  * Admin-only scoped summaries; sensitive old/new values are redacted.
  */
+export const listAuditLogsQueryActivityTypeDefault = `all`;
 export const listAuditLogsQueryPageDefault = 1;
 
 export const listAuditLogsQueryPageSizeDefault = 20;
@@ -2805,6 +2913,8 @@ export const listAuditLogsQueryPageSizeMax = 100;
 
 export const ListAuditLogsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
+  "sort": zod.coerce.string().optional().describe('Allowlisted field with optional minus prefix for descending order'),
+  "activityType": zod.enum(['all', 'operational', 'security']).default(listAuditLogsQueryActivityTypeDefault),
   "entityType": zod.coerce.string().optional(),
   "actorId": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -2821,7 +2931,8 @@ export const listAuditLogsResponseOneTotalMin = 0;
 export const ListAuditLogsResponse = zod.object({
   "total": zod.number().int().min(listAuditLogsResponseOneTotalMin),
   "page": zod.number().int(),
-  "pageSize": zod.number().int()
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
   "id": zod.string(),

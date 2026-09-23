@@ -97,6 +97,7 @@ export interface PageMeta {
   total: number;
   page: number;
   pageSize: number;
+  totalPages?: number;
 }
 
 export interface ProfileInput {
@@ -389,10 +390,16 @@ export interface ManagingAdminOption {
   fullName: string;
 }
 
+export type StaffAssignmentOptionsPagination = {
+  clinics?: PageMeta;
+  branches?: PageMeta;
+};
+
 export interface StaffAssignmentOptions {
   clinics: Clinic[];
   branches: Branch[];
   managingAdmins: ManagingAdminOption[];
+  pagination?: StaffAssignmentOptionsPagination;
 }
 
 export interface PublicDoctor {
@@ -704,6 +711,10 @@ export interface OwnQueueEntry {
 }
 
 export interface LiveQueue {
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+  entriesTotal?: number;
   doctorId: string;
   branchId: string;
   date: string;
@@ -811,6 +822,10 @@ export interface ReportRow {
 }
 
 export interface Report {
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+  total?: number;
   from: string;
   to: string;
   groupBy: string;
@@ -907,6 +922,11 @@ export type AuditLogList = PageMeta & {
  */
 export type ErrorResponse = ApiError;
 
+/**
+ * Comma-separated exact IDs within existing scope (maximum 100).
+ */
+export type SelectedIdsParameter = string;
+
 export type SearchParameter = string;
 
 export type PageParameter = number;
@@ -939,6 +959,11 @@ export type FromParameter = string;
 export type ToParameter = string;
 
 export type ListPublicClinicsParams = {
+/**
+ * Comma-separated exact IDs within existing scope (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: SelectedIdsParameter;
 search?: SearchParameter;
 /**
  * @minimum 1
@@ -952,6 +977,13 @@ pageSize?: PageSizeParameter;
 };
 
 export type ListPublicBranchesParams = {
+/**
+ * Comma-separated exact IDs within existing scope (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: SelectedIdsParameter;
+search?: SearchParameter;
+doctorId?: DoctorIdParameter;
 clinicId?: ClinicIdParameter;
 /**
  * @minimum 1
@@ -965,6 +997,11 @@ pageSize?: PageSizeParameter;
 };
 
 export type ListPublicDoctorsParams = {
+/**
+ * Comma-separated exact IDs within existing scope (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: SelectedIdsParameter;
 search?: SearchParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
@@ -989,6 +1026,7 @@ date: string;
 export type ListClinicsParams = {
 search?: SearchParameter;
 status?: StatusParameter;
+adminId?: string;
 city?: string;
 /**
  * @minimum 1
@@ -1006,6 +1044,7 @@ sort?: SortParameter;
 };
 
 export type ListBranchesParams = {
+doctorId?: DoctorIdParameter;
 clinicId?: ClinicIdParameter;
 search?: SearchParameter;
 status?: StatusParameter;
@@ -1047,6 +1086,7 @@ sort?: SortParameter;
 };
 
 export type ListUsersParams = {
+linkedOnly?: boolean;
 search?: SearchParameter;
 role?: Role;
 clinicId?: ClinicIdParameter;
@@ -1078,6 +1118,27 @@ doctorId?: string;
  * Existing receptionist being edited.
  */
 userId?: string;
+/**
+ * Narrows the catalog owner; cannot override an actor or edited staff owner.
+ */
+managingAdminId?: string;
+search?: SearchParameter;
+/**
+ * @minimum 1
+ */
+page?: PageParameter;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: PageSizeParameter;
+clinicId?: ClinicIdParameter;
+branchId?: BranchIdParameter;
+/**
+ * Comma-separated IDs to resolve within the authorized catalog (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: string;
 };
 
 export type GetStaffAssignmentOptionsTargetRole = typeof GetStaffAssignmentOptionsTargetRole[keyof typeof GetStaffAssignmentOptionsTargetRole];
@@ -1092,6 +1153,9 @@ export type ListPatientsParams = {
 search?: SearchParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
+status?: StatusParameter;
+from?: FromParameter;
+to?: ToParameter;
 gender?: string;
 /**
  * @minimum 1
@@ -1129,6 +1193,22 @@ sort?: SortParameter;
 };
 
 export type ListSchedulesParams = {
+search?: SearchParameter;
+/**
+ * Allowlisted field with optional minus prefix for descending order
+ */
+sort?: SortParameter;
+/**
+ * @minimum 0
+ * @maximum 6
+ */
+dayOfWeek?: number;
+/**
+ * Alias for dayOfWeek
+ * @minimum 0
+ * @maximum 6
+ */
+weekday?: number;
 doctorId?: DoctorIdParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
@@ -1144,6 +1224,12 @@ pageSize?: PageSizeParameter;
 };
 
 export type ListAvailabilityExceptionsParams = {
+search?: SearchParameter;
+/**
+ * Allowlisted field with optional minus prefix for descending order
+ */
+sort?: SortParameter;
+date?: DateParameter;
 doctorId?: DoctorIdParameter;
 branchId?: BranchIdParameter;
 from?: FromParameter;
@@ -1190,9 +1276,29 @@ doctorId: string;
 branchId: string;
 date: string;
 appointmentId?: string;
+/**
+ * @minimum 1
+ */
+page?: PageParameter;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: PageSizeParameter;
+search?: SearchParameter;
+/**
+ * Allowlisted field with optional minus prefix for descending order
+ */
+sort?: SortParameter;
+status?: AppointmentStatus;
 };
 
 export type ListQrsParams = {
+search?: SearchParameter;
+/**
+ * Allowlisted field with optional minus prefix for descending order
+ */
+sort?: SortParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
 doctorId?: DoctorIdParameter;
@@ -1216,6 +1322,15 @@ doctorId?: DoctorIdParameter;
 };
 
 export type GetReportsParams = {
+/**
+ * @minimum 1
+ */
+page?: PageParameter;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: PageSizeParameter;
 from?: FromParameter;
 to?: ToParameter;
 clinicId?: ClinicIdParameter;
@@ -1235,6 +1350,11 @@ export const GetReportsGroupBy = {
 
 export type ListAuditLogsParams = {
 search?: SearchParameter;
+/**
+ * Allowlisted field with optional minus prefix for descending order
+ */
+sort?: SortParameter;
+activityType?: ListAuditLogsActivityType;
 entityType?: string;
 actorId?: string;
 clinicId?: ClinicIdParameter;
@@ -1250,4 +1370,13 @@ page?: PageParameter;
  */
 pageSize?: PageSizeParameter;
 };
+
+export type ListAuditLogsActivityType = typeof ListAuditLogsActivityType[keyof typeof ListAuditLogsActivityType];
+
+
+export const ListAuditLogsActivityType = {
+  all: 'all',
+  operational: 'operational',
+  security: 'security',
+} as const;
 

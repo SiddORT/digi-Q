@@ -5,6 +5,7 @@ import { Logo } from "./App";
 import { Check, X, Camera, Image as ImageIcon, QrCode } from "lucide-react";
 import * as api from "@workspace/api-client-react";
 import jsQR from "jsqr";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function CheckInScanner() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -16,6 +17,9 @@ export function CheckInScanner() {
   if (!isSignedIn) {
     const encoded = encodeURIComponent(`/check-in${search ? `?${search}` : ""}`);
     return <Redirect to={`/sign-in?redirect=${encoded}`} />;
+  }
+  if (me.error || !me.data?.user) {
+    return <main className="public-book"><div className="error-box" role="alert"><h2>Unable to verify staff access</h2><p>Please retry before scanning an appointment.</p><button className="button secondary" onClick={() => me.refetch()}>Retry</button></div></main>;
   }
   
   if (me.data?.user?.role === "patient") {
@@ -34,7 +38,7 @@ export function CheckInScanner() {
     <div className="landing">
       <header className="public-header"><Logo/></header>
       <main style={{ padding: "40px 20px", maxWidth: "600px", margin: "0 auto" }}>
-        <section className="panel">
+        <section className="panel padded">
           <span className="eyebrow">CLINIC STAFF</span>
           <h2>Appointment Check-In</h2>
           <ScannerCore initialPayload={payloadFromUrl} />
@@ -52,6 +56,8 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
   const [mode, setMode] = useState<"camera" | "file">("camera");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const submitting = useRef(false);
+  const client = useQueryClient();
 
   useEffect(() => {
     if (payload) {
@@ -68,6 +74,11 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
 
   useEffect(() => {
     if (mode === "camera" && !payload) {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setScanError("Camera access is unavailable in this browser. Upload a QR image instead.");
+        setMode("file");
+        return;
+      }
       let active = true;
       navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
         .then(stream => {
@@ -78,13 +89,19 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
           streamRef.current = stream;
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
-            videoRef.current.play();
-            requestAnimationFrame(scanVideo);
+            videoRef.current.play().then(() => {
+              if (active) requestAnimationFrame(scanVideo);
+            }).catch(() => {
+              if (active) {
+                setScanError("Unable to start the camera. Upload a QR image instead.");
+                setMode("file");
+              }
+            });
           }
         })
         .catch(err => {
-          console.error("Camera error:", err);
-          alert(err.message || "Could not access camera. Please check permissions or use an image file.");
+          if (!active) return;
+          setScanError("Could not access the camera. Check camera permissions or upload a QR image.");
           setMode("file");
         });
         
@@ -155,11 +172,19 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
     setScanError(null);
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
+    if (file.size > 10 * 1024 * 1024) {
+      setScanError("Choose a QR image smaller than 10 MB.");
+      return;
+    }
     const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
+      const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
@@ -170,13 +195,21 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
         } else {
           setScanError("No QR code found in image. Please try a clearer image.");
         }
+      } else {
+        setScanError("Unable to read this image. Please try a different image.");
       }
     };
-    img.src = URL.createObjectURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      setScanError("This image could not be opened. Choose a valid PNG, JPEG or WebP image.");
+    };
+    img.src = objectUrl;
   };
 
   const reset = () => {
+    if (submitting.current) return;
     setPayload(null);
+    setScanError(null);
     resolve.reset();
     checkIn.reset();
   };
@@ -184,7 +217,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
   if (payload) {
     if (resolve.isPending) return <div className="skeleton">Verifying appointment...</div>;
     if (resolve.error) return (
-      <div className="error-box">
+       <div className="error-box" role="alert">
         Invalid or expired QR code.
         <button onClick={reset}>Scan again</button>
       </div>
@@ -193,7 +226,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
       const { appointment, eligible, alreadyCheckedIn, message } = resolve.data;
       if (checkIn.isSuccess && checkIn.data) {
          return (
-           <div style={{ textAlign: "center", padding: "20px 0" }}>
+            <div role="status" style={{ textAlign: "center", padding: "20px 0" }}>
              <span className="confirmation-check"><Check size={34}/></span>
              <h2>{checkIn.data.alreadyCheckedIn ? "Already Checked In" : "Checked In"}</h2>
              <p>{checkIn.data.message || `${checkIn.data.appointment.patientName} has been checked in successfully.`}</p>
@@ -208,6 +241,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
       }
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+           {checkIn.error && <div className="error-box" role="alert">Check-in was not confirmed. Please retry; an existing check-in will not be duplicated.</div>}
           <div>
             <small>PATIENT</small>
             <h3>{appointment.patientName}</h3>
@@ -221,12 +255,19 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
             <button 
               className="button" 
               disabled={checkIn.isPending} 
-              onClick={() => checkIn.mutate({ data: { payload } })}
+              onClick={() => {
+                if (submitting.current || checkIn.isPending) return;
+                submitting.current = true;
+                checkIn.mutate({ data: { payload } }, {
+                  onSuccess: () => { client.invalidateQueries(); },
+                  onSettled: () => { submitting.current = false; },
+                });
+              }}
             >
               {checkIn.isPending ? "Checking in..." : "Confirm Check-in"}
             </button>
           )}
-          <button className="button secondary" onClick={reset}>Cancel / Scan another</button>
+          <button className="button secondary" disabled={checkIn.isPending} onClick={reset}>Cancel / Scan another</button>
         </div>
       );
     }
@@ -234,6 +275,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {scanError && <div className="error-box" role="alert">{scanError}</div>}
       <div className="toolbar" style={{ justifyContent: "center" }}>
         <button className={`button small ${mode === "camera" ? "" : "light"}`} onClick={() => setMode("camera")}><Camera size={16}/> Camera</button>
         <button className={`button small ${mode === "file" ? "" : "light"}`} onClick={() => setMode("file")}><ImageIcon size={16}/> Image File</button>
@@ -248,7 +290,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
         <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", aspectRatio: "1", border: "2px dashed var(--color-input)", borderRadius: "12px", cursor: "pointer" }}>
           <QrCode size={48} style={{ color: "var(--color-muted-foreground)", marginBottom: "16px" }} />
           <span>Upload QR Code Image</span>
-          <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleFileUpload} />
+          <input type="file" accept="image/*" onChange={handleFileUpload} />
         </label>
       )}
     </div>

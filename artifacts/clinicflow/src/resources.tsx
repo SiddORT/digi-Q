@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Link } from "wouter";
@@ -7,6 +7,9 @@ import * as api from "@workspace/api-client-react";
 import QRCode from "qrcode";
 import { Plus, Search, X, Pencil, Trash2, Download } from "lucide-react";
 import { ClinicAdminOnboarding } from "./components/ClinicAdminOnboarding";
+import { ResourceLookup, ResourceMultiLookup } from "./components/ResourceLookup";
+import { Pagination, SearchInput, FilterBar, useDebouncedValue } from "./components/ListingControls";
+import { AppDialog } from "./components/AppDialog";
 
 export const title = (s:string) => s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase());
 export const today = (timeZone?:string) => new Date().toLocaleDateString("en-CA",timeZone?{timeZone}:undefined);
@@ -33,96 +36,46 @@ export const resources:Record<string,Resource>={
   qrs:{name:"booking QR codes",list:api.listQrs,create:api.createQr,update:api.updateQr,remove:api.deleteQr,fields:[f("name","text",true),relation("clinicId","clinics",true),{...relation("branchId","branches"),nullable:true},{...relation("doctorId","doctors"),nullable:true},status],columns:["name","reference","status"]},
  audit:{name:"audit events",list:api.listAuditLogs,fields:[],columns:["createdAt","actorName","action","entityType","summary"]},
 };
-export async function allPages<T>(list:(params:any)=>Promise<{items:T[];total:number}>,params:Record<string,unknown>={}):Promise<{items:T[];total:number}>{
- const first=await list({...params,page:1,pageSize:100});
- const items=[...first.items];
- const pages=Math.ceil(first.total/100);
- for(let page=2;page<=pages;page+=4){
-  const batch=await Promise.all(Array.from({length:Math.min(4,pages-page+1)},(_,i)=>list({...params,page:page+i,pageSize:100})));
-  batch.forEach(result=>items.push(...result.items));
- }
- return {items,total:first.total};
-}
 function MasterTextInput({field,register}:any){
- const q=useQuery({queryKey:["lookup","masters",field.category],queryFn:()=>allPages(api.listMasters,{category:field.category,status:"active"})});
- return <><input list={`master-options-${field.key}`} {...register(field.key,{required:field.required})} data-testid={`input-${field.key}`}/><datalist id={`master-options-${field.key}`}>{q.data?.items.map(row=><option key={row.id} value={row.name}/>)}</datalist>{q.isLoading&&<small>Loading location suggestions…</small>}<ErrorNotice error={q.error}/></>;
+ const [search,setSearch]=useState("");
+ const term=useDebouncedValue(search);
+ const q=useQuery({queryKey:["lookup","masters",field.category,term],queryFn:()=>api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any)});
+ return <><input list={`master-options-${field.key}`} {...register(field.key,{required:field.required,onChange:(e:any)=>setSearch(e.target.value)})} data-testid={`input-${field.key}`}/><datalist id={`master-options-${field.key}`}>{q.data?.items.map(row=><option key={row.id} value={row.name}/>)}</datalist>{q.isLoading&&<small>Loading location suggestions…</small>}{(q.data?.total||0)>20&&<small>Type to refine location suggestions. Free text is accepted.</small>}<ErrorNotice error={q.error}/></>;
 }
-import { SearchableMultiSelect } from "./components/SearchableMultiSelect";
-
-function RelationInput({field,register,defaultValue,form,fields,resourceName}:any){
-  const me = api.useGetMe({query:{queryKey:api.getGetMeQueryKey(), staleTime: 60000}});
-  const isDoctorBranchClinic = me.data?.user?.role === "doctor" && resourceName === "branches" && field.resource === "clinics";
-
-  const optionsParams = { targetRole: "receptionist" as const };
-  const assignmentOptions = api.useGetStaffAssignmentOptions(optionsParams, {
-    query: {
-      queryKey: api.getGetStaffAssignmentOptionsQueryKey(optionsParams),
-      staleTime: 60000,
-      enabled: !!(isDoctorBranchClinic && me.data?.doctorId)
-    }
-  });
-
-  const values=form.watch();
-  const clinicIds=values.clinicIds || (values.clinicId?[values.clinicId]:[]);
-  const hasClinic=fields.some((f:Field)=>["clinicId","clinicIds"].includes(f.key));
-  const params=field.category?{category:field.category}:
-    field.resource==="doctors"?{clinicId:values.clinicId||undefined,branchId:hasClinic?values.branchId||undefined:undefined}:
-    field.resource==="branches"&&values.clinicId?{clinicId:values.clinicId}:{};
-  const q=useQuery({queryKey:["lookup",field.resource,params],queryFn:()=>allPages<any>(resources[field.resource].list,params)});
-  const assignedDoctor=useQuery({queryKey:["lookup-doctor-branches",values.doctorId],queryFn:()=>api.getDoctor(values.doctorId),enabled:field.resource==="branches"&&!hasClinic&&!!values.doctorId});
+function RelationInput({field,form,fields,resourceName}:any){
+ const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),staleTime:60000}});
+ const values=form.watch();
  const many=field.key.endsWith("Ids");
-
-  const baseItems = isDoctorBranchClinic && assignmentOptions.data ? assignmentOptions.data.clinics : (q.data?.items||[]);
-  const rows=baseItems.filter((r:any)=>{
-    const isSelected = many ? (defaultValue?.includes(r.id) || form.watch(field.key)?.includes(r.id)) : (defaultValue === r.id || form.watch(field.key) === r.id);
-    if (r.status === "inactive" && !isSelected) return false;
-    if(field.resource==="branches"){
-      if(hasClinic&&!clinicIds.includes(r.clinicId))return false;
-      if(!hasClinic&&fields.some((f:Field)=>f.key==="doctorId")&&!assignedDoctor.data?.branchIds?.includes(r.id))return false;
-    }
-    if(field.resource==="doctors"){
-      if(hasClinic&&!values.clinicId)return false;
-      if(values.clinicId&&!r.clinicIds?.includes(values.clinicId))return false;
-      if(hasClinic&&values.branchId&&!r.branchIds?.includes(values.branchId))return false;
-    }
-    return true;
-  });
-  const rowIds=rows.map((r:any)=>r.id).join(",");
-  useEffect(()=>{
-    if(!q.data||q.isFetching||q.error||assignedDoctor.isFetching)return;
-    const value=form.getValues(field.key);
-    if(many&&Array.isArray(value)){
-      const valid=value.filter((id: string)=>rows.some((r:any)=>r.id===id) || (defaultValue && defaultValue.includes(id)));
-      if(valid.length!==value.length)form.setValue(field.key,valid);
-    }else if(value&&!rows.some((r:any)=>r.id===value))form.setValue(field.key,"");
-  },[rowIds,q.data,q.isFetching,q.error,assignedDoctor.isFetching]);
-
-  useEffect(() => {
-    if (many) form.register(field.key, { validate: (v: any) => !field.required || (Array.isArray(v) && v.length > 0) || "Required" });
-  }, [field.key, field.required, form, many]);
-
-  if (many) {
-    const value = form.watch(field.key) || [];
-    const options = q.data?.items?.map((r: any) => {
-      const isAvailable = rows.some((row: any) => row.id === r.id);
-      return { value: r.id, label: r.name || r.fullName, hidden: !isAvailable };
-    }) || [];
-
-    return <>
-      <SearchableMultiSelect
-        options={options}
-        value={value}
-        onChange={(v) => form.setValue(field.key, v, { shouldValidate: true, shouldDirty: true })}
-        isLoading={q.isLoading}
-      />
-      <ErrorNotice error={q.error}/>
-    </>;
-  }
-
-  return <><select {...register(field.key,{required:field.required})} defaultValue={defaultValue} data-testid={`input-${field.key}`}><option value="">{q.isLoading?"Loading all available records…":"Select…"}</option>{rows.map((r:any)=><option key={r.id} value={r.id}>{r.name||r.fullName} {r.code?`· ${r.code}`:""}</option>)}</select><ErrorNotice error={q.error}/></>;
+ const clinicIds=values.clinicIds || (values.clinicId?[values.clinicId]:[]);
+ const hasClinic=fields.some((f:Field)=>["clinicId","clinicIds"].includes(f.key));
+ const assignment=((resourceName==="doctors"||resourceName==="users")&&["clinics","branches"].includes(field.resource))||(resourceName==="branches"&&field.resource==="clinics"&&me.data?.user?.role==="doctor");
+ const params:Record<string,unknown>=field.category?{category:field.category}:{};
+ if(field.resource==="users")params.role="clinicAdmin";
+ if(field.resource==="branches"){
+   if(clinicIds.length)params.clinicId=clinicIds.join(",");
+   if(values.doctorId)params.doctorId=values.doctorId;
+ }
+ if(field.resource==="doctors"){
+   if(values.clinicId)params.clinicId=values.clinicId;
+   if(values.branchId)params.branchId=values.branchId;
+ }
+ if(assignment){params.targetRole=resourceName==="doctors"?"doctor":"receptionist";params[resourceName==="doctors"?"doctorId":"userId"]=values.id;}
+ useEffect(()=>{form.register(field.key,{validate:(value:any)=>!field.required||(many?value?.length>0:!!value)||"Required"});},[field.key,field.required]);
+ const change=(value:any)=>{
+   form.setValue(field.key,value,{shouldValidate:true,shouldDirty:true});
+   if(["clinicId","clinicIds"].includes(field.key)){
+     for(const dependent of ["branchId","branchIds","doctorId"])if(fields.some((f:Field)=>f.key===dependent))form.setValue(dependent,dependent.endsWith("Ids")?[]:"",{shouldDirty:true});
+   }
+   if(field.key==="branchId"&&hasClinic&&fields.some((f:Field)=>f.key==="doctorId"))form.setValue("doctorId","",{shouldDirty:true});
+ };
+ const props={resource:assignment?`assignment:${field.resource}`:field.resource,params,disabled:["branches","doctors"].includes(field.resource)&&hasClinic&&!clinicIds.length,required:field.required,onChange:change};
+ return many?<ResourceMultiLookup {...props} value={values[field.key]||[]}/>:<ResourceLookup {...props} value={values[field.key]||""}/>;
 }
-export function Editor({fields,initial={},onSave,busy=false,submitLabel="Save changes",resourceName}:{fields:Field[];initial?:any;onSave:(data:any)=>void;busy?:boolean;submitLabel?:string;resourceName?:string}){
+export function Editor({fields,initial={},onSave,busy=false,submitLabel="Save changes",resourceName,onDirtyChange}:{fields:Field[];initial?:any;onSave:(data:any)=>void;busy?:boolean;submitLabel?:string;resourceName?:string;onDirtyChange?:(dirty:boolean)=>void}){
  const form=useForm({defaultValues:initial});
+ const submitting=useRef(false);
+ useEffect(()=>{if(!busy)submitting.current=false;},[busy]);
+ useEffect(()=>{onDirtyChange?.(form.formState.isDirty);},[form.formState.isDirty,onDirtyChange]);
  const currentRole = form.watch("role");
  const activeFields = useMemo(() => {
    return fields.map(f => {
@@ -139,7 +92,7 @@ export function Editor({fields,initial={},onSave,busy=false,submitLabel="Save ch
    }).filter(f => !f.hidden);
  }, [fields, currentRole]);
 
-   return <Form {...form}><form className="form-grid" onSubmit={form.handleSubmit(values=>{const body:any={}; activeFields.forEach(field=>{
+   return <Form {...form}><form className="form-grid" onSubmit={form.handleSubmit(values=>{if(busy||submitting.current)return;submitting.current=true;const body:any={}; activeFields.forEach(field=>{
     let value=values[field.key];
     const isClinicOrBranchMapping = field.key === "clinicIds" || field.key === "branchIds";
     if (field.key === "adminId" || field.key === "ownerAdminId") {
@@ -170,17 +123,29 @@ function QrCard({row}:{row:any}){
  const url=`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/,"")}/book/${row.reference}`;
  useEffect(()=>{QRCode.toDataURL(url,{width:400,margin:2}).then(setImage).catch(setError);},[url]);
  const regenerate=useMutation({mutationFn:()=>api.regenerateQr(row.id),onSuccess:()=>client.invalidateQueries()});
- return <div className="qr-card">{image&&<img src={image} alt={`Booking QR code for ${row.name}`}/>}<strong>{row.name}</strong><a href={url} target="_blank" rel="noreferrer">{url}</a><a className="button secondary small" href={image} download={`${row.name}-qr.png`}><Download size={15}/> Download PNG</a><button disabled={regenerate.isPending} onClick={()=>{if(confirm("Regenerate this QR code? Printed copies will stop working."))regenerate.mutate();}}>Regenerate reference</button><ErrorNotice error={error||regenerate.error}/></div>;
+ return <div className="qr-card">{image?<img src={image} alt={`Booking QR code for ${row.name}`}/>:!error&&<p role="status">Generating QR image…</p>}<strong>{row.name}</strong><a href={url} target="_blank" rel="noreferrer">{url}</a>{image&&<a className="button secondary small" href={image} download={`${row.name}-qr.png`}><Download size={15}/> Download PNG</a>}<button disabled={regenerate.isPending} onClick={()=>{if(!regenerate.isPending&&confirm("Regenerate this QR code? Printed copies will stop working."))regenerate.mutate();}}>{regenerate.isPending?"Regenerating…":"Regenerate reference"}</button>{regenerate.isSuccess&&<p className="notice" role="status">QR reference regenerated. Download and replace printed copies.</p>}<ErrorNotice error={error||regenerate.error}/></div>;
 }
 export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{resource:string;identity?:api.Identity;defaults?:any;allowCreate?:boolean}){
+ const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),staleTime:60000}});
  const config=resources[resource]; const [search,setSearch]=useState("");const [page,setPage]=useState(1);const [editing,setEditing]=useState<any>(null);
- const supportsSearch=!["availability","exceptions","qrs"].includes(resource);
+ const [pageSize,setPageSize]=useState(20);
+ const [filters,setFilters]=useState<Record<string,string>>({});
+ const [sort,setSort]=useState("-createdAt");
+ const [dirty,setDirty]=useState(false);
+ const [success,setSuccess]=useState("");
+ const term=useDebouncedValue(search);
+ const supportsSearch=true;
+ const filter=(key:string,value:string)=>{setFilters(previous=>({...previous,[key]:value,...(key==="clinicId"?{branchId:"",doctorId:""}:{})}));setPage(1);};
+ const active=!!(search||Object.values(filters).some(Boolean));
+ const reset=()=>{setSearch("");setFilters({});setSort("-createdAt");setPage(1);};
+ const listParams={...Object.fromEntries(Object.entries(filters).filter(([,value])=>value!=="")),search:term||undefined,page,pageSize,sort};
  const [recoveryId,setRecoveryId]=useState("");
  const recovery=api.useRequestUserPasswordReset();
  const client=useQueryClient();
- const query=useQuery({queryKey:[resource,{search: supportsSearch?search:undefined,page}],queryFn:()=>config.list({...(supportsSearch?{search}:{}),page,pageSize:10})});
- const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,data):config.create(data),onSuccess:()=>{setEditing(null);client.invalidateQueries();}});
- const remove=useMutation({mutationFn:(id:string)=>config.remove(id),onSuccess:()=>client.invalidateQueries()});
+ const query=useQuery<any>({queryKey:[resource,listParams],queryFn:()=>config.list(listParams)});
+ useEffect(()=>{if(query.data&&page>1&&page>Math.max(1,Math.ceil(query.data.total/pageSize)))setPage(Math.max(1,Math.ceil(query.data.total/pageSize)));},[query.data,page,pageSize]);
+ const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,data):config.create(data),onSuccess:()=>{setEditing(null);setSuccess("Record saved successfully.");client.invalidateQueries();}});
+ const remove=useMutation({mutationFn:(id:string)=>config.remove(id),onSuccess:()=>{setSuccess("Record deleted or deactivated successfully.");client.invalidateQueries();}});
 
  const effectiveFields = useMemo(() => {
    if (!identity?.user) return config.fields;
@@ -203,12 +168,36 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
    });
  }, [config.fields, identity, resource, editing]);
 
- return <><div className="toolbar">{supportsSearch?<div className="search"><Search size={17}/><input placeholder={`Search ${config.name}…`} value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} data-testid={`search-${resource}`}/></div>:<span className="muted">{title(config.name)} · Page {page}</span>}{config.create&&allowCreate&&<button className="button small" onClick={()=>{save.reset();setEditing(defaults);}} data-testid={`button-add-${resource}`}><Plus size={17}/> Add {resource==="availability"?"schedule":resource==="exceptions"?"exception":resource==="qrs"?"QR code":resource.replace(/s$/,"")}</button>}</div>{!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={query.error||remove.error}/>
-  {resource==="users"&&identity?.user?.role!=="doctor"&&<section className="panel padded" style={{marginBottom:20}}><h3>Account recovery assistance</h3><p className="muted">Select a linked staff account to view the secure Clerk recovery steps. This action does not send an email.</p><div className="inline-form"><select aria-label="User for password recovery" value={recoveryId} onChange={e=>{setRecoveryId(e.target.value);recovery.reset();}} data-testid="select-recovery-user"><option value="">Select user from this page…</option>{query.data?.items.filter((u:any)=>u.role!=="patient"&&u.clerkId).map((u:any)=><option key={u.id} value={u.id}>{u.fullName} · {u.email}</option>)}</select><button disabled={!recoveryId||recovery.isPending} onClick={()=>recovery.mutate({id:recoveryId})} data-testid="button-password-reset">{recovery.isPending?"Loading…":"Get recovery steps"}</button></div><ErrorNotice error={recovery.error}/>{recovery.data&&<div className="notice" data-testid="status-password-recovery"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link" data-testid="link-password-recovery">Open secure password recovery</Link></div>}</section>}
- <section className="panel table-panel">{query.isLoading?<div className="skeleton">Loading {config.name}…</div>:query.data?.items?.length?<><div className="table-scroll"><table><thead><tr>{config.columns.map(c=><th key={c}>{title(c)}</th>)}{config.update&&<th>Actions</th>}</tr></thead><tbody>{query.data.items.map((row:any)=><tr key={row.id} data-testid={`row-${resource}-${row.id}`}>{config.columns.map(c=><td key={c} style={c === "clinicNames" || c === "branchNames" ? { maxWidth: 200, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } : undefined} title={c === "clinicNames" || c === "branchNames" ? (Array.isArray(row[c]) ? row[c].join(", ") : row[c]) : undefined}>{c==="status"?<span className={`badge ${row[c]}`}>{title(row[c]||"")}</span>:c==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][row[c]]:typeof row[c]==="boolean"?(row[c]?"Yes":"No"):(c === "clinicNames" || c === "branchNames") ? (Array.isArray(row[c]) ? row[c].join(", ") : row[c] || "—") : row[c]??"—"}</td>)}{config.update&&<td><div className="row-actions"><button aria-label="Edit" onClick={()=>{save.reset();setEditing(row);}}><Pencil size={15}/></button><button aria-label="Delete or deactivate" disabled={remove.isPending} onClick={()=>{if(confirm("Delete or deactivate this record? Records with history are preserved."))remove.mutate(row.id);}}><Trash2 size={15}/></button></div></td>}</tr>)}</tbody></table></div><div className="pagination"><span>{query.data.total} records</span><button disabled={page===1} onClick={()=>setPage(page-1)}>Previous</button><span>Page {page}</span><button disabled={page*10>=query.data.total} onClick={()=>setPage(page+1)}>Next</button></div></>:<Empty label={config.name}/>}</section>
+ return <><div className="toolbar"><SearchInput placeholder={`Search ${config.name}…`} value={search} onChange={value=>{setSearch(value);setPage(1);}}/>{config.create&&allowCreate&&<button className="button small" onClick={()=>{save.reset();setDirty(false);setEditing(defaults);}} data-testid={`button-add-${resource}`}><Plus size={17}/> Add {resource==="availability"?"schedule":resource==="exceptions"?"exception":resource==="qrs"?"QR code":resource.replace(/s$/,"")}</button>}</div>
+ <FilterBar onReset={reset} active={active}>
+ {config.fields.some(f=>f.key==="status")&&<label>Status<select value={filters.status||""} onChange={e=>filter("status",e.target.value)}><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>}
+ {resource==="clinics"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Clinic admin" params={{role:"clinicAdmin"}} value={filters.adminId||""} onChange={value=>filter("adminId",value)}/>}
+ {resource==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={filters.specializationId||""} onChange={value=>filter("specializationId",value)}/>}
+ {resource==="doctors"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Managing admin" params={{role:"clinicAdmin"}} value={filters.managingAdminId||""} onChange={value=>filter("managingAdminId",value)}/>}
+ {["patients","audit"].includes(resource)&&<><label>From date<input type="date" value={filters.from||""} onChange={e=>filter("from",e.target.value)}/></label><label>To date<input type="date" min={filters.from||undefined} value={filters.to||""} onChange={e=>filter("to",e.target.value)}/></label></>}
+ {["branches","doctors","patients","availability","qrs"].includes(resource)&&<ResourceLookup resource="clinics" label="Clinic" value={filters.clinicId||""} onChange={value=>filter("clinicId",value)}/>}
+ {["doctors","patients","availability","exceptions","qrs"].includes(resource)&&<ResourceLookup resource="branches" label="Branch" params={{clinicId:filters.clinicId||undefined}} value={filters.branchId||""} onChange={value=>filter("branchId",value)}/>}
+ {["availability","exceptions","qrs"].includes(resource)&&<ResourceLookup resource="doctors" label="Doctor" params={{clinicId:filters.clinicId||undefined,branchId:filters.branchId||undefined}} value={filters.doctorId||""} onChange={value=>filter("doctorId",value)}/>}
+ {resource==="masters"&&<label>Category<select value={filters.category||""} onChange={e=>filter("category",e.target.value)}><option value="">All categories</option>{Object.values(api.MasterInputCategory).map(category=><option key={category}>{category}</option>)}</select></label>}
+ {resource==="availability"&&<label>Day<select value={filters.dayOfWeek||""} onChange={e=>filter("dayOfWeek",e.target.value)}><option value="">All days</option>{["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].map((day,index)=><option key={day} value={index}>{day}</option>)}</select></label>}
+ {resource==="exceptions"&&<label>Date<input type="date" value={filters.date||""} onChange={e=>filter("date",e.target.value)}/></label>}
+ {resource==="audit"&&<label>Event category<select value={filters.activityType||""} onChange={e=>filter("activityType",e.target.value)}><option value="">All events</option><option value="operational">Operational activity</option><option value="security">Security audit</option></select></label>}
+ <label>Sort<select value={sort} onChange={e=>{setSort(e.target.value);setPage(1);}}><option value="-createdAt">Newest first</option><option value="createdAt">Oldest first</option>{["clinics","branches","masters","qrs"].includes(resource)&&<><option value="name">Name A–Z</option><option value="-name">Name Z–A</option></>}{["doctors","patients","users"].includes(resource)&&<><option value="fullName">Name A–Z</option><option value="-fullName">Name Z–A</option></>}</select></label>
+ </FilterBar>
+ {success&&<p className="notice" role="status">{success}</p>}
+ {!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={remove.error}/>
+  {resource==="users"&&identity?.user?.role!=="doctor"&&<section className="panel padded" style={{marginBottom:20}}><h3>Account recovery assistance</h3><p className="muted">Select a linked staff account to view the secure Clerk recovery steps. This action does not send an email.</p><div className="inline-form"><ResourceLookup resource="users" label="Staff account" params={{role:"receptionist",linkedOnly:true}} value={recoveryId} onChange={value=>{setRecoveryId(value);recovery.reset();}}/><button disabled={!recoveryId||recovery.isPending} onClick={()=>{if(!recovery.isPending)recovery.mutate({id:recoveryId});}} data-testid="button-password-reset">{recovery.isPending?"Loading…":"Get recovery steps"}</button></div><ErrorNotice error={recovery.error}/>{recovery.data&&<div className="notice" data-testid="status-password-recovery"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link" data-testid="link-password-recovery">Open secure password recovery</Link></div>}</section>}
+ <section className="panel table-panel">
+ {query.isLoading?<div className="skeleton" role="status">Loading {config.name}…</div>:query.error?<><ErrorNotice error={query.error}/><button onClick={()=>query.refetch()}>Retry</button></>:query.data?.items?.length?<div className="table-scroll"><table>
+ <thead><tr>{config.columns.map(c=><th key={c}>{title(c)}</th>)}{config.update&&<th>Actions</th>}</tr></thead>
+ <tbody>{query.data.items.map((row:any)=><tr key={row.id} data-testid={`row-${resource}-${row.id}`}>
+ {config.columns.map(c=><td key={c} data-label={title(c)}>{c==="status"?<span className={`badge ${row[c]}`}>{title(row[c]||"")}</span>:c==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][row[c]]:c==="createdAt"?(settings.data?.timezone?new Date(row[c]).toLocaleString(undefined,{timeZone:settings.data.timezone}):row[c]):typeof row[c]==="boolean"?(row[c]?"Yes":"No"):Array.isArray(row[c])?row[c].join(", ")||"—":row[c]??"—"}</td>)}
+ {config.update&&<td data-label="Actions"><div className="row-actions"><button aria-label="Edit" onClick={()=>{save.reset();setDirty(false);setEditing(row);}}><Pencil size={15}/></button><button aria-label="Delete or deactivate" disabled={remove.isPending} onClick={()=>{if(!remove.isPending&&confirm("Delete or deactivate this record? Records with history are preserved."))remove.mutate(row.id);}}><Trash2 size={15}/></button></div></td>}
+ </tr>)}</tbody></table></div>:active?<div className="empty"><h3>No matching {config.name}</h3><p>Try a different search or clear your filters.</p><button onClick={reset}>Clear filters</button></div>:<Empty label={config.name}/>}
+ {!query.error&&<Pagination page={page} pageSize={pageSize} total={query.data?.total||0} onPageChange={setPage} onPageSizeChange={size=>{setPageSize(size);setPage(1);}}/>}</section>
  {resource==="users"&&identity?.user?.role==="superAdmin"&&allowCreate&&<ClinicAdminOnboarding />}
  {resource==="qrs"&&<div className="qr-grid">{query.data?.items?.filter((r:any)=>r.status==="active").map((r:any)=><QrCard row={r} key={r.id}/>)}</div>}
- {editing&&<div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true"><div className="panel-heading"><div><span className="eyebrow">{editing.id?"UPDATE RECORD":"NEW RECORD"}</span><h2>{title(config.name)}</h2></div><button onClick={()=>setEditing(null)} aria-label="Close"><X/></button></div>{resource==="availability"&&<p className="notice">One session and optional break per branch/day. Overnight sessions are not supported.</p>}<ErrorNotice error={save.error}/><Editor fields={effectiveFields} initial={editing} onSave={data=>save.mutate(data)} busy={save.isPending} resourceName={resource}/></section></div>}
+ {editing&&<AppDialog open onClose={()=>setEditing(null)} title={`${editing.id?"Edit":"Add"} ${title(config.name)}`} dirty={dirty} busy={save.isPending}>{resource==="availability"&&<p className="notice">One session and optional break per branch/day. Overnight sessions are not supported.</p>}<ErrorNotice error={save.error}/><Editor fields={effectiveFields} initial={editing} onSave={data=>{if(!save.isPending)save.mutate(data);}} busy={save.isPending} resourceName={resource} onDirtyChange={setDirty}/></AppDialog>}
  </>;
 }
 export const profileFields = [f("fullName","text",true),f("mobile","tel"),f("photoUrl","url")];

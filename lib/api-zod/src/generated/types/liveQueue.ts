@@ -16,6 +16,10 @@ import type { Appointment } from './appointment';
 import type { OwnQueueEntry } from './ownQueueEntry';
 
 export interface LiveQueue {
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+  entriesTotal?: number;
   doctorId: string;
   branchId: string;
   date: Date;

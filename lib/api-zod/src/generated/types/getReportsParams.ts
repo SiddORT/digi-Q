@@ -17,9 +17,20 @@ import type { ClinicIdParameter } from './clinicIdParameter';
 import type { DoctorIdParameter } from './doctorIdParameter';
 import type { FromParameter } from './fromParameter';
 import type { GetReportsGroupBy } from './getReportsGroupBy';
+import type { PageParameter } from './pageParameter';
+import type { PageSizeParameter } from './pageSizeParameter';
 import type { ToParameter } from './toParameter';
 
 export type GetReportsParams = {
+/**
+ * @minimum 1
+ */
+page?: PageParameter;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: PageSizeParameter;
 from?: FromParameter;
 to?: ToParameter;
 clinicId?: ClinicIdParameter;

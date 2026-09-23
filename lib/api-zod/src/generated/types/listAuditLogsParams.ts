@@ -14,13 +14,20 @@
  */
 import type { ClinicIdParameter } from './clinicIdParameter';
 import type { FromParameter } from './fromParameter';
+import type { ListAuditLogsActivityType } from './listAuditLogsActivityType';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
 import type { SearchParameter } from './searchParameter';
+import type { SortParameter } from './sortParameter';
 import type { ToParameter } from './toParameter';
 
 export type ListAuditLogsParams = {
 search?: SearchParameter;
+/**
+ * Allowlisted field with optional minus prefix for descending order
+ */
+sort?: SortParameter;
+activityType?: ListAuditLogsActivityType;
 entityType?: string;
 actorId?: string;
 clinicId?: ClinicIdParameter;

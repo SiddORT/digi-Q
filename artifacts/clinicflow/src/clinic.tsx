@@ -1,38 +1,66 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth, useClerk, useUser } from "@clerk/react";
 import { Link, Redirect, useLocation } from "wouter";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
-import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2, Stethoscope, Settings, LogOut, ChevronRight, ArrowUpRight, Clock3, Check, Menu, QrCode, SlidersHorizontal, FileText, UserRound, Plus, X } from "lucide-react";
+import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2, Stethoscope, Settings, LogOut, ChevronRight, ArrowUpRight, Clock3, Check, Menu, QrCode, SlidersHorizontal, FileText, UserRound, Plus } from "lucide-react";
 import { Logo } from "./App";
 import { Users } from "./Users";
-import { Editor, Empty, ErrorNotice, ResourcePage, resources, profileFields, settingsFields, title, today, allPages } from "./resources";
+import { Editor, Empty, ErrorNotice, ResourcePage, resources, profileFields, settingsFields, title, today } from "./resources";
+import { SearchableSelect } from "./components/SearchableSelect";
+import { Pagination, SearchInput, FilterBar, useDebouncedValue } from "./components/ListingControls";
+import { AppDialog } from "./components/AppDialog";
+import { ResourceLookup } from "./components/ResourceLookup";
+import { CareLookup, useSelectedCare } from "./components/CareLookup";
+import { configuredGreeting, formatConfiguredTimestamp } from "./lib/date-time";
 
 import { useGetAppointmentQr } from "@workspace/api-client-react";
 import QRCode from "qrcode";
 
+function useConfiguredTimezone(identity?:api.Identity) {
+ const identityTimezone=(identity as (api.Identity&{settings?:{timezone?:string}})|undefined)?.settings?.timezone;
+ const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),enabled:!identityTimezone,staleTime:60000}});
+ return identityTimezone||settings.data?.timezone;
+}
+
+// A ref closes the same-render double-click window before React can display pending state.
+function usePendingGuard<T extends { mutateAsync: (variables: any) => Promise<any> }>(mutation:T) {
+ const locked=useRef(false);
+ return {...mutation,mutate:(variables:Parameters<T["mutateAsync"]>[0])=>{
+  if(locked.current)return;
+  locked.current=true;
+  void mutation.mutateAsync(variables).catch(()=>{/* React Query exposes the error in the form. */}).finally(()=>{locked.current=false;});
+ }};
+}
+
 export function AppointmentQr({ id, name }: { id: string; name: string }) {
   const qr = useGetAppointmentQr(id);
   const [image, setImage] = useState("");
+  const [imageError, setImageError] = useState<Error | null>(null);
+  const [imageAttempt,setImageAttempt]=useState(0);
 
   useEffect(() => {
+    let cancelled=false;
     if (qr.data?.checkInUrl) {
       let url = qr.data.checkInUrl;
       if (url.startsWith("/")) {
         url = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}${url}`;
       }
-      QRCode.toDataURL(url, { width: 300, margin: 2 }).then(setImage).catch(console.error);
+      setImage("");setImageError(null);
+      QRCode.toDataURL(url, { width: 300, margin: 2 }).then(value=>{if(!cancelled)setImage(value);}).catch(error=>{if(!cancelled)setImageError(error);});
     }
-  }, [qr.data?.checkInUrl]);
+    return ()=>{cancelled=true;};
+  }, [qr.data?.checkInUrl,imageAttempt]);
 
   if (qr.isLoading) return <div className="skeleton">Loading QR code...</div>;
-  if (qr.error || !qr.data) return null;
+  if (qr.error || imageError) return <><ErrorNotice error={qr.error || imageError}/><button onClick={()=>{setImageAttempt(value=>value+1);qr.refetch();}}>Retry QR code</button></>;
+  if (!qr.data) return <p>QR code is unavailable.</p>;
 
   return (
     <div className="appointment-qr-box" style={{ margin: "20px 0", padding: "16px", background: "var(--color-input)", borderRadius: "var(--radius)", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
       <small><strong>FAST CHECK-IN</strong></small>
       {image && <img src={image} alt={`Check-in QR for ${name}`} style={{ borderRadius: "8px", width: "200px" }} />}
-      <a className="button secondary small" href={image} download={`appointment-${id}-qr.png`}><QrCode size={15}/> Download QR</a>
+      {image?<a className="button secondary small" href={image} download={`appointment-${id}-qr.png`}><QrCode size={15}/> Download QR</a>:<p role="status">Generating QR image…</p>}
     </div>
   );
 }
@@ -66,7 +94,7 @@ export function PublicBooking({reference}:{reference:string}){
   const auth=useAuth();const qr=api.useResolveQr(reference,{query:{queryKey:api.getResolveQrQueryKey(reference),refetchInterval:30000}}); const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!auth.isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
  useEffect(()=>{sessionStorage.setItem("clinicflow-qr",reference);},[reference]);
  if(qr.isLoading)return <div className="page-loading">Finding your clinic…</div>;
-  return <div className="public-book"><Logo/><div className="panel"><span className="eyebrow">YOUR DIRECT LINK TO CARE</span><h1>{qr.data?.clinicName||"Book a visit"}</h1><ErrorNotice error={qr.error||me.error}/>{qr.data&&!qr.error&&<><p>{[qr.data.branchName,qr.data.doctorName].filter(Boolean).join(" · ")}</p>{!auth.isSignedIn?<><p>Sign in securely to continue booking at this location.</p><Link className="button" href="/login">Sign in to book <ArrowUpRight size={18}/></Link></>:me.data?.needsOnboarding?<Redirect to="/onboarding"/>:me.data?.user?<Booking key={reference} identity={me.data} context={qr.data}/>:<p>Loading your profile…</p>}</>}</div></div>;
+  return <div className="public-book"><Logo/><div className="panel"><span className="eyebrow">YOUR DIRECT LINK TO CARE</span><h1>{qr.data?.clinicName||"Book a visit"}</h1><ErrorNotice error={qr.error||me.error}/>{(qr.error||me.error)&&<button onClick={()=>{qr.refetch();if(auth.isSignedIn)me.refetch();}}>Retry booking context</button>}{qr.data&&!qr.error&&<><p>{[qr.data.branchName,qr.data.doctorName].filter(Boolean).join(" · ")}</p>{!auth.isLoaded?<p role="status">Connecting securely…</p>:!auth.isSignedIn?<><p>Sign in securely to continue booking at this location.</p><Link className="button" href="/login">Sign in to book <ArrowUpRight size={18}/></Link></>:me.error?null:me.data?.needsOnboarding?<Redirect to="/onboarding"/>:me.data?.user?<Booking key={reference} identity={me.data} context={qr.data}/>:<p role="status">Loading your profile…</p>}</>}</div></div>;
 }
 const navConfig:Record<string,string[]>={
   admin:["dashboard","appointments","queue","clinics","branches","patients","users","availability","exceptions","qrs","reports","masters","audit","settings"],
@@ -78,70 +106,58 @@ const labels:Record<string,string>={dashboard:"Overview",availability:"Weekly sc
 const icons:Record<string,any>={dashboard:LayoutDashboard,appointments:CalendarDays,queue:Activity,clinics:Building2,branches:Building2,doctors:Stethoscope,patients:UsersIcon,users:UsersIcon,settings:Settings,reports:FileText,audit:FileText,availability:Clock3,exceptions:CalendarDays,qrs:QrCode,masters:SlidersHorizontal,profile:UserRound,book:Plus};
 export function Portal({identity,role,page}:{identity:api.Identity;role:string;page:string}){
  const {signOut}=useClerk();const client=useQueryClient();const [open,setOpen]=useState(false);
+ const timezone=useConfiguredTimezone(identity);
  const name=identity.user!.fullName;
  const navigation=navConfig[role].filter(p=>identity.user!.role!=="clinicAdmin"||!["masters","settings","audit"].includes(p));
- return <div className="workspace"><aside className={`sidebar ${open?"open":""}`}><Logo/><div className="workspace-label">{role==="patient"?"YOUR CARE":"WORKSPACE"}<span>{title(role)}</span></div><nav>{navigation.map(p=>{const Icon=icons[p]||FileText;return <Link key={p} href={`/${role}/${p}`} className={p===page?"active":""} onClick={()=>setOpen(false)} data-testid={`nav-${p}`}><Icon size={19}/>{labels[p]||title(p)}{p===page&&<ChevronRight size={15}/>}</Link>;})}</nav><div className="sidebar-bottom"><div className="help-card"><span className="live-dot"/>Care, in sync.<p>Your workspace stays connected with live queue updates.</p></div><button className="logout" onClick={()=>{client.clear();signOut({redirectUrl:import.meta.env.BASE_URL});}} data-testid="button-signout"><LogOut size={18}/> Sign out</button></div></aside><div className="workspace-main"><header className="topbar"><button className="mobile-menu" onClick={()=>setOpen(!open)} aria-label="Toggle navigation"><Menu/></button><div className="breadcrumb">Workspace <ChevronRight size={13}/> <strong>{labels[page]||title(page)}</strong></div><div className="topbar-right"><span className="secure-label"><span className="live-dot"/> Secure workspace</span><span className="avatar">{name.split(" ").map(n=>n[0]).slice(0,2).join("")}</span><div><strong>{name}</strong><small>{title(identity.user!.role)}</small></div></div></header><main className="content"><div className="page-heading"><div><span className="eyebrow">{new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}</span><h1>{page==="dashboard"?`Good ${new Date().getHours()<12?"morning":new Date().getHours()<18?"afternoon":"evening"}, ${name.split(" ")[0]}.`:labels[page]||title(page)}</h1><p>{page==="dashboard"?"Here's what's happening with your care workspace today.":page==="queue"?"A clearer view of the day. Automatically refreshed every 30 seconds.":`Manage your ${labels[page]?.toLowerCase()||page} in one place.`}</p></div>{!["book","profile","settings"].includes(page)&&<Link className="button small" href={`/${role}/book`}><Plus size={17}/> Book appointment</Link>}</div>
+ return <div className="workspace"><aside className={`sidebar ${open?"open":""}`}><Logo/><div className="workspace-label">{role==="patient"?"YOUR CARE":"WORKSPACE"}<span>{title(role)}</span></div><nav>{navigation.map(p=>{const Icon=icons[p]||FileText;return <Link key={p} href={`/${role}/${p}`} className={p===page?"active":""} onClick={()=>setOpen(false)} data-testid={`nav-${p}`}><Icon size={19}/>{labels[p]||title(p)}{p===page&&<ChevronRight size={15}/>}</Link>;})}</nav><div className="sidebar-bottom"><div className="help-card"><span className="live-dot"/>Care, in sync.<p>Your workspace stays connected with live queue updates.</p></div><button className="logout" onClick={()=>{client.clear();signOut({redirectUrl:import.meta.env.BASE_URL});}} data-testid="button-signout"><LogOut size={18}/> Sign out</button></div></aside><div className="workspace-main"><header className="topbar"><button className="mobile-menu" onClick={()=>setOpen(!open)} aria-label="Toggle navigation"><Menu/></button><div className="breadcrumb">Workspace <ChevronRight size={13}/> <strong>{labels[page]||title(page)}</strong></div><div className="topbar-right"><span className="secure-label"><span className="live-dot"/> Secure workspace</span><span className="avatar">{name.split(" ").map(n=>n[0]).slice(0,2).join("")}</span><div><strong>{name}</strong><small>{title(identity.user!.role)}</small></div></div></header><main className="content"><div className="page-heading"><div><span className="eyebrow">{formatConfiguredTimestamp(new Date(),timezone,{weekday:"long",month:"long",day:"numeric"})}</span><h1>{page==="dashboard"?`${configuredGreeting(timezone)}, ${name.split(" ")[0]}.`:labels[page]||title(page)}</h1><p>{page==="dashboard"?"Here's what's happening with your care workspace today.":page==="queue"?"A clearer view of the day. Automatically refreshed every 30 seconds.":`Manage your ${labels[page]?.toLowerCase()||page} in one place.`}</p></div>{!["book","profile","settings"].includes(page)&&<Link className="button small" href={`/${role}/book`}><Plus size={17}/> Book appointment</Link>}</div>
  {page==="dashboard"?<Dashboard role={role}/>:page==="users"?<Users identity={identity}/>:page==="clinics"&&role==="doctor"?<DoctorClinics identity={identity}/>:page==="book"?<Booking identity={identity}/>:page==="appointments"?<Appointments/>:page==="queue"?<Queue identity={identity}/>:page==="profile"?<Profile identity={identity}/>:page==="settings"?<PlatformSettings/>:page==="reports"?<Reports/>:resources[page]?<ResourcePage key={page} resource={page} identity={identity} allowCreate={!(identity.user!.role==="doctor"&&page==="patients")} defaults={identity.doctorId?{doctorId:identity.doctorId,isOpen:true}:{}}/>:<Empty label="available modules"/>}
  <div className="content-footer"><span>ClinicFlow · Care, connected.</span><span>All times follow your clinic's configured timezone.</span></div></main></div></div>;
 }
 function Dashboard({role}:{role:string}){
+ const timezone=useConfiguredTimezone();
  const q=api.useGetDashboard(undefined,{query:{queryKey:api.getGetDashboardQueryKey(),refetchInterval:30000}});
  const averageWait=q.data?.averageWaitMinutes;
  const averageWaitDisplay=averageWait==null?undefined:averageWait.toFixed(1);
- return <><ErrorNotice error={q.error}/><div className="stat-grid">{[["Today's appointments",q.data?.todayAppointments,CalendarDays,"Scheduled for today"],["Waiting in queue",q.data?.waiting,Clock3,"Ready for their next step"],["Completed visits",q.data?.completed,Check,"Care delivered today"],["Average wait",averageWaitDisplay,Activity,"Minutes, across today's visits"]].map(([label,value,Icon,caption]:any)=><div className="stat-card" key={label}><div><span>{label}</span><span className="stat-icon"><Icon size={19}/></span></div><strong>{q.isLoading?"…":value??"—"}</strong><small>{caption}</small></div>)}</div><div className="dashboard-grid"><section className="panel"><div className="panel-heading"><div><h2>{role==="patient"?"Your appointments":"Today's appointments"}</h2><p>A little clarity for the day ahead.</p></div><Link href={`/${role}/appointments`} className="text-link">View all <ChevronRight size={16}/></Link></div>{q.isLoading?<div className="skeleton">Loading appointments…</div>:q.data?.recentAppointments?.length?<AppointmentRows appointments={q.data.recentAppointments}/>:<Empty label="appointments"/>}</section><section className="care-card"><span className="eyebrow">MAKE ROOM FOR BETTER CARE</span><div className="care-card-icon"><CalendarDays size={42} strokeWidth={1.2}/></div><h2>{role==="patient"?"Your next visit starts here.":"A smoother day starts here."}</h2><p>{role==="patient"?"Choose your clinic and doctor, explore availability, and take the next step.":"Keep appointments organized and your patient flow moving, all from one workspace."}</p><Link className="button" href={`/${role}/book`}>Book an appointment <ArrowUpRight size={18}/></Link></section></div><section className="panel"><div className="panel-heading"><div><h2>Workspace activity</h2><p>The latest updates from your care network.</p></div><span className="badge">Live data</span></div>{q.data?.recentActivity?.length?<div className="activity-list">{q.data.recentActivity.map(a=><div key={a.id}><span className="icon-box"><Activity size={16}/></span><div><strong>{a.summary}</strong><small>{a.actorName} · {new Date(a.createdAt).toLocaleString()}</small></div></div>)}</div>:<Empty label="activity updates"/>}</section></>;
+ return <><ErrorNotice error={q.error}/>{q.error&&<button onClick={()=>q.refetch()}>Retry dashboard</button>}<div className="stat-grid">{[["Today's appointments",q.data?.todayAppointments,CalendarDays,"Scheduled for today"],["Waiting in queue",q.data?.waiting,Clock3,"Ready for their next step"],["Completed visits",q.data?.completed,Check,"Care delivered today"],["Average wait",averageWaitDisplay,Activity,"Minutes, across today's visits"]].map(([label,value,Icon,caption]:any)=><div className="stat-card" key={label}><div><span>{label}</span><span className="stat-icon"><Icon size={19}/></span></div><strong>{q.isLoading?"…":q.error?"Unavailable":value??"—"}</strong><small>{caption}</small></div>)}</div><div className="dashboard-grid"><section className="panel"><div className="panel-heading"><div><h2>{role==="patient"?"Your appointments":"Today's appointments"}</h2><p>A little clarity for the day ahead.</p></div><Link href={`/${role}/appointments`} className="text-link">View all <ChevronRight size={16}/></Link></div>{q.isLoading?<div className="skeleton">Loading appointments…</div>:q.error?null:q.data?.recentAppointments?.length?<AppointmentRows appointments={q.data.recentAppointments}/>:<Empty label="appointments"/>}</section><section className="care-card"><span className="eyebrow">MAKE ROOM FOR BETTER CARE</span><div className="care-card-icon"><CalendarDays size={42} strokeWidth={1.2}/></div><h2>{role==="patient"?"Your next visit starts here.":"A smoother day starts here."}</h2><p>{role==="patient"?"Choose your clinic and doctor, explore availability, and take the next step.":"Keep appointments organized and your patient flow moving, all from one workspace."}</p><Link className="button" href={`/${role}/book`}>Book an appointment <ArrowUpRight size={18}/></Link></section></div><section className="panel"><div className="panel-heading"><div><h2>Operational activity</h2><p>Recent care and business updates. Authentication and password-verification events remain in the separate security audit, not this feed.</p></div><span className="badge">Live data</span></div>{q.isLoading?<div className="skeleton">Loading operational activity…</div>:q.error?null:q.data?.recentActivity?.length?<div className="activity-list">{q.data.recentActivity.map(a=><div key={a.id}><span className="icon-box"><Activity size={16}/></span><div><strong>{a.summary}</strong><small>{a.actorName} · {formatConfiguredTimestamp(a.createdAt,timezone)}</small></div></div>)}</div>:<Empty label="operational activity updates"/>}</section></>;
 }
 function AppointmentRows({appointments}:{appointments:api.Appointment[]}){
  const client=useQueryClient();const action=api.useTransitionAppointment({mutation:{onSuccess:()=>client.invalidateQueries()}});
  const [viewQr, setViewQr] = useState<api.Appointment | null>(null);
- return <><ErrorNotice error={action.error}/><div className="table-scroll"><table><thead><tr><th>Patient / reference</th><th>Doctor & location</th><th>Date / token</th><th>Status</th><th>Next step</th></tr></thead><tbody>{appointments.map(a=><tr key={a.id} data-testid={`appointment-${a.id}`}><td><strong>{a.patientName}</strong><small>{a.reference}</small></td><td>{a.doctorName}<small>{a.clinicName} · {a.branchName}</small></td><td>{a.date}<small>Token {a.token}</small></td><td><span className={`badge ${a.status}`}>{title(a.status)}</span></td><td><div className="row-actions"><button onClick={() => setViewQr(a)}><QrCode size={15}/></button>{a.allowedActions.map(next=><button key={next} disabled={action.isPending} data-testid={`action-${next}-${a.id}`} onClick={()=>{let reason:string|undefined;if(next==="cancel"||next==="noShow"){const result=prompt("Please provide a reason");if(result===null)return;reason=result;}action.mutate({id:a.id,data:{action:next,expectedStatus:a.status,reason}});}}>{title(next)}</button>)}</div></td></tr>)}</tbody></table></div>
- {viewQr && (
-   <div className="modal-backdrop">
-     <section className="modal" role="dialog">
-       <div className="panel-heading">
-         <div>
-           <span className="eyebrow">APPOINTMENT</span>
-           <h2>Check-in QR Code</h2>
-         </div>
-         <button onClick={() => setViewQr(null)} aria-label="Close"><X /></button>
-       </div>
-       <div style={{ textAlign: "center" }}>
-         <AppointmentQr id={viewQr.id} name={viewQr.patientName} />
-       </div>
-     </section>
-   </div>
- )}
+ const [pendingAction,setPendingAction]=useState<{appointment:api.Appointment;next:api.Appointment["allowedActions"][number]}|null>(null);
+ const [reason,setReason]=useState("");const submitLock=useRef(false);
+ async function transition(a:api.Appointment,next:api.Appointment["allowedActions"][number],reason?:string){if(submitLock.current)return;submitLock.current=true;try{await action.mutateAsync({id:a.id,data:{action:next,expectedStatus:a.status,reason}});setPendingAction(null);setReason("");}catch{/* mutation error is displayed without discarding form state */}finally{submitLock.current=false;}}
+ return <><ErrorNotice error={action.error}/>{action.isSuccess&&<p className="notice" role="status">Appointment updated.</p>}<div className="table-scroll"><table><thead><tr><th>Patient / reference</th><th>Doctor & location</th><th>Date / token</th><th>Status</th><th>Next step</th></tr></thead><tbody>{appointments.map(a=><tr key={a.id} data-testid={`appointment-${a.id}`}><td data-label="Patient / reference"><strong>{a.patientName}</strong><small>{a.reference}</small></td><td data-label="Doctor & location">{a.doctorName}<small>{a.clinicName} · {a.branchName}</small></td><td data-label="Date / token">{a.date}<small>Token {a.token}</small></td><td data-label="Status"><span className={`badge ${a.status}`}>{title(a.status)}</span></td><td data-label="Next step"><div className="row-actions"><button aria-label={`Show check-in QR for ${a.patientName}`} onClick={() => setViewQr(a)}><QrCode size={15}/></button>{a.allowedActions.map(next=><button key={next} disabled={action.isPending} data-testid={`action-${next}-${a.id}`} onClick={()=>{if(next==="cancel"||next==="noShow"){setPendingAction({appointment:a,next});setReason("");return;}void transition(a,next);}}>{title(next)}</button>)}</div></td></tr>)}</tbody></table></div>
+ <AppDialog open={!!viewQr} onClose={()=>setViewQr(null)} title="Appointment check-in QR">{viewQr&&<AppointmentQr id={viewQr.id} name={viewQr.patientName}/>}</AppDialog>
+ <AppDialog open={!!pendingAction} onClose={()=>setPendingAction(null)} title={pendingAction?title(pendingAction.next):"Update appointment"} busy={action.isPending} dirty={!!reason}><form onSubmit={event=>{event.preventDefault();if(pendingAction)void transition(pendingAction.appointment,pendingAction.next,reason);}}><p>{pendingAction?.appointment.patientName} · {pendingAction?.appointment.reference}</p><ErrorNotice error={action.error}/><label>Reason<textarea required value={reason} onChange={event=>setReason(event.target.value)} maxLength={1000}/></label><div className="form-footer"><button type="button" disabled={action.isPending} onClick={()=>setPendingAction(null)}>Cancel</button><button className="button" disabled={action.isPending||!reason.trim()}>{action.isPending?"Updating…":"Confirm"}</button></div></form></AppDialog>
  </>;
 }
 function Appointments(){
- const [search,setSearch]=useState("");const [date,setDate]=useState("");const [status,setStatus]=useState("");const [page,setPage]=useState(1);
- const q=api.useListAppointments({search,date:date||undefined,status:(status||undefined) as api.AppointmentStatus|undefined,page,pageSize:10},{query:{queryKey:api.getListAppointmentsQueryKey({search,date:date||undefined,status:(status||undefined) as api.AppointmentStatus|undefined,page,pageSize:10}),refetchInterval:30000}});
- return <><div className="toolbar filters"><input placeholder="Search patients or references…" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/><input aria-label="Appointment date" type="date" value={date} onChange={e=>{setDate(e.target.value);setPage(1);}}/><select aria-label="Status" value={status} onChange={e=>{setStatus(e.target.value);setPage(1);}}><option value="">All statuses</option>{Object.values(api.AppointmentStatus).map(s=><option key={s}>{s}</option>)}</select></div><ErrorNotice error={q.error}/><section className="panel">{q.isLoading?<div className="skeleton">Loading appointments…</div>:q.data?.items.length?<AppointmentRows appointments={q.data.items}/>:<Empty label="appointments"/>}<div className="pagination"><span>{q.data?.total??0} appointments</span><button disabled={page===1} onClick={()=>setPage(page-1)}>Previous</button><span>Page {page}</span><button disabled={page*10>=(q.data?.total??0)} onClick={()=>setPage(page+1)}>Next</button></div></section></>;
-}
-function SelectRecords({label,value,onChange,items,disabled=false}:{label:string;value:string;onChange:(s:string)=>void;items:any[];disabled?:boolean}){
- return <label>{label}<select value={value} disabled={disabled} onChange={e=>onChange(e.target.value)} data-testid={`select-${label.toLowerCase().replaceAll(" ","-")}`}><option value="">Select {label.toLowerCase()}…</option>{items.map(r=><option key={r.id} value={r.id}>{r.name||r.fullName}</option>)}</select></label>;
+ const identity=api.useGetMe();const isPatient=identity.data?.user?.role==="patient";
+ const [search,setSearch]=useState("");const debounced=useDebouncedValue(search);const [from,setFrom]=useState("");const [to,setTo]=useState("");const [status,setStatus]=useState("");const [clinicId,setClinic]=useState("");const [branchId,setBranch]=useState("");const [doctorId,setDoctor]=useState("");const [sort,setSort]=useState("-createdAt");const [page,setPage]=useState(1);const [pageSize,setPageSize]=useState(20);
+ useEffect(()=>setPage(1),[debounced,from,to,status,clinicId,branchId,doctorId,sort,pageSize]);
+ const params={search:debounced,from:from||undefined,to:to||undefined,status:(status||undefined) as api.AppointmentStatus|undefined,clinicId:clinicId||undefined,branchId:branchId||undefined,doctorId:doctorId||undefined,sort,page,pageSize};
+ const q=api.useListAppointments(params,{query:{queryKey:api.getListAppointmentsQueryKey(params),refetchInterval:30000}});
+ const filtered=!!(search||from||to||status||clinicId||branchId||doctorId);
+ return <><FilterBar active={filtered||sort!=="-createdAt"} onReset={()=>{setSearch("");setFrom("");setTo("");setStatus("");setClinic("");setBranch("");setDoctor("");setSort("-createdAt");setPage(1);}}>
+ <SearchInput value={search} onChange={setSearch} placeholder="Search patients or references…"/>
+ <label>From<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label>To<input type="date" min={from} value={to} onChange={e=>setTo(e.target.value)}/></label>
+ <SearchableSelect label="Status" value={status} onChange={setStatus} options={Object.values(api.AppointmentStatus).map(value=>({value,label:title(value)}))}/>
+ <CareLookup kind="clinics" publicAccess={isPatient} label="Clinic" value={clinicId} onChange={value=>{setClinic(value);setBranch("");setDoctor("");}}/>
+ <CareLookup kind="branches" publicAccess={isPatient} label="Branch" value={branchId} onChange={value=>{setBranch(value);setDoctor("");}} disabled={!clinicId} params={{clinicId}}/>
+ <CareLookup kind="doctors" publicAccess={isPatient} label="Doctor" value={doctorId} onChange={setDoctor} disabled={!clinicId} params={{clinicId,branchId:branchId||undefined}}/>
+ <SearchableSelect label="Sort" value={sort} onChange={value=>setSort(value||"-createdAt")} options={[{value:"-createdAt",label:"Newest first"},{value:"date",label:"Visit date, earliest"},{value:"-date",label:"Visit date, latest"}]}/>
+ </FilterBar><ErrorNotice error={q.error}/>{q.error&&<button onClick={()=>q.refetch()}>Retry appointments</button>}<section className="panel">{q.isLoading?<div className="skeleton">Loading appointments…</div>:q.error?null:q.data?.items.length?<AppointmentRows appointments={q.data.items}/>:<p className="empty">{filtered?"No appointments match these filters. Clear filters to broaden your search.":"No appointments have been booked yet."}</p>}<Pagination page={page} pageSize={pageSize} total={q.data?.total??0} onPageChange={setPage} onPageSizeChange={setPageSize}/></section></>;
 }
 function Booking({identity,context}:{identity:api.Identity;context?:api.QrContext}){
  const [clinicId,setClinic]=useState(context?.clinicId||"");const [branchId,setBranch]=useState(context?.branchId||"");const [doctorId,setDoctor]=useState(context?.doctorId||"");const [date,setDate]=useState(today());const [step,setStep]=useState(1);const [patientId,setPatient]=useState(identity.patientId||"");const [consent,setConsent]=useState(false);const [notes,setNotes]=useState("");const [mobile,setMobile]=useState(identity.user?.mobile||"");const [code,setCode]=useState("");const [newPatient,setNewPatient]=useState(false);const [requestId]=useState(()=>crypto.randomUUID());
   const client=useQueryClient();const isPatient=identity.user?.role==="patient";
   const canRegisterPatient=["superAdmin","clinicAdmin","receptionist"].includes(identity.user!.role);
   const [source,setSource]=useState<"phone"|"walkIn">("phone");
-  const [patientSearch,setPatientSearch]=useState("");
-  const clinics=useQuery({queryKey:["booking-clinics",isPatient],queryFn:()=>allPages(isPatient?api.listPublicClinics:api.listClinics,{status:"active"})});
-  const branches=useQuery({queryKey:["booking-branches",isPatient,clinicId,context?.doctorId],queryFn:async()=>{
-    const result=await allPages(isPatient?api.listPublicBranches:api.listBranches,{clinicId,status:"active"});
-    if(context?.doctorId){
-      const assigned=await allPages(api.listPublicDoctors,{clinicId});
-      const doctor=assigned.items.find(d=>d.id===context.doctorId);
-      result.items=result.items.filter(b=>doctor?.branchIds?.includes(b.id));
-    }
-    return result;
-  },enabled:!!clinicId});
-  const doctors=useQuery<{items:(api.PublicDoctor|api.Doctor)[];total:number}>({queryKey:["booking-doctors",isPatient,clinicId,branchId],queryFn:()=>isPatient?allPages(api.listPublicDoctors,{clinicId,branchId}):allPages(api.listDoctors,{clinicId,branchId,status:"active"}),enabled:!!clinicId&&!!branchId});
+  const clinics=useSelectedCare("clinics",clinicId,isPatient);
+  const branches=useSelectedCare("branches",branchId,isPatient,{clinicId});
+  const doctors=useSelectedCare("doctors",doctorId,isPatient,{clinicId,branchId:branchId||undefined});
   const availableParams={doctorId,branchId,date};const availability=api.useGetPublicAvailability(availableParams,{query:{queryKey:api.getGetPublicAvailabilityQueryKey(availableParams),enabled:!!doctorId&&!!branchId&&!!date,refetchInterval:30000}});
-  const patients=useQuery({queryKey:["booking-patients",clinicId,branchId,patientSearch],queryFn:async()=>{
-    const result=await allPages(api.listPatients,{clinicId,branchId,search:patientSearch});
-    return {...result,items:result.items.filter(p=>p.status==="active")};
-  },enabled:!isPatient&&!!clinicId&&!!branchId});
+  const patients=useSelectedCare("patients",!isPatient?patientId:"");
   const visitToday=today(availability.data?.timezone);
   const session=availability.data;
   const localTime=session?new Date().toLocaleTimeString("en-GB",{timeZone:session.timezone,hour:"2-digit",minute:"2-digit",hour12:false}):"";
@@ -153,51 +169,53 @@ function Booking({identity,context}:{identity:api.Identity;context?:api.QrContex
     walkIn&&localTime<(session.queueOpenTime||session.startTime||"")?"The queue has not opened yet.":
     date===visitToday&&session.queueCloseTime&&localTime>=session.queueCloseTime?"Queue booking has closed.":
     walkIn&&session.breakStart&&session.breakEnd&&localTime>=session.breakStart&&localTime<session.breakEnd?"The doctor is on a break.":null):null;
-  const canContinue=!!clinics.data?.items.some(c=>c.id===clinicId)&&!!branches.data?.items.some(b=>b.id===branchId)&&!!doctors.data?.items.some(d=>d.id===doctorId)&&!!availability.data?.available&&availability.data.remainingTokens>0&&!availability.isFetching&&!availability.error&&!sourceError;
+  const canContinue=!!clinics.data&&!!branches.data&&!!doctors.data&&!clinics.error&&!branches.error&&!doctors.error&&!!availability.data?.available&&availability.data.remainingTokens>0&&!availability.isFetching&&!availability.error&&!sourceError;
   useEffect(()=>{if(!isPatient&&source==="walkIn")setDate(visitToday);},[source,isPatient,visitToday]);
   useEffect(()=>{if(!isPatient)setPatient("");},[clinicId,branchId,isPatient]);
-  useEffect(()=>{
-    if(branches.data&&!branches.isFetching&&branchId&&!branches.data.items.some(b=>b.id===branchId)){setBranch("");setDoctor(context?.doctorId||"");setStep(1);}
-  },[branches.data,branches.isFetching,branchId,context?.doctorId]);
-  useEffect(()=>{
-    if(doctors.data&&!doctors.isFetching&&doctorId&&!doctors.data.items.some(d=>d.id===doctorId)){if(!context?.doctorId)setDoctor("");setStep(1);}
-  },[doctors.data,doctors.isFetching,doctorId,context?.doctorId]);
-  const createPatient=api.useCreatePatient({mutation:{onSuccess:p=>{setPatientSearch("");setPatient(p.id);setNewPatient(false);client.invalidateQueries();}}});
- const otp=api.useRequestOtp(); const verify=api.useVerifyOtp({mutation:{onSuccess:()=>client.invalidateQueries()}});
- const book=api.useCreateAppointment({mutation:{onSuccess:()=>{sessionStorage.removeItem("clinicflow-qr");client.invalidateQueries();}}});
+  const createPatient=usePendingGuard(api.useCreatePatient({mutation:{onSuccess:p=>{setPatient(p.id);setNewPatient(false);client.invalidateQueries();}}}));
+ const otp=usePendingGuard(api.useRequestOtp()); const verify=usePendingGuard(api.useVerifyOtp({mutation:{onSuccess:()=>client.invalidateQueries()}}));
+ const book=usePendingGuard(api.useCreateAppointment({mutation:{onSuccess:()=>{sessionStorage.removeItem("clinicflow-qr");client.invalidateQueries();}}}));
   if(book.data)return <section className="panel confirmation"><span className="confirmation-check"><Check size={34}/></span><span className="eyebrow">APPOINTMENT CONFIRMED</span><h2>Your next step to better care.</h2><p>{book.data.doctorName} · {book.data.clinicName} · {book.data.branchName}</p><div className="confirmation-token"><small>YOUR TOKEN</small><strong>{book.data.token}</strong><span>{book.data.date} · {title(book.data.status)}</span></div><p>Booking reference <strong>{book.data.reference}</strong></p><AppointmentQr id={book.data.id} name={book.data.patientName}/><p className="notice">{book.data.status==="booked"?"Booking and check-in are separate. Please check in at the clinic when you arrive.":"The patient has entered the normal appointment queue."}</p><Link className="text-link" href={`/${["superAdmin","clinicAdmin"].includes(identity.user!.role)?"admin":identity.user!.role}/appointments`}>View appointments</Link><Queue identity={identity} initial={book.data}/></section>;
  return <section className="panel booking-panel"><div className="booking-steps">{["Choose your care","Your details","Review & book"].map((s,i)=><div className={step===i+1?"active":step>i+1?"done":""} key={s}><span>{step>i+1?<Check size={15}/>:i+1}</span>{s}</div>)}</div><ErrorNotice error={clinics.error||branches.error||doctors.error||availability.error||book.error||patients.error}/>
+  {(clinics.error||branches.error||doctors.error||patients.error)&&<button onClick={()=>{if(clinicId)clinics.refetch();if(branchId)branches.refetch();if(doctorId)doctors.refetch();if(patientId&&!isPatient)patients.refetch();}}>Retry selected records</button>}
+  {(clinics.isFetching||branches.isFetching||doctors.isFetching||patients.isFetching)&&<p role="status">Loading selected care details…</p>}
   {step===1?<><div className="section-heading"><h2>Where would you like to visit?</h2><p>Choose from real clinics and available consulting sessions.</p></div>
   {!isPatient&&!context&&<label>Booking source<select value={source} onChange={e=>setSource(e.target.value as "phone"|"walkIn")}><option value="phone">Phone / advance booking</option><option value="walkIn">Walk-in — today</option></select></label>}
-  <div className="form-grid"><SelectRecords label="Clinic" value={clinicId} disabled={!!context?.clinicId} onChange={v=>{setClinic(v);setBranch("");setDoctor(context?.doctorId||"");}} items={clinics.data?.items||[]}/><SelectRecords label="Branch" value={branchId} disabled={!!context?.branchId||!clinicId} onChange={v=>{setBranch(v);setDoctor(context?.doctorId||"");}} items={(branches.data?.items||[]).filter(b=>b.clinicId===clinicId)}/><SelectRecords label="Doctor" value={doctorId} disabled={!!context?.doctorId||!branchId} onChange={setDoctor} items={doctors.data?.items||[]}/><label>Visit date<input type="date" value={date} min={visitToday} disabled={!isPatient&&!context&&source==="walkIn"} onChange={e=>setDate(e.target.value)} data-testid="input-booking-date"/></label></div>
-  {!clinics.isLoading&&!clinics.data?.items.length&&<Empty label="clinics accepting appointments"/>}{doctorId&&branchId&&<div className="availability-box">{availability.isLoading?"Checking availability…":availability.data?.available?<><span className="live-dot"/><strong>{availability.data.remainingTokens} places available</strong><p>{availability.data.startTime} – {availability.data.endTime} · {availability.data.timezone}{availability.data.breakStart&&` · Break ${availability.data.breakStart}–${availability.data.breakEnd}`}</p><small>Queue-based appointments. Your token is assigned when you book; an exact consultation time is not guaranteed.</small></>:<p>{availability.data?.reason||"No session is available on this date. Try another day."}</p>}<ErrorNotice error={sourceError}/></div>}
-  <div className="form-footer"><button className="button" disabled={!canContinue} onClick={()=>setStep(2)}>Continue <ChevronRight size={17}/></button></div></>:step===2?<><h2>Who is this visit for?</h2>{isPatient?<div className="notice">Booking for {identity.user?.fullName}. Your patient profile is securely linked to this account.</div>:<><label>Search patients by name or mobile<input value={patientSearch} onChange={e=>setPatientSearch(e.target.value)}/></label><SelectRecords label="Patient" value={patientId} onChange={setPatient} items={patients.data?.items||[]}/>{canRegisterPatient?<button className="text-link" onClick={()=>setNewPatient(!newPatient)}><Plus size={16}/> Register a new patient</button>:<p className="notice">Doctors can book for existing patients in their scope. Ask reception or an administrator to register a new patient.</p>}{canRegisterPatient&&newPatient&&<><ErrorNotice error={createPatient.error}/><Editor fields={resources.patients.fields.filter(f=>!["clinicId","branchId"].includes(f.key))} initial={{clinicId,branchId}} onSave={data=>createPatient.mutate({data:{...data,clinicId,branchId}})} busy={createPatient.isPending} submitLabel="Register patient"/></>}</>}
+  <div className="form-grid"><CareLookup kind="clinics" label="Clinic" value={clinicId} publicAccess={isPatient} selectedLabel={String(clinics.data?.name||context?.clinicName||"")} disabled={!!context?.clinicId} params={{status:"active"}} onChange={v=>{setClinic(v);setBranch("");setDoctor(context?.doctorId||"");}}/><CareLookup kind="branches" label="Branch" value={branchId} publicAccess={isPatient} selectedLabel={String(branches.data?.name||context?.branchName||"")} disabled={!!context?.branchId||!clinicId} params={{clinicId,status:"active",doctorId:context?.doctorId}} onChange={v=>{setBranch(v);setDoctor(context?.doctorId||"");}}/><CareLookup kind="doctors" label="Doctor" value={doctorId} publicAccess={isPatient} selectedLabel={String(doctors.data?.fullName||context?.doctorName||"")} disabled={!!context?.doctorId||!branchId} params={{clinicId,branchId,status:"active"}} onChange={setDoctor}/><label>Visit date<input type="date" value={date} min={visitToday} disabled={!isPatient&&!context&&source==="walkIn"} onChange={e=>setDate(e.target.value)} data-testid="input-booking-date"/></label></div>
+  {doctorId&&branchId&&<div className="availability-box">{availability.isFetching?"Checking availability…":availability.error?<button onClick={()=>availability.refetch()}>Retry availability</button>:availability.data?.available?<><span className="live-dot"/><strong>{availability.data.remainingTokens} places available</strong><p>{availability.data.startTime} – {availability.data.endTime} · {availability.data.timezone}{availability.data.breakStart&&` · Break ${availability.data.breakStart}–${availability.data.breakEnd}`}</p><small>Queue-based appointments. Your token is assigned when you book; an exact consultation time is not guaranteed.</small></>:<p>{availability.data?.reason||"No session is available on this date. Try another day."}</p>}<ErrorNotice error={sourceError}/></div>}
+  <div className="form-footer"><button className="button" disabled={!canContinue} onClick={()=>setStep(2)}>Continue <ChevronRight size={17}/></button></div></>:step===2?<><h2>Who is this visit for?</h2>{isPatient?<div className="notice">Booking for {identity.user?.fullName}. Your patient profile is securely linked to this account.</div>:<><CareLookup kind="patients" label="Patient" value={patientId} onChange={setPatient} selectedLabel={String(patients.data?.fullName||"")} params={{clinicId,branchId,status:"active"}}/>{createPatient.isSuccess&&<p className="notice" role="status">Patient registered and selected.</p>}{canRegisterPatient?<button className="text-link" onClick={()=>setNewPatient(true)}><Plus size={16}/> Register a new patient</button>:<p className="notice">Doctors can book for existing patients in their scope. Ask reception or an administrator to register a new patient.</p>}<AppDialog open={canRegisterPatient&&newPatient} onClose={()=>setNewPatient(false)} title="Register a new patient" dirty busy={createPatient.isPending}><ErrorNotice error={createPatient.error}/><Editor fields={resources.patients.fields.filter(f=>!["clinicId","branchId"].includes(f.key))} initial={{clinicId,branchId}} onSave={data=>{if(!createPatient.isPending)createPatient.mutate({data:{...data,clinicId,branchId}});}} busy={createPatient.isPending} submitLabel="Register patient"/></AppDialog></>}
  {isPatient&&<div className="verification"><h3>Verify your mobile</h3><p>Mobile verification may be required by your clinic. International format, for example +14155552671.</p><div className="inline-form"><input type="tel" aria-label="Mobile number" value={mobile} onChange={e=>setMobile(e.target.value)}/><button disabled={otp.isPending||!mobile} onClick={()=>otp.mutate({data:{mobile}})}>Send code</button></div><ErrorNotice error={otp.error||verify.error}/>{otp.data&&<><p>Code sent via {otp.data.provider}. Expires at {new Date(otp.data.expiresAt).toLocaleTimeString()}.</p>{otp.data.developmentCode&&<p className="notice">Development-only verification code: <strong>{otp.data.developmentCode}</strong>. This is not a delivered SMS.</p>}<div className="inline-form"><input aria-label="Verification code" inputMode="numeric" value={code} onChange={e=>setCode(e.target.value)}/><button disabled={verify.isPending||!code} onClick={()=>verify.mutate({data:{challengeId:otp.data!.challengeId,code}})}>Verify</button></div></>}{verify.data?.verified&&<span className="badge active">Mobile verified</span>}</div>}
-  <label>Notes for your visit<textarea maxLength={1000} value={notes} onChange={e=>setNotes(e.target.value)}/></label><div className="form-footer"><button onClick={()=>setStep(1)}>Back</button><button className="button" disabled={!patientId} onClick={()=>setStep(3)}>Review appointment <ChevronRight size={17}/></button></div></>:<><h2>Everything look right?</h2><div className="review-grid"><div><small>CLINIC & LOCATION</small><strong>{clinics.data?.items.find(c=>c.id===clinicId)?.name}</strong><p>{branches.data?.items.find(b=>b.id===branchId)?.name}</p></div><div><small>YOUR DOCTOR</small><strong>{doctors.data?.items.find(d=>d.id===doctorId)?.fullName}</strong><p>{date} · {availability.data?.startTime}–{availability.data?.endTime}</p></div><div><small>PATIENT</small><strong>{isPatient?identity.user?.fullName:patients.data?.items.find(p=>p.id===patientId)?.fullName}</strong></div></div><label className="check-label"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/> I consent to appointment management and the clinic's booking policy.</label><p className="notice">Your reservation is confirmed only after a token is issued. Availability is checked again when you confirm.</p><ErrorNotice error={sourceError}/><div className="form-footer"><button onClick={()=>setStep(1)}>Change visit</button><button onClick={()=>setStep(2)}>Back</button><button className="button" disabled={!consent||book.isPending||!canContinue||!patientId} data-testid="button-confirm-booking" onClick={()=>book.mutate({data:{clinicId,branchId,doctorId,patientId,date,source:context?"qr":isPatient?"online":source,qrReference:context?.reference,termsAccepted:consent,notes,requestId}})}>{book.isPending?"Confirming…":"Confirm appointment"} <Check size={17}/></button></div></>}
+  <label>Notes for your visit<textarea maxLength={1000} value={notes} onChange={e=>setNotes(e.target.value)}/></label><div className="form-footer"><button onClick={()=>setStep(1)}>Back</button><button className="button" disabled={!patientId} onClick={()=>setStep(3)}>Review appointment <ChevronRight size={17}/></button></div></>:<><h2>Everything look right?</h2><div className="review-grid"><div><small>CLINIC & LOCATION</small><strong>{String(clinics.data?.name||"")}</strong><p>{String(branches.data?.name||"")}</p></div><div><small>YOUR DOCTOR</small><strong>{String(doctors.data?.fullName||"")}</strong><p>{date} · {availability.data?.startTime}–{availability.data?.endTime}</p></div><div><small>PATIENT</small><strong>{isPatient?identity.user?.fullName:String(patients.data?.fullName||"")}</strong></div></div><label className="check-label"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/> I consent to appointment management and the clinic's booking policy.</label><p className="notice">Your reservation is confirmed only after a token is issued. Availability is checked again when you confirm.</p><ErrorNotice error={sourceError}/><div className="form-footer"><button disabled={book.isPending} onClick={()=>setStep(1)}>Change visit</button><button disabled={book.isPending} onClick={()=>setStep(2)}>Back</button><button className="button" disabled={!consent||book.isPending||!canContinue||!patientId} data-testid="button-confirm-booking" onClick={()=>{if(!book.isPending)book.mutate({data:{clinicId,branchId,doctorId,patientId,date,source:context?"qr":isPatient?"online":source,qrReference:context?.reference,termsAccepted:consent,notes,requestId}});}}>{book.isPending?"Confirming…":"Confirm appointment"} <Check size={17}/></button></div></>}
  </section>;
 }
 function Queue({identity,initial}:{identity:api.Identity;initial?:api.Appointment}){
- const [doctorId,setDoctor]=useState(initial?.doctorId||identity.doctorId||"");const [branchId,setBranch]=useState(initial?.branchId||"");const [date,setDate]=useState(initial?.date||today());const [appointmentId,setAppointment]=useState(initial?.id||"");const client=useQueryClient();const isPatient=identity.user?.role==="patient";
-  const doctors=useQuery({queryKey:["queue-doctors"],queryFn:()=>allPages(api.listDoctors,{status:"active"}),enabled:!isPatient});const branches=useQuery({queryKey:["queue-branches"],queryFn:()=>allPages(api.listBranches,{status:"active"}),enabled:!isPatient});const appointments=useQuery({queryKey:["queue-appointments",date],queryFn:()=>allPages(api.listAppointments,{date}),enabled:isPatient,refetchInterval:30000});
-  const selectedDoctor=doctors.data?.items.find(d=>d.id===doctorId);
-  const queueBranches=(branches.data?.items||[]).filter(b=>selectedDoctor?.branchIds?.includes(b.id));
-  const params={doctorId,branchId,date,appointmentId:appointmentId||undefined};const queue=api.useGetQueue(params,{query:{queryKey:api.getGetQueueQueryKey(params),enabled:!!doctorId&&!!branchId&&(!isPatient||!!appointmentId),refetchInterval:30000}});
- const next=api.useCallNext({mutation:{onSuccess:()=>client.invalidateQueries()}});
-  const canCall=!!queue.data?.entries?.some(a=>a.allowedActions.includes("call"));
-  return <><div className="panel queue-filters"><div className="form-grid">{isPatient?<label>Your appointment<select value={appointmentId} onChange={e=>{const a=appointments.data?.items.find(a=>a.id===e.target.value);setAppointment(a?.id||"");setDoctor(a?.doctorId||"");setBranch(a?.branchId||"");}}><option value="">Select an appointment…</option>{appointments.data?.items.map(a=><option key={a.id} value={a.id}>{a.token} · {a.doctorName} · {a.branchName}</option>)}</select></label>:<><SelectRecords label="Doctor" value={doctorId} disabled={!!identity.doctorId} onChange={v=>{setDoctor(v);setBranch("");}} items={doctors.data?.items||[]}/><SelectRecords label="Branch" value={branchId} disabled={!doctorId} onChange={setBranch} items={queueBranches}/></>}<label>Queue date<input type="date" value={date} onChange={e=>{setDate(e.target.value);if(isPatient){setAppointment("");setDoctor("");setBranch("");}}}/></label></div></div>
-  <ErrorNotice error={queue.error||next.error||appointments.error||doctors.error||branches.error}/>
-  {queue.isLoading&&doctorId&&branchId?<div className="skeleton">Updating live queue…</div>:queue.data&&doctorId&&branchId&&(!isPatient||appointmentId)?<><div className="queue-display"><div><span className="eyebrow">NOW SERVING</span><strong>{queue.data.currentToken||"—"}</strong><small>{queue.data.currentToken?"Called / in consultation":"No active consultation"}</small></div><div><span className="eyebrow">UP NEXT</span><strong>{queue.data.nextToken||"—"}</strong><small>{queue.data.waiting} waiting · {queue.data.completed} completed</small></div>{!isPatient&&<button className="button light" disabled={next.isPending||!!queue.error||!!queue.data.currentToken||!canCall} onClick={()=>next.mutate({data:{doctorId,branchId,date}})}>Call next patient <ChevronRight size={18}/></button>}</div>{queue.data.ownEntry&&<div className="notice"><h3>Your token: {queue.data.ownEntry.token}</h3><p>{queue.data.ownEntry.patientsAhead} patients ahead · Estimated waiting time ~{queue.data.ownEntry.estimatedWaitMinutes} minutes · {title(queue.data.ownEntry.status)}</p><small>This is an estimate, not a guaranteed consultation time.</small></div>}{!isPatient&&queue.data.entries?.length?<section className="panel"><AppointmentRows appointments={queue.data.entries}/></section>:null}<p className="muted">Last updated {new Date(queue.data.updatedAt).toLocaleTimeString()} · Refreshes every 30 seconds</p></>:<Empty label="selected queue"/>}</>;
+ const timezone=useConfiguredTimezone(identity);
+ const [clinicId,setClinic]=useState(initial?.clinicId||"");const [doctorId,setDoctor]=useState(initial?.doctorId||identity.doctorId||"");const [branchId,setBranch]=useState(initial?.branchId||"");const [date,setDate]=useState(initial?.date||today());const [appointmentId,setAppointment]=useState(initial?.id||"");const [status,setStatus]=useState("");const [page,setPage]=useState(1);const [pageSize,setPageSize]=useState(20);const client=useQueryClient();const isPatient=identity.user?.role==="patient";
+ useEffect(()=>setPage(1),[doctorId,branchId,date,status,pageSize]);
+ const params={doctorId,branchId,date,appointmentId:appointmentId||undefined,status:(status||undefined) as api.AppointmentStatus|undefined,page,pageSize};
+ const enabled=!!doctorId&&!!branchId&&(!isPatient||!!appointmentId);
+ const queue=api.useGetQueue(params,{query:{queryKey:api.getGetQueueQueryKey(params),enabled,refetchInterval:30000}});
+ const next=usePendingGuard(api.useCallNext({mutation:{onSuccess:()=>client.invalidateQueries()}}));
+ const entryTotal=(queue.data as (api.LiveQueue&{entriesTotal?:number})|undefined)?.entriesTotal??0;
+ return <><FilterBar active={!!(clinicId||branchId||status||date!==today())} onReset={()=>{setClinic("");setBranch("");setDoctor(identity.doctorId||"");setAppointment("");setStatus("");setDate(today());setPage(1);}}>
+ {isPatient?<CareLookup kind="appointments" label="Your appointment" value={appointmentId} selectedLabel={initial?`${initial.token} · ${initial.doctorName}`:undefined} params={{date}} onChange={(id,record)=>{setAppointment(id);setDoctor(String(record?.doctorId||""));setBranch(String(record?.branchId||""));}}/>:<><ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={id=>{setClinic(id);setBranch("");setDoctor(identity.doctorId||"");}}/><ResourceLookup resource="branches" label="Branch" value={branchId} disabled={!clinicId} params={{clinicId,status:"active"}} onChange={id=>{setBranch(id);setDoctor(identity.doctorId||"");}}/><ResourceLookup resource="doctors" label="Doctor" value={doctorId} disabled={!!identity.doctorId||!branchId} params={{clinicId,branchId,status:"active"}} onChange={setDoctor}/><SearchableSelect label="Queue status" value={status} onChange={setStatus} options={Object.values(api.AppointmentStatus).map(value=>({value,label:title(value)}))}/></>}
+ <label>Queue date<input type="date" value={date} onChange={e=>{setDate(e.target.value);if(isPatient){setAppointment("");setDoctor("");setBranch("");}}}/></label></FilterBar>
+ <ErrorNotice error={queue.error||next.error}/>{queue.error&&<button onClick={()=>queue.refetch()}>Retry queue</button>}{next.isSuccess&&<p role="status" className="notice">Next patient called.</p>}
+ {!enabled?<p className="empty">Select {isPatient?"your appointment":"a clinic, branch and doctor"} to view the session queue.</p>:queue.isLoading?<div className="skeleton">Updating live queue…</div>:queue.error?null:queue.data?<><div className="queue-display"><div><span className="eyebrow">NOW SERVING</span><strong>{queue.data.currentToken||"—"}</strong><small>{queue.data.currentToken?"Called / in consultation":"No active consultation"}</small></div><div><span className="eyebrow">UP NEXT</span><strong>{queue.data.nextToken||"—"}</strong><small>{queue.data.waiting} waiting · {queue.data.completed} completed</small></div>{!isPatient&&<button className="button light" disabled={next.isPending||queue.isFetching||!!queue.data.currentToken||!queue.data.nextToken} onClick={()=>{if(!next.isPending)next.mutate({data:{doctorId,branchId,date}});}}>{next.isPending?"Calling…":"Call next patient"} <ChevronRight size={18}/></button>}</div>{queue.data.ownEntry&&<div className="notice"><h3>Your token: {queue.data.ownEntry.token}</h3><p>{queue.data.ownEntry.patientsAhead} patients ahead · Estimated waiting time ~{queue.data.ownEntry.estimatedWaitMinutes} minutes · {title(queue.data.ownEntry.status)}</p><small>This is an estimate, not a guaranteed consultation time.</small></div>}{!isPatient&&<section className="panel">{queue.data.entries?.length?<AppointmentRows appointments={queue.data.entries}/>:<p className="empty">No queue entries match this session and status.</p>}<Pagination page={page} pageSize={pageSize} total={entryTotal} onPageChange={setPage} onPageSizeChange={setPageSize}/></section>}<p className="muted">Last updated {formatConfiguredTimestamp(queue.data.updatedAt,timezone,{hour:"2-digit",minute:"2-digit",second:"2-digit",timeZoneName:"short"})} · Refreshes every 30 seconds</p></>:null}</>;
 }
 function Profile({identity}:{identity:api.Identity}){
  const client=useQueryClient();const doctor=api.useGetDoctor(identity.doctorId||"",{query:{queryKey:api.getGetDoctorQueryKey(identity.doctorId||""),enabled:!!identity.doctorId}});const patient=api.useGetPatient(identity.patientId||"",{query:{queryKey:api.getGetPatientQueryKey(identity.patientId||""),enabled:!!identity.patientId}});
- const mutation=useMutation<api.Patient|api.Doctor|api.User,Error,any>({mutationFn:(data:any)=>identity.doctorId?api.updateDoctor(identity.doctorId,data):identity.patientId?api.updatePatient(identity.patientId,data):api.updateMe(data),onSuccess:()=>client.invalidateQueries()});
+ const mutation=usePendingGuard(useMutation<api.Patient|api.Doctor|api.User,Error,any>({mutationFn:(data:any)=>identity.doctorId?api.updateDoctor(identity.doctorId,data):identity.patientId?api.updatePatient(identity.patientId,data):api.updateMe(data),onSuccess:()=>client.invalidateQueries()}));
  const data=identity.doctorId?doctor.data:identity.patientId?patient.data:identity.user;
- return <section className="panel padded"><h2>Your profile</h2><p className="muted">Keep your contact and care details up to date. Changing a mobile number resets its verification.</p><ErrorNotice error={doctor.error||patient.error||mutation.error}/>{mutation.isSuccess&&<p className="notice">Your profile has been saved.</p>}{data?<Editor key={JSON.stringify(data)} initial={data} fields={identity.doctorId?resources.doctors.fields.filter(f=>!["status","ownerAdminId","clinicIds","branchIds"].includes(f.key)):identity.patientId?resources.patients.fields.filter(f=>!["clinicId","branchId","status"].includes(f.key)):profileFields} busy={mutation.isPending} onSave={d=>mutation.mutate(d)}/>:<p>Loading profile…</p>}</section>;
+ return <section className="panel padded"><h2>Your profile</h2><p className="muted">Keep your contact and care details up to date. Changing a mobile number resets its verification.</p><ErrorNotice error={doctor.error||patient.error||mutation.error}/>{(doctor.error||patient.error)&&<button onClick={()=>{if(identity.doctorId)doctor.refetch();if(identity.patientId)patient.refetch();}}>Retry profile</button>}{mutation.isSuccess&&<p className="notice" role="status">Your profile has been saved.</p>}{data?<Editor key={JSON.stringify(data)} initial={data} fields={identity.doctorId?resources.doctors.fields.filter(f=>!["status","ownerAdminId","clinicIds","branchIds"].includes(f.key)):identity.patientId?resources.patients.fields.filter(f=>!["clinicId","branchId","status"].includes(f.key)):profileFields} busy={mutation.isPending} onSave={d=>mutation.mutate(d)}/>:doctor.error||patient.error?null:<p role="status">Loading profile…</p>}</section>;
 }
 export function DoctorClinics({ identity }: { identity: api.Identity }) {
-  const assigned = api.useListClinics({ page: 1, pageSize: 100, status: "active" }, { query: { queryKey: ["doctor-clinics-assigned"] } });
-
-  const optionsParams = { targetRole: "receptionist" as const };
+  const [search,setSearch]=useState("");const debounced=useDebouncedValue(search);const [page,setPage]=useState(1);const [pageSize,setPageSize]=useState(20);
+  const [networkSearch,setNetworkSearch]=useState("");const networkDebounced=useDebouncedValue(networkSearch);const [networkPage,setNetworkPage]=useState(1);const [networkSize,setNetworkSize]=useState(20);
+  useEffect(()=>setPage(1),[debounced,pageSize]);useEffect(()=>setNetworkPage(1),[networkDebounced,networkSize]);
+  const assignedParams={page,pageSize,search:debounced,status:"active" as const,sort:"name"};
+  const assigned = api.useListClinics(assignedParams, { query: { queryKey: api.getListClinicsQueryKey(assignedParams) } });
+  const optionsParams = { targetRole: "receptionist" as const,search:networkDebounced,page:networkPage,pageSize:networkSize };
   const options = api.useGetStaffAssignmentOptions(optionsParams, {
     query: {
       queryKey: api.getGetStaffAssignmentOptionsQueryKey(optionsParams),
@@ -207,12 +225,13 @@ export function DoctorClinics({ identity }: { identity: api.Identity }) {
   });
 
   const assignedClinics = assigned.data?.items || [];
-  const assignedIds = new Set(assignedClinics.map((c: any) => c.id));
-  const availableClinics = (options.data?.clinics || []).filter((c: any) => !assignedIds.has(c.id));
+  const availableClinics = options.data?.clinics || [];
+  const networkTotal=(options.data as any)?.pagination?.clinics?.total??0;
 
   return (
     <div className="doctor-clinics-page">
       <ErrorNotice error={assigned.error || options.error} />
+      {(assigned.error||options.error)&&<button onClick={()=>{assigned.refetch();options.refetch();}}>Retry clinics</button>}
       <section className="panel table-panel" style={{ marginBottom: '2rem' }}>
         <div className="panel-heading">
           <div>
@@ -220,32 +239,35 @@ export function DoctorClinics({ identity }: { identity: api.Identity }) {
             <p>Clinics where you actively practice and manage appointments.</p>
           </div>
         </div>
-        {assigned.isLoading ? <div className="skeleton">Loading assigned clinics…</div> : assignedClinics.length ? (
+        <FilterBar active={!!search} onReset={()=>setSearch("")}><SearchInput value={search} onChange={setSearch} placeholder="Search assigned clinics…"/></FilterBar>
+        {assigned.isLoading ? <div className="skeleton">Loading assigned clinics…</div> : assigned.error?null:assignedClinics.length ? (
           <div className="table-scroll">
             <table>
               <thead><tr><th>Name</th><th>City</th><th>Phone</th><th>Status</th></tr></thead>
               <tbody>
                 {assignedClinics.map((c: any) => (
                   <tr key={c.id}>
-                    <td><strong>{c.name}</strong></td>
-                    <td>{c.city || "—"}</td>
-                    <td>{c.phone || "—"}</td>
-                    <td><span className={`badge ${c.status}`}>{title(c.status || "")}</span></td>
+                    <td data-label="Name"><strong>{c.name}</strong></td>
+                    <td data-label="City">{c.city || "—"}</td>
+                    <td data-label="Phone">{c.phone || "—"}</td>
+                    <td data-label="Status"><span className={`badge ${c.status}`}>{title(c.status || "")}</span></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        ) : <Empty label="assigned clinics" />}
+        ) : <p className="empty">{search?"No assigned clinics match your search.":"No active clinics are assigned to you."}</p>}
+        <Pagination page={page} pageSize={pageSize} total={assigned.data?.total||0} onPageChange={setPage} onPageSizeChange={setPageSize}/>
       </section>
 
       <section className="panel table-panel">
         <div className="panel-heading">
           <div>
-            <h2>Available in Network</h2>
-            <p>Other clinics managed by your administrator. Contact your Clinic Admin for clinical assignments.</p>
+            <h2>Clinics in your network</h2>
+            <p>Clinics managed by your administrator, including existing assignments. Contact your Clinic Admin for clinical assignments.</p>
           </div>
         </div>
+        <FilterBar active={!!networkSearch} onReset={()=>setNetworkSearch("")}><SearchInput value={networkSearch} onChange={setNetworkSearch} placeholder="Search network clinics…"/></FilterBar>
         {options.isLoading ? <div className="skeleton">Loading available clinics…</div> : options.error ? null : availableClinics.length ? (
           <div className="table-scroll">
             <table>
@@ -253,27 +275,50 @@ export function DoctorClinics({ identity }: { identity: api.Identity }) {
               <tbody>
                 {availableClinics.map((c: any) => (
                   <tr key={c.id}>
-                    <td><strong>{c.name}</strong></td>
-                    <td>{c.city || "—"}</td>
-                    <td>{c.phone || "—"}</td>
+                    <td data-label="Name"><strong>{c.name}</strong></td>
+                    <td data-label="City">{c.city || "—"}</td>
+                    <td data-label="Phone">{c.phone || "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        ) : <div className="empty" style={{ padding: '2rem', textAlign: 'center' }}><p className="muted">No additional clinics available in your network.</p></div>}
+        ) : <p className="empty">{networkSearch?"No network clinics match your search.":"No clinics are available in your administrator's network."}</p>}
+        <Pagination page={networkPage} pageSize={networkSize} total={networkTotal} onPageChange={setNetworkPage} onPageSizeChange={setNetworkSize}/>
       </section>
     </div>
   );
 }
 
 function PlatformSettings(){
- const q=api.useGetSettings();const client=useQueryClient();const mutation=api.useUpdateSettings({mutation:{onSuccess:()=>client.invalidateQueries()}});
- return <section className="panel padded"><h2>Platform preferences</h2><ErrorNotice error={q.error||mutation.error}/><div className="notice"><strong>Integration boundaries</strong><p>General notifications are not connected. Session timeout is managed by Clerk; platform preferences do not change your authentication session.</p><p>SMS provider: {q.data?.otpProviderConfigured?"Configured":"Not connected"} · Queue refresh: 30 seconds</p></div>{mutation.isSuccess&&<p className="notice">Settings saved.</p>}{q.data&&<Editor initial={q.data} fields={settingsFields} busy={mutation.isPending} onSave={data=>mutation.mutate({data})}/>}</section>;
+ const q=api.useGetSettings();const client=useQueryClient();const mutation=usePendingGuard(api.useUpdateSettings({mutation:{onSuccess:()=>client.invalidateQueries()}}));
+ return <section className="panel padded"><h2>Platform preferences</h2><ErrorNotice error={q.error||mutation.error}/>{q.isLoading&&<div className="skeleton">Loading platform preferences…</div>}{q.error&&<button onClick={()=>q.refetch()}>Retry settings</button>}<div className="notice"><strong>Integration boundaries</strong><p>General notifications are not connected. Session timeout is managed by Clerk; platform preferences do not change your authentication session.</p><p>SMS provider: {q.isLoading?"Loading…":q.error?"Unavailable":q.data?.otpProviderConfigured?"Configured":"Not connected"} · Queue refresh: 30 seconds</p></div>{mutation.isSuccess&&<p className="notice" role="status">Settings saved.</p>}{q.data&&<Editor initial={q.data} fields={settingsFields} busy={mutation.isPending} onSave={data=>{if(!mutation.isPending)mutation.mutate({data});}}/>}</section>;
 }
 function Reports(){
- const [from,setFrom]=useState(today());const [to,setTo]=useState(today());const [groupBy,setGroup]=useState<"date"|"clinic"|"doctor">("date");
- const q=api.useGetReports({from,to,groupBy});
- function download(){if(!q.data)return;const keys=["label","appointments","completed","cancelled","noShow","registrations","averageWaitMinutes"] as const;const csv=[keys.join(","),...q.data.rows.map(r=>keys.map(k=>`"${String(r[k]).replaceAll('"','""')}"`).join(","))].join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="clinicflow-report.csv";a.click();URL.revokeObjectURL(a.href);}
- return <><div className="toolbar filters"><label>From<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label>To<input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label><label>Group by<select value={groupBy} onChange={e=>setGroup(e.target.value as typeof groupBy)}><option value="date">Date</option><option value="clinic">Clinic</option><option value="doctor">Doctor</option></select></label><button onClick={download} disabled={!q.data?.rows.length}>Export CSV</button></div><ErrorNotice error={q.error}/><section className="panel"><div className="table-scroll"><table><thead><tr>{["Group","Appointments","Completed","Cancelled","No-show","Registrations","Average wait"].map(t=><th key={t}>{t}</th>)}</tr></thead><tbody>{q.data?.rows.map(r=><tr key={r.key}><td>{r.label}</td><td>{r.appointments}</td><td>{r.completed}</td><td>{r.cancelled}</td><td>{r.noShow}</td><td>{r.registrations}</td><td>{r.averageWaitMinutes} min</td></tr>)}</tbody></table></div>{!q.data?.rows.length&&<Empty label="report results"/>}</section></>;
+ const [from,setFrom]=useState(today());const [to,setTo]=useState(today());const [groupBy,setGroup]=useState<"date"|"clinic"|"doctor">("date");const [clinicId,setClinic]=useState("");const [branchId,setBranch]=useState("");const [doctorId,setDoctor]=useState("");const [page,setPage]=useState(1);const [pageSize,setPageSize]=useState(20);
+ const [exporting,setExporting]=useState(false);const exportLock=useRef(false);const [exportError,setExportError]=useState<Error|null>(null);const [exportDone,setExportDone]=useState(false);
+ useEffect(()=>{setPage(1);setExportDone(false);},[from,to,groupBy,clinicId,branchId,doctorId,pageSize]);
+ const params={from,to,groupBy,clinicId:clinicId||undefined,branchId:branchId||undefined,doctorId:doctorId||undefined,page,pageSize};
+ const q=api.useGetReports(params,{query:{queryKey:api.getGetReportsQueryKey(params),enabled:!!from&&!!to&&from<=to}});
+ const total=(q.data as (NonNullable<typeof q.data>&{total?:number})|undefined)?.total??0;
+ async function download(){
+  if(exportLock.current)return;exportLock.current=true;setExporting(true);setExportError(null);setExportDone(false);
+  try{
+   const keys=["label","appointments","completed","cancelled","noShow","registrations","averageWaitMinutes"] as const;
+   const chunks=[keys.join(",")];const exportedKeys=new Set<string>();let exportPage=1;let loaded=0;let expected=0;
+   do{
+    const batch=await api.getReports({...params,page:exportPage,pageSize:100} as any) as NonNullable<typeof q.data>&{total:number};
+    if(exportPage>1&&batch.total!==expected)throw new Error("Report totals changed while exporting. Please retry for a complete export.");
+    expected=batch.total;if(!Number.isFinite(expected))throw new Error("Report export requires server pagination metadata. Please retry after refreshing.");
+    if(!batch.rows.length&&loaded<expected)throw new Error("Report changed while exporting. Please retry to avoid an incomplete export.");
+    for(const row of batch.rows){if(exportedKeys.has(row.key))throw new Error("Report grouping changed while exporting. Please retry.");exportedKeys.add(row.key);}
+    chunks.push(...batch.rows.map(row=>keys.map(key=>{let value=String(row[key]??"");if(/^[=+@-]/.test(value))value="'"+value;return `"${value.replaceAll('"','""')}"`;}).join(",")));
+    loaded+=batch.rows.length;exportPage++;
+   }while(loaded<expected);
+   const url=URL.createObjectURL(new Blob(["\uFEFF"+chunks.join("\r\n")],{type:"text/csv;charset=utf-8"}));const anchor=document.createElement("a");anchor.href=url;anchor.download=`clinicflow-report-${from}-${to}.csv`;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setExportDone(true);
+  }catch(error){setExportError(error instanceof Error?error:new Error("Unable to export report."));}finally{setExporting(false);exportLock.current=false;}
+ }
+ return <><FilterBar active={!!clinicId||!!branchId||!!doctorId||from!==today()||to!==today()||groupBy!=="date"} onReset={()=>{setFrom(today());setTo(today());setGroup("date");setClinic("");setBranch("");setDoctor("");}}>
+ <label>From<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label>To<input type="date" min={from} value={to} onChange={e=>setTo(e.target.value)}/></label><SearchableSelect label="Group by" value={groupBy} onChange={value=>setGroup((value||"date") as typeof groupBy)} options={["date","clinic","doctor"].map(value=>({value,label:title(value)}))}/><ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={value=>{setClinic(value);setBranch("");setDoctor("");}}/><ResourceLookup resource="branches" label="Branch" value={branchId} disabled={!clinicId} params={{clinicId}} onChange={value=>{setBranch(value);setDoctor("");}}/><ResourceLookup resource="doctors" label="Doctor" value={doctorId} disabled={!clinicId} params={{clinicId,branchId:branchId||undefined}} onChange={setDoctor}/><button onClick={()=>void download()} disabled={exporting||q.isFetching||!!q.error||!total||!from||!to||from>to}>{exporting?"Exporting all results…":"Export all results CSV"}</button></FilterBar>
+ {(!from||!to||from>to)&&<p role="alert" className="error-box">Select a valid date range.</p>}<ErrorNotice error={q.error||exportError}/>{q.error&&<button onClick={()=>q.refetch()}>Retry report</button>}{exportDone&&<p role="status" className="notice">All matching report results exported.</p>}<section className="panel">{q.isLoading?<div className="skeleton">Loading report…</div>:q.error?null:q.data?.rows.length?<div className="table-scroll"><table><thead><tr><th>Group</th><th>Visits</th><th>Outcomes</th><th>Registrations</th><th>Average wait</th></tr></thead><tbody>{q.data.rows.map(r=><tr key={r.key}><td data-label="Group">{r.label}</td><td data-label="Visits"><strong>{r.appointments} appointments</strong><small>{r.completed} completed</small></td><td data-label="Outcomes">{r.cancelled} cancelled<small>{r.noShow} no-show</small></td><td data-label="Registrations">{r.registrations}</td><td data-label="Average wait">{r.averageWaitMinutes} min</td></tr>)}</tbody></table></div>:<p className="empty">No report results match this date range and scope.</p>}<Pagination page={page} pageSize={pageSize} total={total} onPageChange={setPage} onPageSizeChange={setPageSize}/></section></>;
 }

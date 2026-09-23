@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { db, clinics, branches, doctors, qrs } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import * as z from "@workspace/api-zod";
 import { all, one, filtered, paginate } from "../lib/store";
 import { query, assert } from "../lib/http";
 import { enrich, publicDoctor } from "../lib/entities";
 import { availability } from "../lib/availability";
+import { queryPage } from "../lib/list-query";
 export const publicRouter = Router();
 for (const [kind, table, schema] of [
   ["clinics", clinics, z.ListPublicClinicsQueryParams],
@@ -14,14 +15,12 @@ for (const [kind, table, schema] of [
 ] as const) {
   publicRouter.get(`/public/${kind}`, async (req, res) => {
     const q = query(schema, req);
-    let rows = (await Promise.all((await all(table)).filter(r => r.status === "active").map(r => enrich(kind, r)))).filter(r => r.status === "active");
-    const activeClinics = (await all(clinics)).filter(c => c.status === "active").map(c => c.id);
-    const activeBranches = (await all(branches)).filter(b => b.status === "active" && activeClinics.includes(b.clinicId)).map(b => b.id);
-    if (kind === "branches") rows = rows.filter(b => activeClinics.includes(b.clinicId));
-    if (kind === "doctors") rows = rows.map(d => ({ ...d, clinicIds: d.clinicIds.filter((id: string) => activeClinics.includes(id)), branchIds: d.branchIds.filter((id: string) => activeBranches.includes(id)) })).filter(d => d.branchIds.length);
-    const result = paginate(filtered(rows, q), q);
+    const extra = kind === "branches" ? sql`exists(select 1 from clinics c where c.id=r.clinic_id and c.status='active') and ${"doctorId" in q && q.doctorId ? sql`exists(select 1 from doctors d join users u on u.id=d.user_id where d.id=${q.doctorId} and d.status='active' and u.status='active')` : sql`true`}`
+      : kind === "doctors" ? sql`exists(select 1 from assignments a join clinics c on c.id=a.clinic_id join branches b on b.id=a.branch_id where a.user_id=r.user_id and c.status='active' and b.status='active')`
+        : sql`true`;
+    const result = await queryPage({ role: "superAdmin" }, kind, { ...q, status: "active" }, extra);
     if (kind === "doctors") result.items = result.items.map(publicDoctor);
-    if (kind === "clinics") result.items = result.items.map(({ ownerId, ...r }) => r);
+    if (kind === "clinics") result.items = result.items.map(({ ownerId, ...r }: any) => r);
     res.json(result);
   });
 }

@@ -15,9 +15,11 @@
 import type { Branch } from './branch';
 import type { Clinic } from './clinic';
 import type { ManagingAdminOption } from './managingAdminOption';
+import type { StaffAssignmentOptionsPagination } from './staffAssignmentOptionsPagination';
 
 export interface StaffAssignmentOptions {
   clinics: Clinic[];
   branches: Branch[];
   managingAdmins: ManagingAdminOption[];
+  pagination?: StaffAssignmentOptionsPagination;
 }

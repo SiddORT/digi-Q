@@ -8,6 +8,7 @@ import { requireUser, roles, scope, scoped, canRead, projectAssignmentScope, set
 import { all, one, put, change, uid, audit, filtered, paginate } from "../lib/store";
 import { assert, parse, query } from "../lib/http";
 import { enrich } from "../lib/entities";
+import { queryPage, assignmentCatalogPredicate } from "../lib/list-query";
 import { invitationMetadata } from "../lib/invitation-metadata";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus } from "../lib/availability";
 const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs } = tables;
@@ -558,11 +559,31 @@ for (const [kind, table, schema, listSchema] of definitions) {
   resourcesRouter.get(`/${kind}`, async (req, res) => {
     const user = await requireUser(req), q = query(listSchema, req);
     if (kind === "users") roles(user, ["superAdmin", "clinicAdmin", "doctor"]);
-    const rows = await Promise.all((await all(table)).map(r => enrich(kind, r)));
-    const visible = await scoped(user, kind, rows);
-    const projected = await Promise.all(visible.map(async row =>
-      withPasswordState(await projectAssignmentScope(user, kind, row))));
-    res.json(paginate(filtered(projected, q), q));
+    const result = await queryPage(user, kind, q);
+    if (["users", "doctors"].includes(kind)) {
+      const clinicIds = [...new Set(result.items.flatMap((r: any) => r.clinicIds))] as string[];
+      const branchIds = [...new Set(result.items.flatMap((r: any) => r.branchIds))] as string[];
+      const clinicRows = clinicIds.length ? (await db.execute(sql`select id, data->>'name' as name from clinics where id in (${sql.join(clinicIds.map(id => sql`${id}`), sql`,`)})`)).rows : [];
+      const branchRows = branchIds.length ? (await db.execute(sql`select id, clinic_id as "clinicId", data->>'name' as name from branches where id in (${sql.join(branchIds.map(id => sql`${id}`), sql`,`)})`)).rows : [];
+      result.items = result.items.map((row: any) => {
+        const own = kind === "users" ? row.id === user.id : row.id === user.doctorId;
+        const peer = kind === "users" && row.role === "receptionist" && ["clinicAdmin", "doctor"].includes(user.role) && row.managingAdminId === (user.role === "clinicAdmin" ? user.id : user.managingAdminId);
+        const unrestricted = user.role === "superAdmin" || own || peer;
+        const clinicIds = row.clinicIds.filter((id: string) => unrestricted || scope(user, id));
+        const branchIds = row.branchIds.filter((id: string) => unrestricted || branchRows.some(b => b.id === id && scope(user, b.clinicId as string, id)));
+        return { ...row, clinicIds, branchIds, clinicNames: clinicRows.filter(c => clinicIds.includes(c.id)).map(c => c.name), branchNames: branchRows.filter(b => branchIds.includes(b.id)).map(b => b.name) };
+      });
+      const ids = result.items.filter((r: any) => r.clerkId && ["superAdmin", "clinicAdmin", "doctor", "receptionist"].includes(r.role)).map((r: any) => r.clerkId);
+      if (ids.length) {
+        try {
+          const identities = await clerkClient.users.getUserList({ userId: ids, limit: 100 });
+          result.items = result.items.map((r: any) => ids.includes(r.clerkId) ? { ...r, passwordEnabled: identities.data.find(i => i.id === r.clerkId)?.passwordEnabled ?? null } : r);
+        } catch {
+          result.items = result.items.map((r: any) => ids.includes(r.clerkId) ? { ...r, passwordEnabled: null, passwordStateError: "Identity provider unavailable" } : r);
+        }
+      }
+    }
+    res.json(result);
   });
   resourcesRouter.get(`/${kind}/:id`, async (req, res) => {
     const user = await requireUser(req), row = await enrich(kind, await one(table, req.params.id as string));
@@ -600,29 +621,45 @@ resourcesRouter.get("/staff-assignment-options", async (req, res) => {
   if (user.role === "doctor") assert(q.targetRole === "receptionist", 403, "Doctors may request receptionist assignment options only");
   assert(!(q.doctorId && q.userId), 400, "Select only one staff record to edit");
   let managingAdminId: string | undefined;
+  let retainedUserId: string | undefined;
   if (q.doctorId) {
     assert(q.targetRole === "doctor", 400, "doctorId requires targetRole=doctor");
-    const target = await enrich("doctors", await one(doctors, q.doctorId));
-    assert(await canRead(user, "doctors", target), 403, "Doctor outside your management scope");
+    const target = (await queryPage(user, "doctors", { selectedIds: q.doctorId, pageSize: 1 })).items[0];
+    assert(target, 403, "Doctor outside your management scope");
     managingAdminId = target.ownerAdminId;
+    retainedUserId = target.userId;
   }
   if (q.userId) {
     assert(q.targetRole === "receptionist", 400, "userId requires targetRole=receptionist");
-    const target = await enrich("users", await one(users, q.userId));
-    assert(target.role === "receptionist" && await canRead(user, "users", target), 403, "Receptionist outside your management scope");
+    const target = (await queryPage(user, "users", { selectedIds: q.userId, pageSize: 1 })).items[0];
+    assert(target?.role === "receptionist", 403, "Receptionist outside your management scope");
     managingAdminId = target.managingAdminId;
+    retainedUserId = target.id;
   }
   if (!managingAdminId && user.role === "clinicAdmin") managingAdminId = user.id;
   if (!managingAdminId && user.role === "doctor") managingAdminId = user.managingAdminId;
-  const clinicRows = (await all(clinics)).filter(c => c.status === "active" && (!managingAdminId || c.adminId === managingAdminId));
-  const clinicIds = new Set(clinicRows.map(c => c.id));
-  const branchRows = (await all(branches)).filter(b => b.status === "active" && clinicIds.has(b.clinicId));
-  const adminIds = [...new Set(clinicRows.map(c => c.adminId))];
-  const adminRows = (await all(users)).filter(a => adminIds.includes(a.id) && a.role === "clinicAdmin" && a.status === "active");
+  if (user.role !== "superAdmin") {
+    const actorManager = user.role === "clinicAdmin" ? user.id : user.managingAdminId;
+    assert(actorManager && managingAdminId === actorManager, 403, "Managing Admin outside this assignment catalog");
+    assert(!q.managingAdminId || q.managingAdminId === actorManager, 403, "Managing Admin outside this assignment catalog");
+  }
+  if (q.managingAdminId) {
+    assert(!managingAdminId || managingAdminId === q.managingAdminId, 403, "Managing Admin outside this assignment catalog");
+    managingAdminId = q.managingAdminId;
+  }
+  const options = { ...q, managingAdminId: undefined, sort: "name" };
+  // Management catalog intentionally differs from operational assignments.
+  const catalogUser = { role: "superAdmin" };
+  const retained = q.selectedIds ? retainedUserId : undefined;
+  const clinicPage = await queryPage(catalogUser, "clinics", { ...options, doctorId: undefined, clinicId: undefined, branchId: undefined }, sql`${assignmentCatalogPredicate("clinics", managingAdminId, retained)} and ${q.clinicId ? sql`r.id=${q.clinicId}` : sql`true`}`);
+  const branchPage = await queryPage(catalogUser, "branches", { ...options, doctorId: undefined, branchId: undefined }, sql`${assignmentCatalogPredicate("branches", managingAdminId, retained)} and ${q.branchId ? sql`r.id=${q.branchId}` : sql`true`}`);
+  const adminIds = [...new Set(clinicPage.items.map((c: any) => c.adminId))] as string[];
+  const adminRows = adminIds.length ? (await db.execute(sql`select id, full_name as "fullName" from users where id in (${sql.join(adminIds.map(id => sql`${id}`), sql`,`)}) and role='clinicAdmin' and status='active' order by id limit 100`)).rows : [];
   res.json({
-    clinics: await Promise.all(clinicRows.map(c => enrich("clinics", c))),
-    branches: await Promise.all(branchRows.map(b => enrich("branches", b))),
+    clinics: clinicPage.items,
+    branches: branchPage.items,
     managingAdmins: adminRows.map(a => ({ id: a.id, fullName: a.fullName })),
+    pagination: { clinics: { ...clinicPage, items: undefined }, branches: { ...branchPage, items: undefined } },
   });
 });
 resourcesRouter.post("/users/:id/password-reset", async (req, res) => {

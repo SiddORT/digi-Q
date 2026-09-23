@@ -12,15 +12,9 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { ReportRow } from './reportRow';
+import type { PageMeta } from './pageMeta';
 
-export interface Report {
-  page?: number;
-  pageSize?: number;
-  totalPages?: number;
-  total?: number;
-  from: Date;
-  to: Date;
-  groupBy: string;
-  rows: ReportRow[];
-}
+export type StaffAssignmentOptionsPagination = {
+  clinics?: PageMeta;
+  branches?: PageMeta;
+};

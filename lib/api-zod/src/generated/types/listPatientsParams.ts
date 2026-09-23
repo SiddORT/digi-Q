@@ -14,15 +14,21 @@
  */
 import type { BranchIdParameter } from './branchIdParameter';
 import type { ClinicIdParameter } from './clinicIdParameter';
+import type { FromParameter } from './fromParameter';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
 import type { SearchParameter } from './searchParameter';
 import type { SortParameter } from './sortParameter';
+import type { StatusParameter } from './statusParameter';
+import type { ToParameter } from './toParameter';
 
 export type ListPatientsParams = {
 search?: SearchParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
+status?: StatusParameter;
+from?: FromParameter;
+to?: ToParameter;
 gender?: string;
 /**
  * @minimum 1

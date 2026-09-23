@@ -12,7 +12,12 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { BranchIdParameter } from './branchIdParameter';
+import type { ClinicIdParameter } from './clinicIdParameter';
 import type { GetStaffAssignmentOptionsTargetRole } from './getStaffAssignmentOptionsTargetRole';
+import type { PageParameter } from './pageParameter';
+import type { PageSizeParameter } from './pageSizeParameter';
+import type { SearchParameter } from './searchParameter';
 
 export type GetStaffAssignmentOptionsParams = {
 targetRole: GetStaffAssignmentOptionsTargetRole;
@@ -24,4 +29,25 @@ doctorId?: string;
  * Existing receptionist being edited.
  */
 userId?: string;
+/**
+ * Narrows the catalog owner; cannot override an actor or edited staff owner.
+ */
+managingAdminId?: string;
+search?: SearchParameter;
+/**
+ * @minimum 1
+ */
+page?: PageParameter;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: PageSizeParameter;
+clinicId?: ClinicIdParameter;
+branchId?: BranchIdParameter;
+/**
+ * Comma-separated IDs to resolve within the authorized catalog (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: string;
 };

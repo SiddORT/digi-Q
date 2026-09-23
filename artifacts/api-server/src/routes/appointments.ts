@@ -8,10 +8,12 @@ import { availability, localNow, minutes } from "../lib/availability";
 import { enrich } from "../lib/entities";
 import { appointmentView, transition, lockQueue } from "../lib/appointments";
 import { resolveQr } from "./public";
+import { queryPage } from "../lib/list-query";
 export const appointmentsRouter = Router();
 appointmentsRouter.get("/appointments", async (req, res) => {
   const user = await requireUser(req), q = query(z.ListAppointmentsQueryParams, req);
-  res.json(paginate(filtered((await scoped(user, "appointments", await all(appointments))).map(a => appointmentView(a, user)), q), q));
+  const result = await queryPage(user, "appointments", q);
+  res.json({ ...result, items: result.items.map((a: any) => appointmentView(a, user)) });
 });
 appointmentsRouter.get("/appointments/:id", async (req, res) => {
   const user = await requireUser(req), row = await one(appointments, req.params.id as string);

@@ -20,7 +20,7 @@ export const reset = () => {
     users: [],
     invitations: [],
      sessions: new Map(),
-    getUserList: async () => ({data:[]}),
+    getUserList: async ({userId} = {}) => ({data:state.clerk.users.filter(u => !userId || userId.includes(u.id))}),
      getSession: async id => {
        const session = state.clerk.sessions.get(id);
        if (!session) throw Object.assign(new Error("Session not found"), {status:404});
@@ -59,7 +59,7 @@ export const change = async (table,id,value) => { const row = (await all(table))
 export const audit = async () => {};
 export const getSettings = async () => state.config;
 export const filtered = (rows,q) => rows.filter(r => Object.entries(q).every(([k,v]) => !v || !["doctorId","branchId","clinicId","date","patientId","status"].includes(k) || r[k] === v));
-export const paginate = rows => ({items:rows,total:rows.length,page:1,pageSize:20});
+export const paginate = (rows,q={}) => {const page=q.page||1,pageSize=q.pageSize||20;return {items:rows.slice((page-1)*pageSize,page*pageSize),total:rows.length,page,pageSize};};
 `;
 await build({
   stdin: { contents: `
@@ -73,6 +73,7 @@ await build({
     export * from "./routes/resources";
     export * from "./routes/public";
     export * from "./routes/reporting";
+    export { ListSchedulesQueryParams, ListAvailabilityExceptionsQueryParams, ListQrsQueryParams, ListUsersQueryParams, ListPatientsQueryParams, ListAuditLogsQueryParams, ListPublicClinicsQueryParams, ListPublicBranchesQueryParams, ListPublicDoctorsQueryParams, GetStaffAssignmentOptionsQueryParams } from "@workspace/api-zod";
     export { state, reset } from "audit-fixture";
   `, resolveDir: root },
   outfile: join(directory, "suite.mjs"), bundle: true, platform: "node", format: "esm",
@@ -83,7 +84,38 @@ await build({
       b.onResolve({ filter: /^@workspace\/api-zod$/ }, () => ({path:resolve(root,"../../../lib/api-zod/src/index.ts")}));
       b.onResolve({ filter: /^(audit-fixture|@workspace\/db|@clerk\/express|drizzle-orm)$/ }, a => ({path:a.path,namespace:"fixture"}));
       b.onResolve({ filter: /\/store$/ }, () => ({path:"audit-fixture",namespace:"fixture"}));
+      // Legacy lifecycle tests use a repository double. list-query.test.mjs separately
+      // executes the real query compiler against PostgreSQL with large isolated fixtures.
+      b.onResolve({ filter: /\/list-query$/ }, () => ({path:"list-query",namespace:"fixture"}));
       b.onLoad({ filter: /.*/, namespace: "fixture" }, a => {
+        if (a.path === "list-query") return {resolveDir:join(root,"lib"),contents:`
+          import {state,all,filtered,paginate} from "audit-fixture";
+          import {scoped,projectAssignmentScope} from "./auth";
+          import {enrich} from "./entities";
+          export const sourceSql=()=>({});
+          export const filterSql=()=>({});
+          export const metricSql={};
+          export const assignmentCatalogPredicate=(kind,manager)=>({strings:[kind==="clinics"?(manager?"r.admin_id":""):"exists(select 1 from clinics"],values:manager?[manager]:[]});
+          export const pageParams=q=>({page:q.page||1,pageSize:q.pageSize||20});
+          const values=s=>s?.values?.flatMap(v=>v?.values?values(v):[v])||[];
+          const textOf=s=>(s?.strings||[]).join("")+(s?.values||[]).filter(v=>v?.strings).map(textOf).join("");
+          export async function queryPage(user,kind,q={},extra) {
+            let rows=await Promise.all((state.rows[kind==="audit-logs"?"auditLogs":kind]||[]).map(r=>enrich(kind,r)));
+            rows=await scoped(user,kind,rows);
+            rows=await Promise.all(rows.map(r=>projectAssignmentScope(user,kind,r)));
+            const text=textOf(extra), args=values(extra);
+            if(text.includes("r.admin_id")) rows=rows.filter(r=>r.adminId===args[0]);
+            if(text.includes("exists(select 1 from clinics")) rows=rows.filter(r=>state.rows.clinics.some(c=>c.id===r.clinicId&&(!args.length||c.adminId===args[0])));
+            if(text.includes("r.id=")) rows=rows.filter(r=>r.id===args[args.length-1]);
+            rows=filtered(rows,q);
+            if(q.selectedIds) rows=rows.filter(r=>q.selectedIds.split(",").includes(r.id));
+            const result=paginate(rows,q); return {...result,totalPages:Math.ceil(result.total/result.pageSize)};
+          }
+          export async function queryMetrics(user,q) {
+            const rows=(await queryPage(user,"appointments",{...q,pageSize:100})).items;
+            return {appointments:rows.length,waiting:rows.filter(r=>r.status==="waiting").length,activeQueues:0,currentToken:null};
+          }
+        `};
         if (a.path === "audit-fixture") return {contents:fixture};
         if (a.path === "@clerk/express") return {contents:`
           import {state} from "audit-fixture";
@@ -101,7 +133,7 @@ await build({
           };
           export const getAuth = () => ({});
         `};
-        if (a.path === "drizzle-orm") return {contents:"export const eq = (field,value) => ({field,value}); export const gt = (field,value) => ({field,value,operator:'gt'}); export const and = (...conditions) => ({conditions}); export const sql = (strings,...values) => ({strings,values});"};
+        if (a.path === "drizzle-orm") return {contents:"export const eq = (field,value) => ({field,value}); export const gt = (field,value) => ({field,value,operator:'gt'}); export const and = (...conditions) => ({conditions}); export const sql = (strings,...values) => ({strings,values}); sql.raw=text=>({strings:[text],values:[]}); sql.join=(values)=>({strings:[],values});"};
         return {contents: `
           import {state,all} from "audit-fixture";
           ${tables.map(t => `export const ${t} = {name:"${t}",id:"id",status:"status",clinicId:"clinicId",branchId:"branchId",doctorId:"doctorId",publicReference:"publicReference"};`).join("\n")}
@@ -115,7 +147,7 @@ await build({
              await previous;
              return () => { release(); if (locks.get(key) === queued) locks.delete(key); };
            }
-           const select = () => ({from:table=>({where:condition=>({for:async()=> (await all(table)).filter(r=>r[condition.field]===condition.value)})})});
+           const select = () => ({from:table=>({where:condition=>({for:async()=> (await all(table)).filter(r=>r[condition.field]===condition.value),limit:async n=>(await all(table)).slice(0,n)})})});
            const remove = table => ({where:async condition => {
              const rows = state.rows[table.name] || [];
              state.rows[table.name] = rows.filter(row=>row[condition.field]!==condition.value);
@@ -126,7 +158,21 @@ await build({
              return {onConflictDoNothing:async()=>row,returning:async()=>[row]};
            }});
            export const db = {
-             execute:async()=>{},
+             execute:async statement=>{
+               const text=statement?.strings?.join("")||"";
+               if(text.includes("count(*) filter")) {
+                 const rows=state.rows.appointments||[],current=rows.find(r=>["called","inConsultation"].includes(r.status));
+                 return {rows:[{total:rows.length,waiting:rows.filter(r=>r.status==="waiting").length,inConsultation:rows.filter(r=>r.status==="inConsultation").length,completed:rows.filter(r=>r.status==="completed").length,noShow:rows.filter(r=>r.status==="noShow").length,ahead:0,current,nextToken:rows.find(r=>r.status==="waiting")?.token}]};
+               }
+               if(text.includes("from clinics")) return {rows:state.rows.clinics||[]};
+               if(text.includes("from branches")) return {rows:state.rows.branches||[]};
+               if(text.includes("from users")) {
+                 const values=s=>s?.values?.flatMap(v=>v?.values?values(v):[v])||[];
+                 const ids=values(statement);
+                 return {rows:(state.rows.users||[]).filter(u=>ids.includes(u.id)&&u.role==="clinicAdmin"&&u.status==="active")};
+               }
+               return {rows:[]};
+             },
              select,
              delete:remove,
              insert,
@@ -400,6 +446,57 @@ test("doctor management catalog follows managing admin without broadening operat
   assert.equal(api.state.rows.assignments.length,before);
   assert.equal(await api.canRead(api.state.actor,"clinics",api.state.rows.clinics[1]),false);
   assert.equal(await api.canRead(api.state.actor,"users",api.state.rows.users.find(u=>u.id==="managed-rec")),true);
+  await assert.rejects(route(api.resourcesRouter,"get","/staff-assignment-options",{}, {targetRole:"receptionist",managingAdminId:"admin2"}),/outside this assignment catalog/);
+});
+test("assignment catalogs reject foreign owner overrides for both Clinic Admin and Doctor", async () => {
+  seed();
+  api.state.rows.users.push({id:"rec",role:"receptionist",fullName:"Managed",status:"active",managingAdminId:"admin"});
+  for(const actor of [
+    {id:"admin",role:"clinicAdmin",clinicIds:["c"],branchIds:[]},
+    {id:"du",role:"doctor",doctorId:"d",managingAdminId:"admin",clinicIds:["c"],branchIds:["b"]},
+  ]) {
+    api.state.actor=actor;
+    for(const context of [{},{userId:"rec"}]) {
+      await assert.rejects(route(api.resourcesRouter,"get","/staff-assignment-options",{},{
+        targetRole:"receptionist",managingAdminId:"foreign",...context,
+      }),error=>error.status===403&&/outside this assignment catalog/.test(error.message));
+      const allowed=await route(api.resourcesRouter,"get","/staff-assignment-options",{},{
+        targetRole:"receptionist",managingAdminId:"admin",...context,
+      });
+      assert.deepEqual(allowed.clinics.map(c=>c.id),["c"]);
+    }
+  }
+  api.state.actor={id:"du",role:"doctor",doctorId:"d",managingAdminId:null,clinicIds:["c"],branchIds:["b"]};
+  await assert.rejects(route(api.resourcesRouter,"get","/staff-assignment-options",{},{
+    targetRole:"receptionist",managingAdminId:"foreign",
+  }),error=>error.status===403);
+  await assert.rejects(route(api.resourcesRouter,"get","/staff-assignment-options",{},{
+    targetRole:"receptionist",
+  }),error=>error.status===403);
+});
+test("assignment managingAdmins is bounded by the clinic page, not the entire ownership catalog", async () => {
+  seed();
+  api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
+  api.state.rows.clinics=Array.from({length:120},(_,i)=>({id:"clinic-"+i,adminId:"manager-"+i,status:"active",name:"Clinic "+i}));
+  api.state.rows.users=Array.from({length:120},(_,i)=>({id:"manager-"+i,role:"clinicAdmin",status:"active",fullName:"Manager "+i}));
+  api.state.rows.branches=[];
+  for(const pageSize of [10,20,50,100]) {
+    const result=await route(api.resourcesRouter,"get","/staff-assignment-options",{}, {targetRole:"receptionist",page:1,pageSize});
+    assert.equal(result.pagination.clinics.total,120);
+    assert.equal(result.clinics.length,pageSize);
+    assert.equal(result.managingAdmins.length,pageSize);
+    assert.ok(result.managingAdmins.every(a=>result.clinics.some(c=>c.adminId===a.id)));
+  }
+  const second=await route(api.resourcesRouter,"get","/staff-assignment-options",{}, {targetRole:"receptionist",page:2,pageSize:100});
+  assert.equal(second.managingAdmins.length,20);
+});
+test("actual staff assignment lookup sends selectedIds with edited identity for inactive hydration", async () => {
+  const lookup=await readFile(resolve(root,"../../clinicflow/src/components/ResourceLookup.tsx"),"utf8");
+  const users=await readFile(resolve(root,"../../clinicflow/src/Users.tsx"),"utf8");
+  assert.match(lookup,/getStaffAssignmentOptions\(\{\s*\.\.\.params,[^}]*selectedIds:\s*selected\.join\(","\)/);
+  assert.match(lookup,/selected\.length > 0/);
+  assert.match(users,/doctorId:\s*tab === "doctors" \? initial\.id/);
+  assert.match(users,/userId:\s*tab === "receptionists" \? initial\.id/);
 });
 test("assignment validation derives one owner for both staff roles, including Super Admin", async () => {
   seed();
@@ -565,9 +662,22 @@ test("staff resource reports Clerk password state without guessing on provider f
   assert.equal(result.items.find(user=>user.id==="du").passwordEnabled,true);
   assert.equal(result.items.find(user=>user.id==="admin").passwordEnabled,false);
 
-  api.state.clerk.getUser=async()=>{ throw new Error("provider unavailable"); };
+  api.state.clerk.getUserList=async()=>{ throw new Error("provider unavailable"); };
   result=await route(api.resourcesRouter,"get","/users");
   assert.equal(result.items.find(user=>user.id==="du").passwordEnabled,null);
+});
+test("generated query schemas retain the actual frontend lookup and listing parameters", () => {
+  const read=(schema,query)=>api.query(schema,{query});
+  assert.equal(read(api.ListSchedulesQueryParams,{search:"Doctor",sort:"-createdAt",dayOfWeek:"0"}).dayOfWeek,0);
+  assert.equal(read(api.ListSchedulesQueryParams,{weekday:"6"}).weekday,6);
+  assert.equal(read(api.ListAvailabilityExceptionsQueryParams,{search:"Doctor",sort:"-createdAt",date:"2030-01-05"}).date,"2030-01-05");
+  assert.equal(read(api.ListQrsQueryParams,{search:"QR",sort:"name"}).search,"QR");
+  assert.equal(read(api.ListUsersQueryParams,{role:"doctor",linkedOnly:"true"}).linkedOnly,true);
+  assert.equal(read(api.ListUsersQueryParams,{role:"doctor",linkedOnly:"false"}).linkedOnly,false);
+  for(const schema of [api.ListPatientsQueryParams,api.ListAuditLogsQueryParams]) assert.equal(read(schema,{from:"2030-01-01",to:"2030-01-05"}).from,"2030-01-01");
+  for(const schema of [api.ListPublicClinicsQueryParams,api.ListPublicBranchesQueryParams,api.ListPublicDoctorsQueryParams]) assert.equal(read(schema,{selectedIds:"a,b"}).selectedIds,"a,b");
+  assert.equal(read(api.ListPublicBranchesQueryParams,{doctorId:"d",search:"Branch"}).doctorId,"d");
+  assert.equal(read(api.GetStaffAssignmentOptionsQueryParams,{targetRole:"receptionist",managingAdminId:"admin"}).managingAdminId,"admin");
 });
 test("Super Admin onboarding atomically persists the new Clinic Admin's first clinic scope", async () => {
   seed();

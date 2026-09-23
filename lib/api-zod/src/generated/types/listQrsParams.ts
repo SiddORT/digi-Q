@@ -17,9 +17,16 @@ import type { ClinicIdParameter } from './clinicIdParameter';
 import type { DoctorIdParameter } from './doctorIdParameter';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
+import type { SearchParameter } from './searchParameter';
+import type { SortParameter } from './sortParameter';
 import type { StatusParameter } from './statusParameter';
 
 export type ListQrsParams = {
+search?: SearchParameter;
+/**
+ * Allowlisted field with optional minus prefix for descending order
+ */
+sort?: SortParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
 doctorId?: DoctorIdParameter;

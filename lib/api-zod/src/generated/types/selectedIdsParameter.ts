@@ -12,29 +12,8 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { ClinicIdParameter } from './clinicIdParameter';
-import type { DoctorIdParameter } from './doctorIdParameter';
-import type { PageParameter } from './pageParameter';
-import type { PageSizeParameter } from './pageSizeParameter';
-import type { SearchParameter } from './searchParameter';
-import type { SelectedIdsParameter } from './selectedIdsParameter';
 
-export type ListPublicBranchesParams = {
 /**
  * Comma-separated exact IDs within existing scope (maximum 100).
- * @maxLength 10000
  */
-selectedIds?: SelectedIdsParameter;
-search?: SearchParameter;
-doctorId?: DoctorIdParameter;
-clinicId?: ClinicIdParameter;
-/**
- * @minimum 1
- */
-page?: PageParameter;
-/**
- * @minimum 1
- * @maximum 100
- */
-pageSize?: PageSizeParameter;
-};
+export type SelectedIdsParameter = string;

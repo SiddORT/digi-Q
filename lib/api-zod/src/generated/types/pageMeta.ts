@@ -18,4 +18,5 @@ export interface PageMeta {
   total: number;
   page: number;
   pageSize: number;
+  totalPages?: number;
 }

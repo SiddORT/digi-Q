@@ -22,6 +22,7 @@ import type { SortParameter } from './sortParameter';
 import type { StatusParameter } from './statusParameter';
 
 export type ListUsersParams = {
+linkedOnly?: boolean;
 search?: SearchParameter;
 role?: Role;
 clinicId?: ClinicIdParameter;

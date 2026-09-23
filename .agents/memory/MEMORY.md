@@ -2,3 +2,4 @@
 - [Role test isolation](role-test-isolation.md) — verify actual browser identity and mapped role in fresh contexts; a helper handshake alone does not prove sign-in.
 - [Clinic Admin ownership](clinic-admin-ownership.md) — exactly one admin per clinic; doctor-created clinics inherit the doctor's single owning admin.
 - [Clerk role authentication](clerk-role-authentication.md) — use Clerk-owned password proof for staff and reserved passwordless patient identities; never infer methods from session claims.
+- [Embedded PostgreSQL tests](embedded-postgres-tests.md) — root-level PGlite avoids duplicate Drizzle peer instances in the pnpm workspace.

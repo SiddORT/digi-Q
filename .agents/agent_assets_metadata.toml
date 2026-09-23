@@ -50,3 +50,17 @@ mtime_ms = 1790105486496
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/0ac647eb-8d4c-4251-9889-5389154ecbae/73bbd31c-57b9-4016-90ea-6514eeb44c80"
 storage_version_token = "1790105487811368"
 content_type = "text/html"
+
+[[outputs]]
+id = "sBoyl_qQTckZN2lZsOT64"
+uri = "file://docs/ux-implementation-report.html"
+type = "html"
+title = "ClinicFlow implementation and verification report"
+description = "Screen-by-screen changes, dropdown and table capabilities, test evidence, and remaining verification limits."
+logical_id = "0a52a66e-07a5-4def-83aa-930414b653e4"
+content_hash = "sha256:6f4fbb364b39692a967716277f4480dd3a88ce146c776d09a03307b8009ccbe8"
+size = 23406
+mtime_ms = 1790167358189
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/0a52a66e-07a5-4def-83aa-930414b653e4/c9aeb9e2-5c28-4439-84e0-27548fcac1db"
+storage_version_token = "1790167466347148"
+content_type = "text/html"
