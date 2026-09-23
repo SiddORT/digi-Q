@@ -1,0 +1,126 @@
+# CLINICFLOW — CLERK DASHBOARD EMAIL DELIVERY CHECK
+
+This is a READ-ONLY investigation.
+
+Do NOT modify ClinicFlow code.
+Do NOT resend the invitation.
+Do NOT revoke the invitation.
+Do NOT change Clerk configuration.
+Do NOT change authentication settings.
+
+We already confirmed:
+
+- Exact invitation exists.
+- `invitation.created` event exists at:
+  23 September 2026, 11:33:48.351 AM IST
+- Recipient is correct.
+- Role is correct.
+- Clinic mapping is correct.
+- Branch mapping is correct.
+- Invitation status remains pending.
+- No email-delivery event is available through the inspected API/logs.
+- No application-level email delivery system exists.
+
+## 1. CLERK DEVELOPMENT DASHBOARD
+
+Using the Clerk Dashboard, inspect the DEVELOPMENT instance only.
+
+Look for any available:
+
+- Email delivery logs
+- Email activity
+- Notification logs
+- Usage information
+- Email quota/allowance information
+- Delivery status
+- Failed/suppressed email information
+- Development email usage
+- Webhook/event information related to email delivery
+
+Focus specifically on the invitation created at:
+
+23 September 2026
+11:33:48 AM IST
+
+## 2. DETERMINE WHAT CAN ACTUALLY BE VERIFIED
+
+For the exact invitation, report whether the Dashboard provides evidence of:
+
+- Email generated
+- Email queued
+- Email accepted
+- Email sent
+- Email delivered
+- Email bounced
+- Email rejected
+- Email suppressed
+- Email failed
+- Development limit reached
+
+Do NOT infer a status if the Dashboard does not expose it.
+
+## 3. CHECK DEVELOPMENT EMAIL ALLOWANCE
+
+Determine whether the Development instance exposes:
+
+- Current monthly email usage
+- Remaining allowance
+- Usage percentage
+- Any indication that the allowance has been exhausted
+- Any indication that this particular invitation was affected by the allowance
+
+If the Dashboard does not expose this information, explicitly report:
+
+"Not available through the accessible Dashboard."
+
+Do not estimate the usage.
+
+## 4. IMPORTANT
+
+Do NOT:
+
+- resend the invitation
+- revoke the invitation
+- create another invitation
+- change the email template
+- change email settings
+- enable SMTP
+- disable CAPTCHA
+- change Device Trust
+- change OTP
+- modify authentication
+- modify ClinicFlow code
+
+This is ONLY a read-only diagnosis.
+
+## 5. REPORT
+
+Return:
+
+### Clerk Dashboard Delivery Evidence
+
+| Item | Finding |
+|---|---|
+| Email activity visible | |
+| Email generated | |
+| Email queued | |
+| Email sent | |
+| Email delivered | |
+| Bounce/rejection | |
+| Suppression | |
+| Development limit evidence | |
+| Monthly usage | |
+| Remaining allowance | |
+
+### Conclusion
+
+State exactly one of:
+
+1. Delivery confirmed
+2. Delivery failure confirmed
+3. Development limit impact confirmed
+4. No delivery evidence available
+
+Do not select an option unless supported by actual evidence.
+
+Do not mark the invitation flow as passed.
