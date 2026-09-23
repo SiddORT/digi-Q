@@ -32,3 +32,9 @@ The owner chose password-only staff login and reported disabling only Developmen
 **Why:** Normal staff login must require email/password without OTP, while patients retain email OTP. The owner accepted the Device Trust tradeoff but prohibited any other security or architecture changes.
 
 **How to apply:** Preserve server-side password proof, authorization, session security, CAPTCHA, lockout and enumeration protection. Do not make additional tenant configuration changes. Verify actual staff browser login, not only backend proof, before declaring completion.
+
+Treat invitation creation, email dispatch, and inbox receipt as separate evidence.
+
+**Why:** Clerk returned a pending invitation with delivery enabled, but the recipient reported no receipt; the invitation response had no correlated email-delivery status. An omitted `notify` relies on Clerk's documented true default, not an explicitly recorded true field.
+
+**How to apply:** Never report a pending invitation or application `sent` state as delivered. Check live template delivery flags and seek message/quota/bounce evidence before attributing the failure. SDK absence does not establish API absence: Clerk's public OpenAPI still documented deprecated read-only template endpoints omitted from the installed SDK, and the template-list GET succeeded. Recheck current documentation before reuse.

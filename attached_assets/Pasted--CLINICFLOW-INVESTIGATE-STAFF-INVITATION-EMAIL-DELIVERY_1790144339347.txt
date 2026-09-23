@@ -1,0 +1,86 @@
+# CLINICFLOW — INVESTIGATE STAFF INVITATION EMAIL DELIVERY
+
+The manual invitation test is paused because the intended recipient did NOT receive the Staff invitation email.
+
+Do not mark the invitation flow as passed.
+
+Do not resend or revoke the existing temporary invitation yet.
+
+Do not change the authentication architecture or any ClinicFlow business logic.
+
+## Investigate the existing temporary invitation
+
+Please inspect the existing temporary Receptionist invitation and determine:
+
+1. Was the invitation email actually requested/sent?
+2. Did Clerk report a successful email send?
+3. Did Clerk report an email delivery failure, bounce, rejection, or other error?
+4. What email delivery mechanism is currently configured for the Development Clerk instance?
+5. Is the recipient email address stored on the invitation/user record correct?
+6. Is the invitation ticket/link correctly associated with that recipient?
+7. Are there Clerk email-delivery logs/events that show what happened?
+8. Is the Development instance using a development email-delivery limitation?
+9. Is the application relying on a custom email sender instead of Clerk?
+10. If a custom sender is involved, determine whether it actually attempted delivery and whether it reported an error.
+
+## Important
+
+Do NOT:
+
+- create another authentication provider
+- replace Clerk
+- modify staff authentication
+- modify patient OTP
+- remove CAPTCHA
+- disable additional security settings
+- modify invitation expiry
+- modify clinic/branch mappings
+- modify user roles
+- modify appointment/queue/QR functionality
+- invent a successful delivery result
+- mark the email-delivery test as passed without evidence
+
+Do not expose passwords, OTPs, invitation URLs, secrets, API keys, or other sensitive credentials in the report.
+
+## If the email was not sent
+
+Identify the exact reason.
+
+For example, determine whether the issue is:
+
+- Clerk email configuration
+- Development-instance limitation
+- missing email configuration
+- application code not triggering the send
+- incorrect recipient
+- email provider failure
+- delivery/bounce issue
+- another concrete cause
+
+## If the email was successfully sent
+
+Provide the available delivery status/evidence and tell me whether the issue appears to be recipient-side delivery.
+
+Do not resend the invitation yet.
+
+## Final output
+
+Give me:
+
+### Invitation record
+- Created: Yes/No
+- Recipient correct: Yes/No
+- Role correct: Yes/No
+- Clinic mapping correct: Yes/No
+- Invitation ticket created: Yes/No
+
+### Email delivery
+- Send requested: Yes/No
+- Send accepted: Yes/No
+- Delivery status: [actual status]
+- Failure reason: [actual reason, if available]
+
+### Conclusion
+State exactly what is known and what remains unverified.
+
+Do not claim the invitation flow works until real email delivery and the complete invitation → password setup → staff login flow have been verified.
