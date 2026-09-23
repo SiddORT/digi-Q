@@ -58,22 +58,22 @@ export function PatientLogin() {
 
   return (
     <AuthShell eyebrow="PATIENT ACCESS">
-      <AuthCard title="Patient Login" description={step === "email" ? "Enter your email and we’ll send a one-time login code." : `Enter the code sent to ${email}.`}>
+      <AuthCard title="Patient login" description={step === "email" ? "Enter your email and we’ll send a one-time login code." : `Enter the code sent to ${email}.`}>
         {step === "email" ? (
           <form onSubmit={sendCode}>
             <label>Email address<input data-testid="input-patient-email" type="email" autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)} /></label>
-            {error && <div className="error-box" data-testid="status-patient-login-error">{error}</div>}
+             {error && <div className="error-box" role="alert" data-testid="status-patient-login-error">{error}</div>}
             <button className="button auth-submit" data-testid="button-send-patient-code" type="submit" disabled={busy}>{busy ? "Sending…" : "Send login code"}</button>
           </form>
         ) : (
           <form onSubmit={verifyCode}>
             <label>One-time code<input data-testid="input-patient-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)} /></label>
-            {error && <div className="error-box" data-testid="status-patient-code-error">{error}</div>}
+             {error && <div className="error-box" role="alert" data-testid="status-patient-code-error">{error}</div>}
             <button className="button auth-submit" data-testid="button-verify-patient-code" type="submit" disabled={busy}>{busy ? "Verifying…" : "Verify and continue"}</button>
             <div className="auth-links"><button type="button" className="text-link" data-testid="button-change-patient-email" onClick={() => { signIn.reset(); setStep("email"); setCode(""); setError(""); }}>Change email</button><button type="button" className="text-link" data-testid="button-resend-patient-code" disabled={busy || cooldown > 0} onClick={() => sendCode()}>{cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}</button></div>
           </form>
         )}
-        <div className="auth-links"><Link href="/sign-in" data-testid="link-staff-login">Staff Login</Link></div>
+        <div className="auth-links"><Link href="/sign-in" data-testid="link-staff-login">Staff login</Link></div>
       </AuthCard>
     </AuthShell>
   );

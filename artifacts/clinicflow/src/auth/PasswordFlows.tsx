@@ -72,10 +72,10 @@ export function ForgotPassword() {
   return (
     <AuthShell eyebrow="STAFF PASSWORD RECOVERY">
       <AuthCard title="Reset staff password" description={step === "email" ? "We’ll send a recovery code to your staff email." : step === "code" ? `Enter the recovery code sent to ${email}.` : "Choose a new password for your staff account."}>
-        {step === "email" && <form onSubmit={start}><label>Staff email<input data-testid="input-reset-email" type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} /></label>{error && <div className="error-box">{error}</div>}<button className="button auth-submit" data-testid="button-send-reset-code" disabled={busy}>Send recovery code</button></form>}
-        {step === "code" && <form onSubmit={verify}><label>Recovery code<input data-testid="input-reset-code" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)} /></label>{error && <div className="error-box">{error}</div>}<button className="button auth-submit" data-testid="button-verify-reset-code" disabled={busy}>Verify code</button></form>}
-        {step === "password" && <form onSubmit={save}><label>New password<input data-testid="input-new-password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={event => setPassword(event.target.value)} /></label>{error && <div className="error-box">{error}</div>}<button className="button auth-submit" data-testid="button-save-new-password" disabled={busy}>Set new password</button></form>}
-        <div className="auth-links"><Link href="/sign-in" data-testid="link-return-staff-login">Return to Staff Login</Link></div>
+        {step === "email" && <form onSubmit={start}><label>Staff email<input data-testid="input-reset-email" type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} /></label>{error && <div className="error-box" role="alert">{error}</div>}<button className="button auth-submit" data-testid="button-send-reset-code" disabled={busy}>Send recovery code</button></form>}
+        {step === "code" && <form onSubmit={verify}><label>Recovery code<input data-testid="input-reset-code" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)} /></label>{error && <div className="error-box" role="alert">{error}</div>}<button className="button auth-submit" data-testid="button-verify-reset-code" disabled={busy}>Verify code</button></form>}
+        {step === "password" && <form onSubmit={save}><label>New password<input data-testid="input-new-password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={event => setPassword(event.target.value)} /></label>{error && <div className="error-box" role="alert">{error}</div>}<button className="button auth-submit" data-testid="button-save-new-password" disabled={busy}>Set new password</button></form>}
+        <div className="auth-links"><Link href="/sign-in" data-testid="link-return-staff-login">Return to staff login</Link></div>
       </AuthCard>
     </AuthShell>
   );
@@ -126,12 +126,12 @@ export function SetPassword() {
 
   return (
     <AuthShell eyebrow="STAFF INVITATION">
-      <AuthCard title="Set your staff password" description="Choose a secure password, then sign in from the Staff Login page.">
+      <AuthCard title="Set your staff password" description="Choose a secure password, then sign in from the staff login page.">
         <div id="clerk-captcha" data-testid="clerk-captcha" />
         {!ready && !error && <div className="page-loading auth-inline-loading">Checking invitation…</div>}
-        {error && <div className="error-box" data-testid="status-invitation-error">{error}</div>}
+        {error && <div className="error-box" role="alert" data-testid="status-invitation-error">{error}</div>}
         {ready && <form onSubmit={save}><label>New password<input data-testid="input-invitation-password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={event => setPassword(event.target.value)} /></label><button className="button auth-submit" data-testid="button-set-invitation-password" disabled={fetchStatus === "fetching"}>Set password</button></form>}
-        <div className="auth-links"><Link href="/sign-in" data-testid="link-invitation-staff-login">Staff Login</Link></div>
+        <div className="auth-links"><Link href="/sign-in" data-testid="link-invitation-staff-login">Staff login</Link></div>
       </AuthCard>
     </AuthShell>
   );

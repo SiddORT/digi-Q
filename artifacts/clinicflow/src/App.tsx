@@ -31,7 +31,7 @@ function Home() {
   const { isSignedIn } = useAuth();
   if (isSignedIn) return <AuthAccess><Redirect to="/onboarding"/></AuthAccess>;
   return <div className="landing">
-    <header className="public-header"><Logo/><nav><a href="#how-it-works">How it works</a><a href="#for-clinics">For clinics</a><Link href="/patient-login">Patient Login</Link><Link className="button small" href="/sign-in">Staff Login <ArrowUpRight size={16}/></Link></nav></header>
+    <header className="public-header"><Logo/><nav><a href="#how-it-works">How it works</a><a href="#for-clinics">For clinics</a><Link href="/patient-login">Patient login</Link><Link className="button small" href="/sign-in">Staff login <ArrowUpRight size={16}/></Link></nav></header>
     <main>
       <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="dot"/> BETTER CARE. LESS WAITING.</span><h1>A healthier way<br/>to manage<br/><em>your next visit.</em></h1><p>Find your clinic, book an appointment, and follow your place in line. A little less waiting. A lot more peace of mind.</p><div className="hero-actions"><Link className="button" href="/patient-login">Book an appointment <ArrowUpRight size={19}/></Link><Link className="text-link" href="/register-doctor">I'm a healthcare provider <ChevronRight size={17}/></Link></div><div className="trust"><ShieldCheck size={17}/> Secure sign-in <span/> Real-time queue updates <span/> Care on your terms</div></div>
       <div className="hero-art"><div className="art-grid"/><div className="art-heading"><span className="mini-mark"><Activity/></span><span>CONNECTED CARE<br/><strong>From booking to better.</strong></span></div><div className="care-orbit orbit-one"/><div className="care-orbit orbit-two"/><div className="care-center"><Stethoscope size={78} strokeWidth={1.25}/></div><div className="float-card card-a"><span className="icon-box"><CalendarDays/></span><div><strong>Your visit, simplified</strong><p>Appointments that fit your day</p></div></div><div className="float-card card-b"><span className="live-dot"/><div><strong>Stay in the know</strong><p>Follow your queue, wherever you are</p></div></div><div className="art-footer">Thoughtfully designed around you <ShieldCheck size={18}/></div></div></section>
@@ -59,7 +59,7 @@ function RegisterDoctor(){
       <main style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', textAlign: 'center' }}>
         <h2>Already invited?</h2>
         <p className="muted" style={{ marginBottom: '2rem' }}>If your administrator has already set up your account, sign in to connect it.</p>
-        <Link href="/sign-in" className="button">Staff Login</Link>
+        <Link href="/sign-in" className="button">Staff login</Link>
         <div style={{ marginTop: '2rem' }}>
           <Link href="/" className="text-link">← Return to home</Link>
         </div>

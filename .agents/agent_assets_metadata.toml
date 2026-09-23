@@ -64,3 +64,17 @@ mtime_ms = 1790167358189
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/0a52a66e-07a5-4def-83aa-930414b653e4/c9aeb9e2-5c28-4439-84e0-27548fcac1db"
 storage_version_token = "1790167466347148"
 content_type = "text/html"
+
+[[outputs]]
+id = "6-KkHOC9fU94OA_1-8-8q"
+uri = "file://docs/restoration-report.html"
+type = "html"
+title = "ClinicFlow restoration — implementation and QA report"
+description = "A–J report covering shared controls, screen migrations, dropdown/search/table matrices, copy corrections, visual checks, regressions, and remaining limits."
+logical_id = "09ff0ada-db8b-4bc9-84a6-c995216156bb"
+content_hash = "sha256:c0221b44497fa6fa9de0f22d6480b23ae1646f29a8691bc1a5cd65eb1507b104"
+size = 33576
+mtime_ms = 1790171102929
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/09ff0ada-db8b-4bc9-84a6-c995216156bb/6dd2949a-afa5-4255-b62d-d057ee2f90e9"
+storage_version_token = "1790171142039173"
+content_type = "text/html"

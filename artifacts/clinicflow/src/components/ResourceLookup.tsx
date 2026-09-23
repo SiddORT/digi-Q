@@ -10,6 +10,11 @@ const getters: Record<string, any> = { clinics: api.getClinic, branches: api.get
 type Props = { resource: string; value: string; onChange: (value: string) => void; label?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean };
 type MultiProps = Omit<Props, "value" | "onChange"> & { value: string[]; onChange: (value: string[]) => void; onRecords?: (records: any[]) => void; isOptionDisabled?: (record:any)=>boolean };
 
+function lookupName(resource: string) {
+  const name = resource.split(":").pop() || "options";
+  return name === "masters" ? "values" : name;
+}
+
 function useOptions(resource: string, selected: string[], params: Record<string, unknown>, enabled=true) {
   const [search, setSearch] = useState("");
   const debounced = useDebouncedValue(search);
@@ -61,17 +66,19 @@ function useOptions(resource: string, selected: string[], params: Record<string,
 
 export function ResourceLookup({ resource, value, onChange, params = {}, ...props }: Props) {
   const lookup = useOptions(resource, value ? [value] : [], params, !props.disabled);
-  return <><SearchableSelect {...props} value={value} onChange={onChange} options={lookup.options} onSearchChange={lookup.search} loading={lookup.query.isFetching} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
+  const placeholder=props.placeholder||`Search ${lookupName(resource)}…`;
+  return <><SearchableSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options} onSearchChange={lookup.search} loading={lookup.query.isFetching} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
 }
 export function ResourceMultiLookup({ resource, value, onChange, params = {}, onRecords, isOptionDisabled, ...props }: MultiProps) {
   const lookup = useOptions(resource, value, params, !props.disabled);
   const recordsKey = JSON.stringify(lookup.rows);
   useEffect(() => { onRecords?.(lookup.rows); }, [recordsKey]);
-  return <><SearchableMultiSelect {...props} value={value} onChange={onChange} options={lookup.options.map(option=>({...option,disabled:!value.includes(option.value)&&!!isOptionDisabled?.(lookup.rows.find(row=>row.id===option.value))}))} onSearchChange={lookup.search} isLoading={lookup.query.isFetching} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
+  const placeholder=props.placeholder||`Search ${lookupName(resource)}…`;
+  return <><SearchableMultiSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options.map(option=>({...option,disabled:!value.includes(option.value)&&!!isOptionDisabled?.(lookup.rows.find(row=>row.id===option.value))}))} onSearchChange={lookup.search} isLoading={lookup.query.isFetching} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
 }
 function LookupError({ error, retry }: { error: unknown; retry: () => void }) {
-  return error ? <div role="alert" className="error-box">{error instanceof Error ? error.message : "Unable to load options."} <button type="button" onClick={retry}>Retry</button></div> : null;
+  return error ? <div role="alert" className="error-box">{error instanceof Error ? error.message : "Unable to load options. Please try again."} <button type="button" onClick={retry}>Retry options</button></div> : null;
 }
 export default ResourceLookup;

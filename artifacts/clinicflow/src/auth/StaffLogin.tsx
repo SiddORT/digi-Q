@@ -53,15 +53,15 @@ export function StaffLogin() {
 
   return (
     <AuthShell eyebrow="STAFF WORKSPACE">
-      <AuthCard title="Staff Login" description="Use your ClinicFlow staff email and password.">
+      <AuthCard title="Staff login" description="Use your ClinicFlow staff email and password.">
         {confirmation && <div className="notice" data-testid="status-password-confirmation">{confirmation}</div>}
         <form onSubmit={submit}>
           <label>Email address<input data-testid="input-staff-email" type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} /></label>
           <label>Password<input data-testid="input-staff-password" type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} /></label>
-          {error && <div className="error-box" data-testid="status-staff-login-error">{error}</div>}
+          {error && <div className="error-box" role="alert" data-testid="status-staff-login-error">{error}</div>}
           <button className="button auth-submit" data-testid="button-staff-login" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
         </form>
-        <div className="auth-links"><Link href="/forgot-password" data-testid="link-forgot-password">Forgot password?</Link><Link href="/patient-login" data-testid="link-patient-login">Patient Login</Link></div>
+        <div className="auth-links"><Link href="/forgot-password" data-testid="link-forgot-password">Forgot password?</Link><Link href="/patient-login" data-testid="link-patient-login">Patient login</Link></div>
       </AuthCard>
     </AuthShell>
   );

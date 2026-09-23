@@ -11,6 +11,7 @@ import { ResourceLookup, ResourceMultiLookup } from "./components/ResourceLookup
 import { Pagination, SearchInput, FilterBar, useDebouncedValue } from "./components/ListingControls";
 import { AppDialog } from "./components/AppDialog";
 import { ClinicAdminOnboarding } from "./components/ClinicAdminOnboarding";
+import { SearchableSelect } from "./components/SearchableSelect";
 
 export function Users({ identity }: { identity: api.Identity }) {
   const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),staleTime:60000}});
@@ -59,15 +60,15 @@ export function Users({ identity }: { identity: api.Identity }) {
   const beginEdit = (row: any) => { setDirty(false); setBusy(false); setEditing(row); };
   return <>
     <div className="tabs" role="tablist" aria-label="Staff type">{tabs.map(t => <button role="tab" aria-selected={tab === t.id} key={t.id} className={`tab ${tab === t.id ? "active" : ""}`} onClick={() => setTab(t.id)}>{t.label}</button>)}</div>
-    <div className="toolbar"><SearchInput value={context.search} onChange={search => change({ search })} placeholder={`Search ${tabs.find(t => t.id === tab)?.label.toLowerCase()}…`} />
+    <div className="toolbar"><SearchInput value={context.search} onChange={search => change({ search })} placeholder={tab==="doctors"?"Search doctors by name, email or specialization…":tab==="receptionists"?"Search receptionists by name, email or mobile…":"Search Clinic Admins by name, email or mobile…"} />
       <button className="button small" onClick={() => beginEdit({})} data-testid={`button-add-${tab}`}><Plus size={17} /> Add {tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}</button></div>
     <FilterBar active={active} onReset={reset}>
-      <label>Status<select value={context.status} onChange={e => change({ status: e.target.value })}><option value="">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+      <SearchableSelect label="Status" placeholder="All statuses" value={context.status} onChange={status => change({ status })} options={[{value:"active",label:"Active"},{value:"inactive",label:"Inactive"}]}/>
       {tab !== "admins" && <ResourceLookup resource="assignment:clinics" label="Clinic" params={assignmentParams} value={context.clinicId} onChange={clinicId => change({ clinicId, branchId: "" })} />}
       {tab==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={context.specializationId} onChange={specializationId=>change({specializationId})}/>}
       {tab === "receptionists" && <ResourceLookup resource="assignment:branches" label="Branch" params={{ ...assignmentParams, clinicId: context.clinicId || undefined }} value={context.branchId} onChange={branchId => change({ branchId })} />}
       {isSuperAdmin && tab !== "admins" && <ResourceLookup resource="users" label="Managing admin" params={{role:"clinicAdmin"}} value={context.managingAdminId} onChange={managingAdminId => change({ managingAdminId })} />}
-      <label>Sort<select value={context.sort} onChange={e => change({ sort: e.target.value })}><option value="-createdAt">Newest first</option><option value="createdAt">Oldest first</option><option value="fullName">Name A–Z</option><option value="-fullName">Name Z–A</option></select></label>
+      <SearchableSelect label="Sort" value={context.sort} onChange={sort => change({ sort:sort||"-createdAt" })} options={[{value:"-createdAt",label:"Newest first"},{value:"createdAt",label:"Oldest first"},{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"}]}/>
     </FilterBar>
     {success && <p role="status" className="notice">{success}</p>}
     <ErrorNotice error={remove.error || resendInvitation.error} />
@@ -79,7 +80,7 @@ export function Users({ identity }: { identity: api.Identity }) {
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open secure password recovery</Link></div>}
     </section>}
     <section className="panel table-panel">
-      {query.isLoading ? <div className="skeleton" role="status">Loading {tab}…</div> : query.error ? <><ErrorNotice error={query.error} /><button onClick={() => query.refetch()}>Retry</button></> : query.data?.items.length ? <div className="table-scroll"><table>
+      {query.isLoading ? <div className="skeleton" role="status">Loading {tabs.find(item=>item.id===tab)?.label.toLowerCase()}…</div> : query.error ? <><div className="error-box" role="alert">Unable to load {tabs.find(item=>item.id===tab)?.label.toLowerCase()}. {query.error instanceof Error?query.error.message:"Please try again."}</div><button onClick={() => query.refetch()}>Retry {tabs.find(item=>item.id===tab)?.label.toLowerCase()}</button></> : query.data?.items.length ? <div className="table-scroll"><table>
         <thead><tr><th>Staff member</th>{isSuperAdmin && tab !== "admins" && <th>Managing admin</th>}<th>{tab === "admins" ? "Owned clinics" : "Assignments"}</th><th>Account</th><th>Created</th><th>Actions</th></tr></thead>
         <tbody>{query.data.items.map((row: any) => <tr key={row.id}>
           <td data-label="Staff member"><strong>{row.fullName}</strong><div>{row.email}</div><div className="muted">{row.mobile || "—"}</div></td>
@@ -148,7 +149,7 @@ function UserEditor({ tab, initial, onClose, isSuperAdmin, onDirtyChange, onBusy
         {tab === "receptionists" && <small className="muted">Select at least one branch for every assigned clinic.</small>}
       </div>
     </>}
-    <label>Status<select {...form.register("status")}><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+    <Controller name="status" control={form.control} render={({field})=><SearchableSelect label="Status" value={field.value||"active"} onChange={field.onChange} options={[{value:"active",label:"Active"},{value:"inactive",label:"Inactive"}]}/>}/>
     <div className="wide form-footer">{Object.entries(form.formState.errors).map(([field, error]) => <p className="field-error" role="alert" key={field}>{typeof error?.message === "string" ? error.message : `Please complete ${title(field)}.`}</p>)}<ErrorNotice error={save.error} /><button className="button" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save changes"}</button></div>
   </form></Form>;
 }

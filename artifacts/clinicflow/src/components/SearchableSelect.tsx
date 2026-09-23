@@ -104,12 +104,11 @@ export function SearchableSelect({
       <Popover open={open} onOpenChange={setOpen}>
         <div
           className={cn(
-            "relative w-full rounded-lg border border-border bg-white text-sm shadow-sm transition-colors",
-            disabled && "opacity-50 cursor-not-allowed",
-            error && "border-destructive"
+            "relative flex min-h-[43px] w-full items-center justify-between rounded-lg border border-border bg-white px-3 py-2 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15",
+            disabled && "opacity-50 cursor-not-allowed bg-slate-50",
+            error && "border-destructive focus-within:border-destructive focus-within:ring-destructive/15"
           )}
         >
-          {/* Main trigger button, spanning the entire container */}
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -118,10 +117,7 @@ export function SearchableSelect({
               aria-expanded={open}
               aria-required={required}
               disabled={disabled}
-              className={cn(
-                "absolute inset-0 h-full w-full rounded-lg bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                error && "focus-visible:ring-destructive"
-              )}
+              className="absolute inset-0 z-0 h-full w-full rounded-lg bg-transparent outline-none cursor-pointer"
               aria-label={
                 value
                   ? `${label || "Selected item"}: ${selectedLabel || value}`
@@ -130,50 +126,53 @@ export function SearchableSelect({
             />
           </PopoverTrigger>
 
-          {/* Foreground content: text, clear button, chevron */}
-          <div className="relative z-10 flex min-h-[43px] w-full items-center justify-between pointer-events-none px-3 py-2">
-            <span
-              className={cn(
-                "truncate flex-1 text-left mr-2 pointer-events-none",
-                !value && "text-muted-foreground"
-              )}
-            >
-              {value ? selectedLabel || value : placeholder}
-            </span>
+          <span
+            className={cn(
+              "relative z-10 truncate flex-1 text-left mr-2 pointer-events-none",
+              !value ? "text-muted-foreground" : "text-foreground font-medium"
+            )}
+          >
+            {value ? selectedLabel || value : placeholder}
+          </span>
 
-            <div className="flex items-center gap-1 shrink-0">
-              {value && !disabled && (
-                <button
-                  type="button"
-                  className="pointer-events-auto rounded-sm p-0.5 hover:bg-slate-200 text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onChange("");
-                  }}
-                  aria-label="Clear selection"
-                >
-                  <X className="h-3.5 w-3.5 pointer-events-none" />
-                </button>
+          <div className="relative z-20 flex items-center gap-1 shrink-0 px-1">
+            {value && !disabled && (
+              <button
+                type="button"
+                className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-slate-100 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors border-none p-0"
+                style={{ minHeight: "auto" }} // Override global buttons
+                onClick={(e) => {
+                  e.preventDefault();
+                  onChange("");
+                }}
+                aria-label="Clear selection"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <div className="flex h-6 w-6 items-center justify-center text-muted-foreground pointer-events-none">
+              {loading && !open ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
               )}
-              <div className="pointer-events-none flex items-center justify-center opacity-50">
-                {loading && !open ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ChevronsUpDown className="h-4 w-4" />
-                )}
-              </div>
             </div>
           </div>
         </div>
         
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white z-[100]" align="start">
-          <Command shouldFilter={!onSearchChange}>
+        <PopoverContent 
+          className="p-0 bg-white border border-border shadow-lg rounded-lg z-[100] overflow-hidden" 
+          align="start"
+          style={{ width: "var(--radix-popover-trigger-width)" }}
+        >
+          <Command shouldFilter={!onSearchChange} className="max-h-[var(--radix-popover-content-available-height,300px)]">
             <CommandInput
-              placeholder="Search..."
+              placeholder={label ? `Search ${label.toLowerCase()}...` : (placeholder?.startsWith("Search") ? placeholder : "Search...")}
               value={search}
               onValueChange={handleSearch}
+              className="h-10 text-sm border-none focus:ring-0"
             />
-            <CommandList>
+            <CommandList className="max-h-[250px] overflow-y-auto">
               <CommandEmpty>
                 {loading ? "Searching..." : "No results found."}
               </CommandEmpty>
@@ -189,11 +188,12 @@ export function SearchableSelect({
                       setSearch("");
                       if (onSearchChange) onSearchChange("");
                     }}
+                    className="cursor-pointer"
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        value === option.value ? "opacity-100" : "opacity-0"
+                        value === option.value ? "opacity-100 text-primary" : "opacity-0"
                       )}
                     />
                     {option.label}

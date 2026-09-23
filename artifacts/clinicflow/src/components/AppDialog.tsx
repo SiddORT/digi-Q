@@ -50,7 +50,7 @@ export function AppDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="flex flex-col gap-0 p-0 overflow-hidden sm:max-w-2xl max-h-[90vh]"
+        className="flex flex-col gap-0 p-0 overflow-hidden sm:max-w-2xl max-h-[90vh] bg-white border border-border shadow-xl rounded-xl"
         onInteractOutside={(e) => {
           if (busy) {
             e.preventDefault();
@@ -62,17 +62,17 @@ export function AppDialog({
           }
         }}
       >
-        <DialogHeader className="px-6 py-4 border-b border-border bg-slate-50 flex-shrink-0">
-          <DialogTitle className="text-xl text-foreground font-bold">{title}</DialogTitle>
+        <DialogHeader className="px-6 md:px-8 py-5 border-b border-border bg-slate-50/50 flex-shrink-0">
+          <DialogTitle className="text-xl text-foreground font-bold tracking-tight">{title}</DialogTitle>
           {description && (
-            <DialogDescription className="mt-1 text-sm text-muted-foreground">
+            <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
               {description}
             </DialogDescription>
           )}
         </DialogHeader>
         
         {/* Single internal scroll area for the content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-white">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6 md:p-8 bg-white">
           {children}
         </div>
       </DialogContent>

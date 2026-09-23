@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { onboardClinicAdmin } from "@workspace/api-client-react";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { AppDialog } from "./AppDialog";
 
 type SetupFields = {
@@ -61,9 +61,9 @@ export function ClinicAdminOnboarding() {
         form.reset(); setup.reset(); setSuccess(""); setOpen(true);
       }}><Plus size={17} /> Set up Clinic Admin</button>
       {success && <p className="notice" role="status" data-testid="onboarding-success">{success}</p>}
-      {open && <AppDialog open onClose={() => setOpen(false)} title="Set up Clinic Admin & first clinic" dirty={form.formState.isDirty} busy={setup.isPending}>
+      {open && <AppDialog open onClose={() => setOpen(false)} title="Set up Clinic Admin and first clinic" dirty={form.formState.isDirty} busy={setup.isPending}>
         <p className="notice">Both records are saved together. The new admin will be the clinic’s only Clinic Admin. No existing ownership will be transferred.</p>
-        {setup.error && <div className="error-box" role="alert">{setup.error.message}</div>}
+        {setup.error && <div className="error-box" role="alert">Unable to set up the Clinic Admin and clinic. {setup.error.message}</div>}
         <form className="form-grid" onSubmit={form.handleSubmit(values => { if (!setup.isPending && !locked.current) { locked.current = true; setup.mutate(values); } })}>
           <h3 className="wide">Administrator</h3>
           {input("fullName", "Full name", true)}
@@ -76,7 +76,7 @@ export function ClinicAdminOnboarding() {
           {input("phone", "Clinic phone", false, "tel")}
           <div className="wide form-footer">
             <button className="button" disabled={setup.isPending} data-testid="button-submit-clinic-admin">
-              {setup.isPending ? "Creating admin and clinic…" : "Create admin & clinic"}
+              {setup.isPending ? "Saving…" : "Set up Clinic Admin"}
             </button>
           </div>
         </form>

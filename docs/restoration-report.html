@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ClinicFlow UI restoration — final implementation report</title>
+  <style>
+    :root{--ink:#203d3a;--muted:#617471;--teal:#13786f;--soft:#f4f8f6;--line:#d6e4de;--warn:#8a5a13;--warn-bg:#fff8e8;--ok:#236748;--ok-bg:#edf8f2;--pending:#72510d;--pending-bg:#fff6db}
+    *{box-sizing:border-box}body{margin:0;background:#f5f8f6;color:var(--ink);font:14px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    main{max-width:1180px;margin:0 auto;padding:32px 24px 64px}.hero,section{background:#fff;border:1px solid var(--line);border-radius:14px}.hero{padding:30px;margin-bottom:20px;border-top:5px solid var(--teal)}
+    section{padding:24px;margin:16px 0}h1{font-size:30px;line-height:1.2;margin:0 0 8px}h2{font-size:21px;margin:0 0 14px}h3{font-size:15px;margin:20px 0 8px}p{margin:7px 0}.lede{font-size:16px;color:var(--muted);max-width:900px}.meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}.tag{padding:5px 9px;border-radius:99px;background:var(--soft);border:1px solid var(--line);font-size:12px;font-weight:650}.ok{color:var(--ok);background:var(--ok-bg)}.pending{color:var(--pending);background:var(--pending-bg)}
+    .callout{padding:14px 16px;border-left:4px solid var(--teal);background:var(--soft);margin:14px 0}.warning{border-left-color:var(--warn);background:var(--warn-bg)}ul{margin:8px 0;padding-left:20px}li{margin:4px 0}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px;margin:10px 0 18px}table{border-collapse:collapse;width:100%;min-width:740px;font-size:12.5px}th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}th{background:var(--soft);font-size:11px;text-transform:uppercase;letter-spacing:.035em}tr:last-child td{border-bottom:0}code{background:#edf3f0;border-radius:4px;padding:1px 4px;font-size:.92em;word-break:break-word}.compact td,.compact th{padding:8px 10px}.issue{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0}.issue dl{display:grid;grid-template-columns:90px 1fr;gap:5px 12px;margin:0}.issue dt{font-weight:700}.issue dd{margin:0}.note{color:var(--muted);font-size:12px}.status{font-weight:700;white-space:nowrap}.footer{color:var(--muted);text-align:center;margin-top:24px;font-size:12px}
+    @media(max-width:680px){main{padding:18px 12px 40px}.hero,section{padding:18px}h1{font-size:25px}.issue dl{grid-template-columns:1fr}.issue dd{margin-bottom:5px}}
+    @media print{body{background:#fff}main{max-width:none;padding:0}.hero,section{break-inside:avoid;box-shadow:none}.table-wrap{overflow:visible}table{min-width:0;font-size:10px}}
+  </style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <h1>ClinicFlow UI restoration and design unification</h1>
+    <p class="lede">Final implementation report for the frontend restoration work. This document records what changed, what was verified, and what remains open. It is intentionally limited to evidence available from the current diff and the restoration work notes.</p>
+    <div class="meta">
+      <span class="tag ok">Frontend restoration implemented</span>
+      <span class="tag ok">56 isolated tests passed</span>
+      <span class="tag ok">Desktop visual pass recorded</span>
+      <span class="tag ok">Responsive Users pass recorded</span>
+      <span class="tag pending">No full acceptance claim</span>
+    </div>
+    <div class="callout warning"><strong>Scope and safety:</strong> no backend files or backend contracts were changed. Existing authentication, authorization, invitation, appointment, queue, QR, check-in and ownership rules were not intentionally altered. The live <code>STAFF_PASSWORD_REQUIRED</code> gate remains in place and was not bypassed. Fixture-browser evidence is separate from live authentication evidence. No live email, OTP or invitation was sent.</div>
+  </header>
+
+  <section id="a">
+    <h2>A. Shared components fixed</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Component / foundation</th><th>Problem</th><th>Correction</th><th>Screens migrated or affected</th></tr></thead>
+      <tbody>
+        <tr><td>Design tokens and global form styles</td><td>Input and border contrast was too dark; focus and shadows felt aggressive; token use was inconsistent.</td><td>Softened border/input tokens to <code>160 22% 84%</code>, calmed muted text, retained ClinicFlow teal, reduced shadows, and standardized radius, 43px field height and soft teal focus treatment.</td><td>All ClinicFlow public, authentication and portal surfaces using global styles.</td></tr>
+        <tr><td><code>SearchInput</code></td><td>Icon/text overlap risk, inconsistent padding and clear-button spacing.</td><td>Unified 43px field, <code>pl-10 / pr-9</code>, aligned icon, in-field clear action, subtle focus and responsive max width.</td><td>Staff tabs; resource lists; Appointments; Doctor assigned/network clinics.</td></tr>
+        <tr><td><code>SearchableSelect</code></td><td>Native-looking/inconsistent triggers and menus; weak clear, loading and positioning treatment.</td><td>Unified trigger/menu styling, selected check, integrated search and clear, loading/no-results states, trigger-width alignment, bounded menu height and viewport-aware Radix popover behavior.</td><td>Resource filters/editors, Staff, Booking source, Appointments, Queue, Reports and relation lookups.</td></tr>
+        <tr><td><code>SearchableMultiSelect</code></td><td>Assignment fields read like checkbox lists and selected values were not presented consistently.</td><td>Added soft-teal wrapping chips, individual removal, Clear all, integrated search, keyboard-driven command list, loading/no-results and bounded incremental loading.</td><td>Doctor and Receptionist clinic/branch assignment editors and relation-based multi-fields.</td></tr>
+        <tr><td><code>ResourceLookup</code> / <code>CareLookup</code></td><td>Generic or grammatically incorrect placeholders and inconsistent option errors.</td><td>Added entity-aware plural placeholders, retained selected records, explicit retry copy, bounded 20-row option pages and existing dependency/scoping parameters.</td><td>Resource editors/filters, Booking, Queue, Appointments and Reports.</td></tr>
+        <tr><td><code>SuggestionInput</code></td><td>Browser datalists produced native-looking location suggestions.</td><td>Replaced datalist consumption with a shared debounced suggestion field; bounded master-value lookup while preserving valid free-text entry.</td><td>City, state, pincode, country and area fields in resource editors.</td></tr>
+        <tr><td><code>FilterBar</code></td><td>Heavy, tall, uneven filter layouts and awkward empty space.</td><td>Soft surface/border, consistent heading, responsive 1–4 column grid then wrapping desktop row, uniform gaps, and standardized <q>Clear filters</q>.</td><td>Staff, resource lists, Appointments, Live queue, Doctor clinics and Reports.</td></tr>
+        <tr><td><code>Pagination</code></td><td>Unfinished controls and confusing zero-count display.</td><td>Added <q>Showing X–Y of Z</q>, 10/20/50/100 sizes, labelled Previous/Next, first/last controls, page chips and understandable disabled states; pagination is hidden at zero records.</td><td>All paginated resource, Staff, Appointments, Queue, Doctor clinics and Reports lists.</td></tr>
+        <tr><td><code>AppDialog</code></td><td>Modal padding and scroll behavior were inconsistent.</td><td>Unified responsive padding, header tracking and one scrollable body to reduce nested-scroll risk.</td><td>Resource editors, staff editor, Clinic Admin setup, patient registration, appointment QR and transition dialogs.</td></tr>
+        <tr><td>Tables and list states</td><td>Hard separators, wide-table dependence and generic API-failure presentation.</td><td>Soft separators and hover, fixed desktop wrapping, labelled stacked cards at ≤1024px, contextual errors and retry actions, while preserving explicit empty states.</td><td>Every HTML table rendered by resource pages, Staff, dashboard appointments, Appointments, Queue, Doctor clinics and Reports.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="b">
+    <h2>B. Screens completed</h2>
+    <p><strong>Actual direct-change inventory:</strong></p>
+    <ul>
+      <li>Home/provider entry; Staff login; Patient login; forgot-password; invitation password setup; staff password confirmation.</li>
+      <li>Staff management tabs: Clinic Admins, Doctors and Receptionists, including editors, recovery panel and Clinic Admin first-clinic setup.</li>
+      <li>Resource list/editor surfaces: Clinics, Branches, Doctors, Patients, Weekly schedule, Date exceptions, Booking QR codes, Master data and Audit log.</li>
+      <li>Appointments; Book appointment; Live queue; Doctor clinics (assigned clinics and network clinics); Reports; Profile editors and Settings editors where shared editor controls are consumed.</li>
+      <li>Appointment check-in scanner, including camera/file mode, confirmation and access-required presentation.</li>
+    </ul>
+    <p><strong>Inherited global/shared styling coverage:</strong> Overview/dashboard appointment tables, activity and status surfaces; public booking; onboarding; QR and dialog surfaces; and role-specific Admin, Doctor, Receptionist and Patient portal renderings that consume the same controls.</p>
+    <p class="note">“Completed” here means implementation/migration in the current frontend diff. Browser inspection covered the major Super Admin fixture surfaces listed in section I, but not every live role, viewport, data shape or mutation.</p>
+  </section>
+
+  <section id="c">
+    <h2>C. Dropdown audit</h2>
+    <div class="table-wrap"><table class="compact">
+      <thead><tr><th>Screen / editor</th><th>Field</th><th>Searchable</th><th>Mode</th><th>Scope</th><th>Dependency</th></tr></thead>
+      <tbody>
+        <tr><td>Resource lists</td><td>Status, Category, Day, Event category, Sort</td><td>Yes</td><td>Single</td><td>Fixed allowed enums; existing query values</td><td>None</td></tr>
+        <tr><td>Resource editors</td><td>Status, day and other enum fields</td><td>Yes</td><td>Single</td><td>Field-specific allowed values; existing validation</td><td>Conditional fields preserved</td></tr>
+        <tr><td>Clinics / staff / doctors</td><td>Clinic Admin / Managing admin</td><td>Yes</td><td>Single</td><td>Users query constrained to <code>clinicAdmin</code></td><td>Managing-admin ownership constraints retained</td></tr>
+        <tr><td>Branches, Doctors, Patients, schedules, QR</td><td>Clinic</td><td>Yes</td><td>Single</td><td>Authorized clinic or assignment endpoint</td><td>Changing Clinic clears stale Branch and Doctor where present</td></tr>
+        <tr><td>Doctors, Patients, schedules, exceptions, QR</td><td>Branch</td><td>Yes</td><td>Single</td><td>Authorized branches scoped by selected Clinic</td><td>Disabled until required parent; change clears Doctor</td></tr>
+        <tr><td>Schedules, exceptions, QR, Reports</td><td>Doctor</td><td>Yes</td><td>Single</td><td>Doctor endpoint scoped by Clinic and optional Branch</td><td>Requeried after parent changes</td></tr>
+        <tr><td>Staff editor</td><td>Clinics / Branches</td><td>Yes</td><td>Multi</td><td>Assignment endpoints; selected IDs retained; managing-admin constraints</td><td>Branches depend on selected Clinics; assignment validation retained</td></tr>
+        <tr><td>Staff filters</td><td>Clinic, Branch, Specialization, Managing admin</td><td>Yes</td><td>Single</td><td>Role/assignment/master endpoints</td><td>Clinic change clears stale Branch</td></tr>
+        <tr><td>Booking / Appointments</td><td>Clinic, Branch, Doctor</td><td>Yes</td><td>Single</td><td>Public care endpoints for patients; authorized endpoints for staff</td><td>Clinic → Branch → Doctor clearing retained</td></tr>
+        <tr><td>Booking</td><td>Booking source</td><td>Yes</td><td>Single</td><td>Only <code>phone</code> and <code>walkIn</code></td><td>Existing date behavior retained</td></tr>
+        <tr><td>Booking</td><td>Patient</td><td>Yes</td><td>Single</td><td>Patients scoped by Clinic, Branch and active status</td><td>Available at the established workflow step</td></tr>
+        <tr><td>Live queue</td><td>Your appointment or Clinic / Branch / Doctor / Queue status</td><td>Yes</td><td>Single</td><td>Patient-owned appointments or staff role scope</td><td>Date/Clinic/Branch clearing retained</td></tr>
+        <tr><td>Reports</td><td>Group by, Clinic, Branch, Doctor</td><td>Yes</td><td>Single</td><td>Authorized report dimensions and relation endpoints</td><td>Clinic clears Branch/Doctor; Branch clears Doctor</td></tr>
+        <tr><td>Location fields</td><td>City, State, Pincode, Country, Area</td><td>Yes</td><td>Free text + suggestion</td><td>Active master values, 20-row bounded pages</td><td>Selection optional; free text intentionally valid</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Rows describe the important dynamic/enum selectors in changed consumers. Server authorization remains authoritative; frontend option scoping is not treated as a security boundary.</p>
+  </section>
+
+  <section id="d">
+    <h2>D. Search audit</h2>
+    <div class="table-wrap"><table class="compact">
+      <thead><tr><th>Screen</th><th>Actual placeholder</th><th>Clear</th><th>Debounce</th><th>Query behavior</th></tr></thead>
+      <tbody>
+        <tr><td>Clinic Admins</td><td><code>Search Clinic Admins by name, email or mobile…</code></td><td>Shared in-field button</td><td>Yes</td><td>Server staff list; filter change resets page</td></tr>
+        <tr><td>Doctors</td><td><code>Search doctors by name, email or specialization…</code></td><td>Yes</td><td>Yes</td><td>Server doctor/staff list with current scope</td></tr>
+        <tr><td>Receptionists</td><td><code>Search receptionists by name, email or mobile…</code></td><td>Yes</td><td>Yes</td><td>Server staff list with current scope</td></tr>
+        <tr><td>Appointments</td><td><code>Search appointments by patient or reference…</code></td><td>Yes</td><td>Yes</td><td>Combined server query with dates, status, Clinic, Branch, Doctor, sort and page</td></tr>
+        <tr><td>Patients</td><td><code>Search patients by name, email or mobile…</code></td><td>Yes</td><td>Yes</td><td>Existing scoped server list</td></tr>
+        <tr><td>Clinics / Branches / schedules / QR / Masters</td><td>Entity-specific <code>Search [resource]…</code></td><td>Yes</td><td>Yes</td><td>Existing server list query; page resets</td></tr>
+        <tr><td>Audit log</td><td><code>Search audit events…</code></td><td>Yes</td><td>Yes</td><td>Existing audit list query and pagination</td></tr>
+        <tr><td>Doctor clinics</td><td><code>Search assigned clinics…</code> / <code>Search network clinics…</code></td><td>Yes</td><td>Yes</td><td>Separate assigned and assignment-option endpoints with server paging</td></tr>
+        <tr><td>Relation dropdowns</td><td><code>Search clinics…</code>, <code>Search branches…</code>, <code>Search doctors…</code>, etc.</td><td>Selector clear</td><td>Yes</td><td>Bounded 20-row pages with incremental loading; selected values retained</td></tr>
+        <tr><td>Location suggestions</td><td><code>Type or search city…</code> and equivalent field wording</td><td>Field clear</td><td>Yes</td><td>Bounded active master-value suggestions; typed free text remains valid</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="e">
+    <h2>E. Table audit</h2>
+    <div class="table-wrap"><table class="compact">
+      <thead><tr><th>Table / list</th><th>Search</th><th>Filters</th><th>Sort</th><th>Pagination</th><th>Server-side</th><th>Responsive / horizontal scroll</th></tr></thead>
+      <tbody>
+        <tr><td>Clinic Admins / Doctors / Receptionists</td><td>Yes</td><td>Status; role-specific assignment filters</td><td>Created/name</td><td>10/20/50/100</td><td>Yes</td><td>Grouped staff cells; desktop wraps; stacked labelled rows ≤1024px</td></tr>
+        <tr><td>Clinics</td><td>Yes</td><td>Status, Clinic Admin</td><td>Created/name</td><td>10/20/50/100</td><td>Yes</td><td>Same shared responsive table treatment</td></tr>
+        <tr><td>Branches</td><td>Yes</td><td>Status, Clinic</td><td>Created/name</td><td>10/20/50/100</td><td>Yes</td><td>Same</td></tr>
+        <tr><td>Doctors resource list</td><td>Yes</td><td>Status, specialization, managing admin, Clinic, Branch</td><td>Created/name</td><td>10/20/50/100</td><td>Yes</td><td>Long clinic/branch values wrap; stacked rows on smaller screens</td></tr>
+        <tr><td>Patients</td><td>Yes</td><td>Status, dates, Clinic, Branch</td><td>Created/name</td><td>10/20/50/100</td><td>Yes</td><td>Same</td></tr>
+        <tr><td>Weekly schedule / Date exceptions</td><td>Resource search</td><td>Clinic, Branch, Doctor; Day or Date</td><td>Created</td><td>10/20/50/100</td><td>Yes</td><td>Same</td></tr>
+        <tr><td>Booking QR codes</td><td>Yes</td><td>Status, Clinic, Branch, Doctor</td><td>Created/name</td><td>10/20/50/100</td><td>Yes</td><td>Table plus responsive QR-card grid</td></tr>
+        <tr><td>Master data</td><td>Yes</td><td>Status, Category</td><td>Created/name</td><td>10/20/50/100</td><td>Yes</td><td>Same shared table treatment</td></tr>
+        <tr><td>Audit log</td><td>Yes</td><td>Date range, event category</td><td>Created</td><td>10/20/50/100</td><td>Yes</td><td>Long summaries wrap; stacked rows on smaller screens</td></tr>
+        <tr><td>Appointments / dashboard appointment rows</td><td>Appointments page: yes</td><td>Dates, status, Clinic, Branch, Doctor</td><td>Created/visit date</td><td>Appointments: 10/20/50/100</td><td>Yes for Appointments</td><td>Grouped patient/location/date cells; shared stacked rows</td></tr>
+        <tr><td>Live queue entries</td><td>Via scoped selectors</td><td>Appointment or Clinic, Branch, Doctor, status, date</td><td>Session order from API</td><td>10/20/50/100</td><td>Yes</td><td>Shared appointment-row responsive treatment</td></tr>
+        <tr><td>Doctor assigned / network clinics</td><td>Yes, separate</td><td>Search</td><td>Stable endpoint order</td><td>10/20/50/100</td><td>Yes</td><td>Shared stacked rows; no normal page-level horizontal scrolling intended</td></tr>
+        <tr><td>Reports</td><td>No free-text search</td><td>Date, group, Clinic, Branch, Doctor</td><td>Grouped endpoint order</td><td>10/20/50/100</td><td>Yes</td><td>Five grouped metrics columns stack at smaller widths</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">CSS removes horizontal-scroll-first presentation by wrapping fixed-layout desktop cells and converting tables to labelled card rows at ≤1024px. Users was checked at 1440, 1280, 768 and 390px with no page-level horizontal overflow; this is not an assertion about every possible real-data edge case.</p>
+  </section>
+
+  <section id="f">
+    <h2>F. Copy audit</h2>
+    <div class="table-wrap"><table class="compact">
+      <thead><tr><th>Area</th><th>Before</th><th>Actual standardized copy</th></tr></thead>
+      <tbody>
+        <tr><td>Authentication navigation/titles</td><td><code>Staff Login</code>, <code>Patient Login</code></td><td><code>Staff login</code>, <code>Patient login</code></td></tr>
+        <tr><td>Password flows</td><td><code>Return to Staff Login</code>; references to the <code>Staff Login</code> page</td><td><code>Return to staff login</code>; <code>staff login page</code></td></tr>
+        <tr><td>Check-in title/access</td><td><code>Appointment Check-In</code>, <code>Staff Access Required</code></td><td><code>Appointment check-in</code>, <code>Staff access required</code></td></tr>
+        <tr><td>Check-in states/actions</td><td><code>Already Checked In</code>, <code>Checked In</code>, <code>Scan Next</code>, <code>Confirm Check-in</code></td><td><code>Already checked in</code>, <code>Checked in</code>, <code>Scan next</code>, <code>Confirm check-in</code></td></tr>
+        <tr><td>Scanner file mode</td><td><code>Image File</code>, <code>Upload QR Code Image</code></td><td><code>Image file</code>, <code>Upload QR code image</code></td></tr>
+        <tr><td>Progress punctuation</td><td>Three-period ellipses in changed check-in loading copy</td><td>Typographic ellipsis, for example <code>Verifying access…</code> and <code>Checking in…</code></td></tr>
+        <tr><td>Clinic Admin setup</td><td><code>Set up Clinic Admin &amp; first clinic</code>, <code>Create admin &amp; clinic</code></td><td><code>Set up Clinic Admin and first clinic</code>, <code>Set up Clinic Admin</code>; explicit combined-save failure copy</td></tr>
+        <tr><td>Doctor clinics heading</td><td><code>Currently Assigned Clinics</code></td><td><code>Currently assigned clinics</code></td></tr>
+        <tr><td>Filter reset / pagination</td><td>Mixed reset wording; <code>Rows:</code></td><td><code>Clear filters</code>; <code>Rows per page:</code></td></tr>
+        <tr><td>Branches primary action</td><td><code>Add branche</code></td><td><code>Add branch</code></td></tr>
+        <tr><td>Search wording</td><td>Generic or incomplete entity phrasing such as <code>Search patients or references…</code></td><td>Contextual placeholders listed in section D</td></tr>
+        <tr><td>List API failures</td><td>Generic error component and <code>Retry</code></td><td><code>Unable to load [resource]. Please try again.</code> with contextual <code>Retry [resource]</code></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="g">
+    <h2>G. Performance</h2>
+    <ul>
+      <li><strong>Preserved:</strong> search, filters, sort, page and page size continue to be sent to existing list endpoints. No fake client-only filters or pagination were introduced.</li>
+      <li><strong>Bounded options:</strong> remote selectors and master suggestions request 20-row pages and load more on demand; selected relation rows are retained separately.</li>
+      <li><strong>Dependent queries:</strong> Clinic/Branch/Doctor parameters continue to scope option requests, and stale children are cleared.</li>
+      <li><strong>Fetch-all / <code>allPages()</code>:</strong> no new fetch-all pattern was added by this frontend restoration. Existing list consumers remain paginated. Report export behavior remains the existing explicit “export all matching results” path.</li>
+      <li><strong>Sorting and stable order:</strong> existing server sort parameters and endpoint ordering were preserved.</li>
+      <li><strong>N+1:</strong> no backend query layer was changed, so no claim is made that backend N+1 behavior was exhaustively re-audited or altered.</li>
+    </ul>
+    <div class="callout"><strong>Build note:</strong> after the final FilterBar grid, <q>Add branch</q> copy and modal <code>min-height: 0</code> edits, the frontend typecheck passed and the production Vite build passed in 4.43s with <code>PORT=25283</code> and <code>BASE_PATH=/</code>. Vite retained the approximately 800KB JavaScript bundle warning tracked in section J.</div>
+  </section>
+
+  <section id="h">
+    <h2>H. Regression testing</h2>
+    <div class="table-wrap"><table class="compact">
+      <thead><tr><th>Evidence</th><th>Result</th><th>Coverage / limitation</th></tr></thead>
+      <tbody>
+        <tr><td><code>node --test artifacts/api-server/src/*.test.mjs artifacts/clinicflow/src/staff-input.test.mjs</code></td><td class="status">56 passed, 0 failed</td><td>Isolated API-server suites plus staff-input frontend tests.</td></tr>
+        <tr><td>Frontend TypeScript typecheck</td><td class="status">Passed after final UI edits</td><td>ClinicFlow frontend type validation includes the final grid, copy and modal changes.</td></tr>
+        <tr><td><code>PORT=25283 BASE_PATH=/ pnpm --filter @workspace/clinicflow build</code></td><td class="status">Passed after final UI edits, with warning</td><td>Production Vite build completed in 4.43s; ~800KB JavaScript bundle warning remains.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Functional areas represented by the isolated tests and preserved source paths</h3>
+    <ul>
+      <li>Authentication and authorization contracts, appointment/availability, queue, QR/check-in, mappings and invitation-related behavior are covered to the extent present in the 56-test isolated suite.</li>
+      <li>The UI diff did not modify backend files, API contracts, server authorization or delivery logic.</li>
+      <li>The existing live <code>STAFF_PASSWORD_REQUIRED</code> block was observed and remains enforced; it was not bypassed to manufacture live role evidence.</li>
+      <li>No live staff invitation, invitation resend, email, patient OTP or check-in mutation was initiated for this report.</li>
+    </ul>
+    <p class="note">Passing isolated tests are not presented as exhaustive end-to-end coverage of every role, combined query, form failure, or live third-party delivery flow.</p>
+  </section>
+
+  <section id="i">
+    <h2>I. Visual QA</h2>
+    <div class="callout"><strong>Status: major mocked-Super-Admin browser pass recorded.</strong> This was browser-only fixture inspection entered through the normal Clerk test helper. It did not perform password confirmation and is not live authentication, authorization or role proof. Screenshot tool references are <code>Users 8df99e</code>, <code>Branches 7mvhbm</code> and <code>mobile modal 63zlu8</code>; these are tool assets, not files stored in this repository.</div>
+    <div class="table-wrap"><table class="compact">
+      <thead><tr><th>Required check</th><th>Actual browser evidence</th><th>Result / boundary</th></tr></thead>
+      <tbody>
+        <tr><td>Major desktop inventory</td><td>Inspected Users (all three tabs), Clinics, Branches, Patients, Master data, Weekly schedule, Date exceptions, Booking QR codes, Audit log, Appointments, Live queue, Reports, Dashboard, Settings, Admin booking, public Patient login, public booking and check-in.</td><td>Major surfaces passed presentation inspection with the fixture data limitations in section J.</td></tr>
+        <tr><td>Contrast and product consistency</td><td>Softened borders, light surfaces, teal focus/action treatment and shared control language were compared across the inspected surfaces.</td><td>Verified visually; no comprehensive WCAG contrast measurement was performed.</td></tr>
+        <tr><td>Search bars</td><td>Icon/text alignment, contextual placeholder and clear action were exercised.</td><td>Verified on inspected list surfaces.</td></tr>
+        <tr><td>Dropdowns</td><td>Menu search, no-results state, keyboard use, clear and reopen were exercised.</td><td>Verified for shared single-select behavior. Multi-select chip wrapping had prior coverage but its whole lifecycle was not reverified in this final pass.</td></tr>
+        <tr><td>Filter spacing</td><td>An initial full-width desktop FilterBar defect was found and fixed by removing the <code>xl:flex</code> layout. Final recheck showed compact four-column Users filters and three-column Branches filters.</td><td>Verified after fix.</td></tr>
+        <tr><td>Modal spacing and reachability</td><td>Dirty cancel and Escape were exercised. The 390×844 mobile modal was rechecked after applying intentional internal scroll with <code>min-height: 0</code>; Save remained reachable.</td><td>Verified at the tested mobile viewport.</td></tr>
+        <tr><td>Tables and states</td><td>Responsive Users was checked at 1440, 1280, 768 and 390px; no page-level horizontal overflow was observed. Error presentation was distinguished from empty state.</td><td>Verified for Users and major desktop fixtures, not every long-data permutation.</td></tr>
+        <tr><td>Pagination</td><td>Finished count/size/navigation presentation was inspected on fixture lists.</td><td>Presentation verified; exhaustive page-boundary/data-change behavior was not rerun live.</td></tr>
+        <tr><td>Copy</td><td>Changed terminology was reviewed; the generated <code>Add branche</code> label was found and corrected to <code>Add branch</code>.</td><td>Changed copy verified; no claim of exhaustive untouched-copy audit.</td></tr>
+        <tr><td>Responsive layouts</td><td>Users across four widths plus the 390×844 editor modal were checked; the major screens received desktop inspection.</td><td>Meaningful responsive sample completed, not an all-screen/all-viewport matrix.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="j">
+    <h2>J. Remaining issues</h2>
+    <div class="issue"><dl>
+      <dt>Issue</dt><dd>Browser QA used a mocked Super Admin fixture and was not live all-role end-to-end verification.</dd>
+      <dt>Screen</dt><dd>All role-restricted portal screens and authentication entry points.</dd>
+      <dt>Impact</dt><dd>The pass supports presentation and shared-control behavior only; it does not prove live password confirmation, role authorization, CRUD or clinical mutations.</dd>
+      <dt>Reason</dt><dd>The normal Clerk test helper supplied fixture identity/data, while live safety gates and mutations were intentionally left intact.</dd>
+      <dt>Next action</dt><dd>Run separately authorized live sessions for Super Admin, Clinic Admin, Doctor, Receptionist and Patient, including scoped CRUD and clinical workflows.</dd>
+    </dl></div>
+    <div class="issue"><dl>
+      <dt>Issue</dt><dd>Live Clinic Admin browser coverage is blocked by <code>STAFF_PASSWORD_REQUIRED</code>.</dd>
+      <dt>Screen</dt><dd>Clinic Admin restricted portal pages and role-specific navigation.</dd>
+      <dt>Impact</dt><dd>Fixture-browser evidence can demonstrate presentation separately, but it is not proof of a live authenticated Clinic Admin session.</dd>
+      <dt>Reason</dt><dd>The existing security gate correctly requires live staff password confirmation and was not bypassed.</dd>
+      <dt>Next action</dt><dd>Use an authorized live Clinic Admin credential/session to complete role-specific browser verification; keep fixture evidence labelled separately.</dd>
+    </dl></div>
+    <div class="issue"><dl>
+      <dt>Issue</dt><dd>Live delivery and completion of invitation/email/OTP flows were not tested.</dd>
+      <dt>Screen</dt><dd>Clinic Admin/staff invitations, staff password setup/recovery and Patient login.</dd>
+      <dt>Impact</dt><dd>No end-to-end assertion is made about real inbox delivery or live code completion in this run.</dd>
+      <dt>Reason</dt><dd>Safety constraints prohibited unsolicited emails, retained-invitation resend and live OTP/invitation sends.</dd>
+      <dt>Next action</dt><dd>Run a separately approved test with controlled recipient accounts and record delivery, link destination, expiry and completion behavior.</dd>
+    </dl></div>
+    <div class="issue"><dl>
+      <dt>Issue</dt><dd>Production JavaScript bundle warning at approximately 800KB.</dd>
+      <dt>Screen</dt><dd>Application-wide initial bundle.</dd>
+      <dt>Impact</dt><dd>Potential slower initial load on constrained devices or networks; build correctness is unaffected.</dd>
+      <dt>Reason</dt><dd>Vite’s chunk-size threshold is exceeded; optimization was outside this UI restoration scope.</dd>
+      <dt>Next action</dt><dd>Profile bundle composition, then consider route/component code-splitting and vendor chunking without changing clinical workflows.</dd>
+    </dl></div>
+    <div class="issue"><dl>
+      <dt>Issue</dt><dd>Some fixture evidence was incomplete or malformed.</dd>
+      <dt>Screen</dt><dd>Weekly schedule, Date exceptions and Booking QR codes.</dd>
+      <dt>Impact</dt><dd>Weekly/exception fixtures did not cover all domain fields. The QR fixture used <code>publicReference</code> instead of product field <code>reference</code>, yielding <code>/book/undefined</code>; this is fixture evidence, not a product defect.</dd>
+      <dt>Reason</dt><dd>The browser dataset was designed for visual inspection rather than exhaustive domain fidelity.</dd>
+      <dt>Next action</dt><dd>Repeat those screens with contract-accurate, field-complete fixtures or controlled live data.</dd>
+    </dl></div>
+    <div class="issue"><dl>
+      <dt>Issue</dt><dd>Accessibility and multi-select coverage remain partial.</dd>
+      <dt>Screen</dt><dd>Shared controls, especially multi-select assignments.</dd>
+      <dt>Impact</dt><dd>No comprehensive WCAG contrast/assistive-technology metrics were collected. Chip wrapping was covered previously but the complete multi-select lifecycle was not reverified in the final pass.</dd>
+      <dt>Reason</dt><dd>The final pass prioritized major visual regressions, dropdown single-select interactions and responsive layout.</dd>
+      <dt>Next action</dt><dd>Run automated and manual accessibility checks and repeat multi-select search/select/remove/Clear all/keyboard/reopen behavior.</dd>
+    </dl></div>
+    <div class="issue"><dl>
+      <dt>Issue</dt><dd>A transient development overlay appeared once and was not reproduced.</dd>
+      <dt>Screen</dt><dd>Development preview during visual QA.</dd>
+      <dt>Impact</dt><dd>No persistent product defect was established, but the one-off event is disclosed.</dd>
+      <dt>Reason</dt><dd>The overlay disappeared and did not recur during final rechecks.</dd>
+      <dt>Next action</dt><dd>Monitor during the next browser run and capture diagnostics only if it recurs.</dd>
+    </dl></div>
+  </section>
+
+  <p class="footer">ClinicFlow restoration report · self-contained HTML · no external assets</p>
+</main>
+</body>
+</html>

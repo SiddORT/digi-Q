@@ -136,12 +136,11 @@ export function SearchableMultiSelect({
       <Popover open={open} onOpenChange={setOpen}>
         <div
           className={cn(
-            "relative w-full rounded-lg border border-border bg-white text-sm shadow-sm transition-colors",
-            disabled && "opacity-50 cursor-not-allowed",
-            error && "border-destructive"
+            "relative flex min-h-[43px] w-full items-center justify-between rounded-lg border border-border bg-white px-2 py-1.5 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15",
+            disabled && "opacity-50 cursor-not-allowed bg-slate-50",
+            error && "border-destructive focus-within:border-destructive focus-within:ring-destructive/15"
           )}
         >
-          {/* Main trigger button, spanning the entire container */}
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -150,10 +149,7 @@ export function SearchableMultiSelect({
               aria-expanded={open}
               aria-required={required}
               disabled={disabled}
-              className={cn(
-                "absolute inset-0 h-full w-full rounded-lg bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
-                error && "focus-visible:ring-destructive"
-              )}
+              className="absolute inset-0 z-0 h-full w-full rounded-lg bg-transparent outline-none cursor-pointer"
               aria-label={
                 value.length > 0
                   ? `${label || "Selected items"}: ${value.map((v) => selectedLabels[v] || v).join(", ")}`
@@ -162,67 +158,70 @@ export function SearchableMultiSelect({
             />
           </PopoverTrigger>
 
-          {/* Foreground content: text, clear button, chevron */}
-          <div className="relative z-10 flex min-h-[43px] w-full items-center justify-between pointer-events-none px-2 py-1.5">
-            <div className="flex flex-wrap gap-1.5 flex-1 items-center mr-2">
-              {value.length === 0 ? (
-                <span className="px-1 text-muted-foreground pointer-events-none">
-                  {placeholder}
-                </span>
-              ) : (
-                value.map((v) => (
-                  <span
-                    key={v}
-                    className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground pointer-events-auto"
-                  >
-                    <span className="max-w-[120px] truncate pointer-events-none">
-                      {selectedLabels[v] || v}
-                    </span>
-                    {!disabled && (
-                      <button
-                        type="button"
-                        className="ml-1 rounded-full hover:bg-slate-300 p-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                        onClick={(e) => removeValue(e, v)}
-                        aria-label={`Remove ${selectedLabels[v] || v}`}
-                      >
-                        <X className="h-3 w-3 pointer-events-none" />
-                      </button>
-                    )}
-                  </span>
-                ))
-              )}
-            </div>
-
-            <div className="flex items-center gap-1 shrink-0 px-1">
-              {value.length > 0 && !disabled && (
-                <button
-                  type="button"
-                  className="pointer-events-auto rounded-sm p-1 hover:bg-slate-200 text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  onClick={clearAll}
-                  aria-label="Clear all"
+          <div className="relative z-10 flex flex-wrap gap-1.5 flex-1 items-center mr-2 pointer-events-none">
+            {value.length === 0 ? (
+              <span className="px-1 text-muted-foreground pointer-events-none">
+                {placeholder}
+              </span>
+            ) : (
+              value.map((v) => (
+                <span
+                  key={v}
+                  className="inline-flex items-center gap-1 rounded-md bg-teal-50 border border-teal-100 px-2 py-1 text-xs font-medium text-teal-800 pointer-events-auto"
                 >
-                  <X className="h-4 w-4 pointer-events-none" />
-                </button>
+                  <span className="max-w-[120px] truncate pointer-events-none">
+                    {selectedLabels[v] || v}
+                  </span>
+                  {!disabled && (
+                    <button
+                      type="button"
+                      className="ml-0.5 rounded-sm hover:bg-teal-200/50 p-0.5 focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition-colors border-none min-h-0 h-auto"
+                      onClick={(e) => removeValue(e, v)}
+                      aria-label={`Remove ${selectedLabels[v] || v}`}
+                    >
+                      <X className="h-3 w-3 pointer-events-none text-teal-600 hover:text-teal-900" />
+                    </button>
+                  )}
+                </span>
+              ))
+            )}
+          </div>
+
+          <div className="relative z-20 flex items-center gap-1 shrink-0 px-1">
+            {value.length > 0 && !disabled && (
+              <button
+                type="button"
+                className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-slate-100 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors border-none p-0"
+                style={{ minHeight: "auto" }}
+                onClick={clearAll}
+                aria-label="Clear all"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <div className="flex h-6 w-6 items-center justify-center text-muted-foreground pointer-events-none">
+              {isActuallyLoading && !open ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <ChevronsUpDown className="h-3.5 w-3.5 opacity-50" />
               )}
-              <div className="pointer-events-none flex items-center justify-center opacity-50">
-                {isActuallyLoading && !open ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ChevronsUpDown className="h-4 w-4" />
-                )}
-              </div>
             </div>
           </div>
         </div>
 
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white z-[100]" align="start">
-          <Command shouldFilter={!onSearchChange}>
+        <PopoverContent 
+          className="p-0 bg-white border border-border shadow-lg rounded-lg z-[100] overflow-hidden" 
+          align="start"
+          style={{ width: "var(--radix-popover-trigger-width)" }}
+        >
+          <Command shouldFilter={!onSearchChange} className="max-h-[var(--radix-popover-content-available-height,300px)]">
             <CommandInput
-              placeholder="Search..."
+              placeholder={label ? `Search ${label.toLowerCase()}...` : (placeholder?.startsWith("Search") ? placeholder : "Search...")}
               value={search}
               onValueChange={handleSearch}
+              className="h-10 text-sm border-none focus:ring-0"
             />
-            <CommandList>
+            <CommandList className="max-h-[250px] overflow-y-auto">
               <CommandEmpty>
                 {isActuallyLoading ? "Searching..." : "No results found."}
               </CommandEmpty>
@@ -239,13 +238,14 @@ export function SearchableMultiSelect({
                       onSelect={() => {
                         toggleValue(option.value);
                       }}
+                      className="cursor-pointer"
                     >
                       <div
                         className={cn(
-                          "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                          "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border",
                           isSelected
-                            ? "bg-primary text-primary-foreground"
-                            : "opacity-50 [&_svg]:invisible"
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-border opacity-50 [&_svg]:invisible"
                         )}
                       >
                         <Check className={cn("h-3 w-3")} />

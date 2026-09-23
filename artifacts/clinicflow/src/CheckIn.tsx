@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Redirect, useLocation, useSearch } from "wouter";
+import { Redirect, useSearch } from "wouter";
 import { useAuth } from "@clerk/react";
 import { Logo } from "./App";
-import { Check, X, Camera, Image as ImageIcon, QrCode } from "lucide-react";
+import { Check, Camera, Image as ImageIcon, QrCode } from "lucide-react";
 import * as api from "@workspace/api-client-react";
 import jsQR from "jsqr";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,7 +13,7 @@ export function CheckInScanner() {
   const payloadFromUrl = new URLSearchParams(search).get("payload");
   const me = api.useGetMe({ query: { queryKey: api.getGetMeQueryKey(), enabled: !!isSignedIn } });
 
-  if (!isLoaded || (isSignedIn && me.isLoading)) return <div className="page-loading">Verifying access...</div>;
+  if (!isLoaded || (isSignedIn && me.isLoading)) return <div className="page-loading">Verifying access…</div>;
   if (!isSignedIn) {
     const encoded = encodeURIComponent(`/check-in${search ? `?${search}` : ""}`);
     return <Redirect to={`/sign-in?redirect=${encoded}`} />;
@@ -27,7 +27,7 @@ export function CheckInScanner() {
       <div className="landing">
         <header className="public-header"><Logo/></header>
         <main style={{ padding: "40px 20px", maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
-          <h2>Staff Access Required</h2>
+          <h2>Staff access required</h2>
           <p>The check-in scanner is available for clinic staff only.</p>
         </main>
       </div>
@@ -40,7 +40,7 @@ export function CheckInScanner() {
       <main style={{ padding: "40px 20px", maxWidth: "600px", margin: "0 auto" }}>
         <section className="panel padded">
           <span className="eyebrow">CLINIC STAFF</span>
-          <h2>Appointment Check-In</h2>
+          <h2>Appointment check-in</h2>
           <ScannerCore initialPayload={payloadFromUrl} />
         </section>
       </main>
@@ -215,7 +215,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
   };
 
   if (payload) {
-    if (resolve.isPending) return <div className="skeleton">Verifying appointment...</div>;
+    if (resolve.isPending) return <div className="skeleton">Verifying appointment…</div>;
     if (resolve.error) return (
        <div className="error-box" role="alert">
         Invalid or expired QR code.
@@ -228,14 +228,14 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
          return (
             <div role="status" style={{ textAlign: "center", padding: "20px 0" }}>
              <span className="confirmation-check"><Check size={34}/></span>
-             <h2>{checkIn.data.alreadyCheckedIn ? "Already Checked In" : "Checked In"}</h2>
+              <h2>{checkIn.data.alreadyCheckedIn ? "Already checked in" : "Checked in"}</h2>
              <p>{checkIn.data.message || `${checkIn.data.appointment.patientName} has been checked in successfully.`}</p>
              <div className="confirmation-token" style={{ margin: "20px auto" }}>
                <small>TOKEN</small>
                <strong>{checkIn.data.appointment.token || "—"}</strong>
                <span>{checkIn.data.appointment.date} · {checkIn.data.appointment.status.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase())}</span>
              </div>
-             <button className="button" onClick={reset}>Scan Next</button>
+              <button className="button" onClick={reset}>Scan next</button>
            </div>
          );
       }
@@ -264,7 +264,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
                 });
               }}
             >
-              {checkIn.isPending ? "Checking in..." : "Confirm Check-in"}
+              {checkIn.isPending ? "Checking in…" : "Confirm check-in"}
             </button>
           )}
           <button className="button secondary" disabled={checkIn.isPending} onClick={reset}>Cancel / Scan another</button>
@@ -278,7 +278,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
       {scanError && <div className="error-box" role="alert">{scanError}</div>}
       <div className="toolbar" style={{ justifyContent: "center" }}>
         <button className={`button small ${mode === "camera" ? "" : "light"}`} onClick={() => setMode("camera")}><Camera size={16}/> Camera</button>
-        <button className={`button small ${mode === "file" ? "" : "light"}`} onClick={() => setMode("file")}><ImageIcon size={16}/> Image File</button>
+        <button className={`button small ${mode === "file" ? "" : "light"}`} onClick={() => setMode("file")}><ImageIcon size={16}/> Image file</button>
       </div>
       
       {mode === "camera" ? (
@@ -289,7 +289,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
       ) : (
         <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", aspectRatio: "1", border: "2px dashed var(--color-input)", borderRadius: "12px", cursor: "pointer" }}>
           <QrCode size={48} style={{ color: "var(--color-muted-foreground)", marginBottom: "16px" }} />
-          <span>Upload QR Code Image</span>
+          <span>Upload QR code image</span>
           <input type="file" accept="image/*" onChange={handleFileUpload} />
         </label>
       )}

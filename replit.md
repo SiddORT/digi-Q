@@ -39,6 +39,14 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 - Availability → appointment → token → staff live queue → patient live queue is the core acceptance flow.
 - The referenced visual wireframe was not supplied here. The attached text specification is the available journey reference; do not claim pixel-level wireframe conformance.
 
+## UI restoration constraints
+
+- Preserve the established ClinicFlow teal identity and navigation; refine the existing product rather than redesigning it.
+- Use calm surfaces, soft neutral boundaries, readable text, subtle focus states, and consistent compact spacing. The earlier dark-outline contrast treatment was explicitly rejected.
+- Fix shared components and migrate consumers rather than adding page-specific overrides. Search icons, clear actions, relation selectors, filter grids, and pagination must share one visual language.
+- Preserve authentication, ownership, invitations, appointments, capacity, queue, and check-in rules during visual changes. Do not introduce unsupported filters.
+- Judge visual acceptance from rendered screens at relevant sizes, not from compilation alone. Separate browser-fixture evidence from live authenticated verification.
+
 ## Gotchas
 
 _Populate as you build — sharp edges, "always run X before Y" rules._

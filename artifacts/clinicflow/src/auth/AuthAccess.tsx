@@ -35,7 +35,7 @@ function StaffPasswordConfirmation() {
       <AuthCard title="Confirm your staff password" description="Your session is active. Confirm your password once to continue to the staff workspace.">
         <form onSubmit={submit}>
           <label>Password<input data-testid="input-confirm-staff-password" type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} /></label>
-          {error && <div className="error-box" data-testid="status-confirm-password-error">{error}</div>}
+          {error && <div className="error-box" role="alert" data-testid="status-confirm-password-error">{error}</div>}
           <button className="button auth-submit" data-testid="button-confirm-staff-password" disabled={busy}>{busy ? "Confirming…" : "Confirm password"}</button>
         </form>
         <div className="auth-links"><button type="button" className="text-link" data-testid="button-confirm-signout" onClick={() => { setPassword(""); signOut({ redirectUrl: `${window.location.origin}${import.meta.env.BASE_URL}` }); }}>Sign out</button></div>
