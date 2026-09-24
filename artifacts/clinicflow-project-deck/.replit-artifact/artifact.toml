@@ -1,0 +1,28 @@
+kind = "slides"
+previewPath = "/clinicflow-project-deck/"
+title = "ClinicFlow — Project Overview"
+description = "18-slide Healthcare Clarity presentation covering ClinicFlow roles, operations, UI restoration, verification evidence and remaining blockers."
+version = "1.0.0"
+id = "artifacts/clinicflow-project-deck"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/clinicflow-project-deck/" ]
+localPort = 25031
+
+[services.development]
+run = "pnpm --filter @workspace/clinicflow-project-deck run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/clinicflow-project-deck", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/clinicflow-project-deck/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25031"
+BASE_PATH = "/clinicflow-project-deck/"
