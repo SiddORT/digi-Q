@@ -30,7 +30,7 @@ export function PatientLogin() {
       const result = await signIn.emailCode.sendCode({ emailAddress: entry.email });
       if (result.error) throw result.error;
       if (signIn.status === "needs_protect_check") {
-        throw new Error("Clerk requires an additional security check. Reload the page and try again.");
+        throw new Error("An additional security check is required. Reload the page and try again.");
       }
       setEmail(entry.email);
       setStep("code");

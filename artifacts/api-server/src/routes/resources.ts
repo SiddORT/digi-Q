@@ -669,7 +669,7 @@ resourcesRouter.post("/users/:id/password-reset", async (req, res) => {
   assert(await canRead(user, "users", target), 403, "User outside your scope");
   assert(target.clerkId, 409, "This staff account has not completed invitation setup. Resend the set-password invitation instead.");
   await audit(user, "recoveryInstructions", "users", target);
-  res.status(202).json({ message: "Open /forgot-password to start Clerk's secure email-code password flow. No recovery email has been sent by this action." });
+  res.status(202).json({ message: "Open /forgot-password to start the secure email-code password flow. No recovery email has been sent by this action." });
 });
 resourcesRouter.post("/users/:id/resend-invitation", async (req, res) => {
   const actor = await requireUser(req), target = await enrich("users", await one(users, req.params.id as string));

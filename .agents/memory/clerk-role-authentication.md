@@ -21,17 +21,17 @@ Clerk supports reserved, initially unverified passwordless identities through it
 
 **How to apply:** Verify current SDK support and live provider behavior before reuse. Reserve an email without marking it verified, require Clerk email-code completion before application onboarding, and check authoritative staff-role exclusions first. Never create a patient password. Do not claim this disables provider-level password login for legacy patients who already have a password.
 
-Check Clerk Device Trust independently from MFA when a requirement forbids staff OTP.
+Check Clerk Device Trust independently from MFA.
 
 **Why:** A real browser password sign-in returned `needs_client_trust` with the password verified and email-code verification still required. Successful backend password verification did not establish a completed browser sign-in.
 
-**How to apply:** Inspect the live sign-in status without logging identifiers or credentials. Explain the security tradeoff before changing Device Trust; do not offer staff OTP against the requirement, bypass the challenge, or claim browser completion from API-only evidence.
+**How to apply:** Inspect the live sign-in status without logging identifiers or credentials. Do not bypass the challenge or claim browser completion from API-only evidence.
 
-The owner chose password-only staff login and reported disabling only Development Device Trust on 2026-09-22. Subsequent fresh browser logins for all four staff roles completed without OTP. Do not infer the Production setting from this.
+On 2026-09-24 the owner explicitly approved staff password plus new-device email OTP, superseding the earlier password-only/no-OTP requirement. Keep provider branding out of user-facing authentication messages.
 
-**Why:** Normal staff login must require email/password without OTP, while patients retain email OTP. The owner accepted the Device Trust tradeoff but prohibited any other security or architecture changes.
+**Why:** Production Device Trust blocked password sign-in, and the owner chose to support its email challenge rather than disable protection. Previously observed Development behavior does not establish Production settings.
 
-**How to apply:** Preserve server-side password proof, authorization, session security, CAPTCHA, lockout and enumeration protection. Do not make additional tenant configuration changes. Verify actual staff browser login, not only backend proof, before declaring completion.
+**How to apply:** Preserve server-side password proof, authorization, session security, CAPTCHA, lockout and enumeration protection. Use the provider as OTP authority and retain its managed email delivery; do not introduce independent OTPs or silently change tenant settings. Distinguish mocked browser checks from actual email delivery and completed production sign-in.
 
 Treat invitation creation, email dispatch, inbox receipt, ticket processing, and completed signup as separate evidence.
 

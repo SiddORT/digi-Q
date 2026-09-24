@@ -27,7 +27,7 @@ export function ForgotPassword() {
       const sent = await signIn.resetPasswordEmailCode.sendCode();
       if (sent.error) throw sent.error;
       if (signIn.status === "needs_protect_check") {
-        throw new Error("Clerk requires an additional security check. Reload the page and try again.");
+        throw new Error("An additional security check is required. Reload the page and try again.");
       }
       setEmail(entry.email);
       setStep("code");

@@ -74,7 +74,7 @@ export function Users({ identity }: { identity: api.Identity }) {
     <ErrorNotice error={remove.error || resendInvitation.error} />
     <ErrorNotice error={settings.error} />
     {role !== "doctor" && <section className="panel padded">
-      <h3>Account recovery assistance</h3><p className="muted">Search linked staff accounts for secure Clerk recovery steps. This action does not send an email.</p>
+      <h3>Account recovery assistance</h3><p className="muted">Search linked staff accounts for secure account recovery steps. This action does not send an email.</p>
       <div className="inline-form"><ResourceLookup resource="users" label="Staff account" params={{ role: tab === "admins" ? "clinicAdmin" : tab === "doctors" ? "doctor" : "receptionist", linkedOnly: true }} value={recoveryId} onChange={id => { setRecoveryId(id); recovery.reset(); }} />
         <button disabled={!recoveryId || recovery.isPending} onClick={() => { if (!recovery.isPending) recovery.mutate({ id: recoveryId }); }} data-testid="button-password-help">{recovery.isPending ? "Loading…" : "Get recovery steps"}</button></div>
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open secure password recovery</Link></div>}
