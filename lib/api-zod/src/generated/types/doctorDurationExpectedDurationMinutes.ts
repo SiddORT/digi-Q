@@ -12,13 +12,15 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { AppointmentStatus } from './appointmentStatus';
 
-export interface OwnQueueEntry {
-  appointmentId: string;
-  token: string;
-  status: AppointmentStatus;
-  patientsAhead: number;
-  /** @nullable */
-  estimatedWaitMinutes: number | null;
-}
+/**
+ * @nullable
+ */
+export type DoctorDurationExpectedDurationMinutes = typeof DoctorDurationExpectedDurationMinutes[keyof typeof DoctorDurationExpectedDurationMinutes] | null;
+
+
+export const DoctorDurationExpectedDurationMinutes = {
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_60: 60,
+} as const;

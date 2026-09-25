@@ -53,7 +53,7 @@ export function Pagination({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-2 text-sm text-muted-foreground border-t border-border mt-4">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2.5 px-3 text-sm text-muted-foreground border-t border-border">
       <div className="flex items-center gap-4">
         <span>
           Showing <strong className="text-foreground font-medium">{startRecord}–{endRecord}</strong> of{" "}
@@ -171,7 +171,7 @@ export function SearchInput({ value, onChange, placeholder = "Search...", label 
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="h-[43px] w-full rounded-lg border border-border bg-white pl-10 pr-9 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all"
+          className="h-[38px] w-full rounded-lg border border-border bg-white pl-10 pr-9 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all"
           style={{ margin: 0 }}
         />
         {value && (
@@ -192,32 +192,67 @@ export function SearchInput({ value, onChange, placeholder = "Search...", label 
 
 // --- FilterBar ---
 
-export interface FilterBarProps {
-  children: React.ReactNode;
-  onReset?: () => void;
-  active?: boolean;
+export interface FilterChip {
+  key: string;
+  label: string;
+  onRemove?: () => void;
 }
 
-export function FilterBar({ children, onReset, active }: FilterBarProps) {
+export interface FilterBarProps {
+  /** Primary controls. Always visible (required selections such as queue/booking context belong here). */
+  children?: React.ReactNode;
+  /** Secondary controls, collapsed behind an "More filters" toggle. */
+  advanced?: React.ReactNode;
+  onReset?: () => void;
+  active?: boolean;
+  /** Active filter chips shown under the toolbar. */
+  chips?: FilterChip[];
+  defaultAdvancedOpen?: boolean;
+  /** Optional trailing actions (e.g. export). */
+  actions?: React.ReactNode;
+  label?: string;
+}
+
+export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, label = "Filters" }: FilterBarProps) {
+  const advancedActiveCount = chips.filter(c => c.key.startsWith("adv:")).length;
+  const [open, setOpen] = useState(!!defaultAdvancedOpen);
+  const panelId = React.useId();
+  useEffect(() => { if (advancedActiveCount > 0 && defaultAdvancedOpen) setOpen(true); }, [advancedActiveCount, defaultAdvancedOpen]);
   return (
-    <div className="bg-slate-50 border border-border rounded-xl p-4 sm:p-5 mb-6 shadow-sm">
-      <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-foreground border-b border-border/60 pb-3">
-        <Filter className="h-4 w-4 text-muted-foreground" />
-        Filters
+    <section className="filter-bar" aria-label={label}>
+      <div className="filter-bar-row">
+        <span className="filter-bar-title"><Filter aria-hidden className="h-3.5 w-3.5" />{label}</span>
+        {children && <div className="filter-bar-primary">{children}</div>}
+        <div className="filter-bar-tools">
+          {advanced && (
+            <button type="button" className="filter-toggle" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen(v => !v)} data-testid="button-toggle-advanced-filters">
+              {open ? "Fewer filters" : "More filters"}
+              {advancedActiveCount > 0 && <span className="filter-count" aria-label={`${advancedActiveCount} active`}>{advancedActiveCount}</span>}
+            </button>
+          )}
+          {actions}
+          {onReset && (
+            <button type="button" className="filter-clear" onClick={onReset} disabled={!active} data-testid="button-clear-filters">
+              Clear filters
+            </button>
+          )}
+        </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-end gap-4 [&>*]:min-w-0">
-        {children}
-        {onReset && (
-          <button
-            type="button"
-            onClick={onReset}
-            disabled={!active}
-            className="h-[43px] px-4 text-sm font-medium border border-border rounded-lg bg-white text-foreground hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors justify-self-start shadow-sm"
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
-    </div>
+      {advanced && open && <div id={panelId} className="filter-bar-advanced">{advanced}</div>}
+      {chips.length > 0 && (
+        <ul className="filter-chips" aria-label="Active filters">
+          {chips.map(chip => (
+            <li key={chip.key}>
+              <span>{chip.label}</span>
+              {chip.onRemove && (
+                <button type="button" onClick={chip.onRemove} aria-label={`Remove filter ${chip.label}`} data-testid={`chip-remove-${chip.key}`}>
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

@@ -28,6 +28,14 @@ export interface LiveQueue {
   /** @nullable */
   nextToken: string | null;
   waiting: number;
+  /** All pending booked */
+  reserved?: number;
+  /** Checked-in */
+  arrived?: number;
+  queueVersion?: string;
+  /** @nullable */
+  expectedDurationMinutes?: number | null;
+  blockedByAbsentReservation?: boolean;
   inConsultation: number;
   completed: number;
   noShow: number;

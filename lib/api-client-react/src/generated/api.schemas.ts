@@ -644,6 +644,10 @@ export type Appointment = AppointmentInput & ({
   reference: string;
   token: string;
   tokenNumber?: number;
+  queueRank?: number;
+  revision?: number;
+  /** @nullable */
+  expectedDurationMinutes?: number | null;
   status: AppointmentStatus;
   patientName: string;
   patientCode?: string;
@@ -694,6 +698,14 @@ export interface AppointmentAction {
   reason?: string;
   cancellationReasonId?: string;
   expectedStatus?: AppointmentStatus;
+  /** @minimum 0 */
+  expectedRevision?: number;
+  expectedQueueVersion?: string;
+  /**
+     * Required for requeue. One-based position among pending reservations; current consultation is never displaced.
+     * @minimum 1
+     */
+  position?: number;
 }
 
 export interface QueueSelection {
@@ -707,7 +719,8 @@ export interface OwnQueueEntry {
   token: string;
   status: AppointmentStatus;
   patientsAhead: number;
-  estimatedWaitMinutes: number;
+  /** @nullable */
+  estimatedWaitMinutes: number | null;
 }
 
 export interface LiveQueue {
@@ -723,6 +736,14 @@ export interface LiveQueue {
   /** @nullable */
   nextToken: string | null;
   waiting: number;
+  /** All pending booked */
+  reserved?: number;
+  /** Checked-in */
+  arrived?: number;
+  queueVersion?: string;
+  /** @nullable */
+  expectedDurationMinutes?: number | null;
+  blockedByAbsentReservation?: boolean;
   inConsultation: number;
   completed: number;
   noShow: number;
@@ -732,6 +753,61 @@ export interface LiveQueue {
   entries?: Appointment[];
   pollIntervalSeconds: 30;
   updatedAt: string;
+}
+
+/**
+ * @nullable
+ */
+export type DoctorDurationExpectedDurationMinutes = typeof DoctorDurationExpectedDurationMinutes[keyof typeof DoctorDurationExpectedDurationMinutes] | null;
+
+
+export const DoctorDurationExpectedDurationMinutes = {
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_60: 60,
+} as const;
+
+export interface DoctorDuration {
+  doctorId: string;
+  clinicId: string;
+  /** @nullable */
+  expectedDurationMinutes: DoctorDurationExpectedDurationMinutes;
+}
+
+export type DoctorDurationInputExpectedDurationMinutes = typeof DoctorDurationInputExpectedDurationMinutes[keyof typeof DoctorDurationInputExpectedDurationMinutes];
+
+
+export const DoctorDurationInputExpectedDurationMinutes = {
+  NUMBER_20: 20,
+  NUMBER_30: 30,
+  NUMBER_60: 60,
+} as const;
+
+export type DoctorDurationInputEffect = typeof DoctorDurationInputEffect[keyof typeof DoctorDurationInputEffect];
+
+
+export const DoctorDurationInputEffect = {
+  futureOnly: 'futureOnly',
+  runningSession: 'runningSession',
+} as const;
+
+export interface DoctorDurationInput {
+  clinicId: string;
+  expectedDurationMinutes: DoctorDurationInputExpectedDurationMinutes;
+  effect: DoctorDurationInputEffect;
+  branchId?: string;
+  date?: string;
+  confirmRunningSession?: boolean;
+  expectedQueueVersion?: string;
+}
+
+export interface AppointmentReschedule {
+  doctorId: string;
+  branchId: string;
+  date: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  reason?: string;
 }
 
 export interface CallNextResult {

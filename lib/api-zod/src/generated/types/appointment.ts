@@ -22,6 +22,10 @@ export type Appointment = AppointmentInput & ({
   reference: string;
   token: string;
   tokenNumber?: number;
+  queueRank?: number;
+  revision?: number;
+  /** @nullable */
+  expectedDurationMinutes?: number | null;
   status: AppointmentStatus;
   patientName: string;
   patientCode?: string;

@@ -13,6 +13,8 @@ import { AppDialog } from "./components/AppDialog";
 import { ClinicAdminOnboarding } from "./components/ClinicAdminOnboarding";
 import { SearchableSelect } from "./components/SearchableSelect";
 
+const SORTS=[{value:"-createdAt",label:"Newest first"},{value:"createdAt",label:"Oldest first"},{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"}];
+
 export function Users({ identity }: { identity: api.Identity }) {
   const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),staleTime:60000}});
   const role = identity.user!.role;
@@ -54,7 +56,7 @@ export function Users({ identity }: { identity: api.Identity }) {
   const [recoveryId, setRecoveryId] = useState("");
   const recovery = api.useRequestUserPasswordReset();
   const resendInvitation = api.useResendUserInvitation({ mutation: { onSuccess: () => { setSuccess("Invitation request completed."); client.invalidateQueries(); } } });
-  const active = !!(context.search || context.status || context.clinicId || context.branchId || context.managingAdminId || context.specializationId);
+  const active = !!(context.sort !== "-createdAt" || context.search || context.status || context.clinicId || context.branchId || context.managingAdminId || context.specializationId);
   const reset = () => change({ search: "", status: "", clinicId: "", branchId: "", managingAdminId: "", specializationId:"", sort: "-createdAt" });
   const assignmentParams = { targetRole: assignmentTargetRole(tab) };
   const beginEdit = (row: any) => { setDirty(false); setBusy(false); setEditing(row); };
@@ -62,18 +64,27 @@ export function Users({ identity }: { identity: api.Identity }) {
     <div className="tabs" role="tablist" aria-label="Staff type">{tabs.map(t => <button role="tab" aria-selected={tab === t.id} key={t.id} className={`tab ${tab === t.id ? "active" : ""}`} onClick={() => setTab(t.id)}>{t.label}</button>)}</div>
     <div className="toolbar"><SearchInput value={context.search} onChange={search => change({ search })} placeholder={tab==="doctors"?"Search doctors by name, email or specialization…":tab==="receptionists"?"Search receptionists by name, email or mobile…":"Search Clinic Admins by name, email or mobile…"} />
       <button className="button small" onClick={() => beginEdit({})} data-testid={`button-add-${tab}`}><Plus size={17} /> Add {tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}</button></div>
-    <FilterBar active={active} onReset={reset}>
+    <FilterBar active={active} onReset={reset} label="Filter staff" chips={[
+      ...(context.search?[{key:"search",label:`Search: ${context.search}`,onRemove:()=>change({search:""})}]:[]),
+      ...(context.clinicId?[{key:"clinicId",label:"Clinic selected",onRemove:()=>change({clinicId:"",branchId:""})}]:[]),
+      ...(context.branchId?[{key:"branchId",label:"Branch selected",onRemove:()=>change({branchId:""})}]:[]),
+      ...(context.status?[{key:"adv:status",label:`Status: ${title(context.status)}`,onRemove:()=>change({status:""})}]:[]),
+      ...(context.specializationId?[{key:"adv:specializationId",label:"Specialization selected",onRemove:()=>change({specializationId:""})}]:[]),
+      ...(context.managingAdminId?[{key:"adv:managingAdminId",label:"Managing admin selected",onRemove:()=>change({managingAdminId:""})}]:[]),
+      ...(context.sort!=="-createdAt"?[{key:"adv:sort",label:`Sort: ${SORTS.find(o=>o.value===context.sort)?.label}`,onRemove:()=>change({sort:"-createdAt"})}]:[]),
+    ]} advanced={<>
       <SearchableSelect label="Status" placeholder="All statuses" value={context.status} onChange={status => change({ status })} options={[{value:"active",label:"Active"},{value:"inactive",label:"Inactive"}]}/>
-      {tab !== "admins" && <ResourceLookup resource="assignment:clinics" label="Clinic" params={assignmentParams} value={context.clinicId} onChange={clinicId => change({ clinicId, branchId: "" })} />}
       {tab==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={context.specializationId} onChange={specializationId=>change({specializationId})}/>}
-      {tab === "receptionists" && <ResourceLookup resource="assignment:branches" label="Branch" params={{ ...assignmentParams, clinicId: context.clinicId || undefined }} value={context.branchId} onChange={branchId => change({ branchId })} />}
       {isSuperAdmin && tab !== "admins" && <ResourceLookup resource="users" label="Managing admin" params={{role:"clinicAdmin"}} value={context.managingAdminId} onChange={managingAdminId => change({ managingAdminId })} />}
-      <SearchableSelect label="Sort" value={context.sort} onChange={sort => change({ sort:sort||"-createdAt" })} options={[{value:"-createdAt",label:"Newest first"},{value:"createdAt",label:"Oldest first"},{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"}]}/>
+      <SearchableSelect label="Sort" value={context.sort} onChange={sort => change({ sort:sort||"-createdAt" })} options={SORTS}/>
+    </>}>
+      {tab !== "admins" && <ResourceLookup resource="assignment:clinics" label="Clinic" params={assignmentParams} value={context.clinicId} onChange={clinicId => change({ clinicId, branchId: "" })} />}
+      {tab === "receptionists" && <ResourceLookup resource="assignment:branches" label="Branch" params={{ ...assignmentParams, clinicId: context.clinicId || undefined }} value={context.branchId} onChange={branchId => change({ branchId })} />}
     </FilterBar>
     {success && <p role="status" className="notice">{success}</p>}
     <ErrorNotice error={remove.error || resendInvitation.error} />
     <ErrorNotice error={settings.error} />
-    {role !== "doctor" && <section className="panel padded">
+    {role !== "doctor" && <section className="panel padded" style={{ marginBottom: 14 }}>
       <h3>Account recovery assistance</h3><p className="muted">Search linked staff accounts for secure account recovery steps. This action does not send an email.</p>
       <div className="inline-form"><ResourceLookup resource="users" label="Staff account" params={{ role: tab === "admins" ? "clinicAdmin" : tab === "doctors" ? "doctor" : "receptionist", linkedOnly: true }} value={recoveryId} onChange={id => { setRecoveryId(id); recovery.reset(); }} />
         <button disabled={!recoveryId || recovery.isPending} onClick={() => { if (!recovery.isPending) recovery.mutate({ id: recoveryId }); }} data-testid="button-password-help">{recovery.isPending ? "Loading…" : "Get recovery steps"}</button></div>
@@ -81,14 +92,14 @@ export function Users({ identity }: { identity: api.Identity }) {
     </section>}
     <section className="panel table-panel">
       {query.isLoading ? <div className="skeleton" role="status">Loading {tabs.find(item=>item.id===tab)?.label.toLowerCase()}…</div> : query.error ? <><div className="error-box" role="alert">Unable to load {tabs.find(item=>item.id===tab)?.label.toLowerCase()}. {query.error instanceof Error?query.error.message:"Please try again."}</div><button onClick={() => query.refetch()}>Retry {tabs.find(item=>item.id===tab)?.label.toLowerCase()}</button></> : query.data?.items.length ? <div className="table-scroll"><table>
-        <thead><tr><th>Staff member</th>{isSuperAdmin && tab !== "admins" && <th>Managing admin</th>}<th>{tab === "admins" ? "Owned clinics" : "Assignments"}</th><th>Account</th><th>Created</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Staff member</th>{isSuperAdmin && tab !== "admins" && <th>Managing admin</th>}<th>{tab === "admins" ? "Owned clinics" : "Assignments"}</th><th className="col-status">Account</th><th>Created</th><th className="col-actions">Actions</th></tr></thead>
         <tbody>{query.data.items.map((row: any) => <tr key={row.id}>
           <td data-label="Staff member"><strong>{row.fullName}</strong><div>{row.email}</div><div className="muted">{row.mobile || "—"}</div></td>
           {isSuperAdmin && tab !== "admins" && <td data-label="Managing admin">{row.managingAdminName || row.ownerAdminName || "—"}</td>}
           <td data-label={tab === "admins" ? "Owned clinics" : "Assignments"}><div>{Array.isArray(row.clinicNames) ? row.clinicNames.join(", ") || "—" : row.clinicNames || "—"}</div>{tab !== "admins" && <div className="muted">Branches: {Array.isArray(row.branchNames) ? row.branchNames.join(", ") || "—" : row.branchNames || "—"}</div>}</td>
           <td data-label="Account"><span className={`badge ${row.status}`}>{title(row.status || "")}</span><div>{row.invitationStatus === "notRequired" ? row.clerkId ? row.passwordEnabled === true ? "Password set" : row.passwordEnabled === false ? "Needs password setup" : "Linked · state unavailable" : "—" : row.invitationStatus === "sent" ? "Pending setup" : row.invitationStatus === "failed" ? "Delivery failed" : "—"}</div></td>
           <td data-label="Created">{row.createdAt ? settings.data?.timezone ? new Date(row.createdAt).toLocaleDateString(undefined,{timeZone:settings.data.timezone}) : row.createdAt : "—"}</td>
-          <td data-label="Actions"><div className="row-actions">
+          <td data-label="Actions" className="col-actions"><div className="row-actions">
             {row.invitationStatus !== "notRequired" && <button aria-label="Resend set-password invitation" disabled={resendInvitation.isPending} onClick={() => { if (!resendInvitation.isPending && confirm("Revoke any pending invitation and send a new set-password invitation?")) resendInvitation.mutate({ id: tab === "doctors" ? row.userId : row.id }); }}><Send size={15} /></button>}
             {role !== "doctor" && row.invitationStatus === "notRequired" && <button aria-label="Password recovery assistance" disabled={recovery.isPending} onClick={() => { const id = tab === "doctors" ? row.userId : row.id; setRecoveryId(id); if (!recovery.isPending) recovery.mutate({ id }); }}><KeyRound size={15} /></button>}
             <button aria-label="Edit" onClick={() => beginEdit(row)}><Pencil size={15} /></button>

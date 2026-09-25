@@ -20,4 +20,12 @@ export interface AppointmentAction {
   reason?: string;
   cancellationReasonId?: string;
   expectedStatus?: AppointmentStatus;
+  /** @minimum 0 */
+  expectedRevision?: number;
+  expectedQueueVersion?: string;
+  /**
+     * Required for requeue. One-based position among pending reservations; current consultation is never displaced.
+     * @minimum 1
+     */
+  position?: number;
 }

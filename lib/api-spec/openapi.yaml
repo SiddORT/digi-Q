@@ -416,6 +416,30 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentQrPayload" } } } }
       responses:
         "200": { description: Appointment QR check-in result, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentQrCheckInResult" } } } }
+  /doctors/{id}/duration/{clinicId}:
+    get:
+      operationId: getDoctorDuration
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: clinicId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Clinic-specific duration, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorDuration" } } } }
+    patch:
+      operationId: updateDoctorDuration
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: clinicId, in: path, required: true, schema: { type: string } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorDurationInput" } } } }
+      responses:
+        "200": { description: Saved duration, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorDuration" } } } }
+  /appointments/{id}/reschedule:
+    post:
+      operationId: rescheduleAppointment
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentReschedule" } } } }
+      responses:
+        "200": { description: Rescheduled atomically, content: { application/json: { schema: { $ref: "#/components/schemas/Appointment" } } } }
   /appointments/{id}/actions:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
@@ -965,6 +989,9 @@ components:
             reference: { type: string }
             token: { type: string }
             tokenNumber: { type: integer }
+            queueRank: { type: number }
+            revision: { type: integer }
+            expectedDurationMinutes: { type: [integer, "null"] }
             status: { $ref: "#/components/schemas/AppointmentStatus" }
             patientName: { type: string }
             patientCode: { type: string }
@@ -1016,6 +1043,9 @@ components:
         reason: { type: string }
         cancellationReasonId: { type: string }
         expectedStatus: { $ref: "#/components/schemas/AppointmentStatus" }
+        expectedRevision: { type: integer, minimum: 0 }
+        expectedQueueVersion: { type: string }
+        position: { type: integer, minimum: 1, description: Required for requeue. One-based position among pending reservations; current consultation is never displaced. }
     StatusEvent:
       type: object
       required: [status, occurredAt]
@@ -1038,7 +1068,7 @@ components:
         token: { type: string }
         status: { $ref: "#/components/schemas/AppointmentStatus" }
         patientsAhead: { type: integer }
-        estimatedWaitMinutes: { type: integer }
+        estimatedWaitMinutes: { type: [integer, "null"] }
     LiveQueue:
       type: object
       required: [doctorId, branchId, date, currentToken, nextToken, waiting, inConsultation, completed, noShow, total, pollIntervalSeconds, updatedAt]
@@ -1053,6 +1083,11 @@ components:
         currentToken: { type: [string, "null"] }
         nextToken: { type: [string, "null"] }
         waiting: { type: integer }
+        reserved: { type: integer, description: All pending booked, checked-in and waiting reservations }
+        arrived: { type: integer, description: Checked-in, waiting, called and in-consultation patients }
+        queueVersion: { type: string }
+        expectedDurationMinutes: { type: [integer, "null"] }
+        blockedByAbsentReservation: { type: boolean }
         inConsultation: { type: integer }
         completed: { type: integer }
         noShow: { type: integer }
@@ -1061,6 +1096,33 @@ components:
         entries: { type: array, description: Omitted for patients, items: { $ref: "#/components/schemas/Appointment" } }
         pollIntervalSeconds: { type: integer, const: 30 }
         updatedAt: { type: string, format: date-time }
+    DoctorDuration:
+      type: object
+      required: [doctorId, clinicId, expectedDurationMinutes]
+      properties:
+        doctorId: { type: string }
+        clinicId: { type: string }
+        expectedDurationMinutes: { type: [integer, "null"], enum: [20, 30, 60, null] }
+    DoctorDurationInput:
+      type: object
+      required: [clinicId, expectedDurationMinutes, effect]
+      properties:
+        clinicId: { type: string }
+        expectedDurationMinutes: { type: integer, enum: [20, 30, 60] }
+        effect: { type: string, enum: [futureOnly, runningSession] }
+        branchId: { type: string }
+        date: { type: string, format: date }
+        confirmRunningSession: { type: boolean }
+        expectedQueueVersion: { type: string }
+    AppointmentReschedule:
+      type: object
+      required: [doctorId, branchId, date, expectedRevision]
+      properties:
+        doctorId: { type: string }
+        branchId: { type: string }
+        date: { type: string, format: date }
+        expectedRevision: { type: integer, minimum: 0 }
+        reason: { type: string }
     CallNextResult:
       type: object
       required: [appointment]

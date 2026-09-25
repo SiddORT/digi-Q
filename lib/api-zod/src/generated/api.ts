@@ -2166,6 +2166,9 @@ export const ListAppointmentsResponse = zod.object({
   "reference": zod.string(),
   "token": zod.string(),
   "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -2233,6 +2236,9 @@ export const CreateAppointmentResponse = zod.object({
   "reference": zod.string(),
   "token": zod.string(),
   "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -2281,6 +2287,9 @@ export const GetAppointmentResponse = zod.object({
   "reference": zod.string(),
   "token": zod.string(),
   "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -2350,6 +2359,9 @@ export const ResolveAppointmentQrResponse = zod.object({
   "reference": zod.string(),
   "token": zod.string(),
   "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -2409,6 +2421,9 @@ export const CheckInAppointmentQrResponse = zod.object({
   "reference": zod.string(),
   "token": zod.string(),
   "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -2434,6 +2449,103 @@ export const CheckInAppointmentQrResponse = zod.object({
 })
 
 
+export const GetDoctorDurationParams = zod.object({
+  "id": zod.coerce.string(),
+  "clinicId": zod.coerce.string()
+})
+
+export const GetDoctorDurationResponse = zod.object({
+  "doctorId": zod.string(),
+  "clinicId": zod.string(),
+  "expectedDurationMinutes": zod.union([zod.literal(20),zod.literal(30),zod.literal(60),zod.literal(null)]).nullable()
+})
+
+
+export const UpdateDoctorDurationParams = zod.object({
+  "id": zod.coerce.string(),
+  "clinicId": zod.coerce.string()
+})
+
+export const UpdateDoctorDurationBody = zod.object({
+  "clinicId": zod.string(),
+  "expectedDurationMinutes": zod.union([zod.literal(20),zod.literal(30),zod.literal(60)]),
+  "effect": zod.enum(['futureOnly', 'runningSession']),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "confirmRunningSession": zod.boolean().optional(),
+  "expectedQueueVersion": zod.string().optional()
+})
+
+export const UpdateDoctorDurationResponse = zod.object({
+  "doctorId": zod.string(),
+  "clinicId": zod.string(),
+  "expectedDurationMinutes": zod.union([zod.literal(20),zod.literal(30),zod.literal(60),zod.literal(null)]).nullable()
+})
+
+
+export const RescheduleAppointmentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const rescheduleAppointmentBodyExpectedRevisionMin = 0;
+
+
+
+export const RescheduleAppointmentBody = zod.object({
+  "doctorId": zod.string(),
+  "branchId": zod.string(),
+  "date": zod.coerce.date(),
+  "expectedRevision": zod.number().int().min(rescheduleAppointmentBodyExpectedRevisionMin),
+  "reason": zod.string().optional()
+})
+
+export const rescheduleAppointmentResponseOneNotesMax = 1000;
+
+
+
+export const RescheduleAppointmentResponse = zod.object({
+  "patientId": zod.string(),
+  "doctorId": zod.string(),
+  "clinicId": zod.string(),
+  "branchId": zod.string(),
+  "date": zod.coerce.date(),
+  "source": zod.enum(['online', 'walkIn', 'phone', 'qr']),
+  "appointmentTypeId": zod.string().optional(),
+  "consultationTypeId": zod.string().optional(),
+  "qrReference": zod.string().optional(),
+  "requestId": zod.string().optional().describe('Client-generated idempotency key'),
+  "termsAccepted": zod.boolean().optional(),
+  "notes": zod.string().max(rescheduleAppointmentResponseOneNotesMax).optional()
+}).and(zod.object({
+  "id": zod.string(),
+  "reference": zod.string(),
+  "token": zod.string(),
+  "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
+  "patientName": zod.string(),
+  "patientCode": zod.string().optional(),
+  "doctorName": zod.string(),
+  "clinicName": zod.string(),
+  "branchName": zod.string(),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "createdAt": zod.coerce.date(),
+  "checkedInAt": zod.coerce.date().nullish(),
+  "calledAt": zod.coerce.date().nullish(),
+  "consultationStartedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel'])),
+  "history": zod.array(zod.object({
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
+  "occurredAt": zod.coerce.date(),
+  "reason": zod.string().optional()
+})).optional()
+}))
+
+
 /**
  * checkIn booked→checkedIn; enqueue checkedIn→waiting; call waiting→called;
  * start called→inConsultation; complete inConsultation→completed;
@@ -2446,11 +2558,19 @@ export const TransitionAppointmentParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const transitionAppointmentBodyExpectedRevisionMin = 0;
+
+
+
+
 export const TransitionAppointmentBody = zod.object({
   "action": zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel']),
   "reason": zod.string().optional(),
   "cancellationReasonId": zod.string().optional(),
-  "expectedStatus": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']).optional()
+  "expectedStatus": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']).optional(),
+  "expectedRevision": zod.number().int().min(transitionAppointmentBodyExpectedRevisionMin).optional(),
+  "expectedQueueVersion": zod.string().optional(),
+  "position": zod.number().int().min(1).optional().describe('Required for requeue. One-based position among pending reservations; current consultation is never displaced.')
 })
 
 export const transitionAppointmentResponseOneNotesMax = 1000;
@@ -2475,6 +2595,9 @@ export const TransitionAppointmentResponse = zod.object({
   "reference": zod.string(),
   "token": zod.string(),
   "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -2534,6 +2657,11 @@ export const GetQueueResponse = zod.object({
   "currentToken": zod.string().nullable(),
   "nextToken": zod.string().nullable(),
   "waiting": zod.number().int(),
+  "reserved": zod.number().int().optional().describe('All pending booked'),
+  "arrived": zod.number().int().optional().describe('Checked-in'),
+  "queueVersion": zod.string().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
+  "blockedByAbsentReservation": zod.boolean().optional(),
   "inConsultation": zod.number().int(),
   "completed": zod.number().int(),
   "noShow": zod.number().int(),
@@ -2543,7 +2671,7 @@ export const GetQueueResponse = zod.object({
   "token": zod.string(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientsAhead": zod.number().int(),
-  "estimatedWaitMinutes": zod.number().int()
+  "estimatedWaitMinutes": zod.number().int().nullable()
 }),zod.null()]).optional(),
   "entries": zod.array(zod.object({
   "patientId": zod.string(),
@@ -2563,6 +2691,9 @@ export const GetQueueResponse = zod.object({
   "reference": zod.string(),
   "token": zod.string(),
   "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -2620,6 +2751,9 @@ export const CallNextResponse = zod.object({
   "reference": zod.string(),
   "token": zod.string(),
   "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),
@@ -2823,6 +2957,9 @@ export const GetDashboardResponse = zod.object({
   "reference": zod.string(),
   "token": zod.string(),
   "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "patientName": zod.string(),
   "patientCode": zod.string().optional(),

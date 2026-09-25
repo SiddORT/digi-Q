@@ -35,6 +35,7 @@ import type {
   AppointmentQrCheckInResult,
   AppointmentQrPayload,
   AppointmentQrResolution,
+  AppointmentReschedule,
   AuditLogList,
   AuthEmailInput,
   AuthEmailResult,
@@ -54,6 +55,8 @@ import type {
   ClinicList,
   Dashboard,
   Doctor,
+  DoctorDuration,
+  DoctorDurationInput,
   DoctorInput,
   DoctorList,
   ErrorResponse,
@@ -5042,6 +5045,250 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCheckInAppointmentQrMutationOptions(options));
+    }
+
+export const getGetDoctorDurationUrl = (id: string,
+    clinicId: string,) => {
+
+
+
+
+  return `/api/doctors/${id}/duration/${clinicId}`
+}
+
+export const getDoctorDuration = async (id: string,
+    clinicId: string, options?: Parameters<typeof customFetch>[1]): Promise<DoctorDuration> => {
+
+  return customFetch<DoctorDuration>(getGetDoctorDurationUrl(id,clinicId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDoctorDurationQueryKey = (id: string,
+    clinicId: string,) => {
+    return [
+    `/api/doctors/${id}/duration/${clinicId}`
+    ] as const;
+    }
+
+
+export const getGetDoctorDurationQueryOptions = <TData = Awaited<ReturnType<typeof getDoctorDuration>>, TError = ErrorType<unknown>>(id: string,
+    clinicId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDoctorDuration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDoctorDurationQueryKey(id,clinicId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDoctorDuration>>> = ({ signal }) => getDoctorDuration(id,clinicId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined && clinicId !== null && clinicId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDoctorDuration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDoctorDurationQueryResult = NonNullable<Awaited<ReturnType<typeof getDoctorDuration>>>
+export type GetDoctorDurationQueryError = ErrorType<unknown>
+
+
+
+export function useGetDoctorDuration<TData = Awaited<ReturnType<typeof getDoctorDuration>>, TError = ErrorType<unknown>>(
+ id: string,
+    clinicId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDoctorDuration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDoctorDurationQueryOptions(id,clinicId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateDoctorDurationUrl = (id: string,
+    clinicId: string,) => {
+
+
+
+
+  return `/api/doctors/${id}/duration/${clinicId}`
+}
+
+export const updateDoctorDuration = async (id: string,
+    clinicId: string,
+    doctorDurationInput: DoctorDurationInput, options?: Parameters<typeof customFetch>[1]): Promise<DoctorDuration> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DoctorDuration>(getUpdateDoctorDurationUrl(id,clinicId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(doctorDurationInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateDoctorDurationMutationKey = () => ['updateDoctorDuration'] as const;
+
+export const getUpdateDoctorDurationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDoctorDuration>>, TError,UpdateDoctorDurationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDoctorDuration>>, TError,UpdateDoctorDurationMutationVariables, TContext> => {
+
+const mutationKey = getUpdateDoctorDurationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDoctorDuration>>, UpdateDoctorDurationMutationVariables> = (props) => {
+          const {id,clinicId,data} = props ?? {};
+
+          return  updateDoctorDuration(id,clinicId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDoctorDurationMutationResult = NonNullable<Awaited<ReturnType<typeof updateDoctorDuration>>>
+    export type UpdateDoctorDurationMutationBody = BodyType<DoctorDurationInput>
+    export type UpdateDoctorDurationMutationError = ErrorType<unknown>
+    export type UpdateDoctorDurationMutationVariables = {id: string;clinicId: string;data: BodyType<DoctorDurationInput>}
+
+    export const useUpdateDoctorDuration = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDoctorDuration>>, TError,UpdateDoctorDurationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDoctorDuration>>,
+        TError,
+        UpdateDoctorDurationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateDoctorDurationMutationOptions(options));
+    }
+
+export const getRescheduleAppointmentUrl = (id: string,) => {
+
+
+
+
+  return `/api/appointments/${id}/reschedule`
+}
+
+export const rescheduleAppointment = async (id: string,
+    appointmentReschedule: AppointmentReschedule, options?: Parameters<typeof customFetch>[1]): Promise<Appointment> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Appointment>(getRescheduleAppointmentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(appointmentReschedule)
+  }
+);}
+
+
+
+
+
+export const getRescheduleAppointmentMutationKey = () => ['rescheduleAppointment'] as const;
+
+export const getRescheduleAppointmentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rescheduleAppointment>>, TError,RescheduleAppointmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rescheduleAppointment>>, TError,RescheduleAppointmentMutationVariables, TContext> => {
+
+const mutationKey = getRescheduleAppointmentMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rescheduleAppointment>>, RescheduleAppointmentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  rescheduleAppointment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RescheduleAppointmentMutationResult = NonNullable<Awaited<ReturnType<typeof rescheduleAppointment>>>
+    export type RescheduleAppointmentMutationBody = BodyType<AppointmentReschedule>
+    export type RescheduleAppointmentMutationError = ErrorType<unknown>
+    export type RescheduleAppointmentMutationVariables = {id: string;data: BodyType<AppointmentReschedule>}
+
+    export const useRescheduleAppointment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rescheduleAppointment>>, TError,RescheduleAppointmentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rescheduleAppointment>>,
+        TError,
+        RescheduleAppointmentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRescheduleAppointmentMutationOptions(options));
     }
 
 export const getTransitionAppointmentUrl = (id: string,) => {

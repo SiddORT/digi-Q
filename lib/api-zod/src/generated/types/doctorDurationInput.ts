@@ -12,13 +12,15 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { AppointmentStatus } from './appointmentStatus';
+import type { DoctorDurationInputEffect } from './doctorDurationInputEffect';
+import type { DoctorDurationInputExpectedDurationMinutes } from './doctorDurationInputExpectedDurationMinutes';
 
-export interface OwnQueueEntry {
-  appointmentId: string;
-  token: string;
-  status: AppointmentStatus;
-  patientsAhead: number;
-  /** @nullable */
-  estimatedWaitMinutes: number | null;
+export interface DoctorDurationInput {
+  clinicId: string;
+  expectedDurationMinutes: DoctorDurationInputExpectedDurationMinutes;
+  effect: DoctorDurationInputEffect;
+  branchId?: string;
+  date?: Date;
+  confirmRunningSession?: boolean;
+  expectedQueueVersion?: string;
 }

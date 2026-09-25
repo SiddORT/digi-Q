@@ -12,13 +12,11 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { AppointmentStatus } from './appointmentStatus';
+import type { DoctorDurationExpectedDurationMinutes } from './doctorDurationExpectedDurationMinutes';
 
-export interface OwnQueueEntry {
-  appointmentId: string;
-  token: string;
-  status: AppointmentStatus;
-  patientsAhead: number;
+export interface DoctorDuration {
+  doctorId: string;
+  clinicId: string;
   /** @nullable */
-  estimatedWaitMinutes: number | null;
+  expectedDurationMinutes: DoctorDurationExpectedDurationMinutes;
 }

@@ -6,6 +6,7 @@ import { Check, Camera, Image as ImageIcon, QrCode } from "lucide-react";
 import * as api from "@workspace/api-client-react";
 import jsQR from "jsqr";
 import { useQueryClient } from "@tanstack/react-query";
+import { ErrorNotice } from "./resources";
 
 export function CheckInScanner() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -57,12 +58,23 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const submitting = useRef(false);
+  const generation = useRef(0);
+  const [resolved, setResolved] = useState<api.AppointmentQrResolution | null>(null);
+  const [resolveError, setResolveError] = useState<unknown>(null);
   const client = useQueryClient();
 
   useEffect(() => {
+    const current = ++generation.current;
+    setResolved(null);
+    setResolveError(null);
     if (payload) {
-      resolve.mutate({ data: { payload } });
+      void resolve.mutateAsync({ data: { payload } }).then(value => {
+        if (current === generation.current) setResolved(value);
+      }).catch(error => {
+        if (current === generation.current) setResolveError(error);
+      });
     }
+    return () => { generation.current++; };
   }, [payload]);
 
   const stopCamera = () => {
@@ -115,6 +127,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
         if ('BarcodeDetector' in window) {
           const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
           detector.detect(videoRef.current).then((barcodes: any) => {
+            if (!active) return;
             if (barcodes.length > 0) {
               handleScanResult(barcodes[0].rawValue);
             } else if (active) {
@@ -208,6 +221,9 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
 
   const reset = () => {
     if (submitting.current) return;
+    generation.current++;
+    setResolved(null);
+    setResolveError(null);
     setPayload(null);
     setScanError(null);
     resolve.reset();
@@ -215,15 +231,15 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
   };
 
   if (payload) {
-    if (resolve.isPending) return <div className="skeleton">Verifying appointment…</div>;
-    if (resolve.error) return (
+    if (!resolved && !resolveError) return <div className="skeleton">Verifying appointment…</div>;
+    if (resolveError) return (
        <div className="error-box" role="alert">
-        Invalid or expired QR code.
+        <ErrorNotice error={resolveError}/>
         <button onClick={reset}>Scan again</button>
       </div>
     );
-    if (resolve.data) {
-      const { appointment, eligible, alreadyCheckedIn, message } = resolve.data;
+    if (resolved) {
+      const { appointment, eligible, alreadyCheckedIn, message } = resolved;
       if (checkIn.isSuccess && checkIn.data) {
          return (
             <div role="status" style={{ textAlign: "center", padding: "20px 0" }}>
@@ -241,7 +257,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
       }
       return (
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-           {checkIn.error && <div className="error-box" role="alert">Check-in was not confirmed. Please retry; an existing check-in will not be duplicated.</div>}
+           {checkIn.error && <><ErrorNotice error={checkIn.error}/><p>Check-in was not confirmed. Retry safely; an existing check-in will not be duplicated.</p></>}
           <div>
             <small>PATIENT</small>
             <h3>{appointment.patientName}</h3>
