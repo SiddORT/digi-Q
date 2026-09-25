@@ -152,9 +152,10 @@ export async function createQueueHarness() {
       seed: () => seedQueueFixtures(api, t, { exec: sql => control.query(sql) }),
       rows: () => api.all(t.appointments),
       act: (id, body, actor = staff) => db.transaction(tx => api.transition(actor, id, body, tx)),
-      book: (patientId = "p1", date = today, extra = {}) =>
-        route(api.appointmentsRouter, "post", "/appointments", staff,
-          { patientId, doctorId: "d", branchId: "b", clinicId: "c", date, source: "phone", ...extra }),
+      book: (patientId = "p1", date = today, extra = {}, { actor = staff, tx } = {}) =>
+        route(api.appointmentsRouter, "post", "/appointments", actor,
+          { patientId, doctorId: "d", branchId: "b", clinicId: "c", date, source: "phone", ...extra },
+          {}, {}, tx),
     };
   } catch (error) {
     await close();

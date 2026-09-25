@@ -45,6 +45,109 @@ const reschedule = (id, body) =>
   (tx, actor) => h.api.reschedule(actor, id, body, tx);
 const destination = date => ({ doctorId: "d2", branchId: "b2", date, expectedRevision: 0 });
 
+async function capacity(maxTokens) {
+  const schedule = await h.api.one(h.t.schedules, "d" + new Date(h.tomorrow).getUTCDay());
+  await h.api.change(h.t.schedules, schedule.id, { data: { ...schedule, maxTokens } });
+}
+
+const booking = (patientId, requestId, actor) => (tx, worker) =>
+  h.book(patientId, h.tomorrow, { requestId }, { tx, actor: actor || worker });
+
+async function assertBookingEffects(count) {
+  assert.equal((await h.rows()).length, count);
+  const history = await h.api.all(h.t.appointmentHistory);
+  const audits = (await h.api.all(h.t.auditLogs)).filter(event => event.action === "book");
+  assert.equal(history.filter(event => event.toStatus === "waiting").length, count);
+  assert.equal(audits.length, count);
+  const rows = await h.rows();
+  assert.equal(new Set(rows.map(row => row.token)).size, count, "tickets are unique, including cancelled bookings");
+  assert.equal(new Set(rows.map(row => row.reference)).size, count);
+  for (const row of rows) {
+    assert.equal(history.filter(event => event.appointmentId === row.id && event.toStatus === "waiting").length, 1);
+    assert.equal(audits.filter(event => event.entityId === row.id).length, 1);
+  }
+}
+
+test("same-request booking retries return one ticket even at capacity", async () => {
+  await capacity(1);
+  const op = booking("p1", "same-request", h.staff);
+  const results = winner(await h.race([op, op]), 2).map(result => result.value);
+  assert.equal(results[0].id, results[1].id);
+  assert.equal(results[0].token, "A-01");
+  assert.equal(results[0].reference, results[1].reference);
+  const retry = await h.book("p1", h.tomorrow, { requestId: "same-request" });
+  assert.equal(retry.id, results[0].id);
+  assert.equal(retry.token, results[0].token);
+  assert.equal(retry.reference, results[0].reference);
+  await assert.rejects(h.book("p2", h.tomorrow, { requestId: "same-request" }),
+    { status: 409, message: "Idempotency key already used for another booking" });
+  await assertBookingEffects(1);
+  await capacity(2);
+  assert.equal((await h.book("p2", h.tomorrow)).token, "A-02", "retries consume no extra token");
+});
+
+test("different requests for the same patient create one active booking and a clear conflict", async () => {
+  const outcomes = await h.race([booking("p1", "duplicate-a"), booking("p1", "duplicate-b")]);
+  const [success] = winner(outcomes);
+  assert.equal(outcomes.find(result => result.status === "rejected").reason.message,
+    "Patient already has an active booking for this session");
+  assert.equal(success.value.token, "A-01");
+  await assertBookingEffects(1);
+  assert.equal((await h.book("p2", h.tomorrow)).token, "A-02", "duplicate rejection consumes no token");
+  await assertBookingEffects(2);
+});
+
+test("competing patients for the last slot cannot exceed capacity or consume losing tokens", async () => {
+  await capacity(2);
+  const first = await h.book("p1", h.tomorrow);
+  const outcomes = await h.race([booking("p2", "last-a"), booking("p3", "last-b")]);
+  const [success] = winner(outcomes);
+  assert.equal(outcomes.find(result => result.status === "rejected").reason.message, "Session capacity reached");
+  assert.equal(first.token, "A-01");
+  assert.equal(success.value.token, "A-02");
+  assert.equal((await h.rows()).filter(row => row.status !== "cancelled").length, 2);
+  await assertBookingEffects(2);
+  await capacity(3);
+  assert.equal((await h.book("p4", h.tomorrow)).token, "A-03", "capacity rejection consumes no token");
+  await assertBookingEffects(3);
+});
+
+test("cancellation racing a full session booking frees capacity without reusing its ticket", async () => {
+  // Either serialization order is valid; launch order is not proof of lock order.
+  for (const reverse of [false, true]) {
+    await h.seed();
+    await capacity(1);
+    const original = await h.book("p1", h.tomorrow, { requestId: "original" });
+    const cancel = (tx, actor) => h.route(h.api.appointmentsRouter, "post", "/appointments/:id/actions",
+      actor, { action: "cancel", expectedRevision: 0 }, { id: original.id }, {}, tx);
+    const ops = [cancel, booking("p2", "replacement", h.staff)];
+    const outcomes = await h.race(reverse ? ops.reverse() : ops);
+    const cancelled = outcomes[reverse ? 1 : 0], booked = outcomes[reverse ? 0 : 1];
+    assert.equal(cancelled.status, "fulfilled");
+    winner(outcomes, booked.status === "fulfilled" ? 2 : 1);
+    if (booked.status === "rejected") assert.equal(booked.reason.message, "Session capacity reached");
+    await assertBookingEffects(booked.status === "fulfilled" ? 2 : 1);
+    const retained = await h.api.one(h.t.appointments, original.id);
+    assert.equal(retained.status, "cancelled");
+    assert.equal(retained.token, original.token);
+    assert.equal(retained.reference, original.reference);
+    assert.equal(retained.revision, 1);
+    await oneEvent(original.id, "cancel");
+    const replacement = await h.book("p2", h.tomorrow, { requestId: "replacement" });
+    assert.equal(replacement.token, "A-02");
+    if (booked.status === "fulfilled") assert.equal(replacement.id, booked.value.id);
+    const retry = await h.book("p2", h.tomorrow, { requestId: "replacement" });
+    assert.equal(retry.id, replacement.id);
+    assert.equal(retry.reference, replacement.reference);
+    const originalRetry = await h.book("p1", h.tomorrow, { requestId: "original" });
+    assert.equal(originalRetry.id, original.id);
+    assert.equal(originalRetry.status, "cancelled", "retry cannot resurrect a cancelled reservation");
+    assert.equal((await h.rows()).filter(row => row.status !== "cancelled").length, 1);
+    await assert.rejects(h.book("p3", h.tomorrow), { status: 409, message: "Session capacity reached" });
+    await assertBookingEffects(2);
+  }
+});
+
 test("duplicate check-in cannot create two consultations, history events, or audits", async () => {
   const a = await h.book();
   const outcomes = await h.race([checkIn(a.id), checkIn(a.id)]);
