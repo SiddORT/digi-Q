@@ -8,13 +8,14 @@ import { AuthAccess } from "../auth/AuthAccess";
 import { ClinicAdminOnboarding } from "./ClinicAdminOnboarding";
 import { ClinicRegistrationWizard, type RegistrationValues } from "./ClinicRegistrationWizard";
 import { Logo } from "../App";
+import "./ClinicRegistrationAccount.css";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export function ClinicRegistration() {
   const { isLoaded, isSignedIn } = useAuth();
   useEffect(() => { const old = document.title; document.title = "Register a Clinic | ClinicFlow"; return () => { document.title = old; }; }, []);
   if (!isLoaded) return <div className="page-loading">Preparing secure registration…</div>;
-  if (!isSignedIn) return <AuthShell eyebrow="REGISTER A CLINIC"><div className="auth-card registration-account-card"><h1>Start with your secure account.</h1><p>Create an account with a verified email and password. Then we’ll guide you through your clinic, locations and opening hours.</p><div className="registration-clerk-container"><SignUp routing="path" path={`${basePath}/register-clinic`} signInUrl={`${basePath}/sign-in`} forceRedirectUrl={`${basePath}/register-clinic`} appearance={{ elements: {
+  if (!isSignedIn) return <AuthShell eyebrow="REGISTER A CLINIC" registration><div className="auth-card registration-account-card"><h1>Start with your secure account.</h1><p>Create an account with a verified email and password. Then we’ll guide you through your clinic, locations and opening hours.</p><div className="registration-clerk-container"><h2 className="registration-form-title">Create your account</h2><SignUp routing="path" path={`${basePath}/register-clinic`} signInUrl={`${basePath}/sign-in`} forceRedirectUrl={`${basePath}/register-clinic`} appearance={{ elements: {
     rootBox: { width: "100%", minWidth: 0, maxWidth: "100%" },
     cardBox: { width: "100%", minWidth: 0, maxWidth: "100%" },
     card: { width: "100%", minWidth: 0, maxWidth: "100%", padding: "20px 16px" },
@@ -27,7 +28,7 @@ export function ClinicRegistration() {
     socialButtonsBlockButton: { display: "none" },
     socialButtonsIconButton: { display: "none" },
     dividerRow: { display: "none" },
-  } }}/></div><p className="registration-note">Already have a staff account? <Link href="/sign-in">Sign in to your workspace.</Link> Existing patient or staff accounts cannot be converted through clinic registration.</p></div></AuthShell>;
+  } }}/></div><p className="registration-note"><span className="registration-existing-signin">Already have a staff account? <Link href="/sign-in">Sign in to your workspace.</Link> </span>Existing patient or staff accounts cannot be converted through clinic registration.</p></div></AuthShell>;
   return <RegistrationIdentity/>;
 }
 
