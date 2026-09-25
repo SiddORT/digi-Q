@@ -12,6 +12,7 @@ import { Pagination, SearchInput, FilterBar, useDebouncedValue, type FilterChip 
 import { AppDialog } from "./components/AppDialog";
 import { SearchableSelect } from "./components/SearchableSelect";
 import { SuggestionInput } from "./components/SuggestionInput";
+import { emptyFieldValue, scheduleBreakFields, selectInputValue } from "./editor-input";
 
 export const title = (s:string) => s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase());
 export const today = (timeZone?:string) => new Date().toLocaleDateString("en-CA",timeZone?{timeZone}:undefined);
@@ -33,8 +34,8 @@ export const resources:Record<string,Resource>={
  patients:{name:"patients",list:api.listPatients,create:api.createPatient,update:api.updatePatient,remove:api.deletePatient,fields:[...person,f("age","number"),f("address"),f("emergencyContactName"),f("emergencyContactPhone","tel"),relation("clinicId","clinics"),relation("branchId","branches"),status],columns:["fullName","code","mobile","gender","mobileVerified"]},
  users:{name:"users",list:api.listUsers,create:api.createUser,update:api.updateUser,remove:api.deleteUser,fields:[f("fullName","text",true),f("email","email",true),f("mobile","tel"),f("role","select",true,["receptionist","clinicAdmin","patient"]),relation("clinicIds","clinics"),relation("branchIds","branches"),status],columns:["fullName","email","role","clinicNames","branchNames","status"]},
  masters:{name:"master values",list:api.listMasters,create:api.createMaster,update:api.updateMaster,remove:api.deleteMaster,fields:[f("category","select",true,Object.values(api.MasterInputCategory)),f("name","text",true),f("code","text",true),relation("parentId","masters"),f("sortOrder","number"),status],columns:["name","category","code","status"]},
- availability:{name:"weekly schedules",list:api.listSchedules,create:api.createSchedule,update:api.updateSchedule,remove:api.deleteSchedule,fields:[relation("doctorId","doctors",true),relation("clinicId","clinics",true),relation("branchId","branches",true),f("dayOfWeek","select",true,["0","1","2","3","4","5","6"]),f("isOpen","checkbox"),f("startTime","time",true),f("endTime","time",true),f("breakStart","time"),f("breakEnd","time"),f("timezone"),f("tokenPrefix","text",true),f("maxTokens","number",true),{...f("consultationMinutes","duration",true),label:"Expected consultation duration"},f("bufferMinutes","number"),f("queueMode","select",false,["mixed","appointmentsOnly","walkInsOnly"]),f("queueOpenTime","time"),f("queueCloseTime","time")],columns:["doctorName","branchName","dayOfWeek","session","break","capacity","isOpen"]},
- exceptions:{name:"date exceptions",list:api.listAvailabilityExceptions,create:api.createAvailabilityException,update:api.updateAvailabilityException,remove:api.deleteAvailabilityException,fields:[relation("doctorId","doctors",true),relation("branchId","branches",true),f("date","date",true),f("isClosed","checkbox"),f("reason","text",true),f("startTime","time"),f("endTime","time"),f("breakStart","time"),f("breakEnd","time"),f("maxTokens","number")],columns:["date","reason","isClosed","session","break","maxTokens"]},
+ availability:{name:"weekly schedules",list:api.listSchedules,create:api.createSchedule,update:api.updateSchedule,remove:api.deleteSchedule,fields:[relation("doctorId","doctors",true),relation("clinicId","clinics",true),relation("branchId","branches",true),f("dayOfWeek","select",true,["0","1","2","3","4","5","6"]),f("isOpen","checkbox"),f("startTime","time",true),f("endTime","time",true),...scheduleBreakFields,f("timezone"),f("tokenPrefix","text",true),f("maxTokens","number",true),{...f("consultationMinutes","duration",true),label:"Expected consultation duration"},f("bufferMinutes","number"),f("queueMode","select",false,["mixed","appointmentsOnly","walkInsOnly"]),f("queueOpenTime","time"),f("queueCloseTime","time")],columns:["doctorName","branchName","dayOfWeek","session","break","capacity","isOpen"]},
+ exceptions:{name:"date exceptions",list:api.listAvailabilityExceptions,create:api.createAvailabilityException,update:api.updateAvailabilityException,remove:api.deleteAvailabilityException,fields:[relation("doctorId","doctors",true),relation("branchId","branches",true),f("date","date",true),f("isClosed","checkbox"),f("reason","text",true),{...f("startTime","time"),nullable:true},{...f("endTime","time"),nullable:true},...scheduleBreakFields,{...f("maxTokens","number"),nullable:true}],columns:["date","reason","isClosed","session","break","maxTokens"]},
   qrs:{name:"booking QR codes",list:api.listQrs,create:api.createQr,update:api.updateQr,remove:api.deleteQr,fields:[f("name","text",true),relation("clinicId","clinics",true),{...relation("branchId","branches"),nullable:true},{...relation("doctorId","doctors"),nullable:true},status],columns:["name","reference","status"]},
  audit:{name:"audit events",list:api.listAuditLogs,fields:[],columns:["createdAt","actorName","action","entityType","summary"]},
 };
@@ -105,7 +106,7 @@ export function Editor({fields,initial={},onSave,busy=false,submitLabel="Save ch
       return;
     }
     if(value===""||value===undefined||value===null){
-      if(field.nullable)body[field.key]=null;
+      Object.assign(body,emptyFieldValue(field,value));
       // Also omit mapping array if not required to bypass minItems1 on create
       if (isClinicOrBranchMapping && !field.required) return;
       return;
@@ -127,19 +128,25 @@ export function Editor({fields,initial={},onSave,busy=false,submitLabel="Save ch
      const opts=[...choices.map(v=>({value:String(v),label:`${v} minutes`})),...(legacy!=null&&legacy!==""&&!choices.includes(Number(legacy))?[{value:String(legacy),label:`${legacy} minutes (current, legacy value)`}]:[])];
      return <Controller key={field.key} name={field.key} control={form.control} rules={{required:field.required}} render={({field:input})=><div><SearchableSelect id={`input-${field.key}`} label={label} required={field.required} value={input.value==null?"":String(input.value)} onChange={input.onChange} placeholder="Select duration…" error={error} options={opts}/>{legacy!=null&&!choices.includes(Number(legacy))&&<small className="muted">This schedule keeps its existing {legacy}-minute value until you choose 20, 30 or 60 minutes.</small>}</div>}/>;
     }
-    if(field.type==="select")return <Controller key={field.key} name={field.key} control={form.control} rules={{required:field.required}} render={({field:input})=><SearchableSelect id={`input-${field.key}`} label={label} required={field.required} value={input.value||""} onChange={input.onChange} placeholder={`Select ${label.toLowerCase()}…`} error={error} options={(field.options||[]).map(v=>({value:v,label:field.key==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][Number(v)]:title(v)}))}/>}/>;
+    if(field.type==="select")return <Controller key={field.key} name={field.key} control={form.control} rules={{required:field.required}} render={({field:input})=><SearchableSelect id={`input-${field.key}`} label={label} required={field.required} value={selectInputValue(input.value)} onChange={input.onChange} placeholder={`Select ${label.toLowerCase()}…`} error={error} options={(field.options||[]).map(v=>({value:v,label:field.key==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][Number(v)]:title(v)}))}/>}/>;
     return <label className={field.type==="textarea"?"wide":""} key={field.key}>{label}{field.required&&<span className="required"> *</span>}{field.type==="textarea"?<textarea data-testid={`input-${field.key}`} {...form.register(field.key,{required:field.required})}/>:<input data-testid={`input-${field.key}`} type={field.type==="array"?"text":field.type} {...form.register(field.key,{required:field.required})}/>} {error&&<small className="field-error">{error}</small>}</label>;
    })}
  <div className="wide form-footer"><button className="button" disabled={busy} data-testid="button-save">{busy?"Saving…":submitLabel}</button></div></form></Form>;
 }
 function QrCard({row}:{row:any}){
- const [image,setImage]=useState("");
+ const [generated,setGenerated]=useState({url:"",image:""});
  const [error,setError]=useState<unknown>();
+ const [attempt,setAttempt]=useState(0);
  const client=useQueryClient();
  const url=`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/,"")}/book/${row.reference}`;
- useEffect(()=>{QRCode.toDataURL(url,{width:400,margin:2}).then(setImage).catch(setError);},[url]);
+ const image=generated.url===url?generated.image:"";
+ useEffect(()=>{
+  let cancelled=false;setError(undefined);
+  QRCode.toDataURL(url,{width:400,margin:2}).then(image=>{if(!cancelled)setGenerated({url,image});}).catch(error=>{if(!cancelled)setError(error);});
+  return()=>{cancelled=true;};
+ },[url,attempt]);
  const regenerate=useMutation({mutationFn:()=>api.regenerateQr(row.id),onSuccess:()=>client.invalidateQueries()});
- return <div className="qr-card">{image?<img src={image} alt={`Booking QR code for ${row.name}`}/>:!error&&<p role="status">Generating QR image…</p>}<strong>{row.name}</strong><a href={url} target="_blank" rel="noreferrer">{url}</a>{image&&<a className="button secondary small" href={image} download={`${row.name}-qr.png`}><Download size={15}/> Download PNG</a>}<button disabled={regenerate.isPending} onClick={()=>{if(!regenerate.isPending&&confirm("Regenerate this QR code? Printed copies will stop working."))regenerate.mutate();}}>{regenerate.isPending?"Regenerating…":"Regenerate reference"}</button>{regenerate.isSuccess&&<p className="notice" role="status">QR reference regenerated. Download and replace printed copies.</p>}<ErrorNotice error={error||regenerate.error}/></div>;
+ return <div className="qr-card">{image?<img src={image} alt={`Booking QR code for ${row.name}`}/>:!error&&<p role="status">Generating QR image…</p>}<strong>{row.name}</strong><a href={url} target="_blank" rel="noreferrer">{url}</a>{image&&<a className="button secondary small" href={image} download={`${row.name}-qr.png`}><Download size={15}/> Download PNG</a>}<button disabled={regenerate.isPending} onClick={()=>{if(!regenerate.isPending&&confirm("Regenerate this QR code? Printed copies will stop working."))regenerate.mutate();}}>{regenerate.isPending?"Regenerating…":"Regenerate reference"}</button>{regenerate.isSuccess&&<p className="notice" role="status">QR reference regenerated. Download and replace printed copies.</p>}<ErrorNotice error={error||regenerate.error}/>{!!error&&<button type="button" data-testid={`button-retry-qr-${row.id}`} onClick={()=>setAttempt(value=>value+1)}>Retry QR image</button>}</div>;
 }
 const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const PRIMARY_KEYS:Record<string,string[]>={branches:["clinicId"],doctors:["clinicId"],patients:["clinicId"],availability:["clinicId","branchId","doctorId"],exceptions:["branchId","doctorId","date"],qrs:["clinicId","branchId","doctorId"],masters:["category"]};

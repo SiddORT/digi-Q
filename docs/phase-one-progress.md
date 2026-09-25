@@ -31,7 +31,7 @@ Statuses: Not started / In progress / Completed and verified / Blocked.
 | 8 | Responsive/accessibility/context preservation | Blocked | Mobile login rendered; protected mobile/focus checks remain |
 | 9 | Per-doctor-per-clinic duration | ✅ Completed and verified | Scoped SQL tests and staff duration save passed |
 | 10 | Explicit duration-edit effects | ✅ Completed and verified | Future-only save and running warning/required confirmation UI checked; actual effects tested in SQL |
-| 11 | Weekly availability, breaks, capacity, exceptions UX | Blocked | Form improvements implemented; staff UI acceptance remains |
+| 11 | Weekly availability, breaks, capacity, exceptions UX | Blocked | Sunday select and clearing breaks/exception overrides fixed with input regressions; full staff UI acceptance remains |
 | 12 | Sessions, remaining/full states | Blocked | Live booking succeeded; full-session UI acceptance remains |
 | 13 | Concurrency, duplicate and capacity integrity | ✅ Completed and verified | Isolated SQL domain race/capacity/duplicate tests pass; not a production load test |
 | 14 | QR/link through email verification | Blocked | QR backend regressions pass; actual email-return flow not tested |
@@ -59,7 +59,7 @@ Statuses: Not started / In progress / Completed and verified / Blocked.
 | 36 | Superadmin compact oversight | Blocked | Shared compact controls implemented; role UI acceptance remains |
 | 37 | Auth, roles, tenant privacy, provider-free messages | Blocked | Regression suite and fixture role mapping pass; real OTP and full role UI not reverified |
 | 38 | Ticket/queue/report consistency, audits and retry recovery | Blocked | Domain/audit tests pass; report parity and browser retry acceptance remain |
-| 39 | End-to-end absence/cancel/reschedule workflow | Blocked | Live booking succeeded; remaining staff journey blocked by test identity reattachment |
+| 39 | End-to-end absence/cancel/reschedule workflow | Blocked | Prior absence/re-entry and reschedule checks passed; final remaining browser pass stalled without a usable report |
 | 40 | Desktop/mobile acceptance and release summary | Blocked | Public shell rendered; protected acceptance incomplete; do not publish as verified |
 
 ## Verification log
@@ -77,3 +77,14 @@ Statuses: Not started / In progress / Completed and verified / Blocked.
 - An apparent blank CURRENT/NEXT issue was traced to direct fixture rows missing generated JSON token values. A real booking/check-in/enqueue/call flow has correct raw API and DOM summaries. Added actual GET /queue JSON/generated-schema regression; 13 phase-one SQL tests pass.
 - Desktop density and bottom-row menu reachability verified at 1440×1000. Mobile card text overlap was fixed by replacing absolute pseudo-labels with normal-flow labels; representative markup with the real stylesheet rendered correctly at 390px in `screenshots/phase-one-mobile-card-layout.jpg`. Temporary fixture page removed.
 - Subsequent live staff test fixtures were cleaned up and verified absent. Native printing, actual OTP return flow, all role-specific views, report parity, and remaining checks explicitly listed above are not claimed complete.
+
+## Final audit update — 2026-09-25
+
+- Fixed numeric weekday select normalization (including Sunday), explicit clearing of schedule breaks and exception overrides, stale QR image generation races/retry, and retry for selected-appointment lookup failures.
+- Fixed the separate deck's nullable-total type errors. **Full workspace `pnpm run typecheck` now passes**; the earlier workspace typecheck blocker is resolved.
+- Focused frontend tests: 14/14 passed, including three new editor-input regressions. Isolated backend-flow tests: 32/32 passed. These are targeted checks, not a rerun of every earlier suite.
+- The consolidated remaining browser pass stalled and was stopped after no final acceptance report arrived. No new checklist ticks were inferred from request logs or partially created bookings.
+- Its development fixtures were removed in an ownership-checked transaction and verified absent. No production or external authentication-provider records were changed.
+- ClinicFlow and deck workflows restarted; ClinicFlow homepage screenshot rendered without a runtime error.
+- Report export is not a transactional snapshot across pages: unchanged group keys/counts can conceal changing values while exporting. This consistency limitation remains open alongside report parity acceptance.
+- Status remains **22/40 fully verified**. No release approval or publication is claimed.
