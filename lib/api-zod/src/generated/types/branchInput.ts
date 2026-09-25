@@ -12,9 +12,25 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { OpeningHour } from './openingHour';
 import type { RecordStatus } from './recordStatus';
 
 export interface BranchInput {
+  /**
+     * @minLength 3
+     * @maxLength 63
+     */
+  slug?: string;
+  /** @nullable */
+  email?: string | null;
+  inheritEmail?: boolean;
+  inheritPhone?: boolean;
+  /**
+     * Null or absent is legacy unrestricted; empty array means closed all days.
+     * @maxItems 28
+     * @nullable
+     */
+  openingHours?: OpeningHour[] | null;
   clinicId: string;
   /** @minLength 1 */
   name: string;
@@ -22,7 +38,8 @@ export interface BranchInput {
   city?: string;
   state?: string;
   pincode?: string;
-  phone?: string;
+  /** @nullable */
+  phone?: string | null;
   timezone?: string;
   status?: RecordStatus;
 }

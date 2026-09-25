@@ -88,29 +88,42 @@ export async function doctorContext(doctorId: string, branchId: string, conn: an
   assert(active, 409, "Doctor, clinic or branch is inactive");
   return { doctor, branch, clinic };
 }
-export async function availability(doctorId: string, branchId: string, date: string, conn: any = db) {
+export async function availability(doctorId: string, branchId: string, date: string, conn: any = db, selector: { sessionId?: string; startTime?: string } = {}) {
   assert(/^\d{4}-\d{2}-\d{2}$/.test(date) && !Number.isNaN(Date.parse(date)) && new Date(date).toISOString().slice(0,10) === date, 400, "Invalid date");
   const { doctor, branch, clinic } = await doctorContext(doctorId, branchId, conn);
   const weekday = new Date(date + "T12:00:00Z").getUTCDay();
   const sessions = (await all(schedules, conn)).filter(s => s.doctorId === doctorId && s.branchId === branchId && s.dayOfWeek === weekday && s.status === "active");
-  const exception = (await all(availabilityExceptions, conn)).find(e => e.doctorId === doctorId && e.branchId === branchId && e.date === date && e.status === "active");
-  const schedule = sessions[0];
+  const matches = sessions.filter(s => selector.sessionId ? s.id === selector.sessionId : !selector.startTime || s.startTime === selector.startTime);
+  assert(matches.length <= 1, 409, "Select a session for this doctor and date");
+  const schedule = matches[0];
+  if (selector.sessionId || selector.startTime) assert(schedule, 404, "Session not found for this doctor, branch and date");
+  const exceptions = (await all(availabilityExceptions, conn)).filter(e => e.doctorId === doctorId && e.branchId === branchId && e.date === date && e.status === "active");
+  const exception = exceptions.find(e => e.sessionId === schedule?.id) || exceptions.find(e => !e.sessionId);
   const effective = { ...schedule };
   if (exception) for (const key of ["startTime", "endTime", "breakStart", "breakEnd", "maxTokens"]) if (exception[key] !== undefined && (exception[key] !== null || key.startsWith("break"))) effective[key] = exception[key];
-  const timezone = effective.timezone || branch.timezone || "Asia/Kolkata", now = localNow(timezone), config = await getSettings(conn);
-  const sessionBookings = (await all(appointments, conn)).filter(a => a.doctorId === doctorId && a.branchId === branchId && a.date === date);
+  if (selector.sessionId && selector.startTime) assert(selector.startTime === effective.startTime, 409, "Session timing changed; refresh availability");
+  const timezone = effective.timezone || branch.timezone || "Asia/Kolkata", now = localNow(timezone), config = await getSettings(conn, clinic.id);
+  const sessionBookings = (await all(appointments, conn)).filter(a => a.doctorId === doctorId && a.branchId === branchId && a.date === date && a.startTime === effective.startTime);
   const bookedTokens = sessionBookings.filter(a => a.status !== "cancelled").length;
-  const [snapshot] = await conn.select().from(settings).where(eq(settings.id, sessionKey({ doctorId, branchId, date })));
+  const [snapshot] = await conn.select().from(settings).where(eq(settings.id, sessionKey({ doctorId, branchId, date, startTime: effective.startTime })));
   const consultationMinutes = snapshot?.data?.expectedDurationMinutes ?? (sessionBookings.length
     ? sessionBookings[0].expectedDurationMinutes ?? effective.consultationMinutes ?? 10
     : await configuredDuration(doctorId, clinic.id, conn) ?? effective.consultationMinutes ?? 10);
   let reason: string | null = null;
   if (!schedule || !schedule.isOpen) reason = "No open weekly session";
   if (exception?.isClosed) reason = exception.reason || "Closed for this date";
+  if (!reason && Array.isArray(branch.openingHours) && (!branch.openingHours.some((h: any) => h.dayOfWeek === weekday && minutes(h.startTime) <= minutes(effective.startTime) && minutes(h.endTime) >= minutes(effective.endTime)) || timezone !== (branch.timezone || "Asia/Kolkata"))) reason = "Session is outside branch opening hours";
   if (date < now.date || date === now.date && effective.endTime && now.minute >= minutes(effective.endTime)) reason = "Session is in the past";
    if (!reason && date === now.date && effective.queueCloseTime && now.minute >= minutes(effective.queueCloseTime)) reason = "Queue booking has closed";
   if ((Date.parse(date) - Date.parse(now.date)) / 86400000 > config.bookingHorizonDays) reason = "Outside booking horizon";
   const maxTokens = effective.maxTokens || 0, remainingTokens = Math.max(0, maxTokens - bookedTokens);
   if (!remainingTokens) reason ||= "Session capacity reached";
-  return { doctorId, branchId, clinicId: clinic.id, date, available: !reason, reason, startTime: effective.startTime || null, endTime: effective.endTime || null, breakStart: effective.breakStart || null, breakEnd: effective.breakEnd || null, timezone, maxTokens, bookedTokens, remainingTokens, consultationMinutes, tokenPrefix: effective.tokenPrefix || "A", queueMode: effective.queueMode || "mixed", queueOpenTime: effective.queueOpenTime, queueCloseTime: effective.queueCloseTime, bufferMinutes: effective.bufferMinutes || 0 };
+  return { doctorId, branchId, clinicId: clinic.id, date, sessionId: schedule?.id || null, available: !reason, reason, startTime: effective.startTime || null, endTime: effective.endTime || null, breakStart: effective.breakStart || null, breakEnd: effective.breakEnd || null, timezone, maxTokens, bookedTokens, remainingTokens, consultationMinutes, tokenPrefix: effective.tokenPrefix || "A", queueMode: effective.queueMode || "mixed", queueOpenTime: effective.queueOpenTime, queueCloseTime: effective.queueCloseTime, bufferMinutes: effective.bufferMinutes || 0 };
+}
+export async function availabilitySessions(doctorId: string, branchId: string, date: string, conn: any = db) {
+  assert(/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(Date.parse(date)) && new Date(date).toISOString().slice(0,10) === date, 400, "Invalid date");
+  await doctorContext(doctorId, branchId, conn);
+  const weekday = new Date(date + "T12:00:00Z").getUTCDay();
+  const rows = (await all(schedules, conn)).filter(s => s.doctorId === doctorId && s.branchId === branchId && s.dayOfWeek === weekday && s.status === "active");
+  return Promise.all(rows.sort((a,b) => a.startTime.localeCompare(b.startTime)).map(s => availability(doctorId, branchId, date, conn, { sessionId: s.id })));
 }

@@ -16,13 +16,17 @@ await build({
     export * from "./lib/queue-order";
     export * from "./lib/session-duration";
     export * from "./lib/store";
+    export * from "./lib/clinic-expansion";
+    export * from "./lib/presence";
     export { queryMetrics } from "./lib/list-query";
-    export { sessionQueueWaitMinutes } from "./lib/availability";
+    export { sessionQueueWaitMinutes, availability, availabilitySessions } from "./lib/availability";
     export * from "./routes/appointments";
     export * from "./routes/queue";
     export * from "./routes/duration";
     export * from "./routes/public";
     export * from "./routes/guest-requests";
+    export * from "./routes/clinic-expansion";
+    export * from "./routes/resources";
     export * as tables from "@workspace/db";
     export { GetQueueResponse } from "@workspace/api-zod";
   `, resolveDir: root },
@@ -57,7 +61,7 @@ async function route(router, method, path, actor, body = {}, params = {}, query 
   assert.ok(layer, path);
   let result;
   const response = { status: () => response, set: () => response, json: value => { result = value; } };
-  await layer.route.stack[0].handle({ body, params, query }, response);
+  await layer.route.stack.at(-1).handle({ body, params, query }, response);
   return result;
 }
 async function book(patientId = "p1", date = today, extra = {}) {
@@ -382,7 +386,7 @@ test("public display is branch-local, doctor-restricted, revocable and contains 
   assert.ok(!JSON.stringify(display).includes(a.reference));
   assert.ok(!JSON.stringify(display).includes("patient"));
   assert.equal(display.sessions[0].currentStatus, "inConsultation");
-  assert.deepEqual(Object.keys(display.sessions[0]).sort(), ["doctorId", "doctorName", "startTime", "endTime", "currentToken", "currentStatus", "nextToken", "waitingTokens", "waitingCount", "completedCount"].sort());
+  assert.deepEqual(Object.keys(display.sessions[0]).sort(), ["doctorId", "doctorName", "sessionId", "presence", "startTime", "endTime", "currentToken", "currentStatus", "nextToken", "waitingTokens", "waitingCount", "completedCount"].sort());
   await api.change(t.qrs, "qr", { doctorId: "d" });
   assert.equal((await api.publicDisplay("display")).sessions.length, 1);
   await api.change(t.qrs, "qr", { branchId: null });
@@ -450,4 +454,239 @@ test("inactive operational context does not roll back checkout or call pending r
   await database.exec("delete from assignments where id='d'");
   assert.equal((await act(a.id, { action: "complete" })).status, "completed");
   assert.equal((await api.one(t.appointments, b.id)).status, "waiting");
+});
+
+test("multiple weekly sessions isolate availability capacity tokens queue and reschedule", async () => {
+  await seed();
+  const weekday = new Date(tomorrow).getUTCDay(), id = "d" + weekday;
+  const original = await api.one(t.schedules, id);
+  await api.change(t.schedules, id, { data: { ...original, startTime: "09:00", endTime: "10:00", maxTokens: 1 } });
+  await api.put(t.schedules, { id: "afternoon", doctorId: "d", clinicId: "c", branchId: "b", dayOfWeek: weekday,
+    data: { ...original, startTime: "14:00", endTime: "15:00", maxTokens: 1 } });
+  await assert.rejects(api.availability("d", "b", tomorrow), /Select a session/);
+  const sessions = await api.availabilitySessions("d", "b", tomorrow);
+  assert.equal(sessions.length, 2);
+  const morning = await book("p1", tomorrow, { sessionId: id });
+  const afternoon = await book("p1", tomorrow, { sessionId: "afternoon" });
+  assert.equal(morning.tokenNumber, 1); assert.equal(afternoon.tokenNumber, 1);
+  assert.equal(api.sessionRows([morning, afternoon], morning).length, 1);
+  assert.equal(api.sessionKey(morning) === api.sessionKey(afternoon), false);
+  const filtered = await route(api.appointmentsRouter,"get","/appointments",staff,{}, {}, {doctorId:"d",branchId:"b",date:tomorrow,sessionId:id,pageSize:1});
+  assert.equal(filtered.total,1); assert.equal(filtered.items[0].id,morning.id);
+  await assert.rejects(book("p2", tomorrow, { sessionId: id }), /capacity/);
+  await assert.rejects(book("p2", tomorrow, { sessionId: "afternoon" }), /capacity/);
+  await act(afternoon.id, { action: "cancel" });
+  const moved = await globalThis.phaseDb.transaction(tx => api.reschedule(staff, morning.id, { doctorId: "d", branchId: "b", date: tomorrow, sessionId: "afternoon", expectedRevision: 0 }, tx));
+  assert.equal(moved.startTime, "14:00"); assert.equal(moved.tokenNumber, 2);
+  assert.equal(moved.reference, morning.reference);
+});
+
+test("session-specific exception affects only selected session and retains breaks", async () => {
+  await seed();
+  const weekday = new Date(tomorrow).getUTCDay(), id = "d" + weekday;
+  const original = await api.one(t.schedules, id);
+  await api.change(t.schedules, id, { data: { ...original, startTime: "09:00", endTime: "12:00", breakStart: "10:00", breakEnd: "10:15" } });
+  await api.put(t.schedules, { id: "late", doctorId: "d", clinicId: "c", branchId: "b", dayOfWeek: weekday, data: { ...original, startTime: "14:00", endTime: "16:00" } });
+  await api.put(t.availabilityExceptions, { id: "closed", doctorId: "d", branchId: "b", date: tomorrow, data: { sessionId: "late", isClosed: true, reason: "Holiday" } });
+  const [a,b] = await api.availabilitySessions("d","b",tomorrow);
+  assert.equal(a.available,true); assert.equal(a.breakStart,"10:00");
+  assert.equal(b.available,false); assert.equal(b.reason,"Holiday");
+});
+
+test("live away blocks new consultations and automatic calling but permits checkout", async () => {
+  await seed();
+  const a = await book(), b = await book("p2");
+  await act(a.id, { action: "checkIn" });
+  assert.equal((await api.getPresence(a)).status, "available");
+  await api.put(t.settings, { id: "presence:" + api.sessionKey(a), data: { status: "away", updatedAt: new Date().toISOString() } });
+  await act(a.id, { action: "complete" });
+  assert.equal((await api.one(t.appointments,b.id)).status,"waiting");
+  await assert.rejects(act(b.id,{action:"checkIn"}),/break or away/);
+  assert.equal((await book("p3",tomorrow)).status,"waiting");
+});
+
+test("clinic settings parity, independent live contacts and immutable URL", async () => {
+  await seed();
+  const owner = { id:"admin", role:"clinicAdmin" }, superAdmin = { id:"super", role:"superAdmin" };
+  const save = (actor,body) => globalThis.phaseDb.transaction(tx => api.saveClinicSetup(actor,"c",body,tx));
+  await save(owner,{clinic:{email:"clinic@example.com",phone:"100",slug:"clinic-one"},branches:[{id:"b",name:"Main",address:"Road",slug:"main-branch",inheritEmail:true,inheritPhone:false,phone:"200"}],policies:{bookingHorizonDays:14}});
+  let view = await api.clinicSettingsResult("c");
+  assert.equal(view.branches.find(b=>b.id==="b").effectiveEmail,"clinic@example.com");
+  assert.equal(view.branches.find(b=>b.id==="b").effectivePhone,"200");
+  await save(superAdmin,{clinic:{email:"new@example.com",phone:"300"}});
+  view = await api.clinicSettingsResult("c");
+  assert.equal(view.branches.find(b=>b.id==="b").effectiveEmail,"new@example.com");
+  assert.equal(view.branches.find(b=>b.id==="b").effectivePhone,"200");
+  assert.equal((await api.getSettings(globalThis.phaseDb,"c")).bookingHorizonDays,14);
+  assert.equal((await api.getSettings()).bookingHorizonDays,60);
+  await assert.rejects(save({id:"foreign",role:"clinicAdmin"},{clinic:{name:"Stolen"}}),/ownership/);
+  await assert.rejects(save(owner,{clinic:{slug:"new-slug"}}),/locked/);
+  assert.equal((await api.all(t.qrs)).length,1);
+  await api.change(t.qrs,(await api.all(t.qrs))[0].id,{status:"inactive"});
+  await save(owner,{branches:[{id:"b",name:"Rename",address:"Road",slug:"main-branch"}]});
+  assert.equal((await api.all(t.qrs)).filter(q=>q.status==="active").length,0);
+  assert.equal(api.validSlug("api"),false); assert.equal(api.validSlug("Clinic"),false);
+});
+
+test("admin clinician capability preserves single role and restricts owned branch assignments", async () => {
+  await seed();
+  const owner = await api.one(t.users,"admin");
+  const doctor = await globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds:["b"]},tx));
+  assert.equal((await api.one(t.users,"admin")).role,"clinicAdmin");
+  assert.equal(doctor.ownerAdminId,"admin"); assert.equal(doctor.userId,"admin");
+  const again = await globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds:["b","b2"]},tx));
+  assert.equal(again.id,doctor.id);
+  await api.put(t.clinics,{id:"foreign",adminId:"other",data:{name:"Other"}});
+  await api.put(t.branches,{id:"foreign-b",clinicId:"foreign",data:{name:"Other"}});
+  await assert.rejects(globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds:["foreign-b"]},tx)),/own clinic/);
+  const actor = {...owner,clinicIds:["c"],branchIds:["b","b2"],doctorId:doctor.id};
+  await route(api.resourcesRouter,"patch","/doctors/:id",actor,{fullName:"Admin clinician",email:owner.email,status:"inactive"},{id:doctor.id});
+  assert.equal((await api.one(t.users,"admin")).role,"clinicAdmin");
+  assert.equal((await api.one(t.users,"admin")).status,"active");
+  assert.equal((await api.one(t.doctors,doctor.id)).status,"inactive");
+});
+
+test("opening hours validate intervals and constrain sessions without changing legacy hours", () => {
+  api.validateOpeningHours([{dayOfWeek:1,startTime:"09:00",endTime:"12:00"},{dayOfWeek:1,startTime:"14:00",endTime:"17:00"}]);
+  assert.throws(()=>api.validateOpeningHours([{dayOfWeek:1,startTime:"09:00",endTime:"12:00"},{dayOfWeek:1,startTime:"11:00",endTime:"13:00"}]),/overlap/);
+  const session = {isOpen:true,dayOfWeek:1,startTime:"08:00",endTime:"10:00",timezone:"UTC"};
+  api.withinBranchHours({},session);
+  api.withinBranchHours({openingHours:null},session);
+  assert.throws(()=>api.withinBranchHours({openingHours:[]},session),/within branch/);
+  assert.throws(()=>api.withinBranchHours({timezone:"UTC",openingHours:[{dayOfWeek:1,startTime:"09:00",endTime:"12:00"}]},session),/within branch/);
+});
+
+test("explicit all-closed settings reject booking while absent and null hours retain legacy access", async () => {
+  await seed();
+  assert.equal((await api.availability("d","b",tomorrow)).available,true);
+  await globalThis.phaseDb.transaction(tx=>api.saveClinicSetup({id:"admin",role:"clinicAdmin"},"c",{branches:[{id:"b",openingHours:[]}]},tx));
+  assert.equal((await api.availability("d","b",tomorrow)).available,false);
+  await assert.rejects(book("p1",tomorrow),/outside branch opening hours/);
+  await globalThis.phaseDb.transaction(tx=>api.saveClinicSetup({id:"admin",role:"clinicAdmin"},"c",{branches:[{id:"b",openingHours:null}]},tx));
+  assert.equal((await api.availability("d","b",tomorrow)).available,true);
+});
+
+test("queue GET uses legacy duration without writing appointments, settings or audits", async () => {
+  await seed();
+  const a = await book();
+  await database.exec("delete from settings where id like 'session:%'; update appointments set data=data-'expectedDurationMinutes'");
+  const before = { appointments:await api.all(t.appointments),settings:await api.all(t.settings),audits:await api.all(t.auditLogs) };
+  const q = {doctorId:"d",branchId:"b",date:today,startTime:a.startTime};
+  const first = await route(api.queueRouter,"get","/queue",staff,{}, {},q);
+  const second = await route(api.queueRouter,"get","/queue",patient,{}, {},{...q,appointmentId:a.id});
+  assert.equal(first.expectedDurationMinutes,10);
+  assert.equal(second.queueVersion,first.queueVersion);
+  assert.deepEqual({ appointments:await api.all(t.appointments),settings:await api.all(t.settings),audits:await api.all(t.auditLogs) },before);
+  await act(a.id,{action:"call"});
+  assert.equal((await api.one(t.appointments,a.id)).expectedDurationMinutes,10);
+  assert.ok((await api.all(t.settings)).some(s=>s.id===api.sessionKey(a)));
+});
+
+test("authenticated session contexts retain edited/deleted template snapshots without leaking patients", async () => {
+  await seed();
+  const a = await book("p1",tomorrow);
+  const schedule = await api.one(t.schedules,a.sessionId);
+  await api.change(t.schedules,schedule.id,{data:{...schedule,startTime:"18:00",endTime:"19:00"}});
+  const q = {doctorId:"d",branchId:"b",date:tomorrow};
+  const contexts = await route(api.queueRouter,"get","/session-contexts",staff,{}, {},q);
+  assert.equal(contexts.length,2);
+  const historical = contexts.find(s=>s.startTime===a.startTime);
+  assert.equal(historical.snapshotOnly,true); assert.equal(historical.available,false);
+  assert.ok(contexts.some(s=>s.startTime==="18:00" && !s.snapshotOnly));
+  assert.ok(!JSON.stringify(contexts).includes(a.patientId));
+  assert.ok(!JSON.stringify(contexts).includes(a.reference));
+  await api.change(t.schedules,schedule.id,{status:"inactive"});
+  const remaining = await route(api.queueRouter,"get","/session-contexts",staff,{}, {},q);
+  assert.equal(remaining.length,1); assert.equal(remaining[0].startTime,a.startTime);
+  const queue = await route(api.queueRouter,"get","/queue",staff,{}, {},{...q,startTime:a.startTime,sessionId:a.sessionId});
+  assert.equal(queue.entries[0].id,a.id);
+  await assert.rejects(route(api.queueRouter,"get","/session-contexts",patient,{}, {},q),/access|role|permission/i);
+  await assert.rejects(route(api.queueRouter,"get","/session-contexts",{id:"other",role:"receptionist",clinicIds:["foreign"],branchIds:[]},{}, {},q),/scope/);
+});
+
+test("actual TAT is nullable without completed timestamps and independent of configured duration", async () => {
+  await seed();
+  const a = await book();
+  assert.equal((await api.queryMetrics({role:"superAdmin"},{})).averageConsultationMinutes,null);
+  await api.change(t.appointments,a.id,{status:"completed",data:{...a,expectedDurationMinutes:60,consultationMinutesActual:999,consultationStartedAt:"2030-01-07T10:00:00.000Z",completedAt:"2030-01-07T10:12:00.000Z"}});
+  assert.equal((await api.queryMetrics({role:"superAdmin"},{})).averageConsultationMinutes,12);
+});
+
+test("atomic owned clinic setup rolls back on branch slug conflict and retains one owner", async () => {
+  await seed();
+  const admin = await api.one(t.users,"admin");
+  await assert.rejects(globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,{clinic:{name:"Second",address:"Street",slug:"second-clinic"},branches:[{name:"A",address:"One",slug:"same-branch"},{name:"B",address:"Two",slug:"same-branch"}]},tx)),/already in use/);
+  assert.equal((await api.all(t.clinics)).length,1);
+  assert.equal((await api.all(t.branches)).length,2);
+  const result = await globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,{clinic:{name:"Second",address:"Street",slug:"second-clinic"},branches:[{name:"A",address:"One",slug:"main-branch",openingHours:[{dayOfWeek:1,startTime:"09:00",endTime:"17:00"}]}],ownDoctor:true},tx));
+  assert.equal(result.clinic.adminId,admin.id);
+  assert.ok(result.doctorId);
+  assert.equal(result.branches.length,1);
+  assert.equal((await api.all(t.qrs)).filter(q=>q.branchId===result.branches[0].id).length,1);
+});
+
+test("public slug resolver is active-only, read-only, contact-effective and never restores revoked QR", async () => {
+  await seed();
+  const owner = {id:"admin",role:"clinicAdmin"};
+  await globalThis.phaseDb.transaction(tx=>api.saveClinicSetup(owner,"c",{clinic:{slug:"public-clinic",email:"contact@example.com"},branches:[{id:"b",name:"Main",address:"Road",slug:"main-branch",inheritEmail:true}]},tx));
+  const resolve = (branchSlug) => route(api.clinicExpansionRouter,"get","/public/clinics-by-slug/:clinicSlug{/:branchSlug}",null,{}, {clinicSlug:"public-clinic",...(branchSlug ? {branchSlug} : {})});
+  const root = await resolve();
+  assert.equal(root.branch,null);
+  const branch = await resolve("main-branch");
+  assert.equal(branch.branch.effectiveEmail,"contact@example.com");
+  assert.ok(branch.qrReference);
+  assert.equal(branch.doctors.length,1);
+  assert.equal(branch.doctors[0].averageConsultationMinutes,null);
+  const before = (await api.all(t.qrs)).length;
+  await api.change(t.qrs,(await api.all(t.qrs))[0].id,{status:"inactive"});
+  assert.equal((await resolve("main-branch")).qrReference,null);
+  assert.equal((await api.all(t.qrs)).length,before);
+  assert.ok(!JSON.stringify(branch).includes("adminId"));
+  assert.ok(!JSON.stringify(branch).includes("patient"));
+  await api.change(t.branches,"b",{status:"inactive"});
+  await assert.rejects(resolve("main-branch"),/not found/);
+  await api.change(t.clinics,"c",{status:"inactive"});
+  await assert.rejects(resolve(),/not found/);
+});
+
+test("signup reference data only exposes active allowlisted names and IDs", async () => {
+  await seed();
+  for (const [id,category,status] of [["s","specialization","active"],["q","qualification","active"],["c","clinicCategory","active"],["secret","userRole","active"],["old","specialization","inactive"]]) {
+    await api.put(t.masters,{id,category,code:id,status,data:{name:id,privateMetadata:"not-public"}});
+  }
+  const options = await route(api.clinicExpansionRouter,"get","/public/registration-options",null);
+  assert.deepEqual(options,{categories:[{id:"c",name:"c"}],specialities:[{id:"s",name:"s"}],qualifications:[{id:"q",name:"q"}]});
+});
+
+test("guest request session SQL filters constrain rows and count before pagination", async () => {
+  await seed();
+  const weekday = new Date(tomorrow).getUTCDay(), id = "d" + weekday;
+  const original = await api.one(t.schedules,id);
+  await api.change(t.schedules,id,{data:{...original,startTime:"09:00",endTime:"10:00"}});
+  await api.put(t.schedules,{id:"late",doctorId:"d",clinicId:"c",branchId:"b",dayOfWeek:weekday,data:{...original,startTime:"14:00",endTime:"15:00"}});
+  const a = await guest({date:tomorrow,sessionId:id});
+  await guest({date:tomorrow,sessionId:"late",requestId:"12345678-1234-4234-8234-123456789013",receiptSecret:"b".repeat(64)});
+  const page = await route(api.guestRequestsRouter,"get","/guest-requests",staff,{}, {}, {date:tomorrow,sessionId:id,startTime:"09:00",pageSize:1});
+  assert.equal(page.total,1); assert.equal(page.items[0].id,a.id); assert.equal(page.items[0].sessionId,id);
+  const empty = await route(api.guestRequestsRouter,"get","/guest-requests",{id:"other",role:"clinicAdmin",clinicIds:["other"],branchIds:[]},{}, {}, {date:tomorrow,sessionId:id});
+  assert.equal(empty.total,0);
+  const confirmed = await api.decideGuestRequest(staff,a.id,{action:"confirm",reason:"Confirmed"});
+  assert.equal((await api.one(t.appointments,confirmed.appointmentId)).sessionId,id);
+});
+
+test("adding a weekly session binds legacy exceptions and rejects dated overlaps atomically", async () => {
+  await seed();
+  const weekday = new Date(tomorrow).getUTCDay(), id = "d"+weekday;
+  const original = await api.one(t.schedules,id);
+  await api.change(t.schedules,id,{data:{...original,startTime:"09:00",endTime:"12:00"}});
+  await api.put(t.availabilityExceptions,{id:"legacy-exception",doctorId:"d",branchId:"b",date:tomorrow,data:{isClosed:false,startTime:"14:00",endTime:"15:00",reason:"Adjusted"}});
+  const actor = {id:"admin",role:"clinicAdmin",clinicIds:["c"],branchIds:["b","b2"]};
+  const create = body => route(api.resourcesRouter,"post","/schedules",actor,{...original,...body});
+  await assert.rejects(create({startTime:"14:00",endTime:"15:00"}),/dated session exception/);
+  assert.equal((await api.one(t.availabilityExceptions,"legacy-exception")).sessionId,undefined);
+  const added = await create({startTime:"16:00",endTime:"17:00"});
+  assert.equal((await api.one(t.availabilityExceptions,"legacy-exception")).sessionId,id);
+  const sessions = await api.availabilitySessions("d","b",tomorrow);
+  assert.equal(sessions.find(s=>s.sessionId===id).startTime,"14:00");
+  assert.equal(sessions.find(s=>s.sessionId===added.id).startTime,"16:00");
 });

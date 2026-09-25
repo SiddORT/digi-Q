@@ -6,6 +6,7 @@ import * as api from "@workspace/api-client-react";
 import { queryClient } from "../App";
 import { authErrorMessage } from "./errors";
 import { AuthCard, AuthShell } from "./AuthShell";
+import "../components/clinic-registration.css";
 import {
   activateAndProveStaffSession,
   createAsyncActionLock,
@@ -193,6 +194,7 @@ export function StaffLogin() {
               <button className="button auth-submit" data-testid="button-staff-login" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
             </form>
             <div className="auth-links"><Link href="/forgot-password" aria-disabled={busy} onClick={event => { if (busy) event.preventDefault(); }} data-testid="link-forgot-password">Forgot password?</Link><Link href="/patient-login" aria-disabled={busy} onClick={event => { if (busy) event.preventDefault(); }} data-testid="link-patient-login">Patient login</Link></div>
+            <div className="register-clinic-entry"><div><strong>Bring your clinic together.</strong><p>Set up your locations, hours and care team.</p></div><Link className="button register-clinic-button" href="/register-clinic" aria-disabled={busy} data-testid="link-register-clinic" onClick={event => { if (busy) event.preventDefault(); }}>Register a Clinic</Link></div>
           </>
         ) : (
           <form onSubmit={verifyDevice}>

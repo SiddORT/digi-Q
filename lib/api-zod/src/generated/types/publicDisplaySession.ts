@@ -13,8 +13,12 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { PublicDisplaySessionCurrentStatus } from './publicDisplaySessionCurrentStatus';
+import type { PublicDisplaySessionPresence } from './publicDisplaySessionPresence';
 
 export interface PublicDisplaySession {
+  /** @nullable */
+  sessionId?: string | null;
+  presence?: PublicDisplaySessionPresence;
   doctorId: string;
   doctorName: string;
   /** @nullable */

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
-import { Plus, Pencil, Trash2, Send, KeyRound } from "lucide-react";
+import { Plus, Pencil, Trash2, Send } from "lucide-react";
 import { Link } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { assignmentTargetRole, staffInput, type StaffTab } from "./staff-input";
@@ -44,7 +44,9 @@ export function Users({ identity }: { identity: api.Identity }) {
   }, [tab]);
   const params = { ...context, search: term || undefined, status: context.status || undefined, clinicId: context.clinicId || undefined, branchId: context.branchId || undefined, specializationId:context.specializationId||undefined, managingAdminId: isSuperAdmin ? context.managingAdminId || undefined : undefined };
   const query = useQuery<any>({
-    queryKey: ["users-tab", tab, params],
+    queryKey: ["users-tab", identity.user?.id, role, tab, params],
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
     queryFn: () => tab === "doctors" ? api.listDoctors(params) : api.listUsers({ ...params, role: tab === "admins" ? "clinicAdmin" : "receptionist" }),
   });
   const selectionContext=JSON.stringify([tab,context,term,identity.user,role]);
@@ -66,9 +68,7 @@ export function Users({ identity }: { identity: api.Identity }) {
   const beginEdit = (row: any) => { setDirty(false); setBusy(false); setEditing(row); };
   return <>
     <div className="tabs" role="tablist" aria-label="Staff type">{tabs.map(t => <button role="tab" aria-selected={tab === t.id} key={t.id} className={`tab ${tab === t.id ? "active" : ""}`} onClick={() => setTab(t.id)}>{t.label}</button>)}</div>
-    <div className="toolbar"><SearchInput value={context.search} onChange={search => change({ search })} placeholder={tab==="doctors"?"Search doctors by name, email or specialization…":tab==="receptionists"?"Search receptionists by name, email or mobile…":"Search Clinic Admins by name, email or mobile…"} />
-      <button className="button small" onClick={() => beginEdit({})} data-testid={`button-add-${tab}`}><Plus size={17} /> Add {tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}</button></div>
-    <FilterBar active={active} onReset={reset} label="Filter staff" chips={[
+    <FilterBar actions={<button className="button small" onClick={() => beginEdit({})} data-testid={`button-add-${tab}`}><Plus size={17} /> Add {tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}</button>} active={active} onReset={reset} label="Filter staff" chips={[
       ...(context.search?[{key:"search",label:`Search: ${context.search}`,onRemove:()=>change({search:""})}]:[]),
       ...(context.clinicId?[{key:"clinicId",label:"Clinic selected",onRemove:()=>change({clinicId:"",branchId:""})}]:[]),
       ...(context.branchId?[{key:"branchId",label:"Branch selected",onRemove:()=>change({branchId:""})}]:[]),
@@ -82,24 +82,25 @@ export function Users({ identity }: { identity: api.Identity }) {
       {isSuperAdmin && tab !== "admins" && <ResourceLookup resource="users" label="Managing admin" params={{role:"clinicAdmin"}} value={context.managingAdminId} onChange={managingAdminId => change({ managingAdminId })} />}
       <SearchableSelect label="Sort" value={context.sort} onChange={sort => change({ sort:sort||"-createdAt" })} options={SORTS}/>
     </>}>
+      <SearchInput value={context.search} onChange={search => change({ search })} placeholder={tab==="doctors"?"Search doctors by name, email or specialization…":tab==="receptionists"?"Search receptionists by name, email or mobile…":"Search Clinic Admins by name, email or mobile…"} />
       {tab !== "admins" && <ResourceLookup resource="assignment:clinics" label="Clinic" params={assignmentParams} value={context.clinicId} onChange={clinicId => change({ clinicId, branchId: "" })} />}
       {tab === "receptionists" && <ResourceLookup resource="assignment:branches" label="Branch" params={{ ...assignmentParams, clinicId: context.clinicId || undefined }} value={context.branchId} onChange={branchId => change({ branchId })} />}
     </FilterBar>
     {success && <p role="status" className="notice">{success}</p>}
     <ErrorNotice error={remove.error || resendInvitation.error} />
     <ErrorNotice error={settings.error} />
-    {role !== "doctor" && <section className="panel padded" style={{ marginBottom: 14 }}>
-      <h3>Account recovery assistance</h3><p className="muted">Search linked staff accounts for secure account recovery steps. This action does not send an email.</p>
+    {role !== "doctor" && <details className="panel padded" style={{ marginBottom: 14 }}>
+      <summary>Account recovery assistance</summary><p className="muted">Search linked staff accounts for secure account recovery steps. This action does not send an email.</p>
       <div className="inline-form"><ResourceLookup resource="users" label="Staff account" params={{ role: tab === "admins" ? "clinicAdmin" : tab === "doctors" ? "doctor" : "receptionist", linkedOnly: true }} value={recoveryId} onChange={id => { setRecoveryId(id); recovery.reset(); }} />
         <button disabled={!recoveryId || recovery.isPending} onClick={() => { if (!recovery.isPending) recovery.mutate({ id: recoveryId }); }} data-testid="button-password-help">{recovery.isPending ? "Loading…" : "Get recovery steps"}</button></div>
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open secure password recovery</Link></div>}
-    </section>}
+    </details>}
     <ListingBulk selection={selection} resource={tab==="doctors"?"doctors":"users"} columns={["fullName","email","mobile","role","clinicNames","branchNames","status"]} identity={identity} context={selectionContext}/>
     <section className="panel table-panel admin-listing-table">
       {query.isLoading ? <div className="skeleton" role="status">Loading {tabs.find(item=>item.id===tab)?.label.toLowerCase()}…</div> : query.error ? <><div className="error-box" role="alert">Unable to load {tabs.find(item=>item.id===tab)?.label.toLowerCase()}. {query.error instanceof Error?query.error.message:"Please try again."}</div><button onClick={() => query.refetch()}>Retry {tabs.find(item=>item.id===tab)?.label.toLowerCase()}</button></> : query.data?.items.length ? <div className="table-scroll"><table>
-        <thead><tr><th scope="col">{selection.header}</th><th>Staff member</th>{isSuperAdmin && tab !== "admins" && <th>Managing admin</th>}<th>{tab === "admins" ? "Owned clinics" : "Assignments"}</th><th className="col-status">Account</th><th>Created</th><th className="col-actions">Actions</th></tr></thead>
+        <thead><tr><th scope="col" className="col-select">{selection.header}</th><th>Staff member</th>{isSuperAdmin && tab !== "admins" && <th>Managing admin</th>}<th>{tab === "admins" ? "Owned clinics" : "Assignments"}</th><th className="col-status">Account</th><th>Created</th><th className="col-actions">Actions</th></tr></thead>
         <tbody>{query.data.items.map((row: any) => <tr key={row.id}>
-          <td data-label="Select">{selection.checkbox(row)}</td>
+          <td data-label="Select" className="col-select">{selection.checkbox(row)}</td>
           <td data-label="Staff member" className="admin-record"><strong>{row.fullName}</strong><small>{row.email} · {tab==="admins"?"Clinic admin":tab==="doctors"?"Doctor":"Receptionist"}{row.mobile?` · ${row.mobile}`:""}</small></td>
           {isSuperAdmin && tab !== "admins" && <td data-label="Managing admin">{row.managingAdminName || row.ownerAdminName || "—"}</td>}
           <td data-label={tab === "admins" ? "Owned clinics" : "Assignments"}><div>{Array.isArray(row.clinicNames) ? row.clinicNames.join(", ") || "—" : row.clinicNames || "—"}</div>{tab !== "admins" && <div className="muted">Branches: {Array.isArray(row.branchNames) ? row.branchNames.join(", ") || "—" : row.branchNames || "—"}</div>}</td>
@@ -107,7 +108,6 @@ export function Users({ identity }: { identity: api.Identity }) {
           <td data-label="Created">{row.createdAt ? settings.data?.timezone ? new Date(row.createdAt).toLocaleDateString(undefined,{timeZone:settings.data.timezone}) : row.createdAt : "—"}</td>
           <td data-label="Actions" className="col-actions"><div className="row-actions">
             {row.invitationStatus !== "notRequired" && <HelpTip text="Revoke the pending invitation and send a new set-password invitation"><button aria-label="Resend set-password invitation" disabled={resendInvitation.isPending} onClick={() => { if (!resendInvitation.isPending && confirm("Revoke any pending invitation and send a new set-password invitation?")) resendInvitation.mutate({ id: tab === "doctors" ? row.userId : row.id }); }}><Send size={15} /></button></HelpTip>}
-            {role !== "doctor" && row.invitationStatus === "notRequired" && <HelpTip text="View secure password recovery steps; no email is sent"><button aria-label="Password recovery assistance" disabled={recovery.isPending} onClick={() => { const id = tab === "doctors" ? row.userId : row.id; setRecoveryId(id); if (!recovery.isPending) recovery.mutate({ id }); }}><KeyRound size={15} /></button></HelpTip>}
             <HelpTip text="Edit staff details and assignments"><button aria-label="Edit" onClick={() => beginEdit(row)}><Pencil size={15} /></button></HelpTip>
             <HelpTip text="Delete or deactivate this account; ownership protections apply"><button aria-label="Delete or deactivate" disabled={remove.isPending||row.id===identity.user?.id||row.userId===identity.user?.id} onClick={() => { if (!remove.isPending && confirm("Delete or deactivate this record?")) remove.mutate(row.id); }}><Trash2 size={15} /></button></HelpTip>
           </div></td>

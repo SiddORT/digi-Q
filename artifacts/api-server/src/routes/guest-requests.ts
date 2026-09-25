@@ -15,7 +15,7 @@ import { bookAppointment } from "./appointments";
 export const guestRequestsRouter = Router();
 export const guestHash = (s: string) => createHash("sha256").update(s).digest("hex");
 export function guestReceipt(r: any) {
-  return Object.fromEntries(["id", "status", "fullName", "clinicName", "branchName", "doctorName", "date", "startTime", "endTime", "timezone", "token", "reason"].map(k => [k, r[k] ?? null]));
+  return Object.fromEntries(["id", "status", "fullName", "clinicName", "branchName", "doctorName", "date", "sessionId", "startTime", "endTime", "timezone", "token", "reason"].map(k => [k, r[k] ?? null]));
 }
 function staffView(r: any) {
   return { ...guestReceipt(r), clinicId: r.clinicId, branchId: r.branchId, doctorId: r.doctorId,
@@ -42,7 +42,7 @@ export async function createGuestRequest(body: any, conn: any = db) {
     }
     const context = await resolveQr(body.qrReference, tx, true);
     assert((!context.branchId || context.branchId === body.branchId) && (!context.doctorId || context.doctorId === body.doctorId), 400, "Request does not match QR context");
-    const available = await availability(body.doctorId, body.branchId, body.date, tx);
+    const available = await availability(body.doctorId, body.branchId, body.date, tx, body);
     assert(available.clinicId === context.clinicId, 400, "Request does not match QR clinic");
     assert(available.available && available.queueMode !== "walkInsOnly", 409, available.reason || "Session does not accept appointments");
     const doctor = await enrich("doctors", await one(doctors, body.doctorId, tx), tx);
@@ -51,7 +51,7 @@ export async function createGuestRequest(body: any, conn: any = db) {
       clinicId: context.clinicId, branchId: body.branchId, doctorId: body.doctorId, date: body.date,
       data: { fullName: body.fullName, email: body.email, mobile: body.mobile, qrReference: body.qrReference,
         clinicName: context.clinicName, branchName: branch.name, doctorName: doctor.fullName,
-        startTime: available.startTime, endTime: available.endTime, timezone: available.timezone, token: null, reason: null } }, tx);
+        sessionId: available.sessionId, startTime: available.startTime, endTime: available.endTime, timezone: available.timezone, token: null, reason: null } }, tx);
   });
 }
 export async function decideGuestRequest(user: any, id: string, body: any, conn: any = db) {
@@ -70,7 +70,7 @@ export async function decideGuestRequest(user: any, id: string, body: any, conn:
       await put(patients, { id: patientId, clinicId: row.clinicId, branchId: row.branchId, mobile: row.mobile,
         data: { fullName: row.fullName, email: row.email, code: `PAT-${patientId.slice(0, 8)}` } }, tx);
       const appointment = await bookAppointment(user, { patientId, clinicId: row.clinicId, branchId: row.branchId,
-        doctorId: row.doctorId, date: row.date, source: "qr", qrReference: row.qrReference, requestId: `guest:${row.id}` }, tx);
+        doctorId: row.doctorId, date: row.date, sessionId: row.sessionId, startTime: row.startTime, source: "qr", qrReference: row.qrReference, requestId: `guest:${row.id}` }, tx);
       appointmentId = appointment.id; token = appointment.token;
     }
     row = await change(guestRequests, id, { status, appointmentId, decidedBy: user.id,
@@ -99,6 +99,8 @@ guestRequestsRouter.get("/guest-requests", async (req, res) => {
   if (q.branchId) clauses.push(eq(guestRequests.branchId, q.branchId));
   if (q.doctorId) clauses.push(eq(guestRequests.doctorId, q.doctorId));
   if (q.date) clauses.push(eq(guestRequests.date, q.date));
+  if (q.sessionId) clauses.push(sql`${guestRequests.data}->>'sessionId'=${q.sessionId}`);
+  if (q.startTime) clauses.push(sql`${guestRequests.data}->>'startTime'=${q.startTime}`);
   if (user.role !== "superAdmin") {
     clauses.push(inArray(guestRequests.clinicId, user.clinicIds));
     if (user.role === "receptionist") clauses.push(inArray(guestRequests.branchId, user.branchIds));

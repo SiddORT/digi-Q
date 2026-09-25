@@ -18,12 +18,14 @@ export function queueVersion(rows: any[]) {
   ))).digest("hex");
 }
 export function sessionRows(rows: any[], session: any) {
-  return rows.filter(a => a.doctorId === session.doctorId && a.branchId === session.branchId && a.date === session.date);
+  return rows.filter(a => a.doctorId === session.doctorId && a.branchId === session.branchId && a.date === session.date &&
+    (session.startTime ? a.startTime === session.startTime : session.sessionId ? a.sessionId === session.sessionId : true));
 }
-export function queueSummary(rows: any[], own?: any) {
+export function queueSummary(rows: any[], own?: any, fallbackDuration: number | null = null) {
   const pending = orderedReservations(rows.filter(a => pendingStatuses.includes(a.status)));
   const current = rows.find(a => ["called", "inConsultation"].includes(a.status));
-  const duration = rows.find(a => Object.hasOwn(a, "expectedDurationMinutes"))?.expectedDurationMinutes ?? null;
+  const durationRow = rows.find(a => Object.hasOwn(a, "expectedDurationMinutes"));
+  const duration = durationRow ? durationRow.expectedDurationMinutes ?? null : fallbackDuration;
   const ahead = own && pendingStatuses.includes(own.status)
     ? pending.filter(a => rank(a) < rank(own) || rank(a) === rank(own) && a.tokenNumber < own.tokenNumber).length + (current ? 1 : 0) : 0;
   return {

@@ -34,7 +34,7 @@ function useOnline() {
   return online;
 }
 
-export function ClinicDisplay({ reference }: { reference: string }) {
+export function ClinicDisplay({ reference, bookingHref }: { reference: string; bookingHref?: string }) {
   const online = useOnline();
   const q = useGetPublicDisplay(reference, { query: {
     queryKey: getGetPublicDisplayQueryKey(reference),
@@ -43,7 +43,7 @@ export function ClinicDisplay({ reference }: { reference: string }) {
     staleTime: 0,
     retry: (count, err) => !isRevoked(err) && count < 2,
   } });
-  const bookingUrl = `${window.location.origin}${basePath}/book/${encodeURIComponent(reference)}`;
+  const bookingUrl = bookingHref || `${window.location.origin}${basePath}/book/${encodeURIComponent(reference)}`;
   const [qrResult, setQrResult] = useState({url:"", image:"", failed:false});
   const [qrAttempt, setQrAttempt] = useState(0);
   const qr = qrResult.url === bookingUrl ? qrResult.image : "";

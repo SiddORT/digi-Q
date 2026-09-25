@@ -6,6 +6,7 @@ import { CareLookup } from "./CareLookup";
 import { ErrorNotice, today } from "../resources";
 import { useFreshWorkspace } from "./queue/useFreshWorkspace";
 import { canPollGuestReceipt, guestReceiptText } from "../guest-receipt";
+import { SessionSelector, useDailySession } from "./queue/SessionSelector";
 
 export function GuestBooking({reference,context}:{reference:string;context:api.QrContext}) {
  const storageKey=`clinicflow-guest:${reference}`;
@@ -19,9 +20,8 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  const [date,setDate]=useState(today(context.branchTimezone||undefined));
  const lock=useRef(false);
  const form=useForm({defaultValues:{fullName:"",email:"",mobile:"",permission:false}});
- const params={branchId,doctorId,date};
- const validDate=/^\d{4}-\d{2}-\d{2}$/.test(date)&&date>=today(context.branchTimezone||undefined);
- const availability=api.useGetPublicAvailability(params,{query:{queryKey:api.getGetPublicAvailabilityQueryKey(params),enabled:!!branchId&&!!doctorId&&validDate,refetchInterval:30000}});
+ const selection=useDailySession({branchId,doctorId,date});
+ const availability=selection.availability;
  const fresh=useFreshWorkspace(availability.dataUpdatedAt,!!availability.error);
  const accept=(value:api.GuestReceipt)=>{setReceipt(value);setUpdated(Date.now());};
  const create=api.useCreateGuestRequest({mutation:{onSuccess:(value,variables)=>{
@@ -52,7 +52,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  function submit(values:{fullName:string;email:string;mobile:string;permission:boolean}) {
   if(lock.current)return;
   const bytes=crypto.getRandomValues(new Uint8Array(32));
-  const data:api.GuestRequestInput={qrReference:reference,branchId,doctorId,date,fullName:values.fullName.trim(),email:values.email.trim()||undefined,mobile:values.mobile.trim()||undefined,requestId:crypto.randomUUID(),receiptSecret:Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("")};
+  const data:api.GuestRequestInput={qrReference:reference,branchId,doctorId,date,sessionId:selection.sessionId||undefined,fullName:values.fullName.trim(),email:values.email.trim()||undefined,mobile:values.mobile.trim()||undefined,requestId:crypto.randomUUID(),receiptSecret:Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("")};
   try{sessionStorage.setItem(storageKey,JSON.stringify(data));}catch{setStorageError("This browser cannot save your receipt. Keep this page open and ask reception for help before closing it.");}
   setAttempt(data);void send(data);
  }
@@ -86,6 +86,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  {!context.branchId&&<CareLookup publicAccess kind="branches" label="Location" value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}}/>}
  {!context.doctorId&&<CareLookup publicAccess kind="doctors" label="Doctor" value={doctorId} disabled={!branchId} params={{clinicId:context.clinicId,branchId,status:"active"}} onChange={setDoctor}/>}
  <label>Visit date<input data-testid="input-guest-date" type="date" required min={today(available?.timezone)} value={date} onChange={e=>setDate(e.target.value)}/></label>
+ <SessionSelector selection={selection}/>
  <label>Patient's name<input data-testid="input-guest-name" autoComplete="name" maxLength={150} {...form.register("fullName",{required:true,validate:v=>!!v.trim()})}/></label>
  </div>
  <details><summary data-testid="toggle-guest-contact" style={{padding:"14px 0",cursor:"pointer"}}>Add contact details (optional)</summary><div className="form-grid">

@@ -24,5 +24,6 @@ export interface ReportRow {
   noShow: number;
   registrations: number;
   averageWaitMinutes: number;
-  averageConsultationMinutes?: number;
+  /** @nullable */
+  averageConsultationMinutes?: number | null;
 }

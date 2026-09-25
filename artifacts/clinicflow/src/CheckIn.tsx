@@ -256,7 +256,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
              <div className="confirmation-token" style={{ margin: "20px auto" }}>
                <small>TOKEN</small>
                <strong>{checkIn.data.appointment.token || "—"}</strong>
-               <span>{checkIn.data.appointment.date} · {checkIn.data.appointment.status.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase())}</span>
+               <span>{checkIn.data.appointment.date} · {checkIn.data.appointment.startTime}–{checkIn.data.appointment.endTime} · {checkIn.data.appointment.status.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase())}</span>
              </div>
               <button className="button" onClick={reset}>Scan next</button>
            </div>

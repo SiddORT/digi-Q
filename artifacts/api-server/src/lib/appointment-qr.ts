@@ -113,7 +113,7 @@ export async function checkInAppointmentQr(user: any, payload: string) {
     const original = row;
     await lockQueue(tx, row.doctorId, row.branchId, row.date);
     row = await one(appointments, row.id, tx);
-    assert(row.doctorId === original.doctorId && row.branchId === original.branchId && row.date === original.date, 409, "Appointment was rescheduled; scan again");
+    assert(row.doctorId === original.doctorId && row.branchId === original.branchId && row.date === original.date && row.startTime === original.startTime, 409, "Appointment was rescheduled; scan again");
     await authorizeStaff(user, row);
     await validateCheckInState(row, tx);
     if (ALREADY_CHECKED_IN.includes(row.status)) {

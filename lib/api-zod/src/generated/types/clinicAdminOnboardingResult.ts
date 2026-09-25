@@ -12,10 +12,14 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { Branch } from './branch';
 import type { Clinic } from './clinic';
 import type { User } from './user';
 
 export interface ClinicAdminOnboardingResult {
+  branches?: Branch[];
+  /** @nullable */
+  doctorId?: string | null;
   admin: User;
   clinic: Clinic;
 }

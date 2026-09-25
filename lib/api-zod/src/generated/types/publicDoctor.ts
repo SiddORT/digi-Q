@@ -14,6 +14,16 @@
  */
 
 export interface PublicDoctor {
+  /**
+     * Actual mean of valid completed consultation timestamps
+     * @nullable
+     */
+  averageConsultationMinutes?: number | null;
+  /**
+     * Explicit clinic duration configuration
+     * @nullable
+     */
+  expectedDurationMinutes?: number | null;
   id: string;
   fullName: string;
   photoUrl?: string;

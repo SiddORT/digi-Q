@@ -2,6 +2,7 @@
 import { after, before, beforeEach, mock, test } from "node:test";
 import assert from "node:assert/strict";
 import { createQueueHarness } from "./test-support/postgres-queue.mjs";
+import { eq } from "drizzle-orm";
 
 mock.timers.enable({ apis: ["Date"], now: Date.UTC(2030, 0, 7, 12) });
 let h;
@@ -23,6 +24,45 @@ function winner(outcomes, count = 1) {
   }
   return successes;
 }
+
+test("real legacy ownership triggers permit atomic consulting-admin setup and reject bypasses", async () => {
+  const result = await h.db.transaction(async tx => {
+    const admin = await h.api.put(h.t.users,{id:"consult-admin",email:"consult@example.invalid",fullName:"Consulting Admin",role:"clinicAdmin"},tx);
+    return h.api.createOwnedClinic(admin,admin,{clinic:{name:"Owned Clinical Clinic",address:"Road",slug:"owned-clinical"},branches:[{name:"Main",address:"Road",slug:"main-clinical"}],ownDoctor:true},tx);
+  });
+  assert.ok(result.doctorId);
+  assert.equal((await h.api.one(h.t.users,"consult-admin")).role,"clinicAdmin");
+  await h.api.change(h.t.users,"consult-admin",{role:"clinicAdmin",status:"active"});
+  const reject = async (operation,pattern) => assert.rejects(operation,error=>pattern.test(error.cause?.message || error.message));
+  await reject(h.api.put(h.t.assignments,{id:"foreign-clinic-link",userId:"consult-admin",clinicId:"c",branchId:"b"}),/must match the active clinic administrator/);
+  await reject(h.api.put(h.t.assignments,{id:"wrong-branch-clinic",userId:"consult-admin",clinicId:result.clinic.id,branchId:"b"}),/active own doctor profile/);
+  await reject(h.api.put(h.t.assignments,{id:"admin-without-profile",userId:"admin",clinicId:"c",branchId:"b"}),/active own doctor profile/);
+  await reject(h.api.change(h.t.doctors,result.doctorId,{ownerAdminId:"admin"}),/must own their own doctor profile/);
+  await reject(h.api.change(h.t.users,"consult-admin",{role:"doctor"}),/Transfer clinic and doctor ownership/);
+  await reject(h.api.change(h.t.users,"consult-admin",{status:"inactive"}),/Transfer clinic and doctor ownership/);
+  await h.api.change(h.t.doctors,result.doctorId,{status:"inactive"});
+  await reject(h.api.put(h.t.assignments,{id:"inactive-profile-link",userId:"consult-admin",clinicId:result.clinic.id,branchId:result.branches[0].id}),/active own doctor profile/);
+  await h.api.change(h.t.users,"consult-admin",{role:"clinicAdmin",status:"active"});
+  await h.api.change(h.t.doctors,result.doctorId,{status:"active"});
+  await h.api.change(h.t.branches,result.branches[0].id,{status:"inactive"});
+  await reject(h.api.put(h.t.assignments,{id:"inactive-branch-link",userId:"consult-admin",clinicId:result.clinic.id,branchId:result.branches[0].id}),/active own doctor profile/);
+  await h.api.change(h.t.branches,result.branches[0].id,{status:"active"});
+  const mapping=(await h.api.all(h.t.assignments)).find(a=>a.userId==="consult-admin" && !a.branchId);
+  await reject(h.db.delete(h.t.assignments).where(eq(h.t.assignments.id,mapping.id)),/administrator assignment cannot be removed/);
+  assert.equal((await h.api.one(h.t.clinics,result.clinic.id)).adminId,"consult-admin");
+});
+
+test("concurrent own-doctor attachment uses actual legacy triggers and produces one capability", async () => {
+  const owner=await h.api.one(h.t.users,"admin");
+  const outcomes=await h.race([
+    tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx),
+    tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx),
+  ],{doctorIds:[],lockKeys:["own-doctor:admin"]});
+  assert.ok(outcomes.every(o=>o.status==="fulfilled"));
+  assert.equal(outcomes[0].value.id,outcomes[1].value.id);
+  assert.equal((await h.api.all(h.t.doctors)).filter(d=>d.userId==="admin").length,1);
+  assert.equal((await h.api.all(h.t.assignments)).filter(a=>a.userId==="admin" && a.branchId==="b").length,1);
+});
 
 async function events(id, action) {
   const [history, audits] = await Promise.all([h.api.all(h.t.appointmentHistory), h.api.all(h.t.auditLogs)]);
@@ -84,6 +124,32 @@ test("same-request booking retries return one ticket even at capacity", async ()
   await assertBookingEffects(1);
   await capacity(2);
   assert.equal((await h.book("p2", h.tomorrow)).token, "A-02", "retries consume no extra token");
+});
+
+test("independent PostgreSQL contenders preserve separate same-day session capacity and tokens", async () => {
+  const weekday = new Date(h.tomorrow).getUTCDay(), id = "d" + weekday;
+  const original = await h.api.one(h.t.schedules,id);
+  await h.api.change(h.t.schedules,id,{data:{...original,startTime:"09:00",endTime:"10:00",maxTokens:1}});
+  await h.api.put(h.t.schedules,{id:"second",doctorId:"d",clinicId:"c",branchId:"b",dayOfWeek:weekday,data:{...original,startTime:"14:00",endTime:"15:00",maxTokens:1}});
+  const op = (patientId,sessionId) => (tx,actor) => h.book(patientId,h.tomorrow,{sessionId},{tx,actor});
+  const outcomes = await h.race([op("p1",id),op("p2","second"),op("p3",id),op("p4","second")]);
+  const accepted = winner(outcomes,2).map(r=>r.value);
+  assert.deepEqual(accepted.map(a=>a.startTime).sort(),["09:00","14:00"]);
+  assert.deepEqual(accepted.map(a=>a.tokenNumber),[1,1]);
+  assert.equal((await h.rows()).length,2);
+});
+
+test("competing clinic slug provisioning rolls back the losing admin and all its setup", async () => {
+  const op = async (tx, actor) => {
+    const admin = await h.api.put(h.t.users,{id:"new-"+actor.id,email:actor.id+"@example.com",fullName:"New Admin",role:"clinicAdmin"},tx);
+    return h.api.createOwnedClinic(admin,admin,{clinic:{name:actor.id,address:"Road",slug:"shared-clinic"},branches:[{name:"Main",address:"Road",slug:"main-branch"}]},tx);
+  };
+  const results = winner(await h.race([op,op],{doctorIds:[],lockKeys:["slug:clinics::shared-clinic"]}));
+  assert.equal(results.length,1);
+  assert.equal((await h.api.all(h.t.clinics)).filter(c=>c.slug==="shared-clinic").length,1);
+  assert.equal((await h.api.all(h.t.users)).filter(u=>u.id.startsWith("new-")).length,1);
+  assert.equal((await h.api.all(h.t.branches)).filter(b=>b.slug==="main-branch").length,1);
+  assert.equal((await h.api.all(h.t.qrs)).length,1);
 });
 
 test("different requests for the same patient create one active booking and a clear conflict", async () => {

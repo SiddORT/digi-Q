@@ -1,7 +1,8 @@
 import {
-  cloneElement, isValidElement, useEffect, useId, useRef, useState,
-  type FocusEvent, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactElement, type ReactNode,
+  cloneElement, isValidElement, useEffect, useId, useLayoutEffect, useRef, useState,
+  type FocusEvent, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactElement, type ReactNode, type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 import { HelpCircle } from "lucide-react";
 import "./help-tip.css";
 
@@ -17,6 +18,33 @@ type ChildProps = {
   onBlur?: (e: FocusEvent) => void;
   onPointerDown?: (e: ReactPointerEvent) => void;
 };
+
+/** Tooltip rendered in a body portal, positioned against the anchor with flip + viewport clamp. */
+function Bubble({ anchor, text, id }: { anchor: RefObject<HTMLSpanElement | null>; text: string; id?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      const a = anchor.current, b = ref.current;
+      if (!a || !b) return;
+      const r = a.getBoundingClientRect(), w = b.offsetWidth, h = b.offsetHeight, m = 8, gap = 6;
+      const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      let top = r.top - h - gap;
+      if (top < m) top = r.bottom + gap <= vh - h - m ? r.bottom + gap : Math.max(m, Math.min(vh - h - m, r.bottom + gap));
+      const left = Math.max(m, Math.min(vw - w - m, r.left + r.width / 2 - w / 2));
+      setPos({ top, left });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => { window.removeEventListener("resize", place); window.removeEventListener("scroll", place, true); };
+  }, [anchor, text]);
+  return createPortal(
+    <span ref={ref} role="tooltip" id={id} aria-hidden="true" className="helptip-bubble" data-measuring={pos ? undefined : ""}
+      style={pos ? { transform: `translate(${Math.round(pos.left)}px, ${Math.round(pos.top)}px)` } : undefined}>{text}</span>,
+    document.body,
+  );
+}
 
 /**
  * Accessible help tooltip.
@@ -45,7 +73,7 @@ export function HelpTip({ text, children }: HelpTipProps) {
   }, [open]);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const bubble = open ? <span role="tooltip" id={id} className="helptip-bubble">{text}</span> : null;
+  const bubble = open ? <Bubble anchor={ref} text={text} /> : null;
   const hoverProps = { onMouseEnter: () => setOpen(true), onMouseLeave: () => { if (!pinned) setOpen(false); } };
 
   if (isValidElement(children)) {
@@ -63,7 +91,7 @@ export function HelpTip({ text, children }: HelpTipProps) {
           {child}
         </span>
         <span id={id} className="sr-only-helptip">{text}</span>
-        {open && <span role="tooltip" className="helptip-bubble">{text}</span>}
+        {bubble}
       </span>;
     }
 
@@ -82,7 +110,7 @@ export function HelpTip({ text, children }: HelpTipProps) {
     return <span className="helptip" ref={ref}>
       {trigger}
       <span id={id} className="sr-only-helptip">{text}</span>
-      {open && <span role="tooltip" aria-hidden="true" className="helptip-bubble">{text}</span>}
+      {bubble}
     </span>;
   }
 
@@ -93,7 +121,7 @@ export function HelpTip({ text, children }: HelpTipProps) {
       {children ?? <HelpCircle size={15} aria-hidden="true" />}
     </button>
     <span id={id} className="sr-only-helptip">{text}</span>
-    {bubble && <span role="tooltip" aria-hidden="true" className="helptip-bubble">{text}</span>}
+    {bubble}
   </span>;
 }
 

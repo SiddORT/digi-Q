@@ -14,6 +14,7 @@
  */
 
 export interface AvailabilityExceptionInput {
+  sessionId?: string;
   doctorId: string;
   branchId: string;
   date: Date;

@@ -64,6 +64,11 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 
 ## Approved queue refresh (supersedes older arrival/check-in terminology)
 
+- Consolidated expansion is tracked in `docs/clinic-expansion-progress.md`. TAT means average actual consultation duration. Doctor in/out is live Available / On break / Away, separate from weekly schedules. Additional staff are added/invited by Clinic Admin, not self-joined.
+- Reuse existing booking, guest requests, QR, staff and clinic records. Super Admin and owning Clinic Admin must share clinic-level configuration and data, with server-enforced boundaries; platform settings remain Super Admin only.
+- Clinic registration is guided, supports multiple branches with independently inherited email/phone, weekly multi-session hours, referral code metadata, and a consulting-admin doctor capability on the same account. Do not grant a second clinic owner or use a role-switch identity.
+- Public clinic/branch slugs must be unique, protect reserved application paths and preserve existing QR links. Public pages expose clinic information and queue tokens, never patient identities/history. Custom-domain DNS and referral payouts are not part of this expansion.
+
 - Contact-optional booking: clinic QR/link guests can request a place without an account, email or phone. Name is required. Reception confirmation creates the appointment/token; pending requests do not reserve capacity. Reception-assisted bookings may omit contact details. Preserve existing authenticated booking separately; guest receipts must not expose patient history or permit public name/token lookup.
 
 - Track this expanded scope separately in `docs/queue-refresh-progress.md`.

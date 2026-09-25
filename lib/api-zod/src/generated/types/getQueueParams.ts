@@ -20,6 +20,8 @@ import type { SortParameter } from './sortParameter';
 import type { StatusGroupParameter } from './statusGroupParameter';
 
 export type GetQueueParams = {
+sessionId?: string;
+startTime?: string;
 doctorId: string;
 branchId: string;
 date: Date;

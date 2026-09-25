@@ -14,6 +14,8 @@
  */
 
 export interface AppointmentReschedule {
+  sessionId?: string;
+  startTime?: string;
   doctorId: string;
   branchId: string;
   date: Date;

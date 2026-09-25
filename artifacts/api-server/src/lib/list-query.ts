@@ -42,7 +42,11 @@ export function documentSql(kind: string): SQL {
   if (kind === "doctors") doc = sql`${doc} || (select jsonb_build_object('fullName',u.full_name,'email',u.email,'mobile',coalesce(u.mobile,''),'managingAdminId',r.owner_admin_id,'managingAdminName',(select full_name from users where id=r.owner_admin_id),'invitationStatus',case when u.clerk_id is not null then 'notRequired' else u.invitation_status end,'status',case when u.status<>'active' then 'inactive' else r.status end) from users u where u.id=r.user_id) || jsonb_build_object('specializationName',(select data->>'name' from masters where id=r.specialization_id),'qualificationNames',coalesce((select jsonb_agg(data->>'name') from masters where id in (select jsonb_array_elements_text(coalesce(r.data->'qualificationIds','[]'::jsonb)))),'[]'::jsonb))`;
   if (kind === "users") doc = sql`${doc} || jsonb_build_object('mobile',coalesce(r.mobile,''),'managingAdminName',(select full_name from users where id=r.managing_admin_id),'invitationStatus',case when r.clerk_id is not null then 'notRequired' else r.invitation_status end)`;
   if (kind === "clinics") doc = sql`${doc} || jsonb_build_object('adminName',(select full_name from users where id=r.admin_id))`;
-  if (kind === "branches") doc = sql`${doc} || jsonb_build_object('clinicName',(select data->>'name' from clinics where id=r.clinic_id))`;
+  if (kind === "branches") doc = sql`${doc} || jsonb_build_object('clinicName',(select data->>'name' from clinics where id=r.clinic_id),
+    'inheritEmail',coalesce((r.data->>'inheritEmail')::boolean,nullif(r.data->>'email','') is null),
+    'inheritPhone',coalesce((r.data->>'inheritPhone')::boolean,nullif(r.data->>'phone','') is null),
+    'effectiveEmail',case when coalesce((r.data->>'inheritEmail')::boolean,nullif(r.data->>'email','') is null) then (select data->>'email' from clinics where id=r.clinic_id) else r.data->>'email' end,
+    'effectivePhone',case when coalesce((r.data->>'inheritPhone')::boolean,nullif(r.data->>'phone','') is null) then (select data->>'phone' from clinics where id=r.clinic_id) else r.data->>'phone' end)`;
   if (["schedules", "availability-exceptions", "qrs"].includes(kind)) doc = sql`${doc} || jsonb_build_object('doctorName',(select u.full_name from doctors d join users u on u.id=d.user_id where d.id=r.doctor_id),'branchName',(select data->>'name' from branches where id=r.branch_id))`;
   if (kind === "qrs") doc = sql`${doc} || jsonb_build_object('reference',r.public_reference)`;
   if (kind === "audit-logs") doc = sql`${doc} || jsonb_build_object('actorName',(select full_name from users where id=r.actor_id),'actorRole',(select role from users where id=r.actor_id))`;
@@ -60,7 +64,7 @@ export function filterSql(q: any): SQL {
     assert(statusGroups[q.statusGroup], 400, "Invalid status group");
     filters.push(inList(raw("doc->>'status'"), statusGroups[q.statusGroup]));
   }
-  for (const key of ["clinicId", "branchId", "doctorId", "patientId", "adminId", "managingAdminId", "status", "role", "category", "parentId", "gender", "city", "specializationId", "source", "entityType", "actorId", "date"]) {
+  for (const key of ["clinicId", "branchId", "doctorId", "patientId", "adminId", "managingAdminId", "status", "role", "category", "parentId", "gender", "city", "specializationId", "source", "entityType", "actorId", "date", "sessionId", "startTime"]) {
     if (q[key] !== undefined) filters.push(sql`(doc->>${key}=${q[key]} or coalesce(doc->${key === "clinicId" ? "clinicIds" : key === "branchId" ? "branchIds" : "__none"},'[]'::jsonb) ? ${q[key]})`);
   }
   if (q.search) filters.push(sql`exists(select 1 from jsonb_each_text(doc) e where e.key in ('name','fullName','email','mobile','code','reference','token','patientName','doctorName','summary','specializationName') and e.value ilike ${"%" + String(q.search).replace(/[\\%_]/g, "\\$&") + "%"})`);
@@ -95,10 +99,14 @@ export const metricSql = sql`count(*)::int as appointments,
   count(*) filter(where doc->>'status'='noShow')::int as "noShow",
   count(*) filter(where doc->>'status'='cancelled')::int as cancelled,
   coalesce(avg((doc->>'waitMinutes')::numeric),0)::float as "averageWaitMinutes",
-  coalesce(avg((doc->>'consultationMinutesActual')::numeric),0)::float as "averageConsultationMinutes"`;
+  avg(case when doc->>'status'='completed'
+    and doc->>'consultationStartedAt' ~ '^\\d{4}-\\d{2}-\\d{2}T'
+    and doc->>'completedAt' ~ '^\\d{4}-\\d{2}-\\d{2}T'
+    and (doc->>'completedAt')::timestamptz >= (doc->>'consultationStartedAt')::timestamptz
+    then extract(epoch from ((doc->>'completedAt')::timestamptz - (doc->>'consultationStartedAt')::timestamptz))/60 end)::float as "averageConsultationMinutes"`;
 export async function queryMetrics(user: any, q: any) {
   const result = await db.execute(sql`with visible as (${sourceSql(user, "appointments")}) select ${metricSql},
-    count(distinct (doc->>'doctorId',doc->>'branchId')) filter(where doc->>'status' in ('booked','checkedIn','waiting','called','inConsultation'))::int as "activeQueues",
+    count(distinct (doc->>'doctorId',doc->>'branchId',doc->>'date',doc->>'startTime')) filter(where doc->>'status' in ('booked','checkedIn','waiting','called','inConsultation'))::int as "activeQueues",
     min(doc->>'token') filter(where doc->>'status' in ('called','inConsultation')) as "currentToken"
     from visible where ${filterSql(q)}`);
   return result.rows[0];

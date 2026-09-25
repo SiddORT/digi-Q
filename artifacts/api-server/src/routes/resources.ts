@@ -10,6 +10,7 @@ import { assert, parse, query } from "../lib/http";
 import { enrich } from "../lib/entities";
 import { queryPage, assignmentCatalogPredicate } from "../lib/list-query";
 import { invitationMetadata } from "../lib/invitation-metadata";
+import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata } from "../lib/clinic-expansion";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus } from "../lib/availability";
 const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs } = tables;
 export const resourcesRouter = Router();
@@ -224,21 +225,13 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
       status: "active",
       invitationStatus: "failed",
     }, tx);
-    const clinicId = uid();
-    const clinic = await put(clinics, {
-      id: clinicId,
-      ownerId: actor.id,
-      adminId,
-      status: "active",
-      data: {
-        ...body.clinic,
-        code: body.clinic.code || `CLN-${clinicId.slice(0, 8)}`,
-        timezone: body.clinic.timezone || "Asia/Kolkata",
-      },
-    }, tx);
+    const setup = await createOwnedClinic(actor, admin, body, tx);
+    const clinic = setup.clinic;
     await audit(actor, "create", "users", admin, tx);
     await audit(actor, "create", "clinics", clinic, tx);
     return {
+      branches: setup.branches,
+      doctorId: setup.doctorId,
       admin: await enrich("users", admin, tx),
       clinic: await enrich("clinics", clinic, tx),
     };
@@ -258,6 +251,13 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
   }
   const saved = await db.transaction(async tx => {
     const proposed = { ...old, ...body };
+    await validateSlugWrite(kind, body, old, tx);
+    if (kind === "clinics") await validateClinicMetadata(body, tx);
+    if (kind === "branches" && proposed.openingHours) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"branch-hours:" + old?.id}))`);
+      validateOpeningHours(proposed.openingHours);
+      if (proposed.openingHours.length) for (const s of (await all(schedules, tx)).filter(s => s.branchId === old?.id && s.status === "active")) withinBranchHours(proposed, s);
+    }
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${kind + ":" + (proposed.doctorId || old?.id || body.email || "create")}))`);
     if (kind === "schedules") {
       const { freezeDoctorSessions } = await import("../lib/session-duration");
@@ -275,7 +275,15 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       const current = await one(users, old.id, tx);
       assert(current.managingAdminId === old.managingAdminId, 409, "Staff ownership changed; reload before retrying");
     }
-    if (["schedules", "availability-exceptions"].includes(kind)) await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"doctor-schedules:" + proposed.doctorId}))`);
+    if (["schedules", "availability-exceptions"].includes(kind)) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + proposed.doctorId}))`);
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"doctor-schedules:" + proposed.doctorId}))`);
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"branch-hours:" + proposed.branchId}))`);
+      if (kind === "availability-exceptions" && proposed.sessionId) {
+        const session = await one(schedules, proposed.sessionId, tx);
+        assert(session.doctorId === proposed.doctorId && session.branchId === proposed.branchId && session.dayOfWeek === new Date(proposed.date + "T12:00:00Z").getUTCDay(), 400, "Exception session does not match doctor, branch and date");
+      }
+    }
     if (kind === "users" && old?.role === "superAdmin" && body.status === "inactive") {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext('super-admin-protection'))`);
       assert((await all(users, tx)).filter(u => u.role === "superAdmin" && u.status === "active" && u.id !== old.id).length, 409, "Cannot deactivate last active super administrator");
@@ -287,28 +295,58 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       validateTimes(proposed);
       const branch = await one(branches, proposed.branchId, tx);
       const candidate = { ...proposed, timezone: proposed.timezone || branch.timezone || "Asia/Kolkata" };
+      withinBranchHours(branch, candidate);
       const collisions = (await all(schedules, tx)).filter(s => s.id !== old?.id && s.status === "active" && s.doctorId === proposed.doctorId);
+      // A legacy exception was authored for the one original weekly session.
+      // Bind it to that stable ID before introducing a second template, rather
+      // than accidentally copying its replacement timing onto both sessions.
+      const previous = (await all(schedules, tx)).filter(s => s.status === "active" && s.doctorId === proposed.doctorId && s.branchId === proposed.branchId && s.dayOfWeek === proposed.dayOfWeek);
+      if (!old && previous.length === 1) {
+        for (const e of (await all(availabilityExceptions, tx)).filter(e => !e.sessionId && e.doctorId === proposed.doctorId && e.branchId === proposed.branchId && new Date(e.date + "T12:00:00Z").getUTCDay() === proposed.dayOfWeek)) {
+          await change(availabilityExceptions, e.id, { data: { ...e, sessionId: previous[0].id } }, tx);
+        }
+      }
       for (const session of collisions) {
         const otherBranch = await one(branches, session.branchId, tx);
         const other = { ...session, timezone: session.timezone || otherBranch.timezone || "Asia/Kolkata" };
-        assert(!(session.branchId === proposed.branchId && session.dayOfWeek === proposed.dayOfWeek) && !weeklySessionsOverlap(candidate, other), 409, "This schedule overlaps with an existing schedule");
+        assert(!weeklySessionsOverlap(candidate, other), 409, "This schedule overlaps with an existing schedule");
+      }
+      const exceptions = (await all(availabilityExceptions, tx)).filter(e => e.doctorId === proposed.doctorId && e.status === "active");
+      const templates = [...collisions, { ...candidate, id: old?.id || "__new_session__" }];
+      const dates = new Set<string>();
+      for (const e of exceptions) for (const offset of [-1, 0, 1]) dates.add(datePlus(e.date, offset));
+      const effective: { session: any; date: string }[] = [];
+      for (const date of dates) {
+        for (const template of templates.filter(s => s.dayOfWeek === new Date(date + "T12:00:00Z").getUTCDay())) {
+          const location = await one(branches, template.branchId, tx);
+          const exception = exceptions.find(e => e.branchId === template.branchId && e.date === date && e.sessionId === template.id) || exceptions.find(e => e.branchId === template.branchId && e.date === date && !e.sessionId);
+          const session = { ...template, timezone: template.timezone || location.timezone || "Asia/Kolkata" };
+          if (exception) for (const key of ["startTime", "endTime", "breakStart", "breakEnd", "isClosed"]) if (exception[key] !== undefined && (exception[key] !== null || key.startsWith("break"))) session[key] = exception[key];
+          effective.push({ session, date });
+        }
+      }
+      for (let i = 0; i < effective.length; i++) for (let j = i + 1; j < effective.length; j++) {
+        assert(!sessionsOverlap(effective[i].session, effective[i].date, effective[j].session, effective[j].date), 409, "Weekly change overlaps a dated session exception");
       }
     }
     if (kind === "availability-exceptions" && !proposed.isClosed) {
       const weekday = new Date(proposed.date + "T12:00:00Z").getUTCDay();
-      const base = (await all(schedules, tx)).find(s => s.doctorId === proposed.doctorId && s.branchId === proposed.branchId && s.dayOfWeek === weekday && s.status === "active");
+      const bases = (await all(schedules, tx)).filter(s => s.doctorId === proposed.doctorId && s.branchId === proposed.branchId && s.dayOfWeek === weekday && s.status === "active" && (!proposed.sessionId || s.id === proposed.sessionId));
+      assert(bases.length <= 1, 409, "Choose a session for the date exception");
+      const base = bases[0];
       assert(base, 409, "Create a weekly schedule before overriding its timing");
       const baseBranch = await one(branches, base.branchId, tx);
       const effective = { ...base, ...Object.fromEntries(Object.entries(proposed).filter(([k,v]) => v !== null || k.startsWith("break"))), timezone: proposed.timezone || base.timezone || baseBranch.timezone || "Asia/Kolkata" };
       validateTimes(effective);
-      const otherSchedules = (await all(schedules, tx)).filter(s => s.doctorId === proposed.doctorId && s.branchId !== proposed.branchId && s.status === "active" && s.isOpen);
+      withinBranchHours(baseBranch, effective);
+      const otherSchedules = (await all(schedules, tx)).filter(s => s.doctorId === proposed.doctorId && s.id !== base.id && s.status === "active" && s.isOpen);
       const exceptions = (await all(availabilityExceptions, tx)).filter(e => e.id !== old?.id && e.doctorId === proposed.doctorId && e.status === "active");
       for (const session of otherSchedules) {
         const otherBranch = await one(branches, session.branchId, tx);
         for (const offset of [-1, 0, 1]) {
           const otherDate = datePlus(proposed.date, offset);
           if (new Date(otherDate + "T12:00:00Z").getUTCDay() !== session.dayOfWeek) continue;
-          const exception = exceptions.find(e => e.branchId === session.branchId && e.date === otherDate);
+          const exception = exceptions.find(e => e.branchId === session.branchId && e.date === otherDate && e.sessionId === session.id) || exceptions.find(e => e.branchId === session.branchId && e.date === otherDate && !e.sessionId);
           const other = { ...session, ...exception, timezone: exception?.timezone || session.timezone || otherBranch.timezone || "Asia/Kolkata" };
           assert(!sessionsOverlap(effective, proposed.date, other, otherDate), 409, "This schedule overlaps with an existing schedule");
         }
@@ -335,7 +373,8 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         const conflict = links.some(link => {
           const account = accounts.find(a => a.id === link.userId);
           if (account?.role === "receptionist") return account.managingAdminId !== fields.adminId;
-          if (account?.role === "doctor") return doctorRows.find(d => d.userId === account.id)?.ownerAdminId !== fields.adminId;
+          const clinicalProfile = doctorRows.find(d => d.userId === account?.id);
+          if (clinicalProfile) return clinicalProfile.ownerAdminId !== fields.adminId;
           return false;
         });
         assert(!conflict, 409, "Transfer blocked because assigned doctors or receptionists are managed by another Clinic Admin");
@@ -373,6 +412,17 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       if (body.ownerAdminId !== undefined) assert(body.ownerAdminId === managingAdminId, 409, "Supplied Clinic Admin does not match the owner derived from selected clinics");
       if (body.managingAdminId !== undefined) assert(body.managingAdminId === managingAdminId, 409, "Supplied Clinic Admin does not match the owner derived from selected clinics");
       const uf: any = { fullName: body.fullName, email: body.email, mobile: body.mobile, role, status: fields.status, ...(!old ? { invitationStatus: "failed" } : {}) };
+      if (kind === "doctors" && old) {
+        const account = await one(users, userId, tx);
+        if (account.role === "clinicAdmin") {
+          assert(managingAdminId === userId, 409, "An administrator's clinical profile must retain its own Clinic Admin owner");
+          // Updating or deactivating the clinical capability must never downgrade
+          // or deactivate the owning administrative account.
+          uf.role = "clinicAdmin"; uf.status = account.status;
+          const sameIds = (a: string[], b: string[]) => JSON.stringify([...new Set(a)].sort()) === JSON.stringify([...new Set(b)].sort());
+          assert(!assignmentChangeRequested || sameIds(requestedClinics, old.clinicIds || []) && sameIds(requestedBranches, old.branchIds || []), 409, "Use your own doctor-profile setup to attach additional owned branches; clinic ownership mappings are preserved");
+        }
+      }
       if (kind === "doctors") {
         if (old) {
           await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + old.id}))`);
@@ -401,7 +451,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         assert(!requestedClinics.length && !requestedBranches.length, 409, "Create the Clinic Admin as pending, then transfer clinic ownership explicitly");
       }
       const row = old ? await change(table, id, fields, tx) : await put(table, { id, ...fields }, tx);
-      if (["doctor", "receptionist"].includes(role) && (kind !== "doctors" || !old || assignmentChangeRequested)) {
+      if (uf.role !== "clinicAdmin" && ["doctor", "receptionist"].includes(role) && (kind !== "doctors" || !old || assignmentChangeRequested)) {
         await setAssignments(userId, requestedClinics, requestedBranches, user, managingAdminId!, tx);
       }
       if (kind === "users" && !old && body.role === "patient") await put(patients, { id: uid(), userId, mobile: body.mobile || "", data: { fullName: body.fullName, email: body.email, code: `PAT-${id.slice(0,8)}` } }, tx);
@@ -413,6 +463,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       return enrich(kind, row, tx);
     }
     const row = old ? await change(table, id, fields, tx) : await put(table, { id, ...fields }, tx);
+    if (kind === "branches") await provisionBranchQr(row, old, tx);
     if (kind === "clinics" && !old && user.role === "doctor") {
       await tx.insert(tables.assignments).values({ id: uid(), userId: user.id, clinicId: id }).onConflictDoNothing();
     }
@@ -615,12 +666,17 @@ for (const [kind, table, schema, listSchema] of definitions) {
     assert(user.role !== "patient", 403, "Patients cannot deactivate profiles");
     await authorizeWrite(user, kind, {}, old);
     await db.transaction(async tx => {
+      if (kind === "schedules") {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + old.doctorId}))`);
+        const { freezeDoctorSessions } = await import("../lib/session-duration");
+        await freezeDoctorSessions(old.doctorId, tx);
+      }
       if (kind === "users" && old.role === "superAdmin") {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext('super-admin-protection'))`);
         assert((await all(users, tx)).some(u => u.role === "superAdmin" && u.status === "active" && u.id !== old.id), 409, "Cannot deactivate last active super administrator");
       }
       await change(table, old.id, { status: "inactive" }, tx);
-      if (kind === "doctors") await change(users, old.userId, { status: "inactive" }, tx);
+      if (kind === "doctors" && (await one(users, old.userId, tx)).role !== "clinicAdmin") await change(users, old.userId, { status: "inactive" }, tx);
       await audit(user, "deactivate", kind, old, tx);
     });
     res.sendStatus(204);

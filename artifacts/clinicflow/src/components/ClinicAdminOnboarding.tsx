@@ -1,86 +1,38 @@
 import { useRef, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { onboardClinicAdmin } from "@workspace/api-client-react";
+import { Link } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
+import * as api from "@workspace/api-client-react";
 import { Plus } from "lucide-react";
-import { AppDialog } from "./AppDialog";
+import { ClinicRegistrationWizard, type RegistrationValues } from "./ClinicRegistrationWizard";
+import { Logo } from "../App";
 
-type SetupFields = {
-  fullName: string;
-  email: string;
-  mobile: string;
-  name: string;
-  address: string;
-  city: string;
-  phone: string;
-};
+export function ClinicAdminOnboarding({ guided = false }: { guided?: boolean }) {
+  if (guided) return <GuidedAdminSetup/>;
+  return <section className="panel padded" style={{ marginBottom: 20 }}><h3>Clinic Admin setup</h3><p className="muted">Invite a clinic owner and create their clinic, locations and hours together. Existing ownership is never transferred.</p><Link className="button small" href="/register-clinic" data-testid="button-setup-clinic-admin"><Plus size={17}/>Set up Clinic Admin</Link></section>;
+}
 
-export function ClinicAdminOnboarding() {
-  const [open, setOpen] = useState(false);
-  const [success, setSuccess] = useState("");
-  const locked = useRef(false);
+function GuidedAdminSetup() {
   const client = useQueryClient();
-  const form = useForm<SetupFields>();
-  const setup = useMutation({
-    onSettled: () => { locked.current = false; },
-    mutationFn: (values: SetupFields) => onboardClinicAdmin({
-      admin: {
-        fullName: values.fullName.trim(),
-        email: values.email.trim(),
-        ...(values.mobile.trim() ? { mobile: values.mobile.trim() } : {}),
-      },
-      clinic: {
-        name: values.name.trim(),
-        address: values.address.trim(),
-        ...(values.city.trim() ? { city: values.city.trim() } : {}),
-        ...(values.phone.trim() ? { phone: values.phone.trim() } : {}),
-      },
-    }),
-    onSuccess: (_result, values) => {
-      setSuccess(`${values.fullName} now manages ${values.name}. Clinic access has been saved.`);
-      setOpen(false);
-      form.reset();
-      client.invalidateQueries();
-    },
-  });
-  const input = (key: keyof SetupFields, label: string, required = false, type = "text") => (
-    <label key={key}>
-      {label}{required && <span className="required"> *</span>}
-      <input type={type} data-testid={`onboarding-${key}`} {...form.register(key, {
-        required,
-        validate: value => !required || !!value?.trim(),
-      })} />
-      {form.formState.errors[key] && <small className="field-error">Please complete this field.</small>}
-    </label>
-  );
-  return (
-    <section className="panel padded" style={{ marginBottom: 20 }}>
-      <h3>Clinic Admin setup</h3>
-      <p className="muted">Create a Clinic Admin and their first clinic together. Existing clinics and their owners are not changed.</p>
-      <button className="button small" data-testid="button-setup-clinic-admin" onClick={() => {
-        form.reset(); setup.reset(); setSuccess(""); setOpen(true);
-      }}><Plus size={17} /> Set up Clinic Admin</button>
-      {success && <p className="notice" role="status" data-testid="onboarding-success">{success}</p>}
-      {open && <AppDialog open onClose={() => setOpen(false)} title="Set up Clinic Admin and first clinic" dirty={form.formState.isDirty} busy={setup.isPending}>
-        <p className="notice">Both records are saved together. The new admin will be the clinic’s only Clinic Admin. No existing ownership will be transferred.</p>
-        {setup.error && <div className="error-box" role="alert">Unable to set up the Clinic Admin and clinic. {setup.error.message}</div>}
-        <form className="form-grid" onSubmit={form.handleSubmit(values => { if (!setup.isPending && !locked.current) { locked.current = true; setup.mutate(values); } })}>
-          <h3 className="wide">Administrator</h3>
-          {input("fullName", "Full name", true)}
-          {input("email", "Admin email", true, "email")}
-          {input("mobile", "Admin mobile", false, "tel")}
-          <h3 className="wide">New clinic</h3>
-          {input("name", "Clinic name", true)}
-          {input("address", "Address", true)}
-          {input("city", "City")}
-          {input("phone", "Clinic phone", false, "tel")}
-          <div className="wide form-footer">
-            <button className="button" disabled={setup.isPending} data-testid="button-submit-clinic-admin">
-              {setup.isPending ? "Saving…" : "Set up Clinic Admin"}
-            </button>
-          </div>
-        </form>
-      </AppDialog>}
-    </section>
-  );
+  const locked = useRef(false);
+  const [completed, setCompleted] = useState<api.ClinicAdminOnboardingResult | null>(null);
+  const setup = api.useOnboardClinicAdmin();
+  const references = api.useGetRegistrationOptions();
+  async function finish(values: RegistrationValues) {
+    if (locked.current) return;
+    locked.current = true;
+    try {
+      const result = await setup.mutateAsync({ data: {
+        admin: { fullName: values.fullName.trim(), email: values.email.trim(), ...(values.mobile.trim() ? { mobile: values.mobile.trim() } : {}) },
+        clinic: { name: values.name.trim(), address: values.branches[0].address.trim(), slug: values.slug, email: values.clinicEmail.trim() || undefined, phone: values.phone.trim() || undefined, categoryId: values.categoryId || undefined, specialityIds: values.specialityIds, referralCode: values.referralCode.trim() || null },
+        branches: values.branches.map(b => ({ name: b.name.trim(), slug: b.slug, address: b.address.trim(), city: b.city.trim(), timezone: b.timezone, email: b.email.trim() || null, phone: b.phone.trim() || null, inheritEmail: b.inheritEmail, inheritPhone: b.inheritPhone, openingHours: b.hours.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ dayOfWeek: d.dayOfWeek, ...s }))) })),
+        ownDoctor: values.alsoConsult, ...(values.alsoConsult ? { specializationId: values.specializationId || undefined, qualificationIds: values.qualificationIds } : {}),
+      } });
+      setCompleted(result);
+      await client.invalidateQueries();
+    } finally { locked.current = false; }
+  }
+  if (completed) return <div className="clinic-registration"><Logo/><main className="registration-card"><span className="eyebrow">CLINIC SETUP SAVED</span><h1>{completed.clinic.name}</h1><p>{completed.admin.fullName} is the clinic’s sole Clinic Admin.</p><p role="status" className={completed.admin.invitationStatus === "failed" ? "error-box" : "notice"}>{completed.admin.invitationStatus === "sent" ? "The account invitation was sent." : completed.admin.invitationStatus === "failed" ? "The clinic was created, but the invitation failed. Retry the invitation in Staff management." : "No new account invitation was required."}</p><Link href="/admin/users" className="button" data-testid="admin-registration-users">Open Staff management</Link>{completed.clinic.slug && <Link href={`/${completed.clinic.slug}`} className="text-link" data-testid="admin-registration-public">View clinic page</Link>}</main></div>;
+  if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
+  if (references.error && !references.data) return <div className="error-box" role="alert">Could not load clinic setup options. {references.error.message}<button data-testid="admin-registration-retry-options" onClick={() => references.refetch()}>Try again</button></div>;
+  return <ClinicRegistrationWizard adminMode categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?.message}/>;
 }

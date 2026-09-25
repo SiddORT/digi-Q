@@ -13,9 +13,15 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { Appointment } from './appointment';
+import type { DoctorPresence } from './doctorPresence';
 import type { OwnQueueEntry } from './ownQueueEntry';
 
 export interface LiveQueue {
+  /** @nullable */
+  sessionId?: string | null;
+  /** @nullable */
+  startTime?: string | null;
+  presence?: DoctorPresence;
   page?: number;
   pageSize?: number;
   totalPages?: number;

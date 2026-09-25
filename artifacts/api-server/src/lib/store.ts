@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { db, settings, auditLogs } from "@workspace/db";
+import { db, settings, auditLogs, clinics } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { assert } from "./http";
 import { otpDeliveryConfigured } from "./otp-delivery";
@@ -30,9 +30,10 @@ export const defaultSettings = {
   requireMobileVerification: false, otpExpirySeconds: 300, otpMaxAttempts: 5, sessionTimeoutMinutes: 60,
   notificationsEnabled: false, queuePollSeconds: 30,
 };
-export async function getSettings(conn: any = db) {
+export async function getSettings(conn: any = db, clinicId?: string) {
   const [row] = await conn.select().from(settings).where(eq(settings.id, "platform"));
-  return { ...defaultSettings, ...row?.data, otpProviderConfigured: otpDeliveryConfigured(), queuePollSeconds: 30 };
+  const clinic = clinicId ? await one(clinics, clinicId, conn) : null;
+  return { ...defaultSettings, ...row?.data, ...(clinic?.policies || {}), otpProviderConfigured: otpDeliveryConfigured(), queuePollSeconds: 30 };
 }
 export function filtered(rows: any[], q: any) {
   return rows.filter(r => {

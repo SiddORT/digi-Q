@@ -7,7 +7,7 @@ import { assert, parse } from "../lib/http";
 import { all, one, change, audit } from "../lib/store";
 import { configuredDuration, sessionKey, freezeDoctorSessions } from "../lib/session-duration";
 import { sessionRows, queueVersion } from "../lib/queue-order";
-import { doctorContext, localNow, minutes } from "../lib/availability";
+import { doctorContext, localNow, minutes, availability } from "../lib/availability";
 
 export const durationRouter = Router();
 async function authorize(user: any, doctorId: string, clinicId: string, conn: any = db) {
@@ -33,7 +33,8 @@ durationRouter.patch("/doctors/:id/duration/:clinicId", async (req, res) => {
       assert(body.confirmRunningSession === true && body.branchId && body.date && body.expectedQueueVersion, 400, "Confirm the warning and select a running session");
       const { branch } = await doctorContext(p.id, body.branchId, tx);
       assert(branch.clinicId === p.clinicId && scope(user, p.clinicId, branch.id), 403, "Session outside assigned scope");
-      const session = { doctorId: p.id, branchId: body.branchId, date: body.date };
+      const available = body.startTime ? { startTime: body.startTime, sessionId: body.sessionId } : await availability(p.id, body.branchId, body.date, tx, body);
+      const session = { doctorId: p.id, branchId: body.branchId, date: body.date, startTime: available.startTime, sessionId: available.sessionId };
       const rows = sessionRows(await all(appointments, tx), session);
       assert(rows.length > 0, 409, "No snapshotted session to update");
       const now = localNow(rows[0].timezone || branch.timezone || "Asia/Kolkata");
@@ -48,19 +49,20 @@ durationRouter.patch("/doctors/:id/duration/:clinicId", async (req, res) => {
     const doctorRows = (await all(appointments, tx)).filter(a => a.doctorId === p.id && a.clinicId === p.clinicId);
     const clinicBranches = (await all(branches, tx)).filter(b => b.clinicId === p.clinicId);
     const doctorSchedules = (await all(schedules, tx)).filter(s => s.doctorId === p.id && s.status === "active");
-    const sessions = new Map<string, { doctorId: string; branchId: string; date: string }>();
+    const sessions = new Map<string, any>();
     for (const row of doctorRows) sessions.set(sessionKey(row), row);
     // A rescheduled-away reservation can leave an empty but durable snapshot.
     // Include it so a later booking does not resurrect the former duration.
     const prefix = `session:${p.id}:`;
     for (const snapshot of (await all(settings, tx)).filter(s => s.id.startsWith(prefix))) {
-      const tail = snapshot.id.slice(prefix.length), separator = tail.lastIndexOf(":");
-      const branchId = tail.slice(0, separator), date = tail.slice(separator + 1);
-      if (clinicBranches.some(b => b.id === branchId)) sessions.set(snapshot.id, { doctorId: p.id, branchId, date });
+      const match = /^([^:]+):(\d{4}-\d{2}-\d{2})(?::(\d{2}:\d{2}))?$/.exec(snapshot.id.slice(prefix.length));
+      if (!match) continue;
+      const [, branchId, date, startTime] = match;
+      if (clinicBranches.some(b => b.id === branchId)) sessions.set(snapshot.id, { doctorId: p.id, branchId, date, startTime });
     }
     for (const [key, session] of sessions) {
       const rows = sessionRows(doctorRows, session), branch = clinicBranches.find(b => b.id === session.branchId);
-      const schedule = doctorSchedules.find(s => s.branchId === session.branchId && s.dayOfWeek === new Date(session.date + "T12:00:00Z").getUTCDay());
+      const schedule = doctorSchedules.find(s => s.branchId === session.branchId && s.dayOfWeek === new Date(session.date + "T12:00:00Z").getUTCDay() && (!session.startTime || s.startTime === session.startTime));
       const timezone = rows[0]?.timezone || schedule?.timezone || branch?.timezone || "Asia/Kolkata";
       const now = localNow(timezone), startTime = rows[0]?.startTime || schedule?.startTime;
       const hasStarted = rows.some(a => a.calledAt || a.consultationStartedAt || ["called", "inConsultation", "completed"].includes(a.status));

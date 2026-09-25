@@ -15,6 +15,8 @@
 import type { BookingSource } from './bookingSource';
 
 export interface AppointmentInput {
+  sessionId?: string;
+  startTime?: string;
   patientId: string;
   doctorId: string;
   clinicId: string;

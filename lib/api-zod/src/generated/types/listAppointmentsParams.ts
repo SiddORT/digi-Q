@@ -22,11 +22,15 @@ import type { FromParameter } from './fromParameter';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
 import type { SearchParameter } from './searchParameter';
+import type { SessionIdParameter } from './sessionIdParameter';
 import type { SortParameter } from './sortParameter';
+import type { StartTimeParameter } from './startTimeParameter';
 import type { StatusGroupParameter } from './statusGroupParameter';
 import type { ToParameter } from './toParameter';
 
 export type ListAppointmentsParams = {
+sessionId?: SessionIdParameter;
+startTime?: StartTimeParameter;
 /**
  * Server-side group filter applied before pagination; intersects with status when both supplied
  */

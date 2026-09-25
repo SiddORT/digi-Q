@@ -276,6 +276,7 @@ test("booking rejects invalid scope, inactive context, duplicate, full, past, ho
   body=seed(); api.state.rows.availabilityExceptions=[{doctorId:"d",branchId:"b",date:body.date,status:"active",isClosed:true}];
   await assert.rejects(book(body),/Closed/);
   body=seed(); api.state.config.requireMobileVerification=true; api.state.rows.patients[0].mobileVerified=false;
+  api.state.rows.patients[0].userId="linked-patient"; // Unlinked assisted guests intentionally permit missing contact/OTP.
   await assert.rejects(book({...body,source:"phone"}),/verification/);
   body=seed(); api.state.rows.schedules[0].queueCloseTime="00:00";
   assert.equal((await api.availability("d","b",body.date)).reason,"Queue booking has closed");

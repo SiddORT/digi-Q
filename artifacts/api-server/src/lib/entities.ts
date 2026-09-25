@@ -27,7 +27,14 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
     row.createdAt ||= null;
   }
   if (kind === "clinics") row.adminName = (await one(users, row.adminId, conn)).fullName;
-  if (kind === "branches") { row.clinicName = (await one(clinics, row.clinicId, conn)).name; row.createdAt ||= null; }
+  if (kind === "branches") {
+    const clinic = await one(clinics, row.clinicId, conn);
+    row.clinicName = clinic.name; row.createdAt ||= null;
+    row.inheritEmail ??= !row.email;
+    row.inheritPhone ??= !row.phone;
+    row.effectiveEmail = row.inheritEmail ? clinic.email || null : row.email || null;
+    row.effectivePhone = row.inheritPhone ? clinic.phone || null : row.phone || null;
+  }
   if (kind === "qrs") row.reference = row.publicReference;
   return row;
 }

@@ -70,6 +70,7 @@ export async function createQueueHarness() {
         export * from "./lib/reschedule";
         export * from "./lib/queue-order";
         export * from "./lib/store";
+        export * from "./lib/clinic-expansion";
         export * from "./routes/appointments";
         export * from "./routes/queue";
         export * as tables from "@workspace/db";
@@ -97,6 +98,15 @@ export async function createQueueHarness() {
     });
     const api = await import(bundle), t = api.tables;
     await control.query(queueFixtureSql);
+    // Execute the exact historical triggers, then the additive compatibility
+    // migration, so fixture-only schemas cannot conceal live ownership guards.
+    const legacyOwnership = await readFile(resolve(root, "../../../lib/db/drizzle/0002_sad_texas_twister.sql"), "utf8");
+    await control.query("create unique index assignment_user_clinic_only_unique on assignments(user_id,clinic_id) where branch_id is null; create unique index assignment_user_branch_unique on assignments(user_id,branch_id) where branch_id is not null;");
+    await control.query(legacyOwnership.slice(legacyOwnership.indexOf("CREATE OR REPLACE FUNCTION enforce_clinicflow_admin_ownership()")));
+    const staffOwnership = await readFile(resolve(root, "../../../lib/db/drizzle/0005_ancient_ultron.sql"), "utf8");
+    await control.query(staffOwnership.slice(staffOwnership.indexOf("CREATE OR REPLACE FUNCTION clinicflow_assert_staff_owner(")));
+    await control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0006_safe_staff_manager_guard.sql"), "utf8"));
+    await control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0008_consulting_admin_assignments.sql"), "utf8"));
     const staff = { id: "r", role: "receptionist", clinicIds: ["c"], branchIds: ["b", "b2"] };
     const patient = { id: "u1", role: "patient", patientId: "p1", clinicIds: [], branchIds: [] };
     const today = new Date().toISOString().slice(0, 10);
@@ -113,7 +123,7 @@ export async function createQueueHarness() {
         return result;
       });
     }
-    async function race(operations, { doctorIds = ["d"] } = {}) {
+    async function race(operations, { doctorIds = ["d"], lockKeys = [] } = {}) {
       const gate = await connect();
       const workers = await Promise.all(operations.map(() => connect()));
       let results;
@@ -122,6 +132,7 @@ export async function createQueueHarness() {
         for (const id of [...doctorIds].sort()) {
           await gate.query("select pg_advisory_xact_lock(hashtext($1))", [`schedules:${id}`]);
         }
+        for (const key of [...lockKeys].sort()) await gate.query("select pg_advisory_xact_lock(hashtext($1))", [key]);
         const pids = await Promise.all(workers.map(async c => (await c.query("select pg_backend_pid() as pid")).rows[0].pid));
         assert.equal(new Set(pids).size, operations.length, "independent PostgreSQL backends");
         results = Promise.allSettled(workers.map((client, index) => {
@@ -149,7 +160,7 @@ export async function createQueueHarness() {
     }
     return {
       api, t, staff, patient, today, tomorrow, db, route, race, close,
-      seed: () => seedQueueFixtures(api, t, { exec: sql => control.query(sql) }),
+      seed: () => db.transaction(tx => context.run({db:tx}, () => seedQueueFixtures(api, t, { exec: sql => control.query(sql) }))),
       rows: () => api.all(t.appointments),
       act: (id, body, actor = staff) => db.transaction(tx => api.transition(actor, id, body, tx)),
       book: (patientId = "p1", date = today, extra = {}, { actor = staff, tx } = {}) =>

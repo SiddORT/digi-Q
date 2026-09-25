@@ -35,15 +35,16 @@ export async function bookAppointment(user: any, body: any, tx: any) {
     const existing = await all(appointments, tx);
     if (body.requestId) {
       const original = existing.find(a => a.requestId === body.requestId && a.actorId === user.id);
-      if (original) { assert(original.patientId === body.patientId && original.doctorId === body.doctorId && original.clinicId === body.clinicId && original.branchId === body.branchId && original.date === body.date && original.source === body.source, 409, "Idempotency key already used for another booking"); return original; }
+      if (original) { assert(original.patientId === body.patientId && original.doctorId === body.doctorId && original.clinicId === body.clinicId && original.branchId === body.branchId && original.date === body.date && (!body.startTime || original.startTime === body.startTime) && (!body.sessionId || original.sessionId === body.sessionId) && original.source === body.source, 409, "Idempotency key already used for another booking"); return original; }
     }
-    assert(!existing.some(a => a.patientId === body.patientId && a.doctorId === body.doctorId && a.branchId === body.branchId && a.date === body.date && !["cancelled", "completed", "noShow"].includes(a.status)), 409, "Patient already has an active booking for this session");
+    const available = await availability(body.doctorId, body.branchId, body.date, tx, body);
+    body = { ...body, sessionId: available.sessionId, startTime: available.startTime };
+    assert(!sessionRows(existing, body).some(a => a.patientId === body.patientId && !["cancelled", "completed", "noShow"].includes(a.status)), 409, "Patient already has an active booking for this session");
     const patient = await one(patients, body.patientId, tx);
     assert(patient.status === "active", 409, "Patient is inactive");
     const contactOptional = !patient.userId && ["superAdmin", "clinicAdmin", "receptionist"].includes(user.role);
     if (!contactOptional) assert(/^\+[1-9][0-9]{7,14}$/.test(patient.mobile), 400, "Complete the patient's international mobile number before booking");
     assert(user.role === "patient" || await canRead(user, "patients", patient), 403, "Patient outside assigned scope");
-    const available = await availability(body.doctorId, body.branchId, body.date, tx);
     assert(available.clinicId === body.clinicId, 400, "Clinic/branch mismatch");
     assert(available.available, 409, available.reason || "Session unavailable");
     assert(available.queueMode !== "appointmentsOnly" || body.source !== "walkIn", 409, "Session accepts appointments only");
@@ -57,7 +58,7 @@ export async function bookAppointment(user: any, body: any, tx: any) {
         assert(!available.breakStart || now.minute < minutes(available.breakStart) || now.minute >= minutes(available.breakEnd!), 409, "Doctor is on a break");
       }
     }
-    const config = await getSettings(tx);
+    const config = await getSettings(tx, body.clinicId);
     assert(contactOptional || !config.requireMobileVerification || patient.mobileVerified, 403, "Patient mobile verification is required");
     if (user.role === "patient") assert(body.termsAccepted, 400, "Terms and privacy consent is required");
     if (body.source === "qr") {

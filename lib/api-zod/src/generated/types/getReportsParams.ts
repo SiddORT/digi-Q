@@ -19,9 +19,13 @@ import type { FromParameter } from './fromParameter';
 import type { GetReportsGroupBy } from './getReportsGroupBy';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
+import type { SessionIdParameter } from './sessionIdParameter';
+import type { StartTimeParameter } from './startTimeParameter';
 import type { ToParameter } from './toParameter';
 
 export type GetReportsParams = {
+sessionId?: SessionIdParameter;
+startTime?: StartTimeParameter;
 /**
  * @minimum 1
  */

@@ -1,0 +1,6 @@
+.clinic-settings { display: grid; gap: 16px; }
+.clinic-settings details { padding: 10px 0; border-bottom: 1px solid var(--color-border); }
+.clinic-settings summary, .branch-hours summary { cursor: pointer; font-weight: 600; }
+.branch-hours { padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius); }
+.branch-hours details { padding: 9px 0; }
+.branch-hours button { margin: 8px 8px 8px 0; }

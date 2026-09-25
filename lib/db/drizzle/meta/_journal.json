@@ -57,6 +57,27 @@
       "when": 1790097311355,
       "tag": "0007_staff_session_proofs",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790352000000,
+      "tag": "0008_consulting_admin_assignments",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790352000001,
+      "tag": "0009_public_slugs_session_isolation",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790352000002,
+      "tag": "0010_guest_request_contract",
+      "breakpoints": true
     }
   ]
 }

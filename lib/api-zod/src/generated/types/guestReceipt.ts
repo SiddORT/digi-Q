@@ -15,6 +15,8 @@
 import type { GuestReceiptStatus } from './guestReceiptStatus';
 
 export interface GuestReceipt {
+  /** @nullable */
+  sessionId?: string | null;
   id: string;
   status: GuestReceiptStatus;
   fullName: string;

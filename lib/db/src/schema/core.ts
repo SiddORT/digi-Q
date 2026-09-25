@@ -19,13 +19,14 @@ export const users = pgTable("users", {
 export const clinics = pgTable("clinics", {
   id: id(), ownerId: text("owner_id").references(() => users.id), adminId: text("admin_id").notNull().references(() => users.id),
   status: text("status").notNull().default("active"), data: data(), createdAt: created(),
-}, t => [index("clinic_owner_idx").on(t.ownerId), index("clinic_admin_idx").on(t.adminId), uniqueIndex("clinic_name_unique").on(sql`lower(${t.data}->>'name')`)]);
+}, t => [index("clinic_owner_idx").on(t.ownerId), index("clinic_admin_idx").on(t.adminId), uniqueIndex("clinic_name_unique").on(sql`lower(${t.data}->>'name')`), uniqueIndex("clinic_slug_unique").on(sql`(${t.data}->>'slug')`)]);
 export const branches = pgTable("branches", {
   id: id(), clinicId: text("clinic_id").notNull().references(() => clinics.id), status: text("status").notNull().default("active"), data: data(), createdAt: created(),
 }, t => [
   index("branch_clinic_idx").on(t.clinicId),
   uniqueIndex("branch_id_clinic_unique").on(t.id, t.clinicId),
   uniqueIndex("branch_name_clinic_unique").on(t.clinicId, sql`lower(${t.data}->>'name')`),
+  uniqueIndex("branch_slug_clinic_unique").on(t.clinicId, sql`(${t.data}->>'slug')`),
 ]);
 export const assignments = pgTable("assignments", {
   id: id(), userId: text("user_id").notNull().references(() => users.id), clinicId: text("clinic_id").notNull().references(() => clinics.id),
@@ -56,25 +57,25 @@ export const schedules = pgTable("schedules", {
   branchId: text("branch_id").notNull().references(() => branches.id), dayOfWeek: integer("day_of_week").notNull(), status: text("status").notNull().default("active"), data: data(),
 }, t => [
   index("schedule_lookup_idx").on(t.doctorId, t.branchId, t.dayOfWeek),
-  uniqueIndex("schedule_active_location_day_unique").on(t.doctorId, t.branchId, t.dayOfWeek).where(sql`${t.status} = 'active'`),
+  uniqueIndex("schedule_active_location_day_unique").on(t.doctorId, t.branchId, t.dayOfWeek, sql`(${t.data}->>'startTime')`).where(sql`${t.status} = 'active'`),
   check("schedule_weekday", sql`${t.dayOfWeek} between 0 and 6`),
 ]);
 export const availabilityExceptions = pgTable("availability_exceptions", {
   id: id(), doctorId: text("doctor_id").notNull().references(() => doctors.id), branchId: text("branch_id").notNull().references(() => branches.id),
   date: text("date").notNull(), status: text("status").notNull().default("active"), data: data(),
-}, t => [uniqueIndex("exception_date_idx").on(t.doctorId, t.branchId, t.date)]);
+}, t => [uniqueIndex("exception_date_idx").on(t.doctorId, t.branchId, t.date, sql`coalesce(${t.data}->>'sessionId','')`)]);
 export const appointments = pgTable("appointments", {
   id: id(), patientId: text("patient_id").notNull().references(() => patients.id), doctorId: text("doctor_id").notNull().references(() => doctors.id),
   clinicId: text("clinic_id").notNull().references(() => clinics.id), branchId: text("branch_id").notNull().references(() => branches.id),
   date: text("date").notNull(), tokenNumber: integer("token_number").notNull(), status: text("status").notNull().default("booked"),
   requestId: text("request_id"), actorId: text("actor_id").notNull().references(() => users.id), data: data(), createdAt: created(),
 }, t => [
-  uniqueIndex("appointment_token_idx").on(t.doctorId, t.branchId, t.date, t.tokenNumber),
+  uniqueIndex("appointment_token_idx").on(t.doctorId, t.branchId, t.date, sql`coalesce(${t.data}->>'startTime','')`, t.tokenNumber),
   uniqueIndex("appointment_request_idx").on(t.actorId, t.requestId),
   uniqueIndex("appointment_reference_idx").on(sql`(${t.data}->>'reference')`),
   index("appointment_patient_idx").on(t.patientId), index("appointment_scope_idx").on(t.clinicId, t.branchId, t.date),
-  uniqueIndex("appointment_active_patient_idx").on(t.patientId, t.doctorId, t.branchId, t.date).where(sql`${t.status} not in ('cancelled','completed','noShow')`),
-  uniqueIndex("appointment_one_consult_idx").on(t.doctorId, t.branchId, t.date).where(sql`${t.status} in ('called','inConsultation')`),
+  uniqueIndex("appointment_active_patient_idx").on(t.patientId, t.doctorId, t.branchId, t.date, sql`coalesce(${t.data}->>'startTime','')`).where(sql`${t.status} not in ('cancelled','completed','noShow')`),
+  uniqueIndex("appointment_one_consult_idx").on(t.doctorId, t.branchId, t.date, sql`coalesce(${t.data}->>'startTime','')`).where(sql`${t.status} in ('called','inConsultation')`),
   check("appointment_status_check", sql`${t.status} in ('booked','checkedIn','waiting','called','inConsultation','completed','noShow','cancelled')`),
   check("appointment_token_positive", sql`${t.tokenNumber} > 0`),
 ]);

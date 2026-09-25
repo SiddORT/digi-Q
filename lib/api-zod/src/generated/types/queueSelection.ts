@@ -14,6 +14,8 @@
  */
 
 export interface QueueSelection {
+  sessionId?: string;
+  startTime?: string;
   doctorId: string;
   branchId: string;
   date: Date;

@@ -5,6 +5,8 @@ import { assert } from "./http";
 import { canRead, roles } from "./auth";
 import { localNow, minutes, doctorContext, operationalDoctorContext, sessionQueueWaitMinutes } from "./availability";
 import { orderedReservations, pendingStatuses, queueVersion, rank, sessionRows } from "./queue-order";
+import { isDoctorAvailable } from "./presence";
+import { snapshotDuration } from "./session-duration";
 export const transitions: Record<string, { from: string[], to: string, stamp?: string }> = {
   checkIn: { from: ["booked", "checkedIn", "waiting", "called"], to: "inConsultation", stamp: "checkedInAt" },
   enqueue: { from: ["booked", "checkedIn"], to: "waiting", stamp: "waitingAt" },
@@ -30,7 +32,7 @@ export async function transition(user: any, id: string, body: any, conn: any = d
   if (!locked) {
     const original = row;
     await lockQueue(conn, row.doctorId, row.branchId, row.date); row = await one(appointments, id, conn);
-    assert(row.doctorId === original.doctorId && row.branchId === original.branchId && row.date === original.date, 409, "Appointment was rescheduled; refresh and retry");
+    assert(row.doctorId === original.doctorId && row.branchId === original.branchId && row.date === original.date && row.startTime === original.startTime, 409, "Appointment was rescheduled; refresh and retry");
   }
   const rule = transitions[body.action];
   assert(rule && rule.from.includes(row.status), 409, "Invalid appointment state transition");
@@ -42,7 +44,7 @@ export async function transition(user: any, id: string, body: any, conn: any = d
   const now = localNow(row.timezone || "Asia/Kolkata");
   if (body.action === "cancel") {
     assert(!row.checkedInAt, 409, "Cannot cancel after consultation check-in");
-    const config = await getSettings(conn);
+    const config = await getSettings(conn, row.clinicId);
     const difference = (Date.parse(row.date) - Date.parse(now.date)) / 60000 + minutes(row.startTime || "00:00") - now.minute;
     assert(difference >= config.cancellationCutoffMinutes, 409, "Cancellation cutoff has passed");
   } else assert(row.date === now.date, 409, "Queue actions are allowed only on the appointment date");
@@ -61,11 +63,13 @@ export async function transition(user: any, id: string, body: any, conn: any = d
     }
   }
   if (["call", "start", "checkIn"].includes(body.action)) {
+    assert(await isDoctorAvailable(row, conn), 409, "Doctor is on break or away. Future bookings are unchanged.");
     const active = rows.some(a => a.id !== id && ["called", "inConsultation"].includes(a.status));
     assert(!active, 409, "Another patient is already called or in consultation");
     if (row.status !== "called") assert(orderedReservations(rows.filter(a => pendingStatuses.includes(a.status)))[0]?.id === id, 409, "Earlier reservation must be served or explicitly skipped first");
   }
-  const timestamp = new Date().toISOString(), data = { ...row, revision: (row.revision || 0) + 1, ...(rule.stamp ? { [rule.stamp]: timestamp } : {}) };
+  const expectedDurationMinutes = await snapshotDuration(row, conn);
+  const timestamp = new Date().toISOString(), data = { ...row, expectedDurationMinutes: row.expectedDurationMinutes === undefined ? expectedDurationMinutes : row.expectedDurationMinutes, revision: (row.revision || 0) + 1, ...(rule.stamp ? { [rule.stamp]: timestamp } : {}) };
   if (["start", "checkIn"].includes(body.action)) {
     data.checkedInAt = timestamp;
     data.consultationStartedAt = timestamp;
@@ -80,7 +84,7 @@ export async function transition(user: any, id: string, body: any, conn: any = d
     const next = orderedReservations(rows.filter(a => pendingStatuses.includes(a.status)))[0];
     if (next) {
       const context = await operationalDoctorContext(next.doctorId, next.branchId, conn);
-      if (context.active && context.assigned) await transition(user, next.id, { action: "call", expectedStatus: next.status }, conn, true);
+      if (context.active && context.assigned && await isDoctorAvailable(next, conn)) await transition(user, next.id, { action: "call", expectedStatus: next.status }, conn, true);
     }
   }
   return appointmentView(updated, user);

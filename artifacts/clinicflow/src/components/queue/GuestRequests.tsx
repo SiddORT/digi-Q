@@ -6,7 +6,7 @@ import { Pagination } from "../ListingControls";
 import { useFreshWorkspace } from "./useFreshWorkspace";
 import { AppDialog } from "../AppDialog";
 
-export function GuestRequests({clinicId,branchId,doctorId,date}:{clinicId:string;branchId:string;doctorId:string;date:string}) {
+export function GuestRequests({clinicId,branchId,doctorId,date,sessionId,startTime}:{clinicId:string;branchId:string;doctorId:string;date:string;sessionId?:string;startTime?:string}) {
  const [page,setPage]=useState(1);
  const [pageSize,setPageSize]=useState(10);
  const [declining,setDeclining]=useState<api.StaffGuestRequest|null>(null);
@@ -14,7 +14,8 @@ export function GuestRequests({clinicId,branchId,doctorId,date}:{clinicId:string
  const [message,setMessage]=useState("");
  const lock=useRef(false);
  const client=useQueryClient();
- const params={clinicId,branchId,doctorId,date,status:"pending" as const,page,pageSize};
+ // A snapshotted time includes older requests without a stored session ID.
+ const params:api.ListGuestRequestsParams={clinicId,branchId,doctorId,date,sessionId:startTime?undefined:sessionId,startTime,status:"pending",page,pageSize};
  const requests=api.useListGuestRequests(params,{query:{queryKey:api.getListGuestRequestsQueryKey(params),refetchInterval:20000}});
  const fresh=useFreshWorkspace(requests.dataUpdatedAt,!!requests.error);
  const decision=api.useDecideGuestRequest({mutation:{onSuccess:item=>{setMessage(item.status==="confirmed"?`${item.fullName} confirmed · Token ${item.token}`:`${item.fullName}: request declined.`);setDeclining(null);setReason("");},onSettled:()=>{void client.invalidateQueries();}}});
@@ -23,7 +24,7 @@ export function GuestRequests({clinicId,branchId,doctorId,date}:{clinicId:string
   try{await decision.mutateAsync({id,data:{action,reason:auditReason}});}catch{/* Error remains visible; failed confirmation leaves request pending. */}finally{lock.current=false;}
  }
  return <section className="panel" aria-label="Awaiting confirmation">
-  <div className="panel-heading"><div><h2>Awaiting confirmation <span className="badge" data-testid="guest-pending-count">{requests.error?"Unavailable":requests.data?.total??"…"}</span></h2><p>Requests for this location, doctor and date. No tokens or capacity reserved yet.</p></div></div>
+  <div className="panel-heading"><div><h2>Awaiting confirmation <span className="badge" data-testid="guest-pending-count">{requests.error?"Unavailable":requests.data?.total??"…"}</span></h2><p>Requests for the selected consulting session. No tokens or capacity reserved yet.</p></div></div>
   <ErrorNotice error={requests.error}/><ErrorNotice error={decision.error}/>
   {decision.error&&<p>Confirmation may fail if the session is full or availability changed. Refresh and review the request before trying again.</p>}
   {message&&<p role="status" data-testid="guest-decision-result">{message}</p>}

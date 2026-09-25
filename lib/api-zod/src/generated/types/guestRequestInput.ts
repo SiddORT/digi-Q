@@ -14,6 +14,8 @@
  */
 
 export interface GuestRequestInput {
+  sessionId?: string;
+  startTime?: string;
   /**
      * @minLength 1
      * @maxLength 200

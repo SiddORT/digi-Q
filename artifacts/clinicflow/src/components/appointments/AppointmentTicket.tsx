@@ -12,7 +12,7 @@ export function AppointmentTicket({id}:{id:string}) {
   const appointment=api.useGetAppointment(id,{query:{queryKey:api.getGetAppointmentQueryKey(id),refetchInterval:30000}});
   const me=api.useGetMe();
   const a=appointment.data;
-  const params={doctorId:a?.doctorId||"",branchId:a?.branchId||"",date:a?.date||"",appointmentId:id};
+  const params={doctorId:a?.doctorId||"",branchId:a?.branchId||"",date:a?.date||"",sessionId:a?.sessionId||undefined,startTime:a?.startTime,appointmentId:id};
   const queue=api.useGetQueue(params,{query:{queryKey:api.getGetQueueQueryKey(params),enabled:!!a,refetchInterval:30000}});
   const printable=useRef<HTMLDivElement>(null);
   const [printError,setPrintError]=useState("");
@@ -66,6 +66,7 @@ export function AppointmentTicket({id}:{id:string}) {
       <p>Patient live queue — sign in with the account that owns this appointment:<br/><a data-ticket-live-link data-testid="link-ticket-patient-live" href={patientLiveUrl} style={{overflowWrap:"anywhere"}}>{patientLiveUrl}</a><br/><small>This link does not grant public access to patient details. The QR above is a separate staff check-in link.</small></p>
     </div>
     <ErrorNotice error={queue.error}/>
+    {!queue.error&&online&&queue.data?.presence&&<p className="notice">Doctor status: {queue.data.presence.status==="onBreak"?"On break":queue.data.presence.status==="away"?"Away":"Available"}{queue.data.presence.status!=="available"&&" · Calling is paused; your reservation is retained."}</p>}
     {queue.error||!online?<p role="alert">Queue updates unavailable / offline. No live estimate is shown. <button onClick={()=>queue.refetch()}>Retry</button></p>:queue.isLoading?<p role="status">Loading queue information…</p>:queue.data?.ownEntry&&<p className="notice">{queue.data.ownEntry.patientsAhead} patients ahead · Approx. wait {queue.data.ownEntry.estimatedWaitMinutes==null?"unavailable — duration not configured":`${queue.data.ownEntry.estimatedWaitMinutes} minutes`}<br/><small>Ahead × expected consultation duration; changes with queue events, not a countdown. Breaks, pauses and delays may extend the actual wait.</small></p>}
     <p>QR is for authorized staff validation, not public access to patient details. A booking joins the waiting queue; staff explicitly check in when consultation begins.</p>
     {!!a.history?.length&&<details><summary>Appointment history</summary><ul>{a.history.map((event,index)=><li key={index}>{new Date(event.occurredAt).toLocaleString()} · {statusLabel(event.status)}{event.reason&&` · ${event.reason}`}</li>)}</ul></details>}

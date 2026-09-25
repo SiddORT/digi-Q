@@ -16,6 +16,8 @@ import type { DoctorDurationInputEffect } from './doctorDurationInputEffect';
 import type { DoctorDurationInputExpectedDurationMinutes } from './doctorDurationInputExpectedDurationMinutes';
 
 export interface DoctorDurationInput {
+  sessionId?: string;
+  startTime?: string;
   clinicId: string;
   expectedDurationMinutes: DoctorDurationInputExpectedDurationMinutes;
   /** Both choices update sessions that have not started */

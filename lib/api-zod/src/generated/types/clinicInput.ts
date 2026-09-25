@@ -15,6 +15,17 @@
 import type { RecordStatus } from './recordStatus';
 
 export interface ClinicInput {
+  /**
+     * @minLength 3
+     * @maxLength 63
+     */
+  slug?: string;
+  specialityIds?: string[];
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  referralCode?: string | null;
   /** Super admins may select the owning clinic administrator; other roles are assigned by the server. */
   adminId?: string;
   /** @minLength 1 */
@@ -25,10 +36,13 @@ export interface ClinicInput {
   city?: string;
   area?: string;
   pincode?: string;
-  phone?: string;
-  email?: string;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  email?: string | null;
   description?: string;
   clinicTypeId?: string;
-  categoryId?: string;
+  /** @nullable */
+  categoryId?: string | null;
   status?: RecordStatus;
 }

@@ -15,12 +15,20 @@
 import type { BranchInput } from './branchInput';
 
 export type Branch = BranchInput & ({
+  /** @nullable */
+  effectiveEmail?: string | null;
+  /** @nullable */
+  effectivePhone?: string | null;
   id: string;
   code: string;
   clinicName?: string;
   /** @nullable */
   createdAt: Date | null;
 }) & Required<Pick<BranchInput & ({
+  /** @nullable */
+  effectiveEmail?: string | null;
+  /** @nullable */
+  effectivePhone?: string | null;
   id: string;
   code: string;
   clinicName?: string;

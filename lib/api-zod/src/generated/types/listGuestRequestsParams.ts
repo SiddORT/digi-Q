@@ -13,8 +13,12 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { ListGuestRequestsStatus } from './listGuestRequestsStatus';
+import type { SessionIdParameter } from './sessionIdParameter';
+import type { StartTimeParameter } from './startTimeParameter';
 
 export type ListGuestRequestsParams = {
+sessionId?: SessionIdParameter;
+startTime?: StartTimeParameter;
 clinicId?: string;
 branchId?: string;
 doctorId?: string;

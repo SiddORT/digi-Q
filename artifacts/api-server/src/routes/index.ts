@@ -11,10 +11,14 @@ import { appointmentQrRouter } from "./appointment-qr";
 import { authRouter } from "./auth";
 import { durationRouter } from "./duration";
 import { guestRequestsRouter } from "./guest-requests";
+import { clinicExpansionRouter } from "./clinic-expansion";
+import { presenceRouter } from "./presence";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(clinicExpansionRouter);
+router.use(presenceRouter);
 router.use(publicRouter);
 router.use(guestRequestsRouter);
 router.use(authRouter);

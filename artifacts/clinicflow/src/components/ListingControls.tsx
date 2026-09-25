@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -199,16 +199,17 @@ export interface FilterChip {
 }
 
 export interface FilterBarProps {
-  /** Primary controls. Always visible (required selections such as queue/booking context belong here). */
+  /** Primary controls. Always visible inline (search, required queue/booking scope). Never hidden. */
   children?: React.ReactNode;
-  /** Secondary controls, collapsed behind an "More filters" toggle. */
+  /** Secondary controls, shown in a compact popup opened from the filter icon. */
   advanced?: React.ReactNode;
   onReset?: () => void;
   active?: boolean;
-  /** Active filter chips shown under the toolbar. */
+  /** Active filter chips shown under the toolbar (only rendered when present). */
   chips?: FilterChip[];
+  /** Kept for API compatibility; the panel never auto-opens on state changes. */
   defaultAdvancedOpen?: boolean;
-  /** Optional trailing actions (e.g. export). */
+  /** Optional trailing actions (e.g. export, add). Aligned on the same row. */
   actions?: React.ReactNode;
   label?: string;
 }
@@ -217,28 +218,72 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
   const advancedActiveCount = chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
-  useEffect(() => { if (advancedActiveCount > 0 && defaultAdvancedOpen) setOpen(true); }, [advancedActiveCount, defaultAdvancedOpen]);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [alignRight, setAlignRight] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    // Move focus into the panel once, without changing any filter state.
+    const first = panelRef.current?.querySelector<HTMLElement>("input,select,textarea,button,[tabindex]:not([tabindex='-1'])");
+    first?.focus({ preventScroll: true });
+    const r = wrapRef.current?.getBoundingClientRect();
+    if (r) setAlignRight(r.left + 340 > window.innerWidth);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      // Let nested popovers (selects, tooltips) close first.
+      if (e.defaultPrevented) return;
+      e.stopPropagation();
+      setOpen(false);
+      toggleRef.current?.focus();
+    };
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (wrapRef.current?.contains(t)) return;
+      // Portalled listboxes/tooltips from children live outside; ignore them.
+      if ((t as Element).closest?.("[role=listbox],[role=option],[role=tooltip],[data-radix-popper-content-wrapper]")) return;
+      setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown); };
+  }, [open]);
+
   return (
     <section className="filter-bar" aria-label={label}>
       <div className="filter-bar-row">
-        <span className="filter-bar-title"><Filter aria-hidden className="h-3.5 w-3.5" />{label}</span>
         {children && <div className="filter-bar-primary">{children}</div>}
         <div className="filter-bar-tools">
           {advanced && (
-            <button type="button" className="filter-toggle" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen(v => !v)} data-testid="button-toggle-advanced-filters">
-              {open ? "Fewer filters" : "More filters"}
-              {advancedActiveCount > 0 && <span className="filter-count" aria-label={`${advancedActiveCount} active`}>{advancedActiveCount}</span>}
+            <div className="filter-pop" ref={wrapRef}>
+              <button type="button" ref={toggleRef} className={cn("filter-toggle", advancedActiveCount > 0 && "has-active")}
+                aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
+                aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
+                onClick={() => setOpen(v => !v)} data-testid="button-toggle-advanced-filters">
+                <Filter aria-hidden className="h-4 w-4" />
+                <span className="filter-toggle-text">Filters</span>
+                {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
+              </button>
+              {open && (
+                <div id={panelId} ref={panelRef} role="dialog" aria-label={label} className={cn("filter-bar-advanced", alignRight && "align-right")}>
+                  <div className="filter-panel-fields">{advanced}</div>
+                  <div className="filter-panel-foot">
+                    {onReset && <button type="button" className="filter-clear" onClick={onReset} disabled={!active} data-testid="button-clear-filters-panel">Clear all</button>}
+                    <button type="button" className="filter-done" onClick={() => { setOpen(false); toggleRef.current?.focus(); }} data-testid="button-close-filters">Done</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {onReset && active && (
+            <button type="button" className="filter-clear" onClick={onReset} data-testid="button-clear-filters">
+              <X aria-hidden className="h-3.5 w-3.5" />Clear
             </button>
           )}
           {actions}
-          {onReset && (
-            <button type="button" className="filter-clear" onClick={onReset} disabled={!active} data-testid="button-clear-filters">
-              Clear filters
-            </button>
-          )}
         </div>
       </div>
-      {advanced && open && <div id={panelId} className="filter-bar-advanced">{advanced}</div>}
       {chips.length > 0 && (
         <ul className="filter-chips" aria-label="Active filters">
           {chips.map(chip => (

@@ -74,3 +74,16 @@ test("unknown patient provisioning is race-safe and reserved unverified", () => 
   assert.doesNotMatch(route, /verification.*verified|emailAddressIdentificationStatus: \["verified"\]/);
   assert.doesNotMatch(route, /db\.insert\(users\)|db\.insert\(patients\)/);
 });
+
+test("clinic registration keeps Clerk password authority and rejects existing profile elevation", async () => {
+  const registration = await readFile(resolve(root, "routes/clinic-expansion.ts"), "utf8");
+  assert.match(registration, /requireSessionIdentity\(req\)/);
+  assert.match(registration, /verification\?\.status === "verified"/);
+  assert.match(registration, /clerkClient\.users\.verifyPassword/);
+  assert.match(registration, /authoritativeStaffSessionExpiry\(sessionId, clerkId\)/);
+  assert.match(registration, /where clerk_id=\$\{clerkId\} or lower\(email\)=\$\{email\}/);
+  assert.match(registration, /assert\(!existing\.length, 409/);
+  assert.match(registration, /createOwnedClinic\(admin, admin, body, tx\)/);
+  assert.doesNotMatch(registration, /data:\s*\{\s*\.\.\.body/);
+  assert.doesNotMatch(registration, /req\.log\.\w+\([^)]*password/);
+});

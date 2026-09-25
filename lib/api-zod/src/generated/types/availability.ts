@@ -15,6 +15,8 @@
 import type { AvailabilityQueueMode } from './availabilityQueueMode';
 
 export interface Availability {
+  /** @nullable */
+  sessionId?: string | null;
   doctorId: string;
   clinicId: string;
   branchId: string;

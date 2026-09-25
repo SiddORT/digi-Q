@@ -12,7 +12,384 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export type AvailabilityQueueMode = typeof AvailabilityQueueMode[keyof typeof AvailabilityQueueMode];
+
+
+export const AvailabilityQueueMode = {
+  mixed: 'mixed',
+  appointmentsOnly: 'appointmentsOnly',
+  walkInsOnly: 'walkInsOnly',
+} as const;
+
+export interface Availability {
+  /** @nullable */
+  sessionId?: string | null;
+  doctorId: string;
+  clinicId: string;
+  branchId: string;
+  date: string;
+  available: boolean;
+  /** @nullable */
+  reason?: string | null;
+  /** @nullable */
+  startTime?: string | null;
+  /** @nullable */
+  endTime?: string | null;
+  /** @nullable */
+  breakStart?: string | null;
+  /** @nullable */
+  breakEnd?: string | null;
+  timezone?: string;
+  maxTokens: number;
+  bookedTokens: number;
+  remainingTokens: number;
+  consultationMinutes?: number;
+  tokenPrefix?: string;
+  queueMode?: AvailabilityQueueMode;
+  queueOpenTime?: string;
+  queueCloseTime?: string;
+}
+
+export type SessionContext = Availability & {
+  snapshotOnly: boolean;
+};
+
+export interface RegistrationOption {
+  id: string;
+  name: string;
+}
+
+export interface RegistrationOptions {
+  categories: RegistrationOption[];
+  specialities: RegistrationOption[];
+  qualifications: RegistrationOption[];
+}
+
+export interface SlugAvailability {
+  available: boolean;
+  slug: string;
+}
+
+export interface OpeningHour {
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+}
+
+export interface ClinicPolicy {
+  /**
+     * @minimum 1
+     * @maximum 365
+     */
+  bookingHorizonDays?: number;
+  /**
+     * @minimum 0
+     * @maximum 10080
+     */
+  cancellationCutoffMinutes?: number;
+}
+
+export interface ClinicDetails {
+  /** @minLength 1 */
+  name?: string;
+  address?: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /**
+     * @minLength 3
+     * @maxLength 63
+     */
+  slug?: string;
+  /** @nullable */
+  categoryId?: string | null;
+  specialityIds?: string[];
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  referralCode?: string | null;
+}
+
+export interface ClinicBranchSetup {
+  id?: string;
+  /** @minLength 1 */
+  name: string;
+  address: string;
+  city?: string;
+  timezone?: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  inheritEmail?: boolean;
+  inheritPhone?: boolean;
+  /**
+     * @minLength 3
+     * @maxLength 63
+     */
+  slug?: string;
+  /**
+     * Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.
+     * @maxItems 28
+     * @nullable
+     */
+  openingHours?: OpeningHour[] | null;
+}
+
+export interface ClinicSettingsInput {
+  clinic?: ClinicDetails;
+  /** @maxItems 30 */
+  branches?: ClinicBranchSetup[];
+  policies?: ClinicPolicy;
+}
+
+export type RecordStatus = typeof RecordStatus[keyof typeof RecordStatus];
+
+
+export const RecordStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface ClinicInput {
+  /**
+     * @minLength 3
+     * @maxLength 63
+     */
+  slug?: string;
+  specialityIds?: string[];
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  referralCode?: string | null;
+  /** Super admins may select the owning clinic administrator; other roles are assigned by the server. */
+  adminId?: string;
+  /** @minLength 1 */
+  name: string;
+  address: string;
+  country?: string;
+  state?: string;
+  city?: string;
+  area?: string;
+  pincode?: string;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  email?: string | null;
+  description?: string;
+  clinicTypeId?: string;
+  /** @nullable */
+  categoryId?: string | null;
+  status?: RecordStatus;
+}
+
+export type Clinic = ClinicInput & ({
+  id: string;
+  code: string;
+  adminName: string;
+  /** @nullable */
+  createdAt: string | null;
+  doctorCount?: number;
+  branchCount?: number;
+}) & Required<Pick<ClinicInput & ({
+  id: string;
+  code: string;
+  adminName: string;
+  /** @nullable */
+  createdAt: string | null;
+  doctorCount?: number;
+  branchCount?: number;
+}), 'adminId' | 'status'>>;
+
+export interface BranchInput {
+  /**
+     * @minLength 3
+     * @maxLength 63
+     */
+  slug?: string;
+  /** @nullable */
+  email?: string | null;
+  inheritEmail?: boolean;
+  inheritPhone?: boolean;
+  /**
+     * Null or absent is legacy unrestricted; empty array means closed all days.
+     * @maxItems 28
+     * @nullable
+     */
+  openingHours?: OpeningHour[] | null;
+  clinicId: string;
+  /** @minLength 1 */
+  name: string;
+  address: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  /** @nullable */
+  phone?: string | null;
+  timezone?: string;
+  status?: RecordStatus;
+}
+
+export type Branch = BranchInput & ({
+  /** @nullable */
+  effectiveEmail?: string | null;
+  /** @nullable */
+  effectivePhone?: string | null;
+  id: string;
+  code: string;
+  clinicName?: string;
+  /** @nullable */
+  createdAt: string | null;
+}) & Required<Pick<BranchInput & ({
+  /** @nullable */
+  effectiveEmail?: string | null;
+  /** @nullable */
+  effectivePhone?: string | null;
+  id: string;
+  code: string;
+  clinicName?: string;
+  /** @nullable */
+  createdAt: string | null;
+}), 'status'>>;
+
+export interface ClinicSettingsResult {
+  clinic: Clinic;
+  branches: Branch[];
+  policies: ClinicPolicy;
+  /** @nullable */
+  doctorId?: string | null;
+}
+
+export interface OwnDoctorProfileInput {
+  /** @maxItems 30 */
+  branchIds: string[];
+  specializationId?: string;
+  qualificationIds?: string[];
+  about?: string;
+}
+
+export interface ClinicRegistrationInput {
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  fullName: string;
+  mobile?: string;
+  /**
+     * @minLength 1
+     * @maxLength 1024
+     */
+  password: string;
+  clinic: ClinicDetails;
+  /**
+     * @minItems 1
+     * @maxItems 30
+     */
+  branches: ClinicBranchSetup[];
+  policies?: ClinicPolicy;
+  ownDoctor?: boolean;
+  specializationId?: string;
+  qualificationIds?: string[];
+}
+
+export type DoctorPresenceInputStatus = typeof DoctorPresenceInputStatus[keyof typeof DoctorPresenceInputStatus];
+
+
+export const DoctorPresenceInputStatus = {
+  available: 'available',
+  onBreak: 'onBreak',
+  away: 'away',
+} as const;
+
+export interface DoctorPresenceInput {
+  branchId: string;
+  date: string;
+  sessionId?: string;
+  startTime?: string;
+  status: DoctorPresenceInputStatus;
+}
+
+export type DoctorPresence = DoctorPresenceInput & ({
+  doctorId: string;
+  /** @nullable */
+  updatedAt: string | null;
+});
+
+export interface PublicClinicSummary {
+  doctorCount?: number;
+  /** @nullable */
+  averageConsultationMinutes?: number | null;
+  id: string;
+  name: string;
+  slug: string;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  phone?: string | null;
+}
+
+export interface PublicBranchSummary {
+  id: string;
+  name: string;
+  /** @nullable */
+  slug?: string | null;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  city?: string | null;
+  timezone?: string;
+  /** @nullable */
+  effectiveEmail?: string | null;
+  /** @nullable */
+  effectivePhone?: string | null;
+  /** @nullable */
+  openingHours?: OpeningHour[] | null;
+}
+
+export interface PublicDoctor {
+  /**
+     * Actual mean of valid completed consultation timestamps
+     * @nullable
+     */
+  averageConsultationMinutes?: number | null;
+  /**
+     * Explicit clinic duration configuration
+     * @nullable
+     */
+  expectedDurationMinutes?: number | null;
+  id: string;
+  fullName: string;
+  photoUrl?: string;
+  specializationName?: string;
+  qualificationNames?: string[];
+  about?: string;
+  experienceYears?: number;
+  consultationFee?: number;
+  clinicIds: string[];
+  branchIds: string[];
+}
+
+export interface PublicClinicContext {
+  clinic: PublicClinicSummary;
+  branches: PublicBranchSummary[];
+  branch: PublicBranchSummary | null;
+  /** @nullable */
+  qrReference: string | null;
+  doctors: PublicDoctor[];
+}
+
 export interface GuestRequestInput {
+  sessionId?: string;
+  startTime?: string;
   /**
      * @minLength 1
      * @maxLength 200
@@ -83,6 +460,8 @@ export const GuestReceiptStatus = {
 } as const;
 
 export interface GuestReceipt {
+  /** @nullable */
+  sessionId?: string | null;
   id: string;
   status: GuestReceiptStatus;
   fullName: string;
@@ -167,14 +546,6 @@ export const Role = {
   doctor: 'doctor',
   receptionist: 'receptionist',
   patient: 'patient',
-} as const;
-
-export type RecordStatus = typeof RecordStatus[keyof typeof RecordStatus];
-
-
-export const RecordStatus = {
-  active: 'active',
-  inactive: 'inactive',
 } as const;
 
 export type AppointmentStatus = typeof AppointmentStatus[keyof typeof AppointmentStatus];
@@ -313,6 +684,18 @@ export type ClinicAdminOnboardingInputAdmin = {
 };
 
 export type ClinicAdminOnboardingInputClinic = {
+  /**
+     * @minLength 3
+     * @maxLength 63
+     */
+  slug?: string;
+  categoryId?: string;
+  specialityIds?: string[];
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  referralCode?: string | null;
   /** @minLength 1 */
   name: string;
   code?: string;
@@ -326,48 +709,20 @@ export type ClinicAdminOnboardingInputClinic = {
 };
 
 export interface ClinicAdminOnboardingInput {
+  /** @maxItems 30 */
+  branches?: ClinicBranchSetup[];
+  policies?: ClinicPolicy;
+  ownDoctor?: boolean;
+  specializationId?: string;
+  qualificationIds?: string[];
   admin: ClinicAdminOnboardingInputAdmin;
   clinic: ClinicAdminOnboardingInputClinic;
 }
 
-export interface ClinicInput {
-  /** Super admins may select the owning clinic administrator; other roles are assigned by the server. */
-  adminId?: string;
-  /** @minLength 1 */
-  name: string;
-  address: string;
-  country?: string;
-  state?: string;
-  city?: string;
-  area?: string;
-  pincode?: string;
-  phone?: string;
-  email?: string;
-  description?: string;
-  clinicTypeId?: string;
-  categoryId?: string;
-  status?: RecordStatus;
-}
-
-export type Clinic = ClinicInput & ({
-  id: string;
-  code: string;
-  adminName: string;
-  /** @nullable */
-  createdAt: string | null;
-  doctorCount?: number;
-  branchCount?: number;
-}) & Required<Pick<ClinicInput & ({
-  id: string;
-  code: string;
-  adminName: string;
-  /** @nullable */
-  createdAt: string | null;
-  doctorCount?: number;
-  branchCount?: number;
-}), 'adminId' | 'status'>>;
-
 export interface ClinicAdminOnboardingResult {
+  branches?: Branch[];
+  /** @nullable */
+  doctorId?: string | null;
   admin: User;
   clinic: Clinic;
 }
@@ -405,33 +760,6 @@ export interface OtpResult {
   mobile: string;
   verifiedAt?: string;
 }
-
-export interface BranchInput {
-  clinicId: string;
-  /** @minLength 1 */
-  name: string;
-  address: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
-  phone?: string;
-  timezone?: string;
-  status?: RecordStatus;
-}
-
-export type Branch = BranchInput & ({
-  id: string;
-  code: string;
-  clinicName?: string;
-  /** @nullable */
-  createdAt: string | null;
-}) & Required<Pick<BranchInput & ({
-  id: string;
-  code: string;
-  clinicName?: string;
-  /** @nullable */
-  createdAt: string | null;
-}), 'status'>>;
 
 export interface DoctorInput {
   /** Backward-compatible only. If supplied it must match the managing admin derived by the server. */
@@ -509,19 +837,6 @@ export interface StaffAssignmentOptions {
   branches: Branch[];
   managingAdmins: ManagingAdminOption[];
   pagination?: StaffAssignmentOptionsPagination;
-}
-
-export interface PublicDoctor {
-  id: string;
-  fullName: string;
-  photoUrl?: string;
-  specializationName?: string;
-  qualificationNames?: string[];
-  about?: string;
-  experienceYears?: number;
-  consultationFee?: number;
-  clinicIds: string[];
-  branchIds: string[];
 }
 
 export interface PatientInput {
@@ -653,6 +968,7 @@ export type Schedule = ScheduleInput & {
 };
 
 export interface AvailabilityExceptionInput {
+  sessionId?: string;
   doctorId: string;
   branchId: string;
   date: string;
@@ -677,43 +993,9 @@ export type AvailabilityException = AvailabilityExceptionInput & {
   id: string;
 };
 
-export type AvailabilityQueueMode = typeof AvailabilityQueueMode[keyof typeof AvailabilityQueueMode];
-
-
-export const AvailabilityQueueMode = {
-  mixed: 'mixed',
-  appointmentsOnly: 'appointmentsOnly',
-  walkInsOnly: 'walkInsOnly',
-} as const;
-
-export interface Availability {
-  doctorId: string;
-  clinicId: string;
-  branchId: string;
-  date: string;
-  available: boolean;
-  /** @nullable */
-  reason?: string | null;
-  /** @nullable */
-  startTime?: string | null;
-  /** @nullable */
-  endTime?: string | null;
-  /** @nullable */
-  breakStart?: string | null;
-  /** @nullable */
-  breakEnd?: string | null;
-  timezone?: string;
-  maxTokens: number;
-  bookedTokens: number;
-  remainingTokens: number;
-  consultationMinutes?: number;
-  tokenPrefix?: string;
-  queueMode?: AvailabilityQueueMode;
-  queueOpenTime?: string;
-  queueCloseTime?: string;
-}
-
 export interface AppointmentInput {
+  sessionId?: string;
+  startTime?: string;
   patientId: string;
   doctorId: string;
   clinicId: string;
@@ -832,6 +1114,8 @@ export interface AppointmentAction {
 }
 
 export interface QueueSelection {
+  sessionId?: string;
+  startTime?: string;
   doctorId: string;
   branchId: string;
   date: string;
@@ -847,6 +1131,11 @@ export interface OwnQueueEntry {
 }
 
 export interface LiveQueue {
+  /** @nullable */
+  sessionId?: string | null;
+  /** @nullable */
+  startTime?: string | null;
+  presence?: DoctorPresence;
   page?: number;
   pageSize?: number;
   totalPages?: number;
@@ -909,6 +1198,8 @@ export const DoctorDurationInputEffect = {
 } as const;
 
 export interface DoctorDurationInput {
+  sessionId?: string;
+  startTime?: string;
   clinicId: string;
   expectedDurationMinutes: DoctorDurationInputExpectedDurationMinutes;
   /** Both choices update sessions that have not started */
@@ -920,6 +1211,8 @@ export interface DoctorDurationInput {
 }
 
 export interface AppointmentReschedule {
+  sessionId?: string;
+  startTime?: string;
   doctorId: string;
   branchId: string;
   date: string;
@@ -954,6 +1247,15 @@ export type Qr = QrInput & {
   createdAt: string;
 }, 'status'>>;
 
+export type PublicDisplaySessionPresence = typeof PublicDisplaySessionPresence[keyof typeof PublicDisplaySessionPresence];
+
+
+export const PublicDisplaySessionPresence = {
+  available: 'available',
+  onBreak: 'onBreak',
+  away: 'away',
+} as const;
+
 /**
  * @nullable
  */
@@ -966,6 +1268,9 @@ export const PublicDisplaySessionCurrentStatus = {
 } as const;
 
 export interface PublicDisplaySession {
+  /** @nullable */
+  sessionId?: string | null;
+  presence?: PublicDisplaySessionPresence;
   doctorId: string;
   doctorName: string;
   /** @nullable */
@@ -1070,7 +1375,8 @@ export interface ReportRow {
   noShow: number;
   registrations: number;
   averageWaitMinutes: number;
-  averageConsultationMinutes?: number;
+  /** @nullable */
+  averageConsultationMinutes?: number | null;
 }
 
 export interface Report {
@@ -1174,6 +1480,10 @@ export type AuditLogList = PageMeta & {
  */
 export type ErrorResponse = ApiError;
 
+export type SessionIdParameter = string;
+
+export type StartTimeParameter = string;
+
 /**
  * Comma-separated exact IDs within existing scope (maximum 100).
  */
@@ -1222,7 +1532,37 @@ export type FromParameter = string;
 
 export type ToParameter = string;
 
+export type GetSessionContextsParams = {
+doctorId: string;
+branchId: string;
+date: string;
+};
+
+export type CheckSlugAvailabilityParams = {
+/**
+ * @minLength 3
+ * @maxLength 63
+ */
+slug: string;
+clinicId?: string;
+};
+
+export type GetDoctorPresenceParams = {
+branchId: string;
+date: string;
+sessionId?: string;
+startTime?: string;
+};
+
+export type GetPublicAvailabilitySessionsParams = {
+doctorId: string;
+branchId: string;
+date: string;
+};
+
 export type ListGuestRequestsParams = {
+sessionId?: SessionIdParameter;
+startTime?: StartTimeParameter;
 clinicId?: string;
 branchId?: string;
 doctorId?: string;
@@ -1309,6 +1649,8 @@ pageSize?: PageSizeParameter;
 };
 
 export type GetPublicAvailabilityParams = {
+sessionId?: string;
+startTime?: string;
 doctorId: string;
 branchId: string;
 date: string;
@@ -1537,6 +1879,8 @@ pageSize?: PageSizeParameter;
 };
 
 export type ListAppointmentsParams = {
+sessionId?: SessionIdParameter;
+startTime?: StartTimeParameter;
 /**
  * Server-side group filter applied before pagination; intersects with status when both supplied
  */
@@ -1567,6 +1911,8 @@ sort?: SortParameter;
 };
 
 export type GetQueueParams = {
+sessionId?: string;
+startTime?: string;
 doctorId: string;
 branchId: string;
 date: string;
@@ -1621,6 +1967,8 @@ doctorId?: DoctorIdParameter;
 };
 
 export type GetReportsParams = {
+sessionId?: SessionIdParameter;
+startTime?: StartTimeParameter;
 /**
  * @minimum 1
  */

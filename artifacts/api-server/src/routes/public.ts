@@ -5,7 +5,8 @@ import * as z from "@workspace/api-zod";
 import { all, one, filtered, paginate } from "../lib/store";
 import { query, assert } from "../lib/http";
 import { enrich, publicDoctor } from "../lib/entities";
-import { availability, localNow } from "../lib/availability";
+import { availability, availabilitySessions, localNow } from "../lib/availability";
+import { getPresence } from "../lib/presence";
 import { orderedReservations, pendingStatuses, sessionRows } from "../lib/queue-order";
 import { queryPage } from "../lib/list-query";
 export const publicRouter = Router();
@@ -26,7 +27,10 @@ for (const [kind, table, schema] of [
   });
 }
 publicRouter.get("/public/availability", async (req, res) => {
-  const q = query(z.GetPublicAvailabilityQueryParams, req); res.json(await availability(q.doctorId, q.branchId, q.date));
+  const q = query(z.GetPublicAvailabilityQueryParams, req); res.json(await availability(q.doctorId, q.branchId, q.date, db, q));
+});
+publicRouter.get("/public/availability/sessions", async (req, res) => {
+  const q = query(z.GetPublicAvailabilitySessionsQueryParams, req); res.json(await availabilitySessions(q.doctorId, q.branchId, q.date));
 });
 export async function resolveQr(reference: string, conn: any = db, lock = false) {
   let qr;
@@ -57,12 +61,19 @@ export async function publicDisplay(reference: string, conn: any = db) {
   const rows = (await all(appointments, conn)).filter(a => a.clinicId === context.clinicId && a.branchId === branch.id && a.date === date);
   const sessions = [];
   for (const doctor of assigned.sort((a,b) => a.fullName.localeCompare(b.fullName))) {
-    const entries = sessionRows(rows, { doctorId: doctor.id, branchId: branch.id, date });
+    const scheduled = await availabilitySessions(doctor.id, branch.id, date, conn);
+    // Preserve old appointment snapshots when a weekly template has since moved.
+    const doctorRows = rows.filter(a => a.doctorId === doctor.id);
+    const contexts = new Map(scheduled.map(s => [s.startTime, s]));
+    for (const entry of doctorRows) if (!contexts.has(entry.startTime)) contexts.set(entry.startTime, entry);
+    for (const schedule of contexts.values()) {
+    const entries = sessionRows(rows, { doctorId: doctor.id, branchId: branch.id, date, startTime: schedule.startTime });
     const pending = orderedReservations(entries.filter(a => pendingStatuses.includes(a.status)));
     const current = entries.find(a => ["called", "inConsultation"].includes(a.status));
-    const schedule = await availability(doctor.id, branch.id, date, conn);
-    sessions.push({ doctorId: doctor.id, doctorName: doctor.fullName, startTime: schedule.startTime || entries[0]?.startTime || null, endTime: schedule.endTime || entries[0]?.endTime || null,
+    const presence = await getPresence({ doctorId: doctor.id, branchId: branch.id, date, startTime: schedule.startTime, sessionId: schedule.sessionId }, conn);
+    sessions.push({ doctorId: doctor.id, doctorName: doctor.fullName, sessionId: schedule.sessionId || null, presence: presence.status, startTime: schedule.startTime || entries[0]?.startTime || null, endTime: schedule.endTime || entries[0]?.endTime || null,
       currentToken: current?.token || null, currentStatus: current?.status || null, nextToken: pending[0]?.token || null, waitingTokens: pending.map(a => a.token), waitingCount: pending.length, completedCount: entries.filter(a => a.status === "completed").length });
+    }
   }
   return { clinic: { name: context.clinicName }, branch: { name: branch.name, address: branch.address || null, city: branch.city || null, timezone }, date, updatedAt: new Date().toISOString(), sessions };
 }
