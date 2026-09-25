@@ -106,3 +106,17 @@ mtime_ms = 1790355860366
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/eb2ca4ed-a751-4f7f-9f1f-274935dc8d5f/1412fad6-c133-482d-8137-8b529f20b96f"
 storage_version_token = "1790356201810066"
 content_type = "image/png"
+
+[[outputs]]
+id = "Lw_vMdANQZKsIlcTMQjLM"
+uri = "file://docs/digiq-progress.html"
+type = "html"
+title = "DigiQ Doctors — complete progress checklist"
+description = "Individual status for all 41 UI/UX items and B1–B12 branding items, with verification results and remaining limitations."
+logical_id = "841b2aac-08dd-4f2d-b1f3-d1c90ab3295f"
+content_hash = "sha256:694e8a8ee566be938012bf83d13e26c204ee1060931b5427fafe7a75dcae7ce9"
+size = 9675
+mtime_ms = 1790377329704
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/841b2aac-08dd-4f2d-b1f3-d1c90ab3295f/3955d9fa-ea9f-4419-ab66-8c52a1da24d2"
+storage_version_token = "1790377378073943"
+content_type = "text/html"

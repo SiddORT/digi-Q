@@ -4,6 +4,8 @@ import QRCode from "qrcode";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppDialog } from "../AppDialog";
 import { ErrorNotice } from "../../resources";
+import { BRAND_NAME } from "../../branding";
+import { embeddedTicketLogo } from "../tickets/VisitTicket";
 
 function download(content:string,type:string,name:string) {
   const url=URL.createObjectURL(new Blob([content],{type}));
@@ -16,9 +18,10 @@ export function BulkAppointments({ids,disabled,onClear}:{ids:string[];disabled:b
     lock.current=true;setBusy(true);setError(null);setResults([]);
     const popup=kind==="print"?window.open("","_blank"):null;
     if(popup)popup.opener=null;
-    const messages:string[]=[];const records:api.Appointment[]=[];const documentOut=document.implementation.createHTMLDocument("ClinicFlow private tickets");
+    const messages:string[]=[];const records:api.Appointment[]=[];const documentOut=document.implementation.createHTMLDocument(`${BRAND_NAME} private tickets`);
     try {
       if(kind==="print"&&!popup)throw new Error("Allow pop-ups to print selected tickets.");
+      const logo = kind==="print"||kind==="download" ? await embeddedTicketLogo() : null;
       for(const id of ids) {
         try {
           if(!navigator.onLine)throw new Error("Offline — reconnect and retry.");
@@ -31,11 +34,12 @@ export function BulkAppointments({ids,disabled,onClear}:{ids:string[];disabled:b
             const qr=await api.getAppointmentQr(id);
             const url=qr.checkInUrl.startsWith("/")?`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/,"")}${qr.checkInUrl}`:qr.checkInUrl;
             const image=await QRCode.toDataURL(url,{width:250,margin:2});
-            const section=documentOut.createElement("section");section.style.cssText="page-break-after:always;padding:24px;font-family:sans-serif";
-            const heading=documentOut.createElement("h2");heading.textContent="ClinicFlow · Private appointment ticket";
+            const section=documentOut.createElement("section");section.style.cssText="page-break-after:always;padding:24px;font-family:sans-serif;color:#10274e;background:#fff;border-top:4px solid #087cb7";
+            const brand=documentOut.createElement("img");brand.src=logo!;brand.alt="DigiQ Doctors logo";brand.style.cssText="display:block;width:108px;height:54px;object-fit:contain";
+            const heading=documentOut.createElement("h2");heading.textContent="Private appointment ticket";heading.style.color="#10274e";
             const detail=documentOut.createElement("p");detail.style.whiteSpace="pre-line";detail.textContent=`${a.patientName}\n${a.reference} · Token ${a.token}\n${a.clinicName} · ${a.branchName}\n${a.doctorName} · ${a.date}\nSession ${a.startTime||"—"}–${a.endTime||"—"}\n${a.status}\nToken is not queue position. Staff must explicitly confirm consultation check-in.`;
             const img=documentOut.createElement("img");img.src=image;img.alt="Private appointment QR";
-            section.append(heading,detail,img);documentOut.body.append(section);
+            section.append(brand,heading,detail,img);documentOut.body.append(section);
           }
           messages.push(`${a.reference}: ${kind==="cancel"?"cancelled":"prepared"}.`);
         }catch(e){messages.push(`${id}: failed — ${e instanceof Error?e.message:"request rejected"}`);}

@@ -3,6 +3,7 @@ import { Link, useSearch } from "wouter";
 import { Building2, MapPin, Stethoscope } from "lucide-react";
 import * as api from "@workspace/api-client-react";
 import { Logo } from "../App";
+import { BRAND_NAME } from "../branding";
 import { PublicBooking } from "../clinic";
 import { AuthAccess } from "../auth/AuthAccess";
 import { useAuth } from "@clerk/react";
@@ -28,7 +29,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
   const data = query.data;
   useEffect(() => {
     const previous = document.title;
-    document.title = data ? `${data.branch?.name ? `${data.branch.name} · ` : ""}${data.clinic.name} | ClinicFlow` : "Clinic information | ClinicFlow";
+    document.title = data ? `${data.branch?.name ? `${data.branch.name} · ` : ""}${data.clinic.name} | ${BRAND_NAME}` : `Clinic information | ${BRAND_NAME}`;
     const description = document.createElement("meta"); description.name = "description"; description.content = data ? `Visit ${data.clinic.name}. Find clinic locations, care specialists, live sessions and book a visit.` : "Clinic locations, care teams and booking information.";
     const og = document.createElement("meta"); og.setAttribute("property", "og:title"); og.content = document.title;
     document.head.append(description, og);

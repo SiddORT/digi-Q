@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Camera, Image as ImageIcon } from "lucide-react";
 import jsQR from "jsqr";
 import { Logo } from "../App";
+import { BRAND_NAME } from "../branding";
 import { patientBookingPath } from "./patient-qr";
 
 export function PatientScanner() {
@@ -15,7 +16,7 @@ export function PatientScanner() {
   function openBooking(value: string) {
     const path = patientBookingPath(value, window.location.origin, import.meta.env.BASE_URL);
     if (!path) {
-      setError("This is not a ClinicFlow booking QR code for this website. Scan the clinic's booking QR, or choose Guest booking below. Appointment check-in codes are for staff only.");
+      setError(`This is not a ${BRAND_NAME} booking QR code for this website. Scan the clinic's booking QR, or choose Guest booking below. Appointment check-in codes are for staff only.`);
       completed.current = false;
       setScanning(false);
       return;

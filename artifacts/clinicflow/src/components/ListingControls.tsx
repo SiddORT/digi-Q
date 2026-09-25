@@ -14,6 +14,8 @@ export interface PaginationProps {
   total: number;
   onPageChange: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
+  /** Set false when the size callback already resets the page in URL state. */
+  resetPageOnSizeChange?: boolean;
 }
 
 export function Pagination({
@@ -22,7 +24,9 @@ export function Pagination({
   total,
   onPageChange,
   onPageSizeChange,
+  resetPageOnSizeChange = true,
 }: PaginationProps) {
+  const sizeId = React.useId();
   if (total === 0) return null;
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -33,7 +37,7 @@ export function Pagination({
   const endRecord = Math.min(currentPage * pageSize, total);
 
   const getPageNumbers = () => {
-    const delta = 2;
+    const delta = 1;
     const range = [];
     for (
       let i = Math.max(2, currentPage - delta);
@@ -53,20 +57,21 @@ export function Pagination({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2.5 px-3 text-sm text-muted-foreground border-t border-border">
-      <div className="flex items-center gap-4">
+    <div className="flex flex-wrap items-center justify-between gap-2 py-2 px-3 text-xs text-muted-foreground border-t border-border">
+      <div className="flex flex-wrap items-center gap-2">
         <span>
           Showing <strong className="text-foreground font-medium">{startRecord}–{endRecord}</strong> of{" "}
           <strong className="text-foreground font-medium">{total}</strong>
         </span>
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
-            <span>Rows per page:</span>
+            <label htmlFor={sizeId}>Rows:</label>
             <select
+              id={sizeId}
               value={pageSize}
               onChange={(e) => {
                 onPageSizeChange(Number(e.target.value));
-                onPageChange(1); // Reset to page 1 on size change
+                if (resetPageOnSizeChange) onPageChange(1);
               }}
               className="h-8 w-auto rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-foreground"
               style={{ minHeight: "auto", margin: 0, paddingRight: "28px" }}
@@ -102,7 +107,7 @@ export function Pagination({
           <span className="hidden sm:inline-block pr-1 text-xs">Previous</span>
         </button>
 
-        <div className="hidden md:flex items-center gap-1 mx-2">
+        <div className="hidden lg:flex items-center gap-1 mx-1">
           {getPageNumbers().map((p, i) =>
             p === "..." ? (
               <span key={`ellipsis-${i}`} className="px-2 text-muted-foreground">

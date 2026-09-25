@@ -26,7 +26,7 @@ export async function audit(user: any, action: string, type: string, row: any, c
   await conn.insert(auditLogs).values({ id: uid(), actorId: user.id, clinicId: row.clinicId || (type === "clinics" ? row.id : null), branchId: row.branchId || (type === "branches" ? row.id : null), action, entityType: type, entityId: row.id, summary: `${action} ${type} record` });
 }
 export const defaultSettings = {
-  platformName: "ClinicFlow", timezone: "Asia/Kolkata", bookingHorizonDays: 60, cancellationCutoffMinutes: 0,
+  platformName: "DigiQ Doctors", timezone: "Asia/Kolkata", bookingHorizonDays: 60, cancellationCutoffMinutes: 0,
   requireMobileVerification: false, otpExpirySeconds: 300, otpMaxAttempts: 5, sessionTimeoutMinutes: 60,
   notificationsEnabled: false, queuePollSeconds: 30,
 };

@@ -8,12 +8,13 @@ import { AuthAccess } from "../auth/AuthAccess";
 import { ClinicAdminOnboarding } from "./ClinicAdminOnboarding";
 import { ClinicRegistrationWizard, type RegistrationValues } from "./ClinicRegistrationWizard";
 import { Logo } from "../App";
+import { BRAND_NAME } from "../branding";
 import "./ClinicRegistrationAccount.css";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export function ClinicRegistration() {
   const { isLoaded, isSignedIn } = useAuth();
-  useEffect(() => { const old = document.title; document.title = "Register a Clinic | ClinicFlow"; return () => { document.title = old; }; }, []);
+  useEffect(() => { const old = document.title; document.title = `Register a Clinic | ${BRAND_NAME}`; return () => { document.title = old; }; }, []);
   if (!isLoaded) return <div className="page-loading">Preparing secure registration…</div>;
   if (!isSignedIn) return <AuthShell eyebrow="REGISTER A CLINIC" registration><div className="auth-card registration-account-card"><h1>Start with your secure account.</h1><p>Create an account with a verified email and password. Then we’ll guide you through your clinic, locations and opening hours.</p><div className="registration-clerk-container"><h2 className="registration-form-title">Create your account</h2><SignUp routing="path" path={`${basePath}/register-clinic`} signInUrl={`${basePath}/sign-in`} forceRedirectUrl={`${basePath}/register-clinic`} appearance={{ elements: {
     rootBox: { width: "100%", minWidth: 0, maxWidth: "100%" },
@@ -41,7 +42,7 @@ function RegistrationIdentity() {
   if (me.data?.user?.role === "superAdmin") return <AuthAccess><ClinicAdminOnboarding guided/></AuthAccess>;
   if (me.data?.user) {
     const role = me.data.user.role === "clinicAdmin" ? "admin" : me.data.user.role;
-    return <div className="clinic-registration"><Logo/><main className="registration-card"><h1>You already have a ClinicFlow account.</h1><p>Clinic registration is for a new clinic owner. Your existing role and permissions will not change.</p><Link className="button" href={`/${role}/dashboard`} data-testid="registration-existing-workspace">Go to your workspace</Link></main></div>;
+    return <div className="clinic-registration"><Logo/><main className="registration-card"><h1>You already have a {BRAND_NAME} account.</h1><p>Clinic registration is for a new clinic owner. Your existing role and permissions will not change.</p><Link className="button" href={`/${role}/dashboard`} data-testid="registration-existing-workspace">Go to your workspace</Link></main></div>;
   }
   if (!user?.passwordEnabled) return <div className="clinic-registration"><Logo/><main className="registration-card"><h1>A staff password is required.</h1><p>Clinic administration requires an email-and-password account. This identity does not have a password enabled. Open secure account settings and add a password under Security, then return here.</p><button className="button" onClick={() => openUserProfile()} data-testid="registration-account-security">Open secure account settings</button><p className="registration-note">If password setup is unavailable for this identity, sign out and create a new email-and-password account with a different email. Staff password recovery is only available after a staff account exists.</p><button className="text-link" onClick={() => signOut()} data-testid="registration-signout">Sign out</button></main></div>;
   return <RegistrationForm key={user.id}/>;

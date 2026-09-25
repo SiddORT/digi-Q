@@ -4,6 +4,8 @@ import { publishableKeyFromHost } from "@clerk/react/internal";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router, Route, Switch, Redirect, Link, useLocation } from "wouter";
 import { Activity, ArrowUpRight, CalendarDays, ShieldCheck, Clock3, Building2, Stethoscope, ChevronRight, QrCode } from "lucide-react";
+import { BRAND_NAME, brandLogoAbsoluteUrl } from "./branding";
+import { BrandLogo } from "./components/BrandLogo";
 import * as api from "@workspace/api-client-react";
 import { Portal, Onboarding, PublicBooking } from "./clinic";
 import { CheckInScanner } from "./CheckIn";
@@ -26,7 +28,8 @@ const clerkPubKey = publishableKeyFromHost(
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 export const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 15000 } } });
 function stripBase(path: string) { return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || "/" : path; }
-export function Logo() { return <Link href="/" className="brand" data-testid="link-home"><span className="brand-mark"><Activity size={24}/></span>Clinic<span>Flow</span></Link>; }
+export { BrandLogo as Logo };
+const Logo = BrandLogo;
 function CacheReset() {
   const { addListener } = useClerk();
   const previous = useRef<string | null | undefined>(undefined);
@@ -43,7 +46,7 @@ function Home() {
       <div className="hero-art"><div className="art-grid"/><div className="art-heading"><span className="mini-mark"><Activity/></span><span>CONNECTED CARE<br/><strong>From booking to better.</strong></span></div><div className="care-orbit orbit-one"/><div className="care-orbit orbit-two"/><div className="care-center"><Stethoscope size={78} strokeWidth={1.25}/></div><div className="float-card card-a"><span className="icon-box"><CalendarDays/></span><div><strong>Your visit, simplified</strong><p>Appointments that fit your day</p></div></div><div className="float-card card-b"><span className="live-dot"/><div><strong>Stay in the know</strong><p>Follow your queue, wherever you are</p></div></div><div className="art-footer">Thoughtfully designed around you <ShieldCheck size={18}/></div></div></section>
       <section id="how-it-works" className="journey"><div><span className="eyebrow">CARE WITHOUT THE COMPLICATIONS</span><h2>Less admin. More living.</h2></div><div className="journey-grid">{[[Building2,"01","Find your care","Choose a clinic, location and doctor that work for you."],[CalendarDays,"02","Plan your visit","See actual availability and reserve your appointment."],[Clock3,"03","Skip the uncertainty","Check your token and live queue before you arrive."]].map(([Icon,n,title,body]: any)=><article key={n}><div className="journey-top"><Icon size={25}/><span>{n}</span></div><h3>{title}</h3><p>{body}</p></article>)}</div></section>
       <section id="for-clinics" className="provider-banner"><div><span className="eyebrow">FOR PEOPLE WHO CARE FOR PEOPLE</span><h2>Your practice. Working together.</h2><p>One workspace for your clinics, appointments, schedules and patient flow.</p></div><Link href="/register-clinic" className="button light" data-testid="landing-register-clinic-banner">Register a Clinic <ArrowUpRight size={18}/></Link></section>
-    </main><footer><Logo/><span>Thoughtful technology. Human care.</span><span>© {new Date().getFullYear()} ClinicFlow</span></footer>
+    </main><footer><Logo compact/><span>Thoughtful technology. Human care.</span><span>© {new Date().getFullYear()} {BRAND_NAME}</span></footer>
   </div>;
 }
 function SignUpRoute() {
@@ -101,8 +104,8 @@ const routes: Record<string,string[]> = {
 function Providers(){
  const [,setLocation]=useLocation();
  return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} routerPush={to=>setLocation(stripBase(to))} routerReplace={to=>setLocation(stripBase(to),{replace:true})}
- appearance={{options:{logoImageUrl:`${window.location.origin}${basePath}/logo.svg`,logoLinkUrl:basePath||"/"},variables:{colorPrimary:"#13786f",colorForeground:"#173332",colorMutedForeground:"#617471",colorBackground:"#ffffff",colorInput:"#ffffff",colorInputForeground:"#173332",colorDanger:"#b33636",fontFamily:"'DM Sans', sans-serif",borderRadius:"12px"},elements:{cardBox:{width:"420px",maxWidth:"100%",background:"#fff"},headerTitle:{color:"#173332"},headerSubtitle:{color:"#617471"},formFieldLabel:{color:"#173332"},footerActionLink:{color:"#13786f"}}}}
- localization={{signIn:{start:{title:"Welcome back",subtitle:"Sign in to your ClinicFlow workspace"}},signUp:{start:{title:"Your care, connected",subtitle:"Create your secure ClinicFlow account"}}}}>
+ appearance={{options:{logoImageUrl:brandLogoAbsoluteUrl(),logoLinkUrl:basePath||"/"},variables:{colorPrimary:"#1552b0",colorForeground:"#142d53",colorMutedForeground:"#61748b",colorBackground:"#ffffff",colorInput:"#ffffff",colorInputForeground:"#142d53",colorDanger:"#b33636",fontFamily:"'DM Sans', sans-serif",borderRadius:"12px"},elements:{cardBox:{width:"420px",maxWidth:"100%",background:"#fff"},headerTitle:{color:"#142d53"},headerSubtitle:{color:"#61748b"},formFieldLabel:{color:"#142d53"},footerActionLink:{color:"#1552b0"}}}}
+ localization={{signIn:{start:{title:"Welcome back",subtitle:`Sign in to your ${BRAND_NAME} workspace`}},signUp:{start:{title:"Your care, connected",subtitle:`Create your secure ${BRAND_NAME} account`}}}}>
   <QueryClientProvider client={queryClient}><CacheReset/><Switch>
     <Route path="/" component={Home}/>
     <Route path="/sign-in/*?" component={StaffLogin}/>

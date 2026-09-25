@@ -94,6 +94,8 @@ async function decode(page: Page, uri: string) {
 }
 async function verifyScreen(page: Page, expected: { name: string; status: string; token: string; date?: string }) {
   const ticket = page.getByRole("article", { name: "Visit ticket" });
+  await expect(ticket.locator(".vt-head-brand img")).toBeVisible();
+  await expect(ticket.locator(".vt-head-brand")).toContainText("Visit ticket");
   await expect(ticket.locator(".vt-name")).toHaveText(expected.name);
   await expect(ticket.getByTestId("ticket-status")).toHaveText(expected.status);
   await expect(ticket.getByTestId("ticket-waiting-number")).toHaveText(expected.token);
@@ -102,6 +104,8 @@ async function verifyScreen(page: Page, expected: { name: string; status: string
   const source = await ticket.getByAltText("Personal visit QR").getAttribute("src");
   expect(source).toMatch(/^data:image\/png;base64,/);
   expect(await decode(page, source!)).toBe(qrUrl);
+  const logo = ticket.locator(".vt-head-brand img");
+  await expect.poll(() => logo.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1529, 778]);
 }
 async function download(page: Page) {
   const event = page.waitForEvent("download");
@@ -112,6 +116,7 @@ async function download(page: Page) {
 }
 async function verifyHtml(page: Page, html: string, expected: { name: string; status: string; token: string; date?: string }) {
   const dom = new DOMParserShim(html);
+  expect(html).toContain("DigiQ Doctors");
   expect(html).toContain(`>${expected.name}</h2>`);
   expect(html).toContain(`>${expected.status}</strong>`);
   expect(html).toContain(`class="n">${expected.token}</div>`);
@@ -121,6 +126,7 @@ async function verifyHtml(page: Page, html: string, expected: { name: string; st
   const image = dom.image();
   expect(image).toMatch(/^data:image\/png;base64,/);
   expect(await decode(page, image!)).toBe(qrUrl);
+  expect(dom.logo()).toMatch(/^data:image\/png;base64,/);
   // Loading the exported document without a network proves the embedded image works offline.
   const offline = await page.context().newPage();
   try {
@@ -128,6 +134,8 @@ async function verifyHtml(page: Page, html: string, expected: { name: string; st
     await offline.setContent(html);
     await expect(offline.getByAltText("Personal visit QR")).toBeVisible();
     expect(await offline.getByAltText("Personal visit QR").evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    expect(await offline.getByAltText("DigiQ Doctors logo").evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect.poll(() => offline.getByAltText("DigiQ Doctors logo").evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1529, 778]);
   } finally {
     await offline.context().setOffline(false);
     await offline.close();
@@ -135,12 +143,13 @@ async function verifyHtml(page: Page, html: string, expected: { name: string; st
 }
 class DOMParserShim {
   constructor(private html: string) {}
-  image() { return this.html.match(/<img src="([^"]+)" alt="Personal visit QR">/)?.[1] ?? null; }
+  image() { return this.html.match(/<img class="qr" src="([^"]+)" alt="Personal visit QR">/)?.[1] ?? null; }
+  logo() { return this.html.match(/<img src="([^"]+)" alt="DigiQ Doctors logo"/)?.[1] ?? null; }
 }
 async function interceptPrint(page: Page, blocked = false) {
   await page.evaluate((deny) => {
     const native = window.open.bind(window);
-    const parent = window as Window & { printCount?: number; printImages?: { complete: boolean; naturalWidth: number; src: string }[][] };
+    const parent = window as Window & { printCount?: number; printImages?: { complete: boolean; naturalWidth: number; src: string; alt: string }[][] };
     parent.printCount = 0;
     parent.printImages = [];
     window.open = (...args) => {
@@ -150,7 +159,7 @@ async function interceptPrint(page: Page, blocked = false) {
       const child = native(...args);
       if (child) child.print = () => {
         parent.printImages!.push(Array.from(child.document.images as HTMLCollectionOf<HTMLImageElement>, (img: HTMLImageElement) => ({
-          complete: img.complete, naturalWidth: img.naturalWidth, src: img.src,
+          complete: img.complete, naturalWidth: img.naturalWidth, src: img.src, alt: img.alt,
         })));
         parent.printCount!++;
       };
@@ -163,12 +172,17 @@ async function print(page: Page, inspect?: (popup: Page) => Promise<void>) {
   await page.getByTestId("button-print-ticket").click();
   const popup = await event;
   await expect.poll(() => page.evaluate(() => (window as Window & { printCount?: number }).printCount)).toBe(1);
-  const images = await page.evaluate(() => (window as Window & { printImages?: { complete: boolean; naturalWidth: number; src: string }[][] }).printImages);
+  const images = await page.evaluate(() => (window as Window & { printImages?: { complete: boolean; naturalWidth: number; src: string; alt: string }[][] }).printImages);
   expect(images).toHaveLength(1);
-  expect(images![0]).toHaveLength(1);
-  expect(images![0][0].complete).toBe(true);
-  expect(images![0][0].naturalWidth).toBeGreaterThan(0);
-  expect(await decode(page, images![0][0].src)).toBe(qrUrl);
+  expect(images![0]).toHaveLength(2);
+  const logo = images![0].find(img => img.alt === "DigiQ Doctors logo");
+  const qr = images![0].find(img => img.alt === "Personal visit QR");
+  expect(logo?.src).toMatch(/^data:image\/png;base64,/);
+  expect(logo?.complete).toBe(true);
+  expect(logo?.naturalWidth).toBeGreaterThan(0);
+  expect(qr?.complete).toBe(true);
+  expect(qr?.naturalWidth).toBeGreaterThan(0);
+  expect(await decode(page, qr!.src)).toBe(qrUrl);
   const html = await popup.content();
   try {
     if (inspect) await inspect(popup);
@@ -403,4 +417,57 @@ for (const mode of ["guest", "appointment"] as const) {
     }
   });
   }
+}
+
+for (const kind of ["download", "print"] as const) {
+  test(`bulk ${kind} embeds the complete logo and private QR`, async ({ page }) => {
+    const f = fixture();
+    await page.route("**/api/**", async route => {
+      const path = new URL(route.request().url()).pathname;
+      f.calls.push(path);
+      const reply = path === "/api/appointments/appointment-1"
+        ? f.mutateAppointment(++f.appointmentReads)
+        : path === "/api/appointments/appointment-1/qr"
+          ? f.mutateQr(++f.qrReads)
+          : { status: 501, body: { message: `Unmocked ${path}` } };
+      await route.fulfill({ status: reply.status ?? 200, json: reply.body });
+    });
+    await page.goto("/?mode=bulk");
+    let html: string;
+    if (kind === "download") {
+      const event = page.waitForEvent("download");
+      await page.getByRole("button", { name: "Download QR tickets" }).click();
+      const item = await event;
+      expect(item.suggestedFilename()).toBe("private-appointment-tickets.html");
+      html = await readFile(await item.path(), "utf8");
+    } else {
+      await interceptPrint(page);
+      const event = page.waitForEvent("popup");
+      await page.getByRole("button", { name: "Print QR tickets" }).click();
+      const popup = await event;
+      await expect.poll(() => page.evaluate(() => (window as Window & { printCount?: number }).printCount)).toBe(1);
+      html = await popup.content();
+      await popup.close();
+    }
+    expect(f.calls).toEqual(["/api/appointments/appointment-1", "/api/appointments/appointment-1/qr"]);
+    expect(html).toContain("Private appointment ticket");
+    expect(html).toContain("Account Patient");
+    expect(html).not.toMatch(/<script\b|<link\b|<iframe\b/i);
+    const offline = await page.context().newPage();
+    try {
+      await offline.context().setOffline(true);
+      await offline.setContent(html);
+      const logo = offline.getByAltText("DigiQ Doctors logo");
+      const qr = offline.getByAltText("Private appointment QR");
+      expect(await logo.getAttribute("src")).toMatch(/^data:image\/png;base64,/);
+      await expect.poll(() => logo.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1529, 778]);
+      const src = await qr.getAttribute("src");
+      expect(src).toMatch(/^data:image\/png;base64,/);
+      expect(await qr.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+      expect(await decode(page, src!)).toBe(qrUrl);
+    } finally {
+      await offline.context().setOffline(false);
+      await offline.close();
+    }
+  });
 }

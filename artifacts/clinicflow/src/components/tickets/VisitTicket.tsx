@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { BRAND_LOGO_URL, BRAND_NAME } from "../../branding";
 import "./visit-ticket.css";
 
 export type TicketData = {
@@ -22,14 +23,36 @@ const esc = (v: string) => v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt
 export const sessionRange = (t: TicketData) => t.startTime || t.endTime ? `${t.startTime || "—"} – ${t.endTime || "—"}${t.timezone ? ` (${t.timezone})` : ""}` : "Session time set by clinic";
 export const absoluteUrl = (u: string) => u.startsWith("/") ? `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}${u}` : u;
 
+let logoPromise: Promise<string> | undefined;
+/** Embed the actual supplied logo so saved and printed tickets work without network access. */
+export function embeddedTicketLogo(): Promise<string> {
+  if (!logoPromise) logoPromise = fetch(BRAND_LOGO_URL)
+    .then(async response => {
+      if (!response.ok) throw new Error(`Logo request failed (${response.status}).`);
+      if (!response.headers.get("content-type")?.toLowerCase().startsWith("image/png")) throw new Error("Logo response is not a PNG image.");
+      const blob = await response.blob();
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Logo could not be read."));
+        reader.readAsDataURL(blob);
+      });
+    })
+    .catch(() => {
+      logoPromise = undefined;
+      throw new Error("DigiQ Doctors logo could not be loaded. Try exporting again.");
+    });
+  return logoPromise;
+}
+
 /** Self-contained HTML (inline styles + QR data URI) usable for both download and print. */
-export function ticketHtml(t: TicketData, qr: string | null) {
+export function ticketHtml(t: TicketData, qr: string | null, logo = BRAND_LOGO_URL) {
   const rows: [string, string][] = [["Clinic", t.clinicName], ["Location", t.branchName], ...(t.address ? [["Address", t.address] as [string, string]] : []), ["Doctor", t.doctorName], ["Date", t.date], ["Session", sessionRange(t)]];
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ClinicFlow ticket ${esc(t.reference || "")}</title>
-<style>body{font-family:system-ui,sans-serif;background:#f7f4ee;color:#18223a;margin:0;padding:24px}.t{max-width:560px;margin:auto;background:#fcfaf6;border:1px solid #d9d1c3;border-radius:16px;overflow:hidden}.h{background:#1d7a6c;color:#fcfaf6;padding:14px 20px;font-weight:700}.b{padding:20px}.n{font:700 56px/1 ui-monospace,monospace;color:#1d7a6c;margin:4px 0 8px}.l{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}td{padding:3px 12px 3px 0;vertical-align:top}td:first-child{opacity:.65}.f{border-top:2px dashed #d9d1c3;padding:12px 20px;font-size:13px;background:#e6f2ef}img{display:block;margin:14px auto 0;width:180px}@media print{body{background:none;padding:0}}</style></head><body><div class="t"><div class="h">ClinicFlow · Visit ticket</div><div class="b">
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${BRAND_NAME} ticket ${esc(t.reference || "")}</title>
+<style>body{font-family:system-ui,sans-serif;background:#f0f9fd;color:#10274e;margin:0;padding:24px}.t{max-width:560px;margin:auto;background:#fff;border:1px solid #c9e3ed;border-radius:16px;overflow:hidden}.h{background:#edfaff;color:#10274e;padding:4px 20px;border-bottom:1px solid #c9e3ed;display:flex;align-items:center;gap:8px;font-weight:700}.h img{display:block;width:108px;height:54px;object-fit:contain;flex:none}.b{padding:20px}.n{font:700 56px/1 ui-monospace,monospace;color:#087cb7;margin:4px 0 8px}.l{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}td{padding:3px 12px 3px 0;vertical-align:top}td:first-child{opacity:.65}.f{border-top:2px dashed #c9e3ed;padding:12px 20px;font-size:13px;background:#e9f8fc}.qr{display:block;margin:14px auto 0;width:180px}@media(max-width:420px){.h{flex-wrap:wrap;gap:0 8px}}@media print{body{background:none;padding:0}}</style></head><body><div class="t"><div class="h"><img src="${esc(logo)}" alt="DigiQ Doctors logo"><span>Visit ticket</span></div><div class="b">
 <p>Status: <strong>${esc(t.statusLabel || "Booked")}</strong></p><div class="l">Waiting number</div><div class="n">${esc(t.waitingNumber || "—")}</div>${t.reference ? `<div>Reference <strong>${esc(t.reference)}</strong></div>` : ""}
 <h2 style="margin:14px 0 8px;overflow-wrap:anywhere">${esc(t.patientName)}</h2><table style="width:100%;table-layout:fixed;overflow-wrap:anywhere">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
-${qr ? `<img src="${qr}" alt="Personal visit QR">` : ""}</div><div class="f">Show this ticket at reception. The session time is a range, not an exact consultation time. Keep the QR private.</div></div></body></html>`;
+${qr ? `<img class="qr" src="${qr}" alt="Personal visit QR">` : ""}</div><div class="f">Show this ticket at reception. The session time is a range, not an exact consultation time. Keep the QR private.</div></div></body></html>`;
 }
 
 /** Patient-facing label for the real appointment status. */
@@ -67,7 +90,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
       if (w) { w.opener = null; w.document.body.textContent = "Checking your ticket…"; }
       const fresh = prepareExport ? await prepareExport() : ticket;
       const image = await qrImage(fresh.qrUrl);
-      const html = ticketHtml(fresh, image);
+      const html = ticketHtml(fresh, image, await embeddedTicketLogo());
       if (w) {
         if (w.closed) throw new Error("Print window closed. Try again.");
         w.document.open(); w.document.write(html); w.document.close();
@@ -84,7 +107,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
   }
   const disabled = !!busy || exportDisabled || !qr;
   return <article className="vt" data-testid={testId} aria-label="Visit ticket">
-    <header className="vt-head"><h2>ClinicFlow · Visit ticket</h2><span className="vt-badge" data-testid="ticket-status">{ticket.statusLabel || "Booked"}</span></header>
+    <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>Visit ticket</h2></div><span className="vt-badge" data-testid="ticket-status">{ticket.statusLabel || "Booked"}</span></header>
     <div className="vt-body">
       <div>
         <p className="vt-number-label">Waiting number</p>

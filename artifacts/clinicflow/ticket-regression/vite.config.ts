@@ -5,6 +5,8 @@ import path from "node:path";
 const root = path.dirname(new URL(import.meta.url).pathname);
 export default defineConfig({
   root,
+  // Exercise the same checked-in public logo served by the production Vite app.
+  publicDir: path.resolve(root, "../public"),
   plugins: [react()],
   resolve: {
     alias: { "@": path.resolve(root, "../src") },

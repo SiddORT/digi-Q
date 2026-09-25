@@ -4,12 +4,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import jsQR from "jsqr";
 import { GuestBooking } from "../src/components/GuestBooking";
 import { AppointmentTicket } from "../src/components/appointments/AppointmentTicket";
+import { BulkAppointments } from "../src/components/appointments/BulkAppointments";
 
 // Test-only browser entry: no application router, Clerk, production API or credentials.
 const query = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false }, mutations: { retry: false } } });
 const params = new URLSearchParams(location.search);
 const mode = params.get("mode");
-if (mode !== "guest" && mode !== "appointment") throw new Error(`Unknown ticket fixture: ${mode}`);
+if (mode !== "guest" && mode !== "appointment" && mode !== "bulk") throw new Error(`Unknown ticket fixture: ${mode}`);
 
 declare global {
   interface Window {
@@ -34,6 +35,7 @@ createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={query}>
     {mode === "guest"
       ? <GuestBooking reference="fixture-qr" context={{ clinicId: "clinic-1", branchId: "branch-1", doctorId: "doctor-1", branchTimezone: "UTC" } as React.ComponentProps<typeof GuestBooking>["context"]} />
+      : mode === "bulk" ? <BulkAppointments ids={["appointment-1"]} disabled={false} onClear={() => {}} />
       : <AppointmentTicket id="appointment-1" />}
   </QueryClientProvider>,
 );

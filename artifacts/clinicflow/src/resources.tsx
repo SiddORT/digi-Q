@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
+import { createPortal } from "react-dom";
 import { Form } from "@/components/ui/form";
 import * as api from "@workspace/api-client-react";
 import QRCode from "qrcode";
@@ -163,6 +164,28 @@ function QrCard({row}:{row:any}){
 const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 function LocationActions({row,resource,portal}:{row:any;resource:string;portal:string}){
  const [action,setAction]=useState<"book"|"display"|null>(null);
+  const [menuOpen,setMenuOpen]=useState(false);
+  const [menuPosition,setMenuPosition]=useState({top:0,left:0});
+  const menuTrigger=useRef<HTMLButtonElement>(null);
+  const menuRef=useRef<HTMLDivElement>(null);
+  useEffect(()=>{
+    if(!menuOpen)return;
+    const place=()=>{
+      const rect=menuTrigger.current?.getBoundingClientRect();
+      if(!rect)return;
+      const height=menuRef.current?.offsetHeight||130;
+      setMenuPosition({top:rect.bottom+height+8>window.innerHeight?Math.max(8,rect.top-height-4):rect.bottom+4,left:Math.max(8,Math.min(rect.right-190,window.innerWidth-198))});
+    };
+    const dismiss=(event:PointerEvent)=>{if(!menuTrigger.current?.contains(event.target as Node)&&!menuRef.current?.contains(event.target as Node))setMenuOpen(false);};
+    const escape=(event:KeyboardEvent)=>{if(event.key==="Escape"){setMenuOpen(false);menuTrigger.current?.focus();}};
+    place();
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    window.addEventListener("resize",place);
+    window.addEventListener("scroll",place,true);
+    document.addEventListener("pointerdown",dismiss);
+    document.addEventListener("keydown",escape);
+    return()=>{window.removeEventListener("resize",place);window.removeEventListener("scroll",place,true);document.removeEventListener("pointerdown",dismiss);document.removeEventListener("keydown",escape);};
+  },[menuOpen]);
  const [branchId,setBranchId]=useState("");
  const clinicId=resource==="clinics"?row.id:row.clinicId;
  const clinic=api.useGetClinic(clinicId,{query:{queryKey:api.getGetClinicQueryKey(clinicId),enabled:!!action&&resource==="branches"}});
@@ -175,7 +198,12 @@ function LocationActions({row,resource,portal}:{row:any;resource:string;portal:s
  const loading=clinic.isFetching||branches.isFetching||selected.isFetching;
  const error=clinic.error||branches.error||selected.error;
  useEffect(()=>{if(action&&url&&!loading&&!error&&(resource==="branches"||branches.data?.total===1))window.location.assign(url);},[action,url,loading,error,resource,branches.data?.total]);
- return <><details className="row-menu" onKeyDown={event=>{if(event.key==="Escape"){event.currentTarget.open=false;event.currentTarget.querySelector("summary")?.focus();}}}><summary aria-label={`Booking and display actions for ${row.name}`}><QrCode size={15}/></summary><div className="row-menu-list" role="group" aria-label="Booking and display actions"><button onClick={()=>{setBranchId("");setAction("book");}}>Open booking</button><button onClick={()=>{setBranchId("");setAction("display");}}>Queue display</button><Link href={`/${portal}/qrs?clinicId=${encodeURIComponent(clinicId)}${resource==="branches"?`&branchId=${encodeURIComponent(row.id)}`:""}`}>Manage QR codes</Link></div></details>
+  return <><HelpTip text="Booking and display actions"><button type="button" ref={menuTrigger} aria-label={`Booking and display actions for ${row.name}`} aria-haspopup="menu" aria-expanded={menuOpen} onClick={()=>setMenuOpen(open=>!open)}><QrCode size={15}/></button></HelpTip>
+  {menuOpen&&createPortal(<div ref={menuRef} className="admin-location-menu" role="menu" aria-label={`Booking and display actions for ${row.name}`} style={menuPosition} onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget as Node)&&event.relatedTarget!==menuTrigger.current)setMenuOpen(false);}} onKeyDown={event=>{if(!["ArrowDown","ArrowUp","Home","End"].includes(event.key))return;event.preventDefault();const items=Array.from(event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'));const index=items.indexOf(document.activeElement as HTMLElement);items[event.key==="Home"?0:event.key==="End"?items.length-1:(index+(event.key==="ArrowDown"?1:items.length-1))%items.length]?.focus();}}>
+    <button role="menuitem" onClick={()=>{setMenuOpen(false);setBranchId("");setAction("book");}}>Open booking</button>
+    <button role="menuitem" onClick={()=>{setMenuOpen(false);setBranchId("");setAction("display");}}>Queue display</button>
+    <Link role="menuitem" href={`/${portal}/qrs?clinicId=${encodeURIComponent(clinicId)}${resource==="branches"?`&branchId=${encodeURIComponent(row.id)}`:""}`} onClick={()=>setMenuOpen(false)}>Manage QR codes</Link>
+  </div>,document.body)}
  <AppDialog open={!!action} onClose={()=>setAction(null)} title={action==="display"?"Open queue display":"Open clinic booking"}>
  <ErrorNotice error={error}/>{loading?<p role="status">Loading clinic address…</p>:!clinicSlug?<p className="notice">This clinic has no web address. <Link href={`/admin/settings?clinicId=${encodeURIComponent(clinicId)}`}>Set web address in clinic settings</Link>.</p>:<>
  {resource==="clinics"&&(branches.data?.total??0)>1&&<ResourceLookup resource="branches" label="Select branch" params={{clinicId,status:"active"}} value={branchId} onChange={setBranchId}/>}
@@ -186,6 +214,8 @@ function LocationActions({row,resource,portal}:{row:any;resource:string;portal:s
  </AppDialog></>;
 }
 const PRIMARY_KEYS:Record<string,string[]>={branches:["clinicId"],doctors:["clinicId"],patients:["clinicId"],availability:["clinicId","branchId","doctorId"],exceptions:["branchId","doctorId","date"],qrs:["clinicId","branchId","doctorId"],masters:["category"]};
+const LIST_FILTER_KEYS=["clinicId","branchId","doctorId","adminId","managingAdminId","specializationId","status","from","to","dayOfWeek","activityType","date","category"];
+const LIST_URL_KEYS=["search","page","pageSize","sort",...LIST_FILTER_KEYS];
 const FILTER_LABELS:Record<string,string>={clinicId:"Clinic",branchId:"Branch",doctorId:"Doctor",adminId:"Clinic admin",managingAdminId:"Managing admin",specializationId:"Specialization",activityType:"Events",dayOfWeek:"Day",from:"From",to:"To"};
 function chipLabel(key:string,value:string){
  if(key==="dayOfWeek")return `Day: ${DAYS[Number(value)]}`;
@@ -209,30 +239,49 @@ function renderComputed(c:string,row:any){
 }
 export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{resource:string;identity?:api.Identity;defaults?:any;allowCreate?:boolean}){
  const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),staleTime:60000}});
- const config=resources[resource]; const [search,setSearch]=useState("");const [page,setPage]=useState(1);const [editing,setEditing]=useState<any>(null);
- const [pageSize,setPageSize]=useState(20);
- const [filters,setFilters]=useState<Record<string,string>>(()=>Object.fromEntries(["clinicId","branchId"].flatMap(key=>{const value=new URLSearchParams(window.location.search).get(key);return value?[[key,value]]:[];})));
- const [sort,setSort]=useState("-createdAt");
+  const config=resources[resource]; const [,navigate]=useLocation(); const urlSearch=useSearch();
+  const urlParams=new URLSearchParams(urlSearch);
+  const search=urlParams.get("search")||"";
+  const pageValue=Number(urlParams.get("page"));
+  const page=Number.isSafeInteger(pageValue)&&pageValue>0?pageValue:1;
+  const sizeValue=Number(urlParams.get("pageSize"));
+  const pageSize=[10,20,50,100].includes(sizeValue)?sizeValue:20;
+  const sort=urlParams.get("sort")||"-createdAt";
+  const [editing,setEditing]=useState<any>(null);
  const [dirty,setDirty]=useState(false);
  const [success,setSuccess]=useState("");
  const term=useDebouncedValue(search);
  const supportsSearch=true;
   const roleDefaults=useMemo<Record<string,string>>(()=>identity?.doctorId&&["doctor","clinicAdmin"].includes(identity.user?.role||"")&&["availability","exceptions"].includes(resource)?{doctorId:identity.doctorId as string}:({} as Record<string,string>),[identity,resource]);
- useEffect(()=>{if(Object.keys(roleDefaults).length)setFilters(previous=>({...roleDefaults,...previous}));},[roleDefaults]);
- const filter=(key:string,value:string)=>{setFilters(previous=>({...previous,[key]:value,...(key==="clinicId"?{branchId:"",doctorId:roleDefaults.doctorId||""}:{})}));setPage(1);};
+  const filters:Record<string,string>={...roleDefaults,...Object.fromEntries(LIST_FILTER_KEYS.flatMap(key=>urlParams.get(key)?[[key,urlParams.get(key)!]]:[]))};
+  // The URL is the source of truth so opening an editor and browser Back both retain list context.
+  // Keep unrelated query parameters (e.g. links from clinic settings) intact.
+  const changeUrl=(changes:Record<string,string|number>,replace=false)=>{
+    const next=new URLSearchParams(window.location.search);
+    for(const [key,value] of Object.entries(changes)){
+      if(value===""||value===null||value===undefined||key==="page"&&value===1||key==="pageSize"&&value===20||key==="sort"&&value==="-createdAt")next.delete(key);
+      else next.set(key,String(value));
+    }
+    navigate(`${window.location.pathname}${next.size?`?${next}`:""}`,{replace});
+  };
+  const setPage=(value:number)=>changeUrl({page:value});
+  const setPageSize=(value:number)=>changeUrl({pageSize:value,page:1});
+  const setSearch=(value:string)=>changeUrl({search:value,page:1},true);
+  const setSort=(value:string)=>changeUrl({sort:value,page:1});
+  const filter=(key:string,value:string)=>changeUrl({[key]:value,...(key==="clinicId"?{branchId:"",doctorId:roleDefaults.doctorId||""}:{}),page:1});
  const active=!!(search||sort!=="-createdAt"||Object.entries(filters).some(([k,v])=>v&&v!==roleDefaults[k]));
- const reset=()=>{setSearch("");setFilters(roleDefaults);setSort("-createdAt");setPage(1);};
+  const reset=()=>changeUrl(Object.fromEntries(LIST_URL_KEYS.map(key=>[key,""])));
  const listParams={...Object.fromEntries(Object.entries(filters).filter(([,value])=>value!=="")),search:term||undefined,page,pageSize,sort};
  const [recoveryId,setRecoveryId]=useState("");
  const recovery=api.useRequestUserPasswordReset();
  const client=useQueryClient();
- const query=useQuery<any>({queryKey:[resource,identity?.user?.id,identity?.user?.role,listParams],queryFn:()=>config.list(listParams),refetchInterval:30000,refetchOnWindowFocus:true});
+  const query=useQuery<any>({queryKey:[resource,identity?.user?.id,identity?.user?.role,listParams],queryFn:()=>config.list(listParams),placeholderData:(previous:any)=>previous,refetchInterval:30000,refetchOnWindowFocus:true});
  const selectionContext=JSON.stringify([resource,listParams,search,identity?.user]);
- const selection=useListingSelection(selectionContext,query.error?[]:query.data?.items||[]);
+  const selection=useListingSelection(selectionContext,query.error||query.isPlaceholderData?[]:query.data?.items||[]);
  const compact=["clinics","branches","doctors","patients","users","masters","qrs"].includes(resource);
  const displayColumns=compact?[config.columns[0],...config.columns.slice(1).filter(c=>!["code","reference","city","email","phone","clinicName","specializationName"].includes(c))]:config.columns;
  const portal=identity?.user?.role==="doctor"?"doctor":identity?.user?.role==="receptionist"?"receptionist":"admin";
- useEffect(()=>{if(query.data&&page>1&&page>Math.max(1,Math.ceil(query.data.total/pageSize)))setPage(Math.max(1,Math.ceil(query.data.total/pageSize)));},[query.data,page,pageSize]);
+  useEffect(()=>{if(query.data&&!query.isPlaceholderData&&page>1&&page>Math.max(1,Math.ceil(query.data.total/pageSize)))setPage(Math.max(1,Math.ceil(query.data.total/pageSize)));},[query.data,query.isPlaceholderData,page,pageSize]);
  const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,data):config.create(data),onSuccess:()=>{setEditing(null);setSuccess("Record saved successfully.");client.invalidateQueries();}});
  const remove=useMutation({mutationFn:(id:string)=>config.remove(id),onSuccess:()=>{setSuccess("Record deleted or deactivated successfully.");client.invalidateQueries();}});
 
@@ -258,13 +307,14 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
  }, [config.fields, identity, resource, editing]);
 
   const searchPlaceholder=resource==="doctors"?"Search doctors by name, email or specialization…":resource==="patients"?"Search patients by name, email or mobile…":resource==="audit"?"Search audit events…":`Search ${config.name}…`;
+   const singularName=resource==="availability"?"schedule":resource==="qrs"?"QR code":resource==="masters"?"master value":resource.replace(/s$/,"");
   const sortOptions=[{value:"-createdAt",label:"Newest first"},{value:"createdAt",label:"Oldest first"},...(["clinics","branches","masters","qrs"].includes(resource)?[{value:"name",label:"Name A–Z"},{value:"-name",label:"Name Z–A"}]:[]),...(["doctors","patients","users"].includes(resource)?[{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"}]:[])];
   const chips:FilterChip[]=[
-   ...(search?[{key:"search",label:`Search: ${search}`,onRemove:()=>{setSearch("");setPage(1);}}]:[]),
+    ...(search?[{key:"search",label:`Search: ${search}`,onRemove:()=>setSearch("")}]:[]),
    ...Object.entries(filters).filter(([k,v])=>v&&v!==roleDefaults[k]).map(([k,v])=>({key:`${PRIMARY_KEYS[resource]?.includes(k)?"":"adv:"}${k}`,label:resource==="patients"&&k==="clinicId"?"Registration clinic selected":chipLabel(k,v),onRemove:()=>filter(k,roleDefaults[k]||"")})),
-   ...(sort!=="-createdAt"?[{key:"adv:sort",label:`Sort: ${sortOptions.find(o=>o.value===sort)?.label||sort}`,onRemove:()=>{setSort("-createdAt");setPage(1);}}]:[]),
+    ...(sort!=="-createdAt"?[{key:"adv:sort",label:`Sort: ${sortOptions.find(o=>o.value===sort)?.label||sort}`,onRemove:()=>setSort("-createdAt")}]:[]),
   ];
-  return <><FilterBar actions={config.create&&allowCreate&&<button className="button small" onClick={()=>{save.reset();setDirty(false);setEditing(resource==="qrs"?{...defaults,...Object.fromEntries(["clinicId","branchId","doctorId"].filter(key=>filters[key]).map(key=>[key,filters[key]]))}:defaults);}} data-testid={`button-add-${resource}`}><Plus size={17}/> Add {resource==="branches"?"branch":resource==="availability"?"schedule":resource==="exceptions"?"exception":resource==="qrs"?"QR code":resource.replace(/s$/,"")}</button>} onReset={reset} active={active} chips={chips} label={`Filter ${config.name}`} advanced={<>
+   return <><div className="admin-listing-filter"><FilterBar actions={config.create&&allowCreate&&<button className="button small" onClick={()=>{save.reset();setDirty(false);setEditing(resource==="qrs"?{...defaults,...Object.fromEntries(["clinicId","branchId","doctorId"].filter(key=>filters[key]).map(key=>[key,filters[key]]))}:defaults);}} data-testid={`button-add-${resource}`}><Plus size={17}/> Add {singularName}</button>} onReset={reset} active={active} chips={chips} label={`Filter ${config.name}`} advanced={<>
   {config.fields.some(f=>f.key==="status")&&<SearchableSelect label="Status" placeholder="All statuses" value={filters.status||""} onChange={value=>filter("status",value)} options={[{value:"active",label:"Active"},{value:"inactive",label:"Inactive"}]}/>}
   {resource==="clinics"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Clinic admin" params={{role:"clinicAdmin"}} value={filters.adminId||""} onChange={value=>filter("adminId",value)}/>}
   {resource==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={filters.specializationId||""} onChange={value=>filter("specializationId",value)}/>}
@@ -272,32 +322,34 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
   {["patients","audit"].includes(resource)&&<><label>From date<input type="date" value={filters.from||""} onChange={e=>filter("from",e.target.value)}/></label><label>To date<input type="date" min={filters.from||undefined} value={filters.to||""} onChange={e=>filter("to",e.target.value)}/></label></>}
   {["doctors","patients"].includes(resource)&&<ResourceLookup resource="branches" label="Branch" params={{clinicId:filters.clinicId||undefined}} value={filters.branchId||""} onChange={value=>filter("branchId",value)}/>}
   {resource==="availability"&&<SearchableSelect label="Day" placeholder="All days" value={filters.dayOfWeek||""} onChange={value=>filter("dayOfWeek",value)} options={DAYS.map((label,index)=>({value:String(index),label}))}/>}
-  {resource==="audit"&&<SearchableSelect label="Event category" placeholder="All events" value={filters.activityType||""} onChange={value=>filter("activityType",value)} options={[{value:"operational",label:"Operational activity"},{value:"security",label:"Security audit"}]}/>}
-  <SearchableSelect label="Sort" value={sort} onChange={value=>{setSort(value||"-createdAt");setPage(1);}} options={sortOptions}/>
+   {resource==="audit"&&<SearchableSelect label="Event category" placeholder="All events" value={filters.activityType||""} onChange={value=>filter("activityType",value)} options={[{value:"operational",label:"Operational activity"},{value:"security",label:"Security audit"}]}/>}
+   <SearchableSelect label="Sort" value={sort} onChange={value=>setSort(value||"-createdAt")} options={sortOptions}/>
  </>}>
-  <SearchInput placeholder={searchPlaceholder} value={search} onChange={value=>{setSearch(value);setPage(1);}}/>
+   <SearchInput placeholder={searchPlaceholder} value={search} onChange={setSearch}/>
   {["branches","doctors","patients","availability","qrs"].includes(resource)&&<ResourceLookup resource="clinics" label={resource==="patients"?"Registration clinic":"Clinic"} value={filters.clinicId||""} onChange={value=>filter("clinicId",value)}/>}
   {["availability","exceptions","qrs"].includes(resource)&&<ResourceLookup resource="branches" label="Branch" params={{clinicId:filters.clinicId||undefined}} value={filters.branchId||""} onChange={value=>filter("branchId",value)}/>}
   {["availability","exceptions","qrs"].includes(resource)&&<ResourceLookup resource="doctors" label="Doctor" params={{clinicId:filters.clinicId||undefined,branchId:filters.branchId||undefined}} value={filters.doctorId||""} onChange={value=>filter("doctorId",value)}/>}
   {resource==="exceptions"&&<label>Date<input type="date" value={filters.date||""} onChange={e=>filter("date",e.target.value)}/></label>}
   {resource==="masters"&&<SearchableSelect label="Category" placeholder="All categories" value={filters.category||""} onChange={value=>filter("category",value)} options={Object.values(api.MasterInputCategory).map(category=>({value:category,label:title(category)}))}/>}
- </FilterBar>
+  </FilterBar></div>
  {success&&<p className="notice" role="status">{success}</p>}
  {!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={remove.error}/>
   {resource==="users"&&identity?.user?.role!=="doctor"&&<details className="panel padded" style={{marginBottom:20}}><summary>Account recovery assistance</summary><p className="muted">Select a linked staff account to view the secure account recovery steps. This action does not send an email.</p><div className="inline-form"><ResourceLookup resource="users" label="Staff account" params={{role:"receptionist",linkedOnly:true}} value={recoveryId} onChange={value=>{setRecoveryId(value);recovery.reset();}}/><button disabled={!recoveryId||recovery.isPending} onClick={()=>{if(!recovery.isPending)recovery.mutate({id:recoveryId});}} data-testid="button-password-reset">{recovery.isPending?"Loading…":"Get recovery steps"}</button></div><ErrorNotice error={recovery.error}/>{recovery.data&&<div className="notice" data-testid="status-password-recovery"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link" data-testid="link-password-recovery">Open secure password recovery</Link></div>}</details>}
  <ListingBulk selection={selection} resource={resource} columns={config.columns} identity={identity} context={selectionContext}/>
  <section className="panel table-panel admin-listing-table">
-  {query.isLoading?<div className="skeleton" role="status">Loading {config.name}…</div>:query.error?<><div className="error-box" role="alert">Unable to load {config.name}. {query.error instanceof Error?query.error.message:"Please try again."}</div><button onClick={()=>query.refetch()}>Retry {config.name}</button></>:query.data?.items?.length?<div className="table-scroll"><table>
- <thead><tr><th scope="col" className="col-select">{selection.header}</th>{displayColumns.map(c=><th scope="col" key={c} className={c==="status"?"col-status":undefined}>{columnLabel(c)}</th>)}{config.update&&<th scope="col" className="col-actions">Actions</th>}</tr></thead>
+   {query.isLoading?<div className="skeleton" role="status">Loading {config.name}…</div>:query.error?<><div className="error-box" role="alert">Unable to load {config.name}. {query.error instanceof Error?query.error.message:"Please try again."}</div><button onClick={()=>query.refetch()}>Retry {config.name}</button></>:query.data?.items?.length?<div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>
+  <colgroup><col className="col-select"/>{displayColumns.map(c=><col key={c} className={compact&&c===config.columns[0]?"col-record":undefined}/>)}{config.update&&<col className="col-actions"/>}</colgroup>
+  <thead><tr><th scope="col" className="col-select">{selection.header}</th>{displayColumns.map(c=><th scope="col" key={c} className={compact&&c===config.columns[0]?"col-record":c==="status"?"col-status":undefined}>{columnLabel(c)}</th>)}{config.update&&<th scope="col" className="col-actions">Actions</th>}</tr></thead>
  <tbody>{query.data.items.map((row:any)=><tr key={row.id} data-testid={`row-${resource}-${row.id}`}>
  <td data-label="Select" className="col-select">{selection.checkbox(row)}</td>
- {displayColumns.map(c=><td key={c} data-label={columnLabel(c)}>{compact&&c===config.columns[0]?<div className="admin-record"><strong>{row[c]} {row.code||row.reference?<small>{row.code||row.reference}</small>:null}</strong><small>{[row.address,row.city,row.clinicName,row.specializationName,row.email||row.phone].filter(Boolean).join(" · ")||"—"}</small></div>:renderComputed(c,row)??(c==="status"?<span className={`badge ${row[c]}`}>{title(row[c]||"")}</span>:c==="dayOfWeek"?DAYS[row[c]]:c==="createdAt"?(settings.data?.timezone?new Date(row[c]).toLocaleString(undefined,{timeZone:settings.data.timezone}):row[c]):typeof row[c]==="boolean"?(row[c]?"Yes":"No"):Array.isArray(row[c])?row[c].join(", ")||"—":row[c]??"—")}</td>)}
+  {displayColumns.map(c=><td key={c} data-label={columnLabel(c)} className={compact&&c===config.columns[0]?"col-record":undefined}>{compact&&c===config.columns[0]?<div className="admin-record"><strong>{row[c]} {row.code||row.reference?<small>{row.code||row.reference}</small>:null}</strong><small>{[row.address,row.city,row.clinicName,row.specializationName,row.email||row.phone].filter(Boolean).join(" · ")||"—"}</small></div>:renderComputed(c,row)??(c==="status"?<span className={`badge ${row[c]}`}>{title(row[c]||"")}</span>:c==="dayOfWeek"?DAYS[row[c]]:c==="createdAt"?(settings.data?.timezone?new Date(row[c]).toLocaleString(undefined,{timeZone:settings.data.timezone}):row[c]):typeof row[c]==="boolean"?(row[c]?"Yes":"No"):Array.isArray(row[c])?row[c].join(", ")||"—":row[c]??"—")}</td>)}
  {config.update&&<td data-label="Actions" className="col-actions"><div className="row-actions">{["clinics","branches"].includes(resource)&&<LocationActions row={row} resource={resource} portal={portal}/>}<HelpTip text="Edit this record"><button aria-label="Edit" onClick={()=>{save.reset();setDirty(false);setEditing(row);}}><Pencil size={15}/></button></HelpTip><HelpTip text="Delete or deactivate; records with history are preserved"><button aria-label="Delete or deactivate" disabled={remove.isPending} onClick={()=>{if(!remove.isPending&&confirm("Delete or deactivate this record? Records with history are preserved."))remove.mutate(row.id);}}><Trash2 size={15}/></button></HelpTip></div></td>}
- </tr>)}</tbody></table></div>:active?<div className="empty"><h3>No matching {config.name}</h3><p>Try a different search or clear your filters.</p><button onClick={reset}>Clear filters</button></div>:<Empty label={config.name}/>}
- {!query.error&&<Pagination page={page} pageSize={pageSize} total={query.data?.total||0} onPageChange={setPage} onPageSizeChange={size=>{setPageSize(size);setPage(1);}}/>}</section>
+  </tr>)}</tbody></table></div>:active?<div className="empty"><h3>No matching {config.name}</h3><p>Try a different search or clear your filters.</p><button onClick={reset}>Clear filters</button></div>:<Empty label={config.name}/>}
+  {query.isFetching&&!query.isLoading&&!query.error&&<span className="admin-listing-refresh" role="status">Updating {config.name}…</span>}
+  {!query.error&&<div className="admin-listing-pagination"><Pagination page={page} pageSize={pageSize} total={query.data?.total||0} onPageChange={setPage} onPageSizeChange={setPageSize} resetPageOnSizeChange={false}/></div>}</section>
  {resource==="users"&&identity?.user?.role==="superAdmin"&&allowCreate&&<ClinicAdminOnboarding />}
- {resource==="qrs"&&<div className="qr-grid">{query.data?.items?.filter((r:any)=>r.status==="active").map((r:any)=><QrCard row={r} key={r.id}/>)}</div>}
- {editing&&<AppDialog open onClose={()=>setEditing(null)} title={`${editing.id?"Edit":"Add"} ${title(config.name)}`} dirty={dirty} busy={save.isPending}>{resource==="availability"&&<p className="notice">Each record is one consulting session. Add separate, non-overlapping sessions for the same doctor, branch and weekday. Overnight sessions are not supported.</p>}{resource==="branches"&&editing.id&&<p className="notice">Effective contacts: {editing.effectiveEmail||"No email"} · {editing.effectivePhone||"No phone"}. Inherited contacts update when the clinic changes; branch overrides are retained.</p>}<ErrorNotice error={save.error}/><Editor fields={effectiveFields} initial={editing} onSave={data=>{if(!save.isPending)save.mutate(data);}} busy={save.isPending} resourceName={resource} onDirtyChange={setDirty}/></AppDialog>}
+  {resource==="qrs"&&!query.isPlaceholderData&&<div className="qr-grid">{query.data?.items?.filter((r:any)=>r.status==="active").map((r:any)=><QrCard row={r} key={r.id}/>)}</div>}
+  {editing&&<AppDialog open onClose={()=>setEditing(null)} title={`${editing.id?"Edit":"Add"} ${title(singularName)}`} dirty={dirty} busy={save.isPending}>{resource==="availability"&&<p className="notice">Each record is one consulting session. Add separate, non-overlapping sessions for the same doctor, branch and weekday. Overnight sessions are not supported.</p>}{resource==="branches"&&editing.id&&<p className="notice">Effective contacts: {editing.effectiveEmail||"No email"} · {editing.effectivePhone||"No phone"}. Inherited contacts update when the clinic changes; branch overrides are retained.</p>}<ErrorNotice error={save.error}/><Editor fields={effectiveFields} initial={editing} onSave={data=>{if(!save.isPending)save.mutate(data);}} busy={save.isPending} resourceName={resource} onDirtyChange={setDirty}/></AppDialog>}
  </>;
 }
 export const profileFields = [f("fullName","text",true),f("mobile","tel"),f("photoUrl","url")];

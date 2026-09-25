@@ -4,6 +4,7 @@ import { OTPInput, REGEXP_ONLY_DIGITS } from "input-otp";
 import { Link, useLocation } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { queryClient } from "../App";
+import { BRAND_NAME } from "../branding";
 import { authErrorMessage } from "./errors";
 import { AuthCard, AuthShell } from "./AuthShell";
 import "../components/clinic-registration.css";
@@ -177,7 +178,7 @@ export function StaffLogin() {
       <AuthCard
         title={step === "credentials" ? "Staff login" : "Verify this device"}
         description={step === "credentials"
-          ? "Use your ClinicFlow staff email and password."
+          ? `Use your ${BRAND_NAME} staff email and password.`
           : codeSent
             ? `For your security, enter the code sent to ${maskedEmail}.`
             : working

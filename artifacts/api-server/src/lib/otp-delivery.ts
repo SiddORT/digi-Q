@@ -23,7 +23,7 @@ export async function deliverOtp(mobile: string, code: string, expirySeconds: nu
   const body = new URLSearchParams({
     To: mobile,
     MessagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID!,
-    Body: `Your ClinicFlow verification code is ${code}. It expires in ${Math.ceil(expirySeconds / 60)} minutes. Do not share this code.`,
+    Body: `Your DigiQ Doctors verification code is ${code}. It expires in ${Math.ceil(expirySeconds / 60)} minutes. Do not share this code.`,
   });
   try {
     const response = await new ReplitConnectors().proxy(

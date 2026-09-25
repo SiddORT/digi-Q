@@ -1,0 +1,69 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DigiQ Doctors — implementation checklist</title>
+<style>body{font:16px/1.55 system-ui,sans-serif;color:#172a4a;background:#f3f7fc;margin:0;padding:24px}main{max-width:1000px;margin:auto}h1,h2{color:#0d2350}section{background:white;padding:24px;border:1px solid #d7e2f0;border-radius:12px;margin:20px 0}li{margin:10px 0}strong{color:#1552b0}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #e2e9f3;vertical-align:top}.note{background:#fff5da;padding:16px;border-radius:8px}small{color:#56657d}@media(max-width:600px){body{padding:12px}section{padding:16px}}</style>
+<main><h1>DigiQ Doctors: item-by-item progress</h1><p>26 September 2026 · Development preview only. Not published.</p>
+<p><strong>Implemented</strong> means code is in place and typechecked; it does not imply every page and role has received a complete browser pass. <strong>Verified</strong> identifies direct browser, automated-test or asset-inspection evidence. <strong>Partial</strong> identifies remaining work or checks.</p>
+<section><h2>Branding B1–B12</h2><table><tr><th>Item</th><th>Status and result</th></tr>
+<tr><td>B1 · Inspect asset</td><td>Verified: supplied PNG has transparency; only transparent outer padding removed.</td></tr>
+<tr><td>B2 · Preserve artwork</td><td>Verified: complete lettering, tagline, trademark, colour and proportions preserved.</td></tr>
+<tr><td>B3 · Existing logo slots</td><td>Implemented; representative public/header/sidebar placements checked. Contain sizing keeps the complete logo inside existing layout space, so its wider artwork does not stretch to fill every slot.</td></tr>
+<tr><td>B4 · Small-size readability</td><td>Reviewed: full logo visible on mobile/sidebar. The tagline is necessarily small at header size; no simplified logo substituted.</td></tr>
+<tr><td>B5 · Blue palette</td><td>Implemented: navy headings, #1552b0 primary blue, cyan accents and light-blue backgrounds. Key foreground/background pairs calculated for contrast.</td></tr>
+<tr><td>B6 · Replace brand green</td><td>Implemented across shared theme, public/auth/registration, queue display, help, listings and tickets.</td></tr>
+<tr><td>B7 · Semantic statuses</td><td>Implemented: meaningful success, amber and error colours retained, with text labels.</td></tr>
+<tr><td>B8 · Platform name</td><td>Implemented: visible app branding, titles, exports and SMS verification copy updated. Defaults use DigiQ Doctors; stored user settings and clinic names preserved.</td></tr>
+<tr><td>B9 · Surface coverage</td><td>Partial: app-controlled pages/cards/tickets/exports updated. No custom email templates found; Clerk invitation/verification email branding remains provider-managed and has not been changed or delivery-tested.</td></tr>
+<tr><td>B10 · Browser branding</td><td>Implemented: page metadata and favicon use new branding. Full supplied logo reused rather than an unapproved cropped mark.</td></tr>
+<tr><td>B11 · Shared branding</td><td>Implemented: shared brand constants and reusable logo component, plus centralized colour tokens.</td></tr>
+<tr><td>B12 · Existing links</td><td>Preserved: API identifiers, slugs, storage keys, QR links and historical records unchanged. Ticket QR regression checks pass.</td></tr>
+</table></section>
+<section><h2>Original UI/UX checklist</h2><ol>
+<li><strong>Implemented:</strong> fixed-width selection column; desktop sizing corrected to avoid distributing surplus space into checkboxes.</li>
+<li><strong>Implemented:</strong> flexible record/name width with space reserved for status and actions.</li>
+<li><strong>Verified on desktop:</strong> row action icons aligned horizontally. Mobile width correction added after screenshot review.</li>
+<li><strong>Implemented:</strong> listing and appointment action widths handled separately.</li>
+<li><strong>Implemented:</strong> consistent icon controls, gaps and touch-sized mobile targets.</li>
+<li><strong>Verified in representative listing:</strong> Edit/Delete tooltips and accessible action labels; shared portal tooltips retained.</li>
+<li><strong>Implemented; full interaction check incomplete:</strong> viewport-positioned row-action portal, Escape and focus handling. Bottom-row menu keyboard/bounds check was interrupted.</li>
+<li><strong>Implemented:</strong> long names and metadata wrap; narrow hostile-name ticket export tests pass.</li>
+<li><strong>Verified on desktop:</strong> headers and row contents aligned.</li>
+<li><strong>Verified:</strong> no permanent separate empty filter strip on shared listings.</li>
+<li><strong>Verified:</strong> search, Filters and Add aligned in a compact desktop toolbar.</li>
+<li><strong>Implemented:</strong> Clear action conditional on active filters; reset disabled when no filters apply.</li>
+<li><strong>Verified:</strong> Active filter produced a count badge, removable chip and URL parameter.</li>
+<li><strong>Verified:</strong> advanced filtering opens on demand; responsive controls remain usable.</li>
+<li><strong>Implemented:</strong> tighter page-header, toolbar and panel spacing.</li>
+<li><strong>Implemented:</strong> duplicate generic booking actions removed where contextual actions already exist.</li>
+<li><strong>Verified on desktop:</strong> toolbar actions use right-side space.</li>
+<li><strong>Implemented:</strong> shared resource listings inherit fixes; Clinics, Locations and Users included in smoke checks.</li>
+<li><strong>Implemented / mobile smoke checked:</strong> queue and appointments retain operational session and status controls.</li>
+<li><strong>Implemented:</strong> schedules, exceptions and audit retain necessary data fields; reports preserve data during refresh errors. Full page-by-page browser verification not completed.</li>
+<li><strong>Implemented:</strong> Clinics list naming and Locations terminology; internal branch routes unchanged.</li>
+<li><strong>Preserved:</strong> role restrictions, existing confirmation and record-history protections. No real record mutations performed in acceptance.</li>
+<li><strong>Mobile verified; tablet checks incomplete:</strong> responsive cards/drawer and no positive page overflow on sampled mobile pages.</li>
+<li><strong>Implemented:</strong> wide tables contain scrolling; sampled mobile pages stayed within viewport.</li>
+<li><strong>Implemented:</strong> bulk controls appear for selected records.</li>
+<li><strong>Implemented:</strong> compact pagination and page-size controls.</li>
+<li><strong>Partial verification:</strong> active filters, modal, mobile screens, long ticket content and export error paths checked. Complete keyboard, zoom and tablet matrix remains unverified.</li>
+<li><strong>Implemented:</strong> shared spacing tokens.</li>
+<li><strong>Implemented:</strong> common field/button heights, with larger touch targets.</li>
+<li><strong>Implemented:</strong> redundant generic page descriptions removed.</li>
+<li><strong>Implemented:</strong> heading dates limited to operational pages.</li>
+<li><strong>Implemented:</strong> denser rows without fixed text-clipping heights.</li>
+<li><strong>Implemented:</strong> unnecessary nested panel borders and oversized panel spacing reduced.</li>
+<li><strong>Implemented:</strong> names emphasized; identifiers and secondary details visually subordinate.</li>
+<li><strong>Implemented:</strong> URL-backed resource and appointment search/filter/sort/page state. Exact Back-navigation interaction not completed in browser pass.</li>
+<li><strong>Implemented:</strong> available data retained during refresh, with explicit stale/error feedback; profile refresh no longer remounts editor mid-entry.</li>
+<li><strong>Preserved / clarified:</strong> named action controls remain separate from selection; rows do not introduce surprise navigation.</li>
+<li><strong>Representative modal verified:</strong> two-column desktop form, internal scrolling and reachable Save/Close. Responsive form and dialog styles applied.</li>
+<li><strong>Implemented:</strong> shared listing empty states distinguish no records from filtered results.</li>
+<li><strong>Implemented:</strong> readable status text and stale/offline/retry messaging; semantic status colours retained.</li>
+<li><strong>Implemented:</strong> tables use available width; forms/auth/dialogs retain reasonable content bounds.</li>
+</ol></section>
+<section><h2>Verification results</h2><ul>
+<li>Workspace TypeScript checks passed.</li>
+<li>All 23 ticket regression cases passed across the final run and targeted retry: on-screen/download/print logos, signed QR, current/cancelled/rescheduled data, revision changes, missing QR/API failure, blocked popup, hostile long content and bulk ticket exports.</li>
+<li>The initial test harness omitted public logo assets; its public directory and image validation were corrected. Subsequent concurrent page-load timeouts passed when retried serially.</li>
+<li>Authenticated browser checks: compact Clinics toolbar/actions, active filtering, Add modal, mobile navigation/listings and essential queue/appointment controls.</li>
+<li>Public homepage rendered successfully in independent desktop and mobile screenshots after the tester's anonymous-page timeout.</li>
+<li>Temporary development staff test identity was removed. No production records were changed.</li>
+</ul><p class="note">Remaining boundaries: provider-managed emails are not rebranded; the full keyboard/tablet/zoom matrix and post-correction mobile action arrangement are not browser-verified. No publishing was performed.</p></section></main></html>

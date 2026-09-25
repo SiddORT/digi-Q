@@ -9,7 +9,7 @@ export function navLabel(p: string, role: string) {
   if (p === "book") return role === "patient" ? "Book Now" : "Book appointment";
   if (p === "queue" && role === "patient") return "Booking status";
   if (p === "profile" && role === "admin") return "My consultation";
-  const map: Record<string, string> = { dashboard: "Overview", branches: "Locations", clinics: role === "doctor" ? "My clinics" : "Clinic details", availability: "Weekly schedule", exceptions: "Date exceptions", qrs: "Booking QR codes", audit: "Audit log", queue: "Live queue", masters: "Master data", demo: "Demo clinic" };
+  const map: Record<string, string> = { dashboard: "Overview", branches: "Locations", clinics: role === "doctor" ? "My clinics" : "Clinics", availability: "Weekly schedule", exceptions: "Date exceptions", qrs: "Booking QR codes", audit: "Audit log", queue: "Live queue", masters: "Master data", demo: "Demo clinic" };
   return map[p] || title(p);
 }
 

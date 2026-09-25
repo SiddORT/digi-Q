@@ -3,6 +3,7 @@ import { useGetPublicDisplay, getGetPublicDisplayQueryKey, type PublicDisplay } 
 import QRCode from "qrcode";
 import { Activity, Clock3, MapPin, QrCode, RefreshCw, WifiOff, Users, Maximize2 } from "lucide-react";
 import "./clinic-display.css";
+import { BRAND_NAME } from "../branding";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 type DisplaySession = PublicDisplay["sessions"][number];
@@ -60,7 +61,7 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
   const clock = useClock(data?.branch.timezone);
   const revoked = q.isError && isRevoked(q.error);
 
-  useEffect(() => { document.title = data ? `${data.clinic.name} · Queue display` : "ClinicFlow · Queue display"; }, [data]);
+  useEffect(() => { document.title = data ? `${data.clinic.name} · Queue display` : `${BRAND_NAME} · Queue display`; }, [data]);
 
   const fullscreen = () => { document.fullscreenElement ? document.exitFullscreen?.() : document.documentElement.requestFullscreen?.().catch(() => {}); };
 

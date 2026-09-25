@@ -15,9 +15,12 @@ function download(body:string,name:string,type:string) {
 export function useListingSelection(context:string, rows:any[]) {
   const [state,setState]=useState<{context:string;ids:string[]}>({context,ids:[]});
   const ids=state.context===context?state.ids:[];
-  useEffect(()=>setState({context,ids:[]}),[context]);
+  useEffect(()=>setState(previous=>previous.context===context?previous:{context,ids:[]}),[context]);
   const selected=rows.filter(row=>ids.includes(row.id));
-  const toggle=(id:string)=>setState({context,ids:ids.includes(id)?ids.filter(value=>value!==id):[...ids,id]});
+  const toggle=(id:string)=>setState(previous=>{
+    const current=previous.context===context?previous.ids:[];
+    return {context,ids:current.includes(id)?current.filter(value=>value!==id):[...current,id]};
+  });
   const clear=()=>setState({context,ids:[]});
   const all=rows.length>0&&selected.length===rows.length;
   return {selected,clear,
