@@ -49,6 +49,15 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## Gotchas
 
+## Phase 1 acceptance and policy
+
+- Track approved work and verification evidence in `docs/phase-one-progress.md`. Do not equate existing code or compilation with a verified workflow.
+- Preserve legacy consultation durations until staff deliberately changes them; new duration selections are 20/30/60 minutes per doctor within a clinic. Staff choose future-only changes or explicitly confirm a warning before changing a running session.
+- Wait estimates are approximate patients-ahead × expected duration, updated on queue changes, not a countdown or automatically learned consultation duration.
+- Ordinary bookings/walk-ins preserve reservation order. Reception chooses an absent patient's re-entry position with a mandatory audited reason; the ticket survives and a current consultation is never interrupted.
+- Patient rescheduling is before check-in within the same clinic, including another doctor/branch, subject to the cancellation cutoff. Preserve reference/history, issue a destination-session token, and leave the original untouched on failure.
+- Email OTP is accepted for Phase 1. SMS, custom SMTP, automatic notification delivery, advanced calendar grids, billing and clinical records are outside this phase.
+
 _Populate as you build — sharp edges, "always run X before Y" rules._
 
 ## Pointers

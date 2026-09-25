@@ -12,10 +12,15 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { AppointmentSessionHistory } from './appointmentSessionHistory';
 import type { AppointmentStatus } from './appointmentStatus';
 
 export interface StatusEvent {
   status: AppointmentStatus;
   occurredAt: Date;
   reason?: string;
+  action?: string;
+  position?: number;
+  from?: AppointmentSessionHistory;
+  to?: AppointmentSessionHistory;
 }

@@ -1053,6 +1053,18 @@ components:
         status: { $ref: "#/components/schemas/AppointmentStatus" }
         occurredAt: { type: string, format: date-time }
         reason: { type: string }
+        action: { type: string }
+        position: { type: integer }
+        from: { $ref: "#/components/schemas/AppointmentSessionHistory" }
+        to: { $ref: "#/components/schemas/AppointmentSessionHistory" }
+    AppointmentSessionHistory:
+      type: object
+      properties:
+        doctorId: { type: string }
+        branchId: { type: string }
+        date: { type: string, format: date }
+        token: { type: string }
+        tokenNumber: { type: integer }
     QueueSelection:
       type: object
       required: [doctorId, branchId, date]
@@ -1102,14 +1114,14 @@ components:
       properties:
         doctorId: { type: string }
         clinicId: { type: string }
-        expectedDurationMinutes: { type: [integer, "null"], enum: [20, 30, 60, null] }
+        expectedDurationMinutes: { type: [integer, "null"], description: Existing legacy durations are retained; new selections must be 20/30/60. }
     DoctorDurationInput:
       type: object
       required: [clinicId, expectedDurationMinutes, effect]
       properties:
         clinicId: { type: string }
         expectedDurationMinutes: { type: integer, enum: [20, 30, 60] }
-        effect: { type: string, enum: [futureOnly, runningSession] }
+        effect: { type: string, enum: [futureOnly, runningSession], description: Both choices update sessions that have not started, including already-booked future sessions. Running-session snapshots change only for an explicitly confirmed selected session. Past sessions remain unchanged. }
         branchId: { type: string }
         date: { type: string, format: date }
         confirmRunningSession: { type: boolean }

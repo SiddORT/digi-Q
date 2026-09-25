@@ -1,4 +1,6 @@
-import { db, doctors, branches, clinics, schedules, availabilityExceptions, appointments, assignments, users } from "@workspace/db";
+import { db, doctors, branches, clinics, schedules, availabilityExceptions, appointments, assignments, users, settings } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { configuredDuration, sessionKey } from "./session-duration";
 import { all, one, getSettings } from "./store";
 import { assert } from "./http";
 export function minutes(time: string) {
@@ -75,7 +77,12 @@ export async function availability(doctorId: string, branchId: string, date: str
   const effective = { ...schedule };
   if (exception) for (const key of ["startTime", "endTime", "breakStart", "breakEnd", "maxTokens"]) if (exception[key] !== undefined && (exception[key] !== null || key.startsWith("break"))) effective[key] = exception[key];
   const timezone = effective.timezone || branch.timezone || "Asia/Kolkata", now = localNow(timezone), config = await getSettings(conn);
-  const bookedTokens = (await all(appointments, conn)).filter(a => a.doctorId === doctorId && a.branchId === branchId && a.date === date && a.status !== "cancelled").length;
+  const sessionBookings = (await all(appointments, conn)).filter(a => a.doctorId === doctorId && a.branchId === branchId && a.date === date);
+  const bookedTokens = sessionBookings.filter(a => a.status !== "cancelled").length;
+  const [snapshot] = await conn.select().from(settings).where(eq(settings.id, sessionKey({ doctorId, branchId, date })));
+  const consultationMinutes = snapshot?.data?.expectedDurationMinutes ?? (sessionBookings.length
+    ? sessionBookings[0].expectedDurationMinutes ?? effective.consultationMinutes ?? 10
+    : await configuredDuration(doctorId, clinic.id, conn) ?? effective.consultationMinutes ?? 10);
   let reason: string | null = null;
   if (!schedule || !schedule.isOpen) reason = "No open weekly session";
   if (exception?.isClosed) reason = exception.reason || "Closed for this date";
@@ -84,5 +91,5 @@ export async function availability(doctorId: string, branchId: string, date: str
   if ((Date.parse(date) - Date.parse(now.date)) / 86400000 > config.bookingHorizonDays) reason = "Outside booking horizon";
   const maxTokens = effective.maxTokens || 0, remainingTokens = Math.max(0, maxTokens - bookedTokens);
   if (!remainingTokens) reason ||= "Session capacity reached";
-  return { doctorId, branchId, clinicId: clinic.id, date, available: !reason, reason, startTime: effective.startTime || null, endTime: effective.endTime || null, breakStart: effective.breakStart || null, breakEnd: effective.breakEnd || null, timezone, maxTokens, bookedTokens, remainingTokens, consultationMinutes: effective.consultationMinutes || 10, tokenPrefix: effective.tokenPrefix || "A", queueMode: effective.queueMode || "mixed", queueOpenTime: effective.queueOpenTime, queueCloseTime: effective.queueCloseTime, bufferMinutes: effective.bufferMinutes || 0 };
+  return { doctorId, branchId, clinicId: clinic.id, date, available: !reason, reason, startTime: effective.startTime || null, endTime: effective.endTime || null, breakStart: effective.breakStart || null, breakEnd: effective.breakEnd || null, timezone, maxTokens, bookedTokens, remainingTokens, consultationMinutes, tokenPrefix: effective.tokenPrefix || "A", queueMode: effective.queueMode || "mixed", queueOpenTime: effective.queueOpenTime, queueCloseTime: effective.queueCloseTime, bufferMinutes: effective.bufferMinutes || 0 };
 }

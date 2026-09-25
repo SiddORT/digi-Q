@@ -3,12 +3,15 @@ import { db, appointments, patients, doctors, clinics, branches, appointmentHist
 import * as z from "@workspace/api-zod";
 import { requireUser, scoped, canRead, scope } from "../lib/auth";
 import { assert, parse, query } from "../lib/http";
-import { all, one, put, uid, audit, getSettings, filtered, paginate } from "../lib/store";
+import { all, one, put, uid, audit, getSettings, filtered, paginate, change } from "../lib/store";
 import { availability, localNow, minutes } from "../lib/availability";
 import { enrich } from "../lib/entities";
 import { appointmentView, transition, lockQueue } from "../lib/appointments";
 import { resolveQr } from "./public";
 import { queryPage } from "../lib/list-query";
+import { snapshotDuration, allocateToken } from "../lib/session-duration";
+import { reschedule } from "../lib/reschedule";
+import { rank, sessionRows } from "../lib/queue-order";
 export const appointmentsRouter = Router();
 appointmentsRouter.get("/appointments", async (req, res) => {
   const user = await requireUser(req), q = query(z.ListAppointmentsQueryParams, req);
@@ -59,10 +62,14 @@ appointmentsRouter.post("/appointments", async (req, res) => {
       assert(context.clinicId === body.clinicId && (!context.branchId || context.branchId === body.branchId) && (!context.doctorId || context.doctorId === body.doctorId), 400, "Booking does not match QR context");
     }
     for (const [field, category] of [["appointmentTypeId", "appointmentType"], ["consultationTypeId", "consultationType"]]) if (body[field]) { const m = await one(masters, body[field], tx); assert(m.category === category && m.status === "active", 400, `Invalid ${field}`); }
-    const tokenNumber = 1 + Math.max(0, ...existing.filter(a => a.doctorId === body.doctorId && a.branchId === body.branchId && a.date === body.date).map(a => a.tokenNumber));
+    const tokenNumber = await allocateToken(body, tx);
     const doctor = await enrich("doctors", await one(doctors, body.doctorId, tx), tx), clinic = await one(clinics, body.clinicId, tx), branch = await one(branches, body.branchId, tx);
     const id = uid(), timestamp = new Date().toISOString();
+    const expectedDurationMinutes = await snapshotDuration(body, tx);
+    const queueRank = Math.max(0, ...sessionRows(existing, body).map(rank)) + 1;
     const result = await put(appointments, { id, patientId: body.patientId, doctorId: body.doctorId, clinicId: body.clinicId, branchId: body.branchId, date: body.date, tokenNumber, requestId: body.requestId, actorId: user.id, data: { ...body, reference: `CF-${uid().replaceAll("-", "").toUpperCase().slice(0,16)}`, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, patientName: patient.fullName, patientCode: patient.code, doctorName: doctor.fullName, clinicName: clinic.name, branchName: branch.name, timezone: available.timezone, startTime: available.startTime, endTime: available.endTime, history: [{ status: "booked", occurredAt: timestamp }] } }, tx);
+    Object.assign(result, { expectedDurationMinutes, queueRank, revision: 0 });
+    await change(appointments, id, { data: result }, tx);
     await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, toStatus: "booked" }, tx);
     await audit(user, "book", "appointments", result, tx);
     if (body.source === "walkIn") {
@@ -76,4 +83,8 @@ appointmentsRouter.post("/appointments", async (req, res) => {
 appointmentsRouter.post("/appointments/:id/actions", async (req, res) => {
   const user = await requireUser(req), body = parse(z.TransitionAppointmentBody, req.body);
   res.json(await db.transaction(tx => transition(user, req.params.id as string, body, tx)));
+});
+appointmentsRouter.post("/appointments/:id/reschedule", async (req, res) => {
+  const user = await requireUser(req), body = parse(z.RescheduleAppointmentBody, req.body);
+  res.json(await db.transaction(tx => reschedule(user, req.params.id as string, body, tx)));
 });

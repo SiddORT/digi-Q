@@ -259,6 +259,10 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
   const saved = await db.transaction(async tx => {
     const proposed = { ...old, ...body };
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${kind + ":" + (proposed.doctorId || old?.id || body.email || "create")}))`);
+    if (kind === "schedules") {
+      const { freezeDoctorSessions } = await import("../lib/session-duration");
+      await freezeDoctorSessions(proposed.doctorId, tx);
+    }
     if (old && kind === "doctors" && body.ownerAdminId !== undefined) {
       const current = await one(doctors, old.id, tx);
       assert(current.ownerAdminId === old.ownerAdminId, 409, "Doctor ownership changed; reload before retrying");
@@ -369,6 +373,12 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       if (body.managingAdminId !== undefined) assert(body.managingAdminId === managingAdminId, 409, "Supplied Clinic Admin does not match the owner derived from selected clinics");
       const uf: any = { fullName: body.fullName, email: body.email, mobile: body.mobile, role, status: fields.status, ...(!old ? { invitationStatus: "failed" } : {}) };
       if (kind === "doctors") {
+        if (old) {
+          await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + old.id}))`);
+          const latest = await one(doctors, old.id, tx);
+          fields.data.expectedDurations = latest.expectedDurations;
+          fields.data.durationHistory = latest.durationHistory;
+        }
         fields.ownerAdminId = managingAdminId;
         const owner = await one(users, fields.ownerAdminId, tx);
         assert(owner.role === "clinicAdmin" && owner.status === "active", 400, "Please select an active Clinic Admin");

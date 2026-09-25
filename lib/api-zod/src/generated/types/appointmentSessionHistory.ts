@@ -13,14 +13,10 @@
  * OpenAPI spec version: 1.0.0
  */
 
-/**
- * @nullable
- */
-export type DoctorDurationExpectedDurationMinutes = typeof DoctorDurationExpectedDurationMinutes[keyof typeof DoctorDurationExpectedDurationMinutes] | null;
-
-
-export const DoctorDurationExpectedDurationMinutes = {
-  NUMBER_20: 20,
-  NUMBER_30: 30,
-  NUMBER_60: 60,
-} as const;
+export interface AppointmentSessionHistory {
+  doctorId?: string;
+  branchId?: string;
+  date?: Date;
+  token?: string;
+  tokenNumber?: number;
+}

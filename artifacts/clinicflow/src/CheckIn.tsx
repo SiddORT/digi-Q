@@ -183,6 +183,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setScanError(null);
+    const current = generation.current;
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
@@ -194,6 +195,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
     const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(objectUrl);
+      if (current !== generation.current) return;
       const canvas = document.createElement("canvas");
       const scale = Math.min(1, 2000 / Math.max(img.width, img.height));
       canvas.width = Math.max(1, Math.round(img.width * scale));
@@ -214,6 +216,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
     };
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
+      if (current !== generation.current) return;
       setScanError("This image could not be opened. Choose a valid PNG, JPEG or WebP image.");
     };
     img.src = objectUrl;

@@ -18,6 +18,7 @@ import type { DoctorDurationInputExpectedDurationMinutes } from './doctorDuratio
 export interface DoctorDurationInput {
   clinicId: string;
   expectedDurationMinutes: DoctorDurationInputExpectedDurationMinutes;
+  /** Both choices update sessions that have not started */
   effect: DoctorDurationInputEffect;
   branchId?: string;
   date?: Date;

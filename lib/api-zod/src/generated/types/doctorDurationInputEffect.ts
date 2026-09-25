@@ -13,6 +13,9 @@
  * OpenAPI spec version: 1.0.0
  */
 
+/**
+ * Both choices update sessions that have not started
+ */
 export type DoctorDurationInputEffect = typeof DoctorDurationInputEffect[keyof typeof DoctorDurationInputEffect];
 
 

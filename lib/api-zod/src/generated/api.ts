@@ -2186,7 +2186,23 @@ export const ListAppointmentsResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 })))
 }))
@@ -2256,7 +2272,23 @@ export const CreateAppointmentResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 }))
 
@@ -2307,7 +2339,23 @@ export const GetAppointmentResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 }))
 
@@ -2379,7 +2427,23 @@ export const ResolveAppointmentQrResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 })),
   "eligible": zod.boolean(),
@@ -2441,7 +2505,23 @@ export const CheckInAppointmentQrResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 })),
   "alreadyCheckedIn": zod.boolean(),
@@ -2457,7 +2537,7 @@ export const GetDoctorDurationParams = zod.object({
 export const GetDoctorDurationResponse = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
-  "expectedDurationMinutes": zod.union([zod.literal(20),zod.literal(30),zod.literal(60),zod.literal(null)]).nullable()
+  "expectedDurationMinutes": zod.number().int().nullable().describe('Existing legacy durations are retained; new selections must be 20/30/60.')
 })
 
 
@@ -2469,7 +2549,7 @@ export const UpdateDoctorDurationParams = zod.object({
 export const UpdateDoctorDurationBody = zod.object({
   "clinicId": zod.string(),
   "expectedDurationMinutes": zod.union([zod.literal(20),zod.literal(30),zod.literal(60)]),
-  "effect": zod.enum(['futureOnly', 'runningSession']),
+  "effect": zod.enum(['futureOnly', 'runningSession']).describe('Both choices update sessions that have not started'),
   "branchId": zod.string().optional(),
   "date": zod.coerce.date().optional(),
   "confirmRunningSession": zod.boolean().optional(),
@@ -2479,7 +2559,7 @@ export const UpdateDoctorDurationBody = zod.object({
 export const UpdateDoctorDurationResponse = zod.object({
   "doctorId": zod.string(),
   "clinicId": zod.string(),
-  "expectedDurationMinutes": zod.union([zod.literal(20),zod.literal(30),zod.literal(60),zod.literal(null)]).nullable()
+  "expectedDurationMinutes": zod.number().int().nullable().describe('Existing legacy durations are retained; new selections must be 20/30/60.')
 })
 
 
@@ -2541,7 +2621,23 @@ export const RescheduleAppointmentResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 }))
 
@@ -2615,7 +2711,23 @@ export const TransitionAppointmentResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 }))
 
@@ -2711,7 +2823,23 @@ export const GetQueueResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 }))).optional().describe('Omitted for patients'),
   "pollIntervalSeconds": zod.literal(30),
@@ -2771,7 +2899,23 @@ export const CallNextResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 })),zod.null()])
 })
@@ -2977,7 +3121,23 @@ export const GetDashboardResponse = zod.object({
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
   "occurredAt": zod.coerce.date(),
-  "reason": zod.string().optional()
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
 })).optional()
 }))).optional(),
   "recentActivity": zod.array(zod.object({

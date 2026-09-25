@@ -33,3 +33,6 @@ Source: `artifacts/clinicflow/src/components/ListingControls.tsx`
 
 ## Note on assignmentTargetRole("admins") === "doctor"
 This is intentional, not a bug. The `GetStaffAssignmentOptionsTargetRole` enum only allows `doctor|receptionist`. The admins tab never calls assignment lookups (the selectors are guarded by `tab !== "admins"`). The create/update payload role (`clinicAdmin`) comes separately from `staffInput`. The mapping is a safe fallback that the tests cover, so it was left unchanged.
+
+## Schedule consultation duration
+The schedule form offers 20, 30 or 60 minutes. If a schedule has a legacy value outside that set, it appears as an extra "(current, legacy value)" option with a hint, and it is sent back unchanged until staff pick a new value. There is no automatic migration.

@@ -12,11 +12,13 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { DoctorDurationExpectedDurationMinutes } from './doctorDurationExpectedDurationMinutes';
 
 export interface DoctorDuration {
   doctorId: string;
   clinicId: string;
-  /** @nullable */
-  expectedDurationMinutes: DoctorDurationExpectedDurationMinutes;
+  /**
+     * Existing legacy durations are retained; new selections must be 20/30/60.
+     * @nullable
+     */
+  expectedDurationMinutes: number | null;
 }

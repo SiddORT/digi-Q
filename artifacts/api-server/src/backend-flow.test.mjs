@@ -64,6 +64,7 @@ export const paginate = (rows,q={}) => {const page=q.page||1,pageSize=q.pageSize
 await build({
   stdin: { contents: `
     export * from "./lib/appointments";
+    export * from "./lib/queue-order";
     export * from "./lib/availability";
     export * from "./lib/auth";
     export * from "./lib/appointment-qr";
@@ -147,7 +148,7 @@ await build({
              await previous;
              return () => { release(); if (locks.get(key) === queued) locks.delete(key); };
            }
-           const select = () => ({from:table=>({where:condition=>({for:async()=> (await all(table)).filter(r=>r[condition.field]===condition.value),limit:async n=>(await all(table)).slice(0,n)})})});
+            const select = () => ({from:table=>({where:condition=>({then:(resolve,reject)=>all(table).then(rows=>rows.filter(r=>r[condition.field]===condition.value)).then(resolve,reject),for:async()=> (await all(table)).filter(r=>r[condition.field]===condition.value),limit:async n=>(await all(table)).slice(0,n)})})});
            const remove = table => ({where:async condition => {
              const rows = state.rows[table.name] || [];
              state.rows[table.name] = rows.filter(row=>row[condition.field]!==condition.value);
@@ -155,7 +156,10 @@ await build({
            const insert = table => ({values:value => {
              const row={...value};
              (state.rows[table.name] ||= []).push(row);
-             return {onConflictDoNothing:async()=>row,returning:async()=>[row]};
+              return {onConflictDoNothing:async()=>row,onConflictDoUpdate:async({set})=>{
+                const original=state.rows[table.name].find(r=>r.id===row.id&&r!==row);
+                if(original){Object.assign(original,set);state.rows[table.name]=state.rows[table.name].filter(r=>r!==row);}
+              },returning:async()=>[row]};
            }});
            export const db = {
              execute:async statement=>{
@@ -317,8 +321,8 @@ test("queue lifecycle, oldest waiting, active consultation guard and patient pri
   const completed=await api.transition(staff,first.id,{action:"complete"});
   assert.equal(completed.status,"completed");
   await assert.rejects(api.transition(staff,first.id,{action:"checkIn"}),/Invalid/);
-  await api.transition(staff,second.id,{action:"noShow"});
-  assert.equal((await api.transition(staff,second.id,{action:"requeue"})).status,"waiting");
+  await api.transition(staff,second.id,{action:"noShow",reason:"Temporarily absent"});
+  assert.equal((await api.transition(staff,second.id,{action:"requeue",reason:"Returned to reception",position:1,expectedRevision:api.state.rows.appointments.find(a=>a.id===second.id).revision,expectedQueueVersion:api.queueVersion(api.state.rows.appointments)})).status,"waiting");
   api.state.rows.appointments.find(a=>a.id===second.id).startTime="23:59";
   assert.equal((await api.transition(staff,second.id,{action:"cancel"})).status,"cancelled");
   for (const action of ["checkIn","call","start","complete","requeue"]) await assert.rejects(api.transition(staff,second.id,{action}),/Invalid/);

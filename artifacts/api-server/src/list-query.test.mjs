@@ -100,6 +100,13 @@ test("600 appointments/patients: clinic, branch, own doctor, status, date and pa
   assert.equal((await queryPage(patient, "appointments", {}, undefined, conn)).items[0].id, "a500");
   assert.equal((await queryPage(patient, "patients", {}, undefined, conn)).total, 1);
 });
+test("manual token lookup searches the token without leaking another tenant", async () => {
+  await database.exec(`update appointments set data=data || jsonb_build_object('token','MANUAL-LOOKUP-01') where clinic_id='c1'`);
+  const found = await queryPage(admin, "appointments", { search: "MANUAL-LOOKUP-01", pageSize: 20 }, undefined, conn);
+  assert.ok(found.total > 0);
+  assert.ok(found.items.every(row => row.clinicId === "c1"));
+  assert.equal((await queryPage({ ...admin, id: "admin2", clinicIds: ["c61"] }, "appointments", { search: "MANUAL-LOOKUP-01" }, undefined, conn)).total, 0);
+});
 test("audit separation retains security records; dashboard aggregates scoped SQL counts", async () => {
   assert.equal((await queryPage(admin, "audit-logs", {}, undefined, conn)).total, 2);
   assert.equal((await queryPage(admin, "audit-logs", { activityType: "operational" }, undefined, conn)).items[0].id, "audit2");

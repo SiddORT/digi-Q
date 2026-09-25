@@ -9,6 +9,7 @@ import { reportingRouter } from "./reporting";
 import otpRouter from "./otp";
 import { appointmentQrRouter } from "./appointment-qr";
 import { authRouter } from "./auth";
+import { durationRouter } from "./duration";
 
 const router: IRouter = Router();
 
@@ -18,6 +19,7 @@ router.use(authRouter);
 router.use(identityRouter);
 router.use(otpRouter);
 router.use(resourcesRouter);
+router.use(durationRouter);
 router.use(appointmentsRouter);
 router.use(appointmentQrRouter);
 router.use(queueRouter);

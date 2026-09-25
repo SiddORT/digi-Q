@@ -633,10 +633,22 @@ export const AppointmentActionType = {
   cancel: 'cancel',
 } as const;
 
+export interface AppointmentSessionHistory {
+  doctorId?: string;
+  branchId?: string;
+  date?: string;
+  token?: string;
+  tokenNumber?: number;
+}
+
 export interface StatusEvent {
   status: AppointmentStatus;
   occurredAt: string;
   reason?: string;
+  action?: string;
+  position?: number;
+  from?: AppointmentSessionHistory;
+  to?: AppointmentSessionHistory;
 }
 
 export type Appointment = AppointmentInput & ({
@@ -755,23 +767,14 @@ export interface LiveQueue {
   updatedAt: string;
 }
 
-/**
- * @nullable
- */
-export type DoctorDurationExpectedDurationMinutes = typeof DoctorDurationExpectedDurationMinutes[keyof typeof DoctorDurationExpectedDurationMinutes] | null;
-
-
-export const DoctorDurationExpectedDurationMinutes = {
-  NUMBER_20: 20,
-  NUMBER_30: 30,
-  NUMBER_60: 60,
-} as const;
-
 export interface DoctorDuration {
   doctorId: string;
   clinicId: string;
-  /** @nullable */
-  expectedDurationMinutes: DoctorDurationExpectedDurationMinutes;
+  /**
+     * Existing legacy durations are retained; new selections must be 20/30/60.
+     * @nullable
+     */
+  expectedDurationMinutes: number | null;
 }
 
 export type DoctorDurationInputExpectedDurationMinutes = typeof DoctorDurationInputExpectedDurationMinutes[keyof typeof DoctorDurationInputExpectedDurationMinutes];
@@ -783,6 +786,9 @@ export const DoctorDurationInputExpectedDurationMinutes = {
   NUMBER_60: 60,
 } as const;
 
+/**
+ * Both choices update sessions that have not started
+ */
 export type DoctorDurationInputEffect = typeof DoctorDurationInputEffect[keyof typeof DoctorDurationInputEffect];
 
 
@@ -794,6 +800,7 @@ export const DoctorDurationInputEffect = {
 export interface DoctorDurationInput {
   clinicId: string;
   expectedDurationMinutes: DoctorDurationInputExpectedDurationMinutes;
+  /** Both choices update sessions that have not started */
   effect: DoctorDurationInputEffect;
   branchId?: string;
   date?: string;

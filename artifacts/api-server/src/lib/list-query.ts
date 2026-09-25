@@ -58,7 +58,7 @@ export function filterSql(q: any): SQL {
   for (const key of ["clinicId", "branchId", "doctorId", "patientId", "adminId", "managingAdminId", "status", "role", "category", "parentId", "gender", "city", "specializationId", "source", "entityType", "actorId", "date"]) {
     if (q[key] !== undefined) filters.push(sql`(doc->>${key}=${q[key]} or coalesce(doc->${key === "clinicId" ? "clinicIds" : key === "branchId" ? "branchIds" : "__none"},'[]'::jsonb) ? ${q[key]})`);
   }
-  if (q.search) filters.push(sql`exists(select 1 from jsonb_each_text(doc) e where e.key in ('name','fullName','email','mobile','code','reference','patientName','doctorName','summary','specializationName') and e.value ilike ${"%" + String(q.search).replace(/[\\%_]/g, "\\$&") + "%"})`);
+  if (q.search) filters.push(sql`exists(select 1 from jsonb_each_text(doc) e where e.key in ('name','fullName','email','mobile','code','reference','token','patientName','doctorName','summary','specializationName') and e.value ilike ${"%" + String(q.search).replace(/[\\%_]/g, "\\$&") + "%"})`);
   if (q.from) filters.push(sql`coalesce(doc->>'date',left(doc->>'createdAt',10))>=${q.from}`);
   if (q.to) filters.push(sql`coalesce(doc->>'date',left(doc->>'createdAt',10))<=${q.to}`);
   const security = sql`doc->>'action' in ('verifyStaffPassword','recoveryInstructions','invitationResent','invitationNotRequired','invitationFailed')`;
