@@ -28,11 +28,16 @@ production QR and the fixture does not exist in the published database.
 No production records were written. Do not assume publishing code copies this
 fixture or its authentication identity into production.
 
-The fixture's synthetic provider identity is for automated development testing,
-not a usable human email inbox. A controlled real email is needed to finish
-staff-access handoff. No credentials belong in this document or downloadable QR.
-Live provisioning must use authorized application onboarding, not direct
-production SQL or weakened authentication.
+The synthetic provider identity and its local credentials were retired. The
+existing Clinic Admin and self-owned doctor profile were retained, and a
+development-tenant staff invitation for an owner-controlled mailbox was
+created with email notifications enabled. The application records the invitation
+as sent and the provider reports it pending; neither status proves inbox
+delivery, password setup, or a completed sign-in. The recipient should follow
+the private invitation to set their own password, then use Preview `/sign-in`.
+No email address, credentials, or invitation tickets belong in this document
+or downloadable QR. Production provisioning must use authorized application
+onboarding, not direct production SQL or weakened authentication.
 
 ## Acceptance evidence
 
@@ -43,9 +48,9 @@ One browser pass verified:
 - Pending receipt survives reload.
 - Actual QR image decoding opens the correct booking page.
 - Camera-denied and non-QR-image errors provide recovery instructions.
-- Exact real development provider identity and real password proof established
-  the expected Clinic Admin and linked doctor.
-- That account approved the request in Live queue, producing token D-01 and one
+- Before the staff handoff, the isolated development test identity and real
+  password proof established the expected Clinic Admin and linked doctor.
+- That test identity approved the request in Live queue, producing token D-01 and one
   waiting appointment for Fictional QR Flow Test Patient 2026 (2026-09-25).
 
 The labelled test appointment and requested demo fixture were intentionally
