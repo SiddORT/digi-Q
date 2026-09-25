@@ -24,6 +24,20 @@ custom SQL workaround and does not mean the four new functions reached productio
 
 #### Reduced-release evidence and remaining operator steps
 
+Main-workspace pre-publish recheck on 2026-09-25: the first fresh diff exposed
+missing development expression indexes and would have dropped five production
+session/queue indexes without replacements. Restored only the missing development
+indexes using the checked-in definitions in one bounded transaction; unique-index
+creation validated existing records, and no records were changed or deleted.
+The repeated actual Publish diff now includes all five session-index replacements,
+both branch indexes, the clinic slug index, and all three guest uniqueness
+replacements. It reports no structural data loss, but flags possible backward
+incompatibility during rollout. Production aggregate slug/name duplicate counts
+are zero. The registration page renders in Preview. No production DDL or Publish
+was performed. Review the actual interactive plan and use a quiet maintenance
+window; do not select overwrite-production-data. This clears the observed index
+omission for the reduced release, not the deferred consulting-admin feature.
+
 `node --test artifacts/api-server/src/pre-0008-compatibility.test.mjs` passed:
 the isolated PostgreSQL harness installs the historical guard definitions and
 verifies their four hashes exactly equal the observed production hashes. All ten
@@ -49,10 +63,10 @@ identity were independently rejected by the existing request-origin protection.
 
 For the reduced release, use only normal **user-controlled managed Publish**:
 
-1. Review its actual current schema plan. The last confirmed plan replaces the
+1. Review its actual current schema plan. The freshly confirmed plan replaces the
    ordinary session indexes and guest uniqueness constraints, adds slug/branch
-   indexes, and omits function replacements. This task environment cannot recompute
-   the platform diff; never treat the old plan as approval of a changed live plan.
+   indexes, and omits function replacements. The main agent recomputed this after
+   development index reconciliation; recheck if development changes again.
    Retain all three guest uniqueness protections and the five same-session
    uniqueness semantics. Stop for unexpected data/table drops or missing replacements.
 2. Confirm the platform-supported restore options before proceeding. Do not choose

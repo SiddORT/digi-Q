@@ -15,6 +15,12 @@ Also compare real development constraints with both declared schema and producti
 
 **How to apply:** Inspect both DROP and corresponding ADD statements. Validate pre-existing data before adding uniqueness; preserve records and treat declarations in source as intent, not proof of live database state.
 
+Recheck the live catalog and Publish diff after task merges, even when earlier release checks passed.
+
+**Why:** A later main-workspace check again found declared expression indexes absent, producing production index drops without replacements. The exact cause was not established; a prior clean diff did not remain reliable across intervening work.
+
+**How to apply:** Check index definitions as well as names after development schema synchronization. Fail release readiness when required replacements disappear; never assume a successful merge proves database parity.
+
 The owner approved a reduced release that defers consulting Clinic Admin capability
 rather than bypassing the omitted custom-function migration.
 
