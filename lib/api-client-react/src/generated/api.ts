@@ -58,6 +58,10 @@ import type {
   ClinicSettingsInput,
   ClinicSettingsResult,
   Dashboard,
+  DemoLoginInput,
+  DemoLoginTicket,
+  DemoSetupAction,
+  DemoSetupStatus,
   Doctor,
   DoctorDuration,
   DoctorDurationInput,
@@ -162,6 +166,318 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getDemoLoginUrl = () => {
+
+
+
+
+  return `/api/demo/login`
+}
+
+/**
+ * Dedicated demo identity only. Provider password verification precedes a 60-second single-use Clerk ticket. Never available to ordinary users.
+ */
+export const demoLogin = async (demoLoginInput: DemoLoginInput, options?: Parameters<typeof customFetch>[1]): Promise<DemoLoginTicket> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DemoLoginTicket>(getDemoLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(demoLoginInput)
+  }
+);}
+
+
+
+
+
+export const getDemoLoginMutationKey = () => ['demoLogin'] as const;
+
+export const getDemoLoginMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof demoLogin>>, TError,DemoLoginMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof demoLogin>>, TError,DemoLoginMutationVariables, TContext> => {
+
+const mutationKey = getDemoLoginMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof demoLogin>>, DemoLoginMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  demoLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DemoLoginMutationResult = NonNullable<Awaited<ReturnType<typeof demoLogin>>>
+    export type DemoLoginMutationBody = BodyType<DemoLoginInput>
+    export type DemoLoginMutationError = ErrorType<unknown>
+    export type DemoLoginMutationVariables = {data: BodyType<DemoLoginInput>}
+
+    export const useDemoLogin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof demoLogin>>, TError,DemoLoginMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof demoLogin>>,
+        TError,
+        DemoLoginMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDemoLoginMutationOptions(options));
+    }
+
+export const getGetDemoSetupUrl = () => {
+
+
+
+
+  return `/api/demo/setup`
+}
+
+/**
+ * Super Admin only
+ */
+export const getDemoSetup = async ( options?: Parameters<typeof customFetch>[1]): Promise<DemoSetupStatus> => {
+
+  return customFetch<DemoSetupStatus>(getGetDemoSetupUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDemoSetupQueryKey = () => {
+    return [
+    `/api/demo/setup`
+    ] as const;
+    }
+
+
+export const getGetDemoSetupQueryOptions = <TData = Awaited<ReturnType<typeof getDemoSetup>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDemoSetup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDemoSetupQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDemoSetup>>> = ({ signal }) => getDemoSetup({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDemoSetup>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDemoSetupQueryResult = NonNullable<Awaited<ReturnType<typeof getDemoSetup>>>
+export type GetDemoSetupQueryError = ErrorType<unknown>
+
+
+
+export function useGetDemoSetup<TData = Awaited<ReturnType<typeof getDemoSetup>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDemoSetup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDemoSetupQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateDemoSetupUrl = () => {
+
+
+
+
+  return `/api/demo/setup`
+}
+
+/**
+ * Explicit Super Admin creation; initial password is returned once only, never stored locally
+ */
+export const createDemoSetup = async ( options?: Parameters<typeof customFetch>[1]): Promise<DemoSetupStatus> => {
+
+  return customFetch<DemoSetupStatus>(getCreateDemoSetupUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateDemoSetupMutationKey = () => ['createDemoSetup'] as const;
+
+export const getCreateDemoSetupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDemoSetup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDemoSetup>>, TError,void, TContext> => {
+
+const mutationKey = getCreateDemoSetupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDemoSetup>>, void> = () => {
+
+
+          return  createDemoSetup(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDemoSetupMutationResult = NonNullable<Awaited<ReturnType<typeof createDemoSetup>>>
+
+    export type CreateDemoSetupMutationError = ErrorType<unknown>
+
+
+    export const useCreateDemoSetup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDemoSetup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDemoSetup>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateDemoSetupMutationOptions(options));
+    }
+
+export const getUpdateDemoSetupUrl = () => {
+
+
+
+
+  return `/api/demo/setup`
+}
+
+export const updateDemoSetup = async (demoSetupAction: DemoSetupAction, options?: Parameters<typeof customFetch>[1]): Promise<DemoSetupStatus> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<DemoSetupStatus>(getUpdateDemoSetupUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(demoSetupAction)
+  }
+);}
+
+
+
+
+
+export const getUpdateDemoSetupMutationKey = () => ['updateDemoSetup'] as const;
+
+export const getUpdateDemoSetupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDemoSetup>>, TError,UpdateDemoSetupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDemoSetup>>, TError,UpdateDemoSetupMutationVariables, TContext> => {
+
+const mutationKey = getUpdateDemoSetupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDemoSetup>>, UpdateDemoSetupMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateDemoSetup(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDemoSetupMutationResult = NonNullable<Awaited<ReturnType<typeof updateDemoSetup>>>
+    export type UpdateDemoSetupMutationBody = BodyType<DemoSetupAction>
+    export type UpdateDemoSetupMutationError = ErrorType<unknown>
+    export type UpdateDemoSetupMutationVariables = {data: BodyType<DemoSetupAction>}
+
+    export const useUpdateDemoSetup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDemoSetup>>, TError,UpdateDemoSetupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDemoSetup>>,
+        TError,
+        UpdateDemoSetupMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateDemoSetupMutationOptions(options));
+    }
 
 export const getGetSessionContextsUrl = (params: GetSessionContextsParams,) => {
   const normalizedParams = new URLSearchParams();

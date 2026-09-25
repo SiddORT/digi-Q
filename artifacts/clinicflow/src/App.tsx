@@ -16,6 +16,7 @@ import { ClinicRegistration } from "./components/ClinicRegistration";
 import { PublicClinicPage } from "./components/PublicClinicPage";
 import { PatientScanner } from "./components/PatientScanner";
 import { GuestClinicFinder } from "./components/GuestClinicFinder";
+import { DemoLogin } from "./auth/DemoLogin";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const clerkPubKey = publishableKeyFromHost(
@@ -81,7 +82,7 @@ function Guard({role, page}: {role:string;page:string}) {
   if (!me.data?.user || me.data.needsOnboarding) return <Redirect to="/onboarding"/>;
   const actual = ["superAdmin","clinicAdmin"].includes(me.data.user.role) ? "admin" : me.data.user.role;
   if(actual !== role) return <Redirect to={`/${actual}/dashboard`}/>;
-  if(me.data.user.role==="clinicAdmin"&&["masters","audit"].includes(page)) return <Redirect to="/admin/dashboard"/>;
+  if(me.data.user.role==="clinicAdmin"&&["masters","audit","demo"].includes(page)) return <Redirect to="/admin/dashboard"/>;
   if(role==="admin"&&page==="profile"&&(me.data.user.role!=="clinicAdmin"||!me.data.doctorId)) return <Redirect to="/admin/dashboard"/>;
   return <Portal identity={me.data} role={role} page={page}/>;
 }
@@ -92,7 +93,7 @@ function PublicBookingRoute({reference}: {reference:string}) {
   return <PublicBooking reference={reference}/>;
 }
 const routes: Record<string,string[]> = {
-   admin:["dashboard","clinics","branches","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions","profile"],
+   admin:["dashboard","clinics","branches","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions","profile","demo"],
   doctor:["dashboard","profile","clinics","branches","availability","exceptions","appointments","queue","patients","qrs","book","users"],
    receptionist:["dashboard","appointments","queue","patients","book","qrs","availability","exceptions"],
   patient:["dashboard","book","appointments","queue","profile"],
@@ -108,6 +109,7 @@ function Providers(){
     <Route path="/sign-up/*?" component={SignUpRoute}/>
     <Route path="/register-clinic/*?" component={ClinicRegistration}/>
     <Route path="/patient-login" component={PatientLogin}/>
+    <Route path="/demo-login" component={DemoLogin}/>
     <Route path="/scan-qr" component={PatientScanner}/>
     <Route path="/guest-booking" component={GuestClinicFinder}/>
     <Route path="/forgot-password" component={ForgotPassword}/>

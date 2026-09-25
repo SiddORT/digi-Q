@@ -1,10 +1,11 @@
 import type { Request } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
-import { db, users, doctors, patients, assignments, branches, clinics, appointments, staffSessionProofs } from "@workspace/db";
+import { db, users, doctors, patients, assignments, branches, clinics, appointments, staffSessionProofs, settings } from "@workspace/db";
 import { and, eq, gt } from "drizzle-orm";
 import { assert, HttpError } from "./http";
 import { all, flatten, one, uid } from "./store";
 import { isClinicalMember } from "./clinical-membership";
+import { DEMO_FIXTURE, demoWriteAllowed } from "./demo-policy";
 export const STAFF_ROLES = ["superAdmin", "clinicAdmin", "doctor", "receptionist"] as const;
 export function isStaffRole(role: string | null | undefined): boolean {
   return Boolean(role && STAFF_ROLES.includes(role as (typeof STAFF_ROLES)[number]));
@@ -61,6 +62,22 @@ export async function findUser(clerkId: string) {
     }
   }
   if (!row) return null;
+  if (row.data?.demoFixture === DEMO_FIXTURE) {
+    const [state] = await db.select().from(settings).where(eq(settings.id, DEMO_FIXTURE));
+    if (!state?.data?.enabled || state.data.clerkId !== clerkId || state.data.userId !== row.id ||
+        row.status !== "active" || row.role !== "clinicAdmin") return null;
+    const owned = await db.select().from(clinics).where(eq(clinics.adminId, row.id));
+    const doctor = await db.select().from(doctors).where(eq(doctors.userId, row.id));
+    const selected = await db.select().from(branches).where(eq(branches.clinicId, state.data.clinicId));
+    if (owned.length !== 1 || owned[0].id !== state.data.clinicId ||
+      owned[0].status !== "active" ||
+      selected.length !== 1 || selected[0].id !== state.data.branchId || selected[0].status !== "active" ||
+      doctor.length !== 1 || doctor[0].id !== state.data.doctorId || doctor[0].ownerAdminId !== row.id ||
+      doctor[0].status !== "active")
+      return null;
+    const links = await db.select().from(assignments).where(eq(assignments.userId, row.id));
+    if (links.length !== 1 || links[0].clinicId !== state.data.clinicId || links[0].branchId) return null;
+  }
   const user = flatten(row);
   const activeClinics = new Set((await all(clinics)).filter(c => c.status === "active").map(c => c.id));
   const activeBranches = new Set((await all(branches)).filter(b => b.status === "active" && activeClinics.has(b.clinicId)).map(b => b.id));
@@ -77,6 +94,8 @@ export async function requireUser(req: Request) {
   // access therefore requires a server-side proof produced only by Clerk's
   // verifyPassword API and bound to this signed session ID.
   if (isStaffRole(user.role)) await requireStaffSessionProof(req);
+  if (user.demoFixture === DEMO_FIXTURE)
+    assert(demoWriteAllowed(req.method, req.path), 403, "Demo account cannot modify clinic structure or staff");
   return user;
 }
 export function roles(user: any, allowed: string[]) { assert(allowed.includes(user.role), 403, "Permission denied"); }

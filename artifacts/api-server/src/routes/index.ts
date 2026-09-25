@@ -13,6 +13,7 @@ import { durationRouter } from "./duration";
 import { guestRequestsRouter } from "./guest-requests";
 import { clinicExpansionRouter } from "./clinic-expansion";
 import { presenceRouter } from "./presence";
+import { demoRouter } from "./demo";
 
 const router: IRouter = Router();
 
@@ -22,6 +23,7 @@ router.use(presenceRouter);
 router.use(publicRouter);
 router.use(guestRequestsRouter);
 router.use(authRouter);
+router.use(demoRouter);
 router.use(identityRouter);
 router.use(otpRouter);
 router.use(resourcesRouter);

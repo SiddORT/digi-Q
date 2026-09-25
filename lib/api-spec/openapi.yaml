@@ -15,6 +15,54 @@ servers:
 security:
   - ClerkBearer: []
 paths:
+  /demo/login:
+    post:
+      operationId: demoLogin
+      security: []
+      description: Dedicated demo identity only. Provider password verification precedes a 60-second single-use Clerk ticket. Never available to ordinary users.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DemoLoginInput" }
+      responses:
+        "200":
+          description: Single-use Clerk ticket, redeem in the browser, then complete staff password proof
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoLoginTicket" }
+  /demo/setup:
+    get:
+      operationId: getDemoSetup
+      description: Super Admin only
+      responses:
+        "200":
+          description: Demo setup status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoSetupStatus" }
+    post:
+      operationId: createDemoSetup
+      description: Explicit Super Admin creation; initial password is returned once only, never stored locally
+      responses:
+        "200":
+          description: Newly created setup, or existing state without password
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoSetupStatus" }
+    patch:
+      operationId: updateDemoSetup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DemoSetupAction" }
+      responses:
+        "200":
+          description: Updated setup, one-time password on rotation only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DemoSetupStatus" }
   /session-contexts:
     get:
       operationId: getSessionContexts
@@ -716,6 +764,39 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    DemoLoginInput:
+      type: object
+      required: [password]
+      additionalProperties: false
+      properties:
+        password: { type: string, minLength: 1, maxLength: 200 }
+    DemoLoginTicket:
+      type: object
+      required: [ticket]
+      properties:
+        ticket: { type: string }
+    DemoSetupAction:
+      type: object
+      required: [action]
+      additionalProperties: false
+      properties:
+        action: { type: string, enum: [enable, disable, rotate-password] }
+    DemoSetupStatus:
+      type: object
+      required: [configured, enabled]
+      properties:
+        configured: { type: boolean }
+        enabled: { type: boolean }
+        clinicName: { type: string }
+        clinicSlug: { type: string }
+        branchSlug: { type: string }
+        doctorName: { type: string }
+        username: { type: string }
+        loginPath: { type: string }
+        bookingPath: { type: string }
+        clinicPath: { type: string }
+        alreadyExists: { type: boolean }
+        password: { type: string, description: One-time secret only on creation or rotation }
     SessionContext:
       allOf:
         - { $ref: "#/components/schemas/Availability" }

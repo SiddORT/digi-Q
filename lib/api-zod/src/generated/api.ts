@@ -16,6 +16,80 @@ import * as zod from 'zod';
 
 
 /**
+ * Dedicated demo identity only. Provider password verification precedes a 60-second single-use Clerk ticket. Never available to ordinary users.
+ */
+export const demoLoginBodyPasswordMax = 200;
+
+
+
+export const DemoLoginBody = zod.object({
+  "password": zod.string().min(1).max(demoLoginBodyPasswordMax)
+})
+
+export const DemoLoginResponse = zod.object({
+  "ticket": zod.string()
+})
+
+
+/**
+ * Super Admin only
+ */
+export const GetDemoSetupResponse = zod.object({
+  "configured": zod.boolean(),
+  "enabled": zod.boolean(),
+  "clinicName": zod.string().optional(),
+  "clinicSlug": zod.string().optional(),
+  "branchSlug": zod.string().optional(),
+  "doctorName": zod.string().optional(),
+  "username": zod.string().optional(),
+  "loginPath": zod.string().optional(),
+  "bookingPath": zod.string().optional(),
+  "clinicPath": zod.string().optional(),
+  "alreadyExists": zod.boolean().optional(),
+  "password": zod.string().optional().describe('One-time secret only on creation or rotation')
+})
+
+
+/**
+ * Explicit Super Admin creation; initial password is returned once only, never stored locally
+ */
+export const CreateDemoSetupResponse = zod.object({
+  "configured": zod.boolean(),
+  "enabled": zod.boolean(),
+  "clinicName": zod.string().optional(),
+  "clinicSlug": zod.string().optional(),
+  "branchSlug": zod.string().optional(),
+  "doctorName": zod.string().optional(),
+  "username": zod.string().optional(),
+  "loginPath": zod.string().optional(),
+  "bookingPath": zod.string().optional(),
+  "clinicPath": zod.string().optional(),
+  "alreadyExists": zod.boolean().optional(),
+  "password": zod.string().optional().describe('One-time secret only on creation or rotation')
+})
+
+
+export const UpdateDemoSetupBody = zod.object({
+  "action": zod.enum(['enable', 'disable', 'rotate-password'])
+})
+
+export const UpdateDemoSetupResponse = zod.object({
+  "configured": zod.boolean(),
+  "enabled": zod.boolean(),
+  "clinicName": zod.string().optional(),
+  "clinicSlug": zod.string().optional(),
+  "branchSlug": zod.string().optional(),
+  "doctorName": zod.string().optional(),
+  "username": zod.string().optional(),
+  "loginPath": zod.string().optional(),
+  "bookingPath": zod.string().optional(),
+  "clinicPath": zod.string().optional(),
+  "alreadyExists": zod.boolean().optional(),
+  "password": zod.string().optional().describe('One-time secret only on creation or rotation')
+})
+
+
+/**
  * Scope-checked staff operational sessions, merging current templates with persisted appointment snapshots. Historical-only sessions never authorize new booking. Select using startTime as well as sessionId because one template can have multiple historical timings.
  */
 export const GetSessionContextsQueryParams = zod.object({

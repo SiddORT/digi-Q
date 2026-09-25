@@ -12,6 +12,47 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export interface DemoLoginInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  password: string;
+}
+
+export interface DemoLoginTicket {
+  ticket: string;
+}
+
+export type DemoSetupActionAction = typeof DemoSetupActionAction[keyof typeof DemoSetupActionAction];
+
+
+export const DemoSetupActionAction = {
+  enable: 'enable',
+  disable: 'disable',
+  'rotate-password': 'rotate-password',
+} as const;
+
+export interface DemoSetupAction {
+  action: DemoSetupActionAction;
+}
+
+export interface DemoSetupStatus {
+  configured: boolean;
+  enabled: boolean;
+  clinicName?: string;
+  clinicSlug?: string;
+  branchSlug?: string;
+  doctorName?: string;
+  username?: string;
+  loginPath?: string;
+  bookingPath?: string;
+  clinicPath?: string;
+  alreadyExists?: boolean;
+  /** One-time secret only on creation or rotation */
+  password?: string;
+}
+
 export type AvailabilityQueueMode = typeof AvailabilityQueueMode[keyof typeof AvailabilityQueueMode];
 
 
