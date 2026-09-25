@@ -12,6 +12,115 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export interface GuestRequestInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  qrReference: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  fullName: string;
+  /**
+     * @maxLength 254
+     * @nullable
+     */
+  email?: string | null;
+  /**
+     * @maxLength 16
+     * @nullable
+     * @pattern ^\+[1-9][0-9]{7,14}$
+     */
+  mobile?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  branchId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  doctorId: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  requestId: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  receiptSecret: string;
+}
+
+export interface GuestReceiptInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  receiptSecret: string;
+}
+
+export type GuestDecisionInputAction = typeof GuestDecisionInputAction[keyof typeof GuestDecisionInputAction];
+
+
+export const GuestDecisionInputAction = {
+  confirm: 'confirm',
+  reject: 'reject',
+} as const;
+
+export interface GuestDecisionInput {
+  action: GuestDecisionInputAction;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export type GuestReceiptStatus = typeof GuestReceiptStatus[keyof typeof GuestReceiptStatus];
+
+
+export const GuestReceiptStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+} as const;
+
+export interface GuestReceipt {
+  id: string;
+  status: GuestReceiptStatus;
+  fullName: string;
+  clinicName: string;
+  branchName: string;
+  doctorName: string;
+  date: string;
+  /** @nullable */
+  startTime: string | null;
+  /** @nullable */
+  endTime: string | null;
+  timezone: string;
+  /** @nullable */
+  token: string | null;
+  /** @nullable */
+  reason: string | null;
+}
+
+export type StaffGuestRequest = GuestReceipt & ({
+  clinicId: string;
+  branchId: string;
+  doctorId: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  mobile: string | null;
+  /** @nullable */
+  appointmentId: string | null;
+  createdAt: string;
+});
+
+export interface GuestRequestList {
+  items: StaffGuestRequest[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -418,8 +527,10 @@ export interface PublicDoctor {
 export interface PatientInput {
   /** @minLength 1 */
   fullName: string;
-  mobile: string;
-  email?: string;
+  /** @nullable */
+  mobile?: string | null;
+  /** @nullable */
+  email?: string | null;
   dateOfBirth?: string;
   /**
      * @minimum 0
@@ -1110,6 +1221,33 @@ export type DateParameter = string;
 export type FromParameter = string;
 
 export type ToParameter = string;
+
+export type ListGuestRequestsParams = {
+clinicId?: string;
+branchId?: string;
+doctorId?: string;
+date?: string;
+status?: ListGuestRequestsStatus;
+/**
+ * @minimum 1
+ * @maximum 100000
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type ListGuestRequestsStatus = typeof ListGuestRequestsStatus[keyof typeof ListGuestRequestsStatus];
+
+
+export const ListGuestRequestsStatus = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+} as const;
 
 export type ListPublicClinicsParams = {
 /**

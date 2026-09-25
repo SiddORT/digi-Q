@@ -12,26 +12,8 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { RecordStatus } from './recordStatus';
 
-export interface PatientInput {
-  /** @minLength 1 */
-  fullName: string;
-  /** @nullable */
-  mobile?: string | null;
-  /** @nullable */
-  email?: string | null;
-  dateOfBirth?: Date;
-  /**
-     * @minimum 0
-     * @maximum 130
-     */
-  age?: number;
-  gender?: string;
-  address?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  clinicId?: string;
-  branchId?: string;
-  status?: RecordStatus;
+export interface GuestReceiptInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  receiptSecret: string;
 }

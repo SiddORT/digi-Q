@@ -10,11 +10,13 @@ import otpRouter from "./otp";
 import { appointmentQrRouter } from "./appointment-qr";
 import { authRouter } from "./auth";
 import { durationRouter } from "./duration";
+import { guestRequestsRouter } from "./guest-requests";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(publicRouter);
+router.use(guestRequestsRouter);
 router.use(authRouter);
 router.use(identityRouter);
 router.use(otpRouter);

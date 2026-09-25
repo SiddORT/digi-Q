@@ -12,6 +12,7 @@ import { StatusTabs, statusFilter } from "./StatusTabs";
 import { useFreshWorkspace } from "./useFreshWorkspace";
 import { useSoleCareDefaults } from "./useSoleCareDefaults";
 import { HelpTip } from "../HelpTip";
+import { GuestRequests } from "./GuestRequests";
 
 export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:api.Appointment}){
  const searchParams=new URLSearchParams(useSearch());
@@ -48,6 +49,7 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  <CareLookup kind="doctors" label="Doctor" value={doctorId} disabled={!branchId||!!identity.doctorId} params={{clinicId,branchId}} onChange={v=>{setDoctor(v);setAppointment("");}}/>
  <label>Date<input type="date" value={date} onChange={e=>{setDate(e.target.value);setAppointment("");}}/></label></>}
  </FilterBar>
+ {["receptionist","clinicAdmin","superAdmin"].includes(identity.user!.role)&&clinicId&&branchId&&doctorId&&<GuestRequests key={`${clinicId}-${branchId}-${doctorId}-${date}`} clinicId={clinicId} branchId={branchId} doctorId={doctorId} date={date}/>}
   {branch.data&&<div className="sq-context"><strong>{String(branch.data.name||"Selected branch")}</strong><p>{String(branch.data.address||"Address not provided")} · {date}</p></div>}
   {!isPatient&&<StatusTabs value={status} onChange={setStatus} counts={(q as typeof q&{statusCounts?:Record<string,number>})?.statusCounts||(q?{waiting:q.waiting,completed:q.completed,absent:q.noShow,all:q.total}:undefined)}/>}
   {!isPatient&&<div className="toolbar sq-toolbar"><SearchInput value={search} onChange={setSearch} placeholder="Find patient, permanent reference or token…"/><Link className="button secondary small" href="/check-in">Validate appointment QR</Link><Link className="button small" href={`/${root}/book?clinic=${clinicId}&branch=${branchId}&doctor=${doctorId}&source=walkIn`}>Register walk-in</Link></div>}

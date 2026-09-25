@@ -1,0 +1,14 @@
+# Guest booking UI progress
+
+- Read React/Vite and Clerk instructions; no authentication changes planned.
+- Staff patient editor now makes mobile optional independently of doctor and account signup requirements.
+- Integrated generated create/receipt/list/decision hooks from `docs/guest-booking-api.md`.
+- Public QR page now offers the short name-required guest form first, with optional contacts and permission copy. Existing signed-in booking and signup requirements are unchanged.
+- Requests explicitly await reception confirmation without a token or reserved capacity. Session availability is polled; one schedule per doctor/location/date is displayed.
+- Browser-session receipt retention includes the idempotent request and pre-generated capability. Neither request capability nor private appointment identifiers appear in URLs, query keys, printed output, or logs. The secret is generated before submission as required by the backend contract, not returned by the API.
+- Private receipt polling every 20 seconds, stale/offline retry, pending/confirmed/declined states, and allowlisted text-only printing are implemented. Unknown submission failures retry the identical request, not a duplicate. Lost receipts direct patients to reception.
+- Awaiting confirmation is inside the existing staff queue, filtered server-side by clinic/branch/doctor/date, with count, pagination, individual approval, and a required patient-visible decline reason. Approval uses an explicit reception audit reason and invalidates workspace data.
+- Frontend typecheck passed. Existing 7 frontend tests passed; added receipt allowlist/status tests. No browser or workflow actions performed; visual and end-to-end acceptance remain for the parent agent.
+- Follow-up race fix: receipt polling previously began as soon as the local attempt was saved, before create committed; the initial zero update timestamp also incorrectly rendered a stale warning. Polling now requires a successful-create marker matching the retained request, waits 20 seconds after the create response, and immediately reads only a previously committed resumed receipt. Uncertain submissions/reloads offer the identical idempotent create retry rather than premature receipt lookup. Manual refresh is similarly gated; malformed retained secrets do not poll.
+- Optional email/mobile fields are now behind “Add contact details (optional)”; pending, permission, contact limitations, and lost-receipt explanations stay visible. Mobile placeholder no longer resembles an actual number.
+- Follow-up frontend typecheck and all 4 focused receipt tests pass. The inspected race explains a pre-commit 404 and transient stale notice; the two reported HTTP 400 responses were not independently attributed or reproduced without request-level evidence.

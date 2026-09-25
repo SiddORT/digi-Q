@@ -12,26 +12,42 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { RecordStatus } from './recordStatus';
 
-export interface PatientInput {
-  /** @minLength 1 */
-  fullName: string;
-  /** @nullable */
-  mobile?: string | null;
-  /** @nullable */
-  email?: string | null;
-  dateOfBirth?: Date;
+export interface GuestRequestInput {
   /**
-     * @minimum 0
-     * @maximum 130
+     * @minLength 1
+     * @maxLength 200
      */
-  age?: number;
-  gender?: string;
-  address?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  clinicId?: string;
-  branchId?: string;
-  status?: RecordStatus;
+  qrReference: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  fullName: string;
+  /**
+     * @maxLength 254
+     * @nullable
+     */
+  email?: string | null;
+  /**
+     * @maxLength 16
+     * @nullable
+     * @pattern ^\+[1-9][0-9]{7,14}$
+     */
+  mobile?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  branchId: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  doctorId: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  requestId: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  receiptSecret: string;
 }

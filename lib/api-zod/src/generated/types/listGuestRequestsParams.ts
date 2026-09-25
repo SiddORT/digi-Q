@@ -12,26 +12,22 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { RecordStatus } from './recordStatus';
+import type { ListGuestRequestsStatus } from './listGuestRequestsStatus';
 
-export interface PatientInput {
-  /** @minLength 1 */
-  fullName: string;
-  /** @nullable */
-  mobile?: string | null;
-  /** @nullable */
-  email?: string | null;
-  dateOfBirth?: Date;
-  /**
-     * @minimum 0
-     * @maximum 130
-     */
-  age?: number;
-  gender?: string;
-  address?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  clinicId?: string;
-  branchId?: string;
-  status?: RecordStatus;
-}
+export type ListGuestRequestsParams = {
+clinicId?: string;
+branchId?: string;
+doctorId?: string;
+date?: Date;
+status?: ListGuestRequestsStatus;
+/**
+ * @minimum 1
+ * @maximum 100000
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};

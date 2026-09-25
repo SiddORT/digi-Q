@@ -345,13 +345,14 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
     if (kind === "branches") fields.data.code ||= `BR-${id.slice(0,8)}`;
     if (kind === "masters") fields.code = body.code;
     if (kind === "patients") {
-      assert(body.mobile, 400, "Patient mobile is required");
-      if (!old && body.clinicId) {
+      if (user.role === "patient" || old?.userId || user.role === "doctor") assert(body.mobile, 400, "Patient mobile is required");
+      if (!old && body.clinicId && body.mobile) {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"patient-mobile:" + body.clinicId + ":" + body.mobile}))`);
         const matches = (await all(patients, tx)).filter(p => p.clinicId === body.clinicId && p.mobile === body.mobile);
         for (const match of matches) assert(!await canRead(user, "patients", match), 409, "A patient with this mobile already exists in this clinic. Search by mobile and select the existing patient; contact your clinic administrator if this is a different household member.");
       }
-      fields.mobile = body.mobile; fields.mobileVerified = old?.mobile === body.mobile ? old.mobileVerified : false;
+      fields.mobile = body.mobile || null; fields.mobileVerified = old?.mobile === body.mobile ? old.mobileVerified : false;
+      fields.data.email = body.email || null;
       fields.data.code ||= `PAT-${id.slice(0,8)}`;
     }
     if (kind === "qrs") {
@@ -495,13 +496,14 @@ function discardedIncomingSave(kind: string, table: any, user: any, body: any, o
     if (kind === "branches") fields.data.code ||= `BR-${id.slice(0,8)}`;
     if (kind === "masters") fields.code = body.code;
     if (kind === "patients") {
-      assert(body.mobile, 400, "Patient mobile is required");
-      if (!old && body.clinicId) {
+      if (user.role === "patient" || old?.userId || user.role === "doctor") assert(body.mobile, 400, "Patient mobile is required");
+      if (!old && body.clinicId && body.mobile) {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"patient-mobile:" + body.clinicId + ":" + body.mobile}))`);
         const matches = (await all(patients, tx)).filter(p => p.clinicId === body.clinicId && p.mobile === body.mobile);
         for (const match of matches) assert(!await canRead(user, "patients", match), 409, "A patient with this mobile already exists in this clinic. Search by mobile and select the existing patient; contact your clinic administrator if this is a different household member.");
       }
-      fields.mobile = body.mobile; fields.mobileVerified = old?.mobile === body.mobile ? old.mobileVerified : false;
+      fields.mobile = body.mobile || null; fields.mobileVerified = old?.mobile === body.mobile ? old.mobileVerified : false;
+      fields.data.email = body.email || null;
       fields.data.code ||= `PAT-${id.slice(0,8)}`;
     }
     if (kind === "qrs") {

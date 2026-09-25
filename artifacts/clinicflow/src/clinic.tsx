@@ -19,6 +19,7 @@ import { SessionQueue } from "./components/queue/SessionQueue";
 import { StatusTabs, statusFilter } from "./components/queue/StatusTabs";
 import { useFreshWorkspace } from "./components/queue/useFreshWorkspace";
 import { useSoleCareDefaults } from "./components/queue/useSoleCareDefaults";
+import { GuestBooking } from "./components/GuestBooking";
 
 import { useGetAppointmentQr } from "@workspace/api-client-react";
 import QRCode from "qrcode";
@@ -101,7 +102,7 @@ export function PublicBooking({reference}:{reference:string}){
   const auth=useAuth();const qr=api.useResolveQr(reference,{query:{queryKey:api.getResolveQrQueryKey(reference),refetchInterval:30000}}); const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!auth.isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
  useEffect(()=>{sessionStorage.setItem("clinicflow-qr",reference);},[reference]);
  if(qr.isLoading)return <div className="page-loading">Finding your clinic…</div>;
-  return <div className="public-book"><Logo/><div className="panel"><span className="eyebrow">YOUR DIRECT LINK TO CARE</span><h1>{qr.data?.clinicName||"Book a visit"}</h1><ErrorNotice error={qr.error||me.error}/>{(qr.error||me.error)&&<button onClick={()=>{qr.refetch();if(auth.isSignedIn)me.refetch();}}>Retry booking context</button>}{qr.data&&!qr.error&&<><p>{[qr.data.branchName,qr.data.doctorName].filter(Boolean).join(" · ")}</p>{!auth.isLoaded?<p role="status">Connecting securely…</p>:!auth.isSignedIn?<><p>Sign in securely to continue booking at this location.</p><Link className="button" href="/login">Sign in to book <ArrowUpRight size={18}/></Link></>:me.error?null:me.data?.needsOnboarding?<Redirect to="/onboarding"/>:me.data?.user?<Booking key={reference} identity={me.data} context={qr.data}/>:<p role="status">Loading your profile…</p>}</>}</div></div>;
+  return <div className="public-book"><Logo/><div className="panel"><span className="eyebrow">YOUR DIRECT LINK TO CARE</span><h1>{qr.data?.clinicName||"Book a visit"}</h1><ErrorNotice error={qr.error||me.error}/>{(qr.error||me.error)&&<button onClick={()=>{qr.refetch();if(auth.isSignedIn)me.refetch();}}>Retry booking context</button>}{qr.data&&!qr.error&&<><p>{[qr.data.branchName,qr.data.doctorName].filter(Boolean).join(" · ")}</p>{!auth.isLoaded?<p role="status">Connecting securely…</p>:!auth.isSignedIn?<><GuestBooking key={reference} reference={reference} context={qr.data}/><hr/><p>Already have an account?</p><Link className="button secondary" href="/patient-login" data-testid="link-account-booking">Sign in to book <ArrowUpRight size={18}/></Link></>:me.error?null:me.data?.needsOnboarding?<Redirect to="/onboarding"/>:me.data?.user?<Booking key={reference} identity={me.data} context={qr.data}/>:<p role="status">Loading your profile…</p>}</>}</div></div>;
 }
 const navConfig:Record<string,string[]>={
   admin:["dashboard","appointments","queue","clinics","branches","patients","users","availability","exceptions","qrs","reports","masters","audit","settings"],

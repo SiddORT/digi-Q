@@ -15,6 +15,157 @@
 import * as zod from 'zod';
 
 
+export const createGuestRequestBodyQrReferenceMax = 200;
+
+export const createGuestRequestBodyFullNameMax = 150;
+
+export const createGuestRequestBodyEmailMax = 254;
+
+export const createGuestRequestBodyMobileMax = 16;
+
+
+export const createGuestRequestBodyMobileRegExp = new RegExp('^\\+[1-9][0-9]{7,14}$');
+export const createGuestRequestBodyBranchIdMax = 100;
+
+export const createGuestRequestBodyDoctorIdMax = 100;
+
+export const createGuestRequestBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createGuestRequestBodyReceiptSecretRegExp = new RegExp('^[a-f0-9]{64}$');
+
+
+export const CreateGuestRequestBody = zod.object({
+  "qrReference": zod.string().min(1).max(createGuestRequestBodyQrReferenceMax),
+  "fullName": zod.string().min(1).max(createGuestRequestBodyFullNameMax),
+  "email": zod.string().email().max(createGuestRequestBodyEmailMax).nullish(),
+  "mobile": zod.string().max(createGuestRequestBodyMobileMax).regex(createGuestRequestBodyMobileRegExp).nullish(),
+  "branchId": zod.string().min(1).max(createGuestRequestBodyBranchIdMax),
+  "doctorId": zod.string().min(1).max(createGuestRequestBodyDoctorIdMax),
+  "date": zod.string().regex(createGuestRequestBodyDateRegExp),
+  "requestId": zod.string().uuid(),
+  "receiptSecret": zod.string().regex(createGuestRequestBodyReceiptSecretRegExp)
+})
+
+export const CreateGuestRequestResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
+  "fullName": zod.string(),
+  "clinicName": zod.string(),
+  "branchName": zod.string(),
+  "doctorName": zod.string(),
+  "date": zod.string(),
+  "startTime": zod.string().nullable(),
+  "endTime": zod.string().nullable(),
+  "timezone": zod.string(),
+  "token": zod.string().nullable(),
+  "reason": zod.string().nullable()
+})
+
+
+export const getGuestReceiptBodyReceiptSecretRegExp = new RegExp('^[a-f0-9]{64}$');
+
+
+export const GetGuestReceiptBody = zod.object({
+  "receiptSecret": zod.string().regex(getGuestReceiptBodyReceiptSecretRegExp)
+})
+
+export const GetGuestReceiptResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
+  "fullName": zod.string(),
+  "clinicName": zod.string(),
+  "branchName": zod.string(),
+  "doctorName": zod.string(),
+  "date": zod.string(),
+  "startTime": zod.string().nullable(),
+  "endTime": zod.string().nullable(),
+  "timezone": zod.string(),
+  "token": zod.string().nullable(),
+  "reason": zod.string().nullable()
+})
+
+
+export const listGuestRequestsQueryPageMax = 100000;
+
+export const listGuestRequestsQueryPageSizeMax = 100;
+
+
+
+export const ListGuestRequestsQueryParams = zod.object({
+  "clinicId": zod.coerce.string().optional(),
+  "branchId": zod.coerce.string().optional(),
+  "doctorId": zod.coerce.string().optional(),
+  "date": zod.date().optional(),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']).optional(),
+  "page": zod.coerce.number().int().min(1).max(listGuestRequestsQueryPageMax).optional(),
+  "pageSize": zod.coerce.number().int().min(1).max(listGuestRequestsQueryPageSizeMax).optional()
+})
+
+export const ListGuestRequestsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
+  "fullName": zod.string(),
+  "clinicName": zod.string(),
+  "branchName": zod.string(),
+  "doctorName": zod.string(),
+  "date": zod.string(),
+  "startTime": zod.string().nullable(),
+  "endTime": zod.string().nullable(),
+  "timezone": zod.string(),
+  "token": zod.string().nullable(),
+  "reason": zod.string().nullable()
+}).and(zod.object({
+  "clinicId": zod.string(),
+  "branchId": zod.string(),
+  "doctorId": zod.string(),
+  "email": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "appointmentId": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+}))),
+  "total": zod.number().int(),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int()
+})
+
+
+export const DecideGuestRequestParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const decideGuestRequestBodyReasonMax = 500;
+
+
+
+export const DecideGuestRequestBody = zod.object({
+  "action": zod.enum(['confirm', 'reject']),
+  "reason": zod.string().min(1).max(decideGuestRequestBodyReasonMax)
+})
+
+export const DecideGuestRequestResponse = zod.object({
+  "id": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
+  "fullName": zod.string(),
+  "clinicName": zod.string(),
+  "branchName": zod.string(),
+  "doctorName": zod.string(),
+  "date": zod.string(),
+  "startTime": zod.string().nullable(),
+  "endTime": zod.string().nullable(),
+  "timezone": zod.string(),
+  "token": zod.string().nullable(),
+  "reason": zod.string().nullable()
+}).and(zod.object({
+  "clinicId": zod.string(),
+  "branchId": zod.string(),
+  "doctorId": zod.string(),
+  "email": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "appointmentId": zod.string().nullable(),
+  "createdAt": zod.coerce.date()
+}))
+
+
 export const HealthCheckResponse = zod.object({
   "status": zod.string()
 })
@@ -1491,8 +1642,8 @@ export const ListPatientsResponse = zod.object({
 }).and(zod.object({
   "items": zod.array(zod.object({
   "fullName": zod.string().min(1),
-  "mobile": zod.string(),
-  "email": zod.string().email().optional(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
   "dateOfBirth": zod.coerce.date().optional(),
   "age": zod.number().int().min(listPatientsResponseTwoItemsItemOneAgeMin).max(listPatientsResponseTwoItemsItemOneAgeMax).optional(),
   "gender": zod.string().optional(),
@@ -1520,8 +1671,8 @@ export const createPatientBodyAgeMax = 130;
 
 export const CreatePatientBody = zod.object({
   "fullName": zod.string().min(1),
-  "mobile": zod.string(),
-  "email": zod.string().email().optional(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
   "dateOfBirth": zod.coerce.date().optional(),
   "age": zod.number().int().min(createPatientBodyAgeMin).max(createPatientBodyAgeMax).optional(),
   "gender": zod.string().optional(),
@@ -1541,8 +1692,8 @@ export const createPatientResponseOneAgeMax = 130;
 
 export const CreatePatientResponse = zod.object({
   "fullName": zod.string().min(1),
-  "mobile": zod.string(),
-  "email": zod.string().email().optional(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
   "dateOfBirth": zod.coerce.date().optional(),
   "age": zod.number().int().min(createPatientResponseOneAgeMin).max(createPatientResponseOneAgeMax).optional(),
   "gender": zod.string().optional(),
@@ -1573,8 +1724,8 @@ export const getPatientResponseOneAgeMax = 130;
 
 export const GetPatientResponse = zod.object({
   "fullName": zod.string().min(1),
-  "mobile": zod.string(),
-  "email": zod.string().email().optional(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
   "dateOfBirth": zod.coerce.date().optional(),
   "age": zod.number().int().min(getPatientResponseOneAgeMin).max(getPatientResponseOneAgeMax).optional(),
   "gender": zod.string().optional(),
@@ -1605,8 +1756,8 @@ export const updatePatientBodyAgeMax = 130;
 
 export const UpdatePatientBody = zod.object({
   "fullName": zod.string().min(1),
-  "mobile": zod.string(),
-  "email": zod.string().email().optional(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
   "dateOfBirth": zod.coerce.date().optional(),
   "age": zod.number().int().min(updatePatientBodyAgeMin).max(updatePatientBodyAgeMax).optional(),
   "gender": zod.string().optional(),
@@ -1626,8 +1777,8 @@ export const updatePatientResponseOneAgeMax = 130;
 
 export const UpdatePatientResponse = zod.object({
   "fullName": zod.string().min(1),
-  "mobile": zod.string(),
-  "email": zod.string().email().optional(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
   "dateOfBirth": zod.coerce.date().optional(),
   "age": zod.number().int().min(updatePatientResponseOneAgeMin).max(updatePatientResponseOneAgeMax).optional(),
   "gender": zod.string().optional(),

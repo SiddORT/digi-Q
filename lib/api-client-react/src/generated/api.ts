@@ -65,6 +65,11 @@ import type {
   GetQueueParams,
   GetReportsParams,
   GetStaffAssignmentOptionsParams,
+  GuestDecisionInput,
+  GuestReceipt,
+  GuestReceiptInput,
+  GuestRequestInput,
+  GuestRequestList,
   HealthStatus,
   Identity,
   ListAppointmentsParams,
@@ -73,6 +78,7 @@ import type {
   ListBranchesParams,
   ListClinicsParams,
   ListDoctorsParams,
+  ListGuestRequestsParams,
   ListMastersParams,
   ListPatientsParams,
   ListPublicBranchesParams,
@@ -109,6 +115,7 @@ import type {
   Settings,
   SettingsInput,
   StaffAssignmentOptions,
+  StaffGuestRequest,
   StaffPasswordInput,
   User,
   UserInput,
@@ -141,6 +148,331 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getCreateGuestRequestUrl = () => {
+
+
+
+
+  return `/api/public/guest-requests`
+}
+
+export const createGuestRequest = async (guestRequestInput: GuestRequestInput, options?: Parameters<typeof customFetch>[1]): Promise<GuestReceipt> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<GuestReceipt>(getCreateGuestRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(guestRequestInput)
+  }
+);}
+
+
+
+
+
+export const getCreateGuestRequestMutationKey = () => ['createGuestRequest'] as const;
+
+export const getCreateGuestRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGuestRequest>>, TError,CreateGuestRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGuestRequest>>, TError,CreateGuestRequestMutationVariables, TContext> => {
+
+const mutationKey = getCreateGuestRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGuestRequest>>, CreateGuestRequestMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createGuestRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGuestRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createGuestRequest>>>
+    export type CreateGuestRequestMutationBody = BodyType<GuestRequestInput>
+    export type CreateGuestRequestMutationError = ErrorType<unknown>
+    export type CreateGuestRequestMutationVariables = {data: BodyType<GuestRequestInput>}
+
+    export const useCreateGuestRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGuestRequest>>, TError,CreateGuestRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createGuestRequest>>,
+        TError,
+        CreateGuestRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateGuestRequestMutationOptions(options));
+    }
+
+export const getGetGuestReceiptUrl = () => {
+
+
+
+
+  return `/api/public/guest-receipt`
+}
+
+export const getGuestReceipt = async (guestReceiptInput: GuestReceiptInput, options?: Parameters<typeof customFetch>[1]): Promise<GuestReceipt> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<GuestReceipt>(getGetGuestReceiptUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(guestReceiptInput)
+  }
+);}
+
+
+
+
+
+export const getGetGuestReceiptMutationKey = () => ['getGuestReceipt'] as const;
+
+export const getGetGuestReceiptMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getGuestReceipt>>, TError,GetGuestReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getGuestReceipt>>, TError,GetGuestReceiptMutationVariables, TContext> => {
+
+const mutationKey = getGetGuestReceiptMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getGuestReceipt>>, GetGuestReceiptMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  getGuestReceipt(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetGuestReceiptMutationResult = NonNullable<Awaited<ReturnType<typeof getGuestReceipt>>>
+    export type GetGuestReceiptMutationBody = BodyType<GuestReceiptInput>
+    export type GetGuestReceiptMutationError = ErrorType<unknown>
+    export type GetGuestReceiptMutationVariables = {data: BodyType<GuestReceiptInput>}
+
+    export const useGetGuestReceipt = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getGuestReceipt>>, TError,GetGuestReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getGuestReceipt>>,
+        TError,
+        GetGuestReceiptMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetGuestReceiptMutationOptions(options));
+    }
+
+export const getListGuestRequestsUrl = (params?: ListGuestRequestsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/guest-requests?${stringifiedParams}` : `/api/guest-requests`
+}
+
+export const listGuestRequests = async (params?: ListGuestRequestsParams, options?: Parameters<typeof customFetch>[1]): Promise<GuestRequestList> => {
+
+  return customFetch<GuestRequestList>(getListGuestRequestsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGuestRequestsQueryKey = (params?: ListGuestRequestsParams,) => {
+    return [
+    `/api/guest-requests`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListGuestRequestsQueryOptions = <TData = Awaited<ReturnType<typeof listGuestRequests>>, TError = ErrorType<unknown>>(params?: ListGuestRequestsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGuestRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGuestRequestsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGuestRequests>>> = ({ signal }) => listGuestRequests(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGuestRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGuestRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof listGuestRequests>>>
+export type ListGuestRequestsQueryError = ErrorType<unknown>
+
+
+
+export function useListGuestRequests<TData = Awaited<ReturnType<typeof listGuestRequests>>, TError = ErrorType<unknown>>(
+ params?: ListGuestRequestsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGuestRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGuestRequestsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDecideGuestRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/guest-requests/${id}/decision`
+}
+
+export const decideGuestRequest = async (id: string,
+    guestDecisionInput: GuestDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<StaffGuestRequest> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StaffGuestRequest>(getDecideGuestRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(guestDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getDecideGuestRequestMutationKey = () => ['decideGuestRequest'] as const;
+
+export const getDecideGuestRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideGuestRequest>>, TError,DecideGuestRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof decideGuestRequest>>, TError,DecideGuestRequestMutationVariables, TContext> => {
+
+const mutationKey = getDecideGuestRequestMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof decideGuestRequest>>, DecideGuestRequestMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  decideGuestRequest(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DecideGuestRequestMutationResult = NonNullable<Awaited<ReturnType<typeof decideGuestRequest>>>
+    export type DecideGuestRequestMutationBody = BodyType<GuestDecisionInput>
+    export type DecideGuestRequestMutationError = ErrorType<unknown>
+    export type DecideGuestRequestMutationVariables = {id: string;data: BodyType<GuestDecisionInput>}
+
+    export const useDecideGuestRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof decideGuestRequest>>, TError,DecideGuestRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof decideGuestRequest>>,
+        TError,
+        DecideGuestRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDecideGuestRequestMutationOptions(options));
+    }
 
 export const getHealthCheckUrl = () => {
 

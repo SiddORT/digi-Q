@@ -48,7 +48,7 @@ export const doctors = pgTable("doctors", {
 }, t => [index("doctor_owner_admin_idx").on(t.ownerAdminId)]);
 export const patients = pgTable("patients", {
   id: id(), userId: text("user_id").unique().references(() => users.id), clinicId: text("clinic_id").references(() => clinics.id),
-  branchId: text("branch_id").references(() => branches.id), mobile: text("mobile").notNull().default(""),
+  branchId: text("branch_id").references(() => branches.id), mobile: text("mobile"),
   mobileVerified: boolean("mobile_verified").notNull().default(false), status: text("status").notNull().default("active"), data: data(), createdAt: created(),
 }, t => [index("patient_scope_idx").on(t.clinicId, t.branchId), index("patient_mobile_idx").on(t.mobile)]);
 export const schedules = pgTable("schedules", {
@@ -82,6 +82,15 @@ export const appointmentHistory = pgTable("appointment_history", {
   id: id(), appointmentId: text("appointment_id").notNull().references(() => appointments.id), actorId: text("actor_id").notNull().references(() => users.id),
   fromStatus: text("from_status"), toStatus: text("to_status").notNull(), createdAt: created(),
 }, t => [index("history_appointment_idx").on(t.appointmentId)]);
+export const guestRequests = pgTable("guest_requests", {
+  id: id(), requestId: text("request_id").notNull().unique(), receiptHash: text("receipt_hash").notNull().unique(),
+  inputHash: text("input_hash").notNull(), clinicId: text("clinic_id").notNull().references(() => clinics.id),
+  branchId: text("branch_id").notNull().references(() => branches.id), doctorId: text("doctor_id").notNull().references(() => doctors.id),
+  date: text("date").notNull(), status: text("status").notNull().default("pending"),
+  appointmentId: text("appointment_id").unique().references(() => appointments.id),
+  decidedBy: text("decided_by").references(() => users.id), data: data(), createdAt: created(),
+}, t => [index("guest_request_scope_idx").on(t.clinicId, t.branchId, t.status),
+  check("guest_request_status", sql`${t.status} in ('pending','confirmed','rejected')`)]);
 export const qrs = pgTable("qrs", {
   id: id(), clinicId: text("clinic_id").notNull().references(() => clinics.id), branchId: text("branch_id").references(() => branches.id),
   doctorId: text("doctor_id").references(() => doctors.id), publicReference: text("public_reference").notNull().unique(),

@@ -21,6 +21,7 @@ await build({
     export * from "./routes/queue";
     export * from "./routes/duration";
     export * from "./routes/public";
+    export * from "./routes/guest-requests";
     export * as tables from "@workspace/db";
     export { GetQueueResponse } from "@workspace/api-zod";
   `, resolveDir: root },
@@ -61,6 +62,7 @@ await database.exec(`
   create table settings(id text primary key,data jsonb not null default '{}');
   create table masters(id text primary key,category text,code text,parent_id text,status text default 'active',data jsonb not null default '{}');
   create table qrs(id text primary key,clinic_id text,branch_id text,doctor_id text,public_reference text,status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
+  create table guest_requests(id text primary key,request_id text not null unique,receipt_hash text not null unique,input_hash text not null,clinic_id text,branch_id text,doctor_id text,date text,status text default 'pending',appointment_id text unique,decided_by text,data jsonb not null default '{}',created_at timestamptz default now());
 `);
 mock.timers.enable({ apis: ["Date"], now: Date.UTC(2030, 0, 7, 12) });
 const today = new Date().toISOString().slice(0, 10);
@@ -68,7 +70,7 @@ const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 const staff = { id: "r", role: "receptionist", clinicIds: ["c"], branchIds: ["b", "b2"] };
 const patient = { id: "u1", role: "patient", patientId: "p1", clinicIds: [], branchIds: [] };
 async function seed() {
-  await database.exec("truncate users,clinics,branches,doctors,assignments,patients,schedules,availability_exceptions,appointments,appointment_history,audit_logs,settings,masters,qrs");
+  await database.exec("truncate users,clinics,branches,doctors,assignments,patients,schedules,availability_exceptions,appointments,appointment_history,audit_logs,settings,masters,qrs,guest_requests");
   await api.put(t.users, { id: "du", email: "d@example.com", fullName: "Doctor", role: "doctor" });
   await api.put(t.users, { id: "du2", email: "d2@example.com", fullName: "Doctor Two", role: "doctor" });
   await api.put(t.users, { id: "admin", email: "admin@example.com", fullName: "Admin", role: "clinicAdmin" });
@@ -88,7 +90,7 @@ async function route(router, method, path, actor, body = {}, params = {}, query 
   const layer = router.stack.find(l => l.route?.path === path && l.route.methods[method]);
   assert.ok(layer, path);
   let result;
-  const response = { status: () => response, json: value => { result = value; } };
+  const response = { status: () => response, set: () => response, json: value => { result = value; } };
   await layer.route.stack[0].handle({ body, params, query }, response);
   return result;
 }
@@ -98,6 +100,74 @@ async function book(patientId = "p1", date = today, extra = {}) {
 async function act(id, body, actor = staff) {
   return globalThis.phaseDb.transaction(tx => api.transition(actor, id, body, tx));
 }
+async function guest(extra = {}) {
+  await globalThis.phaseDb.insert(t.qrs).values({ id: "guestqr", clinicId: "c", branchId: "b", publicReference: "guest-qr" }).onConflictDoNothing();
+  return api.createGuestRequest({ qrReference: "guest-qr", fullName: "Name Only", branchId: "b", doctorId: "d", date: today,
+    requestId: "12345678-1234-4234-8234-123456789012", receiptSecret: "a".repeat(64), ...extra });
+}
+test("guest request reserves nothing, hashes capability, confirms once with no account/contact", async () => {
+  await seed();
+  const row = await guest();
+  assert.equal(row.status, "pending");
+  assert.equal((await api.all(t.appointments)).length, 0);
+  assert.equal(row.mobile, null);
+  assert.equal(row.receiptHash, api.guestHash("a".repeat(64)));
+  assert.equal(JSON.stringify(row).includes("a".repeat(64)), false);
+  assert.equal((await guest()).id, row.id);
+  await assert.rejects(() => guest({ fullName: "Changed" }), /Idempotency/);
+  await assert.rejects(() => api.decideGuestRequest({ ...staff, branchIds: ["b2"] }, row.id, { action: "confirm", reason: "Approved" }), /scope/);
+  await assert.rejects(() => api.decideGuestRequest(patient, row.id, { action: "confirm", reason: "Approved" }), /Reception/);
+  const results = await Promise.all([1, 2].map(() => api.decideGuestRequest(staff, row.id, { action: "confirm", reason: "Approved at reception" })));
+  assert.equal(results[0].appointmentId, results[1].appointmentId);
+  const appointments = await api.all(t.appointments);
+  assert.equal(appointments.length, 1);
+  assert.equal(appointments[0].status, "waiting");
+  const p = await api.one(t.patients, appointments[0].patientId);
+  assert.equal(p.userId, null); assert.equal(p.mobile, null); assert.equal(p.fullName, "Name Only");
+  const receipt = api.guestReceipt(results[0]);
+  assert.ok(receipt.token);
+  for (const key of ["receiptHash", "inputHash", "email", "mobile", "appointmentId", "history", "reference"]) assert.equal(key in receipt, false);
+  await assert.rejects(() => api.decideGuestRequest(staff, row.id, { action: "reject", reason: "Changed" }), /already decided/);
+  assert.equal((await api.all(t.auditLogs)).filter(r => r.action === "guest-confirm").length, 1);
+});
+test("guest last-slot failure stays pending without orphan patient; rejection is final", async () => {
+  await seed();
+  const row = await guest();
+  await database.exec("update schedules set data=data || '{\"maxTokens\":1}'::jsonb");
+  await book();
+  const count = (await api.all(t.patients)).length;
+  await assert.rejects(() => api.decideGuestRequest(staff, row.id, { action: "confirm", reason: "Approved" }), /capacity/);
+  assert.equal((await api.one(t.guestRequests, row.id)).status, "pending");
+  assert.equal((await api.all(t.patients)).length, count);
+  const rejected = await api.decideGuestRequest(staff, row.id, { action: "reject", reason: "No remaining capacity" });
+  assert.equal(rejected.token, null); assert.equal(rejected.status, "rejected");
+  assert.equal((await api.decideGuestRequest(staff, row.id, { action: "reject", reason: "Retry" })).id, row.id);
+  await assert.rejects(() => api.decideGuestRequest(staff, row.id, { action: "confirm", reason: "Retry" }), /already decided/);
+});
+test("guest QR scope and revocation are enforced at request and confirmation", async () => {
+  await seed();
+  await assert.rejects(() => guest({ branchId: "b2", doctorId: "d2" }), /QR context/);
+  const row = await guest();
+  await api.change(t.qrs, "guestqr", { status: "inactive" });
+  await assert.rejects(() => api.decideGuestRequest(staff, row.id, { action: "confirm", reason: "Approved" }), /revoked/);
+  assert.equal((await api.one(t.guestRequests, row.id)).status, "pending");
+});
+test("guest staff list SQL restricts clinic and branch before pagination", async () => {
+  await seed();
+  await guest();
+  const list = await route(api.guestRequestsRouter, "get", "/guest-requests", staff);
+  assert.equal(list.total, 1); assert.equal(list.items[0].mobile, null);
+  assert.equal("receiptHash" in list.items[0], false);
+  const outside = await route(api.guestRequestsRouter, "get", "/guest-requests", { ...staff, branchIds: ["b2"] });
+  assert.equal(outside.total, 0);
+  await guest({ date: tomorrow, requestId: "22345678-1234-4234-8234-123456789012", receiptSecret: "b".repeat(64) });
+  const dated = await route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { doctorId: "d", date: tomorrow, pageSize: "1" });
+  assert.equal(dated.total, 1); assert.equal(dated.items.length, 1); assert.equal(dated.items[0].date, tomorrow);
+  const otherDoctor = await route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { doctorId: "d2", pageSize: "1" });
+  assert.equal(otherDoctor.total, 0);
+  await assert.rejects(() => route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { date: "2030-02-30" }), /Invalid date/);
+  await assert.rejects(() => route(api.guestRequestsRouter, "get", "/guest-requests", patient), /Reception/);
+});
 async function rows() { return api.all(t.appointments); }
 async function queue(actor = patient, extra = {}) {
   return route(api.queueRouter, "get", "/queue", actor, {}, {}, { doctorId: "d", branchId: "b", date: today, ...extra });

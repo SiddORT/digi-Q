@@ -12,26 +12,17 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { RecordStatus } from './recordStatus';
+import type { GuestReceipt } from './guestReceipt';
 
-export interface PatientInput {
-  /** @minLength 1 */
-  fullName: string;
+export type StaffGuestRequest = GuestReceipt & ({
+  clinicId: string;
+  branchId: string;
+  doctorId: string;
   /** @nullable */
-  mobile?: string | null;
+  email: string | null;
   /** @nullable */
-  email?: string | null;
-  dateOfBirth?: Date;
-  /**
-     * @minimum 0
-     * @maximum 130
-     */
-  age?: number;
-  gender?: string;
-  address?: string;
-  emergencyContactName?: string;
-  emergencyContactPhone?: string;
-  clinicId?: string;
-  branchId?: string;
-  status?: RecordStatus;
-}
+  mobile: string | null;
+  /** @nullable */
+  appointmentId: string | null;
+  createdAt: Date;
+});

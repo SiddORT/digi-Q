@@ -64,6 +64,8 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 
 ## Approved queue refresh (supersedes older arrival/check-in terminology)
 
+- Contact-optional booking: clinic QR/link guests can request a place without an account, email or phone. Name is required. Reception confirmation creates the appointment/token; pending requests do not reserve capacity. Reception-assisted bookings may omit contact details. Preserve existing authenticated booking separately; guest receipts must not expose patient history or permit public name/token lookup.
+
 - Track this expanded scope separately in `docs/queue-refresh-progress.md`.
 - Bookings join their doctor/branch/date waiting queue immediately. Check in means consultation entry; check out means consultation completion and automatic calling of the next waiting patient, not automatic consultation start.
 - Explicit absence skip and reason/position-based re-entry remain required. Future bookings never enter today's queue.
