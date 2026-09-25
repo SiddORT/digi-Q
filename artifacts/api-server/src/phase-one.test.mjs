@@ -19,6 +19,7 @@ await build({
     export * from "./routes/queue";
     export * from "./routes/duration";
     export * as tables from "@workspace/db";
+    export { GetQueueResponse } from "@workspace/api-zod";
   `, resolveDir: root },
   outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
   plugins: [{ name: "isolated-db", setup(b) {
@@ -270,4 +271,40 @@ test("simultaneous re-entry position edits reject stale queue version instead of
   const pending = (await rows()).filter(a => api.pendingStatuses.includes(a.status));
   assert.equal(new Set(pending.map(api.rank)).size, pending.length);
   assert.ok(pending.some(a => a.id === c.id));
+});
+test("GET queue wire response preserves CURRENT/NEXT through generated response schema across call/start/complete", async () => {
+  await seed();
+  const a = await book(), b = await book("p2");
+  for (const appointment of [a, b]) {
+    await act(appointment.id, { action: "checkIn" });
+    await act(appointment.id, { action: "enqueue" });
+  }
+  const response = async () => {
+    // Exercise the real route and JSON transport, then the actual generated
+    // response schema (not queueSummary alone or an equivalent handwritten schema).
+    const wire = JSON.parse(JSON.stringify(await queue(staff)));
+    const parsed = api.GetQueueResponse.parse(wire);
+    assert.equal(parsed.currentToken, wire.currentToken);
+    assert.equal(parsed.nextToken, wire.nextToken);
+    return parsed;
+  };
+  let q = await response();
+  assert.equal(q.currentToken, null);
+  assert.equal(q.nextToken, a.token);
+  assert.equal(q.arrived, 2);
+  assert.equal(q.blockedByAbsentReservation, false);
+  assert.ok(q.nextToken && !q.currentToken && !q.blockedByAbsentReservation, "aggregate call-next is enabled");
+  await route(api.queueRouter, "post", "/queue/call-next", staff, { doctorId: "d", branchId: "b", date: today });
+  q = await response();
+  assert.equal(q.currentToken, a.token); assert.equal(q.nextToken, b.token);
+  assert.equal(q.entries.find(row => row.id === a.id).status, "called");
+  await act(a.id, { action: "start" });
+  q = await response();
+  assert.equal(q.currentToken, a.token); assert.equal(q.nextToken, b.token);
+  assert.equal(q.inConsultation, 1);
+  await act(a.id, { action: "complete" });
+  q = await response();
+  assert.equal(q.currentToken, null); assert.equal(q.nextToken, b.token);
+  assert.equal(q.completed, 1);
+  assert.ok(q.nextToken && !q.currentToken && !q.blockedByAbsentReservation, "next call is enabled after completion");
 });

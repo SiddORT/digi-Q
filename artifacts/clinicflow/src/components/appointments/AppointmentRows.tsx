@@ -6,6 +6,7 @@ import { ErrorNotice, title } from "../../resources";
 import { AppointmentTicket } from "./AppointmentTicket";
 import { RescheduleAppointment } from "./RescheduleAppointment";
 
+const PRIMARY:api.AppointmentActionType[]=["call","start","complete","checkIn","enqueue"];
 export function AppointmentRows({appointments}:{appointments:api.Appointment[]}){
  const client=useQueryClient();
  const action=api.useTransitionAppointment({mutation:{onSuccess:()=>client.invalidateQueries(),onError:()=>client.invalidateQueries()}});
@@ -21,11 +22,15 @@ export function AppointmentRows({appointments}:{appointments:api.Appointment[]})
   catch{/* Keep the form and refresh conflicting server state. */}finally{lock.current=false;}
  }
  return <><ErrorNotice error={action.error}/>{action.isSuccess&&<p className="notice" role="status">Appointment updated.</p>}
- <div className="table-scroll"><table><thead><tr><th>Patient / reference</th><th>Doctor & location</th><th>Date / token</th><th className="col-status">Status</th><th className="col-actions">Actions</th></tr></thead><tbody>
+ <div className="table-scroll appt-table"><table><thead><tr><th>Patient / reference</th><th>Doctor & location</th><th>Date / token</th><th className="col-status">Status</th><th className="col-actions">Actions</th></tr></thead><tbody>
  {appointments.map(a=><tr key={a.id} data-testid={`appointment-${a.id}`}><td data-label="Patient / reference"><strong>{a.patientName}</strong><small>{a.reference}</small></td><td data-label="Doctor & location">{a.doctorName}<small>{a.clinicName} · {a.branchName}</small></td><td data-label="Date / token">{a.date}<small>Token {a.token}</small></td><td data-label="Status"><span className={`badge ${a.status}`}>{title(a.status)}</span>{a.status==="booked"&&<small>Reserved · not arrived</small>}{["checkedIn","waiting"].includes(a.status)&&<small>Arrived</small>}</td><td className="col-actions" data-label="Actions"><div className="row-actions">
- <button data-testid={`ticket-${a.id}`} onClick={()=>setTicket(a.id)}>Ticket / details</button>
- {a.status==="booked"&&!a.checkedInAt&&a.allowedActions.includes("cancel")&&<button onClick={()=>setReschedule(a)}>Reschedule</button>}
- {a.allowedActions.map(next=><button key={next} disabled={action.isPending} data-testid={`action-${next}-${a.id}`} onClick={()=>{action.reset();setReason("");setPosition(1);setPending({appointment:a,next});}}>{next==="noShow"?"Skip absent":next==="requeue"?"Return / re-enter":title(next)}</button>)}
+ {(()=>{const primary=a.allowedActions.find(n=>PRIMARY.includes(n));const rest=a.allowedActions.filter(n=>n!==primary);const label=(n:api.AppointmentActionType)=>n==="noShow"?"Skip absent":n==="requeue"?"Return / re-enter":title(n);const open=(n:api.AppointmentActionType)=>{action.reset();setReason("");setPosition(1);setPending({appointment:a,next:n});};const canReschedule=a.status==="booked"&&!a.checkedInAt&&a.allowedActions.includes("cancel");return <>
+ {primary&&<button className="row-primary" disabled={action.isPending} data-testid={`action-${primary}-${a.id}`} onClick={()=>open(primary)}>{label(primary)}</button>}
+ <button className="row-ticket" data-testid={`ticket-${a.id}`} onClick={()=>setTicket(a.id)}>Ticket</button>
+ {(rest.length>0||canReschedule)&&<details className="row-menu" onKeyDown={e=>{if(e.key==="Escape"){(e.currentTarget as HTMLDetailsElement).open=false;(e.currentTarget.querySelector("summary") as HTMLElement)?.focus();}}}><summary aria-label={`More actions for ${a.patientName}`} data-testid={`menu-${a.id}`}>More</summary><div className="row-menu-list" role="group" aria-label="More actions">
+ {canReschedule&&<button onClick={e=>{(e.currentTarget.closest("details") as HTMLDetailsElement).open=false;setReschedule(a);}}>Reschedule</button>}
+ {rest.map(next=><button key={next} className={["cancel","noShow"].includes(next)?"danger":undefined} disabled={action.isPending} data-testid={`action-${next}-${a.id}`} onClick={e=>{(e.currentTarget.closest("details") as HTMLDetailsElement).open=false;open(next);}}>{label(next)}</button>)}
+ </div></details>}</>;})()}
  </div></td></tr>)}</tbody></table></div>
  <AppDialog open={!!ticket} onClose={()=>setTicket("")} title="Appointment ticket">{ticket&&<AppointmentTicket id={ticket}/>}</AppDialog>
  <AppDialog open={!!reschedule} onClose={()=>setReschedule(null)} title="Reschedule appointment" dirty>{reschedule&&<RescheduleAppointment key={reschedule.id} appointment={reschedule} onDone={()=>{setReschedule(null);setTicket(reschedule.id);}}/>}</AppDialog>

@@ -1,6 +1,6 @@
 # ClinicFlow Phase 1 — implementation and verification
 
-Status: 3/40 completed and verified; 37 blocked at full acceptance verification. Implementation is present, but Phase 1 is NOT release-approved.
+Status: 22/40 completed and verified; 18 still require full acceptance verification. Implementation is present, but Phase 1 is NOT fully release-approved.
 
 Only verified items receive a green tick. Existing functionality does not count as verification.
 Statuses: Not started / In progress / Completed and verified / Blocked.
@@ -21,38 +21,38 @@ Statuses: Not started / In progress / Completed and verified / Blocked.
 
 | # | Requirement | Status | Evidence / remaining checks |
 |---|---|---|---|
-| 1 | Preserve appearance | Blocked | Public desktop/mobile shell rendered; protected screens remain |
-| 2 | Compact spacing | Blocked | Shared CSS implemented; authenticated rendered check remains |
-| 3 | Primary search/filter toolbar | Blocked | Implemented; interaction acceptance remains |
-| 4 | Collapsible advanced filters, chips, clear | Blocked | Implemented; interaction acceptance remains |
+| 1 | Preserve appearance | ✅ Completed and verified | Public and authenticated reception screens retain branding |
+| 2 | Compact spacing | ✅ Completed and verified | Reception desktop density measured; mobile card CSS rendered separately after fix |
+| 3 | Primary search/filter toolbar | ✅ Completed and verified | Required clinic/branch/doctor/date controls used in live staff journey |
+| 4 | Collapsible advanced filters, chips, clear | ✅ Completed and verified | Booked filter reduces 12 to 9; clear restores 12; disclosure exercised |
 | 5 | Role-aware defaults | Blocked | Implemented; role UI acceptance remains |
-| 6 | Readable 10+ desktop rows and pagination | Blocked | Implemented; populated desktop measurement remains |
-| 7 | Sticky headings, status badges, actions | Blocked | Implemented; rendered scroll check remains |
+| 6 | Readable 10+ desktop rows and pagination | ✅ Completed and verified | 10 real API-booked rows visible at 1440×1000 with table scrolled into view |
+| 7 | Sticky headings, status badges, actions | ✅ Completed and verified | Desktop scroll and bottom-row menu bounds/Escape checked |
 | 8 | Responsive/accessibility/context preservation | Blocked | Mobile login rendered; protected mobile/focus checks remain |
-| 9 | Per-doctor-per-clinic duration | Blocked | Domain tests pass; staff editor interaction remains |
-| 10 | Explicit duration-edit effects | Blocked | Running/future/legacy tests pass; warning interaction remains |
+| 9 | Per-doctor-per-clinic duration | ✅ Completed and verified | Scoped SQL tests and staff duration save passed |
+| 10 | Explicit duration-edit effects | ✅ Completed and verified | Future-only save and running warning/required confirmation UI checked; actual effects tested in SQL |
 | 11 | Weekly availability, breaks, capacity, exceptions UX | Blocked | Form improvements implemented; staff UI acceptance remains |
 | 12 | Sessions, remaining/full states | Blocked | Live booking succeeded; full-session UI acceptance remains |
 | 13 | Concurrency, duplicate and capacity integrity | ✅ Completed and verified | Isolated SQL domain race/capacity/duplicate tests pass; not a production load test |
 | 14 | QR/link through email verification | Blocked | QR backend regressions pass; actual email-return flow not tested |
 | 15 | Assisted bookings and walk-ins | Blocked | Backend lifecycle tests pass; staff UI acceptance remains |
-| 16 | Ticket view | Blocked | Live patient booking showed ticket controls; dedicated dialog acceptance remains |
-| 17 | Complete ticket information | Blocked | Fields implemented; screenshot/print acceptance remains |
+| 16 | Ticket view | ✅ Completed and verified | Dedicated live staff ticket dialog opened and inspected |
+| 17 | Complete ticket information | ✅ Completed and verified | Ticket patient/session/reference/token/QR/queue snapshot/privacy/live-link inspected |
 | 18 | QR validation and manual token lookup | Blocked | Signed QR and scoped lookup tests pass; staff interaction remains |
-| 19 | Token distinct from position | Blocked | Domain tests and UI copy present; full ticket UI acceptance remains |
-| 20 | Approximate wait without countdown | Blocked | Live patient confirmation showed approximate wait; changing queue UI remains |
-| 21 | All lifecycle statuses | Blocked | Domain tests pass; lifecycle UI acceptance remains |
+| 19 | Token distinct from position | ✅ Completed and verified | Re-entry position 3 retained token/reference; ticket distinction present |
+| 20 | Approximate wait without countdown | ✅ Completed and verified | Ticket/confirmation approximate wait shown; event arithmetic covered in SQL |
+| 21 | All lifecycle statuses | ✅ Completed and verified | Booked/check-in/waiting/called/consulting/completed/absent/re-entry exercised; cancellation transition covered in SQL |
 | 22 | Upcoming/past, reopen and print ticket | Blocked | Implemented, including private live link; print/navigation acceptance remains |
 | 23 | Honest stale/pause/delay/privacy messaging | Blocked | Failure/offline messaging implemented; disconnect UI check remains |
-| 24 | Reserved versus arrived/active queue remotely | Blocked | SQL summary tests pass; changing queue UI remains |
+| 24 | Reserved versus arrived/active queue remotely | ✅ Completed and verified | Real API booked/check-in/enqueue responses matched DOM state and summary |
 | 25 | Stable reservation order | ✅ Completed and verified | Reversed arrival, absent-first, both call paths and positioned re-entry SQL tests pass |
-| 26 | Agreed absence/re-entry | Blocked | Reason/position/version/role tests pass; receptionist dialog acceptance remains |
-| 27 | Event-based ETA | Blocked | Ahead × duration domain checks pass; multi-session browser refresh remains |
-| 28 | Current/next/call controls | Blocked | Domain tests pass; staff controls acceptance remains |
+| 26 | Agreed absence/re-entry | ✅ Completed and verified | Mandatory reason, skip and return at chosen position 3 exercised by reception |
+| 27 | Event-based ETA | ✅ Completed and verified | SQL queue-event calculations and ticket snapshot inspected; no countdown |
+| 28 | Current/next/call controls | ✅ Completed and verified | Real bookings: aggregate call changes CURRENT to Q-01 and NEXT to Q-02; raw response matches DOM |
 | 29 | Safe concurrent start/complete transitions | ✅ Completed and verified | Single-winner call/start/complete isolated SQL tests pass |
-| 30 | Authorized/audited skip, priority and re-entry | Blocked | Skip/re-entry permission and audit tests pass; staff interaction remains |
+| 30 | Authorized/audited skip, priority and re-entry | ✅ Completed and verified | Scoped audit/role/version tests plus live skip and positioned return; no arbitrary priority bypass |
 | 31 | Cancellation | Blocked | Capacity/reference/history tests pass; confirm dialog acceptance remains |
-| 32 | Atomic rescheduling | Blocked | Success, full destination, audit failure rollback and check-in race tests pass; UI acceptance remains |
+| 32 | Atomic rescheduling | ✅ Completed and verified | Browser success preserves reference/history; rejected cutoff preserves original; full-capacity/audit rollback and races verified in SQL |
 | 33 | Doctor compact current/next/list/details | Blocked | Implemented; protected doctor page acceptance remains |
 | 34 | Reception switch, summary, search, check-in, walk-ins | Blocked | Implemented; protected reception page acceptance remains |
 | 35 | Clinic admin compact scoped management/duration | Blocked | Scope regressions pass; protected admin UI acceptance remains |
@@ -73,3 +73,7 @@ Statuses: Not started / In progress / Completed and verified / Blocked.
 - Full workspace typecheck is blocked by two nullable-total errors in unrelated `artifacts/clinicflow-project-deck/src/widgets/ImportedChart.tsx:78`. The paused deck was not changed.
 - No production changes or publishing performed. No notification delivery claimed.
 - Development test database fixtures were removed in a verified, ownership-checked transaction; no matching fixture records remain. External test authentication identities were not modified.
+- Continued same-page staff acceptance succeeded after mapping the actual helper identity to a fresh test fixture. The identity problem is no longer a verification blocker.
+- An apparent blank CURRENT/NEXT issue was traced to direct fixture rows missing generated JSON token values. A real booking/check-in/enqueue/call flow has correct raw API and DOM summaries. Added actual GET /queue JSON/generated-schema regression; 13 phase-one SQL tests pass.
+- Desktop density and bottom-row menu reachability verified at 1440×1000. Mobile card text overlap was fixed by replacing absolute pseudo-labels with normal-flow labels; representative markup with the real stylesheet rendered correctly at 390px in `screenshots/phase-one-mobile-card-layout.jpg`. Temporary fixture page removed.
+- Subsequent live staff test fixtures were cleaned up and verified absent. Native printing, actual OTP return flow, all role-specific views, report parity, and remaining checks explicitly listed above are not claimed complete.
