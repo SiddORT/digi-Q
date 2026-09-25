@@ -14,3 +14,15 @@ Also compare real development constraints with both declared schema and producti
 **Why:** Development had drifted from its declared guest-request uniqueness constraints, and the first proposed Publish diff would have removed production safeguards without replacements. Safe development reconciliation restored replacement constraints in the proposed diff.
 
 **How to apply:** Inspect both DROP and corresponding ADD statements. Validate pre-existing data before adding uniqueness; preserve records and treat declarations in source as intent, not proof of live database state.
+
+The owner approved a reduced release that defers consulting Clinic Admin capability
+rather than bypassing the omitted custom-function migration.
+
+**Why:** The current managed production guards reject admin branch assignments;
+ordinary clinic-only admin registration can remain compatible without changing
+those guards. This is a deliberate feature deferral, not a solved migration.
+
+**How to apply:** Do not re-enable consulting capability as a cosmetic UI fix or
+environment toggle. First establish supported custom-function delivery and verify
+compatibility, rollback, and production definitions. Keep ordinary doctor and
+receptionist workflows available; never delete existing data to meet old guards.

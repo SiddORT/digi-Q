@@ -10,7 +10,7 @@ import { assert, parse, query } from "../lib/http";
 import { enrich } from "../lib/entities";
 import { queryPage, assignmentCatalogPredicate } from "../lib/list-query";
 import { invitationMetadata } from "../lib/invitation-metadata";
-import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata } from "../lib/clinic-expansion";
+import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, rejectConsultingAdminRequest, requireConsultingAdminCapability } from "../lib/clinic-expansion";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus } from "../lib/availability";
 const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs } = tables;
 export const resourcesRouter = Router();
@@ -66,7 +66,18 @@ async function withPasswordState(row: any) {
   }
 }
 
-async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
+export async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
+  // Existing admin clinical records (if any) must not be mutated through the
+  // generic doctor endpoint, including deactivation. A doctor userId on create
+  // must never become a back door to attach an administrator's profile.
+  if (kind === "doctors" && old?.userId) {
+    const account = await one(users, old.userId);
+    if (account.role === "clinicAdmin") requireConsultingAdminCapability();
+  }
+  if (kind === "doctors" && body.userId !== undefined) requireConsultingAdminCapability();
+  if (kind === "users" && old?.role === "clinicAdmin" && body.status !== undefined) {
+    if ((await all(doctors)).some(d => d.userId === old.id)) requireConsultingAdminCapability();
+  }
   const context = { ...old, ...body };
   if (body.timezone) localNow(body.timezone);
   if (old) assert(await canRead(user, kind, old), 403, "Record outside your scope");
@@ -208,6 +219,7 @@ export async function deliverInvitation(userId: string, redirectUrl?: string) {
   });
 }
 export async function createClinicAdminOnboarding(actor: any, body: any, redirectUrl?: string) {
+  rejectConsultingAdminRequest(body);
   roles(actor, ["superAdmin"]);
   const email = body.admin.email.toLowerCase();
   if (body.clinic.timezone) localNow(body.clinic.timezone);
@@ -448,7 +460,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       if (role === "clinicAdmin") {
         assert(user.role === "superAdmin", 403, "Only Super Admin can create Clinic Admins");
         assert(old, 409, "Create Clinic Admins through clinic admin onboarding");
-        assert(!requestedClinics.length && !requestedBranches.length, 409, "Create the Clinic Admin as pending, then transfer clinic ownership explicitly");
+        assert(body.clinicIds === undefined && body.branchIds === undefined, 409, "Clinic Admin assignments are managed only through clinic ownership");
       }
       const row = old ? await change(table, id, fields, tx) : await put(table, { id, ...fields }, tx);
       if (uf.role !== "clinicAdmin" && ["doctor", "receptionist"].includes(role) && (kind !== "doctors" || !old || assignmentChangeRequested)) {

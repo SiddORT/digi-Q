@@ -528,22 +528,20 @@ test("clinic settings parity, independent live contacts and immutable URL", asyn
   assert.equal(api.validSlug("api"),false); assert.equal(api.validSlug("Clinic"),false);
 });
 
-test("admin clinician capability preserves single role and restricts owned branch assignments", async () => {
+test("admin clinical attachment is disabled before any profile or assignment writes", async () => {
   await seed();
   const owner = await api.one(t.users,"admin");
-  const doctor = await globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds:["b"]},tx));
+  const before = await Promise.all([api.all(t.doctors),api.all(t.assignments),api.all(t.auditLogs)]);
+  for (const branchIds of [["b"],["b","b2"],["foreign-b"]]) {
+    await assert.rejects(globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds},tx)),
+      error => error.code === "CONSULTING_ADMIN_DISABLED" && error.status === 409);
+  }
+  assert.deepEqual(await Promise.all([api.all(t.doctors),api.all(t.assignments),api.all(t.auditLogs)]),before);
   assert.equal((await api.one(t.users,"admin")).role,"clinicAdmin");
-  assert.equal(doctor.ownerAdminId,"admin"); assert.equal(doctor.userId,"admin");
-  const again = await globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds:["b","b2"]},tx));
-  assert.equal(again.id,doctor.id);
-  await api.put(t.clinics,{id:"foreign",adminId:"other",data:{name:"Other"}});
-  await api.put(t.branches,{id:"foreign-b",clinicId:"foreign",data:{name:"Other"}});
-  await assert.rejects(globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds:["foreign-b"]},tx)),/own clinic/);
-  const actor = {...owner,clinicIds:["c"],branchIds:["b","b2"],doctorId:doctor.id};
-  await route(api.resourcesRouter,"patch","/doctors/:id",actor,{fullName:"Admin clinician",email:owner.email,status:"inactive"},{id:doctor.id});
-  assert.equal((await api.one(t.users,"admin")).role,"clinicAdmin");
+  const actor = {...owner,clinicIds:["c"],branchIds:["b","b2"]};
+  await route(api.resourcesRouter,"patch","/doctors/:id",actor,{fullName:"Ordinary Doctor",email:"doctor@example.invalid",status:"inactive"},{id:"d"});
+  assert.equal((await api.one(t.doctors,"d")).status,"inactive");
   assert.equal((await api.one(t.users,"admin")).status,"active");
-  assert.equal((await api.one(t.doctors,doctor.id)).status,"inactive");
 });
 
 test("staff patient creation accepts omitted mobile and updates preserve verification only for unchanged mobile", async () => {
@@ -575,9 +573,10 @@ test("shared settings routes round-trip both admins and reject foreign clinic st
   const owner = {...await api.one(t.users,"admin"),clinicIds:["c"],branchIds:["b","b2"]};
   const other = await api.put(t.users,{id:"other-admin",email:"other@example.invalid",fullName:"Other",role:"clinicAdmin"});
   const setup = await globalThis.phaseDb.transaction(tx => api.createOwnedClinic(other,other,{
-    clinic:{name:"Foreign clinic",address:"Other road"},branches:[{name:"Foreign branch",address:"Other road"}],ownDoctor:true
+    clinic:{name:"Foreign clinic",address:"Other road"},branches:[{name:"Foreign branch",address:"Other road"}]
   },tx));
-  const foreign = {...other,clinicIds:[setup.clinic.id],branchIds:[setup.branches[0].id],doctorId:setup.doctorId};
+  assert.equal(setup.doctorId,null);
+  const foreign = {...other,clinicIds:[setup.clinic.id],branchIds:[setup.branches[0].id]};
   const receptionist = await api.put(t.users,{id:"foreign-staff",email:"staff@example.invalid",fullName:"Foreign staff",role:"receptionist",managingAdminId:other.id});
   await api.put(t.assignments,{id:"foreign-staff-link",userId:receptionist.id,clinicId:setup.clinic.id,branchId:setup.branches[0].id});
   const superAdmin = {id:"super",role:"superAdmin"};
@@ -601,31 +600,29 @@ test("shared settings routes round-trip both admins and reject foreign clinic st
   assert.equal((await settings("get",foreign,{},setup.clinic.id)).clinic.name,"Foreign clinic");
 });
 
-test("consulting admin retains all own doctors with scoped patient and visit route totals", async () => {
+test("clinic admin retains ordinary doctors with scoped patient and visit route totals", async () => {
   await seed();
   const user = await api.one(t.users,"admin");
-  const own = await globalThis.phaseDb.transaction(tx=>api.attachOwnDoctor(user,{branchIds:["b"]},tx));
-  const owner = {...user,doctorId:own.id,clinicIds:["c"],branchIds:["b"]};
+  const owner = {...user,clinicIds:["c"],branchIds:["b"]};
   const superAdmin = {id:"super",role:"superAdmin"};
   const other = await api.put(t.users,{id:"other-admin",email:"other@example.invalid",fullName:"Other",role:"clinicAdmin"});
-  const setup = await globalThis.phaseDb.transaction(tx=>api.createOwnedClinic(other,other,{clinic:{name:"Other",address:"Road"},branches:[{name:"Other",address:"Road"}],ownDoctor:true},tx));
-  const foreign = {...other,doctorId:setup.doctorId,clinicIds:[setup.clinic.id],branchIds:[setup.branches[0].id]};
+  const setup = await globalThis.phaseDb.transaction(tx=>api.createOwnedClinic(other,other,{clinic:{name:"Other",address:"Road"},branches:[{name:"Other",address:"Road"}]},tx));
+  assert.equal(setup.doctorId,null);
+  const foreign = {...other,clinicIds:[setup.clinic.id],branchIds:[setup.branches[0].id]};
   await api.put(t.patients,{id:"foreign-patient",clinicId:setup.clinic.id,branchId:setup.branches[0].id,data:{fullName:"Foreign only"}});
   const create = (actor,doctorId,branchId,patientId,clinicId="c")=>route(api.appointmentsRouter,"post","/appointments",actor,{doctorId,branchId,patientId,clinicId,date:today,source:"phone"});
   for (const [doctorId,branchId,patientId] of [["d","b","p1"],["d2","b2","p2"]]) await create(owner,doctorId,branchId,patientId);
-  await api.put(t.schedules,{id:"own-session",doctorId:own.id,clinicId:"c",branchId:"b",dayOfWeek:new Date(today).getUTCDay(),data:{isOpen:true,startTime:"00:00",endTime:"23:59",timezone:"UTC",consultationMinutes:10,maxTokens:10}});
-  await create(owner,own.id,"b","p3");
-  // The capability's single branch must not narrow the administrator's clinic-wide access.
-  await assert.rejects(create(owner,setup.doctorId,setup.branches[0].id,"foreign-patient",setup.clinic.id),error=>error.status===403);
+  // The administrator's branch list must not narrow clinic-wide access to ordinary doctors.
+  await assert.rejects(create(owner,"d",setup.branches[0].id,"foreign-patient",setup.clinic.id),error=>error.status===403);
   await assert.rejects(create(foreign,"d","b","p1"),error=>error.status===403);
   const list = (actor,kind,query)=>route(kind==="patients"?api.resourcesRouter:api.appointmentsRouter,"get","/"+kind,actor,{}, {},query);
   for (const actor of [owner,superAdmin]) {
     const doctors = await route(api.resourcesRouter,"get","/doctors",actor,{}, {},{clinicId:"c",pageSize:1});
-    assert.equal(doctors.total,3); assert.equal(doctors.items.length,1);
+    assert.equal(doctors.total,2); assert.equal(doctors.items.length,1);
     const patients = await list(actor,"patients",{clinicId:"c",page:1,pageSize:1});
     assert.equal(patients.total,4); assert.equal(patients.items.length,1);
     const visits = await list(actor,"appointments",{clinicId:"c",date:today,page:1,pageSize:1});
-    assert.equal(visits.total,3); assert.equal(visits.items.length,1);
+    assert.equal(visits.total,2); assert.equal(visits.items.length,1);
     const filtered = await list(actor,"appointments",{clinicId:"c",doctorId:"d2",branchId:"b2",date:today,status:"waiting"});
     assert.equal(filtered.total,1); assert.equal(filtered.items[0].patientId,"p2");
     assert.equal((await list(actor,"patients",{clinicId:"c",search:"Patient 2"})).total,1);
@@ -715,9 +712,14 @@ test("atomic owned clinic setup rolls back on branch slug conflict and retains o
   await assert.rejects(globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,{clinic:{name:"Second",address:"Street",slug:"second-clinic"},branches:[{name:"A",address:"One",slug:"same-branch"},{name:"B",address:"Two",slug:"same-branch"}]},tx)),/already in use/);
   assert.equal((await api.all(t.clinics)).length,1);
   assert.equal((await api.all(t.branches)).length,2);
-  const result = await globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,{clinic:{name:"Second",address:"Street",slug:"second-clinic"},branches:[{name:"A",address:"One",slug:"main-branch",openingHours:[{dayOfWeek:1,startTime:"09:00",endTime:"17:00"}]}],ownDoctor:true},tx));
+  const before = await Promise.all([api.all(t.clinics),api.all(t.branches),api.all(t.doctors),api.all(t.assignments),api.all(t.qrs),api.all(t.auditLogs)]);
+  const input = {clinic:{name:"Second",address:"Street",slug:"second-clinic"},branches:[{name:"A",address:"One",slug:"main-branch",openingHours:[{dayOfWeek:1,startTime:"09:00",endTime:"17:00"}]}]};
+  await assert.rejects(globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,{...input,ownDoctor:true},tx)),
+    error => error.code === "CONSULTING_ADMIN_DISABLED" && error.status === 409);
+  assert.deepEqual(await Promise.all([api.all(t.clinics),api.all(t.branches),api.all(t.doctors),api.all(t.assignments),api.all(t.qrs),api.all(t.auditLogs)]),before);
+  const result = await globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,input,tx));
   assert.equal(result.clinic.adminId,admin.id);
-  assert.ok(result.doctorId);
+  assert.equal(result.doctorId,null);
   assert.equal(result.branches.length,1);
   assert.equal((await api.all(t.qrs)).filter(q=>q.branchId===result.branches[0].id).length,1);
 });

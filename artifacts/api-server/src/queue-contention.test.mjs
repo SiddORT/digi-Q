@@ -25,43 +25,49 @@ function winner(outcomes, count = 1) {
   return successes;
 }
 
-test("real legacy ownership triggers permit atomic consulting-admin setup and reject bypasses", async () => {
+test("consulting setup is disabled while ordinary clinic ownership and legacy guards remain", async () => {
+  const input = {clinic:{name:"Owned Clinic",address:"Road",slug:"owned-clinical"},branches:[{name:"Main",address:"Road",slug:"main-clinical"}]};
+  const before = await Promise.all([h.api.all(h.t.users),h.api.all(h.t.clinics),h.api.all(h.t.branches),h.api.all(h.t.doctors),h.api.all(h.t.assignments),h.api.all(h.t.qrs),h.api.all(h.t.auditLogs)]);
+  await assert.rejects(h.db.transaction(async tx => {
+    const admin = await h.api.put(h.t.users,{id:"consult-admin",email:"consult@example.invalid",fullName:"Consulting Admin",role:"clinicAdmin"},tx);
+    return h.api.createOwnedClinic(admin,admin,{...input,ownDoctor:true},tx);
+  }), error => error.code === "CONSULTING_ADMIN_DISABLED" && error.status === 409);
+  assert.deepEqual(await Promise.all([h.api.all(h.t.users),h.api.all(h.t.clinics),h.api.all(h.t.branches),h.api.all(h.t.doctors),h.api.all(h.t.assignments),h.api.all(h.t.qrs),h.api.all(h.t.auditLogs)]),before);
   const result = await h.db.transaction(async tx => {
     const admin = await h.api.put(h.t.users,{id:"consult-admin",email:"consult@example.invalid",fullName:"Consulting Admin",role:"clinicAdmin"},tx);
-    return h.api.createOwnedClinic(admin,admin,{clinic:{name:"Owned Clinical Clinic",address:"Road",slug:"owned-clinical"},branches:[{name:"Main",address:"Road",slug:"main-clinical"}],ownDoctor:true},tx);
+    return h.api.createOwnedClinic(admin,admin,input,tx);
   });
-  assert.ok(result.doctorId);
-  assert.equal((await h.api.one(h.t.users,"consult-admin")).role,"clinicAdmin");
-  await h.api.change(h.t.users,"consult-admin",{role:"clinicAdmin",status:"active"});
+  assert.equal(result.doctorId,null);
+  assert.equal((await h.api.one(h.t.clinics,result.clinic.id)).adminId,"consult-admin");
+  assert.equal((await h.api.all(h.t.assignments)).filter(a=>a.userId==="consult-admin" && a.clinicId===result.clinic.id && !a.branchId).length,1);
+  assert.equal((await h.api.all(h.t.doctors)).filter(d=>d.userId==="consult-admin").length,0);
   const reject = async (operation,pattern) => assert.rejects(operation,error=>pattern.test(error.cause?.message || error.message));
   await reject(h.api.put(h.t.assignments,{id:"foreign-clinic-link",userId:"consult-admin",clinicId:"c",branchId:"b"}),/must match the active clinic administrator/);
   await reject(h.api.put(h.t.assignments,{id:"wrong-branch-clinic",userId:"consult-admin",clinicId:result.clinic.id,branchId:"b"}),/active own doctor profile/);
   await reject(h.api.put(h.t.assignments,{id:"admin-without-profile",userId:"admin",clinicId:"c",branchId:"b"}),/active own doctor profile/);
-  await reject(h.api.change(h.t.doctors,result.doctorId,{ownerAdminId:"admin"}),/must own their own doctor profile/);
-  await reject(h.api.change(h.t.users,"consult-admin",{role:"doctor"}),/Transfer clinic and doctor ownership/);
-  await reject(h.api.change(h.t.users,"consult-admin",{status:"inactive"}),/Transfer clinic and doctor ownership/);
-  await h.api.change(h.t.doctors,result.doctorId,{status:"inactive"});
-  await reject(h.api.put(h.t.assignments,{id:"inactive-profile-link",userId:"consult-admin",clinicId:result.clinic.id,branchId:result.branches[0].id}),/active own doctor profile/);
-  await h.api.change(h.t.users,"consult-admin",{role:"clinicAdmin",status:"active"});
-  await h.api.change(h.t.doctors,result.doctorId,{status:"active"});
-  await h.api.change(h.t.branches,result.branches[0].id,{status:"inactive"});
-  await reject(h.api.put(h.t.assignments,{id:"inactive-branch-link",userId:"consult-admin",clinicId:result.clinic.id,branchId:result.branches[0].id}),/active own doctor profile/);
-  await h.api.change(h.t.branches,result.branches[0].id,{status:"active"});
   const mapping=(await h.api.all(h.t.assignments)).find(a=>a.userId==="consult-admin" && !a.branchId);
   await reject(h.db.delete(h.t.assignments).where(eq(h.t.assignments.id,mapping.id)),/administrator assignment cannot be removed/);
+  assert.equal((await h.api.all(h.t.assignments)).some(a=>a.id===mapping.id),true);
+  assert.equal((await h.api.all(h.t.assignments)).some(a=>["foreign-clinic-link","wrong-branch-clinic","admin-without-profile"].includes(a.id)),false);
   assert.equal((await h.api.one(h.t.clinics,result.clinic.id)).adminId,"consult-admin");
 });
 
-test("concurrent own-doctor attachment uses actual legacy triggers and produces one capability", async () => {
+test("concurrent own-doctor attachment rejects both attempts without creating a capability", async () => {
   const owner=await h.api.one(h.t.users,"admin");
-  const outcomes=await h.race([
-    tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx),
-    tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx),
-  ],{doctorIds:[],lockKeys:["own-doctor:admin"]});
-  assert.ok(outcomes.every(o=>o.status==="fulfilled"));
-  assert.equal(outcomes[0].value.id,outcomes[1].value.id);
-  assert.equal((await h.api.all(h.t.doctors)).filter(d=>d.userId==="admin").length,1);
-  assert.equal((await h.api.all(h.t.assignments)).filter(a=>a.userId==="admin" && a.branchId==="b").length,1);
+  const before = await Promise.all([h.api.all(h.t.doctors),h.api.all(h.t.assignments),h.api.all(h.t.auditLogs)]);
+  // The release gate rejects before acquiring any advisory lock, so the
+  // lock-contention harness cannot apply to this disabled operation.
+  const outcomes=await Promise.allSettled([
+    h.db.transaction(tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx)),
+    h.db.transaction(tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx)),
+  ]);
+  assert.equal(outcomes.length,2);
+  for (const outcome of outcomes) {
+    assert.equal(outcome.status,"rejected");
+    assert.equal(outcome.reason.code,"CONSULTING_ADMIN_DISABLED");
+    assert.equal(outcome.reason.status,409);
+  }
+  assert.deepEqual(await Promise.all([h.api.all(h.t.doctors),h.api.all(h.t.assignments),h.api.all(h.t.auditLogs)]),before);
 });
 
 async function events(id, action) {

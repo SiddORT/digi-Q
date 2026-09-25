@@ -15,7 +15,7 @@ import { queueFixtureSql, seedQueueFixtures } from "./queue-fixtures.mjs";
 const root = resolve(import.meta.dirname, "..");
 const { Client } = createRequire(resolve(root, "../../../lib/db/package.json"))("pg");
 
-export async function createQueueHarness({ empty = false } = {}) {
+export async function createQueueHarness({ empty = false, pre0008 = false } = {}) {
   const temp = await mkdtemp(join(tmpdir(), "clinicflow-contention-"));
   const data = join(temp, "data");
   const bundle = join(root, `.contention-${process.pid}.mjs`);
@@ -75,6 +75,8 @@ export async function createQueueHarness({ empty = false } = {}) {
         export * from "./lib/clinic-expansion";
         export * from "./routes/appointments";
         export * from "./routes/queue";
+        export { authorizeWrite, createClinicAdminOnboarding } from "./routes/resources";
+        export { clinicExpansionRouter } from "./routes/clinic-expansion";
         export * as tables from "@workspace/db";
       `, resolveDir: root },
       outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
@@ -108,7 +110,7 @@ export async function createQueueHarness({ empty = false } = {}) {
     const staffOwnership = await readFile(resolve(root, "../../../lib/db/drizzle/0005_ancient_ultron.sql"), "utf8");
     await control.query(staffOwnership.slice(staffOwnership.indexOf("CREATE OR REPLACE FUNCTION clinicflow_assert_staff_owner(")));
     await control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0006_safe_staff_manager_guard.sql"), "utf8"));
-    await control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0008_consulting_admin_assignments.sql"), "utf8"));
+    if (!pre0008) await control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0008_consulting_admin_assignments.sql"), "utf8"));
     const staff = { id: "r", role: "receptionist", clinicIds: ["c"], branchIds: ["b", "b2"] };
     const patient = { id: "u1", role: "patient", patientId: "p1", clinicIds: [], branchIds: [] };
     const today = new Date().toISOString().slice(0, 10);
@@ -161,7 +163,7 @@ export async function createQueueHarness({ empty = false } = {}) {
       }
     }
     return {
-      api, t, staff, patient, today, tomorrow, db, route, race, close,
+      api, t, staff, patient, today, tomorrow, db, control, route, race, close,
       seed: () => db.transaction(tx => context.run({db:tx}, () => seedQueueFixtures(api, t, { exec: sql => control.query(sql) }))),
       rows: () => api.all(t.appointments),
       act: (id, body, actor = staff) => db.transaction(tx => api.transition(actor, id, body, tx)),

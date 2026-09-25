@@ -1,11 +1,20 @@
 import { db, clinics, branches, doctors, assignments, schedules, masters, qrs, users } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { all, one, put, change, uid, audit, getSettings } from "./store";
-import { assert } from "./http";
+import { assert, HttpError } from "./http";
 import { enrich } from "./entities";
 import { localNow, minutes, weeklySessionsOverlap } from "./availability";
 
 const reserved = new Set(["api", "admin", "auth", "login", "logout", "register", "signup", "sign-in", "sign-up", "onboarding", "dashboard", "clinics", "branches", "doctors", "patients", "appointments", "queue", "settings", "reports", "users", "masters", "schedules", "availability", "booking", "book", "display", "qr", "public", "guest", "invite", "invitations", "forgot-password", "reset-password", "account", "me", "assets", "favicon", "__mockup", "clinicflow-project-deck"]);
+// Release invariant: production still has pre-0008 ownership functions. Enabling
+// this requires a code change AND independent verification of the four 0008 bodies.
+export const CONSULTING_ADMIN_ENABLED = false;
+export function requireConsultingAdminCapability(): void {
+  if (!CONSULTING_ADMIN_ENABLED) throw new HttpError(409, "Clinic Admin clinical profiles are unavailable in this release", "CONSULTING_ADMIN_DISABLED");
+}
+export function rejectConsultingAdminRequest(input: any): void {
+  if (input?.ownDoctor === true) requireConsultingAdminCapability();
+}
 for (const path of ["register-clinic", "register-doctor", "patient-login", "set-password", "check-in", "doctor", "patient", "receptionist", "audit", "qrs", "exceptions"]) reserved.add(path);
 export function validSlug(value: unknown): value is string {
   return typeof value === "string" && /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/.test(value) && !reserved.has(value);
@@ -90,6 +99,7 @@ export async function saveClinicSetup(actor: any, clinicId: string, body: any, c
   return clinicSettingsResult(clinicId, conn);
 }
 export async function attachOwnDoctor(actor: any, body: any, conn: any) {
+  requireConsultingAdminCapability();
   assert(actor.role === "clinicAdmin", 403, "Only the owning Clinic Admin can attach their clinical profile");
   await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"own-doctor:" + actor.id}))`);
   const selected = [];
@@ -117,6 +127,7 @@ export async function attachOwnDoctor(actor: any, body: any, conn: any) {
   return enrich("doctors", doctor, conn);
 }
 export async function createOwnedClinic(actor: any, admin: any, input: any, conn: any) {
+  rejectConsultingAdminRequest(input);
   assert(input.clinic?.name?.trim() && typeof input.clinic.address === "string", 400, "Clinic name and address are required");
   await validateClinicMetadata(input.clinic, conn);
   await validateSlugWrite("clinics", input.clinic, null, conn);

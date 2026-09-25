@@ -8,7 +8,7 @@ import { requireUser, requireSessionIdentity, authoritativeStaffSessionExpiry, r
 import { parse, query, assert, HttpError } from "../lib/http";
 import { all, one, flatten, put, uid, audit } from "../lib/store";
 import { enrich, publicDoctor } from "../lib/entities";
-import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, createOwnedClinic } from "../lib/clinic-expansion";
+import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, createOwnedClinic, rejectConsultingAdminRequest, requireConsultingAdminCapability } from "../lib/clinic-expansion";
 import { queryMetrics } from "../lib/list-query";
 import { configuredDuration } from "../lib/session-duration";
 
@@ -32,11 +32,16 @@ clinicExpansionRouter.patch("/clinics/:id/settings", async (req, res) => {
   res.json(await db.transaction(tx => saveClinicSetup(user, req.params.id as string, body, tx)));
 });
 clinicExpansionRouter.post("/me/doctor-profile", async (req, res) => {
+  requireConsultingAdminCapability();
   const user = await requireUser(req), body = parse(z.AttachOwnDoctorProfileBody, req.body);
   res.json(await db.transaction(tx => attachOwnDoctor(user, body, tx)));
 });
-clinicExpansionRouter.post("/clinic-registration", registrationLimit, async (req, res) => {
+clinicExpansionRouter.post("/clinic-registration", (req, _res, next) => {
+  rejectConsultingAdminRequest(req.body);
+  next();
+}, registrationLimit, async (req, res) => {
   const { clerkId, sessionId } = requireSessionIdentity(req), body = parse(z.RegisterClinicBody, req.body);
+  rejectConsultingAdminRequest(body);
   const identity = await clerkClient.users.getUser(clerkId);
   const email = identity.emailAddresses.find(e => e.id === identity.primaryEmailAddressId && e.verification?.status === "verified")?.emailAddress.toLowerCase();
   assert(email, 400, "Verify your primary email before registering a clinic");

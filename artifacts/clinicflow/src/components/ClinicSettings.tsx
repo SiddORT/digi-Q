@@ -16,9 +16,7 @@ export function ClinicSettings({identity}:{identity:api.Identity}){
  const query=api.useGetClinicSettings(clinicId,{query:{queryKey:api.getGetClinicSettingsQueryKey(clinicId),enabled:!!clinicId,refetchInterval:30000}});
  const [section,setSection]=useState<"clinic"|"policies"|null>(null);
  const [branch,setBranch]=useState<api.Branch|null>(null);
- const [ownProfile,setOwnProfile]=useState(false);
  const save=api.useUpdateClinicSettings({mutation:{onSuccess:()=>{setSection(null);setBranch(null);client.invalidateQueries();}}});
- const own=api.useAttachOwnDoctorProfile({mutation:{onSuccess:()=>{setOwnProfile(false);client.invalidateQueries();}}});
  const [dirty,setDirty]=useState(false);
  const data=query.data;
  return <section className="clinic-settings">
@@ -30,11 +28,10 @@ export function ClinicSettings({identity}:{identity:api.Identity}){
  </section>
  <section className="panel padded"><div className="panel-heading"><h2>Booking policies</h2><button onClick={()=>{setDirty(false);save.reset();setSection("policies");}}>Edit policies</button></div><p>Booking horizon: {data.policies.bookingHorizonDays??"Not configured"} days · Cancellation cutoff: {data.policies.cancellationCutoffMinutes??"Not configured"} minutes</p></section>
  <section className="panel padded"><h2>Branches & contact inheritance</h2>{data.branches.map(item=><details key={item.id}><summary>{item.name} · {item.city||item.address}</summary><p>Effective email: {item.effectiveEmail||"Not set"} · Effective phone: {item.effectivePhone||"Not set"}</p><p>Web address: {item.slug||"Not set"}</p><button onClick={()=>{setDirty(false);save.reset();setBranch(item);}}>Edit branch & hours</button></details>)}<Link href="/admin/branches">Manage branches</Link></section>
- {identity.user?.role==="clinicAdmin"&&<section className="panel padded"><h2>My consultation</h2><p>Keep your administrator role while consulting at your own branches.</p>{identity.doctorId?<div className="row-actions"><Link href="/admin/profile">Edit my doctor profile</Link><Link href={`/admin/queue?doctor=${encodeURIComponent(identity.doctorId)}`}>Open my consultation queue</Link></div>:<button onClick={()=>setOwnProfile(true)}>Enable my doctor profile</button>}</section>}
+  {identity.user?.role==="clinicAdmin"&&<section className="panel padded"><h2>Clinical access</h2><p>Consulting as a Clinic Admin is unavailable this release. You can still manage clinic appointments and queues, and invite doctors through Staff management.</p></section>}
  <AppDialog open={!!section} onClose={()=>setSection(null)} title={section==="clinic"?"Clinic details":"Booking policies"} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{section&&<Editor onDirtyChange={setDirty} initial={section==="clinic"?data.clinic:data.policies} fields={section==="clinic"?resources.clinics.fields.filter(field=>["name","address","email","phone","slug","categoryId","specialityIds","referralCode"].includes(field.key)):[{key:"bookingHorizonDays",type:"number",required:true},{key:"cancellationCutoffMinutes",type:"number",required:true}]} busy={save.isPending} onSave={value=>save.mutate({id:clinicId,data:section==="clinic"?{clinic:value}:{policies:value}})}/>}</AppDialog>
  <AppDialog open={!!branch} onClose={()=>setBranch(null)} title="Branch contacts & hours" dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{branch&&<BranchSettings key={branch.id} branch={branch} busy={save.isPending} onDirtyChange={setDirty} onSave={value=>save.mutate({id:clinicId,data:{branches:[value]}})}/>}</AppDialog>
  </>}
- <AppDialog open={ownProfile} onClose={()=>setOwnProfile(false)} title="Enable my doctor profile" busy={own.isPending} dirty><ErrorNotice error={own.error}/><Editor resourceName="doctors" initial={{clinicIds:[clinicId],branchIds:[]}} fields={resources.doctors.fields.filter(field=>["branchIds","specializationId","qualificationIds","about"].includes(field.key))} busy={own.isPending} onSave={value=>own.mutate({data:value})}/></AppDialog>
  </section>;
 }
 

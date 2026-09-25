@@ -2,6 +2,124 @@
 
 ## Decision
 
+### Current release: reduced functionality, no custom-function migration
+
+The owner authorized deferring consulting Clinic Admin capability to avoid the
+unsupported production function migration. This supersedes the full-expansion
+release decision below **only for the reduced release**. It is not approval of a
+custom SQL workaround and does not mean the four new functions reached production.
+
+- Clinic registration and Super Admin onboarding create a Clinic Admin, owned
+  clinic, branches and clinic-only admin assignment, without an admin doctor profile.
+- Consulting selection, attachment UI and admin clinical-profile navigation are
+  removed. Ordinary doctor/receptionist workflows and admin clinic management stay.
+- The server rejects consulting-profile requests with
+  `409 CONSULTING_ADMIN_DISABLED`, including direct API requests and generic
+  doctor-profile mutation bypasses. The restriction is fixed in code, not an
+  environment switch. Existing records are preserved, not converted or deleted.
+- The historical 0008 migration remains for future expansion. Neither startup nor
+  build applies production DDL. The reduced release does not require its four
+  replacements; the **full consulting feature remains blocked** until supported
+  delivery, compatibility and rollback verification are established.
+
+#### Reduced-release evidence and remaining operator steps
+
+`node --test artifacts/api-server/src/pre-0008-compatibility.test.mjs` passed:
+the isolated PostgreSQL harness installs the historical guard definitions and
+verifies their four hashes exactly equal the observed production hashes. All ten
+triggers remain enabled. Tests cover early rejection without writes, clinic-only
+provisioning, ordinary doctor mappings, existing-record preservation, rejection
+of admin branch mappings by the old SQL, and transactional rollback preserving
+previously committed records. This is not a production restore rehearsal.
+
+Read-only production aggregate checks on 2026-09-25 returned zero cross-owned
+admin doctor profiles, invalid/inactive admin assignments, admin branch assignments,
+clinic-slug duplicates, per-clinic branch-slug duplicates, and case-insensitive
+per-clinic branch-name duplicates. These are point-in-time observations.
+API/frontend typechecks passed; both development workflows started cleanly and
+the registration page rendered. Successful Clerk-backed registration was not
+rerun in this reduced-release pass; prior authenticated acceptance is recorded
+below. No production writes or publication occurred.
+
+The updated phase-one and PostgreSQL queue-contention suites passed all 57 tests.
+Live development HTTP probes with a valid same-origin header returned
+`409 CONSULTING_ADMIN_DISABLED` for both registration with `ownDoctor: true`
+and direct doctor-profile attachment. Requests without an origin or bearer
+identity were independently rejected by the existing request-origin protection.
+
+For the reduced release, use only normal **user-controlled managed Publish**:
+
+1. Review its actual current schema plan. The last confirmed plan replaces the
+   ordinary session indexes and guest uniqueness constraints, adds slug/branch
+   indexes, and omits function replacements. This task environment cannot recompute
+   the platform diff; never treat the old plan as approval of a changed live plan.
+   Retain all three guest uniqueness protections and the five same-session
+   uniqueness semantics. Stop for unexpected data/table drops or missing replacements.
+2. Confirm the platform-supported restore options before proceeding. Do not choose
+   overwrite-production-data. Use an appropriate maintenance window for index/
+   constraint changes. This release makes no custom-function change to roll back.
+3. The user initiates Publish. Publication and subsequent production verification
+   are still outstanding; successful development checks are not a deployment.
+4. After Publish, compare the four function definitions and all ten enabled trigger
+   attachments with the baseline below, and verify the ordinary indexes/guest
+   uniqueness from the approved plan. Old function hashes are expected and
+   compatible for this reduced release. Unexpected changes require investigation.
+5. Verify ordinary registration, booking/queue and guest approval using authorized
+   isolated fixtures, and verify consulting requests remain unavailable.
+
+Rollback must not blindly restore older cross-session unique indexes after
+separate sessions have accumulated equal tokens. Preserve records and assess
+conflicts first. Application rollback does not undo the managed schema diff.
+Keep the consulting restriction during any rollback; never publish a version
+that exposes consulting assignments against the old guards.
+
+### Historical full-expansion gate (still applies before enabling consulting)
+
+**2026-09-25 release-preparation recheck: BLOCKED on supported custom-function
+delivery.** Core authenticated registration, booking/queue, guest approval, and
+cross-role acceptance have now passed per the current release handoff. Earlier
+acceptance-pending notes below are historical, not the current feature status.
+This does not clear the production database gate.
+
+Fresh read-only production catalog queries returned exactly the four expected
+function signatures and the same four **old** SHA-256 values in the fingerprint
+table below. Full definitions confirm the semantic differences, including the
+old prohibition on every Clinic Admin branch assignment. All ten ownership trigger
+attachments remain enabled (`O`); the four constraint triggers remain deferrable
+and initially deferred. No production changes or publication occurred, so these
+are pre-release observations, **not post-migration verification**.
+
+Official documentation searches for a supported custom-function migration,
+transaction, and rollback procedure found no explicit procedure. General SQL
+runner documentation is insufficient authorization. The schema-diff callback is
+unavailable in this task environment; the confirmed prior Publish diff remains
+the evidence for omitted functions, not a newly recomputed plan.
+
+### External dependency required to proceed
+
+The project owner must obtain platform confirmation of the supported delivery
+mechanism for these four managed-production function replacements. Confirmation
+must specify:
+
+- Who executes the change and through which supported platform surface; whether
+  Publish can include it or a platform operator must coordinate it.
+- How the exact four 0008 replacements are applied atomically while preserving
+  all ten enabled attachments, and how failures abort without partial changes.
+- How writes are held during the operation and application publication; whether
+  subsequent Publish preserves the custom definitions.
+- How the actual pre-change function definitions are captured and restored, and
+  what supported restore mechanism protects production records.
+
+This is a requirements checklist for platform confirmation, not a supported
+execution procedure or an instruction to paste DDL into a production SQL runner.
+Once confirmed, validate that procedure and old/new application compatibility in
+an isolated rehearsal, including a rollback rehearsal. Repeat aggregate data
+preconditions near the approved window. The user retains control of Publish.
+After the supported change and publication, repeat the read-only full-definition,
+hash, and trigger comparison; require all four intended bodies and all ten
+unchanged enabled attachments before lifting the gate. Until those steps are
+possible, this release-preparation task remains incomplete.
+
 **Final mobile verification passed; isolated DEV clinical cleanup DONE.** Ownership,
 patient-creation evidence, and inbound/outbound references were checked before
 transactional deletion. Zero owned clinical records, zero staff session proofs,
