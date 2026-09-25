@@ -2,7 +2,7 @@ import { Router } from "express";
 import { createHash } from "node:crypto";
 import { rateLimit } from "express-rate-limit";
 import { and, eq, sql, desc, inArray } from "drizzle-orm";
-import { db, guestRequests, patients, doctors, branches, auditLogs } from "@workspace/db";
+import { db, guestRequests, patients, doctors, branches, clinics, appointments, auditLogs } from "@workspace/db";
 import * as z from "@workspace/api-zod";
 import { assert, parse, query } from "../lib/http";
 import { requireUser, scope } from "../lib/auth";
@@ -11,11 +11,28 @@ import { availability } from "../lib/availability";
 import { enrich } from "../lib/entities";
 import { resolveQr } from "./public";
 import { bookAppointment } from "./appointments";
+import { createAppointmentQrPayload } from "../lib/appointment-qr";
 
 export const guestRequestsRouter = Router();
 export const guestHash = (s: string) => createHash("sha256").update(s).digest("hex");
-export function guestReceipt(r: any) {
-  return Object.fromEntries(["id", "status", "fullName", "clinicName", "branchName", "doctorName", "date", "sessionId", "startTime", "endTime", "timezone", "token", "reason"].map(k => [k, r[k] ?? null]));
+export function guestReceipt(r: any, appointment?: any) {
+  const receipt = Object.fromEntries(["id", "status", "fullName", "clinicName", "branchName", "doctorName", "date", "sessionId", "startTime", "endTime", "timezone", "token", "reason"].map(k => [k, r[k] ?? null]));
+  const payload = appointment?.reference ? createAppointmentQrPayload(appointment.reference) : null;
+  return { ...receipt, ...(appointment ? Object.fromEntries(
+    ["clinicName", "branchName", "doctorName", "date", "sessionId", "startTime", "endTime", "timezone", "token"]
+      .map(key => [key, appointment[key] ?? receipt[key]])) : {}),
+    appointmentId: r.appointmentId ?? null,
+    reference: appointment?.reference ?? null, branchAddress: appointment?.branchAddress ?? r.branchAddress ?? null,
+    appointmentStatus: appointment?.status ?? null, revision: appointment?.revision ?? null,
+    checkInUrl: payload ? `/check-in?payload=${encodeURIComponent(payload)}` : null };
+}
+async function currentReceipt(row: any, conn: any = db) {
+  let appointment = row.appointmentId ? await one(appointments, row.appointmentId, conn) : null;
+  if (appointment && appointment.branchAddress == null) {
+    const branch = await one(branches, appointment.branchId, conn);
+    appointment = { ...appointment, branchAddress: branch.address ?? null };
+  }
+  return guestReceipt(row, appointment);
 }
 function staffView(r: any) {
   return { ...guestReceipt(r), clinicId: r.clinicId, branchId: r.branchId, doctorId: r.doctorId,
@@ -29,6 +46,8 @@ async function staff(req: any) {
 const submissionLimit = rateLimit({ windowMs: 15 * 60_000, limit: 20, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Too many guest requests. Please retry later.", code: "RATE_LIMIT" } });
 const receiptLimit = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "draft-8", legacyHeaders: false, message: { error: "Too many receipt requests.", code: "RATE_LIMIT" } });
 export async function createGuestRequest(body: any, conn: any = db) {
+  // Refuse writes when tickets cannot be signed, not after committing a booking.
+  createAppointmentQrPayload("guest-signing-preflight");
   body = { ...body, fullName: body.fullName.trim(), email: body.email?.trim() || null, mobile: body.mobile?.trim() || null };
   assert(body.fullName.length > 0, 400, "Name is required");
   const { receiptSecret, ...input } = body;
@@ -40,6 +59,9 @@ export async function createGuestRequest(body: any, conn: any = db) {
       assert(existing.inputHash === inputHash && existing.receiptHash === receiptHash, 409, "Idempotency key already used for another request");
       return flatten(existing);
     }
+     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"guest-receipt:" + receiptHash}))`);
+     const [claimed] = await tx.select({ id: guestRequests.id }).from(guestRequests).where(eq(guestRequests.receiptHash, receiptHash));
+     assert(!claimed, 409, "Receipt secret already belongs to another request");
     const context = await resolveQr(body.qrReference, tx, true);
     assert((!context.branchId || context.branchId === body.branchId) && (!context.doctorId || context.doctorId === body.doctorId), 400, "Request does not match QR context");
     const available = await availability(body.doctorId, body.branchId, body.date, tx, body);
@@ -47,11 +69,23 @@ export async function createGuestRequest(body: any, conn: any = db) {
     assert(available.available && available.queueMode !== "walkInsOnly", 409, available.reason || "Session does not accept appointments");
     const doctor = await enrich("doctors", await one(doctors, body.doctorId, tx), tx);
     const branch = await one(branches, body.branchId, tx);
-    return put(guestRequests, { id: uid(), requestId: body.requestId, receiptHash, inputHash,
+    const clinic = await one(clinics, context.clinicId, tx);
+    const id = uid(), patientId = uid();
+    await put(patients, { id: patientId, clinicId: context.clinicId, branchId: body.branchId, mobile: body.mobile,
+      data: { fullName: body.fullName, email: body.email, code: `PAT-${patientId.slice(0, 8)}` } }, tx);
+    // The real clinic administrator is the required FK audit principal; the
+    // guest policy is distinct from staff authorization and explicitly marked
+    // on the appointment. This is not a staff session or a staff permission.
+    const appointment = await bookAppointment({ id: clinic.adminId, role: "guest" },
+      { patientId, clinicId: context.clinicId, branchId: body.branchId, doctorId: body.doctorId,
+        date: body.date, sessionId: available.sessionId, startTime: available.startTime,
+        source: "qr", qrReference: body.qrReference, requestId: `guest:${id}` }, tx, true);
+    return put(guestRequests, { id, requestId: body.requestId, receiptHash, inputHash,
       clinicId: context.clinicId, branchId: body.branchId, doctorId: body.doctorId, date: body.date,
+       status: "confirmed", appointmentId: appointment.id,
       data: { fullName: body.fullName, email: body.email, mobile: body.mobile, qrReference: body.qrReference,
-        clinicName: context.clinicName, branchName: branch.name, doctorName: doctor.fullName,
-        sessionId: available.sessionId, startTime: available.startTime, endTime: available.endTime, timezone: available.timezone, token: null, reason: null } }, tx);
+         clinicName: context.clinicName, branchName: branch.name, branchAddress: branch.address || null, doctorName: doctor.fullName,
+         sessionId: available.sessionId, startTime: available.startTime, endTime: available.endTime, timezone: available.timezone, token: appointment.token, reason: null } }, tx);
   });
 }
 export async function decideGuestRequest(user: any, id: string, body: any, conn: any = db) {
@@ -82,14 +116,14 @@ export async function decideGuestRequest(user: any, id: string, body: any, conn:
 }
 guestRequestsRouter.post("/public/guest-requests", submissionLimit, async (req, res) => {
   res.set("Cache-Control", "no-store");
-  res.status(201).json(z.CreateGuestRequestResponse.parse(guestReceipt(await createGuestRequest(parse(z.CreateGuestRequestBody, req.body)))));
+  res.status(201).json(z.CreateGuestRequestResponse.parse(await currentReceipt(await createGuestRequest(parse(z.CreateGuestRequestBody, req.body)))));
 });
 guestRequestsRouter.post("/public/guest-receipt", receiptLimit, async (req, res) => {
   res.set("Cache-Control", "no-store");
   const body = parse(z.GetGuestReceiptBody, req.body);
   const [row] = await db.select().from(guestRequests).where(eq(guestRequests.receiptHash, guestHash(body.receiptSecret)));
   assert(row, 404, "Receipt not found");
-  res.json(z.GetGuestReceiptResponse.parse(guestReceipt(flatten(row))));
+  res.json(z.GetGuestReceiptResponse.parse(await currentReceipt(flatten(row))));
 });
 guestRequestsRouter.get("/guest-requests", async (req, res) => {
   const user = await staff(req), q = query(z.ListGuestRequestsQueryParams, req);

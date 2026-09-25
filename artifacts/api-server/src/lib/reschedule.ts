@@ -40,7 +40,7 @@ export async function reschedule(user: any, id: string, body: any, tx: any) {
   const timestamp = new Date().toISOString();
   const data = { ...row, doctorId: body.doctorId, branchId: body.branchId, date: body.date, sessionId: body.sessionId,
     token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber,
-    doctorName: doctor.fullName, branchName: branch.name, timezone: available.timezone,
+    doctorName: doctor.fullName, branchName: branch.name, branchAddress: branch.address ?? null, timezone: available.timezone,
     startTime: available.startTime, endTime: available.endTime,
     expectedDurationMinutes: duration, queueRank: Math.max(0, ...rows.map(rank)) + 1, revision: (row.revision || 0) + 1,
     waitingAt: timestamp, calledAt: null,

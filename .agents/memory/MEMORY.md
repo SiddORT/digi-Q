@@ -7,3 +7,4 @@
 - [Visual cascade verification](visual-cascade.md) — rendered checks catch legacy CSS precedence and breakpoint regressions that typechecks cannot.
 - [Publishing database guards](publish-database-guards.md) — schema diffs can omit custom guard functions or propagate development constraint drift; verify both before rollout.
 - [Published demo boundary](published-demo-auth-boundary.md) — same-app fictional demo may use password-verified tickets; ordinary account verification must remain unchanged.
+- [Patient booking contract](patient-booking-contract.md) — Book Now immediately issues a private ticket; guest contact is optional and queue operations stay staff-facing.

@@ -5,8 +5,11 @@ import { Form } from "./ui/form";
 import { CareLookup } from "./CareLookup";
 import { ErrorNotice, today } from "../resources";
 import { useFreshWorkspace } from "./queue/useFreshWorkspace";
-import { canPollGuestReceipt, guestReceiptText } from "../guest-receipt";
+import { canPollGuestReceipt } from "../guest-receipt";
 import { SessionSelector, useDailySession } from "./queue/SessionSelector";
+import { VisitTicket, bookingStatusLabel, type TicketData } from "./tickets/VisitTicket";
+
+const toTicket=(r:api.GuestReceipt):TicketData=>({patientName:r.fullName,clinicName:r.clinicName,branchName:r.branchName,address:r.branchAddress,doctorName:r.doctorName,date:r.date,startTime:r.startTime,endTime:r.endTime,timezone:r.timezone,waitingNumber:r.token,reference:r.reference,statusLabel:bookingStatusLabel(r.appointmentStatus),qrUrl:r.checkInUrl});
 
 export function GuestBooking({reference,context}:{reference:string;context:api.QrContext}) {
  const storageKey=`clinicflow-guest:${reference}`;
@@ -56,31 +59,34 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   try{sessionStorage.setItem(storageKey,JSON.stringify(data));}catch{setStorageError("This browser cannot save your receipt. Keep this page open and ask reception for help before closing it.");}
   setAttempt(data);void send(data);
  }
- function printReceipt() {
-  if(!receipt||receiptFresh.stale)return;
-  const popup=window.open("","_blank","width=650,height=750");
-  if(!popup){setStorageError("Allow pop-ups to print your receipt.");return;}
-  popup.opener=null;popup.document.title="ClinicFlow visit receipt";
-  const text=popup.document.createElement("pre");text.style.cssText="white-space:pre-wrap;font:18px sans-serif;line-height:1.6";
-  text.textContent=guestReceiptText(receipt);
-  popup.document.body.append(text);popup.focus();popup.print();
+ const r=receipt;
+ async function prepareExport(){
+  if(!attempt||!r)throw new Error("Ticket not ready. Refresh and try again.");
+  if(!navigator.onLine)throw new Error("You are offline. Reconnect and try again.");
+  const first=await api.getGuestReceipt({receiptSecret:attempt.receiptSecret});
+  const second=await api.getGuestReceipt({receiptSecret:attempt.receiptSecret});
+  if(first.revision!==second.revision||first.appointmentStatus!==second.appointmentStatus||first.status!==second.status)throw new Error("Your booking changed while preparing the ticket. Try again.");
+  accept(second);
+  if(second.status==="pending"||second.status==="rejected")throw new Error("This booking has no issued ticket.");
+  if(!second.checkInUrl)throw new Error("Your personal QR is not available. Refresh and try again.");
+  return toTicket(second);
  }
- if(attempt)return <section aria-label="Your guest request" data-testid="guest-receipt">
-  <h2>{receipt?.status==="confirmed"?"Your visit is confirmed":receipt?.status==="rejected"?"Request declined":receipt?"Awaiting reception confirmation":"Checking your request"}</h2>
-  {!receipt&&<p>{attempt.fullName} · {attempt.date}</p>}
-  {receipt?<><p>{receipt.fullName} · {receipt.doctorName}</p><p>{receipt.clinicName} · {receipt.branchName}<br/>{receipt.date} · {receipt.startTime}–{receipt.endTime} · {receipt.timezone}</p>
-  {receipt.status==="pending"&&<p className="notice">Reception must confirm this request. It does not reserve capacity or a queue place. No token has been issued.</p>}
-  {receipt.status==="confirmed"&&<p className="notice" data-testid="guest-token">Your token: <strong>{receipt.token}</strong>. This is not your queue position.</p>}
-  {receipt.status==="rejected"&&<p role="status">{receipt.reason||"Please speak to reception."}</p>}
-  <button className="button secondary" data-testid="button-print-guest" disabled={receiptFresh.stale||status.isPending} onClick={printReceipt}>Print receipt</button></>:<p>Keep this page open while we check. Do not send a second request.</p>}
+ const issued=r&&r.status!=="pending"&&r.status!=="rejected";
+ if(attempt)return <section aria-label="Your visit ticket" data-testid="guest-receipt">
+  <h2>{issued?"You're booked":r?.status==="rejected"?"Booking not available":r?"Booking received":"Issuing your ticket"}</h2>
+  {!r&&<p role="status">{attempt.fullName} · {attempt.date}. Keep this page open; do not book again.</p>}
+  {issued&&r&&<VisitTicket testId="guest-ticket" ticket={toTicket(r)} prepareExport={prepareExport} exportDisabled={!committed||status.isPending}/>}
+  {r?.status==="pending"&&<p className="notice">This earlier request is still with reception. No waiting number has been issued yet.</p>}
+  {r?.status==="rejected"&&<p role="status">{r.reason||"Please speak to reception."}</p>}
+  {receiptFresh.stale&&updated>0&&<p className="muted">Ticket shown as last loaded.</p>}
   <ErrorNotice error={create.error}/><ErrorNotice error={storageError}/>
-   {committed&&(status.error||(updated>0&&receiptFresh.stale)||!receiptFresh.online)&&<p role="alert">Receipt status is unavailable or out of date. Reconnect and retry. If your receipt cannot be recovered, ask reception; do not submit another request.</p>}
-   {committed&&<button className="button secondary" data-testid="button-refresh-guest" disabled={!pollAllowed||status.isPending} onClick={()=>pollRef.current()}>Refresh status</button>}
-   {!committed&&!create.isPending&&<><p>We have not received confirmation that your request was saved. Retry the same request safely below; this will not create a second request.</p><button className="button" data-testid="button-retry-guest" onClick={()=>void send(attempt)}>Retry same request</button></>}
-  <p className="muted">This private receipt is saved only in this browser tab. Closing the tab or clearing browser data can lose access. Ask reception if it is lost; there is no public name search. No message delivery is guaranteed.</p>
+  {committed&&(status.error||!receiptFresh.online)&&<p role="alert">We could not refresh your ticket. Reconnect and retry. If it cannot be recovered, ask reception; do not book again.</p>}
+  {committed&&<button className="button secondary" data-testid="button-refresh-guest" disabled={!pollAllowed||status.isPending} onClick={()=>pollRef.current()}>Refresh ticket</button>}
+  {!committed&&!create.isPending&&<><p>We did not receive confirmation that your booking was saved. Retry safely below; it will not create a second booking.</p><button className="button" data-testid="button-retry-guest" onClick={()=>void send(attempt)}>Retry booking</button></>}
+  <p className="muted">Download or print your ticket now. It is recoverable only in this browser tab; there is no public name search. If it is lost, ask reception.</p>
  </section>;
  const available=availability.data;
- return <section><h2>Book without an account</h2><p>Enter the patient's name and choose a visit. No account or verification code needed.</p>
+ return <section><h2>Book a visit</h2><p>Enter the patient's name and choose a session. No account needed; your ticket is issued straight away.</p>
  <Form {...form}><form onSubmit={form.handleSubmit(submit)}>
  <div className="form-grid">
  {!context.branchId&&<CareLookup publicAccess kind="branches" label="Location" value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}}/>}
@@ -96,12 +102,12 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  {form.formState.errors.fullName&&<p role="alert">Enter the patient's name.</p>}
  {form.formState.errors.mobile&&<p role="alert">Open contact details and enter + followed by your country code and number (8–15 digits), or leave mobile blank.</p>}
  <ErrorNotice error={create.error}/>
- <p className="muted">Without contact details, we cannot send updates or recover your receipt remotely. You may give a family member's contact with their permission. This does not link the visit to their account. If you lose this receipt, ask reception rather than sending another request.</p>
- <label className="check-label"><input data-testid="input-guest-permission" type="checkbox" {...form.register("permission",{required:true})}/> I have permission to request this visit and share any contact details provided.</label>
+ <p className="muted">Contact details are optional. Without them we cannot send updates. You may give a family member's contact with their permission; it does not link the visit to their account.</p>
+ <label className="check-label"><input data-testid="input-guest-permission" type="checkbox" {...form.register("permission",{required:true})}/> I have permission to book this visit and share any contact details provided.</label>
  {form.formState.errors.permission&&<p role="alert">Please confirm permission to continue.</p>}
  <div className="availability-box">{availability.isFetching?"Checking session…":available?<><strong>{available.available&&available.remainingTokens>0?"Available session":"Session unavailable"}</strong><p>{available.startTime}–{available.endTime} · {available.timezone}</p>{(!available.available||available.remainingTokens<=0)&&<p>{available.reason||"Session full. Choose another date."}</p>}</>:<p>Choose a location and doctor to see the session.</p>}</div>
  <ErrorNotice error={availability.error}/>{(availability.error||fresh.stale)&&branchId&&doctorId&&<button type="button" data-testid="button-retry-guest-availability" onClick={()=>availability.refetch()}>Refresh availability</button>}
- <p className="notice">Your request needs reception confirmation. No place or token is reserved until staff confirms.</p>
- <button className="button" data-testid="button-submit-guest" disabled={fresh.stale||availability.isFetching||!available?.available||available.remainingTokens<=0||create.isPending} type="submit">Request visit</button>
+ <p className="notice">Your ticket shows a session time range, not an exact consultation time.</p>
+ <button className="button" data-testid="button-submit-guest" disabled={fresh.stale||availability.isFetching||!available?.available||available.remainingTokens<=0||create.isPending} type="submit">{create.isPending?"Booking…":"Book Now"}</button>
  </form></Form></section>;
 }

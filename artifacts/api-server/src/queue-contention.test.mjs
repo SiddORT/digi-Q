@@ -5,6 +5,7 @@ import { createQueueHarness } from "./test-support/postgres-queue.mjs";
 import { eq } from "drizzle-orm";
 
 mock.timers.enable({ apis: ["Date"], now: Date.UTC(2030, 0, 7, 12) });
+process.env.SESSION_SECRET = "isolated-postgres-contention-signing-key-not-for-production";
 let h;
 before(async () => { h = await createQueueHarness(); });
 beforeEach(async () => { await h.seed(); });
@@ -24,6 +25,28 @@ function winner(outcomes, count = 1) {
   }
   return successes;
 }
+
+test("separate PostgreSQL guest contenders serialize last token and same-key replay", async () => {
+  await h.api.put(h.t.qrs, { id: "guest-qr-row", clinicId: "c", branchId: "b", publicReference: "guest-qr" });
+  await h.api.put(h.t.qrs, { id: "guest-qr-row-2", clinicId: "c", branchId: "b", publicReference: "guest-qr-2" });
+  const date = h.tomorrow;
+  const schedule = await h.api.one(h.t.schedules, "d" + new Date(date).getUTCDay());
+  await h.api.change(h.t.schedules, schedule.id, { data: { ...schedule, maxTokens: 1 } });
+  const input = (suffix) => ({ qrReference: "guest-qr", fullName: "Guest " + suffix, branchId: "b", doctorId: "d", date,
+    requestId: `12345678-1234-4234-8234-1234567890${suffix}`, receiptSecret: suffix[0].repeat(64) });
+  const a = input("12"), b = { ...input("34"), qrReference: "guest-qr-2" };
+  // Distinct guest keys race for the same schedule lock on distinct backends.
+  const outcomes = await h.race([tx => h.api.createGuestRequest(a, tx), tx => h.api.createGuestRequest(b, tx)]);
+  const [reserved] = winner(outcomes);
+  assert.equal(reserved.value.status, "confirmed");
+  assert.equal((await h.api.all(h.t.appointments)).length, 1);
+  assert.equal((await h.api.all(h.t.guestRequests)).length, 1);
+  assert.equal((await h.api.all(h.t.patients)).length, 5, "failed booking has no orphan patient");
+  const retry = await h.api.createGuestRequest(reserved.value.requestId === a.requestId ? a : b);
+  assert.equal(retry.appointmentId, reserved.value.appointmentId);
+  assert.equal(retry.token, reserved.value.token);
+  assert.equal((await h.api.all(h.t.appointments)).length, 1);
+});
 
 test("consulting setup creates one user, a self-owned doctor and clinic-only mapping", async () => {
   const input = {clinic:{name:"Owned Clinic",address:"Road",slug:"owned-clinical"},branches:[{name:"Main",address:"Road",slug:"main-clinical"}]};

@@ -162,7 +162,7 @@ paths:
       security: []
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GuestRequestInput" } } } }
       responses:
-        "201": { description: Pending request receipt, content: { application/json: { schema: { $ref: "#/components/schemas/GuestReceipt" } } } }
+        "201": { description: Immediately allocated appointment and private receipt (idempotent replay returns same ticket), content: { application/json: { schema: { $ref: "#/components/schemas/GuestReceipt" } } } }
   /public/guest-receipt:
     post:
       operationId: getGuestReceipt
@@ -975,7 +975,7 @@ components:
         reason: { type: string, minLength: 1, maxLength: 500 }
     GuestReceipt:
       type: object
-      required: [id, status, fullName, clinicName, branchName, doctorName, date, startTime, endTime, timezone, token, reason]
+      required: [id, status, fullName, clinicName, branchName, doctorName, date, startTime, endTime, timezone, token, reason, appointmentId, reference, branchAddress, appointmentStatus, revision, checkInUrl]
       properties:
         sessionId: { type: [string, "null"] }
         id: { type: string }
@@ -990,6 +990,12 @@ components:
         timezone: { type: string }
         token: { type: ["string", "null"] }
         reason: { type: ["string", "null"] }
+        appointmentId: { type: ["string", "null"] }
+        reference: { type: ["string", "null"] }
+        branchAddress: { type: ["string", "null"] }
+        appointmentStatus: { type: ["string", "null"] }
+        revision: { type: ["integer", "null"] }
+        checkInUrl: { type: ["string", "null"], description: "Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability." }
     StaffGuestRequest:
       allOf:
         - { $ref: "#/components/schemas/GuestReceipt" }
@@ -1471,6 +1477,8 @@ components:
             doctorName: { type: string }
             clinicName: { type: string }
             branchName: { type: string }
+            branchAddress: { type: [string, "null"], description: "Booking branch address snapshot; for legacy bookings the current branch address is resolved." }
+            timezone: { type: [string, "null"], description: "Time zone for the consulting session range." }
             startTime: { type: string }
             endTime: { type: string }
             createdAt: { type: string, format: date-time }

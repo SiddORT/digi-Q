@@ -10,8 +10,10 @@ Updated 2026-09-25.
 - Existing patient email-code login remains separate.
 - Patient booking QRs are not appointment check-in QRs; check-in remains a staff operation.
 
-Guest submissions are requests, not confirmed appointments. Reception/authorized
-staff must approve them before a token and queue place are allocated.
+New guest submissions are immediate bookings: Book Now issues a waiting number
+and a private visit ticket without reception approval. Email and phone are
+optional. Historical pending receipts remain readable and are handled separately.
+The acceptance evidence below describes the older flow before this change.
 
 ## Retained fictional development fixture
 

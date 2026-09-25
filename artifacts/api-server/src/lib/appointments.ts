@@ -1,4 +1,4 @@
-import { db, appointments, patients, appointmentHistory } from "@workspace/db";
+import { db, appointments, patients, branches, appointmentHistory } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { all, one, change, put, uid, audit, getSettings } from "./store";
 import { assert } from "./http";
@@ -25,6 +25,11 @@ export function appointmentView(row: any, user: any) {
   const allowedActions = Object.entries(transitions).filter(([action, rule]) => !["enqueue", "call", "start"].includes(action) && rule.from.includes(row.status) && (action === "cancel" ? !row.checkedInAt : row.date === localNow(row.timezone || "Asia/Kolkata").date) && (user.role !== "patient" || action === "cancel") && (action !== "requeue" || ["superAdmin", "clinicAdmin", "receptionist"].includes(user.role))).map(([a]) => a);
   const { actorId, requestId, ...view } = row;
   return { ...view, ...(user.role === "patient" && row.history ? { history: row.history.map(({ actorId: _actor, ...event }: any) => event) } : {}), queueRank: rank(row), revision: row.revision || 0, expectedDurationMinutes: row.expectedDurationMinutes ?? null, allowedActions };
+}
+export async function appointmentViewWithBranch(row: any, user: any, conn: any = db) {
+  if (row.branchAddress != null) return appointmentView(row, user);
+  const branch = await one(branches, row.branchId, conn);
+  return appointmentView({ ...row, branchAddress: branch.address ?? null }, user);
 }
 export async function transition(user: any, id: string, body: any, conn: any = db, locked = false) {
   let row = await one(appointments, id, conn);

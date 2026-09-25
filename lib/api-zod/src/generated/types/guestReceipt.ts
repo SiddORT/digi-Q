@@ -33,4 +33,19 @@ export interface GuestReceipt {
   token: string | null;
   /** @nullable */
   reason: string | null;
+  /** @nullable */
+  appointmentId: string | null;
+  /** @nullable */
+  reference: string | null;
+  /** @nullable */
+  branchAddress: string | null;
+  /** @nullable */
+  appointmentStatus: string | null;
+  /** @nullable */
+  revision: number | null;
+  /**
+     * Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.
+     * @nullable
+     */
+  checkInUrl: string | null;
 }

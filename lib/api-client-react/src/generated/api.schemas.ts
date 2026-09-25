@@ -519,6 +519,21 @@ export interface GuestReceipt {
   token: string | null;
   /** @nullable */
   reason: string | null;
+  /** @nullable */
+  appointmentId: string | null;
+  /** @nullable */
+  reference: string | null;
+  /** @nullable */
+  branchAddress: string | null;
+  /** @nullable */
+  appointmentStatus: string | null;
+  /** @nullable */
+  revision: number | null;
+  /**
+     * Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.
+     * @nullable
+     */
+  checkInUrl: string | null;
 }
 
 export type StaffGuestRequest = GuestReceipt & ({
@@ -1100,6 +1115,16 @@ export type Appointment = AppointmentInput & ({
   doctorName: string;
   clinicName: string;
   branchName: string;
+  /**
+     * Booking branch address snapshot; for legacy bookings the current branch address is resolved.
+     * @nullable
+     */
+  branchAddress?: string | null;
+  /**
+     * Time zone for the consulting session range.
+     * @nullable
+     */
+  timezone?: string | null;
   startTime?: string;
   endTime?: string;
   createdAt: string;

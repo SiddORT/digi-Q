@@ -29,7 +29,10 @@ public sharing message.
 One account is both Clinic Admin and doctor. It can operate its existing
 clinic's booking/queue/presence workflow but cannot change clinic structure,
 create staff or access another clinic. Use only fictional patient details.
-Guest requests need staff approval before receiving a token.
+New guest bookings immediately receive a waiting number and private ticket QR,
+without staff approval. Email and phone are optional. The ticket identifies the
+clinic, location, doctor, date and session time range, not an exact appointment time.
+Historical pending requests remain staff-manageable; they are not silently converted.
 
 Super Admin can disable or rotate access. These actions invalidate existing
 demo access; disabling does not delete the fictional clinic or its bookings.

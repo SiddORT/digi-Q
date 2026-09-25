@@ -49,7 +49,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
   const email = branch ? branch.effectiveEmail : clinic.email;
   const phone = branch ? branch.effectivePhone : clinic.phone;
   return <div className="public-clinic"><header className="public-clinic-header"><Logo/><Link href={clinicSlug === "clinicflow-demo" ? "/demo-login" : "/sign-in"} data-testid="public-clinic-staff">{clinicSlug === "clinicflow-demo" ? "Demo staff login" : "Staff login"}</Link></header><main className="public-clinic-content">
-    {clinicSlug === "clinicflow-demo" && <div className="notice" role="status" data-testid="demo-clinic-warning"><strong>Fictional demo clinic.</strong> Do not enter real patient information. Guest requests require staff approval before a token is issued.</div>}
+    {clinicSlug === "clinicflow-demo" && <div className="notice" role="status" data-testid="demo-clinic-warning"><strong>Fictional demo clinic.</strong> Do not enter real patient information. Bookings issue a ticket immediately.</div>}
     <section className="public-clinic-hero">
       <span className="eyebrow"><Building2 size={15}/> YOUR CARE, CONNECTED</span>
       <h1>{clinic.name}</h1>{branch && <h2>{branch.name}</h2>}

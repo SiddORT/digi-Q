@@ -20,3 +20,13 @@ Create booking fixtures through the real booking API when testing queue summarie
 **Why:** Hand-inserted rows lacking generated token data produced blank current/next summaries and a false application-bug report even though row transitions worked. Real API bookings passed the same checks.
 
 **How to apply:** Use database setup only for identities, assignments and prerequisite configuration; exercise appointment creation through the API and compare raw queue responses with the displayed state before attributing a mismatch to the app.
+
+Do not infer the workspace database target from `REPLIT_ENVIRONMENT` alone.
+
+**Why:** This workspace reported a production environment label while its database
+connection matched the explicitly queried development database and Clerk test tenant.
+
+**How to apply:** Before creating temporary auth fixtures, compare a read-only
+database fingerprint through the actual workspace connection against explicitly
+selected development and production query results, and verify the provider tenant
+is development. Stop on ambiguity; never print credentials or reset existing users.

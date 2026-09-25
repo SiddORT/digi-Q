@@ -4,7 +4,7 @@ import { all, one } from "./store";
 import { assert } from "./http";
 import { canRead, roles } from "./auth";
 import { doctorContext, localNow } from "./availability";
-import { appointmentView, lockQueue, transition } from "./appointments";
+import { appointmentViewWithBranch, lockQueue, transition } from "./appointments";
 import { orderedReservations, pendingStatuses, sessionRows } from "./queue-order";
 
 const VERSION = "v1";
@@ -99,7 +99,7 @@ export async function resolveAppointmentQr(user: any, payload: string, conn: any
   const blocked = rows.some(a => a.id !== row.id && ["called", "inConsultation"].includes(a.status))
     || row.status !== "called" && !alreadyCheckedIn && orderedReservations(rows.filter(a => pendingStatuses.includes(a.status)))[0]?.id !== row.id;
   return {
-    appointment: appointmentView(row, user),
+    appointment: await appointmentViewWithBranch(row, user, conn),
     eligible: !alreadyCheckedIn && !blocked,
     alreadyCheckedIn,
     message: alreadyCheckedIn ? "Consultation has already started." : blocked ? "Another reservation must be served or explicitly skipped first." : "Confirm check-in to start consultation.",
@@ -118,7 +118,7 @@ export async function checkInAppointmentQr(user: any, payload: string) {
     await validateCheckInState(row, tx);
     if (ALREADY_CHECKED_IN.includes(row.status)) {
       return {
-        appointment: appointmentView(row, user),
+        appointment: await appointmentViewWithBranch(row, user, tx),
         alreadyCheckedIn: true,
         message: "Appointment is already checked in.",
       };
@@ -131,7 +131,7 @@ export async function checkInAppointmentQr(user: any, payload: string) {
       true,
     );
     return {
-      appointment,
+      appointment: await appointmentViewWithBranch(appointment, user, tx),
       alreadyCheckedIn: false,
       message: "Appointment checked in; consultation started.",
     };

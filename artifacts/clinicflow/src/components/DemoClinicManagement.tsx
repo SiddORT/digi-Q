@@ -91,7 +91,7 @@ export function DemoClinicManagement() {
     window.setTimeout(() => URL.revokeObjectURL(href), 1000);
   }
 
-  const forward = `Try ClinicFlow's fictional demo clinic (please do not enter real patient information).\nClinic: ${clinicUrl}\nGuest booking: ${bookingUrl}\nYou can scan the booking QR on the clinic page or open the booking link directly. Guest booking requires no login; reception must approve your request.`;
+  const forward = `Try ClinicFlow's fictional demo clinic (please do not enter real patient information).\nClinic: ${clinicUrl}\nGuest booking: ${bookingUrl}\nYou can scan the booking QR on the clinic page or open the booking link directly. Guest booking requires no login and issues a ticket immediately.`;
   return <div className="panel padded" data-testid="demo-management">
     <span className="eyebrow">SUPER ADMIN ONLY · FICTIONAL DEMO</span>
     <h2>Published demo clinic</h2>

@@ -77,6 +77,7 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
         export * from "./lib/clinical-membership";
         export * from "./lib/list-query";
         export * from "./routes/appointments";
+        export * from "./routes/guest-requests";
         export * from "./routes/queue";
         export { publicRouter, resolveQr } from "./routes/public";
         export { authorizeWrite, createClinicAdminOnboarding, resourcesRouter } from "./routes/resources";

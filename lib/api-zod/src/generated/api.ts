@@ -862,7 +862,13 @@ export const CreateGuestRequestResponse = zod.object({
   "endTime": zod.string().nullable(),
   "timezone": zod.string(),
   "token": zod.string().nullable(),
-  "reason": zod.string().nullable()
+  "reason": zod.string().nullable(),
+  "appointmentId": zod.string().nullable(),
+  "reference": zod.string().nullable(),
+  "branchAddress": zod.string().nullable(),
+  "appointmentStatus": zod.string().nullable(),
+  "revision": zod.number().int().nullable(),
+  "checkInUrl": zod.string().nullable().describe('Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.')
 })
 
 
@@ -886,7 +892,13 @@ export const GetGuestReceiptResponse = zod.object({
   "endTime": zod.string().nullable(),
   "timezone": zod.string(),
   "token": zod.string().nullable(),
-  "reason": zod.string().nullable()
+  "reason": zod.string().nullable(),
+  "appointmentId": zod.string().nullable(),
+  "reference": zod.string().nullable(),
+  "branchAddress": zod.string().nullable(),
+  "appointmentStatus": zod.string().nullable(),
+  "revision": zod.number().int().nullable(),
+  "checkInUrl": zod.string().nullable().describe('Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.')
 })
 
 
@@ -922,7 +934,13 @@ export const ListGuestRequestsResponse = zod.object({
   "endTime": zod.string().nullable(),
   "timezone": zod.string(),
   "token": zod.string().nullable(),
-  "reason": zod.string().nullable()
+  "reason": zod.string().nullable(),
+  "appointmentId": zod.string().nullable(),
+  "reference": zod.string().nullable(),
+  "branchAddress": zod.string().nullable(),
+  "appointmentStatus": zod.string().nullable(),
+  "revision": zod.number().int().nullable(),
+  "checkInUrl": zod.string().nullable().describe('Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.')
 }).and(zod.object({
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -964,7 +982,13 @@ export const DecideGuestRequestResponse = zod.object({
   "endTime": zod.string().nullable(),
   "timezone": zod.string(),
   "token": zod.string().nullable(),
-  "reason": zod.string().nullable()
+  "reason": zod.string().nullable(),
+  "appointmentId": zod.string().nullable(),
+  "reference": zod.string().nullable(),
+  "branchAddress": zod.string().nullable(),
+  "appointmentStatus": zod.string().nullable(),
+  "revision": zod.number().int().nullable(),
+  "checkInUrl": zod.string().nullable().describe('Personal signed check-in QR URL. Keep private like receiptSecret; only returned via booking or receipt capability.')
 }).and(zod.object({
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -3494,6 +3518,8 @@ export const ListAppointmentsResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),
@@ -3584,6 +3610,8 @@ export const CreateAppointmentResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),
@@ -3653,6 +3681,8 @@ export const GetAppointmentResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),
@@ -3743,6 +3773,8 @@ export const ResolveAppointmentQrResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),
@@ -3823,6 +3855,8 @@ export const CheckInAppointmentQrResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),
@@ -3945,6 +3979,8 @@ export const RescheduleAppointmentResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),
@@ -4042,6 +4078,8 @@ export const TransitionAppointmentResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),
@@ -4171,6 +4209,8 @@ export const GetQueueResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),
@@ -4251,6 +4291,8 @@ export const CallNextResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),
@@ -4475,6 +4517,8 @@ export const GetDashboardResponse = zod.object({
   "doctorName": zod.string(),
   "clinicName": zod.string(),
   "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
   "createdAt": zod.coerce.date(),

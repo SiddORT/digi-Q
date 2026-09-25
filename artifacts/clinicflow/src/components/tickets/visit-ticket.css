@@ -1,0 +1,24 @@
+.vt{--vt-ink:hsl(222 38% 16%);--vt-paper:hsl(42 45% 97%);--vt-accent:hsl(172 62% 30%);--vt-soft:hsl(172 35% 92%);--vt-line:hsl(35 20% 82%);
+ font-family:"DM Sans",system-ui,sans-serif;color:var(--vt-ink);background:var(--vt-paper);border:1px solid var(--vt-line);border-radius:18px;max-width:640px;overflow:hidden;box-shadow:0 18px 40px -24px hsl(222 40% 20% / .35);animation:vt-in .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes vt-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.vt-head{background:var(--vt-accent);color:hsl(42 45% 97%);padding:16px 22px;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.vt-head h2{margin:0;font-size:1.05rem;letter-spacing:.02em}
+.vt-badge{font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;background:hsl(42 45% 97% / .18);padding:4px 10px;border-radius:99px}
+.vt-body{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;padding:22px}
+.vt-body>div,.vt-dl dd{min-width:0;overflow-wrap:anywhere}
+.vt-ref,.vt-name{overflow-wrap:anywhere}
+.vt-number-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;opacity:.7;margin:0}
+.vt-number{font-family:"Space Mono",ui-monospace,monospace;font-size:clamp(2.6rem,9vw,4rem);line-height:1;margin:4px 0 10px;color:var(--vt-accent);font-weight:700}
+.vt-ref{font-family:"Space Mono",ui-monospace,monospace;font-size:.95rem;margin:0 0 14px}
+.vt-name{font-size:1.3rem;font-weight:700;margin:0 0 12px}
+.vt-dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:.93rem}
+.vt-dl dt{opacity:.65}.vt-dl dd{margin:0;font-weight:500}
+.vt-qr{display:flex;flex-direction:column;align-items:center;gap:6px}
+.vt-qr img{width:160px;height:160px;background:hsl(42 45% 99%);border-radius:10px;border:1px solid var(--vt-line)}
+.vt-qr small{font-size:.72rem;opacity:.7;max-width:160px;text-align:center}
+.vt-foot{border-top:2px dashed var(--vt-line);padding:14px 22px;background:var(--vt-soft);font-size:.85rem}
+.vt-foot p{margin:0}
+.vt-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+@media (max-width:560px){.vt-body{grid-template-columns:1fr}.vt-qr{order:-1}}
+@media print{.vt{box-shadow:none}.vt-actions{display:none}}
+@media(prefers-reduced-motion:reduce){.vt{animation:none}}

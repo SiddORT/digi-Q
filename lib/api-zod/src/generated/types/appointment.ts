@@ -32,6 +32,16 @@ export type Appointment = AppointmentInput & ({
   doctorName: string;
   clinicName: string;
   branchName: string;
+  /**
+     * Booking branch address snapshot; for legacy bookings the current branch address is resolved.
+     * @nullable
+     */
+  branchAddress?: string | null;
+  /**
+     * Time zone for the consulting session range.
+     * @nullable
+     */
+  timezone?: string | null;
   startTime?: string;
   endTime?: string;
   createdAt: Date;

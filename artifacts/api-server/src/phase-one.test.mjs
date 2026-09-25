@@ -9,6 +9,7 @@ import { rm } from "node:fs/promises";
 import { queueFixtureSql, seedQueueFixtures } from "./test-support/queue-fixtures.mjs";
 
 const root = import.meta.dirname, bundle = join(root, ".phase-one-test.mjs");
+process.env.SESSION_SECRET = "isolated-phase-one-test-signing-key-not-for-production";
 await build({
   stdin: { contents: `
     export * from "./lib/appointments";
@@ -25,6 +26,7 @@ await build({
     export * from "./routes/duration";
     export * from "./routes/public";
     export * from "./routes/guest-requests";
+    export { readAppointmentQrPayload } from "./lib/appointment-qr";
     export * from "./routes/clinic-expansion";
     export * from "./routes/resources";
     export * as tables from "@workspace/db";
@@ -75,65 +77,119 @@ async function guest(extra = {}) {
   return api.createGuestRequest({ qrReference: "guest-qr", fullName: "Name Only", branchId: "b", doctorId: "d", date: today,
     requestId: "12345678-1234-4234-8234-123456789012", receiptSecret: "a".repeat(64), ...extra });
 }
-test("guest request reserves nothing, hashes capability, confirms once with no account/contact", async () => {
+test("anonymous guest immediately reserves a waiting token without contact; replay preserves private ticket", async () => {
   await seed();
   const row = await guest();
-  assert.equal(row.status, "pending");
-  assert.equal((await api.all(t.appointments)).length, 0);
+  assert.equal(row.status, "confirmed");
+  assert.equal((await api.all(t.appointments)).length, 1);
   assert.equal(row.mobile, null);
   assert.equal(row.receiptHash, api.guestHash("a".repeat(64)));
   assert.equal(JSON.stringify(row).includes("a".repeat(64)), false);
-  assert.equal((await guest()).id, row.id);
+  const ticket = await route(api.guestRequestsRouter, "post", "/public/guest-receipt", null, { receiptSecret: "a".repeat(64) });
+  assert.equal(ticket.appointmentId, row.appointmentId);
+  assert.equal(ticket.appointmentStatus, "waiting");
+  assert.equal(ticket.revision, 0);
+  assert.equal(ticket.token, row.token);
+  assert.ok(ticket.reference && ticket.checkInUrl.startsWith("/check-in?payload=v1."));
+  assert.equal(api.readAppointmentQrPayload(new URL(ticket.checkInUrl, "http://localhost").searchParams.get("payload")), ticket.reference);
+  assert.deepEqual(await route(api.guestRequestsRouter, "post", "/public/guest-requests", null, {
+    qrReference: "guest-qr", fullName: "Name Only", branchId: "b", doctorId: "d", date: today,
+    requestId: "12345678-1234-4234-8234-123456789012", receiptSecret: "a".repeat(64),
+  }), ticket);
+  await assert.rejects(() => route(api.guestRequestsRouter, "post", "/public/guest-receipt", null, { receiptSecret: "b".repeat(64) }), /Receipt not found/);
   await assert.rejects(() => guest({ fullName: "Changed" }), /Idempotency/);
-  await assert.rejects(() => api.decideGuestRequest({ ...staff, branchIds: ["b2"] }, row.id, { action: "confirm", reason: "Approved" }), /scope/);
-  await assert.rejects(() => api.decideGuestRequest(patient, row.id, { action: "confirm", reason: "Approved" }), /Reception/);
-  const results = await Promise.all([1, 2].map(() => api.decideGuestRequest(staff, row.id, { action: "confirm", reason: "Approved at reception" })));
-  assert.equal(results[0].appointmentId, results[1].appointmentId);
+  await assert.rejects(() => guest({ receiptSecret: "c".repeat(64) }), /Idempotency/);
+  await assert.rejects(() => guest({ requestId: "12345678-1234-4234-8234-123456789099" }), /Receipt secret already belongs/);
+  await assert.rejects(() => api.decideGuestRequest(staff, row.id, { action: "reject", reason: "Changed" }), /already decided/);
   const appointments = await api.all(t.appointments);
   assert.equal(appointments.length, 1);
   assert.equal(appointments[0].status, "waiting");
+  assert.equal(appointments[0].bookingOrigin, "anonymousGuest");
   const p = await api.one(t.patients, appointments[0].patientId);
   assert.equal(p.userId, null); assert.equal(p.mobile, null); assert.equal(p.fullName, "Name Only");
-  const receipt = api.guestReceipt(results[0]);
+  const receipt = api.guestReceipt(row);
   assert.ok(receipt.token);
-  for (const key of ["receiptHash", "inputHash", "email", "mobile", "appointmentId", "history", "reference"]) assert.equal(key in receipt, false);
-  await assert.rejects(() => api.decideGuestRequest(staff, row.id, { action: "reject", reason: "Changed" }), /already decided/);
-  assert.equal((await api.all(t.auditLogs)).filter(r => r.action === "guest-confirm").length, 1);
+  for (const key of ["receiptHash", "inputHash", "email", "mobile", "history"]) assert.equal(key in receipt, false);
+  await api.change(t.appointments, row.appointmentId, { status: "called", data: { ...appointments[0], revision: 1 } });
+  const fresh = await route(api.guestRequestsRouter, "post", "/public/guest-receipt", null, { receiptSecret: "a".repeat(64) });
+  assert.equal(fresh.appointmentStatus, "called"); assert.equal(fresh.revision, 1);
 });
-test("guest last-slot failure stays pending without orphan patient; rejection is final", async () => {
+test("guest last-slot failure rolls back patient and receipt; legacy pending decisions survive", async () => {
   await seed();
-  const row = await guest();
   await database.exec("update schedules set data=data || '{\"maxTokens\":1}'::jsonb");
   await book();
   const count = (await api.all(t.patients)).length;
-  await assert.rejects(() => api.decideGuestRequest(staff, row.id, { action: "confirm", reason: "Approved" }), /capacity/);
-  assert.equal((await api.one(t.guestRequests, row.id)).status, "pending");
+  await assert.rejects(() => guest(), /capacity/);
   assert.equal((await api.all(t.patients)).length, count);
+  assert.equal((await api.all(t.guestRequests)).length, 0);
+  const row = await api.put(t.guestRequests, { id: "legacy", requestId: "legacy", receiptHash: api.guestHash("f".repeat(64)), inputHash: "old", clinicId: "c", branchId: "b", doctorId: "d", date: today,
+    data: { fullName: "Legacy", sessionId: "d1", startTime: "09:00", qrReference: "guest-qr" } });
   const rejected = await api.decideGuestRequest(staff, row.id, { action: "reject", reason: "No remaining capacity" });
   assert.equal(rejected.token, null); assert.equal(rejected.status, "rejected");
   assert.equal((await api.decideGuestRequest(staff, row.id, { action: "reject", reason: "Retry" })).id, row.id);
   await assert.rejects(() => api.decideGuestRequest(staff, row.id, { action: "confirm", reason: "Retry" }), /already decided/);
 });
-test("guest QR scope and revocation are enforced at request and confirmation", async () => {
+test("guest QR scope and revocation are enforced at request", async () => {
   await seed();
   await assert.rejects(() => guest({ branchId: "b2", doctorId: "d2" }), /QR context/);
-  const row = await guest();
   await api.change(t.qrs, "guestqr", { status: "inactive" });
-  await assert.rejects(() => api.decideGuestRequest(staff, row.id, { action: "confirm", reason: "Approved" }), /revoked/);
-  assert.equal((await api.one(t.guestRequests, row.id)).status, "pending");
+  await assert.rejects(() => guest(), /revoked/);
+  assert.equal((await api.all(t.guestRequests)).length, 0);
+});
+test("guest optional contact is persisted without claiming verified mobile; invalid clinic and session cannot book", async () => {
+  await seed();
+  const booked = await guest({ email: "visitor@example.invalid", mobile: "+15555550123", date: tomorrow });
+  const appointment = await api.one(t.appointments, booked.appointmentId);
+  const p = await api.one(t.patients, appointment.patientId);
+  assert.equal(p.mobile, "+15555550123"); assert.equal(p.email, "visitor@example.invalid");
+  assert.equal(p.mobileVerified, false);
+  await assert.rejects(() => guest({ requestId: "22345678-1234-4234-8234-123456789012", receiptSecret: "b".repeat(64), sessionId: "d2" }), /Session not found/);
+  await api.change(t.branches, "b2", { clinicId: "other" });
+  await assert.rejects(() => guest({ requestId: "32345678-1234-4234-8234-123456789012", receiptSecret: "c".repeat(64), branchId: "b2", doctorId: "d2" }), /QR context/);
+});
+test("private receipt and authenticated appointment reflect a rescheduled ticket and legacy address fallback", async () => {
+  await seed();
+  await api.change(t.branches, "b", { data: { name: "b", timezone: "UTC", address: "Original address" } });
+  await api.change(t.branches, "b2", { data: { name: "b2", timezone: "UTC", address: "Destination address" } });
+  const booked = await guest({ date: tomorrow });
+  const original = await api.one(t.appointments, booked.appointmentId);
+  assert.equal(original.branchAddress, "Original address");
+  const old = await route(api.guestRequestsRouter, "post", "/public/guest-receipt", null, { receiptSecret: "a".repeat(64) });
+  const moved = await globalThis.phaseDb.transaction(tx => api.reschedule(staff, booked.appointmentId,
+    { branchId: "b2", doctorId: "d2", date: tomorrow, expectedRevision: 0 }, tx));
+  const receipt = await route(api.guestRequestsRouter, "post", "/public/guest-receipt", null, { receiptSecret: "a".repeat(64) });
+  for (const key of ["date", "sessionId", "startTime", "endTime", "timezone", "token", "doctorName", "branchName", "branchAddress"])
+    assert.equal(receipt[key], moved[key], `${key} follows appointment, not original request`);
+  assert.equal(receipt.appointmentStatus, "waiting");
+  assert.equal(receipt.revision, 1);
+  assert.equal(receipt.reference, old.reference);
+  assert.equal(receipt.checkInUrl, old.checkInUrl);
+  // Older persisted appointments have no address snapshot: detail and private
+  // receipt resolve the current destination branch without exposing other data.
+  await api.change(t.appointments, booked.appointmentId, { data: { ...moved, branchAddress: null } });
+  const historicalRequest = await api.one(t.guestRequests, booked.id);
+  await api.change(t.guestRequests, booked.id, { data: {
+    fullName: historicalRequest.fullName, clinicName: historicalRequest.clinicName, branchName: historicalRequest.branchName,
+    doctorName: historicalRequest.doctorName, sessionId: historicalRequest.sessionId, startTime: historicalRequest.startTime,
+    endTime: historicalRequest.endTime, timezone: historicalRequest.timezone, token: old.token,
+  } });
+  assert.equal((await route(api.appointmentsRouter, "get", "/appointments/:id", staff, {}, { id: booked.appointmentId })).branchAddress, "Destination address");
+  const historicalReceipt = await route(api.guestRequestsRouter, "post", "/public/guest-receipt", null, { receiptSecret: "a".repeat(64) });
+  assert.equal(historicalReceipt.branchAddress, "Destination address");
+  assert.equal(historicalReceipt.token, moved.token);
 });
 test("guest staff list SQL restricts clinic and branch before pagination", async () => {
   await seed();
   await guest();
-  const list = await route(api.guestRequestsRouter, "get", "/guest-requests", staff);
+  const list = await route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { status: "confirmed" });
   assert.equal(list.total, 1); assert.equal(list.items[0].mobile, null);
   assert.equal("receiptHash" in list.items[0], false);
-  const outside = await route(api.guestRequestsRouter, "get", "/guest-requests", { ...staff, branchIds: ["b2"] });
+  const outside = await route(api.guestRequestsRouter, "get", "/guest-requests", { ...staff, branchIds: ["b2"] }, {}, {}, { status: "confirmed" });
   assert.equal(outside.total, 0);
   await guest({ date: tomorrow, requestId: "22345678-1234-4234-8234-123456789012", receiptSecret: "b".repeat(64) });
-  const dated = await route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { doctorId: "d", date: tomorrow, pageSize: "1" });
+  const dated = await route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { status: "confirmed", doctorId: "d", date: tomorrow, pageSize: "1" });
   assert.equal(dated.total, 1); assert.equal(dated.items.length, 1); assert.equal(dated.items[0].date, tomorrow);
-  const otherDoctor = await route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { doctorId: "d2", pageSize: "1" });
+  const otherDoctor = await route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { status: "confirmed", doctorId: "d2", pageSize: "1" });
   assert.equal(otherDoctor.total, 0);
   await assert.rejects(() => route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { date: "2030-02-30" }), /Invalid date/);
   await assert.rejects(() => route(api.guestRequestsRouter, "get", "/guest-requests", patient), /Reception/);
@@ -776,12 +832,11 @@ test("guest request session SQL filters constrain rows and count before paginati
   await api.put(t.schedules,{id:"late",doctorId:"d",clinicId:"c",branchId:"b",dayOfWeek:weekday,data:{...original,startTime:"14:00",endTime:"15:00"}});
   const a = await guest({date:tomorrow,sessionId:id});
   await guest({date:tomorrow,sessionId:"late",requestId:"12345678-1234-4234-8234-123456789013",receiptSecret:"b".repeat(64)});
-  const page = await route(api.guestRequestsRouter,"get","/guest-requests",staff,{}, {}, {date:tomorrow,sessionId:id,startTime:"09:00",pageSize:1});
+  const page = await route(api.guestRequestsRouter,"get","/guest-requests",staff,{}, {}, {status:"confirmed",date:tomorrow,sessionId:id,startTime:"09:00",pageSize:1});
   assert.equal(page.total,1); assert.equal(page.items[0].id,a.id); assert.equal(page.items[0].sessionId,id);
-  const empty = await route(api.guestRequestsRouter,"get","/guest-requests",{id:"other",role:"clinicAdmin",clinicIds:["other"],branchIds:[]},{}, {}, {date:tomorrow,sessionId:id});
+  const empty = await route(api.guestRequestsRouter,"get","/guest-requests",{id:"other",role:"clinicAdmin",clinicIds:["other"],branchIds:[]},{}, {}, {status:"confirmed",date:tomorrow,sessionId:id});
   assert.equal(empty.total,0);
-  const confirmed = await api.decideGuestRequest(staff,a.id,{action:"confirm",reason:"Confirmed"});
-  assert.equal((await api.one(t.appointments,confirmed.appointmentId)).sessionId,id);
+  assert.equal((await api.one(t.appointments,a.appointmentId)).sessionId,id);
 });
 
 test("adding a weekly session binds legacy exceptions and rejects dated overlaps atomically", async () => {
