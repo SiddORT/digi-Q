@@ -390,7 +390,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         const matches = (await all(patients, tx)).filter(p => p.clinicId === body.clinicId && p.mobile === body.mobile);
         for (const match of matches) assert(!await canRead(user, "patients", match), 409, "A patient with this mobile already exists in this clinic. Search by mobile and select the existing patient; contact your clinic administrator if this is a different household member.");
       }
-      fields.mobile = body.mobile || null; fields.mobileVerified = old?.mobile === body.mobile ? old.mobileVerified : false;
+      fields.mobile = body.mobile || null; fields.mobileVerified = old && old.mobile === body.mobile ? old.mobileVerified : false;
       fields.data.email = body.email || null;
       fields.data.code ||= `PAT-${id.slice(0,8)}`;
     }
@@ -553,7 +553,7 @@ function discardedIncomingSave(kind: string, table: any, user: any, body: any, o
         const matches = (await all(patients, tx)).filter(p => p.clinicId === body.clinicId && p.mobile === body.mobile);
         for (const match of matches) assert(!await canRead(user, "patients", match), 409, "A patient with this mobile already exists in this clinic. Search by mobile and select the existing patient; contact your clinic administrator if this is a different household member.");
       }
-      fields.mobile = body.mobile || null; fields.mobileVerified = old?.mobile === body.mobile ? old.mobileVerified : false;
+      fields.mobile = body.mobile || null; fields.mobileVerified = old && old.mobile === body.mobile ? old.mobileVerified : false;
       fields.data.email = body.email || null;
       fields.data.code ||= `PAT-${id.slice(0,8)}`;
     }

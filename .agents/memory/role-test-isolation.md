@@ -11,9 +11,9 @@ Use a fresh isolated browser context per role, explicitly select the intended Cl
 
 Confirm the observation tool is capturing the same page being driven, and recheck identity after helper reattachment.
 
-**Why:** A multi-page acceptance run drove the patient page while screenshots still captured the original admin page. Reattaching the helper later produced an unmapped identity instead of the intended existing fixture.
+**Why:** A multi-page acceptance run drove the patient page while screenshots still captured the original admin page. Reattaching the helper later produced an unmapped identity instead of the intended existing fixture. A helper/raw-probe context mismatch also produced misleading 401 evidence while the observable app subsequently authenticated successfully.
 
-**How to apply:** Prefer one observable page per testing pass where tooling cannot switch reliably. Confirm `/me` again after reattachment. Treat mismatches as test-tool limitations, not successful role login or application failures; do not bypass authentication to make the test pass.
+**How to apply:** Prefer one observable page per testing pass where tooling cannot switch reliably. Wait for loaded, signed-in state and inspect that page's actual app network responses; confirm `/me` again after reattachment rather than treating a separate raw probe as equivalent. A real isolated DEV provider identity with a random password supports registration and app-owned password confirmation; helper identity authentication alone does not establish staff password proof or email delivery. Treat context mismatches as test-tool limitations, not successful role login or application failures; never bypass authentication. Verify the intended role and fixture ownership before each mutation, and never edit an existing customer record as a substitute for creating test-owned data.
 
 Create booking fixtures through the real booking API when testing queue summaries.
 

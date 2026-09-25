@@ -45,7 +45,7 @@ export const resources:Record<string,Resource>={
 function MasterTextInput({field,control}:any){
  const [search,setSearch]=useState("");
  const term=useDebouncedValue(search);
- const q=useQuery({queryKey:["lookup","masters",field.category,term],queryFn:()=>api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any)});
+ const q=useQuery({queryKey:["lookup","masters",field.category,term],queryFn:()=>api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any),refetchInterval:30000});
  const fieldName=title(field.key).toLowerCase();
  return <Controller name={field.key} control={control} rules={{required:field.required}} render={({field:input})=><SuggestionInput id={`input-${field.key}`} value={input.value||""} onChange={input.onChange} onSearchChange={setSearch} options={(q.data?.items||[]).map(row=>row.name)} placeholder={`Type or search ${fieldName}…`} clearLabel={`Clear ${fieldName}`} loading={q.isFetching} error={q.error ? `Unable to load ${fieldName} suggestions. You can still enter free text.` : undefined}/>}/>;
 }
@@ -167,7 +167,7 @@ function LocationActions({row,resource,portal}:{row:any;resource:string;portal:s
  const clinicId=resource==="clinics"?row.id:row.clinicId;
  const clinic=api.useGetClinic(clinicId,{query:{queryKey:api.getGetClinicQueryKey(clinicId),enabled:!!action&&resource==="branches"}});
  const params={clinicId,status:"active" as const,pageSize:2};
- const branches=api.useListBranches(params,{query:{queryKey:api.getListBranchesQueryKey(params),enabled:!!action&&resource==="clinics"}});
+ const branches=api.useListBranches(params,{query:{queryKey:api.getListBranchesQueryKey(params),enabled:!!action&&resource==="clinics",refetchInterval:30000}});
  const selected=api.useGetBranch(branchId,{query:{queryKey:api.getGetBranchQueryKey(branchId),enabled:!!action&&!!branchId}});
  const clinicSlug=resource==="clinics"?row.slug:clinic.data?.slug;
  const branch=resource==="branches"?row:(branches.data?.total===1?branches.data.items[0]:selected.data);
@@ -261,7 +261,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
   const sortOptions=[{value:"-createdAt",label:"Newest first"},{value:"createdAt",label:"Oldest first"},...(["clinics","branches","masters","qrs"].includes(resource)?[{value:"name",label:"Name A–Z"},{value:"-name",label:"Name Z–A"}]:[]),...(["doctors","patients","users"].includes(resource)?[{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"}]:[])];
   const chips:FilterChip[]=[
    ...(search?[{key:"search",label:`Search: ${search}`,onRemove:()=>{setSearch("");setPage(1);}}]:[]),
-   ...Object.entries(filters).filter(([k,v])=>v&&v!==roleDefaults[k]).map(([k,v])=>({key:`${PRIMARY_KEYS[resource]?.includes(k)?"":"adv:"}${k}`,label:chipLabel(k,v),onRemove:()=>filter(k,roleDefaults[k]||"")})),
+   ...Object.entries(filters).filter(([k,v])=>v&&v!==roleDefaults[k]).map(([k,v])=>({key:`${PRIMARY_KEYS[resource]?.includes(k)?"":"adv:"}${k}`,label:resource==="patients"&&k==="clinicId"?"Registration clinic selected":chipLabel(k,v),onRemove:()=>filter(k,roleDefaults[k]||"")})),
    ...(sort!=="-createdAt"?[{key:"adv:sort",label:`Sort: ${sortOptions.find(o=>o.value===sort)?.label||sort}`,onRemove:()=>{setSort("-createdAt");setPage(1);}}]:[]),
   ];
   return <><FilterBar actions={config.create&&allowCreate&&<button className="button small" onClick={()=>{save.reset();setDirty(false);setEditing(resource==="qrs"?{...defaults,...Object.fromEntries(["clinicId","branchId","doctorId"].filter(key=>filters[key]).map(key=>[key,filters[key]]))}:defaults);}} data-testid={`button-add-${resource}`}><Plus size={17}/> Add {resource==="branches"?"branch":resource==="availability"?"schedule":resource==="exceptions"?"exception":resource==="qrs"?"QR code":resource.replace(/s$/,"")}</button>} onReset={reset} active={active} chips={chips} label={`Filter ${config.name}`} advanced={<>
@@ -276,7 +276,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
   <SearchableSelect label="Sort" value={sort} onChange={value=>{setSort(value||"-createdAt");setPage(1);}} options={sortOptions}/>
  </>}>
   <SearchInput placeholder={searchPlaceholder} value={search} onChange={value=>{setSearch(value);setPage(1);}}/>
-  {["branches","doctors","patients","availability","qrs"].includes(resource)&&<ResourceLookup resource="clinics" label="Clinic" value={filters.clinicId||""} onChange={value=>filter("clinicId",value)}/>}
+  {["branches","doctors","patients","availability","qrs"].includes(resource)&&<ResourceLookup resource="clinics" label={resource==="patients"?"Registration clinic":"Clinic"} value={filters.clinicId||""} onChange={value=>filter("clinicId",value)}/>}
   {["availability","exceptions","qrs"].includes(resource)&&<ResourceLookup resource="branches" label="Branch" params={{clinicId:filters.clinicId||undefined}} value={filters.branchId||""} onChange={value=>filter("branchId",value)}/>}
   {["availability","exceptions","qrs"].includes(resource)&&<ResourceLookup resource="doctors" label="Doctor" params={{clinicId:filters.clinicId||undefined,branchId:filters.branchId||undefined}} value={filters.doctorId||""} onChange={value=>filter("doctorId",value)}/>}
   {resource==="exceptions"&&<label>Date<input type="date" value={filters.date||""} onChange={e=>filter("date",e.target.value)}/></label>}

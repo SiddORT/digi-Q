@@ -45,18 +45,23 @@ function useOptions(resource: string, selected: string[], params: Record<string,
     },
     getNextPageParam: (last: any, pages) => pages.reduce((n, p: any) => n + p.items.length, 0) < last.total ? pages.length + 1 : undefined,
     staleTime: 30000,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
   const selectedQuery = useQuery({
     queryKey: ["remote-selected", resource, selected.join(","), params],
-    enabled: selected.length > 0,
+    enabled: enabled && selected.length > 0,
     queryFn: async () => {
       if (assignment) {
         const result: any = await api.getStaffAssignmentOptions({ ...params, search: undefined, clinicId: undefined, selectedIds: selected.join(","), pageSize: 100 } as any);
         return result[kind] || [];
       }
-      return Promise.all(selected.filter(id => !cache.current.has(id)).map(id => getters[resource](id)));
+      // Refresh selected records too: cached labels are not a server freshness check.
+      return Promise.all(selected.map(id => getters[resource](id)));
     },
     staleTime: 60000,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: false,
   });
   const rows: any[] = query.data?.pages.flatMap((p: any) => p.items) || [];
   [...rows, ...(selectedQuery.data || [])].forEach(row => cache.current.set(row.id, row));

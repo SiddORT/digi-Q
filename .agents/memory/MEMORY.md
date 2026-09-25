@@ -5,3 +5,4 @@
 - [Embedded PostgreSQL tests](embedded-postgres-tests.md) — root-level PGlite avoids duplicate Drizzle peer instances in the pnpm workspace.
 - [PostgreSQL contention](postgres-contention.md) — require observable multi-connection lock waits in a disposable cluster, not concurrent promises on PGlite.
 - [Visual cascade verification](visual-cascade.md) — rendered checks catch legacy CSS precedence and breakpoint regressions that typechecks cannot.
+- [Publishing database guards](publish-database-guards.md) — schema diffs can omit custom guard functions or propagate development constraint drift; verify both before rollout.

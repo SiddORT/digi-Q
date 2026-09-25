@@ -244,6 +244,7 @@ export function DoctorClinics({ identity }: { identity: api.Identity }) {
     query: {
       queryKey: api.getGetStaffAssignmentOptionsQueryKey(optionsParams),
       staleTime: 60000,
+      refetchInterval: 30000,
       enabled: !!identity.doctorId
     }
   });

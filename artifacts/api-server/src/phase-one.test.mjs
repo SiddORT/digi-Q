@@ -546,6 +546,103 @@ test("admin clinician capability preserves single role and restricts owned branc
   assert.equal((await api.one(t.doctors,doctor.id)).status,"inactive");
 });
 
+test("staff patient creation accepts omitted mobile and updates preserve verification only for unchanged mobile", async () => {
+  await seed();
+  const owner = {...await api.one(t.users,"admin"),clinicIds:["c"],branchIds:["b","b2"]};
+  const create = data=>route(api.resourcesRouter,"post","/patients",owner,{fullName:"Staff-created patient",clinicId:"c",branchId:"b",...data});
+  const withoutMobile = await create({});
+  assert.ok(withoutMobile.id);
+  assert.equal((await api.one(t.patients,withoutMobile.id)).mobile,null);
+  assert.equal((await api.one(t.patients,withoutMobile.id)).mobileVerified,false);
+  const mobile = "+15555550999";
+  const withMobile = await create({mobile});
+  assert.equal((await api.one(t.patients,withMobile.id)).mobile,mobile);
+  assert.equal((await api.one(t.patients,withMobile.id)).mobileVerified,false);
+  await api.change(t.patients,withMobile.id,{mobileVerified:true});
+  const edit = data=>route(api.resourcesRouter,"patch","/patients/:id",owner,{fullName:"Edited patient",clinicId:"c",branchId:"b",...data},{id:withMobile.id});
+  await edit({mobile});
+  assert.equal((await api.one(t.patients,withMobile.id)).mobileVerified,true);
+  await edit({mobile:"+15555550888"});
+  assert.equal((await api.one(t.patients,withMobile.id)).mobileVerified,false);
+  await api.change(t.patients,withMobile.id,{mobileVerified:true});
+  await edit({});
+  assert.equal((await api.one(t.patients,withMobile.id)).mobile,null);
+  assert.equal((await api.one(t.patients,withMobile.id)).mobileVerified,false);
+});
+
+test("shared settings routes round-trip both admins and reject foreign clinic staff", async () => {
+  await seed();
+  const owner = {...await api.one(t.users,"admin"),clinicIds:["c"],branchIds:["b","b2"]};
+  const other = await api.put(t.users,{id:"other-admin",email:"other@example.invalid",fullName:"Other",role:"clinicAdmin"});
+  const setup = await globalThis.phaseDb.transaction(tx => api.createOwnedClinic(other,other,{
+    clinic:{name:"Foreign clinic",address:"Other road"},branches:[{name:"Foreign branch",address:"Other road"}],ownDoctor:true
+  },tx));
+  const foreign = {...other,clinicIds:[setup.clinic.id],branchIds:[setup.branches[0].id],doctorId:setup.doctorId};
+  const receptionist = await api.put(t.users,{id:"foreign-staff",email:"staff@example.invalid",fullName:"Foreign staff",role:"receptionist",managingAdminId:other.id});
+  await api.put(t.assignments,{id:"foreign-staff-link",userId:receptionist.id,clinicId:setup.clinic.id,branchId:setup.branches[0].id});
+  const superAdmin = {id:"super",role:"superAdmin"};
+  const settings = (method,actor,body={},id="c") => route(api.clinicExpansionRouter,method,"/clinics/:id/settings",actor,body,{id});
+  const hours = Array.from({length:7},(_,dayOfWeek)=>({dayOfWeek,startTime:"00:00",endTime:"23:59"}));
+  await settings("patch",owner,{clinic:{email:"owner@example.invalid",phone:"111"},branches:[{id:"b",name:"Main",address:"Road",inheritEmail:true,inheritPhone:false,phone:"222",openingHours:hours}],policies:{bookingHorizonDays:21,cancellationCutoffMinutes:15}});
+  assert.deepEqual(await settings("get",owner),await settings("get",superAdmin));
+  await settings("patch",superAdmin,{clinic:{email:"super@example.invalid",phone:"333"},policies:{bookingHorizonDays:10,cancellationCutoffMinutes:20}});
+  const view = await settings("get",owner);
+  assert.deepEqual(view,await settings("get",superAdmin));
+  assert.equal(view.branches.find(b=>b.id==="b").effectiveEmail,"super@example.invalid");
+  assert.equal(view.branches.find(b=>b.id==="b").effectivePhone,"222");
+  assert.deepEqual(view.branches.find(b=>b.id==="b").openingHours,hours);
+  assert.equal(view.policies.bookingHorizonDays,10);
+  assert.equal(view.policies.cancellationCutoffMinutes,20);
+  for (const actor of [foreign,{...receptionist,clinicIds:foreign.clinicIds,branchIds:foreign.branchIds}]) {
+    await assert.rejects(settings("get",actor),error=>error.status===403);
+    await assert.rejects(settings("patch",actor,{clinic:{name:"Forbidden"}}),error=>error.status===403);
+  }
+  await assert.rejects(settings("get",owner,{},setup.clinic.id),error=>error.status===403);
+  assert.equal((await settings("get",foreign,{},setup.clinic.id)).clinic.name,"Foreign clinic");
+});
+
+test("consulting admin retains all own doctors with scoped patient and visit route totals", async () => {
+  await seed();
+  const user = await api.one(t.users,"admin");
+  const own = await globalThis.phaseDb.transaction(tx=>api.attachOwnDoctor(user,{branchIds:["b"]},tx));
+  const owner = {...user,doctorId:own.id,clinicIds:["c"],branchIds:["b"]};
+  const superAdmin = {id:"super",role:"superAdmin"};
+  const other = await api.put(t.users,{id:"other-admin",email:"other@example.invalid",fullName:"Other",role:"clinicAdmin"});
+  const setup = await globalThis.phaseDb.transaction(tx=>api.createOwnedClinic(other,other,{clinic:{name:"Other",address:"Road"},branches:[{name:"Other",address:"Road"}],ownDoctor:true},tx));
+  const foreign = {...other,doctorId:setup.doctorId,clinicIds:[setup.clinic.id],branchIds:[setup.branches[0].id]};
+  await api.put(t.patients,{id:"foreign-patient",clinicId:setup.clinic.id,branchId:setup.branches[0].id,data:{fullName:"Foreign only"}});
+  const create = (actor,doctorId,branchId,patientId,clinicId="c")=>route(api.appointmentsRouter,"post","/appointments",actor,{doctorId,branchId,patientId,clinicId,date:today,source:"phone"});
+  for (const [doctorId,branchId,patientId] of [["d","b","p1"],["d2","b2","p2"]]) await create(owner,doctorId,branchId,patientId);
+  await api.put(t.schedules,{id:"own-session",doctorId:own.id,clinicId:"c",branchId:"b",dayOfWeek:new Date(today).getUTCDay(),data:{isOpen:true,startTime:"00:00",endTime:"23:59",timezone:"UTC",consultationMinutes:10,maxTokens:10}});
+  await create(owner,own.id,"b","p3");
+  // The capability's single branch must not narrow the administrator's clinic-wide access.
+  await assert.rejects(create(owner,setup.doctorId,setup.branches[0].id,"foreign-patient",setup.clinic.id),error=>error.status===403);
+  await assert.rejects(create(foreign,"d","b","p1"),error=>error.status===403);
+  const list = (actor,kind,query)=>route(kind==="patients"?api.resourcesRouter:api.appointmentsRouter,"get","/"+kind,actor,{}, {},query);
+  for (const actor of [owner,superAdmin]) {
+    const doctors = await route(api.resourcesRouter,"get","/doctors",actor,{}, {},{clinicId:"c",pageSize:1});
+    assert.equal(doctors.total,3); assert.equal(doctors.items.length,1);
+    const patients = await list(actor,"patients",{clinicId:"c",page:1,pageSize:1});
+    assert.equal(patients.total,4); assert.equal(patients.items.length,1);
+    const visits = await list(actor,"appointments",{clinicId:"c",date:today,page:1,pageSize:1});
+    assert.equal(visits.total,3); assert.equal(visits.items.length,1);
+    const filtered = await list(actor,"appointments",{clinicId:"c",doctorId:"d2",branchId:"b2",date:today,status:"waiting"});
+    assert.equal(filtered.total,1); assert.equal(filtered.items[0].patientId,"p2");
+    assert.equal((await list(actor,"patients",{clinicId:"c",search:"Patient 2"})).total,1);
+  }
+  assert.equal((await list(owner,"patients",{clinicId:setup.clinic.id})).total,0);
+  assert.equal((await list(owner,"appointments",{clinicId:setup.clinic.id})).total,0);
+  assert.equal((await list(foreign,"appointments",{clinicId:"c"})).total,0);
+  assert.equal((await list(foreign,"patients",{clinicId:"c"})).total,0);
+  assert.equal((await list(superAdmin,"patients",{clinicId:setup.clinic.id})).total,1);
+  await create(superAdmin,"d","b","foreign-patient");
+  // A patient registered elsewhere becomes readable through an authorized visit.
+  assert.equal((await list(owner,"patients",{search:"Foreign only"})).total,1);
+  assert.equal((await list(superAdmin,"patients",{search:"Foreign only"})).total,1);
+  assert.equal((await list(owner,"appointments",{patientId:"foreign-patient",clinicId:"c"})).total,1);
+  assert.equal((await list(foreign,"appointments",{patientId:"foreign-patient",clinicId:"c"})).total,0);
+});
+
 test("opening hours validate intervals and constrain sessions without changing legacy hours", () => {
   api.validateOpeningHours([{dayOfWeek:1,startTime:"09:00",endTime:"12:00"},{dayOfWeek:1,startTime:"14:00",endTime:"17:00"}]);
   assert.throws(()=>api.validateOpeningHours([{dayOfWeek:1,startTime:"09:00",endTime:"12:00"},{dayOfWeek:1,startTime:"11:00",endTime:"13:00"}]),/overlap/);

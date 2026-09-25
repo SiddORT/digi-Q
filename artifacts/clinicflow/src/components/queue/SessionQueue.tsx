@@ -41,7 +41,7 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
   const searchQuery:api.ListAppointmentsParams={clinicId:clinicId||undefined,branchId:branchId||undefined,doctorId:doctorId||undefined,sessionId:startTime?undefined:sessionId,startTime,from:date,to:date,search:debounced,...statusFilter(status),page,pageSize};
  const found=api.useListAppointments(searchQuery,{query:{queryKey:api.getListAppointmentsQueryKey(searchQuery),enabled:!isPatient&&!!debounced&&enabled,refetchInterval:30000}});
  const doctorsParams={clinicId,branchId,status:"active" as const,page:1,pageSize:20};
- const doctors=api.useListDoctors(doctorsParams,{query:{queryKey:api.getListDoctorsQueryKey(doctorsParams),enabled:showSummary&&!isPatient&&!isDoctor&&!!branchId}});
+ const doctors=api.useListDoctors(doctorsParams,{query:{queryKey:api.getListDoctorsQueryKey(doctorsParams),enabled:showSummary&&!isPatient&&!isDoctor&&!!branchId,refetchInterval:30000,refetchIntervalInBackground:false}});
  const [online,setOnline]=useState(navigator.onLine);
  useEffect(()=>{const on=()=>setOnline(navigator.onLine);window.addEventListener("online",on);window.addEventListener("offline",on);return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",on);};},[]);
  const q=queue.data;

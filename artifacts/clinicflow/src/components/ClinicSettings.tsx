@@ -11,7 +11,7 @@ export function ClinicSettings({identity}:{identity:api.Identity}){
  const [clinicId,setClinic]=useState(()=>new URLSearchParams(window.location.search).get("clinicId")||"");
  const client=useQueryClient();
  const clinicParams={pageSize:2};
- const clinics=api.useListClinics(clinicParams,{query:{queryKey:api.getListClinicsQueryKey(clinicParams),enabled:!clinicId&&identity.user?.role==="clinicAdmin"}});
+ const clinics=api.useListClinics(clinicParams,{query:{queryKey:api.getListClinicsQueryKey(clinicParams),enabled:!clinicId&&identity.user?.role==="clinicAdmin",refetchInterval:30000}});
  useEffect(()=>{if(!clinicId&&clinics.data?.total===1)setClinic(clinics.data.items[0].id);},[clinicId,clinics.data]);
  const query=api.useGetClinicSettings(clinicId,{query:{queryKey:api.getGetClinicSettingsQueryKey(clinicId),enabled:!!clinicId,refetchInterval:30000}});
  const [section,setSection]=useState<"clinic"|"policies"|null>(null);

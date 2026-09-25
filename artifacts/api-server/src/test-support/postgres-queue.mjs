@@ -15,7 +15,7 @@ import { queueFixtureSql, seedQueueFixtures } from "./queue-fixtures.mjs";
 const root = resolve(import.meta.dirname, "..");
 const { Client } = createRequire(resolve(root, "../../../lib/db/package.json"))("pg");
 
-export async function createQueueHarness() {
+export async function createQueueHarness({ empty = false } = {}) {
   const temp = await mkdtemp(join(tmpdir(), "clinicflow-contention-"));
   const data = join(temp, "data");
   const bundle = join(root, `.contention-${process.pid}.mjs`);
@@ -25,9 +25,9 @@ export async function createQueueHarness() {
   const pg = (command, args) => execFileSync(command, args, {
     encoding: "utf8", timeout: 20000, stdio: "pipe",
   });
-  async function connect() {
+  async function connect(database = "postgres") {
     const client = new Client({
-      host: temp, port: 5432, user: "queue_test", database: "postgres",
+      host: temp, port: 5432, user: "queue_test", database,
       password: "", ssl: false, connectionTimeoutMillis: 5000,
       statement_timeout: 10000, lock_timeout: 8000,
       application_name: "clinicflow-disposable-contention",
@@ -63,6 +63,8 @@ export async function createQueueHarness() {
     started = true;
     const control = await connect();
     const db = drizzle(control);
+    // Migration tests require an actually empty private database, not fixtures.
+    if (empty) return { control, db, connect, close, temp };
     globalThis.queueContentionContext = { db, context };
     await build({
       stdin: { contents: `

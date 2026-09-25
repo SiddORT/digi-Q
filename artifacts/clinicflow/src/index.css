@@ -292,8 +292,8 @@
   }
   @media (max-width: 1024px) {
     tr { margin-bottom: 10px; }
-    td { padding: 8px 12px 8px 40%; min-height: 38px; }
-    td::before { top: 9px; }
+    td { padding: 8px 12px; min-height: 38px; }
+    td::before { position: static; display: block; width: auto; padding: 0; margin-bottom: 4px; }
     .table-panel .table-scroll { max-height: none; padding: 10px; }
     .row-actions { justify-content: flex-start; }
     .row-actions button { min-width: 40px; min-height: 40px; }

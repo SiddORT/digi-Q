@@ -12,4 +12,22 @@
 .admin-listing-table th:first-child:has(>input[type=checkbox]),.admin-listing-table td:first-child:has(>input[type=checkbox]){width:44px;max-width:44px;padding-left:12px;padding-right:4px}
 .admin-qr-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-start}
 @media(max-width:1024px),(pointer:coarse){.admin-bulk-bar button{min-height:44px}.admin-listing-table input[type=checkbox]{width:22px;height:22px;min-height:22px}}
-@media(max-width:760px){.admin-listing-table table,.admin-listing-table tbody,.admin-listing-table tr,.admin-listing-table td{display:block;width:100%}.admin-listing-table thead{display:none}.admin-listing-table tr{padding:12px;border-bottom:1px solid #dce7e4}.admin-listing-table td{border:0;padding:5px 8px;white-space:normal}.admin-listing-table td:before{content:attr(data-label);font-size:11px;color:#617471;display:block}.admin-listing-table td:first-child:has(>input[type=checkbox]){width:auto;max-width:none;padding:0 0 4px}.admin-listing-table td:has(>input[type=checkbox]):before{display:none}.admin-listing-table .col-actions{width:auto;min-width:0}.admin-listing-table .table-scroll{overflow:visible}.admin-listing-table table{min-width:0}.admin-bulk-bar strong{flex-basis:100%}}
+@media(max-width:1024px){
+  .admin-listing-table td.col-select{width:auto;max-width:none;min-height:44px;padding:4px 12px;text-align:left}
+  .admin-listing-table td.col-select::before{content:none}
+  .admin-listing-table .row-actions{flex-wrap:wrap;justify-content:flex-start}
+  .admin-listing-table .row-actions button,.admin-listing-table .row-menu > summary{min-width:44px;min-height:44px}
+}
+@media(max-width:760px){
+  .admin-listing-table table,.admin-listing-table tbody,.admin-listing-table tr,.admin-listing-table td{display:block;width:100%}
+  .admin-listing-table thead{display:none}
+  .admin-listing-table tr{padding:12px;border-bottom:1px solid #dce7e4}
+  .admin-listing-table td{border:0;padding:5px 8px;white-space:normal}
+  .admin-listing-table td::before{content:attr(data-label);position:static;display:block;width:auto;padding:0;margin:0 0 4px;font-size:11px;color:#617471}
+  .admin-listing-table td:first-child:has(>input[type=checkbox]){width:auto;max-width:none;min-height:44px;padding:4px 8px}
+  .admin-listing-table td:has(>input[type=checkbox])::before{content:none}
+  .admin-listing-table .col-actions{width:auto;min-width:0}
+  .admin-listing-table .table-scroll{overflow:visible}
+  .admin-listing-table table{min-width:0}
+  .admin-bulk-bar strong{flex-basis:100%}
+}
