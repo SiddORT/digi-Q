@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { authErrorMessage } from "./errors";
 import { AuthCard, AuthShell } from "./AuthShell";
+import { QrCode, CalendarDays } from "lucide-react";
 
 export function PatientLogin() {
   const { signIn, fetchStatus, errors } = useSignIn();
@@ -59,6 +60,12 @@ export function PatientLogin() {
   return (
     <AuthShell eyebrow="PATIENT ACCESS">
       <AuthCard title="Patient login" description={step === "email" ? "Enter your email and we’ll send a one-time login code." : `Enter the code sent to ${email}.`}>
+        <div className="patient-entry-options" aria-label="Book without logging in">
+          <p>Booking a visit? No account needed.</p>
+          <Link className="button" href="/scan-qr" data-testid="link-patient-scan"><QrCode size={18}/> Scan QR code</Link>
+          <Link className="button secondary" href="/guest-booking" data-testid="link-patient-guest"><CalendarDays size={18}/> Guest booking</Link>
+        </div>
+        <div className="patient-login-separator">Or sign in to your patient account</div>
         {step === "email" ? (
           <form onSubmit={sendCode}>
             <label>Email address<input data-testid="input-patient-email" type="email" autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)} /></label>

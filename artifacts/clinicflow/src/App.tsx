@@ -3,7 +3,7 @@ import { ClerkProvider, useAuth, useClerk } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router, Route, Switch, Redirect, Link, useLocation } from "wouter";
-import { Activity, ArrowUpRight, CalendarDays, ShieldCheck, Clock3, Building2, Stethoscope, ChevronRight } from "lucide-react";
+import { Activity, ArrowUpRight, CalendarDays, ShieldCheck, Clock3, Building2, Stethoscope, ChevronRight, QrCode } from "lucide-react";
 import * as api from "@workspace/api-client-react";
 import { Portal, Onboarding, PublicBooking } from "./clinic";
 import { CheckInScanner } from "./CheckIn";
@@ -14,6 +14,8 @@ import { AuthAccess } from "./auth/AuthAccess";
 import { ClinicDisplay } from "./components/ClinicDisplay";
 import { ClinicRegistration } from "./components/ClinicRegistration";
 import { PublicClinicPage } from "./components/PublicClinicPage";
+import { PatientScanner } from "./components/PatientScanner";
+import { GuestClinicFinder } from "./components/GuestClinicFinder";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 const clerkPubKey = publishableKeyFromHost(
@@ -34,9 +36,9 @@ function Home() {
   const { isSignedIn } = useAuth();
   if (isSignedIn) return <AuthAccess><Redirect to="/onboarding"/></AuthAccess>;
   return <div className="landing">
-    <header className="public-header"><Logo/><nav><a href="#how-it-works">How it works</a><a href="#for-clinics">For clinics</a><Link href="/register-clinic" data-testid="landing-register-clinic">Register a Clinic</Link><Link href="/patient-login">Patient login</Link><Link className="button small" href="/sign-in">Staff login <ArrowUpRight size={16}/></Link></nav></header>
+    <header className="public-header"><Logo/><nav><a href="#how-it-works">How it works</a><a href="#for-clinics">For clinics</a><Link href="/register-clinic" data-testid="landing-register-clinic">Register a Clinic</Link><Link href="/guest-booking" data-testid="landing-guest-booking">Guest booking</Link><Link href="/patient-login">Patient login</Link><Link className="button small" href="/sign-in">Staff login <ArrowUpRight size={16}/></Link></nav></header>
     <main>
-      <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="dot"/> BETTER CARE. LESS WAITING.</span><h1>A healthier way<br/>to manage<br/><em>your next visit.</em></h1><p>Find your clinic, book an appointment, and follow your place in line. A little less waiting. A lot more peace of mind.</p><div className="hero-actions"><Link className="button" href="/patient-login">Book an appointment <ArrowUpRight size={19}/></Link><Link className="text-link" href="/register-doctor">I'm a healthcare provider <ChevronRight size={17}/></Link></div><div className="trust"><ShieldCheck size={17}/> Secure sign-in <span/> Real-time queue updates <span/> Care on your terms</div></div>
+      <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="dot"/> BETTER CARE. LESS WAITING.</span><h1>A healthier way<br/>to manage<br/><em>your next visit.</em></h1><p>Find your clinic, book an appointment, and follow your place in line. A little less waiting. A lot more peace of mind.</p><div className="hero-actions"><Link className="button" href="/scan-qr" data-testid="landing-scan-qr"><QrCode size={19}/> Scan QR code</Link><Link className="button secondary" href="/guest-booking" data-testid="landing-book-guest">Guest booking <ArrowUpRight size={19}/></Link><Link className="text-link" href="/register-doctor">I'm a healthcare provider <ChevronRight size={17}/></Link></div><div className="trust"><ShieldCheck size={17}/> No login needed to request a visit <span/> Real-time queue updates</div></div>
       <div className="hero-art"><div className="art-grid"/><div className="art-heading"><span className="mini-mark"><Activity/></span><span>CONNECTED CARE<br/><strong>From booking to better.</strong></span></div><div className="care-orbit orbit-one"/><div className="care-orbit orbit-two"/><div className="care-center"><Stethoscope size={78} strokeWidth={1.25}/></div><div className="float-card card-a"><span className="icon-box"><CalendarDays/></span><div><strong>Your visit, simplified</strong><p>Appointments that fit your day</p></div></div><div className="float-card card-b"><span className="live-dot"/><div><strong>Stay in the know</strong><p>Follow your queue, wherever you are</p></div></div><div className="art-footer">Thoughtfully designed around you <ShieldCheck size={18}/></div></div></section>
       <section id="how-it-works" className="journey"><div><span className="eyebrow">CARE WITHOUT THE COMPLICATIONS</span><h2>Less admin. More living.</h2></div><div className="journey-grid">{[[Building2,"01","Find your care","Choose a clinic, location and doctor that work for you."],[CalendarDays,"02","Plan your visit","See actual availability and reserve your appointment."],[Clock3,"03","Skip the uncertainty","Check your token and live queue before you arrive."]].map(([Icon,n,title,body]: any)=><article key={n}><div className="journey-top"><Icon size={25}/><span>{n}</span></div><h3>{title}</h3><p>{body}</p></article>)}</div></section>
       <section id="for-clinics" className="provider-banner"><div><span className="eyebrow">FOR PEOPLE WHO CARE FOR PEOPLE</span><h2>Your practice. Working together.</h2><p>One workspace for your clinics, appointments, schedules and patient flow.</p></div><Link href="/register-clinic" className="button light" data-testid="landing-register-clinic-banner">Register a Clinic <ArrowUpRight size={18}/></Link></section>
@@ -106,6 +108,8 @@ function Providers(){
     <Route path="/sign-up/*?" component={SignUpRoute}/>
     <Route path="/register-clinic/*?" component={ClinicRegistration}/>
     <Route path="/patient-login" component={PatientLogin}/>
+    <Route path="/scan-qr" component={PatientScanner}/>
+    <Route path="/guest-booking" component={GuestClinicFinder}/>
     <Route path="/forgot-password" component={ForgotPassword}/>
     <Route path="/set-password" component={SetPassword}/>
     <Route path="/login"><Redirect to="/sign-in"/></Route>

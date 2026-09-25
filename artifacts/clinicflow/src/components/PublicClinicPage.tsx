@@ -11,7 +11,7 @@ import { PublicClinicLive } from "./PublicClinicLive";
 import { PublicClinicBookingQr } from "./PublicClinicBookingQr";
 import "./clinic-registration.css";
 
-const reserved = new Set(["admin", "doctor", "receptionist", "patient", "api", "auth", "sign-in", "sign-up", "login", "logout", "register", "register-clinic", "register-doctor", "onboarding", "patient-login", "forgot-password", "set-password", "check-in", "display", "book", "settings", "users", "assets", "public", "health", "healthz", "favicon", "robots", "sitemap", "clinics", "branches", "appointments", "patients", "queue", "reports", "masters", "audit", "qrs", "availability", "exceptions"]);
+const reserved = new Set(["admin", "doctor", "receptionist", "patient", "api", "auth", "sign-in", "sign-up", "login", "logout", "register", "register-clinic", "register-doctor", "onboarding", "patient-login", "scan-qr", "guest-booking", "forgot-password", "set-password", "check-in", "display", "book", "settings", "users", "assets", "public", "health", "healthz", "favicon", "robots", "sitemap", "clinics", "branches", "appointments", "patients", "queue", "reports", "masters", "audit", "qrs", "availability", "exceptions"]);
 for (const name of ["signup", "dashboard", "doctors", "schedules", "booking", "qr", "guest", "invite", "invitations", "reset-password", "account", "me", "clinicflow-project-deck"]) reserved.add(name);
 const validSlug = (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length >= 3 && value.length <= 63;
 export function PublicClinicPage({ clinicSlug, branchSlug }: { clinicSlug: string; branchSlug?: string }) {

@@ -92,3 +92,17 @@ mtime_ms = 1790333003241
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/2b31cdaa-dd60-4d54-ada5-6183adf6f76f/ec8a6b87-fb2c-4b44-9fbf-8433784e02d3"
 storage_version_token = "1790333254988005"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "IQ1zvr1IqtEDawcH_DAku"
+uri = "file://attached_assets/demo-patient-test/preview-clinic-booking-qr.png"
+type = "image"
+title = "Demo clinic QR — Preview only"
+description = "Scan with your phone camera or upload on Scan QR code. Opens DEMO Care Clinic / DEMO Main Location in the running development Preview, not the published app."
+logical_id = "eb2ca4ed-a751-4f7f-9f1f-274935dc8d5f"
+content_hash = "sha256:db1f2a925e739e9a60ddd5faa3499dc2a524b1371636332531b598f66e231abf"
+size = 8693
+mtime_ms = 1790355860366
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/eb2ca4ed-a751-4f7f-9f1f-274935dc8d5f/1412fad6-c133-482d-8137-8b529f20b96f"
+storage_version_token = "1790356201810066"
+content_type = "image/png"

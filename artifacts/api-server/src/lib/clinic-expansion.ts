@@ -9,7 +9,7 @@ const reserved = new Set(["api", "admin", "auth", "login", "logout", "register",
 // Pre-0008 ownership functions permit a self-owned doctor profile, but prohibit
 // branch assignments for administrators. Clinical membership lives in doctor.data.
 export const CONSULTING_ADMIN_ENABLED = true;
-for (const path of ["register-clinic", "register-doctor", "patient-login", "set-password", "check-in", "doctor", "patient", "receptionist", "audit", "qrs", "exceptions"]) reserved.add(path);
+for (const path of ["register-clinic", "register-doctor", "patient-login", "scan-qr", "guest-booking", "set-password", "check-in", "doctor", "patient", "receptionist", "audit", "qrs", "exceptions"]) reserved.add(path);
 export function validSlug(value: unknown): value is string {
   return typeof value === "string" && /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/.test(value) && !reserved.has(value);
 }

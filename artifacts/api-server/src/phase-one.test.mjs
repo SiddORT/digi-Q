@@ -526,6 +526,8 @@ test("clinic settings parity, independent live contacts and immutable URL", asyn
   await save(owner,{branches:[{id:"b",name:"Rename",address:"Road",slug:"main-branch"}]});
   assert.equal((await api.all(t.qrs)).filter(q=>q.status==="active").length,0);
   assert.equal(api.validSlug("api"),false); assert.equal(api.validSlug("Clinic"),false);
+  assert.equal(api.validSlug("scan-qr"),false); assert.equal(api.validSlug("guest-booking"),false);
+  assert.equal(api.validSlug("demo-clinic"),true);
 });
 
 test("admin clinical attachment reconciles selected branches without admin branch assignments", async () => {
