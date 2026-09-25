@@ -73,9 +73,13 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
         export * from "./lib/queue-order";
         export * from "./lib/store";
         export * from "./lib/clinic-expansion";
+        export * from "./lib/availability";
+        export * from "./lib/clinical-membership";
+        export * from "./lib/list-query";
         export * from "./routes/appointments";
         export * from "./routes/queue";
-        export { authorizeWrite, createClinicAdminOnboarding } from "./routes/resources";
+        export { publicRouter, resolveQr } from "./routes/public";
+        export { authorizeWrite, createClinicAdminOnboarding, resourcesRouter } from "./routes/resources";
         export { clinicExpansionRouter } from "./routes/clinic-expansion";
         export * as tables from "@workspace/db";
       `, resolveDir: root },

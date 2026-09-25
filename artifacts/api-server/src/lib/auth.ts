@@ -4,6 +4,7 @@ import { db, users, doctors, patients, assignments, branches, clinics, appointme
 import { and, eq, gt } from "drizzle-orm";
 import { assert, HttpError } from "./http";
 import { all, flatten, one, uid } from "./store";
+import { isClinicalMember } from "./clinical-membership";
 export const STAFF_ROLES = ["superAdmin", "clinicAdmin", "doctor", "receptionist"] as const;
 export function isStaffRole(role: string | null | undefined): boolean {
   return Boolean(role && STAFF_ROLES.includes(role as (typeof STAFF_ROLES)[number]));
@@ -102,7 +103,7 @@ export async function canRead(user: any, kind: string, row: any): Promise<boolea
   if (user.role === "doctor" && ["appointments", "qrs"].includes(kind)) return row.doctorId === user.doctorId && scope(user, row.clinicId, row.branchId);
   if (["schedules", "availability-exceptions"].includes(kind)) {
     const doctor = await one(doctors, row.doctorId);
-    const doctorAssigned = (await all(assignments)).some(a => a.userId === doctor.userId && a.branchId === row.branchId);
+    const doctorAssigned = await isClinicalMember(doctor.id, row.branchId);
     if (!doctorAssigned) return false;
   }
   let clinicId = row.clinicId;

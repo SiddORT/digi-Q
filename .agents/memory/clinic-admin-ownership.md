@@ -20,3 +20,9 @@ Doctors and receptionists must each have one managing admin, and every assigned 
 **Why:** The user's revised user-management specification on 2026-09-22 makes the managing admin an ownership boundary, not merely a record of who created a doctor. It also extends this relationship to receptionists.
 
 **How to apply:** Reject mixed-owner assignments and ownership changes that would invalidate existing staff mappings. Distinguish the doctor's management catalog (clinics owned by their managing admin) from operational access (actual clinic/branch assignments and own clinical relationships). A wider staff-assignment catalog must not grant wider appointment or queue access.
+
+The same-account Clinic Admin + doctor capability is a required release feature, not an optional fallback to remove when deployment is difficult.
+
+**Why:** The user's demo clinic has one doctor and no separate administrator. Requiring another person, login or role switch does not satisfy that clinic's daily workflow.
+
+**How to apply:** Verify single-branch onboarding, bookings and consultations using one identity while retaining full owner administration. Do not call a reduced release without this capability complete.

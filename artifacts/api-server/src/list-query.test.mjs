@@ -15,7 +15,7 @@ await build({
   bundle: true, platform: "node", format: "esm",
   plugins: [{ name: "no-application-database", setup(b) {
     b.onResolve({ filter: /^@workspace\/db$/ }, () => ({ path: "db", namespace: "isolated" }));
-    b.onLoad({ filter: /.*/, namespace: "isolated" }, () => ({ contents: "export const db = {execute: (...args) => globalThis.fixtureExecute(...args)};" }));
+    b.onLoad({ filter: /.*/, namespace: "isolated" }, () => ({ contents: "export const db = {execute: (...args) => globalThis.fixtureExecute(...args)};" + ["users","doctors","assignments","branches","clinics","settings","auditLogs"].map(t=>`export const ${t}="${t}";`).join("") }));
   } }],
 });
 const { queryPage, queryMetrics, assignmentCatalogPredicate, sourceSql } = await import(join(dir, "query.mjs"));

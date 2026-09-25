@@ -25,22 +25,16 @@ function winner(outcomes, count = 1) {
   return successes;
 }
 
-test("consulting setup is disabled while ordinary clinic ownership and legacy guards remain", async () => {
+test("consulting setup creates one user, a self-owned doctor and clinic-only mapping", async () => {
   const input = {clinic:{name:"Owned Clinic",address:"Road",slug:"owned-clinical"},branches:[{name:"Main",address:"Road",slug:"main-clinical"}]};
-  const before = await Promise.all([h.api.all(h.t.users),h.api.all(h.t.clinics),h.api.all(h.t.branches),h.api.all(h.t.doctors),h.api.all(h.t.assignments),h.api.all(h.t.qrs),h.api.all(h.t.auditLogs)]);
-  await assert.rejects(h.db.transaction(async tx => {
-    const admin = await h.api.put(h.t.users,{id:"consult-admin",email:"consult@example.invalid",fullName:"Consulting Admin",role:"clinicAdmin"},tx);
-    return h.api.createOwnedClinic(admin,admin,{...input,ownDoctor:true},tx);
-  }), error => error.code === "CONSULTING_ADMIN_DISABLED" && error.status === 409);
-  assert.deepEqual(await Promise.all([h.api.all(h.t.users),h.api.all(h.t.clinics),h.api.all(h.t.branches),h.api.all(h.t.doctors),h.api.all(h.t.assignments),h.api.all(h.t.qrs),h.api.all(h.t.auditLogs)]),before);
   const result = await h.db.transaction(async tx => {
     const admin = await h.api.put(h.t.users,{id:"consult-admin",email:"consult@example.invalid",fullName:"Consulting Admin",role:"clinicAdmin"},tx);
-    return h.api.createOwnedClinic(admin,admin,input,tx);
+    return h.api.createOwnedClinic(admin,admin,{...input,ownDoctor:true},tx);
   });
-  assert.equal(result.doctorId,null);
+  assert.ok(result.doctorId);
   assert.equal((await h.api.one(h.t.clinics,result.clinic.id)).adminId,"consult-admin");
   assert.equal((await h.api.all(h.t.assignments)).filter(a=>a.userId==="consult-admin" && a.clinicId===result.clinic.id && !a.branchId).length,1);
-  assert.equal((await h.api.all(h.t.doctors)).filter(d=>d.userId==="consult-admin").length,0);
+  assert.equal((await h.api.all(h.t.doctors)).filter(d=>d.userId==="consult-admin").length,1);
   const reject = async (operation,pattern) => assert.rejects(operation,error=>pattern.test(error.cause?.message || error.message));
   await reject(h.api.put(h.t.assignments,{id:"foreign-clinic-link",userId:"consult-admin",clinicId:"c",branchId:"b"}),/must match the active clinic administrator/);
   await reject(h.api.put(h.t.assignments,{id:"wrong-branch-clinic",userId:"consult-admin",clinicId:result.clinic.id,branchId:"b"}),/active own doctor profile/);
@@ -52,22 +46,19 @@ test("consulting setup is disabled while ordinary clinic ownership and legacy gu
   assert.equal((await h.api.one(h.t.clinics,result.clinic.id)).adminId,"consult-admin");
 });
 
-test("concurrent own-doctor attachment rejects both attempts without creating a capability", async () => {
+test("concurrent own-doctor attachment is idempotent with no duplicate account or branch assignment", async () => {
   const owner=await h.api.one(h.t.users,"admin");
-  const before = await Promise.all([h.api.all(h.t.doctors),h.api.all(h.t.assignments),h.api.all(h.t.auditLogs)]);
-  // The release gate rejects before acquiring any advisory lock, so the
-  // lock-contention harness cannot apply to this disabled operation.
-  const outcomes=await Promise.allSettled([
-    h.db.transaction(tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx)),
-    h.db.transaction(tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx)),
-  ]);
+  const before = (await h.api.all(h.t.users)).length;
+  const outcomes=await h.race([
+    tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx),
+    tx=>h.api.attachOwnDoctor(owner,{branchIds:["b"]},tx),
+  ], {doctorIds:[],lockKeys:["own-doctor:admin"]});
   assert.equal(outcomes.length,2);
-  for (const outcome of outcomes) {
-    assert.equal(outcome.status,"rejected");
-    assert.equal(outcome.reason.code,"CONSULTING_ADMIN_DISABLED");
-    assert.equal(outcome.reason.status,409);
-  }
-  assert.deepEqual(await Promise.all([h.api.all(h.t.doctors),h.api.all(h.t.assignments),h.api.all(h.t.auditLogs)]),before);
+  assert.ok(outcomes.every(o => o.status === "fulfilled"));
+  assert.equal(outcomes[0].value.id, outcomes[1].value.id);
+  assert.equal((await h.api.all(h.t.doctors)).filter(d=>d.userId==="admin").length,1);
+  assert.equal((await h.api.all(h.t.assignments)).filter(a=>a.userId==="admin" && a.branchId).length,0);
+  assert.equal((await h.api.all(h.t.users)).length,before);
 });
 
 async function events(id, action) {

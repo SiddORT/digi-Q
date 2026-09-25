@@ -1,5 +1,6 @@
 import { db, doctors, users, assignments, masters, branches, clinics } from "@workspace/db";
 import { all, flatten, one } from "./store";
+import { managedDoctorAssignments } from "./clinical-membership";
 export async function enrich(kind: string, row: any, conn: any = db): Promise<any> {
   row = { ...row };
   if (kind === "doctors" || kind === "users") {
@@ -7,7 +8,11 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
     const activeClinics = new Set((await all(clinics, conn)).filter(c => c.status === "active").map(c => c.id));
     const activeBranches = new Set((await all(branches, conn)).filter(b => b.status === "active" && activeClinics.has(b.clinicId)).map(b => b.id));
     const links = (await all(assignments, conn)).filter(a => a.userId === (kind === "doctors" ? row.userId : row.id) && activeClinics.has(a.clinicId) && (!a.branchId || activeBranches.has(a.branchId)));
-    row.clinicIds = [...new Set(links.map(a => a.clinicId))]; row.branchIds = [...new Set(links.filter(a => a.branchId).map(a => a.branchId))];
+    if (kind === "doctors") Object.assign(row, await managedDoctorAssignments(row, conn));
+    else {
+      row.clinicIds = [...new Set(links.map(a => a.clinicId))];
+      row.branchIds = [...new Set(links.filter(a => a.branchId).map(a => a.branchId))];
+    }
   }
   if (kind === "doctors") {
     const account = await one(users, row.userId, conn); row.fullName = account.fullName; row.email = account.email; row.mobile = account.mobile || "";

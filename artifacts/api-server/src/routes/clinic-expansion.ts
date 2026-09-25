@@ -8,9 +8,10 @@ import { requireUser, requireSessionIdentity, authoritativeStaffSessionExpiry, r
 import { parse, query, assert, HttpError } from "../lib/http";
 import { all, one, flatten, put, uid, audit } from "../lib/store";
 import { enrich, publicDoctor } from "../lib/entities";
-import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, createOwnedClinic, rejectConsultingAdminRequest, requireConsultingAdminCapability } from "../lib/clinic-expansion";
+import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, createOwnedClinic } from "../lib/clinic-expansion";
 import { queryMetrics } from "../lib/list-query";
 import { configuredDuration } from "../lib/session-duration";
+import { clinicalMembership, clinicalBranchIds } from "../lib/clinical-membership";
 
 export const clinicExpansionRouter = Router();
 const anonymousLimit = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: true, legacyHeaders: false });
@@ -32,16 +33,11 @@ clinicExpansionRouter.patch("/clinics/:id/settings", async (req, res) => {
   res.json(await db.transaction(tx => saveClinicSetup(user, req.params.id as string, body, tx)));
 });
 clinicExpansionRouter.post("/me/doctor-profile", async (req, res) => {
-  requireConsultingAdminCapability();
   const user = await requireUser(req), body = parse(z.AttachOwnDoctorProfileBody, req.body);
   res.json(await db.transaction(tx => attachOwnDoctor(user, body, tx)));
 });
-clinicExpansionRouter.post("/clinic-registration", (req, _res, next) => {
-  rejectConsultingAdminRequest(req.body);
-  next();
-}, registrationLimit, async (req, res) => {
+clinicExpansionRouter.post("/clinic-registration", registrationLimit, async (req, res) => {
   const { clerkId, sessionId } = requireSessionIdentity(req), body = parse(z.RegisterClinicBody, req.body);
-  rejectConsultingAdminRequest(body);
   const identity = await clerkClient.users.getUser(clerkId);
   const email = identity.emailAddresses.find(e => e.id === identity.primaryEmailAddressId && e.verification?.status === "verified")?.emailAddress.toLowerCase();
   assert(email, 400, "Verify your primary email before registering a clinic");
@@ -90,16 +86,17 @@ clinicExpansionRouter.get("/public/clinics-by-slug/:clinicSlug{/:branchSlug}", a
   assert(!branchSlug || branch, 404, "Branch page not found");
   const publicDoctors = [];
   if (branch) {
-    const candidates = (await db.execute(sql`select d.id from doctors d join users u on u.id=d.user_id where d.status='active' and u.status='active' and exists(select 1 from assignments a where a.user_id=d.user_id and a.branch_id=${branch.id}) order by d.id limit 100`)).rows;
+    const candidates = (await db.execute(sql`select d.id from doctors d where ${clinicalMembership(sql`d.id`, sql`${branch.id}`)} order by d.id limit 100`)).rows;
     for (const row of candidates) {
       const id = row.id as string;
       const metric = await queryMetrics({ role: "superAdmin" }, { clinicId: clinic.id, branchId: branch.id, doctorId: id });
-      publicDoctors.push({ ...publicDoctor(await enrich("doctors", await one(doctors, id))),
+      const branchIds = await clinicalBranchIds(id);
+      publicDoctors.push({ ...publicDoctor({ ...await enrich("doctors", await one(doctors, id)), branchIds, clinicIds: [clinic.id] }),
         averageConsultationMinutes: metric.averageConsultationMinutes, expectedDurationMinutes: await configuredDuration(id, clinic.id) });
     }
   }
   const references = branch ? (await db.execute(sql`select public_reference from qrs where clinic_id=${clinic.id} and branch_id=${branch.id} and doctor_id is null and status='active' order by created_at,id limit 1`)).rows : [];
-  const [counts] = (await db.execute(sql`select count(*)::int as count from doctors d join users u on u.id=d.user_id where d.status='active' and u.status='active' and exists(select 1 from assignments a join branches b on b.id=a.branch_id where a.user_id=d.user_id and a.clinic_id=${clinic.id} and b.status='active')`)).rows;
+  const [counts] = (await db.execute(sql`select count(*)::int as count from doctors d where exists(select 1 from branches b where b.clinic_id=${clinic.id} and ${clinicalMembership(sql`d.id`, sql`b.id`)})`)).rows;
   const metric = await queryMetrics({ role: "superAdmin" }, { clinicId: clinic.id });
   res.set("Cache-Control", "no-store").json({ clinic: { id: clinic.id, name: clinic.name, slug: clinic.slug, address: clinic.address || null, email: clinic.email || null, phone: clinic.phone || null, doctorCount: Number(counts.count), averageConsultationMinutes: metric.averageConsultationMinutes },
     branches: branchList, branch: branch || null, qrReference: references[0]?.public_reference || null, doctors: publicDoctors });

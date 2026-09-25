@@ -1,5 +1,46 @@
 # Clinic expansion sync check
 
+Final solo-owner update: the complete current API/frontend test run passed
+**146/146**. Actual one-account solo onboarding, settings/profile reload,
+bookings and consultation queue operation passed in the browser. Review fixes
+preserve inactive-doctor management, allow removing inactive clinical selections,
+and reject mismatched public clinic/branch filters. Solo fixture cleanup is DONE:
+zero owned clinical records, local users or session proofs remain; the provider
+account deletion was verified. Production is untouched. Current release guidance
+supersedes the historical function-migration and reduced-release blockers below.
+
+## CURRENT implementation and verification
+
+Solo consulting uses the existing pre-0008 production ownership functions:
+Clinic Admin retains their clinic-only assignment and clinic-wide administrative
+access; selected clinical branch IDs live in `doctors.data.branchIds` on a
+self-owned doctor profile. Central active effective membership governs public
+discovery, counts, availability, booking, scheduling and queue transitions.
+Management visibility is separate: the owner may list/edit/reactivate an
+inactive doctor/profile with its selected branch form data, but public discovery
+and booking cannot use it until active. No custom SQL/function migration or
+ownership-guard weakening is required for this design.
+
+All **117 API tests passed**, including disposable pre-0008 exact function
+hashes/ten enabled triggers, solo and ordinary doctor regression tests, foreign
+owner denial, inactive owner-profile reactivation, branch-subset discovery,
+booking capacity and queue actions. Main-agent root/API/frontend/deck/scripts
+typechecks passed. An unrelated mockup-sandbox Vite plugin version conflict
+means full workspace typecheck must **not** be claimed.
+
+The latest development browser journey submitted a real single-branch six-step
+wizard with `ownDoctor:true`, using one real Clerk fixture and actual app-password
+confirmation, no invite/second user. `/me` returned 200 with `clinicAdmin` and
+`doctorId`; settings, own profile and admin menus survived reload. Friday UTC
+full-day schedule, two name-only bookings, On break/Available calling, check-in
+and checkout with automatic next call (not automatic consultation) passed. This
+does not establish new Clerk signup or invitation email delivery. Production
+is untouched and unpublished; fixture cleanup is pending. Review the actual
+managed Publish diff for ordinary indexes/guest uniqueness before user-controlled
+publication; no custom-function changes are planned.
+
+## Historical earlier sync evidence (superseded where release claims differ)
+
 ## Scope and evidence
 
 Reviewed existing phase-one, list-query, backend-flow, queue-contention and frontend tests before adding coverage. Existing tests already covered settings-service parity/inheritance, immutable URLs, attaching the consulting-admin capability, ownership triggers, broad SQL pagination/authorization, and nullable actual TAT. Added two route-level regressions to the existing phase-one harness rather than duplicating those services or creating another fixture engine.
@@ -48,4 +89,4 @@ Latest main-agent verification: **120/120 combined unit/regression tests passed*
 - Follow-up authorized selector fixes close the remaining identified polling gaps: `ResourceLookup.tsx` remote options and selected hydration, and `SessionQueue.tsx` summary doctor list now poll every 30 seconds with `refetchIntervalInBackground:false`. Existing query keys/caches remain; no new store was added. Selected hydration re-fetches selected IDs instead of skipping IDs already present in the label cache, and respects disabled selectors.
 - Patient `clinicId` filtering follows the stored registration clinic, whereas patient authorization also admits an authorized visit. Appointment clinic filters describe visits. The patient filter and its active chip now say **Registration clinic** to avoid implying a visit-clinic filter. This is a label-only change: the default remains unfiltered and includes patients visible through authorized visits; no patient visibility or API behavior changed.
 - The focused regression work did not alter authentication or migration files and does not replace prior historical-trigger coverage. Separate main-agent migration readiness evidence is stated above.
-- **Release remains blocked**: the managed Publish diff omits required custom ownership function definitions. A successful fresh migration chain/replay does not resolve their production delivery. See [clinic-expansion-release.md](clinic-expansion-release.md). Current fixture cleanup and final mobile table screenshot remain pending.
+- **Historical release gate, superseded:** the earlier admin-branch-assignment design was blocked because managed Publish omitted custom ownership functions. The current effective-membership design works against pre-0008 functions and has no custom-function rollout prerequisite. The ordinary index/guest uniqueness diff still needs review and production remains unpublished. See [current plan](clinic-expansion-release.md).

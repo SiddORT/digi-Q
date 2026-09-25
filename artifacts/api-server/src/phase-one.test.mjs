@@ -528,17 +528,30 @@ test("clinic settings parity, independent live contacts and immutable URL", asyn
   assert.equal(api.validSlug("api"),false); assert.equal(api.validSlug("Clinic"),false);
 });
 
-test("admin clinical attachment is disabled before any profile or assignment writes", async () => {
+test("admin clinical attachment reconciles selected branches without admin branch assignments", async () => {
   await seed();
+  await api.put(t.assignments,{id:"admin-clinic-own",userId:"admin",clinicId:"c"});
   const owner = await api.one(t.users,"admin");
-  const before = await Promise.all([api.all(t.doctors),api.all(t.assignments),api.all(t.auditLogs)]);
-  for (const branchIds of [["b"],["b","b2"],["foreign-b"]]) {
-    await assert.rejects(globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds},tx)),
-      error => error.code === "CONSULTING_ADMIN_DISABLED" && error.status === 409);
-  }
-  assert.deepEqual(await Promise.all([api.all(t.doctors),api.all(t.assignments),api.all(t.auditLogs)]),before);
+  const before = await api.all(t.assignments);
+  const own = await globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds:["b"]},tx));
+  assert.deepEqual(own.branchIds,["b"]);
+  const updated = await globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds:["b2"]},tx));
+  assert.equal(own.id,updated.id);
+  assert.deepEqual(updated.branchIds,["b2"]);
+  await assert.rejects(globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner,{branchIds:["foreign-b"]},tx)));
+  assert.deepEqual(await api.all(t.assignments),before);
   assert.equal((await api.one(t.users,"admin")).role,"clinicAdmin");
   const actor = {...owner,clinicIds:["c"],branchIds:["b","b2"]};
+  const ownEdit = await route(api.resourcesRouter,"patch","/doctors/:id",actor,{
+    fullName:owner.fullName,email:owner.email,branchIds:["b"],about:"Consulting today",
+  },{id:own.id});
+  assert.deepEqual(ownEdit.branchIds,["b"]);
+  assert.deepEqual((await api.one(t.doctors,own.id)).branchIds,["b"]);
+  assert.deepEqual(await api.all(t.assignments),before);
+  await assert.rejects(route(api.resourcesRouter,"patch","/doctors/:id",actor,{
+    fullName:owner.fullName,email:owner.email,branchIds:["foreign-b"],
+  },{id:own.id}));
+  assert.deepEqual((await api.one(t.doctors,own.id)).branchIds,["b"]);
   await route(api.resourcesRouter,"patch","/doctors/:id",actor,{fullName:"Ordinary Doctor",email:"doctor@example.invalid",status:"inactive"},{id:"d"});
   assert.equal((await api.one(t.doctors,"d")).status,"inactive");
   assert.equal((await api.one(t.users,"admin")).status,"active");
@@ -712,14 +725,10 @@ test("atomic owned clinic setup rolls back on branch slug conflict and retains o
   await assert.rejects(globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,{clinic:{name:"Second",address:"Street",slug:"second-clinic"},branches:[{name:"A",address:"One",slug:"same-branch"},{name:"B",address:"Two",slug:"same-branch"}]},tx)),/already in use/);
   assert.equal((await api.all(t.clinics)).length,1);
   assert.equal((await api.all(t.branches)).length,2);
-  const before = await Promise.all([api.all(t.clinics),api.all(t.branches),api.all(t.doctors),api.all(t.assignments),api.all(t.qrs),api.all(t.auditLogs)]);
   const input = {clinic:{name:"Second",address:"Street",slug:"second-clinic"},branches:[{name:"A",address:"One",slug:"main-branch",openingHours:[{dayOfWeek:1,startTime:"09:00",endTime:"17:00"}]}]};
-  await assert.rejects(globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,{...input,ownDoctor:true},tx)),
-    error => error.code === "CONSULTING_ADMIN_DISABLED" && error.status === 409);
-  assert.deepEqual(await Promise.all([api.all(t.clinics),api.all(t.branches),api.all(t.doctors),api.all(t.assignments),api.all(t.qrs),api.all(t.auditLogs)]),before);
-  const result = await globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,input,tx));
+  const result = await globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin,admin,{...input,ownDoctor:true},tx));
   assert.equal(result.clinic.adminId,admin.id);
-  assert.equal(result.doctorId,null);
+  assert.ok(result.doctorId);
   assert.equal(result.branches.length,1);
   assert.equal((await api.all(t.qrs)).filter(q=>q.branchId===result.branches[0].id).length,1);
 });

@@ -217,7 +217,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
  const [success,setSuccess]=useState("");
  const term=useDebouncedValue(search);
  const supportsSearch=true;
- const roleDefaults=useMemo<Record<string,string>>(()=>identity?.user?.role==="doctor"&&identity.doctorId&&["availability","exceptions"].includes(resource)?{doctorId:identity.doctorId as string}:({} as Record<string,string>),[identity,resource]);
+  const roleDefaults=useMemo<Record<string,string>>(()=>identity?.doctorId&&["doctor","clinicAdmin"].includes(identity.user?.role||"")&&["availability","exceptions"].includes(resource)?{doctorId:identity.doctorId as string}:({} as Record<string,string>),[identity,resource]);
  useEffect(()=>{if(Object.keys(roleDefaults).length)setFilters(previous=>({...roleDefaults,...previous}));},[roleDefaults]);
  const filter=(key:string,value:string)=>{setFilters(previous=>({...previous,[key]:value,...(key==="clinicId"?{branchId:"",doctorId:roleDefaults.doctorId||""}:{})}));setPage(1);};
  const active=!!(search||sort!=="-createdAt"||Object.entries(filters).some(([k,v])=>v&&v!==roleDefaults[k]));

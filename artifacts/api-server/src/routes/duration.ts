@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db, doctors, appointments, assignments, settings, branches, schedules } from "@workspace/db";
+import { clinicalBranchIds } from "../lib/clinical-membership";
 import * as z from "@workspace/api-zod";
 import { sql } from "drizzle-orm";
 import { requireUser, roles, scope } from "../lib/auth";
@@ -14,7 +15,9 @@ async function authorize(user: any, doctorId: string, clinicId: string, conn: an
   roles(user, ["superAdmin", "clinicAdmin", "doctor", "receptionist"]);
   const doctor = await one(doctors, doctorId, conn);
   assert(scope(user, clinicId) && (user.role !== "doctor" || user.doctorId === doctorId), 403, "Duration outside assigned scope");
-  assert((await all(assignments, conn)).some(a => a.userId === doctor.userId && a.clinicId === clinicId && (!["doctor", "receptionist"].includes(user.role) || a.branchId && user.branchIds.includes(a.branchId))), 403, "Doctor is not assigned within your branch scope");
+  const clinicalBranches = await clinicalBranchIds(doctor.id, conn);
+  const branchRows = await all(branches, conn);
+  assert(clinicalBranches.some(id => branchRows.some(b => b.id === id && b.clinicId === clinicId) && (!["doctor", "receptionist"].includes(user.role) || user.branchIds.includes(id))), 403, "Doctor is not assigned within your branch scope");
   return doctor;
 }
 durationRouter.get("/doctors/:id/duration/:clinicId", async (req, res) => {

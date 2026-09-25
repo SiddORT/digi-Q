@@ -2,6 +2,7 @@ import { db } from "@workspace/db";
 import { sql, type SQL } from "drizzle-orm";
 import { assert } from "./http";
 import { statusGroups } from "./queue-order";
+import { clinicalMembership, managedDoctorLinks } from "./clinical-membership";
 
 const names: Record<string, string> = { users: "users", doctors: "doctors", clinics: "clinics", branches: "branches", patients: "patients", masters: "masters", schedules: "schedules", "availability-exceptions": "availability_exceptions", qrs: "qrs", appointments: "appointments", "audit-logs": "audit_logs" };
 const raw = sql.raw;
@@ -11,6 +12,7 @@ function operationalScope(user: any, clinic: SQL, branch: SQL): SQL {
   return sql`(${inList(clinic, user.clinicIds)} and (${branch} is null or ${!["doctor", "receptionist"].includes(user.role)} or ${inList(branch, user.branchIds)}))`;
 }
 function links(kind: string) {
+  if (kind === "doctors") return managedDoctorLinks(raw("r.id"));
   return raw(`select a.*, c.data->>'name' as clinic_name, b.data->>'name' as branch_name from assignments a join clinics c on c.id=a.clinic_id left join branches b on b.id=a.branch_id where a.user_id=r.${kind === "doctors" ? "user_id" : "id"} and c.status='active' and (a.branch_id is null or b.status='active')`);
 }
 export function readScope(user: any, kind: string): SQL {
@@ -32,7 +34,7 @@ export function readScope(user: any, kind: string): SQL {
   const branch = kind === "branches" ? raw("r.id") : raw("r.branch_id");
   let result = operationalScope(user, clinic, branch);
   if (user.role === "doctor" && ["appointments", "qrs"].includes(kind)) result = sql`${result} and r.doctor_id=${user.doctorId || ""}`;
-  if (["schedules", "availability-exceptions"].includes(kind)) result = sql`${result} and exists(select 1 from assignments a join doctors d on d.user_id=a.user_id where d.id=r.doctor_id and a.branch_id=r.branch_id)`;
+  if (["schedules", "availability-exceptions"].includes(kind)) result = sql`${result} and ${clinicalMembership(raw("r.doctor_id"), raw("r.branch_id"))}`;
   return result;
 }
 export function documentSql(kind: string): SQL {
@@ -125,7 +127,7 @@ export async function queryPage(user: any, kind: string, q: any = {}, extra?: SQ
   // Branches have no doctorId column: resolve the real assignment relationship.
   let effectiveQuery = q;
   if (kind === "branches" && q.doctorId) {
-    extra = sql`(${extra || raw("true")}) and exists(select 1 from assignments a join doctors d on d.user_id=a.user_id where a.branch_id=r.id and a.clinic_id=r.clinic_id and d.id=${q.doctorId})`;
+    extra = sql`(${extra || raw("true")}) and ${clinicalMembership(sql`${q.doctorId}`, raw("r.id"))}`;
     effectiveQuery = { ...q, doctorId: undefined };
   }
   const source = sourceSql(user, kind, extra), filter = filterSql(effectiveQuery);

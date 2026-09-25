@@ -9,6 +9,7 @@ import { availability, availabilitySessions, localNow } from "../lib/availabilit
 import { getPresence } from "../lib/presence";
 import { orderedReservations, pendingStatuses, sessionRows } from "../lib/queue-order";
 import { queryPage } from "../lib/list-query";
+import { clinicalMembership, clinicalBranchIds } from "../lib/clinical-membership";
 export const publicRouter = Router();
 for (const [kind, table, schema] of [
   ["clinics", clinics, z.ListPublicClinicsQueryParams],
@@ -18,10 +19,19 @@ for (const [kind, table, schema] of [
   publicRouter.get(`/public/${kind}`, async (req, res) => {
     const q = query(schema, req);
     const extra = kind === "branches" ? sql`exists(select 1 from clinics c where c.id=r.clinic_id and c.status='active') and ${"doctorId" in q && q.doctorId ? sql`exists(select 1 from doctors d join users u on u.id=d.user_id where d.id=${q.doctorId} and d.status='active' and u.status='active')` : sql`true`}`
-      : kind === "doctors" ? sql`exists(select 1 from assignments a join clinics c on c.id=a.clinic_id join branches b on b.id=a.branch_id where a.user_id=r.user_id and c.status='active' and b.status='active')`
+      : kind === "doctors" ? sql`${clinicalMembership(sql`r.id`, q.branchId ? sql`${q.branchId}` : undefined)}
+          and ${q.clinicId ? sql`exists(select 1 from branches pb where pb.clinic_id=${q.clinicId}
+            ${q.branchId ? sql`and pb.id=${q.branchId}` : sql``}
+            and ${clinicalMembership(sql`r.id`, sql`pb.id`)})` : sql`true`}`
         : sql`true`;
-    const result = await queryPage({ role: "superAdmin" }, kind, { ...q, status: "active" }, extra);
-    if (kind === "doctors") result.items = result.items.map(publicDoctor);
+    const result = await queryPage({ role: "superAdmin" }, kind, { ...q, ...(kind === "doctors" ? { branchId: undefined } : {}), status: "active" }, extra);
+    if (kind === "doctors") {
+      const locations = await all(branches);
+      result.items = await Promise.all(result.items.map(async (row: any) => {
+        const branchIds = await clinicalBranchIds(row.id);
+        return publicDoctor({ ...row, branchIds, clinicIds: [...new Set(locations.filter(b => branchIds.includes(b.id)).map(b => b.clinicId))] });
+      }));
+    }
     if (kind === "clinics") result.items = result.items.map(({ ownerId, ...r }: any) => r);
     res.json(result);
   });

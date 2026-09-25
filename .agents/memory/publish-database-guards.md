@@ -21,6 +21,12 @@ Recheck the live catalog and Publish diff after task merges, even when earlier r
 
 **How to apply:** Check index definitions as well as names after development schema synchronization. Fail release readiness when required replacements disappear; never assume a successful merge proves database parity.
 
+Consulting-admin operation need not require replacing the old production functions.
+
+**Why:** Exact historical-guard tests established that an admin can own its own doctor profile while retaining clinic-only admin assignments. The incompatible part was inserting admin branch-assignment rows, not the combined identity itself.
+
+**How to apply:** Keep management ownership separate from the doctor's selected clinical branches and validate effective clinical membership centrally. Preserve ordinary doctor assignment rules, test against both old and new guards, and distinguish inactive-profile management visibility from active clinical eligibility.
+
 The owner approved a reduced release that defers consulting Clinic Admin capability
 rather than bypassing the omitted custom-function migration.
 

@@ -1,4 +1,5 @@
-import { db, doctors, branches, clinics, schedules, availabilityExceptions, appointments, assignments, users, settings } from "@workspace/db";
+import { db, doctors, branches, clinics, schedules, availabilityExceptions, appointments, users, settings } from "@workspace/db";
+import { isClinicalMember } from "./clinical-membership";
 import { eq } from "drizzle-orm";
 import { configuredDuration, sessionKey } from "./session-duration";
 import { all, one, getSettings } from "./store";
@@ -79,13 +80,13 @@ export { datePlus };
 export async function operationalDoctorContext(doctorId: string, branchId: string, conn: any = db) {
   const doctor = await one(doctors, doctorId, conn), branch = await one(branches, branchId, conn), clinic = await one(clinics, branch.clinicId, conn);
   const account = await one(users, doctor.userId, conn);
-  const assigned = (await all(assignments, conn)).some(a => a.userId === doctor.userId && a.branchId === branchId);
+  const assigned = await isClinicalMember(doctorId, branchId, conn);
   return { doctor, branch, clinic, assigned, active: [doctor, account, branch, clinic].every(r => r.status === "active") };
 }
 export async function doctorContext(doctorId: string, branchId: string, conn: any = db) {
   const { doctor, branch, clinic, assigned, active } = await operationalDoctorContext(doctorId, branchId, conn);
-  assert(assigned, 409, "Doctor is not assigned to this branch");
   assert(active, 409, "Doctor, clinic or branch is inactive");
+  assert(assigned, 409, "Doctor is not assigned to this branch");
   return { doctor, branch, clinic };
 }
 export async function availability(doctorId: string, branchId: string, date: string, conn: any = db, selector: { sessionId?: string; startTime?: string } = {}) {

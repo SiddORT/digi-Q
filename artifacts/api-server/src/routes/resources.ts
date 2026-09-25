@@ -10,7 +10,7 @@ import { assert, parse, query } from "../lib/http";
 import { enrich } from "../lib/entities";
 import { queryPage, assignmentCatalogPredicate } from "../lib/list-query";
 import { invitationMetadata } from "../lib/invitation-metadata";
-import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, rejectConsultingAdminRequest, requireConsultingAdminCapability } from "../lib/clinic-expansion";
+import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, attachOwnDoctor } from "../lib/clinic-expansion";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus } from "../lib/availability";
 const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs } = tables;
 export const resourcesRouter = Router();
@@ -67,16 +67,16 @@ async function withPasswordState(row: any) {
 }
 
 export async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
-  // Existing admin clinical records (if any) must not be mutated through the
-  // generic doctor endpoint, including deactivation. A doctor userId on create
-  // must never become a back door to attach an administrator's profile.
-  if (kind === "doctors" && old?.userId) {
-    const account = await one(users, old.userId);
-    if (account.role === "clinicAdmin") requireConsultingAdminCapability();
-  }
-  if (kind === "doctors" && body.userId !== undefined) requireConsultingAdminCapability();
-  if (kind === "users" && old?.role === "clinicAdmin" && body.status !== undefined) {
-    if ((await all(doctors)).some(d => d.userId === old.id)) requireConsultingAdminCapability();
+  if (kind === "doctors") {
+    assert(body.userId === undefined, 409, "Doctor identity cannot be reassigned");
+    if (old?.userId) {
+      const account = await one(users, old.userId);
+      if (account.role === "clinicAdmin") {
+        assert(old.ownerAdminId === old.userId && user.id === old.userId && user.role === "clinicAdmin", 403, "Only the owning Clinic Admin can edit their clinical profile");
+        assert(body.ownerAdminId === undefined || body.ownerAdminId === old.userId, 409, "Self-owned doctor profile cannot be transferred");
+        assert(body.clinicIds === undefined, 409, "Administrative clinic mappings cannot be edited through a doctor profile");
+      }
+    }
   }
   const context = { ...old, ...body };
   if (body.timezone) localNow(body.timezone);
@@ -219,7 +219,6 @@ export async function deliverInvitation(userId: string, redirectUrl?: string) {
   });
 }
 export async function createClinicAdminOnboarding(actor: any, body: any, redirectUrl?: string) {
-  rejectConsultingAdminRequest(body);
   roles(actor, ["superAdmin"]);
   const email = body.admin.email.toLowerCase();
   if (body.clinic.timezone) localNow(body.clinic.timezone);
@@ -419,7 +418,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       const explicitDoctorTransfer = old && kind === "doctors" && user.role === "superAdmin" && ownershipChangeRequested(body.ownerAdminId, old.ownerAdminId);
       const expectedManager = old && !explicitDoctorTransfer ? (kind === "doctors" ? old.ownerAdminId : old.managingAdminId) : undefined;
       let managingAdminId: string | undefined;
-      if (kind === "doctors" && old && !assignmentChangeRequested && !explicitDoctorTransfer) managingAdminId = old.ownerAdminId;
+      if (kind === "doctors" && old && (old.userId === user.id && user.role === "clinicAdmin" || !assignmentChangeRequested && !explicitDoctorTransfer)) managingAdminId = old.ownerAdminId;
       else if (["doctor", "receptionist"].includes(role)) managingAdminId = await validateAssignments(user, requestedClinics, requestedBranches, role, expectedManager, tx);
       if (body.ownerAdminId !== undefined) assert(body.ownerAdminId === managingAdminId, 409, "Supplied Clinic Admin does not match the owner derived from selected clinics");
       if (body.managingAdminId !== undefined) assert(body.managingAdminId === managingAdminId, 409, "Supplied Clinic Admin does not match the owner derived from selected clinics");
@@ -427,12 +426,17 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       if (kind === "doctors" && old) {
         const account = await one(users, userId, tx);
         if (account.role === "clinicAdmin") {
-          assert(managingAdminId === userId, 409, "An administrator's clinical profile must retain its own Clinic Admin owner");
+          assert(old.ownerAdminId === userId && user.id === userId && account.status === "active", 403, "Only the active owning Clinic Admin can edit their clinical profile");
+          managingAdminId = userId;
           // Updating or deactivating the clinical capability must never downgrade
           // or deactivate the owning administrative account.
           uf.role = "clinicAdmin"; uf.status = account.status;
-          const sameIds = (a: string[], b: string[]) => JSON.stringify([...new Set(a)].sort()) === JSON.stringify([...new Set(b)].sort());
-          assert(!assignmentChangeRequested || sameIds(requestedClinics, old.clinicIds || []) && sameIds(requestedBranches, old.branchIds || []), 409, "Use your own doctor-profile setup to attach additional owned branches; clinic ownership mappings are preserved");
+          if (body.branchIds !== undefined) {
+            // Reuse the same validation, ownership lock and reconciliation as
+            // the dedicated self-service endpoint; never write admin branch rows.
+            await attachOwnDoctor(account, { branchIds: body.branchIds }, tx);
+            fields.data.branchIds = [...new Set(body.branchIds)];
+          } else fields.data.branchIds = (await one(doctors, old.id, tx)).branchIds;
         }
       }
       if (kind === "doctors") {

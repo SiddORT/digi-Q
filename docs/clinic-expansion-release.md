@@ -2,7 +2,72 @@
 
 ## Decision
 
-### Current release: reduced functionality, no custom-function migration
+### CURRENT: full solo consulting capability without custom-function migration
+
+The reduced release and proposed 0008 production-function replacement gate below
+are **historical and superseded for the current application design**. The current
+implementation supports one Clinic Admin account with a self-owned doctor profile
+using the **existing pre-0008 production ownership functions**. It never creates
+an administrator branch-assignment row: the explicit selected clinical branch IDs
+live in `doctors.data.branchIds`. Central effective clinical membership requires
+an active self-owned doctor profile, active Clinic Admin account, active owned
+clinic and branch, and the owner's clinic-only assignment. Ordinary doctors
+continue using their existing branch assignments. Admin access to owned clinics
+remains clinic-wide; their clinical branch selection is narrower. Inactive owned
+profiles remain visible and editable to their owner for reactivation but cannot
+appear in active discovery or provide availability until active.
+
+**No custom function replacement is required for this capability.** Do not apply
+0008 to managed production, invent a production SQL path, weaken ownership
+guards, or assume managed Publish delivers custom functions. The production
+pre-0008 bodies and ten enabled ownership triggers are the compatibility baseline;
+isolated tests compare all four exact observed function hashes and exercise the
+old guards. The historical 0008 migration may remain checked in for migration
+history/disposable testing; it is not part of this production rollout plan.
+
+Latest final application evidence: **146/146 API and frontend tests passed** (including isolated
+pre-0008 compatibility, solo atomic creation, branch-selection and inactivity
+boundaries, public discovery, booking capacity, queue transitions, concurrency,
+and ordinary doctors). The main agent confirmed a real development browser
+journey: a single-branch six-step wizard with `ownDoctor:true` used one Clinic
+Admin account and no invitations; `/me` returned 200 with `clinicAdmin` and
+`doctorId`; settings, owner profile and admin menus survived reload. A Friday
+UTC full-day schedule accepted two name-only bookings; On break disabled calling,
+Available restored it, and Call next, check-in and checkout worked, with automatic
+next call **without** automatically starting consultation. The browser used a
+real Clerk fixture and actual app-password confirmation. This does **not** verify
+new Clerk signup or invitation email delivery.
+
+Main-agent API/frontend/deck/scripts and shared-library typechecks passed. Do **not** describe
+the full workspace as typecheck-clean: the unrelated mockup-sandbox typecheck
+fails on Vite plugin versions. Development tests and browser acceptance are not
+production validation. **Production is untouched; Publish was not performed.**
+Solo fixture cleanup is complete: zero owned clinical records, local fixture
+users or proofs remain. The exact provider account was deleted and independently
+returned 404; private credentials and the manifest were removed. Existing clinics
+and retained audits were unchanged. Counts-only evidence is in
+`/tmp/clinic-solo-demo-cleanup-result.json`.
+
+The final read-only Publish diff contains all five session-index replacements,
+the three guest uniqueness replacements, and clinic/branch indexes. It reports
+no structural data loss, but flags possible backward incompatibility during
+rollout; use a quiet maintenance window. No function replacement is proposed or
+required. The final application workflows started and the registration page
+rendered after the review fixes.
+
+Current operator plan: review the **current** managed Publish diff again before
+publication, specifically ordinary session/queue indexes and guest uniqueness
+replacements described in the historical audit below. Do not approve unexpected
+record/table drops, loss of uniqueness, custom-function changes, or
+overwrite-production-data. The user controls Publish. After publication,
+verify expected pre-0008 function hashes and all ten enabled triggers plus the
+ordinary indexes and approved clinical flows; plan rollback around the actual
+index/data state, not a blind index restoration. This is a review plan, **not**
+confirmation that Publish is safe or has occurred.
+
+## Historical release gates and audit trail (superseded where noted)
+
+### Historical reduced-functionality release decision (superseded)
 
 The owner authorized deferring consulting Clinic Admin capability to avoid the
 unsupported production function migration. This supersedes the full-expansion
@@ -87,7 +152,7 @@ conflicts first. Application rollback does not undo the managed schema diff.
 Keep the consulting restriction during any rollback; never publish a version
 that exposes consulting assignments against the old guards.
 
-### Historical full-expansion gate (still applies before enabling consulting)
+### Historical full-expansion gate for the abandoned admin-branch-assignment design (superseded)
 
 **2026-09-25 release-preparation recheck: BLOCKED on supported custom-function
 delivery.** Core authenticated registration, booking/queue, guest approval, and

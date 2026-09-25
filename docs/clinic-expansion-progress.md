@@ -1,6 +1,28 @@
 # ClinicFlow — consolidated clinic expansion
 
-Approved scope: 31 items. Status: feature implementation complete; core protected and anonymous browser flows verified, remaining acceptance scoped below. **Production release blocked** by custom-function delivery; not release-approved. See [release gate](clinic-expansion-release.md).
+Final solo-owner verification: **146/146 API/frontend tests passed**. The real
+single-user, single-branch browser journey passed registration, retained admin
+navigation, own doctor profile, scheduling, two bookings and consultation queue
+transitions. Later focused regressions cover inactive-profile management,
+removable inactive clinical selections and consistent public clinic/branch
+filtering. All new solo test data and identities are cleaned up with zero
+remaining owned clinical records or usable identities. No production mutation
+or Publish occurred. ClinicFlow API/frontend typechecks pass; the separate
+mockup-sandbox Vite plugin type mismatch prevents a full-workspace typecheck pass.
+See the CURRENT release section for the production-compatible implementation
+that does not require custom ownership-function replacements.
+
+**CURRENT:** Full solo Clinic Admin + doctor capability is implemented without
+custom production SQL. Selected clinical branches are persisted on the
+self-owned doctor profile; the existing pre-0008 ownership functions and
+clinic-only admin assignment remain intact. Admin clinic management stays
+clinic-wide, while consultation membership is branch-selected and active-only.
+The earlier custom-function-blocked/reduced-release notes below are historical;
+they describe the superseded admin-branch-assignment design. Production has not
+been changed or published. Review the ordinary index/guest uniqueness Publish
+diff before user-controlled publication. See [current release plan](clinic-expansion-release.md).
+
+Approved scope: 31 items. Status: feature implementation complete; core protected and anonymous browser flows verified, remaining acceptance scoped below.
 Existing queue/guest/QR functionality is reused; no separate parallel booking engine.
 
 ## Browser test isolation correction
@@ -32,10 +54,10 @@ Further browser tests must confirm the intended role and use fixture-owned recor
 | 1 | Branded Register a Clinic entry points | Implemented | Public render checked |
 | 2 | Guided onboarding, back/next, retained answers | Implemented | Actual six-step authenticated wizard submitted; exhaustive back/next retention cases not claimed |
 | 3 | First Clinic Admin account and atomic clinic creation | Implemented | Existing isolated Clerk identity completed app registration; atomic clinic setup and settings reload 200 verified; new Clerk signup/email delivery not verified |
-| 4 | Solo doctor/admin one-account capability | Implemented | Browser ownDoctor setup preserved Clinic Admin role and operated consultations; exact-trigger SQL checks |
+| 4 | Solo doctor/admin one-account capability | Implemented | Fresh single-branch development browser journey: same Clinic Admin user, `doctorId` on `/me`, no invitation/second identity; pre-0008 exact-trigger and branch-subset tests |
 | 5 | Clinic name/category/specialities/address | Implemented | Full UI acceptance pending |
 | 6 | Main clinic contacts | Implemented | Super Admin phone update 200; fresh authenticated owner read same persisted phone |
-| 7 | Single/multiple location setup paths | Implemented | Two-branch wizard submission and atomic registration verified; separate single-location path not newly retested |
+| 7 | Single/multiple location setup paths | Implemented | Earlier two-branch wizard and latest single-branch `ownDoctor:true` wizard both verified |
 | 8 | Branch-specific identities and addresses | Implemented | Public API/render checked; staff editing pending |
 | 9 | Independent live phone/email inheritance | Implemented | Full multi-actor UI acceptance pending |
 | 10 | Accordion branch editing | Implemented | Protected browser acceptance pending |
@@ -64,7 +86,8 @@ Further browser tests must confirm the intended role and use fixture-owned recor
 ## Evidence and limitations
 - No completion count inferred from code existence. Implementation and verification are separate.
 - Prior acceptance limitations remain until explicitly retested for this expansion.
-- Latest main-agent automated evidence: **120/120 combined unit/regression tests passed** and **full workspace typecheck passed**. Prior **16 real PostgreSQL contention/ownership tests** with historical triggers remain valid evidence, not claimed as freshly rerun. New migration readiness test passes the complete **12-file chain and runner replay** on disposable PostgreSQL.
+- Latest API automated evidence: **117/117 API tests passed**, including exact pre-0008 function-hash and trigger verification, inactive-profile owner management/reactivation versus active-only public/booking access, and ordinary doctor regressions. Main-agent root/API/frontend/deck/scripts typechecks passed; unrelated mockup-sandbox typecheck fails on Vite plugin versions, so **full workspace typecheck is not claimed**. The earlier 120-test combined run, 16 exact-trigger tests, and fresh 12-file migration-chain evidence are historical, not a claim that 0008 must be delivered to production.
+- Latest single-branch development browser journey used a real Clerk fixture and app-password confirmation: six-step wizard submitted `ownDoctor:true` with no invite/second user; `/me` returned 200 as `clinicAdmin` with `doctorId`; settings reload, own profile and admin menus worked. Friday UTC full-day session received two name-only bookings; On break disabled Call next, Available restored it, Call next and check-in worked, and checkout automatically called (but did not start) the next patient. New Clerk signup and email delivery were **not** tested.
 - Live development checks: public slug/branch/session endpoints, name-only guest HTTP submission, domain confirmation, selected-session-only capacity decrement, no public patient identifiers, and unchanged data across public GETs.
 - Live consulting-admin creation and attachment exercised actual database guards. Immediate/deferred foreign-ownership and deactivation rejections verified; isolated verification transaction rolled back.
 - Earlier browser helper `/api/me` 401 failures were resolved using the correct route and ready application/network plus actual app password confirmation. Security checks were not weakened. The isolated owner's real Clerk session completed the actual six-step `/register-clinic` wizard with two branches and `ownDoctor:true`; atomic registration retained Clinic Admin role and settings reload returned 200. This is not proof of creating a brand-new Clerk identity or email delivery.
@@ -76,4 +99,4 @@ Further browser tests must confirm the intended role and use fixture-owned recor
 - Audit-retention exception: two local fixture profiles were deleted; one fully anonymized, inactive, provider-unlinked actor row remains solely to preserve the original existing-record edit and correction audits unchanged. Thus zero usable fixture identities and zero owned clinical records remain, but literal zero local fixture rows is blocked by those retained audit foreign keys. No guards were disabled. The existing clinic phone remains restored. Non-secret cleanup counts: `/tmp/clinic-expansion-cleanup-result.json`.
 - Public screenshots: `screenshots/clinic-public-page.jpg`, `screenshots/clinic-public-booking.jpg`, `screenshots/clinic-expansion-registration.jpg`. Fixture data is synthetic and its URLs will be removed after verification.
 - Review fixes: role-based queue restrictions, explicit empty hours meaning closed rather than legacy unrestricted, read-only queue GET, persisted historical session discovery, and live ownership-trigger compatibility.
-- Production remains untouched and **release blocked**: required custom ownership function definitions are absent from the Publish diff. Fresh migration-chain success does not prove managed Publish delivers those functions. See [release gate](clinic-expansion-release.md) for the production/custom-function blocker.
+- **Current release status:** Production remains untouched, Publish was not performed, and fixture cleanup is pending. The old custom-function delivery blocker applies only to the historical admin-branch-assignment implementation, not the current effective-membership implementation. The current managed Publish diff still requires review of ordinary index changes and guest uniqueness protections; no production custom-function migration is planned. See [release plan](clinic-expansion-release.md).

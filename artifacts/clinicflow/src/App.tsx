@@ -80,7 +80,7 @@ function Guard({role, page}: {role:string;page:string}) {
   const actual = ["superAdmin","clinicAdmin"].includes(me.data.user.role) ? "admin" : me.data.user.role;
   if(actual !== role) return <Redirect to={`/${actual}/dashboard`}/>;
   if(me.data.user.role==="clinicAdmin"&&["masters","audit"].includes(page)) return <Redirect to="/admin/dashboard"/>;
-  if(role==="admin"&&page==="profile") return <Redirect to="/admin/dashboard"/>;
+  if(role==="admin"&&page==="profile"&&(me.data.user.role!=="clinicAdmin"||!me.data.doctorId)) return <Redirect to="/admin/dashboard"/>;
   return <Portal identity={me.data} role={role} page={page}/>;
 }
 function PublicBookingRoute({reference}: {reference:string}) {
