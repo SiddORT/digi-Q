@@ -33,7 +33,7 @@ Status: all eight workstreams implemented; automated and public-display checks p
 ## Verification log
 
 - 2026-09-25: Full workspace TypeScript check passed. Frontend unit checks: 16/16; backend-flow, SQL domain and list-query checks: 61/61. No whitespace errors.
-- SQL concurrency tests use embedded PGlite, not independent production PostgreSQL connections.
+- The original SQL concurrency tests use embedded PGlite. The separate `test:queue-contention` suite now covers eight lifecycle races on independent connections in a disposable PostgreSQL cluster, with observed advisory-lock waits; all eight passed.
 - Review corrected future-booking lead time being counted as queue wait, legacy metric discrepancies, checkout rollback after entity deactivation, and stale single-ticket printing.
 - Average queue wait is measured within the consultation session, not physical arrival wait. Missing/invalid timing remains unknown.
 - Public display screenshots: `screenshots/queue-refresh-display-desktop.jpg`, `screenshots/queue-refresh-display-mobile.jpg`. These use synthetic SQL-seeded data and do not prove a real booking/consultation UI journey.

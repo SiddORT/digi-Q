@@ -8,7 +8,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:auth": "node --test ./src/auth-flow.test.mjs"
+    "test:auth": "node --test ./src/auth-flow.test.mjs",
+    "test:queue-contention": "node --test ./src/queue-contention.test.mjs"
   },
   "dependencies": {
     "@clerk/express": "^2.1.69",

@@ -1,5 +1,38 @@
 # Queue refresh API contract
 
+## PostgreSQL contention regression tests
+
+Run `pnpm --filter @workspace/api-server test:queue-contention`.
+Requires PostgreSQL `initdb` and `pg_ctl` on PATH and a non-root OS user.
+Missing binaries fail the suite; it does not silently skip or fall back to PGlite.
+
+The harness starts its own disposable PostgreSQL cluster in a private temporary
+directory, exposes only a Unix socket (no TCP listener), and supplies all connection
+settings explicitly. It never uses the application's database URL or existing
+database records. Cleanup closes connections, stops the server, and removes its
+temporary data and bundle on success or test failure.
+
+Each race uses independent connections and transactions at PostgreSQL's default
+READ COMMITTED isolation. A separate transaction holds the application advisory
+locks while `pg_locks` confirms **every** contender is blocked; only then is the
+gate released. Backend PIDs must be distinct, and waits/statements are bounded.
+Launch order is varied but does not imply a guaranteed PostgreSQL winner.
+Authentication is fixture-injected with per-operation async context; lifecycle,
+ordering, reschedule, booking, and call-next logic are the real application code.
+
+Cases cover duplicate/competing check-ins; duplicate checkout racing call-next
+with legacy pending reservations; skip racing check-in; competing re-entry with
+one queue version; reschedule racing check-in; transfers competing for destination
+capacity; and opposing doctor transfers. Assertions include readable 409 conflicts,
+one called/consulting reservation, exactly-once history/audit writes, stable
+references/tokens/ranks, non-reused source tokens, and no losing destination token
+allocation. Shared synthetic schema/fixtures include the queue's partial unique
+indexes, but this is not a full production migration, Clerk, or browser test.
+The existing PGlite suite remains the fast domain/SQL suite; its concurrent promises
+alone do not prove independent PostgreSQL connection contention.
+
+## Lifecycle contract
+
 - New `POST /api/appointments` bookings (online, QR, walk-in) immediately return `status: waiting`, a stable dated doctor/branch token and `waitingAt`. No arrival/enqueue step is required.
 - `POST /api/appointments/:id/actions` retains the existing action enum. Primary UI actions: `checkIn` = enter consultation (`inConsultation`, stamps `checkedInAt` and `consultationStartedAt`); `complete` = checkout (`completed`) and atomically call the next reservation (`called`, never automatically start consultation); `noShow` = explicit skip with mandatory `reason`; `requeue` = return with mandatory `reason`, one-based `position`, `expectedRevision` and `expectedQueueVersion`; `cancel` = cancel before consultation subject to cutoff.
 - `checkIn` accepts `called`, or the first pending reservation when no patient is called/in consultation. Legacy `booked`/`checkedIn` remain usable as pending reservations. All consultation/queue actions are appointment-date-only. No automatic skip occurs. Token/reference survive skip/requeue.
