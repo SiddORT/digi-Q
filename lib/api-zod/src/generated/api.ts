@@ -400,6 +400,37 @@ export const GetPublicAvailabilityResponse = zod.object({
 })
 
 
+export const GetPublicDisplayParams = zod.object({
+  "reference": zod.coerce.string()
+})
+
+export const GetPublicDisplayResponse = zod.object({
+  "clinic": zod.object({
+  "name": zod.string()
+}),
+  "branch": zod.object({
+  "name": zod.string(),
+  "address": zod.string().nullable(),
+  "city": zod.string().nullable(),
+  "timezone": zod.string()
+}),
+  "date": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "sessions": zod.array(zod.object({
+  "doctorId": zod.string(),
+  "doctorName": zod.string(),
+  "startTime": zod.string().nullable(),
+  "endTime": zod.string().nullable(),
+  "currentToken": zod.string().nullable(),
+  "currentStatus": zod.union([zod.literal('called'),zod.literal('inConsultation'),zod.literal(null)]).nullable(),
+  "nextToken": zod.string().nullable(),
+  "waitingTokens": zod.array(zod.string()),
+  "waitingCount": zod.number().int(),
+  "completedCount": zod.number().int()
+}))
+})
+
+
 export const ResolveQrParams = zod.object({
   "reference": zod.coerce.string()
 })
@@ -408,6 +439,10 @@ export const ResolveQrResponse = zod.object({
   "reference": zod.string(),
   "clinicId": zod.string(),
   "clinicName": zod.string(),
+  "clinicAddress": zod.string().nullish(),
+  "branchAddress": zod.string().nullish(),
+  "branchCity": zod.string().nullish(),
+  "branchTimezone": zod.string().nullish(),
   "branchId": zod.string().nullish(),
   "branchName": zod.string().nullish(),
   "doctorId": zod.string().nullish(),
@@ -2121,6 +2156,7 @@ export const listAppointmentsQueryPageSizeMax = 100;
 
 
 export const ListAppointmentsQueryParams = zod.object({
+  "statusGroup": zod.enum(['active', 'waiting', 'absent', 'completed', 'cancelled', 'all']).optional().describe('Server-side group filter applied before pagination; intersects with status when both supplied'),
   "search": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
   "branchId": zod.coerce.string().optional(),
@@ -2453,7 +2489,7 @@ export const ResolveAppointmentQrResponse = zod.object({
 
 
 /**
- * Idempotently checks in and enqueues an eligible appointment for authorized operational staff.
+ * After explicit staff confirmation, enters consultation for the called or first pending reservation. Stamps checkedInAt and consultationStartedAt. Repeated scans of a current consultation are idempotent; never enqueues or bypasses reservation order.
  */
 
 
@@ -2643,10 +2679,15 @@ export const RescheduleAppointmentResponse = zod.object({
 
 
 /**
- * checkIn booked→checkedIn; enqueue checkedIn→waiting; call waiting→called;
- * start called→inConsultation; complete inConsultation→completed;
- * noShow waiting/called→noShow; requeue noShow→waiting;
- * cancel booked/checkedIn/waiting→cancelled where policy allows.
+ * New bookings immediately enter waiting with a stable token.
+ * checkIn called (or first pending with no current patient)→inConsultation,
+ * stamping checkedInAt and consultationStartedAt.
+ * complete inConsultation→completed and atomically calls the next pending reservation.
+ * Legacy booked/checkedIn reservations remain usable without migration.
+ * Compatibility enqueue normalizes legacy pending to waiting; call pending→called; start called→inConsultation.
+ * noShow pending/called→noShow requires reason; requeue noShow→waiting requires reason, position and fresh versions.
+ * cancel booked/checkedIn/waiting/called→cancelled only before checkedInAt and within cutoff.
+ * Queue actions are appointment-date-only, serialized per session, and never automatically skip patients.
  * Patients may cancel only self. All other actions require scoped staff.
  * Concurrent state conflicts return 409. Every transition is audited.
  */
@@ -2751,7 +2792,8 @@ export const GetQueueQueryParams = zod.object({
   "pageSize": zod.coerce.number().int().min(1).max(getQueueQueryPageSizeMax).default(getQueueQueryPageSizeDefault),
   "search": zod.coerce.string().optional(),
   "sort": zod.coerce.string().optional().describe('Allowlisted field with optional minus prefix for descending order'),
-  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']).optional()
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']).optional(),
+  "statusGroup": zod.enum(['active', 'waiting', 'absent', 'completed', 'cancelled', 'all']).optional().describe('Server-side group filter applied before pagination; intersects with status when both supplied')
 })
 
 export const getQueueResponseEntriesItemOneNotesMax = 1000;

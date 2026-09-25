@@ -1,6 +1,13 @@
 import { createHash } from "node:crypto";
 
 export const pendingStatuses = ["booked", "checkedIn", "waiting"];
+export const statusGroups: Record<string, string[]> = {
+  active: [...pendingStatuses, "called", "inConsultation"],
+  waiting: pendingStatuses,
+  absent: ["noShow"],
+  completed: ["completed"],
+  cancelled: ["cancelled"],
+};
 export const rank = (row: any): number => row.queueRank ?? row.tokenNumber;
 export function orderedReservations(rows: any[]) {
   return [...rows].sort((a, b) => rank(a) - rank(b) || a.tokenNumber - b.tokenNumber || a.id.localeCompare(b.id));
@@ -22,11 +29,11 @@ export function queueSummary(rows: any[], own?: any) {
   return {
     currentToken: current?.token || null, nextToken: pending[0]?.token || null,
     reserved: pending.length, arrived: rows.filter(a => ["checkedIn", "waiting", "called", "inConsultation"].includes(a.status)).length,
-    waiting: rows.filter(a => a.status === "waiting").length,
+    waiting: pending.length,
     inConsultation: rows.filter(a => a.status === "inConsultation").length,
     completed: rows.filter(a => a.status === "completed").length, noShow: rows.filter(a => a.status === "noShow").length,
     total: rows.length, queueVersion: queueVersion(rows), expectedDurationMinutes: duration,
-    blockedByAbsentReservation: !!pending[0] && pending[0].status !== "waiting",
+    blockedByAbsentReservation: false,
     ownEntry: own ? { appointmentId: own.id, token: own.token, status: own.status, patientsAhead: ahead, estimatedWaitMinutes: duration === null ? null : ahead * duration } : null,
   };
 }

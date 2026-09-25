@@ -17,6 +17,7 @@ import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
 import type { SearchParameter } from './searchParameter';
 import type { SortParameter } from './sortParameter';
+import type { StatusGroupParameter } from './statusGroupParameter';
 
 export type GetQueueParams = {
 doctorId: string;
@@ -38,4 +39,8 @@ search?: SearchParameter;
  */
 sort?: SortParameter;
 status?: AppointmentStatus;
+/**
+ * Server-side group filter applied before pagination; intersects with status when both supplied
+ */
+statusGroup?: StatusGroupParameter;
 };

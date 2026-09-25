@@ -843,10 +843,68 @@ export type Qr = QrInput & {
   createdAt: string;
 }, 'status'>>;
 
+/**
+ * @nullable
+ */
+export type PublicDisplaySessionCurrentStatus = typeof PublicDisplaySessionCurrentStatus[keyof typeof PublicDisplaySessionCurrentStatus] | null;
+
+
+export const PublicDisplaySessionCurrentStatus = {
+  called: 'called',
+  inConsultation: 'inConsultation',
+} as const;
+
+export interface PublicDisplaySession {
+  doctorId: string;
+  doctorName: string;
+  /** @nullable */
+  startTime: string | null;
+  /** @nullable */
+  endTime: string | null;
+  /** @nullable */
+  currentToken: string | null;
+  /** @nullable */
+  currentStatus: PublicDisplaySessionCurrentStatus;
+  /** @nullable */
+  nextToken: string | null;
+  waitingTokens: string[];
+  waitingCount: number;
+  completedCount: number;
+}
+
+export type PublicDisplayClinic = {
+  name: string;
+};
+
+export type PublicDisplayBranch = {
+  name: string;
+  /** @nullable */
+  address: string | null;
+  /** @nullable */
+  city: string | null;
+  timezone: string;
+};
+
+export interface PublicDisplay {
+  clinic: PublicDisplayClinic;
+  branch: PublicDisplayBranch;
+  date: string;
+  updatedAt: string;
+  sessions: PublicDisplaySession[];
+}
+
 export interface QrContext {
   reference: string;
   clinicId: string;
   clinicName: string;
+  /** @nullable */
+  clinicAddress?: string | null;
+  /** @nullable */
+  branchAddress?: string | null;
+  /** @nullable */
+  branchCity?: string | null;
+  /** @nullable */
+  branchTimezone?: string | null;
   /** @nullable */
   branchId?: string | null;
   /** @nullable */
@@ -1027,6 +1085,18 @@ export type StatusParameter = typeof StatusParameter[keyof typeof StatusParamete
 export const StatusParameter = {
   active: 'active',
   inactive: 'inactive',
+} as const;
+
+export type StatusGroupParameter = typeof StatusGroupParameter[keyof typeof StatusGroupParameter];
+
+
+export const StatusGroupParameter = {
+  active: 'active',
+  waiting: 'waiting',
+  absent: 'absent',
+  completed: 'completed',
+  cancelled: 'cancelled',
+  all: 'all',
 } as const;
 
 export type ClinicIdParameter = string;
@@ -1329,6 +1399,10 @@ pageSize?: PageSizeParameter;
 };
 
 export type ListAppointmentsParams = {
+/**
+ * Server-side group filter applied before pagination; intersects with status when both supplied
+ */
+statusGroup?: StatusGroupParameter;
 search?: SearchParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;
@@ -1374,6 +1448,10 @@ search?: SearchParameter;
  */
 sort?: SortParameter;
 status?: AppointmentStatus;
+/**
+ * Server-side group filter applied before pagination; intersects with status when both supplied
+ */
+statusGroup?: StatusGroupParameter;
 };
 
 export type ListQrsParams = {

@@ -3,24 +3,24 @@ import { sql } from "drizzle-orm";
 import { all, one, change, put, uid, audit, getSettings } from "./store";
 import { assert } from "./http";
 import { canRead, roles } from "./auth";
-import { localNow, minutes, doctorContext } from "./availability";
+import { localNow, minutes, doctorContext, operationalDoctorContext, sessionQueueWaitMinutes } from "./availability";
 import { orderedReservations, pendingStatuses, queueVersion, rank, sessionRows } from "./queue-order";
 export const transitions: Record<string, { from: string[], to: string, stamp?: string }> = {
-  checkIn: { from: ["booked"], to: "checkedIn", stamp: "checkedInAt" },
-  enqueue: { from: ["checkedIn"], to: "waiting", stamp: "waitingAt" },
-  call: { from: ["waiting"], to: "called", stamp: "calledAt" },
+  checkIn: { from: ["booked", "checkedIn", "waiting", "called"], to: "inConsultation", stamp: "checkedInAt" },
+  enqueue: { from: ["booked", "checkedIn"], to: "waiting", stamp: "waitingAt" },
+  call: { from: ["booked", "checkedIn", "waiting"], to: "called", stamp: "calledAt" },
   start: { from: ["called"], to: "inConsultation", stamp: "consultationStartedAt" },
   complete: { from: ["inConsultation"], to: "completed", stamp: "completedAt" },
   noShow: { from: ["booked", "checkedIn", "waiting", "called"], to: "noShow" },
   requeue: { from: ["noShow"], to: "waiting", stamp: "waitingAt" },
-  cancel: { from: ["booked", "checkedIn", "waiting"], to: "cancelled", stamp: "cancelledAt" },
+  cancel: { from: ["booked", "checkedIn", "waiting", "called"], to: "cancelled", stamp: "cancelledAt" },
 };
 export async function lockQueue(conn: any, doctorId: string, branchId: string, date: string) {
   await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + doctorId}))`);
   await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${`${doctorId}:${branchId}:${date}`}))`);
 }
 export function appointmentView(row: any, user: any) {
-  const allowedActions = Object.entries(transitions).filter(([action, rule]) => rule.from.includes(row.status) && (user.role !== "patient" || action === "cancel") && (action !== "requeue" || ["superAdmin", "clinicAdmin", "receptionist"].includes(user.role))).map(([a]) => a);
+  const allowedActions = Object.entries(transitions).filter(([action, rule]) => !["enqueue", "call", "start"].includes(action) && rule.from.includes(row.status) && (action === "cancel" ? !row.checkedInAt : row.date === localNow(row.timezone || "Asia/Kolkata").date) && (user.role !== "patient" || action === "cancel") && (action !== "requeue" || ["superAdmin", "clinicAdmin", "receptionist"].includes(user.role))).map(([a]) => a);
   const { actorId, requestId, ...view } = row;
   return { ...view, ...(user.role === "patient" && row.history ? { history: row.history.map(({ actorId: _actor, ...event }: any) => event) } : {}), queueRank: rank(row), revision: row.revision || 0, expectedDurationMinutes: row.expectedDurationMinutes ?? null, allowedActions };
 }
@@ -41,6 +41,7 @@ export async function transition(user: any, id: string, body: any, conn: any = d
   if (!["cancel", "complete", "noShow"].includes(body.action)) await doctorContext(row.doctorId, row.branchId, conn);
   const now = localNow(row.timezone || "Asia/Kolkata");
   if (body.action === "cancel") {
+    assert(!row.checkedInAt, 409, "Cannot cancel after consultation check-in");
     const config = await getSettings(conn);
     const difference = (Date.parse(row.date) - Date.parse(now.date)) / 60000 + minutes(row.startTime || "00:00") - now.minute;
     assert(difference >= config.cancellationCutoffMinutes, 409, "Cancellation cutoff has passed");
@@ -59,17 +60,28 @@ export async function transition(user: any, id: string, body: any, conn: any = d
       if (entry.id !== id) await change(appointments, entry.id, { data: { ...entry, revision: (entry.revision || 0) + 1 } }, conn);
     }
   }
-  if (["call", "start"].includes(body.action)) {
+  if (["call", "start", "checkIn"].includes(body.action)) {
     const active = rows.some(a => a.id !== id && ["called", "inConsultation"].includes(a.status));
     assert(!active, 409, "Another patient is already called or in consultation");
-    if (body.action === "call") assert(orderedReservations(rows.filter(a => pendingStatuses.includes(a.status)))[0]?.id === id, 409, "Earlier reservation must be served or explicitly skipped first");
+    if (row.status !== "called") assert(orderedReservations(rows.filter(a => pendingStatuses.includes(a.status)))[0]?.id === id, 409, "Earlier reservation must be served or explicitly skipped first");
   }
   const timestamp = new Date().toISOString(), data = { ...row, revision: (row.revision || 0) + 1, ...(rule.stamp ? { [rule.stamp]: timestamp } : {}) };
-  if (body.action === "start" && row.waitingAt) data.waitMinutes = Math.max(0, (Date.now() - Date.parse(row.waitingAt)) / 60000);
+  if (["start", "checkIn"].includes(body.action)) {
+    data.checkedInAt = timestamp;
+    data.consultationStartedAt = timestamp;
+    data.waitMinutes = sessionQueueWaitMinutes(row);
+  }
   if (body.action === "complete" && row.consultationStartedAt) data.consultationMinutesActual = Math.max(0, (Date.now() - Date.parse(row.consultationStartedAt)) / 60000);
   data.history = [...(row.history || []), { status: rule.to, occurredAt: timestamp, actorId: user.id, action: body.action, ...(body.position ? { position: body.position } : {}), ...(body.reason ? { reason: body.reason.trim() } : {}) }];
   const updated = await change(appointments, id, { status: rule.to, data }, conn);
   await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, fromStatus: row.status, toStatus: rule.to }, conn);
   await audit(user, body.action, "appointments", updated, conn);
+  if (body.action === "complete") {
+    const next = orderedReservations(rows.filter(a => pendingStatuses.includes(a.status)))[0];
+    if (next) {
+      const context = await operationalDoctorContext(next.doctorId, next.branchId, conn);
+      if (context.active && context.assigned) await transition(user, next.id, { action: "call", expectedStatus: next.status }, conn, true);
+    }
+  }
   return appointmentView(updated, user);
 }

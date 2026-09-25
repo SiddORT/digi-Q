@@ -1,6 +1,7 @@
 import { db } from "@workspace/db";
 import { sql, type SQL } from "drizzle-orm";
 import { assert } from "./http";
+import { statusGroups } from "./queue-order";
 
 const names: Record<string, string> = { users: "users", doctors: "doctors", clinics: "clinics", branches: "branches", patients: "patients", masters: "masters", schedules: "schedules", "availability-exceptions": "availability_exceptions", qrs: "qrs", appointments: "appointments", "audit-logs": "audit_logs" };
 const raw = sql.raw;
@@ -55,6 +56,10 @@ export function filterSql(q: any): SQL {
     filters.push(sql`doc->>'dayOfWeek'=${String(weekday)}`);
   }
   if (q.linkedOnly === true) filters.push(sql`nullif(doc->>'clerkId','') is not null`);
+  if (q.statusGroup && q.statusGroup !== "all") {
+    assert(statusGroups[q.statusGroup], 400, "Invalid status group");
+    filters.push(inList(raw("doc->>'status'"), statusGroups[q.statusGroup]));
+  }
   for (const key of ["clinicId", "branchId", "doctorId", "patientId", "adminId", "managingAdminId", "status", "role", "category", "parentId", "gender", "city", "specializationId", "source", "entityType", "actorId", "date"]) {
     if (q[key] !== undefined) filters.push(sql`(doc->>${key}=${q[key]} or coalesce(doc->${key === "clinicId" ? "clinicIds" : key === "branchId" ? "branchIds" : "__none"},'[]'::jsonb) ? ${q[key]})`);
   }
@@ -84,8 +89,8 @@ export function sourceSql(user: any, kind: string, extra: SQL = raw("true")) {
   return sql`select ${document} as doc from ${raw(names[kind])} r where (${readScope(user, kind)}) and (${extra})`;
 }
 export const metricSql = sql`count(*)::int as appointments,
-  count(*) filter(where doc->>'status'='waiting')::int as waiting,
-  count(*) filter(where doc->>'status'='checkedIn')::int as "checkedIn",
+  count(*) filter(where doc->>'status' in ('booked','checkedIn','waiting'))::int as waiting,
+  count(*) filter(where doc->>'status'='inConsultation')::int as "checkedIn",
   count(*) filter(where doc->>'status'='completed')::int as completed,
   count(*) filter(where doc->>'status'='noShow')::int as "noShow",
   count(*) filter(where doc->>'status'='cancelled')::int as cancelled,
@@ -93,7 +98,7 @@ export const metricSql = sql`count(*)::int as appointments,
   coalesce(avg((doc->>'consultationMinutesActual')::numeric),0)::float as "averageConsultationMinutes"`;
 export async function queryMetrics(user: any, q: any) {
   const result = await db.execute(sql`with visible as (${sourceSql(user, "appointments")}) select ${metricSql},
-    count(distinct (doc->>'doctorId',doc->>'branchId')) filter(where doc->>'status' in ('waiting','called','inConsultation'))::int as "activeQueues",
+    count(distinct (doc->>'doctorId',doc->>'branchId')) filter(where doc->>'status' in ('booked','checkedIn','waiting','called','inConsultation'))::int as "activeQueues",
     min(doc->>'token') filter(where doc->>'status' in ('called','inConsultation')) as "currentToken"
     from visible where ${filterSql(q)}`);
   return result.rows[0];

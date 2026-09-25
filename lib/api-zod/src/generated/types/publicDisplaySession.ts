@@ -12,25 +12,22 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { PublicDisplaySessionCurrentStatus } from './publicDisplaySessionCurrentStatus';
 
-export interface QrContext {
-  reference: string;
-  clinicId: string;
-  clinicName: string;
+export interface PublicDisplaySession {
+  doctorId: string;
+  doctorName: string;
   /** @nullable */
-  clinicAddress?: string | null;
+  startTime: string | null;
   /** @nullable */
-  branchAddress?: string | null;
+  endTime: string | null;
   /** @nullable */
-  branchCity?: string | null;
+  currentToken: string | null;
   /** @nullable */
-  branchTimezone?: string | null;
+  currentStatus: PublicDisplaySessionCurrentStatus;
   /** @nullable */
-  branchId?: string | null;
-  /** @nullable */
-  branchName?: string | null;
-  /** @nullable */
-  doctorId?: string | null;
-  /** @nullable */
-  doctorName?: string | null;
+  nextToken: string | null;
+  waitingTokens: string[];
+  waitingCount: number;
+  completedCount: number;
 }

@@ -122,6 +122,14 @@ paths:
         - { name: date, in: query, required: true, schema: { type: string, format: date } }
       responses:
         "200": { description: Computed availability including exceptions and remaining capacity, content: { application/json: { schema: { $ref: "#/components/schemas/Availability" } } } }
+  /public/display/{reference}:
+    get:
+      operationId: getPublicDisplay
+      security: []
+      parameters: [{ name: reference, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: Branch-local live token display without patient information, content: { application/json: { schema: { $ref: "#/components/schemas/PublicDisplay" } } } }
+        "404": { $ref: "#/components/responses/Error" }
   /public/qr/{reference}:
     get:
       operationId: resolveQr
@@ -379,7 +387,7 @@ paths:
   /appointments:
     get:
       operationId: listAppointments
-      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { name: patientId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Date" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { name: status, in: query, schema: { $ref: "#/components/schemas/AppointmentStatus" } }, { name: source, in: query, schema: { $ref: "#/components/schemas/BookingSource" } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ $ref: "#/components/parameters/StatusGroup" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { name: patientId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Date" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { name: status, in: query, schema: { $ref: "#/components/schemas/AppointmentStatus" } }, { name: source, in: query, schema: { $ref: "#/components/schemas/BookingSource" } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Scoped history and upcoming visits, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentList" } } } }
     post:
@@ -412,7 +420,7 @@ paths:
   /appointment-qr/check-in:
     post:
       operationId: checkInAppointmentQr
-      description: Idempotently checks in and enqueues an eligible appointment for authorized operational staff.
+      description: After explicit staff confirmation, enters consultation for the called or first pending reservation. Stamps checkedInAt and consultationStartedAt. Repeated scans of a current consultation are idempotent; never enqueues or bypasses reservation order.
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentQrPayload" } } } }
       responses:
         "200": { description: Appointment QR check-in result, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentQrCheckInResult" } } } }
@@ -445,10 +453,15 @@ paths:
     post:
       operationId: transitionAppointment
       description: |
-        checkIn booked→checkedIn; enqueue checkedIn→waiting; call waiting→called;
-        start called→inConsultation; complete inConsultation→completed;
-        noShow waiting/called→noShow; requeue noShow→waiting;
-        cancel booked/checkedIn/waiting→cancelled where policy allows.
+        New bookings immediately enter waiting with a stable token.
+        checkIn called (or first pending with no current patient)→inConsultation,
+        stamping checkedInAt and consultationStartedAt.
+        complete inConsultation→completed and atomically calls the next pending reservation.
+        Legacy booked/checkedIn reservations remain usable without migration.
+        Compatibility enqueue normalizes legacy pending to waiting; call pending→called; start called→inConsultation.
+        noShow pending/called→noShow requires reason; requeue noShow→waiting requires reason, position and fresh versions.
+        cancel booked/checkedIn/waiting/called→cancelled only before checkedInAt and within cutoff.
+        Queue actions are appointment-date-only, serialized per session, and never automatically skip patients.
         Patients may cancel only self. All other actions require scoped staff.
         Concurrent state conflicts return 409. Every transition is audited.
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentAction" } } } }
@@ -469,6 +482,7 @@ paths:
         - { $ref: "#/components/parameters/Search" }
         - { $ref: "#/components/parameters/Sort" }
         - { name: status, in: query, schema: { $ref: "#/components/schemas/AppointmentStatus" } }
+        - { $ref: "#/components/parameters/StatusGroup" }
       responses:
         "200": { description: Live queue, content: { application/json: { schema: { $ref: "#/components/schemas/LiveQueue" } } } }
   /queue/call-next:
@@ -558,6 +572,7 @@ components:
     PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
     Sort: { name: sort, in: query, description: Allowlisted field with optional minus prefix for descending order, schema: { type: string } }
     Status: { name: status, in: query, schema: { type: string, enum: [active, inactive] } }
+    StatusGroup: { name: statusGroup, in: query, description: Server-side group filter applied before pagination; intersects with status when both supplied, schema: { type: string, enum: [active, waiting, absent, completed, cancelled, all] } }
     ClinicId: { name: clinicId, in: query, schema: { type: string } }
     BranchId: { name: branchId, in: query, schema: { type: string } }
     DoctorId: { name: doctorId, in: query, schema: { type: string } }
@@ -1159,6 +1174,40 @@ components:
             reference: { type: string }
             bookingUrl: { type: string }
             createdAt: { type: string, format: date-time }
+    PublicDisplaySession:
+      type: object
+      required: [doctorId, doctorName, startTime, endTime, currentToken, currentStatus, nextToken, waitingTokens, waitingCount, completedCount]
+      properties:
+        doctorId: { type: string }
+        doctorName: { type: string }
+        startTime: { type: [string, "null"] }
+        endTime: { type: [string, "null"] }
+        currentToken: { type: [string, "null"] }
+        currentStatus: { type: [string, "null"], enum: [called, inConsultation, null] }
+        nextToken: { type: [string, "null"] }
+        waitingTokens: { type: array, items: { type: string } }
+        waitingCount: { type: integer }
+        completedCount: { type: integer }
+    PublicDisplay:
+      type: object
+      required: [clinic, branch, date, updatedAt, sessions]
+      properties:
+        clinic:
+          type: object
+          required: [name]
+          properties:
+            name: { type: string }
+        branch:
+          type: object
+          required: [name, address, city, timezone]
+          properties:
+            name: { type: string }
+            address: { type: [string, "null"] }
+            city: { type: [string, "null"] }
+            timezone: { type: string }
+        date: { type: string, format: date }
+        updatedAt: { type: string, format: date-time }
+        sessions: { type: array, items: { $ref: "#/components/schemas/PublicDisplaySession" } }
     QrContext:
       type: object
       required: [reference, clinicId, clinicName]
@@ -1166,6 +1215,10 @@ components:
         reference: { type: string }
         clinicId: { type: string }
         clinicName: { type: string }
+        clinicAddress: { type: [string, "null"] }
+        branchAddress: { type: [string, "null"] }
+        branchCity: { type: [string, "null"] }
+        branchTimezone: { type: [string, "null"] }
         branchId: { type: [string, "null"] }
         branchName: { type: [string, "null"] }
         doctorId: { type: [string, "null"] }

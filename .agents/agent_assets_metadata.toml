@@ -78,3 +78,17 @@ mtime_ms = 1790171102929
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/09ff0ada-db8b-4bc9-84a6-c995216156bb/6dd2949a-afa5-4255-b62d-d057ee2f90e9"
 storage_version_token = "1790171142039173"
 content_type = "text/html"
+
+[[outputs]]
+id = "vHuX4l1JYoI7bZNodA9Zt"
+uri = "file://screenshots/queue-refresh-display-desktop.jpg"
+type = "image"
+title = "Clinic reception display — example"
+description = "Implemented split-screen booking QR and doctor queue, rendered with temporary synthetic test data. This example QR is no longer active."
+logical_id = "2b31cdaa-dd60-4d54-ada5-6183adf6f76f"
+content_hash = "sha256:315ca03e4a4b1d202f4822f5711fc8ef3f7b26271c202ac20e7baba9db4010f7"
+size = 106891
+mtime_ms = 1790333003241
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/2b31cdaa-dd60-4d54-ada5-6183adf6f76f/ec8a6b87-fb2c-4b44-9fbf-8433784e02d3"
+storage_version_token = "1790333254988005"
+content_type = "image/jpeg"

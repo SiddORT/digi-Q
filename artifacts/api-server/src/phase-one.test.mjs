@@ -15,9 +15,12 @@ await build({
     export * from "./lib/queue-order";
     export * from "./lib/session-duration";
     export * from "./lib/store";
+    export { queryMetrics } from "./lib/list-query";
+    export { sessionQueueWaitMinutes } from "./lib/availability";
     export * from "./routes/appointments";
     export * from "./routes/queue";
     export * from "./routes/duration";
+    export * from "./routes/public";
     export * as tables from "@workspace/db";
     export { GetQueueResponse } from "@workspace/api-zod";
   `, resolveDir: root },
@@ -57,6 +60,7 @@ await database.exec(`
   create table audit_logs(id text primary key,actor_id text,clinic_id text,branch_id text,action text,entity_type text,entity_id text,summary text,created_at timestamptz default now());
   create table settings(id text primary key,data jsonb not null default '{}');
   create table masters(id text primary key,category text,code text,parent_id text,status text default 'active',data jsonb not null default '{}');
+  create table qrs(id text primary key,clinic_id text,branch_id text,doctor_id text,public_reference text,status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
 `);
 mock.timers.enable({ apis: ["Date"], now: Date.UTC(2030, 0, 7, 12) });
 const today = new Date().toISOString().slice(0, 10);
@@ -64,7 +68,7 @@ const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 const staff = { id: "r", role: "receptionist", clinicIds: ["c"], branchIds: ["b", "b2"] };
 const patient = { id: "u1", role: "patient", patientId: "p1", clinicIds: [], branchIds: [] };
 async function seed() {
-  await database.exec("truncate users,clinics,branches,doctors,assignments,patients,schedules,availability_exceptions,appointments,appointment_history,audit_logs,settings,masters");
+  await database.exec("truncate users,clinics,branches,doctors,assignments,patients,schedules,availability_exceptions,appointments,appointment_history,audit_logs,settings,masters,qrs");
   await api.put(t.users, { id: "du", email: "d@example.com", fullName: "Doctor", role: "doctor" });
   await api.put(t.users, { id: "du2", email: "d2@example.com", fullName: "Doctor Two", role: "doctor" });
   await api.put(t.users, { id: "admin", email: "admin@example.com", fullName: "Admin", role: "clinicAdmin" });
@@ -99,17 +103,17 @@ async function queue(actor = patient, extra = {}) {
   return route(api.queueRouter, "get", "/queue", actor, {}, {}, { doctorId: "d", branchId: "b", date: today, ...extra });
 }
 
-test("real SQL reservation order survives reversed arrivals; absent reservations block both call paths", async () => {
+test("real SQL immediate waiting preserves reservation order and explicit skip", async () => {
   await seed();
   const a = await book(), b = await book("p2");
-  await act(b.id, { action: "checkIn" }); await act(b.id, { action: "enqueue" });
+  assert.equal(a.status, "waiting");
+  await assert.rejects(act(b.id, { action: "checkIn" }), /Earlier reservation/);
   let q = await queue({ ...patient, patientId: "p2" });
   assert.equal(q.ownEntry.patientsAhead, 1);
   assert.equal(q.ownEntry.estimatedWaitMinutes, 10, "no five-minute buffer");
-  assert.equal(q.reserved, 2); assert.equal(q.arrived, 1); assert.equal(q.entries, undefined);
-  assert.equal(q.blockedByAbsentReservation, true);
+  assert.equal(q.reserved, 2); assert.equal(q.arrived, 2); assert.equal(q.entries, undefined);
+  assert.equal(q.blockedByAbsentReservation, false);
   await assert.rejects(act(b.id, { action: "call" }), /Earlier reservation/);
-  await assert.rejects(route(api.queueRouter, "post", "/queue/call-next", staff, { doctorId: "d", branchId: "b", date: today }), /Earlier reservation/);
   await assert.rejects(act(a.id, { action: "noShow" }), /reason/);
   await act(a.id, { action: "noShow", reason: "Not present at reception" });
   await act(b.id, { action: "call" });
@@ -124,7 +128,7 @@ test("re-entry requires reception, reason, fresh queue version, position; retain
   const body = { action: "requeue", reason: "Returned; agreed after next reservation", position: 2, expectedRevision: absent.revision, expectedQueueVersion: version };
   await assert.rejects(act(a.id, body, { ...staff, role: "doctor", doctorId: "d" }), /Permission/);
   await assert.rejects(act(a.id, { ...body, reason: " " }), /reason/);
-  await act(c.id, { action: "checkIn" });
+  await api.change(t.appointments, c.id, { data: { ...c, revision: 1 } });
   await assert.rejects(act(a.id, body), /Queue changed/);
   const returned = await act(a.id, { ...body, expectedQueueVersion: api.queueVersion(await rows()) });
   assert.equal(returned.token, a.token);
@@ -200,7 +204,7 @@ test("scoped staff ticket selection supplies ahead and ETA without broadening pa
 });
 test("concurrent calls/start/completion have one winner; concurrent duplicate/capacity bookings are safe", async () => {
   await seed();
-  const a = await book(); await act(a.id, { action: "checkIn" }); await act(a.id, { action: "enqueue" });
+  const a = await book();
   let outcomes = await Promise.allSettled([act(a.id, { action: "call" }), act(a.id, { action: "call" })]);
   assert.equal(outcomes.filter(r => r.status === "fulfilled").length, 1);
   outcomes = await Promise.allSettled([act(a.id, { action: "start" }), act(a.id, { action: "start" })]);
@@ -241,7 +245,7 @@ test("concurrent reschedule versus check-in has exactly one success, with cohere
   ]);
   assert.equal(outcomes.filter(r => r.status === "fulfilled").length, 1);
   const final = await api.one(t.appointments, a.id);
-  assert.ok(final.status === "booked" && final.date === tomorrow || final.status === "checkedIn" && final.date === today);
+  assert.ok(final.status === "waiting" && final.date === tomorrow || final.status === "inConsultation" && final.date === today);
 });
 test("patient cancellation frees capacity and retains ticket/reference/history; booking retry retains token", async () => {
   await seed();
@@ -275,10 +279,6 @@ test("simultaneous re-entry position edits reject stale queue version instead of
 test("GET queue wire response preserves CURRENT/NEXT through generated response schema across call/start/complete", async () => {
   await seed();
   const a = await book(), b = await book("p2");
-  for (const appointment of [a, b]) {
-    await act(appointment.id, { action: "checkIn" });
-    await act(appointment.id, { action: "enqueue" });
-  }
   const response = async () => {
     // Exercise the real route and JSON transport, then the actual generated
     // response schema (not queueSummary alone or an equivalent handwritten schema).
@@ -304,7 +304,114 @@ test("GET queue wire response preserves CURRENT/NEXT through generated response 
   assert.equal(q.inConsultation, 1);
   await act(a.id, { action: "complete" });
   q = await response();
-  assert.equal(q.currentToken, null); assert.equal(q.nextToken, b.token);
+  assert.equal(q.currentToken, b.token); assert.equal(q.nextToken, null);
   assert.equal(q.completed, 1);
-  assert.ok(q.nextToken && !q.currentToken && !q.blockedByAbsentReservation, "next call is enabled after completion");
+  assert.equal(q.entries.find(row => row.id === b.id).status, "called");
+  assert.equal(q.entries.find(row => row.id === b.id).checkedInAt, undefined);
+});
+test("checkout atomically calls once; concurrent check-in and legacy pending remain usable", async () => {
+  await seed();
+  const a = await book(), b = await book("p2"), c = await book("p3");
+  await api.change(t.appointments, b.id, { status: "booked" });
+  const started = await act(a.id, { action: "checkIn" });
+  assert.ok(started.checkedInAt && started.consultationStartedAt);
+  const results = await Promise.allSettled([act(a.id, { action: "complete" }), act(a.id, { action: "complete" })]);
+  assert.equal(results.filter(r => r.status === "fulfilled").length, 1);
+  assert.equal((await api.one(t.appointments, b.id)).status, "called");
+  assert.equal((await api.one(t.appointments, c.id)).status, "waiting");
+  const starts = await Promise.allSettled([act(b.id, { action: "checkIn" }), act(b.id, { action: "checkIn" })]);
+  assert.equal(starts.filter(r => r.status === "fulfilled").length, 1);
+  await act(c.id, { action: "noShow", reason: "Absent" });
+  const skipped = await api.one(t.appointments, c.id);
+  await act(c.id, { action: "requeue", reason: "Returned", position: 1, expectedRevision: skipped.revision, expectedQueueVersion: api.queueVersion(await rows()) });
+  assert.equal((await api.one(t.appointments, b.id)).status, "inConsultation");
+  assert.equal((await api.one(t.appointments, c.id)).token, c.token);
+  const future = await book("p4", tomorrow);
+  await assert.rejects(act(future.id, { action: "checkIn" }), /appointment date/);
+  await assert.rejects(route(api.queueRouter, "post", "/queue/call-next", staff, { doctorId: "d", branchId: "b", date: tomorrow }), /appointment date/);
+});
+test("public display is branch-local, doctor-restricted, revocable and contains no patient fields", async () => {
+  await seed();
+  const a = await book(), b = await book("p2");
+  await book("p3", tomorrow);
+  await api.put(t.qrs, { id: "qr", clinicId: "c", branchId: "b", publicReference: "display" });
+  await act(a.id, { action: "checkIn" });
+  const display = await api.publicDisplay("display");
+  assert.equal(display.date, today);
+  assert.equal(display.sessions.length, 1);
+  assert.equal(display.sessions[0].doctorId, "d");
+  assert.equal(display.sessions[0].currentToken, a.token);
+  assert.deepEqual(display.sessions[0].waitingTokens, [b.token]);
+  assert.equal(display.sessions[0].waitingCount, 1);
+  assert.ok(!JSON.stringify(display).includes(a.reference));
+  assert.ok(!JSON.stringify(display).includes("patient"));
+  assert.equal(display.sessions[0].currentStatus, "inConsultation");
+  assert.deepEqual(Object.keys(display.sessions[0]).sort(), ["doctorId", "doctorName", "startTime", "endTime", "currentToken", "currentStatus", "nextToken", "waitingTokens", "waitingCount", "completedCount"].sort());
+  await api.change(t.qrs, "qr", { doctorId: "d" });
+  assert.equal((await api.publicDisplay("display")).sessions.length, 1);
+  await api.change(t.qrs, "qr", { branchId: null });
+  await assert.rejects(api.publicDisplay("display"), /branch-specific/);
+  await api.change(t.qrs, "qr", { branchId: "b", status: "inactive" });
+  await assert.rejects(api.publicDisplay("display"), /expired or revoked/);
+});
+test("grouped status filters apply before pagination in appointment and queue routes", async () => {
+  await seed();
+  const a = await book(), b = await book("p2"), c = await book("p3"), d = await book("p4");
+  await act(a.id, { action: "noShow", reason: "Absent" });
+  await act(b.id, { action: "checkIn" });
+  for (const [group, expected] of [["active", 3], ["waiting", 2], ["absent", 1], ["completed", 0], ["all", 4]]) {
+    const listing = await route(api.appointmentsRouter, "get", "/appointments", staff, {}, {}, { statusGroup: group, pageSize: "1", page: "1" });
+    assert.equal(listing.total, expected);
+    assert.equal(listing.items.length, Math.min(1, expected));
+    const q = await queue(staff, { statusGroup: group, pageSize: "1", page: "1" });
+    assert.equal(q.entriesTotal, expected);
+    assert.equal(q.entries.length, Math.min(1, expected));
+    assert.equal(q.totalPages, expected);
+  }
+  const second = await queue(staff, { statusGroup: "waiting", pageSize: "1", page: "2" });
+  assert.equal(second.entries[0].id, d.id);
+  assert.equal(second.entriesTotal, 2);
+  const intersect = await route(api.appointmentsRouter, "get", "/appointments", staff, {}, {}, { statusGroup: "waiting", status: "noShow" });
+  assert.equal(intersect.total, 0);
+});
+test("session queue wait excludes advance booking lead time, respects timezone and preserves unknown", async () => {
+  await seed();
+  const a = await book();
+  const row = await api.one(t.appointments, a.id);
+  await api.change(t.appointments, a.id, { data: { ...row, waitingAt: "2029-12-01T00:00:00Z", startTime: "17:00", timezone: "Asia/Kolkata" } });
+  const started = await act(a.id, { action: "checkIn" });
+  assert.equal(started.waitMinutes, 30, "12:00Z minus 17:00 India session start, not reservation lead time");
+  assert.equal(api.sessionQueueWaitMinutes({ ...row, waitingAt: null }), null);
+  assert.equal(api.sessionQueueWaitMinutes({ ...row, startTime: null }), null);
+  assert.equal(api.sessionQueueWaitMinutes({ ...row, timezone: "invalid-zone" }), null);
+  assert.equal(api.sessionQueueWaitMinutes({ ...row, date: "2030-03-10", startTime: "02:30", timezone: "America/New_York" }), null, "nonexistent DST session start is unknown");
+  assert.equal(api.sessionQueueWaitMinutes({ ...row, waitingAt: "2030-07-01T00:00:00Z", date: "2030-07-02", startTime: "08:00", timezone: "America/New_York" }, Date.parse("2030-07-02T12:45:00Z")), 45);
+});
+test("dashboard legacy pending counters match queue semantics and consultation check-in", async () => {
+  await seed();
+  const a = await book(), b = await book("p2"), c = await book("p3");
+  await api.change(t.appointments, a.id, { status: "booked" });
+  await api.change(t.appointments, b.id, { status: "checkedIn" });
+  let metrics = await api.queryMetrics(staff, { date: today });
+  assert.equal(metrics.waiting, 3); assert.equal(metrics.checkedIn, 0); assert.equal(metrics.activeQueues, 1);
+  await act(a.id, { action: "checkIn" });
+  metrics = await api.queryMetrics(staff, { date: today });
+  assert.equal(metrics.waiting, 2); assert.equal(metrics.checkedIn, 1);
+  assert.equal(metrics.waiting, (await queue(staff)).waiting);
+});
+test("inactive operational context does not roll back checkout or call pending reservations", async () => {
+  for (const [table, id] of [[t.doctors, "d"], [t.users, "du"], [t.branches, "b"], [t.clinics, "c"]]) {
+    await seed();
+    const a = await book(), b = await book("p2");
+    await act(a.id, { action: "checkIn" });
+    await api.change(table, id, { status: "inactive" });
+    assert.equal((await act(a.id, { action: "complete" })).status, "completed");
+    assert.equal((await api.one(t.appointments, b.id)).status, "waiting");
+  }
+  await seed();
+  const a = await book(), b = await book("p2");
+  await act(a.id, { action: "checkIn" });
+  await database.exec("delete from assignments where id='d'");
+  assert.equal((await act(a.id, { action: "complete" })).status, "completed");
+  assert.equal((await api.one(t.appointments, b.id)).status, "waiting");
 });

@@ -12,6 +12,8 @@ import { Pagination, SearchInput, FilterBar, useDebouncedValue } from "./compone
 import { AppDialog } from "./components/AppDialog";
 import { ClinicAdminOnboarding } from "./components/ClinicAdminOnboarding";
 import { SearchableSelect } from "./components/SearchableSelect";
+import { ListingBulk, useListingSelection } from "./components/AdminListing";
+import { HelpTip } from "./components/HelpTip";
 
 const SORTS=[{value:"-createdAt",label:"Newest first"},{value:"createdAt",label:"Oldest first"},{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"}];
 
@@ -45,6 +47,8 @@ export function Users({ identity }: { identity: api.Identity }) {
     queryKey: ["users-tab", tab, params],
     queryFn: () => tab === "doctors" ? api.listDoctors(params) : api.listUsers({ ...params, role: tab === "admins" ? "clinicAdmin" : "receptionist" }),
   });
+  const selectionContext=JSON.stringify([tab,context,term,identity.user,role]);
+  const selection=useListingSelection(selectionContext,query.error?[]:query.data?.items||[]);
   useEffect(() => {
     if (query.data && context.page > Math.max(1, Math.ceil(query.data.total / context.pageSize))) change({ page: Math.max(1, Math.ceil(query.data.total / context.pageSize)) });
   }, [query.data, context.page, context.pageSize]);
@@ -90,20 +94,22 @@ export function Users({ identity }: { identity: api.Identity }) {
         <button disabled={!recoveryId || recovery.isPending} onClick={() => { if (!recovery.isPending) recovery.mutate({ id: recoveryId }); }} data-testid="button-password-help">{recovery.isPending ? "Loading…" : "Get recovery steps"}</button></div>
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open secure password recovery</Link></div>}
     </section>}
-    <section className="panel table-panel">
+    <ListingBulk selection={selection} resource={tab==="doctors"?"doctors":"users"} columns={["fullName","email","mobile","role","clinicNames","branchNames","status"]} identity={identity} context={selectionContext}/>
+    <section className="panel table-panel admin-listing-table">
       {query.isLoading ? <div className="skeleton" role="status">Loading {tabs.find(item=>item.id===tab)?.label.toLowerCase()}…</div> : query.error ? <><div className="error-box" role="alert">Unable to load {tabs.find(item=>item.id===tab)?.label.toLowerCase()}. {query.error instanceof Error?query.error.message:"Please try again."}</div><button onClick={() => query.refetch()}>Retry {tabs.find(item=>item.id===tab)?.label.toLowerCase()}</button></> : query.data?.items.length ? <div className="table-scroll"><table>
-        <thead><tr><th>Staff member</th>{isSuperAdmin && tab !== "admins" && <th>Managing admin</th>}<th>{tab === "admins" ? "Owned clinics" : "Assignments"}</th><th className="col-status">Account</th><th>Created</th><th className="col-actions">Actions</th></tr></thead>
+        <thead><tr><th scope="col">{selection.header}</th><th>Staff member</th>{isSuperAdmin && tab !== "admins" && <th>Managing admin</th>}<th>{tab === "admins" ? "Owned clinics" : "Assignments"}</th><th className="col-status">Account</th><th>Created</th><th className="col-actions">Actions</th></tr></thead>
         <tbody>{query.data.items.map((row: any) => <tr key={row.id}>
-          <td data-label="Staff member"><strong>{row.fullName}</strong><div>{row.email}</div><div className="muted">{row.mobile || "—"}</div></td>
+          <td data-label="Select">{selection.checkbox(row)}</td>
+          <td data-label="Staff member" className="admin-record"><strong>{row.fullName}</strong><small>{row.email} · {tab==="admins"?"Clinic admin":tab==="doctors"?"Doctor":"Receptionist"}{row.mobile?` · ${row.mobile}`:""}</small></td>
           {isSuperAdmin && tab !== "admins" && <td data-label="Managing admin">{row.managingAdminName || row.ownerAdminName || "—"}</td>}
           <td data-label={tab === "admins" ? "Owned clinics" : "Assignments"}><div>{Array.isArray(row.clinicNames) ? row.clinicNames.join(", ") || "—" : row.clinicNames || "—"}</div>{tab !== "admins" && <div className="muted">Branches: {Array.isArray(row.branchNames) ? row.branchNames.join(", ") || "—" : row.branchNames || "—"}</div>}</td>
           <td data-label="Account"><span className={`badge ${row.status}`}>{title(row.status || "")}</span><div>{row.invitationStatus === "notRequired" ? row.clerkId ? row.passwordEnabled === true ? "Password set" : row.passwordEnabled === false ? "Needs password setup" : "Linked · state unavailable" : "—" : row.invitationStatus === "sent" ? "Pending setup" : row.invitationStatus === "failed" ? "Delivery failed" : "—"}</div></td>
           <td data-label="Created">{row.createdAt ? settings.data?.timezone ? new Date(row.createdAt).toLocaleDateString(undefined,{timeZone:settings.data.timezone}) : row.createdAt : "—"}</td>
           <td data-label="Actions" className="col-actions"><div className="row-actions">
-            {row.invitationStatus !== "notRequired" && <button aria-label="Resend set-password invitation" disabled={resendInvitation.isPending} onClick={() => { if (!resendInvitation.isPending && confirm("Revoke any pending invitation and send a new set-password invitation?")) resendInvitation.mutate({ id: tab === "doctors" ? row.userId : row.id }); }}><Send size={15} /></button>}
-            {role !== "doctor" && row.invitationStatus === "notRequired" && <button aria-label="Password recovery assistance" disabled={recovery.isPending} onClick={() => { const id = tab === "doctors" ? row.userId : row.id; setRecoveryId(id); if (!recovery.isPending) recovery.mutate({ id }); }}><KeyRound size={15} /></button>}
-            <button aria-label="Edit" onClick={() => beginEdit(row)}><Pencil size={15} /></button>
-            <button aria-label="Delete or deactivate" disabled={remove.isPending} onClick={() => { if (!remove.isPending && confirm("Delete or deactivate this record?")) remove.mutate(row.id); }}><Trash2 size={15} /></button>
+            {row.invitationStatus !== "notRequired" && <HelpTip text="Revoke the pending invitation and send a new set-password invitation"><button aria-label="Resend set-password invitation" disabled={resendInvitation.isPending} onClick={() => { if (!resendInvitation.isPending && confirm("Revoke any pending invitation and send a new set-password invitation?")) resendInvitation.mutate({ id: tab === "doctors" ? row.userId : row.id }); }}><Send size={15} /></button></HelpTip>}
+            {role !== "doctor" && row.invitationStatus === "notRequired" && <HelpTip text="View secure password recovery steps; no email is sent"><button aria-label="Password recovery assistance" disabled={recovery.isPending} onClick={() => { const id = tab === "doctors" ? row.userId : row.id; setRecoveryId(id); if (!recovery.isPending) recovery.mutate({ id }); }}><KeyRound size={15} /></button></HelpTip>}
+            <HelpTip text="Edit staff details and assignments"><button aria-label="Edit" onClick={() => beginEdit(row)}><Pencil size={15} /></button></HelpTip>
+            <HelpTip text="Delete or deactivate this account; ownership protections apply"><button aria-label="Delete or deactivate" disabled={remove.isPending||row.id===identity.user?.id||row.userId===identity.user?.id} onClick={() => { if (!remove.isPending && confirm("Delete or deactivate this record?")) remove.mutate(row.id); }}><Trash2 size={15} /></button></HelpTip>
           </div></td>
         </tr>)}</tbody>
       </table></div> : active ? <div className="empty"><h3>No matching staff</h3><p>Try another search or clear your filters.</p><button onClick={reset}>Clear filters</button></div> : <Empty label={tab} />}

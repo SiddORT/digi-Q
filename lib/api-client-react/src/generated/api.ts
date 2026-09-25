@@ -95,6 +95,7 @@ import type {
   PatientInput,
   PatientList,
   ProfileInput,
+  PublicDisplay,
   PublicDoctorList,
   Qr,
   QrContext,
@@ -1249,6 +1250,77 @@ export function useGetPublicAvailability<TData = Awaited<ReturnType<typeof getPu
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPublicAvailabilityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPublicDisplayUrl = (reference: string,) => {
+
+
+
+
+  return `/api/public/display/${reference}`
+}
+
+export const getPublicDisplay = async (reference: string, options?: Parameters<typeof customFetch>[1]): Promise<PublicDisplay> => {
+
+  return customFetch<PublicDisplay>(getGetPublicDisplayUrl(reference),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicDisplayQueryKey = (reference: string,) => {
+    return [
+    `/api/public/display/${reference}`
+    ] as const;
+    }
+
+
+export const getGetPublicDisplayQueryOptions = <TData = Awaited<ReturnType<typeof getPublicDisplay>>, TError = ErrorType<ErrorResponse>>(reference: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicDisplay>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicDisplayQueryKey(reference);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicDisplay>>> = ({ signal }) => getPublicDisplay(reference, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: reference !== null && reference !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicDisplay>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicDisplayQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicDisplay>>>
+export type GetPublicDisplayQueryError = ErrorType<ErrorResponse>
+
+
+
+export function useGetPublicDisplay<TData = Awaited<ReturnType<typeof getPublicDisplay>>, TError = ErrorType<ErrorResponse>>(
+ reference: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicDisplay>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicDisplayQueryOptions(reference,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -4971,7 +5043,7 @@ export const getCheckInAppointmentQrUrl = () => {
 }
 
 /**
- * Idempotently checks in and enqueues an eligible appointment for authorized operational staff.
+ * After explicit staff confirmation, enters consultation for the called or first pending reservation. Stamps checkedInAt and consultationStartedAt. Repeated scans of a current consultation are idempotent; never enqueues or bypasses reservation order.
  */
 export const checkInAppointmentQr = async (appointmentQrPayload: AppointmentQrPayload, options?: Parameters<typeof customFetch>[1]): Promise<AppointmentQrCheckInResult> => {
 
@@ -5300,10 +5372,15 @@ export const getTransitionAppointmentUrl = (id: string,) => {
 }
 
 /**
- * checkIn booked→checkedIn; enqueue checkedIn→waiting; call waiting→called;
- * start called→inConsultation; complete inConsultation→completed;
- * noShow waiting/called→noShow; requeue noShow→waiting;
- * cancel booked/checkedIn/waiting→cancelled where policy allows.
+ * New bookings immediately enter waiting with a stable token.
+ * checkIn called (or first pending with no current patient)→inConsultation,
+ * stamping checkedInAt and consultationStartedAt.
+ * complete inConsultation→completed and atomically calls the next pending reservation.
+ * Legacy booked/checkedIn reservations remain usable without migration.
+ * Compatibility enqueue normalizes legacy pending to waiting; call pending→called; start called→inConsultation.
+ * noShow pending/called→noShow requires reason; requeue noShow→waiting requires reason, position and fresh versions.
+ * cancel booked/checkedIn/waiting/called→cancelled only before checkedInAt and within cutoff.
+ * Queue actions are appointment-date-only, serialized per session, and never automatically skip patients.
  * Patients may cancel only self. All other actions require scoped staff.
  * Concurrent state conflicts return 409. Every transition is audited.
  */

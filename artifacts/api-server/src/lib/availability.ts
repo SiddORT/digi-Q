@@ -2,7 +2,7 @@ import { db, doctors, branches, clinics, schedules, availabilityExceptions, appo
 import { eq } from "drizzle-orm";
 import { configuredDuration, sessionKey } from "./session-duration";
 import { all, one, getSettings } from "./store";
-import { assert } from "./http";
+import { assert, HttpError } from "./http";
 export function minutes(time: string) {
   assert(typeof time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(time), 400, "Time must be HH:mm");
   const [h, m] = time.split(":").map(Number); return h * 60 + m;
@@ -41,6 +41,23 @@ function zonedInstant(date: string, time: string, timezone: string) {
   }
   return guess;
 }
+// Reservation lead time is not queue wait. Missing/invalid legacy snapshots
+// and nonexistent DST wall times remain unknown rather than becoming zero.
+export function sessionQueueWaitMinutes(row: any, now = Date.now()): number | null {
+  if (!row.waitingAt || !row.startTime || !row.timezone || !row.date) return null;
+  const waiting = Date.parse(row.waitingAt);
+  if (!Number.isFinite(waiting) || !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !Number.isFinite(Date.parse(row.date))) return null;
+  try {
+    minutes(row.startTime);
+    const start = zonedInstant(row.date, row.startTime, row.timezone);
+    const parts = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: row.timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(start)).map(p => [p.type, p.value]));
+    if (`${parts.year}-${parts.month}-${parts.day}` !== row.date || `${parts.hour}:${parts.minute}` !== row.startTime) return null;
+    return Math.max(0, (now - Math.max(waiting, start)) / 60000);
+  } catch (error) {
+    if (error instanceof RangeError || error instanceof HttpError && error.status === 400) return null;
+    throw error;
+  }
+}
 export function sessionsOverlap(a: any, aDate: string, b: any, bDate: string) {
   if (!a.isOpen || !b.isOpen || a.isClosed || b.isClosed) return false;
   const aStart = zonedInstant(aDate, a.startTime, a.timezone), aEnd = zonedInstant(aDate, a.endTime, a.timezone);
@@ -59,12 +76,16 @@ export function weeklySessionsOverlap(a: any, b: any) {
   return false;
 }
 export { datePlus };
-export async function doctorContext(doctorId: string, branchId: string, conn: any = db) {
+export async function operationalDoctorContext(doctorId: string, branchId: string, conn: any = db) {
   const doctor = await one(doctors, doctorId, conn), branch = await one(branches, branchId, conn), clinic = await one(clinics, branch.clinicId, conn);
   const account = await one(users, doctor.userId, conn);
   const assigned = (await all(assignments, conn)).some(a => a.userId === doctor.userId && a.branchId === branchId);
+  return { doctor, branch, clinic, assigned, active: [doctor, account, branch, clinic].every(r => r.status === "active") };
+}
+export async function doctorContext(doctorId: string, branchId: string, conn: any = db) {
+  const { doctor, branch, clinic, assigned, active } = await operationalDoctorContext(doctorId, branchId, conn);
   assert(assigned, 409, "Doctor is not assigned to this branch");
-  assert([doctor, account, branch, clinic].every(r => r.status === "active"), 409, "Doctor, clinic or branch is inactive");
+  assert(active, 409, "Doctor, clinic or branch is inactive");
   return { doctor, branch, clinic };
 }
 export async function availability(doctorId: string, branchId: string, date: string, conn: any = db) {

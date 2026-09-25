@@ -13,24 +13,14 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface QrContext {
-  reference: string;
-  clinicId: string;
-  clinicName: string;
-  /** @nullable */
-  clinicAddress?: string | null;
-  /** @nullable */
-  branchAddress?: string | null;
-  /** @nullable */
-  branchCity?: string | null;
-  /** @nullable */
-  branchTimezone?: string | null;
-  /** @nullable */
-  branchId?: string | null;
-  /** @nullable */
-  branchName?: string | null;
-  /** @nullable */
-  doctorId?: string | null;
-  /** @nullable */
-  doctorName?: string | null;
-}
+export type StatusGroupParameter = typeof StatusGroupParameter[keyof typeof StatusGroupParameter];
+
+
+export const StatusGroupParameter = {
+  active: 'active',
+  waiting: 'waiting',
+  absent: 'absent',
+  completed: 'completed',
+  cancelled: 'cancelled',
+  all: 'all',
+} as const;

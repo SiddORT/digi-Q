@@ -5,7 +5,7 @@ import { Link } from "wouter";
 import { Form } from "@/components/ui/form";
 import * as api from "@workspace/api-client-react";
 import QRCode from "qrcode";
-import { Plus, Pencil, Trash2, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Copy, Monitor, QrCode } from "lucide-react";
 import { ClinicAdminOnboarding } from "./components/ClinicAdminOnboarding";
 import { ResourceLookup, ResourceMultiLookup } from "./components/ResourceLookup";
 import { Pagination, SearchInput, FilterBar, useDebouncedValue, type FilterChip } from "./components/ListingControls";
@@ -13,8 +13,10 @@ import { AppDialog } from "./components/AppDialog";
 import { SearchableSelect } from "./components/SearchableSelect";
 import { SuggestionInput } from "./components/SuggestionInput";
 import { emptyFieldValue, scheduleBreakFields, selectInputValue } from "./editor-input";
+import { ListingBulk, useListingSelection, publicQrLink } from "./components/AdminListing";
+import { HelpTip } from "./components/HelpTip";
 
-export const title = (s:string) => s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase());
+export const title = (s:string) => ({called:"Called next",noShow:"Absent"}[s] || s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()));
 export const today = (timeZone?:string) => new Date().toLocaleDateString("en-CA",timeZone?{timeZone}:undefined);
 export function ErrorNotice({error}:{error:unknown}) { return error ? <div className="error-box" role="alert" data-testid="status-error">{error instanceof Error ? error.message : String(error)}</div> : null; }
 export function Empty({label="records"}:{label?:string}){return <div className="empty" data-testid="status-empty"><span className="empty-icon"><Plus size={24}/></span><h3>No {label} yet</h3><p>When {label} are added, you'll find them here.</p></div>;}
@@ -138,7 +140,8 @@ function QrCard({row}:{row:any}){
  const [error,setError]=useState<unknown>();
  const [attempt,setAttempt]=useState(0);
  const client=useQueryClient();
- const url=`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/,"")}/book/${row.reference}`;
+ const url=publicQrLink(row.reference);
+ const [copied,setCopied]=useState(false);
  const image=generated.url===url?generated.image:"";
  useEffect(()=>{
   let cancelled=false;setError(undefined);
@@ -146,7 +149,7 @@ function QrCard({row}:{row:any}){
   return()=>{cancelled=true;};
  },[url,attempt]);
  const regenerate=useMutation({mutationFn:()=>api.regenerateQr(row.id),onSuccess:()=>client.invalidateQueries()});
- return <div className="qr-card">{image?<img src={image} alt={`Booking QR code for ${row.name}`}/>:!error&&<p role="status">Generating QR image…</p>}<strong>{row.name}</strong><a href={url} target="_blank" rel="noreferrer">{url}</a>{image&&<a className="button secondary small" href={image} download={`${row.name}-qr.png`}><Download size={15}/> Download PNG</a>}<button disabled={regenerate.isPending} onClick={()=>{if(!regenerate.isPending&&confirm("Regenerate this QR code? Printed copies will stop working."))regenerate.mutate();}}>{regenerate.isPending?"Regenerating…":"Regenerate reference"}</button>{regenerate.isSuccess&&<p className="notice" role="status">QR reference regenerated. Download and replace printed copies.</p>}<ErrorNotice error={error||regenerate.error}/>{!!error&&<button type="button" data-testid={`button-retry-qr-${row.id}`} onClick={()=>setAttempt(value=>value+1)}>Retry QR image</button>}</div>;
+ return <div className="qr-card">{image?<img src={image} alt={`Booking QR code for ${row.name}`}/>:!error&&<p role="status">Generating QR image…</p>}<strong>{row.name}</strong><small>{row.reference} · Active</small><a href={url} target="_blank" rel="noreferrer">{url}</a><div className="admin-qr-actions"><HelpTip text="Copy public booking link"><button aria-label={`Copy booking link for ${row.name}`} onClick={async()=>{try{await navigator.clipboard.writeText(url);setCopied(true);}catch(e){setError(e);}}}><Copy size={15}/></button></HelpTip>{image&&<HelpTip text="Download booking QR image"><a className="button secondary small" aria-label={`Download QR for ${row.name}`} href={image} download={`${row.name}-qr.png`}><Download size={15}/></a></HelpTip>}{row.branchId&&<HelpTip text="Open the public branch queue display; no private patient tickets"><a className="button secondary small" aria-label={`Open queue display for ${row.name}`} href={publicQrLink(row.reference,true)} target="_blank" rel="noreferrer"><Monitor size={15}/></a></HelpTip>}</div>{copied&&<small role="status">Booking link copied.</small>}<button disabled={regenerate.isPending} onClick={()=>{if(!regenerate.isPending&&confirm("Regenerate this QR code? Printed copies will stop working."))regenerate.mutate();}}>{regenerate.isPending?"Regenerating…":"Regenerate reference"}</button>{regenerate.isSuccess&&<p className="notice" role="status">QR reference regenerated. Download and replace printed copies.</p>}<ErrorNotice error={error||regenerate.error}/>{!!error&&<button type="button" data-testid={`button-retry-qr-${row.id}`} onClick={()=>setAttempt(value=>value+1)}>Retry QR image</button>}</div>;
 }
 const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const PRIMARY_KEYS:Record<string,string[]>={branches:["clinicId"],doctors:["clinicId"],patients:["clinicId"],availability:["clinicId","branchId","doctorId"],exceptions:["branchId","doctorId","date"],qrs:["clinicId","branchId","doctorId"],masters:["category"]};
@@ -175,7 +178,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
  const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),staleTime:60000}});
  const config=resources[resource]; const [search,setSearch]=useState("");const [page,setPage]=useState(1);const [editing,setEditing]=useState<any>(null);
  const [pageSize,setPageSize]=useState(20);
- const [filters,setFilters]=useState<Record<string,string>>({});
+ const [filters,setFilters]=useState<Record<string,string>>(()=>Object.fromEntries(["clinicId","branchId"].flatMap(key=>{const value=new URLSearchParams(window.location.search).get(key);return value?[[key,value]]:[];})));
  const [sort,setSort]=useState("-createdAt");
  const [dirty,setDirty]=useState(false);
  const [success,setSuccess]=useState("");
@@ -191,6 +194,11 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
  const recovery=api.useRequestUserPasswordReset();
  const client=useQueryClient();
  const query=useQuery<any>({queryKey:[resource,listParams],queryFn:()=>config.list(listParams)});
+ const selectionContext=JSON.stringify([resource,listParams,search,identity?.user]);
+ const selection=useListingSelection(selectionContext,query.error?[]:query.data?.items||[]);
+ const compact=["clinics","branches","doctors","patients","users","masters","qrs"].includes(resource);
+ const displayColumns=compact?[config.columns[0],...config.columns.slice(1).filter(c=>!["code","reference","city","email","phone","clinicName","specializationName"].includes(c))]:config.columns;
+ const portal=identity?.user?.role==="doctor"?"doctor":identity?.user?.role==="receptionist"?"receptionist":"admin";
  useEffect(()=>{if(query.data&&page>1&&page>Math.max(1,Math.ceil(query.data.total/pageSize)))setPage(Math.max(1,Math.ceil(query.data.total/pageSize)));},[query.data,page,pageSize]);
  const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,data):config.create(data),onSuccess:()=>{setEditing(null);setSuccess("Record saved successfully.");client.invalidateQueries();}});
  const remove=useMutation({mutationFn:(id:string)=>config.remove(id),onSuccess:()=>{setSuccess("Record deleted or deactivated successfully.");client.invalidateQueries();}});
@@ -223,7 +231,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
    ...Object.entries(filters).filter(([k,v])=>v&&v!==roleDefaults[k]).map(([k,v])=>({key:`${PRIMARY_KEYS[resource]?.includes(k)?"":"adv:"}${k}`,label:chipLabel(k,v),onRemove:()=>filter(k,roleDefaults[k]||"")})),
    ...(sort!=="-createdAt"?[{key:"adv:sort",label:`Sort: ${sortOptions.find(o=>o.value===sort)?.label||sort}`,onRemove:()=>{setSort("-createdAt");setPage(1);}}]:[]),
   ];
-  return <><div className="toolbar"><SearchInput placeholder={searchPlaceholder} value={search} onChange={value=>{setSearch(value);setPage(1);}}/>{config.create&&allowCreate&&<button className="button small" onClick={()=>{save.reset();setDirty(false);setEditing(defaults);}} data-testid={`button-add-${resource}`}><Plus size={17}/> Add {resource==="branches"?"branch":resource==="availability"?"schedule":resource==="exceptions"?"exception":resource==="qrs"?"QR code":resource.replace(/s$/,"")}</button>}</div>
+  return <><div className="toolbar"><SearchInput placeholder={searchPlaceholder} value={search} onChange={value=>{setSearch(value);setPage(1);}}/>{config.create&&allowCreate&&<button className="button small" onClick={()=>{save.reset();setDirty(false);setEditing(resource==="qrs"?{...defaults,...Object.fromEntries(["clinicId","branchId","doctorId"].filter(key=>filters[key]).map(key=>[key,filters[key]]))}:defaults);}} data-testid={`button-add-${resource}`}><Plus size={17}/> Add {resource==="branches"?"branch":resource==="availability"?"schedule":resource==="exceptions"?"exception":resource==="qrs"?"QR code":resource.replace(/s$/,"")}</button>}</div>
  <FilterBar onReset={reset} active={active} chips={chips} label={`Filter ${config.name}`} advanced={<>
   {config.fields.some(f=>f.key==="status")&&<SearchableSelect label="Status" placeholder="All statuses" value={filters.status||""} onChange={value=>filter("status",value)} options={[{value:"active",label:"Active"},{value:"inactive",label:"Inactive"}]}/>}
   {resource==="clinics"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Clinic admin" params={{role:"clinicAdmin"}} value={filters.adminId||""} onChange={value=>filter("adminId",value)}/>}
@@ -244,12 +252,14 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true}:{r
  {success&&<p className="notice" role="status">{success}</p>}
  {!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={remove.error}/>
   {resource==="users"&&identity?.user?.role!=="doctor"&&<section className="panel padded" style={{marginBottom:20}}><h3>Account recovery assistance</h3><p className="muted">Select a linked staff account to view the secure account recovery steps. This action does not send an email.</p><div className="inline-form"><ResourceLookup resource="users" label="Staff account" params={{role:"receptionist",linkedOnly:true}} value={recoveryId} onChange={value=>{setRecoveryId(value);recovery.reset();}}/><button disabled={!recoveryId||recovery.isPending} onClick={()=>{if(!recovery.isPending)recovery.mutate({id:recoveryId});}} data-testid="button-password-reset">{recovery.isPending?"Loading…":"Get recovery steps"}</button></div><ErrorNotice error={recovery.error}/>{recovery.data&&<div className="notice" data-testid="status-password-recovery"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link" data-testid="link-password-recovery">Open secure password recovery</Link></div>}</section>}
- <section className="panel table-panel">
+ <ListingBulk selection={selection} resource={resource} columns={config.columns} identity={identity} context={selectionContext}/>
+ <section className="panel table-panel admin-listing-table">
   {query.isLoading?<div className="skeleton" role="status">Loading {config.name}…</div>:query.error?<><div className="error-box" role="alert">Unable to load {config.name}. {query.error instanceof Error?query.error.message:"Please try again."}</div><button onClick={()=>query.refetch()}>Retry {config.name}</button></>:query.data?.items?.length?<div className="table-scroll"><table>
- <thead><tr>{config.columns.map(c=><th scope="col" key={c} className={c==="status"?"col-status":undefined}>{columnLabel(c)}</th>)}{config.update&&<th scope="col" className="col-actions">Actions</th>}</tr></thead>
+ <thead><tr><th scope="col">{selection.header}</th>{displayColumns.map(c=><th scope="col" key={c} className={c==="status"?"col-status":undefined}>{columnLabel(c)}</th>)}{config.update&&<th scope="col" className="col-actions">Actions</th>}</tr></thead>
  <tbody>{query.data.items.map((row:any)=><tr key={row.id} data-testid={`row-${resource}-${row.id}`}>
- {config.columns.map(c=><td key={c} data-label={columnLabel(c)}>{renderComputed(c,row)??(c==="status"?<span className={`badge ${row[c]}`}>{title(row[c]||"")}</span>:c==="dayOfWeek"?DAYS[row[c]]:c==="createdAt"?(settings.data?.timezone?new Date(row[c]).toLocaleString(undefined,{timeZone:settings.data.timezone}):row[c]):typeof row[c]==="boolean"?(row[c]?"Yes":"No"):Array.isArray(row[c])?row[c].join(", ")||"—":row[c]??"—")}</td>)}
- {config.update&&<td data-label="Actions" className="col-actions"><div className="row-actions"><button aria-label="Edit" onClick={()=>{save.reset();setDirty(false);setEditing(row);}}><Pencil size={15}/></button><button aria-label="Delete or deactivate" disabled={remove.isPending} onClick={()=>{if(!remove.isPending&&confirm("Delete or deactivate this record? Records with history are preserved."))remove.mutate(row.id);}}><Trash2 size={15}/></button></div></td>}
+ <td data-label="Select">{selection.checkbox(row)}</td>
+ {displayColumns.map(c=><td key={c} data-label={columnLabel(c)}>{compact&&c===config.columns[0]?<div className="admin-record"><strong>{row[c]} {row.code||row.reference?<small>{row.code||row.reference}</small>:null}</strong><small>{[row.address,row.city,row.clinicName,row.specializationName,row.email||row.phone].filter(Boolean).join(" · ")||"—"}</small></div>:renderComputed(c,row)??(c==="status"?<span className={`badge ${row[c]}`}>{title(row[c]||"")}</span>:c==="dayOfWeek"?DAYS[row[c]]:c==="createdAt"?(settings.data?.timezone?new Date(row[c]).toLocaleString(undefined,{timeZone:settings.data.timezone}):row[c]):typeof row[c]==="boolean"?(row[c]?"Yes":"No"):Array.isArray(row[c])?row[c].join(", ")||"—":row[c]??"—")}</td>)}
+ {config.update&&<td data-label="Actions" className="col-actions"><div className="row-actions">{["clinics","branches"].includes(resource)&&<HelpTip text="Create or manage booking QR codes for this clinic or branch"><Link aria-label={`Manage QR codes for ${row.name}`} href={`/${portal}/qrs?clinicId=${encodeURIComponent(resource==="clinics"?row.id:row.clinicId)}${resource==="branches"?`&branchId=${encodeURIComponent(row.id)}`:""}`}><QrCode size={15}/></Link></HelpTip>}<HelpTip text="Edit this record"><button aria-label="Edit" onClick={()=>{save.reset();setDirty(false);setEditing(row);}}><Pencil size={15}/></button></HelpTip><HelpTip text="Delete or deactivate; records with history are preserved"><button aria-label="Delete or deactivate" disabled={remove.isPending} onClick={()=>{if(!remove.isPending&&confirm("Delete or deactivate this record? Records with history are preserved."))remove.mutate(row.id);}}><Trash2 size={15}/></button></HelpTip></div></td>}
  </tr>)}</tbody></table></div>:active?<div className="empty"><h3>No matching {config.name}</h3><p>Try a different search or clear your filters.</p><button onClick={reset}>Clear filters</button></div>:<Empty label={config.name}/>}
  {!query.error&&<Pagination page={page} pageSize={pageSize} total={query.data?.total||0} onPageChange={setPage} onPageSizeChange={size=>{setPageSize(size);setPage(1);}}/>}</section>
  {resource==="users"&&identity?.user?.role==="superAdmin"&&allowCreate&&<ClinicAdminOnboarding />}

@@ -18,7 +18,7 @@ export async function reschedule(user: any, id: string, body: any, tx: any) {
   for (const session of locks) await lockQueue(tx, session.doctorId, session.branchId, session.date);
   row = await one(appointments, id, tx);
   assert(row.doctorId === original.doctorId && row.branchId === original.branchId && row.date === original.date && (row.revision || 0) === body.expectedRevision, 409, "Appointment changed; refresh and retry");
-  assert(row.status === "booked" && !row.checkedInAt, 409, "Only appointments before check-in can be rescheduled");
+  assert(["booked", "checkedIn", "waiting", "called"].includes(row.status) && !row.checkedInAt, 409, "Only appointments before check-in can be rescheduled");
   assert(row.doctorId !== body.doctorId || row.branchId !== body.branchId || row.date !== body.date, 400, "Choose a different destination session");
   const config = await getSettings(tx), now = localNow(row.timezone || "Asia/Kolkata");
   const difference = (Date.parse(row.date) - Date.parse(now.date)) / 60000 + minutes(row.startTime || "00:00") - now.minute;
@@ -42,12 +42,13 @@ export async function reschedule(user: any, id: string, body: any, tx: any) {
     doctorName: doctor.fullName, branchName: branch.name, timezone: available.timezone,
     startTime: available.startTime, endTime: available.endTime,
     expectedDurationMinutes: duration, queueRank: Math.max(0, ...rows.map(rank)) + 1, revision: (row.revision || 0) + 1,
-    history: [...(row.history || []), { status: "booked", action: "reschedule", occurredAt: timestamp, actorId: user.id, reason: body.reason,
+    waitingAt: timestamp, calledAt: null,
+    history: [...(row.history || []), { status: "waiting", action: "reschedule", occurredAt: timestamp, actorId: user.id, reason: body.reason,
       from: { doctorId: row.doctorId, branchId: row.branchId, date: row.date, token: row.token, tokenNumber: row.tokenNumber },
       to: { doctorId: body.doctorId, branchId: body.branchId, date: body.date, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber } }],
   };
-  const updated = await change(appointments, id, { doctorId: body.doctorId, branchId: body.branchId, date: body.date, tokenNumber, data }, tx);
-  await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, fromStatus: "booked", toStatus: "booked" }, tx);
+  const updated = await change(appointments, id, { status: "waiting", doctorId: body.doctorId, branchId: body.branchId, date: body.date, tokenNumber, data }, tx);
+  await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, fromStatus: row.status, toStatus: "waiting" }, tx);
   await audit(user, "reschedule", "appointments", updated, tx);
   return appointmentView(updated, user);
 }

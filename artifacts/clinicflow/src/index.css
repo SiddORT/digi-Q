@@ -1,6 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap');
 @import "tailwindcss";
 
+@layer components {
+  .workspace .sidebar { padding-top: 16px; padding-bottom: 12px; }
+  .workspace .workspace-label { margin: 20px 10px 10px; }
+  .workspace .sidebar nav { gap: 3px; min-height: 0; scrollbar-width: thin; }
+  .workspace .sidebar nav > a { min-height: 38px; padding: 7px 12px; }
+  .workspace .sidebar-bottom { padding-top: 12px; }
+  .workspace .help-card { padding: 10px 12px; }
+  .workspace .help-card p { margin-top: 4px; line-height: 1.45; }
+  @media (max-height: 800px) {
+    .workspace .sidebar-bottom .help-card { display: none; }
+  }
+  @media (max-width: 1024px), (pointer: coarse) {
+    .workspace .sidebar nav > a { min-height: 44px; }
+  }
+}
+
 @theme inline {
   --color-border: hsl(var(--border));
   --color-background: hsl(var(--background));

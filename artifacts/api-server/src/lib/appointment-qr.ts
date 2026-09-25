@@ -5,10 +5,11 @@ import { assert } from "./http";
 import { canRead, roles } from "./auth";
 import { doctorContext, localNow } from "./availability";
 import { appointmentView, lockQueue, transition } from "./appointments";
+import { orderedReservations, pendingStatuses, sessionRows } from "./queue-order";
 
 const VERSION = "v1";
 const SIGNING_CONTEXT = "clinicflow:appointment-qr";
-const ALREADY_CHECKED_IN = ["checkedIn", "waiting", "called", "inConsultation"];
+const ALREADY_CHECKED_IN = ["inConsultation"];
 const TERMINAL_STATUSES = ["cancelled", "completed", "noShow"];
 
 function secret(): string {
@@ -69,7 +70,7 @@ async function authorizeStaff(user: any, row: any) {
 async function validateCheckInState(row: any, conn: any = db) {
   assert(!TERMINAL_STATUSES.includes(row.status), 409, `Cannot check in a ${row.status} appointment`);
   assert(
-    row.status === "booked" || ALREADY_CHECKED_IN.includes(row.status),
+    ["booked", "checkedIn", "waiting", "called"].includes(row.status) || ALREADY_CHECKED_IN.includes(row.status),
     409,
     "Appointment is not eligible for check-in",
   );
@@ -94,11 +95,14 @@ export async function resolveAppointmentQr(user: any, payload: string, conn: any
   await authorizeStaff(user, row);
   await validateCheckInState(row, conn);
   const alreadyCheckedIn = ALREADY_CHECKED_IN.includes(row.status);
+  const rows = sessionRows(await all(appointments, conn), row);
+  const blocked = rows.some(a => a.id !== row.id && ["called", "inConsultation"].includes(a.status))
+    || row.status !== "called" && !alreadyCheckedIn && orderedReservations(rows.filter(a => pendingStatuses.includes(a.status)))[0]?.id !== row.id;
   return {
     appointment: appointmentView(row, user),
-    eligible: !alreadyCheckedIn,
+    eligible: !alreadyCheckedIn && !blocked,
     alreadyCheckedIn,
-    message: alreadyCheckedIn ? "Appointment is already checked in." : "Appointment is eligible for check-in.",
+    message: alreadyCheckedIn ? "Consultation has already started." : blocked ? "Another reservation must be served or explicitly skipped first." : "Confirm check-in to start consultation.",
   };
 }
 
@@ -119,18 +123,17 @@ export async function checkInAppointmentQr(user: any, payload: string) {
         message: "Appointment is already checked in.",
       };
     }
-    await transition(user, row.id, { action: "checkIn", expectedStatus: "booked" }, tx, true);
     const appointment = await transition(
       user,
       row.id,
-      { action: "enqueue", expectedStatus: "checkedIn" },
+      { action: "checkIn", expectedStatus: row.status },
       tx,
       true,
     );
     return {
       appointment,
       alreadyCheckedIn: false,
-      message: "Appointment checked in and added to the queue.",
+      message: "Appointment checked in; consultation started.",
     };
   });
 }

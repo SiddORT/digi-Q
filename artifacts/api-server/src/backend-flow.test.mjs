@@ -245,10 +245,10 @@ async function route(router, method, path, body = {}, query = {}, params = {}) {
 }
 const book = body => route(api.appointmentsRouter,"post","/appointments",body);
 
-test("advance booking remains booked; walk-in follows shared lifecycle and idempotency", async () => {
+test("advance booking and walk-in immediately wait with stable idempotent tokens", async () => {
   const body = seed();
   const advance = await book(body);
-  assert.equal(advance.status,"booked");
+  assert.equal(advance.status,"waiting");
   await assert.rejects(book({...body,source:"walkIn"}),/Idempotency/);
   const walk = await book({...body,patientId:"p2",source:"walkIn",requestId:"walk"}).catch(e => {
     assert.match(e.message,/Not found/);
@@ -256,8 +256,8 @@ test("advance booking remains booked; walk-in follows shared lifecycle and idemp
     return book({...body,patientId:"p2",source:"walkIn",requestId:"walk"});
   });
   assert.equal(walk.status,"waiting"); assert.equal(walk.token,"A-02");
-  assert.deepEqual(walk.history.map(h=>h.status),["booked","checkedIn","waiting"]);
-  assert.ok(walk.checkedInAt && walk.waitingAt);
+  assert.deepEqual(walk.history.map(h=>h.status),["waiting"]);
+  assert.ok(!walk.checkedInAt && walk.waitingAt);
   assert.equal((await book({...body,patientId:"p2",source:"walkIn",requestId:"walk"})).id,walk.id);
   assert.equal(api.state.rows.appointments.length,2);
 });
@@ -327,11 +327,11 @@ test("queue lifecycle, oldest waiting, active consultation guard and patient pri
   assert.equal((await api.transition(staff,second.id,{action:"cancel"})).status,"cancelled");
   for (const action of ["checkIn","call","start","complete","requeue"]) await assert.rejects(api.transition(staff,second.id,{action}),/Invalid/);
 });
-test("QR booking converges on booked and rejects revoked or reassigned references", async () => {
+test("QR booking converges on waiting and rejects revoked or reassigned references", async () => {
   const body=seed();
   api.state.rows.qrs=[{id:"qr",publicReference:"valid",clinicId:"c",branchId:"b",doctorId:"d",status:"active"}];
   const row=await book({...body,source:"qr",qrReference:"valid"});
-  assert.equal(row.status,"booked"); assert.equal(row.token,"A-01");
+  assert.equal(row.status,"waiting"); assert.equal(row.token,"A-01");
   api.state.rows.qrs[0].publicReference="new";
   await assert.rejects(api.resolveQr("valid"),/expired or revoked/);
   api.state.rows.patients.push({...api.state.rows.patients[0],id:"p2"});
@@ -354,7 +354,7 @@ test("appointment QR signatures reject tampering and check-in is transactionally
   assert.equal(resolved.eligible,true);
   assert.equal(resolved.alreadyCheckedIn,false);
   const checkedIn=await api.checkInAppointmentQr(staff,payload);
-  assert.equal(checkedIn.appointment.status,"waiting");
+  assert.equal(checkedIn.appointment.status,"inConsultation");
   assert.equal(checkedIn.appointment.token,booked.token);
   assert.equal(checkedIn.alreadyCheckedIn,false);
   const historyCount=api.state.rows.appointmentHistory.length;

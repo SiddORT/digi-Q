@@ -2,6 +2,8 @@
 
 Status: 22/40 completed and verified; 18 still require full acceptance verification. Implementation is present, but Phase 1 is NOT fully release-approved.
 
+Historical baseline: the subsequently approved queue refresh supersedes arrival/check-in semantics. Its implementation and verification are tracked separately in `docs/queue-refresh-progress.md`; the ticks below are not a new acceptance claim for the changed workflow.
+
 Only verified items receive a green tick. Existing functionality does not count as verification.
 Statuses: Not started / In progress / Completed and verified / Blocked.
 

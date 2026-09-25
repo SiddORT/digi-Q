@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import "./app-dialog.css";
 
 export interface AppDialogProps {
   open: boolean;
@@ -50,7 +51,7 @@ export function AppDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="flex flex-col gap-0 p-0 overflow-hidden sm:max-w-2xl max-h-[90vh] bg-white border border-border shadow-xl rounded-xl"
+        className="app-dialog sm:max-w-2xl bg-white border border-border shadow-xl"
         onInteractOutside={(e) => {
           if (busy) {
             e.preventDefault();
@@ -62,17 +63,17 @@ export function AppDialog({
           }
         }}
       >
-        <DialogHeader className="px-6 md:px-8 py-5 border-b border-border bg-slate-50/50 flex-shrink-0">
-          <DialogTitle className="text-xl text-foreground font-bold tracking-tight">{title}</DialogTitle>
+        <DialogHeader className="app-dialog-header bg-slate-50/50 space-y-0">
+          <DialogTitle className="app-dialog-title text-foreground">{title}</DialogTitle>
           {description && (
-            <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
+            <DialogDescription className="app-dialog-desc text-muted-foreground">
               {description}
             </DialogDescription>
           )}
         </DialogHeader>
         
         {/* Single internal scroll area for the content */}
-        <div className="min-h-0 flex-1 overflow-y-auto p-6 md:p-8 bg-white">
+        <div className="app-dialog-body bg-white">
           {children}
         </div>
       </DialogContent>

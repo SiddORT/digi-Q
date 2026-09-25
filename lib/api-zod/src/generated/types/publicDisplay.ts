@@ -12,25 +12,14 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { PublicDisplayBranch } from './publicDisplayBranch';
+import type { PublicDisplayClinic } from './publicDisplayClinic';
+import type { PublicDisplaySession } from './publicDisplaySession';
 
-export interface QrContext {
-  reference: string;
-  clinicId: string;
-  clinicName: string;
-  /** @nullable */
-  clinicAddress?: string | null;
-  /** @nullable */
-  branchAddress?: string | null;
-  /** @nullable */
-  branchCity?: string | null;
-  /** @nullable */
-  branchTimezone?: string | null;
-  /** @nullable */
-  branchId?: string | null;
-  /** @nullable */
-  branchName?: string | null;
-  /** @nullable */
-  doctorId?: string | null;
-  /** @nullable */
-  doctorName?: string | null;
+export interface PublicDisplay {
+  clinic: PublicDisplayClinic;
+  branch: PublicDisplayBranch;
+  date: Date;
+  updatedAt: Date;
+  sessions: PublicDisplaySession[];
 }

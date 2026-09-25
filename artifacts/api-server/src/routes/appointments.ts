@@ -67,15 +67,11 @@ appointmentsRouter.post("/appointments", async (req, res) => {
     const id = uid(), timestamp = new Date().toISOString();
     const expectedDurationMinutes = await snapshotDuration(body, tx);
     const queueRank = Math.max(0, ...sessionRows(existing, body).map(rank)) + 1;
-    const result = await put(appointments, { id, patientId: body.patientId, doctorId: body.doctorId, clinicId: body.clinicId, branchId: body.branchId, date: body.date, tokenNumber, requestId: body.requestId, actorId: user.id, data: { ...body, reference: `CF-${uid().replaceAll("-", "").toUpperCase().slice(0,16)}`, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, patientName: patient.fullName, patientCode: patient.code, doctorName: doctor.fullName, clinicName: clinic.name, branchName: branch.name, timezone: available.timezone, startTime: available.startTime, endTime: available.endTime, history: [{ status: "booked", occurredAt: timestamp }] } }, tx);
+    const result = await put(appointments, { id, status: "waiting", patientId: body.patientId, doctorId: body.doctorId, clinicId: body.clinicId, branchId: body.branchId, date: body.date, tokenNumber, requestId: body.requestId, actorId: user.id, data: { ...body, waitingAt: timestamp, reference: `CF-${uid().replaceAll("-", "").toUpperCase().slice(0,16)}`, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, patientName: patient.fullName, patientCode: patient.code, doctorName: doctor.fullName, clinicName: clinic.name, branchName: branch.name, timezone: available.timezone, startTime: available.startTime, endTime: available.endTime, history: [{ status: "waiting", occurredAt: timestamp }] } }, tx);
     Object.assign(result, { expectedDurationMinutes, queueRank, revision: 0 });
     await change(appointments, id, { data: result }, tx);
-    await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, toStatus: "booked" }, tx);
+    await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, toStatus: "waiting" }, tx);
     await audit(user, "book", "appointments", result, tx);
-    if (body.source === "walkIn") {
-      await transition(user, id, { action: "checkIn", expectedStatus: "booked" }, tx, true);
-      return transition(user, id, { action: "enqueue", expectedStatus: "checkedIn" }, tx, true);
-    }
     return result;
   });
   res.status(201).json(appointmentView(row, user));

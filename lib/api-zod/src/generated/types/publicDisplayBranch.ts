@@ -13,24 +13,11 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export interface QrContext {
-  reference: string;
-  clinicId: string;
-  clinicName: string;
+export type PublicDisplayBranch = {
+  name: string;
   /** @nullable */
-  clinicAddress?: string | null;
+  address: string | null;
   /** @nullable */
-  branchAddress?: string | null;
-  /** @nullable */
-  branchCity?: string | null;
-  /** @nullable */
-  branchTimezone?: string | null;
-  /** @nullable */
-  branchId?: string | null;
-  /** @nullable */
-  branchName?: string | null;
-  /** @nullable */
-  doctorId?: string | null;
-  /** @nullable */
-  doctorName?: string | null;
-}
+  city: string | null;
+  timezone: string;
+};

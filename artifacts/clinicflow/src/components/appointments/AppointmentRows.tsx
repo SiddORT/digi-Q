@@ -5,9 +5,19 @@ import { AppDialog } from "../AppDialog";
 import { ErrorNotice, title } from "../../resources";
 import { AppointmentTicket } from "./AppointmentTicket";
 import { RescheduleAppointment } from "./RescheduleAppointment";
+import { BulkAppointments } from "./BulkAppointments";
+import { useFreshWorkspace } from "../queue/useFreshWorkspace";
+import "../queue/queue-workspace.css";
+import { QrCode, LogIn, LogOut } from "lucide-react";
+import { HelpTip } from "../HelpTip";
 
-const PRIMARY:api.AppointmentActionType[]=["call","start","complete","checkIn","enqueue"];
-export function AppointmentRows({appointments}:{appointments:api.Appointment[]}){
+const PRIMARY:api.AppointmentActionType[]=["checkIn","start","complete","call"];
+const actionLabel=(n:api.AppointmentActionType)=>n==="start"||n==="checkIn"?"Check in":n==="complete"?"Check out":n==="noShow"?"Skip absent":n==="requeue"?"Return / re-enter":title(n);
+export function AppointmentRows({appointments,selectionKey="",disabled=false,selectable=false}:{appointments:api.Appointment[];selectionKey?:string;disabled?:boolean;selectable?:boolean}){
+  const [selected,setSelected]=useState<string[]>([]);
+  const {online}=useFreshWorkspace(Date.now());
+  const blocked=disabled||!online;
+  useEffect(()=>setSelected([]),[selectionKey]);
  const client=useQueryClient();
  const action=api.useTransitionAppointment({mutation:{onSuccess:()=>client.invalidateQueries(),onError:()=>client.invalidateQueries()}});
  const [ticket,setTicket]=useState("");const [reschedule,setReschedule]=useState<api.Appointment|null>(null);
@@ -17,24 +27,28 @@ export function AppointmentRows({appointments}:{appointments:api.Appointment[]})
  const selection={doctorId:pending?.appointment.doctorId||"",branchId:pending?.appointment.branchId||"",date:pending?.appointment.date||""};
  const queue=api.useGetQueue(selection,{query:{queryKey:api.getGetQueueQueryKey(selection),enabled:pending?.next==="requeue",refetchInterval:30000}});
  async function transition(a:api.Appointment,next:api.AppointmentActionType){
-  if(lock.current)return;lock.current=true;
+  if(lock.current||blocked)return;lock.current=true;
   try{await action.mutateAsync({id:a.id,data:{action:next,expectedStatus:a.status,expectedRevision:a.revision??0,reason:reason.trim()||undefined,...(next==="requeue"?{position,expectedQueueVersion:queue.data?.queueVersion}:{})}});setPending(null);setReason("");}
   catch{/* Keep the form and refresh conflicting server state. */}finally{lock.current=false;}
  }
- return <><ErrorNotice error={action.error}/>{action.isSuccess&&<p className="notice" role="status">Appointment updated.</p>}
- <div className="table-scroll appt-table"><table><thead><tr><th>Patient / reference</th><th>Doctor & location</th><th>Date / token</th><th className="col-status">Status</th><th className="col-actions">Actions</th></tr></thead><tbody>
- {appointments.map(a=><tr key={a.id} data-testid={`appointment-${a.id}`}><td data-label="Patient / reference"><strong>{a.patientName}</strong><small>{a.reference}</small></td><td data-label="Doctor & location">{a.doctorName}<small>{a.clinicName} · {a.branchName}</small></td><td data-label="Date / token">{a.date}<small>Token {a.token}</small></td><td data-label="Status"><span className={`badge ${a.status}`}>{title(a.status)}</span>{a.status==="booked"&&<small>Reserved · not arrived</small>}{["checkedIn","waiting"].includes(a.status)&&<small>Arrived</small>}</td><td className="col-actions" data-label="Actions"><div className="row-actions">
- {(()=>{const primary=a.allowedActions.find(n=>PRIMARY.includes(n));const rest=a.allowedActions.filter(n=>n!==primary);const label=(n:api.AppointmentActionType)=>n==="noShow"?"Skip absent":n==="requeue"?"Return / re-enter":title(n);const open=(n:api.AppointmentActionType)=>{action.reset();setReason("");setPosition(1);setPending({appointment:a,next:n});};const canReschedule=a.status==="booked"&&!a.checkedInAt&&a.allowedActions.includes("cancel");return <>
- {primary&&<button className="row-primary" disabled={action.isPending} data-testid={`action-${primary}-${a.id}`} onClick={()=>open(primary)}>{label(primary)}</button>}
- <button className="row-ticket" data-testid={`ticket-${a.id}`} onClick={()=>setTicket(a.id)}>Ticket</button>
+  return <>{selectable&&<BulkAppointments ids={selected} disabled={blocked} onClear={()=>setSelected([])}/>}<ErrorNotice error={action.error}/>{action.isSuccess&&<p className="notice" role="status">Appointment updated. Check-out calls the next eligible patient; check-in starts their consultation.</p>}
+  <div className="table-scroll appt-table"><table><thead><tr><th>{selectable&&<input type="checkbox" aria-label="Select all appointments on this page" checked={appointments.length>0&&appointments.every(a=>selected.includes(a.id))} onChange={e=>setSelected(e.target.checked?appointments.map(a=>a.id):[])}/>} Patient / reference</th><th>Doctor & location</th><th>Date / token</th><th className="col-status">Status</th><th className="col-actions">Actions</th></tr></thead><tbody>
+  {appointments.map(a=><tr key={a.id} data-testid={`appointment-${a.id}`}><td data-label="Patient / reference">{selectable&&<input type="checkbox" aria-label={`Select ${a.reference}`} checked={selected.includes(a.id)} onChange={e=>setSelected(ids=>e.target.checked?[...ids,a.id]:ids.filter(id=>id!==a.id))}/>}<strong>{a.patientName}</strong><small>{a.reference}</small></td><td data-label="Doctor & location">{a.doctorName}<small>{a.clinicName} · {a.branchName}</small></td><td data-label="Date / token">{a.date}<small>Token {a.token} · Session {a.startTime||"—"}–{a.endTime||"—"}</small></td><td data-label="Status"><span className={`badge ${a.status}`}>{a.status==="called"?"Called next":title(a.status)}</span>{a.status==="waiting"&&<small>Awaiting consultation</small>}</td><td className="col-actions" data-label="Actions"><div className="row-actions">
+  {(()=>{const primary=PRIMARY.find(n=>a.allowedActions.includes(n));const rest=a.allowedActions.filter(n=>n!==primary&&n!=="enqueue"&&!(primary==="checkIn"&&n==="start"));const label=actionLabel;const open=(n:api.AppointmentActionType)=>{if(blocked)return;action.reset();setReason("");setPosition(1);setPending({appointment:a,next:n});};const canReschedule=["booked","waiting","called"].includes(a.status)&&!a.checkedInAt&&a.allowedActions.includes("cancel");return <>
+  {primary&&<button className="row-primary" title={primary==="complete"?"Finish consultation and call the next eligible patient":"Check in only when the patient enters consultation"} disabled={blocked||action.isPending} data-testid={`action-${primary}-${a.id}`} onClick={()=>open(primary)}>{primary==="complete"?<LogOut size={14}/>:<LogIn size={14}/>} {label(primary)}</button>}
+  <button className="row-ticket" data-testid={`ticket-${a.id}`} onClick={()=>setTicket(a.id)}><QrCode size={14}/> Ticket</button>
+  <HelpTip text="Check in starts consultation. Check out completes it and calls the next eligible patient. A called patient still needs explicit check-in."/>
  {(rest.length>0||canReschedule)&&<details className="row-menu" onKeyDown={e=>{if(e.key==="Escape"){(e.currentTarget as HTMLDetailsElement).open=false;(e.currentTarget.querySelector("summary") as HTMLElement)?.focus();}}}><summary aria-label={`More actions for ${a.patientName}`} data-testid={`menu-${a.id}`}>More</summary><div className="row-menu-list" role="group" aria-label="More actions">
- {canReschedule&&<button onClick={e=>{(e.currentTarget.closest("details") as HTMLDetailsElement).open=false;setReschedule(a);}}>Reschedule</button>}
- {rest.map(next=><button key={next} className={["cancel","noShow"].includes(next)?"danger":undefined} disabled={action.isPending} data-testid={`action-${next}-${a.id}`} onClick={e=>{(e.currentTarget.closest("details") as HTMLDetailsElement).open=false;open(next);}}>{label(next)}</button>)}
+  {canReschedule&&<button disabled={blocked} onClick={e=>{(e.currentTarget.closest("details") as HTMLDetailsElement).open=false;setReschedule(a);}}>Reschedule</button>}
+  {rest.map(next=><button key={next} className={["cancel","noShow"].includes(next)?"danger":undefined} disabled={blocked||action.isPending} data-testid={`action-${next}-${a.id}`} onClick={e=>{(e.currentTarget.closest("details") as HTMLDetailsElement).open=false;open(next);}}>{label(next)}</button>)}
  </div></details>}</>;})()}
  </div></td></tr>)}</tbody></table></div>
  <AppDialog open={!!ticket} onClose={()=>setTicket("")} title="Appointment ticket">{ticket&&<AppointmentTicket id={ticket}/>}</AppDialog>
  <AppDialog open={!!reschedule} onClose={()=>setReschedule(null)} title="Reschedule appointment" dirty>{reschedule&&<RescheduleAppointment key={reschedule.id} appointment={reschedule} onDone={()=>{setReschedule(null);setTicket(reschedule.id);}}/>}</AppDialog>
- <AppDialog open={!!pending} onClose={()=>setPending(null)} title={pending?title(pending.next):"Update appointment"} busy={action.isPending} dirty={!!reason}><form onSubmit={e=>{e.preventDefault();if(pending)void transition(pending.appointment,pending.next);}}>
+  <AppDialog open={!!pending} onClose={()=>setPending(null)} title={pending?actionLabel(pending.next):"Update appointment"} busy={action.isPending} dirty={!!reason}><form onSubmit={e=>{e.preventDefault();if(pending)void transition(pending.appointment,pending.next);}}>
+  {blocked&&<p role="alert">Updates are disabled while offline or stale. Refresh before continuing.</p>}
+  {pending&&["checkIn","start"].includes(pending.next)&&<p className="notice">Confirm the patient is entering consultation now. Scanning a QR alone does not start consultation.</p>}
+  {pending?.next==="complete"&&<p className="notice">Finish this consultation. The next eligible waiting patient will be called, not checked in automatically.</p>}
  <p>{pending?.appointment.patientName} · {pending?.appointment.reference} · Token {pending?.appointment.token}</p>
  {pending?.next==="cancel"&&<p className="notice">Cancel this reservation? It will release its place. This cannot be undone; the clinic cutoff is checked again when you confirm.</p>}
  {pending?.next==="noShow"&&<p className="notice">Explicitly skip this absent patient without cancelling their booking or token. Reception can record a return position later.</p>}
@@ -42,6 +56,6 @@ export function AppointmentRows({appointments}:{appointments:api.Appointment[]})
  <ErrorNotice error={action.error}/>
  {pending&&["cancel","noShow","requeue"].includes(pending.next)&&<label>Required reason<textarea required value={reason} maxLength={1000} onChange={e=>setReason(e.target.value)}/></label>}
  {pending&&!pending.appointment.allowedActions.includes(pending.next)&&<p role="alert">This appointment changed. Close this dialog and review its current status.</p>}
- <div className="form-footer"><button type="button" disabled={action.isPending} onClick={()=>setPending(null)}>Back</button><button className="button" disabled={action.isPending||!!(pending&&!pending.appointment.allowedActions.includes(pending.next))||!!(pending&&["cancel","noShow","requeue"].includes(pending.next)&&!reason.trim())||(pending?.next==="requeue"&&(!queue.data?.queueVersion||queue.isFetching||!!queue.error||!Number.isInteger(position)||position<1))}>{action.isPending?"Updating…":"Confirm"}</button></div>
+  <div className="form-footer"><button type="button" disabled={action.isPending} onClick={()=>setPending(null)}>Back</button><button className="button" disabled={blocked||action.isPending||!!(pending&&!pending.appointment.allowedActions.includes(pending.next))||!!(pending&&["cancel","noShow","requeue"].includes(pending.next)&&!reason.trim())||(pending?.next==="requeue"&&(!queue.data?.queueVersion||queue.isFetching||!!queue.error||!Number.isInteger(position)||position<1))}>{action.isPending?"Updating…":"Confirm"}</button></div>
  </form></AppDialog></>;
 }

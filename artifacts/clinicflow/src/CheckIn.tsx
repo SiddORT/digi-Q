@@ -7,6 +7,7 @@ import * as api from "@workspace/api-client-react";
 import jsQR from "jsqr";
 import { useQueryClient } from "@tanstack/react-query";
 import { ErrorNotice } from "./resources";
+import { useFreshWorkspace } from "./components/queue/useFreshWorkspace";
 
 export function CheckInScanner() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -41,7 +42,8 @@ export function CheckInScanner() {
       <main style={{ padding: "40px 20px", maxWidth: "600px", margin: "0 auto" }}>
         <section className="panel padded">
           <span className="eyebrow">CLINIC STAFF</span>
-          <h2>Appointment check-in</h2>
+           <h2>Validate appointment QR</h2>
+           <p>Scanning only verifies the ticket. Confirm check-in explicitly when the patient enters consultation.</p>
           <ScannerCore initialPayload={payloadFromUrl} />
         </section>
       </main>
@@ -62,6 +64,8 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
   const [resolved, setResolved] = useState<api.AppointmentQrResolution | null>(null);
   const [resolveError, setResolveError] = useState<unknown>(null);
   const client = useQueryClient();
+  const [verifiedAt,setVerifiedAt]=useState(0);
+  const freshness=useFreshWorkspace(verifiedAt);
 
   useEffect(() => {
     const current = ++generation.current;
@@ -69,7 +73,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
     setResolveError(null);
     if (payload) {
       void resolve.mutateAsync({ data: { payload } }).then(value => {
-        if (current === generation.current) setResolved(value);
+        if (current === generation.current) {setResolved(value);setVerifiedAt(Date.now());}
       }).catch(error => {
         if (current === generation.current) setResolveError(error);
       });
@@ -262,6 +266,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
            {checkIn.error && <><ErrorNotice error={checkIn.error}/><p>Check-in was not confirmed. Retry safely; an existing check-in will not be duplicated.</p></>}
           <div>
+            {freshness.stale&&<p role="alert">Verification is stale or you are offline. Scan again after reconnecting before checking in.</p>}
             <small>PATIENT</small>
             <h3>{appointment.patientName}</h3>
             <p>{appointment.doctorName} · {appointment.branchName}</p>
@@ -273,9 +278,9 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
           ) : (
             <button 
               className="button" 
-              disabled={checkIn.isPending} 
+              disabled={checkIn.isPending||freshness.stale}
               onClick={() => {
-                if (submitting.current || checkIn.isPending) return;
+                if (submitting.current || checkIn.isPending || freshness.stale) return;
                 submitting.current = true;
                 checkIn.mutate({ data: { payload } }, {
                   onSuccess: () => { client.invalidateQueries(); },
@@ -283,7 +288,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
                 });
               }}
             >
-              {checkIn.isPending ? "Checking in…" : "Confirm check-in"}
+              {checkIn.isPending ? "Checking in…" : "Check in — enter consultation"}
             </button>
           )}
           <button className="button secondary" disabled={checkIn.isPending} onClick={reset}>Cancel / Scan another</button>

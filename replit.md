@@ -62,4 +62,13 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 
 ## Pointers
 
+## Approved queue refresh (supersedes older arrival/check-in terminology)
+
+- Track this expanded scope separately in `docs/queue-refresh-progress.md`.
+- Bookings join their doctor/branch/date waiting queue immediately. Check in means consultation entry; check out means consultation completion and automatic calling of the next waiting patient, not automatic consultation start.
+- Explicit absence skip and reason/position-based re-entry remain required. Future bookings never enter today's queue.
+- A branch-specific public reception display shows clinic/location, booking QR and separate doctor queues. Expose tokens only, never patient identities, contact information or private ticket references/QRs.
+- Rich compact two-line listings support explicit selection, CSV export, QR/ticket print/download, eligible activation/deactivation and reason-confirmed appointment cancellation. Preserve per-record authorization and report partial failures; no bulk deletion or clinical transitions.
+- Use icons with accessible labels and hover/focus/tap help. Keep critical instructions visible. Compact dialogs and navigation without removing necessary small-screen/zoom scrolling.
+
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details

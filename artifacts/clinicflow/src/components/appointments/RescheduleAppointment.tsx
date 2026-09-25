@@ -3,6 +3,7 @@ import * as api from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CareLookup } from "../CareLookup";
 import { ErrorNotice, today } from "../../resources";
+import { useFreshWorkspace } from "../queue/useFreshWorkspace";
 
 export function RescheduleAppointment({appointment:a,onDone}:{appointment:api.Appointment;onDone:()=>void}){
  const [branchId,setBranch]=useState(a.branchId);const [doctorId,setDoctor]=useState(a.doctorId);const [date,setDate]=useState(a.date);const [reason,setReason]=useState("");const [confirmed,setConfirmed]=useState(false);
@@ -11,7 +12,8 @@ export function RescheduleAppointment({appointment:a,onDone}:{appointment:api.Ap
  const current=api.useGetAppointment(a.id,{query:{queryKey:api.getGetAppointmentQueryKey(a.id),refetchInterval:30000}});
  const original=current.data||a;
  const mutation=api.useRescheduleAppointment({mutation:{onSuccess:()=>{client.invalidateQueries();onDone();},onError:()=>{setConfirmed(false);client.invalidateQueries();}}});
- const valid=original.status==="booked"&&!original.checkedInAt&&!current.error&&!current.isFetching&&availability.data?.available&&availability.data.queueMode!=="walkInsOnly"&&availability.data.remainingTokens>0&&!availability.error&&!availability.isFetching&&(branchId!==original.branchId||doctorId!==original.doctorId||date!==original.date);
+ const fresh=useFreshWorkspace(current.dataUpdatedAt,!!current.error);
+ const valid=!fresh.stale&&["booked","waiting","called"].includes(original.status)&&!original.checkedInAt&&!current.error&&!current.isFetching&&availability.data?.available&&availability.data.queueMode!=="walkInsOnly"&&availability.data.remainingTokens>0&&!availability.error&&!availability.isFetching&&(branchId!==original.branchId||doctorId!==original.doctorId||date!==original.date);
  return <form onSubmit={async e=>{e.preventDefault();if(lock.current||!valid||!confirmed)return;lock.current=true;try{await mutation.mutateAsync({id:a.id,data:{branchId,doctorId,date,reason:reason.trim()||undefined,expectedRevision:original.revision??0}});}catch{}finally{lock.current=false;}}}>
  <p>{a.reference} · {a.clinicName}. Changes are permitted only before check-in and the clinic cancellation cutoff. Your reference and history remain; the destination issues a new token. A failed change leaves your original booking intact.</p>
  <p>Current reservation: {original.doctorName} · {original.branchName} · {original.date} · Token {original.token} · {original.status}</p>
