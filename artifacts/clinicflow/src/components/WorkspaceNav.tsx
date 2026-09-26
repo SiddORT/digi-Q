@@ -8,8 +8,9 @@ const icons: Record<string, any> = { dashboard: LayoutDashboard, appointments: C
 export function navLabel(p: string, role: string) {
   if (p === "book") return role === "patient" ? "Book Now" : "Book appointment";
   if (p === "queue" && role === "patient") return "Booking status";
-  if (p === "profile" && role === "admin") return "My consultation";
-  const map: Record<string, string> = { dashboard: "Overview", branches: "Locations", clinics: role === "doctor" ? "My clinics" : "Clinics", availability: "Weekly schedule", exceptions: "Date exceptions", qrs: "Booking QR codes", audit: "Audit log", queue: "Live queue", masters: "Master data", demo: "Demo clinic" };
+  if (p === "profile" && role === "admin") return "My profile & consultation";
+  if (p === "profile" && role === "doctor") return "My profile & clinics";
+  const map: Record<string, string> = { dashboard: "Overview", branches: "Locations", clinics: role === "doctor" ? "My clinics" : "Clinics", availability: "Schedule", exceptions: "Schedule · exceptions", qrs: "Booking QR codes", audit: "Audit log", queue: "Live queue", masters: "Master data", demo: "Demo clinic", settings:"Clinic workspace" };
   return map[p] || title(p);
 }
 

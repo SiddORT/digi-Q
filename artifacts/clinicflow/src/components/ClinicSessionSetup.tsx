@@ -84,7 +84,7 @@ export function ClinicSessionSetup({ clinicId, branches, ownDoctorId }: {
     }
   }
   return <section className="panel padded" aria-label="Booking readiness and doctor sessions">
-    <div className="panel-heading"><div><h2>Booking readiness · doctor sessions</h2><p>Solo owner? Link consultations in Locations &amp; Hours to use one timetable. Other doctors can use custom sessions below.</p></div><Link href={`/admin/availability?clinicId=${encodeURIComponent(clinicId)}`}>Weekly schedule</Link></div>
+    <div className="panel-heading"><div><h2>Booking readiness · doctor sessions</h2><p>Owner-linked hours are configured in Locations &amp; Hours. Custom doctors can copy saved intervals here, then manage every session below.</p></div></div>
     <div className="form-grid">
       <label>Location<select disabled={busy} value={branchId} onChange={e => { setBranchId(e.target.value); setDoctorId(""); setChosen([]); setMessage(""); }}><option value="">Choose a location</option>{active.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
       {branchId && <label>Doctor<select disabled={busy || incompleteDoctors} value={doctorId} onChange={e => { setDoctorId(e.target.value); setChosen([]); setMessage(""); }}><option value="">Choose a doctor</option>{doctorOptions.map(d => <option key={d.id} value={d.id}>{d.fullName}{d.id === ownDoctorId ? " (you)" : ""}</option>)}</select></label>}

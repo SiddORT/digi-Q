@@ -1,0 +1,107 @@
+/* DigiQ Doctors — compact-only staff workspace contract. See docs/compact-style-contract.md.
+   Scoped under .workspace so patient tickets, print, auth and public pages are untouched. */
+:root{--cw-gap:8px;--cw-gap-lg:12px;--cw-ctl:36px;--cw-ctl-sm:30px;--cw-line:#dbe4f0;--cw-line-soft:#e8eef6;--cw-blue:#1552b0;--cw-blue-strong:#0f3f8c;--cw-ink:#172a4a;--cw-soft:#56657d;--cw-surface:#f6f9fd}
+
+/* Workspace shell + section navigation (not tabs) */
+.workspace .clinic-workspace{display:grid;grid-template-columns:200px minmax(0,1fr);gap:var(--cw-gap-lg);align-items:start}
+.workspace .clinic-workspace>*{min-width:0}
+.workspace .workspace-section-nav{position:sticky;top:12px;display:flex;flex-direction:column;gap:2px;padding:6px;background:#fff;border:1px solid var(--cw-line-soft);border-radius:10px}
+.workspace .workspace-section-nav a,.workspace .workspace-section-nav button{display:flex;align-items:center;gap:8px;justify-content:flex-start;width:100%;min-height:34px;padding:6px 10px;border:0;border-radius:7px;background:none;font-size:13px;font-weight:550;color:#40577a;text-align:left}
+.workspace .workspace-section-nav a:hover,.workspace .workspace-section-nav button:hover{background:var(--cw-surface);color:var(--cw-blue)}
+.workspace .workspace-section-nav [aria-current],.workspace .workspace-section-nav .active{background:#e6effb;color:var(--cw-blue-strong);font-weight:650;box-shadow:inset 3px 0 0 var(--cw-blue)}
+.workspace .workspace-section-select{display:none}
+.workspace .workspace-section-select select{margin:0;min-height:44px;font-weight:600}
+
+/* Toolbar: search left at sensible width, actions right */
+.workspace .filter-bar-row{display:flex;align-items:center;flex-wrap:wrap;width:100%;gap:8px}
+.workspace .filter-bar-primary{flex:1 1 320px;min-width:0}
+.workspace .filter-bar-tools{display:flex;align-items:center;gap:8px;margin-left:auto;flex:0 0 auto}
+.workspace .sq-status-tabs [aria-selected=true]{background:#e6effb;color:var(--cw-blue-strong);border-color:#afc6e7;font-weight:650}
+.workspace .resource-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:var(--cw-gap);margin:0 0 var(--cw-gap)}
+.workspace .resource-toolbar .search,.workspace .resource-toolbar>input[type=search]{flex:1 1 240px;max-width:360px;margin:0;min-height:var(--cw-ctl)}
+.workspace .resource-toolbar .search input{min-height:calc(var(--cw-ctl) - 2px);font-size:13px}
+.workspace .resource-toolbar select{margin:0;width:auto;min-width:140px;min-height:var(--cw-ctl);padding:6px 10px;font-size:13px}
+.workspace .resource-toolbar-actions,.workspace .toolbar-actions{display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}
+.workspace .toolbar{align-items:center}
+.workspace .toolbar .search{max-width:360px;flex:1 1 240px}
+.workspace .toolbar .search input,.workspace .search input{min-height:34px;font-size:13px}
+
+/* Status tabs — the only tab pattern allowed (Active / Inactive / All) */
+.workspace .status-tabs{display:inline-flex;gap:2px;padding:2px;background:#eef3fa;border:1px solid var(--cw-line);border-radius:8px}
+.workspace .status-tabs [role=tab],.workspace .status-tabs button{min-height:30px;padding:4px 12px;border:0;border-radius:6px;background:transparent;font-size:12.5px;font-weight:600;color:#40577a;gap:6px}
+.workspace .status-tabs [aria-selected=true],.workspace .status-tabs [aria-pressed=true]{background:#fff;color:var(--cw-blue-strong);box-shadow:0 1px 2px #0d235026}
+.workspace .status-tabs .count{font-size:11px;font-variant-numeric:tabular-nums;color:var(--cw-soft)}
+
+/* Tables: compact only */
+.workspace th{padding:8px 12px;font-size:11px;letter-spacing:.4px;vertical-align:middle}
+.workspace td{padding:8px 12px;font-size:13px;line-height:1.4;vertical-align:middle}
+.workspace td small{margin-top:1px}
+.workspace th .sort-button,.workspace th button.sort{display:inline-flex;align-items:center;gap:4px;width:100%;justify-content:flex-start;min-height:28px;padding:2px 4px;margin:-2px -4px;border:0;border-radius:5px;background:none;font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit}
+.workspace th .sort-button:hover{background:#e8effa;color:var(--cw-blue-strong)}
+.workspace th .sort-button .sort-arrow,.workspace th .sort-button svg{flex:0 0 14px;width:14px;height:14px;opacity:.35}
+.workspace th[aria-sort=ascending] .sort-arrow,.workspace th[aria-sort=descending] .sort-arrow,.workspace th[aria-sort=ascending] .sort-button svg,.workspace th[aria-sort=descending] .sort-button svg{opacity:1;color:var(--cw-blue)}
+.workspace th.col-actions .sort-button{justify-content:flex-end}
+.workspace .row-actions{align-items:center;gap:4px}
+
+/* Labelled activation switch */
+.workspace .status-switch{display:inline-flex;align-items:center;gap:8px;min-height:30px;padding:0;border:0;background:none;font-size:12.5px;font-weight:600;color:var(--cw-soft);cursor:pointer}
+.workspace .status-switch input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.workspace .status-switch-track{position:relative;flex:0 0 32px;width:32px;height:18px;border-radius:999px;background:#c5d0de;transition:background .15s}
+.workspace .status-switch-track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px #0d235040;transition:transform .15s}
+.workspace .status-switch[aria-checked=true] .status-switch-track,.workspace .status-switch input:checked+.status-switch-track{background:#2f8a57}
+.workspace .status-switch[aria-checked=true] .status-switch-track::after,.workspace .status-switch input:checked+.status-switch-track::after{transform:translateX(14px)}
+.workspace .status-switch[aria-checked=true],.workspace .status-switch:has(input:checked){color:#23704a}
+.workspace .status-switch:focus-visible,.workspace .status-switch:has(input:focus-visible){outline:2px solid #12a4cc;outline-offset:2px;border-radius:6px}
+.workspace .status-switch:disabled,.workspace .status-switch[aria-disabled=true]{opacity:.5;cursor:not-allowed}
+
+/* Button groups: primary + secondary together, destructive separated */
+.workspace .button-group{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.workspace .button-group .danger,.workspace .button.danger{color:#a2302a;border-color:#efc3bf;background:#fff}
+.workspace .button-group .danger:first-child{margin-right:auto}
+.workspace .button{min-height:var(--cw-ctl);padding:7px 14px;font-size:13px;gap:6px;border-radius:8px;box-shadow:none}
+.workspace .button.small{min-height:var(--cw-ctl-sm);padding:4px 10px;font-size:12px}
+.workspace button:not(.button){min-height:var(--cw-ctl-sm);padding:4px 10px;font-size:12.5px}
+
+/* Card / panel headers: title left, actions right, vertically centred */
+.workspace .panel-heading{align-items:center;padding:10px 14px;min-height:48px}
+.workspace .panel-heading>div:first-child{min-width:0}
+.workspace .panel-heading h2{font-size:15px;line-height:1.3}
+.workspace .panel-heading p{margin-top:1px}
+.workspace .panel-actions,.workspace .panel-heading>.button-group{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.workspace .panel+.panel{margin-top:var(--cw-gap-lg)}
+
+/* Forms: consistent footer, compact fields */
+.workspace input:not([type=checkbox]):not([type=radio]),.workspace select,.workspace textarea{--field-height:36px;padding:7px 10px;font-size:13px;margin-top:4px}
+.workspace .workspace-search input{padding-left:40px;padding-right:40px}
+.workspace .filter-bar-primary>.workspace-search{max-width:360px}
+.workspace .workspace-search button{min-height:28px}
+.workspace textarea{min-height:76px}
+.workspace label{font-size:12.5px}
+.workspace .form-grid{gap:10px 14px;margin-top:10px}
+.workspace .form-footer,.workspace .modal-footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:14px;padding-top:10px;border-top:1px solid var(--cw-line-soft)}
+.workspace .form-footer .danger{margin-right:auto}
+
+/* Mobile: section select, stacked toolbar, 44px targets */
+@media(max-width:900px){
+ .workspace .clinic-workspace{grid-template-columns:1fr}
+ .workspace .workspace-section-nav{display:none}
+ .workspace .workspace-section-select{display:block;margin-bottom:var(--cw-gap)}
+}
+@media(max-width:767px){
+ .workspace .filter-bar-primary{flex-basis:100%;width:100%}
+ .workspace .filter-bar-tools{margin-left:0;width:100%;flex-wrap:wrap}
+ .workspace .filter-bar-primary>.workspace-search{max-width:none}
+ .workspace .resource-toolbar .search,.workspace .toolbar .search{max-width:none;flex-basis:100%}
+ .workspace .resource-toolbar-actions,.workspace .toolbar-actions{margin-left:0;width:100%}
+ .workspace .resource-toolbar-actions>*,.workspace .toolbar-actions>*{flex:1 1 auto}
+ .workspace .status-tabs{display:flex;width:100%;overflow-x:auto}
+ .workspace .status-tabs [role=tab],.workspace .status-tabs button{flex:1 0 auto}
+ .workspace .form-footer,.workspace .modal-footer{flex-wrap:wrap}
+ .workspace .form-footer>*,.workspace .modal-footer>*{flex:1 1 auto}
+ .workspace .panel-heading{flex-wrap:wrap}
+}
+@media(max-width:767px),(pointer:coarse){
+ .workspace .button,.workspace .button.small,.workspace button:not(.button),.workspace .sq-status-tabs [role=tab],.workspace .status-tabs [role=tab],.workspace .status-tabs button,.workspace .status-switch,.workspace th .sort-button,.workspace input:not([type=checkbox]):not([type=radio]),.workspace select,.workspace .workspace-section-nav a{min-height:44px}
+ .workspace .search input{min-height:42px}
+}
+@media(prefers-reduced-motion:reduce){.workspace .status-switch-track,.workspace .status-switch-track::after{transition:none}}

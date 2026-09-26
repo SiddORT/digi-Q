@@ -1,0 +1,40 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { readFileSync } from "node:fs";
+import ts from "typescript";
+
+const source=readFileSync(new URL("./staff-controls.ts",import.meta.url),"utf8");
+const ui=readFileSync(new URL("./Users.tsx",import.meta.url),"utf8");
+const staffInputSource=readFileSync(new URL("./staff-input.ts",import.meta.url),"utf8");
+const moduleOptions={compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}};
+const inputs={};
+new Function("exports",ts.transpileModule(staffInputSource,moduleOptions).outputText)(inputs);
+const scoped={};
+new Function("exports","staffInput",ts.transpileModule(source.replace(/^import .*staff-input.*;\n/m,""),moduleOptions).outputText)(scoped,inputs.staffInput);
+const { clinicScopedStaffInput }=scoped;
+test("embedded staff queries always include the fixed clinic",()=>{
+  assert.match(ui,/clinicId:\s*clinicId \|\| context\.clinicId \|\| undefined/);
+  assert.match(ui,/!clinicId&&draftTab !== "admins"/);
+  assert.match(ui,/onOpen=\{openFilters\} onApply=\{applyFilters\}/);
+});
+test("status is the only tab category and filters have no status/sort dropdown",()=>{
+  assert.match(ui,/className="status-tabs"/);
+  assert.doesNotMatch(ui,/role="tablist" aria-label="Staff type"/);
+  assert.doesNotMatch(ui,/<SearchableSelect label="Status"/);
+  assert.doesNotMatch(ui,/<SearchableSelect label="Sort"/);
+  assert.match(ui,/aria-sort=/);
+  assert.match(ui,/role="switch"/);
+});
+test("scoped assignment payload explicitly preserves foreign clinic and unknown branches",()=>{
+  const existing={clinicIds:["fixed","other"],branchIds:["fixed-old","foreign","unknown"]};
+  const records=new Map([["fixed-old",{clinicId:"fixed"}],["foreign",{clinicId:"other"}]]);
+  const body=clinicScopedStaffInput("receptionists",{fullName:"Staff",email:"staff@example.com",clinicIds:[],branchIds:["fixed-new"],status:"active"},existing,"fixed",records);
+  assert.deepEqual(body.clinicIds,["other","fixed"]);
+  assert.deepEqual(body.branchIds,["fixed-new","foreign","unknown"]);
+  assert.deepEqual(clinicScopedStaffInput("doctors",{fullName:"Doctor",email:"doctor@example.com",clinicIds:["fixed"],branchIds:["fixed-old"]},existing,"fixed",records).branchIds,["fixed-old","foreign","unknown"]);
+  assert.deepEqual(clinicScopedStaffInput("receptionists",{fullName:"Staff",email:"staff@example.com",clinicIds:["fixed"],branchIds:["fixed-old"]},existing,undefined,records).branchIds,["fixed-old"]);
+  assert.match(ui,/clinicScopedStaffInput/);
+  assert.match(ui,/const current=await api\.getUser\(row\.id\)/);
+  assert.match(ui,/api\.updateUser\(row\.id,\{fullName:current\.fullName,email:current\.email,mobile:current\.mobile\|\|undefined,role:current\.role,status\}\)/);
+  assert.match(ui,/window\.confirm\(`Deactivate/);
+});

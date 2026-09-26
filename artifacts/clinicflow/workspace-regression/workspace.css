@@ -1,0 +1,5 @@
+/* Test-only build entry. Tailwind's Vite root is this directory, while the
+   real application components live one directory above it. Register that
+   source explicitly so this harness exercises the application's utility CSS. */
+@import "../src/index.css";
+@source "../src";

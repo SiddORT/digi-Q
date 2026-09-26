@@ -1,0 +1,5 @@
+# Staff workspace component
+
+`Users` in `artifacts/clinicflow/src/Users.tsx` accepts `{ identity: api.Identity; clinicId?: string; embedded?: boolean }`. Embed as `<Users identity={identity} clinicId={clinicId} embedded />` in the clinic workspace's Staff section. `clinicId` is a fixed list/create scope, not a removable filter. Existing other-clinic assignments on a staff record remain visible and are retained when editing within a clinic. Do not import `ClinicSettings` into `Users`.
+
+The standalone `/admin/users` route and its existing role protections remain intact. Staff type is a labelled selector in Filters; **only account statuses** use tabs. No status dropdown, density control, or sort dropdown in the Filters panel. User/doctor activation controls use the existing update APIs and do not bypass backend ownership protections.

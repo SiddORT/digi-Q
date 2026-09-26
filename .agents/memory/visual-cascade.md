@@ -14,3 +14,15 @@ For narrow export documents, compare text and table internal scroll widths with 
 **Why:** A ticket container with hidden overflow can make the page appear to fit while silently clipping a long patient name.
 
 **How to apply:** Check child bounds inside the exported HTML as well as the on-screen component; exercise downloaded documents and print popups separately.
+
+Isolated component browser harnesses must explicitly scan the application's source for Tailwind utilities, not just import its stylesheet and Vite plugin.
+
+**Why:** An isolated harness passed interaction checks while rendering stacked pagination, duplicate mobile navigation and misplaced search icons because it did not generate utilities from the real application files. These were initially confused with production cascade problems.
+
+**How to apply:** Match the real CSS compiler and explicitly include external component sources in scanning. Assert computed flex/hidden styles before trusting visual evidence; then distinguish genuine selector mismatches and specificity problems from harness omissions.
+
+Keep the clinic administration interface compact-only and reserve tabs for status filtering. Consolidate overlapping management surfaces around one editor per record type.
+
+**Why:** The user explicitly rejected density choices, tab-like section navigation, and pages that repeat most of the same controls with only a few differences. The goal is fewer competing places to manage information, not merely smaller spacing.
+
+**How to apply:** Use section navigation for configuration, labelled toggles for binary staff activation and column arrows for sorting. Reuse canonical editors from contextual entry points while preserving role scopes, unique actions, historical links and distinct appointment/queue workflows.

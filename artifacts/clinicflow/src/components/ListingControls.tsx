@@ -168,7 +168,7 @@ export interface SearchInputProps {
 
 export function SearchInput({ value, onChange, placeholder = "Search...", label }: SearchInputProps) {
   return (
-    <div className="flex flex-col gap-1.5 w-full md:max-w-sm">
+    <div className="workspace-search flex flex-col gap-1.5 w-full md:max-w-sm">
       {label && <label className="text-sm font-semibold text-foreground">{label}</label>}
       <div className="relative flex items-center group">
         <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
@@ -178,7 +178,7 @@ export function SearchInput({ value, onChange, placeholder = "Search...", label 
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className="h-[38px] w-full rounded-lg border border-border bg-white pl-10 pr-9 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all"
-          style={{ margin: 0 }}
+          style={{ margin: 0, paddingInlineStart: "2.5rem", paddingInlineEnd: "2.5rem" }}
         />
         {value && (
           <button
@@ -218,9 +218,11 @@ export interface FilterBarProps {
   /** Optional trailing actions (e.g. export, add). Aligned on the same row. */
   actions?: React.ReactNode;
   label?: string;
+  onOpen?: () => void;
+  onApply?: () => void;
 }
 
-export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, label = "Filters" }: FilterBarProps) {
+export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, label = "Filters", onOpen, onApply }: FilterBarProps) {
   const advancedActiveCount = chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
@@ -266,7 +268,7 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
               <button type="button" ref={toggleRef} className={cn("filter-toggle", advancedActiveCount > 0 && "has-active")}
                 aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
                 aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
-                onClick={() => setOpen(v => !v)} data-testid="button-toggle-advanced-filters">
+                onClick={() => { if (!open) onOpen?.(); setOpen(v => !v); }} data-testid="button-toggle-advanced-filters">
                 <Filter aria-hidden className="h-4 w-4" />
                 <span className="filter-toggle-text">Filters</span>
                 {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
@@ -275,8 +277,8 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
                 <div id={panelId} ref={panelRef} role="dialog" aria-label={label} className={cn("filter-bar-advanced", alignRight && "align-right")}>
                   <div className="filter-panel-fields">{advanced}</div>
                   <div className="filter-panel-foot">
-                    {onReset && <button type="button" className="filter-clear" onClick={onReset} disabled={!active} data-testid="button-clear-filters-panel">Clear all</button>}
-                    <button type="button" className="filter-done" onClick={() => { setOpen(false); toggleRef.current?.focus(); }} data-testid="button-close-filters">Done</button>
+                    {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); setOpen(false); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
+                    <button type="button" className="filter-done" onClick={() => { onApply?.(); setOpen(false); toggleRef.current?.focus(); }} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
                   </div>
                 </div>
               )}

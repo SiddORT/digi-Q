@@ -1,18 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import * as api from "@workspace/api-client-react";
-import { Editor, ErrorNotice, resources } from "../resources";
+import { Editor, ErrorNotice, ResourcePage, resources } from "../resources";
+import { Users } from "../Users";
 import { ResourceLookup } from "./ResourceLookup";
 import { AppDialog } from "./AppDialog";
 import { clinicalBranchSelection } from "./clinical-branches";
-import { ClinicSessionSetup } from "./ClinicSessionSetup";
+import { SchedulingWorkspace } from "./SchedulingWorkspace";
 import { ClinicChangeReview, LinkedScheduleControls, type LinkedSchedule } from "./LinkedScheduleControls";
 import "./clinic-settings.css";
 
+const sections = [["general","General"],["locations","Locations & Hours"],["sessions","Doctors & Sessions"],["policies","Booking Rules"],["staff","Staff"],["qrs","Booking Links & QR"],["history","Activity history"]] as const;
+
 export function ClinicSettings({identity}:{identity:api.Identity}){
+ const [,navigate]=useLocation();
  const [clinicId,setClinic]=useState(()=>new URLSearchParams(window.location.search).get("clinicId")||"");
  const [view,setView]=useState(()=>{const value=new URLSearchParams(window.location.search).get("section")||"general";return ["general","locations","sessions","policies","staff","qrs","history"].includes(value)?value:"general";});
+ const selectView=(next:string)=>{if(next===view)return;setView(next);const url=new URL(window.location.href);url.searchParams.set("section",next);for(const key of ["search","page","pageSize","sort","status","branchId","doctorId","date","from","to"])url.searchParams.delete(key);navigate(`${url.pathname}${url.search}`);};
  useEffect(()=>{if(clinicId){const url=new URL(window.location.href);url.searchParams.set("clinicId",clinicId);url.searchParams.set("section",view);window.history.replaceState(window.history.state,"",url);}},[clinicId,view]);
  const client=useQueryClient();
  const clinicParams={pageSize:2};
@@ -21,39 +26,74 @@ export function ClinicSettings({identity}:{identity:api.Identity}){
  const query=api.useGetClinicSettings(clinicId,{query:{queryKey:api.getGetClinicSettingsQueryKey(clinicId),enabled:!!clinicId,refetchInterval:30000}});
  const [section,setSection]=useState<"clinic"|"policies"|null>(null);
  const [branch,setBranch]=useState<api.Branch|null>(null);
- const [ownProfile,setOwnProfile]=useState(false);
- const [clinicalBranches,setClinicalBranches]=useState<string[]>([]);
- const save=api.useUpdateClinicSettings({mutation:{onSuccess:()=>{setSection(null);setBranch(null);client.invalidateQueries();}}});
- const doctor=api.useGetDoctor(identity.doctorId||"",{query:{queryKey:api.getGetDoctorQueryKey(identity.doctorId||""),enabled:!!identity.doctorId}});
- const own=api.useAttachOwnDoctorProfile({mutation:{onSuccess:async()=>{setOwnProfile(false);await client.invalidateQueries();}}});
+ const openedBranchId=useRef<string|null>(null);
+ const closeBranch=()=>{setBranch(null);if(openedBranchId.current){const url=new URL(window.location.href);if(url.searchParams.get("branchId")===openedBranchId.current){url.searchParams.delete("branchId");window.history.replaceState(window.history.state,"",url);}openedBranchId.current=null;}};
+ const save=api.useUpdateClinicSettings({mutation:{onSuccess:()=>{setSection(null);closeBranch();client.invalidateQueries();}}});
  const [dirty,setDirty]=useState(false);
  const data=query.data;
- const otherIds=(doctor.data?.branchIds||[]).filter(id=>!data?.branches.some(branch=>branch.id===id));
- const otherQueries=useQueries({queries:otherIds.map(id=>({queryKey:api.getGetBranchQueryKey(id),queryFn:()=>api.getBranch(id),enabled:ownProfile,staleTime:15000}))});
- const otherBranches=otherQueries.flatMap(result=>result.data?[result.data]:[]);
- const selection=clinicalBranchSelection(clinicalBranches,[...(data?.branches||[]),...otherBranches]);
- const openClinical=()=>{own.reset();setDirty(false);setClinicalBranches(doctor.data?.branchIds||[]);setOwnProfile(true);};
- const toggleClinical=(id:string,checked:boolean)=>{setDirty(true);setClinicalBranches(previous=>checked?[...previous,id]:previous.filter(value=>value!==id));};
+ const [missingBranch,setMissingBranch]=useState(false);
+ useEffect(()=>{
+  if(!data||view!=="locations")return;
+  const url=new URL(window.location.href);const target=url.searchParams.get("branchId");
+  if(!target||openedBranchId.current===target)return;
+  const item=data.branches.find(branch=>branch.id===target);
+  if(item){openedBranchId.current=target;setDirty(false);setBranch(item);setMissingBranch(false);}
+  else{setMissingBranch(true);url.searchParams.delete("branchId");window.history.replaceState(window.history.state,"",url);}
+ },[data,view]);
  return <section className="clinic-settings">
-  <ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Select clinic to configure":"Your clinic"} value={clinicId} onChange={id=>{setClinic(id);setSection(null);setBranch(null);setOwnProfile(false);save.reset();}}/>
+  <ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Select clinic to configure":"Your clinic"} value={clinicId} onChange={id=>{setClinic(id);setSection(null);closeBranch();save.reset();}}/>
  <ErrorNotice error={query.error||clinics.error}/>{query.error&&<button onClick={()=>query.refetch()}>Retry clinic settings</button>}
  {!clinicId?<p className="empty">Select a clinic to manage its settings. Platform settings are separate.</p>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&!query.error&&<>
- <nav className="clinic-settings-tabs" aria-label="Clinic configuration sections">{[["general","General"],["locations","Locations & Hours"],["sessions","Doctors & Sessions"],["policies","Booking Rules"],["staff","Staff"],["qrs","QR & Links"],["history","History"]].map(([key,label])=><button key={key} type="button" aria-pressed={view===key} onClick={()=>setView(key)}>{label}</button>)}</nav>
+  <label className="clinic-section-mobile workspace-section-select">Clinic section<select aria-label="Clinic section" value={view} onChange={event=>selectView(event.target.value)}>{sections.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
+  <div className="clinic-workspace-layout clinic-workspace"><nav className="clinic-section-menu workspace-section-nav" aria-label="Clinic configuration sections">{sections.map(([key,label])=><button key={key} type="button" aria-current={view===key?"page":undefined} onClick={()=>selectView(key)}>{label}</button>)}</nav><div className="clinic-workspace-content">
  <div hidden={view!=="general"}>
- <section className="panel padded"><div className="panel-heading"><div><h2>{data.clinic.name}</h2><p>{data.clinic.address}</p></div><button onClick={()=>{setDirty(false);save.reset();setSection("clinic");}}>Edit clinic</button></div>
+  <section className="panel padded"><div className="panel-heading"><div><h2>{data.clinic.name}</h2><p>{data.clinic.address}</p></div><div className="row-actions"><Link href="/admin/clinics">All clinics / Add clinic</Link><button onClick={()=>{setDirty(false);save.reset();setSection("clinic");}}>Edit clinic</button></div></div>
  <p>Web address: {data.clinic.slug?<Link href={`/${data.clinic.slug}`}>/{data.clinic.slug}</Link>:"Not set — edit clinic to choose a permanent address"}</p><p>{[data.clinic.email,data.clinic.phone].filter(Boolean).join(" · ")||"No clinic contacts configured"}</p>
  </section>
- <p>{data.branches.filter(b=>b.linkedSchedule?.enabled).length} location(s) use linked owner-doctor hours. Custom doctor availability must be checked separately.</p><button onClick={()=>setView("sessions")}>Check doctor booking readiness</button>
+ <p>{data.branches.filter(b=>b.linkedSchedule?.enabled).length} location(s) use linked owner-doctor hours. Custom doctor availability must be checked separately.</p><button onClick={()=>selectView("sessions")}>Check doctor booking readiness</button>
  </div>
  <section hidden={view!=="policies"} className="panel padded"><div className="panel-heading"><h2>Booking policies</h2><button onClick={()=>{setDirty(false);save.reset();setSection("policies");}}>Edit policies</button></div><p>Booking horizon: {data.policies.bookingHorizonDays??"Not configured"} days · Cancellation cutoff: {data.policies.cancellationCutoffMinutes??"Not configured"} minutes</p><p className="muted">Clinic policies do not configure general notification delivery or authentication session timeout. Those integration controls belong to platform/provider administration.</p></section>
- <div hidden={view!=="sessions"}><ClinicSessionSetup key={clinicId} clinicId={clinicId} branches={data.branches} ownDoctorId={identity.doctorId||undefined}/><button onClick={()=>setView("locations")}>Link owner consultations to location hours</button></div>
- <section hidden={view!=="locations"} className="panel padded"><h2>Opening days &amp; hours · locations</h2><p>Link the owner's consultations to use one timetable, or keep custom doctor sessions. Every change is previewed before applying.</p>{data.branches.map(item=><details key={item.id}><summary>{item.name} · {(item.openingHours||[]).length} open interval(s) · {item.linkedSchedule?.enabled?"Linked owner consultations":"Custom doctor schedules"}</summary><p>{item.city||item.address}</p><p>Effective email: {item.effectiveEmail||"Not set"} · Effective phone: {item.effectivePhone||"Not set"}</p><p>Web address: {item.slug||"Not set"}</p><button onClick={()=>{setDirty(false);save.reset();setBranch(item);}}>Edit opening days &amp; hours</button></details>)}<Link href={`/admin/branches?clinicId=${encodeURIComponent(clinicId)}`}>Manage locations</Link></section>
- {["staff","qrs","history"].includes(view)&&<section className="panel padded"><h2>{view==="staff"?"Staff and assignments":view==="qrs"?"Booking QR & links":"Clinic activity history"}</h2><p>{view==="staff"?"Manage this clinic's doctors and receptionists without changing ownership.":view==="qrs"?"Existing QR links stay unchanged when hours change. Check doctor availability before sharing.":"Review configuration and operational changes within your authorised clinic scope."}</p><Link className="button" href={`/admin/${view==="staff"?"users":view==="history"?"audit":"qrs"}?clinicId=${encodeURIComponent(clinicId)}`}>Open {view==="staff"?"staff management":view==="history"?"clinic history":"booking QR codes"}</Link>{view==="qrs"&&data.clinic.slug&&<Link className="button secondary" href={`/${data.clinic.slug}`}>Check patient booking page</Link>}</section>}
-   {view==="sessions"&&identity.user?.role==="clinicAdmin"&&<section className="panel padded"><h2>My consultation</h2><p>Consult at your own branches while retaining the full Clinic Admin workspace. No role switch or second login is needed.</p><ErrorNotice error={doctor.error}/>{doctor.error&&<button onClick={()=>doctor.refetch()}>Retry doctor profile</button>}{identity.doctorId?<><div className="row-actions"><Link href="/admin/profile">Edit my doctor profile</Link><button onClick={openClinical} disabled={doctor.isLoading||!!doctor.error}>Manage clinical branches</button>{doctor.data?.status==="active"&&<Link href={`/admin/queue?doctor=${encodeURIComponent(identity.doctorId)}`}>Open my consultation queue</Link>}</div>{doctor.data?.status==="inactive"&&<p className="notice" role="status">Your doctor profile is inactive. Clinical queue access is unavailable until you reactivate it in My consultation. Your clinic administration remains available.</p>}</>:<button onClick={openClinical}>Enable my doctor profile</button>}</section>}
+  {view==="sessions"&&<SchedulingWorkspace key={`${clinicId}-sessions`} identity={identity} page="availability" clinicId={clinicId} onLinkOwner={()=>selectView("locations")}/>}
+  {view==="locations"&&<><section className="panel padded"><h2>Location hours and linked consultations</h2><p>Select a location below to edit its details, opening hours and linked consultations together. Preview every change before applying; bookings cannot be moved silently.</p>{missingBranch&&<p role="alert">This location is not available in the selected clinic. Check your clinic and choose an authorised location below.</p>}</section><ResourcePage key={`${clinicId}-branches`} resource="branches" identity={identity} embedded fixedClinicId={clinicId} onEdit={row=>{const item=data.branches.find(branch=>branch.id===row.id);if(item){setDirty(false);save.reset();setMissingBranch(false);setBranch(item);}else void query.refetch();}}/></>}
+  {view==="staff"&&<>{identity.user?.role==="superAdmin"&&<p><Link href="/admin/users">Manage all staff and clinic administrators</Link></p>}<Users key={`${clinicId}-staff`} identity={identity} clinicId={clinicId} embedded/></>}
+  {view==="qrs"&&<><p className="muted">QR regeneration invalidates printed copies; existing booking links stay unchanged when editing clinic hours.</p><ResourcePage key={`${clinicId}-qrs`} resource="qrs" identity={identity} embedded fixedClinicId={clinicId}/>{data.clinic.slug&&<Link href={`/${data.clinic.slug}`}>Check patient booking page</Link>}</>}
+  {view==="history"&&<>{identity.user?.role==="superAdmin"&&<p><Link href="/admin/audit">View platform-wide audit history</Link></p>}<ResourcePage key={`${clinicId}-history`} resource="audit" identity={identity} embedded fixedClinicId={clinicId} allowCreate={false}/></>}
  <AppDialog open={!!section} onClose={()=>setSection(null)} title={section==="clinic"?"Clinic details":"Booking policies"} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{section&&<Editor onDirtyChange={setDirty} initial={section==="clinic"?data.clinic:data.policies} fields={section==="clinic"?resources.clinics.fields.filter(field=>["name","address","email","phone","slug","categoryId","specialityIds","referralCode"].includes(field.key)):[{key:"bookingHorizonDays",type:"number",required:true},{key:"cancellationCutoffMinutes",type:"number",required:true}]} busy={save.isPending} onSave={value=>save.mutate({id:clinicId,data:section==="clinic"?{clinic:value}:{policies:value}})}/>}</AppDialog>
- <AppDialog open={!!branch} onClose={()=>setBranch(null)} title="Location opening days & hours" dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{branch&&<BranchSettings key={branch.id} clinicId={clinicId} branch={branch} busy={save.isPending} onDirtyChange={setDirty} onSave={value=>save.mutate({id:clinicId,data:{branches:[value]}})}/>}</AppDialog>
+  <AppDialog open={!!branch} onClose={closeBranch} title="Location opening days & hours" dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{branch&&<BranchSettings key={branch.id} clinicId={clinicId} branch={branch} busy={save.isPending} onDirtyChange={setDirty} onSave={value=>save.mutate({id:clinicId,data:{branches:[value]}})}/>}</AppDialog>
+  </div></div>
  </>}
-   <AppDialog open={ownProfile} onClose={()=>setOwnProfile(false)} title={identity.doctorId?"Manage clinical branches":"Enable my doctor profile"} busy={own.isPending} dirty={dirty}><p>Choose active branches where you consult. You may remove the last branch at this clinic if another active owned branch stays selected. Inactive selections must be removed before saving.</p><ErrorNotice error={own.error}/><form onSubmit={event=>{event.preventDefault();if(selection.canSave&&!own.isPending)own.mutate({data:{branchIds:selection.branchIds}});}}>{(data?.branches||[]).filter(item=>item.status==="active"||clinicalBranches.includes(item.id)).map(item=><label className="check-label" key={item.id}><input type="checkbox" checked={clinicalBranches.includes(item.id)} disabled={item.status!=="active"&&!clinicalBranches.includes(item.id)} onChange={event=>toggleClinical(item.id,event.target.checked)}/> {item.name} · {item.city||item.address}{item.status!=="active"&&" · Inactive — remove before saving"}</label>)}{!!otherIds.length&&<><h3>Selected at other clinics</h3>{otherIds.map((id,index)=>{const item=otherQueries[index].data;return <div key={id}><label className="check-label"><input type="checkbox" checked={clinicalBranches.includes(id)} disabled={!clinicalBranches.includes(id)} onChange={event=>toggleClinical(id,event.target.checked)}/> {item?`${item.name} · ${item.city||item.address} (${item.clinicId})${item.status!=="active"?" · Inactive — remove before saving":""}`:`Branch ${id} · ${otherQueries[index].error?"Unable to load — remove or retry":"Loading details…"}`}</label>{otherQueries[index].error&&<><ErrorNotice error={otherQueries[index].error}/><button type="button" onClick={()=>otherQueries[index].refetch()}>Retry branch details</button></>}</div>;})}</>}{!selection.canSave&&<p className="muted" role="status">{selection.inactive.length?"Remove inactive branches before saving. ":""}{selection.unknown.length?"Wait for selected branch details, retry, or remove unavailable selections. ":""}{!selection.branchIds.length?"Choose at least one active owned branch.":""}</p>}<div className="form-footer"><button className="button" disabled={own.isPending||!selection.canSave}>{own.isPending?"Saving…":identity.doctorId?"Save clinical branches":"Enable my doctor profile"}</button></div></form></AppDialog>
+ </section>;
+}
+
+/** One owner-doctor capability editor, shared by the profile and clinic workspace links. */
+export function ConsultationManagement({identity}:{identity:api.Identity}){
+ const client=useQueryClient();
+ const [clinicId,setClinicId]=useState("");
+ const [open,setOpen]=useState(false);
+ const [dirty,setDirty]=useState(false);
+ const [selected,setSelected]=useState<string[]>([]);
+ const clinics=api.useListClinics({pageSize:2},{query:{queryKey:api.getListClinicsQueryKey({pageSize:2}),refetchInterval:30000}});
+ useEffect(()=>{if(!clinicId&&clinics.data?.total===1)setClinicId(clinics.data.items[0].id);},[clinicId,clinics.data]);
+ const settings=api.useGetClinicSettings(clinicId,{query:{queryKey:api.getGetClinicSettingsQueryKey(clinicId),enabled:!!clinicId}});
+ const doctor=api.useGetDoctor(identity.doctorId||"",{query:{queryKey:api.getGetDoctorQueryKey(identity.doctorId||""),enabled:!!identity.doctorId}});
+ const own=api.useAttachOwnDoctorProfile({mutation:{onSuccess:async()=>{setOpen(false);await client.invalidateQueries();}}});
+ const otherIds=(doctor.data?.branchIds||[]).filter(id=>!settings.data?.branches.some(branch=>branch.id===id));
+ const other=useQueries({queries:otherIds.map(id=>({queryKey:api.getGetBranchQueryKey(id),queryFn:()=>api.getBranch(id),enabled:open,staleTime:15000}))});
+ const choice=clinicalBranchSelection(selected,[...(settings.data?.branches||[]),...other.flatMap(item=>item.data?[item.data]:[])]);
+ const start=()=>{own.reset();setDirty(false);setSelected(doctor.data?.branchIds||[]);setOpen(true);};
+ const toggle=(id:string,checked:boolean)=>{setDirty(true);setSelected(previous=>checked?[...previous,id]:previous.filter(value=>value!==id));};
+ return <section className="panel padded"><div className="panel-heading"><div><h2>My consultation &amp; clinical locations</h2><p>Manage where you consult without changing your Clinic Admin account.</p></div>{doctor.data?.status==="active"&&<Link href={`/admin/queue?doctor=${encodeURIComponent(identity.doctorId||"")}`}>Open my queue</Link>}</div>
+  <ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={setClinicId}/>
+  <ErrorNotice error={settings.error||doctor.error||clinics.error}/>{(settings.error||doctor.error)&&<button type="button" onClick={()=>{void settings.refetch();void doctor.refetch();}}>Retry consultation details</button>}
+  {doctor.data?.status==="inactive"&&<p className="notice">Your clinical profile is inactive. Administration remains available; reactivate your doctor profile before using the queue.</p>}
+  {clinicId&&settings.data&&<button type="button" onClick={start} disabled={doctor.isLoading||!!doctor.error}>{identity.doctorId?"Manage clinical locations":"Enable my doctor profile"}</button>}
+  <AppDialog open={open} onClose={()=>setOpen(false)} title={identity.doctorId?"Manage clinical locations":"Enable my doctor profile"} busy={own.isPending} dirty={dirty}><p>Choose active owned locations where you consult. Removing an inactive location is permitted; you must retain at least one active location overall.</p><ErrorNotice error={own.error}/>
+   <form onSubmit={event=>{event.preventDefault();if(choice.canSave&&!own.isPending)own.mutate({data:{branchIds:choice.branchIds}});}}>
+    {(settings.data?.branches||[]).filter(item=>item.status==="active"||selected.includes(item.id)).map(item=><label className="check-label" key={item.id}><input type="checkbox" checked={selected.includes(item.id)} onChange={event=>toggle(item.id,event.target.checked)}/> {item.name} · {item.city||item.address}{item.status!=="active"&&" · Inactive — remove before saving"}</label>)}
+    {!!otherIds.length&&<><h3>Previously selected at other clinics</h3>{otherIds.map((id,index)=>{const item=other[index].data;return <div key={id}><label className="check-label"><input type="checkbox" checked={selected.includes(id)} onChange={event=>toggle(id,event.target.checked)}/> {item?`${item.name} · ${item.city||item.address}${item.status!=="active"?" · Inactive":""}`:`Location ${id} · ${other[index].error?"Unable to load — remove or retry":"Loading…"}`}</label>{other[index].error&&<button type="button" onClick={()=>void other[index].refetch()}>Retry location</button>}</div>;})}</>}
+    {!choice.canSave&&<p role="status">{choice.inactive.length?"Remove inactive locations. ":""}{choice.unknown.length?"Wait, retry or remove unavailable locations. ":""}{!choice.branchIds.length?"Choose an active location.":""}</p>}
+    <div className="form-footer"><button className="button" disabled={own.isPending||!choice.canSave}>{own.isPending?"Saving…":identity.doctorId?"Save clinical locations":"Enable my doctor profile"}</button></div>
+   </form></AppDialog>
  </section>;
 }
 

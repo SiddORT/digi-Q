@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap');
 @import "tailwindcss";
+@import "./compact-workspace.css";
 
 @layer components {
   .workspace .sidebar { padding-top: 16px; padding-bottom: 12px; }
@@ -575,16 +576,12 @@
   .panel:has(.filter-pop),.panel:has([role=menu]){overflow:visible}
   @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
 }
-.density-toggle{display:inline-flex;border:1px solid var(--color-border,#d9dee5);border-radius:8px;overflow:hidden}
-.density-toggle button{border:0;border-radius:0;min-height:36px;padding:0 10px;font-size:12px;background:transparent}
-.density-toggle button[aria-pressed="true"]{background:hsl(var(--primary));color:hsl(var(--primary-foreground))}
-.density-compact td,.density-compact th{padding-top:6px!important;padding-bottom:6px!important;font-size:13px}
 .weekly-overview{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-bottom:12px}
 .weekly-overview .day{border:1px solid var(--color-border,#d9dee5);border-radius:10px;padding:8px;font-size:12px;display:flex;flex-direction:column;gap:4px}
 .weekly-overview .day button.slot{min-height:32px;font-size:12px;text-align:left}
 .weekly-copy{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
 .qr-card.compact img{width:160px}
-@media (max-width:767px){.weekly-overview{grid-template-columns:1fr}.density-toggle button,.weekly-overview .day button.slot{min-height:44px}}
+@media (max-width:767px){.weekly-overview{grid-template-columns:1fr}.weekly-overview .day button.slot{min-height:44px}}
 .sq-note-details summary{cursor:pointer;font-size:13px;color:var(--color-muted,#5b6b73)}
 @media (max-width:767px){
  .filter-bar-advanced,.filter-bar-advanced.align-right{position:fixed;left:0;right:0;top:auto;bottom:0;width:100%;max-height:80dvh;border-radius:16px 16px 0 0;z-index:60}
