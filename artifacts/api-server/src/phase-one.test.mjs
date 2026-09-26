@@ -907,3 +907,106 @@ test("generic clinic and branch updates cannot bypass owner-only settings permis
   // The ordinary doctor's existing scoped, non-settings edit path remains intact.
   await api.authorizeWrite(doctor, "branches", { name: "Clinical location" }, branch);
 });
+
+const ownerLinkedOptions = { maxTokens: 2, consultationMinutes: 20, tokenPrefix: "L", queueMode: "mixed" };
+async function linkedFixture(extra = {}) {
+  await seed();
+  const admin = await api.one(t.users, "admin");
+  const weekday = new Date(tomorrow + "T12:00:00Z").getUTCDay();
+  const result = await globalThis.phaseDb.transaction(tx => api.createOwnedClinic(admin, admin, {
+    clinic: { name: "Linked solo clinic", address: "Road", slug: "linked-solo-clinic" },
+    branches: [{ name: "Linked location", address: "Road", slug: "linked-location", timezone: "Asia/Calcutta", openingHours: [{ dayOfWeek: weekday, startTime: "09:00", endTime: "17:00" }] }],
+    ownDoctor: true, ownerSchedule: ownerLinkedOptions, ...extra,
+  }, tx));
+  const branch = result.branches[0];
+  const session = (await api.all(t.schedules)).find(s => s.branchId === branch.id);
+  const owner = { ...admin, clinicIds: [result.clinic.id], branchIds: [branch.id] };
+  const save = branches => globalThis.phaseDb.transaction(tx => api.saveClinicSetup(owner, result.clinic.id, { branches }, tx));
+  return { result, branch, session, owner, save };
+}
+test("linked owner onboarding atomically creates bookable sessions and keeps the original QR through a guest booking", async () => {
+  const { result, branch, session } = await linkedFixture();
+  assert.equal(branch.linkedSchedule.doctorId, result.doctorId);
+  assert.equal(session.linkedBranchId, branch.id);
+  const sessions = await api.availabilitySessions(result.doctorId, branch.id, tomorrow);
+  assert.equal(sessions[0].available, true);
+  assert.equal(sessions[0].remainingTokens, 2);
+  const qr = (await api.all(t.qrs)).find(q => q.branchId === branch.id);
+  const ticket = await api.createGuestRequest({ qrReference: qr.publicReference, fullName: "Linked patient", branchId: branch.id, doctorId: result.doctorId, date: tomorrow, sessionId: session.id, requestId: "87654321-1234-4234-8234-123456789012", receiptSecret: "f".repeat(64) });
+  assert.ok(ticket.appointmentId);
+  assert.equal((await api.availabilitySessions(result.doctorId, branch.id, tomorrow))[0].remainingTokens, 1);
+  assert.equal((await api.one(t.qrs, qr.id)).publicReference, qr.publicReference);
+  const booking = { qrReference: qr.publicReference, fullName: "Second linked patient", branchId: branch.id, doctorId: result.doctorId, date: tomorrow, sessionId: session.id, requestId: "87654321-1234-4234-8234-123456789013", receiptSecret: "d".repeat(64) };
+  await api.createGuestRequest(booking);
+  assert.equal((await api.availabilitySessions(result.doctorId, branch.id, tomorrow))[0].remainingTokens, 0);
+  await assert.rejects(api.createGuestRequest({ ...booking, fullName: "Over capacity", requestId: "87654321-1234-4234-8234-123456789014", receiptSecret: "c".repeat(64) }), /capacity|available/i);
+});
+test("linked hours preview is read-only and saves are idempotent, support multiple locations and sync unused sessions", async () => {
+  const { result, branch, session, owner, save } = await linkedFixture();
+  const unchanged = { id: branch.id, name: branch.name, address: branch.address, openingHours: branch.openingHours };
+  const preview = await api.previewClinicSetup(owner, result.clinic.id, { branches: [unchanged] });
+  assert.deepEqual(preview.impacts[0], { branchId: branch.id, create: 0, update: 0, retire: 0, unlink: false });
+  const wirePreview = await route(api.clinicExpansionRouter, "post", "/clinics/:id/settings/preview", owner, { branches: [unchanged] }, { id: result.clinic.id });
+  assert.equal(wirePreview.allowed, true);
+  const wireSave = await route(api.clinicExpansionRouter, "patch", "/clinics/:id/settings", owner, { branches: [unchanged] }, { id: result.clinic.id });
+  assert.equal(wireSave.branches[0].linkedSchedule.enabled, true);
+  await save([unchanged]); await save([unchanged]);
+  assert.equal((await api.all(t.schedules)).filter(s => s.branchId === branch.id).length, 1);
+  const changed = { ...unchanged, openingHours: [{ ...branch.openingHours[0], endTime: "16:00" }] };
+  const p = await api.previewClinicSetup(owner, result.clinic.id, { branches: [changed] });
+  assert.equal(p.allowed, true); assert.equal(p.impacts[0].create, 1); assert.equal(p.impacts[0].retire, 1);
+  assert.equal((await api.one(t.schedules, session.id)).status, "active");
+  await save([changed]);
+  assert.equal((await api.one(t.schedules, session.id)).status, "inactive");
+  assert.equal((await api.availabilitySessions(result.doctorId, branch.id, tomorrow))[0].endTime, "16:00");
+  // A second location links independently, with a non-overlapping weekday.
+  const second = await save([{ name: "Second location", address: "Road", openingHours: [{ dayOfWeek: (branch.openingHours[0].dayOfWeek + 1) % 7, startTime: "09:00", endTime: "17:00" }] }]);
+  const other = second.branches.find(b => b.id !== branch.id);
+  await globalThis.phaseDb.transaction(tx => api.attachOwnDoctor(owner, { branchIds: [branch.id, other.id] }, tx));
+  await save([{ id: other.id, linkedSchedule: { enabled: true, ...ownerLinkedOptions } }]);
+  assert.equal((await api.all(t.schedules)).filter(s => s.branchId === other.id && s.status === "active").length, 1);
+});
+test("linked session changes preserve booked session IDs/history and roll back clinic/hour edits on conflict", async () => {
+  const { result, branch, session, owner, save } = await linkedFixture();
+  const qr = (await api.all(t.qrs)).find(q => q.branchId === branch.id);
+  const ticket = await api.createGuestRequest({ qrReference: qr.publicReference, fullName: "Protected patient", branchId: branch.id, doctorId: result.doctorId, date: tomorrow, sessionId: session.id, requestId: "97654321-1234-4234-8234-123456789012", receiptSecret: "e".repeat(64) });
+  const original = await api.one(t.appointments, ticket.appointmentId);
+  const input = { id: branch.id, name: branch.name, address: branch.address, openingHours: [{ ...branch.openingHours[0], startTime: "10:00" }] };
+  const p = await api.previewClinicSetup(owner, result.clinic.id, { branches: [input] });
+  assert.equal(p.allowed, false); assert.match(p.conflicts.join(" "), /booking history/);
+  await assert.rejects(save([input]), /booking history/);
+  await assert.rejects(save([{ id: branch.id, linkedSchedule: { ...branch.linkedSchedule, maxTokens: 1 } }]), /booking history/);
+  assert.deepEqual((await api.one(t.branches, branch.id)).openingHours, branch.openingHours);
+  assert.deepEqual(await api.one(t.appointments, ticket.appointmentId), original);
+  assert.equal((await api.one(t.schedules, session.id)).status, "active");
+});
+test("linked configuration is owner-scoped, Super Admin accessible, and direct session edits require explicit unlink", async () => {
+  const { result, branch, session, owner, save } = await linkedFixture();
+  const foreign = { id: "du", role: "clinicAdmin", clinicIds: [result.clinic.id] };
+  const ordinaryDoctor = { id: "du", role: "doctor", doctorId: "d", clinicIds: [result.clinic.id] };
+  for (const actor of [foreign, ordinaryDoctor, staff, patient]) {
+    await assert.rejects(api.previewClinicSetup(actor, result.clinic.id, {}), /ownership/);
+    await assert.rejects(globalThis.phaseDb.transaction(tx => api.saveClinicSetup(actor, result.clinic.id, {}, tx)), /ownership/);
+  }
+  assert.equal((await api.previewClinicSetup({ id: "admin", role: "superAdmin" }, result.clinic.id, {})).allowed, true);
+  await globalThis.phaseDb.transaction(tx => api.saveClinicSetup({ id: "admin", role: "superAdmin" }, result.clinic.id, { branches: [{ id: branch.id, linkedSchedule: { ...branch.linkedSchedule, maxTokens: 3 } }] }, tx));
+  await assert.rejects(route(api.resourcesRouter, "patch", "/schedules/:id", owner, { ...session, maxTokens: 4 }, { id: session.id }), /Unlink/);
+  await assert.rejects(route(api.resourcesRouter, "delete", "/schedules/:id", owner, {}, { id: session.id }), /Unlink/);
+  await assert.rejects(route(api.resourcesRouter, "patch", "/branches/:id", owner, { ...branch, openingHours: [] }, { id: branch.id }), /Clinic settings/);
+  await save([{ id: branch.id, linkedSchedule: { enabled: false } }]);
+  assert.equal((await api.one(t.schedules, session.id)).linkedBranchId, null);
+  await route(api.resourcesRouter, "patch", "/schedules/:id", owner, { ...session, maxTokens: 4 }, { id: session.id });
+  assert.equal((await api.one(t.schedules, session.id)).maxTokens, 4);
+});
+test("linked schedules respect date closures and block unsafe exception-affecting changes", async () => {
+  const { result, branch, session, save } = await linkedFixture();
+  await api.put(t.availabilityExceptions, { id: "linked-exception", doctorId: result.doctorId, clinicId: result.clinic.id, branchId: branch.id, date: tomorrow, data: { isClosed: true, sessionId: session.id, reason: "Holiday" } });
+  assert.equal((await api.availabilitySessions(result.doctorId, branch.id, tomorrow))[0].available, false);
+  await assert.rejects(save([{ id: branch.id, openingHours: [] }]), /date exceptions/);
+  assert.equal((await api.one(t.schedules, session.id)).status, "active");
+});
+test("linked onboarding requires explicit valid capacity and rolls back incomplete setup", async () => {
+  await assert.rejects(linkedFixture({ ownerSchedule: { ...ownerLinkedOptions, maxTokens: 0 } }), /capacity/);
+  assert.equal((await api.all(t.clinics)).some(c => c.slug === "linked-solo-clinic"), false);
+  await assert.rejects(linkedFixture({ ownDoctor: false }), /consulting owner/);
+});

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useSearch } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { Building2, MapPin, Stethoscope } from "lucide-react";
 import * as api from "@workspace/api-client-react";
 import { Logo } from "../App";
@@ -22,11 +22,18 @@ export function PublicClinicPage({ clinicSlug, branchSlug }: { clinicSlug: strin
 
 function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; branchSlug?: string }) {
   const search = useSearch();
+  const [, navigate] = useLocation();
   const auth = useAuth();
   const clinicQuery = api.useResolveClinicSlug(clinicSlug, { query: { queryKey: api.getResolveClinicSlugQueryKey(clinicSlug), enabled: !branchSlug, refetchInterval: 30000, staleTime: 0 } });
   const branchQuery = api.useResolveBranchSlug(clinicSlug, branchSlug || "", { query: { queryKey: api.getResolveBranchSlugQueryKey(clinicSlug, branchSlug || ""), enabled: !!branchSlug, refetchInterval: 30000, staleTime: 0 } });
   const query = branchSlug ? branchQuery : clinicQuery;
   const data = query.data;
+  const params = new URLSearchParams(search);
+  const mode = params.get("display") === "1" ? "display" : params.get("book") === "1" ? "book" : null;
+  const onlyBranch = !branchSlug && mode === "book" && data?.branches.length === 1 && data.branches[0]?.slug ? data.branches[0] : null;
+  useEffect(() => {
+    if (onlyBranch) navigate(`/${clinicSlug}/${onlyBranch.slug}?book=1`, { replace: true });
+  }, [clinicSlug, onlyBranch?.slug, navigate]);
   useEffect(() => {
     const previous = document.title;
     document.title = data ? `${data.branch?.name ? `${data.branch.name} · ` : ""}${data.clinic.name} | ${BRAND_NAME}` : `Clinic information | ${BRAND_NAME}`;
@@ -35,8 +42,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
     document.head.append(description, og);
     return () => { document.title = previous; description.remove(); og.remove(); };
   }, [data?.clinic.name, data?.branch?.name]);
-  const params = new URLSearchParams(search);
-  const mode = params.get("display") === "1" ? "display" : params.get("book") === "1" ? "book" : null;
+  if (onlyBranch) return <div className="page-loading" role="status">Opening your clinic’s only location…</div>;
   if (query.isLoading) return <div className="page-loading" role="status">Loading clinic information…</div>;
   if (query.error || !data) return <div className="public-clinic"><Logo/><main className="registration-card"><h1>Clinic page unavailable</h1><p>This address may be unavailable, inactive or temporarily unreachable.</p><div className="error-box" role="alert">{query.error?.message || "No clinic information was returned."}</div><button className="button" data-testid="public-clinic-retry" onClick={() => query.refetch()}>Try again</button> <Link href="/">Return home</Link></main></div>;
   const { clinic, branch, branches, doctors, qrReference } = data;

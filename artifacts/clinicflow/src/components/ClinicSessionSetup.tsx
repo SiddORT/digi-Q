@@ -25,6 +25,7 @@ export function ClinicSessionSetup({ clinicId, branches, ownDoctorId }: {
   const [message, setMessage] = useState("");
   const active = branches.filter(b => b.status === "active");
   const selectedBranch = active.find(b => b.id === branchId);
+  const linkedOwner = selectedBranch?.linkedSchedule?.enabled && selectedBranch.linkedSchedule.doctorId === doctorId;
   const shifts: Hour[] = selectedBranch?.openingHours || [];
   const doctors = useQuery({
     queryKey: ["clinic-session-doctors", clinicId, branchId],
@@ -83,7 +84,7 @@ export function ClinicSessionSetup({ clinicId, branches, ownDoctorId }: {
     }
   }
   return <section className="panel padded" aria-label="Booking readiness and doctor sessions">
-    <div className="panel-heading"><div><h2>Booking readiness · doctor sessions</h2><p>Location opening hours alone do not make a doctor bookable. Set explicit capacity and consultation duration for each session.</p></div><Link href="/admin/availability">Weekly schedule</Link></div>
+    <div className="panel-heading"><div><h2>Booking readiness · doctor sessions</h2><p>Solo owner? Link consultations in Locations &amp; Hours to use one timetable. Other doctors can use custom sessions below.</p></div><Link href={`/admin/availability?clinicId=${encodeURIComponent(clinicId)}`}>Weekly schedule</Link></div>
     <div className="form-grid">
       <label>Location<select disabled={busy} value={branchId} onChange={e => { setBranchId(e.target.value); setDoctorId(""); setChosen([]); setMessage(""); }}><option value="">Choose a location</option>{active.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
       {branchId && <label>Doctor<select disabled={busy || incompleteDoctors} value={doctorId} onChange={e => { setDoctorId(e.target.value); setChosen([]); setMessage(""); }}><option value="">Choose a doctor</option>{doctorOptions.map(d => <option key={d.id} value={d.id}>{d.fullName}{d.id === ownDoctorId ? " (you)" : ""}</option>)}</select></label>}
@@ -94,7 +95,7 @@ export function ClinicSessionSetup({ clinicId, branches, ownDoctorId }: {
     {branchId && !doctors.isLoading && !doctors.error && !doctorOptions.length && <p role="status">No active doctor is assigned to this location. Assign one in Staff management or enable your own doctor profile.</p>}
     {doctorId && schedules.isLoading && <p role="status">Checking existing doctor sessions…</p>}
     {doctorId && schedules.data && !schedules.error && <><p role="status">{bookableSessions(schedules.data.items).length ? `${bookableSessions(schedules.data.items).length} open weekly session${bookableSessions(schedules.data.items).length === 1 ? "" : "s"} allowing appointments at this location. This does not guarantee availability on every date: opening hours, exceptions, time cutoffs and remaining capacity also apply.` : "Not ready for patient bookings: no open weekly doctor sessions that allow appointments at this location."} {activeSessions(schedules.data.items).length > bookableSessions(schedules.data.items).length && <Link href="/admin/availability">Review closed or walk-ins-only sessions in Weekly schedule.</Link>}</p>
-      {!shifts.length ? <p>There are no location opening hours to copy. Set Opening days &amp; hours below, then return here.</p> : <form onSubmit={e => { void create(e); }}>
+      {linkedOwner ? <p className="notice">Linked owner consultations: edit hours, capacity or booking mode in Locations &amp; Hours. Changes require an impact preview. Unlink there first if this doctor needs custom hours.</p> : !shifts.length ? <p>There are no location opening hours to copy. Set them in Locations &amp; Hours, then return here.</p> : <form onSubmit={e => { void create(e); }}>
         <p>Choose intervals from the saved location hours. Already-created sessions are left unchanged.</p>
         {shifts.map(h => { const previous = activeSessions(schedules.data.items).find(s => s.dayOfWeek === h.dayOfWeek && s.startTime === h.startTime && s.endTime === h.endTime); return <label className="check-label" key={identified(h)}><input type="checkbox" disabled={busy || !!previous} checked={chosen.includes(identified(h))} onChange={e => setChosen(current => e.target.checked ? [...current, identified(h)] : current.filter(key => key !== identified(h)))}/>{days[h.dayOfWeek]} · {h.startTime}–{h.endTime}{previous ? previous.isOpen && previous.queueMode !== "walkInsOnly" ? " · already scheduled" : " · existing session does not allow patient appointments; edit in Weekly schedule" : ""}</label>; })}
         <div className="form-grid"><label>Patients per session<input disabled={busy} type="number" required min="1" step="1" value={capacity} onChange={e => setCapacity(e.target.value)}/></label><label>Expected consultation (minutes)<input disabled={busy} type="number" required min="1" step="1" value={duration} onChange={e => setDuration(e.target.value)}/></label><label>Ticket prefix<input disabled={busy} required maxLength={8} pattern="[A-Za-z0-9]{1,8}" value={prefix} onChange={e => setPrefix(e.target.value)}/></label></div>

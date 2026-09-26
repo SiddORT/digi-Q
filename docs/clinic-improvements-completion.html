@@ -1,0 +1,42 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DigiQ Doctors — improvement checklist</title>
+<style>body{font:16px/1.55 system-ui,sans-serif;margin:0;padding:24px;background:#f5f8fc;color:#162c4d}main{max-width:1040px;margin:auto}h1,h2{color:#0d2350}section{background:white;border:1px solid #d7e2f0;border-radius:12px;padding:24px;margin:20px 0}table{border-collapse:collapse;width:100%}td,th{padding:10px;text-align:left;vertical-align:top;border-bottom:1px solid #d7e2f0}strong{color:#1552b0}.notice{background:#fff4d8;padding:16px;border-radius:8px}@media(max-width:600px){body{padding:12px}section{padding:12px}td,th{padding:7px}}</style>
+<main><h1>DigiQ Doctors: completed improvements</h1><p>26 September 2026 · Development implementation. Not automatically published.</p>
+<p>“Implemented” means the feature is present, not that every possible role, screen and browser combination was manually tested. Specific verification evidence and limits follow the checklist.</p>
+<section><h2>Requested items 1–24</h2><table><tr><th>#</th><th>Area</th><th>Delivered</th></tr>
+<tr><td>1</td><td>Solo-doctor onboarding</td><td>Linked location hours selected by default for consulting owners. Capacity and consultation duration remain explicit. Sessions are created atomically with setup.</td></tr>
+<tr><td>2</td><td>Existing clinics</td><td>Owner/Super Admin can opt existing locations into linked hours using saved intervals and explicit consultation settings. No automatic live backfill.</td></tr>
+<tr><td>3</td><td>Linked timetable changes</td><td>Preview and transactional recheck; preserve unchanged session IDs; block unsafe changes affecting booking history or date exceptions. Explicit unlink retains sessions and history.</td></tr>
+<tr><td>4</td><td>Admin configuration access</td><td>Actual owning Clinic Admin or Super Admin can configure/preview. Same-account owner-doctor retains administrative access. Generic editing bypasses remain protected.</td></tr>
+<tr><td>5</td><td>Super Admin overview</td><td>Clinic selection with retained context and access to clinic configuration sections and linked schedule setup.</td></tr>
+<tr><td>6</td><td>Status tabs</td><td>Tabs are primary on appointments and staff queue; redundant status dropdowns removed. Existing vocabulary retained.</td></tr>
+<tr><td>7</td><td>Status terminology</td><td>Active, Waiting, Absent, Completed, Cancelled and All remain distinct groups. No invented Pending-to-Waiting equivalence.</td></tr>
+<tr><td>8</td><td>Tab counts</td><td>Real backend counts respect authorised clinic/date/doctor/search scope, ignore selected status and pagination, and do not leak staff aggregates to patients.</td></tr>
+<tr><td>9</td><td>Filter placement</td><td>Shared compact advanced-filter controls; essential operational doctor/location/session context remains visible where needed.</td></tr>
+<tr><td>10</td><td>Active filters</td><td>Active chips and reset controls retained and standardised, including report scope.</td></tr>
+<tr><td>11</td><td>Doctor queue</td><td>Condensed summary, clearly labelled whole-session totals, less duplicate freshness text, collapsed wait explanation.</td></tr>
+<tr><td>12</td><td>Appointments</td><td>One status-control hierarchy, compact filtering and actual scoped counts.</td></tr>
+<tr><td>13</td><td>Resource lists</td><td>Shared toolbar/table/action/pagination patterns with Compact/Comfortable density saved per resource.</td></tr>
+<tr><td>14</td><td>Patient directory</td><td>Patient search and scope retained without adding misleading appointment-status tabs to patient records.</td></tr>
+<tr><td>15</td><td>Weekly schedule</td><td>Seven-day overview loads all scoped pages. Copy to selected days skips exact equivalents, reports conflicts and partial failures, and never copies linkage metadata.</td></tr>
+<tr><td>16</td><td>Clinic settings</td><td>General, Locations &amp; Hours, Doctors &amp; Sessions, Booking Rules, Staff, QR &amp; Links and History sections; selected clinic/section retained in URL.</td></tr>
+<tr><td>17</td><td>Forms/dialogs</td><td>Compact shared editors, explicit Cancel/Save, linked-hours controls inside the validated form, repeatable preview submissions and conflict-disabled Apply.</td></tr>
+<tr><td>18</td><td>Reports/audit</td><td>Advanced scope/group controls in filters, active chips, compact pagination and collapsed report methodology.</td></tr>
+<tr><td>19</td><td>QR management</td><td>Smaller previews and real open-weekly-session/day counts. These describe configuration, not a guarantee of current capacity.</td></tr>
+<tr><td>20</td><td>Patient booking</td><td>Auto-select only unambiguous choices, concise known QR context, bounded real next-available-session search for the following 14 days. No automatic booking.</td></tr>
+<tr><td>21</td><td>Patient tickets</td><td>Waiting number, status, location and session remain prominent; compact secondary details in screen, print and download. Signed QR/export protections retained.</td></tr>
+<tr><td>22</td><td>Desktop density</td><td>Shared compact layouts and per-resource row density; unnecessary page-level spacing reduced.</td></tr>
+<tr><td>23</td><td>Mobile</td><td>Filter bottom sheet, horizontally scrolling status tabs, readable cards and preserved touch targets.</td></tr>
+<tr><td>24</td><td>Verification</td><td>Fresh guided linked onboarding through QR booking and admin queue verified; backend permissions, exception/history protection, concurrency, exports and focused UI logic tested. Limits below.</td></tr>
+</table></section>
+<section><h2>Verification evidence</h2><ul>
+<li>Workspace TypeScript checks passed.</li>
+<li>51 disposable backend integration tests passed, including linked creation, previews, permissions, idempotence, capacity, exceptions, rollback and unlinking.</li>
+<li>Two new real PostgreSQL contention tests passed with distinct connections and observed lock waits: booking-first preserves the ticket and rejects conflicting hours; settings-first rejects stale booking without consuming a token.</li>
+<li>23 ticket/export browser regressions passed, including logo/QR embedding, print/download, revisions, errors, long text and bulk exports.</li>
+<li>14 list/status-count tests and 10 initial focused frontend logic tests passed.</li>
+<li>The targeted browser pass used real provider password proof and fresh Super Admin-assisted guided registration, not a seeded clinic. It created linked Monday/Tuesday sessions immediately, used the new QR anonymously, issued a fictional ticket and showed it in queue/appointments with correct tab counts.</li>
+<li>Browser conflict preview blocked a booked Monday timing change. Mobile settings and ticket receipt rendered cleanly.</li>
+<li>The browser exposed a repeat-review submission latch. That was fixed; seven focused regressions passed, including repeated review after a conflict. Frontend typecheck passed afterward.</li>
+</ul><h3>Verification limits</h3><p>The corrected repeated-review interaction was confirmed with focused tests, not a second browser pass. Safe unused-day synchronisation is covered by backend tests; the browser's unused-day draft was discarded before this fix. The browser onboarding path was Super Admin-assisted; a new anonymous self-signup/email-delivery path was not exercised. Every page/role combination was not individually browser-tested.</p>
+<p>Temporary booking data and provider credentials were cleaned up. Protected inactive development fixture ownership records remain where removal would require weakening database guards. No guards were disabled.</p></section>
+<section><h2>Making it available live</h2><p class="notice">No production records were modified and nothing was published automatically. Publish the update, then use each existing clinic's Settings → Locations &amp; Hours to enable linked owner consultations with the intended capacity and duration. Review the impact and apply. Existing QR destinations remain unchanged.</p><p>For new solo-owner clinics, linked sessions are configured during onboarding when the linked option is selected. Existing clinics are not silently converted.</p></section></main></html>

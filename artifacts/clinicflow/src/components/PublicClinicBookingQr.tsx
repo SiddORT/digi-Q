@@ -6,7 +6,7 @@ export function PublicClinicBookingQr({ bookingUrl, branchName }: { bookingUrl: 
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let active = true;
-    QRCode.toDataURL(bookingUrl, { width: 240, margin: 2, errorCorrectionLevel: "M", color: { dark: "#123a37", light: "#ffffff" } })
+    QRCode.toDataURL(bookingUrl, { width: 240, margin: 2, errorCorrectionLevel: "M", color: { dark: "#0d2350", light: "#ffffff" } })
       .then(image => { if (active) setResult({ url: bookingUrl, image }); })
       .catch(() => { if (active) setResult({ url: bookingUrl, error: "The booking QR could not be rendered. You can still use the booking link." }); });
     return () => { active = false; };

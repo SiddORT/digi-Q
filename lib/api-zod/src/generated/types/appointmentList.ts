@@ -14,7 +14,9 @@
  */
 import type { Appointment } from './appointment';
 import type { PageMeta } from './pageMeta';
+import type { StatusCounts } from './statusCounts';
 
 export type AppointmentList = PageMeta & {
+  statusCounts?: StatusCounts;
   items: Appointment[];
 };

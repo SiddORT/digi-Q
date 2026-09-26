@@ -118,7 +118,12 @@ export function pageParams(q: any) {
   assert(Number.isInteger(page) && page > 0 && Number.isInteger(pageSize) && pageSize > 0 && pageSize <= 100, 400, "Invalid pagination");
   return { page, pageSize };
 }
-export async function queryPage(user: any, kind: string, q: any = {}, extra?: SQL, conn: any = db) {
+const statusCountsSql = sql`jsonb_build_object(
+  'all', count(*)::int,
+  ${sql.join(Object.entries(statusGroups).map(([group, statuses]) =>
+    sql`${group}::text, count(*) filter(where ${inList(raw("doc->>'status'"), statuses)})::int`), raw(","))})`;
+export async function queryPage(user: any, kind: string, q: any = {}, extra?: SQL, conn: any = db, withStatusCounts = false) {
+  assert(!withStatusCounts || kind === "appointments" && user.role !== "patient", 400, "Status counts require staff appointments");
   const { page, pageSize } = pageParams(q), sort = q.sort || "-createdAt", key = sort.replace(/^-/, "");
   assert(["createdAt", "name", "fullName", "date", "status", "code", "tokenNumber", "sortOrder", "email", "waitingAt"].includes(key), 400, "Unsupported sort field");
   const direction = raw(sort.startsWith("-") ? "desc" : "asc");
@@ -131,9 +136,15 @@ export async function queryPage(user: any, kind: string, q: any = {}, extra?: SQ
     effectiveQuery = { ...q, doctorId: undefined };
   }
   const source = sourceSql(user, kind, extra), filter = filterSql(effectiveQuery);
-  const result = await conn.execute(sql`with visible as (${source}), matching as (select doc from visible where ${filter}), page_rows as (select doc from matching order by ${value} ${direction} nulls last, ${secondary} doc->>'id' ${direction} limit ${pageSize} offset ${(page - 1) * pageSize}) select (select count(*)::int from matching) as total, coalesce((select jsonb_agg(doc) from page_rows),'[]'::jsonb) as items`);
-  const { items, total } = result.rows[0];
-  return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  const matching = withStatusCounts
+    ? sql`base_matching as (select doc from visible where ${filterSql({ ...effectiveQuery, status: undefined, statusGroup: undefined })}), matching as (select doc from base_matching where ${filterSql({ status: effectiveQuery.status, statusGroup: effectiveQuery.statusGroup })})`
+    : sql`matching as (select doc from visible where ${filter})`;
+  const result = await conn.execute(sql`with visible as (${source}), ${matching}, page_rows as (select doc from matching order by ${value} ${direction} nulls last, ${secondary} doc->>'id' ${direction} limit ${pageSize} offset ${(page - 1) * pageSize}) select (select count(*)::int from matching) as total, coalesce((select jsonb_agg(doc) from page_rows),'[]'::jsonb) as items ${withStatusCounts ? sql`, (select ${statusCountsSql} from base_matching) as "statusCounts"` : raw("")}`);
+  const { items, total, statusCounts } = result.rows[0];
+  return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize), ...(withStatusCounts ? { statusCounts } : {}) };
+}
+export function queryAppointmentPage(user: any, q: any, conn: any = db) {
+  return queryPage(user, "appointments", q, undefined, conn, user.role !== "patient");
 }
 export function assignmentCatalogPredicate(kind: "clinics" | "branches", manager?: string, retainedUserId?: string) {
   const retained = retainedUserId ? sql`exists(select 1 from assignments a where a.user_id=${retainedUserId} and ${kind === "clinics" ? sql`a.clinic_id=r.id` : sql`a.branch_id=r.id and a.clinic_id=r.clinic_id`})` : raw("false");

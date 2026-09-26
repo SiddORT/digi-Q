@@ -97,6 +97,14 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicSettingsInput" } } } }
       responses:
         "200": { description: Saved atomically, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicSettingsResult" } } } }
+  /clinics/{id}/settings/preview:
+    parameters:
+      - { $ref: "#/components/parameters/Id" }
+    post:
+      operationId: previewClinicSettings
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicSettingsInput" } } } }
+      responses:
+        "200": { description: Advisory linked schedule impact, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicSettingsPreview" } } } }
   /me/doctor-profile:
     post:
       operationId: attachOwnDoctorProfile
@@ -861,6 +869,42 @@ components:
         inheritPhone: { type: boolean }
         slug: { type: string, minLength: 3, maxLength: 63 }
         openingHours: { type: [array, "null"], maxItems: 28, description: Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days., items: { $ref: "#/components/schemas/OpeningHour" } }
+        linkedSchedule: { $ref: "#/components/schemas/LinkedSchedule" }
+    OwnerSchedule:
+      type: object
+      required: [maxTokens, consultationMinutes, tokenPrefix, queueMode]
+      properties:
+        maxTokens: { type: integer, minimum: 1, maximum: 1000 }
+        consultationMinutes: { type: integer, minimum: 1, maximum: 240 }
+        tokenPrefix: { type: string, pattern: "^[A-Za-z0-9]{1,8}$" }
+        queueMode: { type: string, enum: [mixed, appointmentsOnly, walkInsOnly] }
+    LinkedSchedule:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+        doctorId: { type: string }
+        maxTokens: { type: integer, minimum: 1, maximum: 1000 }
+        consultationMinutes: { type: integer, minimum: 1, maximum: 240 }
+        tokenPrefix: { type: string, pattern: "^[A-Za-z0-9]{1,8}$" }
+        queueMode: { type: string, enum: [mixed, appointmentsOnly, walkInsOnly] }
+    ClinicSettingsPreview:
+      type: object
+      required: [allowed, impacts, conflicts]
+      properties:
+        allowed: { type: boolean }
+        conflicts: { type: array, items: { type: string } }
+        impacts:
+          type: array
+          items:
+            type: object
+            required: [branchId, create, update, retire, unlink]
+            properties:
+              branchId: { type: string }
+              create: { type: integer }
+              update: { type: integer }
+              retire: { type: integer }
+              unlink: { type: boolean }
     ClinicSettingsInput:
       type: object
       properties:
@@ -894,6 +938,7 @@ components:
         branches: { type: array, minItems: 1, maxItems: 30, items: { $ref: "#/components/schemas/ClinicBranchSetup" } }
         policies: { $ref: "#/components/schemas/ClinicPolicy" }
         ownDoctor: { type: boolean, default: false }
+        ownerSchedule: { $ref: "#/components/schemas/OwnerSchedule" }
         specializationId: { type: string }
         qualificationIds: { type: array, items: { type: string } }
     DoctorPresenceInput:
@@ -1125,6 +1170,7 @@ components:
         branches: { type: array, maxItems: 30, items: { $ref: "#/components/schemas/ClinicBranchSetup" } }
         policies: { $ref: "#/components/schemas/ClinicPolicy" }
         ownDoctor: { type: boolean }
+        ownerSchedule: { $ref: "#/components/schemas/OwnerSchedule" }
         specializationId: { type: string }
         qualificationIds: { type: array, items: { type: string } }
         admin:
@@ -1243,6 +1289,7 @@ components:
         - type: object
           required: [id, code, status, createdAt]
           properties:
+            linkedSchedule: { $ref: "#/components/schemas/LinkedSchedule" }
             effectiveEmail: { type: [string, "null"] }
             effectivePhone: { type: [string, "null"] }
             id: { type: string }
@@ -1564,6 +1611,15 @@ components:
         status: { $ref: "#/components/schemas/AppointmentStatus" }
         patientsAhead: { type: integer }
         estimatedWaitMinutes: { type: [integer, "null"] }
+    StatusCounts:
+      type: object
+      properties:
+        active: { type: integer }
+        waiting: { type: integer }
+        absent: { type: integer }
+        completed: { type: integer }
+        cancelled: { type: integer }
+        all: { type: integer }
     LiveQueue:
       type: object
       required: [doctorId, branchId, date, currentToken, nextToken, waiting, inConsultation, completed, noShow, total, pollIntervalSeconds, updatedAt]
@@ -1592,6 +1648,7 @@ components:
         total: { type: integer }
         ownEntry: { oneOf: [{ $ref: "#/components/schemas/OwnQueueEntry" }, { type: "null" }] }
         entries: { type: array, description: Omitted for patients, items: { $ref: "#/components/schemas/Appointment" } }
+        statusCounts: { $ref: "#/components/schemas/StatusCounts" }
         pollIntervalSeconds: { type: integer, const: 30 }
         updatedAt: { type: string, format: date-time }
     DoctorDuration:
@@ -1825,7 +1882,7 @@ components:
     AppointmentList:
       allOf:
         - { $ref: "#/components/schemas/PageMeta" }
-        - { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/Appointment" } } } }
+        - { type: object, required: [items], properties: { statusCounts: { $ref: "#/components/schemas/StatusCounts" }, items: { type: array, items: { $ref: "#/components/schemas/Appointment" } } } }
     QrList:
       allOf:
         - { $ref: "#/components/schemas/PageMeta" }

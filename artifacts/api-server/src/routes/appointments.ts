@@ -8,14 +8,14 @@ import { availability, localNow, minutes } from "../lib/availability";
 import { enrich } from "../lib/entities";
 import { appointmentView, appointmentViewWithBranch, transition, lockQueue } from "../lib/appointments";
 import { resolveQr } from "./public";
-import { queryPage } from "../lib/list-query";
+import { queryAppointmentPage } from "../lib/list-query";
 import { snapshotDuration, allocateToken } from "../lib/session-duration";
 import { reschedule } from "../lib/reschedule";
 import { rank, sessionRows } from "../lib/queue-order";
 export const appointmentsRouter = Router();
 appointmentsRouter.get("/appointments", async (req, res) => {
   const user = await requireUser(req), q = query(z.ListAppointmentsQueryParams, req);
-  const result = await queryPage(user, "appointments", q);
+  const result = await queryAppointmentPage(user, q);
   res.json({ ...result, items: await Promise.all(result.items.map((a: any) => appointmentViewWithBranch(a, user))) });
 });
 appointmentsRouter.get("/appointments/:id", async (req, res) => {

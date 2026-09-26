@@ -6,6 +6,7 @@ import * as api from "@workspace/api-client-react";
 import { AuthShell } from "../auth/AuthShell";
 import { AuthAccess } from "../auth/AuthAccess";
 import { ClinicAdminOnboarding } from "./ClinicAdminOnboarding";
+import { ClinicRegistrationComplete } from "./ClinicRegistrationComplete";
 import { ClinicRegistrationWizard, type RegistrationValues } from "./ClinicRegistrationWizard";
 import { Logo } from "../App";
 import { BRAND_NAME } from "../branding";
@@ -66,6 +67,7 @@ function RegistrationForm() {
         clinic: { name: values.name.trim(), slug: values.slug, address: values.branches[0].address.trim(), email: values.clinicEmail.trim() || null, phone: values.phone.trim() || null, categoryId: values.categoryId || null, specialityIds: values.specialityIds, referralCode: values.referralCode.trim() || null },
         branches: values.branches.map(b => ({ name: b.name.trim(), slug: b.slug, address: b.address.trim(), city: b.city.trim(), timezone: b.timezone, email: b.email.trim() || null, phone: b.phone.trim() || null, inheritEmail: b.inheritEmail, inheritPhone: b.inheritPhone, openingHours: b.hours.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ dayOfWeek: d.dayOfWeek, ...s }))) })),
         ownDoctor: values.alsoConsult, ...(values.alsoConsult ? { specializationId: values.specializationId || undefined, qualificationIds: values.qualificationIds } : {}),
+        ...(values.alsoConsult && values.linkConsultationHours ? { ownerSchedule: { maxTokens: Number(values.sessionCapacity), consultationMinutes: Number(values.consultationMinutes), tokenPrefix: "A", queueMode: "mixed" as const } } : {}),
       } });
       setPassword("");
       setCompleted(result);
@@ -74,7 +76,7 @@ function RegistrationForm() {
       client.invalidateQueries({ predicate: q => q.queryKey[0] !== api.getGetMeQueryKey()[0] });
     } finally { setPassword(""); locked.current = false; }
   }
-   if (completed) return <div className="clinic-registration"><Logo/><main className="registration-card"><span className="eyebrow">ACCOUNT AND CLINIC CREATED · BOOKINGS NOT YET READY</span><h1>{completed.clinic.name} is registered, not yet bookable.</h1><p>Your clinic and {completed.branches.length} location{completed.branches.length === 1 ? "" : "s"} were saved together. Opening days and hours do not create doctor sessions.</p><p>{completed.doctorId?"Your doctor profile is attached to this Clinic Admin account. Configure its weekly sessions, capacity and consultation length before sharing the booking QR.":"Assign a doctor, then configure weekly sessions, capacity and consultation length before sharing the booking QR."}</p><div className="public-clinic-actions"><Link className="button" href={`/admin/settings?clinicId=${encodeURIComponent(completed.clinic.id)}`} onClick={() => client.invalidateQueries()} data-testid="registration-configure-sessions">Configure doctor sessions</Link><Link className="button secondary" href="/admin/dashboard" onClick={() => client.invalidateQueries()} data-testid="registration-open-workspace">Open workspace</Link>{completed.doctorId&&<Link className="button secondary" href="/admin/profile" onClick={()=>client.invalidateQueries()} data-testid="registration-own-profile">My consultation</Link>}<Link className="button secondary" href="/admin/users" onClick={() => client.invalidateQueries()} data-testid="registration-invite-staff">Invite staff</Link>{completed.clinic.slug && <Link href={`/${completed.clinic.slug}`} data-testid="registration-public-page">View clinic page</Link>}</div></main></div>;
+   if (completed) return <ClinicRegistrationComplete result={completed}/>;
   if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
   if (references.error && !references.data) return <div className="error-box" role="alert">Could not load clinic setup options. {references.error.message}<button data-testid="registration-retry-options" onClick={() => references.refetch()}>Try again</button></div>;
    return <ClinicRegistrationWizard initial={{ fullName: user?.fullName || "", email: user?.primaryEmailAddress?.emailAddress || "" }} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={registration.isPending} error={registration.error?.message} finishSecurity={<label style={{ marginTop: 20 }}>Confirm your account password<input type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} data-testid="registration-confirm-password"/><small className="registration-note">Verified securely before staff access is created. Never stored in your registration draft.</small></label>}/>;

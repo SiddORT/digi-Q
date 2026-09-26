@@ -410,3 +410,76 @@ test("opposing doctor transfers acquire locks in a deadlock-free order", { timeo
   await oneEvent(a.id, "reschedule");
   await oneEvent(b.id, "reschedule");
 });
+
+for (const bookingFirst of [true, false]) {
+  test(`linked hours versus booking contention: ${bookingFirst ? "booking" : "settings edit"} acquires first`, { timeout: 20000 }, async context => {
+    const admin = await h.api.one(h.t.users, "admin");
+    const weekday = new Date(h.tomorrow + "T12:00:00Z").getUTCDay();
+    const setup = await h.db.transaction(tx => h.api.createOwnedClinic(admin, admin, {
+      clinic: { name: "Isolated linked race", address: "Road", slug: "isolated-linked-race" },
+      branches: [{ name: "Linked race", address: "Road", slug: "linked-race", timezone: "Asia/Kolkata", openingHours: [{ dayOfWeek: weekday, startTime: "09:00", endTime: "17:00" }] }],
+      ownDoctor: true,
+      ownerSchedule: { maxTokens: 10, consultationMinutes: 20, tokenPrefix: "R", queueMode: "mixed" },
+    }, tx));
+    const branch = setup.branches[0];
+    const session = (await h.api.all(h.t.schedules)).find(s => s.branchId === branch.id && s.status === "active");
+    const qr = (await h.api.all(h.t.qrs)).find(q => q.branchId === branch.id);
+    const request = { qrReference: qr.publicReference, fullName: "Isolated race patient", branchId: branch.id, doctorId: setup.doctorId, date: h.tomorrow, sessionId: session.id,
+      requestId: "76543210-1234-4234-8234-123456789012", receiptSecret: "a".repeat(64) };
+    const patientsBefore = (await h.api.all(h.t.patients)).length;
+    const reserve = tx => h.api.createGuestRequest(request, tx);
+    const edit = tx => h.api.saveClinicSetup(admin, setup.clinic.id, { branches: [{ id: branch.id, name: branch.name, address: branch.address,
+      openingHours: [{ dayOfWeek: weekday, startTime: "10:00", endTime: "16:00" }] }] }, tx);
+    let contention;
+    const outcomes = await h.race(bookingFirst ? [reserve, edit] : [edit, reserve], {
+      doctorIds: [setup.doctorId], orderedWaiters: true,
+      onContention: evidence => { contention = evidence; },
+    });
+    assert.equal(contention.waiting, 2);
+    assert.equal(new Set(contention.pids).size, 2);
+    context.diagnostic(`Distinct PostgreSQL backends ${contention.pids.join(", ")}; both observed waiting on advisory locks before gate release; first waiter=${bookingFirst ? "booking" : "settings"}.`);
+    const booking = outcomes[bookingFirst ? 0 : 1], settings = outcomes[bookingFirst ? 1 : 0];
+    const currentBranch = await h.api.one(h.t.branches, branch.id);
+    const originalSession = await h.api.one(h.t.schedules, session.id);
+    const appointments = (await h.api.all(h.t.appointments)).filter(a => a.branchId === branch.id);
+    const requests = (await h.api.all(h.t.guestRequests)).filter(r => r.branchId === branch.id);
+    const active = (await h.api.all(h.t.schedules)).filter(s => s.branchId === branch.id && s.status === "active");
+    assert.equal(active.length, 1);
+    assert.equal((await h.api.all(h.t.patients)).length, patientsBefore + (bookingFirst ? 1 : 0), "failed booking must not leave an orphan patient");
+    assert.equal((await h.api.one(h.t.qrs, qr.id)).publicReference, qr.publicReference);
+    if (bookingFirst) {
+      assert.equal(booking.status, "fulfilled");
+      assert.equal(settings.status, "rejected");
+      assert.equal(settings.reason.status, 409);
+      assert.match(settings.reason.message, /booking history/);
+      assert.equal(appointments.length, 1);
+      assert.equal(requests.length, 1);
+      assert.equal(appointments[0].id, booking.value.appointmentId);
+      assert.ok(appointments[0].reference && appointments[0].token);
+      assert.equal(appointments[0].sessionId, session.id);
+      assert.equal(appointments[0].startTime, "09:00");
+      assert.equal(originalSession.status, "active");
+      assert.equal(active[0].id, session.id);
+      assert.deepEqual(currentBranch.openingHours, branch.openingHours);
+      const replay = await h.api.createGuestRequest(request);
+      assert.equal(replay.appointmentId, booking.value.appointmentId);
+      assert.equal(replay.token, booking.value.token);
+    } else {
+      assert.equal(settings.status, "fulfilled");
+      assert.equal(booking.status, "rejected");
+      assert.ok([404, 409].includes(booking.reason.status), booking.reason.message);
+      assert.match(booking.reason.message, /session|available/i);
+      assert.equal(appointments.length, 0, "stale booking must not persist an orphan appointment");
+      assert.equal(requests.length, 0, "stale booking must not persist a guest receipt");
+      assert.equal(originalSession.status, "inactive");
+      assert.notEqual(active[0].id, session.id);
+      assert.equal(active[0].startTime, "10:00");
+      assert.equal(currentBranch.openingHours[0].startTime, "10:00");
+      const fresh = await h.api.createGuestRequest({ ...request, sessionId: active[0].id });
+      const row = await h.api.one(h.t.appointments, fresh.appointmentId);
+      assert.equal(row.sessionId, active[0].id);
+      assert.equal(row.startTime, "10:00");
+      assert.equal(row.token, "R-01", "failed stale request consumed no waiting number");
+    }
+  });
+}

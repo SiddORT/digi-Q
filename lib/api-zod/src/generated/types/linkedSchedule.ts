@@ -12,32 +12,22 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { LinkedSchedule } from './linkedSchedule';
-import type { OpeningHour } from './openingHour';
+import type { LinkedScheduleQueueMode } from './linkedScheduleQueueMode';
 
-export interface ClinicBranchSetup {
-  id?: string;
-  /** @minLength 1 */
-  name: string;
-  address: string;
-  city?: string;
-  timezone?: string;
-  /** @nullable */
-  email?: string | null;
-  /** @nullable */
-  phone?: string | null;
-  inheritEmail?: boolean;
-  inheritPhone?: boolean;
+export interface LinkedSchedule {
+  enabled: boolean;
+  doctorId?: string;
   /**
-     * @minLength 3
-     * @maxLength 63
+     * @minimum 1
+     * @maximum 1000
      */
-  slug?: string;
+  maxTokens?: number;
   /**
-     * Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.
-     * @maxItems 28
-     * @nullable
+     * @minimum 1
+     * @maximum 240
      */
-  openingHours?: OpeningHour[] | null;
-  linkedSchedule?: LinkedSchedule;
+  consultationMinutes?: number;
+  /** @pattern ^[A-Za-z0-9]{1,8}$ */
+  tokenPrefix?: string;
+  queueMode?: LinkedScheduleQueueMode;
 }

@@ -157,6 +157,33 @@ export interface ClinicDetails {
   referralCode?: string | null;
 }
 
+export type LinkedScheduleQueueMode = typeof LinkedScheduleQueueMode[keyof typeof LinkedScheduleQueueMode];
+
+
+export const LinkedScheduleQueueMode = {
+  mixed: 'mixed',
+  appointmentsOnly: 'appointmentsOnly',
+  walkInsOnly: 'walkInsOnly',
+} as const;
+
+export interface LinkedSchedule {
+  enabled: boolean;
+  doctorId?: string;
+  /**
+     * @minimum 1
+     * @maximum 1000
+     */
+  maxTokens?: number;
+  /**
+     * @minimum 1
+     * @maximum 240
+     */
+  consultationMinutes?: number;
+  /** @pattern ^[A-Za-z0-9]{1,8}$ */
+  tokenPrefix?: string;
+  queueMode?: LinkedScheduleQueueMode;
+}
+
 export interface ClinicBranchSetup {
   id?: string;
   /** @minLength 1 */
@@ -181,6 +208,46 @@ export interface ClinicBranchSetup {
      * @nullable
      */
   openingHours?: OpeningHour[] | null;
+  linkedSchedule?: LinkedSchedule;
+}
+
+export type OwnerScheduleQueueMode = typeof OwnerScheduleQueueMode[keyof typeof OwnerScheduleQueueMode];
+
+
+export const OwnerScheduleQueueMode = {
+  mixed: 'mixed',
+  appointmentsOnly: 'appointmentsOnly',
+  walkInsOnly: 'walkInsOnly',
+} as const;
+
+export interface OwnerSchedule {
+  /**
+     * @minimum 1
+     * @maximum 1000
+     */
+  maxTokens: number;
+  /**
+     * @minimum 1
+     * @maximum 240
+     */
+  consultationMinutes: number;
+  /** @pattern ^[A-Za-z0-9]{1,8}$ */
+  tokenPrefix: string;
+  queueMode: OwnerScheduleQueueMode;
+}
+
+export type ClinicSettingsPreviewImpactsItem = {
+  branchId: string;
+  create: number;
+  update: number;
+  retire: number;
+  unlink: boolean;
+};
+
+export interface ClinicSettingsPreview {
+  allowed: boolean;
+  conflicts: string[];
+  impacts: ClinicSettingsPreviewImpactsItem[];
 }
 
 export interface ClinicSettingsInput {
@@ -279,6 +346,7 @@ export interface BranchInput {
 }
 
 export type Branch = BranchInput & ({
+  linkedSchedule?: LinkedSchedule;
   /** @nullable */
   effectiveEmail?: string | null;
   /** @nullable */
@@ -289,6 +357,7 @@ export type Branch = BranchInput & ({
   /** @nullable */
   createdAt: string | null;
 }) & Required<Pick<BranchInput & ({
+  linkedSchedule?: LinkedSchedule;
   /** @nullable */
   effectiveEmail?: string | null;
   /** @nullable */
@@ -336,6 +405,7 @@ export interface ClinicRegistrationInput {
   branches: ClinicBranchSetup[];
   policies?: ClinicPolicy;
   ownDoctor?: boolean;
+  ownerSchedule?: OwnerSchedule;
   specializationId?: string;
   qualificationIds?: string[];
 }
@@ -769,6 +839,7 @@ export interface ClinicAdminOnboardingInput {
   branches?: ClinicBranchSetup[];
   policies?: ClinicPolicy;
   ownDoctor?: boolean;
+  ownerSchedule?: OwnerSchedule;
   specializationId?: string;
   qualificationIds?: string[];
   admin: ClinicAdminOnboardingInputAdmin;
@@ -1196,6 +1267,15 @@ export interface OwnQueueEntry {
   estimatedWaitMinutes: number | null;
 }
 
+export interface StatusCounts {
+  active?: number;
+  waiting?: number;
+  absent?: number;
+  completed?: number;
+  cancelled?: number;
+  all?: number;
+}
+
 export interface LiveQueue {
   /** @nullable */
   sessionId?: string | null;
@@ -1229,6 +1309,7 @@ export interface LiveQueue {
   ownEntry?: OwnQueueEntry | null;
   /** Omitted for patients */
   entries?: Appointment[];
+  statusCounts?: StatusCounts;
   pollIntervalSeconds: 30;
   updatedAt: string;
 }
@@ -1530,6 +1611,7 @@ export type AvailabilityExceptionList = PageMeta & {
 };
 
 export type AppointmentList = PageMeta & {
+  statusCounts?: StatusCounts;
   items: Appointment[];
 };
 

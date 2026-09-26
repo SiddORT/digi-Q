@@ -160,6 +160,11 @@ export const registerClinicBodyBranchesItemOpeningHoursItemDayOfWeekMax = 6;
 
 export const registerClinicBodyBranchesItemOpeningHoursMax = 28;
 
+export const registerClinicBodyBranchesItemLinkedScheduleMaxTokensMax = 1000;
+
+export const registerClinicBodyBranchesItemLinkedScheduleConsultationMinutesMax = 240;
+
+export const registerClinicBodyBranchesItemLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
 export const registerClinicBodyBranchesMax = 30;
 
 export const registerClinicBodyPoliciesBookingHorizonDaysMax = 365;
@@ -168,6 +173,12 @@ export const registerClinicBodyPoliciesCancellationCutoffMinutesMin = 0;
 export const registerClinicBodyPoliciesCancellationCutoffMinutesMax = 10080;
 
 export const registerClinicBodyOwnDoctorDefault = false;
+export const registerClinicBodyOwnerScheduleMaxTokensMax = 1000;
+
+export const registerClinicBodyOwnerScheduleConsultationMinutesMax = 240;
+
+export const registerClinicBodyOwnerScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+
 
 export const RegisterClinicBody = zod.object({
   "fullName": zod.string().min(1).max(registerClinicBodyFullNameMax),
@@ -198,13 +209,27 @@ export const RegisterClinicBody = zod.object({
   "dayOfWeek": zod.number().int().min(registerClinicBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(registerClinicBodyBranchesItemOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
-})).max(registerClinicBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.')
+})).max(registerClinicBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.'),
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(registerClinicBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(registerClinicBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(registerClinicBodyBranchesItemLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional()
 })).min(1).max(registerClinicBodyBranchesMax),
   "policies": zod.object({
   "bookingHorizonDays": zod.number().int().min(1).max(registerClinicBodyPoliciesBookingHorizonDaysMax).optional(),
   "cancellationCutoffMinutes": zod.number().int().min(registerClinicBodyPoliciesCancellationCutoffMinutesMin).max(registerClinicBodyPoliciesCancellationCutoffMinutesMax).optional()
 }).optional(),
   "ownDoctor": zod.boolean().default(registerClinicBodyOwnDoctorDefault),
+  "ownerSchedule": zod.object({
+  "maxTokens": zod.number().int().min(1).max(registerClinicBodyOwnerScheduleMaxTokensMax),
+  "consultationMinutes": zod.number().int().min(1).max(registerClinicBodyOwnerScheduleConsultationMinutesMax),
+  "tokenPrefix": zod.string().regex(registerClinicBodyOwnerScheduleTokenPrefixRegExp),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly'])
+}).optional(),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional()
 })
@@ -225,6 +250,11 @@ export const registerClinicResponseBranchesItemOneOpeningHoursMax = 28;
 
 
 export const registerClinicResponseBranchesItemOneTimezoneDefault = `Asia/Kolkata`;
+export const registerClinicResponseBranchesItemTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const registerClinicResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const registerClinicResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
 export const registerClinicResponsePoliciesBookingHorizonDaysMax = 365;
 
 export const registerClinicResponsePoliciesCancellationCutoffMinutesMin = 0;
@@ -279,6 +309,14 @@ export const RegisterClinicResponse = zod.object({
   "timezone": zod.string().default(registerClinicResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(registerClinicResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(registerClinicResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(registerClinicResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -314,6 +352,11 @@ export const getClinicSettingsResponseBranchesItemOneOpeningHoursMax = 28;
 
 
 export const getClinicSettingsResponseBranchesItemOneTimezoneDefault = `Asia/Kolkata`;
+export const getClinicSettingsResponseBranchesItemTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const getClinicSettingsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const getClinicSettingsResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
 export const getClinicSettingsResponsePoliciesBookingHorizonDaysMax = 365;
 
 export const getClinicSettingsResponsePoliciesCancellationCutoffMinutesMin = 0;
@@ -368,6 +411,14 @@ export const GetClinicSettingsResponse = zod.object({
   "timezone": zod.string().default(getClinicSettingsResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(getClinicSettingsResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(getClinicSettingsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(getClinicSettingsResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -402,6 +453,11 @@ export const updateClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMax = 
 
 export const updateClinicSettingsBodyBranchesItemOpeningHoursMax = 28;
 
+export const updateClinicSettingsBodyBranchesItemLinkedScheduleMaxTokensMax = 1000;
+
+export const updateClinicSettingsBodyBranchesItemLinkedScheduleConsultationMinutesMax = 240;
+
+export const updateClinicSettingsBodyBranchesItemLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
 export const updateClinicSettingsBodyBranchesMax = 30;
 
 export const updateClinicSettingsBodyPoliciesBookingHorizonDaysMax = 365;
@@ -437,7 +493,15 @@ export const UpdateClinicSettingsBody = zod.object({
   "dayOfWeek": zod.number().int().min(updateClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(updateClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
-})).max(updateClinicSettingsBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.')
+})).max(updateClinicSettingsBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.'),
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(updateClinicSettingsBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(updateClinicSettingsBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(updateClinicSettingsBodyBranchesItemLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional()
 })).max(updateClinicSettingsBodyBranchesMax).optional(),
   "policies": zod.object({
   "bookingHorizonDays": zod.number().int().min(1).max(updateClinicSettingsBodyPoliciesBookingHorizonDaysMax).optional(),
@@ -461,6 +525,11 @@ export const updateClinicSettingsResponseBranchesItemOneOpeningHoursMax = 28;
 
 
 export const updateClinicSettingsResponseBranchesItemOneTimezoneDefault = `Asia/Kolkata`;
+export const updateClinicSettingsResponseBranchesItemTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const updateClinicSettingsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const updateClinicSettingsResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
 export const updateClinicSettingsResponsePoliciesBookingHorizonDaysMax = 365;
 
 export const updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMin = 0;
@@ -515,6 +584,14 @@ export const UpdateClinicSettingsResponse = zod.object({
   "timezone": zod.string().default(updateClinicSettingsResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(updateClinicSettingsResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(updateClinicSettingsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(updateClinicSettingsResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -527,6 +604,94 @@ export const UpdateClinicSettingsResponse = zod.object({
   "cancellationCutoffMinutes": zod.number().int().min(updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMin).max(updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMax).optional()
 }),
   "doctorId": zod.string().nullish()
+})
+
+
+export const PreviewClinicSettingsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+export const previewClinicSettingsBodyClinicSlugMin = 3;
+export const previewClinicSettingsBodyClinicSlugMax = 63;
+
+export const previewClinicSettingsBodyClinicReferralCodeMax = 100;
+
+
+export const previewClinicSettingsBodyBranchesItemSlugMin = 3;
+export const previewClinicSettingsBodyBranchesItemSlugMax = 63;
+
+export const previewClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMin = 0;
+export const previewClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMax = 6;
+
+export const previewClinicSettingsBodyBranchesItemOpeningHoursMax = 28;
+
+export const previewClinicSettingsBodyBranchesItemLinkedScheduleMaxTokensMax = 1000;
+
+export const previewClinicSettingsBodyBranchesItemLinkedScheduleConsultationMinutesMax = 240;
+
+export const previewClinicSettingsBodyBranchesItemLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const previewClinicSettingsBodyBranchesMax = 30;
+
+export const previewClinicSettingsBodyPoliciesBookingHorizonDaysMax = 365;
+
+export const previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMin = 0;
+export const previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMax = 10080;
+
+
+
+export const PreviewClinicSettingsBody = zod.object({
+  "clinic": zod.object({
+  "name": zod.string().min(1).optional(),
+  "address": zod.string().optional(),
+  "email": zod.string().email().nullish(),
+  "phone": zod.string().nullish(),
+  "slug": zod.string().min(previewClinicSettingsBodyClinicSlugMin).max(previewClinicSettingsBodyClinicSlugMax).optional(),
+  "categoryId": zod.string().nullish(),
+  "specialityIds": zod.array(zod.string()).optional(),
+  "referralCode": zod.string().max(previewClinicSettingsBodyClinicReferralCodeMax).nullish()
+}).optional(),
+  "branches": zod.array(zod.object({
+  "id": zod.string().optional(),
+  "name": zod.string().min(1),
+  "address": zod.string(),
+  "city": zod.string().optional(),
+  "timezone": zod.string().optional(),
+  "email": zod.string().email().nullish(),
+  "phone": zod.string().nullish(),
+  "inheritEmail": zod.boolean().optional(),
+  "inheritPhone": zod.boolean().optional(),
+  "slug": zod.string().min(previewClinicSettingsBodyBranchesItemSlugMin).max(previewClinicSettingsBodyBranchesItemSlugMax).optional(),
+  "openingHours": zod.array(zod.object({
+  "dayOfWeek": zod.number().int().min(previewClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(previewClinicSettingsBodyBranchesItemOpeningHoursItemDayOfWeekMax),
+  "startTime": zod.string(),
+  "endTime": zod.string()
+})).max(previewClinicSettingsBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.'),
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(previewClinicSettingsBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(previewClinicSettingsBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(previewClinicSettingsBodyBranchesItemLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional()
+})).max(previewClinicSettingsBodyBranchesMax).optional(),
+  "policies": zod.object({
+  "bookingHorizonDays": zod.number().int().min(1).max(previewClinicSettingsBodyPoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.number().int().min(previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMin).max(previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMax).optional()
+}).optional()
+})
+
+export const PreviewClinicSettingsResponse = zod.object({
+  "allowed": zod.boolean(),
+  "conflicts": zod.array(zod.string()),
+  "impacts": zod.array(zod.object({
+  "branchId": zod.string(),
+  "create": zod.number().int(),
+  "update": zod.number().int(),
+  "retire": zod.number().int(),
+  "unlink": zod.boolean()
+}))
 })
 
 
@@ -1302,6 +1467,12 @@ export const listPublicBranchesResponseTwoItemsItemOneOpeningHoursMax = 28;
 
 
 export const listPublicBranchesResponseTwoItemsItemOneTimezoneDefault = `Asia/Kolkata`;
+export const listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+
 
 export const ListPublicBranchesResponse = zod.object({
   "total": zod.number().int().min(listPublicBranchesResponseOneTotalMin),
@@ -1329,6 +1500,14 @@ export const ListPublicBranchesResponse = zod.object({
   "timezone": zod.string().default(listPublicBranchesResponseTwoItemsItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(listPublicBranchesResponseTwoItemsItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -1739,6 +1918,12 @@ export const listBranchesResponseTwoItemsItemOneOpeningHoursMax = 28;
 
 
 export const listBranchesResponseTwoItemsItemOneTimezoneDefault = `Asia/Kolkata`;
+export const listBranchesResponseTwoItemsItemTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const listBranchesResponseTwoItemsItemTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const listBranchesResponseTwoItemsItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+
 
 export const ListBranchesResponse = zod.object({
   "total": zod.number().int().min(listBranchesResponseOneTotalMin),
@@ -1766,6 +1951,14 @@ export const ListBranchesResponse = zod.object({
   "timezone": zod.string().default(listBranchesResponseTwoItemsItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(listBranchesResponseTwoItemsItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(listBranchesResponseTwoItemsItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(listBranchesResponseTwoItemsItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -1818,6 +2011,12 @@ export const createBranchResponseOneOpeningHoursMax = 28;
 
 
 export const createBranchResponseOneTimezoneDefault = `Asia/Kolkata`;
+export const createBranchResponseTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const createBranchResponseTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const createBranchResponseTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+
 
 export const CreateBranchResponse = zod.object({
   "slug": zod.string().min(createBranchResponseOneSlugMin).max(createBranchResponseOneSlugMax).optional(),
@@ -1839,6 +2038,14 @@ export const CreateBranchResponse = zod.object({
   "timezone": zod.string().default(createBranchResponseOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(createBranchResponseTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(createBranchResponseTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(createBranchResponseTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -1862,6 +2069,12 @@ export const getBranchResponseOneOpeningHoursMax = 28;
 
 
 export const getBranchResponseOneTimezoneDefault = `Asia/Kolkata`;
+export const getBranchResponseTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const getBranchResponseTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const getBranchResponseTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+
 
 export const GetBranchResponse = zod.object({
   "slug": zod.string().min(getBranchResponseOneSlugMin).max(getBranchResponseOneSlugMax).optional(),
@@ -1883,6 +2096,14 @@ export const GetBranchResponse = zod.object({
   "timezone": zod.string().default(getBranchResponseOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(getBranchResponseTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(getBranchResponseTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(getBranchResponseTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -1938,6 +2159,12 @@ export const updateBranchResponseOneOpeningHoursMax = 28;
 
 
 export const updateBranchResponseOneTimezoneDefault = `Asia/Kolkata`;
+export const updateBranchResponseTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const updateBranchResponseTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const updateBranchResponseTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+
 
 export const UpdateBranchResponse = zod.object({
   "slug": zod.string().min(updateBranchResponseOneSlugMin).max(updateBranchResponseOneSlugMax).optional(),
@@ -1959,6 +2186,14 @@ export const UpdateBranchResponse = zod.object({
   "timezone": zod.string().default(updateBranchResponseOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(updateBranchResponseTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(updateBranchResponseTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(updateBranchResponseTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -2345,6 +2580,11 @@ export const onboardClinicAdminBodyBranchesItemOpeningHoursItemDayOfWeekMax = 6;
 
 export const onboardClinicAdminBodyBranchesItemOpeningHoursMax = 28;
 
+export const onboardClinicAdminBodyBranchesItemLinkedScheduleMaxTokensMax = 1000;
+
+export const onboardClinicAdminBodyBranchesItemLinkedScheduleConsultationMinutesMax = 240;
+
+export const onboardClinicAdminBodyBranchesItemLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
 export const onboardClinicAdminBodyBranchesMax = 30;
 
 export const onboardClinicAdminBodyPoliciesBookingHorizonDaysMax = 365;
@@ -2352,6 +2592,11 @@ export const onboardClinicAdminBodyPoliciesBookingHorizonDaysMax = 365;
 export const onboardClinicAdminBodyPoliciesCancellationCutoffMinutesMin = 0;
 export const onboardClinicAdminBodyPoliciesCancellationCutoffMinutesMax = 10080;
 
+export const onboardClinicAdminBodyOwnerScheduleMaxTokensMax = 1000;
+
+export const onboardClinicAdminBodyOwnerScheduleConsultationMinutesMax = 240;
+
+export const onboardClinicAdminBodyOwnerScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
 
 export const onboardClinicAdminBodyClinicSlugMin = 3;
 export const onboardClinicAdminBodyClinicSlugMax = 63;
@@ -2377,13 +2622,27 @@ export const OnboardClinicAdminBody = zod.object({
   "dayOfWeek": zod.number().int().min(onboardClinicAdminBodyBranchesItemOpeningHoursItemDayOfWeekMin).max(onboardClinicAdminBodyBranchesItemOpeningHoursItemDayOfWeekMax),
   "startTime": zod.string(),
   "endTime": zod.string()
-})).max(onboardClinicAdminBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.')
+})).max(onboardClinicAdminBodyBranchesItemOpeningHoursMax).nullish().describe('Null or absent preserves legacy unrestricted hours. An explicit empty array closes all days.'),
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminBodyBranchesItemLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminBodyBranchesItemLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(onboardClinicAdminBodyBranchesItemLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional()
 })).max(onboardClinicAdminBodyBranchesMax).optional(),
   "policies": zod.object({
   "bookingHorizonDays": zod.number().int().min(1).max(onboardClinicAdminBodyPoliciesBookingHorizonDaysMax).optional(),
   "cancellationCutoffMinutes": zod.number().int().min(onboardClinicAdminBodyPoliciesCancellationCutoffMinutesMin).max(onboardClinicAdminBodyPoliciesCancellationCutoffMinutesMax).optional()
 }).optional(),
   "ownDoctor": zod.boolean().optional(),
+  "ownerSchedule": zod.object({
+  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerScheduleMaxTokensMax),
+  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerScheduleConsultationMinutesMax),
+  "tokenPrefix": zod.string().regex(onboardClinicAdminBodyOwnerScheduleTokenPrefixRegExp),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly'])
+}).optional(),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "admin": zod.object({
@@ -2418,6 +2677,12 @@ export const onboardClinicAdminResponseBranchesItemOneOpeningHoursMax = 28;
 
 
 export const onboardClinicAdminResponseBranchesItemOneTimezoneDefault = `Asia/Kolkata`;
+export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+
 
 export const onboardClinicAdminResponseClinicOneSlugMin = 3;
 export const onboardClinicAdminResponseClinicOneSlugMax = 63;
@@ -2448,6 +2713,14 @@ export const OnboardClinicAdminResponse = zod.object({
   "timezone": zod.string().default(onboardClinicAdminResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(onboardClinicAdminResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -2669,6 +2942,11 @@ export const getStaffAssignmentOptionsResponseBranchesItemOneOpeningHoursMax = 2
 
 
 export const getStaffAssignmentOptionsResponseBranchesItemOneTimezoneDefault = `Asia/Kolkata`;
+export const getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
 export const getStaffAssignmentOptionsResponsePaginationClinicsTotalMin = 0;
 
 export const getStaffAssignmentOptionsResponsePaginationBranchesTotalMin = 0;
@@ -2722,6 +3000,14 @@ export const GetStaffAssignmentOptionsResponse = zod.object({
   "timezone": zod.string().default(getStaffAssignmentOptionsResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
   "effectiveEmail": zod.string().nullish(),
   "effectivePhone": zod.string().nullish(),
   "id": zod.string(),
@@ -3489,6 +3775,14 @@ export const ListAppointmentsResponse = zod.object({
   "pageSize": zod.number().int(),
   "totalPages": zod.number().int().optional()
 }).and(zod.object({
+  "statusCounts": zod.object({
+  "active": zod.number().int().optional(),
+  "waiting": zod.number().int().optional(),
+  "absent": zod.number().int().optional(),
+  "completed": zod.number().int().optional(),
+  "cancelled": zod.number().int().optional(),
+  "all": zod.number().int().optional()
+}).optional(),
   "items": zod.array(zod.object({
   "sessionId": zod.string().optional(),
   "startTime": zod.string().optional(),
@@ -4241,6 +4535,14 @@ export const GetQueueResponse = zod.object({
 }).optional()
 })).optional()
 }))).optional().describe('Omitted for patients'),
+  "statusCounts": zod.object({
+  "active": zod.number().int().optional(),
+  "waiting": zod.number().int().optional(),
+  "absent": zod.number().int().optional(),
+  "completed": zod.number().int().optional(),
+  "cancelled": zod.number().int().optional(),
+  "all": zod.number().int().optional()
+}).optional(),
   "pollIntervalSeconds": zod.literal(30),
   "updatedAt": zod.coerce.date()
 })

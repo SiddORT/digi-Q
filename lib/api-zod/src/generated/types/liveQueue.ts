@@ -15,6 +15,7 @@
 import type { Appointment } from './appointment';
 import type { DoctorPresence } from './doctorPresence';
 import type { OwnQueueEntry } from './ownQueueEntry';
+import type { StatusCounts } from './statusCounts';
 
 export interface LiveQueue {
   /** @nullable */
@@ -49,6 +50,7 @@ export interface LiveQueue {
   ownEntry?: OwnQueueEntry | null;
   /** Omitted for patients */
   entries?: Appointment[];
+  statusCounts?: StatusCounts;
   pollIntervalSeconds: 30;
   updatedAt: Date;
 }

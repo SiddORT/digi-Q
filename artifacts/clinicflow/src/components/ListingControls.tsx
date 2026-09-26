@@ -57,7 +57,7 @@ export function Pagination({
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 py-2 px-3 text-xs text-muted-foreground border-t border-border">
+    <nav aria-label="Pagination" className="pagination flex flex-wrap items-center justify-between gap-2 py-2 px-3 text-xs text-muted-foreground border-t border-border">
       <div className="flex flex-wrap items-center gap-2">
         <span>
           Showing <strong className="text-foreground font-medium">{startRecord}–{endRecord}</strong> of{" "}
@@ -87,6 +87,7 @@ export function Pagination({
       </div>
 
       <div className="flex items-center gap-1">
+        <span className="pagination-current" aria-live="polite">Page {currentPage} of {totalPages}</span>
         <button
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
@@ -152,7 +153,7 @@ export function Pagination({
           <ChevronsRight className="h-4 w-4" />
         </button>
       </div>
-    </div>
+    </nav>
   );
 }
 

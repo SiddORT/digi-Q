@@ -132,7 +132,7 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
         return result;
       });
     }
-    async function race(operations, { doctorIds = ["d"], lockKeys = [] } = {}) {
+    async function race(operations, { doctorIds = ["d"], lockKeys = [], orderedWaiters = false, onContention } = {}) {
       const gate = await connect();
       const workers = await Promise.all(operations.map(() => connect()));
       let results;
@@ -144,11 +144,26 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
         for (const key of [...lockKeys].sort()) await gate.query("select pg_advisory_xact_lock(hashtext($1))", [key]);
         const pids = await Promise.all(workers.map(async c => (await c.query("select pg_backend_pid() as pid")).rows[0].pid));
         assert.equal(new Set(pids).size, operations.length, "independent PostgreSQL backends");
-        results = Promise.allSettled(workers.map((client, index) => {
+        const pending = [];
+        for (const [index, client] of workers.entries()) {
           const actor = { ...staff, id: `staff-${index}` };
-          return drizzle(client).transaction(tx =>
+          const operation = drizzle(client).transaction(tx =>
             context.run({ db: tx, actor }, () => operations[index](tx, actor)));
-        }));
+          pending.push(operation);
+          // Capture rejections immediately while an ordered worker is entering
+          // the PostgreSQL wait queue. This is not an in-process execution gate.
+          results = Promise.allSettled(pending);
+          if (orderedWaiters) {
+            const until = performance.now() + 5000;
+            let queued = false;
+            while (performance.now() < until) {
+              const locks = await control.query("select 1 from pg_locks where pid=$1 and locktype='advisory' and not granted", [pids[index]]);
+              if (locks.rows.length) { queued = true; break; }
+              await delay(10);
+            }
+            assert.equal(queued, true, `backend ${pids[index]} must enter the real advisory-lock queue before the next contender starts`);
+          }
+        }
         const deadline = performance.now() + 5000;
         let waiting = 0;
         while (performance.now() < deadline) {
@@ -159,6 +174,7 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
           await delay(10);
         }
         assert.equal(waiting, workers.length, "every contender must overlap at an actual PostgreSQL advisory-lock wait");
+        onContention?.({ pids, waiting, orderedWaiters });
         await gate.query("commit");
         return await results;
       } finally {

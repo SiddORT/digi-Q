@@ -16,12 +16,14 @@ import type { ClinicAdminOnboardingInputAdmin } from './clinicAdminOnboardingInp
 import type { ClinicAdminOnboardingInputClinic } from './clinicAdminOnboardingInputClinic';
 import type { ClinicBranchSetup } from './clinicBranchSetup';
 import type { ClinicPolicy } from './clinicPolicy';
+import type { OwnerSchedule } from './ownerSchedule';
 
 export interface ClinicAdminOnboardingInput {
   /** @maxItems 30 */
   branches?: ClinicBranchSetup[];
   policies?: ClinicPolicy;
   ownDoctor?: boolean;
+  ownerSchedule?: OwnerSchedule;
   specializationId?: string;
   qualificationIds?: string[];
   admin: ClinicAdminOnboardingInputAdmin;

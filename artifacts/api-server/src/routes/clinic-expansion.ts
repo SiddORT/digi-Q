@@ -8,7 +8,7 @@ import { requireUser, requireSessionIdentity, authoritativeStaffSessionExpiry, r
 import { parse, query, assert, HttpError } from "../lib/http";
 import { all, one, flatten, put, uid, audit } from "../lib/store";
 import { enrich, publicDoctor } from "../lib/entities";
-import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, createOwnedClinic } from "../lib/clinic-expansion";
+import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, createOwnedClinic, previewClinicSetup } from "../lib/clinic-expansion";
 import { queryMetrics } from "../lib/list-query";
 import { configuredDuration } from "../lib/session-duration";
 import { clinicalMembership, clinicalBranchIds } from "../lib/clinical-membership";
@@ -31,6 +31,10 @@ clinicExpansionRouter.get("/clinics/:id/settings", async (req, res) => {
 clinicExpansionRouter.patch("/clinics/:id/settings", async (req, res) => {
   const user = await requireUser(req), body = parse(z.UpdateClinicSettingsBody, req.body);
   res.json(await db.transaction(tx => saveClinicSetup(user, req.params.id as string, body, tx)));
+});
+clinicExpansionRouter.post("/clinics/:id/settings/preview", async (req, res) => {
+  const user = await requireUser(req), body = parse(z.PreviewClinicSettingsBody, req.body);
+  res.json(await previewClinicSetup(user, req.params.id as string, body));
 });
 clinicExpansionRouter.post("/me/doctor-profile", async (req, res) => {
   const user = await requireUser(req), body = parse(z.AttachOwnDoctorProfileBody, req.body);

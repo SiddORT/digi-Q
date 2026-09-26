@@ -15,6 +15,7 @@
 import type { ClinicBranchSetup } from './clinicBranchSetup';
 import type { ClinicDetails } from './clinicDetails';
 import type { ClinicPolicy } from './clinicPolicy';
+import type { OwnerSchedule } from './ownerSchedule';
 
 export interface ClinicRegistrationInput {
   /**
@@ -36,6 +37,7 @@ export interface ClinicRegistrationInput {
   branches: ClinicBranchSetup[];
   policies?: ClinicPolicy;
   ownDoctor?: boolean;
+  ownerSchedule?: OwnerSchedule;
   specializationId?: string;
   qualificationIds?: string[];
 }

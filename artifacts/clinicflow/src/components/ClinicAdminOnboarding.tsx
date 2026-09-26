@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { Plus } from "lucide-react";
 import { ClinicRegistrationWizard, type RegistrationValues } from "./ClinicRegistrationWizard";
-import { Logo } from "../App";
+import { ClinicRegistrationComplete } from "./ClinicRegistrationComplete";
 
 export function ClinicAdminOnboarding({ guided = false }: { guided?: boolean }) {
   if (guided) return <GuidedAdminSetup/>;
@@ -26,12 +26,13 @@ function GuidedAdminSetup() {
         clinic: { name: values.name.trim(), address: values.branches[0].address.trim(), slug: values.slug, email: values.clinicEmail.trim() || undefined, phone: values.phone.trim() || undefined, categoryId: values.categoryId || undefined, specialityIds: values.specialityIds, referralCode: values.referralCode.trim() || null },
         branches: values.branches.map(b => ({ name: b.name.trim(), slug: b.slug, address: b.address.trim(), city: b.city.trim(), timezone: b.timezone, email: b.email.trim() || null, phone: b.phone.trim() || null, inheritEmail: b.inheritEmail, inheritPhone: b.inheritPhone, openingHours: b.hours.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ dayOfWeek: d.dayOfWeek, ...s }))) })),
         ownDoctor: values.alsoConsult, ...(values.alsoConsult ? { specializationId: values.specializationId || undefined, qualificationIds: values.qualificationIds } : {}),
+        ...(values.alsoConsult && values.linkConsultationHours ? { ownerSchedule: { maxTokens: Number(values.sessionCapacity), consultationMinutes: Number(values.consultationMinutes), tokenPrefix: "A", queueMode: "mixed" as const } } : {}),
       } });
       setCompleted(result);
       await client.invalidateQueries();
     } finally { locked.current = false; }
   }
-   if (completed) return <div className="clinic-registration"><Logo/><main className="registration-card"><span className="eyebrow">ACCOUNT AND CLINIC CREATED · BOOKINGS NOT YET READY</span><h1>{completed.clinic.name} is registered, not yet bookable.</h1><p>{completed.admin.fullName} is the clinic’s sole Clinic Admin{completed.doctorId?" with a doctor profile on the same account":""}. Location opening hours do not create bookable doctor sessions. Configure a doctor, weekly sessions, capacity and consultation length before sharing the QR.</p><p role="status" className={completed.admin.invitationStatus === "failed" ? "error-box" : "notice"}>{completed.admin.invitationStatus === "sent" ? "The account invitation was sent." : completed.admin.invitationStatus === "failed" ? "The clinic was created, but the invitation failed. Retry the invitation in Staff management." : "No new account invitation was required."}</p><Link href={`/admin/settings?clinicId=${encodeURIComponent(completed.clinic.id)}`} className="button" data-testid="admin-registration-configure">Configure doctor sessions</Link><Link href="/admin/users" className="button secondary" data-testid="admin-registration-users">Open Staff management</Link>{completed.clinic.slug && <Link href={`/${completed.clinic.slug}`} className="text-link" data-testid="admin-registration-public">View clinic page</Link>}</main></div>;
+   if (completed) return <ClinicRegistrationComplete result={completed} invitationStatus={completed.admin.invitationStatus}/>;
   if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
   if (references.error && !references.data) return <div className="error-box" role="alert">Could not load clinic setup options. {references.error.message}<button data-testid="admin-registration-retry-options" onClick={() => references.refetch()}>Try again</button></div>;
    return <ClinicRegistrationWizard adminMode categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?.message}/>;

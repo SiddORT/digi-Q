@@ -272,6 +272,10 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
   }
   const saved = await db.transaction(async tx => {
     const proposed = { ...old, ...body };
+    if (kind === "branches" && old && (body.openingHours !== undefined || body.timezone !== undefined)) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"branch-hours:" + old.id}))`);
+      assert(!(await one(branches, old.id, tx)).linkedSchedule?.enabled, 409, "This location has linked doctor sessions. Change opening hours through Clinic settings to preview and synchronize safely.");
+    }
     await validateSlugWrite(kind, body, old, tx);
     if (kind === "clinics") await validateClinicMetadata(body, tx);
     if (kind === "branches" && proposed.openingHours) {
@@ -280,7 +284,15 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       if (proposed.openingHours.length) for (const s of (await all(schedules, tx)).filter(s => s.branchId === old?.id && s.status === "active")) withinBranchHours(proposed, s);
     }
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${kind + ":" + (proposed.doctorId || old?.id || body.email || "create")}))`);
+    if (kind === "doctors" && old && body.branchIds !== undefined) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + old.id}))`);
+      for (const location of await all(branches, tx)) {
+        assert(!location.linkedSchedule?.enabled || location.linkedSchedule.doctorId !== old.id || body.branchIds.includes(location.id), 409, "Unlink clinic hours before removing this doctor's linked consultation location.");
+      }
+    }
     if (kind === "schedules") {
+      const current = old ? await one(schedules, old.id, tx) : null;
+      assert(!current?.linkedBranchId, 409, "This session follows clinic hours. Unlink it in Clinic settings before making custom edits.");
       const { freezeDoctorSessions } = await import("../lib/session-duration");
       await freezeDoctorSessions(proposed.doctorId, tx);
     }
@@ -694,6 +706,7 @@ for (const [kind, table, schema, listSchema] of definitions) {
     await db.transaction(async tx => {
       if (kind === "schedules") {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + old.doctorId}))`);
+        assert(!(await one(schedules, old.id, tx)).linkedBranchId, 409, "This session follows clinic hours. Unlink it in Clinic settings before deactivating it.");
         const { freezeDoctorSessions } = await import("../lib/session-duration");
         await freezeDoctorSessions(old.doctorId, tx);
       }

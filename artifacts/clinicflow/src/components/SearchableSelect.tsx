@@ -139,7 +139,7 @@ export function SearchableSelect({
             {value && !disabled && (
               <button
                 type="button"
-                className="flex h-6 w-6 items-center justify-center rounded-md hover:bg-slate-100 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors border-none p-0"
+                className="searchable-select-clear flex h-6 w-6 items-center justify-center rounded-md hover:bg-slate-100 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors border-none p-0"
                 style={{ minHeight: "auto" }} // Override global buttons
                 onClick={(e) => {
                   e.preventDefault();
@@ -165,7 +165,7 @@ export function SearchableSelect({
           align="start"
           style={{ width: "var(--radix-popover-trigger-width)" }}
         >
-          <Command shouldFilter={!onSearchChange} className="max-h-[var(--radix-popover-content-available-height,300px)]">
+          <Command shouldFilter={!onSearchChange} className="searchable-select-options max-h-[var(--radix-popover-content-available-height,300px)]">
             <CommandInput
               placeholder={label ? `Search ${label.toLowerCase()}...` : (placeholder?.startsWith("Search") ? placeholder : "Search...")}
               value={search}

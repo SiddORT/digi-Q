@@ -120,3 +120,17 @@ mtime_ms = 1790377329704
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/841b2aac-08dd-4f2d-b1f3-d1c90ab3295f/3955d9fa-ea9f-4419-ab66-8c52a1da24d2"
 storage_version_token = "1790377378073943"
 content_type = "text/html"
+
+[[outputs]]
+id = "7Jqg779xeDxRCFFkMFziK"
+uri = "file://docs/clinic-improvements-completion.html"
+type = "html"
+title = "DigiQ Doctors — 24-item completion report"
+description = "Numbered implementation checklist, test evidence, verification limits and live rollout instructions."
+logical_id = "253e4d68-6554-4d0d-94ab-54466433d18b"
+content_hash = "sha256:b7fd3682e3c4b3a59aae86001ba04dec044c2149bab50f5a48eb5401a148877e"
+size = 8225
+mtime_ms = 1790424537599
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/253e4d68-6554-4d0d-94ab-54466433d18b/935865e5-1bf5-4457-99eb-65edc596e904"
+storage_version_token = "1790424555872852"
+content_type = "text/html"

@@ -11,8 +11,8 @@ import { orderedReservations, pendingStatuses, queueSummary, sessionRows, status
 import { readDuration } from "../lib/session-duration";
 import { getPresence } from "../lib/presence";
 export const queueRouter = Router();
-async function selectQueue(q: any, conn: any) {
-  const rows = sessionRows(await all(appointments, conn), { doctorId: q.doctorId, branchId: q.branchId, date: q.date });
+async function selectQueue(q: any, conn: any, scopedRows?: any[]) {
+  const rows = sessionRows(scopedRows ?? await all(appointments, conn), { doctorId: q.doctorId, branchId: q.branchId, date: q.date });
   if (q.appointmentId) {
     const own = rows.find(a => a.id === q.appointmentId);
     assert(own && (!q.sessionId || q.sessionId === own.sessionId) && (!q.startTime || q.startTime === own.startTime), 404, "Appointment is not in the selected session");
@@ -56,9 +56,9 @@ queueRouter.get("/queue", async (req, res) => {
   let duration: number | null = null;
   const rows = await db.transaction(async tx => {
     await lockQueue(tx, q.doctorId, q.branchId, q.date);
-    selected = await selectQueue(q, tx);
-    const readSession = async () => sessionRows((await tx.select().from(appointments).where(sql`${appointments.doctorId}=${q.doctorId} and ${appointments.branchId}=${q.branchId} and ${appointments.date}=${q.date}`)).map(flatten), selected);
-    const initial = await readSession();
+     const candidates = (await tx.select().from(appointments).where(sql`${appointments.doctorId}=${q.doctorId} and ${appointments.branchId}=${q.branchId} and ${appointments.date}=${q.date}`)).map(flatten);
+     selected = await selectQueue(q, tx, candidates);
+     const initial = sessionRows(candidates, selected);
     if (user.role === "patient") assert(initial.some(a => a.patientId === user.patientId && (!q.appointmentId || a.id === q.appointmentId)), 403, "You do not have an appointment in this queue");
     if (initial.length) duration = await readDuration(initial[0], tx);
     return initial;
@@ -69,7 +69,12 @@ queueRouter.get("/queue", async (req, res) => {
   if (user.role === "patient") assert(own, 403, "You do not have an appointment in this queue");
   const summary = queueSummary(rows, own, duration);
   const page = q.page || 1, pageSize = q.pageSize || 20;
-   const entries = orderedReservations(rows).filter(a => (!q.statusGroup || q.statusGroup === "all" || statusGroups[q.statusGroup].includes(a.status)) && (!q.status || a.status === q.status) && (!q.search || [a.token, a.reference, a.patientName, a.patientCode].some(value => String(value || "").toLowerCase().includes(q.search!.toLowerCase()))));
+   const searched = rows.filter(a => !q.search || [a.token, a.reference, a.patientName, a.patientCode].some(value => String(value || "").toLowerCase().includes(q.search!.toLowerCase())));
+   const statusCounts = user.role === "patient" ? undefined : {
+     all: searched.length,
+     ...Object.fromEntries(Object.entries(statusGroups).map(([group, statuses]) => [group, searched.filter(a => statuses.includes(a.status)).length])),
+   };
+   const entries = orderedReservations(searched).filter(a => (!q.statusGroup || q.statusGroup === "all" || statusGroups[q.statusGroup].includes(a.status)) && (!q.status || a.status === q.status));
   if (q.sort && q.sort !== "waitingAt" && q.sort !== "queueRank") {
     const key = q.sort.replace(/^-/, ""), direction = q.sort.startsWith("-") ? -1 : 1;
     assert(["createdAt", "date", "status", "tokenNumber", "queueRank", "waitingAt"].includes(key), 400, "Unsupported queue sort field");
@@ -77,7 +82,7 @@ queueRouter.get("/queue", async (req, res) => {
   }
   res.json({ doctorId: q.doctorId, branchId: q.branchId, date: q.date, sessionId: selected.sessionId || rows[0]?.sessionId || null, startTime: selected.startTime || null, presence: await getPresence(selected), ...summary,
     pollIntervalSeconds: 30, updatedAt: new Date().toISOString(),
-    ...(user.role === "patient" ? {} : { entries: entries.slice((page - 1) * pageSize, page * pageSize).map(a => appointmentView(a, user)), entriesTotal: entries.length, page, pageSize, totalPages: Math.ceil(entries.length / pageSize) }),
+     ...(user.role === "patient" ? {} : { entries: entries.slice((page - 1) * pageSize, page * pageSize).map(a => appointmentView(a, user)), entriesTotal: entries.length, page, pageSize, totalPages: Math.ceil(entries.length / pageSize), statusCounts }),
   });
 });
 queueRouter.post("/queue/call-next", async (req, res) => {

@@ -4,6 +4,7 @@ import { all, one, put, change, uid, audit, getSettings } from "./store";
 import { assert } from "./http";
 import { enrich } from "./entities";
 import { localNow, minutes, sameTimezone, weeklySessionsOverlap } from "./availability";
+import { lockLinkedDoctors, planLinkedSchedules, applyLinkedPlan } from "./linked-schedules";
 
 const reserved = new Set(["api", "admin", "auth", "login", "logout", "register", "signup", "sign-in", "sign-up", "onboarding", "dashboard", "clinics", "branches", "doctors", "patients", "appointments", "queue", "settings", "reports", "users", "masters", "schedules", "availability", "booking", "book", "display", "qr", "public", "guest", "invite", "invitations", "forgot-password", "reset-password", "account", "me", "assets", "favicon", "__mockup", "clinicflow-project-deck"]);
 // Pre-0008 ownership functions permit a self-owned doctor profile, but prohibit
@@ -71,6 +72,7 @@ export async function saveClinicSetup(actor: any, clinicId: string, body: any, c
   await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"clinics:" + clinicId}))`);
   const old = await one(clinics, clinicId, conn);
   assert(actor.role === "superAdmin" || actor.role === "clinicAdmin" && old.adminId === actor.id, 403, "Clinic settings are outside your ownership");
+  await lockLinkedDoctors(old, body.branches || [], await all(branches, conn), conn);
   const detail = body.clinic || {};
   await validateClinicMetadata(detail, conn);
   await validateSlugWrite("clinics", detail, old, conn);
@@ -83,7 +85,10 @@ export async function saveClinicSetup(actor: any, clinicId: string, body: any, c
     if (next.timezone) localNow(next.timezone);
     if (next.openingHours) validateOpeningHours(next.openingHours);
     await validateSlugWrite("branches", next, prior, conn);
+    const plan = await planLinkedSchedules(clinic, next, prior, conn);
+    await applyLinkedPlan(actor, plan, conn);
     if (next.openingHours?.length) for (const s of (await all(schedules, conn)).filter(s => s.branchId === next.id && s.status === "active")) withinBranchHours(next, s);
+    if (plan.link) next.linkedSchedule = plan.link;
     const data = { ...next, timezone: next.timezone || "Asia/Kolkata", code: next.code || `BR-${next.id.slice(0,8)}`, inheritEmail: next.inheritEmail ?? (prior ? !prior.email : true), inheritPhone: next.inheritPhone ?? (prior ? !prior.phone : true) };
     const branch = prior ? await change(branches, next.id, { data }, conn) : await put(branches, { id: next.id, clinicId, data }, conn);
     await provisionBranchQr(branch, prior, conn);
@@ -116,6 +121,10 @@ export async function attachOwnDoctor(actor: any, body: any, conn: any) {
   }
   const prior = (await all(doctors, conn)).find(d => d.userId === actor.id);
   assert(!prior || prior.ownerAdminId === actor.id, 409, "Doctor ownership requires an explicit transfer");
+  if (prior) await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + prior.id}))`);
+  if (prior) for (const branch of await all(branches, conn)) {
+    assert(!branch.linkedSchedule?.enabled || branch.linkedSchedule.doctorId !== prior.id || selected.some(b => b.id === branch.id), 409, "Unlink clinic hours before removing this doctor's linked consultation location.");
+  }
   const id = prior?.id || uid();
   const fields = { data: { ...prior, ...body, branchIds: selected.map(b => b.id), code: prior?.code || `DOC-${id.slice(0,8)}` }, ...(body.specializationId ? { specializationId: body.specializationId } : {}) };
   const doctor = prior ? await change(doctors, prior.id, fields, conn) : await put(doctors, { id, userId: actor.id, ownerAdminId: actor.id, ...fields }, conn);
@@ -123,6 +132,7 @@ export async function attachOwnDoctor(actor: any, body: any, conn: any) {
   return enrich("doctors", doctor, conn);
 }
 export async function createOwnedClinic(actor: any, admin: any, input: any, conn: any) {
+  assert(!input.ownerSchedule || input.ownDoctor, 400, "Linked owner sessions require the consulting owner profile.");
   assert(input.clinic?.name?.trim() && typeof input.clinic.address === "string", 400, "Clinic name and address are required");
   await validateClinicMetadata(input.clinic, conn);
   await validateSlugWrite("clinics", input.clinic, null, conn);
@@ -131,6 +141,37 @@ export async function createOwnedClinic(actor: any, admin: any, input: any, conn
   await conn.insert(assignments).values({ id: uid(), userId: admin.id, clinicId: id }).onConflictDoNothing();
   await audit(actor, "create", "clinics", clinic, conn);
   const result = await saveClinicSetup({ ...admin, role: "clinicAdmin" }, id, { branches: input.branches || [], policies: input.policies }, conn);
-  const doctor = input.ownDoctor ? await attachOwnDoctor(admin, { branchIds: result.branches.map(b => b.id), specializationId: input.specializationId, qualificationIds: input.qualificationIds }, conn) : null;
-  return { ...result, doctorId: doctor?.id || null };
+  const priorDoctor = input.ownDoctor ? (await all(doctors, conn)).find(d => d.userId === admin.id) : null;
+  const doctor = input.ownDoctor ? await attachOwnDoctor(admin, { branchIds: [...new Set([...(priorDoctor?.branchIds || []), ...result.branches.map(b => b.id)])], specializationId: input.specializationId, qualificationIds: input.qualificationIds }, conn) : null;
+  const linkedResult = input.ownerSchedule && doctor ? await saveClinicSetup({ ...admin, role: "clinicAdmin" }, id, {
+    branches: result.branches.map(b => ({ id: b.id, linkedSchedule: { ...input.ownerSchedule, enabled: true, doctorId: doctor.id } })),
+  }, conn) : result;
+  return { ...linkedResult, doctorId: doctor?.id || null };
+}
+
+/** Read-only, advisory preview. Mutation repeats validation with booking-compatible locks. */
+export async function previewClinicSetup(actor: any, clinicId: string, body: any, conn: any = db) {
+  const clinic = await one(clinics, clinicId, conn);
+  assert(actor.role === "superAdmin" || actor.role === "clinicAdmin" && clinic.adminId === actor.id, 403, "Clinic settings are outside your ownership");
+  const impacts: any[] = [], conflicts: string[] = [];
+  for (const input of body.branches || []) {
+    const prior = input.id ? await one(branches, input.id, conn) : null;
+    assert(!prior || prior.clinicId === clinicId, 403, "Branch belongs to another clinic");
+    const next = { ...prior, ...input, id: prior?.id || "new-location", clinicId };
+    try {
+      if (Array.isArray(next.openingHours)) validateOpeningHours(next.openingHours);
+      const plan = await planLinkedSchedules(clinic, next, prior, conn);
+      impacts.push(plan.impact);
+      conflicts.push(...plan.conflicts);
+      const retired = new Set(plan.writes.filter(w => w.retire).map(w => w.old.id));
+      if (next.openingHours?.length) for (const session of (await all(schedules, conn)).filter(s => s.branchId === next.id && s.status === "active" && !retired.has(s.id))) {
+        const update = plan.writes.find(w => w.old?.id === session.id && w.next);
+        withinBranchHours(next, update ? { ...session, ...update.next } : session);
+      }
+    } catch (error: any) {
+      if (error.status === 403) throw error;
+      conflicts.push(error.message || "Unable to preview linked sessions.");
+    }
+  }
+  return { allowed: !conflicts.length, impacts, conflicts };
 }

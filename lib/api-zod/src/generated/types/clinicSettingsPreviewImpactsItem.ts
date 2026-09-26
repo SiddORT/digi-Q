@@ -12,29 +12,11 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { BranchInput } from './branchInput';
-import type { LinkedSchedule } from './linkedSchedule';
 
-export type Branch = BranchInput & ({
-  linkedSchedule?: LinkedSchedule;
-  /** @nullable */
-  effectiveEmail?: string | null;
-  /** @nullable */
-  effectivePhone?: string | null;
-  id: string;
-  code: string;
-  clinicName?: string;
-  /** @nullable */
-  createdAt: Date | null;
-}) & Required<Pick<BranchInput & ({
-  linkedSchedule?: LinkedSchedule;
-  /** @nullable */
-  effectiveEmail?: string | null;
-  /** @nullable */
-  effectivePhone?: string | null;
-  id: string;
-  code: string;
-  clinicName?: string;
-  /** @nullable */
-  createdAt: Date | null;
-}), 'status'>>;
+export type ClinicSettingsPreviewImpactsItem = {
+  branchId: string;
+  create: number;
+  update: number;
+  retire: number;
+  unlink: boolean;
+};
