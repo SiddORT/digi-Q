@@ -18,8 +18,8 @@ const layout: Entry[] = [
   { kind: "link", page: "dashboard" }, { kind: "link", page: "book" }, { kind: "link", page: "appointments" }, { kind: "link", page: "queue" }, { kind: "link", page: "patients" },
   { kind: "group", id: "clinic", name: "Clinic", icon: Building2, pages: ["clinics", "branches", "users"] },
   { kind: "group", id: "schedule", name: "Schedule", icon: Clock3, pages: ["availability", "exceptions", "qrs"] },
-  { kind: "link", page: "reports" }, { kind: "link", page: "settings" }, { kind: "link", page: "profile" },
-  { kind: "group", id: "admin", name: "Administration", icon: ShieldCheck, pages: ["masters", "audit", "demo"] },
+  { kind: "link", page: "reports" }, { kind: "link", page: "settings" }, { kind: "link", page: "audit" }, { kind: "link", page: "profile" },
+  { kind: "group", id: "admin", name: "Administration", icon: ShieldCheck, pages: ["masters", "demo"] },
 ];
 
 export function WorkspaceNav({ navigation, role, page, onNavigate }: { navigation: string[]; role: string; page: string; onNavigate: () => void }) {

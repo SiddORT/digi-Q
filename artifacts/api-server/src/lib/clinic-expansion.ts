@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { all, one, put, change, uid, audit, getSettings } from "./store";
 import { assert } from "./http";
 import { enrich } from "./entities";
-import { localNow, minutes, weeklySessionsOverlap } from "./availability";
+import { localNow, minutes, sameTimezone, weeklySessionsOverlap } from "./availability";
 
 const reserved = new Set(["api", "admin", "auth", "login", "logout", "register", "signup", "sign-in", "sign-up", "onboarding", "dashboard", "clinics", "branches", "doctors", "patients", "appointments", "queue", "settings", "reports", "users", "masters", "schedules", "availability", "booking", "book", "display", "qr", "public", "guest", "invite", "invitations", "forgot-password", "reset-password", "account", "me", "assets", "favicon", "__mockup", "clinicflow-project-deck"]);
 // Pre-0008 ownership functions permit a self-owned doctor profile, but prohibit
@@ -39,7 +39,7 @@ export function withinBranchHours(branch: any, session: any) {
   if (!session.isOpen || session.isClosed || !Array.isArray(branch.openingHours)) return;
   const day = session.date ? new Date(session.date + "T12:00:00Z").getUTCDay() : session.dayOfWeek;
   assert(branch.openingHours.some((h: any) => h.dayOfWeek === day && minutes(h.startTime) <= minutes(session.startTime) && minutes(h.endTime) >= minutes(session.endTime)), 409, "Doctor session must be within branch opening hours");
-  assert(!session.timezone || session.timezone === (branch.timezone || "Asia/Kolkata"), 400, "Sessions with configured branch hours must use the branch timezone");
+  assert(!session.timezone || sameTimezone(session.timezone, branch.timezone || "Asia/Kolkata"), 400, "Sessions with configured branch hours must use the branch timezone");
 }
 export async function provisionBranchQr(branch: any, old: any, conn: any) {
   if (!branch.slug || old?.slug) return;

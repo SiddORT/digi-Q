@@ -15,6 +15,15 @@ export function localNow(timezone: string) {
   const p = Object.fromEntries(parts.map(p => [p.type, p.value]));
   return { date: `${p.year}-${p.month}-${p.day}`, minute: Number(p.hour) * 60 + Number(p.minute) };
 }
+/** Compare IANA aliases without rewriting persisted clinic/session timezone values. */
+export function sameTimezone(a: string, b: string) {
+  try {
+    return new Intl.DateTimeFormat("en", { timeZone: a }).resolvedOptions().timeZone
+      === new Intl.DateTimeFormat("en", { timeZone: b }).resolvedOptions().timeZone;
+  } catch {
+    assert(false, 400, "Invalid timezone");
+  }
+}
 export function validateTimes(body: any) {
   if (body.timezone) localNow(body.timezone);
   if (body.isClosed || body.isOpen === false) return;
@@ -113,7 +122,7 @@ export async function availability(doctorId: string, branchId: string, date: str
   let reason: string | null = null;
   if (!schedule || !schedule.isOpen) reason = "No open weekly session";
   if (exception?.isClosed) reason = exception.reason || "Closed for this date";
-  if (!reason && Array.isArray(branch.openingHours) && (!branch.openingHours.some((h: any) => h.dayOfWeek === weekday && minutes(h.startTime) <= minutes(effective.startTime) && minutes(h.endTime) >= minutes(effective.endTime)) || timezone !== (branch.timezone || "Asia/Kolkata"))) reason = "Session is outside branch opening hours";
+  if (!reason && Array.isArray(branch.openingHours) && (!branch.openingHours.some((h: any) => h.dayOfWeek === weekday && minutes(h.startTime) <= minutes(effective.startTime) && minutes(h.endTime) >= minutes(effective.endTime)) || !sameTimezone(timezone, branch.timezone || "Asia/Kolkata"))) reason = "Session is outside branch opening hours";
   if (date < now.date || date === now.date && effective.endTime && now.minute >= minutes(effective.endTime)) reason = "Session is in the past";
    if (!reason && date === now.date && effective.queueCloseTime && now.minute >= minutes(effective.queueCloseTime)) reason = "Queue booking has closed";
   if ((Date.parse(date) - Date.parse(now.date)) / 86400000 > config.bookingHorizonDays) reason = "Outside booking horizon";

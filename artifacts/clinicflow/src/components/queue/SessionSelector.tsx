@@ -13,11 +13,11 @@ export function useDailySession({doctorId,branchId,date,initialSessionId}:{docto
  const explicit=selection.scope===scope?selection.id:"";
  const sessionId=explicit||(sessions.length===1?sessions[0].sessionId||"":"");
  const session=sessions.length===1&&!sessions[0].sessionId?sessions[0]:sessions.find(item=>item.sessionId===sessionId);
- return {sessionId,setSessionId:(id:string)=>setSelection({scope,id}),sessions,availability:{...query,data:session}};
+  return {sessionId,setSessionId:(id:string)=>setSelection({scope,id}),sessions,hasContext:!!doctorId&&!!branchId&&!!date,availability:{...query,data:session}};
 }
 
 export function SessionSelector({selection}:{selection:ReturnType<typeof useDailySession>}){
- return <div><SearchableSelect label="Consulting session" value={selection.sessionId} onChange={selection.setSessionId} placeholder="Select session…" options={selection.sessions.map(item=>({value:item.sessionId||"",label:`${item.startTime}–${item.endTime} · ${item.remainingTokens} places remaining${item.available?"":" · unavailable"}`}))}/><ErrorNotice error={selection.availability.error}/>{selection.availability.error&&<button type="button" onClick={()=>selection.availability.refetch()}>Retry sessions</button>}</div>;
+  return <div><SearchableSelect label="Consulting session" value={selection.sessionId} onChange={selection.setSessionId} placeholder="Select session…" options={selection.sessions.map(item=>({value:item.sessionId||"",label:`${item.startTime}–${item.endTime} · ${item.remainingTokens} places remaining${item.available?"":` · ${item.reason||"unavailable"}`}`}))}/>{selection.hasContext&&!selection.availability.isLoading&&!selection.availability.isFetching&&!selection.availability.error&&selection.sessions.length===0&&<p className="notice" role="status" data-testid="status-no-doctor-sessions">No doctor sessions are configured for this location and date. Try another date, or ask the clinic to set up its Weekly schedule. Opening hours alone do not create bookable sessions.</p>}<ErrorNotice error={selection.availability.error}/>{selection.availability.error&&<button type="button" onClick={()=>selection.availability.refetch()}>Retry sessions</button>}</div>;
 }
 
 export function useOperationalSession({doctorId,branchId,date,initialSessionId,initialStartTime,enabled=true}:{doctorId:string;branchId:string;date:string;initialSessionId?:string|null;initialStartTime?:string|null;enabled?:boolean}){

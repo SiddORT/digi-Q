@@ -855,3 +855,55 @@ test("adding a weekly session binds legacy exceptions and rejects dated overlaps
   assert.equal(sessions.find(s=>s.sessionId===id).startTime,"14:00");
   assert.equal(sessions.find(s=>s.sessionId===added.id).startTime,"16:00");
 });
+
+test("owner completes an hours-only clinic through existing schedule CRUD and its QR accepts a guest", async () => {
+  await seed();
+  // Reproduce onboarding's persisted shape: the location is open, the owner-doctor
+  // is assigned, but no doctor session has been configured.
+  await database.exec("delete from schedules");
+  const weekday = new Date(tomorrow + "T12:00:00Z").getUTCDay();
+  const location = await api.one(t.branches, "b");
+  await api.change(t.branches, "b", {
+    data: { ...location, timezone: "Asia/Calcutta", openingHours: [{ dayOfWeek: weekday, startTime: "09:00", endTime: "17:00" }] },
+  });
+  assert.deepEqual(await api.availabilitySessions("d", "b", tomorrow), []);
+  const owner = { id: "admin", role: "clinicAdmin", clinicIds: ["c"], branchIds: ["b"] };
+  const setup = {
+    doctorId: "d", clinicId: "c", branchId: "b", dayOfWeek: weekday,
+    isOpen: true, startTime: "09:00", endTime: "17:00", timezone: "Asia/Kolkata",
+    maxTokens: 10, consultationMinutes: 10, tokenPrefix: "A", queueMode: "mixed",
+  };
+  await assert.rejects(route(api.resourcesRouter, "post", "/schedules",
+    { id: "foreign", role: "clinicAdmin", clinicIds: ["other"], branchIds: [] }, setup), /scope|outside|manage/i);
+  assert.deepEqual(await api.availabilitySessions("d", "b", tomorrow), []);
+  const session = await route(api.resourcesRouter, "post", "/schedules", owner, setup);
+  assert.equal((await api.availabilitySessions("d", "b", tomorrow))[0].sessionId, session.id);
+  assert.equal((await api.availabilitySessions("d", "b", tomorrow))[0].available, true);
+  // Retrying the same create is rejected rather than introducing duplicate capacity.
+  await assert.rejects(route(api.resourcesRouter, "post", "/schedules", owner, setup), /overlap/i);
+  assert.equal((await api.all(t.schedules)).length, 1);
+  const ticket = await guest({ date: tomorrow, sessionId: session.id });
+  assert.ok(ticket.appointmentId);
+  assert.equal((await api.availabilitySessions("d", "b", tomorrow))[0].bookedTokens, 1);
+});
+
+test("generic clinic and branch updates cannot bypass owner-only settings permissions", async () => {
+  await seed();
+  const branch = await api.one(t.branches, "b");
+  const clinic = await api.one(t.clinics, "c");
+  const doctor = { id: "du", role: "doctor", doctorId: "d", managingAdminId: "admin", clinicIds: ["c"], branchIds: ["b"] };
+  const foreign = { id: "foreign", role: "clinicAdmin", clinicIds: ["c"], branchIds: ["b"] };
+  const owner = { id: "admin", role: "clinicAdmin", clinicIds: ["c"], branchIds: ["b"] };
+  for (const body of [{ openingHours: [] }, { openingHours: null }, { timezone: "Asia/Kolkata" }, { inheritEmail: false }, { phone: "123" }]) {
+    await assert.rejects(api.authorizeWrite(doctor, "branches", body, branch), /Only the owning Clinic Admin/);
+    await assert.rejects(api.authorizeWrite(foreign, "branches", body, branch), /Only the owning Clinic Admin/);
+    await api.authorizeWrite(owner, "branches", body, branch);
+  }
+  for (const body of [{ name: "Other name" }, { slug: "other-slug" }, { policies: { bookingHorizonDays: 7 } }]) {
+    await assert.rejects(api.authorizeWrite(doctor, "clinics", body, clinic), /Only the owning Clinic Admin/);
+    await assert.rejects(api.authorizeWrite(foreign, "clinics", body, clinic), /Only the owning Clinic Admin/);
+  }
+  await api.authorizeWrite(owner, "clinics", { name: "Permitted" }, clinic);
+  // The ordinary doctor's existing scoped, non-settings edit path remains intact.
+  await api.authorizeWrite(doctor, "branches", { name: "Clinical location" }, branch);
+});

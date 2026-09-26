@@ -81,6 +81,16 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
   const context = { ...old, ...body };
   if (body.timezone) localNow(body.timezone);
   if (old) assert(await canRead(user, kind, old), 403, "Record outside your scope");
+  // Generic resource writes must not bypass the owner-only Clinic Settings
+  // endpoint. Doctors still retain their existing clinical/profile and
+  // clinic/branch creation workflows, but cannot edit a clinic's configuration.
+  if (user.role !== "superAdmin" &&
+      (kind === "clinics" && old && ["name", "address", "email", "phone", "slug", "timezone", "categoryId", "specialityIds", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"].some(key => Object.hasOwn(body, key)) ||
+       kind === "branches" && ["openingHours", "timezone", "email", "phone", "inheritEmail", "inheritPhone"].some(key => Object.hasOwn(body, key)))) {
+    assert(user.role === "clinicAdmin", 403, "Only the owning Clinic Admin can change clinic settings");
+    const clinic = await one(clinics, kind === "clinics" ? old.id : context.clinicId);
+    assert(clinic.adminId === user.id, 403, "Only the owning Clinic Admin can change clinic settings");
+  }
   if (old && kind === "doctors" && user.role === "clinicAdmin") assert(old.clinicIds.some((id: string) => user.clinicIds.includes(id)), 403, "This doctor is outside your administration scope");
   if (kind === "masters") roles(user, ["superAdmin"]);
   else if (kind === "users") {
