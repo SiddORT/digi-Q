@@ -19,4 +19,4 @@ jobs:
           key: ${{ secrets.UAT_SSH_KEY }}
           script: |
             cd /var/www/nodejs/uat.digi-q.in
-            ./deploy/deploy.sh
+            ./deploy-scripts/deploy.sh
