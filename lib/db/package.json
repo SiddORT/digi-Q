@@ -11,7 +11,7 @@
     "migrate": "drizzle-kit migrate --config ./drizzle.config.ts",
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts"
-  }
+  },
   "dependencies": {
     "drizzle-orm": "catalog:",
     "drizzle-zod": "^0.8.3",
