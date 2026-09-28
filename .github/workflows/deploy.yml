@@ -1,0 +1,19 @@
+name: Deploy UAT
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to UAT VPS
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.UAT_HOST }}
+          username: ${{ secrets.UAT_USER }}
+          key: ${{ secrets.UAT_SSH_KEY }}
+          script: |
+            cd /var/www/nodejs/uat.digi-q.in
+            ./deploy/deploy.sh
