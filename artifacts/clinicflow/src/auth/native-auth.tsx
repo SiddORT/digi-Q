@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { csrfToken } from "../lib/csrf";
+import { authRequest } from "../lib/auth-request";
+export { authRequest } from "../lib/auth-request";
 
 type NativeAuth = {
   isLoaded: boolean;
@@ -11,22 +12,6 @@ type NativeAuth = {
 };
 type Status = { authenticated?: boolean; isSignedIn?: boolean; role?: string | null; csrfToken?: string };
 const Context = createContext<NativeAuth | null>(null);
-
-export async function authRequest<T>(path: string, data?: unknown, method = "POST"): Promise<T> {
-  const response = await fetch(`/api/auth/${path}`, {
-    method,
-    credentials: "same-origin",
-    cache: "no-store",
-    headers: {
-      ...(method !== "GET" ? { "X-CSRF-Token": await csrfToken() } : {}),
-      ...(data !== undefined ? { "Content-Type": "application/json" } : {}),
-    },
-    ...(data !== undefined ? { body: JSON.stringify(data) } : {}),
-  });
-  const body = await response.json().catch(() => ({})) as T & { error?: string; message?: string };
-  if (!response.ok) throw new Error(body.message || body.error || "The request could not be completed. Please try again.");
-  return body;
-}
 
 export function NativeAuthProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setLoaded] = useState(false);

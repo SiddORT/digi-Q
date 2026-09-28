@@ -18,6 +18,9 @@ let h, api;
 before(async () => {
   h = await createQueueHarness({ empty: true });
   await h.control.query(queueFixtureSql);
+  // Queue fixtures contain an obsolete session stub; let the auth migration
+  // install the real token-hash primary-key table instead.
+  await h.control.query("drop table auth_sessions");
   await h.control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0012_native_auth_additive.sql"), "utf8"));
   globalThis.nativeAuthDb = h.db;
   await build({

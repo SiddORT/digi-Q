@@ -363,17 +363,32 @@ export async function customFetch<T = unknown>(
       headers.set("authorization", `Bearer ${token}`);
     }
   }
-  if (_csrfTokenGetter && !["GET", "HEAD", "OPTIONS"].includes(method) && !headers.has("x-csrf-token")) {
-    headers.set("X-CSRF-Token", await _csrfTokenGetter());
+  const csrfGetter = _csrfTokenGetter;
+  const managedCsrf = csrfGetter && !["GET", "HEAD", "OPTIONS"].includes(method) && !headers.has("x-csrf-token");
+  if (managedCsrf) {
+    headers.set("X-CSRF-Token", await csrfGetter());
   }
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { credentials: "same-origin", ...init, method, headers });
+  const fetchOptions = {
+    ...init, method, headers,
+    credentials: managedCsrf ? "same-origin" as const : init.credentials ?? "same-origin" as const,
+    cache: managedCsrf ? "no-store" as const : init.cache,
+  };
+  let response = await fetch(input, fetchOptions);
 
   if (!response.ok) {
-    const errorData = await parseErrorBody(response, method);
-    throw new ApiError(response, errorData, requestInfo);
+    let errorData = await parseErrorBody(response, method);
+    // Only the CSRF middleware's pre-handler rejection is safe to replay.
+    // Re-read the cookie's matching token; never retry arbitrary failed writes.
+    if (managedCsrf && response.status === 403 &&
+        getStringField(errorData, "code") === "INVALID_CSRF") {
+      headers.set("X-CSRF-Token", await csrfGetter());
+      response = await fetch(input, fetchOptions);
+      if (!response.ok) errorData = await parseErrorBody(response, method);
+    }
+    if (!response.ok) throw new ApiError(response, errorData, requestInfo);
   }
 
   return (await parseSuccessBody(response, responseType, requestInfo)) as T;

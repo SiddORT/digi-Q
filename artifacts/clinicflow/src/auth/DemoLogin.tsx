@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, Redirect, useLocation } from "wouter";
 import { AuthCard, AuthShell } from "./AuthShell";
-import { csrfToken } from "../lib/csrf";
+import { csrfFetch } from "../lib/csrf";
 import { useNativeAuth } from "./native-auth";
 
 export function DemoLogin() {
@@ -18,9 +18,9 @@ export function DemoLogin() {
     if (busy || !password) return;
     setBusy(true); setError("");
     try {
-      const response = await fetch("/api/demo/login", {
-        method: "POST", credentials: "same-origin", cache: "no-store",
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": await csrfToken() },
+      const response = await csrfFetch("/api/demo/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
       const result = await response.json() as { authenticated?: boolean; error?: string; message?: string };

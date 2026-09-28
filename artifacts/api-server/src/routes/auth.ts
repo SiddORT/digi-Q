@@ -67,8 +67,10 @@ authRouter.get("/auth/status", async (req, res) => {
   const userId = (req as any).authUserId as string | undefined;
   const [user] = userId ? await db.select({ role: users.role }).from(users).where(eq(users.id, userId)) : [];
   const role = user?.role ?? null;
-  res.json({ role, staffPasswordVerified: Boolean(role && isStaffRole(role)), requiresStaffPassword: false,
-    csrfToken: issueCsrf(req, res) });
+  // Session checks can overlap the login form's CSRF bootstrap on first load.
+  // They must not issue a second cookie that invalidates the bootstrap header.
+  // Only /auth/csrf owns CSRF cookie issuance.
+  res.json({ role, staffPasswordVerified: Boolean(role && isStaffRole(role)), requiresStaffPassword: false });
 });
 authRouter.post("/auth/login", async (req, res) => {
   const address = email(req.body?.email), password = req.body?.password;
