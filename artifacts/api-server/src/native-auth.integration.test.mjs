@@ -72,24 +72,18 @@ async function route(path, body = {}, cookie = "") {
 async function resolveSession(req) {
   await new Promise((resolve, reject) => api.nativeSession(req, response(), error => error ? reject(error) : resolve()));
 }
-test("Argon2id baseline, bound challenge, cookie, CSRF and session revocation", async () => {
+test("Argon2id staff login immediately issues a secure session without device email, CSRF and revocation", async () => {
   const password = "disposable staff passphrase with 24 chars";
   const hash = await api.hashPassword(password);
   assert.match(hash, /^\$argon2id\$v=19\$m=65536,p=1,t=3\$/);
   await h.control.query("insert into users(id,email,full_name,role,password_hash) values ($1,$2,$3,$4,$5)",
     ["staff", "staff@example.test", "Staff", "doctor", hash]);
   const login = await route("/auth/login", { email: "staff@example.test", password });
-  assert.equal(login.res.body.requiresVerification, true);
-  assert.equal(globalThis.nativeAuthMail.length, 1);
-  const code = /code is (\d{6})/.exec(globalThis.nativeAuthMail[0].text)?.[1];
-  assert.ok(code, "code was captured by isolated fake SMTP only");
-  const challengeId = login.res.body.challengeId;
-  const [challenge] = (await h.control.query("select token_hash from auth_challenges where id=$1", [challengeId])).rows;
-  assert.notEqual(challenge.token_hash, code);
-  assert.rejects(() => api.consumeChallenge(challengeId, "device", "000000"), /Invalid or expired/);
-  const verified = await route("/auth/verify-device", { challengeId, code });
-  assert.equal(verified.res.body.authenticated, true);
-  const cookie = verified.res.cookies[api.SESSION_COOKIE];
+  assert.deepEqual(login.res.body, { authenticated: true,
+    user: { id: "staff", email: "staff@example.test", fullName: "Staff", role: "doctor", status: "active" } });
+  assert.equal(globalThis.nativeAuthMail.length, 0);
+  assert.equal((await h.control.query("select count(*)::int as n from auth_challenges")).rows[0].n, 0);
+  const cookie = login.res.cookies[api.SESSION_COOKIE];
   assert.equal(cookie.options.httpOnly, true);
   assert.equal(cookie.options.secure, true);
   assert.equal(cookie.options.sameSite, "lax");
@@ -108,7 +102,30 @@ test("Argon2id baseline, bound challenge, cookie, CSRF and session revocation", 
   const revoked = request({}, `${api.SESSION_COOKIE}=${raw}`);
   await resolveSession(revoked);
   assert.equal(revoked.authUserId, undefined);
+});
+test("standalone device challenge is HMAC-bound, single-use, and requires active staff identity", async () => {
+  const hash = await api.hashPassword("standalone device fixture password 123");
+  await h.control.query("insert into users(id,email,full_name,role,password_hash) values ($1,$2,$3,$4,$5)",
+    ["device-staff", "device@example.test", "Device Staff", "doctor", hash]);
+  const code = "123456";
+  const challengeId = await api.createChallenge({ userId: "device-staff", email: "device@example.test",
+    purpose: "device", secret: code, ttlMs: 600_000 });
+  const [challenge] = (await h.control.query("select token_hash from auth_challenges where id=$1", [challengeId])).rows;
+  assert.notEqual(challenge.token_hash, code);
+  assert.match(challenge.token_hash, /^[0-9a-f]{64}$/);
+  await assert.rejects(() => api.consumeChallenge(challengeId, "device", "000000"), /Invalid or expired/);
+  const verified = await route("/auth/verify-device", { challengeId, code });
+  assert.equal(verified.res.body.authenticated, true);
+  assert.equal(verified.res.cookies[api.SESSION_COOKIE].options.secure, true);
+  assert.deepEqual((await h.control.query("select data from auth_challenges where id=$1", [challengeId])).rows[0].data, {});
   await assert.rejects(() => api.consumeChallenge(challengeId, "device", code), /Invalid or expired/);
+  await assert.rejects(() => route("/auth/verify-device", { challengeId, code }), /Invalid or expired/);
+  const inactiveChallenge = await api.createChallenge({ userId: "device-staff", email: "device@example.test",
+    purpose: "device", secret: "654321", ttlMs: 600_000 });
+  await h.control.query("update users set status='inactive' where id='device-staff'");
+  await assert.rejects(() => route("/auth/verify-device", { challengeId: inactiveChallenge, code: "654321" }),
+    error => error.code === "INVALID_VERIFICATION" && error.status === 401);
+  assert.equal(globalThis.nativeAuthMail.length, 0);
 });
 test("unknown email has no session, bad tokens avoid hash work, and absent SMTP fails explicitly", async () => {
   await assert.rejects(() => route("/auth/login", { email: "unknown@example.test", password: "disposable password 123" }),
@@ -119,6 +136,73 @@ test("unknown email has no session, bad tokens avoid hash work, and absent SMTP 
   }), /Invalid or expired/);
   assert.throws(() => api.smtpConfig({}), error => error.code === "EMAIL_UNCONFIGURED");
   assert.throws(() => api.passwordInput("x".repeat(1025)), error => error.code === "INVALID_PASSWORD");
+});
+test("all SMTP settings absent: staff login works, denials remain credential errors, mail endpoints fail explicitly", async () => {
+  const keys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
+  const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  try {
+    for (const key of keys) delete process.env[key];
+    const password = "disposable absent smtp staff password 123";
+    const hash = await api.hashPassword(password);
+    await h.control.query("insert into users(id,email,full_name,role,status,password_hash) values ($1,$2,$3,$4,$5,$6)",
+      ["staff", "staff@example.test", "Staff", "doctor", "active", hash]);
+    await h.control.query("insert into users(id,email,full_name,role,status,password_hash) values ($1,$2,$3,$4,$5,$6)",
+      ["inactive", "inactive@example.test", "Inactive", "doctor", "inactive", hash]);
+    await h.control.query("insert into users(id,email,full_name,role,status,password_hash) values ($1,$2,$3,$4,$5,$6)",
+      ["passwordless", "passwordless@example.test", "Passwordless", "doctor", "active", null]);
+    await h.control.query("insert into users(id,email,full_name,role,status,password_hash) values ($1,$2,$3,$4,$5,$6)",
+      ["patient", "patient@example.test", "Patient", "patient", "active", hash]);
+    for (const [email, attempt] of [
+      ["staff@example.test", "incorrect disposable password"],
+      ["inactive@example.test", password],
+      ["passwordless@example.test", password],
+      ["patient@example.test", password],
+    ]) {
+      await assert.rejects(() => route("/auth/login", { email, password: attempt }),
+        error => error.code === "INVALID_CREDENTIALS" && error.status === 401);
+    }
+    assert.equal((await h.control.query("select count(*)::int as n from auth_sessions")).rows[0].n, 0);
+    const login = await route("/auth/login", { email: "staff@example.test", password });
+    assert.deepEqual(login.res.body, { authenticated: true,
+      user: { id: "staff", email: "staff@example.test", fullName: "Staff", role: "doctor", status: "active" } });
+    const cookie = login.res.cookies[api.SESSION_COOKIE];
+    assert.equal(cookie.options.secure, true);
+    assert.equal(cookie.options.httpOnly, true);
+    assert.equal(cookie.options.sameSite, "lax");
+    assert.equal(globalThis.nativeAuthMail.length, 0);
+    assert.equal((await h.control.query("select count(*)::int as n from auth_challenges")).rows[0].n, 0);
+    const req = request({}, `${api.SESSION_COOKIE}=${cookie.value}`);
+    await resolveSession(req);
+    assert.equal(req.authUserId, "staff");
+    await api.revokeSession(req, response());
+    const revoked = request({}, `${api.SESSION_COOKIE}=${cookie.value}`);
+    await resolveSession(revoked);
+    assert.equal(revoked.authUserId, undefined);
+    for (const [path, body] of [
+      ["/auth/forgot-password", { email: "staff@example.test" }],
+      ["/auth/register/start", { email: "new@example.test", fullName: "New Admin", password }],
+      ["/auth/patient/start", { email: "newpatient@example.test" }],
+    ]) {
+      await assert.rejects(() => route(path, body), error => error.code === "EMAIL_UNCONFIGURED");
+    }
+    await assert.rejects(() => api.inviteStaff(null, { id: "staff", email: "staff@example.test" }),
+      error => error.code === "EMAIL_UNCONFIGURED");
+    await assert.rejects(() => api.requestStaffReset(null, { id: "staff", email: "staff@example.test" }),
+      error => error.code === "EMAIL_UNCONFIGURED");
+    assert.equal((await h.control.query("select count(*)::int as n from auth_challenges")).rows[0].n, 0);
+    assert.equal(globalThis.nativeAuthMail.length, 0);
+    // Redeeming an already-issued reset token has no email-delivery dependency.
+    const id = await api.createChallenge({ userId: "staff", email: "staff@example.test",
+      purpose: "reset", secret: "b".repeat(43), ttlMs: 600_000 });
+    assert.equal((await route("/auth/reset-password", { token: `${id}.${"b".repeat(43)}`,
+      password: "new disposable staff password 123" })).res.body.reset, true);
+    assert.equal(globalThis.nativeAuthMail.length, 0);
+  } finally {
+    for (const key of keys) {
+      if (saved[key] === undefined) delete process.env[key];
+      else process.env[key] = saved[key];
+    }
+  }
 });
 test("account limiter and single-use challenge persist across requests", async () => {
   for (let i = 0; i < 5; i++) await api.consumeRateLimit("test-account", 5);

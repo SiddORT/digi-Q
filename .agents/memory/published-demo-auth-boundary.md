@@ -6,7 +6,7 @@ description: Why the dedicated demo login cannot change ordinary staff verificat
 The owner explicitly declined a separate demo deployment and authorized a
 fictional, single-clinic demo inside the same published application.
 Ordinary users, real clinic staff and user-owned real accounts must continue
-using the ordinary staff password and email verification flow. Never disable
+using the ordinary staff password authentication flow. Never disable
 verification globally, infer staff password knowledge from a patient session,
 or treat a fabricated
 email address as a real user's verified inbox.

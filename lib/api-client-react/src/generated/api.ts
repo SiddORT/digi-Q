@@ -144,6 +144,7 @@ import type {
   SlugAvailability,
   StaffAssignmentOptions,
   StaffGuestRequest,
+  StaffLoginResponse,
   StartClinicRegistrationInput,
   User,
   UserInput,
@@ -1987,9 +1988,9 @@ export const getNativeStaffLoginUrl = () => {
 }
 
 /**
- * Local password and emailed device code verification on every staff sign-in.
+ * Verify the local staff password with Argon2id and create a session directly. No email code or SMTP delivery is required.
  */
-export const nativeStaffLogin = async (nativeStaffLoginInput: NativeStaffLoginInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthChallenge> => {
+export const nativeStaffLogin = async (nativeStaffLoginInput: NativeStaffLoginInput, options?: Parameters<typeof customFetch>[1]): Promise<StaffLoginResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -2005,7 +2006,7 @@ export const nativeStaffLogin = async (nativeStaffLoginInput: NativeStaffLoginIn
     }
     return headers;
   };
-return customFetch<AuthChallenge>(getNativeStaffLoginUrl(),
+return customFetch<StaffLoginResponse>(getNativeStaffLoginUrl(),
   {
     ...options,
     method: 'POST',

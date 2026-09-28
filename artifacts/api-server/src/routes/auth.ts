@@ -80,8 +80,14 @@ authRouter.post("/auth/login", async (req, res) => {
   const validPassword = await verifyPassword(user?.passwordHash, password);
   if (!user || !isStaffRole(user.role) || user.status !== "active" || !validPassword)
     throw new HttpError(401, "Invalid email or password", "INVALID_CREDENTIALS");
-  const challengeId = await mailCode(address, "device", user.id);
-  res.set("Cache-Control", "no-store").json({ requiresVerification: true, challengeId });
+  // Password authentication is independent of email delivery. SMTP is required
+  // only by endpoints that explicitly send verification or recovery messages.
+  await revokeSession(req, res);
+  await createSession(res, user.id);
+  res.set("Cache-Control", "no-store").json({
+    authenticated: true,
+    user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role, status: user.status },
+  });
 });
 authRouter.post("/auth/verify-device", async (req, res) => {
   await consumeRateLimit(`device:${req.ip || "unknown"}`, 25);

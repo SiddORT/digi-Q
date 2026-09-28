@@ -21,6 +21,36 @@ export interface NativeStaffLoginInput {
   password: string;
 }
 
+export type StaffLoginResponseUserRole = typeof StaffLoginResponseUserRole[keyof typeof StaffLoginResponseUserRole];
+
+
+export const StaffLoginResponseUserRole = {
+  superAdmin: 'superAdmin',
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+} as const;
+
+export type StaffLoginResponseUserStatus = typeof StaffLoginResponseUserStatus[keyof typeof StaffLoginResponseUserStatus];
+
+
+export const StaffLoginResponseUserStatus = {
+  active: 'active',
+} as const;
+
+export type StaffLoginResponseUser = {
+  id: string;
+  email: string;
+  fullName: string;
+  role: StaffLoginResponseUserRole;
+  status: StaffLoginResponseUserStatus;
+};
+
+export interface StaffLoginResponse {
+  authenticated: true;
+  user: StaffLoginResponseUser;
+}
+
 export interface StartClinicRegistrationInput {
   email: string;
   /**

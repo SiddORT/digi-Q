@@ -217,10 +217,10 @@ paths:
     post:
       operationId: nativeStaffLogin
       security: []
-      description: Local password and emailed device code verification on every staff sign-in.
+      description: Verify the local staff password with Argon2id and create a session directly. No email code or SMTP delivery is required.
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/NativeStaffLoginInput" } } } }
       responses:
-        "200": { description: Device challenge required, content: { application/json: { schema: { $ref: "#/components/schemas/AuthChallenge" } } } }
+        "200": { description: Staff session created, content: { application/json: { schema: { $ref: "#/components/schemas/StaffLoginResponse" } } } }
   /auth/verify-device:
     post:
       operationId: verifyStaffDevice
@@ -830,6 +830,20 @@ components:
       properties:
         email: { type: string, format: email }
         password: { type: string, minLength: 1, maxLength: 1024 }
+    StaffLoginResponse:
+      type: object
+      required: [authenticated, user]
+      properties:
+        authenticated: { type: boolean, enum: [true] }
+        user:
+          type: object
+          required: [id, email, fullName, role, status]
+          properties:
+            id: { type: string }
+            email: { type: string, format: email }
+            fullName: { type: string }
+            role: { type: string, enum: [superAdmin, clinicAdmin, doctor, receptionist] }
+            status: { type: string, enum: [active] }
     StartClinicRegistrationInput:
       type: object
       required: [email, fullName, password]

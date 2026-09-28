@@ -4,7 +4,7 @@ All endpoints are under `/api` and use same-origin `HttpOnly` session cookies. B
 
 | Endpoint | Request | Response |
 | --- | --- | --- |
-| `POST /api/auth/login` | `{email,password}` | `{authenticated:true}` or `{requiresVerification:true,challengeId}` |
+| `POST /api/auth/login` | `{email,password}` | `{authenticated:true,user:{id,email,fullName,role,status}}`; creates a staff session directly after password verification, without an email challenge |
 | `POST /api/auth/verify-device` | `{challengeId,code}` | `{authenticated:true}` |
 | `GET /api/auth/status` | none | `{role,staffPasswordVerified,requiresStaffPassword}`; never sets a CSRF cookie |
 | `POST /api/auth/logout` | `{}` | `{authenticated:false}` |
@@ -29,4 +29,4 @@ Session-status checks must not issue competing cookies. An explicit HTTP 403
 middleware rejected the original request before its handler ran. Other errors
 must not trigger a replay.
 
-Email delivery requires explicit `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` configuration. No codes or links are returned to the browser or logged. Existing staff need invitation/reset links to set local passwords; their Clerk passwords cannot be copied. The `users.id` and role/scoping contracts remain stable. Provider-specific identity columns remain physically present only for compatible additive migration, never used as runtime identity. Public/guest QR URLs remain unauthenticated where they are today.
+Normal staff password login does not require SMTP or email MFA. Email verification (including clinic registration), password recovery, staff invitations and patient email-code login still require explicit `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` configuration. No codes or links are returned to the browser or logged. Existing staff need invitation/reset links to set local passwords; their Clerk passwords cannot be copied. The `users.id` and role/scoping contracts remain stable. Provider-specific identity columns remain physically present only for compatible additive migration, never used as runtime identity. Public/guest QR URLs remain unauthenticated where they are today.

@@ -144,7 +144,11 @@ function mailCode() {
   return code;
 }
 
-test("actual frontend transport completes Argon2 staff login, verification, session and logout", async () => {
+test("actual HTTPS frontend transport completes Argon2 staff login, session and logout with all SMTP settings absent", async () => {
+  const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
+  const savedSmtp = Object.fromEntries(smtpKeys.map(key => [key, process.env[key]]));
+  try {
+    for (const key of smtpKeys) delete process.env[key];
   const password = "disposable staff passphrase with 24 chars";
   // Seed a real Argon2id credential, not a synthetic route or a password fixture.
   const { default: argon2 } = await import("argon2");
@@ -179,13 +183,11 @@ test("actual frontend transport completes Argon2 staff login, verification, sess
   }
   const transportStart = sent.length;
   const login = await authRequest("login", { email: "staff@example.test", password });
-  assert.equal(login.requiresVerification, true);
-  const code = mailCode();
-  assert.equal((await harness.control.query("select token_hash from auth_challenges where id=$1", [login.challengeId])).rows[0].token_hash === code, false);
-  const verified = await authRequest("verify-device", { challengeId: login.challengeId, code });
-  assert.equal(verified.authenticated, true);
+  assert.deepEqual(login, { authenticated: true,
+    user: { id: "staff", email: "staff@example.test", fullName: "Staff", role: "doctor", status: "active" } },
+    "public user must not leak passwordHash");
   assert.ok(jar.has("digiq_session"));
-  const sessionCookie = sent.findLast(r => r.path === "/api/auth/verify-device").setCookie
+  const sessionCookie = sent.findLast(r => r.path === "/api/auth/login").setCookie
     .find(value => value.startsWith("digiq_session="));
   assert.match(sessionCookie, /; HttpOnly;/i);
   assert.match(sessionCookie, /; Secure;/i);
@@ -196,8 +198,17 @@ test("actual frontend transport completes Argon2 staff login, verification, sess
   assert.equal((await authRequest("logout", {})).authenticated, false);
   assert.equal(jar.has("digiq_session"), false);
   assert.equal((await (await browserFetch("/api/auth/status")).json()).role, null);
+  assert.equal(globalThis.nativeAuthMail.length, 0, "password login does not send device mail");
+  assert.equal((await harness.control.query("select count(*)::int as n from auth_challenges")).rows[0].n, 0,
+    "password login never creates device challenges");
   assert.ok(sent.slice(transportStart).filter(r => r.method === "POST").every(r =>
     r.headers["x-csrf-token"]), "frontend transport includes CSRF on every mutation");
+  } finally {
+    for (const key of smtpKeys) {
+      if (savedSmtp[key] === undefined) delete process.env[key];
+      else process.env[key] = savedSmtp[key];
+    }
+  }
 });
 
 test("origin gate rejects cross-site mutations even with valid CSRF; patient OTP shares transport", async () => {

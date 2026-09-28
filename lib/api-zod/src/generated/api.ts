@@ -1176,7 +1176,7 @@ export const GetAuthCsrfResponse = zod.object({
 
 
 /**
- * Local password and emailed device code verification on every staff sign-in.
+ * Verify the local staff password with Argon2id and create a session directly. No email code or SMTP delivery is required.
  */
 export const nativeStaffLoginBodyPasswordMax = 1024;
 
@@ -1188,8 +1188,14 @@ export const NativeStaffLoginBody = zod.object({
 })
 
 export const NativeStaffLoginResponse = zod.object({
-  "challengeId": zod.string(),
-  "requiresVerification": zod.boolean().optional()
+  "authenticated": zod.literal(true),
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().email(),
+  "fullName": zod.string(),
+  "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist']),
+  "status": zod.enum(['active'])
+})
 })
 
 
