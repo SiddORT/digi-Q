@@ -48,7 +48,17 @@ Deployment requires PostgreSQL `DATABASE_URL`, provisioned Clerk server/public c
 
 ## Starting with real accounts
 
-The system seed does not create doctor, patient, receptionist, or administrator accounts. Separate development-only test accounts were subsequently created through the explicit preview-account provisioning script; their passwords are not stored in repository documentation.
+Deployment can bootstrap the first Super Admin from `SUPERADMIN_EMAIL` and
+`SUPERADMIN_NAME`. The managed production startup runs
+`pnpm --filter @workspace/db run seed` after Publish's schema migration phase
+and before starting the API. Existing Super Admins are preserved; no passwords
+or Clerk accounts are created. Both variables omitted means an explicitly logged
+skip; partial or invalid configuration stops startup.
+For a separate deployment whose schema is managed by Drizzle (not Replit Publish),
+`pnpm --filter @workspace/db run deploy:prepare` runs migrations followed by the seed.
+See [database seed instructions](lib/db/README.md) for authentication and safety details.
+
+The separate system vocabulary seed does not create accounts. Separate development-only test accounts were subsequently created through the explicit preview-account provisioning script; their passwords are not stored in repository documentation.
 
 1. Register and verify an email through the application. Doctor registration has a separate onboarding path; existing users cannot switch roles themselves.
 2. To establish the first administrator, create a verified Clerk identity but do not finish patient/doctor onboarding. An authorized project operator runs:

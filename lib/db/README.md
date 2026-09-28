@@ -1,0 +1,9 @@
+# Database bootstrap seed
+
+For deployments that run migrations externally (rather than in managed application startup), run `pnpm --filter @workspace/db run deploy:prepare`. This runs `migrate` then `seed` against `DATABASE_URL`. Do not add this command to managed startup that already owns migrations. To run only the seed, use `pnpm --filter @workspace/db run seed`.
+
+Set **both** `SUPERADMIN_EMAIL` (a valid email address) and `SUPERADMIN_NAME` (a nonempty name). The seed trims both values and lowercases the email. If both are omitted, it explicitly skips so existing installations can deploy. If only one is set, either is blank/invalid, or the database is unavailable, the command fails. Keep these values configured on initial deployment; no default identity or credential is provided.
+
+The seed creates one active `superAdmin` database profile with no `clerk_id`, password, or invitation. It does **not** create a Clerk account, password, invitation email, or authentication session. The administrator must sign up or sign in with the matching **verified** Clerk email; the application's verified-email linker associates that identity with the profile. Staff sign-in still requires the application's normal password verification. If any super administrator already exists, the seed preserves it even if the configured email changes; an inactive administrator is **not** reactivated. An existing nonadmin with the configured email cannot be silently promoted. Resolve either situation through authorized account administration rather than changing seed variables.
+
+Run disposable embedded PostgreSQL tests without connecting to production: `pnpm --filter @workspace/db run test:seed`.
