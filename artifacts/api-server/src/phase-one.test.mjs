@@ -1,4 +1,4 @@
-// Real isolated PostgreSQL domain tests. No app listener, Clerk session, or production DB.
+// Real isolated PostgreSQL domain tests. No app listener, external identity provider, or production DB.
 import { test, after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
@@ -610,7 +610,7 @@ test("admin clinical attachment reconciles selected branches without admin branc
     fullName:owner.fullName,email:owner.email,branchIds:["foreign-b"],
   },{id:own.id}));
   assert.deepEqual((await api.one(t.doctors,own.id)).branchIds,["b"]);
-  await route(api.resourcesRouter,"patch","/doctors/:id",actor,{fullName:"Ordinary Doctor",email:"doctor@example.invalid",status:"inactive"},{id:"d"});
+  await route(api.resourcesRouter,"patch","/doctors/:id",actor,{fullName:"Ordinary Doctor",email:"d@example.com",status:"inactive"},{id:"d"});
   assert.equal((await api.one(t.doctors,"d")).status,"inactive");
   assert.equal((await api.one(t.users,"admin")).status,"active");
 });

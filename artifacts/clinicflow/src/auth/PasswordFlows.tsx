@@ -1,138 +1,69 @@
-import { useEffect, useRef, useState } from "react";
-import { useClerk, useSignIn, useSignUp } from "@clerk/react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import * as api from "@workspace/api-client-react";
 import { authErrorMessage } from "./errors";
 import { AuthCard, AuthShell } from "./AuthShell";
+import { authRequest, useNativeAuth } from "./native-auth";
 
 export function ForgotPassword() {
-  const { signIn, fetchStatus, errors } = useSignIn();
-  const clerk = useClerk();
-  const [, navigate] = useLocation();
-  const staffEntry = api.usePrepareStaffEntry();
-  const [step, setStep] = useState<"email" | "code" | "password">("email");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [password, setPassword] = useState("");
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const busy = fetchStatus === "fetching" || staffEntry.isPending;
-
-  async function start(event: React.FormEvent) {
+  async function send(event: React.FormEvent) {
     event.preventDefault();
-    setError("");
+    if (busy) return;
+    setBusy(true); setError("");
     try {
-      const entry = await staffEntry.mutateAsync({ data: { email: email.trim().toLowerCase() } });
-      const created = await signIn.create({ identifier: entry.email });
-      if (created.error) throw created.error;
-      const sent = await signIn.resetPasswordEmailCode.sendCode();
-      if (sent.error) throw sent.error;
-      if (signIn.status === "needs_protect_check") {
-        throw new Error("An additional security check is required. Reload the page and try again.");
-      }
-      setEmail(entry.email);
-      setStep("code");
-    } catch (caught) {
-      setError(authErrorMessage(caught, errors.fields.identifier?.message || "Unable to start password recovery."));
-    }
+      await authRequest("forgot-password", { email: email.trim().toLowerCase() });
+      setSent(true);
+    } catch (caught) { setError(authErrorMessage(caught, "Unable to request password recovery. Please retry.")); }
+    finally { setBusy(false); }
   }
-
-  async function verify(event: React.FormEvent) {
-    event.preventDefault();
-    setError("");
-    try {
-      const result = await signIn.resetPasswordEmailCode.verifyCode({ code: code.trim() });
-      if (result.error) throw result.error;
-      if (signIn.status !== "needs_new_password") throw new Error("That recovery code is invalid or expired.");
-      setCode("");
-      setStep("password");
-    } catch (caught) {
-      setError(authErrorMessage(caught, errors.fields.code?.message || "That recovery code is invalid or expired."));
-    }
-  }
-
-  async function save(event: React.FormEvent) {
-    event.preventDefault();
-    setError("");
-    try {
-      const result = await signIn.resetPasswordEmailCode.submitPassword({ password, signOutOfOtherSessions: true });
-      if (result.error) throw result.error;
-      if (signIn.status === "complete") {
-        const finalized = await signIn.finalize();
-        if (finalized.error) throw finalized.error;
-      }
-      setPassword("");
-      await clerk.signOut();
-      navigate("/sign-in?passwordReset=1", { replace: true });
-    } catch (caught) {
-      setPassword("");
-      setError(authErrorMessage(caught, errors.fields.password?.message || "Unable to set the new password."));
-    }
-  }
-
-  return (
-    <AuthShell eyebrow="STAFF PASSWORD RECOVERY">
-      <AuthCard title="Reset staff password" description={step === "email" ? "We’ll send a recovery code to your staff email." : step === "code" ? `Enter the recovery code sent to ${email}.` : "Choose a new password for your staff account."}>
-        {step === "email" && <form onSubmit={start}><label>Staff email<input data-testid="input-reset-email" type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} /></label>{error && <div className="error-box" role="alert">{error}</div>}<button className="button auth-submit" data-testid="button-send-reset-code" disabled={busy}>Send recovery code</button></form>}
-        {step === "code" && <form onSubmit={verify}><label>Recovery code<input data-testid="input-reset-code" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)} /></label>{error && <div className="error-box" role="alert">{error}</div>}<button className="button auth-submit" data-testid="button-verify-reset-code" disabled={busy}>Verify code</button></form>}
-        {step === "password" && <form onSubmit={save}><label>New password<input data-testid="input-new-password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={event => setPassword(event.target.value)} /></label>{error && <div className="error-box" role="alert">{error}</div>}<button className="button auth-submit" data-testid="button-save-new-password" disabled={busy}>Set new password</button></form>}
-        <div className="auth-links"><Link href="/sign-in" data-testid="link-return-staff-login">Return to staff login</Link></div>
-      </AuthCard>
-    </AuthShell>
-  );
+  return <AuthShell eyebrow="STAFF PASSWORD RECOVERY">
+    <AuthCard title="Reset staff password" description="If this email belongs to an active staff account, we'll send a secure, single-use password reset link.">
+      {sent ? <div className="notice" role="status" data-testid="status-password-reset-requested">If the account exists, check your email for a password reset link.</div> : <form onSubmit={send}>
+        <label>Staff email<input data-testid="input-reset-email" type="email" autoComplete="username" required value={email} onChange={event => setEmail(event.target.value)} /></label>
+        {error && <div className="error-box" role="alert">{error}</div>}
+        <button className="button auth-submit" data-testid="button-send-reset-code" disabled={busy}>{busy ? "Requesting…" : "Send password reset link"}</button>
+      </form>}
+      <div className="auth-links"><Link href="/sign-in" data-testid="link-return-staff-login">Return to staff login</Link></div>
+    </AuthCard>
+  </AuthShell>;
 }
 
 export function SetPassword() {
-  const { signUp, fetchStatus, errors } = useSignUp();
-  const clerk = useClerk();
   const [, navigate] = useLocation();
-  const started = useRef(false);
-  const [ready, setReady] = useState(false);
+  const { refresh } = useNativeAuth();
   const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const ticket = new URLSearchParams(window.location.search).get("__clerk_ticket") || new URLSearchParams(window.location.search).get("ticket");
-
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    if (!ticket) {
-      setError("This invitation link is incomplete. Ask your administrator to send a new invitation.");
-      return;
-    }
-    void signUp.ticket({ ticket }).then(result => {
-      if (result.error) throw result.error;
-      setReady(true);
-    }).catch(caught => {
-      setError(authErrorMessage(caught, "This invitation link has expired or has already been used. Ask your administrator to send a new invitation."));
-    });
-  }, [signUp, ticket]);
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("token");
+  const reset = params.get("flow") === "reset";
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
-    setError("");
+    if (busy || !token) return;
+    setBusy(true); setError("");
     try {
-      const result = await signUp.password({ password });
-      if (result.error) throw result.error;
-      if (signUp.status !== "complete") throw new Error("Password setup could not be completed. Ask your administrator for a new invitation.");
-      const finalized = await signUp.finalize();
-      if (finalized.error) throw finalized.error;
+      const result = await authRequest<{ authenticated?: boolean }>(reset ? "reset-password" : "invitation/accept", { token, password });
       setPassword("");
-      await clerk.signOut();
-      navigate("/sign-in?passwordSet=1", { replace: true });
+      if (result.authenticated) { await refresh(); navigate("/onboarding", { replace: true }); }
+      else navigate(`/sign-in?${reset ? "passwordReset" : "passwordSet"}=1`, { replace: true });
     } catch (caught) {
       setPassword("");
-      setError(authErrorMessage(caught, errors.fields.password?.message || "Unable to set your password."));
-    }
+      setError(authErrorMessage(caught, "This link is invalid or expired. Request a new one."));
+    } finally { setBusy(false); }
   }
-
-  return (
-    <AuthShell eyebrow="STAFF INVITATION">
-      <AuthCard title="Set your staff password" description="Choose a secure password, then sign in from the staff login page.">
-        <div id="clerk-captcha" data-testid="clerk-captcha" />
-        {!ready && !error && <div className="page-loading auth-inline-loading">Checking invitation…</div>}
-        {error && <div className="error-box" role="alert" data-testid="status-invitation-error">{error}</div>}
-        {ready && <form onSubmit={save}><label>New password<input data-testid="input-invitation-password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={event => setPassword(event.target.value)} /></label><button className="button auth-submit" data-testid="button-set-invitation-password" disabled={fetchStatus === "fetching"}>Set password</button></form>}
-        <div className="auth-links"><Link href="/sign-in" data-testid="link-invitation-staff-login">Staff login</Link></div>
-      </AuthCard>
-    </AuthShell>
-  );
+  return <AuthShell eyebrow={reset ? "STAFF PASSWORD RECOVERY" : "STAFF INVITATION"}>
+    <AuthCard title={reset ? "Reset your staff password" : "Set your staff password"} description="Choose a secure password, then sign in from the staff login page.">
+      {!token && <div className="error-box" role="alert" data-testid="status-invitation-error">This password setup link is incomplete. Request a new one.</div>}
+      {error && <div className="error-box" role="alert" data-testid="status-invitation-error">{error}</div>}
+      {token && <form onSubmit={save}>
+        <label>New password<input data-testid="input-invitation-password" type="password" autoComplete="new-password" required minLength={12} value={password} onChange={event => setPassword(event.target.value)} /></label>
+        <button className="button auth-submit" data-testid="button-set-invitation-password" disabled={busy}>{busy ? "Setting password…" : "Set password"}</button>
+      </form>}
+      <div className="auth-links"><Link href="/sign-in" data-testid="link-invitation-staff-login">Staff login</Link></div>
+    </AuthCard>
+  </AuthShell>;
 }

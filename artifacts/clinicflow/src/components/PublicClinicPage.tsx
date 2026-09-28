@@ -6,7 +6,7 @@ import { Logo } from "../App";
 import { BRAND_NAME } from "../branding";
 import { PublicBooking } from "../clinic";
 import { AuthAccess } from "../auth/AuthAccess";
-import { useAuth } from "@clerk/react";
+import { useNativeAuth } from "../auth/native-auth";
 import { ClinicDisplay } from "./ClinicDisplay";
 import { PublicClinicLive } from "./PublicClinicLive";
 import { PublicClinicBookingQr } from "./PublicClinicBookingQr";
@@ -23,7 +23,7 @@ export function PublicClinicPage({ clinicSlug, branchSlug }: { clinicSlug: strin
 function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; branchSlug?: string }) {
   const search = useSearch();
   const [, navigate] = useLocation();
-  const auth = useAuth();
+   const auth = useNativeAuth();
   const clinicQuery = api.useResolveClinicSlug(clinicSlug, { query: { queryKey: api.getResolveClinicSlugQueryKey(clinicSlug), enabled: !branchSlug, refetchInterval: 30000, staleTime: 0 } });
   const branchQuery = api.useResolveBranchSlug(clinicSlug, branchSlug || "", { query: { queryKey: api.getResolveBranchSlugQueryKey(clinicSlug, branchSlug || ""), enabled: !!branchSlug, refetchInterval: 30000, staleTime: 0 } });
   const query = branchSlug ? branchQuery : clinicQuery;

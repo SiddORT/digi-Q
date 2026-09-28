@@ -1,4 +1,4 @@
-// Real PostgreSQL execution in isolated WASM memory. Never connects to application data or Clerk.
+// Real PostgreSQL execution in isolated WASM memory. Never connects to application data.
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { PGlite } from "@electric-sql/pglite";
@@ -23,9 +23,8 @@ await build({
   stdin: { contents: 'export {canRead} from "./auth";', resolveDir: join(import.meta.dirname, "lib") },
   outfile: join(dir, "legacy-scope.mjs"), bundle: true, platform: "node", format: "esm",
   plugins: [{ name: "scope-only-fixtures", setup(b) {
-    b.onResolve({ filter: /^@workspace\/db$|^@clerk\/express$|\/store$/ }, a => ({ path: a.path, namespace: "scope-fixture" }));
+    b.onResolve({ filter: /^@workspace\/db$|\/store$/ }, a => ({ path: a.path, namespace: "scope-fixture" }));
     b.onLoad({ filter: /.*/, namespace: "scope-fixture" }, a => {
-      if (a.path === "@clerk/express") return { contents: "export const getAuth=()=>({}); export const clerkClient={};" };
       if (a.path.endsWith("/store")) return { contents: "export const all=async t=>globalThis.scopeFixtures[t]||[]; export const one=async(t,id)=>(await all(t)).find(r=>r.id===id); export const flatten=r=>r; export const uid=()=>'';" };
       return { contents: "export const db={};" + ["users","doctors","patients","assignments","branches","clinics","appointments","staffSessionProofs","settings"].map(t=>`export const ${t}="${t}";`).join("") };
     });
@@ -41,7 +40,7 @@ const conn = { execute: async statement => {
 } };
 globalThis.fixtureExecute = conn.execute;
 await database.exec(`
-  create table users(id text primary key, clerk_id text, full_name text, email text, mobile text, role text, managing_admin_id text, invitation_status text default 'failed', status text default 'active', data jsonb default '{}', created_at timestamptz default now());
+  create table users(id text primary key, clerk_id text, password_hash text, full_name text, email text, mobile text, role text, managing_admin_id text, invitation_status text default 'failed', status text default 'active', data jsonb default '{}', created_at timestamptz default now());
   create table clinics(id text primary key, admin_id text, owner_id text, status text default 'active', data jsonb, created_at timestamptz default now());
   create table branches(id text primary key, clinic_id text, status text default 'active', data jsonb, created_at timestamptz default now());
   create table assignments(id text, user_id text, clinic_id text, branch_id text);
@@ -129,10 +128,15 @@ test("actual SQL retains schedule weekday/name, exception date, QR search and re
   assert.equal((await queryPage(admin,"qrs",{search:"QR 50",sort:"name"},undefined,conn)).total,1);
   assert.equal((await queryPage(admin,"patients",{from:"2030-01-06"},undefined,conn)).total,0);
 });
-test("linked recovery is role-specific and branch doctor lookups resolve assignments", async () => {
-  await database.exec("update users set clerk_id='linked-r1' where id='r1'");
+test("native password enrollment filter is role-specific and branch doctor lookups resolve assignments", async () => {
+  await database.exec("update users set password_hash='$argon2id$fixture-only', data=jsonb_build_object('passwordHash','must-not-appear','tokenHash','also-private') where id='r1'");
   assert.equal((await queryPage(admin,"users",{role:"receptionist",linkedOnly:true},undefined,conn)).total,1);
   assert.equal((await queryPage(admin,"users",{role:"doctor",linkedOnly:true},undefined,conn)).total,0);
+  const enrolled = (await queryPage(admin,"users",{role:"receptionist",linkedOnly:true},undefined,conn)).items[0];
+  assert.equal(enrolled.passwordEnabled, true);
+  assert.equal(enrolled.invitationStatus, "notRequired");
+  for (const secret of ["passwordHash", "password_hash", "tokenHash", "clerkId"]) assert.equal(secret in enrolled, false, `${secret} must not be serialized`);
+  assert.doesNotMatch(JSON.stringify(enrolled), /argon2id|must-not-appear|also-private/);
   assert.deepEqual((await queryPage(admin,"branches",{doctorId:"d1"},undefined,conn)).items.map(r=>r.id),["b1"]);
   assert.equal((await queryPage(admin,"branches",{doctorId:"d61"},undefined,conn)).total,0);
   assert.equal((await queryPage({role:"superAdmin"},"branches",{doctorId:"d1",selectedIds:"b2"},undefined,conn)).total,0);

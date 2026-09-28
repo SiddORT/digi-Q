@@ -1,1 +1,7 @@
 .slide-thumbnails/
+.env
+.env.*
+
+# Deployment / server configuration
+ecosystem.config.cjs
+deploy-scripts/

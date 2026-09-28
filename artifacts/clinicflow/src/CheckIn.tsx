@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Redirect, useSearch } from "wouter";
-import { useAuth } from "@clerk/react";
+import { useNativeAuth } from "./auth/native-auth";
 import { Logo } from "./App";
 import { Check, Camera, Image as ImageIcon, QrCode } from "lucide-react";
 import * as api from "@workspace/api-client-react";
@@ -10,7 +10,7 @@ import { ErrorNotice } from "./resources";
 import { useFreshWorkspace } from "./components/queue/useFreshWorkspace";
 
 export function CheckInScanner() {
-  const { isLoaded, isSignedIn } = useAuth();
+   const { isLoaded, isSignedIn } = useNativeAuth();
   const search = useSearch();
   const payloadFromUrl = new URLSearchParams(search).get("payload");
   const me = api.useGetMe({ query: { queryKey: api.getGetMeQueryKey(), enabled: !!isSignedIn } });

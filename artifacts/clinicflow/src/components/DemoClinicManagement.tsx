@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import QRCode from "qrcode";
-import { useAuth } from "@clerk/react";
+import { csrfToken } from "../lib/csrf";
 import { BRAND_NAME } from "../branding";
 
 type DemoStatus = {
@@ -21,10 +21,10 @@ type DemoStatus = {
 const root = import.meta.env.BASE_URL.replace(/\/$/, "");
 const endpoint = `${root}/api/demo/setup`;
 
-async function jsonRequest(url: string, options: RequestInit, token: string | null): Promise<DemoStatus> {
+async function jsonRequest(url: string, options: RequestInit): Promise<DemoStatus> {
   const response = await fetch(url, {
     ...options, credentials: "include", cache: "no-store",
-    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    headers: { ...(options.body ? { "Content-Type": "application/json" } : {}), ...(options.method && options.method !== "GET" ? { "X-CSRF-Token": await csrfToken() } : {}) },
   });
   const payload = await response.json() as DemoStatus & { error?: string; message?: string };
   if (!response.ok) throw new Error(payload.message || payload.error || "Demo setup failed. Try again.");
@@ -32,7 +32,6 @@ async function jsonRequest(url: string, options: RequestInit, token: string | nu
 }
 
 export function DemoClinicManagement() {
-  const { getToken } = useAuth();
   const [status, setStatus] = useState<DemoStatus | null>(null);
   const [credentials, setCredentials] = useState<{ username: string; password: string } | null>(null);
   const [qr, setQr] = useState("");
@@ -43,11 +42,11 @@ export function DemoClinicManagement() {
   useEffect(() => {
     let active = true;
     setError("");
-    void getToken().then(token => jsonRequest(endpoint, {}, token)).then(data => {
+    void jsonRequest(endpoint, {}).then(data => {
       if (active) setStatus(data);
     }).catch(caught => { if (active) setError(caught instanceof Error ? caught.message : "Unable to load demo setup."); });
     return () => { active = false; };
-  }, [getToken, revision]);
+  }, [revision]);
   const absolute = (path?: string) => path ? new URL(`${root}${path.startsWith("/") ? path : `/${path}`}`, window.location.origin).href : "";
   const clinicUrl = absolute(status?.clinicPath);
   const bookingUrl = absolute(status?.bookingPath);
@@ -70,7 +69,7 @@ export function DemoClinicManagement() {
       const data = await jsonRequest(endpoint, {
         method: action === "create" ? "POST" : "PATCH",
         ...(action !== "create" ? { body: JSON.stringify({ action }) } : {}),
-      }, await getToken());
+      });
       setStatus(data);
       if (data.password) setCredentials({ username: data.username || "clinicflow-demo", password: data.password });
       setNotice(action === "create" ? "Demo clinic created on this environment. Save the password below now; it is shown only once." : action === "rotate-password" ? "Demo password rotated. Save the new password now; it is shown only once." : `Demo access ${action === "enable" ? "enabled" : "disabled"}.`);

@@ -3,7 +3,7 @@ info:
   title: Api
   version: 1.0.0
   description: |
-    ClinicFlow REST contract. Clerk identity is mapped to a database role.
+    ClinicFlow REST contract. PostgreSQL-backed native sessions resolve a database role.
     Super admins access all; clinic admins and receptionists are assignment-scoped;
     doctors access their own resources and relevant patients; patients access self only.
     All filters narrow authorized scope, never expand it. DELETE deactivates records
@@ -13,13 +13,13 @@ info:
 servers:
   - url: /api
 security:
-  - ClerkBearer: []
+  - NativeSession: []
 paths:
   /demo/login:
     post:
       operationId: demoLogin
       security: []
-      description: Dedicated demo identity only. Provider password verification precedes a 60-second single-use Clerk ticket. Never available to ordinary users.
+      description: Dedicated demo identity only. Local Argon2id password verification issues a scoped HttpOnly session cookie.
       requestBody:
         required: true
         content:
@@ -27,10 +27,10 @@ paths:
             schema: { $ref: "#/components/schemas/DemoLoginInput" }
       responses:
         "200":
-          description: Single-use Clerk ticket, redeem in the browser, then complete staff password proof
+          description: Native demo session
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/DemoLoginTicket" }
+              schema: { $ref: "#/components/schemas/AuthAuthenticated" }
   /demo/setup:
     get:
       operationId: getDemoSetup
@@ -43,7 +43,7 @@ paths:
               schema: { $ref: "#/components/schemas/DemoSetupStatus" }
     post:
       operationId: createDemoSetup
-      description: Explicit Super Admin creation; initial password is returned once only, never stored locally
+      description: Explicit Super Admin creation; initial password is returned once only and stored only as Argon2id hash
       responses:
         "200":
           description: Newly created setup, or existing state without password
@@ -207,40 +207,92 @@ paths:
       security: []
       responses:
         "200": { description: Healthy, content: { application/json: { schema: { $ref: "#/components/schemas/HealthStatus" } } } }
-  /auth/patient-entry:
-    post:
-      operationId: preparePatientEntry
+  /auth/csrf:
+    get:
+      operationId: getAuthCsrf
       security: []
-      description: Validates the normalized email against authoritative ClinicFlow records before preparing a Clerk email-code identity. Staff and inactive patients are rejected before Clerk is called. No OTP is generated or stored by ClinicFlow.
+      responses:
+        "200": { description: CSRF cookie and token, content: { application/json: { schema: { type: object, required: [csrfToken], properties: { csrfToken: { type: string } } } } } }
+  /auth/login:
+    post:
+      operationId: nativeStaffLogin
+      security: []
+      description: Local password and emailed device code verification on every staff sign-in.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/NativeStaffLoginInput" } } } }
+      responses:
+        "200": { description: Device challenge required, content: { application/json: { schema: { $ref: "#/components/schemas/AuthChallenge" } } } }
+  /auth/verify-device:
+    post:
+      operationId: verifyStaffDevice
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthCodeInput" } } } }
+      responses:
+        "200": { description: Session created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
+  /auth/patient/start:
+    post:
+      operationId: startPatientEmail
+      security: []
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthEmailInput" } } } }
       responses:
-        "200": { description: Patient entry may continue through Clerk email-code verification, content: { application/json: { schema: { $ref: "#/components/schemas/AuthEmailResult" } } } }
-        "403": { $ref: "#/components/responses/Error" }
-        "429": { $ref: "#/components/responses/Error" }
-  /auth/staff-entry:
+        "200": { description: Patient challenge, content: { application/json: { schema: { $ref: "#/components/schemas/AuthChallenge" } } } }
+  /auth/patient/verify:
     post:
-      operationId: prepareStaffEntry
+      operationId: verifyPatientEmail
       security: []
-      description: Confirms that the normalized email belongs to an active authoritative staff record before client-side Clerk password sign-in.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthCodeInput" } } } }
+      responses:
+        "200": { description: Patient session created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
+  /auth/register/start:
+    post:
+      operationId: startClinicRegistration
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/StartClinicRegistrationInput" } } } }
+      responses:
+        "200": { description: Registration challenge, content: { application/json: { schema: { $ref: "#/components/schemas/AuthChallenge" } } } }
+  /auth/register/verify:
+    post:
+      operationId: verifyClinicRegistration
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthCodeInput" } } } }
+      responses:
+        "200": { description: Administrator created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
+  /auth/forgot-password:
+    post:
+      operationId: requestPasswordRecovery
+      security: []
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthEmailInput" } } } }
       responses:
-        "200": { description: Staff entry may continue through Clerk password sign-in, content: { application/json: { schema: { $ref: "#/components/schemas/AuthEmailResult" } } } }
-        "403": { $ref: "#/components/responses/Error" }
-        "429": { $ref: "#/components/responses/Error" }
-  /auth/staff-verify:
+        "200": { description: Generic response independent of account existence, content: { application/json: { schema: { type: object, required: [sent], properties: { sent: { type: boolean } } } } } }
+  /auth/reset-password:
     post:
-      operationId: verifyStaffPassword
-      description: Re-verifies the authenticated active staff user's password with Clerk and binds a short-lived proof to the current signed Clerk session. ClinicFlow never stores the password.
-      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/StaffPasswordInput" } } } }
+      operationId: resetNativePassword
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthTokenPasswordInput" } } } }
       responses:
-        "200": { description: Session-bound staff proof persisted, content: { application/json: { schema: { $ref: "#/components/schemas/AuthStatus" } } } }
-        "401": { $ref: "#/components/responses/Error" }
-        "403": { $ref: "#/components/responses/Error" }
-        "429": { $ref: "#/components/responses/Error" }
+        "200": { description: Password reset, content: { application/json: { schema: { type: object, required: [reset], properties: { reset: { type: boolean } } } } } }
+  /auth/invitation/accept:
+    post:
+      operationId: acceptStaffInvitation
+      security: []
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthTokenPasswordInput" } } } }
+      responses:
+        "200": { description: Session created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
+  /auth/change-password:
+    post:
+      operationId: changeNativePassword
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ChangeNativePasswordInput" } } } }
+      responses:
+        "200": { description: Password changed, content: { application/json: { schema: { type: object, required: [changed], properties: { changed: { type: boolean } } } } } }
+  /auth/logout:
+    post:
+      operationId: logoutNativeSession
+      responses:
+        "200": { description: Session revoked, content: { application/json: { schema: { type: object, required: [authenticated], properties: { authenticated: { type: boolean } } } } } }
   /auth/status:
     get:
       operationId: getAuthStatus
-      description: Returns only role and session-bound staff password-proof state for the signed-in Clerk context. It exposes no clinical data.
+      security: []
+      description: Returns role, local session state and CSRF token, with no clinical data.
       responses:
         "200": { description: Authentication status, content: { application/json: { schema: { $ref: "#/components/schemas/AuthStatus" } } } }
         "401": { $ref: "#/components/responses/Error" }
@@ -447,14 +499,14 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       operationId: requestUserPasswordReset
-      description: Requests Clerk-managed password recovery; never returns credentials.
+      description: Requests a local password reset link by email; never returns credentials.
       responses:
         "202": { description: Recovery requested, content: { application/json: { schema: { $ref: "#/components/schemas/Message" } } } }
   /users/{id}/resend-invitation:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       operationId: resendUserInvitation
-      description: Retries the existing Clerk invitation flow for a scoped unlinked staff profile. Database role and assignments already exist and are not changed.
+      description: Retries the local set-password invitation for a scoped staff profile without a local password. Database role and assignments are not changed.
       responses:
         "200": { description: Invitation outcome updated, content: { application/json: { schema: { $ref: "#/components/schemas/User" } } } }
   /staff-assignment-options:
@@ -749,7 +801,7 @@ paths:
         "200": { description: Saved, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
 components:
   securitySchemes:
-    ClerkBearer: { type: http, scheme: bearer, bearerFormat: JWT }
+    NativeSession: { type: apiKey, in: cookie, name: digiq_session }
   responses:
     Error:
       description: Request failed
@@ -772,17 +824,36 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    NativeStaffLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 1, maxLength: 1024 }
+    StartClinicRegistrationInput:
+      type: object
+      required: [email, fullName, password]
+      properties:
+        email: { type: string, format: email }
+        fullName: { type: string, minLength: 1, maxLength: 200 }
+        password: { type: string, minLength: 12, maxLength: 1024 }
+    ChangeNativePasswordInput:
+      type: object
+      required: [currentPassword, password]
+      properties:
+        currentPassword: { type: string }
+        password: { type: string, minLength: 12, maxLength: 1024 }
     DemoLoginInput:
       type: object
       required: [password]
       additionalProperties: false
       properties:
         password: { type: string, minLength: 1, maxLength: 200 }
-    DemoLoginTicket:
+    AuthAuthenticated:
       type: object
-      required: [ticket]
+      required: [authenticated]
       properties:
-        ticket: { type: string }
+        authenticated: { type: boolean }
     DemoSetupAction:
       type: object
       required: [action]
@@ -1073,24 +1144,32 @@ components:
       additionalProperties: false
       properties:
         email: { type: string, format: email, maxLength: 254 }
-    AuthEmailResult:
+    AuthChallenge:
       type: object
-      required: [email]
+      required: [challengeId]
       properties:
-        email: { type: string, format: email }
-    StaffPasswordInput:
+        challengeId: { type: string }
+        requiresVerification: { type: boolean }
+    AuthCodeInput:
       type: object
-      required: [password]
-      additionalProperties: false
+      required: [challengeId, code]
       properties:
-        password: { type: string, minLength: 1, maxLength: 1024 }
+        challengeId: { type: string }
+        code: { type: string, minLength: 6, maxLength: 6 }
+    AuthTokenPasswordInput:
+      type: object
+      required: [token, password]
+      properties:
+        token: { type: string }
+        password: { type: string, minLength: 12, maxLength: 1024 }
     AuthStatus:
       type: object
-      required: [role, staffPasswordVerified, requiresStaffPassword]
+      required: [role, staffPasswordVerified, requiresStaffPassword, csrfToken]
       properties:
         role: { type: [string, "null"] }
         staffPasswordVerified: { type: boolean }
         requiresStaffPassword: { type: boolean }
+        csrfToken: { type: string }
     ApiError:
       type: object
       required: [error]
@@ -1130,9 +1209,9 @@ components:
         termsAccepted: { type: boolean }
     Identity:
       type: object
-      required: [clerkId, user, needsOnboarding]
+      required: [userId, user, needsOnboarding]
       properties:
-        clerkId: { type: string }
+        userId: { type: string }
         user: { oneOf: [{ $ref: "#/components/schemas/User" }, { type: "null" }] }
         doctorId: { type: [string, "null"] }
         patientId: { type: [string, "null"] }
@@ -1153,14 +1232,13 @@ components:
       allOf:
         - { $ref: "#/components/schemas/UserInput" }
         - type: object
-          required: [id, clerkId, status, clinicIds, branchIds, managingAdminId, managingAdminName, invitationStatus, createdAt]
+          required: [id, status, clinicIds, branchIds, managingAdminId, managingAdminName, invitationStatus, createdAt]
           properties:
             id: { type: string }
-            clerkId: { type: [string, "null"] }
             managingAdminId: { type: [string, "null"] }
             managingAdminName: { type: [string, "null"] }
             invitationStatus: { type: string, enum: [sent, failed, notRequired] }
-            passwordEnabled: { type: [boolean, "null"], description: Clerk-reported password state for linked staff records. Null when provider lookup is unavailable; omitted for records where it is not applicable. }
+            passwordEnabled: { type: boolean, description: Whether this staff record has a local password configured. }
             createdAt: { type: [string, "null"], format: date-time }
             lastLoginAt: { type: [string, "null"], format: date-time }
     ClinicAdminOnboardingInput:

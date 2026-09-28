@@ -1,6 +1,6 @@
 .clinic-registration,.public-clinic{min-height:100vh;background:#f5f8fd;color:#0d2350;padding:28px clamp(16px,4vw,64px)}
-.registration-account-card,.registration-clerk-container{min-width:0;max-width:100%;box-sizing:border-box}
-.registration-clerk-container{width:100%;margin-top:22px}
+.registration-account-card,.registration-account-container{min-width:0;max-width:100%;box-sizing:border-box}
+.registration-account-container{width:100%;margin-top:22px}
 .auth-card .register-clinic-entry{flex-direction:column;align-items:stretch}
 .auth-card .register-clinic-entry .register-clinic-button{display:flex;justify-content:center;width:100%;box-sizing:border-box;white-space:normal;background:#1552b0;color:#fff;border:1px solid #1552b0;padding:13px 18px;font-size:14px;font-weight:700;text-decoration:none}
 .auth-card .register-clinic-entry .register-clinic-button:hover{background:#0f3f8c;border-color:#0f3f8c}

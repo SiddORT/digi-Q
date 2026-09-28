@@ -85,6 +85,13 @@
       "when": 1790352000003,
       "tag": "0011_patient_mobile_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790352000004,
+      "tag": "0012_native_auth_additive",
+      "breakpoints": true
     }
   ]
 }

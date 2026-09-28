@@ -1,4 +1,4 @@
-// Isolated service/route regressions: no HTTP listener, Clerk calls, or database writes.
+// Isolated service/route regressions: no HTTP listener, email delivery, or external database writes.
 import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
@@ -10,43 +10,23 @@ const directory = await mkdtemp(join(tmpdir(), "clinicflow-audit-"));
 const root = resolve(import.meta.dirname);
 process.env.SESSION_SECRET = "unit-test-only-appointment-qr-secret";
 mock.timers.enable({apis:["Date"],now:Date.UTC(2030,0,7,12)});
-const tables = ["appointments", "patients", "appointmentHistory", "doctors", "clinics", "branches", "masters", "schedules", "availabilityExceptions", "assignments", "users", "qrs", "auditLogs", "settings", "otpChallenges", "staffSessionProofs"];
+const tables = ["appointments", "patients", "appointmentHistory", "doctors", "clinics", "branches", "masters", "schedules", "availabilityExceptions", "assignments", "users", "qrs", "auditLogs", "settings", "otpChallenges", "authChallenges", "authSessions"];
 const fixture = `
-export const state = { rows: {}, config: {}, actor: null, clerk: {} };
+export const state = { rows: {}, config: {}, actor: null, notifications: [], delivery: null };
 export const reset = () => {
   state.rows = {};
   state.config = { bookingHorizonDays: 30, cancellationCutoffMinutes: 0 };
-  state.clerk = {
-    users: [],
-    invitations: [],
-     sessions: new Map(),
-    getUserList: async ({userId} = {}) => ({data:state.clerk.users.filter(u => !userId || userId.includes(u.id))}),
-     getSession: async id => {
-       const session = state.clerk.sessions.get(id);
-       if (!session) throw Object.assign(new Error("Session not found"), {status:404});
-       return session;
-     },
-    getUser: async id => state.clerk.users.find(user => user.id === id) || {id,passwordEnabled:false},
-    getInvitationList: async ({query,status} = {}) => ({
-      data: state.clerk.invitations.filter(invitation =>
-        (!query || invitation.emailAddress === query) && (!status || invitation.status === status)),
-    }),
-    revokeInvitation: async id => {
-      const invitation=state.clerk.invitations.find(item => item.id === id);
-      if (!invitation || invitation.status !== "pending") throw new Error("Invitation is not pending");
-      invitation.status="revoked";
-      return invitation;
-    },
-    createInvitation: async input => {
-      const invitation={id:"inv-"+crypto.randomUUID(),status:"pending",...input};
-      state.clerk.invitations.push(invitation);
-      return invitation;
-    },
-  };
+  state.notifications = [];
+  state.delivery = null;
 };
 export const all = async table => state.rows[table.name] || [];
-export const flatten = row => row;
-export const one = async (table, id) => { const row = (await all(table)).find(r => r.id === id); if (!row) throw Object.assign(new Error("Not found"), {status:404}); return {...row}; };
+export const flatten = row => {
+  if (!row) return null;
+  const {data,clerkId:_legacy,passwordHash:_hash,tokenHash:_token,...fields}=row;
+  const {passwordHash:_dataHash,tokenHash:_dataToken,...safeData}=data||{};
+  return {...safeData,...fields};
+};
+export const one = async (table, id) => { const row = (await all(table)).find(r => r.id === id); if (!row) throw Object.assign(new Error("Not found"), {status:404}); return flatten(row); };
 export const uid = () => crypto.randomUUID();
 export const put = async (table, value) => {
   if (table.name === "clinics" && state.config.failClinicInsert) throw new Error("forced clinic insert failure");
@@ -83,14 +63,18 @@ await build({
     name: "isolated-persistence",
     setup(b) {
       b.onResolve({ filter: /^@workspace\/api-zod$/ }, () => ({path:resolve(root,"../../../lib/api-zod/src/index.ts")}));
-      b.onResolve({ filter: /^(audit-fixture|@workspace\/db|@clerk\/express|drizzle-orm)$/ }, a => ({path:a.path,namespace:"fixture"}));
+      b.onResolve({ filter: /^(audit-fixture|@workspace\/db|drizzle-orm)$/ }, a => ({path:a.path,namespace:"fixture"}));
       b.onResolve({ filter: /\/store$/ }, () => ({path:"audit-fixture",namespace:"fixture"}));
+      // Authentication endpoints have their own DB-backed integration suite. This
+      // isolated domain double records invitation dispatch without SMTP or tokens.
+      b.onResolve({ filter: /^\.\/auth$/ }, a => a.importer.includes("/routes/") ? {path:"native-mail",namespace:"fixture"} : undefined);
+      b.onResolve({ filter: /\/lib\/native-auth$/ }, () => ({path:"native-sessions",namespace:"fixture"}));
       // Legacy lifecycle tests use a repository double. list-query.test.mjs separately
       // executes the real query compiler against PostgreSQL with large isolated fixtures.
       b.onResolve({ filter: /\/list-query$/ }, () => ({path:"list-query",namespace:"fixture"}));
       b.onLoad({ filter: /.*/, namespace: "fixture" }, a => {
         if (a.path === "list-query") return {resolveDir:join(root,"lib"),contents:`
-          import {state,all,filtered,paginate} from "audit-fixture";
+          import {state,all,flatten,filtered,paginate} from "audit-fixture";
           import {scoped,projectAssignmentScope} from "./auth";
           import {enrich} from "./entities";
           export const sourceSql=()=>({});
@@ -101,7 +85,7 @@ await build({
           const values=s=>s?.values?.flatMap(v=>v?.values?values(v):[v])||[];
           const textOf=s=>(s?.strings||[]).join("")+(s?.values||[]).filter(v=>v?.strings).map(textOf).join("");
           export async function queryPage(user,kind,q={},extra) {
-            let rows=await Promise.all((state.rows[kind==="audit-logs"?"auditLogs":kind]||[]).map(r=>enrich(kind,r)));
+            let rows=await Promise.all((state.rows[kind==="audit-logs"?"auditLogs":kind]||[]).map(r=>enrich(kind,flatten(r))));
             rows=await scoped(user,kind,rows);
             rows=await Promise.all(rows.map(r=>projectAssignmentScope(user,kind,r)));
             const text=textOf(extra), args=values(extra);
@@ -112,32 +96,37 @@ await build({
             if(q.selectedIds) rows=rows.filter(r=>q.selectedIds.split(",").includes(r.id));
             const result=paginate(rows,q); return {...result,totalPages:Math.ceil(result.total/result.pageSize)};
           }
+          export async function queryAppointmentPage(user,q={}) { return queryPage(user,"appointments",q); }
           export async function queryMetrics(user,q) {
             const rows=(await queryPage(user,"appointments",{...q,pageSize:100})).items;
             return {appointments:rows.length,waiting:rows.filter(r=>r.status==="waiting").length,activeQueues:0,currentToken:null};
           }
         `};
         if (a.path === "audit-fixture") return {contents:fixture};
-        if (a.path === "@clerk/express") return {contents:`
+        if (a.path === "native-mail") return {contents:`
           import {state} from "audit-fixture";
-          export const clerkClient = {
-            users:{
-              getUserList:value=>state.clerk.getUserList(value),
-              getUser:value=>state.clerk.getUser(value),
-            },
-             sessions:{getSession:id=>state.clerk.getSession(id)},
-            invitations:{
-              getInvitationList:value=>state.clerk.getInvitationList(value),
-              createInvitation:value=>state.clerk.createInvitation(value),
-              revokeInvitation:value=>state.clerk.revokeInvitation(value),
-            },
-          };
-          export const getAuth = () => ({});
+          export async function inviteStaff(req, account) {
+            if (state.delivery) await state.delivery(account);
+            const challenges=state.rows.authChallenges ||= [];
+            challenges.push({id:crypto.randomUUID(),userId:account.id,purpose:"invitation",tokenHash:"hash-only",consumedAt:null});
+            state.notifications.push({userId:account.id,purpose:"invitation"});
+            state.rows.users.find(user=>user.id===account.id).invitationStatus="sent";
+          }
+          export async function requestStaffReset(req, account) {
+            if (state.delivery) await state.delivery(account);
+            state.notifications.push({userId:account.id,purpose:"reset"});
+          }
+        `};
+        if (a.path === "native-sessions") return {contents:`
+          import {state} from "audit-fixture";
+          export const consumeRateLimit = async()=>{};
+          export const revokeUserSessions = async userId => { for (const session of state.rows.authSessions || []) if (session.userId === userId) session.revokedAt = new Date(); };
+          export const verifyPassword = async (hash,password) => Boolean(hash && hash === password);
         `};
         if (a.path === "drizzle-orm") return {contents:"export const eq = (field,value) => ({field,value}); export const gt = (field,value) => ({field,value,operator:'gt'}); export const and = (...conditions) => ({conditions}); export const sql = (strings,...values) => ({strings,values}); sql.raw=text=>({strings:[text],values:[]}); sql.join=(values)=>({strings:[],values});"};
         return {contents: `
           import {state,all} from "audit-fixture";
-          ${tables.map(t => `export const ${t} = {name:"${t}",id:"id",status:"status",clinicId:"clinicId",branchId:"branchId",doctorId:"doctorId",publicReference:"publicReference"};`).join("\n")}
+          ${tables.map(t => `export const ${t} = {name:"${t}",id:"id",status:"status",clinicId:"clinicId",branchId:"branchId",doctorId:"doctorId",publicReference:"publicReference",passwordHash:"passwordHash",userId:"userId",purpose:"purpose"};`).join("\n")}
            const locks = new Map();
            async function acquire(key) {
              const previous = locks.get(key) || Promise.resolve();
@@ -153,6 +142,10 @@ await build({
              const rows = state.rows[table.name] || [];
              state.rows[table.name] = rows.filter(row=>row[condition.field]!==condition.value);
            }});
+            const update = table => ({set:values=>({where:async condition=>{
+              const conditions=condition.conditions||[condition];
+              for(const row of state.rows[table.name]||[]) if(conditions.every(c=>row[c.field]===c.value)) Object.assign(row,values);
+            }})});
            const insert = table => ({values:value => {
              const row={...value};
              (state.rows[table.name] ||= []).push(row);
@@ -180,6 +173,7 @@ await build({
              select,
              delete:remove,
              insert,
+              update,
              transaction:async fn => {
                 const snapshot=structuredClone(state.rows);
                const releases = [];
@@ -537,13 +531,13 @@ test("doctor self demographic edits preserve ownership and assignments", async (
   Object.assign(api.state.rows.users.find(user=>user.id==="du"),{email:"doctor@example.com",mobile:"+15555550100"});
   const assignments=structuredClone(api.state.rows.assignments);
   const updated=await route(api.resourcesRouter,"patch","/doctors/:id",{
-    fullName:"Doctor Updated",email:"doctor.updated@example.com",mobile:"+15555550101",
+    fullName:"Doctor Updated",email:"doctor@example.com",mobile:"+15555550101",
   },{}, {id:"d"});
   assert.equal(updated.fullName,"Doctor Updated");
   assert.equal(updated.ownerAdminId,"admin");
   assert.deepEqual(api.state.rows.assignments,assignments);
   await assert.rejects(route(api.resourcesRouter,"patch","/doctors/:id",{
-    fullName:"Doctor Updated",email:"doctor.updated@example.com",clinicIds:["c"],branchIds:["b"],
+    fullName:"Doctor Updated",email:"doctor@example.com",clinicIds:["c"],branchIds:["b"],
   },{}, {id:"d"}),error=>error.status===403);
 });
 test("serialized competing doctor ownership claims reject the stale edit", async () => {
@@ -584,92 +578,42 @@ test("invitation delivery is attempted after profile commit", async () => {
   const delivered=source.indexOf("await deliverInvitation",committed);
   assert.ok(committed>=0 && delivered>committed);
 });
-test("concurrent invitation retries serialize per user and remain sent", async () => {
+test("reissued native invitations invalidate earlier one-time challenges", async () => {
   seed();
-  api.state.rows.users.push({id:"invitee",role:"receptionist",fullName:"Invitee",email:"invitee@example.com",status:"active",invitationStatus:"failed"});
-  let active=0, maximum=0, calls=0;
-  api.state.clerk.createInvitation=async input => {
-    calls++; active++; maximum=Math.max(maximum,active);
-    assert.equal(input.ignoreExisting,false);
-    assert.equal(input.redirectUrl,"https://clinicflow.example/set-password");
-    assert.equal(input.expiresInDays,7);
-    await new Promise(resolve=>setTimeout(resolve,10));
-    active--;
-    const invitation={id:"inv-"+calls,emailAddress:input.emailAddress,status:"pending"};
-    api.state.clerk.invitations.push(invitation);
-    return invitation;
-  };
-  await Promise.all([
-    api.deliverInvitation("invitee","https://clinicflow.example/set-password"),
-    api.deliverInvitation("invitee","https://clinicflow.example/set-password"),
-  ]);
-  assert.equal(calls,2);
-  assert.equal(maximum,1);
-  assert.equal(api.state.clerk.invitations.filter(invitation=>invitation.status==="pending").length,1);
-  assert.equal(api.state.clerk.invitations.filter(invitation=>invitation.status==="revoked").length,1);
-  assert.equal(api.state.rows.users.find(user=>user.id==="invitee").invitationStatus,"sent");
+  const account={id:"invitee",role:"receptionist",fullName:"Invitee",email:"invitee@example.com",status:"active",invitationStatus:"failed"};
+  api.state.rows.users.push(account);
+  await api.deliverInvitation(account.id);
+  const first=api.state.rows.authChallenges[0];
+  assert.equal(first.consumedAt,null);
+  await api.deliverInvitation(account.id);
+  assert.ok(first.consumedAt instanceof Date);
+  assert.equal(api.state.rows.authChallenges.filter(challenge=>!challenge.consumedAt).length,1);
+  assert.equal(api.state.notifications.length,2);
+  assert.equal(account.invitationStatus,"sent");
+  assert.ok(api.state.rows.authChallenges.every(challenge=>!Object.hasOwn(challenge,"secret")));
 });
-test("invitation outcomes are idempotent and identity conflicts remain 409", async () => {
+test("native invitations reject inactive/nonstaff accounts and skip existing password holders", async () => {
   seed();
-  let target={id:"invitee",role:"doctor",fullName:"Invitee",email:"invitee@example.com",status:"active",invitationStatus:"sent"};
-  api.state.rows.users.push(target,{id:"other-profile",role:"patient",email:"other@example.com",clerkId:"clerk-existing",status:"active"});
-  api.state.clerk.getUserList=async()=>({data:[{
-    id:"clerk-existing",
-    emailAddresses:[{emailAddress:"INVITEE@example.com",verification:{status:"verified"}}],
-  }]});
-  await assert.rejects(api.deliverInvitation("invitee","https://clinicflow.example/set-password"),error=>error.status===409 && /already has a profile/.test(error.message));
-  target=api.state.rows.users.find(user=>user.id==="invitee");
-  assert.equal(target.invitationStatus,"sent");
-
-  api.state.rows.users=api.state.rows.users.filter(user=>user.id!=="other-profile");
-  target.clerkId=undefined;
-  api.state.clerk.getUserList=async()=>({data:[{
-    id:"unverified-identity",
-    emailAddresses:[{emailAddress:"invitee@example.com",verification:{status:"unverified"}}],
-  }]});
-  let invitations=0;
-  api.state.clerk.createInvitation=async input => {
-    invitations++;
-    assert.equal(input.ignoreExisting,false);
-    assert.equal(input.redirectUrl,"https://clinicflow.example/set-password");
-    return {id:"existing-invitation"};
-  };
-  await api.deliverInvitation("invitee","https://clinicflow.example/set-password");
-  assert.equal(invitations,1);
-  assert.equal(target.clerkId,undefined);
-  assert.equal(target.invitationStatus,"sent");
-
-  api.state.clerk.getUserList=async()=>({data:[{
-    id:"verified-identity",
-    emailAddresses:[{emailAddress:"invitee@example.com",verification:{status:"verified"}}],
-  }]});
-  await api.deliverInvitation("invitee","https://clinicflow.example/set-password");
-  assert.equal(invitations,1);
-  assert.equal(target.clerkId,"verified-identity");
-  assert.equal(target.invitationStatus,"notRequired");
-
-  target.clerkId=undefined;
-  api.state.clerk.getUserList=async()=>({data:[]});
-  api.state.clerk.createInvitation=async()=>{ throw new Error("provider unavailable"); };
-  await api.deliverInvitation("invitee","https://clinicflow.example/set-password");
-  assert.equal(target.invitationStatus,"failed");
+  api.state.rows.users.push(
+    {id:"patient-account",role:"patient",email:"patient@example.com",status:"active"},
+    {id:"inactive-account",role:"doctor",email:"inactive@example.com",status:"inactive"},
+    {id:"enrolled",role:"doctor",email:"enrolled@example.com",status:"active",passwordHash:"$argon2id$fixture"},
+  );
+  for (const id of ["patient-account","inactive-account"]) await assert.rejects(api.deliverInvitation(id),error=>error.status===403);
+  await api.deliverInvitation("enrolled");
+  assert.deepEqual(api.state.notifications,[]);
+  assert.equal(api.state.rows.authChallenges,undefined);
 });
-test("staff resource reports Clerk password state without guessing on provider failure", async () => {
+test("staff resource uses native password enrollment, never serializes credential material", async () => {
   seed();
   api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
-  Object.assign(api.state.rows.users.find(user=>user.id==="du"),{clerkId:"clerk-password",email:"doctor@example.com"});
-  Object.assign(api.state.rows.users.find(user=>user.id==="admin"),{clerkId:"clerk-passwordless",email:"admin@example.com"});
-  api.state.clerk.users=[
-    {id:"clerk-password",passwordEnabled:true},
-    {id:"clerk-passwordless",passwordEnabled:false},
-  ];
-  let result=await route(api.resourcesRouter,"get","/users");
+  Object.assign(api.state.rows.users.find(user=>user.id==="du"),{email:"doctor@example.com",passwordHash:"$argon2id$private",data:{tokenHash:"private-token"}});
+  Object.assign(api.state.rows.users.find(user=>user.id==="admin"),{email:"admin@example.com"});
+  const result=await route(api.resourcesRouter,"get","/users");
   assert.equal(result.items.find(user=>user.id==="du").passwordEnabled,true);
   assert.equal(result.items.find(user=>user.id==="admin").passwordEnabled,false);
-
-  api.state.clerk.getUserList=async()=>{ throw new Error("provider unavailable"); };
-  result=await route(api.resourcesRouter,"get","/users");
-  assert.equal(result.items.find(user=>user.id==="du").passwordEnabled,null);
+  assert.doesNotMatch(JSON.stringify(result), /\\$argon2id\\$private|private-token/);
+  for (const item of result.items) for (const key of ["passwordHash","tokenHash","clerkId"]) assert.equal(key in item,false);
 });
 test("generated query schemas retain the actual frontend lookup and listing parameters", () => {
   const read=(schema,query)=>api.query(schema,{query});
@@ -707,13 +651,13 @@ test("clinic admin onboarding denies non-Super Admins and duplicate profiles wit
   const body={admin:{fullName:"Denied",email:"denied@example.com"},clinic:{name:"Denied Clinic",address:"Address"}};
   api.state.actor={id:"ca",role:"clinicAdmin",clinicIds:["c"],branchIds:[]};
   await assert.rejects(route(api.resourcesRouter,"post","/clinic-admin-onboarding",body),/Permission denied/);
-  assert.equal(api.state.clerk.invitations.length,0);
+  assert.equal(api.state.notifications.length,0);
   api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
   api.state.rows.users.push({id:"existing",fullName:"Existing",email:"denied@example.com",role:"patient",status:"active"});
   await assert.rejects(route(api.resourcesRouter,"post","/clinic-admin-onboarding",body),/already belongs/);
-  assert.equal(api.state.clerk.invitations.length,0);
+  assert.equal(api.state.notifications.length,0);
   await assert.rejects(route(api.resourcesRouter,"post","/users",{fullName:"Staged",email:"staged@example.com",role:"clinicAdmin"}),/clinic admin onboarding/i);
-  assert.equal(api.state.clerk.invitations.length,0);
+  assert.equal(api.state.notifications.length,0);
 });
 test("clinic admin onboarding rolls database changes back before durable invitation delivery", async () => {
   seed();
@@ -726,7 +670,7 @@ test("clinic admin onboarding rolls database changes back before durable invitat
   }),/forced clinic insert failure/);
   assert.equal(api.state.rows.users.length,usersBefore);
   assert.equal(api.state.rows.clinics.length,clinicsBefore);
-  assert.equal(api.state.clerk.invitations.length,0);
+  assert.equal(api.state.notifications.length,0);
 });
 test("schedule overlap compares real instants across timezones and closed exceptions", () => {
   const india={isOpen:true,startTime:"09:00",endTime:"10:00",timezone:"Asia/Kolkata"};
@@ -735,26 +679,12 @@ test("schedule overlap compares real instants across timezones and closed except
   assert.equal(api.sessionsOverlap(india,"2030-01-07",{...london,startTime:"05:00",endTime:"06:00"},"2030-01-07"),false);
   assert.equal(api.sessionsOverlap(india,"2030-01-07",{...london,isClosed:true},"2030-01-07"),false);
 });
-test("staff proof follows Clerk session expiry across access-token refreshes", async () => {
-  api.reset();
-  const now = Date.now();
-  const originalJwtExpiry = now - 60_000;
-  const clerkSessionExpiry = now + 30 * 60_000;
-  api.state.clerk.sessions.set("sess-staff", {
-    id:"sess-staff", userId:"clerk-staff", status:"active", expireAt:clerkSessionExpiry,
-  });
-  assert.ok(originalJwtExpiry < now, "the original access-token JWT is already expired");
-  const expiresAt = await api.authoritativeStaffSessionExpiry("sess-staff","clerk-staff",now);
-  assert.equal(expiresAt.getTime(),clerkSessionExpiry);
-});
-test("staff proof rejects a Clerk session belonging to another user", async () => {
-  api.reset();
-  const now = Date.now();
-  api.state.clerk.sessions.set("sess-staff", {
-    id:"sess-staff", userId:"different-clerk-user", status:"active", expireAt:now + 30 * 60_000,
-  });
-  await assert.rejects(
-    () => api.authoritativeStaffSessionExpiry("sess-staff","clerk-staff",now),
-    error => error.status === 401 && error.code === "SESSION_INVALID",
-  );
+test("deactivating a staff account revokes its native database sessions", async () => {
+  seed();
+  api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
+  api.state.rows.users.find(user=>user.id==="du").email="d@example.com";
+  api.state.rows.authSessions=[{id:"owned",userId:"du",revokedAt:null},{id:"other",userId:"admin",revokedAt:null}];
+  await route(api.resourcesRouter,"patch","/doctors/:id",{fullName:"Doctor",email:"d@example.com",status:"inactive"},{},{id:"d"});
+  assert.ok(api.state.rows.authSessions.find(session=>session.id==="owned").revokedAt instanceof Date);
+  assert.equal(api.state.rows.authSessions.find(session=>session.id==="other").revokedAt,null);
 });

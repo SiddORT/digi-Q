@@ -6,8 +6,9 @@ import { otpDeliveryConfigured } from "./otp-delivery";
 export const uid = () => randomUUID();
 export function flatten(row: any): any {
   if (!row) return null;
-  const { data, ...fields } = row;
-  return { ...data, ...fields };
+  const { data, clerkId: _legacyProviderId, passwordHash: _hash, tokenHash: _token, ...fields } = row;
+  const { passwordHash: _nestedHash, tokenHash: _nestedToken, ...safeData } = data || {};
+  return { ...safeData, ...fields };
 }
 export async function all(table: any, conn: any = db): Promise<any[]> { return (await conn.select().from(table)).map(flatten); }
 export async function one(table: any, id: string, conn: any = db): Promise<any> {

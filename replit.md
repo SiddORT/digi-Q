@@ -10,12 +10,14 @@ A new multi-clinic appointment and live queue platform. See README.md for the en
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
+- Native authentication uses PostgreSQL sessions; VPS rollout needs SMTP configuration, secure `SUPERADMIN_EMAIL`/`SUPERADMIN_NAME`/`SUPERADMIN_PASSWORD`, and Drizzle migrations before the seed. See `docs/auth/native-auth-migration.md`. Do not put credentials in this file.
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
+- Auth: local Argon2id-hashed staff passwords, patient email-code sign-in, database-backed sessions
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)

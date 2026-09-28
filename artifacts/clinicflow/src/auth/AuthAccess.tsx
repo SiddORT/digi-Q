@@ -1,61 +1,37 @@
-import { useState, type ReactNode } from "react";
-import { useAuth, useClerk } from "@clerk/react";
-import { Redirect, useLocation } from "wouter";
+import { useEffect, type ReactNode } from "react";
+import { Redirect } from "wouter";
 import * as api from "@workspace/api-client-react";
-import { queryClient } from "../App";
-import { authErrorMessage } from "./errors";
+import { useNativeAuth } from "./native-auth";
 import { AuthCard, AuthShell } from "./AuthShell";
 
 function StaffPasswordConfirmation() {
-  const { signOut } = useClerk();
-  const [, navigate] = useLocation();
-  const verifyPassword = api.useVerifyStaffPassword();
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      await verifyPassword.mutateAsync({ data: { password } });
-      setPassword("");
-      await queryClient.invalidateQueries({ queryKey: api.getGetAuthStatusQueryKey() });
-      navigate("/onboarding", { replace: true });
-    } catch (caught) {
-      setError(authErrorMessage(caught, "That password is incorrect."));
-    } finally {
-      setBusy(false);
-    }
-  }
-
+  const { logout } = useNativeAuth();
   return (
     <AuthShell eyebrow="STAFF SECURITY CHECK">
-      <AuthCard title="Confirm your staff password" description="Your session is active. Confirm your password once to continue to the staff workspace.">
-        <form onSubmit={submit}>
-          <label>Password<input data-testid="input-confirm-staff-password" type="password" autoComplete="current-password" required value={password} onChange={event => setPassword(event.target.value)} /></label>
-          {error && <div className="error-box" role="alert" data-testid="status-confirm-password-error">{error}</div>}
-          <button className="button auth-submit" data-testid="button-confirm-staff-password" disabled={busy}>{busy ? "Confirming…" : "Confirm password"}</button>
-        </form>
-        <div className="auth-links"><button type="button" className="text-link" data-testid="button-confirm-signout" onClick={() => { setPassword(""); signOut({ redirectUrl: `${window.location.origin}${import.meta.env.BASE_URL}` }); }}>Sign out</button></div>
+      <AuthCard title="Staff password required" description="Your current session does not include staff password verification. Sign out and sign in with your staff password.">
+        <button className="button auth-submit" onClick={() => void logout().then(() => { window.location.href = `${import.meta.env.BASE_URL}sign-in`; })}>Sign out and use staff login</button>
       </AuthCard>
     </AuthShell>
   );
 }
 
 export function AuthAccess({ children }: { children: ReactNode }) {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, error, refresh } = useNativeAuth();
   const status = api.useGetAuthStatus({ query: {
     queryKey: api.getGetAuthStatusQueryKey(),
     enabled: !!isSignedIn,
     staleTime: 0,
     refetchOnWindowFocus: true,
   } });
+  useEffect(() => {
+    if (isSignedIn && status.data && !status.data.role) void refresh().catch(() => undefined);
+  }, [isSignedIn, status.data, refresh]);
 
   if (!isLoaded || (isSignedIn && status.isLoading)) return <div className="page-loading">Checking secure access…</div>;
+  if (error) return <div className="error-box auth-status-error" role="alert">{error}<button onClick={() => void refresh().catch(() => undefined)}>Retry</button></div>;
   if (!isSignedIn) return <Redirect to="/sign-in" />;
   if (status.error) return <div className="error-box auth-status-error">Unable to verify access: {status.error.message}<button onClick={() => status.refetch()} data-testid="button-retry-auth-status">Try again</button></div>;
+  if (status.data && !status.data.role) return <div className="page-loading">Your session has ended…</div>;
   if (status.data?.requiresStaffPassword && !status.data.staffPasswordVerified) return <StaffPasswordConfirmation />;
   return children;
 }

@@ -6,12 +6,12 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "bootstrap-admin": "tsx ./src/bootstrap-admin.ts",
+    "preflight-native-auth": "tsx ./src/preflight-native-auth.ts",
     "seed-system": "tsx ./src/seed-system.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
-    "@clerk/express": "^2.1.69",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {

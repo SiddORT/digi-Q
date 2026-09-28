@@ -1,11 +1,11 @@
 - [Worker execution failures](worker-isolation.md) — helper tool disconnections can be isolated; preserve healthy backend work rather than treating them as project-wide failures.
 - [Role test isolation](role-test-isolation.md) — verify actual browser identity and mapped role in fresh contexts; a helper handshake alone does not prove sign-in.
 - [Clinic Admin ownership](clinic-admin-ownership.md) — exactly one admin per clinic; doctor-created clinics inherit the doctor's single owning admin.
-- [Clerk role authentication](clerk-role-authentication.md) — use Clerk-owned password proof for staff and reserved passwordless patient identities; never infer methods from session claims.
+- [Native authentication boundary](native-auth-boundary.md) — PostgreSQL-owned staff credentials are intentional; do not restore Clerk to solve deployment or email configuration.
 - [Embedded PostgreSQL tests](embedded-postgres-tests.md) — root-level PGlite avoids duplicate Drizzle peer instances in the pnpm workspace.
 - [PostgreSQL contention](postgres-contention.md) — require observable multi-connection lock waits in a disposable cluster, not concurrent promises on PGlite.
 - [Visual cascade verification](visual-cascade.md) — rendered checks catch legacy CSS precedence and breakpoint regressions that typechecks cannot.
 - [Publishing database guards](publish-database-guards.md) — schema diffs can omit custom guard functions or propagate development constraint drift; verify both before rollout.
-- [Published demo boundary](published-demo-auth-boundary.md) — same-app fictional demo may use password-verified tickets; ordinary account verification must remain unchanged.
+- [Published demo boundary](published-demo-auth-boundary.md) — same-app fictional demo has a dedicated password path; ordinary staff verification must remain unchanged.
 - [Patient booking contract](patient-booking-contract.md) — Book Now immediately issues a private ticket; guest contact is optional and queue operations stay staff-facing.
 - [Booking readiness](booking-readiness.md) — location opening hours are not doctor sessions; never imply booking readiness or guess patient capacity from hours alone.

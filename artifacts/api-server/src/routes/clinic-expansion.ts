@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { clerkClient } from "@clerk/express";
 import { rateLimit } from "express-rate-limit";
-import { db, clinics, branches, doctors, qrs, users, staffSessionProofs } from "@workspace/db";
-import { sql } from "drizzle-orm";
+import { db, clinics, branches, doctors, qrs, users } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
 import * as z from "@workspace/api-zod";
-import { requireUser, requireSessionIdentity, authoritativeStaffSessionExpiry, roles } from "../lib/auth";
+import { requireUser, requireSessionIdentity, roles } from "../lib/auth";
+import { verifyPassword } from "../lib/native-auth";
 import { parse, query, assert, HttpError } from "../lib/http";
-import { all, one, flatten, put, uid, audit } from "../lib/store";
+import { all, one, flatten, put, uid, audit, change } from "../lib/store";
 import { enrich, publicDoctor } from "../lib/entities";
 import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, createOwnedClinic, previewClinicSetup } from "../lib/clinic-expansion";
 import { queryMetrics } from "../lib/list-query";
@@ -41,26 +41,17 @@ clinicExpansionRouter.post("/me/doctor-profile", async (req, res) => {
   res.json(await db.transaction(tx => attachOwnDoctor(user, body, tx)));
 });
 clinicExpansionRouter.post("/clinic-registration", registrationLimit, async (req, res) => {
-  const { clerkId, sessionId } = requireSessionIdentity(req), body = parse(z.RegisterClinicBody, req.body);
-  const identity = await clerkClient.users.getUser(clerkId);
-  const email = identity.emailAddresses.find(e => e.id === identity.primaryEmailAddressId && e.verification?.status === "verified")?.emailAddress.toLowerCase();
-  assert(email, 400, "Verify your primary email before registering a clinic");
-  assert(identity.passwordEnabled, 403, "Set an account password before registering a clinic");
-  try { await clerkClient.users.verifyPassword({ userId: clerkId, password: body.password }); }
-  catch (error: any) {
-    if ([400, 401, 403, 422].includes(Number(error?.status || error?.statusCode))) throw new HttpError(401, "Password is incorrect", "INVALID_STAFF_PASSWORD");
-    throw new HttpError(503, "Authentication service unavailable. Please retry.", "AUTH_PROVIDER_UNAVAILABLE");
-  }
-  const expiresAt = await authoritativeStaffSessionExpiry(sessionId, clerkId);
+  const { userId } = requireSessionIdentity(req), body = parse(z.RegisterClinicBody, req.body);
+  const [identity] = await db.select().from(users).where(eq(users.id, userId));
+  assert(identity?.emailVerifiedAt && identity.role === "clinicAdmin" && identity.status === "active", 403, "A verified clinic administrator is required");
+  assert(await verifyPassword(identity.passwordHash, body.password), 401, "Invalid password");
   const result = await db.transaction(async tx => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${clerkId}))`);
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"user-email:" + email}))`);
-    const existing = (await tx.execute(sql`select id from users where clerk_id=${clerkId} or lower(email)=${email} limit 1`)).rows;
-    assert(!existing.length, 409, "This identity already has an application profile. Existing roles cannot be changed by registration.");
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
+    const existing = await tx.select({ id: clinics.id }).from(clinics).where(eq(clinics.adminId, userId)).limit(1);
+    assert(!existing.length, 409, "This administrator already owns a clinic");
     assert(body.clinic.slug && body.branches.every((b: any) => b.slug), 400, "Choose public URLs for the clinic and each branch");
-    const admin = await put(users, { id: uid(), clerkId, fullName: body.fullName, email, mobile: body.mobile, role: "clinicAdmin", invitationStatus: "notRequired" }, tx);
+    const admin = await change(users, userId, { fullName: body.fullName, mobile: body.mobile }, tx);
     const result = await createOwnedClinic(admin, admin, body, tx);
-    await tx.insert(staffSessionProofs).values({ sessionId, clerkUserId: clerkId, expiresAt }).onConflictDoUpdate({ target: staffSessionProofs.sessionId, set: { clerkUserId: clerkId, expiresAt, createdAt: new Date() } });
     await audit(admin, "registerClinic", "users", admin, tx);
     return result;
   });

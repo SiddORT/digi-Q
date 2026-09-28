@@ -20,7 +20,7 @@ test("editing submits writable fields and preserves deliberate empty branch assi
   const body = staffInput("doctors", {
     fullName: "Test", clinicIds: ["a"], branchIds: [],
     ownerAdminId: "readonly", managingAdminId: "readonly", invitationStatus: "sent",
-    id: "readonly", clerkId: "readonly", experienceYears: NaN,
+    id: "readonly", passwordHash: "readonly", tokenHash: "readonly", experienceYears: NaN,
   });
   assert.deepEqual(body, { role: "doctor", status: "active", fullName: "Test", email: "", clinicIds: ["a"], branchIds: [] });
 });

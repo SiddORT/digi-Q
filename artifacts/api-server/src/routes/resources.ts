@@ -1,18 +1,18 @@
 import { Router } from "express";
-import { clerkClient } from "@clerk/express";
 import * as tables from "@workspace/db";
 import * as z from "@workspace/api-zod";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { requireUser, roles, scope, scoped, canRead, projectAssignmentScope, setAssignments, validateAssignments } from "../lib/auth";
 import { all, one, put, change, uid, audit, filtered, paginate } from "../lib/store";
-import { assert, parse, query } from "../lib/http";
+import { HttpError, assert, parse, query } from "../lib/http";
 import { enrich } from "../lib/entities";
 import { queryPage, assignmentCatalogPredicate } from "../lib/list-query";
-import { invitationMetadata } from "../lib/invitation-metadata";
+import { inviteStaff, requestStaffReset } from "./auth";
+import { consumeRateLimit, revokeUserSessions } from "../lib/native-auth";
 import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, attachOwnDoctor } from "../lib/clinic-expansion";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus } from "../lib/availability";
-const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs } = tables;
+const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs, authChallenges } = tables;
 export const resourcesRouter = Router();
 const definitions: [string, any, any, any][] = [
   ["clinics", clinics, z.CreateClinicBody, z.ListClinicsQueryParams],
@@ -57,13 +57,9 @@ function invitationRedirectUrl(req: any) {
 }
 
 async function withPasswordState(row: any) {
-  if (!row?.clerkId || !["superAdmin", "clinicAdmin", "doctor", "receptionist"].includes(row.role)) return row;
-  try {
-    const identity = await clerkClient.users.getUser(row.clerkId);
-    return { ...row, passwordEnabled: identity.passwordEnabled };
-  } catch {
-    return { ...row, passwordEnabled: null };
-  }
+  if (!row?.id || !["superAdmin", "clinicAdmin", "doctor", "receptionist"].includes(row.role)) return row;
+  const [identity] = await db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, row.id));
+  return { ...row, passwordEnabled: Boolean(identity?.passwordHash) };
 }
 
 export async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
@@ -156,77 +152,14 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
   }
 }
 export async function deliverInvitation(userId: string, redirectUrl?: string) {
-  return db.transaction(async tx => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"staff-invitation:" + userId}))`);
-    const account = await one(users, userId, tx);
-    if (account.clerkId) {
-      await change(users, userId, { invitationStatus: "notRequired" }, tx);
-      return;
-    }
-    const verifiedIdentity = async () => {
-      const email = account.email.toLowerCase();
-      const matches = await clerkClient.users.getUserList({ emailAddress: [email] });
-      return matches.data.find(identity => identity.emailAddresses.some(candidate =>
-        candidate.emailAddress.toLowerCase() === email && candidate.verification?.status === "verified"));
-    };
-    const linkIdentity = async (identity: { id: string }) => {
-      assert(!(await all(users, tx)).some(u => u.id !== userId && u.clerkId === identity.id), 409, "This identity already has a profile");
-      await change(users, userId, { clerkId: identity.id, invitationStatus: "notRequired" }, tx);
-    };
-    let identity;
-    try {
-      identity = await verifiedIdentity();
-    } catch {
-      await change(users, userId, { invitationStatus: "failed" }, tx);
-      return;
-    }
-    if (identity) {
-      await linkIdentity(identity);
-      return;
-    }
-    if (!redirectUrl) {
-      await change(users, userId, { invitationStatus: "failed" }, tx);
-      return;
-    }
-    try {
-      const emailAddress = account.email.toLowerCase();
-      const pending = await clerkClient.invitations.getInvitationList({ query: emailAddress, status: "pending", limit: 100 });
-      for (const invitation of pending.data.filter(item => item.emailAddress.toLowerCase() === emailAddress)) {
-        await clerkClient.invitations.revokeInvitation(invitation.id);
-      }
-      const enriched = await enrich("users", account, tx);
-      const metadata = invitationMetadata(
-        account.role,
-        enriched.clinicIds,
-        enriched.branchIds,
-        await all(clinics, tx),
-        await all(branches, tx),
-      );
-      await clerkClient.invitations.createInvitation({
-        emailAddress,
-        expiresInDays: Math.min(30, Math.max(1, Number.parseInt(process.env.CLERK_INVITATION_EXPIRES_IN_DAYS || "7", 10) || 7)),
-        ignoreExisting: false,
-        notify: true,
-        ...(redirectUrl ? { redirectUrl } : {}),
-        publicMetadata: metadata,
-      });
-    } catch {
-      // A Clerk identity can be completed between the lookup and invitation call.
-      // Only a verified matching address is safe to link.
-      try {
-        identity = await verifiedIdentity();
-      } catch {
-        identity = undefined;
-      }
-      if (identity) {
-        await linkIdentity(identity);
-        return;
-      }
-      await change(users, userId, { invitationStatus: "failed" }, tx);
-      return;
-    }
-    await change(users, userId, { invitationStatus: "sent" }, tx);
-  });
+  const account = await one(users, userId);
+  assert(["clinicAdmin", "doctor", "receptionist"].includes(account.role) && account.status === "active", 403, "Only active staff can be invited");
+  const [credential] = await db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, userId));
+  if (credential?.passwordHash) return;
+  await db.update(authChallenges).set({ consumedAt: new Date() }).where(and(
+    eq(authChallenges.userId, userId), eq(authChallenges.purpose, "invitation"),
+  ));
+  await inviteStaff(null, account);
 }
 export async function createClinicAdminOnboarding(actor: any, body: any, redirectUrl?: string) {
   roles(actor, ["superAdmin"]);
@@ -265,6 +198,9 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
 }
 async function save(kind: string, table: any, user: any, body: any, old?: any, redirectUrl?: string) {
   await authorizeWrite(user, kind, body, old);
+  if (old && ["users", "doctors"].includes(kind) && body.email !== undefined &&
+      body.email.toLowerCase() !== old.email.toLowerCase())
+    throw new HttpError(409, "Changing a login email requires a separately verified account transfer", "EMAIL_CHANGE_REQUIRES_VERIFICATION");
   if (kind === "users" || kind === "doctors") body.email = body.email.toLowerCase();
   if (!old && (kind === "users" || kind === "doctors")) {
     const existing = (await all(users)).find(u => u.email === body.email);
@@ -508,6 +444,11 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
     await audit(user, old && kind === "clinics" && ownershipChangeRequested(body.adminId, old.adminId) ? "ownershipTransfer" : old ? "update" : "create", kind, row, tx);
     return enrich(kind, row, tx);
   });
+  if (old?.status === "active" && saved.status === "inactive") {
+    if (kind === "users") await revokeUserSessions(saved.id);
+    if (kind === "doctors" && (await one(users, saved.userId)).status === "inactive")
+      await revokeUserSessions(saved.userId);
+  }
   if (!old && (kind === "doctors" || (kind === "users" && ["clinicAdmin", "doctor", "receptionist"].includes(saved.role)))) {
     await deliverInvitation(kind === "users" ? saved.id : saved.userId, redirectUrl);
     return enrich(kind, await one(table, saved.id));
@@ -674,15 +615,7 @@ for (const [kind, table, schema, listSchema] of definitions) {
         const branchIds = row.branchIds.filter((id: string) => unrestricted || branchRows.some(b => b.id === id && scope(user, b.clinicId as string, id)));
         return { ...row, clinicIds, branchIds, clinicNames: clinicRows.filter(c => clinicIds.includes(c.id)).map(c => c.name), branchNames: branchRows.filter(b => branchIds.includes(b.id)).map(b => b.name) };
       });
-      const ids = result.items.filter((r: any) => r.clerkId && ["superAdmin", "clinicAdmin", "doctor", "receptionist"].includes(r.role)).map((r: any) => r.clerkId);
-      if (ids.length) {
-        try {
-          const identities = await clerkClient.users.getUserList({ userId: ids, limit: 100 });
-          result.items = result.items.map((r: any) => ids.includes(r.clerkId) ? { ...r, passwordEnabled: identities.data.find(i => i.id === r.clerkId)?.passwordEnabled ?? null } : r);
-        } catch {
-          result.items = result.items.map((r: any) => ids.includes(r.clerkId) ? { ...r, passwordEnabled: null, passwordStateError: "Identity provider unavailable" } : r);
-        }
-      }
+      result.items = await Promise.all(result.items.map((row: any) => withPasswordState(row)));
     }
     res.json(result);
   });
@@ -718,6 +651,9 @@ for (const [kind, table, schema, listSchema] of definitions) {
       if (kind === "doctors" && (await one(users, old.userId, tx)).role !== "clinicAdmin") await change(users, old.userId, { status: "inactive" }, tx);
       await audit(user, "deactivate", kind, old, tx);
     });
+    if (kind === "users") await revokeUserSessions(old.id);
+    if (kind === "doctors" && (await one(users, old.userId)).status === "inactive")
+      await revokeUserSessions(old.userId);
     res.sendStatus(204);
   });
 }
@@ -774,16 +710,21 @@ resourcesRouter.post("/users/:id/password-reset", async (req, res) => {
   roles(user, ["superAdmin", "clinicAdmin"]);
   assert(["clinicAdmin", "doctor", "receptionist", "superAdmin"].includes(target.role), 400, "Password recovery assistance is available for staff profiles only");
   assert(await canRead(user, "users", target), 403, "User outside your scope");
-  assert(target.clerkId, 409, "This staff account has not completed invitation setup. Resend the set-password invitation instead.");
+  const [credential] = await db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, target.id));
+  assert(credential?.passwordHash, 409, "This staff account has not completed invitation setup. Resend the set-password invitation instead.");
+  await consumeRateLimit(`staff-recovery:${target.id}`, 3);
+  await requestStaffReset(req, target);
   await audit(user, "recoveryInstructions", "users", target);
-  res.status(202).json({ message: "Open /forgot-password to start the secure email-code password flow. No recovery email has been sent by this action." });
+  res.status(202).json({ message: "Password recovery email requested." });
 });
 resourcesRouter.post("/users/:id/resend-invitation", async (req, res) => {
   const actor = await requireUser(req), target = await enrich("users", await one(users, req.params.id as string));
   roles(actor, ["superAdmin", "clinicAdmin", "doctor"]);
   assert(["clinicAdmin", "doctor", "receptionist"].includes(target.role), 400, "Invitations are available for staff profiles only");
   assert(await canRead(actor, "users", target), 403, "User outside your management scope");
-  assert(!target.clerkId, 409, "This staff account is already linked. Use password recovery assistance instead.");
+  const [credential] = await db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, target.id));
+  assert(!credential?.passwordHash, 409, "This staff account has a password. Use password recovery assistance instead.");
+  await consumeRateLimit(`staff-invite:${target.id}`, 3);
   await deliverInvitation(target.id, invitationRedirectUrl(req));
   const updated = await enrich("users", await one(users, target.id));
   await audit(actor,

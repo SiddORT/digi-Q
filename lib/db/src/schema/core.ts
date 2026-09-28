@@ -6,6 +6,8 @@ const data = () => jsonb("data").$type<Record<string, any>>().notNull().default(
 const created = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 export const users = pgTable("users", {
   id: id(), clerkId: text("clerk_id").unique(), email: text("email").notNull().unique(),
+  passwordHash: text("password_hash"), emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }),
   fullName: text("full_name").notNull(), mobile: text("mobile"), role: text("role").notNull(),
   managingAdminId: text("managing_admin_id").references((): AnyPgColumn => users.id),
   invitationStatus: text("invitation_status").notNull().default("failed"),
@@ -117,3 +119,33 @@ export const staffSessionProofs = pgTable("staff_session_proofs", {
   index("staff_session_proof_user_idx").on(t.clerkUserId),
   index("staff_session_proof_expiry_idx").on(t.expiresAt),
 ]);
+
+/** Opaque cookies contain the random token; only its digest is stored here. */
+export const authSessions = pgTable("auth_sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: created(),
+}, t => [index("auth_session_user_idx").on(t.userId), index("auth_session_expiry_idx").on(t.expiresAt)]);
+
+/** Single-use, hashed setup/reset/email challenge material. Never store raw codes. */
+export const authChallenges = pgTable("auth_challenges", {
+  id: id(),
+  userId: text("user_id").references(() => users.id),
+  email: text("email").notNull(),
+  purpose: text("purpose").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  data: data(),
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: created(),
+}, t => [index("auth_challenge_email_idx").on(t.email, t.purpose), index("auth_challenge_expiry_idx").on(t.expiresAt)]);
+
+/** Shared across workers; no per-process rate-limit bypass. */
+export const authRateLimits = pgTable("auth_rate_limits", {
+  key: text("key").primaryKey(),
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+}, t => [index("auth_rate_limit_expiry_idx").on(t.expiresAt)]);

@@ -6,16 +6,14 @@ description: Why the dedicated demo login cannot change ordinary staff verificat
 The owner explicitly declined a separate demo deployment and authorized a
 fictional, single-clinic demo inside the same published application.
 Ordinary users, real clinic staff and user-owned real accounts must continue
-using the existing Clerk password, new-device verification and session-bound
-staff password proof. Never disable verification tenant-wide, infer staff
-password knowledge from a Clerk session alone, or treat a fabricated
+using the ordinary staff password and email verification flow. Never disable
+verification globally, infer staff password knowledge from a patient session,
+or treat a fabricated
 email address as a real user's verified inbox.
 
 The designated demo identity alone may use the dedicated demo-password path:
-the backend checks that the marked, active provider identity is the fixed
-demo account, asks Clerk to verify its password, then issues a short-lived
-Clerk sign-in ticket. The new session still needs the normal server-side
-staff password proof. The demo identity can own only its one marked clinic,
+the backend must check the marked active demo identity, verify its password,
+and establish an application-owned session. The demo identity can own only its one marked clinic,
 branch and self-owned doctor; structural writes/invitations and cross-clinic
 access remain denied. An authorized Super Admin explicitly provisions,
 disables and rotates the account; no startup seed or production SQL creates it.

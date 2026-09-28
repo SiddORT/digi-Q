@@ -3,7 +3,7 @@ name: Role test authentication isolation
 description: Avoiding false authorization conclusions during multi-account browser verification
 ---
 
-Use a fresh isolated browser context per role, explicitly select the intended Clerk fixture identity, and confirm both the browser identity and `/me` role before evaluating a protected flow.
+Use a fresh isolated browser context per role, explicitly select the intended fixture identity, and confirm both the browser identity and `/me` role before evaluating a protected flow.
 
 **Why:** A browser-helper handshake initially left the patient view unauthenticated during the flow audit. Fresh-context identity checks established the correct patient session without any application authentication change. A helper's apparent sign-in success alone was insufficient evidence.
 
@@ -24,9 +24,9 @@ Create booking fixtures through the real booking API when testing queue summarie
 Do not infer the workspace database target from `REPLIT_ENVIRONMENT` alone.
 
 **Why:** This workspace reported a production environment label while its database
-connection matched the explicitly queried development database and Clerk test tenant.
+connection matched the explicitly queried development database rather than production.
 
 **How to apply:** Before creating temporary auth fixtures, compare a read-only
 database fingerprint through the actual workspace connection against explicitly
-selected development and production query results, and verify the provider tenant
-is development. Stop on ambiguity; never print credentials or reset existing users.
+selected development and production query results. Prefer a disposable database.
+Stop on ambiguity; never print credentials or reset existing users.

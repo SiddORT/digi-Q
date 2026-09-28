@@ -39,10 +39,13 @@ export function readScope(user: any, kind: string): SQL {
 }
 export function documentSql(kind: string): SQL {
   // Transform physical columns to the public camelCase contract; JSON data remains extensible.
-  let doc = raw(`coalesce(to_jsonb(r)->'data','{}'::jsonb) || (select jsonb_object_agg((select string_agg(case when n=1 then word else initcap(word) end,'' order by n) from unnest(string_to_array(k,'_')) with ordinality t(word,n)),v) from jsonb_each(to_jsonb(r)-'data') e(k,v))`);
+  let doc = raw(`coalesce(to_jsonb(r)->'data','{}'::jsonb) || (select jsonb_object_agg((select string_agg(case when n=1 then word else initcap(word) end,'' order by n) from unnest(string_to_array(k,'_')) with ordinality t(word,n)),v) from jsonb_each(to_jsonb(r)-'data'-'password_hash'-'token_hash') e(k,v))`);
+  // Users use a credential column, not extensible data. Never project that
+  // column through generic list/export serialization.
+  if (kind === "users") doc = sql`(${doc}) - 'passwordHash' - 'password_hash' - 'tokenHash' - 'token_hash' - 'clerkId'`;
   if (["users", "doctors"].includes(kind)) doc = sql`${doc} || jsonb_build_object('clinicIds',coalesce((select jsonb_agg(distinct l.clinic_id) from (${links(kind)}) l),'[]'::jsonb),'branchIds',coalesce((select jsonb_agg(distinct l.branch_id) filter(where l.branch_id is not null) from (${links(kind)}) l),'[]'::jsonb))`;
-  if (kind === "doctors") doc = sql`${doc} || (select jsonb_build_object('fullName',u.full_name,'email',u.email,'mobile',coalesce(u.mobile,''),'managingAdminId',r.owner_admin_id,'managingAdminName',(select full_name from users where id=r.owner_admin_id),'invitationStatus',case when u.clerk_id is not null then 'notRequired' else u.invitation_status end,'status',case when u.status<>'active' then 'inactive' else r.status end) from users u where u.id=r.user_id) || jsonb_build_object('specializationName',(select data->>'name' from masters where id=r.specialization_id),'qualificationNames',coalesce((select jsonb_agg(data->>'name') from masters where id in (select jsonb_array_elements_text(coalesce(r.data->'qualificationIds','[]'::jsonb)))),'[]'::jsonb))`;
-  if (kind === "users") doc = sql`${doc} || jsonb_build_object('mobile',coalesce(r.mobile,''),'managingAdminName',(select full_name from users where id=r.managing_admin_id),'invitationStatus',case when r.clerk_id is not null then 'notRequired' else r.invitation_status end)`;
+  if (kind === "doctors") doc = sql`${doc} || (select jsonb_build_object('fullName',u.full_name,'email',u.email,'mobile',coalesce(u.mobile,''),'passwordEnabled',u.password_hash is not null,'managingAdminId',r.owner_admin_id,'managingAdminName',(select full_name from users where id=r.owner_admin_id),'invitationStatus',case when u.password_hash is not null then 'notRequired' else u.invitation_status end,'status',case when u.status<>'active' then 'inactive' else r.status end) from users u where u.id=r.user_id) || jsonb_build_object('specializationName',(select data->>'name' from masters where id=r.specialization_id),'qualificationNames',coalesce((select jsonb_agg(data->>'name') from masters where id in (select jsonb_array_elements_text(coalesce(r.data->'qualificationIds','[]'::jsonb)))),'[]'::jsonb))`;
+  if (kind === "users") doc = sql`${doc} || jsonb_build_object('mobile',coalesce(r.mobile,''),'passwordEnabled',r.password_hash is not null,'managingAdminName',(select full_name from users where id=r.managing_admin_id),'invitationStatus',case when r.password_hash is not null then 'notRequired' else r.invitation_status end)`;
   if (kind === "clinics") doc = sql`${doc} || jsonb_build_object('adminName',(select full_name from users where id=r.admin_id))`;
   if (kind === "branches") doc = sql`${doc} || jsonb_build_object('clinicName',(select data->>'name' from clinics where id=r.clinic_id),
     'inheritEmail',coalesce((r.data->>'inheritEmail')::boolean,nullif(r.data->>'email','') is null),
@@ -61,7 +64,7 @@ export function filterSql(q: any): SQL {
     assert(Number.isInteger(Number(weekday)) && Number(weekday) >= 0 && Number(weekday) <= 6, 400, "Invalid weekday");
     filters.push(sql`doc->>'dayOfWeek'=${String(weekday)}`);
   }
-  if (q.linkedOnly === true) filters.push(sql`nullif(doc->>'clerkId','') is not null`);
+  if (q.linkedOnly === true) filters.push(sql`doc->>'passwordEnabled'='true'`);
   if (q.statusGroup && q.statusGroup !== "all") {
     assert(statusGroups[q.statusGroup], 400, "Invalid status group");
     filters.push(inList(raw("doc->>'status'"), statusGroups[q.statusGroup]));

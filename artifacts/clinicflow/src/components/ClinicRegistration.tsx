@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { SignUp, useAuth, useClerk, useUser } from "@clerk/react";
+import { useNativeAuth, authRequest } from "../auth/native-auth";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
@@ -12,45 +12,77 @@ import { Logo } from "../App";
 import { BRAND_NAME } from "../branding";
 import "./ClinicRegistrationAccount.css";
 
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export function ClinicRegistration() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useNativeAuth();
   useEffect(() => { const old = document.title; document.title = `Register a Clinic | ${BRAND_NAME}`; return () => { document.title = old; }; }, []);
   if (!isLoaded) return <div className="page-loading">Preparing secure registration…</div>;
-  if (!isSignedIn) return <AuthShell eyebrow="REGISTER A CLINIC" registration><div className="auth-card registration-account-card"><h1>Start with your secure account.</h1><p>Create an account with a verified email and password. Then we’ll guide you through your clinic, locations and opening hours.</p><div className="registration-clerk-container"><h2 className="registration-form-title">Create your account</h2><SignUp routing="path" path={`${basePath}/register-clinic`} signInUrl={`${basePath}/sign-in`} forceRedirectUrl={`${basePath}/register-clinic`} appearance={{ elements: {
-    rootBox: { width: "100%", minWidth: 0, maxWidth: "100%" },
-    cardBox: { width: "100%", minWidth: 0, maxWidth: "100%" },
-    card: { width: "100%", minWidth: 0, maxWidth: "100%", padding: "20px 16px" },
-    main: { minWidth: 0, width: "100%" },
-    form: { minWidth: 0, width: "100%" },
-    formFieldRow: { minWidth: 0, maxWidth: "100%" },
-    formFieldInput: { minWidth: 0, maxWidth: "100%" },
-    footer: { minWidth: 0, maxWidth: "100%", paddingLeft: 16, paddingRight: 16, boxSizing: "border-box" },
-    socialButtons: { display: "none" },
-    socialButtonsBlockButton: { display: "none" },
-    socialButtonsIconButton: { display: "none" },
-    dividerRow: { display: "none" },
-  } }}/></div><p className="registration-note"><span className="registration-existing-signin">Already have a staff account? <Link href="/sign-in">Sign in to your workspace.</Link> </span>Existing patient or staff accounts cannot be converted through clinic registration.</p></div></AuthShell>;
+  if (!isSignedIn) return <RegistrationAccount/>;
   return <RegistrationIdentity/>;
+}
+
+function RegistrationAccount() {
+  const { refresh } = useNativeAuth();
+  const [step, setStep] = useState<"details" | "verify">("details");
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [challengeId, setChallengeId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true); setError("");
+    try {
+      if (step === "details") {
+        const result = await authRequest<{ challengeId: string }>("register/start", { email: email.trim().toLowerCase(), fullName: fullName.trim(), password });
+        if (!result.challengeId) throw new Error("Could not send the verification code. Please retry.");
+        setChallengeId(result.challengeId);
+        setPassword("");
+        setStep("verify");
+      } else {
+        const result = await authRequest<{ authenticated: boolean }>("register/verify", { challengeId, code: code.trim() });
+        if (!result.authenticated) throw new Error("This code is invalid or expired.");
+        setCode("");
+        await refresh();
+      }
+    } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to register your clinic account."); }
+    finally { setBusy(false); }
+  }
+  return <AuthShell eyebrow="REGISTER A CLINIC" registration><div className="auth-card registration-account-card">
+    <h1>Start with your secure account.</h1>
+    <p>Create an account with a verified email and password. Then we’ll guide you through your clinic, locations and opening hours.</p>
+    <div className="registration-account-container"><h2 className="registration-form-title">{step === "details" ? "Create your account" : "Verify your email"}</h2>
+      <form onSubmit={submit}>
+        {step === "details" ? <>
+          <label>Your name<input type="text" autoComplete="name" required value={fullName} onChange={event => setFullName(event.target.value)}/></label>
+          <label>Email address<input type="email" autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)}/></label>
+          <label>Password<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={event => setPassword(event.target.value)}/></label>
+        </> : <label>Code emailed to {email}<input type="text" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)}/></label>}
+        {error && <div className="error-box" role="alert">{error}</div>}
+        <button className="button auth-submit" type="submit" disabled={busy}>{busy ? "Please wait…" : step === "details" ? "Send verification code" : "Verify and continue"}</button>
+        {step === "verify" && <button className="text-link" type="button" disabled={busy} onClick={() => { setStep("details"); setCode(""); setChallengeId(""); setError(""); }}>Change details</button>}
+      </form>
+    </div><p className="registration-note"><span className="registration-existing-signin">Already have a staff account? <Link href="/sign-in">Sign in to your workspace.</Link> </span>Existing patient or staff accounts cannot be converted through clinic registration.</p>
+  </div></AuthShell>;
 }
 
 function RegistrationIdentity() {
   const me = api.useGetMe({ query: { queryKey: api.getGetMeQueryKey(), staleTime: 0 } });
-  const { user } = useUser();
-  const { signOut, openUserProfile } = useClerk();
   if (me.isLoading) return <div className="page-loading">Checking your account…</div>;
   if (me.error) return <div className="error-box" role="alert">Unable to check your account. {me.error.message}<button onClick={() => me.refetch()} data-testid="registration-retry-account">Try again</button></div>;
   if (me.data?.user?.role === "superAdmin") return <AuthAccess><ClinicAdminOnboarding guided/></AuthAccess>;
+   if (me.data?.user?.role === "clinicAdmin" && !me.data.user.clinicIds?.length) return <RegistrationForm/>;
   if (me.data?.user) {
     const role = me.data.user.role === "clinicAdmin" ? "admin" : me.data.user.role;
     return <div className="clinic-registration"><Logo/><main className="registration-card"><h1>You already have a {BRAND_NAME} account.</h1><p>Clinic registration is for a new clinic owner. Your existing role and permissions will not change.</p><Link className="button" href={`/${role}/dashboard`} data-testid="registration-existing-workspace">Go to your workspace</Link></main></div>;
   }
-  if (!user?.passwordEnabled) return <div className="clinic-registration"><Logo/><main className="registration-card"><h1>A staff password is required.</h1><p>Clinic administration requires an email-and-password account. This identity does not have a password enabled. Open secure account settings and add a password under Security, then return here.</p><button className="button" onClick={() => openUserProfile()} data-testid="registration-account-security">Open secure account settings</button><p className="registration-note">If password setup is unavailable for this identity, sign out and create a new email-and-password account with a different email. Staff password recovery is only available after a staff account exists.</p><button className="text-link" onClick={() => signOut()} data-testid="registration-signout">Sign out</button></main></div>;
-  return <RegistrationForm key={user.id}/>;
+   return <div className="error-box" role="alert">Unable to prepare clinic registration for this account. Please sign out and retry.</div>;
 }
 
 function RegistrationForm() {
-  const { user } = useUser();
+  const me = api.useGetMe({ query: { queryKey: api.getGetMeQueryKey() } });
   const client = useQueryClient();
   const [password, setPassword] = useState("");
   const [completed, setCompleted] = useState<api.ClinicSettingsResult | null>(null);
@@ -76,8 +108,10 @@ function RegistrationForm() {
       client.invalidateQueries({ predicate: q => q.queryKey[0] !== api.getGetMeQueryKey()[0] });
     } finally { setPassword(""); locked.current = false; }
   }
-   if (completed) return <ClinicRegistrationComplete result={completed}/>;
+    if (completed) return <ClinicRegistrationComplete result={completed}/>;
+   if (me.isLoading) return <div className="page-loading">Loading your account…</div>;
+   if (me.error || !me.data?.user) return <div className="error-box" role="alert">Unable to load your account. <button onClick={() => me.refetch()}>Retry</button></div>;
   if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
   if (references.error && !references.data) return <div className="error-box" role="alert">Could not load clinic setup options. {references.error.message}<button data-testid="registration-retry-options" onClick={() => references.refetch()}>Try again</button></div>;
-   return <ClinicRegistrationWizard initial={{ fullName: user?.fullName || "", email: user?.primaryEmailAddress?.emailAddress || "" }} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={registration.isPending} error={registration.error?.message} finishSecurity={<label style={{ marginTop: 20 }}>Confirm your account password<input type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} data-testid="registration-confirm-password"/><small className="registration-note">Verified securely before staff access is created. Never stored in your registration draft.</small></label>}/>;
+    return <ClinicRegistrationWizard initial={{ fullName: me.data.user.fullName || "", email: me.data.user.email || "" }} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={registration.isPending} error={registration.error?.message} finishSecurity={<label style={{ marginTop: 20 }}>Confirm your account password<input type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} data-testid="registration-confirm-password"/><small className="registration-note">Verified securely before staff access is created. Never stored in your registration draft.</small></label>}/>;
 }

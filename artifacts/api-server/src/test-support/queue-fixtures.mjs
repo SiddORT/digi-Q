@@ -1,5 +1,6 @@
 export const queueFixtureSql = `
-  create table users(id text primary key, clerk_id text, email text, full_name text, mobile text, role text, managing_admin_id text, invitation_status text default 'notRequired',status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
+  create table users(id text primary key, clerk_id text, password_hash text, email_verified_at timestamptz, password_changed_at timestamptz, email text, full_name text, mobile text, role text, managing_admin_id text, invitation_status text default 'notRequired',status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
+  create table auth_sessions(id text primary key, user_id text, token_hash text, created_at timestamptz default now(), expires_at timestamptz, revoked_at timestamptz);
   create table clinics(id text primary key,owner_id text,admin_id text,status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
   create table branches(id text primary key,clinic_id text,status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
   create unique index clinic_slug_unique on clinics((data->>'slug'));
@@ -23,7 +24,7 @@ export const queueFixtureSql = `
 `;
 
 export async function seedQueueFixtures(api, t, database) {
-  await database.exec("truncate users,clinics,branches,doctors,assignments,patients,schedules,availability_exceptions,appointments,appointment_history,audit_logs,settings,masters,qrs,guest_requests");
+  await database.exec("truncate users,auth_sessions,clinics,branches,doctors,assignments,patients,schedules,availability_exceptions,appointments,appointment_history,audit_logs,settings,masters,qrs,guest_requests");
   await api.put(t.users, { id: "du", email: "d@example.com", fullName: "Doctor", role: "doctor" });
   await api.put(t.users, { id: "du2", email: "d2@example.com", fullName: "Doctor Two", role: "doctor" });
   await api.put(t.users, { id: "admin", email: "admin@example.com", fullName: "Admin", role: "clinicAdmin" });

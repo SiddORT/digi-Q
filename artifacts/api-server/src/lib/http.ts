@@ -54,6 +54,9 @@ export function errors(err: any, req: Request, res: Response, _next: NextFunctio
   const conflictCode = databaseIntegrityCode(err);
   const conflict = Boolean(conflictCode);
   const status = err.status || (validation ? 400 : conflict ? 409 : 500);
-  if (status >= 500) req.log.error({ err }, "Request failed");
+  // Database/SMTP errors may include SQL bound parameters or transport data.
+  // Never serialize exception objects here: auth parameters can include codes,
+  // links, password verifiers and session tokens.
+  if (status >= 500) req.log.error({ code: typeof err?.code === "string" ? err.code : "INTERNAL_ERROR" }, "Request failed");
   res.status(status).json({ error: validation ? "Invalid input: " + err.issues.map((i: any) => `${i.path.join(".")} ${i.message}`).join("; ") : conflict ? "Record conflicts with existing data or references" : status >= 500 ? "Service unavailable. Please retry." : err.message, code: validation ? "VALIDATION_ERROR" : conflict ? "CONFLICT" : err.code || "REQUEST_FAILED" });
 }

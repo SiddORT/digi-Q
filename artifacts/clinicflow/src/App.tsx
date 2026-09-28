@@ -1,10 +1,10 @@
-import { useEffect, useRef } from "react";
-import { ClerkProvider, useAuth, useClerk } from "@clerk/react";
-import { publishableKeyFromHost } from "@clerk/react/internal";
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router, Route, Switch, Redirect, Link, useLocation } from "wouter";
 import { Activity, ArrowUpRight, CalendarDays, ShieldCheck, Clock3, Building2, Stethoscope, ChevronRight, QrCode } from "lucide-react";
-import { BRAND_NAME, brandLogoAbsoluteUrl } from "./branding";
+import { BRAND_NAME } from "./branding";
+import "./lib/api";
+import { NativeAuthProvider, useNativeAuth } from "./auth/native-auth";
 import { BrandLogo } from "./components/BrandLogo";
 import * as api from "@workspace/api-client-react";
 import { Portal, Onboarding, PublicBooking } from "./clinic";
@@ -21,23 +21,11 @@ import { GuestClinicFinder } from "./components/GuestClinicFinder";
 import { DemoLogin } from "./auth/DemoLogin";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
 export const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 15000 } } });
-function stripBase(path: string) { return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || "/" : path; }
 export { BrandLogo as Logo };
 const Logo = BrandLogo;
-function CacheReset() {
-  const { addListener } = useClerk();
-  const previous = useRef<string | null | undefined>(undefined);
-  useEffect(() => addListener(({user}) => { const id = user?.id ?? null; if (previous.current !== undefined && previous.current !== id) queryClient.clear(); previous.current = id; }), [addListener]);
-  return null;
-}
 function Home() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn } = useNativeAuth();
   if (isSignedIn) return <AuthAccess><Redirect to="/onboarding"/></AuthAccess>;
   return <div className="landing">
     <header className="public-header"><Logo/><nav><a href="#how-it-works">How it works</a><a href="#for-clinics">For clinics</a><Link href="/register-clinic" data-testid="landing-register-clinic">Register a Clinic</Link><Link href="/guest-booking" data-testid="landing-guest-booking">Guest booking</Link><Link href="/patient-login">Patient login</Link><Link className="button small" href="/sign-in">Staff login <ArrowUpRight size={16}/></Link></nav></header>
@@ -50,8 +38,12 @@ function Home() {
   </div>;
 }
 function SignUpRoute() {
-  const ticket = new URLSearchParams(window.location.search).get("__clerk_ticket") || new URLSearchParams(window.location.search).get("ticket");
-  return <Redirect to={ticket ? `/set-password?__clerk_ticket=${encodeURIComponent(ticket)}` : "/patient-login"} />;
+  const ticket = new URLSearchParams(window.location.search).get("ticket");
+  return <Redirect to={ticket ? `/set-password?token=${encodeURIComponent(ticket)}` : "/patient-login"} />;
+}
+function ResetPasswordRoute() {
+  const token = new URLSearchParams(window.location.search).get("token");
+  return <Redirect to={token ? `/set-password?flow=reset&token=${encodeURIComponent(token)}` : "/forgot-password"} />;
 }
 function RegisterDoctor(){
   useEffect(()=>{sessionStorage.setItem("clinicflow-intent","doctor");},[]);
@@ -77,7 +69,7 @@ function RegisterDoctor(){
   );
 }
 function Guard({role, page}: {role:string;page:string}) {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useNativeAuth();
   const me = api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
   if (!isLoaded || (isSignedIn && me.isLoading)) return <div className="page-loading">Preparing your workspace…</div>;
   if (!isSignedIn) return <Redirect to="/login"/>;
@@ -90,7 +82,7 @@ function Guard({role, page}: {role:string;page:string}) {
   return <Portal identity={me.data} role={role} page={page}/>;
 }
 function PublicBookingRoute({reference}: {reference:string}) {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useNativeAuth();
   if (!isLoaded) return <div className="page-loading">Preparing booking…</div>;
   if (isSignedIn) return <AuthAccess><PublicBooking reference={reference}/></AuthAccess>;
   return <PublicBooking reference={reference}/>;
@@ -102,11 +94,7 @@ const routes: Record<string,string[]> = {
   patient:["dashboard","book","appointments","queue","profile"],
 };
 function Providers(){
- const [,setLocation]=useLocation();
- return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} routerPush={to=>setLocation(stripBase(to))} routerReplace={to=>setLocation(stripBase(to),{replace:true})}
- appearance={{options:{logoImageUrl:brandLogoAbsoluteUrl(),logoLinkUrl:basePath||"/"},variables:{colorPrimary:"#1552b0",colorForeground:"#142d53",colorMutedForeground:"#61748b",colorBackground:"#ffffff",colorInput:"#ffffff",colorInputForeground:"#142d53",colorDanger:"#b33636",fontFamily:"'DM Sans', sans-serif",borderRadius:"12px"},elements:{cardBox:{width:"420px",maxWidth:"100%",background:"#fff"},headerTitle:{color:"#142d53"},headerSubtitle:{color:"#61748b"},formFieldLabel:{color:"#142d53"},footerActionLink:{color:"#1552b0"}}}}
- localization={{signIn:{start:{title:"Welcome back",subtitle:`Sign in to your ${BRAND_NAME} workspace`}},signUp:{start:{title:"Your care, connected",subtitle:`Create your secure ${BRAND_NAME} account`}}}}>
-  <QueryClientProvider client={queryClient}><CacheReset/><Switch>
+  return <QueryClientProvider client={queryClient}><NativeAuthProvider><Switch>
     <Route path="/" component={Home}/>
     <Route path="/sign-in/*?" component={StaffLogin}/>
     <Route path="/sign-up/*?" component={SignUpRoute}/>
@@ -116,6 +104,7 @@ function Providers(){
     <Route path="/scan-qr" component={PatientScanner}/>
     <Route path="/guest-booking" component={GuestClinicFinder}/>
     <Route path="/forgot-password" component={ForgotPassword}/>
+     <Route path="/reset-password" component={ResetPasswordRoute}/>
     <Route path="/set-password" component={SetPassword}/>
     <Route path="/login"><Redirect to="/sign-in"/></Route>
     <Route path="/register"><Redirect to="/patient-login"/></Route>
@@ -129,6 +118,6 @@ function Providers(){
     <Route path="/:clinicSlug/:branchSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug} branchSlug={p.branchSlug}/>}</Route>
     <Route path="/:clinicSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug}/>}</Route>
     <Route><div className="empty"><h1>Page not found</h1><Link href="/">Return home</Link></div></Route>
-  </Switch></QueryClientProvider></ClerkProvider>;
+   </Switch></NativeAuthProvider></QueryClientProvider>;
 }
 export default function App(){ return <Router base={basePath}><Providers/></Router>; }

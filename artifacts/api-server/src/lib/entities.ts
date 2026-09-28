@@ -1,4 +1,5 @@
 import { db, doctors, users, assignments, masters, branches, clinics } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { all, flatten, one } from "./store";
 import { managedDoctorAssignments } from "./clinical-membership";
 export async function enrich(kind: string, row: any, conn: any = db): Promise<any> {
@@ -19,7 +20,8 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
     row.createdAt ||= account.createdAt || null;
     row.managingAdminId = row.ownerAdminId;
     row.managingAdminName = (await one(users, row.ownerAdminId, conn)).fullName;
-    row.invitationStatus = account.clerkId ? "notRequired" : account.invitationStatus;
+    const [credential] = await conn.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, account.id));
+    row.invitationStatus = credential?.passwordHash ? "notRequired" : account.invitationStatus;
     if (account.status !== "active") row.status = "inactive";
     if (row.specializationId) row.specializationName = (await one(masters, row.specializationId, conn)).name;
     row.qualificationNames = (await all(masters, conn)).filter(m => row.qualificationIds?.includes(m.id)).map(m => m.name);
@@ -28,7 +30,8 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
     const managerId = row.role === "receptionist" ? row.managingAdminId : null;
     row.managingAdminId = managerId || null;
     row.managingAdminName = managerId ? (await one(users, managerId, conn)).fullName : null;
-    row.invitationStatus = row.clerkId ? "notRequired" : row.invitationStatus;
+    const [credential] = await conn.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, row.id));
+    row.invitationStatus = credential?.passwordHash ? "notRequired" : row.invitationStatus;
     row.createdAt ||= null;
   }
   if (kind === "clinics") row.adminName = (await one(users, row.adminId, conn)).fullName;
