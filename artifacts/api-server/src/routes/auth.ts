@@ -107,7 +107,8 @@ authRouter.post("/auth/logout", async (req, res) => {
 });
 authRouter.post("/auth/forgot-password", async (req, res) => {
   const address = email(req.body?.email);
-  await limit(req, address, "forgot-password", 3);
+  // Recovery has no per-account request cap; retain the existing IP abuse limit.
+  await consumeRateLimit(`forgot-password:ip:${req.ip || "unknown"}`, 30);
   smtpConfig();
   const user = await localUser(address);
   if (user?.status === "active" && isStaffRole(user.role)) await mailLink(req, address, user.id, "reset", "/reset-password");

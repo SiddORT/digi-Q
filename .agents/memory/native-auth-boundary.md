@@ -15,6 +15,12 @@ Normal staff password login must be independent of SMTP; successful password ver
 
 **How to apply:** Keep SMTP mandatory for operations that actually send email (registration verification, recovery requests, invitations, patient codes). Do not reintroduce email delivery as a prerequisite for ordinary staff password login.
 
+Password recovery must not impose a per-account email-request cap. Keep IP abuse protection and reset-token controls separate from that policy.
+
+**Why:** The user reported legitimate recovery blocked after three requests and explicitly requested removing that account limit without weakening token security or other authentication endpoints.
+
+**How to apply:** Do not reintroduce the shared account limiter for forgot-password. Preserve single-use, expiring random tokens, password validation/hashing, and limits on other auth operations.
+
 Cookie-transport fixes require a network-level test through the real Express middleware and frontend transport, not just direct calls to authentication handlers.
 
 **Why:** Direct handler tests passed while the deployed login could still fail at CSRF middleware; concurrent anonymous status and token bootstrap requests could issue competing cookies.

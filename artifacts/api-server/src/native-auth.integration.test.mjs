@@ -237,6 +237,32 @@ test("verified registration and patient email create separate roles without an e
   assert.ok(forbidden.res.body.challengeId);
   assert.equal(globalThis.nativeAuthMail.length, 0, "staff identity never gets a patient OTP");
 });
+test("recovery exceeds three requests without an account cap and keeps token safeguards", async () => {
+  await h.control.query("insert into users(id,email,full_name,role) values ('recovery','recovery@example.test','Recovery','doctor')");
+  // Even an already exhausted legacy account bucket must not block recovery.
+  for (let i = 0; i < 3; i++) await api.consumeRateLimit("forgot-password:account:recovery@example.test", 3);
+  const tokens = [];
+  for (let i = 0; i < 5; i++) {
+    const result = await route("/auth/forgot-password", { email: "recovery@example.test" });
+    assert.equal(result.res.body.sent, true);
+    tokens.push(new URL(/https:\/\/\S+/.exec(globalThis.nativeAuthMail.pop().text)[0]).searchParams.get("token"));
+  }
+  assert.equal(new Set(tokens).size, 5);
+  for (const token of tokens) assert.match(token, /^[A-Za-z0-9_-]{24}\.[A-Za-z0-9_-]{43}$/);
+  const password = "recovered secure passphrase 123";
+  await assert.rejects(() => route("/auth/reset-password", { token: tokens[0], password: "short" }));
+  const reset = await route("/auth/reset-password", { token: tokens[0], password });
+  assert.equal(reset.res.body.reset, true);
+  await assert.rejects(() => route("/auth/reset-password", { token: tokens[0], password }), /Invalid or expired/);
+  const row = (await h.control.query("select password_hash from users where id='recovery'")).rows[0];
+  assert.match(row.password_hash, /^\$argon2id\$/);
+  assert.equal(await api.verifyPassword(row.password_hash, password), true);
+  await h.control.query("update auth_challenges set expires_at=now()-interval '1 second' where purpose='reset'");
+  await assert.rejects(() => route("/auth/reset-password", { token: tokens[1], password }), /Invalid or expired/);
+  // Other authentication account limits remain active.
+  for (let i = 0; i < 5; i++) await assert.rejects(() => route("/auth/login", { email: "recovery@example.test", password: "wrong" }), error => error.status === 401);
+  await assert.rejects(() => route("/auth/login", { email: "recovery@example.test", password: "wrong" }), error => error.status === 429);
+});
 test("invitation sets credential once; reset revokes previously issued sessions", async () => {
   await h.control.query("insert into users(id,email,full_name,role) values ('invited','invited@example.test','Invited','doctor')");
   await api.inviteStaff(null, { id: "invited", email: "invited@example.test" });
