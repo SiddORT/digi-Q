@@ -2,6 +2,7 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 
 const clinic = { id: "clinic-1", name: "Fixture Clinic", slug: "fixture-clinic", address: "1 Fixture Road", city: "Pune", status: "active", adminId: "fixture-admin" };
+const otherClinic = { ...clinic, id: "clinic-2", name: "Other Fixture Clinic", slug: "other-fixture-clinic" };
 const branch = {
   id: "branch-1", clinicId: clinic.id, name: "Fixture Location", address: "1 Fixture Road", city: "Pune",
   timezone: "Asia/Kolkata", status: "active", slug: "fixture-location", inheritEmail: true, inheritPhone: true,
@@ -9,17 +10,19 @@ const branch = {
   openingHours: [{ dayOfWeek: 1, startTime: "09:00", endTime: "17:00" }],
 };
 const staff = { id: "staff-1", fullName: "Fixture Receptionist", email: "fixture@example.invalid", status: "active", role: "receptionist", clinicIds: [clinic.id], branchIds: [branch.id] };
+const otherBranch = { ...branch, id: "branch-2", clinicId: otherClinic.id, name: "Other Fixture Location", slug: "other-fixture-location" };
 type Calls = { method: string; pathname: string; params: URLSearchParams; body?: unknown };
 type Fixture = {
   calls: Calls[];
   previewCount: number;
   staff: typeof staff;
   failStatus: boolean;
+  failBranches: boolean;
 };
 const listing = (items: unknown[]) => ({ items, total: items.length, page: 1, pageSize: 20, totalPages: 1 });
 
-async function fixture(page: Page): Promise<Fixture> {
-  const state: Fixture = { calls: [], previewCount: 0, staff: { ...staff }, failStatus: false };
+async function fixture(page: Page, multiClinic = false): Promise<Fixture> {
+  const state: Fixture = { calls: [], previewCount: 0, staff: { ...staff }, failStatus: false, failBranches: false };
   // Intercept all application API requests, including unexpected endpoints. Never proxy to a running API.
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
@@ -33,19 +36,25 @@ async function fixture(page: Page): Promise<Fixture> {
     let status = 200;
     if (path === "/api/settings") reply = { timezone: "Asia/Kolkata" };
     else if (path === "/api/me") reply = { clerkId: "fixture-only", user: { id: "fixture-admin", role: "superAdmin", fullName: "Fixture Administrator" }, doctorId: "doctor-1" };
-    else if (path === "/api/clinics" && method === "GET") reply = listing([clinic]);
-    else if (path === "/api/branches" && method === "GET") reply = listing([branch]);
+    else if (path === "/api/clinics" && method === "GET") reply = listing((multiClinic ? [clinic, otherClinic] : [clinic]).filter(item =>
+      !url.searchParams.get("search") || item.name.toLowerCase().includes(url.searchParams.get("search")!.toLowerCase())));
+    else if (path === "/api/branches" && method === "GET" && state.failBranches) { status = 503; reply = { message: "Fixture branch lookup unavailable" }; }
+    else if (path === "/api/branches" && method === "GET") reply = listing((multiClinic ? [branch, otherBranch] : [branch]).filter(item =>
+      (!url.searchParams.get("clinicId") || url.searchParams.get("clinicId") === item.clinicId) &&
+      (!url.searchParams.get("search") || item.name.toLowerCase().includes(url.searchParams.get("search")!.toLowerCase()))));
     else if (path === "/api/users" && method === "GET") reply = listing(
       (!url.searchParams.get("role") || url.searchParams.get("role") === "receptionist") &&
       (!url.searchParams.get("status") || url.searchParams.get("status") === state.staff.status) ? [state.staff] : [],
     );
     else if (path === "/api/users/staff-1" && method === "GET") reply = state.staff;
-    else if (path === "/api/patients" && method === "GET") reply = listing([{ id: "patient-1", fullName: "Fixture Patient", status: "active", clinicId: clinic.id }]);
+    else if (path === "/api/patients" && method === "GET") reply = listing([{ id: "patient-1", fullName: "Fixture Patient", status: "active", clinicId: clinic.id, branchId: branch.id }]);
     else if (path === "/api/doctors" && method === "GET") reply = listing([{ id: "doctor-1", fullName: "Fixture Doctor", userId: "fixture-admin", status: "active", branchIds: [branch.id] }]);
     else if (path === "/api/masters" && method === "GET") reply = listing([]);
     else if (path === "/api/clinics/clinic-1/settings" && method === "GET") reply = { clinic, branches: [branch], policies: { bookingHorizonDays: 30, cancellationCutoffMinutes: 60 } };
     else if (path === "/api/clinics/clinic-1" && method === "GET") reply = clinic;
     else if (path === "/api/branches/branch-1" && method === "GET") reply = branch;
+    else if (path === "/api/branches/branch-2" && method === "GET") reply = otherBranch;
+    else if (path === "/api/clinics/clinic-2" && method === "GET") reply = otherClinic;
     else if (path === "/api/clinics/clinic-1/settings/preview" && method === "POST") {
       state.previewCount++;
       reply = state.previewCount === 1
@@ -123,6 +132,60 @@ test("embedded locations never request another clinic even with a foreign URL fi
   expect(listCalls(state, "/api/branches").length).toBeGreaterThan(0);
   expect(listCalls(state, "/api/branches").every(call => call.params.get("clinicId") === clinic.id)).toBe(true);
   await expect(page.getByRole("button", { name: "Clear clinic" })).toHaveCount(0);
+});
+
+test("create form preserves clinic and branch across unrelated edits, search and option refresh", async ({ page }) => {
+  const state = await fixture(page, true);
+  await page.goto(pageUrl("patients"));
+  await page.getByTestId("button-add-patients").click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("combobox", { name: /^Clinic/ }).click();
+  await page.getByRole("option", { name: "Fixture Clinic", exact: true }).click();
+  await dialog.getByRole("combobox", { name: /^Branch/ }).click();
+  await page.getByRole("option", { name: "Fixture Location", exact: true }).click();
+  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
+  const clinicRequests = listCalls(state, "/api/clinics").length;
+  const branchRequests = listCalls(state, "/api/branches").length;
+  await dialog.getByTestId("input-fullName").fill("Unsaved Name");
+  await dialog.getByRole("combobox", { name: /^Clinic/ }).click();
+  await page.getByPlaceholder("Search clinic...").fill("Other");
+  await expect.poll(() => listCalls(state, "/api/clinics").filter(call => call.params.get("search") === "Other").length).toBe(1);
+  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
+  await expect(dialog.getByRole("combobox", { name: /Clinic: Fixture Clinic/ })).toBeVisible();
+  await dialog.getByRole("combobox", { name: /^Clinic/ }).click();
+  await expect(dialog.getByTestId("input-fullName")).toHaveValue("Unsaved Name");
+  expect(listCalls(state, "/api/branches")).toHaveLength(branchRequests);
+  expect(listCalls(state, "/api/clinics")).toHaveLength(clinicRequests + 1);
+});
+
+test("edit form retains valid branch for unchanged clinic and removes it for another clinic", async ({ page }) => {
+  const state = await fixture(page, true);
+  await page.goto(pageUrl("patients"));
+  await page.getByRole("button", { name: /Edit Fixture Patient/ }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("combobox", { name: /Clinic: Fixture Clinic/ })).toBeVisible();
+  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
+  await dialog.getByTestId("input-fullName").fill("Unsaved edit");
+  await dialog.getByRole("combobox", { name: /^Clinic/ }).click();
+  await page.getByRole("option", { name: "Other Fixture Clinic", exact: true }).click();
+  await expect.poll(() => listCalls(state, "/api/branches").some(call => call.params.get("clinicId") === "clinic-2")).toBe(true);
+  await expect(dialog.getByRole("combobox", { name: /^Branch/ })).not.toHaveAttribute("aria-label", /Branch: Fixture Location/);
+  await expect(dialog.getByTestId("input-fullName")).toHaveValue("Unsaved edit");
+});
+
+test("branch option errors are not reported as empty or endless loading, and keep the edit selection", async ({ page }) => {
+  const state = await fixture(page);
+  await page.goto(pageUrl("patients"));
+  await page.getByRole("button", { name: /Edit Fixture Patient/ }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
+  state.failBranches = true;
+  await dialog.getByRole("combobox", { name: /^Branch/ }).click();
+  await page.getByPlaceholder("Search branch...").fill("missing");
+  await expect.poll(() => listCalls(state, "/api/branches").filter(call => call.params.get("search") === "missing").length).toBe(1);
+  await expect(dialog.getByRole("alert")).toContainText("Fixture branch lookup unavailable");
+  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
+  await expect(page.getByText("Searching...", { exact: true })).toHaveCount(0);
 });
 
 test("the real Staff page confirms status changes, invalidates lists, and reports rejection", async ({ page }) => {

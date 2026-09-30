@@ -174,7 +174,7 @@ export function SearchableSelect({
             />
             <CommandList className="max-h-[250px] overflow-y-auto">
               <CommandEmpty>
-                {loading ? "Searching..." : "No results found."}
+                 {loading ? "Searching..." : error ? "Unable to load options." : "No results found."}
               </CommandEmpty>
               <CommandGroup>
                 {displayOptions.map((option) => (

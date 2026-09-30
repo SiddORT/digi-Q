@@ -223,7 +223,7 @@ export function SearchableMultiSelect({
             />
             <CommandList className="max-h-[250px] overflow-y-auto">
               <CommandEmpty>
-                {isActuallyLoading ? "Searching..." : "No results found."}
+                 {isActuallyLoading ? "Searching..." : error ? "Unable to load options." : "No results found."}
               </CommandEmpty>
               <CommandGroup>
                 {displayOptions.map((option) => {

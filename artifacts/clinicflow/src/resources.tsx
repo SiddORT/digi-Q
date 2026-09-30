@@ -10,6 +10,7 @@ import QRCode from "qrcode";
 import { Plus, Pencil, Trash2, Download, Copy, Monitor, QrCode, ArrowUp, ArrowDown, ArrowUpDown, ListFilter } from "lucide-react";
 import { ClinicAdminOnboarding } from "./components/ClinicAdminOnboarding";
 import { ResourceLookup, ResourceMultiLookup } from "./components/ResourceLookup";
+import { validDependentIds } from "./components/relation-validity";
 import { Pagination, SearchInput, FilterBar, useDebouncedValue, type FilterChip } from "./components/ListingControls";
 import { AppDialog } from "./components/AppDialog";
 import { SearchableSelect } from "./components/SearchableSelect";
@@ -48,7 +49,7 @@ export const resources:Record<string,Resource>={
 function MasterTextInput({field,control}:any){
  const [search,setSearch]=useState("");
  const term=useDebouncedValue(search);
- const q=useQuery({queryKey:["lookup","masters",field.category,term],queryFn:()=>api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any),refetchInterval:30000});
+  const q=useQuery({queryKey:["lookup","masters",field.category,term],queryFn:()=>api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any),staleTime:120000});
  const fieldName=title(field.key).toLowerCase();
  return <Controller name={field.key} control={control} rules={{required:field.required}} render={({field:input})=><SuggestionInput id={`input-${field.key}`} value={input.value||""} onChange={input.onChange} onSearchChange={setSearch} options={(q.data?.items||[]).map(row=>row.name)} placeholder={`Type or search ${fieldName}…`} clearLabel={`Clear ${fieldName}`} loading={q.isFetching} error={q.error ? `Unable to load ${fieldName} suggestions. You can still enter free text.` : undefined}/>}/>;
 }
@@ -77,13 +78,25 @@ function RelationInput({field,form,fields,resourceName,label}:any){
  if(assignment){params.targetRole=resourceName==="doctors"?"doctor":"receptionist";params[resourceName==="doctors"?"doctorId":"userId"]=values.id;}
  useEffect(()=>{form.register(field.key,{validate:(value:any)=>!field.required||(many?value?.length>0:!!value)||"Required"});},[field.key,field.required]);
  const change=(value:any)=>{
+    const previous=values[field.key];
+    if(Array.isArray(value)?JSON.stringify(value)===JSON.stringify(previous||[]):value===(previous||""))return;
    form.setValue(field.key,value,{shouldValidate:true,shouldDirty:true});
-   if(["clinicId","clinicIds"].includes(field.key)){
-     for(const dependent of ["branchId","branchIds","doctorId"])if(fields.some((f:Field)=>f.key===dependent))form.setValue(dependent,dependent.endsWith("Ids")?[]:"",{shouldDirty:true});
-   }
-   if(field.key==="branchId"&&hasClinic&&fields.some((f:Field)=>f.key==="doctorId"))form.setValue("doctorId","",{shouldDirty:true});
+    // An empty parent cannot have valid dependents. For other changes wait for
+    // the scoped lookup to confirm which existing selections still belong.
+    if(["clinicId","clinicIds"].includes(field.key)&&!value?.length){
+      for(const dependent of ["branchId","branchIds","doctorId"])if(fields.some((f:Field)=>f.key===dependent))form.setValue(dependent,dependent.endsWith("Ids")?[]:"",{shouldDirty:true});
+    }
  };
-  const props={resource:assignment?`assignment:${field.resource}`:field.resource,params,label,placeholder:`Search ${label.toLowerCase()}…`,disabled:["branches","doctors"].includes(field.resource)&&hasClinic&&!clinicIds.length,required:field.required,onChange:change};
+  const validateSelected=(records:any[],verifiedMissing:string[])=>{
+    if(!hasClinic||!["branches","doctors"].includes(field.resource))return;
+    const current=form.getValues();
+    const selected:string[]=many?current[field.key]||[]:current[field.key]?[current[field.key]]:[];
+    if(!selected.length)return;
+    const clinics:string[]=current.clinicIds|| (current.clinicId?[current.clinicId]:[]);
+    const valid=validDependentIds(field.resource,selected,records,clinics,current.branchId).filter(id=>!verifiedMissing.includes(id));
+    if(valid.length!==selected.length)form.setValue(field.key,many?valid:valid[0]||"",{shouldValidate:true,shouldDirty:true});
+  };
+   const props={resource:assignment?`assignment:${field.resource}`:field.resource,params,label,placeholder:`Search ${label.toLowerCase()}…`,disabled:["branches","doctors"].includes(field.resource)&&hasClinic&&!clinicIds.length,required:field.required,onChange:change,onSelectedRecords:validateSelected};
  return many?<ResourceMultiLookup {...props} value={values[field.key]||[]}/>:<ResourceLookup {...props} value={values[field.key]||""}/>;
 }
  export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel="Save changes",resourceName,onDirtyChange,reviewOnly=false,children}:{fields:Field[];initial?:any;onSave:(data:any)=>void;onCancel?:()=>void;busy?:boolean;submitLabel?:string;resourceName?:string;onDirtyChange?:(dirty:boolean)=>void;reviewOnly?:boolean;children?:ReactNode}){

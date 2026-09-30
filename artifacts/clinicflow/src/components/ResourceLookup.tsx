@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { SearchableSelect } from "./SearchableSelect";
 import { SearchableMultiSelect } from "./SearchableMultiSelect";
 import { useDebouncedValue } from "./ListingControls";
+import { selectedIdBatches } from "./relation-validity";
 
 const lists: Record<string, any> = { clinics: api.listClinics, branches: api.listBranches, doctors: api.listDoctors, patients: api.listPatients, users: api.listUsers, masters: api.listMasters };
 const getters: Record<string, any> = { clinics: api.getClinic, branches: api.getBranch, doctors: api.getDoctor, patients: api.getPatient, users: api.getUser, masters: api.getMaster };
-type Props = { resource: string; value: string; onChange: (value: string) => void; label?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean };
+type Props = { resource: string; value: string; onChange: (value: string) => void; label?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean; onSelectedRecords?: (records: any[], verifiedMissing: string[]) => void };
 type MultiProps = Omit<Props, "value" | "onChange"> & { value: string[]; onChange: (value: string[]) => void; onRecords?: (records: any[]) => void; isOptionDisabled?: (record:any)=>boolean };
 
 function lookupName(resource: string) {
@@ -18,7 +19,6 @@ function lookupName(resource: string) {
 function useOptions(resource: string, selected: string[], params: Record<string, unknown>, enabled=true) {
   const [search, setSearch] = useState("");
   const debounced = useDebouncedValue(search);
-  const cache = useRef(new Map<string, any>());
   const assignment = resource.startsWith("assignment:");
   const kind = resource.split(":")[1];
   const query = useInfiniteQuery({
@@ -44,43 +44,59 @@ function useOptions(resource: string, selected: string[], params: Record<string,
       return load(request);
     },
     getNextPageParam: (last: any, pages) => pages.reduce((n, p: any) => n + p.items.length, 0) < last.total ? pages.length + 1 : undefined,
-    staleTime: 30000,
-    refetchInterval: 30000,
-    refetchIntervalInBackground: false,
+     staleTime: 120000,
   });
+   const rows: any[] = query.data?.pages.flatMap((p: any) => p.items) || [];
+   // A selected row on the current page needs no duplicate detail request.
+   const missing = selected.filter(id => !rows.some(row => row.id === id));
   const selectedQuery = useQuery({
-    queryKey: ["remote-selected", resource, selected.join(","), params],
-    enabled: enabled && selected.length > 0,
+     queryKey: ["remote-selected", resource, missing.join(","), params],
+     enabled: enabled && missing.length > 0 && (!query.isPending || query.isError),
     queryFn: async () => {
       if (assignment) {
-        const result: any = await api.getStaffAssignmentOptions({ ...params, search: undefined, clinicId: undefined, selectedIds: selected.join(","), pageSize: 100 } as any);
-        return result[kind] || [];
+         // Selected hydration uses the same clinic scope as the option request,
+         // including the per-clinic requests for multi-clinic branch mappings.
+         const clinicIds = kind === "branches" ? String(params.clinicId || "").split(",").filter(Boolean) : [];
+         const scopes = clinicIds.length ? clinicIds.map(clinicId => ({ ...params, clinicId })) : [params];
+         const results: any[] = await Promise.all(scopes.flatMap(scope => selectedIdBatches(missing).map(ids =>
+           api.getStaffAssignmentOptions({ ...scope, search: undefined, selectedIds: ids.join(","), pageSize: 100 } as any))));
+         if (results.some(result => result.pagination?.[kind]?.total > (result[kind] || []).length))
+           throw new Error("Selected options were only partially loaded. Please retry.");
+         return [...new Map(results.flatMap(result => result[kind] || []).map(row => [row.id, row])).values()];
       }
-      // Refresh selected records too: cached labels are not a server freshness check.
-      return Promise.all(selected.map(id => getters[resource](id)));
+       return Promise.all(missing.map(id => getters[resource](id)));
     },
-    staleTime: 60000,
-    refetchInterval: 30000,
-    refetchIntervalInBackground: false,
+     staleTime: 120000,
   });
-  const rows: any[] = query.data?.pages.flatMap((p: any) => p.items) || [];
-  [...rows, ...(selectedQuery.data || [])].forEach(row => cache.current.set(row.id, row));
-  const merged = [...new Map([...rows, ...selected.map(id => cache.current.get(id)).filter(Boolean)].map(row => [row.id, row])).values()];
-  return { query, selectedQuery, rows: merged, search: setSearch, options: merged.map(row => ({ value: row.id, label: row.name || row.fullName || row.id })) };
+   const selectedRows: any[] = selectedQuery.data || [];
+   const merged = [...new Map([...rows, ...selectedRows].map(row => [row.id, row])).values()];
+   const verifiedMissing = assignment && kind === "branches" && selectedQuery.isSuccess ? missing.filter(id => !selectedRows.some(row => row.id === id)) : [];
+   // Hydration supplies labels at rest, but must not turn an empty search into a
+   // false result (or make an out-of-scope selected row selectable).
+   const visible = debounced ? rows : merged;
+   return { query, selectedQuery, selectedPending: missing.length > 0 && selectedQuery.isPending, rows: merged, selectedRecords: [...rows, ...selectedRows].filter(row => selected.includes(row.id)), verifiedMissing, search: setSearch, options: visible.map(row => ({ value: row.id, label: row.name || row.fullName || row.id, disabled: !rows.some(option => option.id === row.id) })) };
 }
 
-export function ResourceLookup({ resource, value, onChange, params = {}, ...props }: Props) {
+export function ResourceLookup({ resource, value, onChange, params = {}, onSelectedRecords, ...props }: Props) {
   const lookup = useOptions(resource, value ? [value] : [], params, !props.disabled);
+   const scopeKey = JSON.stringify(params);
+   const recordsKey = JSON.stringify(lookup.selectedRecords);
+   const missingKey = lookup.verifiedMissing.join(",");
+   useEffect(() => { if (!lookup.query.isPending && !lookup.query.error && !lookup.selectedPending && !lookup.selectedQuery.error) onSelectedRecords?.(lookup.selectedRecords, lookup.verifiedMissing); }, [scopeKey, recordsKey, missingKey, lookup.query.isPending, lookup.query.error, lookup.selectedPending, lookup.selectedQuery.error, onSelectedRecords]);
   const placeholder=props.placeholder||`Search ${lookupName(resource)}…`;
-  return <><SearchableSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options} onSearchChange={lookup.search} loading={lookup.query.isFetching} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
+   return <><SearchableSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options} onSearchChange={lookup.search} loading={(lookup.query.isPending && !lookup.query.isError) || lookup.query.isFetching} error={lookup.query.error ? "Unable to load options." : undefined} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
 }
-export function ResourceMultiLookup({ resource, value, onChange, params = {}, onRecords, isOptionDisabled, ...props }: MultiProps) {
+export function ResourceMultiLookup({ resource, value, onChange, params = {}, onRecords, onSelectedRecords, isOptionDisabled, ...props }: MultiProps) {
   const lookup = useOptions(resource, value, params, !props.disabled);
+  const scopeKey = JSON.stringify(params);
   const recordsKey = JSON.stringify(lookup.rows);
   useEffect(() => { onRecords?.(lookup.rows); }, [recordsKey]);
+   const selectedKey = JSON.stringify(lookup.selectedRecords);
+   const missingKey = lookup.verifiedMissing.join(",");
+   useEffect(() => { if (!lookup.query.isPending && !lookup.query.error && !lookup.selectedPending && !lookup.selectedQuery.error) onSelectedRecords?.(lookup.selectedRecords, lookup.verifiedMissing); }, [scopeKey, selectedKey, missingKey, lookup.query.isPending, lookup.query.error, lookup.selectedPending, lookup.selectedQuery.error, onSelectedRecords]);
   const placeholder=props.placeholder||`Search ${lookupName(resource)}…`;
-  return <><SearchableMultiSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options.map(option=>({...option,disabled:!value.includes(option.value)&&!!isOptionDisabled?.(lookup.rows.find(row=>row.id===option.value))}))} onSearchChange={lookup.search} isLoading={lookup.query.isFetching} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
+   return <><SearchableMultiSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options.map(option=>({...option,disabled:option.disabled||(!value.includes(option.value)&&!!isOptionDisabled?.(lookup.rows.find(row=>row.id===option.value)))}))} onSearchChange={lookup.search} isLoading={(lookup.query.isPending && !lookup.query.isError) || lookup.query.isFetching} error={lookup.query.error ? "Unable to load options." : undefined} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
 }
 function LookupError({ error, retry }: { error: unknown; retry: () => void }) {

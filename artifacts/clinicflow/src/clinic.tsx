@@ -364,8 +364,8 @@ function Reports(){
   ];
    return <div className="reports-compact"><FilterBar label="Report filters" chips={reportChips} onOpen={openFilters} onApply={applyFilters} advanced={<>
      <SearchableSelect label="Group by" value={draft.groupBy} onChange={value=>draftChange({groupBy:(value||"date") as typeof draft.groupBy})} options={["date","clinic","doctor"].map(value=>({value,label:title(value)}))}/>
-     <ResourceLookup resource="clinics" label="Clinic" value={draft.clinicId} onChange={value=>draftChange({clinicId:value,branchId:"",doctorId:""})}/>
-     <ResourceLookup resource="branches" label="Location" value={draft.branchId} disabled={!draft.clinicId} params={{clinicId:draft.clinicId}} onChange={value=>draftChange({branchId:value,doctorId:""})}/>
+      <ResourceLookup resource="clinics" label="Clinic" value={draft.clinicId} onChange={value=>{if(value!==draft.clinicId)draftChange({clinicId:value,branchId:"",doctorId:""});}}/>
+      <ResourceLookup resource="branches" label="Location" value={draft.branchId} disabled={!draft.clinicId} params={{clinicId:draft.clinicId}} onChange={value=>{if(value!==draft.branchId)draftChange({branchId:value,doctorId:""});}}/>
      <ResourceLookup resource="doctors" label="Doctor" value={draft.doctorId} disabled={!draft.clinicId} params={{clinicId:draft.clinicId,branchId:draft.branchId||undefined}} onChange={value=>draftChange({doctorId:value})}/>
    </>} actions={<button className="button secondary small" onClick={()=>void download()} disabled={exporting||q.isFetching||!!q.error||!total||!from||!to||from>to}>{exporting?"Exporting…":"Export all results CSV"}</button>} active={!!clinicId||!!branchId||!!doctorId||from!==today()||to!==today()||groupBy!=="date"} onReset={()=>{setFrom(today());setTo(today());setGroup("date");setClinic("");setBranch("");setDoctor("");setDraft({groupBy:"date",clinicId:"",branchId:"",doctorId:""});}}>
     <label>From<input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label>To<input type="date" min={from} value={to} onChange={e=>setTo(e.target.value)}/></label>
