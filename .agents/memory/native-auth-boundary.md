@@ -38,3 +38,9 @@ UAT at `https://uat.digi-q.in` is the authoritative target for the authenticatio
 **Why:** The user explicitly selected UAT rather than the Replit-published site or both deployments.
 
 **How to apply:** Scope live verification and release-readiness conclusions to UAT. Observations of the Replit deployment do not establish UAT behavior, and discrepancies there do not automatically expand the work.
+
+The user says development was done here, pushed through Git and deployed, then Clerk authentication was manually changed to JWT in the deployed version. They cannot provide the requested deployment evidence.
+
+**Why:** The user corrected the assumption that workspace authentication represents deployed authentication.
+
+**How to apply:** Treat deployed JWT as user-reported, not independently verified. Scope further analysis as reconciliation of potentially divergent implementations, not automatically a new JWT migration. Do not repeat requests for the unavailable deployment files or claim public endpoint checks prove token format.
