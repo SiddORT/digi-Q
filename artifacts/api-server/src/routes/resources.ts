@@ -74,7 +74,7 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
     if (old?.userId) {
       const account = await one(users, old.userId);
       if (account.role === "clinicAdmin") {
-        assert(old.ownerAdminId === old.userId && user.id === old.userId && user.role === "clinicAdmin", 403, "Only the owning Clinic Admin can edit their clinical profile");
+        assert(old.ownerAdminId === old.userId && (user.role === "superAdmin" || user.id === old.userId && user.role === "clinicAdmin"), 403, "Only Super Admin or the owning Clinic Admin can edit this clinical profile");
         assert(body.ownerAdminId === undefined || body.ownerAdminId === old.userId, 409, "Self-owned doctor profile cannot be transferred");
         assert(body.clinicIds === undefined, 409, "Administrative clinic mappings cannot be edited through a doctor profile");
       }

@@ -383,7 +383,10 @@ test("guest immediate creation commits recoverable receipt without account", asy
     return route.fulfill({ json: { ...guest, fullName: "Walk-in Guest" } });
   });
   await page.goto("/?mode=guest");
-  await page.getByTestId("input-guest-date").fill(date);
+  // The fixture QR context configures DD/MM/YYYY; type the visible clinic format.
+  await page.getByTestId("input-guest-date").fill("14/06/2030");
+  await expect(page.getByTestId("input-guest-date")).toHaveValue("14/06/2030");
+  await expect(page.getByTestId("input-guest-date")).not.toHaveAttribute("aria-invalid", "true");
   await page.getByTestId("input-guest-name").fill("Walk-in Guest");
   await page.getByTestId("input-guest-permission").check();
   await expect(page.getByTestId("button-submit-guest")).toBeEnabled();

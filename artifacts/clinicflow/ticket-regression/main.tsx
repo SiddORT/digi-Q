@@ -34,7 +34,7 @@ window.decodeTicketQr = async (uri) => {
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={query}>
     {mode === "guest"
-      ? <GuestBooking reference="fixture-qr" context={{ clinicId: "clinic-1", branchId: "branch-1", doctorId: "doctor-1", branchTimezone: "UTC" } as React.ComponentProps<typeof GuestBooking>["context"]} />
+      ? <GuestBooking reference="fixture-qr" context={{ clinicId: "clinic-1", branchId: "branch-1", doctorId: "doctor-1", branchTimezone: "UTC", dateFormat: "DD/MM/YYYY", timeFormat: "24h" } as React.ComponentProps<typeof GuestBooking>["context"]} />
       : mode === "bulk" ? <BulkAppointments ids={["appointment-1"]} disabled={false} onClear={() => {}} />
       : <AppointmentTicket id="appointment-1" />}
   </QueryClientProvider>,

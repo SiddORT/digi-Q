@@ -20,6 +20,73 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export interface NotificationTemplateContent {
+  /**
+     * @minLength 1
+     * @maxLength 180
+     */
+  subject: string;
+  /**
+     * @minLength 1
+     * @maxLength 8000
+     */
+  body: string;
+  /** @maxLength 60 */
+  prefix: string;
+  /** @maxLength 500 */
+  footer: string;
+  /** @maxLength 1000 */
+  logoUrl: string;
+}
+
+export type NotificationTemplateSaveEvent = typeof NotificationTemplateSaveEvent[keyof typeof NotificationTemplateSaveEvent];
+
+
+export const NotificationTemplateSaveEvent = {
+  booking: 'booking',
+  onboarding: 'onboarding',
+  rescheduled: 'rescheduled',
+  cancelled: 'cancelled',
+  completed: 'completed',
+  reminder: 'reminder',
+} as const;
+
+export type NotificationTemplateSaveMode = typeof NotificationTemplateSaveMode[keyof typeof NotificationTemplateSaveMode];
+
+
+export const NotificationTemplateSaveMode = {
+  draft: 'draft',
+  publish: 'publish',
+  reset: 'reset',
+} as const;
+
+export interface NotificationTemplateSave {
+  clinicId?: string;
+  event: NotificationTemplateSaveEvent;
+  /** @minimum 0 */
+  revision: number;
+  mode: NotificationTemplateSaveMode;
+  content?: NotificationTemplateContent;
+}
+
+export type NotificationTemplateCatalogItemsItem = {
+  event: string;
+  title: string;
+  revision: number;
+  source: string;
+  content: NotificationTemplateContent;
+  draft?: NotificationTemplateContent;
+  previewSubject: string;
+  previewBody: string;
+  delivery: string;
+};
+
+export interface NotificationTemplateCatalog {
+  scopeName: string;
+  variables: string[];
+  items: NotificationTemplateCatalogItemsItem[];
+}
+
 export type IntegrationKeyStatusStatus = typeof IntegrationKeyStatusStatus[keyof typeof IntegrationKeyStatusStatus];
 
 
@@ -1960,6 +2027,10 @@ export type DateParameter = string;
 export type FromParameter = string;
 
 export type ToParameter = string;
+
+export type GetNotificationTemplatesParams = {
+clinicId?: string;
+};
 
 export type GetSessionContextsParams = {
 doctorId: string;

@@ -1,3 +1,4 @@
+import { phoneValidityMessage } from "./phone.ts";
 /**
  * Shared validators (spec §7.4). Each returns an error message or undefined.
  * All string inputs are trimmed so whitespace-only counts as empty (finding 30).
@@ -43,8 +44,8 @@ export function validatePhone(value: unknown): string | undefined {
   if (!v) return undefined;
   if (/[^\d\s()+.-]/.test(v)) return "Phone number can contain digits only.";
   const n = normalizePhone(v);
-  if (!/^\+[1-9]\d{7,14}$/.test(n)) return "Enter a phone number with country code, for example +91 98765 43210.";
-  return undefined;
+  if (!/^\+[1-9]\d{7,14}$/.test(n)) return "Choose a country and enter the local number, for example India +91 98765 43210.";
+  return phoneValidityMessage(n);
 }
 
 export function validatePassword(value: unknown): string | undefined {

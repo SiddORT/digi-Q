@@ -23,6 +23,32 @@ servers:
 security:
   - NativeSession: []
 paths:
+  /management/templates:
+    get:
+      operationId: getNotificationTemplates
+      parameters:
+        - { in: query, name: clinicId, schema: { type: string } }
+      responses:
+        "200":
+          description: Authorized template drafts and effective published content. Reading never sends a message.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationTemplateCatalog" }
+    put:
+      operationId: saveNotificationTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationTemplateSave" }
+      responses:
+        "200":
+          description: Updated authorized catalog
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationTemplateCatalog" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
   /settings/integrations:
     put:
       operationId: updateIntegrationSettings
@@ -951,6 +977,45 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    NotificationTemplateContent:
+      type: object
+      required: [subject, body, prefix, footer, logoUrl]
+      properties:
+        subject: { type: string, minLength: 1, maxLength: 180 }
+        body: { type: string, minLength: 1, maxLength: 8000 }
+        prefix: { type: string, maxLength: 60 }
+        footer: { type: string, maxLength: 500 }
+        logoUrl: { type: string, maxLength: 1000 }
+    NotificationTemplateSave:
+      type: object
+      required: [event, revision, mode]
+      properties:
+        clinicId: { type: string }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder] }
+        revision: { type: integer, minimum: 0 }
+        mode: { type: string, enum: [draft, publish, reset] }
+        content: { $ref: "#/components/schemas/NotificationTemplateContent" }
+    NotificationTemplateCatalog:
+      type: object
+      required: [scopeName, variables, items]
+      properties:
+        scopeName: { type: string }
+        variables: { type: array, items: { type: string } }
+        items:
+          type: array
+          items:
+            type: object
+            required: [event, title, revision, source, content, previewSubject, previewBody, delivery]
+            properties:
+              event: { type: string }
+              title: { type: string }
+              revision: { type: integer }
+              source: { type: string }
+              content: { $ref: "#/components/schemas/NotificationTemplateContent" }
+              draft: { $ref: "#/components/schemas/NotificationTemplateContent" }
+              previewSubject: { type: string }
+              previewBody: { type: string }
+              delivery: { type: string }
     IntegrationKeyStatus:
       type: object
       required: [key, status]

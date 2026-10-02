@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { Activity, Clock3, MapPin, QrCode, RefreshCw, WifiOff, Users, Maximize2 } from "lucide-react";
 import "./clinic-display.css";
 import { BRAND_NAME } from "../branding";
-import { formatDate, formatTime, type DateTimePreferences } from "../lib/date-time";
+import { formatConfiguredTimestamp, formatDate, formatTime, type DateTimePreferences } from "../lib/date-time";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 type DisplaySession = PublicDisplay["sessions"][number];
@@ -72,7 +72,7 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
   }
 
   const location = data ? [data.branch.name, data.branch.address, data.branch.city].filter(Boolean).join(" · ") : "";
-  const updated = q.dataUpdatedAt ? new Date(q.dataUpdatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" }) : null;
+  const updated = q.dataUpdatedAt ? formatConfiguredTimestamp(new Date(q.dataUpdatedAt), data?.branch.timezone || undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" }, data) : null;
 
   return <div className="cd-root">
     <header className="cd-header">

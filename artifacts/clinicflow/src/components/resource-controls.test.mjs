@@ -28,7 +28,7 @@ test("fixed clinic scope is enforced on API calls and new records", () => {
 });
 
 test("user status is an accessible switch and filters can apply a draft", () => {
-  assert.match(resource, /role="switch" aria-label=\{`\$\{row\.fullName\}/);
+  assert.match(resource, /<StatusSwitch label=\{`\$\{row\.fullName\}/);
   const handler = resource.match(/const changeUserStatus=async\(row:any\)=>\{([\s\S]*?)\n \};/)?.[1];
   assert.ok(handler, "status changes use the async confirmation handler");
   assert.match(handler, /if\(statusUpdate\.isPending\)return/);

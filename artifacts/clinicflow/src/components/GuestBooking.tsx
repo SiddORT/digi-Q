@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
+import { DateFormatInput } from "./DateFormatInput";
+import { PhoneInput } from "./PhoneInput";
+import { validatePhone } from "../lib/validators";
 import * as api from "@workspace/api-client-react";
 import { Form } from "./ui/form";
 import { CareLookup } from "./CareLookup";
@@ -115,16 +118,16 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  <div className="form-grid">
   {!context.branchId&&<CareLookup publicAccess kind="branches" label="Location" value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}} selectedLabel={branchOptions.data?.items.find(b=>b.id===branchId)?.name}/>}
   {!context.doctorId&&<CareLookup publicAccess kind="doctors" label="Doctor" value={doctorId} disabled={!branchId} params={{clinicId:context.clinicId,branchId,status:"active"}} onChange={setDoctor} selectedLabel={doctorOptions.data?.items.find(d=>d.id===doctorId)?.fullName}/>}
-  <label>Visit date<input data-testid="input-guest-date" type="date" required min={today(available?.timezone)} value={date} onChange={e=>{searchRun.current++;setFinding(false);setDateMessage("");setDate(e.target.value);}}/></label>
+  <label>Visit date<DateFormatInput data-testid="input-guest-date" required min={today(available?.timezone)} preferences={{...(context.dateFormat?{dateFormat:context.dateFormat}:{}),...(context.timeFormat?{timeFormat:context.timeFormat}:{})}} value={date} onChange={value=>{searchRun.current++;setFinding(false);setDateMessage("");setDate(value);}}/></label>
   {selection.sessions.length===1&&!availability.error?<div className="guest-session"><strong>Consulting session</strong><span>{formatSessionHours(selection.sessions[0])} · {selection.sessions[0].timezone}</span><small>Only session listed for this date. Availability is checked again when you book.</small></div>:<SessionSelector selection={selection}/>}
  <label>Patient's name<input data-testid="input-guest-name" autoComplete="name" maxLength={150} {...form.register("fullName",{required:true,validate:v=>!!v.trim()})}/></label>
  </div>
  <details><summary data-testid="toggle-guest-contact" style={{padding:"14px 0",cursor:"pointer"}}>Add contact details (optional)</summary><div className="form-grid">
  <label>Email (optional)<input data-testid="input-guest-email" type="email" maxLength={254} autoComplete="email" {...form.register("email")}/></label>
- <label>Mobile (optional, with country code)<input data-testid="input-guest-mobile" type="tel" autoComplete="tel" placeholder="+ country code and number" maxLength={16} {...form.register("mobile",{validate:v=>!v.trim()||/^\+[1-9][0-9]{7,14}$/.test(v.trim())})}/></label>
+ <Controller name="mobile" control={form.control} rules={{validate:v=>!v?.trim()||!validatePhone(v)}} render={({field})=><label>Mobile (optional)<PhoneInput {...field} value={field.value||""} data-testid="input-guest-mobile"/></label>}/>
  </div></details>
  {form.formState.errors.fullName&&<p role="alert">Enter the patient's name.</p>}
- {form.formState.errors.mobile&&<p role="alert">Open contact details and enter + followed by your country code and number (8–15 digits), or leave mobile blank.</p>}
+ {form.formState.errors.mobile&&<p role="alert">Open contact details, choose a country and enter a valid local number, or leave mobile blank.</p>}
  <ErrorNotice error={create.error}/>
   <p className="muted guest-note">Without contact details we cannot send updates. A family member's contact requires their permission and does not link this visit to their account.</p>
  <label className="check-label"><input data-testid="input-guest-permission" type="checkbox" {...form.register("permission",{required:true})}/> I have permission to book this visit and share any contact details provided.</label>

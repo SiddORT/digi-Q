@@ -23,6 +23,140 @@
 import * as zod from 'zod';
 
 
+export const GetNotificationTemplatesQueryParams = zod.object({
+  "clinicId": zod.coerce.string().optional()
+})
+
+export const getNotificationTemplatesResponseItemsItemContentSubjectMax = 180;
+
+export const getNotificationTemplatesResponseItemsItemContentBodyMax = 8000;
+
+export const getNotificationTemplatesResponseItemsItemContentPrefixMax = 60;
+
+export const getNotificationTemplatesResponseItemsItemContentFooterMax = 500;
+
+export const getNotificationTemplatesResponseItemsItemContentLogoUrlMax = 1000;
+
+export const getNotificationTemplatesResponseItemsItemDraftSubjectMax = 180;
+
+export const getNotificationTemplatesResponseItemsItemDraftBodyMax = 8000;
+
+export const getNotificationTemplatesResponseItemsItemDraftPrefixMax = 60;
+
+export const getNotificationTemplatesResponseItemsItemDraftFooterMax = 500;
+
+export const getNotificationTemplatesResponseItemsItemDraftLogoUrlMax = 1000;
+
+
+
+export const GetNotificationTemplatesResponse = zod.object({
+  "scopeName": zod.string(),
+  "variables": zod.array(zod.string()),
+  "items": zod.array(zod.object({
+  "event": zod.string(),
+  "title": zod.string(),
+  "revision": zod.number().int(),
+  "source": zod.string(),
+  "content": zod.object({
+  "subject": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemContentSubjectMax),
+  "body": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemContentBodyMax),
+  "prefix": zod.string().max(getNotificationTemplatesResponseItemsItemContentPrefixMax),
+  "footer": zod.string().max(getNotificationTemplatesResponseItemsItemContentFooterMax),
+  "logoUrl": zod.string().max(getNotificationTemplatesResponseItemsItemContentLogoUrlMax)
+}),
+  "draft": zod.object({
+  "subject": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemDraftSubjectMax),
+  "body": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemDraftBodyMax),
+  "prefix": zod.string().max(getNotificationTemplatesResponseItemsItemDraftPrefixMax),
+  "footer": zod.string().max(getNotificationTemplatesResponseItemsItemDraftFooterMax),
+  "logoUrl": zod.string().max(getNotificationTemplatesResponseItemsItemDraftLogoUrlMax)
+}).optional(),
+  "previewSubject": zod.string(),
+  "previewBody": zod.string(),
+  "delivery": zod.string()
+}))
+})
+
+
+export const saveNotificationTemplateBodyRevisionMin = 0;
+
+export const saveNotificationTemplateBodyContentSubjectMax = 180;
+
+export const saveNotificationTemplateBodyContentBodyMax = 8000;
+
+export const saveNotificationTemplateBodyContentPrefixMax = 60;
+
+export const saveNotificationTemplateBodyContentFooterMax = 500;
+
+export const saveNotificationTemplateBodyContentLogoUrlMax = 1000;
+
+
+
+export const SaveNotificationTemplateBody = zod.object({
+  "clinicId": zod.string().optional(),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
+  "revision": zod.number().int().min(saveNotificationTemplateBodyRevisionMin),
+  "mode": zod.enum(['draft', 'publish', 'reset']),
+  "content": zod.object({
+  "subject": zod.string().min(1).max(saveNotificationTemplateBodyContentSubjectMax),
+  "body": zod.string().min(1).max(saveNotificationTemplateBodyContentBodyMax),
+  "prefix": zod.string().max(saveNotificationTemplateBodyContentPrefixMax),
+  "footer": zod.string().max(saveNotificationTemplateBodyContentFooterMax),
+  "logoUrl": zod.string().max(saveNotificationTemplateBodyContentLogoUrlMax)
+}).optional()
+})
+
+export const saveNotificationTemplateResponseItemsItemContentSubjectMax = 180;
+
+export const saveNotificationTemplateResponseItemsItemContentBodyMax = 8000;
+
+export const saveNotificationTemplateResponseItemsItemContentPrefixMax = 60;
+
+export const saveNotificationTemplateResponseItemsItemContentFooterMax = 500;
+
+export const saveNotificationTemplateResponseItemsItemContentLogoUrlMax = 1000;
+
+export const saveNotificationTemplateResponseItemsItemDraftSubjectMax = 180;
+
+export const saveNotificationTemplateResponseItemsItemDraftBodyMax = 8000;
+
+export const saveNotificationTemplateResponseItemsItemDraftPrefixMax = 60;
+
+export const saveNotificationTemplateResponseItemsItemDraftFooterMax = 500;
+
+export const saveNotificationTemplateResponseItemsItemDraftLogoUrlMax = 1000;
+
+
+
+export const SaveNotificationTemplateResponse = zod.object({
+  "scopeName": zod.string(),
+  "variables": zod.array(zod.string()),
+  "items": zod.array(zod.object({
+  "event": zod.string(),
+  "title": zod.string(),
+  "revision": zod.number().int(),
+  "source": zod.string(),
+  "content": zod.object({
+  "subject": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemContentSubjectMax),
+  "body": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemContentBodyMax),
+  "prefix": zod.string().max(saveNotificationTemplateResponseItemsItemContentPrefixMax),
+  "footer": zod.string().max(saveNotificationTemplateResponseItemsItemContentFooterMax),
+  "logoUrl": zod.string().max(saveNotificationTemplateResponseItemsItemContentLogoUrlMax)
+}),
+  "draft": zod.object({
+  "subject": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemDraftSubjectMax),
+  "body": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemDraftBodyMax),
+  "prefix": zod.string().max(saveNotificationTemplateResponseItemsItemDraftPrefixMax),
+  "footer": zod.string().max(saveNotificationTemplateResponseItemsItemDraftFooterMax),
+  "logoUrl": zod.string().max(saveNotificationTemplateResponseItemsItemDraftLogoUrlMax)
+}).optional(),
+  "previewSubject": zod.string(),
+  "previewBody": zod.string(),
+  "delivery": zod.string()
+}))
+})
+
+
 export const updateIntegrationSettingsBodyCurrentPasswordMax = 1024;
 
 export const updateIntegrationSettingsBodyValuesMaxOne = 2048;

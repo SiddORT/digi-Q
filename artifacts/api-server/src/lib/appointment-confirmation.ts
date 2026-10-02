@@ -5,6 +5,8 @@ import { sendAuthEmail } from "./auth-email";
 import { validEmailAddress } from "./integration-config";
 import { clinicDisplayPreferences } from "./display-preferences";
 import { lockQueue } from "./appointments";
+import { resolvedTemplate } from "./notification-template-store";
+import { renderNotification } from "./notification-templates";
 
 export type ConfirmationEmail = "provider_accepted" | "unavailable" | "disabled" | "no_recipient" | "not_attempted";
 type Sender = (to: string, subject: string, text: string) => Promise<unknown>;
@@ -56,7 +58,7 @@ async function lockConfirmation(conn: any, id: string) {
 
 /** Called only after booking commit. At-most-once dispatch, never SMTP inside the booking transaction. */
 export async function confirmAppointmentEmail(id: string, conn: any = db, send: Sender = sendAuthEmail): Promise<ConfirmationEmail> {
-  let claimed: { outcome: ConfirmationEmail; recipient?: string; text?: string };
+  let claimed: { outcome: ConfirmationEmail; recipient?: string; text?: string; rendered?: ReturnType<typeof renderNotification> };
   try {
     claimed = await conn.transaction(async (tx: any) => {
       const row = await lockConfirmation(tx,id);
@@ -74,9 +76,16 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send: 
         await saveOutcome(tx,id,"no_recipient"); return {outcome:"no_recipient"};
       }
       const clinic = await one(clinics,row.clinicId,tx);
+      const template = await resolvedTemplate("booking", row.clinicId, tx);
+      const rendered = template.source === "default" ? undefined : renderNotification(template.content, {
+        clinic_name: clinic.name, patient_name: patient.fullName || "Patient",
+        doctor_name: row.doctorName || "Your doctor", appointment_details: confirmationText(row, clinic),
+        reference: row.reference || "", timezone: row.timezone || "", previous_details: "",
+        clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · "),
+      });
       // A crash after this durable claim remains unknown, never automatically resent.
       await saveOutcome(tx,id,"not_attempted");
-      return {outcome:"not_attempted",recipient,text:confirmationText(row,clinic)};
+      return {outcome:"not_attempted",recipient,text:confirmationText(row,clinic),rendered};
     });
   } catch {
     // The committed booking is authoritative even if notification storage is unavailable.
@@ -84,7 +93,11 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send: 
   }
   if (!claimed.recipient || !claimed.text) return claimed.outcome;
   let outcome: ConfirmationEmail = "provider_accepted";
-  try { await send(claimed.recipient,"DigiQ Doctors — Appointment confirmation",claimed.text); }
+  try {
+    if (claimed.rendered && send === sendAuthEmail)
+      await sendAuthEmail(claimed.recipient, claimed.rendered.subject, claimed.rendered.text, undefined, claimed.rendered);
+    else await send(claimed.recipient,claimed.rendered?.subject || "DigiQ Doctors — Appointment confirmation",claimed.rendered?.text || claimed.text);
+  }
   catch { outcome = "unavailable"; }
   try { await conn.transaction(async (tx: any) => { await lockConfirmation(tx,id); await saveOutcome(tx,id,outcome); }); }
   catch { return "not_attempted"; }

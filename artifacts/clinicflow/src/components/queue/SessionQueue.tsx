@@ -12,6 +12,7 @@ import { StatusTabs, statusFilter } from "./StatusTabs";
 import { useFreshWorkspace } from "./useFreshWorkspace";
 import { useSoleCareDefaults } from "./useSoleCareDefaults";
 import { HelpTip } from "../HelpTip";
+import { DateFormatInput } from "../DateFormatInput";
 import { GuestRequests } from "./GuestRequests";
 import { OperationalSessionSelector, useOperationalSession } from "./SessionSelector";
 import { doctorWorkspaceScope } from "./session-scope";
@@ -69,7 +70,7 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  <CareLookup kind="clinics" label="Clinic" value={clinicId} onChange={v=>{setClinic(v);setBranch("");setDoctor(restrictedDoctorId);setAppointment("");}}/>
   <CareLookup kind="branches" label="Location" value={branchId} disabled={!clinicId} params={{clinicId}} onChange={v=>{setBranch(v);setDoctor(restrictedDoctorId);setAppointment("");}}/>
  <CareLookup kind="doctors" label="Doctor" value={doctorId} disabled={!branchId||isDoctor} params={{clinicId,branchId}} onChange={v=>{setDoctor(v);setAppointment("");}}/>
- <label>Date<input type="date" value={date} onChange={e=>{setDate(e.target.value);setAppointment("");}}/></label></>}
+ <label>Date<DateFormatInput value={date} onChange={value=>{if(value){setDate(value);setAppointment("");}}}/></label></>}
  {!isPatient&&<OperationalSessionSelector selection={{...sessionSelection,setSelectionKey:key=>{sessionSelection.setSelectionKey(key);setAppointment("");}}}/>}
  </div></section>
  {["receptionist","clinicAdmin","superAdmin"].includes(identity.user!.role)&&enabled&&<GuestRequests key={`${clinicId}-${branchId}-${doctorId}-${date}-${sessionId}-${startTime}`} clinicId={clinicId} branchId={branchId} doctorId={doctorId} date={date} sessionId={sessionId} startTime={startTime}/>}

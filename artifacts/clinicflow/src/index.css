@@ -832,3 +832,5 @@
   .workspace .topbar { padding-inline: var(--space-4); }
   .workspace .form-grid, .app-dialog .form-grid { grid-template-columns: 1fr; }
 }
+.phone-input{grid-template-columns:minmax(9rem,40%) minmax(0,1fr);align-items:start}
+@media (max-width:480px){.phone-input{grid-template-columns:1fr}}

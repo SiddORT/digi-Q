@@ -63,9 +63,11 @@ test("generic doctor and linked admin mutations cannot forge ownership; ordinary
     await api.put(t.doctors, { id: "legacy-admin-doctor", userId: "admin", ownerAdminId: "admin" }, tx);
   });
   const legacy = { ...(await api.one(t.doctors, "legacy-admin-doctor")), clinicIds: ["c"], branchIds: [] };
-  for (const body of [{}, { fullName: "Changed" }, { ownerAdminId: "other" }, { status: "inactive" }, { branchIds: ["b"] }]) {
-    await assert.rejects(api.authorizeWrite(actor, "doctors", body, legacy), /Only the owning Clinic Admin/);
-  }
+  for (const body of [{}, { fullName: "Changed" }, { status: "inactive" }, { branchIds: ["b"] }])
+    await api.authorizeWrite(actor, "doctors", body, legacy);
+  await assert.rejects(api.authorizeWrite(actor, "doctors", { ownerAdminId: "other" }, legacy), /cannot be transferred/);
+  await assert.rejects(api.authorizeWrite(actor, "doctors", { clinicIds: ["foreign"] }, legacy), /cannot be edited through a doctor profile/);
+  await assert.rejects(api.authorizeWrite({ id: "other", role: "clinicAdmin", clinicIds: ["c"] }, "doctors", { fullName: "Changed" }, legacy), /Only Super Admin or the owning Clinic Admin/);
   await api.authorizeWrite(actor, "users", { status: "inactive" }, { ...(await api.one(t.users, "admin")), clinicIds: ["c"] });
   await assert.rejects(api.authorizeWrite(actor, "users", { role: "doctor" }, { ...(await api.one(t.users, "admin")), clinicIds: ["c"] }), /roles cannot be switched/);
   assert.equal((await api.one(t.doctors, legacy.id)).status, "active");
@@ -151,7 +153,7 @@ test("inactive owned clinical profiles remain manageable, not clinically availab
   const foreignActor = { ...foreign, clinicIds: [foreignClinic.clinic.id], branchIds: [] };
   assert.equal((await api.queryPage(foreignActor, "doctors", {})).items.some(d => d.id === own.id), false);
   await assert.rejects(h.route(api.resourcesRouter, "patch", "/doctors/:id", foreignActor,
-    { fullName: owner.fullName, email: owner.email, status: "active" }, { id: own.id }), /Only the owning Clinic Admin/);
+    { fullName: owner.fullName, email: owner.email, status: "active" }, { id: own.id }), /Only Super Admin or the owning Clinic Admin/);
   const updated = await h.route(api.resourcesRouter, "patch", "/doctors/:id", actor,
     { fullName: owner.fullName, email: owner.email, status: "active" }, { id: own.id });
   assert.deepEqual(updated.branchIds, ["b"]);

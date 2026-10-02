@@ -1,0 +1,27 @@
+.email-templates{display:grid;gap:.85rem}
+.et-head h2{margin:0}.et-head p{margin:.2rem 0 0;opacity:.75}
+.et-limit{margin:0;padding:.55rem .75rem;border-left:3px solid hsl(var(--primary,200 60% 40%));background:hsl(var(--muted,210 20% 96%));border-radius:6px;font-size:.88rem}
+.et-scope{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}
+.et-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:.85rem;align-items:start}
+@media (max-width:860px){.et-grid{grid-template-columns:1fr}}
+.et-form{display:grid;gap:.6rem}.et-form textarea{width:100%;font-family:inherit;resize:vertical}
+.et-meta{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}
+.et-chip{font-size:.72rem;padding:.1rem .45rem;border-radius:999px;border:1px solid hsl(var(--border,210 15% 85%));text-transform:capitalize}
+.et-chip.live{border-color:hsl(150 45% 40%);color:hsl(150 45% 28%)}.et-chip.draft{border-color:hsl(38 80% 45%);color:hsl(32 80% 32%)}
+.et-rev{margin-left:auto;font-size:.75rem;opacity:.65}
+.et-vars{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;font-size:.8rem}.et-vars>span{opacity:.7;margin-right:.25rem}
+.et-var{font-family:ui-monospace,monospace;font-size:.75rem;padding:.1rem .4rem}
+.et-actions{display:flex;flex-wrap:wrap;gap:.5rem}
+.et-notice{margin:0;color:hsl(150 45% 28%)}
+.et-preview{position:sticky;top:1rem;display:grid;gap:.5rem}.et-preview h3{margin:0}
+.et-hint{margin:0;font-size:.78rem;opacity:.7}
+.et-logo{max-height:48px;max-width:180px;object-fit:contain}
+.et-mail{border:1px solid hsl(var(--border,210 15% 85%));border-radius:8px;overflow:hidden}
+.et-subject{padding:.55rem .7rem;font-weight:600;border-bottom:1px solid hsl(var(--border,210 15% 85%))}
+.et-body{padding:.7rem;white-space:pre-wrap;font-size:.9rem;line-height:1.5}
+.et-footer{padding:.55rem .7rem;font-size:.78rem;opacity:.7;border-top:1px dashed hsl(var(--border,210 15% 85%));white-space:pre-wrap}
+.et-server pre{white-space:pre-wrap;font-size:.8rem}
+.et-empty{padding:1.5rem;text-align:center;opacity:.75;border:1px dashed hsl(var(--border,210 15% 85%));border-radius:8px}
+.et-skeleton{display:grid;gap:.5rem}.et-skeleton span{height:2.2rem;border-radius:6px;background:hsl(var(--muted,210 20% 94%));animation:et-pulse 1.2s ease-in-out infinite}
+@keyframes et-pulse{50%{opacity:.5}}
+.et-dialog p{margin-top:0}

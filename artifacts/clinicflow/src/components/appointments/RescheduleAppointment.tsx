@@ -6,6 +6,7 @@ import { ErrorNotice, today } from "../../resources";
 import { useFreshWorkspace } from "../queue/useFreshWorkspace";
 import { SessionSelector, useDailySession, formatSessionHours } from "../queue/SessionSelector";
 import { formatTime } from "../../lib/date-time";
+import { DateFormatInput } from "../DateFormatInput";
 
 export function RescheduleAppointment({appointment:a,onDone}:{appointment:api.Appointment;onDone:()=>void}){
  const [branchId,setBranch]=useState(a.branchId);const [doctorId,setDoctor]=useState(a.doctorId);const [date,setDate]=useState(a.date);const [reason,setReason]=useState("");const [confirmed,setConfirmed]=useState(false);
@@ -23,7 +24,7 @@ export function RescheduleAppointment({appointment:a,onDone}:{appointment:api.Ap
  {(availability.error||current.error)&&<button type="button" onClick={()=>{availability.refetch();current.refetch();}}>Refresh original and destination</button>}
  <CareLookup kind="branches" publicAccess label="Destination branch" value={branchId} disabled={mutation.isPending} params={{clinicId:a.clinicId}} onChange={v=>{setBranch(v);setDoctor("");setConfirmed(false);}}/>
  <CareLookup kind="doctors" publicAccess label="Destination doctor" value={doctorId} disabled={!branchId||mutation.isPending} params={{clinicId:a.clinicId,branchId}} onChange={v=>{setDoctor(v);setConfirmed(false);}}/>
- <label>Destination date<input data-testid="input-reschedule-date" type="date" disabled={mutation.isPending} min={today(availability.data?.timezone)} value={date} onChange={e=>{setDate(e.target.value);setConfirmed(false);}}/></label>
+ <label>Destination date<DateFormatInput data-testid="input-reschedule-date" disabled={mutation.isPending} min={today(availability.data?.timezone)} value={date} onChange={value=>{setDate(value);setConfirmed(false);}}/></label>
  <SessionSelector selection={{...selection,setSessionId:id=>{selection.setSessionId(id);setConfirmed(false);}}}/>
  <p role="status">{availability.isFetching?"Checking destination…":availability.data?.available?`${availability.data.remainingTokens} remaining · ${formatSessionHours(availability.data)}${availability.data.breakStart&&availability.data.breakEnd?` · Break ${formatTime(availability.data.breakStart,availability.data)}–${formatTime(availability.data.breakEnd,availability.data)}`:""}`:availability.data?.reason||"Select a destination."}</p>
  <label>Reason (optional)<textarea value={reason} onChange={e=>setReason(e.target.value)} maxLength={1000}/></label>

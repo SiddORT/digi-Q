@@ -15,6 +15,7 @@ import { clinicExpansionRouter } from "./clinic-expansion";
 import { presenceRouter } from "./presence";
 import { demoRouter } from "./demo";
 import { integrationsRouter } from "./integrations";
+import { notificationTemplatesRouter } from "./notification-templates";
 
 const router: IRouter = Router();
 
@@ -28,6 +29,7 @@ router.use(demoRouter);
 router.use(identityRouter);
 router.use(otpRouter);
 router.use(integrationsRouter);
+router.use(notificationTemplatesRouter);
 router.use(resourcesRouter);
 router.use(durationRouter);
 router.use(appointmentsRouter);
