@@ -26,3 +26,9 @@ Cookie-transport fixes require a network-level test through the real Express mid
 **Why:** Direct handler tests passed while the deployed login could still fail at CSRF middleware; concurrent anonymous status and token bootstrap requests could issue competing cookies.
 
 **How to apply:** Include first-visit bootstrap, overlapping status responses, cookie/header mismatch rejection, and session establishment over HTTPS using isolated data. Distinguish a Node cookie-jar integration from real browser or live-UAT verification.
+
+The user specifically wants app-owned JWT authentication, not merely removal of Clerk, and requires reviewing a complete change list together before approving implementation.
+
+**Why:** The user explicitly requested JWT migration analysis and withheld implementation approval.
+
+**How to apply:** Distinguish JWT migration work from existing native session functionality. Do not treat approval of an audit or checklist as permission to change authentication.
