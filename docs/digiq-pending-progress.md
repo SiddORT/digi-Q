@@ -50,6 +50,8 @@ This tracks the remaining requirements in `attached_assets/DigiQ_Replit_Prompt_v
 
 ## Separate boundaries
 
+- Development email preflight on 2026-10-03: SMTP host, port, user and password passed presence/syntax checks, but SMTP_FROM failed the application's sender-format validation. The real test stopped before connecting or sending; SMTP authentication and inbox delivery remain unverified. No account or configuration changes were made.
+
 - Live email/inbox checks, original deployed incident attribution, deployed performance and actual-target account/recovery readiness remain unverified.
 - The full all-role keyboard, screen-reader and actual browser-zoom acceptance matrix is not certified by existing scoped fixture checks.
 - Consent/family booking, after-hours powers, cross-clinic policy changes, new numerical limits, permanent deletion and other Q/P extensions remain approval-held.
