@@ -56,3 +56,9 @@ Super Admin management modules must be visible in navigation. Both Super Admin a
 **Why:** The user explicitly approved the expanded management/template scope and requested visible modules, correct mappings, frequent coding progress and regression checks without making the system unresponsive.
 
 **How to apply:** Scope clinic edits to owned clinics. Resolve appointment-specific recipient/doctor details at send time rather than freezing preview values into templates. Report completed, in-progress and blocked work distinctly; verify existing flows before claiming completion.
+
+Uniform elements and styling are part of the entire approved scope: the same function must use the same control and interaction across and within pages, not a toggle in one place and a dropdown elsewhere.
+
+**Why:** The user explicitly reinforced this requirement and requested analysis before coding.
+
+**How to apply:** Inventory all callers and control states before changing shared controls. Distinguish a status-editing toggle from a status filter or read-only badge; preserve those semantic differences while standardizing their respective patterns.
