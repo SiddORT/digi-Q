@@ -1,15 +1,10 @@
-type AuthServiceError = {
-  message?: string;
-  longMessage?: string;
-  errors?: Array<{ message?: string; longMessage?: string; code?: string }>;
-};
+import { friendlyError } from "@/lib/friendly-error";
 
+/**
+ * Auth error presentation. Delegates to the central translator so raw HTTP lines
+ * ("HTTP 401 Unauthorized"), stack traces or provider text are never shown (finding 20).
+ * Human credential/validation messages from the server are preserved.
+ */
 export function authErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error === "object" && error) {
-    const serviceError = error as AuthServiceError;
-    const item = serviceError.errors?.[0];
-    return item?.longMessage || item?.message || serviceError.longMessage || serviceError.message || fallback;
-  }
-  return fallback;
+  return friendlyError(error, "auth", fallback);
 }

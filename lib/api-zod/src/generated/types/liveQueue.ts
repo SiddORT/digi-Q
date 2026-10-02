@@ -21,11 +21,17 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { Appointment } from './appointment';
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 import type { DoctorPresence } from './doctorPresence';
 import type { OwnQueueEntry } from './ownQueueEntry';
 import type { StatusCounts } from './statusCounts';
 
 export interface LiveQueue {
+  /** Staff-only count after listing filters; omitted for patients. */
+  filteredTotal?: number;
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /** @nullable */
   sessionId?: string | null;
   /** @nullable */

@@ -12,4 +12,12 @@
 .branch-hours { padding: 10px 12px; border: 1px solid var(--dq-line-soft,#e3eaf4); border-radius: 10px; }
 .branch-hours details { padding: 6px 0; }
 .branch-hours button { margin: 6px 6px 6px 0; }
+.clinic-settings .cap-chip { white-space: nowrap; word-break: normal; overflow-wrap: normal; min-width: max-content; }
+.clinic-settings th { word-break: normal; overflow-wrap: normal; }
+[aria-label="Scheduling workspace"] .cap-chip { white-space: nowrap; word-break: normal; overflow-wrap: normal; min-width: max-content; }
+[aria-label="Scheduling workspace"] th { word-break: normal; overflow-wrap: normal; }
+.registration-session input[type="range"] { width: 100%; min-height: 44px; padding: 0; accent-color: var(--dq-blue); }
+.registration-session label { min-width: 0; }
+.registration-inline { display: flex; flex-wrap: wrap; gap: 8px; }
+@media(max-width:640px){.registration-session{grid-template-columns:1fr}.registration-session button{min-height:44px}}
 @media(max-width:760px),(pointer:coarse){.clinic-settings-tabs{width:100%}.clinic-settings-tabs button,.clinic-settings summary,.branch-hours summary{min-height:44px}}

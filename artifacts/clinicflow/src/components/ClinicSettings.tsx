@@ -10,6 +10,12 @@ import { clinicalBranchSelection } from "./clinical-branches";
 import { SchedulingWorkspace } from "./SchedulingWorkspace";
 import { ClinicChangeReview, LinkedScheduleControls, type LinkedSchedule } from "./LinkedScheduleControls";
 import "./clinic-settings.css";
+import { DateTimeFormatFields } from "./ClinicRegistrationWizard";
+import { ClinicRegistrationHours, newWeek, dayError } from "./ClinicRegistrationHours";
+import type { DateTimePreferences } from "../lib/date-time";
+import { DateTimePreferencesProvider } from "./DateTimePreferences";
+import { notifySuccess } from "../lib/notify";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 const sections = [["general","General"],["locations","Locations & Hours"],["sessions","Doctors & Sessions"],["policies","Booking Rules"],["staff","Staff"],["qrs","Booking Links & QR"],["history","Activity history"]] as const;
 
@@ -28,8 +34,10 @@ export function ClinicSettings({identity}:{identity:api.Identity}){
  const [branch,setBranch]=useState<api.Branch|null>(null);
  const openedBranchId=useRef<string|null>(null);
  const closeBranch=()=>{setBranch(null);if(openedBranchId.current){const url=new URL(window.location.href);if(url.searchParams.get("branchId")===openedBranchId.current){url.searchParams.delete("branchId");window.history.replaceState(window.history.state,"",url);}openedBranchId.current=null;}};
- const save=api.useUpdateClinicSettings({mutation:{onSuccess:()=>{setSection(null);closeBranch();client.invalidateQueries();}}});
+ const save=api.useUpdateClinicSettings({mutation:{onSuccess:()=>{setSection(null);closeBranch();notifySuccess("Updated successfully");client.invalidateQueries();}}});
  const [dirty,setDirty]=useState(false);
+ const [formats,setFormats]=useState<Partial<DateTimePreferences>|null>(null);
+ const [confirmFormats,setConfirmFormats]=useState(false);
  const data=query.data;
  const [missingBranch,setMissingBranch]=useState(false);
  useEffect(()=>{
@@ -40,13 +48,14 @@ export function ClinicSettings({identity}:{identity:api.Identity}){
   if(item){openedBranchId.current=target;setDirty(false);setBranch(item);setMissingBranch(false);}
   else{setMissingBranch(true);url.searchParams.delete("branchId");window.history.replaceState(window.history.state,"",url);}
  },[data,view]);
- return <section className="clinic-settings">
-  <ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Select clinic to configure":"Your clinic"} value={clinicId} onChange={id=>{setClinic(id);setSection(null);closeBranch();save.reset();}}/>
+ return <DateTimePreferencesProvider value={data?.clinic}><section className="clinic-settings">
+  <ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Select Clinic Group to configure":"Your Clinic Group"} value={clinicId} onChange={id=>{setClinic(id);setSection(null);closeBranch();save.reset();}}/>
  <ErrorNotice error={query.error||clinics.error}/>{query.error&&<button onClick={()=>query.refetch()}>Retry clinic settings</button>}
  {!clinicId?<p className="empty">Select a clinic to manage its settings. Platform settings are separate.</p>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&!query.error&&<>
   <label className="clinic-section-mobile workspace-section-select">Clinic section<select aria-label="Clinic section" value={view} onChange={event=>selectView(event.target.value)}>{sections.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
   <div className="clinic-workspace-layout clinic-workspace"><nav className="clinic-section-menu workspace-section-nav" aria-label="Clinic configuration sections">{sections.map(([key,label])=><button key={key} type="button" aria-current={view===key?"page":undefined} onClick={()=>selectView(key)}>{label}</button>)}</nav><div className="clinic-workspace-content">
  <div hidden={view!=="general"}>
+  <section className="panel padded"><h2>Date and time display</h2><p>Inherited by all clinics in this Clinic Group.</p><button type="button" onClick={()=>{setFormats({dateFormat:data.clinic.dateFormat,timeFormat:data.clinic.timeFormat});setConfirmFormats(false);save.reset();}}>Edit date and time format</button></section>
   <section className="panel padded"><div className="panel-heading"><div><h2>{data.clinic.name}</h2><p>{data.clinic.address}</p></div><div className="row-actions"><Link href="/admin/clinics">All clinics / Add clinic</Link><button onClick={()=>{setDirty(false);save.reset();setSection("clinic");}}>Edit clinic</button></div></div>
  <p>Web address: {data.clinic.slug?<Link href={`/${data.clinic.slug}`}>/{data.clinic.slug}</Link>:"Not set — edit clinic to choose a permanent address"}</p><p>{[data.clinic.email,data.clinic.phone].filter(Boolean).join(" · ")||"No clinic contacts configured"}</p>
  </section>
@@ -61,8 +70,11 @@ export function ClinicSettings({identity}:{identity:api.Identity}){
  <AppDialog open={!!section} onClose={()=>setSection(null)} title={section==="clinic"?"Clinic details":"Booking policies"} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{section&&<Editor onDirtyChange={setDirty} initial={section==="clinic"?data.clinic:data.policies} fields={section==="clinic"?resources.clinics.fields.filter(field=>["name","address","email","phone","slug","categoryId","specialityIds","referralCode"].includes(field.key)):[{key:"bookingHorizonDays",type:"number",required:true},{key:"cancellationCutoffMinutes",type:"number",required:true}]} busy={save.isPending} onSave={value=>save.mutate({id:clinicId,data:section==="clinic"?{clinic:value}:{policies:value}})}/>}</AppDialog>
   <AppDialog open={!!branch} onClose={closeBranch} title="Location opening days & hours" dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{branch&&<BranchSettings key={branch.id} clinicId={clinicId} branch={branch} busy={save.isPending} onDirtyChange={setDirty} onSave={value=>save.mutate({id:clinicId,data:{branches:[value]}})}/>}</AppDialog>
   </div></div>
+  <AppDialog open={!!formats} onClose={()=>setFormats(null)} title="Date and time format" dirty={!!formats&&(formats.dateFormat!==data.clinic.dateFormat||formats.timeFormat!==data.clinic.timeFormat)} busy={save.isPending}>
+    {formats&&<><DateTimeFormatFields value={formats} onChange={patch=>{setFormats(current=>({...current,...patch}));setConfirmFormats(false);}}/><ErrorNotice error={save.error}/><button type="button" onClick={()=>setConfirmFormats(true)}>Review display change</button><ConfirmDialog open={confirmFormats} title="Confirm display change" description="This changes only how dates and times are displayed throughout this Clinic Group. Stored dates, session times and bookings will not be rewritten." confirmLabel="Confirm display change" onCancel={()=>setConfirmFormats(false)} onConfirm={async()=>{await save.mutateAsync({id:clinicId,data:{clinic:formats}});setConfirmFormats(false);setFormats(null);}}/></>}
+  </AppDialog>
  </>}
- </section>;
+ </section></DateTimePreferencesProvider>;
 }
 
 /** One owner-doctor capability editor, shared by the profile and clinic workspace links. */
@@ -113,7 +125,7 @@ function BranchSettings({branch,clinicId,busy,onDirtyChange,onSave}:{branch:api.
    while(parent){if(parent instanceof HTMLDetailsElement)parent.open=true;parent=parent.parentElement;}
   }} style={{border:0,padding:0,minWidth:0}}>
    {validation&&<p role="alert" className="error-box">{validation}</p>}
-   <Editor initial={branch} fields={resources.branches.fields.filter(field=>field.key!=="clinicId"&&field.key!=="status")} busy={busy} submitLabel="Review changes" reviewOnly onDirtyChange={onDirtyChange} onSave={value=>setPending({...value,id:branch.id,linkedSchedule:linked,...(hoursChanged||branch.openingHours!=null?{openingHours:hours}:{})})}>
+   <Editor initial={branch} fields={resources.branches.fields.filter(field=>field.key!=="clinicId"&&field.key!=="status")} busy={busy} submitLabel="Review changes" reviewOnly onDirtyChange={onDirtyChange} onSave={value=>{const invalid=newWeek().map(day=>({...day,isOpen:hours.some(hour=>hour.dayOfWeek===day.dayOfWeek),sessions:hours.filter(hour=>hour.dayOfWeek===day.dayOfWeek)})).map(dayError).find(Boolean);if(invalid){setValidation(invalid);return;}setPending({...value,id:branch.id,linkedSchedule:linked,...(hoursChanged||branch.openingHours!=null?{openingHours:hours}:{})});}}>
     <div className="wide"><OpeningHoursEditor value={hours} onChange={value=>{setHours(value);setHoursChanged(true);changed();}}/></div>
     <div className="wide"><LinkedScheduleControls value={linked} onChange={value=>{setLinked(value);changed();}}/></div>
    </Editor>
@@ -123,10 +135,6 @@ function BranchSettings({branch,clinicId,busy,onDirtyChange,onSave}:{branch:api.
 }
 
 export function OpeningHoursEditor({value,onChange}:{value:api.OpeningHour[];onChange:(value:api.OpeningHour[])=>void}){
- const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
- const replace=(day:number,items:api.OpeningHour[])=>onChange([...value.filter(item=>item.dayOfWeek!==day),...items]);
- return <fieldset className="branch-hours"><legend>Location opening days &amp; hours</legend><p className="muted">Location opening hours do not create bookable doctor sessions. An explicitly closed week stays closed until you choose opening hours.</p><button type="button" onClick={()=>onChange([])}>Close all days</button>{days.map((name,day)=>{
- const shifts=value.filter(item=>item.dayOfWeek===day);
- return <details key={name}><summary>{name} · {shifts.length?shifts.map(item=>`${item.startTime}–${item.endTime}`).join(", "):"Closed"}</summary><label><input type="checkbox" checked={!!shifts.length} onChange={event=>replace(day,event.target.checked?[{dayOfWeek:day,startTime:"09:00",endTime:"17:00"}]:[])}/> Open</label>{shifts.map((shift,index)=><div className="form-grid" key={index}><label>Shift {index+1} starts<input type="time" required value={shift.startTime} onChange={event=>replace(day,shifts.map((item,i)=>i===index?{...item,startTime:event.target.value}:item))}/></label><label>Ends<input type="time" required value={shift.endTime} onChange={event=>replace(day,shifts.map((item,i)=>i===index?{...item,endTime:event.target.value}:item))}/></label><button type="button" onClick={()=>replace(day,shifts.filter((_,i)=>i!==index))}>Remove shift</button></div>)}<button type="button" onClick={()=>replace(day,[...shifts,{dayOfWeek:day,startTime:"",endTime:""}])}>Add shift</button>{!!shifts.length&&<button type="button" onClick={()=>onChange(days.flatMap((_,target)=>shifts.map(item=>({...item,dayOfWeek:target}))))}>Copy hours to all days</button>}</details>;
- })}</fieldset>;
+ const week=newWeek().map(day=>({...day,isOpen:value.some(item=>item.dayOfWeek===day.dayOfWeek),sessions:value.filter(item=>item.dayOfWeek===day.dayOfWeek)}));
+ return <fieldset className="branch-hours"><legend>Clinic opening days &amp; hours</legend><p className="muted">Opening hours do not create bookable doctor sessions. An explicitly closed week stays closed until you choose opening hours.</p><button type="button" onClick={()=>onChange([])}>Close all days</button><ClinicRegistrationHours value={week} onChange={days=>onChange(days.filter(day=>day.isOpen).flatMap(day=>day.sessions.map(session=>({...session,dayOfWeek:day.dayOfWeek}))))}/></fieldset>;
 }

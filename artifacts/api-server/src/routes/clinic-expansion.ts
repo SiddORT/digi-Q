@@ -8,7 +8,7 @@ import { verifyPassword } from "../lib/native-auth";
 import { parse, query, assert, HttpError } from "../lib/http";
 import { all, one, flatten, put, uid, audit, change } from "../lib/store";
 import { enrich, publicDoctor } from "../lib/entities";
-import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, createOwnedClinic, previewClinicSetup } from "../lib/clinic-expansion";
+import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, createOwnedClinic, previewClinicSetup, clinicDisplayPreferences } from "../lib/clinic-expansion";
 import { queryMetrics } from "../lib/list-query";
 import { configuredDuration } from "../lib/session-duration";
 import { clinicalMembership, clinicalBranchIds } from "../lib/clinical-membership";
@@ -73,7 +73,7 @@ clinicExpansionRouter.get("/public/clinics-by-slug/:clinicSlug{/:branchSlug}", a
   const branchRecords = (await db.execute(sql`select * from branches where clinic_id=${clinic.id} and status='active' order by id limit 100`)).rows;
   const branchList = branchRecords.map((r: any) => {
     const b = flatten(r);
-    return { id: b.id, name: b.name, slug: b.slug || null, address: b.address || null, city: b.city || null, timezone: b.timezone || "Asia/Kolkata",
+    return { ...clinicDisplayPreferences(clinic), id: b.id, name: b.name, slug: b.slug || null, address: b.address || null, city: b.city || null, timezone: b.timezone || "Asia/Kolkata",
       effectiveEmail: (b.inheritEmail ?? !b.email) ? clinic.email || null : b.email || null,
       effectivePhone: (b.inheritPhone ?? !b.phone) ? clinic.phone || null : b.phone || null, openingHours: b.openingHours ?? null };
   });
@@ -93,6 +93,6 @@ clinicExpansionRouter.get("/public/clinics-by-slug/:clinicSlug{/:branchSlug}", a
   const references = branch ? (await db.execute(sql`select public_reference from qrs where clinic_id=${clinic.id} and branch_id=${branch.id} and doctor_id is null and status='active' order by created_at,id limit 1`)).rows : [];
   const [counts] = (await db.execute(sql`select count(*)::int as count from doctors d where exists(select 1 from branches b where b.clinic_id=${clinic.id} and ${clinicalMembership(sql`d.id`, sql`b.id`)})`)).rows;
   const metric = await queryMetrics({ role: "superAdmin" }, { clinicId: clinic.id });
-  res.set("Cache-Control", "no-store").json({ clinic: { id: clinic.id, name: clinic.name, slug: clinic.slug, address: clinic.address || null, email: clinic.email || null, phone: clinic.phone || null, doctorCount: Number(counts.count), averageConsultationMinutes: metric.averageConsultationMinutes },
+  res.set("Cache-Control", "no-store").json({ clinic: { ...clinicDisplayPreferences(clinic), id: clinic.id, name: clinic.name, slug: clinic.slug, address: clinic.address || null, email: clinic.email || null, phone: clinic.phone || null, doctorCount: Number(counts.count), averageConsultationMinutes: metric.averageConsultationMinutes },
     branches: branchList, branch: branch || null, qrReference: references[0]?.public_reference || null, doctors: publicDoctors });
 });

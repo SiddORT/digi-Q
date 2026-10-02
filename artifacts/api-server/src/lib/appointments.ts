@@ -1,4 +1,4 @@
-import { db, appointments, patients, branches, appointmentHistory } from "@workspace/db";
+import { db, appointments, patients, branches, clinics, appointmentHistory } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { all, one, change, put, uid, audit, getSettings } from "./store";
 import { assert } from "./http";
@@ -7,6 +7,7 @@ import { localNow, minutes, doctorContext, operationalDoctorContext, sessionQueu
 import { orderedReservations, pendingStatuses, queueVersion, rank, sessionRows } from "./queue-order";
 import { isDoctorAvailable } from "./presence";
 import { snapshotDuration } from "./session-duration";
+import { clinicDisplayPreferences } from "./display-preferences";
 export const transitions: Record<string, { from: string[], to: string, stamp?: string }> = {
   checkIn: { from: ["booked", "checkedIn", "waiting", "called"], to: "inConsultation", stamp: "checkedInAt" },
   enqueue: { from: ["booked", "checkedIn"], to: "waiting", stamp: "waitingAt" },
@@ -27,9 +28,17 @@ export function appointmentView(row: any, user: any) {
   return { ...view, ...(user.role === "patient" && row.history ? { history: row.history.map(({ actorId: _actor, ...event }: any) => event) } : {}), queueRank: rank(row), revision: row.revision || 0, expectedDurationMinutes: row.expectedDurationMinutes ?? null, allowedActions };
 }
 export async function appointmentViewWithBranch(row: any, user: any, conn: any = db) {
-  if (row.branchAddress != null) return appointmentView(row, user);
-  const branch = await one(branches, row.branchId, conn);
-  return appointmentView({ ...row, branchAddress: branch.address ?? null }, user);
+  const clinic = await one(clinics, row.clinicId, conn);
+  const branch = row.branchAddress == null ? await one(branches, row.branchId, conn) : null;
+  return appointmentView({ ...row, ...clinicDisplayPreferences(clinic), branchAddress: row.branchAddress ?? branch?.address ?? null }, user);
+}
+/** One map per relation for list responses, never one clinic query per appointment. */
+export async function appointmentViews(rows: any[], user: any, conn: any = db) {
+  if (!rows.length) return [];
+  const clinicMap = new Map((await all(clinics, conn)).map(c => [c.id, c]));
+  const branchMap = new Map((rows.some(r => r.branchAddress == null) ? await all(branches, conn) : []).map(b => [b.id, b]));
+  return rows.map(row => appointmentView({ ...row, ...clinicDisplayPreferences(clinicMap.get(row.clinicId)),
+    branchAddress: row.branchAddress ?? branchMap.get(row.branchId)?.address ?? null }, user));
 }
 export async function transition(user: any, id: string, body: any, conn: any = db, locked = false) {
   let row = await one(appointments, id, conn);

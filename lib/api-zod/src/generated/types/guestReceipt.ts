@@ -20,9 +20,15 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
+import type { ConfirmationEmailOutcome } from './confirmationEmailOutcome';
 import type { GuestReceiptStatus } from './guestReceiptStatus';
 
 export interface GuestReceipt {
+  confirmationEmail?: ConfirmationEmailOutcome;
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /** @nullable */
   sessionId?: string | null;
   id: string;

@@ -16,3 +16,14 @@ the patient experience should resemble a straightforward booking ticket.
 **How to apply:** Use the same protected allocator for anonymous and signed-in
 bookings. Keep booking QR links distinct from personal ticket validation QRs.
 Preserve historical pending receipts without making new bookings depend on approval.
+
+Booking confirmation and email delivery are separate outcomes. Keep a committed
+ticket valid even when mail is disabled, unavailable or has an uncertain outcome.
+
+**Why:** Reversing or reporting a failed booking because SMTP failed can cause
+duplicate reservations when the patient retries. Provider acceptance also does
+not establish inbox delivery.
+
+**How to apply:** Present booking success independently of the email result.
+Do not silently add automatic resending or guaranteed-delivery claims; those
+require a separate retry/delivery design.

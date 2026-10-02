@@ -21,8 +21,12 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { AvailabilityQueueMode } from './availabilityQueueMode';
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 
 export interface Availability {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /** @nullable */
   sessionId?: string | null;
   doctorId: string;

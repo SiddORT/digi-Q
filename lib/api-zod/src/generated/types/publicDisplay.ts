@@ -20,11 +20,15 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 import type { PublicDisplayBranch } from './publicDisplayBranch';
 import type { PublicDisplayClinic } from './publicDisplayClinic';
 import type { PublicDisplaySession } from './publicDisplaySession';
 
 export interface PublicDisplay {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   clinic: PublicDisplayClinic;
   branch: PublicDisplayBranch;
   date: Date;

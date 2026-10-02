@@ -4,25 +4,23 @@ import QRCode from "qrcode";
 import { Activity, Clock3, MapPin, QrCode, RefreshCw, WifiOff, Users, Maximize2 } from "lucide-react";
 import "./clinic-display.css";
 import { BRAND_NAME } from "../branding";
+import { formatDate, formatTime, type DateTimePreferences } from "../lib/date-time";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 type DisplaySession = PublicDisplay["sessions"][number];
 const errStatus = (e: unknown) => (e && typeof e === "object" && "status" in e ? Number((e as { status: unknown }).status) : 0);
 const isRevoked = (e: unknown) => [400, 403, 404, 410].includes(errStatus(e));
 
-function fmtTime(t: string | null) {
+function fmtTime(t: string | null,preferences?:Partial<DateTimePreferences>) {
   if (!t) return null;
-  const [h, m] = t.split(":").map(Number);
-  if (Number.isNaN(h)) return t;
-  const ap = h >= 12 ? "PM" : "AM";
-  return `${((h + 11) % 12) + 1}:${String(m || 0).padStart(2, "0")} ${ap}`;
+  return formatTime(t,preferences);
 }
 
-function useClock(tz?: string | null) {
+function useClock(tz?: string | null,preferences?:Partial<DateTimePreferences>) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const i = setInterval(() => setNow(new Date()), 1000 * 15); return () => clearInterval(i); }, []);
-  try { return now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: tz || undefined }); }
-  catch { return now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+  try { return tz ? now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: tz, hour12:preferences?.timeFormat!=="24h" }) : "Clock unavailable"; }
+  catch { return "Clock unavailable"; }
 }
 
 function useOnline() {
@@ -58,7 +56,7 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
   }, [bookingUrl, qrAttempt]);
 
   const data = q.isError || !online ? undefined : q.data;
-  const clock = useClock(data?.branch.timezone);
+  const clock = useClock(data?.branch.timezone,data);
   const revoked = q.isError && isRevoked(q.error);
 
   useEffect(() => { document.title = data ? `${data.clinic.name} · Queue display` : `${BRAND_NAME} · Queue display`; }, [data]);
@@ -110,15 +108,15 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
       </section>
 
       <section className="cd-queues" aria-label="Live doctor queues" aria-live="polite">
-        <div className="cd-queues-head"><span className="cd-eyebrow">Now serving</span>{data && <span className="cd-date">{new Date(String(data.date).slice(0,10) + "T12:00:00").toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })}</span>}</div>
+        <div className="cd-queues-head"><span className="cd-eyebrow">Now serving</span>{data && <span className="cd-date">{formatDate(data.date,data)}</span>}</div>
         {q.isLoading && online ? <div className="cd-grid">{[0, 1].map(i => <div key={i} className="cd-card"><span className="cd-sk cd-sk-line" /><span className="cd-sk cd-sk-token" /><span className="cd-sk cd-sk-line" /></div>)}</div>
           : !data ? <div className="cd-empty"><WifiOff size={34} strokeWidth={1.4} /><p>Live queue hidden while offline.</p></div>
           : data.sessions.length === 0 ? <div className="cd-empty" data-testid="status-no-sessions"><Clock3 size={34} strokeWidth={1.4} /><h3>No consultations scheduled today</h3><p>You can still book an upcoming visit using the QR code.</p></div>
           : <div className={`cd-grid ${data.sessions.length === 1 ? "one" : ""}`}>
             {data.sessions.map((s: DisplaySession) => {
-              const hours = [fmtTime(s.startTime), fmtTime(s.endTime)].filter(Boolean).join(" – ");
+              const hours = [fmtTime(s.startTime,data), fmtTime(s.endTime,data)].filter(Boolean).join(" – ");
               const upcoming = s.waitingTokens.filter(t => t !== s.nextToken);
-              return <article key={s.doctorId} className="cd-card" data-testid={`card-doctor-queue-${s.doctorId}`}>
+              return <article key={`${s.doctorId}-${s.startTime}`} className="cd-card" data-testid={`card-doctor-queue-${s.doctorId}`}>
                 <div className="cd-card-top"><h3>{s.doctorName}</h3>{hours && <span className="cd-hours"><Clock3 size={14} /> {hours}</span>}</div>
                 <div className={`cd-now ${s.currentStatus === "called" ? "called" : ""}`}>
                   <div><label data-testid={`text-current-status-${s.doctorId}`}>{s.currentToken ? (s.currentStatus === "inConsultation" ? "In consultation" : s.currentStatus === "called" ? "Called next — please proceed" : "Now serving") : "No one called yet"}</label><strong className="cd-token-big" data-testid={`text-current-token-${s.doctorId}`}>{s.currentToken ?? "—"}</strong></div>

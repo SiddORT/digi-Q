@@ -20,8 +20,12 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 
 export interface ClinicDetails {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /** @minLength 1 */
   name?: string;
   address?: string;

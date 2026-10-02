@@ -7,12 +7,13 @@ import { CareLookup } from "./CareLookup";
 import { ErrorNotice, today } from "../resources";
 import { useFreshWorkspace } from "./queue/useFreshWorkspace";
 import { canPollGuestReceipt } from "../guest-receipt";
-import { SessionSelector, useDailySession } from "./queue/SessionSelector";
+import { SessionSelector, useDailySession, formatSessionHours } from "./queue/SessionSelector";
 import { VisitTicket, bookingStatusLabel, type TicketData } from "./tickets/VisitTicket";
 import { findNextBookableDate } from "./guest-booking-date";
 import "./guest-booking.css";
+import { confirmationEmailMessage } from "./appointments/confirmation-email";
 
-const toTicket=(r:api.GuestReceipt):TicketData=>({patientName:r.fullName,clinicName:r.clinicName,branchName:r.branchName,address:r.branchAddress,doctorName:r.doctorName,date:r.date,startTime:r.startTime,endTime:r.endTime,timezone:r.timezone,waitingNumber:r.token,reference:r.reference,statusLabel:bookingStatusLabel(r.appointmentStatus),qrUrl:r.checkInUrl});
+const toTicket=(r:api.GuestReceipt):TicketData=>({dateFormat:r.dateFormat,timeFormat:r.timeFormat,patientName:r.fullName,clinicName:r.clinicName,branchName:r.branchName,address:r.branchAddress,doctorName:r.doctorName,date:r.date,startTime:r.startTime,endTime:r.endTime,timezone:r.timezone,waitingNumber:r.token,reference:r.reference,statusLabel:bookingStatusLabel(r.appointmentStatus),qrUrl:r.checkInUrl});
 
 export function GuestBooking({reference,context}:{reference:string;context:api.QrContext}) {
  const storageKey=`clinicflow-guest:${reference}`;
@@ -97,7 +98,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  if(attempt)return <section aria-label="Your visit ticket" data-testid="guest-receipt">
   <h2>{issued?"You're booked":r?.status==="rejected"?"Booking not available":r?"Booking received":"Issuing your ticket"}</h2>
   {!r&&<p role="status">{attempt.fullName} · {attempt.date}. Keep this page open; do not book again.</p>}
-  {issued&&r&&<VisitTicket testId="guest-ticket" ticket={toTicket(r)} prepareExport={prepareExport} exportDisabled={!committed||status.isPending}/>}
+  {issued&&r&&<>{confirmationEmailMessage(r.confirmationEmail)&&<p role="status">{confirmationEmailMessage(r.confirmationEmail)}</p>}<VisitTicket testId="guest-ticket" ticket={toTicket(r)} prepareExport={prepareExport} exportDisabled={!committed||status.isPending}/></>}
   {r?.status==="pending"&&<p className="notice">This earlier request is still with reception. No waiting number has been issued yet.</p>}
   {r?.status==="rejected"&&<p role="status">{r.reason||"Please speak to reception."}</p>}
   {receiptFresh.stale&&updated>0&&<p className="muted">Ticket shown as last loaded.</p>}
@@ -115,7 +116,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   {!context.branchId&&<CareLookup publicAccess kind="branches" label="Location" value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}} selectedLabel={branchOptions.data?.items.find(b=>b.id===branchId)?.name}/>}
   {!context.doctorId&&<CareLookup publicAccess kind="doctors" label="Doctor" value={doctorId} disabled={!branchId} params={{clinicId:context.clinicId,branchId,status:"active"}} onChange={setDoctor} selectedLabel={doctorOptions.data?.items.find(d=>d.id===doctorId)?.fullName}/>}
   <label>Visit date<input data-testid="input-guest-date" type="date" required min={today(available?.timezone)} value={date} onChange={e=>{searchRun.current++;setFinding(false);setDateMessage("");setDate(e.target.value);}}/></label>
-  {selection.sessions.length===1&&!availability.error?<div className="guest-session"><strong>Consulting session</strong><span>{selection.sessions[0].startTime}–{selection.sessions[0].endTime} · {selection.sessions[0].timezone}</span><small>Only session listed for this date. Availability is checked again when you book.</small></div>:<SessionSelector selection={selection}/>}
+  {selection.sessions.length===1&&!availability.error?<div className="guest-session"><strong>Consulting session</strong><span>{formatSessionHours(selection.sessions[0])} · {selection.sessions[0].timezone}</span><small>Only session listed for this date. Availability is checked again when you book.</small></div>:<SessionSelector selection={selection}/>}
  <label>Patient's name<input data-testid="input-guest-name" autoComplete="name" maxLength={150} {...form.register("fullName",{required:true,validate:v=>!!v.trim()})}/></label>
  </div>
  <details><summary data-testid="toggle-guest-contact" style={{padding:"14px 0",cursor:"pointer"}}>Add contact details (optional)</summary><div className="form-grid">
@@ -128,7 +129,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   <p className="muted guest-note">Without contact details we cannot send updates. A family member's contact requires their permission and does not link this visit to their account.</p>
  <label className="check-label"><input data-testid="input-guest-permission" type="checkbox" {...form.register("permission",{required:true})}/> I have permission to book this visit and share any contact details provided.</label>
  {form.formState.errors.permission&&<p role="alert">Please confirm permission to continue.</p>}
-  <div className="availability-box" data-testid="guest-availability-status">{availability.isFetching?"Checking session…":available?<><strong>{available.available&&available.remainingTokens>0&&available.queueMode!=="walkInsOnly"?"Available session":"Session unavailable"}</strong><p>{available.startTime}–{available.endTime} · {available.timezone}</p>{available.queueMode==="walkInsOnly"?<p>This session accepts walk-ins only. Select another session or date for online booking.</p>:(!available.available||available.remainingTokens<=0)&&<p>{available.reason||"Session full. Choose another date."}</p>}</>:availability.error?<p>Could not check sessions. Retry below.</p>:!branchId||!doctorId?<p>Choose a location and doctor to see the sessions.</p>:selection.sessions.length>1?<p>Select one of the listed consulting sessions to check its availability.</p>:availability.isLoading?<p>Finding doctor sessions…</p>:<p>No doctor session is available for this date. Try another date or ask the clinic to configure its Weekly schedule.</p>}</div>
+  <div className="availability-box" data-testid="guest-availability-status">{availability.isFetching?"Checking session…":available?<><strong>{available.available&&available.remainingTokens>0&&available.queueMode!=="walkInsOnly"?"Available session":"Session unavailable"}</strong><p>{formatSessionHours(available)} · {available.timezone}</p>{available.queueMode==="walkInsOnly"?<p>This session accepts walk-ins only. Select another session or date for online booking.</p>:(!available.available||available.remainingTokens<=0)&&<p>{available.reason||"Session full. Choose another date."}</p>}</>:availability.error?<p>Could not check sessions. Retry below.</p>:!branchId||!doctorId?<p>Choose a location and doctor to see the sessions.</p>:selection.sessions.length>1?<p>Select one of the listed consulting sessions to check its availability.</p>:availability.isLoading?<p>Finding doctor sessions…</p>:<p>No doctor session is available for this date. Try another date or ask the clinic to configure its Weekly schedule.</p>}</div>
  <ErrorNotice error={availability.error}/>{(availability.error||fresh.stale)&&branchId&&doctorId&&<button type="button" data-testid="button-retry-guest-availability" onClick={()=>availability.refetch()}>Refresh availability</button>}
   {branchId&&doctorId&&<div className="guest-next-date"><button type="button" className="button secondary" disabled={finding} onClick={()=>void findNextDate()} data-testid="button-next-guest-date">{finding?"Searching the next 14 days…":"Find next available date"}</button>{dateMessage&&<p role="status">{dateMessage}</p>}</div>}
  <p className="notice">Your ticket shows a session time range, not an exact consultation time.</p>

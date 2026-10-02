@@ -5,11 +5,17 @@ import { requireUser, roles, scoped, scope, canRead, projectAssignmentScope } fr
 import { parse, query, assert } from "../lib/http";
 import { all, one, getSettings, filtered, paginate, audit } from "../lib/store";
 import { enrich } from "../lib/entities";
-import { appointmentView } from "../lib/appointments";
+import { appointmentViews } from "../lib/appointments";
 import { localNow } from "../lib/availability";
 import { sql } from "drizzle-orm";
+import { z as schema } from "zod";
 import { queryPage, queryMetrics, sourceSql, filterSql, pageParams, metricSql } from "../lib/list-query";
 export const reportingRouter = Router();
+const reportSortFields = ["key", "label", "appointments", "registrations", "waiting", "checkedIn", "completed", "noShow", "cancelled", "averageWaitMinutes", "averageConsultationMinutes"] as const;
+export const reportListControls = schema.object({
+  search: schema.string().trim().max(200).optional(),
+  sort: schema.string().refine(value => reportSortFields.includes(value.replace(/^-/, "") as typeof reportSortFields[number]), "Unsupported report sort field").optional(),
+});
 async function authorizeReportContext(user: any, q: any) {
   if (user.role === "patient") {
     if (q.clinicId || q.branchId || q.doctorId) {
@@ -56,18 +62,25 @@ reportingRouter.get("/dashboard", async (req, res) => {
   const recentActivity = ["superAdmin", "clinicAdmin"].includes(user.role)
     ? (await queryPage(user, "audit-logs", { clinicId: q.clinicId, branchId: q.branchId, activityType: "operational", pageSize: 8 })).items
     : [];
-  res.json({ ...counts, ...stats, todayAppointments: stats.appointments, recentAppointments: recent.items.map((a: any) => appointmentView(a,user)), recentActivity });
+  res.json({ ...counts, ...stats, todayAppointments: stats.appointments, recentAppointments: await appointmentViews(recent.items,user), recentActivity });
 });
 reportingRouter.get("/reports", async (req, res) => {
   const user = await requireUser(req); roles(user, ["superAdmin", "clinicAdmin", "doctor", "receptionist"]);
-  const q = query(z.GetReportsQueryParams, req), config = await getSettings(), today = localNow(config.timezone).date;
+  const q = { ...query(z.GetReportsQueryParams, req), ...query(reportListControls, req) }, config = await getSettings(), today = localNow(config.timezone).date;
   await authorizeReportContext(user, q);
   q.from ||= today.slice(0,7) + "-01"; q.to ||= today; assert(q.from <= q.to, 400, "Invalid report date range");
   const groupBy = q.groupBy || "date", { page, pageSize } = pageParams(q);
   const group = groupBy === "date" ? sql`doc->>'date'` : sql`doc->>${groupBy + "Id"}`;
   const registrationGroup = groupBy === "date" ? sql`left(doc->>'createdAt',10)` : sql`doc->>'clinicId'`;
+  // Search the grouped view, not patient-level data. Filtering and pagination
+  // share the same CTE so the returned count and exported pages agree.
+  const search = q.search ? `%${q.search.replace(/[\\%_]/g, "\\$&")}%` : null;
+  const searchPredicate = search ? sql`(key ilike ${search} or label ilike ${search})` : sql`true`;
+  const sortKey = (q.sort || "key").replace(/^-/, "");
+  const direction = q.sort?.startsWith("-") ? sql`desc` : sql`asc`;
+  const sortColumn = sql.identifier(sortKey);
   const result = await db.execute(sql`with appointments_scoped as (${sourceSql(user, "appointments")}),
-    records as (select doc from appointments_scoped where ${filterSql(q)}),
+    records as (select doc from appointments_scoped where ${filterSql({ ...q, search: undefined })}),
     patients_scoped as (${sourceSql(user, "patients")}),
     registrations as (select doc from patients_scoped where ${filterSql({ from: q.from, to: q.to, clinicId: q.clinicId, branchId: q.branchId })}),
     grouped as (select ${group} as key, coalesce(min(doc->>${groupBy + "Name"}),${group}) as label, ${metricSql} from records group by ${group}),
@@ -75,8 +88,9 @@ reportingRouter.get("/reports", async (req, res) => {
     results as (select k.key, coalesce(g.label,k.key) as label, coalesce(g.appointments,0) as appointments, coalesce(g.waiting,0) as waiting, coalesce(g."checkedIn",0) as "checkedIn", coalesce(g.completed,0) as completed, coalesce(g."noShow",0) as "noShow", coalesce(g.cancelled,0) as cancelled, coalesce(g."averageWaitMinutes",0) as "averageWaitMinutes", g."averageConsultationMinutes",
       (select count(*)::int from registrations p where ${groupBy === "doctor" ? sql`exists(select 1 from records a where a.doc->>'doctorId'=k.key and a.doc->>'patientId'=p.doc->>'id')` : groupBy === "date" ? sql`left(p.doc->>'createdAt',10)=k.key` : sql`p.doc->>'clinicId'=k.key`}) as registrations
       from keys k left join grouped g using(key)),
-    page_rows as (select * from results order by key limit ${pageSize} offset ${(page - 1) * pageSize})
-    select (select count(*)::int from results) as total, coalesce((select jsonb_agg(to_jsonb(p)) from page_rows p),'[]'::jsonb) as rows`);
+    filtered_results as (select * from results where ${searchPredicate}),
+    page_rows as (select * from filtered_results order by ${sortColumn} ${direction} nulls last, key asc limit ${pageSize} offset ${(page - 1) * pageSize})
+    select (select count(*)::int from filtered_results) as total, coalesce((select jsonb_agg(to_jsonb(p)) from page_rows p),'[]'::jsonb) as rows`);
   const { rows, total } = result.rows[0] as any;
   res.json({ from: q.from, to: q.to, groupBy, rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 });

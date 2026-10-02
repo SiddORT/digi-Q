@@ -332,6 +332,7 @@ export async function customFetch<T = unknown>(
   input: RequestInfo | URL,
   options: CustomFetchOptions = {},
 ): Promise<T> {
+  const startedAt = typeof performance !== "undefined" ? performance.now() : 0;
   input = applyBaseUrl(input);
   const { responseType = "auto", headers: headersInit, ...init } = options;
 
@@ -388,7 +389,21 @@ export async function customFetch<T = unknown>(
       response = await fetch(input, fetchOptions);
       if (!response.ok) errorData = await parseErrorBody(response, method);
     }
-    if (!response.ok) throw new ApiError(response, errorData, requestInfo);
+    if (!response.ok) {
+      if (response.status === 401 && typeof window !== "undefined" && !init.signal?.aborted) {
+        const url = new URL(requestInfo.url, window.location.href);
+        const path = url.pathname;
+        const code = getStringField(errorData, "code");
+        const protectedRequest = url.origin === window.location.origin && path.startsWith("/api/") &&
+          !/^\/api\/(?:public(?:\/|$)|healthz(?:\/|$)|demo\/login(?:\/|$)|auth(?:\/|$))/.test(path);
+        const missingChangePasswordSession = path === "/api/auth/change-password" &&
+          (code === "SIGN_IN_REQUIRED" || getStringField(errorData, "error") === "Sign in required");
+        if ((protectedRequest || (url.origin === window.location.origin && missingChangePasswordSession)) &&
+          code !== "INVALID_CREDENTIALS" && code !== "INVALID_VERIFICATION")
+          window.dispatchEvent(new CustomEvent("digiq:session-unauthorized", { detail: { startedAt } }));
+      }
+      throw new ApiError(response, errorData, requestInfo);
+    }
   }
 
   return (await parseSuccessBody(response, responseType, requestInfo)) as T;

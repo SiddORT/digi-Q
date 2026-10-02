@@ -10,6 +10,7 @@ import { getPresence } from "../lib/presence";
 import { orderedReservations, pendingStatuses, sessionRows } from "../lib/queue-order";
 import { queryPage } from "../lib/list-query";
 import { clinicalMembership, clinicalBranchIds } from "../lib/clinical-membership";
+import { clinicDisplayPreferences } from "../lib/display-preferences";
 export const publicRouter = Router();
 for (const [kind, table, schema] of [
   ["clinics", clinics, z.ListPublicClinicsQueryParams],
@@ -32,7 +33,11 @@ for (const [kind, table, schema] of [
         return publicDoctor({ ...row, branchIds, clinicIds: [...new Set(locations.filter(b => branchIds.includes(b.id)).map(b => b.clinicId))] });
       }));
     }
-    if (kind === "clinics") result.items = result.items.map(({ ownerId, ...r }: any) => r);
+    if (kind === "clinics") result.items = result.items.map(({ ownerId, ...r }: any) => ({ ...r, ...clinicDisplayPreferences(r) }));
+    if (kind === "branches") {
+      const clinicMap = new Map((await all(clinics)).map(c => [c.id, c]));
+      result.items = result.items.map((row: any) => ({ ...row, ...clinicDisplayPreferences(clinicMap.get(row.clinicId)) }));
+    }
     res.json(result);
   });
 }
@@ -55,7 +60,7 @@ export async function resolveQr(reference: string, conn: any = db, lock = false)
   const doctor = qr.doctorId ? await enrich("doctors", await one(doctors, qr.doctorId, conn), conn) : null;
   assert(clinic.status === "active" && (!branch || branch.status === "active") && (!doctor || doctor.status === "active"), 404, "Booking link unavailable");
   assert((!branch || branch.clinicId === clinic.id) && (!doctor || doctor.clinicIds.includes(clinic.id) && (!branch || doctor.branchIds.includes(branch.id))), 404, "Booking link context is no longer available");
-  return { reference, clinicId: clinic.id, clinicName: clinic.name, clinicAddress: clinic.address || null, branchAddress: branch?.address || null, branchCity: branch?.city || null, branchTimezone: branch?.timezone || null, branchId: branch?.id || null, branchName: branch?.name || null, doctorId: doctor?.id || null, doctorName: doctor?.fullName || null };
+  return { reference, clinicId: clinic.id, ...clinicDisplayPreferences(clinic), clinicName: clinic.name, clinicAddress: clinic.address || null, branchAddress: branch?.address || null, branchCity: branch?.city || null, branchTimezone: branch?.timezone || null, branchId: branch?.id || null, branchName: branch?.name || null, doctorId: doctor?.id || null, doctorName: doctor?.fullName || null };
 }
 export async function publicDisplay(reference: string, conn: any = db) {
   const context = await resolveQr(reference, conn);
@@ -81,11 +86,11 @@ export async function publicDisplay(reference: string, conn: any = db) {
     const pending = orderedReservations(entries.filter(a => pendingStatuses.includes(a.status)));
     const current = entries.find(a => ["called", "inConsultation"].includes(a.status));
     const presence = await getPresence({ doctorId: doctor.id, branchId: branch.id, date, startTime: schedule.startTime, sessionId: schedule.sessionId }, conn);
-    sessions.push({ doctorId: doctor.id, doctorName: doctor.fullName, sessionId: schedule.sessionId || null, presence: presence.status, startTime: schedule.startTime || entries[0]?.startTime || null, endTime: schedule.endTime || entries[0]?.endTime || null,
+    sessions.push({ doctorId: doctor.id, doctorName: doctor.fullName, ...clinicDisplayPreferences(context), sessionId: schedule.sessionId || null, presence: presence.status, startTime: schedule.startTime || entries[0]?.startTime || null, endTime: schedule.endTime || entries[0]?.endTime || null,
       currentToken: current?.token || null, currentStatus: current?.status || null, nextToken: pending[0]?.token || null, waitingTokens: pending.map(a => a.token), waitingCount: pending.length, completedCount: entries.filter(a => a.status === "completed").length });
     }
   }
-  return { clinic: { name: context.clinicName }, branch: { name: branch.name, address: branch.address || null, city: branch.city || null, timezone }, date, updatedAt: new Date().toISOString(), sessions };
+  return { ...clinicDisplayPreferences(context), clinic: { name: context.clinicName, ...clinicDisplayPreferences(context) }, branch: { name: branch.name, address: branch.address || null, city: branch.city || null, timezone }, date, updatedAt: new Date().toISOString(), sessions };
 }
 publicRouter.get("/public/display/:reference", async (req, res) => {
   res.set("Cache-Control", "no-store");

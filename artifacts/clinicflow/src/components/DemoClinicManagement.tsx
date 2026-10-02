@@ -3,6 +3,8 @@ import { Link } from "wouter";
 import QRCode from "qrcode";
 import { csrfToken } from "../lib/csrf";
 import { BRAND_NAME } from "../branding";
+import { useConfirm } from "./ConfirmDialog";
+import { friendlyError } from "../lib/friendly-error";
 
 type DemoStatus = {
   configured: boolean;
@@ -44,7 +46,7 @@ export function DemoClinicManagement() {
     setError("");
     void jsonRequest(endpoint, {}).then(data => {
       if (active) setStatus(data);
-    }).catch(caught => { if (active) setError(caught instanceof Error ? caught.message : "Unable to load demo setup."); });
+    }).catch(caught => { if (active) setError(friendlyError(caught, "load", "Unable to load demo setup.")); });
     return () => { active = false; };
   }, [revision]);
   const absolute = (path?: string) => path ? new URL(`${root}${path.startsWith("/") ? path : `/${path}`}`, window.location.origin).href : "";
@@ -60,10 +62,21 @@ export function DemoClinicManagement() {
     return () => { active = false; };
   }, [bookingUrl]);
 
+  const confirmDialog = useConfirm();
+
   async function change(action: "create" | "enable" | "disable" | "rotate-password") {
     if (busy) return;
-    if (action === "create" && !window.confirm("Create a fictional demo clinic, location, doctor, schedule and staff identity on this environment?")) return;
-    if (action === "rotate-password" && !window.confirm("Rotate the demo password? The previous shared password will stop working.")) return;
+    if (action === "create" && !(await confirmDialog.ask({
+      title: "Create demo clinic?",
+      description: "Create a fictional demo clinic, location, doctor, schedule and staff identity on this environment?",
+      confirmLabel: "Create demo clinic",
+    }))) return;
+    if (action === "rotate-password" && !(await confirmDialog.ask({
+      title: "Rotate demo password?",
+      description: "Rotate the demo password? The previous shared password will stop working.",
+      confirmLabel: "Rotate password",
+      tone: "danger",
+    }))) return;
     setBusy(true); setError(""); setNotice(""); setCredentials(null);
     try {
       const data = await jsonRequest(endpoint, {
@@ -75,7 +88,7 @@ export function DemoClinicManagement() {
       setNotice(action === "create" ? "Demo clinic created on this environment. Save the password below now; it is shown only once." : action === "rotate-password" ? "Demo password rotated. Save the new password now; it is shown only once." : `Demo access ${action === "enable" ? "enabled" : "disabled"}.`);
       setRevision(value => value + 1);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Demo action failed. Try again.");
+      setError(friendlyError(caught, "generic", "Demo action failed. Try again."));
     } finally {
       setBusy(false);
     }
@@ -92,7 +105,7 @@ export function DemoClinicManagement() {
   }
 
   const forward = `Try ${BRAND_NAME}' fictional demo clinic (please do not enter real patient information).\nClinic: ${clinicUrl}\nGuest booking: ${bookingUrl}\nYou can scan the booking QR on the clinic page or open the booking link directly. Guest booking requires no login and issues a ticket immediately.`;
-  return <div className="panel padded" data-testid="demo-management">
+  return <>{confirmDialog.dialog}<div className="panel padded" data-testid="demo-management">
     <span className="eyebrow">SUPER ADMIN ONLY · FICTIONAL DEMO</span>
     <h2>Published demo clinic</h2>
     <p>Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo.</p>
@@ -125,5 +138,5 @@ export function DemoClinicManagement() {
       <textarea readOnly rows={6} value={forward} aria-label="Public demo sharing message"/>
       <button type="button" onClick={() => void navigator.clipboard.writeText(forward).then(() => setNotice("Public sharing message copied. Credentials are not included.")).catch(() => setError("Clipboard unavailable. Select and copy the message above."))}>Copy public message</button>
     </>}
-  </div>;
+  </div></>;
 }

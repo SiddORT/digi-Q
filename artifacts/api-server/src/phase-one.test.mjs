@@ -90,6 +90,8 @@ test("anonymous guest immediately reserves a waiting token without contact; repl
   assert.equal(ticket.appointmentStatus, "waiting");
   assert.equal(ticket.revision, 0);
   assert.equal(ticket.token, row.token);
+  assert.equal(ticket.confirmationEmail, "disabled");
+  assert.equal((await api.one(t.appointments,row.appointmentId)).confirmationEmail,"disabled");
   assert.ok(ticket.reference && ticket.checkInUrl.startsWith("/check-in?payload=v1."));
   assert.equal(api.readAppointmentQrPayload(new URL(ticket.checkInUrl, "http://localhost").searchParams.get("payload")), ticket.reference);
   assert.deepEqual(await route(api.guestRequestsRouter, "post", "/public/guest-requests", null, {
@@ -113,6 +115,47 @@ test("anonymous guest immediately reserves a waiting token without contact; repl
   await api.change(t.appointments, row.appointmentId, { status: "called", data: { ...appointments[0], revision: 1 } });
   const fresh = await route(api.guestRequestsRouter, "post", "/public/guest-receipt", null, { receiptSecret: "a".repeat(64) });
   assert.equal(fresh.appointmentStatus, "called"); assert.equal(fresh.revision, 1);
+});
+
+test("staff SQL queue pages preserve full-session next/version/counts and default full compatibility", async () => {
+  await seed();
+  const first=await book("p1"), second=await book("p2");
+  await api.change(t.appointments,first.id,{data:{...first,patientName:"Needle % Person"}});
+  for(let n=3;n<=25;n++) await api.put(t.appointments,{id:`finished-${n}`,patientId:"p1",doctorId:"d",clinicId:"c",branchId:"b",date:today,tokenNumber:n,status:"completed",actorId:staff.id,
+    data:{startTime:first.startTime,sessionId:first.sessionId,token:`A-${n}`,queueRank:n,patientName:"Completed Person"}});
+  const query={doctorId:"d",branchId:"b",date:today,startTime:first.startTime};
+  const full=await route(api.queueRouter,"get","/queue",staff,{}, {},query);
+  assert.equal(full.entries.length,25);
+  assert.equal(full.entriesTotal,25);
+  const paged=await route(api.queueRouter,"get","/queue",staff,{}, {},{...query,page:1,pageSize:1,statusGroup:"waiting",sort:"-tokenNumber"});
+  assert.deepEqual(paged.entries.map(r=>r.id),[second.id]);
+  assert.equal(paged.filteredTotal,2);assert.equal(paged.entriesTotal,2);assert.equal(paged.totalPages,2);
+  for(const field of ["total","waiting","completed","currentToken","nextToken","queueVersion"]) assert.equal(paged[field],full[field],field);
+  assert.equal(paged.nextToken,first.token);
+  const searched=await route(api.queueRouter,"get","/queue",staff,{}, {},{...query,page:2,pageSize:1,search:"%",statusGroup:"waiting"});
+  assert.equal(searched.entries.length,0);assert.equal(searched.filteredTotal,1);
+  assert.equal(searched.statusCounts.all,1);assert.equal(searched.total,25);assert.equal(searched.nextToken,first.token);
+  await assert.rejects(route(api.queueRouter,"get","/queue",staff,{}, {},{...query,page:1,search:"x".repeat(201)}),/200|Invalid|validation/i);
+  const own=await route(api.queueRouter,"get","/queue",patient,{}, {},{...query,page:1,pageSize:1,search:"Other"});
+  for(const key of ["entries","entriesTotal","filteredTotal","page","pageSize","totalPages","statusCounts"]) assert.equal(Object.hasOwn(own,key),false,key);
+  assert.equal(own.nextToken,first.token);
+});
+
+test("guest search is bounded, literal, sorted and restricted to staff assignments",async()=>{
+  await seed();
+  for(const [id,branchId,fullName] of [["g1","b","Zulu %"],["g2","b","Alpha %"],["g3","b2","Secret %"]]){
+    await api.put(t.guestRequests,{id,requestId:`request-${id}`,receiptHash:`hash-${id}`,inputHash:"input",clinicId:"c",branchId,doctorId:"d",date:today,status:"pending",data:{fullName,email:"contact@example.invalid",clinicName:"Clinic",branchName:branchId,doctorName:"Doctor",timezone:"UTC"}});
+  }
+  const actor={...staff,branchIds:["b"]};
+  const result=await route(api.guestRequestsRouter,"get","/guest-requests",actor,{}, {},{search:"%",sort:"fullName",page:1,pageSize:1});
+  assert.equal(result.total,2);assert.deepEqual(result.items.map(r=>r.id),["g2"]);
+  const second=await route(api.guestRequestsRouter,"get","/guest-requests",actor,{}, {},{search:"%",sort:"fullName",page:2,pageSize:1});
+  assert.deepEqual(second.items.map(r=>r.id),["g1"]);
+  const secret=await route(api.guestRequestsRouter,"get","/guest-requests",actor,{}, {},{search:"Secret",branchId:"b2"});
+  assert.equal(secret.total,0);assert.deepEqual(secret.items,[]);
+  for(const query of [{search:"x".repeat(201)},{sort:"date;drop table appointments"},{pageSize:101}]){
+    await assert.rejects(route(api.guestRequestsRouter,"get","/guest-requests",actor,{}, {},query));
+  }
 });
 test("guest last-slot failure rolls back patient and receipt; legacy pending decisions survive", async () => {
   await seed();
@@ -442,7 +485,9 @@ test("public display is branch-local, doctor-restricted, revocable and contains 
   assert.ok(!JSON.stringify(display).includes(a.reference));
   assert.ok(!JSON.stringify(display).includes("patient"));
   assert.equal(display.sessions[0].currentStatus, "inConsultation");
-  assert.deepEqual(Object.keys(display.sessions[0]).sort(), ["doctorId", "doctorName", "sessionId", "presence", "startTime", "endTime", "currentToken", "currentStatus", "nextToken", "waitingTokens", "waitingCount", "completedCount"].sort());
+  assert.deepEqual(Object.keys(display.sessions[0]).sort(), ["doctorId", "doctorName", "dateFormat", "timeFormat", "sessionId", "presence", "startTime", "endTime", "currentToken", "currentStatus", "nextToken", "waitingTokens", "waitingCount", "completedCount"].sort());
+  assert.equal(display.sessions[0].dateFormat,"DD MMM YYYY");
+  assert.equal(display.sessions[0].timeFormat,"12h");
   await api.change(t.qrs, "qr", { doctorId: "d" });
   assert.equal((await api.publicDisplay("display")).sessions.length, 1);
   await api.change(t.qrs, "qr", { branchId: null });

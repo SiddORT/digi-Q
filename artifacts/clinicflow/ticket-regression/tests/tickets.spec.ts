@@ -94,15 +94,15 @@ async function mount(page: Page, mode: Mode, f: Fixtures, recovered = false) {
 async function decode(page: Page, uri: string) {
   return page.evaluate((data) => window.decodeTicketQr(data), uri);
 }
-async function verifyScreen(page: Page, expected: { name: string; status: string; token: string; date?: string }) {
+async function verifyScreen(page: Page, expected: { name: string; status: string; token: string; date?: string; session?: string }) {
   const ticket = page.getByRole("article", { name: "Visit ticket" });
   await expect(ticket.locator(".vt-head-brand img")).toBeVisible();
   await expect(ticket.locator(".vt-head-brand")).toContainText("Visit ticket");
   await expect(ticket.locator(".vt-name")).toHaveText(expected.name);
   await expect(ticket.getByTestId("ticket-status")).toHaveText(expected.status);
   await expect(ticket.getByTestId("ticket-waiting-number")).toHaveText(expected.token);
-  if (expected.date) await expect(ticket.locator("dd")).toContainText([expected.date]);
-  await expect(ticket.getByText("09:00 – 12:00 (UTC)")).toBeVisible();
+  await expect(ticket.locator(".vt-visit strong")).toContainText(expected.date ?? "14 Jun 2030");
+  await expect(ticket.getByText(expected.session ?? "9:00 AM – 12:00 PM (UTC)", { exact: false })).toBeVisible();
   const source = await ticket.getByAltText("Personal visit QR").getAttribute("src");
   expect(source).toMatch(/^data:image\/png;base64,/);
   expect(await decode(page, source!)).toBe(qrUrl);
@@ -116,14 +116,14 @@ async function download(page: Page) {
   expect(item.suggestedFilename()).toMatch(/^clinicflow-ticket-.*\.html$/);
   return readFile(await item.path(), "utf8");
 }
-async function verifyHtml(page: Page, html: string, expected: { name: string; status: string; token: string; date?: string }) {
+async function verifyHtml(page: Page, html: string, expected: { name: string; status: string; token: string; date?: string; session?: string }) {
   const dom = new DOMParserShim(html);
   expect(html).toContain("DigiQ Doctors");
   expect(html).toContain(`>${expected.name}</h2>`);
   expect(html).toContain(`>${expected.status}</strong>`);
   expect(html).toContain(`class="n">${expected.token}</div>`);
-  if (expected.date) expect(html).toContain(expected.date);
-  expect(html).toContain("09:00 – 12:00 (UTC)");
+  expect(html).toContain(expected.date ?? "14 Jun 2030");
+  expect(html).toContain(expected.session ?? "9:00 AM – 12:00 PM (UTC)");
   expect(html).not.toMatch(/<script\b|<link\b|<iframe\b/i);
   const image = dom.image();
   expect(image).toMatch(/^data:image\/png;base64,/);
@@ -214,7 +214,7 @@ for (const mode of ["guest", "appointment"] as const) {
       await mount(page, mode, f, true);
       const old = { name: mode === "guest" ? guest.fullName : appointment.patientName, status: "Booked", token: mode === "guest" ? guest.token : appointment.token };
       await verifyScreen(page, old);
-      const current = { name: mode === "guest" ? "Current Guest" : "Current Account", status: "Booked", token: mode === "guest" ? "G-99" : "A-99", date };
+      const current = { name: mode === "guest" ? "Current Guest" : "Current Account", status: "Booked", token: mode === "guest" ? "G-99" : "A-99", date: "14 Jun 2030" };
       if (kind === "print") await interceptPrint(page);
       f.calls.length = 0;
       const html = kind === "download" ? await download(page) : await print(page);
@@ -249,16 +249,16 @@ for (const mode of ["guest", "appointment"] as const) {
     f.calls.length = 0;
     const exported = await download(page);
     expect(exported).toContain("Cancelled");
-    expect(exported).toContain("2030-06-21");
-    expect(exported).toContain("14:00 – 16:00");
+    expect(exported).toContain("21 Jun 2030");
+    expect(exported).toContain("2:00 PM – 4:00 PM");
     assertFreshOrder(f, mode);
     await interceptPrint(page);
     await expect(page.getByTestId("button-print-ticket")).toBeEnabled();
     f.calls.length = 0;
     const printed = await print(page);
     expect(printed).toContain("Cancelled");
-    expect(printed).toContain("2030-06-21");
-    expect(printed).toContain("14:00 – 16:00");
+    expect(printed).toContain("21 Jun 2030");
+    expect(printed).toContain("2:00 PM – 4:00 PM");
     assertFreshOrder(f, mode);
   });
 
@@ -285,6 +285,30 @@ for (const mode of ["guest", "appointment"] as const) {
     await expect(page.getByTestId("ticket-export-error")).toContainText(/QR.*not available|QR unavailable/);
   });
 }
+
+test("different clinics retain their own date and clock preferences on screen and in exported tickets", async ({ page }) => {
+  const european = fixture();
+  european.mutateAppointment = () => ({ body: { ...appointment, clinicName: "European Format Clinic", dateFormat: "DD/MM/YYYY", timeFormat: "24h" } });
+  await mount(page, "appointment", european);
+  const europeanExpected = { name: "Account Patient", status: "Booked", token: "A-12", date: "14/06/2030", session: "09:00 – 12:00 (UTC)" };
+  await verifyScreen(page, europeanExpected);
+
+  const other = await page.context().newPage();
+  try {
+    const american = fixture();
+    american.mutateGuest = () => ({ body: { ...guest, clinicName: "American Format Clinic", dateFormat: "MM/DD/YYYY", timeFormat: "12h" } });
+    await mount(other, "guest", american, true);
+    const americanExpected = { name: "Guest Patient", status: "Booked", token: "G-12", date: "06/14/2030", session: "9:00 AM – 12:00 PM (UTC)" };
+    await verifyScreen(other, americanExpected);
+    // Opening a second clinic must not replace the first record's preferences.
+    await verifyScreen(page, europeanExpected);
+    await verifyHtml(page, await download(page), europeanExpected);
+    await interceptPrint(other);
+    await verifyHtml(other, await print(other), americanExpected);
+  } finally {
+    await other.close();
+  }
+});
 
 test("guest recovery API error warns and refresh can restore ticket", async ({ page }) => {
   const f = fixture();

@@ -8,6 +8,15 @@ export { useDebouncedValue };
 
 // --- Pagination ---
 
+/** Approved sizes 10/25/50/100 (spec §3). 20 is retained as the existing default page size. */
+export const PAGE_SIZE_OPTIONS = [10, 20, 25, 50, 100] as const;
+export const DEFAULT_PAGE_SIZE = 20;
+export const SEARCH_DEBOUNCE_MS = 300;
+/** Options always include the current size so a persisted/URL value never disappears. */
+export function pageSizeOptions(current: number): number[] {
+  return Array.from(new Set<number>([...PAGE_SIZE_OPTIONS, current])).filter((n) => Number.isFinite(n) && n > 0).sort((a, b) => a - b);
+}
+
 export interface PaginationProps {
   page: number;
   pageSize: number;
@@ -20,7 +29,7 @@ export interface PaginationProps {
 
 export function Pagination({
   page,
-  pageSize = 20,
+  pageSize = DEFAULT_PAGE_SIZE,
   total,
   onPageChange,
   onPageSizeChange,
@@ -76,7 +85,7 @@ export function Pagination({
               className="h-8 w-auto rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-foreground"
               style={{ minHeight: "auto", margin: 0, paddingRight: "28px" }}
             >
-              {[10, 20, 50, 100].map((size) => (
+              {pageSizeOptions(pageSize).map((size) => (
                 <option key={size} value={size}>
                   {size}
                 </option>
@@ -166,14 +175,17 @@ export interface SearchInputProps {
   label?: string;
 }
 
-export function SearchInput({ value, onChange, placeholder = "Search...", label }: SearchInputProps) {
+export function SearchInput({ value, onChange, placeholder = "Search…", label }: SearchInputProps) {
+  const inputId = React.useId();
   return (
     <div className="workspace-search flex flex-col gap-1.5 w-full md:max-w-sm">
-      {label && <label className="text-sm font-semibold text-foreground">{label}</label>}
+      {label && <label htmlFor={inputId} className="text-sm font-semibold text-foreground">{label}</label>}
       <div className="relative flex items-center group">
-        <Search className="absolute left-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+        <Search aria-hidden="true" className="absolute left-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
         <input
-          type="text"
+          id={inputId}
+          type="search"
+          aria-label={label ? undefined : placeholder.replace(/…|\.\.\.$/, "")}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}

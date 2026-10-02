@@ -5,8 +5,11 @@ import test from "node:test";
 const component = readFileSync(new URL("./ClinicSessionSetup.tsx", import.meta.url), "utf8");
 
 test("session setup locks identity and booking parameters during a save", () => {
-  assert.match(component, /Location<select disabled=\{busy\}/);
-  assert.match(component, /Doctor<select disabled=\{busy \|\| incompleteDoctors\}/);
+  assert.match(component, /<SearchableSelect label="Clinic" disabled=\{busy\} value=\{branchId\}/);
+  assert.match(component, /<SearchableSelect label="Doctor" value=\{doctorId\} disabled=\{busy\s*\|\|\s*incompleteDoctors\}/);
+  const select = readFileSync(new URL("./SearchableSelect.tsx", import.meta.url), "utf8");
+  assert.match(select, /disabled=\{disabled\}/, "shared selector forwards saving lock to its trigger");
+  assert.match(component, /disabled=\{busy \|\| incompleteDoctors \|\| schedules\.isFetching \|\| !chosen\.length/, "submission stays blocked during saving or incomplete loading");
   for (const field of ["Patients per session", "Expected consultation (minutes)", "Ticket prefix"])
     assert.ok(component.includes(`${field}<input disabled={busy}`), `${field} must lock during save`);
   assert.match(component, /if \(busy \|\| !selectedBranch \|\| !doctorId \|\| incompleteDoctors\) return/);

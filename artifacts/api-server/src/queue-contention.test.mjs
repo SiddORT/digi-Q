@@ -26,6 +26,29 @@ function winner(outcomes, count = 1) {
   return successes;
 }
 
+test("filtered SQL queue page and concurrent Call Next share the authoritative queue lock",async()=>{
+  const first=await h.book("p1"), second=await h.book("p2");
+  const selection={doctorId:"d",branchId:"b",date:h.today,startTime:first.startTime};
+  const results=await h.race([
+    tx=>h.route(h.api.queueRouter,"get","/queue",h.staff,{}, {},{...selection,page:1,pageSize:1,search:second.token},tx),
+    tx=>h.route(h.api.queueRouter,"post","/queue/call-next",h.staff,selection,{}, {},tx),
+  ]);
+  assert.equal(results.filter(r=>r.status==="fulfilled").length,2);
+  const listing=results[0].value, called=results[1].value.appointment;
+  assert.equal(called.id,first.id);
+  assert.equal(listing.total,2);assert.equal(listing.filteredTotal,1);
+  assert.deepEqual(listing.entries.map(r=>r.id),[second.id]);
+  // Either serial order is valid, but the page/summary/version must describe ONE state.
+  const final=await h.rows();
+  if(listing.currentToken===first.token){
+    assert.equal(listing.nextToken,second.token);assert.equal(listing.waiting,1);
+    assert.equal(listing.queueVersion,h.api.queueVersion(final));
+  }else{
+    assert.equal(listing.currentToken,null);assert.equal(listing.nextToken,first.token);assert.equal(listing.waiting,2);
+    assert.equal(listing.queueVersion,h.api.queueVersion([first,second]));
+  }
+});
+
 test("separate PostgreSQL guest contenders serialize last token and same-key replay", async () => {
   await h.api.put(h.t.qrs, { id: "guest-qr-row", clinicId: "c", branchId: "b", publicReference: "guest-qr" });
   await h.api.put(h.t.qrs, { id: "guest-qr-row-2", clinicId: "c", branchId: "b", publicReference: "guest-qr-2" });

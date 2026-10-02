@@ -20,7 +20,13 @@ export const users = pgTable("users", {
 ]);
 export const clinics = pgTable("clinics", {
   id: id(), ownerId: text("owner_id").references(() => users.id), adminId: text("admin_id").notNull().references(() => users.id),
-  status: text("status").notNull().default("active"), data: data(), createdAt: created(),
+  // Display preferences belong to the parent, in the existing settings document.
+  // Keeping these additive JSON fields avoids missing-column failures before migration.
+  status: text("status").notNull().default("active"),
+  data: jsonb("data").$type<Record<string, any> & {
+    dateFormat?: "DD MMM YYYY" | "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
+    timeFormat?: "12h" | "24h";
+  }>().notNull().default({}), createdAt: created(),
 }, t => [index("clinic_owner_idx").on(t.ownerId), index("clinic_admin_idx").on(t.adminId), uniqueIndex("clinic_name_unique").on(sql`lower(${t.data}->>'name')`), uniqueIndex("clinic_slug_unique").on(sql`(${t.data}->>'slug')`)]);
 export const branches = pgTable("branches", {
   id: id(), clinicId: text("clinic_id").notNull().references(() => clinics.id), status: text("status").notNull().default("active"), data: data(), createdAt: created(),

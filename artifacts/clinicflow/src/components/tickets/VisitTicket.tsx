@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { BRAND_LOGO_URL, BRAND_NAME } from "../../branding";
 import "./visit-ticket.css";
+import { formatDate, formatTime, type DateTimePreferences } from "../../lib/date-time";
 
-export type TicketData = {
+export type TicketData = Partial<DateTimePreferences> & {
   patientName: string;
   clinicName: string;
   branchName: string;
@@ -20,7 +21,7 @@ export type TicketData = {
 };
 
 const esc = (v: string) => v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-export const sessionRange = (t: TicketData) => t.startTime || t.endTime ? `${t.startTime || "—"} – ${t.endTime || "—"}${t.timezone ? ` (${t.timezone})` : ""}` : "Session time set by clinic";
+export const sessionRange = (t: TicketData) => t.startTime || t.endTime ? `${t.startTime ? formatTime(t.startTime,t) : "—"} – ${t.endTime ? formatTime(t.endTime,t) : "—"}${t.timezone ? ` (${t.timezone})` : ""}` : "Session time set by clinic";
 export const absoluteUrl = (u: string) => u.startsWith("/") ? `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}${u}` : u;
 
 let logoPromise: Promise<string> | undefined;
@@ -51,7 +52,7 @@ export function ticketHtml(t: TicketData, qr: string | null, logo = BRAND_LOGO_U
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${BRAND_NAME} ticket ${esc(t.reference || "")}</title>
  <style>body{font-family:system-ui,sans-serif;background:#f0f9fd;color:#10274e;margin:0;padding:16px}.t{max-width:560px;margin:auto;background:#fff;border:1px solid #c9e3ed;border-radius:16px;overflow:hidden}.h{background:#edfaff;color:#10274e;padding:4px 18px;border-bottom:1px solid #c9e3ed;display:flex;align-items:center;gap:8px;font-weight:700}.h img{display:block;width:108px;height:54px;object-fit:contain;flex:none}.b{padding:16px 18px}.n{font:700 56px/1 ui-monospace,monospace;color:#087cb7;margin:4px 0 8px}.l{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}.visit{border:1px solid #c9e3ed;background:#edfaff;padding:10px 12px;border-radius:9px;margin:8px 0 12px;overflow-wrap:anywhere}.visit strong{display:block;font-size:16px}.visit small{display:block;margin-top:4px}td{padding:2px 12px 2px 0;vertical-align:top}td:first-child{opacity:.65}.f{border-top:2px dashed #c9e3ed;padding:10px 18px;font-size:13px;background:#e9f8fc}.qr{display:block;margin:12px auto 0;width:180px}@media(max-width:420px){.h{flex-wrap:wrap;gap:0 8px}}@media print{body{background:none;padding:0}}</style></head><body><div class="t"><div class="h"><img src="${esc(logo)}" alt="DigiQ Doctors logo"><span>Visit ticket</span></div><div class="b">
 <p>Status: <strong>${esc(t.statusLabel || "Booked")}</strong></p><div class="l">Waiting number</div><div class="n">${esc(t.waitingNumber || "—")}</div>${t.reference ? `<div>Reference <strong>${esc(t.reference)}</strong></div>` : ""}
- <h2 style="margin:10px 0 8px;overflow-wrap:anywhere">${esc(t.patientName)}</h2><div class="visit"><span class="l">Date · Location</span><strong>${esc(t.date)} · ${esc(t.branchName)}</strong><small>Session ${esc(sessionRange(t))}</small></div><table style="width:100%;table-layout:fixed;overflow-wrap:anywhere">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
+ <h2 style="margin:10px 0 8px;overflow-wrap:anywhere">${esc(t.patientName)}</h2><div class="visit"><span class="l">Date · Location</span><strong>${esc(formatDate(t.date,t))} · ${esc(t.branchName)}</strong><small>Session ${esc(sessionRange(t))}</small></div><table style="width:100%;table-layout:fixed;overflow-wrap:anywhere">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
 ${qr ? `<img class="qr" src="${qr}" alt="Personal visit QR">` : ""}</div><div class="f">Show this ticket at reception. The session time is a range, not an exact consultation time. Keep the QR private.</div></div></body></html>`;
 }
 
@@ -114,7 +115,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
         <p className="vt-number" data-testid="ticket-waiting-number">{ticket.waitingNumber || "—"}</p>
         {ticket.reference && <p className="vt-ref" data-testid="ticket-reference">Ref {ticket.reference}</p>}
          <p className="vt-name">{ticket.patientName}</p>
-         <div className="vt-visit"><small>Date · Location</small><strong>{ticket.date} · {ticket.branchName}</strong><span>Session {sessionRange(ticket)}</span></div>
+         <div className="vt-visit"><small>Date · Location</small><strong>{formatDate(ticket.date,ticket)} · {ticket.branchName}</strong><span>Session {sessionRange(ticket)}</span></div>
         <dl className="vt-dl">
           <dt>Clinic</dt><dd>{ticket.clinicName}</dd>
           {ticket.address && <><dt>Address</dt><dd>{ticket.address}</dd></>}

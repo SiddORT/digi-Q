@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as api from "@workspace/api-client-react";
+import { friendlyError } from "../lib/friendly-error";
 
 export type LinkedSchedule = { enabled: boolean; doctorId?: string; maxTokens?: number; consultationMinutes?: number; tokenPrefix?: string; queueMode?: "mixed" | "appointmentsOnly" | "walkInsOnly" };
 
@@ -24,7 +25,7 @@ export function ClinicChangeReview({ clinicId, change, onSave, busy }: { clinicI
   async function preview() {
     setChecking(true); setError(""); setResult(null);
     try { setResult(await api.previewClinicSettings(clinicId, change)); }
-    catch (e) { setError(e instanceof Error ? e.message : "Could not preview changes. Nothing was saved."); }
+    catch (e) { setError(friendlyError(e,"save")); }
     finally { setChecking(false); }
   }
   return <section className="notice" aria-label="Review configuration impact">

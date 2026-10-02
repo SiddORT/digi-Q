@@ -15,6 +15,35 @@ const digest = token => createHash("sha256").update(token).digest("hex");
 let api, rows, active, lookups;
 const dialect = new PgDialect();
 globalThis.jwtTestDb = {
+  async transaction(work) {
+    const snapshot = rows.map(row => ({ ...row }));
+    let credentialLocked = false, userLocked = false;
+    const tx = {
+      async execute(statement) {
+        const query = dialect.sqlToQuery(statement);
+        assert.match(query.sql, /pg_advisory_xact_lock\(hashtext\(/);
+        assert.deepEqual(query.params, ["auth-credentials:existing-user-id"]);
+        credentialLocked = true;
+      },
+      select: () => ({ from: () => ({ where: condition => ({
+        async for(mode) {
+          assert.equal(credentialLocked, true, "credential advisory lock precedes user row lock");
+          assert.equal(mode, "update");
+          const query = dialect.sqlToQuery(condition);
+          assert.match(query.sql, /"users"\."id" =/);
+          assert.deepEqual(query.params, ["existing-user-id"]);
+          userLocked = true;
+          return [{ id: "existing-user-id", status: active ? "active" : "inactive", role: "doctor" }];
+        },
+      }) }) }),
+      insert: () => ({ async values(row) {
+        assert.equal(userLocked, true, "session insert follows locked active-user check");
+        rows.push(row);
+      } }),
+    };
+    try { return await work(tx); }
+    catch (error) { rows = snapshot; throw error; }
+  },
   delete: () => ({ where: async () => {} }),
   insert: () => ({ values: async row => rows.push(row) }),
   select: () => ({ from: () => ({ innerJoin: () => ({ where: condition => ({

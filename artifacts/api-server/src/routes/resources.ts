@@ -3,14 +3,14 @@ import * as tables from "@workspace/db";
 import * as z from "@workspace/api-zod";
 import { and, eq, sql } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
-import { requireUser, roles, scope, scoped, canRead, projectAssignmentScope, setAssignments, validateAssignments } from "../lib/auth";
+import { requireUser, roles, scope, scoped, canRead, projectAssignmentScope as projectScope, setAssignments, validateAssignments } from "../lib/auth";
 import { all, one, put, change, uid, audit, filtered, paginate } from "../lib/store";
 import { HttpError, assert, parse, query } from "../lib/http";
 import { enrich } from "../lib/entities";
 import { queryPage, assignmentCatalogPredicate } from "../lib/list-query";
 import { inviteStaff, requestStaffReset } from "./auth";
 import { consumeRateLimit, revokeUserSessions } from "../lib/native-auth";
-import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, attachOwnDoctor } from "../lib/clinic-expansion";
+import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, attachOwnDoctor, clinicDisplayPreferences } from "../lib/clinic-expansion";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus } from "../lib/availability";
 const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs, authChallenges } = tables;
 export const resourcesRouter = Router();
@@ -32,6 +32,12 @@ const governed: Record<string, string[]> = {
   bookingSource: ["online", "walkIn", "phone", "qr"], queueType: ["mixed", "appointmentsOnly", "walkInsOnly"],
   userStatus: ["active", "inactive"], clinicStatus: ["active", "inactive"],
 };
+async function projectAssignmentScope(user: any, kind: string, row: any) {
+  const result = await projectScope(user, kind, row);
+  if (kind === "clinics") return { ...result, ...clinicDisplayPreferences(row) };
+  if (kind === "branches") return { ...result, ...clinicDisplayPreferences(await one(clinics, row.clinicId)) };
+  return result;
+}
 export function ownershipChangeRequested(value: unknown, current: unknown) {
   return value !== undefined && value !== current;
 }
@@ -81,7 +87,7 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
   // endpoint. Doctors still retain their existing clinical/profile and
   // clinic/branch creation workflows, but cannot edit a clinic's configuration.
   if (user.role !== "superAdmin" &&
-      (kind === "clinics" && old && ["name", "address", "email", "phone", "slug", "timezone", "categoryId", "specialityIds", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"].some(key => Object.hasOwn(body, key)) ||
+      (kind === "clinics" && old && ["name", "address", "email", "phone", "slug", "timezone", "dateFormat", "timeFormat", "categoryId", "specialityIds", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"].some(key => Object.hasOwn(body, key)) ||
        kind === "branches" && ["openingHours", "timezone", "email", "phone", "inheritEmail", "inheritPhone"].some(key => Object.hasOwn(body, key)))) {
     assert(user.role === "clinicAdmin", 403, "Only the owning Clinic Admin can change clinic settings");
     const clinic = await one(clinics, kind === "clinics" ? old.id : context.clinicId);
@@ -348,6 +354,8 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         });
         assert(!conflict, 409, "Transfer blocked because assigned doctors or receptionists are managed by another Clinic Admin");
       }
+      fields.data.dateFormat ??= "DD MMM YYYY";
+      fields.data.timeFormat ??= "12h";
       fields.data.code ||= `CLN-${id.slice(0,8)}`;
     }
     if (kind === "branches") fields.data.code ||= `BR-${id.slice(0,8)}`;
@@ -521,6 +529,8 @@ function discardedIncomingSave(kind: string, table: any, user: any, body: any, o
       assert(fields.adminId, 400, "Please select a Clinic Admin");
       const admin = await one(users, fields.adminId, tx);
       assert(admin.role === "clinicAdmin" && admin.status === "active", 400, "Please select an active Clinic Admin");
+      fields.data.dateFormat ??= "DD MMM YYYY";
+      fields.data.timeFormat ??= "12h";
       fields.data.code ||= `CLN-${id.slice(0,8)}`;
     }
     if (kind === "branches") fields.data.code ||= `BR-${id.slice(0,8)}`;
@@ -602,6 +612,14 @@ for (const [kind, table, schema, listSchema] of definitions) {
     const user = await requireUser(req), q = query(listSchema, req);
     if (kind === "users") roles(user, ["superAdmin", "clinicAdmin", "doctor"]);
     const result = await queryPage(user, kind, q);
+    if (kind === "clinics") result.items = result.items.map((row: any) => ({ ...row, ...clinicDisplayPreferences(row) }));
+    if (kind === "branches") {
+      const parents = new Map<string, any>();
+      for (const row of result.items) {
+        if (!parents.has(row.clinicId)) parents.set(row.clinicId, await one(clinics, row.clinicId));
+        Object.assign(row, clinicDisplayPreferences(parents.get(row.clinicId)));
+      }
+    }
     if (["users", "doctors"].includes(kind)) {
       const clinicIds = [...new Set(result.items.flatMap((r: any) => r.clinicIds))] as string[];
       const branchIds = [...new Set(result.items.flatMap((r: any) => r.branchIds))] as string[];
@@ -712,7 +730,6 @@ resourcesRouter.post("/users/:id/password-reset", async (req, res) => {
   assert(await canRead(user, "users", target), 403, "User outside your scope");
   const [credential] = await db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, target.id));
   assert(credential?.passwordHash, 409, "This staff account has not completed invitation setup. Resend the set-password invitation instead.");
-  await consumeRateLimit(`staff-recovery:${target.id}`, 3);
   await requestStaffReset(req, target);
   await audit(user, "recoveryInstructions", "users", target);
   res.status(202).json({ message: "Password recovery email requested." });

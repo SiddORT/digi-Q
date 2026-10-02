@@ -17,6 +17,8 @@ export interface SearchableSelectProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   required?: boolean;
+  /** Shown as a Retry action in the error state; the selected value is kept. */
+  onRetry?: () => void;
   id?: string;
 }
 
@@ -33,6 +35,7 @@ export function SearchableSelect({
   onLoadMore,
   hasMore = false,
   required = false,
+  onRetry,
   id,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
@@ -95,7 +98,7 @@ export function SearchableSelect({
       );
 
   return (
-    <div className="flex flex-col gap-1.5 w-full">
+    <div className="flex min-w-0 max-w-full flex-col gap-1.5 w-full">
       {label && (
         <label htmlFor={id} className="text-sm font-semibold text-foreground">
           {label} {required && <span className="text-destructive">*</span>}
@@ -104,7 +107,7 @@ export function SearchableSelect({
       <Popover open={open} onOpenChange={setOpen}>
         <div
           className={cn(
-            "relative flex min-h-[43px] w-full items-center justify-between rounded-lg border border-border bg-white px-3 py-2 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15",
+            "relative flex min-w-0 max-w-full min-h-[43px] w-full items-center justify-between rounded-lg border border-border bg-white px-3 py-2 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15",
             disabled && "opacity-50 cursor-not-allowed bg-slate-50",
             error && "border-destructive focus-within:border-destructive focus-within:ring-destructive/15"
           )}
@@ -128,7 +131,7 @@ export function SearchableSelect({
 
           <span
             className={cn(
-              "relative z-10 truncate flex-1 text-left mr-2 pointer-events-none",
+              "relative z-10 min-w-0 truncate flex-1 text-left mr-2 pointer-events-none",
               !value ? "text-muted-foreground" : "text-foreground font-medium"
             )}
           >
@@ -167,14 +170,14 @@ export function SearchableSelect({
         >
           <Command shouldFilter={!onSearchChange} className="searchable-select-options max-h-[var(--radix-popover-content-available-height,300px)]">
             <CommandInput
-              placeholder={label ? `Search ${label.toLowerCase()}...` : (placeholder?.startsWith("Search") ? placeholder : "Search...")}
+              placeholder={label ? `Search ${label.toLowerCase()}…` : (placeholder?.startsWith("Search") ? placeholder : "Search…")}
               value={search}
               onValueChange={handleSearch}
               className="h-10 text-sm border-none focus:ring-0"
             />
             <CommandList className="max-h-[250px] overflow-y-auto">
               <CommandEmpty>
-                 {loading ? "Searching..." : error ? "Unable to load options." : "No results found."}
+                {error && onRetry && !loading ? <span className="flex flex-col items-center gap-2">Unable to load options.<button type="button" className="button secondary small" onClick={onRetry}>Retry</button></span> : <>{loading ? (search ? "Searching…" : "Loading…") : error ? "Unable to load options." : search ? "No matching results." : "No options available."}</>}
               </CommandEmpty>
               <CommandGroup>
                 {displayOptions.map((option) => (

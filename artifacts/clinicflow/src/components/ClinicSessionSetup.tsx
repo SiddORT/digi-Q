@@ -1,7 +1,9 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { Link } from "wouter";
+import { friendlyError } from "../lib/friendly-error";
+import { SearchableSelect } from "./SearchableSelect";
 
 const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 type Hour = { dayOfWeek: number; startTime: string; endTime: string };
@@ -46,6 +48,7 @@ export function ClinicSessionSetup({ clinicId, branches, ownDoctorId }: {
   const existing = (h: Hour, items: api.Schedule[]) => activeSessions(items).some(s => s.dayOfWeek === h.dayOfWeek && s.startTime === h.startTime && s.endTime === h.endTime);
   const doctorOptions = doctors.data?.items || [];
   const incompleteDoctors = !!doctors.data && doctors.data.total > doctorOptions.length;
+  useEffect(()=>{if(doctorId&&doctors.isSuccess&&!doctors.isFetching&&!incompleteDoctors&&!doctorOptions.some(doctor=>doctor.id===doctorId))setDoctorId("");},[doctorId,doctors.isSuccess,doctors.isFetching,doctors.data,incompleteDoctors]);
   async function create(event: FormEvent) {
     event.preventDefault();
     if (busy || !selectedBranch || !doctorId || incompleteDoctors) return;
@@ -73,7 +76,7 @@ export function ClinicSessionSetup({ clinicId, branches, ownDoctorId }: {
       setMessage(created ? `Created ${created} doctor session${created === 1 ? "" : "s"}. Check the patient booking page for a future open date.` : "No new sessions were needed. Existing sessions were left unchanged.");
       setChosen([]);
     } catch (error) {
-      setMessage(`${created} session${created === 1 ? "" : "s"} created before setup stopped. ${error instanceof Error ? error.message : "Unable to save the remaining sessions."} Review the schedule before retrying; saved sessions will not be recreated.`);
+      setMessage(`${created} session${created === 1 ? "" : "s"} created before setup stopped. ${friendlyError(error,"save")} Review the schedule before retrying; saved sessions will not be recreated.`);
     } finally {
       try {
         await schedules.refetch();
@@ -86,10 +89,10 @@ export function ClinicSessionSetup({ clinicId, branches, ownDoctorId }: {
   return <section className="panel padded" aria-label="Booking readiness and doctor sessions">
     <div className="panel-heading"><div><h2>Booking readiness · doctor sessions</h2><p>Owner-linked hours are configured in Locations &amp; Hours. Custom doctors can copy saved intervals here, then manage every session below.</p></div></div>
     <div className="form-grid">
-      <label>Location<select disabled={busy} value={branchId} onChange={e => { setBranchId(e.target.value); setDoctorId(""); setChosen([]); setMessage(""); }}><option value="">Choose a location</option>{active.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></label>
-      {branchId && <label>Doctor<select disabled={busy || incompleteDoctors} value={doctorId} onChange={e => { setDoctorId(e.target.value); setChosen([]); setMessage(""); }}><option value="">Choose a doctor</option>{doctorOptions.map(d => <option key={d.id} value={d.id}>{d.fullName}{d.id === ownDoctorId ? " (you)" : ""}</option>)}</select></label>}
+      <SearchableSelect label="Clinic" disabled={busy} value={branchId} onChange={id=>{setBranchId(id);setChosen([]);setMessage("");}} options={active.map(b=>({value:b.id,label:b.name}))}/>
+      {branchId&&<SearchableSelect label="Doctor" value={doctorId} disabled={busy||incompleteDoctors} loading={doctors.isFetching} error={doctors.error?"Unable to load doctors.":undefined} onRetry={()=>void doctors.refetch()} onChange={id=>{setDoctorId(id);setChosen([]);setMessage("");}} options={doctorOptions.map(d=>({value:d.id,label:`${d.fullName}${d.id===ownDoctorId?" (you)":""}`}))}/>}
     </div>
-    {(doctors.error || schedules.error) && <p role="alert">{(doctors.error || schedules.error)?.message} <button type="button" onClick={() => { void doctors.refetch(); void schedules.refetch(); }}>Retry</button></p>}
+    {(doctors.error || schedules.error) && <p role="alert">{friendlyError(doctors.error || schedules.error,"load")} <button type="button" onClick={() => { void doctors.refetch(); void schedules.refetch(); }}>Retry</button></p>}
     {branchId && doctors.isLoading && <p role="status">Loading assigned doctors…</p>}
     {incompleteDoctors && <p role="alert">Only {doctorOptions.length} of {doctors.data?.total} assigned doctors were loaded. Use Weekly schedule to find the intended doctor; bulk setup is unavailable until the complete doctor list can be shown.</p>}
     {branchId && !doctors.isLoading && !doctors.error && !doctorOptions.length && <p role="status">No active doctor is assigned to this location. Assign one in Staff management or enable your own doctor profile.</p>}

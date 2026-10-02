@@ -169,6 +169,30 @@ export interface DemoSetupStatus {
   password?: string;
 }
 
+/**
+ * Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.
+ */
+export type ClinicDateFormat = typeof ClinicDateFormat[keyof typeof ClinicDateFormat];
+
+
+export const ClinicDateFormat = {
+  DD_MMM_YYYY: 'DD MMM YYYY',
+  'DD/MM/YYYY': 'DD/MM/YYYY',
+  'MM/DD/YYYY': 'MM/DD/YYYY',
+  'YYYY-MM-DD': 'YYYY-MM-DD',
+} as const;
+
+/**
+ * Parent Clinic Group display preference; locations inherit it. Default 12h.
+ */
+export type ClinicTimeFormat = typeof ClinicTimeFormat[keyof typeof ClinicTimeFormat];
+
+
+export const ClinicTimeFormat = {
+  '12h': '12h',
+  '24h': '24h',
+} as const;
+
 export type AvailabilityQueueMode = typeof AvailabilityQueueMode[keyof typeof AvailabilityQueueMode];
 
 
@@ -179,6 +203,8 @@ export const AvailabilityQueueMode = {
 } as const;
 
 export interface Availability {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /** @nullable */
   sessionId?: string | null;
   doctorId: string;
@@ -251,6 +277,8 @@ export interface ClinicPolicy {
 }
 
 export interface ClinicDetails {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /** @minLength 1 */
   name?: string;
   address?: string;
@@ -382,6 +410,8 @@ export const RecordStatus = {
 } as const;
 
 export interface ClinicInput {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /**
      * @minLength 3
      * @maxLength 63
@@ -462,6 +492,8 @@ export interface BranchInput {
 }
 
 export type Branch = BranchInput & ({
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   linkedSchedule?: LinkedSchedule;
   /** @nullable */
   effectiveEmail?: string | null;
@@ -473,6 +505,8 @@ export type Branch = BranchInput & ({
   /** @nullable */
   createdAt: string | null;
 }) & Required<Pick<BranchInput & ({
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   linkedSchedule?: LinkedSchedule;
   /** @nullable */
   effectiveEmail?: string | null;
@@ -550,6 +584,8 @@ export type DoctorPresence = DoctorPresenceInput & ({
 });
 
 export interface PublicClinicSummary {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   doctorCount?: number;
   /** @nullable */
   averageConsultationMinutes?: number | null;
@@ -565,6 +601,8 @@ export interface PublicClinicSummary {
 }
 
 export interface PublicBranchSummary {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   id: string;
   name: string;
   /** @nullable */
@@ -686,7 +724,24 @@ export const GuestReceiptStatus = {
   rejected: 'rejected',
 } as const;
 
+/**
+ * Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.
+ */
+export type ConfirmationEmailOutcome = typeof ConfirmationEmailOutcome[keyof typeof ConfirmationEmailOutcome];
+
+
+export const ConfirmationEmailOutcome = {
+  provider_accepted: 'provider_accepted',
+  unavailable: 'unavailable',
+  disabled: 'disabled',
+  no_recipient: 'no_recipient',
+  not_attempted: 'not_attempted',
+} as const;
+
 export interface GuestReceipt {
+  confirmationEmail?: ConfirmationEmailOutcome;
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /** @nullable */
   sessionId?: string | null;
   id: string;
@@ -751,6 +806,10 @@ export interface AuthEmailInput {
   email: string;
 }
 
+export interface RegistrationChallengeReference {
+  challengeId: string;
+}
+
 export interface AuthChallenge {
   challengeId: string;
   requiresVerification?: boolean;
@@ -781,7 +840,6 @@ export interface AuthStatus {
   role: string | null;
   staffPasswordVerified: boolean;
   requiresStaffPassword: boolean;
-  csrfToken: string;
 }
 
 export interface ApiError {
@@ -930,6 +988,8 @@ export type ClinicAdminOnboardingInputAdmin = {
 };
 
 export type ClinicAdminOnboardingInputClinic = {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /**
      * @minLength 3
      * @maxLength 63
@@ -1208,6 +1268,8 @@ export interface ScheduleInput {
 }
 
 export type Schedule = ScheduleInput & {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   id: string;
   doctorName?: string;
   clinicName?: string;
@@ -1292,6 +1354,9 @@ export interface StatusEvent {
 }
 
 export type Appointment = AppointmentInput & ({
+  confirmationEmail?: ConfirmationEmailOutcome;
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   id: string;
   reference: string;
   token: string;
@@ -1379,6 +1444,8 @@ export interface QueueSelection {
 }
 
 export interface OwnQueueEntry {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   appointmentId: string;
   token: string;
   status: AppointmentStatus;
@@ -1397,6 +1464,10 @@ export interface StatusCounts {
 }
 
 export interface LiveQueue {
+  /** Staff-only count after listing filters; omitted for patients. */
+  filteredTotal?: number;
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /** @nullable */
   sessionId?: string | null;
   /** @nullable */
@@ -1535,6 +1606,8 @@ export const PublicDisplaySessionCurrentStatus = {
 } as const;
 
 export interface PublicDisplaySession {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /** @nullable */
   sessionId?: string | null;
   presence?: PublicDisplaySessionPresence;
@@ -1569,6 +1642,8 @@ export type PublicDisplayBranch = {
 };
 
 export interface PublicDisplay {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   clinic: PublicDisplayClinic;
   branch: PublicDisplayBranch;
   date: string;
@@ -1577,6 +1652,8 @@ export interface PublicDisplay {
 }
 
 export interface QrContext {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   reference: string;
   clinicId: string;
   clinicName: string;
@@ -1829,6 +1906,11 @@ date: string;
 };
 
 export type ListGuestRequestsParams = {
+/**
+ * @maxLength 200
+ */
+search?: string;
+sort?: ListGuestRequestsSort;
 sessionId?: SessionIdParameter;
 startTime?: StartTimeParameter;
 clinicId?: string;
@@ -1847,6 +1929,18 @@ page?: number;
  */
 pageSize?: number;
 };
+
+export type ListGuestRequestsSort = typeof ListGuestRequestsSort[keyof typeof ListGuestRequestsSort];
+
+
+export const ListGuestRequestsSort = {
+  createdAt: 'createdAt',
+  '-createdAt': '-createdAt',
+  fullName: 'fullName',
+  '-fullName': '-fullName',
+  date: 'date',
+  '-date': '-date',
+} as const;
 
 export type ListGuestRequestsStatus = typeof ListGuestRequestsStatus[keyof typeof ListGuestRequestsStatus];
 
@@ -2206,19 +2300,25 @@ branchId: string;
 date: string;
 appointmentId?: string;
 /**
+ * Explicit staff listing page; omit both pagination parameters for legacy full-list compatibility
  * @minimum 1
  */
-page?: PageParameter;
+page?: number;
 /**
+ * Explicit staff listing page size; omitted pagination parameters must not be default-injected by clients
  * @minimum 1
  * @maximum 100
  */
-pageSize?: PageSizeParameter;
-search?: SearchParameter;
+pageSize?: number;
 /**
- * Allowlisted field with optional minus prefix for descending order
+ * Staff-only listing search applied before pagination
+ * @maxLength 200
  */
-sort?: SortParameter;
+search?: string;
+/**
+ * Staff-only allowlisted listing sort with optional minus prefix
+ */
+sort?: string;
 status?: AppointmentStatus;
 /**
  * Server-side group filter applied before pagination; intersects with status when both supplied
@@ -2255,6 +2355,12 @@ doctorId?: DoctorIdParameter;
 };
 
 export type GetReportsParams = {
+/**
+ * Trimmed report search text
+ * @maxLength 200
+ */
+search?: string;
+sort?: GetReportsSort;
 sessionId?: SessionIdParameter;
 startTime?: StartTimeParameter;
 /**
@@ -2273,6 +2379,34 @@ branchId?: BranchIdParameter;
 doctorId?: DoctorIdParameter;
 groupBy?: GetReportsGroupBy;
 };
+
+export type GetReportsSort = typeof GetReportsSort[keyof typeof GetReportsSort];
+
+
+export const GetReportsSort = {
+  key: 'key',
+  '-key': '-key',
+  label: 'label',
+  '-label': '-label',
+  appointments: 'appointments',
+  '-appointments': '-appointments',
+  registrations: 'registrations',
+  '-registrations': '-registrations',
+  waiting: 'waiting',
+  '-waiting': '-waiting',
+  checkedIn: 'checkedIn',
+  '-checkedIn': '-checkedIn',
+  completed: 'completed',
+  '-completed': '-completed',
+  noShow: 'noShow',
+  '-noShow': '-noShow',
+  cancelled: 'cancelled',
+  '-cancelled': '-cancelled',
+  averageWaitMinutes: 'averageWaitMinutes',
+  '-averageWaitMinutes': '-averageWaitMinutes',
+  averageConsultationMinutes: 'averageConsultationMinutes',
+  '-averageConsultationMinutes': '-averageConsultationMinutes',
+} as const;
 
 export type GetReportsGroupBy = typeof GetReportsGroupBy[keyof typeof GetReportsGroupBy];
 

@@ -1,4 +1,4 @@
-> Implementation update: This report is the Phase 1 source-audit snapshot. See docs/digiq-progress.md for subsequent implementation and test results. Findings 1/7 (password policy), 33 (native discard confirmation), and shared close-control portions of 22/81 have now received changes; none of this certifies full UAT resolution. SMTP configuration/test controls and an explicit fixed-duration JWT option are implemented, but activation and live delivery remain unverified.
+> Historical baseline: Sections 1–11 and the original individual findings below preserve the Phase 1 audit; their “pending”, “unchanged”, and “not visually reviewed” statements describe that pass only. The **Current disposition register — all 137 items** appended below supersedes those statuses for the inspected workspace. See `docs/digiq-final-status.md` for current limits and actionable gaps. Neither document certifies UAT resolution, activation, delivery, or release readiness.
 
 # DigiQ UI/UX and QA audit — Phase 1
 
@@ -1599,3 +1599,214 @@ This is a source-derived inventory of primary data listings and embedded/public 
 ## Unchanged and why
 
 Only this audit report and a pending-status progress checklist were created. No source/package/config/secrets/schema/deployment changes, workflows, tests, requests, account changes, emails or database mutations. No behavior was “fixed” based solely on symptoms. Q/P, authentication reconciliation, new exception powers, new providers/notifications, hard deletion and any migration beyond two display preferences remain held. All implementation, reproduction and verification statuses remain pending; this report is a planning/evidence baseline, not a completion or release certificate.
+
+---
+
+## Current disposition register — all 137 items
+
+**Reconciliation: 2 October 2026, final evidence snapshot.** Main supplied a clean typecheck and recursive API/UI source-test result: **321/321 passed, zero skipped, 45.48 seconds**, plus final passing mobile/401 browser follow-up. Queue SQL pagination, guest search/sort and auth lifecycle/cache changes are included. No other implementation work is reported running. No application edits, test executions or browser sessions were performed by this documentation worker.
+
+### Evidence and status semantics
+
+- `implemented-awaiting-browser`: relevant caller is wired in current source; not a claim of full UI, accessibility, performance or UAT verification.
+- `verified-with-test-evidence`: the identified behavior has a recorded passing test result in `docs/digiq-progress.md` or explicitly supplied by the main agent below; evidence is limited to that test's scope.
+- `existing-behavior-verified`: source tracing establishes the existing behavior; this is **not** a new browser pass or confirmation of the reported live incident.
+- `held-product-decision`: a Q/P behavior, schema or authentication-policy choice remains approval-held; copy changes can still proceed.
+- `blocked-external`: needed deployment, data, provider or real-delivery evidence is outside the inspected workspace. This does not block unrelated implementation.
+- `pending-implementation`: a known implementation, investigation or verification gap remains. A partial shared fix is described, not counted as complete.
+
+UI/API/R/U/C/AV/AR/RR shorthand remains as defined above. Newly referenced component paths are relative to UI unless prefixed API. New test files are **coverage candidates, not passing execution evidence** absent an explicit recorded result. Historical recorded results are in `docs/digiq-progress.md`; that file's broad “remaining work” paragraph predates this register.
+
+Additional worker evidence relayed by the main agent after completion: **13 authentication-contention tests passed**, including registration resend/backend protections; **6 appointment-confirmation tests passed with fake email transport**. These support isolated behavior only, not real delivery or the pending combined browser run. The main agent also reports completed onboarding/back-error, searchable-select, weekly-day/copy/exact-minute slider/clinic-band and external `aria-invalid` work; their current caller changes are not treated as live UAT certification.
+
+**Test chronology:** earlier root run was **280/284**; corrected source expectations passed targeted **8**, and the real first-receipt `confirmationEmail` mismatch/intended nonpatient date-preference allowlist corrections passed **phase-one + notification 58**. These historical failures are now superseded by **321/321**, not erased or added together. Typecheck and final source-test evidence: `/tmp/replit-shell-output-logs/T2YACJF5WN1AM491ZZZRG/log`. Ticket **24/24** evidence: `/tmp/ticket-regression-approved-formats.txt`, after approved-format fixture corrections and a mixed-clinic test. The workflow card may show an older ticket failure; passing CLI evidence is current.
+
+**Browser evidence supplied by main:** availability rendered and accepted `08:32`; `31 Feb` blocked Continue; registration Back retained values/format preview and cleared validation; password reveal/required passed; completed row had no Ticket action. Mobile registration overflow was found, repaired and **retested successfully at 390×844 on Locations and Opening hours** (document width 375, viewport 390). Protected-action 401 replaced private workspace with `/sign-in`, **one POST only, no write retry**. Initial missing mock-CSRF fixture was corrected before the actual 401 behavior passed. No real users/email used. **Cross-tab/logout and patient-notification visuals were not tested**; their isolated tests are included in 321. Fixture evidence is not live UAT or proof of the original availability incident's cause.
+
+**Selected actual passing tests in the 321 run** (assertion scope, not global feature certification):
+
+| Evidence | Actual passing test names / scope |
+|---|---|
+|Formats/details|“all display formats roundtrip without date/timezone conversion”; “DST transitions use the actual instant, never browser-local interpretation”; “private detail renders notes, reasons and consultation check-in without actor IDs or raw HTML”; “date and time inputs preserve external invalid state and error descriptions”.|
+|Scheduling|“weekday availability uses the selected calendar date including Sunday zero and split Friday sessions”; “stored numeric weekdays match string options, including Sunday zero”; “weekly sessions preserve exact minutes, allow adjacent sessions, reject overlap and invalid clocks”; “exception session requirement mirrors the existing multi-session override rule”.|
+|Booking notices/mail|“portal notices are patient-only, persisted-query-backed, and link to authorized appointment details”; “enabled confirmation uses parent display settings and excludes clinical notes”; “SMTP failure cannot undo booking and retries cannot send again”; “concurrent retries claim once and preserve unknown outcome after dispatch storage failure”.|
+|Queue/listing|“staff SQL queue pages preserve full-session next/version/counts and default full compatibility”; “filtered SQL queue page and concurrent Call Next share the authoritative queue lock”; “guest search is bounded, literal, sorted and restricted to staff assignments”; “real SQL immediate waiting preserves reservation order and explicit skip”.|
+|Scope/privacy|“actual SQL authorization equals prior canRead across all roles and resource families”; “600 appointments/patients: clinic, branch, own doctor, status, date and patient isolation”; “clinic admin retains ordinary doctors with scoped patient and visit route totals”; “patient queue response does not disclose status tabs”.|
+|Lifecycle/contracts|“protected mutation 401 clears private identity/cache immediately and never replays the write”; “logout succeeds across tabs without credentials or rebroadcast loops; failed logout stays signed in”; “status checks are single-flight, do not renew or clear healthy caches, and detect expiry”; “auth status requires no CSRF token and queue preserves omitted pagination”.|
+|Auth transport/security|“actual HTTPS frontend transport completes Argon2 staff login, session and logout with all SMTP settings absent”; “origin gate rejects cross-site mutations even with valid CSRF; patient OTP shares transport”; strict JWT claims/tampering/default-mode tests and thirteen credential-contention/resend tests.|
+
+The original screenshots at `/tmp/digiq-finding-{24,26,51,55,61,74,78,82,87,102,105,107}.png` were visually inspected for this reconciliation. They establish target screens, not current behavior. In particular: 24 is an error boundary at `/admin/availability`, **not evidence of a wrong destination**; 26 is dashboard average queue wait; 51 is schedule capacity; 55 is the booking-confirmation ticket container; 61 is the booking patient lookup; 74 is the bulk-cancel submit button; 78 is multi-doctor quick switch; 82 is the exception session field; 87 is master-backed address suggestions; 102 concerns location credentials; 105 is the dashboard booking side card; 107 concerns appointment action reasons.
+
+### Findings 1–27
+
+| # | Status | Current evidence, cause and remaining limit |
+|---|---|---|
+|1|verified-with-test-evidence|API `lib/native-auth.ts` and `auth/PasswordFlows.tsx` replace the duplicated 12-character rule with eight plus letters/numbers. Prior authentication suite passed; new registration caller still needs browser verification.|
+|2|implemented-awaiting-browser|No `developmentCode` or “Development-only” display remains in inspected UI production source. Verify production bundle and all verification screens; legitimate fictional-demo warnings remain.|
+|3|implemented-awaiting-browser|`ResourceLookup` → `SearchableSelect` now retains selected records and exposes fetch/error/retry states. Original empty field's live data/role cause is not established.|
+|4|implemented-awaiting-browser|R `RelationInput` registers required relations and emits “Select a clinic” inline. Generic Editor and staff caller use it; exercise each dependent form.|
+|5|implemented-awaiting-browser|API `lib/auth-email.ts` calls `systemEmailTemplate` for existing system mail, including integration tests' caller. HTML escaping/plain text implemented; no real send or exact missing-JSON certification.|
+|6|implemented-awaiting-browser|R Editor, U UserEditor and registration account/wizard call shared person-name validation, trimming and inline errors. Verify Unicode/allowed punctuation and server parity.|
+|7|verified-with-test-evidence|Same policy and historical authentication test evidence as 1; preserves Argon2id and existing valid hashes.|
+|8|verified-with-test-evidence|PasswordInput callers include StaffLogin, PasswordFlows and ClinicRegistration. Main's fixture-browser pass verified password toggle and required behavior; complete auth-screen keyboard matrix remains outstanding.|
+|9|verified-with-test-evidence|ClinicRegistration RegistrationAccount calls new `registration/resend`, displays 60-second cooldown and success toast, and replaces challenge ID/code without extending original expiry. Main reports 13 contention tests passed; UI timer/browser interaction awaits final pass.|
+|10|blocked-external|Auth mail path now checks delivery errors/provider response and readiness; actual reported recipient/provider transaction is unavailable. Do not label missing SMTP configuration the proven incident cause.|
+|11|existing-behavior-verified|321 run passes “signup reference data only exposes active allowlisted names and IDs”; wizard consumes those references through shared select. Original empty catalog remains a data/context diagnostic, not a proved missing list implementation.|
+|12|implemented-awaiting-browser|Shared lookup fixes reach R relations and booking care lookups. Empty-data provenance for the original field remains unproven; test its actual role/context.|
+|13|verified-with-test-evidence|Main reports proven slug trailing-hyphen keystroke fix: live normalization previously stripped a just-typed trailing hyphen before the next character. Draft slug now retains it while final slug validation remains; not merely a permissive name-validator change.|
+|14|implemented-awaiting-browser|R timezone fields and onboarding/settings call `TimezoneSelect`; searchable timezone/offset presentation replaces generic text entry. Check browser default and keyboard behavior.|
+|15|implemented-awaiting-browser|Registration hours and doctor WeeklyOverview show Mon–Sun context/copy actions; exact typed minutes, slider and clinic-hour bands are wired into schedule UX. Existing record model/overlap protections retained; no new scheduling powers introduced.|
+|16|implemented-awaiting-browser|R static and relation fields call searchable controls; selected-label caching added to ResourceLookup/CareLookup. Confirm original field/request rather than assuming the shared fix covers missing data.|
+|17|verified-with-test-evidence|321 run passes display roundtrip/DST, per-parent appointment preferences and DateFormatInput external-invalid tests; tickets 24/24 include mixed formats. Resource timestamp caller uses configured formatting. This does not certify every unexercised channel or full JSON styling.|
+|18|implemented-awaiting-browser|R Editor queries peer sessions and validates overlap inline; registration hours validates exact-minute overlap before progression. Cross-clinic authoritative server rules are preserved.|
+|19|verified-with-test-evidence|Wizard Back clears stale errors while retaining input; main's fixture-browser pass confirmed Back preserves values and clears validation. R create/edit reset is source-traced; all rejected-request/navigation permutations are not claimed.|
+|20|implemented-awaiting-browser|Shared friendly translator reaches App ErrorNotice, auth, Users, R and registration. Raw transport prefix suppressed at these callers; retain useful validation message.|
+|21|implemented-awaiting-browser|ResourceLookup/CareLookup cache selected records separately from current page. Root cause addressed: selected label could disappear when search/pagination replaced options; cache does not grant scope validity.|
+|22|implemented-awaiting-browser|Shared AppDialog close hit area updated and used by resource/staff/appointment dialogs. Inspect bespoke controls too; component coverage is not an all-dialog measurement.|
+|23|pending-implementation|U/R retain prior data while refreshing and already call server-paginated queries. No measured profile establishes the original one-doctor delay; API resource enrichment still warrants query-count profiling.|
+|24|existing-behavior-verified|Main's fixture browser rendered intended `/admin/availability` and accepted exact `08:32`. Original screenshot's error-boundary incident was not reproduced; no root cause or UAT routing repair claimed. Diagnose only if original deployment/data case reproduces.|
+|25|verified-with-test-evidence|321 run passes patient-only persisted-query-backed booking notices linked to authorized details, including exclusion of terminal/consultation records. Dashboard derives notices from own saved appointments; no new center/schema or SMTP-delivery assumption. Browser reload/source variations remain supplemental verification.|
+|26|implemented-awaiting-browser|C Dashboard average-wait HelpTip explains recorded wait sum/count, anchor and excluded visits. Screenshot metric is identified; check against API dashboard aggregation, not queue's separate wait estimate.|
+|27|implemented-awaiting-browser|Shared layout applied; actual mobile registration overflow repaired and final 390×844 Locations/Opening-hours check passed (375px document within 390px viewport). Status reflects remaining screen-wide visual/keyboard/200%-zoom scope, not a still-broken mobile page. Exact JSON certification unavailable.|
+
+### Findings 28–54
+
+| # | Status | Current evidence, cause and remaining limit |
+|---|---|---|
+|28|implemented-awaiting-browser|C Booking displays existing cancellation cutoff before booking and on confirmation; R setting helper explains minutes. Status/permission rules unchanged; verify public/guest parity.|
+|29|verified-with-test-evidence|321 passes staff role-specific payload/ownership guards, invitation-after-profile-commit and scoped management tests; U creation handles invitation partial success. Original “cannot add doctor” incident remains unreproduced, not a proven outstanding create defect or identified incident root cause.|
+|30|implemented-awaiting-browser|R/U/registration invoke required validator on trimmed strings and show inline text rather than only highlights. Check every mandatory field caller.|
+|31|implemented-awaiting-browser|U UserEditor invokes shared person-name validation; no claim based solely on validator existence. Server/patient/profile parity still needs matrix verification.|
+|32|implemented-awaiting-browser|Shared AppDialog body/footer layout and forms' footer classes are wired. Browser scrolling, long errors and mobile/zoom required.|
+|33|verified-with-test-evidence|Historical focused browser pass verified custom discard/keep/Escape/backdrop and retained values in AppDialog. Tab unload remains native by browser design.|
+|34|verified-with-test-evidence|321 passes invitation delivery after profile commit and native enrollment behavior; U result caller distinguishes failed delivery with one warning/badge/resend. Original contradictory outcome is addressed without rolling back the saved profile; browser toast placement remains unchecked.|
+|35|pending-implementation|U/R/C preserve query data and render refresh feedback; source improvements are not profiling evidence. Measure network/query/render delays for original screen.|
+|36|implemented-awaiting-browser|U status-change caller now awaits shared ConfirmDialog instead of `window.confirm`. Ownership/self-deactivation protections retained.|
+|37|implemented-awaiting-browser|U status mutation snapshots query cache, optimistically updates affected rows and restores on failure; row pending indicator present. Measure latency and browser rollback.|
+|38|pending-implementation|U resend/revoke-pending-invitation action is disabled for inactive users with explanation. Original bulk “Revoke” semantics and all above-list feedback are not fully reconciled with screenshot/workflow.|
+|39|implemented-awaiting-browser|U invitation confirmation and `AdminListing` bulk status confirmation use in-app dialogs. Confirm exact original action and keyboard focus.|
+|40|pending-implementation|Bulk status feedback is consolidated, but original multi-doctor revoke failure has no proven API reproduction/root cause. Do not conflate deactivation with invitation revocation.|
+|41|pending-implementation|Same unresolved single-revoke incident as 40; shared friendly messages alone do not establish successful mutation semantics.|
+|42|implemented-awaiting-browser|U update close handler and R save success now call `notifySuccess("Updated successfully")`; test successful response and failed response separately.|
+|43|implemented-awaiting-browser|U/R phone fields call PhoneInput/phone validator and normalization; bare “+” fails. Country selector and registration callers need browser coverage.|
+|44|implemented-awaiting-browser|R destructive action calls danger ConfirmDialog with truthful deactivation wording; U no longer offers misleading inactive-account hard-delete action.|
+|45|existing-behavior-verified|R invalidates after deactivation; inactive row remains intentionally in All while active filter excludes it. No established cache defect remains from source tracing; verify original filter/context if incident recurs. Permanent deletion remains held in 88.|
+|46|implemented-awaiting-browser|Booking care lookups request active selection candidates; Doctors management table retains status tabs. Verify schedule relation scope as well as booking; do not broaden role access.|
+|47|verified-with-test-evidence|321 passes scope-load selection preservation, unknown/error metadata retention, private/public exact membership and no eager parent reset tests. C/R call these helpers; browser delayed-option rendering still needs scoped check.|
+|48|existing-behavior-verified|R/U selection is supplied by AdminListing checkbox handlers, not blank-row click handlers. No source basis proves reported blank-area deselection fixed; browser pointer reproduction still needed.|
+|49|implemented-awaiting-browser|R/U and registration wire field-specific errors through FormField/relations, keeping request-level errors separate. Test server field-error mapping and first-invalid focus.|
+|50|implemented-awaiting-browser|R update and ClinicSettings success paths now issue shared toasts. Actual failed saves must not trigger success.|
+|51|implemented-awaiting-browser|Screenshot is schedule capacity. R `renderComputed("capacity")` HelpTip explains max patients, token prefix and consultation minutes; no longer an unidentified metric.|
+|52|held-product-decision|Current time/session/queue checks do not imply automatic clinic closing lockout. Retain historical recommendation: controlled extended-day exception for already-booked patients, subject to approval.|
+|53|verified-with-test-evidence|321 passes selected-calendar-date availability including split Friday sessions, independent session capacity and date exceptions. Original Friday incident is unreproduced; request exact timezone/data only if still failing in UAT, rather than declaring generation unimplemented.|
+|54|verified-with-test-evidence|Same weekday/date/session tests pass with closed-day/hours constraints in 321. No original phantom-Saturday reproduction or incident root cause claimed; deployed schedule/exception data may still require comparison.|
+
+### Findings 55–81
+
+| # | Status | Current evidence, cause and remaining limit |
+|---|---|---|
+|55|implemented-awaiting-browser|Screenshot targets booking-confirmation ticket wrapper. `tickets/visit-ticket.css` presentation changes center the screen container; print/QR geometry must remain unchanged and be rechecked.|
+|56|implemented-awaiting-browser|R patient Editor now explains active booking selection, inactive historical retention and distinction from linked login credentials. Verify discoverability in actual edit/create dialogs.|
+|57|implemented-awaiting-browser|C Booking patient CareLookup now requests active patients; test manual/stale selection and authoritative API rejection without changing patient visibility rules.|
+|58|held-product-decision|Historical consent investigation/proposal remains; no new consent capture/link or receptionist-consent policy authorized. Explain actual stored consent provenance before changing workflow.|
+|59|verified-with-test-evidence|321 passes scoped appointment rows/counts before status/pagination and 600-record isolation/filter tests; C All visits clears stale date bounds. Exact original four-record UI case is not independently reproduced.|
+|60|verified-with-test-evidence|321 passes private detail notes/reasons/check-in rendering and honest missing-note/timestamp behavior. AppointmentRows/SessionQueue reuse presentation and detail callers; long-note hover/mobile access remains visual scope.|
+|61|pending-implementation|Screenshot is staff booking patient lookup, not Patients table. Active filtering/cache fixes are insufficient to explain missing “Deepa”; inspect registration-clinic versus visit-clinic scope/data before changing authorization.|
+|62|verified-with-test-evidence|321 passes shared future-DOB validation and formatted parser overflow rejection; R invokes validator/input. Fixture browser also blocks invalid 31 Feb booking progression. Every DOB browser variant is not claimed.|
+|63|verified-with-test-evidence|321 passes “date of birth blocks future and computes age”; R watches DOB/read-only age and retains age-only legacy values. Uncovered birthday/timezone cases remain test extensions, not missing implementation.|
+|64|held-product-decision|Guest booking issues a visit without account login; sign-in is for existing account-linked flow. Recommend optional-sign-in wording; no new account requirement.|
+|65|blocked-external|Workspace reset flow is implemented and mail errors sanitized; actual deployed “Service unavailable” requires UAT configuration/provider/deployed-route evidence. No real reset/send executed.|
+|66|verified-with-test-evidence|API appointment/guest creation calls `lib/appointment-confirmation.ts` through existing SMTP/template. Outcomes persist in appointment JSON; notification setting/no-recipient/failure/unknown remain honest and do not undo booking. Main reports six fake-transport tests passed. Provider acceptance is not inbox delivery; no new SMS/center.|
+|67|verified-with-test-evidence|321 passes shared settings roundtrip for both admins, foreign staff denial and owner-only generic update guards. Original selected-clinic/save failure is not reproduced; obtain exact rejected payload before changing ownership rules.|
+|68|existing-behavior-verified|R operation deactivates and refreshes with truthful feedback; it is not physical deletion. Original expectation needs active/All filter comparison, not a presumed failed delete. Hard deletion remains held under 88.|
+|69|held-product-decision|Cross-clinic doctor check-in rules must be investigated with authoritative session/date/presence context; no global cross-clinic prohibition introduced.|
+|70|verified-with-test-evidence|321 passes “unique clinic-local running session is the default, but explicit choices and ambiguity win”; SessionSelector uses helper. Distinct snapshots remain preserved rather than blindly selecting first option.|
+|71|implemented-awaiting-browser|SessionSelector distinguishes current, upcoming/other and historical schedule context instead of labeling every option current. Check multiple same-day sessions.|
+|72|implemented-awaiting-browser|C Booking confirmation includes list/back navigation; workspace breadcrumbs already exist. Original target needs browser confirmation; not a blanket claim for every detail screen.|
+|73|verified-with-test-evidence|AppointmentTicket/VisitTicket uses DigiQ download naming; main reports latest ticket suite 24/24 passed including mixed clinic formats. Only assertions exercised by that suite are certified; protected ticket/QR geometry remains the requirement.|
+|74|implemented-awaiting-browser|Screenshot resolves to bulk-cancel submit. BulkAppointments uses visible loading/confirmation label and danger styling; verify contrast, label and accessible name in open dialog.|
+|75|held-product-decision|Reschedule state eligibility is preserved; improve explanation for already-called/consultation states without changing allowed actions. No rule relaxation authorized.|
+|76|verified-with-test-evidence|321 passes stored numeric weekday/string options including Sunday zero and backend selected-date Sunday availability. Original Sunday-only account incident is not reproduced; no further source defect established from it.|
+|77|pending-implementation|Refresh retention/first-load skeletons improved; original queue latency has no measured performance trace. Do not certify response time from loading UI.|
+|78|implemented-awaiting-browser|SessionQueue quick-switch section now explains viewing another doctor's session, distinct from calling/check-in. Screenshot target is resolved; keyboard/mobile discoverability awaits final pass.|
+|79|implemented-awaiting-browser|AdminListing and BulkAppointments use consolidated result summary/shared toast with partial failures. Verify no duplicate per-item success toasts under mixed outcomes.|
+|80|implemented-awaiting-browser|SessionQueue immediately previews candidate token as requesting/awaiting-server, scope-binds feedback and clears pending presentation after response/failure; authoritative queue refresh remains. This deliberately does not falsely mark a patient called before server approval. Literal optimistic committed queue-state mutation is not implemented; latency improvement unmeasured.|
+|81|implemented-awaiting-browser|AppDialog blocks dismissal while saving, exposes disabled close and busy semantics; historical browser saving-close passed, pending-save Escape was not independently verified. Retest after newer caller changes.|
+
+### Findings 82–107
+
+| # | Status | Current evidence, cause and remaining limit |
+|---|---|---|
+|82|implemented-awaiting-browser|Screenshot is exception Session: “optional/all” contradicted existing server requirement for multi-session timing override. R ExceptionSessionInput now determines requirement from date sessions, marks required and validates inline; all-session closure remains allowed.|
+|83|held-product-decision|R maxTokens enforces positive integer/helper, but general schedule contract supplies no upper bound. Separate duration-setting max 1000 must not be silently imposed everywhere; approve general limit before adding it.|
+|84|held-product-decision|R bufferMinutes enforces nonnegative integer and units; general schedule API has no maximum. Propose maximum rather than inventing one.|
+|85|verified-with-test-evidence|321 passes report query allowlist/search/sort, draft appointment/report filter wiring and scoped SQL filtering tests. C/API pass grouping/doctor/clinic/search/sort together; specific UAT dataset remains unreproduced.|
+|86|verified-with-test-evidence|321 passes “reported 13 visits reconcile including the two unlisted outcomes”, residual UI/CSV parity and explicit inconsistent-total errors. Active/other buckets account for missing outcomes rather than hiding discrepancies.|
+|87|pending-implementation|Screenshot fields use SuggestionInput and local master values, not a proved external maps/key failure. Manual fallback is explicit; inspect missing categories/catalog response before proposing provider integration.|
+|88|held-product-decision|Current resource delete routes retain records as inactive. R/U wording now reflects deactivation/history preservation; permanent deletion and retention policy remain proposals, not shipped changes.|
+|89|pending-implementation|Same as 23: pagination/loading improvements exist, but doctor list server query/enrichment and measured latency still need profiling.|
+|90|held-product-decision|Family-member booking remains proposal only; relationship/consent/identity and patient-access data impact unresolved. No implicit registration on another person's behalf added.|
+|91|existing-behavior-verified|Receptionist role exists and U staff tabs/role-specific creation support it; no new role needed. Verify access/navigation discovery for the reported account, not permission expansion.|
+|92|blocked-external|Same deployment/delivery limit as 65. Workspace reset implementation and isolated tests do not prove authoritative UAT forgot-password delivery.|
+|93|held-product-decision|Existing cooldown UI exposes known retry delay in patient login; emergency bypass is a product proposal. Do not fabricate a wait time where API supplies none.|
+|94|verified-with-test-evidence|321 passes consultation check-in detail/presentation and missing-timestamp handling; AppointmentRows/details use record format. This timestamp is consultation check-in, not presumed physical arrival.|
+|95|verified-with-test-evidence|321 passes real SQL reservation order/explicit skip, CURRENT/NEXT generated wire response and independent queue contention/skip-vs-check-in tests. Original absent-promotion screen incident is not reproduced; full suite supports existing ordering, not a business-rule change.|
+|96|verified-with-test-evidence|Shared presentation guard hides completed tickets; main's fixture browser explicitly confirmed completed row has no Ticket action. Latest ticket suite 24/24 also passed; no hidden action is claimed for untested variants.|
+|97|implemented-awaiting-browser|ClinicRegistrationHours and doctor WeeklyOverview callers expose copy-to-all and selected-days; schedule UX retains exact typed minutes and clinic bands. Verify partial failure/overlap handling and protected linked changes.|
+|98|held-product-decision|Multiple clinic assignments already exist; cross-clinic schedule overlap/operational access rules remain. Recommendations do not authorize new simultaneous-consultation behavior.|
+|99|implemented-awaiting-browser|LinkedScheduleControls labels were reconciled without removing review/apply safeguards. Merging protected review steps remains product-held.|
+|100|implemented-awaiting-browser|U assignment labels and R location picker/filter labels now use Clinic/Clinic Group; shared title mappings distinguish parent and location. Internal identifiers remain intentionally unchanged; final visible-string sweep required.|
+|101|implemented-awaiting-browser|R location Editor explains physical care location within Clinic Group, address/timezone/hours/link and contact inheritance versus staff login/notification configuration. Current helpers replace the identified ambiguity; browser discoverability remains.|
+|102|held-product-decision|Screenshot identifies location/branch credentials, not SMTP credentials. Locations do not independently sign in; staff accounts receive assignments and invitations. Recommend explanatory copy, not new location passwords.|
+|103|implemented-awaiting-browser|C appointment/report filter callers and R schedules/exceptions expose Doctor selectors; role-fixed doctor scope is preserved. Verify every relevant table from original listing inventory.|
+|104|held-product-decision|Status consequence helpers/copy are reported completed by main; deactivation explains access/history rather than promising delivery. Entity-specific automatic notification policy remains a proposal; no new status-notification behavior is authorized.|
+|105|implemented-awaiting-browser|C Workspace page heading now owns dashboard primary booking CTA; Dashboard list uses full width and former booking side card is removed. Exact requested placement is wired, awaiting visual check.|
+|106|held-product-decision|Patient mobileVerified column still exists without demonstrated verification flow. Recommend hiding unsupported indicator; no new SMS verification service authorized.|
+|107|implemented-awaiting-browser|Screenshot refers to reschedule/skip/cancel reasons. API appointment serialization plus AppointmentRows/AppointmentDetails surface stored reasons/history, avoiding actor IDs for patients; verify each action and legacy empty history.|
+
+### Authentication review 108–137
+
+These are review/conditional-remediation tasks, not 30 independently demonstrated defects. Fixed-duration JWT is opt-in; native default, existing IDs/hashes/roles/ownership remain. No activation or live UAT test is asserted.
+
+| # | Status | Current evidence, cause and remaining limit |
+|---|---|---|
+|108|blocked-external|Workspace supports explicit JWT/native selection; actual manually changed UAT build/token middleware still unavailable for comparison. No deployed parity conclusion.|
+|109|held-product-decision|Current option retains fixed 12-hour database-backed lifetime/cookie transport. Proposed 15-minute access plus renewal is not approved/implemented.|
+|110|verified-with-test-evidence|Historical authentication/JWT suite in progress report passed strict algorithm/signature/issuer/audience/type/timestamps and identity checks. Live activation not tested.|
+|111|pending-implementation|Dedicated signing key/config validation exists, but overlap key rotation and documented compromise rehearsal are not complete. Missing configured JWT key also prevents activation.|
+|112|implemented-awaiting-browser|Auth routes use shared session issuance across login, challenge, invitation, registration, patient and demo paths; current transaction-aware changes need full end-to-end matrix, not just helper inspection.|
+|113|verified-with-test-evidence|Historical isolated JWT middleware tests preserve live-session/active-account checks and strict mode handling. Not deployed UAT proof.|
+|114|held-product-decision|No refresh credentials/rotation/reuse model added. Depends on short-access policy and separately approved schema; fixed-duration session does not silently renew.|
+|115|implemented-awaiting-browser|Password transactions revoke sessions; session issuance shares credential lock, protecting concurrent login/reset. Logout/deactivate/demo revocation still require full current matrix.|
+|116|verified-with-test-evidence|321 includes ten lifecycle tests: protected401 cache/identity clearing, 60-second single-flight status, cross-tab/stale/abort safety. Final browser401 replaced private workspace with sign-in after one POST, no retry. Cross-tab/logout visuals untested; refresh renewal not required in current fixed-duration mode.|
+|117|verified-with-test-evidence|AuthStatus OpenAPI CSRF contract corrected; generated/manual metadata and “auth status requires no CSRF token…” contract test pass in 321. Main additionally reports seven CSRF tests passed separately; they are not added to 321. No claim of universal API security certification.|
+|118|verified-with-test-evidence|Historical password-rule tests passed eight-character letters/numbers policy; Argon2id preserved. New forms call shared policy; no forced reset of existing valid hashes.|
+|119|verified-with-test-evidence|API native-auth/auth routes serialize credential changes and session issuance with transaction advisory locks, atomic challenge consumption and session invalidation. Main reports 13 contention tests passed, including login/reset ordering and rollback; not live deployment verification.|
+|120|verified-with-test-evidence|Password-update transaction consumes outstanding setup/reset credentials and revokes sessions under same user lock; main-reported 13-test contention suite covers token replay/rollback and supersession. No credential data exposed.|
+|121|implemented-awaiting-browser|RR administrator-assisted reset removes target-account rate-limit call while retaining request/IP/token protections. Review parity with forgot-password policy in tests.|
+|122|verified-with-test-evidence|`consumeRateLimit` uses database atomic upsert; SMTP test limiter uses it. Main-reported contention suite covers independent-client limit enforcement and resend concurrency. Complete endpoint inventory/production topology review remains.|
+|123|blocked-external|Authorized aggregate case-insensitive collision inventory across real deployments not supplied. No uniqueness migration or automatic merge performed.|
+|124|held-product-decision|Verified email-change notifications and revocation policy remain approval-held; do not silently treat general profile update as verified ownership change.|
+|125|pending-implementation|Ordinary staff login is password-based and SMTP-independent, but legacy device-verification UI/endpoints remain. Compatibility purpose and retirement approval need reconciliation.|
+|126|blocked-external|No authoritative deployment/database-wide account/password/invitation/collision readiness inventory available. Development display-default count is unrelated to identity readiness.|
+|127|blocked-external|Controlled former-provider native enrollment not exercised against actual affected accounts. Preserve IDs/native hashes and obtain target deployment inventory first.|
+|128|held-product-decision|No refresh/session schema change inferred from UI approval. Display preferences only use parent JSON; other auth schema requires separate approval.|
+|129|pending-implementation|Dormant Clerk helpers/scripts/docs need compatibility inventory and safe archive; not completed by adding a JWT option. Do not reactivate provider scripts.|
+|130|blocked-external|Unused Clerk configuration retirement depends on verifying target deployed build. No provider tenant/account/config deletion performed.|
+|131|held-product-decision|Explicit session cutoff/re-login and compatible rollback require deployment approval; no indefinite native/JWT/provider fallback added.|
+|132|verified-with-test-evidence|321 passes strict JWT issuance/tampering/claims/expiry/revocation/native-no-fallback plus contention races. Key rotation remains genuine gap 111; refresh/reuse tests are conditional on held policy, not missing current-mode tests.|
+|133|verified-with-test-evidence|321 passes native staff/patient/registration/invitation/recovery/demo, used/expired challenge, missing SMTP and provider-failure tests. Real delivery/enrollment remains external; fixture assertions do not prove live email completion.|
+|134|verified-with-test-evidence|321 includes actual SQL authorization equivalence across all roles/resource families, scoped large datasets, owner-doctor, guest/QR/demo and inactive restrictions. Not a complete live-browser permission matrix; no rule changes inferred.|
+|135|verified-with-test-evidence|321 includes actual HTTPS frontend transport and cross-origin/CSRF patient checks; seven CSRF tests additionally passed. Final fixture browser protected401 redirects to sign-in with one POST/no replay after mock-CSRF correction. Cross-tab/logout visuals and deployed proxy/UAT remain unverified.|
+|136|blocked-external|Exact UAT/VPS deployed revisions, scripts, proxy, migrations and signing-key readiness are unavailable; do not substitute workspace build for deployment inspection.|
+|137|blocked-external|No real-email delivery, backup/restore rehearsal, release aggregate reconciliation or rollout monitoring performed. Publishing remains separately approval-gated.|
+
+### Shared-standard reconciliation (not additional findings)
+
+- **Display schema/data:** two preference values live in parent Clinic Group JSON; Clinics inherit, retaining each timezone. Main agent reports approved **development-only default backfill of nine clinics**. Production unchanged. Default fallback does not prove all records/channels use preferences; see 17. Canonical date/time storage and ticket geometry must remain unchanged.
+- **Design source:** full approved JSON unavailable. Existing tokens plus supplied approved recommendations retained; this blocks exact standard certification, not ordinary functional/copy repairs. Newly styled controls/email are not claimed pixel-certified.
+- **Listings:** U/R/appointments preserve content; reports filters/counts and staff queue SQL paging are tested. Queue retains full-session summary/version under same authoritative lock, full-list compatibility when pagination omitted and patient privacy; guest search/sort is bounded/assignment-scoped. Bounded feeds, native-select leftovers and all-list keyboard/mobile conformance still need scoped review.
+- **Schedules:** existing weekly/multiple-session/date-exception model preserved; doctor weekday overview, clinic bands, exact-minute typed input/slider and selected/all-day copy UX implemented. No approved out-of-hours, extended-day, midnight/DST or session-cap policy change inferred.
+- **Notifications:** existing SMTP/template serves appointment/guest creation and persists outcome without changing booking success. Patient Dashboard notices derive from own authorized persisted appointment records, without a new center. Existing mail-enable setting remains respected. No SMS, inbox confirmation or automatic retry of uncertain sends is claimed.
+- **Verification:** final typecheck and **321/321, zero skipped** supersede earlier 280/284/targeted history; ticket CLI **24/24** and seven additional CSRF tests are separately recorded. Final mobile and protected401 browser follow-ups passed. Cross-tab/logout and patient-notice visuals, comprehensive accessibility and live UAT remain unverified.
+- **Development backfill integrity:** main reports before/after aggregate counts identical: **17 users, 9 clinics, 6 branches, 7 doctors, 3 appointments**. Only nine development Clinic JSON display defaults were backfilled; production unchanged. Migration-runner tests used a disposable database, not an additional production/development data migration.

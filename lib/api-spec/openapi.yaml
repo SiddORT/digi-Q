@@ -222,6 +222,8 @@ paths:
     get:
       operationId: listGuestRequests
       parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: sort, in: query, schema: { type: string, enum: [createdAt, "-createdAt", fullName, "-fullName", date, "-date"], default: "-createdAt" } }
         - { $ref: "#/components/parameters/SessionId" }
         - { $ref: "#/components/parameters/StartTime" }
         - { name: clinicId, in: query, schema: { type: string } }
@@ -292,6 +294,36 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/StartClinicRegistrationInput" } } } }
       responses:
         "200": { description: Registration challenge, content: { application/json: { schema: { $ref: "#/components/schemas/AuthChallenge" } } } }
+  /auth/registration/resend:
+    post:
+      operationId: resendClinicRegistration
+      security: []
+      description: Resends the registration verification code for the existing challenge without changing its ID or original expiry. Uses the anonymous CSRF cookie and matching CSRF request header; no authenticated session is required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegistrationChallengeReference" }
+      responses:
+        "200":
+          description: Code sent for the same stable challenge ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegistrationChallengeReference" }
+        "400":
+          description: Invalid or expired challenge (INVALID_VERIFICATION)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
+        "429":
+          description: Resend cooldown (REGISTRATION_RESEND_COOLDOWN); IP abuse limits may also return rate limiting
+          headers:
+            Retry-After:
+              description: Cooldown retry delay, 60 seconds for REGISTRATION_RESEND_COOLDOWN
+              schema: { type: string, example: "60" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApiError" }
   /auth/register/verify:
     post:
       operationId: verifyClinicRegistration
@@ -335,7 +367,7 @@ paths:
     get:
       operationId: getAuthStatus
       security: []
-      description: Returns role, local session state and CSRF token, with no clinical data.
+      description: Returns role and local session state, with no clinical data. Does not issue a CSRF cookie or token; use GET /auth/csrf for that.
       responses:
         "200": { description: Authentication status, content: { application/json: { schema: { $ref: "#/components/schemas/AuthStatus" } } } }
         "401": { $ref: "#/components/responses/Error" }
@@ -754,7 +786,7 @@ paths:
   /queue:
     get:
       operationId: getQueue
-      description: Poll every 30 seconds. Patients get aggregate tokens/counts and own entry only; entries are omitted for patients. Staff receive scoped identifiable entries.
+      description: Poll every 30 seconds. Patients get aggregate tokens/counts and own entry only; identifiable entries and staff listing metadata are omitted. Staff receive scoped identifiable entries. Explicit page or pageSize enables database-backed staff pagination; omission preserves the legacy full-list response. Staff search, sort, status and statusGroup filters apply before pagination. Listing counts never replace the session-wide queue aggregates.
       parameters:
         - { name: sessionId, in: query, schema: { type: string } }
         - { name: startTime, in: query, schema: { type: string } }
@@ -762,10 +794,10 @@ paths:
         - { name: branchId, in: query, required: true, schema: { type: string } }
         - { name: date, in: query, required: true, schema: { type: string, format: date } }
         - { name: appointmentId, in: query, schema: { type: string } }
-        - { $ref: "#/components/parameters/Page" }
-        - { $ref: "#/components/parameters/PageSize" }
-        - { $ref: "#/components/parameters/Search" }
-        - { $ref: "#/components/parameters/Sort" }
+        - { name: page, in: query, description: Explicit staff listing page; omit both pagination parameters for legacy full-list compatibility, schema: { type: integer, minimum: 1 } }
+        - { name: pageSize, in: query, description: Explicit staff listing page size; omitted pagination parameters must not be default-injected by clients, schema: { type: integer, minimum: 1, maximum: 100 } }
+        - { name: search, in: query, description: Staff-only listing search applied before pagination, schema: { type: string, maxLength: 200 } }
+        - { name: sort, in: query, description: Staff-only allowlisted listing sort with optional minus prefix, schema: { type: string } }
         - { name: status, in: query, schema: { $ref: "#/components/schemas/AppointmentStatus" } }
         - { $ref: "#/components/parameters/StatusGroup" }
       responses:
@@ -820,7 +852,19 @@ paths:
   /reports:
     get:
       operationId: getReports
-      parameters: [{ $ref: "#/components/parameters/SessionId" }, { $ref: "#/components/parameters/StartTime" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }, { name: groupBy, in: query, schema: { type: string, enum: [clinic, doctor, date], default: date } }]
+      parameters:
+        - { name: search, in: query, description: Trimmed report search text, schema: { type: string, maxLength: 200 } }
+        - { name: sort, in: query, schema: { type: string, enum: [key, "-key", label, "-label", appointments, "-appointments", registrations, "-registrations", waiting, "-waiting", checkedIn, "-checkedIn", completed, "-completed", noShow, "-noShow", cancelled, "-cancelled", averageWaitMinutes, "-averageWaitMinutes", averageConsultationMinutes, "-averageConsultationMinutes"] } }
+        - { $ref: "#/components/parameters/SessionId" }
+        - { $ref: "#/components/parameters/StartTime" }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { $ref: "#/components/parameters/From" }
+        - { $ref: "#/components/parameters/To" }
+        - { $ref: "#/components/parameters/ClinicId" }
+        - { $ref: "#/components/parameters/BranchId" }
+        - { $ref: "#/components/parameters/DoctorId" }
+        - { name: groupBy, in: query, schema: { type: string, enum: [clinic, doctor, date], default: date } }
       responses:
         "200": { description: Scoped appointment/registration/queue performance report, content: { application/json: { schema: { $ref: "#/components/schemas/Report" } } } }
   /audit-logs:
@@ -1010,6 +1054,8 @@ components:
     ClinicDetails:
       type: object
       properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         name: { type: string, minLength: 1 }
         address: { type: string }
         email: { type: [string, "null"], format: email }
@@ -1126,6 +1172,8 @@ components:
       type: object
       required: [id, name, slug]
       properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         doctorCount: { type: integer }
         averageConsultationMinutes: { type: [number, "null"] }
         id: { type: string }
@@ -1138,6 +1186,8 @@ components:
       type: object
       required: [id, name]
       properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         id: { type: string }
         name: { type: string }
         slug: { type: [string, "null"] }
@@ -1186,6 +1236,9 @@ components:
       type: object
       required: [id, status, fullName, clinicName, branchName, doctorName, date, startTime, endTime, timezone, token, reason, appointmentId, reference, branchAddress, appointmentStatus, revision, checkInUrl]
       properties:
+        confirmationEmail: { $ref: "#/components/schemas/ConfirmationEmailOutcome" }
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         sessionId: { type: [string, "null"] }
         id: { type: string }
         status: { type: string, enum: [pending, confirmed, rejected] }
@@ -1237,6 +1290,11 @@ components:
       additionalProperties: false
       properties:
         email: { type: string, format: email, maxLength: 254 }
+    RegistrationChallengeReference:
+      type: object
+      required: [challengeId]
+      properties:
+        challengeId: { type: string }
     AuthChallenge:
       type: object
       required: [challengeId]
@@ -1257,12 +1315,11 @@ components:
         password: { type: string, minLength: 8, maxLength: 1024, pattern: '^(?=[\s\S]*[A-Za-z])(?=[\s\S]*[0-9])[\s\S]*$', description: "Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server." }
     AuthStatus:
       type: object
-      required: [role, staffPasswordVerified, requiresStaffPassword, csrfToken]
+      required: [role, staffPasswordVerified, requiresStaffPassword]
       properties:
         role: { type: [string, "null"] }
         staffPasswordVerified: { type: boolean }
         requiresStaffPassword: { type: boolean }
-        csrfToken: { type: string }
     ApiError:
       type: object
       required: [error]
@@ -1355,6 +1412,8 @@ components:
           type: object
           required: [name, address]
           properties:
+            dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+            timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
             slug: { type: string, minLength: 3, maxLength: 63 }
             categoryId: { type: string }
             specialityIds: { type: array, items: { type: string } }
@@ -1403,10 +1462,20 @@ components:
         verified: { type: boolean }
         mobile: { type: string }
         verifiedAt: { type: string, format: date-time }
+    ClinicDateFormat:
+      type: string
+      enum: ["DD MMM YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"]
+      description: Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.
+    ClinicTimeFormat:
+      type: string
+      enum: ["12h", "24h"]
+      description: Parent Clinic Group display preference; locations inherit it. Default 12h.
     ClinicInput:
       type: object
       required: [name, address]
       properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         slug: { type: string, minLength: 3, maxLength: 63 }
         specialityIds: { type: array, items: { type: string } }
         referralCode: { type: [string, "null"], maxLength: 100 }
@@ -1460,6 +1529,8 @@ components:
         - type: object
           required: [id, code, status, createdAt]
           properties:
+            dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+            timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
             linkedSchedule: { $ref: "#/components/schemas/LinkedSchedule" }
             effectiveEmail: { type: [string, "null"] }
             effectivePhone: { type: [string, "null"] }
@@ -1608,6 +1679,8 @@ components:
         - type: object
           required: [id]
           properties:
+            dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+            timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
             id: { type: string }
             doctorName: { type: string }
             clinicName: { type: string }
@@ -1638,6 +1711,8 @@ components:
       type: object
       required: [doctorId, clinicId, branchId, date, available, maxTokens, bookedTokens, remainingTokens]
       properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         sessionId: { type: [string, "null"] }
         doctorId: { type: string }
         clinicId: { type: string }
@@ -1676,12 +1751,19 @@ components:
         requestId: { type: string, description: Client-generated idempotency key }
         termsAccepted: { type: boolean }
         notes: { type: string, maxLength: 1000 }
+    ConfirmationEmailOutcome:
+      type: string
+      enum: [provider_accepted, unavailable, disabled, no_recipient, not_attempted]
+      description: Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.
     Appointment:
       allOf:
         - { $ref: "#/components/schemas/AppointmentInput" }
         - type: object
           required: [id, reference, token, status, createdAt, patientName, doctorName, clinicName, branchName, allowedActions]
           properties:
+            confirmationEmail: { $ref: "#/components/schemas/ConfirmationEmailOutcome" }
+            dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+            timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
             id: { type: string }
             reference: { type: string }
             token: { type: string }
@@ -1777,6 +1859,8 @@ components:
       type: object
       required: [appointmentId, token, status, patientsAhead, estimatedWaitMinutes]
       properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         appointmentId: { type: string }
         token: { type: string }
         status: { $ref: "#/components/schemas/AppointmentStatus" }
@@ -1795,6 +1879,9 @@ components:
       type: object
       required: [doctorId, branchId, date, currentToken, nextToken, waiting, inConsultation, completed, noShow, total, pollIntervalSeconds, updatedAt]
       properties:
+        filteredTotal: { type: number, description: Staff-only count after listing filters; omitted for patients. }
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         sessionId: { type: [string, "null"] }
         startTime: { type: [string, "null"] }
         presence: { $ref: "#/components/schemas/DoctorPresence" }
@@ -1881,6 +1968,8 @@ components:
       type: object
       required: [doctorId, doctorName, startTime, endTime, currentToken, currentStatus, nextToken, waitingTokens, waitingCount, completedCount]
       properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         sessionId: { type: [string, "null"] }
         presence: { type: string, enum: [available, onBreak, away] }
         doctorId: { type: string }
@@ -1897,6 +1986,8 @@ components:
       type: object
       required: [clinic, branch, date, updatedAt, sessions]
       properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         clinic:
           type: object
           required: [name]
@@ -1917,6 +2008,8 @@ components:
       type: object
       required: [reference, clinicId, clinicName]
       properties:
+        dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
+        timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         reference: { type: string }
         clinicId: { type: string }
         clinicName: { type: string }

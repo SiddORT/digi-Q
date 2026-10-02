@@ -21,8 +21,12 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { AppointmentStatus } from './appointmentStatus';
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 
 export interface OwnQueueEntry {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   appointmentId: string;
   token: string;
   status: AppointmentStatus;

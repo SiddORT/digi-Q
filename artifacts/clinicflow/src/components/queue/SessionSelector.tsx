@@ -2,7 +2,9 @@ import { useState } from "react";
 import * as api from "@workspace/api-client-react";
 import { SearchableSelect } from "../SearchableSelect";
 import { ErrorNotice } from "../../resources";
-import { resolveSessionContext, sessionContextKey } from "./session-scope";
+import { resolveSessionContext, sessionContextKey, sessionTimeLabel } from "./session-scope";
+import { formatTime, type DateTimePreferences } from "../../lib/date-time";
+export const formatSessionHours=(item:Partial<DateTimePreferences>&{startTime?:string|null;endTime?:string|null})=>`${item.startTime?formatTime(item.startTime,item):"—"}–${item.endTime?formatTime(item.endTime,item):"—"}`;
 
 export function useDailySession({doctorId,branchId,date,initialSessionId}:{doctorId:string;branchId:string;date:string;initialSessionId?:string|null}){
  const scope=JSON.stringify([doctorId,branchId,date]);
@@ -17,7 +19,7 @@ export function useDailySession({doctorId,branchId,date,initialSessionId}:{docto
 }
 
 export function SessionSelector({selection}:{selection:ReturnType<typeof useDailySession>}){
-  return <div><SearchableSelect label="Consulting session" value={selection.sessionId} onChange={selection.setSessionId} placeholder="Select session…" options={selection.sessions.map(item=>({value:item.sessionId||"",label:`${item.startTime}–${item.endTime} · ${item.remainingTokens} places remaining${item.available?"":` · ${item.reason||"unavailable"}`}`}))}/>{selection.hasContext&&!selection.availability.isLoading&&!selection.availability.isFetching&&!selection.availability.error&&selection.sessions.length===0&&<p className="notice" role="status" data-testid="status-no-doctor-sessions">No doctor sessions are configured for this location and date. Try another date, or ask the clinic to set up its Weekly schedule. Opening hours alone do not create bookable sessions.</p>}<ErrorNotice error={selection.availability.error}/>{selection.availability.error&&<button type="button" onClick={()=>selection.availability.refetch()}>Retry sessions</button>}</div>;
+  return <div><SearchableSelect label="Consulting session" value={selection.sessionId} onChange={selection.setSessionId} placeholder="Select session…" options={selection.sessions.map(item=>({value:item.sessionId||"",label:`${formatSessionHours(item)} · ${item.remainingTokens} places remaining${item.available?"":` · ${item.reason||"unavailable"}`}`}))}/>{selection.hasContext&&!selection.availability.isLoading&&!selection.availability.isFetching&&!selection.availability.error&&selection.sessions.length===0&&<p className="notice" role="status" data-testid="status-no-doctor-sessions">No doctor sessions are configured for this location and date. Try another date, or ask the clinic to set up its Weekly schedule. Opening hours alone do not create bookable sessions.</p>}<ErrorNotice error={selection.availability.error}/>{selection.availability.error&&<button type="button" onClick={()=>selection.availability.refetch()}>Retry sessions</button>}</div>;
 }
 
 export function useOperationalSession({doctorId,branchId,date,initialSessionId,initialStartTime,enabled=true}:{doctorId:string;branchId:string;date:string;initialSessionId?:string|null;initialStartTime?:string|null;enabled?:boolean}){
@@ -31,5 +33,5 @@ export function useOperationalSession({doctorId,branchId,date,initialSessionId,i
 }
 
 export function OperationalSessionSelector({selection}:{selection:ReturnType<typeof useOperationalSession>}){
- return <div><SearchableSelect label="Queue session" value={selection.selectedKey} onChange={selection.setSelectionKey} placeholder="Select session…" options={selection.sessions.map(item=>({value:sessionContextKey(item),label:`${item.startTime}–${item.endTime}${item.snapshotOnly?" · Saved appointment session":" · Current schedule"}`}))}/><ErrorNotice error={selection.availability.error}/>{selection.availability.error&&<button type="button" onClick={()=>selection.availability.refetch()}>Retry queue sessions</button>}{selection.snapshotOnly&&<small className="muted">Saved session retained for existing appointments. It cannot receive new bookings.</small>}</div>;
+ return <div><SearchableSelect label="Queue session" value={selection.selectedKey} onChange={selection.setSelectionKey} placeholder="Select session…" options={selection.sessions.map(item=>({value:sessionContextKey(item),label:`${formatSessionHours(item)} · ${sessionTimeLabel(item)}`}))}/><ErrorNotice error={selection.availability.error}/>{selection.availability.error&&<button type="button" onClick={()=>selection.availability.refetch()}>Retry queue sessions</button>}{selection.snapshotOnly&&<small className="muted">Saved session retained for existing appointments. It cannot receive new bookings.</small>}</div>;
 }

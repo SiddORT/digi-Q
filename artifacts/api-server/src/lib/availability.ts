@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { configuredDuration, sessionKey } from "./session-duration";
 import { all, one, getSettings } from "./store";
 import { assert, HttpError } from "./http";
+import { clinicDisplayPreferences } from "./display-preferences";
 export function minutes(time: string) {
   assert(typeof time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(time), 400, "Time must be HH:mm");
   const [h, m] = time.split(":").map(Number); return h * 60 + m;
@@ -128,7 +129,7 @@ export async function availability(doctorId: string, branchId: string, date: str
   if ((Date.parse(date) - Date.parse(now.date)) / 86400000 > config.bookingHorizonDays) reason = "Outside booking horizon";
   const maxTokens = effective.maxTokens || 0, remainingTokens = Math.max(0, maxTokens - bookedTokens);
   if (!remainingTokens) reason ||= "Session capacity reached";
-  return { doctorId, branchId, clinicId: clinic.id, date, sessionId: schedule?.id || null, available: !reason, reason, startTime: effective.startTime || null, endTime: effective.endTime || null, breakStart: effective.breakStart || null, breakEnd: effective.breakEnd || null, timezone, maxTokens, bookedTokens, remainingTokens, consultationMinutes, tokenPrefix: effective.tokenPrefix || "A", queueMode: effective.queueMode || "mixed", queueOpenTime: effective.queueOpenTime, queueCloseTime: effective.queueCloseTime, bufferMinutes: effective.bufferMinutes || 0 };
+  return { doctorId, branchId, clinicId: clinic.id, ...clinicDisplayPreferences(clinic), date, sessionId: schedule?.id || null, available: !reason, reason, startTime: effective.startTime || null, endTime: effective.endTime || null, breakStart: effective.breakStart || null, breakEnd: effective.breakEnd || null, timezone, maxTokens, bookedTokens, remainingTokens, consultationMinutes, tokenPrefix: effective.tokenPrefix || "A", queueMode: effective.queueMode || "mixed", queueOpenTime: effective.queueOpenTime, queueCloseTime: effective.queueCloseTime, bufferMinutes: effective.bufferMinutes || 0 };
 }
 export async function availabilitySessions(doctorId: string, branchId: string, date: string, conn: any = db) {
   assert(/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(Date.parse(date)) && new Date(date).toISOString().slice(0,10) === date, 400, "Invalid date");

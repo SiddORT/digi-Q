@@ -78,6 +78,7 @@ await build({
           import {scoped,projectAssignmentScope} from "./auth";
           import {enrich} from "./entities";
           export const sourceSql=()=>({});
+          export const documentSql=()=>({});
           export const filterSql=()=>({});
           export const metricSql={};
           export const assignmentCatalogPredicate=(kind,manager)=>({strings:[kind==="clinics"?(manager?"r.admin_id":""):"exists(select 1 from clinics"],values:manager?[manager]:[]});
@@ -238,6 +239,58 @@ async function route(router, method, path, body = {}, query = {}, params = {}) {
   return result;
 }
 const book = body => route(api.appointmentsRouter,"post","/appointments",body);
+
+test("appointment list display preferences follow each parent clinic without rewriting booking fields", async () => {
+  const booking=seed();
+  api.state.rows.clinics[0].dateFormat="DD/MM/YYYY";
+  api.state.rows.clinics[0].timeFormat="24h";
+  api.state.rows.clinics.push({id:"other",dateFormat:"MM/DD/YYYY",timeFormat:"12h"});
+  const rows=[{...booking,id:"one",status:"waiting",startTime:"09:05",branchAddress:"Snapshot"},
+    {...booking,id:"two",clinicId:"other",status:"completed",startTime:"14:05",branchAddress:"Other snapshot"}];
+  const result=await api.appointmentViews(rows,staff);
+  assert.deepEqual(result.map(r=>[r.dateFormat,r.timeFormat]),[["DD/MM/YYYY","24h"],["MM/DD/YYYY","12h"]]);
+  assert.deepEqual(result.map(r=>[r.date,r.startTime,r.branchAddress]),rows.map(r=>[r.date,r.startTime,r.branchAddress]));
+  delete api.state.rows.clinics[0].dateFormat;
+  delete api.state.rows.clinics[0].timeFormat;
+  const [legacy]=await api.appointmentViews([rows[0]],staff);
+  assert.equal(legacy.dateFormat,"DD MMM YYYY");
+  assert.equal(legacy.timeFormat,"12h");
+});
+
+test("report search and sorting controls reject unsupported identifiers and oversized searches", () => {
+  assert.deepEqual(api.reportListControls.parse({search:" Doctor ",sort:"-appointments"}),{search:"Doctor",sort:"-appointments"});
+  for (const sort of ["patientName","appointments desc; drop table appointments","--key",""]) assert.equal(api.reportListControls.safeParse({sort}).success,false);
+  for (const sort of ["key","label","registrations","-completed","-averageConsultationMinutes"]) assert.equal(api.reportListControls.safeParse({sort}).success,true);
+  assert.equal(api.reportListControls.safeParse({search:"x".repeat(201)}).success,false);
+});
+
+test("weekday availability uses the selected calendar date including Sunday zero and split Friday sessions", async () => {
+  seed();
+  const base = api.state.rows.schedules[0];
+  api.state.rows.schedules = [
+    {...base,id:"friday-am",dayOfWeek:5,startTime:"09:00",endTime:"12:00"},
+    {...base,id:"friday-pm",dayOfWeek:5,startTime:"14:00",endTime:"17:00"},
+    {...base,id:"sunday",dayOfWeek:0,startTime:"10:00",endTime:"13:00"},
+  ];
+  assert.deepEqual((await api.availabilitySessions("d","b","2030-01-11")).map(s=>s.sessionId),["friday-am","friday-pm"]);
+  assert.deepEqual(await api.availabilitySessions("d","b","2030-01-12"),[]);
+  assert.deepEqual((await api.availabilitySessions("d","b","2030-01-13")).map(s=>s.sessionId),["sunday"]);
+  await assert.rejects(api.availability("d","b","2030-01-12",undefined,{sessionId:"friday-am"}),/Session not found/);
+  api.state.rows.availabilityExceptions=[{id:"closed-friday",doctorId:"d",branchId:"b",date:"2030-01-11",sessionId:"friday-am",status:"active",isClosed:true,reason:"Doctor away"}];
+  const friday=await api.availabilitySessions("d","b","2030-01-11");
+  assert.equal(friday[0].available,false);
+  assert.equal(friday[0].reason,"Doctor away");
+  assert.equal(friday[1].available,true);
+});
+
+test("public display omits inactive doctor accounts rather than failing all clinic sessions", async () => {
+  seed();
+  api.state.rows.qrs=[{id:"qr",publicReference:"active-location",status:"active",clinicId:"c",branchId:"b"}];
+  api.state.rows.users.find(u=>u.id==="du").status="inactive";
+  assert.deepEqual((await api.publicDisplay("active-location")).sessions,[]);
+  api.state.rows.qrs[0].doctorId="d";
+  await assert.rejects(api.resolveQr("active-location"),/unavailable|context/);
+});
 
 test("advance booking and walk-in immediately wait with stable idempotent tokens", async () => {
   const body = seed();
@@ -492,8 +545,14 @@ test("assignment managingAdmins is bounded by the clinic page, not the entire ow
 test("actual staff assignment lookup sends selectedIds with edited identity for inactive hydration", async () => {
   const lookup=await readFile(resolve(root,"../../clinicflow/src/components/ResourceLookup.tsx"),"utf8");
   const users=await readFile(resolve(root,"../../clinicflow/src/Users.tsx"),"utf8");
-  assert.match(lookup,/getStaffAssignmentOptions\(\{\s*\.\.\.params,[^}]*selectedIds:\s*selected\.join\(","\)/);
-  assert.match(lookup,/selected\.length > 0/);
+  assert.match(lookup,/selectedIdBatches\(missing\)\.map\(ids/);
+  assert.match(lookup,/getStaffAssignmentOptions\(\{\s*\.\.\.scope,[^}]*selectedIds:\s*ids\.join\(","\),\s*pageSize:\s*100/);
+  assert.match(lookup,/missing\.length > 0/);
+  assert.match(lookup,/scopes = clinicIds\.length \? clinicIds\.map\(clinicId => \(\{ \.\.\.params, clinicId \}\)\) : \[params\]/);
+  const { selectedIdBatches }=await import("../../clinicflow/src/components/relation-validity.ts");
+  const selected=Array.from({length:225},(_,i)=>`assigned-${i}`);
+  assert.deepEqual(selectedIdBatches([...selected,selected[0]]).flat(),selected);
+  assert.deepEqual(selectedIdBatches(selected).map(batch=>batch.length),[100,100,25]);
   assert.match(users,/doctorId:\s*tab === "doctors" \? initial\.id/);
   assert.match(users,/userId:\s*tab === "receptionists" \? initial\.id/);
 });
@@ -633,13 +692,18 @@ test("Super Admin onboarding atomically persists the new Clinic Admin's first cl
   api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
   const result=await route(api.resourcesRouter,"post","/clinic-admin-onboarding",{
     admin:{fullName:"New Admin",email:"NEW.ADMIN@example.com",mobile:"+15555550999"},
-    clinic:{name:"New Clinic",address:"1 Main Street",timezone:"UTC"}
+    clinic:{name:"New Clinic",address:"1 Main Street",timezone:"UTC",dateFormat:"MM/DD/YYYY",timeFormat:"24h"}
   });
   assert.equal(result.admin.role,"clinicAdmin");
   assert.equal(result.admin.status,"active");
   assert.equal(result.admin.email,"new.admin@example.com");
   assert.equal(result.admin.invitationStatus,"sent");
   assert.equal(result.clinic.adminId,result.admin.id);
+  assert.equal(result.clinic.dateFormat,"MM/DD/YYYY");
+  assert.equal(result.clinic.timeFormat,"24h");
+  const savedClinic = api.state.rows.clinics.find(row => row.id === result.clinic.id);
+  assert.equal(savedClinic.dateFormat,"MM/DD/YYYY");
+  assert.equal(savedClinic.timeFormat,"24h");
   assert.equal(result.clinic.status,"active");
   assert.deepEqual(result.admin.clinicIds,[result.clinic.id]);
   assert.equal(api.state.rows.assignments.some(a => a.userId === result.admin.id && a.clinicId === result.clinic.id && a.branchId === null),true);

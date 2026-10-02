@@ -36,5 +36,9 @@ test("scoped assignment payload explicitly preserves foreign clinic and unknown 
   assert.match(ui,/clinicScopedStaffInput/);
   assert.match(ui,/const current=await api\.getUser\(row\.id\)/);
   assert.match(ui,/api\.updateUser\(row\.id,\{fullName:current\.fullName,email:current\.email,mobile:current\.mobile\|\|undefined,role:current\.role,status\}\)/);
-  assert.match(ui,/window\.confirm\(`Deactivate/);
+  assert.doesNotMatch(ui,/window\.confirm|[^.\w]confirm\(/);
+  assert.match(ui,/await confirmAction\.ask\(\{title:`Deactivate/);
+  assert.match(ui,/confirmLabel:"Deactivate",tone:"danger"/);
+  assert.match(ui,/confirmAction\.dialog/);
+  assert.match(ui,/context\?\.previous\.forEach/);
 });

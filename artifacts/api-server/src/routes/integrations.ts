@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { rateLimit } from "express-rate-limit";
+import { ipKeyGenerator } from "express-rate-limit";
 import nodemailer from "nodemailer";
 import { SendSmtpTestEmailBody, GetIntegrationSettingsResponse } from "@workspace/api-zod";
 import { requireUser, roles } from "../lib/auth";
 import { HttpError } from "../lib/http";
 import { integrationReadiness, smtpConfig, validEmailAddress } from "../lib/integration-config";
+import { consumeRateLimit } from "../lib/native-auth";
 
 export const integrationsRouter = Router();
 const path = "/settings/integrations";
@@ -16,16 +17,18 @@ integrationsRouter.use(path, async (req, res, next) => {
   res.locals.integrationActor = user.id;
   next();
 });
-const limitOptions = {
-  windowMs: 15 * 60 * 1000, standardHeaders: "draft-8" as const, legacyHeaders: false,
-  message: { error: "Test email limit reached. Try again later.", code: "SMTP_TEST_RATE_LIMIT" },
-};
-const ipLimit = rateLimit({ ...limitOptions, limit: 10 });
-const userLimit = rateLimit({ ...limitOptions, limit: 3, keyGenerator: (_req, res) => res.locals.integrationActor });
 integrationsRouter.get(path, (_req, res) => {
   res.json(GetIntegrationSettingsResponse.parse(integrationReadiness()));
 });
-integrationsRouter.post(`${path}/smtp/test-email`, ipLimit, userLimit, async (req, res) => {
+integrationsRouter.post(`${path}/smtp/test-email`, async (req, res) => {
+  try {
+    await consumeRateLimit(`smtp-test:ip:${ipKeyGenerator(req.ip || "unknown")}`, 10, 900_000);
+    await consumeRateLimit(`smtp-test:actor:${res.locals.integrationActor}`, 3, 900_000);
+  } catch (error) {
+    if (error instanceof HttpError && error.code === "RATE_LIMITED")
+      throw new HttpError(429, "Test email limit reached. Try again later.", "SMTP_TEST_RATE_LIMIT");
+    throw error;
+  }
   const parsed = SendSmtpTestEmailBody.strict().safeParse(req.body);
   if (!parsed.success || !validEmailAddress(parsed.data.recipient))
     throw new HttpError(400, "Enter one valid recipient email address", "INVALID_RECIPIENT");

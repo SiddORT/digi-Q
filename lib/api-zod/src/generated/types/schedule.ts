@@ -20,9 +20,13 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 import type { ScheduleInput } from './scheduleInput';
 
 export type Schedule = ScheduleInput & {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   id: string;
   doctorName?: string;
   clinicName?: string;

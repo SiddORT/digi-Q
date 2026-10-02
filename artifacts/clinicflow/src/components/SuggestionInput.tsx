@@ -10,6 +10,8 @@ type SuggestionInputProps = {
   placeholder: string;
   loading?: boolean;
   error?: string;
+  /** Retry action shown with the error; typed value is kept. */
+  onRetry?: () => void;
   onSearchChange?: (value: string) => void;
   disabled?: boolean;
   id?: string;
@@ -27,6 +29,7 @@ export function SuggestionInput({
   placeholder,
   loading = false,
   error,
+  onRetry,
   onSearchChange,
   disabled = false,
   id,
@@ -126,7 +129,7 @@ export function SuggestionInput({
             </span>
           </div>
         </PopoverAnchor>
-        {error && <p id={`${inputId}-error`} className="field-error" role="alert">{error}</p>}
+        {error && <p id={`${inputId}-error`} className="field-error" role="alert">{error}{onRetry && <> <button type="button" className="text-link" onClick={onRetry}>Retry</button></>}</p>}
       </div>
       <PopoverContent
         id={listId}

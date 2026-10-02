@@ -5,6 +5,11 @@ import { BRAND_NAME } from "../branding";
 import { AuthCard, AuthShell } from "./AuthShell";
 import { authErrorMessage } from "./errors";
 import { authRequest, useNativeAuth } from "./native-auth";
+import { DEVICE_CODE_LENGTH } from "./staff-device-trust";
+import { FormField } from "../components/FormField";
+import { PasswordInput } from "../components/PasswordInput";
+import { LoadingButton } from "../components/LoadingButton";
+import { validateEmail } from "../lib/validators";
 import "../components/clinic-registration.css";
 
 type LoginResponse = { authenticated?: boolean; challengeId?: string; requiresVerification?: boolean; maskedEmail?: string };
@@ -21,6 +26,7 @@ export function StaffLogin() {
   const [cooldown, setCooldown] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const params = new URLSearchParams(window.location.search);
   const confirmation = params.get("passwordSet")
     ? "Your password is set. Sign in to continue."
@@ -43,6 +49,10 @@ export function StaffLogin() {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (busy) return;
+    // Login only checks presence/format; the password policy applies to new passwords, so existing credentials keep working.
+    const errs = { email: email.trim() ? validateEmail(email) : "Enter your email address.", password: password ? undefined : "Enter your password." };
+    setFieldErrors(errs);
+    if (errs.email || errs.password) { (document.querySelector<HTMLElement>(errs.email ? '[name="email"]' : '[name="password"]'))?.focus(); return; }
     setBusy(true); setError("");
     try {
       const result = await authRequest<LoginResponse>("login", { email: email.trim().toLowerCase(), password });
@@ -62,6 +72,7 @@ export function StaffLogin() {
   async function verifyDevice(event: React.FormEvent) {
     event.preventDefault();
     if (busy) return;
+    if (code.length !== DEVICE_CODE_LENGTH) { setError(`Enter the ${DEVICE_CODE_LENGTH}-digit verification code.`); return; }
     setBusy(true); setError("");
     try {
       const result = await authRequest<LoginResponse>("verify-device", { challengeId, code: code.trim() });
@@ -77,18 +88,22 @@ export function StaffLogin() {
       description={step === "credentials" ? `Use your ${BRAND_NAME} staff email and password.` : `Enter the code sent to ${maskedEmail}.`}>
       {confirmation && <div className="notice" data-testid="status-password-confirmation">{confirmation}</div>}
       {step === "credentials" ? <>
-        <form onSubmit={submit}>
-          <label>Email address<input data-testid="input-staff-email" type="email" autoComplete="username" required disabled={busy} value={email} onChange={event => setEmail(event.target.value)} /></label>
-          <label>Password<input data-testid="input-staff-password" type="password" autoComplete="current-password" required disabled={busy} value={password} onChange={event => setPassword(event.target.value)} /></label>
+        <form onSubmit={submit} noValidate>
+          <FormField label="Email address" required error={fieldErrors.email}>
+            <input data-testid="input-staff-email" name="email" type="email" autoComplete="username" disabled={busy} value={email} onChange={event => { setEmail(event.target.value); if (fieldErrors.email) setFieldErrors(p => ({ ...p, email: undefined })); }} />
+          </FormField>
+          <FormField label="Password" required error={fieldErrors.password}>
+            <PasswordInput data-testid="input-staff-password" name="password" autoComplete="current-password" disabled={busy} value={password} onChange={event => { setPassword(event.target.value); if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: undefined })); }} />
+          </FormField>
           {error && <div className="error-box" role="alert" data-testid="status-staff-login-error">{error}</div>}
-          <button className="button auth-submit" data-testid="button-staff-login" type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+          <LoadingButton className="button auth-submit" data-testid="button-staff-login" type="submit" loading={busy} loadingText="Signing in…">Sign in</LoadingButton>
         </form>
         <div className="auth-links"><Link href="/forgot-password" data-testid="link-forgot-password">Forgot password?</Link><Link href="/patient-login" data-testid="link-patient-login">Patient login</Link></div>
         <div className="register-clinic-entry"><div><strong>Bring your clinic together.</strong><p>Set up your locations, hours and care team.</p></div><Link className="button register-clinic-button" href="/register-clinic" data-testid="link-register-clinic">Register a Clinic</Link></div>
       </> : <form onSubmit={verifyDevice}>
-        <label>Verification code<OTPInput data-testid="input-device-code" value={code} onChange={setCode} maxLength={6} pattern={REGEXP_ONLY_DIGITS} inputMode="numeric" autoComplete="one-time-code" required disabled={busy} containerClassName="otp-input" render={({ slots }) => <span className="otp-slots">{slots.map((slot, index) => <span className={`otp-slot${slot.isActive ? " active" : ""}`} key={index}>{slot.char}{slot.hasFakeCaret && <span className="otp-caret" />}</span>)}</span>} /></label>
+        <label>Verification code<OTPInput data-testid="input-device-code" value={code} onChange={setCode} maxLength={DEVICE_CODE_LENGTH} pattern={REGEXP_ONLY_DIGITS} inputMode="numeric" autoComplete="one-time-code" required disabled={busy} containerClassName="otp-input" render={({ slots }) => <span className="otp-slots">{slots.map((slot, index) => <span className={`otp-slot${slot.isActive ? " active" : ""}`} key={index}>{slot.char}{slot.hasFakeCaret && <span className="otp-caret" />}</span>)}</span>} /></label>
         {error && <div className="error-box" role="alert" data-testid="status-device-verification-error">{error}</div>}
-        <button className="button auth-submit" data-testid="button-verify-device" disabled={busy || code.length !== 6}>{busy ? "Verifying…" : "Verify and Sign In"}</button>
+        <LoadingButton className="button auth-submit" data-testid="button-verify-device" type="submit" loading={busy} loadingText="Verifying…" disabled={code.length !== DEVICE_CODE_LENGTH}>Verify and Sign In</LoadingButton>
         <div className="auth-links">
           <button type="button" className="text-link" data-testid="button-change-staff-account" disabled={busy} onClick={() => { setStep("credentials"); setCode(""); setChallengeId(""); setError(""); }}>Change account</button>
           <button type="button" className="text-link" data-testid="button-resend-device-code" disabled={busy || cooldown > 0} onClick={() => { setStep("credentials"); setCode(""); setChallengeId(""); setError(""); }}>{cooldown > 0 ? `Try again in ${cooldown}s` : "Sign in again to request a new code"}</button>

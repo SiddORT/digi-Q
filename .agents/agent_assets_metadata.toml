@@ -176,3 +176,31 @@ mtime_ms = 1790950457199
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/cf1d9e27-1fbe-4b8a-ab4f-65e189033f35/f9abfa9d-b67c-447d-8f86-9031225a637f"
 storage_version_token = "1790950458903162"
 content_type = "text/html"
+
+[[outputs]]
+id = "fkPbDgM2KDL-ayJqU2U5R"
+uri = "file://docs/digiq-final-status.md"
+type = "text"
+title = "DigiQ verification and remaining scope"
+description = "Final test evidence, implementation status, unresolved decisions and live-system verification limits."
+logical_id = "5650f124-0c15-4726-aae5-416e3f14b346"
+content_hash = "sha256:3d6d2def7746d2dfa07073ac28c455e9e2cf4fe46cfde46118a83a5ece772a17"
+size = 13414
+mtime_ms = 1790956095861
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/5650f124-0c15-4726-aae5-416e3f14b346/9453a187-b482-42b8-a018-a6d742f94d83"
+storage_version_token = "1790956111219347"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "XdvKuyyJl-rixAc0-tVUM"
+uri = "file://docs/digiq-ui-qa-report.md"
+type = "text"
+title = "DigiQ — complete 137-item audit"
+description = "Per-finding disposition register with implementation and verification evidence."
+logical_id = "97499168-2ee4-4277-9c9a-6e6307ea955f"
+content_hash = "sha256:d87de072f40830174b9c932c02280ebd4531eb47095bc774a08a3b3115e7d46b"
+size = 138528
+mtime_ms = 1790955898913
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/97499168-2ee4-4277-9c9a-6e6307ea955f/aab4d633-5f1a-4c6f-af9a-d12368766164"
+storage_version_token = "1790956112520066"
+content_type = "text/markdown"

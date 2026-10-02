@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
-import { Plus, Pencil, Trash2, Send, ArrowDown, ArrowUp, ArrowDownUp } from "lucide-react";
+import { Plus, Pencil, Send, ArrowDown, ArrowUp, ArrowDownUp } from "lucide-react";
 import { Link } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { assignmentTargetRole, type StaffTab } from "./staff-input";
@@ -15,6 +15,13 @@ import { ClinicAdminOnboarding } from "./components/ClinicAdminOnboarding";
 import { SearchableSelect } from "./components/SearchableSelect";
 import { ListingBulk, useListingSelection } from "./components/AdminListing";
 import { HelpTip } from "./components/HelpTip";
+import { FormField } from "./components/FormField";
+import { useConfirm } from "./components/ConfirmDialog";
+import { friendlyError } from "./lib/friendly-error";
+import { required, validatePersonName, validateEmail, validatePhone, normalizePhone } from "./lib/validators";
+import { notifySuccess, notifyWarning } from "./lib/notify";
+import { PhoneInput } from "./components/PhoneInput";
+import { formatConfiguredTimestamp } from "./lib/date-time";
 
 type StaffContext = {search:string;status:""|"active"|"inactive";clinicId:string;branchId:string;managingAdminId:string;specializationId:string;page:number;pageSize:number;sort:string};
 const defaultContext = ():StaffContext=>({search:"",status:"",clinicId:"",branchId:"",managingAdminId:"",specializationId:"",page:1,pageSize:20,sort:"-createdAt"});
@@ -22,6 +29,7 @@ const staffTypes: { id:StaffTab; label:string }[] = [{id:"admins",label:"Clinic 
 const sortName = (sort:string) => sort === "fullName" ? "Name A–Z" : sort === "-fullName" ? "Name Z–A" : sort === "createdAt" ? "Oldest first" : "Newest first";
 
 export function Users({ identity, clinicId, embedded=false }: { identity: api.Identity; clinicId?:string; embedded?:boolean }) {
+  const confirmAction = useConfirm();
   const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),staleTime:60000}});
   const role = identity.user!.role;
   const isSuperAdmin = role === "superAdmin";
@@ -56,6 +64,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     queryKey: ["users-tab", identity.user?.id, role, tab, params],
     refetchInterval: 30000,
     refetchOnWindowFocus: true,
+    placeholderData: (previous:any) => previous,
      queryFn: () => fetchStaff(tab,params),
   });
    const countParams={...params,page:1,pageSize:1,status:undefined};
@@ -70,10 +79,6 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     if (query.data && context.page > Math.max(1, Math.ceil(query.data.total / context.pageSize))) change({ page: Math.max(1, Math.ceil(query.data.total / context.pageSize)) });
   }, [query.data, context.page, context.pageSize]);
   const client = useQueryClient();
-  const remove = useMutation({
-    mutationFn: (id: string) => tab === "doctors" ? api.deleteDoctor(id) : api.deleteUser(id),
-    onSuccess: () => { setSuccess("Record deleted or deactivated successfully."); client.invalidateQueries(); },
-  });
    const [recoveryId, setRecoveryId] = useState("");
    const [statusTarget,setStatusTarget]=useState<{id:string;userId?:string;name:string;status:"active"|"inactive"}|null>(null);
    const [statusError,setStatusError]=useState("");
@@ -88,11 +93,13 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
        const current=await api.getUser(row.id);
        return await api.updateUser(row.id,{fullName:current.fullName,email:current.email,mobile:current.mobile||undefined,role:current.role,status});
      },
-     onSuccess:async()=>{setStatusTarget(null);setStatusError("");setSuccess("Staff account status updated.");await client.invalidateQueries();},
-     onError:(error)=>setStatusError(error instanceof Error?error.message:"Status could not be updated. Nothing changed."),
+     onSuccess:async()=>{setStatusTarget(null);setStatusError("");notifySuccess("Staff account status updated.");await client.invalidateQueries();},
+     onMutate:async({row,status})=>{await client.cancelQueries({queryKey:["users-tab"]});const previous=client.getQueriesData({queryKey:["users-tab"]});client.setQueriesData({queryKey:["users-tab"]},(data:any)=>data?{...data,items:data.items.map((item:any)=>item.id===row.id?{...item,status}:item)}:data);return {previous};},
+     onError:(error,_variables,context)=>{context?.previous.forEach(([key,value])=>client.setQueryData(key,value));setStatusError(friendlyError(error,"save"));},
+     onSettled:()=>{void client.invalidateQueries({queryKey:["users-tab"]});},
    });
   const recovery = api.useRequestUserPasswordReset();
-  const resendInvitation = api.useResendUserInvitation({ mutation: { onSuccess: () => { setSuccess("Invitation request completed."); client.invalidateQueries(); } } });
+  const resendInvitation = api.useResendUserInvitation({ mutation: { onSuccess: (result:any) => { if(result.invitationStatus==="failed")notifyWarning("Invitation not sent. Please retry the invitation later.");else notifySuccess("Invitation request completed."); client.invalidateQueries(); } } });
    const active = !!(context.sort !== "-createdAt" || context.search || context.status || (!clinicId&&context.clinicId) || context.branchId || context.managingAdminId || context.specializationId);
    const reset = () => {change({ search: "", status: "", clinicId: "", branchId: "", managingAdminId: "", specializationId:"", sort: "-createdAt" });setDraft(defaultContext());};
    const beginEdit = (row: any) => { setDirty(false); setBusy(false); setEditing(row.id?row:{...row,...(clinicId&&tab!=="admins"?{clinicIds:[clinicId]}:{})}); };
@@ -100,7 +107,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
    const sortable=(key:"fullName"|"createdAt",label:string)=><button type="button" className="sort-button" onClick={()=>toggleSort(key)} aria-label={`Sort ${label} ${context.sort===key?"descending":"ascending"}`}>{label}{context.sort===key?<ArrowUp aria-hidden size={14}/>:context.sort===`-${key}`?<ArrowDown aria-hidden size={14}/>:<ArrowDownUp aria-hidden size={14}/>}</button>;
    const openFilters=()=>{setDraftTab(tab);setDraft({...context});};
    const applyFilters=()=>{setContexts(previous=>({...previous,[draftTab]:{...defaultContext(),...previous[draftTab],...draft,page:1,clinicId:clinicId||draft.clinicId}}));setTab(draftTab);};
-   return <>
+   return <>{confirmAction.dialog}
      <div className="status-tabs" role="group" aria-label="Account status">
        {(["","active","inactive"] as const).map((status,index)=><button type="button" key={status||"all"} className={`tab ${context.status===status?"active":""}`} aria-pressed={context.status===status} onClick={()=>change({status})}>{status?title(status):"All"}{counts[index].data?` (${counts[index].data.total})`:""}</button>)}
      </div>
@@ -108,7 +115,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
      <FilterBar actions={tab==="admins" ? embedded?<Link className="button small" href="/admin/users?tab=admins">Set up a Clinic Admin</Link>:null : <button className="button small" onClick={() => beginEdit({})} data-testid={`button-add-${tab}`}><Plus size={17} /> Add {tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}</button>} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter staff" chips={[
       ...(context.search?[{key:"search",label:`Search: ${context.search}`,onRemove:()=>change({search:""})}]:[]),
        ...(!clinicId&&context.clinicId?[{key:"clinicId",label:"Clinic selected",onRemove:()=>change({clinicId:"",branchId:""})}]:[]),
-      ...(context.branchId?[{key:"branchId",label:"Branch selected",onRemove:()=>change({branchId:""})}]:[]),
+      ...(context.branchId?[{key:"branchId",label:"Clinic selected",onRemove:()=>change({branchId:""})}]:[]),
       ...(context.specializationId?[{key:"adv:specializationId",label:"Specialization selected",onRemove:()=>change({specializationId:""})}]:[]),
       ...(context.managingAdminId?[{key:"adv:managingAdminId",label:"Managing admin selected",onRemove:()=>change({managingAdminId:""})}]:[]),
        ...(context.sort!=="-createdAt"?[{key:"sort",label:`Sorted: ${sortName(context.sort)}`,onRemove:()=>change({sort:"-createdAt"})}]:[]),
@@ -117,13 +124,13 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
        {draftTab==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={draft.specializationId} onChange={specializationId=>draftChange({specializationId})}/>}
        {isSuperAdmin && draftTab !== "admins" && <ResourceLookup resource="users" label="Managing admin" params={{role:"clinicAdmin"}} value={draft.managingAdminId} onChange={managingAdminId => draftChange({ managingAdminId })} />}
        {!clinicId&&draftTab !== "admins"&&<ResourceLookup resource="assignment:clinics" label="Clinic" params={{targetRole:assignmentTargetRole(draftTab)}} value={draft.clinicId} onChange={value=>draftChange({clinicId:value,branchId:""})}/>}
-       {draftTab === "receptionists" && <ResourceLookup resource="assignment:branches" label="Branch" params={{targetRole:assignmentTargetRole(draftTab),clinicId:clinicId||draft.clinicId||undefined}} value={draft.branchId} onChange={branchId=>draftChange({branchId})}/>}
+       {draftTab === "receptionists" && <ResourceLookup resource="assignment:branches" label="Clinic" params={{targetRole:assignmentTargetRole(draftTab),clinicId:clinicId||draft.clinicId||undefined}} value={draft.branchId} onChange={branchId=>draftChange({branchId})}/>}
     </>}>
       <SearchInput value={context.search} onChange={search => change({ search })} placeholder={tab==="doctors"?"Search doctors by name, email or specialization…":tab==="receptionists"?"Search receptionists by name, email or mobile…":"Search Clinic Admins by name, email or mobile…"} />
     </FilterBar>
     {success && <p role="status" className="notice">{success}</p>}
      {statusError&&<div role="alert" className="error-box">{statusError} <button type="button" onClick={()=>setStatusError("")}>Dismiss</button></div>}
-    <ErrorNotice error={remove.error || resendInvitation.error} />
+    <ErrorNotice error={resendInvitation.error} />
     <ErrorNotice error={settings.error} />
     {role !== "doctor" && <details className="panel padded" style={{ marginBottom: 14 }}>
       <summary>Account recovery assistance</summary><p className="muted">Search linked staff accounts for secure account recovery steps. This action does not send an email.</p>
@@ -133,19 +140,19 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     </details>}
     <ListingBulk selection={selection} resource={tab==="doctors"?"doctors":"users"} columns={["fullName","email","mobile","role","clinicNames","branchNames","status"]} identity={identity} context={selectionContext}/>
     <section className="panel table-panel admin-listing-table">
-      {query.isLoading ? <div className="skeleton" role="status">Loading {tabs.find(item=>item.id===tab)?.label.toLowerCase()}…</div> : query.error ? <><div className="error-box" role="alert">Unable to load {tabs.find(item=>item.id===tab)?.label.toLowerCase()}. {query.error instanceof Error?query.error.message:"Please try again."}</div><button onClick={() => query.refetch()}>Retry {tabs.find(item=>item.id===tab)?.label.toLowerCase()}</button></> : query.data?.items.length ? <div className="table-scroll"><table>
+      {query.isLoading ? <div className="skeleton" role="status">Loading {tabs.find(item=>item.id===tab)?.label.toLowerCase()}…</div> : query.error ? <><div className="error-box" role="alert">{friendlyError(query.error,"load")}</div><button onClick={() => query.refetch()}>Retry {tabs.find(item=>item.id===tab)?.label.toLowerCase()}</button></> : query.data?.items.length ? <div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>
          <thead><tr><th scope="col" className="col-select">{selection.header}</th><th aria-sort={context.sort==="fullName"?"ascending":context.sort==="-fullName"?"descending":undefined}>{sortable("fullName","Staff member")}</th>{isSuperAdmin && tab !== "admins" && <th>Managing admin</th>}<th>{tab === "admins" ? "Owned clinics" : "Assignments"}</th><th className="col-status">Account status</th><th aria-sort={context.sort==="createdAt"?"ascending":context.sort==="-createdAt"?"descending":undefined}>{sortable("createdAt","Created")}</th><th className="col-actions">Actions</th></tr></thead>
         <tbody>{query.data.items.map((row: any) => <tr key={row.id}>
           <td data-label="Select" className="col-select">{selection.checkbox(row)}</td>
           <td data-label="Staff member" className="admin-record"><strong>{row.fullName}</strong><small>{row.email} · {tab==="admins"?"Clinic admin":tab==="doctors"?"Doctor":"Receptionist"}{row.mobile?` · ${row.mobile}`:""}</small></td>
           {isSuperAdmin && tab !== "admins" && <td data-label="Managing admin">{row.managingAdminName || row.ownerAdminName || "—"}</td>}
-          <td data-label={tab === "admins" ? "Owned clinics" : "Assignments"}><div>{Array.isArray(row.clinicNames) ? row.clinicNames.join(", ") || "—" : row.clinicNames || "—"}</div>{tab !== "admins" && <div className="muted">Branches: {Array.isArray(row.branchNames) ? row.branchNames.join(", ") || "—" : row.branchNames || "—"}</div>}</td>
-           <td data-label="Account status"><label className="check-label status-switch staff-status-switch" title={row.id===identity.user?.id||row.userId===identity.user?.id?"You cannot deactivate your own account.":tab==="admins"&&row.status==="active"&&row.clinicIds?.length?"Transfer clinic ownership before deactivation.":undefined}><input type="checkbox" role="switch" aria-label={`Account active for ${row.fullName}`} aria-checked={row.status==="active"} checked={row.status==="active"} disabled={statusUpdate.isPending||row.id===identity.user?.id||row.userId===identity.user?.id||(tab==="admins"&&row.status==="active"&&!!row.clinicIds?.length)} onChange={event=>{const next=event.target.checked?"active":"inactive";if(next==="inactive"&&!window.confirm(`Deactivate ${row.fullName}? They will lose access. Clinic ownership restrictions may prevent this change.`))return;setStatusError("");setStatusTarget({id:row.id,userId:row.userId,name:row.fullName,status:next});statusUpdate.mutate({row,status:next,staffTab:tab});}}/><span className="status-switch-track" aria-hidden="true"/>{statusUpdate.isPending&&statusTarget?.id===row.id?"Saving…":title(row.status||"")}</label><small>{row.passwordEnabled === true ? "Password set" : row.invitationStatus === "sent" ? "Pending setup" : row.invitationStatus === "failed" ? "Delivery failed" : "Needs password setup"}</small></td>
-          <td data-label="Created">{row.createdAt ? settings.data?.timezone ? new Date(row.createdAt).toLocaleDateString(undefined,{timeZone:settings.data.timezone}) : row.createdAt : "—"}</td>
+          <td data-label={tab === "admins" ? "Owned Clinic Groups" : "Assignments"}><div>{Array.isArray(row.clinicNames) ? row.clinicNames.join(", ") || "—" : row.clinicNames || "—"}</div>{tab !== "admins" && <div className="muted">Clinics: {Array.isArray(row.branchNames) ? row.branchNames.join(", ") || "—" : row.branchNames || "—"}</div>}</td>
+           <td data-label="Account status"><label className="check-label status-switch staff-status-switch" title={row.id===identity.user?.id||row.userId===identity.user?.id?"You cannot deactivate your own account.":tab==="admins"&&row.status==="active"&&row.clinicIds?.length?"Transfer clinic ownership before deactivation.":undefined}><input type="checkbox" role="switch" aria-label={`Account active for ${row.fullName}`} aria-checked={row.status==="active"} checked={row.status==="active"} disabled={statusUpdate.isPending||row.id===identity.user?.id||row.userId===identity.user?.id||(tab==="admins"&&row.status==="active"&&!!row.clinicIds?.length)} onChange={async event=>{const next=event.target.checked?"active":"inactive";if(next==="inactive"&&!await confirmAction.ask({title:`Deactivate ${row.fullName}?`,description:"They will lose access. Clinic ownership restrictions may prevent this change. Historical records are preserved.",confirmLabel:"Deactivate",tone:"danger"}))return;setStatusError("");setStatusTarget({id:row.id,userId:row.userId,name:row.fullName,status:next});statusUpdate.mutate({row,status:next,staffTab:tab});}}/><span className="status-switch-track" aria-hidden="true"/>{statusUpdate.isPending&&statusTarget?.id===row.id?"Saving…":title(row.status||"")}</label><small>{row.passwordEnabled === true ? "Password set" : row.invitationStatus === "sent" ? "Pending setup" : row.invitationStatus === "failed" ? "Invitation not sent" : "Needs password setup"}</small></td>
+          <td data-label="Created">{row.createdAt ? formatConfiguredTimestamp(row.createdAt,settings.data?.timezone,{dateStyle:"medium"},row) : "—"}</td>
           <td data-label="Actions" className="col-actions"><div className="row-actions">
-            {row.invitationStatus !== "notRequired" && <HelpTip text="Revoke the pending invitation and send a new set-password invitation"><button aria-label="Resend set-password invitation" disabled={resendInvitation.isPending} onClick={() => { if (!resendInvitation.isPending && confirm("Revoke any pending invitation and send a new set-password invitation?")) resendInvitation.mutate({ id: tab === "doctors" ? row.userId : row.id }); }}><Send size={15} /></button></HelpTip>}
+            {row.invitationStatus !== "notRequired" && <HelpTip text={row.status==="inactive"?"Reactivate this account before sending an invitation.":"Revoke the pending invitation and send a new set-password invitation"}><button aria-label="Resend set-password invitation" disabled={resendInvitation.isPending||row.status==="inactive"} onClick={async () => { if (!resendInvitation.isPending && await confirmAction.ask({title:"Resend invitation?",description:"The pending invitation will be revoked and a new set-password invitation requested.",confirmLabel:"Resend invitation"})) resendInvitation.mutate({ id: tab === "doctors" ? row.userId : row.id }); }}><Send size={15} /></button></HelpTip>}
             <HelpTip text="Edit staff details and assignments"><button aria-label="Edit" onClick={() => beginEdit(row)}><Pencil size={15} /></button></HelpTip>
-             {row.status==="inactive"&&<HelpTip text="Delete this inactive account; ownership protections apply"><button aria-label="Delete inactive account" disabled={remove.isPending||row.id===identity.user?.id||row.userId===identity.user?.id} onClick={() => { if (!remove.isPending && confirm("Delete this inactive record? Ownership rules may prevent removal.")) remove.mutate(row.id); }}><Trash2 size={15} /></button></HelpTip>}
+             {row.status==="inactive"&&<HelpTip text="This account is inactive. Historical records are preserved."><span className="badge inactive">Inactive</span></HelpTip>}
           </div></td>
         </tr>)}</tbody>
       </table></div> : active ? <div className="empty"><h3>No matching staff</h3><p>Try another search or clear your filters.</p><button onClick={reset}>Clear filters</button></div> : <Empty label={tab} />}
@@ -153,12 +160,13 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     </section>
      {isSuperAdmin && tab === "admins" && !embedded && <details className="panel padded"><summary>Set up a new Clinic Admin and their first clinic</summary><ClinicAdminOnboarding /></details>}
     {editing && <AppDialog open onClose={() => setEditing(null)} title={`${editing.id ? "Edit" : "Add"} ${tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}`} dirty={dirty} busy={busy}>
-       <UserEditor tab={tab} initial={editing} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onClose={() => { setEditing(null); setSuccess("Staff member saved successfully."); }} />
+       <UserEditor tab={tab} initial={editing} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onClose={(result:any) => { const wasEdit=!!editing.id;setEditing(null);if(!wasEdit&&result.invitationStatus==="failed")notifyWarning(`${tab==="doctors"?"Doctor":"Staff member"} added, but the invitation could not be sent.`);else notifySuccess(wasEdit?"Updated successfully":"Staff member added successfully."); }} />
     </AppDialog>}
   </>;
 }
 
 function UserEditor({ tab, initial, onClose, isSuperAdmin, onDirtyChange, onBusyChange, clinicId, identity }: any) {
+  const confirmAction = useConfirm();
   const form = useForm({ defaultValues: { status: "active", ...initial, ...(clinicId&&!initial.id&&tab!=="admins"?{clinicIds:[clinicId]}:{}) } });
   const client = useQueryClient();
   const locked = useRef(false);
@@ -174,7 +182,7 @@ function UserEditor({ tab, initial, onClose, isSuperAdmin, onDirtyChange, onBusy
        const body = clinicScopedStaffInput(tab,data,initial,clinicId,records.current);
       return tab === "doctors" ? initial.id ? api.updateDoctor(initial.id, body) : api.createDoctor(body) : initial.id ? api.updateUser(initial.id, body) : api.createUser(body);
     },
-    onSuccess: () => { client.invalidateQueries(); onClose(); },
+    onSuccess: (result) => { client.invalidateQueries(); onClose(result); },
     onSettled: () => { locked.current = false; },
   });
   useEffect(() => { onDirtyChange(form.formState.isDirty); }, [form.formState.isDirty]);
@@ -183,12 +191,12 @@ function UserEditor({ tab, initial, onClose, isSuperAdmin, onDirtyChange, onBusy
     if (locked.current || save.isPending) return;
     // Do not infer invalid assignments from a partial lookup page. The API validates ownership and branch coverage.
     locked.current = true;
-    save.mutate(data);
+    save.mutate({...data,fullName:data.fullName.trim(),email:data.email.trim(),mobile:normalizePhone(data.mobile)});
   };
-  return <Form {...form}><form className="form-grid" onSubmit={form.handleSubmit(onSubmit)}>
-    <label>Full name <span className="required">*</span><input {...form.register("fullName", { required: true, validate: (v: string) => !!v.trim() })} /></label>
-    <label>Email <span className="required">*</span><input type="email" {...form.register("email", { required: true })} /></label>
-    <label>Mobile<input type="tel" {...form.register("mobile")} /></label>
+  return <Form {...form}>{confirmAction.dialog}<form className="form-grid" noValidate onSubmit={form.handleSubmit(onSubmit)}>
+    <FormField label="Full name" required error={form.formState.errors.fullName?.message as string}><input {...form.register("fullName", { validate: (v:unknown) => required()(v)||validatePersonName(v)||true })}/></FormField>
+    <FormField label="Email" required error={form.formState.errors.email?.message as string}><input type="email" {...form.register("email", { validate: (v:unknown) => required()(v)||validateEmail(v)||true })}/></FormField>
+    <Controller name="mobile" control={form.control} rules={{validate:(v:unknown)=>validatePhone(v)||true}} render={({field})=><FormField label="Mobile" optional error={form.formState.errors.mobile?.message as string}><PhoneInput {...field} value={field.value||""}/></FormField>}/>
     {tab === "doctors" && <><label>Registration number<input {...form.register("registrationNumber")} /></label><label>Experience years<input type="number" min="0" {...form.register("experienceYears", { valueAsNumber: true })} /></label></>}
     {tab === "admins" && !initial.id && <p className="wide notice">Admin accounts have no clinic access until clinic ownership is assigned. Use Clinic Admin setup to create an admin and their first clinic together.</p>}
     {tab !== "admins" && <>
@@ -198,12 +206,14 @@ function UserEditor({ tab, initial, onClose, isSuperAdmin, onDirtyChange, onBusy
         field.onChange(ids);
         if (removed.length) form.setValue("branchIds", selectedBranches.filter(id => !removed.includes(records.current.get(id)?.clinicId)), { shouldDirty: true });
        }} />} /><small className="muted">{clinicId?"This clinic remains assigned here. Assignments at other clinics are retained; use Staff management to change them.":"Clinic assignments must belong to the same managing admin. Existing assignments are retained while searching."}</small></div>
-      <div className="wide"><label>Branches {tab === "receptionists" && <span className="required">*</span>}</label>
-         <Controller name="branchIds" control={form.control} rules={{ validate: v => tab !== "receptionists" || !!v?.length || "Select at least one branch for each selected clinic." }} render={({ field }) => <ResourceMultiLookup resource="assignment:branches" params={{ ...optionsParams, clinicId:clinicId|| (selectedClinics.length===1?selectedClinics[0]:undefined) }} disabled={!selectedClinics.length} value={field.value || []} onRecords={remember} onChange={ids=>field.onChange(clinicId?[...new Set([...(initial.branchIds||[]).filter((id:string)=>records.current.get(id)?.clinicId!==clinicId),...ids.filter((id:string)=>records.current.get(id)?.clinicId===clinicId||!records.current.get(id))])]:ids)} />} />
-        {tab === "receptionists" && <small className="muted">Select at least one branch for every assigned clinic.</small>}
+      {form.formState.errors.clinicIds&&<p className="field-error wide" role="alert">{String(form.formState.errors.clinicIds.message)}</p>}
+      <div className="wide"><label>Clinics {tab === "receptionists" && <span className="required">*</span>}</label>
+         <Controller name="branchIds" control={form.control} rules={{ validate: v => tab !== "receptionists" || !!v?.length || "Select at least one clinic for each selected Clinic Group." }} render={({ field }) => <ResourceMultiLookup resource="assignment:branches" params={{ ...optionsParams, clinicId:clinicId|| (selectedClinics.length===1?selectedClinics[0]:undefined) }} disabled={!selectedClinics.length} value={field.value || []} onRecords={remember} onChange={ids=>field.onChange(clinicId?[...new Set([...(initial.branchIds||[]).filter((id:string)=>records.current.get(id)?.clinicId!==clinicId),...ids.filter((id:string)=>records.current.get(id)?.clinicId===clinicId||!records.current.get(id))])]:ids)} />} />
+        {form.formState.errors.branchIds&&<p className="field-error" role="alert">{String(form.formState.errors.branchIds.message)}</p>}
+        {tab === "receptionists" && <small className="muted">Select at least one clinic for every assigned Clinic Group.</small>}
       </div>
     </>}
-     <Controller name="status" control={form.control} render={({field})=><div className="wide"><label className="check-label status-switch staff-status-switch"><input type="checkbox" role="switch" aria-label="Staff account active" aria-checked={field.value==="active"} checked={field.value==="active"} disabled={initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)} onChange={e=>{if(!e.target.checked&&!window.confirm(`Deactivate ${initial.fullName||"this staff member"}? They will lose access. Ownership restrictions may prevent this change.`))return;field.onChange(e.target.checked?"active":"inactive");}}/><span className="status-switch-track" aria-hidden="true"/>{field.value==="active"?"Active":"Inactive"}</label>{initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)&&<small className="muted">Your own account cannot be deactivated here.</small>}</div>}/>
-    <div className="wide form-footer">{Object.entries(form.formState.errors).map(([field, error]) => <p className="field-error" role="alert" key={field}>{typeof error?.message === "string" ? error.message : `Please complete ${title(field)}.`}</p>)}<ErrorNotice error={save.error} /><button className="button" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save changes"}</button></div>
+     <Controller name="status" control={form.control} render={({field})=><div className="wide"><label className="check-label status-switch staff-status-switch"><input type="checkbox" role="switch" aria-label="Staff account active" aria-checked={field.value==="active"} checked={field.value==="active"} disabled={initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)} onChange={async e=>{const active=e.target.checked;if(!active&&!await confirmAction.ask({title:"Deactivate staff member?",description:"They will lose access. Ownership restrictions may prevent this change.",confirmLabel:"Deactivate",tone:"danger"}))return;field.onChange(active?"active":"inactive");}}/><span className="status-switch-track" aria-hidden="true"/>{field.value==="active"?"Active":"Inactive"}</label>{initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)&&<small className="muted">Your own account cannot be deactivated here.</small>}</div>}/>
+    <div className="wide form-footer"><ErrorNotice error={save.error} /><button className="button" disabled={save.isPending}>{save.isPending ? "Saving…" : "Save changes"}</button></div>
   </form></Form>;
 }

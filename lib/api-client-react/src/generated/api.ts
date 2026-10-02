@@ -35,6 +35,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ApiError,
   Appointment,
   AppointmentAction,
   AppointmentInput,
@@ -140,6 +141,7 @@ import type {
   QrInput,
   QrList,
   QueueSelection,
+  RegistrationChallengeReference,
   RegistrationOptions,
   Report,
   RequestPasswordRecovery200,
@@ -2562,6 +2564,91 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getStartClinicRegistrationMutationOptions(options));
     }
 
+export const getResendClinicRegistrationUrl = () => {
+
+
+
+
+  return `/api/auth/registration/resend`
+}
+
+/**
+ * Resends the registration verification code for the existing challenge without changing its ID or original expiry. Uses the anonymous CSRF cookie and matching CSRF request header; no authenticated session is required.
+ */
+export const resendClinicRegistration = async (registrationChallengeReference: RegistrationChallengeReference, options?: Parameters<typeof customFetch>[1]): Promise<RegistrationChallengeReference> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RegistrationChallengeReference>(getResendClinicRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(registrationChallengeReference)
+  }
+);}
+
+
+
+
+
+export const getResendClinicRegistrationMutationKey = () => ['resendClinicRegistration'] as const;
+
+export const getResendClinicRegistrationMutationOptions = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendClinicRegistration>>, TError,ResendClinicRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendClinicRegistration>>, TError,ResendClinicRegistrationMutationVariables, TContext> => {
+
+const mutationKey = getResendClinicRegistrationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendClinicRegistration>>, ResendClinicRegistrationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  resendClinicRegistration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendClinicRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof resendClinicRegistration>>>
+    export type ResendClinicRegistrationMutationBody = BodyType<RegistrationChallengeReference>
+    export type ResendClinicRegistrationMutationError = ErrorType<ApiError>
+    export type ResendClinicRegistrationMutationVariables = {data: BodyType<RegistrationChallengeReference>}
+
+    export const useResendClinicRegistration = <TError = ErrorType<ApiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendClinicRegistration>>, TError,ResendClinicRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendClinicRegistration>>,
+        TError,
+        ResendClinicRegistrationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResendClinicRegistrationMutationOptions(options));
+    }
+
 export const getVerifyClinicRegistrationUrl = () => {
 
 
@@ -3049,7 +3136,7 @@ export const getGetAuthStatusUrl = () => {
 }
 
 /**
- * Returns role, local session state and CSRF token, with no clinical data.
+ * Returns role and local session state, with no clinical data. Does not issue a CSRF cookie or token; use GET /auth/csrf for that.
  */
 export const getAuthStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<AuthStatus> => {
 
@@ -8047,7 +8134,7 @@ export const getGetQueueUrl = (params: GetQueueParams,) => {
 }
 
 /**
- * Poll every 30 seconds. Patients get aggregate tokens/counts and own entry only; entries are omitted for patients. Staff receive scoped identifiable entries.
+ * Poll every 30 seconds. Patients get aggregate tokens/counts and own entry only; identifiable entries and staff listing metadata are omitted. Staff receive scoped identifiable entries. Explicit page or pageSize enables database-backed staff pagination; omission preserves the legacy full-list response. Staff search, sort, status and statusGroup filters apply before pagination. Listing counts never replace the session-wide queue aggregates.
  */
 export const getQueue = async (params: GetQueueParams, options?: Parameters<typeof customFetch>[1]): Promise<LiveQueue> => {
 

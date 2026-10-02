@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { selectedIdBatches, validDependentIds } from "./relation-validity.ts";
+import { selectedIdBatches, validDependentIds, retainSelectedRecords } from "./relation-validity.ts";
 
 const editor = readFileSync(new URL("../resources.tsx", import.meta.url), "utf8");
 const lookup = readFileSync(new URL("./ResourceLookup.tsx", import.meta.url), "utf8");
@@ -35,7 +35,13 @@ test("editor only clears proven invalid dependents, not on parent selection", ()
 
 test("lookup is search-stable and does not poll option or selected lists", () => {
   assert.ok(!lookup.includes("refetchInterval:"));
-  assert.ok(!lookup.includes("useRef(new Map"));
+  const cached=retainSelectedRecords(new Map(),["selected"],[{id:"selected",name:"Known clinic"},{id:"unselected",name:"Other"}]);
+  assert.deepEqual([...cached.keys()],["selected"]);
+  assert.equal(retainSelectedRecords(cached,["selected"],[]).get("selected").name,"Known clinic");
+  assert.equal(retainSelectedRecords(cached,["selected"],[{id:"selected",name:"Updated clinic"}]).get("selected").name,"Updated clinic");
+  assert.equal(retainSelectedRecords(cached,[],[]).size,0);
+  assert.ok(lookup.includes("retainSelectedRecords(retained.current,selected,merged)"));
+  assert.ok(lookup.includes("selectedRecords: [...rows, ...selectedRows]"));
   assert.ok(lookup.includes("selected.filter(id => !rows.some"));
   assert.ok(lookup.includes("staleTime: 120000"));
   assert.ok(lookup.includes("[scopeKey, recordsKey, missingKey"));

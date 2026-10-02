@@ -14,7 +14,12 @@ const catalogSql = `
 SELECT 'column' AS kind, table_name || '.' || column_name AS name,
   json_build_array(data_type, is_nullable, column_default)::text AS definition
 FROM information_schema.columns WHERE table_schema='public'
-UNION ALL SELECT 'constraint', c.relname || '.' || con.conname, pg_get_constraintdef(con.oid)
+-- 0012 uses PostgreSQL's inline-reference names; Drizzle's equivalent DDL uses
+-- explicit names. Normalize only these two historical aliases, never definitions.
+UNION ALL SELECT 'constraint', c.relname || '.' || CASE
+  WHEN c.relname = 'auth_sessions' AND con.conname = 'auth_sessions_user_id_fkey' THEN 'auth_sessions_user_id_users_id_fk'
+  WHEN c.relname = 'auth_challenges' AND con.conname = 'auth_challenges_user_id_fkey' THEN 'auth_challenges_user_id_users_id_fk'
+  ELSE con.conname END, pg_get_constraintdef(con.oid)
 FROM pg_constraint con JOIN pg_class c ON c.oid=con.conrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND con.contype <> 't'
 UNION ALL SELECT 'index', tablename || '.' || indexname, indexdef FROM pg_indexes WHERE schemaname='public'
 ORDER BY kind, name`;
@@ -45,6 +50,22 @@ test("actual full journal migrates empty PostgreSQL, replays unchanged, and matc
       WHERE n.nspname='public' AND NOT t.tgisinternal ORDER BY tgname`)).rows, customBefore);
     assert.deepEqual((await h.control.query("SELECT id,mobile FROM patients ORDER BY id")).rows,
       [{ id: "migration-null", mobile: null }, { id: "migration-preserved", mobile: "" }]);
+    // Settings live in the already-existing JSON document: runtime can read old
+    // records before migration without selecting any not-yet-existing columns.
+    await h.control.query("INSERT INTO users(id,email,full_name,role) VALUES ('formats-admin','formats@example.test','Format Admin','clinicAdmin')");
+    await h.control.query(`INSERT INTO clinics(id,admin_id,data) VALUES
+      ('formats-default','formats-admin','{"name":"Format Default","timezone":"Asia/Kolkata"}'),
+      ('formats-custom','formats-admin','{"name":"Format Custom","dateFormat":"MM/DD/YYYY","timeFormat":"24h"}'),
+      ('formats-partial','formats-admin','{"name":"Format Partial","dateFormat":"YYYY-MM-DD"}')`);
+    const formatMigration = await readFile(resolve(folder, "0013_clinic_display_preferences.sql"), "utf8");
+    await h.control.query(formatMigration);
+    const formatRows = (await h.control.query("SELECT id,data FROM clinics WHERE id LIKE 'formats-%' ORDER BY id")).rows;
+    assert.deepEqual(formatRows.map(r => [r.id, r.data.dateFormat, r.data.timeFormat]), [
+      ["formats-custom", "MM/DD/YYYY", "24h"], ["formats-default", "DD MMM YYYY", "12h"], ["formats-partial", "YYYY-MM-DD", "12h"],
+    ]);
+    assert.equal(formatRows[1].data.timezone, "Asia/Kolkata");
+    await h.control.query(formatMigration);
+    assert.deepEqual((await h.control.query("SELECT id,data FROM clinics WHERE id LIKE 'formats-%' ORDER BY id")).rows, formatRows);
     // The additive contract repair is itself safe to repeat and preserves data.
     await h.control.query(await readFile(resolve(folder, "0011_patient_mobile_nullable.sql"), "utf8"));
     assert.deepEqual((await h.control.query("SELECT id,mobile FROM patients ORDER BY id")).rows,

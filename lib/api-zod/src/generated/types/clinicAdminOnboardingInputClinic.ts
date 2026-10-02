@@ -20,8 +20,12 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 
 export type ClinicAdminOnboardingInputClinic = {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /**
      * @minLength 3
      * @maxLength 63

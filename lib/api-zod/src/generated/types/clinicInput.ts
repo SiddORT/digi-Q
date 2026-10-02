@@ -20,9 +20,13 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 import type { RecordStatus } from './recordStatus';
 
 export interface ClinicInput {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   /**
      * @minLength 3
      * @maxLength 63

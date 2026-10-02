@@ -28,7 +28,13 @@ test("fixed clinic scope is enforced on API calls and new records", () => {
 
 test("user status is an accessible switch and filters can apply a draft", () => {
   assert.match(resource, /role="switch" aria-label=\{`\$\{row\.fullName\}/);
-  assert.match(resource, /window\.confirm\(`Deactivate \$\{row\.fullName\}/);
+  const handler = resource.match(/const changeUserStatus=async\(row:any\)=>\{([\s\S]*?)\n \};/)?.[1];
+  assert.ok(handler, "status changes use the async confirmation handler");
+  assert.match(handler, /if\(statusUpdate\.isPending\)return/);
+  assert.match(handler, /if\(next==="inactive"&&!await confirmation\.ask\(\{title:`Deactivate \$\{row\.fullName\}\?`[\s\S]*?\}\)\)return;/);
+  assert.ok(handler.indexOf("confirmation.ask") < handler.indexOf("statusUpdate.mutate"), "mutation follows awaited confirmation and cancellation guard");
+  assert.match(resource, /\{confirmation\.dialog\}/, "shared confirmation is rendered");
+  assert.doesNotMatch(resource, /window\.confirm/);
   assert.match(resource, /statusUpdate=useMutation/);
   assert.match(resource, /onOpen=\{\(\)=>setDraft\(filters\)\} onApply=\{applyDraft\}/);
   assert.match(filters, /onApply\?\.\(\)/);

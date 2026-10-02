@@ -21,9 +21,13 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { BranchInput } from './branchInput';
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 import type { LinkedSchedule } from './linkedSchedule';
 
 export type Branch = BranchInput & ({
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   linkedSchedule?: LinkedSchedule;
   /** @nullable */
   effectiveEmail?: string | null;
@@ -35,6 +39,8 @@ export type Branch = BranchInput & ({
   /** @nullable */
   createdAt: Date | null;
 }) & Required<Pick<BranchInput & ({
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   linkedSchedule?: LinkedSchedule;
   /** @nullable */
   effectiveEmail?: string | null;

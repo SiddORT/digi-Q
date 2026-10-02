@@ -53,6 +53,8 @@ export async function provisionBranchQr(branch: any, old: any, conn: any) {
   }
 }
 export async function validateClinicMetadata(body: any, conn: any) {
+  assert(body.dateFormat === undefined || ["DD MMM YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"].includes(body.dateFormat), 400, "Select a supported date format");
+  assert(body.timeFormat === undefined || ["12h", "24h"].includes(body.timeFormat), 400, "Select a supported time format");
   if (body.categoryId) {
     const row = await one(masters, body.categoryId, conn);
     assert(row.category === "clinicCategory" && row.status === "active", 400, "Invalid clinic category");
@@ -64,9 +66,13 @@ export async function validateClinicMetadata(body: any, conn: any) {
 }
 export async function clinicSettingsResult(clinicId: string, conn: any = db) {
   const clinic = await one(clinics, clinicId, conn), platform = await getSettings(conn);
-  return { clinic: await enrich("clinics", clinic, conn),
-    branches: await Promise.all((await all(branches, conn)).filter(b => b.clinicId === clinicId).map(b => enrich("branches", b, conn))),
+  const formats = clinicDisplayPreferences(clinic);
+  return { clinic: { ...await enrich("clinics", clinic, conn), ...formats },
+    branches: await Promise.all((await all(branches, conn)).filter(b => b.clinicId === clinicId).map(async b => ({ ...await enrich("branches", b, conn), ...formats }))),
     policies: { bookingHorizonDays: clinic.policies?.bookingHorizonDays ?? platform.bookingHorizonDays, cancellationCutoffMinutes: clinic.policies?.cancellationCutoffMinutes ?? platform.cancellationCutoffMinutes } };
+}
+export function clinicDisplayPreferences(clinic: any) {
+  return { dateFormat: clinic?.dateFormat ?? "DD MMM YYYY", timeFormat: clinic?.timeFormat ?? "12h" };
 }
 export async function saveClinicSetup(actor: any, clinicId: string, body: any, conn: any) {
   await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"clinics:" + clinicId}))`);
@@ -76,7 +82,7 @@ export async function saveClinicSetup(actor: any, clinicId: string, body: any, c
   const detail = body.clinic || {};
   await validateClinicMetadata(detail, conn);
   await validateSlugWrite("clinics", detail, old, conn);
-  const clinic = await change(clinics, clinicId, { data: { ...old, ...detail, policies: { ...old.policies, ...body.policies } } }, conn);
+  const clinic = await change(clinics, clinicId, { data: { ...clinicDisplayPreferences(old), ...old, ...detail, policies: { ...old.policies, ...body.policies } } }, conn);
   for (const input of body.branches || []) {
     const prior = input.id ? await one(branches, input.id, conn) : null;
     assert(!prior || prior.clinicId === clinicId, 403, "Branch belongs to another clinic");
@@ -137,7 +143,7 @@ export async function createOwnedClinic(actor: any, admin: any, input: any, conn
   await validateClinicMetadata(input.clinic, conn);
   await validateSlugWrite("clinics", input.clinic, null, conn);
   const id = uid();
-  const clinic = await put(clinics, { id, ownerId: actor.id, adminId: admin.id, data: { ...input.clinic, code: input.clinic.code || `CLN-${id.slice(0,8)}`, timezone: input.clinic.timezone || "Asia/Kolkata" } }, conn);
+  const clinic = await put(clinics, { id, ownerId: actor.id, adminId: admin.id, data: { ...clinicDisplayPreferences(input.clinic), ...input.clinic, code: input.clinic.code || `CLN-${id.slice(0,8)}`, timezone: input.clinic.timezone || "Asia/Kolkata" } }, conn);
   await conn.insert(assignments).values({ id: uid(), userId: admin.id, clinicId: id }).onConflictDoNothing();
   await audit(actor, "create", "clinics", clinic, conn);
   const result = await saveClinicSetup({ ...admin, role: "clinicAdmin" }, id, { branches: input.branches || [], policies: input.policies }, conn);

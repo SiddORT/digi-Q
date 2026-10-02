@@ -20,9 +20,13 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
 import type { OpeningHour } from './openingHour';
 
 export interface PublicBranchSummary {
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   id: string;
   name: string;
   /** @nullable */

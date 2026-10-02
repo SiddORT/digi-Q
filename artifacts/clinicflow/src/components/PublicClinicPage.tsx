@@ -4,6 +4,7 @@ import { Building2, MapPin, Stethoscope } from "lucide-react";
 import * as api from "@workspace/api-client-react";
 import { Logo } from "../App";
 import { BRAND_NAME } from "../branding";
+import { formatTime } from "../lib/date-time";
 import { PublicBooking } from "../clinic";
 import { AuthAccess } from "../auth/AuthAccess";
 import { useNativeAuth } from "../auth/native-auth";
@@ -82,7 +83,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
       <section className="public-clinic-card"><h2>Opening hours</h2>
         {branch.openingHours?.length ? Array.from({ length: 7 }, (_, day) => {
           const sessions = branch.openingHours?.filter(h => h.dayOfWeek === day) || [];
-          return <div className="public-clinic-session" key={day}><strong>{["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][day]}</strong><span>{sessions.length ? sessions.map(s => `${s.startTime}–${s.endTime}`).join(" · ") : "Closed"}</span></div>;
+          return <div className="public-clinic-session" key={day}><strong>{["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][day]}</strong><span>{sessions.length ? sessions.map(s => `${formatTime(s.startTime,clinic)}–${formatTime(s.endTime,clinic)}`).join(" · ") : "Closed"}</span></div>;
         }) : <p>Opening hours have not been published. Contact the clinic for details.</p>}
         <p className="registration-note">{branch.timezone}. Opening hours do not guarantee doctor availability. Check booking for available sessions.</p>
       </section>

@@ -26,5 +26,4 @@ export interface AuthStatus {
   role: string | null;
   staffPasswordVerified: boolean;
   requiresStaffPassword: boolean;
-  csrfToken: string;
 }

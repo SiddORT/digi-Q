@@ -20,11 +20,17 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { ListGuestRequestsSort } from './listGuestRequestsSort';
 import type { ListGuestRequestsStatus } from './listGuestRequestsStatus';
 import type { SessionIdParameter } from './sessionIdParameter';
 import type { StartTimeParameter } from './startTimeParameter';
 
 export type ListGuestRequestsParams = {
+/**
+ * @maxLength 200
+ */
+search?: string;
+sort?: ListGuestRequestsSort;
 sessionId?: SessionIdParameter;
 startTime?: StartTimeParameter;
 clinicId?: string;

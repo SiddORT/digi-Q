@@ -25,6 +25,7 @@ import type { ClinicIdParameter } from './clinicIdParameter';
 import type { DoctorIdParameter } from './doctorIdParameter';
 import type { FromParameter } from './fromParameter';
 import type { GetReportsGroupBy } from './getReportsGroupBy';
+import type { GetReportsSort } from './getReportsSort';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
 import type { SessionIdParameter } from './sessionIdParameter';
@@ -32,6 +33,12 @@ import type { StartTimeParameter } from './startTimeParameter';
 import type { ToParameter } from './toParameter';
 
 export type GetReportsParams = {
+/**
+ * Trimmed report search text
+ * @maxLength 200
+ */
+search?: string;
+sort?: GetReportsSort;
 sessionId?: SessionIdParameter;
 startTime?: StartTimeParameter;
 /**

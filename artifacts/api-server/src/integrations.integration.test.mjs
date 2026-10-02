@@ -3,7 +3,7 @@
 import { before, after, test } from "node:test";
 import assert from "node:assert/strict";
 import { build } from "esbuild";
-import { rm } from "node:fs/promises";
+import { readFile, rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createQueueHarness } from "./test-support/postgres-queue.mjs";
 import { queueFixtureSql } from "./test-support/queue-fixtures.mjs";
@@ -20,6 +20,8 @@ Object.assign(process.env, env, { NODE_ENV: "test", SMTP_SECURE: "", SMTP_REQUIR
 before(async () => {
   harness = await createQueueHarness({ empty: true });
   await harness.control.query(queueFixtureSql);
+  await harness.control.query("drop table auth_sessions");
+  await harness.control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0012_native_auth_additive.sql"), "utf8"));
   for (const role of ["superAdmin", "clinicAdmin", "doctor", "receptionist", "patient"])
     await harness.control.query("insert into users(id,role,email,full_name) values($1,$1,$2,$1)", [role, `${role}@example.invalid`]);
   for (let i = 0; i < 12; i++)

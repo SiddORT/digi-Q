@@ -23,9 +23,15 @@
 import type { AppointmentActionType } from './appointmentActionType';
 import type { AppointmentInput } from './appointmentInput';
 import type { AppointmentStatus } from './appointmentStatus';
+import type { ClinicDateFormat } from './clinicDateFormat';
+import type { ClinicTimeFormat } from './clinicTimeFormat';
+import type { ConfirmationEmailOutcome } from './confirmationEmailOutcome';
 import type { StatusEvent } from './statusEvent';
 
 export type Appointment = AppointmentInput & ({
+  confirmationEmail?: ConfirmationEmailOutcome;
+  dateFormat?: ClinicDateFormat;
+  timeFormat?: ClinicTimeFormat;
   id: string;
   reference: string;
   token: string;

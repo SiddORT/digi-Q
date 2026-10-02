@@ -145,6 +145,8 @@ export const GetSessionContextsQueryParams = zod.object({
 })
 
 export const GetSessionContextsResponseItem = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
@@ -231,6 +233,8 @@ export const RegisterClinicBody = zod.object({
   "mobile": zod.string().optional(),
   "password": zod.string().min(1).max(registerClinicBodyPasswordMax),
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "name": zod.string().min(1).optional(),
   "address": zod.string().optional(),
   "email": zod.string().email().nullish(),
@@ -310,6 +314,8 @@ export const registerClinicResponsePoliciesCancellationCutoffMinutesMax = 10080;
 
 export const RegisterClinicResponse = zod.object({
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(registerClinicResponseClinicOneSlugMin).max(registerClinicResponseClinicOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(registerClinicResponseClinicOneReferralCodeMax).nullish(),
@@ -355,6 +361,8 @@ export const RegisterClinicResponse = zod.object({
   "timezone": zod.string().default(registerClinicResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -412,6 +420,8 @@ export const getClinicSettingsResponsePoliciesCancellationCutoffMinutesMax = 100
 
 export const GetClinicSettingsResponse = zod.object({
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(getClinicSettingsResponseClinicOneSlugMin).max(getClinicSettingsResponseClinicOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(getClinicSettingsResponseClinicOneReferralCodeMax).nullish(),
@@ -457,6 +467,8 @@ export const GetClinicSettingsResponse = zod.object({
   "timezone": zod.string().default(getClinicSettingsResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -515,6 +527,8 @@ export const updateClinicSettingsBodyPoliciesCancellationCutoffMinutesMax = 1008
 
 export const UpdateClinicSettingsBody = zod.object({
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "name": zod.string().min(1).optional(),
   "address": zod.string().optional(),
   "email": zod.string().email().nullish(),
@@ -585,6 +599,8 @@ export const updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMax = 
 
 export const UpdateClinicSettingsResponse = zod.object({
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(updateClinicSettingsResponseClinicOneSlugMin).max(updateClinicSettingsResponseClinicOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(updateClinicSettingsResponseClinicOneReferralCodeMax).nullish(),
@@ -630,6 +646,8 @@ export const UpdateClinicSettingsResponse = zod.object({
   "timezone": zod.string().default(updateClinicSettingsResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -688,6 +706,8 @@ export const previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMax = 100
 
 export const PreviewClinicSettingsBody = zod.object({
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "name": zod.string().min(1).optional(),
   "address": zod.string().optional(),
   "email": zod.string().email().nullish(),
@@ -821,6 +841,8 @@ export const resolveClinicSlugResponseBranchOneOpeningHoursItemDayOfWeekMax = 6;
 
 export const ResolveClinicSlugResponse = zod.object({
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "doctorCount": zod.number().int().optional(),
   "averageConsultationMinutes": zod.number().nullish(),
   "id": zod.string(),
@@ -831,6 +853,8 @@ export const ResolveClinicSlugResponse = zod.object({
   "phone": zod.string().nullish()
 }),
   "branches": zod.array(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string().nullish(),
@@ -846,6 +870,8 @@ export const ResolveClinicSlugResponse = zod.object({
 })).nullish()
 })),
   "branch": zod.union([zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string().nullish(),
@@ -893,6 +919,8 @@ export const resolveBranchSlugResponseBranchOneOpeningHoursItemDayOfWeekMax = 6;
 
 export const ResolveBranchSlugResponse = zod.object({
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "doctorCount": zod.number().int().optional(),
   "averageConsultationMinutes": zod.number().nullish(),
   "id": zod.string(),
@@ -903,6 +931,8 @@ export const ResolveBranchSlugResponse = zod.object({
   "phone": zod.string().nullish()
 }),
   "branches": zod.array(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string().nullish(),
@@ -918,6 +948,8 @@ export const ResolveBranchSlugResponse = zod.object({
 })).nullish()
 })),
   "branch": zod.union([zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string().nullish(),
@@ -1004,6 +1036,8 @@ export const GetPublicAvailabilitySessionsQueryParams = zod.object({
 })
 
 export const GetPublicAvailabilitySessionsResponseItem = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
@@ -1061,6 +1095,9 @@ export const CreateGuestRequestBody = zod.object({
 })
 
 export const CreateGuestRequestResponse = zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
   "id": zod.string(),
   "status": zod.enum(['pending', 'confirmed', 'rejected']),
@@ -1091,6 +1128,9 @@ export const GetGuestReceiptBody = zod.object({
 })
 
 export const GetGuestReceiptResponse = zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
   "id": zod.string(),
   "status": zod.enum(['pending', 'confirmed', 'rejected']),
@@ -1113,6 +1153,9 @@ export const GetGuestReceiptResponse = zod.object({
 })
 
 
+export const listGuestRequestsQuerySearchMax = 200;
+
+export const listGuestRequestsQuerySortDefault = `-createdAt`;
 export const listGuestRequestsQueryPageMax = 100000;
 
 export const listGuestRequestsQueryPageSizeMax = 100;
@@ -1120,6 +1163,8 @@ export const listGuestRequestsQueryPageSizeMax = 100;
 
 
 export const ListGuestRequestsQueryParams = zod.object({
+  "search": zod.coerce.string().max(listGuestRequestsQuerySearchMax).optional(),
+  "sort": zod.enum(['createdAt', '-createdAt', 'fullName', '-fullName', 'date', '-date']).default(listGuestRequestsQuerySortDefault),
   "sessionId": zod.coerce.string().optional(),
   "startTime": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -1133,6 +1178,9 @@ export const ListGuestRequestsQueryParams = zod.object({
 
 export const ListGuestRequestsResponse = zod.object({
   "items": zod.array(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
   "id": zod.string(),
   "status": zod.enum(['pending', 'confirmed', 'rejected']),
@@ -1181,6 +1229,9 @@ export const DecideGuestRequestBody = zod.object({
 })
 
 export const DecideGuestRequestResponse = zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
   "id": zod.string(),
   "status": zod.enum(['pending', 'confirmed', 'rejected']),
@@ -1310,6 +1361,18 @@ export const StartClinicRegistrationResponse = zod.object({
 })
 
 
+/**
+ * Resends the registration verification code for the existing challenge without changing its ID or original expiry. Uses the anonymous CSRF cookie and matching CSRF request header; no authenticated session is required.
+ */
+export const ResendClinicRegistrationBody = zod.object({
+  "challengeId": zod.string()
+})
+
+export const ResendClinicRegistrationResponse = zod.object({
+  "challengeId": zod.string()
+})
+
+
 export const verifyClinicRegistrationBodyCodeMin = 6;
 export const verifyClinicRegistrationBodyCodeMax = 6;
 
@@ -1395,13 +1458,12 @@ export const LogoutNativeSessionResponse = zod.object({
 
 
 /**
- * Returns role, local session state and CSRF token, with no clinical data.
+ * Returns role and local session state, with no clinical data. Does not issue a CSRF cookie or token; use GET /auth/csrf for that.
  */
 export const GetAuthStatusResponse = zod.object({
   "role": zod.string().nullable(),
   "staffPasswordVerified": zod.boolean(),
-  "requiresStaffPassword": zod.boolean(),
-  "csrfToken": zod.string()
+  "requiresStaffPassword": zod.boolean()
 })
 
 
@@ -1581,6 +1643,8 @@ export const ListPublicClinicsResponse = zod.object({
   "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(listPublicClinicsResponseTwoItemsItemOneSlugMin).max(listPublicClinicsResponseTwoItemsItemOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(listPublicClinicsResponseTwoItemsItemOneReferralCodeMax).nullish(),
@@ -1672,6 +1736,8 @@ export const ListPublicBranchesResponse = zod.object({
   "timezone": zod.string().default(listPublicBranchesResponseTwoItemsItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -1745,6 +1811,8 @@ export const GetPublicAvailabilityQueryParams = zod.object({
 })
 
 export const GetPublicAvailabilityResponse = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
@@ -1773,6 +1841,8 @@ export const GetPublicDisplayParams = zod.object({
 })
 
 export const GetPublicDisplayResponse = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "clinic": zod.object({
   "name": zod.string()
 }),
@@ -1785,6 +1855,8 @@ export const GetPublicDisplayResponse = zod.object({
   "date": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "sessions": zod.array(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
   "presence": zod.enum(['available', 'onBreak', 'away']).optional(),
   "doctorId": zod.string(),
@@ -1806,6 +1878,8 @@ export const ResolveQrParams = zod.object({
 })
 
 export const ResolveQrResponse = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "reference": zod.string(),
   "clinicId": zod.string(),
   "clinicName": zod.string(),
@@ -1854,6 +1928,8 @@ export const ListClinicsResponse = zod.object({
   "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(listClinicsResponseTwoItemsItemOneSlugMin).max(listClinicsResponseTwoItemsItemOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(listClinicsResponseTwoItemsItemOneReferralCodeMax).nullish(),
@@ -1891,6 +1967,8 @@ export const createClinicBodyReferralCodeMax = 100;
 
 
 export const CreateClinicBody = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(createClinicBodySlugMin).max(createClinicBodySlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(createClinicBodyReferralCodeMax).nullish(),
@@ -1919,6 +1997,8 @@ export const createClinicResponseOneReferralCodeMax = 100;
 
 
 export const CreateClinicResponse = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(createClinicResponseOneSlugMin).max(createClinicResponseOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(createClinicResponseOneReferralCodeMax).nullish(),
@@ -1959,6 +2039,8 @@ export const getClinicResponseOneReferralCodeMax = 100;
 
 
 export const GetClinicResponse = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(getClinicResponseOneSlugMin).max(getClinicResponseOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(getClinicResponseOneReferralCodeMax).nullish(),
@@ -1999,6 +2081,8 @@ export const updateClinicBodyReferralCodeMax = 100;
 
 
 export const UpdateClinicBody = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(updateClinicBodySlugMin).max(updateClinicBodySlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(updateClinicBodyReferralCodeMax).nullish(),
@@ -2027,6 +2111,8 @@ export const updateClinicResponseOneReferralCodeMax = 100;
 
 
 export const UpdateClinicResponse = zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(updateClinicResponseOneSlugMin).max(updateClinicResponseOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(updateClinicResponseOneReferralCodeMax).nullish(),
@@ -2123,6 +2209,8 @@ export const ListBranchesResponse = zod.object({
   "timezone": zod.string().default(listBranchesResponseTwoItemsItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -2210,6 +2298,8 @@ export const CreateBranchResponse = zod.object({
   "timezone": zod.string().default(createBranchResponseOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -2268,6 +2358,8 @@ export const GetBranchResponse = zod.object({
   "timezone": zod.string().default(getBranchResponseOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -2358,6 +2450,8 @@ export const UpdateBranchResponse = zod.object({
   "timezone": zod.string().default(updateBranchResponseOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -2821,6 +2915,8 @@ export const OnboardClinicAdminBody = zod.object({
   "mobile": zod.string().optional()
 }),
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(onboardClinicAdminBodyClinicSlugMin).max(onboardClinicAdminBodyClinicSlugMax).optional(),
   "categoryId": zod.string().optional(),
   "specialityIds": zod.array(zod.string()).optional(),
@@ -2883,6 +2979,8 @@ export const OnboardClinicAdminResponse = zod.object({
   "timezone": zod.string().default(onboardClinicAdminResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -2918,6 +3016,8 @@ export const OnboardClinicAdminResponse = zod.object({
   "lastLoginAt": zod.coerce.date().nullish()
 })),
   "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(onboardClinicAdminResponseClinicOneSlugMin).max(onboardClinicAdminResponseClinicOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(onboardClinicAdminResponseClinicOneReferralCodeMax).nullish(),
@@ -3121,6 +3221,8 @@ export const getStaffAssignmentOptionsResponsePaginationBranchesTotalMin = 0;
 
 export const GetStaffAssignmentOptionsResponse = zod.object({
   "clinics": zod.array(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(getStaffAssignmentOptionsResponseClinicsItemOneSlugMin).max(getStaffAssignmentOptionsResponseClinicsItemOneSlugMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(getStaffAssignmentOptionsResponseClinicsItemOneReferralCodeMax).nullish(),
@@ -3166,6 +3268,8 @@ export const GetStaffAssignmentOptionsResponse = zod.object({
   "timezone": zod.string().default(getStaffAssignmentOptionsResponseBranchesItemOneTimezoneDefault),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "linkedSchedule": zod.object({
   "enabled": zod.boolean(),
   "doctorId": zod.string().optional(),
@@ -3603,6 +3707,8 @@ export const ListSchedulesResponse = zod.object({
   "queueOpenTime": zod.string().optional(),
   "queueCloseTime": zod.string().optional()
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "doctorName": zod.string().optional(),
   "clinicName": zod.string().optional(),
@@ -3678,6 +3784,8 @@ export const CreateScheduleResponse = zod.object({
   "queueOpenTime": zod.string().optional(),
   "queueCloseTime": zod.string().optional()
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "doctorName": zod.string().optional(),
   "clinicName": zod.string().optional(),
@@ -3756,6 +3864,8 @@ export const UpdateScheduleResponse = zod.object({
   "queueOpenTime": zod.string().optional(),
   "queueCloseTime": zod.string().optional()
 }).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "doctorName": zod.string().optional(),
   "clinicName": zod.string().optional(),
@@ -3965,6 +4075,9 @@ export const ListAppointmentsResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(listAppointmentsResponseTwoItemsItemOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -4057,6 +4170,9 @@ export const CreateAppointmentResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(createAppointmentResponseOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -4128,6 +4244,9 @@ export const GetAppointmentResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(getAppointmentResponseOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -4220,6 +4339,9 @@ export const ResolveAppointmentQrResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(resolveAppointmentQrResponseAppointmentOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -4302,6 +4424,9 @@ export const CheckInAppointmentQrResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(checkInAppointmentQrResponseAppointmentOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -4426,6 +4551,9 @@ export const RescheduleAppointmentResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(rescheduleAppointmentResponseOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -4525,6 +4653,9 @@ export const TransitionAppointmentResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(transitionAppointmentResponseOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -4573,12 +4704,12 @@ export const TransitionAppointmentResponse = zod.object({
 
 
 /**
- * Poll every 30 seconds. Patients get aggregate tokens/counts and own entry only; entries are omitted for patients. Staff receive scoped identifiable entries.
+ * Poll every 30 seconds. Patients get aggregate tokens/counts and own entry only; identifiable entries and staff listing metadata are omitted. Staff receive scoped identifiable entries. Explicit page or pageSize enables database-backed staff pagination; omission preserves the legacy full-list response. Staff search, sort, status and statusGroup filters apply before pagination. Listing counts never replace the session-wide queue aggregates.
  */
-export const getQueueQueryPageDefault = 1;
 
-export const getQueueQueryPageSizeDefault = 20;
 export const getQueueQueryPageSizeMax = 100;
+
+export const getQueueQuerySearchMax = 200;
 
 
 
@@ -4589,10 +4720,10 @@ export const GetQueueQueryParams = zod.object({
   "branchId": zod.coerce.string(),
   "date": zod.date(),
   "appointmentId": zod.coerce.string().optional(),
-  "page": zod.coerce.number().int().min(1).default(getQueueQueryPageDefault),
-  "pageSize": zod.coerce.number().int().min(1).max(getQueueQueryPageSizeMax).default(getQueueQueryPageSizeDefault),
-  "search": zod.coerce.string().optional(),
-  "sort": zod.coerce.string().optional().describe('Allowlisted field with optional minus prefix for descending order'),
+  "page": zod.coerce.number().int().min(1).optional().describe('Explicit staff listing page; omit both pagination parameters for legacy full-list compatibility'),
+  "pageSize": zod.coerce.number().int().min(1).max(getQueueQueryPageSizeMax).optional().describe('Explicit staff listing page size; omitted pagination parameters must not be default-injected by clients'),
+  "search": zod.coerce.string().max(getQueueQuerySearchMax).optional().describe('Staff-only listing search applied before pagination'),
+  "sort": zod.coerce.string().optional().describe('Staff-only allowlisted listing sort with optional minus prefix'),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']).optional(),
   "statusGroup": zod.enum(['active', 'waiting', 'absent', 'completed', 'cancelled', 'all']).optional().describe('Server-side group filter applied before pagination; intersects with status when both supplied')
 })
@@ -4602,6 +4733,9 @@ export const getQueueResponseEntriesItemOneNotesMax = 1000;
 
 
 export const GetQueueResponse = zod.object({
+  "filteredTotal": zod.number().optional().describe('Staff-only count after listing filters; omitted for patients.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
   "startTime": zod.string().nullish(),
   "presence": zod.object({
@@ -4634,6 +4768,8 @@ export const GetQueueResponse = zod.object({
   "noShow": zod.number().int(),
   "total": zod.number().int(),
   "ownEntry": zod.union([zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "appointmentId": zod.string(),
   "token": zod.string(),
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -4656,6 +4792,9 @@ export const GetQueueResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(getQueueResponseEntriesItemOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -4746,6 +4885,9 @@ export const CallNextResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(callNextResponseAppointmentOneOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -4972,6 +5114,9 @@ export const GetDashboardResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(getDashboardResponseRecentAppointmentsItemOneNotesMax).optional()
 }).and(zod.object({
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
   "reference": zod.string(),
   "token": zod.string(),
@@ -5032,6 +5177,8 @@ export const GetDashboardResponse = zod.object({
 })
 
 
+export const getReportsQuerySearchMax = 200;
+
 export const getReportsQueryPageDefault = 1;
 
 export const getReportsQueryPageSizeDefault = 20;
@@ -5040,6 +5187,8 @@ export const getReportsQueryPageSizeMax = 100;
 export const getReportsQueryGroupByDefault = `date`;
 
 export const GetReportsQueryParams = zod.object({
+  "search": zod.coerce.string().max(getReportsQuerySearchMax).optional().describe('Trimmed report search text'),
+  "sort": zod.enum(['key', '-key', 'label', '-label', 'appointments', '-appointments', 'registrations', '-registrations', 'waiting', '-waiting', 'checkedIn', '-checkedIn', 'completed', '-completed', 'noShow', '-noShow', 'cancelled', '-cancelled', 'averageWaitMinutes', '-averageWaitMinutes', 'averageConsultationMinutes', '-averageConsultationMinutes']).optional(),
   "sessionId": zod.coerce.string().optional(),
   "startTime": zod.coerce.string().optional(),
   "page": zod.coerce.number().int().min(1).default(getReportsQueryPageDefault),

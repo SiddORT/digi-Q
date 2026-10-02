@@ -15,6 +15,7 @@ import { HelpTip } from "../HelpTip";
 import { GuestRequests } from "./GuestRequests";
 import { OperationalSessionSelector, useOperationalSession } from "./SessionSelector";
 import { doctorWorkspaceScope } from "./session-scope";
+import { formatDate, formatConfiguredTimestamp } from "../../lib/date-time";
 
 export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:api.Appointment}){
  const searchParams=new URLSearchParams(useSearch());
@@ -23,6 +24,8 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  const [clinicId,setClinic]=useState(initial?.clinicId||searchParams.get("clinic")||retained?.clinicId||"");const [branchId,setBranch]=useState(initial?.branchId||searchParams.get("branch")||retained?.branchId||"");const [doctorId,setDoctor]=useState(restrictedDoctorId||initial?.doctorId||searchParams.get("doctor")||retained?.doctorId||"");const [date,setDate]=useState(initial?.date||searchParams.get("date")||retained?.date||today());const [appointmentId,setAppointment]=useState(initial?.id||searchParams.get("appointment")||"");
  const [status,setStatus]=useState("");const [search,setSearch]=useState("");const debounced=useDebouncedValue(search);const [page,setPage]=useState(1);const [pageSize,setSize]=useState(20);const client=useQueryClient();const lock=useRef(false);
  const [showSummary,setShowSummary]=useState(false);
+ const [callPreview,setCallPreview]=useState<{scope:string;token:string}|null>(null);
+ const [sort,setSort]=useState("queueRank");
  const isPatient=identity.user?.role==="patient";const root=["superAdmin","clinicAdmin"].includes(identity.user!.role)?"admin":identity.user!.role;
   useSoleCareDefaults({enabled:!isPatient,clinicId,branchId,doctorId,setClinic,setBranch,setDoctor});
  // Only staff session selectors are retained. Never persist patient IDs, searches,
@@ -33,11 +36,11 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  const sessionId=appointmentId&&selected.data?selected.data.sessionId||undefined:sessionSelection.sessionId||undefined;
  const startTime=appointmentId&&selected.data?selected.data.startTime:sessionSelection.availability.data?.startTime||undefined;
  useEffect(()=>{if(isPatient)return;try{sessionStorage.setItem("clinicflow-staff-session",JSON.stringify({staffId:identity.user!.id,clinicId,branchId,doctorId,date,sessionId,startTime}));}catch{/* Storage is optional; in-memory selection remains usable. */}},[isPatient,identity.user?.id,clinicId,branchId,doctorId,date,sessionId,startTime]);
- useEffect(()=>setPage(1),[doctorId,branchId,date,sessionId,startTime,status,pageSize,debounced]);
+ useEffect(()=>setPage(1),[doctorId,branchId,date,sessionId,startTime,status,pageSize,debounced,sort]);
  const enabled=!!doctorId&&!!branchId&&!!(sessionId||startTime)&&(!isPatient||!!appointmentId);
   // Search the authoritative session list instead of rendering the same
   // appointments in a second "matching appointments" table.
-  const params={doctorId,branchId,date,sessionId,startTime,appointmentId:appointmentId||undefined,search:!isPatient?debounced||undefined:undefined,...statusFilter(status),page,pageSize};
+  const params={doctorId,branchId,date,sessionId,startTime,appointmentId:appointmentId||undefined,search:!isPatient?debounced||undefined:undefined,sort:!isPatient?sort:undefined,...statusFilter(status),page,pageSize};
  const queue=api.useGetQueue(params,{query:{queryKey:api.getGetQueueQueryKey(params),enabled,refetchInterval:30000}});
  const next=api.useCallNext({mutation:{onSuccess:()=>client.invalidateQueries(),onError:()=>client.invalidateQueries()}});
  const doctorsParams={clinicId,branchId,status:"active" as const,page:1,pageSize:20};
@@ -45,6 +48,9 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  const [online,setOnline]=useState(navigator.onLine);
  useEffect(()=>{const on=()=>setOnline(navigator.onLine);window.addEventListener("online",on);window.addEventListener("offline",on);return()=>{window.removeEventListener("online",on);window.removeEventListener("offline",on);};},[]);
  const q=queue.data;
+ const callScope=JSON.stringify([doctorId,branchId,date,sessionId,startTime]);
+ const lastCall=next.variables?.data;
+ const lastCallScope=lastCall?JSON.stringify([lastCall.doctorId,lastCall.branchId,lastCall.date,lastCall.sessionId,lastCall.startTime]):null;
   const freshness=useFreshWorkspace(queue.dataUpdatedAt,!!queue.error);
   const branch=useSelectedCare("branches",branchId,isPatient,{clinicId});
  return <div className="session-queue">
@@ -59,31 +65,34 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  {!isPatient&&<OperationalSessionSelector selection={{...sessionSelection,setSelectionKey:key=>{sessionSelection.setSelectionKey(key);setAppointment("");}}}/>}
  </div></section>
  {["receptionist","clinicAdmin","superAdmin"].includes(identity.user!.role)&&enabled&&<GuestRequests key={`${clinicId}-${branchId}-${doctorId}-${date}-${sessionId}-${startTime}`} clinicId={clinicId} branchId={branchId} doctorId={doctorId} date={date} sessionId={sessionId} startTime={startTime}/>}
-  {branch.data&&<div className="sq-context"><strong>{String(branch.data.name||"Selected branch")}</strong><p>{String(branch.data.address||"Address not provided")} · {date}</p></div>}
+  {branch.data&&<div className="sq-context"><strong>{String(branch.data.name||"Selected branch")}</strong><p>{String(branch.data.address||"Address not provided")} · {formatDate(date,q)}</p></div>}
   {!isPatient&&<StatusTabs value={status} onChange={setStatus} counts={(q as typeof q&{statusCounts?:Record<string,number>})?.statusCounts}/>}
   {!isPatient&&<FilterBar label="Queue search and actions" actions={<><Link className="button secondary small" href="/check-in">Validate appointment QR</Link>{sessionSelection.snapshotOnly?<span className="badge">Historical session · no new bookings</span>:enabled&&<Link className="button small" href={`/${root}/book?clinic=${encodeURIComponent(clinicId)}&branch=${encodeURIComponent(branchId)}&doctor=${encodeURIComponent(doctorId)}&sessionId=${encodeURIComponent(sessionId||"")}&source=walkIn`}>Register walk-in</Link>}</>}><SearchInput value={search} onChange={setSearch} placeholder="Find patient, reference or token…" label="Search this session"/></FilterBar>}
   {!isPatient&&!isDoctor&&branchId&&<details className="sq-switch" open={showSummary} onToggle={event=>setShowSummary(event.currentTarget.open)}><summary>Multi-doctor sessions · quick switch</summary>{showSummary&&<><ErrorNotice error={doctors.error}/>{doctors.error&&<button onClick={()=>doctors.refetch()}>Retry doctors</button>}{doctors.isLoading?<p>Loading doctors…</p>:<div className="toolbar">{doctors.data?.items.map(d=><DoctorSummary key={d.id} doctor={d} branchId={branchId} date={date} selected={doctorId===d.id} onSelect={()=>{setDoctor(d.id);setAppointment("");}}/>)}</div>}{(doctors.data?.total??0)>20&&<p>Showing the first 20 doctors; use Doctor search for all results.</p>}</>}</details>}
  <ErrorNotice error={selected.error||queue.error||next.error}/>
+ {!isPatient&&<div className="toolbar"><SearchableSelect label="Sort queue listing" value={sort} onChange={setSort} options={[{value:"queueRank",label:"Queue position"},{value:"tokenNumber",label:"Token ascending"},{value:"-tokenNumber",label:"Token descending"},{value:"status",label:"Status"},{value:"-createdAt",label:"Newest bookings"}]}/><span className="muted">Sorting the list does not change who is called next.</span></div>}
+ {showSummary&&!isPatient&&!isDoctor&&branchId&&<p className="muted">Quick switch shows each doctor's queue at this location and date. Choose a doctor, then a session if more than one is listed. Switching does not call or check in a patient.</p>}
+ {callPreview?.scope===callScope&&<p className="notice" role="status" aria-live="polite">Requesting call for token {callPreview.token}… awaiting server confirmation. This does not start consultation.</p>}
  {selected.error&&<button data-testid="button-retry-queue-appointment" onClick={()=>selected.refetch()}>Retry selected appointment</button>}
  {queue.error&&<button onClick={()=>queue.refetch()}>Retry queue</button>}
   {enabled&&freshness.stale&&<p className="notice" role="alert">{!online?"Offline.":"Queue data is stale or unavailable."} Mutations are disabled. Refresh after reconnecting. <button onClick={()=>queue.refetch()}>Refresh</button></p>}
 
- {next.isSuccess&&<p role="status">Patient called. Queue refresh requested.</p>}
+ {next.isSuccess&&lastCallScope===callScope&&<p role="status">{next.data?.appointment?"Patient called. Latest queue requested.":"No eligible patient was called. Latest queue requested."}</p>}
   {!enabled?<p className="empty">Select {isPatient?"your appointment":"clinic, location, doctor and session"} to view a session.</p>:queue.isLoading?<p role="status">Loading queue…</p>:q?<>
   <div className="sq-summary"><div><small>CURRENT TOKEN</small><strong>{q.currentToken||"—"}</strong><small>{q.currentToken?(q.inConsultation>0?"In consultation":"Called next"):"No patient called"}</small></div><div><small>NEXT WAITING TOKEN</small><strong>{q.nextToken||"—"}</strong><HelpTip text="Checkout calls the next patient. Only explicit staff check-in begins consultation."/></div><div><small>WAITING</small><strong>{q.waiting??"—"}</strong></div><div><small>COMPLETED</small><strong>{q.completed??"—"}</strong></div><div><small>SESSION TOTAL</small><strong>{q.total??"—"}</strong><small>Whole session</small></div></div>
   <DoctorPresence identity={identity} doctorId={doctorId} branchId={branchId} date={date} sessionId={sessionId} startTime={startTime} presence={q.presence} stale={freshness.stale}/>
-   {!isPatient&&<button className="button" disabled={freshness.stale||q.presence?.status!=="available"||next.isPending||queue.isFetching||!!q.currentToken||!q.nextToken||q.blockedByAbsentReservation} onClick={async()=>{if(lock.current)return;lock.current=true;try{await next.mutateAsync({data:{doctorId,branchId,date,sessionId,startTime}});}catch{}finally{lock.current=false;}}}>{next.isPending?"Calling…":"Call next patient"}</button>}
+   {!isPatient&&<button className="button" disabled={freshness.stale||q.presence?.status!=="available"||next.isPending||queue.isFetching||!!q.currentToken||!q.nextToken||q.blockedByAbsentReservation} onClick={async()=>{if(lock.current)return;lock.current=true;setCallPreview({scope:callScope,token:q.nextToken||""});try{await next.mutateAsync({data:{doctorId,branchId,date,sessionId,startTime}});}catch{/* Authoritative error stays visible; discard the pending preview. */}finally{setCallPreview(null);lock.current=false;}}}>{next.isPending?"Calling…":"Call next patient"}</button>}
   {q.blockedByAbsentReservation&&<p className="notice">The earliest reservation needs staff review. Confirm consultation check-in or explicitly skip an absent patient with a reason.</p>}
   {q.ownEntry&&<p className="notice">Token {q.ownEntry.token} · {q.ownEntry.status==="called"?"Called next":["booked","checkedIn","waiting"].includes(q.ownEntry.status)?"Waiting":title(q.ownEntry.status)} · {q.ownEntry.patientsAhead} patients ahead · Approx. queue wait {q.ownEntry.estimatedWaitMinutes==null?"unavailable":`${q.ownEntry.estimatedWaitMinutes} minutes`}</p>}
 <details className="sq-note-details"><summary>How waits are estimated</summary><p className="muted sq-note">Token is not position. Approx. wait = patients ahead × {q.expectedDurationMinutes??"configured"} minutes, updated by queue events, not a countdown. Breaks, pauses and delays can extend the actual wait. Expected duration is separate from actual average consultation time.</p></details>
   {!isPatient&&<><details className="sq-duration"><summary>Expected duration settings</summary><fieldset disabled={freshness.stale}><DurationEditor key={`${doctorId}-${clinicId}-${branchId}-${date}-${sessionId}-${startTime}`} clinicId={clinicId} doctorId={doctorId} branchId={branchId} date={date} queue={q}/></fieldset></details><section className="panel table-panel sq-table">{q.entries?.length?<AppointmentRows appointments={q.entries} sessionScoped disabled={freshness.stale||queue.isFetching} selectable selectionKey={JSON.stringify(params)}/>:<p className="empty">{debounced?"No patients match that search in this session.":status?"No appointments match this session and status.":"No appointments in this session."}</p>}<Pagination page={page} pageSize={pageSize} total={q.entriesTotal??0} onPageChange={setPage} onPageSizeChange={setSize}/></section></>}
- <p className="muted sq-note">Last response {new Date(q.updatedAt).toLocaleString()} · Refresh requested every 30 seconds {queue.isFetching?"· Refreshing…":""}</p>
+ <p className="muted sq-note">Last response {formatConfiguredTimestamp(q.updatedAt,typeof branch.data?.timezone==="string"?branch.data.timezone:undefined,{},q)} · Refresh requested every 30 seconds {queue.isFetching?"· Refreshing…":""}</p>
  </>:null}</div>;
 }
 
 function DoctorPresence({identity,doctorId,branchId,date,sessionId,startTime,presence,stale}:{identity:api.Identity;doctorId:string;branchId:string;date:string;sessionId?:string;startTime?:string;presence?:api.DoctorPresence;stale:boolean}){
  const params={branchId,date,sessionId,startTime};const client=useQueryClient();
- const update=api.useUpdateDoctorPresence({mutation:{onSuccess:()=>client.invalidateQueries()}});
+ const update=api.useUpdateDoctorPresence({mutation:{onSettled:()=>client.invalidateQueries()}});
  const allowed=identity.doctorId===doctorId||["superAdmin","clinicAdmin"].includes(identity.user!.role);
  return <section className="notice"><ErrorNotice error={update.error}/><strong>Doctor status: {presence?title(presence.status):"Unavailable"}</strong>{presence&&presence.status!=="available"&&<p>Automatic calling is paused. A current consultation can still be completed.</p>}{allowed&&<div className="row-actions">{Object.values(api.DoctorPresenceInputStatus).map(status=><button key={status} aria-pressed={presence?.status===status} disabled={stale||update.isPending} onClick={()=>update.mutate({id:doctorId,data:{...params,status}})}>{title(status)}</button>)}</div>}<small>Live presence only — weekly hours and future bookings are unchanged.</small></section>;
 }

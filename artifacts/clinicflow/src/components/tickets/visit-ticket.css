@@ -27,4 +27,6 @@
 .vt-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 @media (max-width:560px){.vt-body{grid-template-columns:1fr}.vt-qr{align-items:flex-start}.vt-qr small{text-align:left}.vt-actions .button{min-height:44px}}
 @media print{.vt{box-shadow:none}.vt-actions{display:none}}
+/* Center only the on-screen card; ticket/QR dimensions and printed layout stay unchanged. */
+@media screen{.vt{margin-inline:auto}}
 @media(prefers-reduced-motion:reduce){.vt{animation:none}}

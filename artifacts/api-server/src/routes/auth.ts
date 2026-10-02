@@ -6,7 +6,9 @@ import { HttpError, assert } from "../lib/http";
 import { uid, put, audit } from "../lib/store";
 import { isStaffRole, requireUser } from "../lib/auth";
 import { sendAuthEmail, smtpConfig } from "../lib/auth-email";
-import { createSession, revokeSession, revokeUserSessions, hashPassword, verifyPassword, issueCsrf,
+import { createSession, revokeSession, hashPassword, verifyPassword, issueCsrf,
+  lockCredentials, invalidateStaffCredentials, insertSession, sessionCookie, challengeUserId,
+  resendRegistrationChallenge,
   createChallenge, validateChallenge, consumeChallenge, consumeRateLimit, passwordInput } from "../lib/native-auth";
 
 export const authRouter = Router();
@@ -57,6 +59,8 @@ export async function inviteStaff(req: any, row: { id: string; email: string }) 
   await db.update(users).set({ invitationStatus: "sent" }).where(eq(users.id, row.id));
 }
 export async function requestStaffReset(req: any, row: { id: string; email: string }) {
+  // Assisted recovery follows the same no-account-cap policy as self-service.
+  await consumeRateLimit(`forgot-password:ip:${req?.ip || "unknown"}`, 30);
   await mailLink(req, row.email.toLowerCase(), row.id, "reset", "/reset-password");
 }
 authRouter.get("/auth/csrf", (_req, res) => {
@@ -83,7 +87,7 @@ authRouter.post("/auth/login", async (req, res) => {
   // Password authentication is independent of email delivery. SMTP is required
   // only by endpoints that explicitly send verification or recovery messages.
   await revokeSession(req, res);
-  await createSession(res, user.id);
+  await createSession(res, user.id, user.passwordHash!);
   res.set("Cache-Control", "no-store").json({
     authenticated: true,
     user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role, status: user.status },
@@ -93,12 +97,25 @@ authRouter.post("/auth/verify-device", async (req, res) => {
   await consumeRateLimit(`device:${req.ip || "unknown"}`, 25);
   const { challengeId, code: submitted } = req.body || {};
   if (typeof challengeId !== "string" || typeof submitted !== "string") throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
-  const challenge = await consumeChallenge(challengeId, "device", submitted);
-  const [user] = await db.select().from(users).where(eq(users.id, challenge.userId!));
-  if (!user || user.status !== "active" || !isStaffRole(user.role) || !user.passwordHash ||
-      user.email.toLowerCase() !== challenge.email)
-    throw new HttpError(401, "Invalid verification", "INVALID_VERIFICATION");
-  await createSession(res, user.id);
+  const userId = await challengeUserId(challengeId);
+  const token = await db.transaction(async tx => {
+    await lockCredentials(tx, userId);
+    // Commit failed-code attempt counters, while rolling back successful
+    // consumption if a later identity/session write fails.
+    let challenge;
+    try { challenge = await consumeChallenge(challengeId, "device", submitted, tx); }
+    catch (error) {
+      if (error instanceof HttpError && error.code === "INVALID_VERIFICATION") return undefined;
+      throw error;
+    }
+    const [user] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
+    if (!user || challenge.userId !== user.id || user.status !== "active" || !isStaffRole(user.role) || !user.passwordHash ||
+        user.email.toLowerCase() !== challenge.email)
+      throw new HttpError(401, "Invalid verification", "INVALID_VERIFICATION");
+    return insertSession(tx, user.id);
+  });
+  if (!token) throw new HttpError(400, "Invalid or expired verification", "INVALID_VERIFICATION");
+  sessionCookie(res, token);
   res.set("Cache-Control", "no-store").json({ authenticated: true });
 });
 authRouter.post("/auth/logout", async (req, res) => {
@@ -121,15 +138,19 @@ async function updatePassword(req: any, res: any, purpose: "reset" | "invitation
   await consumeRateLimit(`${purpose}:ip:${req.ip || "unknown"}`, 20);
   await validateChallenge(id, purpose, secret);
   const hashed = await hashPassword(req.body.password);
-  const challenge = await consumeChallenge(id, purpose, secret);
-  if (!challenge.userId) throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
-  const [user] = await db.select().from(users).where(eq(users.id, challenge.userId));
-  if (!user || user.status !== "active" || !isStaffRole(user.role) ||
-      user.email.toLowerCase() !== challenge.email)
-    throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
-  await db.update(users).set({ passwordHash: hashed, passwordChangedAt: new Date(), emailVerifiedAt: new Date(), invitationStatus: "notRequired" }).where(eq(users.id, user.id));
-  await revokeUserSessions(user.id);
-  if (purpose === "invitation") await createSession(res, user.id);
+  const userId = await challengeUserId(id);
+  const token = await db.transaction(async tx => {
+    await lockCredentials(tx, userId);
+    const challenge = await consumeChallenge(id, purpose, secret, tx);
+    const [user] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
+    if (!user || challenge.userId !== user.id || user.status !== "active" || !isStaffRole(user.role) ||
+        user.email.toLowerCase() !== challenge.email)
+      throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
+    await tx.update(users).set({ passwordHash: hashed, passwordChangedAt: new Date(), emailVerifiedAt: new Date(), invitationStatus: "notRequired" }).where(eq(users.id, user.id));
+    await invalidateStaffCredentials(tx, user.id);
+    return purpose === "invitation" ? insertSession(tx, user.id) : undefined;
+  });
+  if (token) sessionCookie(res, token);
   res.set("Cache-Control", "no-store").json(purpose === "invitation" ? { authenticated: true } : { reset: true });
 }
 authRouter.post("/auth/reset-password", async (req, res) => updatePassword(req, res, "reset"));
@@ -137,13 +158,21 @@ authRouter.post("/auth/invitation/accept", async (req, res) => updatePassword(re
 authRouter.post("/auth/change-password", async (req, res) => {
   const actor = await requireUser(req);
   assert(isStaffRole(actor.role), 403, "Staff account required");
+  await limit(req, actor.id, "change-password");
   passwordInput(req.body?.password);
   const [user] = await db.select().from(users).where(eq(users.id, actor.id));
-  if (!await verifyPassword(user.passwordHash, req.body?.currentPassword))
+  if (!user || !await verifyPassword(user.passwordHash, req.body?.currentPassword))
     throw new HttpError(401, "Invalid password", "INVALID_CREDENTIALS");
-  await db.update(users).set({ passwordHash: await hashPassword(req.body.password), passwordChangedAt: new Date() }).where(eq(users.id, user.id));
-  await revokeUserSessions(actor.id);
-  await audit(actor, "changePassword", "users", actor);
+  const hashed = await hashPassword(req.body.password);
+  await db.transaction(async tx => {
+    await lockCredentials(tx, actor.id);
+    const [current] = await tx.select().from(users).where(eq(users.id, actor.id)).for("update");
+    if (!current || current.status !== "active" || !isStaffRole(current.role) || current.passwordHash !== user.passwordHash)
+      throw new HttpError(401, "Invalid password", "INVALID_CREDENTIALS");
+    await tx.update(users).set({ passwordHash: hashed, passwordChangedAt: new Date() }).where(eq(users.id, actor.id));
+    await invalidateStaffCredentials(tx, actor.id);
+    await audit(actor, "changePassword", "users", actor, tx);
+  });
   res.set("Cache-Control", "no-store").json({ changed: true });
 });
 authRouter.post("/auth/patient/start", async (req, res) => {
@@ -186,7 +215,25 @@ authRouter.post("/auth/register/start", async (req, res) => {
   const challengeId = await mailCode(address, "register", undefined, { fullName: name, passwordHash: hash });
   res.set("Cache-Control", "no-store").json({ challengeId });
 });
+authRouter.post("/auth/registration/resend", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  await consumeRateLimit(`registration-resend:ip:${req.ip || "unknown"}`, 25);
+  const id = req.body?.challengeId;
+  if (typeof id !== "string" || !/^[A-Za-z0-9_-]{24}$/.test(id))
+    throw new HttpError(400, "Invalid or expired verification", "INVALID_VERIFICATION");
+  smtpConfig();
+  try {
+    const challengeId = await resendRegistrationChallenge(id, (address, secret) =>
+      sendAuthEmail(address, "DigiQ Doctors verification", `Your verification code is ${secret}. Use it before your original registration code expires.`));
+    res.json({ challengeId });
+  } catch (error) {
+    if (error instanceof HttpError && error.code === "REGISTRATION_RESEND_COOLDOWN")
+      res.set("Retry-After", "60");
+    throw error;
+  }
+});
 authRouter.post("/auth/register/verify", async (req, res) => {
+  await consumeRateLimit(`register-verify:${req.ip || "unknown"}`, 25);
   const { challengeId, code: submitted } = req.body || {};
   if (typeof challengeId !== "string" || typeof submitted !== "string") throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
   const challenge = await consumeChallenge(challengeId, "register", submitted);

@@ -31,7 +31,7 @@ type CareLookupProps = {
   params?: Record<string, unknown>; publicAccess?: boolean; disabled?: boolean; selectedLabel?: string;
 };
 export function CareLookup(props: CareLookupProps) {
-  if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookup resource={props.kind} label={props.label} value={props.value} onChange={props.onChange} params={props.params} disabled={props.disabled}/>;
+  if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookup resource={props.kind} label={props.label} value={props.value} onChange={props.onChange} params={{ ...props.params, status: "active" }} disabled={props.disabled}/>;
   return <PublicCareLookup {...props}/>;
 }
 function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAccess = false, disabled = false, selectedLabel }: CareLookupProps) {
@@ -44,15 +44,15 @@ function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAcc
     initialPageParam: 1,
     queryFn: ({pageParam}) => {
       const load = publicAccess && kind in publicLoaders ? publicLoaders[kind as keyof typeof publicLoaders] : loaders[kind];
-      return (load as Function)({ ...params, search: debounced, page: pageParam, pageSize: 20 }) as Promise<{ items: RecordValue[]; total: number }>;
+      return (load as Function)({ ...params, ...(kind !== "appointments" ? { status: "active" } : {}), search: debounced, page: pageParam, pageSize: 20 }) as Promise<{ items: RecordValue[]; total: number }>;
     },
     getNextPageParam: (last,pages) => pages.reduce((count,page)=>count+page.items.length,0)<last.total?pages.length+1:undefined
   });
   const records=query.data?.pages.flatMap(page=>page.items)||[];
   records.forEach(item=>retained.current.set(item.id,item));
   const display = (item: RecordValue) => item.name || item.fullName || [item.token, item.doctorName, item.branchName, item.reference].filter(Boolean).join(" · ") || item.id;
-  const options = records.map(item => ({ value: item.id, label: display(item) }));
-  if (value && !options.some(option => option.value === value)) options.unshift({ value, label: selectedLabel || (retained.current.has(value) ? display(retained.current.get(value)!) : "Selected record") });
+  const options = records.filter(item => item.status !== "inactive").map(item => ({ value: item.id, label: display(item), disabled: false }));
+  if (value && !options.some(option => option.value === value)) options.unshift({ value, label: selectedLabel || (retained.current.has(value) ? display(retained.current.get(value)!) : "Selected record"), disabled: true });
   const plural=label==="Your appointment"?"your appointments":`${label.toLowerCase()}s`;
-  return <><SearchableSelect label={label} value={value} options={options} onChange={id => onChange(id, retained.current.get(id))} onSearchChange={setSearch} placeholder={`Search ${plural}…`} loading={query.isFetching} error={query.error ? `Unable to load ${plural}. Please try again.` : undefined} disabled={disabled} hasMore={query.hasNextPage} onLoadMore={()=>{void query.fetchNextPage();}} />{query.error&&<button type="button" onClick={()=>query.refetch()}>Retry {plural}</button>}</>;
+  return <><SearchableSelect label={label} value={value} options={options} onChange={id => onChange(id, retained.current.get(id))} onSearchChange={setSearch} placeholder={`Search ${plural}…`} loading={query.isFetching} error={query.error ? `Unable to load ${plural}. Please try again.` : undefined} onRetry={()=>void query.refetch()} disabled={disabled} hasMore={query.hasNextPage} onLoadMore={()=>{void query.fetchNextPage();}} /></>;
 }

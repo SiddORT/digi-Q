@@ -27,3 +27,9 @@ export function selectedIdBatches(ids: string[]): string[][] {
   for (let offset = 0; offset < unique.length; offset += 100) batches.push(unique.slice(offset, offset + 100));
   return batches;
 }
+
+/** Bounded display cache; never use this cache to decide scope membership. */
+export function retainSelectedRecords<T extends { id: string }>(previous: Map<string,T>, selected: string[], current: T[]): Map<string,T> {
+  const byId=new Map([...previous,...current.map(row=>[row.id,row] as const)]);
+  return new Map(selected.flatMap(id=>byId.has(id)?[[id,byId.get(id)!] as const]:[]));
+}

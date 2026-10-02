@@ -18,12 +18,22 @@ import { SuggestionInput } from "./components/SuggestionInput";
 import { emptyFieldValue, scheduleBreakFields, selectInputValue } from "./editor-input";
 import { ListingBulk, useListingSelection, publicQrLink } from "./components/AdminListing";
 import { HelpTip } from "./components/HelpTip";
-import { useDailySession } from "./components/queue/SessionSelector";
 import { WeeklyOverview } from "./components/schedule/WeeklyOverview";
+import { friendlyError } from "./lib/friendly-error";
+import { required, validatePersonName, validatePhone, validateEmail, validateDateOfBirth, ageFromDateOfBirth, normalizePhone, validateNumberRange } from "./lib/validators";
+import { formatDate, formatTime, formatConfiguredTimestamp } from "./lib/date-time";
+import { TimezoneSelect } from "./components/TimezoneSelect";
+import { DateFormatInput, TimeFormatInput } from "./components/DateFormatInput";
+import { FormField } from "./components/FormField";
+import { useConfirm } from "./components/ConfirmDialog";
+import { notifySuccess } from "./lib/notify";
+import { PhoneInput } from "./components/PhoneInput";
+import { useDateTimePreferences } from "./components/DateTimePreferences";
+import { TimeRangeSlider } from "./components/ClinicRegistrationHours";
 
-export const title = (s:string) => ({called:"Called next",noShow:"Absent"}[s] || s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()));
+export const title = (s:string) => ({called:"Called next",noShow:"Absent",branch:"Clinic",branches:"Clinics",branchName:"Clinic",branchNames:"Clinics",clinic:"Clinic Group",clinicName:"Clinic Group",clinicNames:"Clinic Groups"}[s] || s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()));
 export const today = (timeZone?:string) => new Date().toLocaleDateString("en-CA",timeZone?{timeZone}:undefined);
-export function ErrorNotice({error}:{error:unknown}) { return error ? <div className="error-box" role="alert" data-testid="status-error">{error instanceof Error ? error.message : String(error)}</div> : null; }
+export function ErrorNotice({error}:{error:unknown}) { return error ? <div className="error-box" role="alert" data-testid="status-error">{friendlyError(error)}</div> : null; }
 export function Empty({label="records"}:{label?:string}){return <div className="empty" data-testid="status-empty"><span className="empty-icon"><Plus size={24}/></span><h3>No {label} yet</h3><p>When {label} are added, you'll find them here.</p></div>;}
 type Field = {key:string; label?:string; type?:string; required?:boolean; options?:string[]; resource?:string; category?:string; nullable?:boolean; hidden?:boolean; disabled?:boolean};
 const f=(key:string,type="text",required=false,options?:string[]):Field=>({key,type,required,options});
@@ -51,12 +61,17 @@ function MasterTextInput({field,control}:any){
  const term=useDebouncedValue(search);
   const q=useQuery({queryKey:["lookup","masters",field.category,term],queryFn:()=>api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any),staleTime:120000});
  const fieldName=title(field.key).toLowerCase();
- return <Controller name={field.key} control={control} rules={{required:field.required}} render={({field:input})=><SuggestionInput id={`input-${field.key}`} value={input.value||""} onChange={input.onChange} onSearchChange={setSearch} options={(q.data?.items||[]).map(row=>row.name)} placeholder={`Type or search ${fieldName}…`} clearLabel={`Clear ${fieldName}`} loading={q.isFetching} error={q.error ? `Unable to load ${fieldName} suggestions. You can still enter free text.` : undefined}/>}/>;
+ return <Controller name={field.key} control={control} rules={{validate:value=>!field.required||required()(value)||true}} render={({field:input})=><SuggestionInput id={`input-${field.key}`} value={input.value||""} onChange={input.onChange} onSearchChange={setSearch} options={(q.data?.items||[]).map(row=>row.name)} placeholder={`Type or search ${fieldName}…`} clearLabel={`Clear ${fieldName}`} loading={q.isFetching} onRetry={()=>void q.refetch()} error={q.error ? `Unable to load ${fieldName} suggestions. You can still enter free text.` : undefined}/>}/>;
 }
 function ExceptionSessionInput({form,label}:{form:ReturnType<typeof useForm>;label:string}){
+ const preferences=useDateTimePreferences();
  const doctorId=form.watch("doctorId")||"",branchId=form.watch("branchId")||"",date=form.watch("date")||"";
- const selection=useDailySession({doctorId,branchId,date});
- return <Controller name="sessionId" control={form.control} render={({field})=><div><SearchableSelect label={label} value={field.value||""} onChange={field.onChange} placeholder="All sessions" options={selection.sessions.map(session=>({value:session.sessionId||"",label:`${session.startTime}–${session.endTime}`}))}/><ErrorNotice error={selection.availability.error}/></div>}/>;
+ const closed=form.watch("isClosed");
+ const validDate=/^\d{4}-\d{2}-\d{2}$/.test(date);
+ const sessions=useQuery({queryKey:["exception-base-sessions",doctorId,branchId,date],enabled:!!doctorId&&!!branchId&&validDate,queryFn:()=>api.listSchedules({doctorId,branchId,dayOfWeek:new Date(`${date}T12:00:00Z`).getUTCDay(),pageSize:100})});
+ const rows=(sessions.data?.items||[]).filter(row=>(row as any).status!=="inactive");
+ const needsSession=!closed&&(sessions.data?.total||rows.length)>1;
+ return <Controller name="sessionId" control={form.control} rules={{validate:value=>!needsSession||!!value||"Choose a session for this date exception."}} render={({field,fieldState})=><div><SearchableSelect label={needsSession?"Session":label.replace(/\s*\(optional.*$/,"")} required={needsSession} value={field.value||""} onChange={field.onChange} placeholder={needsSession?"Select a session…":closed?"All sessions":"Only weekly session"} error={fieldState.error?.message} loading={sessions.isFetching} onRetry={()=>void sessions.refetch()} options={rows.map(session=>({value:session.id,label:`${formatTime(session.startTime,preferences)}–${formatTime(session.endTime,preferences)}`}))}/><small className="muted">{closed?"A closure can apply to all sessions.":"Timing overrides require a specific session when this date has more than one weekly session."}</small><ErrorNotice error={sessions.error}/></div>}/>;
 }
 function RelationInput({field,form,fields,resourceName,label}:any){
  const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),staleTime:60000}});
@@ -72,11 +87,12 @@ function RelationInput({field,form,fields,resourceName,label}:any){
    if(values.doctorId)params.doctorId=values.doctorId;
  }
  if(field.resource==="doctors"){
+   if(["availability","exceptions","qrs"].includes(resourceName))params.status="active";
    if(values.clinicId)params.clinicId=values.clinicId;
    if(values.branchId)params.branchId=values.branchId;
  }
  if(assignment){params.targetRole=resourceName==="doctors"?"doctor":"receptionist";params[resourceName==="doctors"?"doctorId":"userId"]=values.id;}
- useEffect(()=>{form.register(field.key,{validate:(value:any)=>!field.required||(many?value?.length>0:!!value)||"Required"});},[field.key,field.required]);
+ useEffect(()=>{form.register(field.key,{validate:(value:any)=>!field.required||(many?value?.length>0:!!value)||(field.key==="clinicId"?"Select a clinic":"This field is required")});},[field.key,field.required]);
  const change=(value:any)=>{
     const previous=values[field.key];
     if(Array.isArray(value)?JSON.stringify(value)===JSON.stringify(previous||[]):value===(previous||""))return;
@@ -96,15 +112,29 @@ function RelationInput({field,form,fields,resourceName,label}:any){
     const valid=validDependentIds(field.resource,selected,records,clinics,current.branchId).filter(id=>!verifiedMissing.includes(id));
     if(valid.length!==selected.length)form.setValue(field.key,many?valid:valid[0]||"",{shouldValidate:true,shouldDirty:true});
   };
-   const props={resource:assignment?`assignment:${field.resource}`:field.resource,params,label,placeholder:`Search ${label.toLowerCase()}…`,disabled:["branches","doctors"].includes(field.resource)&&hasClinic&&!clinicIds.length,required:field.required,onChange:change,onSelectedRecords:validateSelected};
+   const props={id:`input-${field.key}`,error:form.formState.errors[field.key]?.message,resource:assignment?`assignment:${field.resource}`:field.resource,params,label,placeholder:`Search ${label.toLowerCase()}…`,disabled:["branches","doctors"].includes(field.resource)&&hasClinic&&!clinicIds.length,required:field.required,onChange:change,onSelectedRecords:validateSelected};
  return many?<ResourceMultiLookup {...props} value={values[field.key]||[]}/>:<ResourceLookup {...props} value={values[field.key]||""}/>;
 }
  export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel="Save changes",resourceName,onDirtyChange,reviewOnly=false,children}:{fields:Field[];initial?:any;onSave:(data:any)=>void;onCancel?:()=>void;busy?:boolean;submitLabel?:string;resourceName?:string;onDirtyChange?:(dirty:boolean)=>void;reviewOnly?:boolean;children?:ReactNode}){
- const form=useForm({defaultValues:initial});
+ const confirmation=useConfirm();
+ const [moreDetails,setMoreDetails]=useState(false);
+ const initialValues=Object.fromEntries(Object.entries(initial).map(([key,value])=>[key,fields.some(field=>field.key===key&&field.type==="date")&&value?value instanceof Date?value.toISOString().slice(0,10):String(value).slice(0,10):value]));
+ const form=useForm<Record<string,any>>({defaultValues:{...fields.some(field=>field.key==="timezone")?{timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC"}:{},...initialValues}});
  const submitting=useRef(false);
  useEffect(()=>{if(!busy)submitting.current=false;},[busy]);
  useEffect(()=>{onDirtyChange?.(form.formState.isDirty);},[form.formState.isDirty,onDirtyChange]);
  const currentRole = form.watch("role");
+ const startTime=form.watch("startTime"),endTime=form.watch("endTime");
+ const parentClinicId=form.watch("clinicId")||initial.clinicId||"";
+ const parentClinic=api.useGetClinic(parentClinicId,{query:{queryKey:api.getGetClinicQueryKey(parentClinicId),enabled:!!parentClinicId}});
+ const inherited=useDateTimePreferences();
+ const preferences=parentClinic.data||inherited;
+ const doctorId=form.watch("doctorId"),branchId=form.watch("branchId"),dayOfWeek=form.watch("dayOfWeek");
+ const sessionClinic=api.useGetBranch(branchId||"",{query:{queryKey:api.getGetBranchQueryKey(branchId||""),enabled:resourceName==="availability"&&!!branchId}});
+ const clinicHours=(sessionClinic.data?.openingHours||[]).filter(hour=>hour.dayOfWeek===Number(dayOfWeek));
+ const matchingTimezone=!form.watch("timezone")||form.watch("timezone")===sessionClinic.data?.timezone;
+ const peers=useQuery({queryKey:["editor-session-overlap",doctorId,branchId,dayOfWeek],enabled:resourceName==="availability"&&!!doctorId&&!!branchId&&dayOfWeek!==undefined,queryFn:()=>api.listSchedules({doctorId,branchId,dayOfWeek:Number(dayOfWeek),pageSize:100})});
+ const overlaps=(peers.data?.items||[]).some(row=>row.id!==initial.id&&(row as any).status!=="inactive"&&row.startTime<endTime&&startTime<row.endTime);
  const activeFields = useMemo(() => {
    return fields.map(f => {
      const field = { ...f };
@@ -124,6 +154,9 @@ function RelationInput({field,form,fields,resourceName,label}:any){
    return <Form {...form}><form className="form-grid" onSubmit={form.handleSubmit(values=>{if(!beginEditorSubmission(submitting,busy,reviewOnly))return;const body:any={}; activeFields.forEach(field=>{
     if(field.disabled)return;
     let value=values[field.key];
+    if(typeof value==="string")value=value.trim();
+    if(field.type==="tel"&&value)value=normalizePhone(value);
+    if(field.key==="age")value=ageFromDateOfBirth(values.dateOfBirth)??initial.age;
     const isClinicOrBranchMapping = field.key === "clinicIds" || field.key === "branchIds";
     if (field.key === "adminId" || field.key === "ownerAdminId") {
       if (field.hidden || value === initial[field.key]) return;
@@ -142,11 +175,27 @@ function RelationInput({field,form,fields,resourceName,label}:any){
     if(Array.isArray(value))value=value.filter(Boolean);
 
     body[field.key]=value;
-  });onSave(body);})}>
-   {children}
+  });onSave(body);},errors=>{setMoreDetails(true);requestAnimationFrame(()=>{const key=Object.keys(errors)[0];const element=document.getElementById(`input-${key}`)||document.querySelector<HTMLElement>(`[name="${CSS.escape(key)}"]`)||document.querySelector<HTMLElement>('[aria-invalid="true"]');element?.focus();});})}>
+   {confirmation.dialog}{children}
+    {resourceName==="patients"&&<p className="muted wide">Active patients can be chosen for new bookings. Inactive profiles stay in historical records but are excluded from active patient pickers. This profile status does not change a linked user's login credentials.</p>}
+    {resourceName==="branches"&&<p className="muted wide">A clinic is a physical care location within a Clinic Group, with its own address, timezone, opening hours and booking link. Contact inheritance controls its public contact details; it does not change staff sign-in addresses or configure notification delivery.</p>}
+   {resourceName==="patients"&&<button type="button" className="text-link wide" aria-expanded={moreDetails} onClick={()=>setMoreDetails(value=>!value)}>{moreDetails?"Hide":"More"} details (optional)</button>}
+    {resourceName==="availability"&&<div className="wide"><TimeRangeSlider clinicHours={matchingTimezone?clinicHours:[]} startTime={startTime||""} endTime={endTime||""} onChange={value=>{form.setValue("startTime",value.startTime,{shouldDirty:true,shouldValidate:true});form.setValue("endTime",value.endTime,{shouldDirty:true,shouldValidate:true});}}/><small className="muted">Slide in 15-minute steps or type exact minutes below. Shaded bands show clinic opening hours in the same timezone. Clinic-hour limits and cross-clinic conflicts are checked by the server.</small>{sessionClinic.data&&<p>Clinic hours: {clinicHours.length?clinicHours.map(hour=>`${formatTime(hour.startTime,preferences)}–${formatTime(hour.endTime,preferences)}`).join(", "):"Closed"} · {sessionClinic.data.timezone}{!matchingTimezone&&" (different session timezone; shading is hidden)"}</p>}{matchingTimezone&&clinicHours.length>0&&startTime&&endTime&&!clinicHours.some(hour=>hour.startTime<=startTime&&hour.endTime>=endTime)&&<p className="notice">This session extends outside a clinic opening interval. Review the times; existing server rules decide whether it can be saved.</p>}{startTime&&endTime&&startTime>=endTime&&<p role="alert" className="field-error">Closing time must follow opening time.</p>}{overlaps&&<p role="alert" className="field-error">This session overlaps another session for this doctor and clinic.</p>}<ErrorNotice error={peers.error||sessionClinic.error}/>{(peers.error||sessionClinic.error)&&<button type="button" onClick={()=>{void peers.refetch();void sessionClinic.refetch();}}>Retry hours and overlap check</button>}</div>}
    {activeFields.map(field=>{
+    if(resourceName==="patients"&&!moreDetails&&["address","emergencyContactName","emergencyContactPhone"].includes(field.key))return null;
     const label=field.label||title(field.key.replace(/Ids?$/,""));
-    const error=form.formState.errors[field.key] ? "Please complete this field." : undefined;
+    const error=form.formState.errors[field.key] ? String(form.formState.errors[field.key]?.message||"This field is required") : undefined;
+    const rules={validate:(value:unknown)=> (field.required?required()(value):undefined)||(field.key==="fullName"||field.key==="emergencyContactName"?validatePersonName(value):undefined)||(field.type==="tel"?validatePhone(value):undefined)||(field.type==="email"?validateEmail(value):undefined)||(field.key==="dateOfBirth"?validateDateOfBirth(value):undefined)||(field.type==="number"?validateNumberRange(value,{min:0,integer:!["consultationFee","experienceYears"].includes(field.key)}):undefined)||true};
+    if(field.key==="age")return <label key={field.key}>Age (read only)<input readOnly value={ageFromDateOfBirth(form.watch("dateOfBirth"))??initial.age??""}/><small className="muted">Calculated from date of birth. An existing age-only record is retained until a date of birth is provided.</small></label>;
+    if(field.key==="timezone")return <Controller key={field.key} name={field.key} control={form.control} rules={rules} render={({field:input})=><TimezoneSelect value={input.value||""} onChange={input.onChange} error={error}/>}/>;
+    if(field.type==="number"){
+      const min=["maxTokens","bookingHorizonDays","otpExpirySeconds","otpMaxAttempts"].includes(field.key)?1:0;
+      const max=field.key==="bookingHorizonDays"?365:field.key==="cancellationCutoffMinutes"?10080:undefined;
+      const helper=field.key==="maxTokens"?"Maximum patients in this session. Enter a positive whole number.":field.key==="bufferMinutes"?"Extra minutes between consultations. Enter a non-negative whole number.":field.key==="cancellationCutoffMinutes"?"Minutes before session start after which cancellation is blocked.":undefined;
+      return <FormField key={field.key} label={label} required={field.required} optional={!field.required} error={error} helper={helper}><input type="number" min={min} max={max} step={["consultationFee","experienceYears"].includes(field.key)?"any":1} {...form.register(field.key,{validate:value=>(field.required?required()(value):undefined)||validateNumberRange(value,{min,max,integer:!["consultationFee","experienceYears"].includes(field.key)})||true})}/></FormField>;
+    }
+    if(field.type==="tel")return <Controller key={field.key} name={field.key} control={form.control} rules={rules} render={({field:input})=><FormField label={label} required={field.required} optional={!field.required} error={error}><PhoneInput {...input} value={input.value||""}/></FormField>}/>;
+    if(field.type==="date"||field.type==="time")return <Controller key={field.key} name={field.key} control={form.control} rules={{...rules,validate:value=>rules.validate(value)!==true?rules.validate(value):field.key==="endTime"&&startTime&&value&&startTime>=value?"Closing time must follow opening time.":true}} render={({field:input})=><FormField id={`input-${field.key}`} label={label} required={field.required} optional={!field.required} error={error} helper={field.key==="dateOfBirth"&&!fields.some(item=>item.key==="age")?<output aria-label="Age (read only)">Age (read only): {ageFromDateOfBirth(input.value)??"—"}</output>:undefined}>{a11y=>field.type==="date"?<DateFormatInput {...a11y} name={field.key} preferences={preferences} value={input.value instanceof Date?input.value.toISOString().slice(0,10):input.value||""} onChange={input.onChange}/>:<TimeFormatInput {...a11y} name={field.key} preferences={preferences} value={input.value||""} onChange={input.onChange}/>}</FormField>}/>;
     if(field.type==="session")return <ExceptionSessionInput key={field.key} form={form} label={label}/>;
     if(field.resource)return <div className={field.type==="textarea"?"wide":""} key={field.key}><RelationInput field={field} form={form} fields={fields} resourceName={resourceName} label={label}/>{error&&<small className="field-error">{error}</small>}</div>;
     if(field.type==="masterText")return <label key={field.key}>{label}{field.required&&<span className="required"> *</span>}<MasterTextInput field={field} control={form.control}/>{error&&<small className="field-error">{error}</small>}</label>;
@@ -156,11 +205,11 @@ function RelationInput({field,form,fields,resourceName,label}:any){
      const opts=[...choices.map(v=>({value:String(v),label:`${v} minutes`})),...(legacy!=null&&legacy!==""&&!choices.includes(Number(legacy))?[{value:String(legacy),label:`${legacy} minutes (current, legacy value)`}]:[])];
      return <Controller key={field.key} name={field.key} control={form.control} rules={{required:field.required}} render={({field:input})=><div><SearchableSelect id={`input-${field.key}`} label={label} required={field.required} value={input.value==null?"":String(input.value)} onChange={input.onChange} placeholder="Select duration…" error={error} options={opts}/>{legacy!=null&&!choices.includes(Number(legacy))&&<small className="muted">This schedule keeps its existing {legacy}-minute value until you choose 20, 30 or 60 minutes.</small>}</div>}/>;
     }
-    if(field.key==="status"&&resourceName==="users")return <Controller key={field.key} name="status" control={form.control} render={({field:input})=><div className="wide"><label className="check-label"><input type="checkbox" role="switch" aria-checked={input.value!=="inactive"} checked={input.value!=="inactive"} onChange={e=>{if(!e.target.checked&&!window.confirm("Deactivate this user? They may lose access. Protected clinic owners cannot be deactivated until ownership is transferred."))return;input.onChange(e.target.checked?"active":"inactive");}} data-testid="switch-user-status-editor"/> {input.value==="inactive"?"Inactive":"Active"}</label><small className="muted">Some administrator accounts are protected by clinic ownership rules. Saving will explain any restriction.</small></div>}/>;
+    if(field.key==="status"&&resourceName==="users")return <Controller key={field.key} name="status" control={form.control} render={({field:input})=><div className="wide"><label className="check-label"><input type="checkbox" role="switch" aria-checked={input.value!=="inactive"} checked={input.value!=="inactive"} onChange={async e=>{const active=e.target.checked;if(!active&&!await confirmation.ask({title:"Deactivate user?",description:"They may lose access. Protected clinic owners cannot be deactivated until ownership is transferred.",confirmLabel:"Deactivate",tone:"danger"}))return;input.onChange(active?"active":"inactive");}} data-testid="switch-user-status-editor"/> {input.value==="inactive"?"Inactive":"Active"}</label><small className="muted">Some administrator accounts are protected by clinic ownership rules. Saving will explain any restriction.</small></div>}/>;
     if(field.type==="select")return <Controller key={field.key} name={field.key} control={form.control} rules={{required:field.required}} render={({field:input})=><SearchableSelect id={`input-${field.key}`} label={label} required={field.required} value={selectInputValue(input.value)} onChange={input.onChange} placeholder={`Select ${label.toLowerCase()}…`} error={error} options={(field.options||[]).map(v=>({value:v,label:field.key==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][Number(v)]:title(v)}))}/>}/>;
-    return <label className={field.type==="textarea"?"wide":""} key={field.key}>{label}{field.required&&<span className="required"> *</span>}{field.type==="textarea"?<textarea data-testid={`input-${field.key}`} {...form.register(field.key,{required:field.required})}/>:<input disabled={field.disabled} data-testid={`input-${field.key}`} type={field.type==="array"?"text":field.type} {...form.register(field.key,{required:field.required})}/>} {field.key==="slug"&&<small className="muted">{initial.slug?"Web address is permanent. Display names can still change.":"Choose a permanent web address: lowercase letters, digits and hyphens."}</small>}{error&&<small className="field-error">{error}</small>}</label>;
+    return <label className={field.type==="textarea"?"wide":""} key={field.key}>{label}{field.required?<span className="required"> *</span>:!label.includes("(optional)")?" (optional)":""}{field.type==="textarea"?<textarea aria-invalid={!!error} aria-describedby={error?`error-${field.key}`:undefined} data-testid={`input-${field.key}`} {...form.register(field.key,rules)}/>:<input disabled={field.disabled} aria-invalid={!!error} aria-describedby={error?`error-${field.key}`:undefined} max={field.key==="dateOfBirth"?today():undefined} data-testid={`input-${field.key}`} type={field.type==="array"?"text":field.type} {...form.register(field.key,rules)}/>} {field.key==="slug"&&<small className="muted">{initial.slug?"Web address is permanent. Display names can still change.":"Choose a permanent web address: lowercase letters, digits and hyphens."}</small>}{error&&<small id={`error-${field.key}`} className="field-error" role="alert">{error}</small>}</label>;
    })}
-  <div className="wide form-footer">{onCancel&&<button type="button" onClick={onCancel} disabled={busy}>Cancel</button>}<button className="button" disabled={busy} data-testid="button-save">{busy?"Saving…":submitLabel}</button></div></form></Form>;
+  <div className="wide form-footer">{onCancel&&<button type="button" onClick={onCancel} disabled={busy}>Cancel</button>}<button className="button" disabled={busy||overlaps} data-testid="button-save">{busy?"Saving…":submitLabel}</button></div></form></Form>;
 }
 function QrReadiness({row}:{row:any}){
  const params={clinicId:row.clinicId,branchId:row.branchId||undefined,doctorId:row.doctorId||undefined,pageSize:100} as any;
@@ -172,6 +221,7 @@ function QrReadiness({row}:{row:any}){
  return <small className={`badge ${open.length?"active":"inactive"}`} data-testid={`status-qr-readiness-${row.id}`}>{open.length?`${open.length} open weekly sessions · ${days} days`:"No open weekly sessions configured"}</small>;
 }
 function QrCard({row,onRegenerated}:{row:any;onRegenerated?:()=>void}){
+ const confirmation=useConfirm();
  const [generated,setGenerated]=useState({url:"",image:""});
  const [error,setError]=useState<unknown>();
  const [attempt,setAttempt]=useState(0);
@@ -185,7 +235,7 @@ function QrCard({row,onRegenerated}:{row:any;onRegenerated?:()=>void}){
   return()=>{cancelled=true;};
  },[url,attempt]);
  const regenerate=useMutation({mutationFn:()=>api.regenerateQr(row.id),onSuccess:async()=>{await client.invalidateQueries();onRegenerated?.();}});
- return <div className="qr-card compact">{image?<img src={image} alt={`Booking QR code for ${row.name}`}/>:!error&&<p role="status">Generating QR image…</p>}<strong>{row.name}</strong><small>{row.reference} · Active</small><QrReadiness row={row}/><a href={url} target="_blank" rel="noreferrer">{url}</a><div className="admin-qr-actions"><HelpTip text="Copy public booking link"><button aria-label={`Copy booking link for ${row.name}`} onClick={async()=>{try{await navigator.clipboard.writeText(url);setCopied(true);}catch(e){setError(e);}}}><Copy size={15}/></button></HelpTip>{image&&<HelpTip text="Download booking QR image"><a className="button secondary small" aria-label={`Download QR for ${row.name}`} href={image} download={`${row.name}-qr.png`}><Download size={15}/></a></HelpTip>}{row.branchId&&<HelpTip text="Open the public branch queue display; no private patient tickets"><a className="button secondary small" aria-label={`Open queue display for ${row.name}`} href={publicQrLink(row.reference,true)} target="_blank" rel="noreferrer"><Monitor size={15}/></a></HelpTip>}</div>{copied&&<small role="status">Booking link copied.</small>}<button disabled={regenerate.isPending} onClick={()=>{if(!regenerate.isPending&&confirm("Regenerate this QR code? Printed copies will stop working."))regenerate.mutate();}}>{regenerate.isPending?"Regenerating…":"Regenerate reference"}</button>{regenerate.isSuccess&&<p className="notice" role="status">QR reference regenerated. Download and replace printed copies.</p>}<ErrorNotice error={error||regenerate.error}/>{!!error&&<button type="button" data-testid={`button-retry-qr-${row.id}`} onClick={()=>setAttempt(value=>value+1)}>Retry QR image</button>}</div>;
+ return <div className="qr-card compact">{confirmation.dialog}{image?<img src={image} alt={`Booking QR code for ${row.name}`}/>:!error&&<p role="status">Generating QR image…</p>}<strong>{row.name}</strong><small>{row.reference} · Active</small><QrReadiness row={row}/><a href={url} target="_blank" rel="noreferrer">{url}</a><div className="admin-qr-actions"><HelpTip text="Copy public booking link"><button aria-label={`Copy booking link for ${row.name}`} onClick={async()=>{try{await navigator.clipboard.writeText(url);setCopied(true);}catch(e){setError(e);}}}><Copy size={15}/></button></HelpTip>{image&&<HelpTip text="Download booking QR image"><a className="button secondary small" aria-label={`Download QR for ${row.name}`} href={image} download={`${row.name}-qr.png`}><Download size={15}/></a></HelpTip>}{row.branchId&&<HelpTip text="Open the public clinic queue display; no private patient tickets"><a className="button secondary small" aria-label={`Open queue display for ${row.name}`} href={publicQrLink(row.reference,true)} target="_blank" rel="noreferrer"><Monitor size={15}/></a></HelpTip>}</div>{copied&&<small role="status">Booking link copied.</small>}<button disabled={regenerate.isPending} onClick={async()=>{if(!regenerate.isPending&&await confirmation.ask({title:"Regenerate QR code?",description:"Printed copies will stop working.",confirmLabel:"Regenerate reference",tone:"danger"}))regenerate.mutate();}}>{regenerate.isPending?"Regenerating…":"Regenerate reference"}</button>{regenerate.isSuccess&&<p className="notice" role="status">QR reference regenerated. Download and replace printed copies.</p>}<ErrorNotice error={error||regenerate.error}/>{!!error&&<button type="button" data-testid={`button-retry-qr-${row.id}`} onClick={()=>setAttempt(value=>value+1)}>Retry QR image</button>}</div>;
 }
 const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 function LocationActions({row,resource,portal}:{row:any;resource:string;portal:string}){
@@ -234,9 +284,9 @@ function LocationActions({row,resource,portal}:{row:any;resource:string;portal:s
   </div>,document.body)}
  <AppDialog open={!!action} onClose={()=>setAction(null)} title={action==="display"?"Open queue display":"Open clinic booking"}>
  <ErrorNotice error={error}/>{loading?<p role="status">Loading clinic address…</p>:!clinicSlug?<p className="notice">This clinic has no web address. <Link href={`/admin/settings?clinicId=${encodeURIComponent(clinicId)}`}>Set web address in clinic settings</Link>.</p>:<>
- {resource==="clinics"&&(branches.data?.total??0)>1&&<ResourceLookup resource="branches" label="Select branch" params={{clinicId,status:"active"}} value={branchId} onChange={setBranchId}/>}
- {branch&&!branch.slug&&<p className="notice">This branch has no web address. <Link href={`/admin/settings?clinicId=${encodeURIComponent(clinicId)}`}>Set web address in clinic settings</Link>.</p>}
- {resource==="clinics"&&branches.data?.total===0&&<p>No active branches. Add a branch in clinic settings.</p>}
+ {resource==="clinics"&&(branches.data?.total??0)>1&&<ResourceLookup resource="branches" label="Select clinic" params={{clinicId,status:"active"}} value={branchId} onChange={setBranchId}/>}
+ {branch&&!branch.slug&&<p className="notice">This clinic has no web address. <Link href={`/admin/settings?clinicId=${encodeURIComponent(clinicId)}`}>Set web address in clinic settings</Link>.</p>}
+ {resource==="clinics"&&branches.data?.total===0&&<p>No active clinics. Add a clinic in settings.</p>}
  {url&&!error&&<a className="button" href={url} target="_blank" rel="noreferrer">Open {action==="display"?"queue display":"booking page"}</a>}
  </>}
  </AppDialog></>;
@@ -244,7 +294,7 @@ function LocationActions({row,resource,portal}:{row:any;resource:string;portal:s
 const PRIMARY_KEYS:Record<string,string[]>={branches:["clinicId"],doctors:["clinicId"],patients:["clinicId"],availability:["clinicId","branchId","doctorId"],exceptions:["branchId","doctorId","date"],qrs:["clinicId","branchId","doctorId"],masters:["category"]};
 const LIST_FILTER_KEYS=["clinicId","branchId","doctorId","adminId","managingAdminId","specializationId","status","from","to","dayOfWeek","activityType","date","category"];
 const LIST_URL_KEYS=["search","page","pageSize","sort",...LIST_FILTER_KEYS];
-const FILTER_LABELS:Record<string,string>={clinicId:"Clinic",branchId:"Branch",doctorId:"Doctor",adminId:"Clinic admin",managingAdminId:"Managing admin",specializationId:"Specialization",activityType:"Events",dayOfWeek:"Day",from:"From",to:"To"};
+const FILTER_LABELS:Record<string,string>={clinicId:"Clinic Group",branchId:"Clinic",doctorId:"Doctor",adminId:"Clinic admin",managingAdminId:"Managing admin",specializationId:"Specialization",activityType:"Events",dayOfWeek:"Day",from:"From",to:"To"};
 function chipLabel(key:string,value:string){
  if(key==="dayOfWeek")return `Day: ${DAYS[Number(value)]}`;
  if(key.endsWith("Id"))return `${FILTER_LABELS[key]||title(key)} selected`;
@@ -253,21 +303,24 @@ function chipLabel(key:string,value:string){
 const COLUMN_LABELS:Record<string,string>={session:"Session hours",break:"Break",capacity:"Capacity",isOpen:"Open",isClosed:"Closed all day",maxTokens:"Max tokens",dayOfWeek:"Day"};
 const columnLabel=(c:string)=>COLUMN_LABELS[c]||title(c);
 function renderComputed(c:string,row:any){
+ if(c==="createdAt")return row[c]?formatConfiguredTimestamp(row[c],row.timezone,undefined,row):"—";
  if(c==="session"){
   if(row.isClosed===true)return <span className="muted">Closed</span>;
   if(!row.startTime&&!row.endTime)return <span className="muted">{"isClosed" in row?"Regular hours":"—"}</span>;
-  return <span>{row.startTime||"—"}–{row.endTime||"—"}{row.queueMode&&<span className="cell-sub">{title(row.queueMode)}</span>}</span>;
+  return <span>{formatTime(row.startTime,row)}–{formatTime(row.endTime,row)}{row.queueMode&&<span className="cell-sub">{title(row.queueMode)}</span>}</span>;
  }
- if(c==="break")return row.breakStart&&row.breakEnd?<span>{row.breakStart}–{row.breakEnd}</span>:<span className="muted">No break</span>;
- if(c==="capacity")return <span className="cap-chip">{row.maxTokens??"—"}<small>tokens</small>{row.tokenPrefix&&<span className="cell-sub">Prefix {row.tokenPrefix}{row.consultationMinutes?` · ${row.consultationMinutes} min`:""}</span>}</span>;
+ if(c==="date"||c==="dateOfBirth")return formatDate(row[c],row);
+ if(c==="break")return row.breakStart&&row.breakEnd?<span>{formatTime(row.breakStart,row)}–{formatTime(row.breakEnd,row)}</span>:<span className="muted">No break</span>;
+ if(c==="capacity")return <HelpTip text="Maximum patients (tokens) for this session. Consultation minutes are the expected duration per patient; remaining availability also depends on existing bookings and queue policy."><span tabIndex={0} className="cap-chip">{row.maxTokens??"—"}<small>patients</small>{row.tokenPrefix&&<span className="cell-sub">Prefix {row.tokenPrefix}{row.consultationMinutes?` · ${row.consultationMinutes} min`:""}</span>}</span></HelpTip>;
  if(c==="isOpen")return <span className={`badge ${row.isOpen?"active":"inactive"}`}>{row.isOpen?"Open":"Closed"}</span>;
  if(c==="isClosed")return <span className={`badge ${row.isClosed?"inactive":"active"}`}>{row.isClosed?"Closed":"Custom hours"}</span>;
  if(c==="maxTokens"&&"isClosed" in row)return row.maxTokens?<span className="cap-chip">{row.maxTokens}<small>tokens</small></span>:<span className="muted">Regular</span>;
  return undefined;
 }
 export function ResourcePage({resource,identity,defaults={},allowCreate=true,onEdit,embedded=false,fixedClinicId}:{resource:string;identity?:api.Identity;defaults?:any;allowCreate?:boolean;onEdit?:(row:any)=>void;embedded?:boolean;fixedClinicId?:string}){
+ const confirmation=useConfirm();
  const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),staleTime:60000}});
-  const config=resources[resource]; const [,navigate]=useLocation(); const urlSearch=useSearch();
+  const baseConfig=resources[resource];const config={...baseConfig,name:resource==="branches"?"clinics":resource==="clinics"?"clinic groups":baseConfig.name}; const [,navigate]=useLocation(); const urlSearch=useSearch();
   const urlParams=new URLSearchParams(urlSearch);
   const search=urlParams.get("search")||"";
   const pageValue=Number(urlParams.get("page"));
@@ -317,13 +370,13 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const displayColumns=compact?[config.columns[0],...config.columns.slice(1).filter(c=>!["code","reference","city","email","phone","clinicName","specializationName"].includes(c))]:config.columns;
  const portal=identity?.user?.role==="doctor"?"doctor":identity?.user?.role==="receptionist"?"receptionist":"admin";
   useEffect(()=>{if(query.data&&!query.isPlaceholderData&&page>1&&page>Math.max(1,Math.ceil(query.data.total/pageSize)))setPage(Math.max(1,Math.ceil(query.data.total/pageSize)));},[query.data,query.isPlaceholderData,page,pageSize]);
- const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,data):config.create(data),onSuccess:()=>{setEditing(null);setSuccess("Record saved successfully.");client.invalidateQueries();}});
- const remove=useMutation({mutationFn:(id:string)=>config.remove(id),onSuccess:()=>{setSuccess("Record deleted or deactivated successfully.");client.invalidateQueries();}});
+ const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,data):config.create(data),onSuccess:()=>{setEditing(null);notifySuccess("Updated successfully");client.invalidateQueries();}});
+ const remove=useMutation({mutationFn:(id:string)=>config.remove(id),onSuccess:()=>{notifySuccess("Record deactivated. Historical records are preserved.");client.invalidateQueries();}});
  const statusUpdate=useMutation({mutationFn:({row,status}:{row:api.User;status:"active"|"inactive"})=>api.updateUser(row.id,{fullName:row.fullName,email:row.email,role:row.role,status,...row.clinicIds?{clinicIds:row.clinicIds}:{},...row.branchIds?{branchIds:row.branchIds}:{}}),onSuccess:()=>{setSuccess("User status updated.");client.invalidateQueries();}});
- const changeUserStatus=(row:any)=>{
+ const changeUserStatus=async(row:any)=>{
    if(statusUpdate.isPending)return;
    const next=row.status==="active"?"inactive":"active";
-   if(next==="inactive"&&!window.confirm(`Deactivate ${row.fullName}? They may lose access. Protected clinic owners require an ownership transfer first.`))return;
+   if(next==="inactive"&&!await confirmation.ask({title:`Deactivate ${row.fullName}?`,description:"They may lose access. Protected clinic owners require an ownership transfer first.",confirmLabel:"Deactivate",tone:"danger"}))return;
    setSuccess("");
    statusUpdate.mutate({row,status:next});
  };
@@ -365,7 +418,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   {resource==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={draft.specializationId||""} onChange={value=>draftFilter("specializationId",value)}/>}
   {resource==="doctors"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Managing admin" params={{role:"clinicAdmin"}} value={draft.managingAdminId||""} onChange={value=>draftFilter("managingAdminId",value)}/>}
   {["patients","audit"].includes(resource)&&<><label>From date<input type="date" value={draft.from||""} onChange={e=>draftFilter("from",e.target.value)}/></label><label>To date<input type="date" min={draft.from||undefined} value={draft.to||""} onChange={e=>draftFilter("to",e.target.value)}/></label></>}
-  {["doctors","patients"].includes(resource)&&<ResourceLookup resource="branches" label="Branch" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/>}
+  {["doctors","patients"].includes(resource)&&<ResourceLookup resource="branches" label="Clinic" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/>}
    {["branches","doctors","patients","qrs"].includes(resource)&&!fixedClinicId&&<ResourceLookup resource="clinics" label={resource==="patients"?"Registration clinic":"Clinic"} value={draft.clinicId||""} onChange={value=>draftFilter("clinicId",value)}/>}
    {resource==="qrs"&&<><ResourceLookup resource="branches" label="Location" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/><ResourceLookup resource="doctors" label="Doctor" params={{clinicId:draft.clinicId||undefined,branchId:draft.branchId||undefined}} value={draft.doctorId||""} onChange={value=>draftFilter("doctorId",value)}/></>}
   {resource==="availability"&&<SearchableSelect label="Day" placeholder="All days" value={draft.dayOfWeek||""} onChange={value=>draftFilter("dayOfWeek",value)} options={DAYS.map((label,index)=>({value:String(index),label}))}/>}
@@ -378,7 +431,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   {resource==="exceptions"&&<label>Date<input type="date" value={filters.date||""} onChange={e=>filter("date",e.target.value)}/></label>}
   {resource==="masters"&&<SearchableSelect label="Category" placeholder="All categories" value={filters.category||""} onChange={value=>filter("category",value)} options={Object.values(api.MasterInputCategory).map(category=>({value:category,label:title(category)}))}/>}
   </FilterBar></div>
- {success&&<p className="notice" role="status">{success}</p>}
+ {confirmation.dialog}{success&&<p className="notice" role="status">{success}</p>}
   {resource==="availability"&&<p className="notice" data-testid="notice-schedule-vs-opening-hours">Doctor sessions set bookable times and capacity for each doctor and location. Location opening hours are separate; {identity?.user?.role==="superAdmin"||identity?.user?.role==="clinicAdmin"?<Link href={`/admin/settings${filters.clinicId?`?clinicId=${encodeURIComponent(filters.clinicId)}`:""}`} data-testid="link-location-opening-hours">edit opening days and hours in Clinic settings</Link>:"ask the clinic owner to update them"}.</p>}
   {resource==="qrs"&&<p className="notice" data-testid="notice-qr-readiness">A booking QR can identify a clinic before it is ready to accept patients. Check that the location is open and the doctor has active bookable sessions with capacity in <Link href={`/${portal}/availability${filters.clinicId?`?clinicId=${encodeURIComponent(filters.clinicId)}`:""}`} data-testid="link-qr-sessions">Weekly schedule</Link> before sharing it.</p>}
  {!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={remove.error||statusUpdate.error}/>
@@ -386,19 +439,19 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  <ListingBulk selection={selection} resource={resource} columns={config.columns} identity={identity} context={selectionContext}/>
  {resource==="availability"&&filters.doctorId&&filters.branchId&&<WeeklyOverview doctorId={filters.doctorId} branchId={filters.branchId} onEdit={row=>{save.reset();setDirty(false);setEditing(row);}}/>}
  <section className={`panel table-panel admin-listing-table density-${density}`}>
-   {query.isLoading?<div className="skeleton" role="status">Loading {config.name}…</div>:query.error?<><div className="error-box" role="alert">Unable to load {config.name}. {query.error instanceof Error?query.error.message:"Please try again."}</div><button onClick={()=>query.refetch()}>Retry {config.name}</button></>:query.data?.items?.length?<div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>
+   {query.isLoading?<div className="skeleton" role="status">Loading {config.name}…</div>:query.error?<><div className="error-box" role="alert">{friendlyError(query.error,"load")}</div><button onClick={()=>query.refetch()}>Retry {config.name}</button></>:query.data?.items?.length?<div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>
   <colgroup><col className="col-select"/>{displayColumns.map(c=><col key={c} className={compact&&c===config.columns[0]?"col-record":undefined}/>)}{config.update&&<col className="col-actions"/>}</colgroup>
   <thead><tr><th scope="col" className="col-select">{selection.header}</th>{displayColumns.map(c=><th scope="col" key={c} aria-sort={sortableColumns.has(c)?sort.replace(/^-/,"")===c?sort.startsWith("-")?"descending":"ascending":"none":undefined} className={compact&&c===config.columns[0]?"col-record":c==="status"?"col-status":undefined}>{sortableColumns.has(c)?<button type="button" className="table-sort-header" style={{display:"inline-flex",alignItems:"center",gap:5,border:0,background:"transparent",font:"inherit",color:"inherit",padding:0,cursor:"pointer"}} onClick={()=>setSort(sort===c?`-${c}`:c)} aria-label={`Sort by ${columnLabel(c)} ${sort===c?"descending":"ascending"}`} data-testid={`sort-${resource}-${c}`}>{columnLabel(c)}{sort.replace(/^-/,"")===c?sort.startsWith("-")?<ArrowDown size={14}/>:<ArrowUp size={14}/>:<ArrowUpDown size={13}/>}</button>:columnLabel(c)}</th>)}{config.update&&<th scope="col" className="col-actions">Actions</th>}</tr></thead>
  <tbody>{query.data.items.map((row:any)=><tr key={row.id} data-testid={`row-${resource}-${row.id}`}>
  <td data-label="Select" className="col-select">{selection.checkbox(row)}</td>
-  {displayColumns.map(c=><td key={c} data-label={columnLabel(c)} className={compact&&c===config.columns[0]?"col-record":undefined}>{compact&&c===config.columns[0]?<div className="admin-record"><strong>{resource==="clinics"&&portal==="admin"?<Link href={`/admin/settings?clinicId=${encodeURIComponent(row.id)}&section=general`}>{row[c]}</Link>:row[c]} {row.code||row.reference?<small>{row.code||row.reference}</small>:null}</strong><small>{[row.address,row.city,row.clinicName,row.specializationName,row.email||row.phone].filter(Boolean).join(" · ")||"—"}</small></div>:resource==="users"&&c==="status"?<label className="check-label" title={row.id===identity?.user?.id?"Change your own status through an authorised administrator":!["superAdmin","clinicAdmin"].includes(identity?.user?.role||"")?"Only administrators can change user access":undefined}><input type="checkbox" role="switch" aria-label={`${row.fullName}: ${row.status==="active"?"Active":"Inactive"}`} aria-checked={row.status==="active"} checked={row.status==="active"} disabled={statusUpdate.isPending||row.id===identity?.user?.id||!["superAdmin","clinicAdmin"].includes(identity?.user?.role||"")} onChange={()=>changeUserStatus(row)} data-testid={`switch-user-status-${row.id}`}/> {row.status==="active"?"Active":"Inactive"}{row.id===identity?.user?.id&&<small className="muted"> · Ask another administrator</small>}</label>:renderComputed(c,row)??(c==="status"?<span className={`badge ${row[c]}`}>{title(row[c]||"")}</span>:c==="dayOfWeek"?DAYS[row[c]]:c==="createdAt"?(settings.data?.timezone?new Date(row[c]).toLocaleString(undefined,{timeZone:settings.data.timezone}):row[c]):typeof row[c]==="boolean"?(row[c]?"Yes":"No"):Array.isArray(row[c])?row[c].join(", ")||"—":row[c]??"—")}</td>)}
- {config.update&&<td data-label="Actions" className="col-actions"><div className="row-actions">{resource==="qrs"&&row.status==="active"&&<HelpTip text="View booking QR and link"><button type="button" aria-label={`View booking QR for ${row.name}`} onClick={()=>setQrPreview(row)} data-testid={`button-view-qr-${row.id}`}><QrCode size={15}/></button></HelpTip>}{["clinics","branches"].includes(resource)&&<LocationActions row={row} resource={resource} portal={portal}/>}<HelpTip text={resource==="clinics"?"Configure this clinic":"Edit this record"}>{resource==="clinics"&&portal==="admin"?<Link aria-label={`Configure ${row.name}`} href={`/admin/settings?clinicId=${encodeURIComponent(row.id)}&section=general`}><Pencil size={15}/></Link>:<button aria-label={`Edit ${row.name||row.fullName||"record"}`} onClick={()=>{if(onEdit)onEdit(row);else{save.reset();setDirty(false);setEditing(row);}}}><Pencil size={15}/></button>}</HelpTip><HelpTip text="Delete or deactivate; records with history are preserved"><button aria-label={`Delete or deactivate ${row.name||row.fullName||"record"}`} disabled={remove.isPending} onClick={()=>{if(!remove.isPending&&confirm("Delete or deactivate this record? Records with history are preserved."))remove.mutate(row.id);}}><Trash2 size={15}/></button></HelpTip></div></td>}
+  {displayColumns.map(c=><td key={c} data-label={columnLabel(c)} className={compact&&c===config.columns[0]?"col-record":undefined}>{compact&&c===config.columns[0]?<div className="admin-record"><strong>{resource==="clinics"&&portal==="admin"?<Link href={`/admin/settings?clinicId=${encodeURIComponent(row.id)}&section=general`}>{row[c]}</Link>:row[c]} {row.code||row.reference?<small>{row.code||row.reference}</small>:null}</strong><small>{[row.address,row.city,row.clinicName,row.specializationName,row.email||row.phone].filter(Boolean).join(" · ")||"—"}</small></div>:resource==="users"&&c==="status"?<label className="check-label" title={row.id===identity?.user?.id?"Change your own status through an authorised administrator":!["superAdmin","clinicAdmin"].includes(identity?.user?.role||"")?"Only administrators can change user access":undefined}><input type="checkbox" role="switch" aria-label={`${row.fullName}: ${row.status==="active"?"Active":"Inactive"}`} aria-checked={row.status==="active"} checked={row.status==="active"} disabled={statusUpdate.isPending||row.id===identity?.user?.id||!["superAdmin","clinicAdmin"].includes(identity?.user?.role||"")} onChange={()=>changeUserStatus(row)} data-testid={`switch-user-status-${row.id}`}/> {row.status==="active"?"Active":"Inactive"}{row.id===identity?.user?.id&&<small className="muted"> · Ask another administrator</small>}</label>:c==="createdAt"?formatConfiguredTimestamp(row[c],row.timezone||settings.data?.timezone,{},row):renderComputed(c,row)??(c==="status"?<span className={`badge ${row[c]}`}>{title(row[c]||"")}</span>:c==="dayOfWeek"?DAYS[row[c]]:typeof row[c]==="boolean"?(row[c]?"Yes":"No"):Array.isArray(row[c])?row[c].join(", ")||"—":row[c]??"—")}</td>)}
+ {config.update&&<td data-label="Actions" className="col-actions"><div className="row-actions">{resource==="qrs"&&row.status==="active"&&<HelpTip text="View booking QR and link"><button type="button" aria-label={`View booking QR for ${row.name}`} onClick={()=>setQrPreview(row)} data-testid={`button-view-qr-${row.id}`}><QrCode size={15}/></button></HelpTip>}{["clinics","branches"].includes(resource)&&<LocationActions row={row} resource={resource} portal={portal}/>}<HelpTip text={resource==="clinics"?"Configure this clinic":"Edit this record"}>{resource==="clinics"&&portal==="admin"?<Link aria-label={`Configure ${row.name}`} href={`/admin/settings?clinicId=${encodeURIComponent(row.id)}&section=general`}><Pencil size={15}/></Link>:<button aria-label={`Edit ${row.name||row.fullName||"record"}`} onClick={()=>{if(onEdit)onEdit(row);else{save.reset();setDirty(false);setEditing(row);}}}><Pencil size={15}/></button>}</HelpTip><HelpTip text="Deactivate; historical records are preserved"><button aria-label={`Deactivate ${row.name||row.fullName||"record"}`} disabled={remove.isPending||row.status==="inactive"} onClick={async()=>{if(!remove.isPending&&await confirmation.ask({title:"Deactivate record?",description:"The record becomes inactive. Historical records are preserved; this is not permanent deletion.",confirmLabel:"Deactivate",tone:"danger"}))remove.mutate(row.id);}}><Trash2 size={15}/></button></HelpTip></div></td>}
   </tr>)}</tbody></table></div>:active?<div className="empty"><h3>No matching {config.name}</h3><p>Try a different search or clear your filters.</p><button onClick={reset}>Clear filters</button></div>:<Empty label={config.name}/>}
   {query.isFetching&&!query.isLoading&&!query.error&&<span className="admin-listing-refresh" role="status">Updating {config.name}…</span>}
   {!query.error&&<div className="admin-listing-pagination"><Pagination page={page} pageSize={pageSize} total={query.data?.total||0} onPageChange={setPage} onPageSizeChange={setPageSize} resetPageOnSizeChange={false}/></div>}</section>
  {resource==="users"&&identity?.user?.role==="superAdmin"&&allowCreate&&<ClinicAdminOnboarding />}
   {resource==="qrs"&&qrPreview&&<AppDialog open onClose={()=>setQrPreview(null)} title={`Booking QR · ${qrPreview.name}`}><QrCard row={qrPreview} onRegenerated={()=>{setQrPreview(null);setSuccess("QR reference regenerated. Replace printed copies.");}}/></AppDialog>}
-   {editing&&<AppDialog open onClose={()=>setEditing(null)} title={`${editing.id?"Edit":"Add"} ${title(singularName)}`} dirty={dirty} busy={save.isPending}>{resource==="availability"&&<p className="notice">Each record is one consulting session. Add separate, non-overlapping sessions for the same doctor, branch and weekday. Overnight sessions are not supported.</p>}{resource==="branches"&&editing.id&&<p className="notice">Effective contacts: {editing.effectiveEmail||"No email"} · {editing.effectivePhone||"No phone"}. Inherited contacts update when the clinic changes; branch overrides are retained.</p>}<ErrorNotice error={save.error}/><Editor fields={effectiveFields} initial={editing} onSave={data=>{if(!save.isPending)save.mutate(data);}} onCancel={()=>{if(!dirty||window.confirm("You have unsaved changes. Are you sure you want to discard them?"))setEditing(null);}} busy={save.isPending} resourceName={resource} onDirtyChange={setDirty}/></AppDialog>}
+   {editing&&<AppDialog open onClose={()=>setEditing(null)} title={`${editing.id?"Edit":"Add"} ${title(singularName)}`} dirty={dirty} busy={save.isPending}>{resource==="availability"&&<p className="notice">Each record is one consulting session. Add separate, non-overlapping sessions for the same doctor, clinic and weekday. Overnight sessions are not supported.</p>}{resource==="branches"&&editing.id&&<p className="notice">Effective contacts: {editing.effectiveEmail||"No email"} · {editing.effectivePhone||"No phone"}. Inherited contacts update when the Clinic Group changes; clinic overrides are retained.</p>}<ErrorNotice error={save.error}/><Editor fields={effectiveFields} initial={editing} onSave={data=>{if(!save.isPending)save.mutate(data);}} onCancel={async()=>{if(!dirty||await confirmation.ask({title:"Discard changes?",description:"Your unsaved changes will be lost.",confirmLabel:"Discard changes",tone:"danger"}))setEditing(null);}} busy={save.isPending} resourceName={resource} onDirtyChange={setDirty}/></AppDialog>}
  </>;
 }
 export const profileFields = [f("fullName","text",true),f("mobile","tel"),f("photoUrl","url")];

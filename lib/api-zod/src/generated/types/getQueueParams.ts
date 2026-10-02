@@ -21,10 +21,6 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { AppointmentStatus } from './appointmentStatus';
-import type { PageParameter } from './pageParameter';
-import type { PageSizeParameter } from './pageSizeParameter';
-import type { SearchParameter } from './searchParameter';
-import type { SortParameter } from './sortParameter';
 import type { StatusGroupParameter } from './statusGroupParameter';
 
 export type GetQueueParams = {
@@ -35,19 +31,25 @@ branchId: string;
 date: Date;
 appointmentId?: string;
 /**
+ * Explicit staff listing page; omit both pagination parameters for legacy full-list compatibility
  * @minimum 1
  */
-page?: PageParameter;
+page?: number;
 /**
+ * Explicit staff listing page size; omitted pagination parameters must not be default-injected by clients
  * @minimum 1
  * @maximum 100
  */
-pageSize?: PageSizeParameter;
-search?: SearchParameter;
+pageSize?: number;
 /**
- * Allowlisted field with optional minus prefix for descending order
+ * Staff-only listing search applied before pagination
+ * @maxLength 200
  */
-sort?: SortParameter;
+search?: string;
+/**
+ * Staff-only allowlisted listing sort with optional minus prefix
+ */
+sort?: string;
 status?: AppointmentStatus;
 /**
  * Server-side group filter applied before pagination; intersects with status when both supplied

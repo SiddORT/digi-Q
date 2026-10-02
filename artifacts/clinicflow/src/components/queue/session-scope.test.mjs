@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { doctorWorkspaceScope, resolveSessionContext, sessionContextKey } from "./session-scope.ts";
+import { doctorWorkspaceScope, resolveSessionContext, sessionContextKey, sessionTimeLabel } from "./session-scope.ts";
 
 test("consulting admin capability never restricts administrative doctor selection",()=>{
  assert.deepEqual(doctorWorkspaceScope({user:{role:"clinicAdmin"},doctorId:"own-doctor"}),{isDoctor:false,doctorId:""});
@@ -24,4 +24,17 @@ test("deleted and legacy template contexts remain selectable by saved start time
  assert.equal(resolveSessionContext(sessions),undefined);
  assert.equal(resolveSessionContext([sessions[0]]),sessions[0]);
  assert.equal(resolveSessionContext(sessions,{sessionId:"missing"}),undefined);
+});
+test("unique clinic-local running session is the default, but explicit choices and ambiguity win",()=>{
+ const now=new Date("2030-01-07T04:00:00Z");
+ const base={date:"2030-01-07",timezone:"Asia/Kolkata"};
+ const am={...base,sessionId:"am",startTime:"09:00",endTime:"10:00"};
+ const pm={...base,sessionId:"pm",startTime:"14:00",endTime:"16:00"};
+ assert.equal(resolveSessionContext([am,pm],undefined,now),am);
+ assert.equal(resolveSessionContext([am,pm],{sessionId:"pm"},now),pm);
+ assert.equal(resolveSessionContext([am,pm],{sessionId:"missing"},now),undefined);
+ assert.equal(resolveSessionContext([am,{...am,sessionId:"overlap"}],undefined,now),undefined);
+ assert.equal(sessionTimeLabel(pm,now),"Upcoming session");
+ assert.equal(sessionTimeLabel(am,new Date("2030-01-07T04:30:00Z")),"Past session");
+ assert.equal(sessionTimeLabel({...am,snapshotOnly:true},now),"Saved appointment session");
 });

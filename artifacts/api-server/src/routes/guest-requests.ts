@@ -1,29 +1,36 @@
 import { Router } from "express";
 import { createHash } from "node:crypto";
 import { rateLimit } from "express-rate-limit";
-import { and, eq, sql, desc, inArray } from "drizzle-orm";
+import { and, eq, sql, desc, asc, inArray } from "drizzle-orm";
+import { z as schema } from "zod";
 import { db, guestRequests, patients, doctors, branches, clinics, appointments, auditLogs } from "@workspace/db";
 import * as z from "@workspace/api-zod";
 import { assert, parse, query } from "../lib/http";
 import { requireUser, scope } from "../lib/auth";
-import { one, put, change, flatten, uid } from "../lib/store";
+import { all, one, put, change, flatten, uid } from "../lib/store";
 import { availability } from "../lib/availability";
 import { enrich } from "../lib/entities";
 import { resolveQr } from "./public";
 import { bookAppointment } from "./appointments";
 import { createAppointmentQrPayload } from "../lib/appointment-qr";
+import { clinicDisplayPreferences } from "../lib/display-preferences";
+import { confirmAppointmentEmail } from "../lib/appointment-confirmation";
 
 export const guestRequestsRouter = Router();
+export const guestListControls = schema.object({
+  search: schema.string().trim().max(200).optional(),
+  sort: schema.enum(["createdAt","-createdAt","fullName","-fullName","date","-date"]).optional(),
+});
 export const guestHash = (s: string) => createHash("sha256").update(s).digest("hex");
 export function guestReceipt(r: any, appointment?: any) {
   const receipt = Object.fromEntries(["id", "status", "fullName", "clinicName", "branchName", "doctorName", "date", "sessionId", "startTime", "endTime", "timezone", "token", "reason"].map(k => [k, r[k] ?? null]));
   const payload = appointment?.reference ? createAppointmentQrPayload(appointment.reference) : null;
-  return { ...receipt, ...(appointment ? Object.fromEntries(
+  return { ...receipt, ...clinicDisplayPreferences(r), ...(appointment ? Object.fromEntries(
     ["clinicName", "branchName", "doctorName", "date", "sessionId", "startTime", "endTime", "timezone", "token"]
       .map(key => [key, appointment[key] ?? receipt[key]])) : {}),
     appointmentId: r.appointmentId ?? null,
     reference: appointment?.reference ?? null, branchAddress: appointment?.branchAddress ?? r.branchAddress ?? null,
-    appointmentStatus: appointment?.status ?? null, revision: appointment?.revision ?? null,
+    appointmentStatus: appointment?.status ?? null, revision: appointment?.revision ?? null, confirmationEmail: appointment?.confirmationEmail ?? r.confirmationEmail,
     checkInUrl: payload ? `/check-in?payload=${encodeURIComponent(payload)}` : null };
 }
 async function currentReceipt(row: any, conn: any = db) {
@@ -32,7 +39,8 @@ async function currentReceipt(row: any, conn: any = db) {
     const branch = await one(branches, appointment.branchId, conn);
     appointment = { ...appointment, branchAddress: branch.address ?? null };
   }
-  return guestReceipt(row, appointment);
+  const clinic = await one(clinics, appointment?.clinicId || row.clinicId, conn);
+  return guestReceipt({ ...row, ...clinicDisplayPreferences(clinic) }, appointment);
 }
 function staffView(r: any) {
   return { ...guestReceipt(r), clinicId: r.clinicId, branchId: r.branchId, doctorId: r.doctorId,
@@ -116,7 +124,9 @@ export async function decideGuestRequest(user: any, id: string, body: any, conn:
 }
 guestRequestsRouter.post("/public/guest-requests", submissionLimit, async (req, res) => {
   res.set("Cache-Control", "no-store");
-  res.status(201).json(z.CreateGuestRequestResponse.parse(await currentReceipt(await createGuestRequest(parse(z.CreateGuestRequestBody, req.body)))));
+  const row = await createGuestRequest(parse(z.CreateGuestRequestBody, req.body));
+  const confirmationEmail = row.appointmentId ? await confirmAppointmentEmail(row.appointmentId) : undefined;
+  res.status(201).json(z.CreateGuestRequestResponse.parse({ ...await currentReceipt(row), confirmationEmail }));
 });
 guestRequestsRouter.post("/public/guest-receipt", receiptLimit, async (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -126,7 +136,7 @@ guestRequestsRouter.post("/public/guest-receipt", receiptLimit, async (req, res)
   res.json(z.GetGuestReceiptResponse.parse(await currentReceipt(flatten(row))));
 });
 guestRequestsRouter.get("/guest-requests", async (req, res) => {
-  const user = await staff(req), q = query(z.ListGuestRequestsQueryParams, req);
+  const user = await staff(req), q = { ...query(z.ListGuestRequestsQueryParams, req), ...query(guestListControls,req) };
   const page = q.page || 1, pageSize = q.pageSize || 20;
   const clauses: any[] = [eq(guestRequests.status, q.status || "pending")];
   if (q.clinicId) clauses.push(eq(guestRequests.clinicId, q.clinicId));
@@ -135,16 +145,27 @@ guestRequestsRouter.get("/guest-requests", async (req, res) => {
   if (q.date) clauses.push(eq(guestRequests.date, q.date));
   if (q.sessionId) clauses.push(sql`${guestRequests.data}->>'sessionId'=${q.sessionId}`);
   if (q.startTime) clauses.push(sql`${guestRequests.data}->>'startTime'=${q.startTime}`);
+  if (q.search) {
+    const pattern = `%${q.search.replace(/[\\%_]/g,"\\$&")}%`;
+    clauses.push(sql`(${guestRequests.data}->>'fullName' ilike ${pattern} or ${guestRequests.data}->>'email' ilike ${pattern}
+      or ${guestRequests.data}->>'mobile' ilike ${pattern} or ${guestRequests.data}->>'token' ilike ${pattern})`);
+  }
   if (user.role !== "superAdmin") {
     clauses.push(inArray(guestRequests.clinicId, user.clinicIds));
     if (user.role === "receptionist") clauses.push(inArray(guestRequests.branchId, user.branchIds));
   }
   const where = and(...clauses);
-  const rows = await db.select().from(guestRequests).where(where).orderBy(desc(guestRequests.createdAt)).limit(pageSize).offset((page - 1) * pageSize);
+  const sort = q.sort || "-createdAt", column = sort.replace(/^-/, "") === "fullName"
+    ? sql`${guestRequests.data}->>'fullName'` : sort.replace(/^-/, "") === "date" ? guestRequests.date : guestRequests.createdAt;
+  const rows = await db.select().from(guestRequests).where(where).orderBy(sort.startsWith("-") ? desc(column) : asc(column),asc(guestRequests.id)).limit(pageSize).offset((page - 1) * pageSize);
   const [count] = await db.select({ total: sql<number>`count(*)::int` }).from(guestRequests).where(where);
-  res.set("Cache-Control", "no-store").json(z.ListGuestRequestsResponse.parse({ items: rows.map(r => staffView(flatten(r))), total: count.total, page, pageSize }));
+  const clinicMap = new Map((await all(clinics)).map(c => [c.id, c]));
+  res.set("Cache-Control", "no-store").json(z.ListGuestRequestsResponse.parse({ items: rows.map(r => staffView({ ...flatten(r), ...clinicDisplayPreferences(clinicMap.get(r.clinicId)) })), total: count.total, page, pageSize }));
 });
 guestRequestsRouter.post("/guest-requests/:id/decision", async (req, res) => {
   const user = await staff(req), body = parse(z.DecideGuestRequestBody, req.body);
-  res.set("Cache-Control", "no-store").json(z.DecideGuestRequestResponse.parse(staffView(await decideGuestRequest(user, req.params.id as string, body))));
+  const row = await decideGuestRequest(user, req.params.id as string, body);
+  const clinic = await one(clinics, row.clinicId);
+  const confirmationEmail = row.appointmentId ? await confirmAppointmentEmail(row.appointmentId) : undefined;
+  res.set("Cache-Control", "no-store").json(z.DecideGuestRequestResponse.parse(staffView({ ...row, confirmationEmail, ...clinicDisplayPreferences(clinic) })));
 });

@@ -6,17 +6,18 @@ import { assert, parse, query } from "../lib/http";
 import { all, one, put, uid, audit, getSettings, filtered, paginate, change } from "../lib/store";
 import { availability, localNow, minutes } from "../lib/availability";
 import { enrich } from "../lib/entities";
-import { appointmentView, appointmentViewWithBranch, transition, lockQueue } from "../lib/appointments";
+import { appointmentView, appointmentViewWithBranch, appointmentViews, transition, lockQueue } from "../lib/appointments";
 import { resolveQr } from "./public";
 import { queryAppointmentPage } from "../lib/list-query";
 import { snapshotDuration, allocateToken } from "../lib/session-duration";
 import { reschedule } from "../lib/reschedule";
 import { rank, sessionRows } from "../lib/queue-order";
+import { confirmAppointmentEmail, initialConfirmationEmail } from "../lib/appointment-confirmation";
 export const appointmentsRouter = Router();
 appointmentsRouter.get("/appointments", async (req, res) => {
   const user = await requireUser(req), q = query(z.ListAppointmentsQueryParams, req);
   const result = await queryAppointmentPage(user, q);
-  res.json({ ...result, items: await Promise.all(result.items.map((a: any) => appointmentViewWithBranch(a, user))) });
+  res.json({ ...result, items: await appointmentViews(result.items, user) });
 });
 appointmentsRouter.get("/appointments/:id", async (req, res) => {
   const user = await requireUser(req), row = await one(appointments, req.params.id as string);
@@ -28,7 +29,8 @@ appointmentsRouter.post("/appointments", async (req, res) => {
   if (user.role === "patient") assert(body.patientId === user.patientId && ["online", "qr"].includes(body.source), 403, "Patients may book online for themselves only");
   else assert(scope(user, body.clinicId, body.branchId) && (user.role !== "doctor" || body.doctorId === user.doctorId), 403, "Booking outside assigned scope");
   const row = await db.transaction(tx => bookAppointment(user, body, tx));
-  res.status(201).json(appointmentView(row, user));
+  const confirmationEmail = await confirmAppointmentEmail(row.id);
+  res.status(201).json(await appointmentViewWithBranch({ ...row, confirmationEmail }, user));
 });
 export async function bookAppointment(user: any, body: any, tx: any, guestPolicy = false) {
     // The anonymous QR flow is an explicit booking policy, not a fabricated
@@ -65,6 +67,7 @@ export async function bookAppointment(user: any, body: any, tx: any, guestPolicy
       }
     }
     const config = await getSettings(tx, body.clinicId);
+    const confirmationEmail = await initialConfirmationEmail(patient,config.notificationsEnabled,tx);
     assert(contactOptional || !config.requireMobileVerification || patient.mobileVerified, 403, "Patient mobile verification is required");
     if (user.role === "patient") assert(body.termsAccepted, 400, "Terms and privacy consent is required");
     if (body.source === "qr") {
@@ -78,7 +81,7 @@ export async function bookAppointment(user: any, body: any, tx: any, guestPolicy
     const id = uid(), timestamp = new Date().toISOString();
     const expectedDurationMinutes = await snapshotDuration(body, tx);
     const queueRank = Math.max(0, ...sessionRows(existing, body).map(rank)) + 1;
-    const result = await put(appointments, { id, status: "waiting", patientId: body.patientId, doctorId: body.doctorId, clinicId: body.clinicId, branchId: body.branchId, date: body.date, tokenNumber, requestId: body.requestId, actorId: user.id, data: { ...body, ...(guestPolicy ? { bookingOrigin: "anonymousGuest" } : {}), waitingAt: timestamp, reference: `CF-${uid().replaceAll("-", "").toUpperCase().slice(0,16)}`, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, patientName: patient.fullName, patientCode: patient.code, doctorName: doctor.fullName, clinicName: clinic.name, branchName: branch.name, branchAddress: branch.address ?? null, timezone: available.timezone, startTime: available.startTime, endTime: available.endTime, history: [{ status: "waiting", occurredAt: timestamp }] } }, tx);
+    const result = await put(appointments, { id, status: "waiting", patientId: body.patientId, doctorId: body.doctorId, clinicId: body.clinicId, branchId: body.branchId, date: body.date, tokenNumber, requestId: body.requestId, actorId: user.id, data: { ...body, confirmationEmail, ...(guestPolicy ? { bookingOrigin: "anonymousGuest" } : {}), waitingAt: timestamp, reference: `CF-${uid().replaceAll("-", "").toUpperCase().slice(0,16)}`, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, patientName: patient.fullName, patientCode: patient.code, doctorName: doctor.fullName, clinicName: clinic.name, branchName: branch.name, branchAddress: branch.address ?? null, timezone: available.timezone, startTime: available.startTime, endTime: available.endTime, history: [{ status: "waiting", occurredAt: timestamp }] } }, tx);
     Object.assign(result, { expectedDurationMinutes, queueRank, revision: 0 });
     await change(appointments, id, { data: result }, tx);
     await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, toStatus: "waiting" }, tx);

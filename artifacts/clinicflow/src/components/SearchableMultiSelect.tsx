@@ -18,6 +18,8 @@ export interface SearchableMultiSelectProps {
   onLoadMore?: () => void;
   hasMore?: boolean;
   required?: boolean;
+  /** Shown as a Retry action in the error state; the selected value is kept. */
+  onRetry?: () => void;
   id?: string;
 }
 
@@ -35,6 +37,7 @@ export function SearchableMultiSelect({
   onLoadMore,
   hasMore = false,
   required = false,
+  onRetry,
   id,
 }: SearchableMultiSelectProps) {
   const [open, setOpen] = useState(false);
@@ -223,7 +226,7 @@ export function SearchableMultiSelect({
             />
             <CommandList className="max-h-[250px] overflow-y-auto">
               <CommandEmpty>
-                 {isActuallyLoading ? "Searching..." : error ? "Unable to load options." : "No results found."}
+                {error && onRetry && !loading ? <span className="flex flex-col items-center gap-2">Unable to load options.<button type="button" className="button secondary small" onClick={onRetry}>Retry</button></span> : <>{isActuallyLoading ? "Searching..." : error ? "Unable to load options." : "No results found."}</>}
               </CommandEmpty>
               <CommandGroup>
                 {displayOptions.map((option) => {

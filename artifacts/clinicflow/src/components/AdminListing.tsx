@@ -4,6 +4,10 @@ import * as api from "@workspace/api-client-react";
 import QRCode from "qrcode";
 import { AppDialog } from "./AppDialog";
 import { csvCell, statusInput } from "./admin-listing-data";
+import { LoadingButton } from "./LoadingButton";
+import { friendlyError } from "@/lib/friendly-error";
+import { notifyBulk } from "@/lib/notify";
+import type { BulkOutcome } from "@/lib/bulk-summary";
 import "./admin-listing.css";
 
 export const recordName = (row:any) => row.fullName || row.name || row.code || row.id;
@@ -58,10 +62,12 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
   const canStatus=identity&&["superAdmin","clinicAdmin","doctor"].includes(identity.user?.role||"")&&["clinics","branches","doctors","users"].includes(resource);
   async function run(status:"active"|"inactive"){
     if(lock.current||!identity)return;lock.current=true;setBusy(true);
-    const rows=[...selection.selected], outcomes:string[]=[];
+    const rows=[...selection.selected], outcomes:string[]=[], summary:BulkOutcome[]=[];
     try {
-      for(const row of rows)try {await updateListingStatus(resource,row,status,identity);outcomes.push(`${recordName(row)}: ${status}.`);}catch(error){outcomes.push(`${recordName(row)}: failed — ${error instanceof Error?error.message:String(error)}`);}
-      setResults(outcomes);selection.clear();setAction(null);await client.invalidateQueries();
+      for(const row of rows)try {await updateListingStatus(resource,row,status,identity);outcomes.push(`${recordName(row)}: ${status}.`);summary.push({label:String(recordName(row)),ok:true});}catch(error){const message=friendlyError(error,"save");outcomes.push(`${recordName(row)}: failed — ${message}`);summary.push({label:String(recordName(row)),ok:false,message});}
+      // One consolidated toast (finding 79); per-record detail kept only when something failed.
+      notifyBulk(summary,status==="active"?"activated":"deactivated");
+      setResults(summary.some(item=>!item.ok)?outcomes:[]);selection.clear();setAction(null);await client.invalidateQueries();
     } finally {lock.current=false;setBusy(false);}
   }
   async function qrDocument(print:boolean){
@@ -76,14 +82,14 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
         const url=publicQrLink(row.reference),image=await QRCode.toDataURL(url,{width:400,margin:2});
         cards.push(`<section><h2>${html(row.name)}</h2><img alt="Booking QR code" src="${image}"><p>${html(url)}</p></section>`);
         outcomes.push(`${recordName(row)}: QR prepared using current active reference.`);
-      }catch(error){outcomes.push(`${recordName(selected)}: failed — ${error instanceof Error?error.message:String(error)}`);}
+      }catch(error){outcomes.push(`${recordName(selected)}: failed — ${friendlyError(error)}`);}
       setResults(outcomes);
       if(cards.length){
         const documentHtml=`<!doctype html><html><head><meta charset="utf-8"><title>Selected booking QR codes</title><style>body{font-family:sans-serif;color:#173332}section{text-align:center;break-inside:avoid;padding:24px;border-bottom:1px solid #ccc}img{width:240px}p{overflow-wrap:anywhere}@media print{button{display:none}}</style></head><body>${print?'<button onclick="window.print()">Print QR codes</button>':""}${cards.join("")}</body></html>`;
         if(popup){popup.document.open();popup.document.write(documentHtml);popup.document.close();}
         else download(documentHtml,"selected-booking-qrs.html","text/html;charset=utf-8");
       }else popup?.close();
-    }catch(error){popup?.close();setResults([error instanceof Error?error.message:String(error)]);}finally{lock.current=false;setBusy(false);}
+    }catch(error){popup?.close();setResults([friendlyError(error)]);}finally{lock.current=false;setBusy(false);}
   }
   async function copyQrLinks(){
     if(lock.current)return;lock.current=true;setBusy(true);
@@ -93,10 +99,10 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
         const row=await api.getQr(selected.id);
         if(row.status!=="active")throw new Error("Inactive QR; no link copied.");
         links.push(publicQrLink(row.reference));outcomes.push(`${recordName(row)}: active booking link included.`);
-      }catch(error){outcomes.push(`${recordName(selected)}: failed — ${error instanceof Error?error.message:String(error)}`);}
+      }catch(error){outcomes.push(`${recordName(selected)}: failed — ${friendlyError(error)}`);}
       if(links.length){await navigator.clipboard.writeText(links.join("\n"));outcomes.push(`${links.length} public booking links copied.`);}
       setResults(outcomes);
-    }catch(error){setResults([...outcomes,`Copy failed — ${error instanceof Error?error.message:String(error)}`]);}finally{lock.current=false;setBusy(false);}
+    }catch(error){setResults([...outcomes,`Copy failed — ${friendlyError(error)}`]);}finally{lock.current=false;setBusy(false);}
   }
   return <div className="admin-listing-bulk">
     {selection.selected.length>0&&<div className="admin-bulk-bar" aria-label="Selected record actions"><strong>{selection.selected.length} selected on this page</strong>
@@ -110,7 +116,7 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
     {action&&<AppDialog open title={`${action==="active"?"Activate":"Deactivate"} selected records?`} busy={busy} onClose={()=>{if(!busy)setAction(null);}}>
       <p>{action==="inactive"?"Inactive accounts lose access; inactive clinics, branches and doctors may no longer be available for booking. Existing history is retained.":"These records will become active and may be available for access or booking again."} Permissions and ownership protections are checked for every record. You cannot deactivate yourself. Administrator ownership must be transferred first; the last active super administrator is protected. Failures do not roll back successful changes.</p>
       <ul>{selection.selected.map(row=><li key={row.id}>{recordName(row)} → {action}</li>)}</ul>
-      <button data-testid="button-confirm-bulk-status" className="button" disabled={busy||!selection.selected.length} onClick={()=>run(action)}>{busy?"Updating…":"Confirm status change"}</button>
+      <div className="app-dialog-footer confirm-dialog-footer"><button type="button" className="button secondary small" disabled={busy} onClick={()=>setAction(null)}>Cancel</button><LoadingButton data-testid="button-confirm-bulk-status" className={`button small${action==="inactive"?" danger-solid":""}`} loading={busy} loadingText="Updating…" disabled={!selection.selected.length} onClick={()=>run(action)}>{action==="active"?`Activate ${selection.selected.length}`:`Deactivate ${selection.selected.length}`}</LoadingButton></div>
     </AppDialog>}
   </div>;
 }

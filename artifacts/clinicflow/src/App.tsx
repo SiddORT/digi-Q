@@ -19,6 +19,8 @@ import { PublicClinicPage } from "./components/PublicClinicPage";
 import { PatientScanner } from "./components/PatientScanner";
 import { GuestClinicFinder } from "./components/GuestClinicFinder";
 import { DemoLogin } from "./auth/DemoLogin";
+import { ToastHost } from "./components/ToastHost";
+import { friendlyError } from "./lib/friendly-error";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 15000 } } });
@@ -73,7 +75,7 @@ function Guard({role, page}: {role:string;page:string}) {
   const me = api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
   if (!isLoaded || (isSignedIn && me.isLoading)) return <div className="page-loading">Preparing your workspace…</div>;
   if (!isSignedIn) return <Redirect to="/login"/>;
-  if (me.error) return <div className="error-box">Unable to load your account: {me.error.message}<button onClick={()=>me.refetch()}>Try again</button></div>;
+  if (me.error) return <div className="error-box" role="alert">Unable to load your account. {friendlyError(me.error,"load")}<button onClick={()=>me.refetch()}>Try again</button></div>;
   if (!me.data?.user || me.data.needsOnboarding) return <Redirect to="/onboarding"/>;
   const actual = ["superAdmin","clinicAdmin"].includes(me.data.user.role) ? "admin" : me.data.user.role;
   if(actual !== role) return <Redirect to={`/${actual}/dashboard`}/>;
@@ -118,6 +120,6 @@ function Providers(){
     <Route path="/:clinicSlug/:branchSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug} branchSlug={p.branchSlug}/>}</Route>
     <Route path="/:clinicSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug}/>}</Route>
     <Route><div className="empty"><h1>Page not found</h1><Link href="/">Return home</Link></div></Route>
-   </Switch></NativeAuthProvider></QueryClientProvider>;
+   </Switch><ToastHost/></NativeAuthProvider></QueryClientProvider>;
 }
 export default function App(){ return <Router base={basePath}><Providers/></Router>; }
