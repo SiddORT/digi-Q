@@ -2,6 +2,8 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import { localMediaRouter } from "./routes/logos";
+import { mediaConfig } from "./lib/local-media";
 import { logger } from "./lib/logger";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
@@ -56,6 +58,7 @@ app.use("/api", (req, _res, next) => {
 });
 app.use("/api", checkCsrf);
 app.use("/api", router);
+app.use(mediaConfig().url, localMediaRouter);
 app.use("/api", (_req, res) => { res.status(404).json({ error: "API route not found" }); });
 app.use(errors);
 

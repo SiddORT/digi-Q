@@ -1,3 +1,4 @@
+import { customFetch } from "@workspace/api-client-react";
 export const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
 export const LOGO_MAX_BYTES = 2 * 1024 * 1024;
 export const LOGO_MAX_SIDE = 2048;
@@ -12,6 +13,9 @@ export function logoFileError(file: { type: string; size: number }): string | nu
 
 /** PUTs the raw file to a signed URL. No credentials or auth headers are sent. */
 export function putToSignedUrl(url: string, file: Blob, onProgress: (pct: number) => void, signal?: AbortSignal): Promise<void> {
+  if (/^\/api\/management\/logos\/[a-f0-9-]{36}\/file$/.test(url)) {
+    return customFetch<void>(url, { method: "PUT", body: file, headers: { "Content-Type": file.type }, signal }).then(() => { onProgress(100); });
+  }
   return new Promise((resolve, reject) => {
     if (signal?.aborted) { reject(new Error("Upload cancelled.")); return; }
     const xhr = new XMLHttpRequest();

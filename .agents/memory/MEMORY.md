@@ -11,3 +11,4 @@
 - [Booking readiness](booking-readiness.md) — location opening hours are not doctor sessions; never imply booking readiness or guess patient capacity from hours alone.
 - [DigiQ standardization](digiq-standardization-decisions.md) — prompt is the approved reference; surface conflicts, inherit parent display formats, and use in-app warnings.
 - [Notification safety](notification-delivery-safety.md) — retry only known pre-dispatch failures; reminders refer to sessions, not promised consultation times.
+- [Media storage choice](media-storage-choice.md) — uploads and HTTPS links; selectable local/object storage in one private server configuration file.

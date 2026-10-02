@@ -149,6 +149,7 @@ export * from './listQrsParams';
 export * from './listSchedulesParams';
 export * from './listUsersParams';
 export * from './liveQueue';
+export * from './logoBinary';
 export * from './logoUploadInput';
 export * from './logoutNativeSession200';
 export * from './managingAdminOption';

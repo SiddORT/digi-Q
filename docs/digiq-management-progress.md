@@ -27,9 +27,11 @@ The four areas requested in the follow-on implementation are now coded:
 
 - This does not certify live SMTP acceptance or inbox delivery. SMTP must work and
   notifications must be enabled before production delivery is expected.
-- Uploaded logos use Replit App Storage and its sidecar. An independent non-Replit
-  deployment needs an equivalent storage adapter/configuration; a passing self-host
-  build is not proof that this storage provider is available there.
+- Uploaded logos now support Replit App Storage (default) and persistent local
+  server folders selected through the private settings file. See media-storage.md.
+  Replit Autoscale must retain object storage; its deployment disk is ephemeral.
+  Local mode was verified against disposable PostgreSQL and a temporary filesystem,
+  not the independent production host.
 - Permission configuration restricts existing roles; this is not an arbitrary
   custom-role or field-level grants engine.
 - A verified account-email-change workflow, unified all-user directory and other

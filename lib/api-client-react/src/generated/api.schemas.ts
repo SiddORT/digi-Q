@@ -20,6 +20,8 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export type LogoBinary = Blob;
+
 export interface PermissionPolicyInput {
   revision: number;
   denied: string[];

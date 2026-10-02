@@ -61,6 +61,16 @@ export const RequestLogoUploadResponse = zod.object({
 })
 
 
+/**
+ * Authenticated same-origin local image upload. Requires the normal CSRF header.
+ */
+export const UploadLocalLogoParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UploadLocalLogoResponse = zod.void()
+
+
 export const CompleteLogoUploadParams = zod.object({
   "id": zod.coerce.string()
 })

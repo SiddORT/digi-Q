@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { startNotificationWorker } from "./lib/notification-outbox";
+import { initializeMedia } from "./lib/local-media";
 
 const rawPort = process.env["PORT"];
 
@@ -16,6 +17,7 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+await initializeMedia();
 app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");

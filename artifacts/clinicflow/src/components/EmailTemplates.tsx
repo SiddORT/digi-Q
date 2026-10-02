@@ -192,7 +192,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
                 <div className="et-actions">
                   <label className="button secondary" data-testid="label-logo-file">{uploading ? "Uploading…" : "Choose image file"}
                     <input type="file" hidden accept={LOGO_TYPES.join(",")} disabled={uploading} onChange={e => { void onLogoFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-logo-file" /></label>
-                  {uploading && <button type="button" className="secondary" onClick={() => uploadAbort.current?.abort()} data-testid="button-cancel-upload">Cancel upload</button>}
+                  {uploading && <button type="button" className="secondary" onClick={() => { uploadAbort.current?.abort(); setUpload({ state: "idle", pct: 0, msg: "Upload cancelled." }); }} data-testid="button-cancel-upload">Cancel upload</button>}
                   {form.logoUrl && !uploading && <button type="button" className="secondary" onClick={() => { set(k, ""); setUpload({ state: "idle", pct: 0, msg: "" }); }} data-testid="button-remove-logo">Remove logo</button>}
                 </div>
                 <small>PNG, JPEG or WebP · max 2 MB · max 2048×2048 px (checked by the server)</small>

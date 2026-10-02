@@ -43,6 +43,20 @@ paths:
         content: { application/json: { schema: { $ref: "#/components/schemas/LogoUploadInput" } } }
       responses:
         "200": { description: Upload reservation, content: { application/json: { schema: { type: object, required: [id, uploadUrl], properties: { id: { type: string }, uploadUrl: { type: string } } } } } }
+  /management/logos/{id}/file:
+    put:
+      operationId: uploadLocalLogo
+      description: Authenticated same-origin local image upload. Requires the normal CSRF header.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          image/png: { schema: { $ref: "#/components/schemas/LogoBinary" } }
+          image/jpeg: { schema: { $ref: "#/components/schemas/LogoBinary" } }
+          image/webp: { schema: { $ref: "#/components/schemas/LogoBinary" } }
+      responses:
+        "204": { description: Validated image stored }
   /management/logos/{id}/complete:
     post:
       operationId: completeLogoUpload
@@ -1004,6 +1018,9 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    LogoBinary:
+      type: string
+      format: binary
     PermissionPolicyInput:
       type: object
       required: [revision, denied]
