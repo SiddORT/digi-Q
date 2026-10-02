@@ -38,3 +38,15 @@ Use friendly in-app warnings, not JavaScript pop-ups.
 **Why:** The user explicitly requested warnings presented through the app UI.
 
 **How to apply:** Replace in-app alert/confirm/prompt interactions with app dialogs. Do not claim a custom dialog can intercept browser tab closure or reload; that browser-level limitation still requires a separate decision if unload protection is requested.
+
+Use a universal phone country-code dropdown so users enter the local number separately. Clinic timezone and date/time configuration may be changed only by Clinic Admin or Super Admin, not ordinary doctors or staff.
+
+**Why:** The user explicitly requested consistent entry throughout the app and administrator-owned clinic configuration.
+
+**How to apply:** Apply across forms, including edits and onboarding. Do not infer that this locks patients' or staff members' personal contact details.
+
+The user wants predefined booking, clinic-onboarding, rescheduling, post-checkout thank-you and one-hour-before-appointment reminder emails, plus detailed module/action permission visibility for Super Admin.
+
+**Why:** These are explicit requested workflow capabilities, not a claim that current templates, scheduling or permission-editor UI already implement them.
+
+**How to apply:** Distinguish existing role enforcement from a configurable permission matrix. Resolve queue-versus-fixed appointment timing before promising precisely timed reminders. Preserve solo Clinic Admin-doctor and staffed-clinic operation.
