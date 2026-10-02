@@ -32,3 +32,9 @@ The user's reason for considering app-owned JWT is that their team is more famil
 **Why:** The user clarified the motivation and requested live-deployment verification rather than assuming the workspace migration is deployed.
 
 **How to apply:** Explain that JWT is a token format, OAuth an authorization protocol, and Clerk a provider. Treat JWT as an architecture choice, not a prerequisite for removing Clerk. Verify each deployment independently; do not treat approval of an audit or checklist as permission to change authentication.
+
+UAT at `https://uat.digi-q.in` is the authoritative target for the authentication review.
+
+**Why:** The user explicitly selected UAT rather than the Replit-published site or both deployments.
+
+**How to apply:** Scope live verification and release-readiness conclusions to UAT. Observations of the Replit deployment do not establish UAT behavior, and discrepancies there do not automatically expand the work.
