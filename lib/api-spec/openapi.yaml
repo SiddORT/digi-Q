@@ -3,7 +3,15 @@ info:
   title: Api
   version: 1.0.0
   description: |
-    ClinicFlow REST contract. PostgreSQL-backed native sessions resolve a database role.
+    ClinicFlow REST contract. Sessions resolve a database role. The HttpOnly, Secure,
+    SameSite=Lax cookie contains an opaque native token by default for continuity,
+    or an app-issued JWT when AUTH_SESSION_MODE=jwt is explicitly configured.
+    Both modes are database-revocable with a fixed 12-hour lifetime, with no refresh
+    endpoint. Changing modes invalidates old cookies. JWT_SIGNING_KEY must be a
+    dedicated high-entropy secret of at least 32 UTF-8 bytes, configured before
+    enabling JWT mode. Session issuance may return 503 AUTH_SESSION_UNCONFIGURED.
+    Newly created passwords require at least 8 characters, ASCII letters and numbers,
+    and at most 1024 UTF-8 bytes (enforced by the server).
     Super admins access all; clinic admins and receptionists are assignment-scoped;
     doctors access their own resources and relevant patients; patients access self only.
     All filters narrow authorized scope, never expand it. DELETE deactivates records
@@ -15,6 +23,38 @@ servers:
 security:
   - NativeSession: []
 paths:
+  /settings/integrations:
+    get:
+      operationId: getIntegrationSettings
+      description: Super Admin only. Environment readiness only; never returns configuration values.
+      responses:
+        "200":
+          description: Configuration readiness (not a provider connectivity check)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IntegrationSettings" }
+        "401": { description: Sign in required }
+        "403": { description: Super Admin required }
+  /settings/integrations/smtp/test-email:
+    post:
+      operationId: sendSmtpTestEmail
+      description: Super Admin only. Sends a fixed DigiQ Doctors test message. Rate limited by user and IP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SmtpTestInput" }
+      responses:
+        "200":
+          description: Provider accepted the message; inbox delivery is not confirmed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SmtpTestResult" }
+        "400": { description: Invalid recipient }
+        "401": { description: Sign in required }
+        "403": { description: Super Admin required }
+        "429": { description: Test email limit reached }
+        "503": { description: Email unavailable }
   /demo/login:
     post:
       operationId: demoLogin
@@ -221,6 +261,7 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/NativeStaffLoginInput" } } } }
       responses:
         "200": { description: Staff session created, content: { application/json: { schema: { $ref: "#/components/schemas/StaffLoginResponse" } } } }
+        "503": { description: "Session issuance unavailable; code AUTH_SESSION_UNCONFIGURED when session mode or signing key is invalid." }
   /auth/verify-device:
     post:
       operationId: verifyStaffDevice
@@ -228,6 +269,7 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthCodeInput" } } } }
       responses:
         "200": { description: Session created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
+        "503": { description: "Session issuance unavailable; code AUTH_SESSION_UNCONFIGURED when session mode or signing key is invalid." }
   /auth/patient/start:
     post:
       operationId: startPatientEmail
@@ -242,6 +284,7 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthCodeInput" } } } }
       responses:
         "200": { description: Patient session created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
+        "503": { description: "Session issuance unavailable; code AUTH_SESSION_UNCONFIGURED when session mode or signing key is invalid." }
   /auth/register/start:
     post:
       operationId: startClinicRegistration
@@ -801,7 +844,11 @@ paths:
         "200": { description: Saved, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
 components:
   securitySchemes:
-    NativeSession: { type: apiKey, in: cookie, name: digiq_session }
+    NativeSession:
+      type: apiKey
+      in: cookie
+      name: digiq_session
+      description: Opaque native token (default) or explicitly enabled app-issued JWT. Both are database-revocable, fixed 12-hour HttpOnly/Secure/SameSite=Lax cookies. No refresh endpoint.
   responses:
     Error:
       description: Request failed
@@ -824,6 +871,38 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    IntegrationKeyStatus:
+      type: object
+      required: [key, status]
+      properties:
+        key: { type: string }
+        status: { type: string, enum: [configured, missing, invalid, default] }
+    IntegrationReadiness:
+      type: object
+      required: [ready, keys]
+      properties:
+        ready: { type: boolean }
+        keys:
+          type: array
+          items: { $ref: "#/components/schemas/IntegrationKeyStatus" }
+    IntegrationSettings:
+      type: object
+      required: [smtp, sms]
+      properties:
+        smtp: { $ref: "#/components/schemas/IntegrationReadiness" }
+        sms: { $ref: "#/components/schemas/IntegrationReadiness" }
+    SmtpTestInput:
+      type: object
+      additionalProperties: false
+      required: [recipient]
+      properties:
+        recipient: { type: string, format: email, maxLength: 254 }
+    SmtpTestResult:
+      type: object
+      required: [status, message]
+      properties:
+        status: { type: string, enum: [provider_accepted] }
+        message: { type: string }
     NativeStaffLoginInput:
       type: object
       required: [email, password]
@@ -850,13 +929,13 @@ components:
       properties:
         email: { type: string, format: email }
         fullName: { type: string, minLength: 1, maxLength: 200 }
-        password: { type: string, minLength: 12, maxLength: 1024 }
+        password: { type: string, minLength: 8, maxLength: 1024, pattern: '^(?=[\s\S]*[A-Za-z])(?=[\s\S]*[0-9])[\s\S]*$', description: "Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server." }
     ChangeNativePasswordInput:
       type: object
       required: [currentPassword, password]
       properties:
         currentPassword: { type: string }
-        password: { type: string, minLength: 12, maxLength: 1024 }
+        password: { type: string, minLength: 8, maxLength: 1024, pattern: '^(?=[\s\S]*[A-Za-z])(?=[\s\S]*[0-9])[\s\S]*$', description: "Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server." }
     DemoLoginInput:
       type: object
       required: [password]
@@ -1175,7 +1254,7 @@ components:
       required: [token, password]
       properties:
         token: { type: string }
-        password: { type: string, minLength: 12, maxLength: 1024 }
+        password: { type: string, minLength: 8, maxLength: 1024, pattern: '^(?=[\s\S]*[A-Za-z])(?=[\s\S]*[0-9])[\s\S]*$', description: "Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server." }
     AuthStatus:
       type: object
       required: [role, staffPasswordVerified, requiresStaffPassword, csrfToken]

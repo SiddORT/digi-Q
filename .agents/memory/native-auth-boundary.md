@@ -44,3 +44,15 @@ The user says development was done here, pushed through Git and deployed, then C
 **Why:** The user corrected the assumption that workspace authentication represents deployed authentication.
 
 **How to apply:** Treat deployed JWT as user-reported, not independently verified. Scope further analysis as reconciliation of potentially divergent implementations, not automatically a new JWT migration. Do not repeat requests for the unavailable deployment files or claim public endpoint checks prove token format.
+
+Third-party credentials, including SMTP, belong in deployment environment/secrets with a separately documented configuration template, not an in-app credential editor.
+
+**Why:** The user chose “Deployment secrets only” and asked for a separate configuration/environment/settings place to manage third-party authentication.
+
+**How to apply:** Keep templates placeholder-only. A Super Admin readiness/test action may use configured credentials but must never expose or edit them. Keep real SMTP delivery distinct from fake-transport tests.
+
+Initial JWT compatibility work preserves the existing fixed 12-hour session policy instead of introducing refresh-token behavior at the same time.
+
+**Why:** Keeping lifetime and database revocation unchanged limits authentication regressions while workspace and manually modified UAT implementations remain divergent.
+
+**How to apply:** Treat short access-token/rotating refresh design as unfinished, not silently completed. Activation is explicit and requires a dedicated signing key; do not weaken validation or fall back on a missing JWT key.

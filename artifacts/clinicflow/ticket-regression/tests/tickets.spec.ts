@@ -51,7 +51,9 @@ async function mount(page: Page, mode: Mode, f: Fixtures, recovered = false) {
     const path = url.pathname;
     f.calls.push(`${req.method()} ${path}`);
     let reply: Reply;
-    if (path === "/api/public/guest-receipt" && req.method() === "POST") {
+    if (path === "/api/auth/csrf") {
+      reply = { body: { csrfToken: "isolated-ticket-fixture-csrf" } };
+    } else if (path === "/api/public/guest-receipt" && req.method() === "POST") {
       const body = req.postDataJSON();
       expect(body.receiptSecret).toBe(guestSecret);
       reply = f.mutateGuest(++f.guestReads);
@@ -291,6 +293,10 @@ test("guest recovery API error warns and refresh can restore ticket", async ({ p
     : { body: guest };
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
+    if (path === "/api/auth/csrf") {
+      await route.fulfill({ json: { csrfToken: "isolated-ticket-fixture-csrf" } });
+      return;
+    }
     if (path === "/api/public/availability/sessions") {
       await route.fulfill({ json: availability });
       return;
@@ -338,6 +344,8 @@ test("appointment missing initial QR disables exports until API retry", async ({
 
 test("guest immediate creation commits recoverable receipt without account", async ({ page }) => {
   const f = fixture();
+  await page.route("**/api/auth/csrf", route =>
+    route.fulfill({ json: { csrfToken: "isolated-ticket-fixture-csrf" } }));
   await page.route("**/api/public/guest-requests", async route => {
     const request = route.request().postDataJSON();
     expect(request.receiptSecret).toMatch(/^[a-f0-9]{64}$/);

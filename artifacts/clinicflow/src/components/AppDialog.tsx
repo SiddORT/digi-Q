@@ -1,4 +1,5 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -6,6 +7,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { decideCloseRequest } from "./app-dialog-close";
 import "./app-dialog.css";
 
 export interface AppDialogProps {
@@ -27,40 +29,78 @@ export function AppDialog({
   dirty = false,
   busy = false,
 }: AppDialogProps) {
-  const handleOpenChange = useCallback(
-    (isOpen: boolean) => {
-      if (!isOpen) {
-        if (busy) {
-          // Do not allow closing if busy (e.g., submitting a form)
-          return;
-        }
-        if (dirty) {
-          const confirmClose = window.confirm(
-            "You have unsaved changes. Are you sure you want to discard them?"
-          );
-          if (!confirmClose) {
-            return;
-          }
-        }
-        onClose();
-      }
-    },
-    [onClose, dirty, busy]
-  );
+  const [confirming, setConfirming] = useState(false);
+  const keepRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Reset when the dialog is closed from outside.
+  useEffect(() => {
+    if (!open) setConfirming(false);
+  }, [open]);
+
+  useEffect(() => {
+    if (confirming) keepRef.current?.focus();
+  }, [confirming]);
+
+  const requestClose = useCallback(() => {
+    const decision = decideCloseRequest({ busy, dirty, confirming });
+    if (decision === "confirm") {
+      returnFocusRef.current = document.activeElement as HTMLElement | null;
+      setConfirming(true);
+    } else if (decision === "close") {
+      onCloseRef.current();
+    }
+  }, [busy, dirty, confirming]);
+
+  const keepEditing = useCallback(() => {
+    setConfirming(false);
+    const el = returnFocusRef.current;
+    requestAnimationFrame(() => {
+      if (el && el.isConnected) el.focus();
+    });
+  }, []);
+
+  const discard = useCallback(() => {
+    setConfirming(false);
+    onCloseRef.current();
+  }, []);
+
+  const trapConfirmFocus = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Tab" || !confirmRef.current) return;
+    const items = confirmRef.current.querySelectorAll<HTMLButtonElement>("button:not([disabled])");
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) requestClose();
+      }}
+    >
       <DialogContent
         className="app-dialog sm:max-w-2xl bg-white border border-border shadow-xl"
+        aria-busy={busy || undefined}
         onInteractOutside={(e) => {
-          if (busy) {
-            e.preventDefault();
-          }
+          e.preventDefault();
+          if (!confirming) requestClose();
         }}
         onEscapeKeyDown={(e) => {
-          if (busy) {
-            e.preventDefault();
-          }
+          e.preventDefault();
+          if (confirming) keepEditing();
+          else requestClose();
         }}
       >
         <DialogHeader className="app-dialog-header bg-slate-50/50 space-y-0">
@@ -70,12 +110,66 @@ export function AppDialog({
               {description}
             </DialogDescription>
           )}
+          <span
+            className="app-dialog-close-wrap"
+            title={busy ? "Saving in progress" : undefined}
+          >
+            <button
+              type="button"
+              className="app-dialog-close"
+              data-testid="button-dialog-close"
+              aria-label={busy ? "Close (saving in progress)" : "Close"}
+              disabled={busy}
+              onClick={requestClose}
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </span>
         </DialogHeader>
-        
-        {/* Single internal scroll area for the content */}
-        <div className="app-dialog-body bg-white">
+
+        {/* Single internal scroll area for the content. Kept mounted during
+            discard confirmation so form values are preserved. */}
+        <div className="app-dialog-body bg-white" aria-hidden={confirming || undefined} inert={confirming ? true : undefined}>
           {children}
         </div>
+
+        {confirming && (
+          <div className="app-discard-scrim" data-testid="discard-confirm">
+            <div
+              ref={confirmRef}
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="app-discard-title"
+              aria-describedby="app-discard-desc"
+              className="app-discard-panel"
+              onKeyDown={trapConfirmFocus}
+            >
+              <h3 id="app-discard-title" className="app-discard-title">Discard unsaved changes?</h3>
+              <p id="app-discard-desc" className="app-discard-desc">
+                The changes you made in this form will be lost.
+              </p>
+              <div className="app-discard-actions">
+                <button
+                  ref={keepRef}
+                  type="button"
+                  className="app-discard-btn app-discard-keep"
+                  data-testid="button-keep-editing"
+                  onClick={keepEditing}
+                >
+                  Keep editing
+                </button>
+                <button
+                  type="button"
+                  className="app-discard-btn app-discard-danger"
+                  data-testid="button-discard-changes"
+                  onClick={discard}
+                >
+                  Discard changes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

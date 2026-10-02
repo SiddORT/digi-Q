@@ -4,10 +4,11 @@ import argon2 from "argon2";
 import { and, eq, gt, isNull, lt, sql } from "drizzle-orm";
 import { db, users, authSessions, authChallenges, authRateLimits } from "@workspace/db";
 import { HttpError } from "./http";
+import { SESSION_AGE, sessionMode } from "./auth-config";
+import { signSessionJwt, verifySessionJwt } from "./jwt-session";
 
 export const SESSION_COOKIE = "digiq_session";
 export const CSRF_COOKIE = "digiq_csrf";
-const SESSION_AGE = 12 * 60 * 60 * 1000;
 const digest = (raw: string) => createHash("sha256").update(raw).digest("hex");
 function challengeDigest(id: string, purpose: string, raw: string) {
   const secret = process.env.SESSION_SECRET;
@@ -17,8 +18,9 @@ function challengeDigest(id: string, purpose: string, raw: string) {
 }
 const cookieOptions = { httpOnly: true, sameSite: "lax" as const, secure: true, path: "/api" };
 export function passwordInput(password: unknown): asserts password is string {
-  if (typeof password !== "string" || password.length < 12 || Buffer.byteLength(password, "utf8") > 1024)
-    throw new HttpError(400, "Password must be at least 12 characters and at most 1024 bytes", "INVALID_PASSWORD");
+  if (typeof password !== "string" || password.length < 8 || !/[A-Za-z]/.test(password) ||
+    !/[0-9]/.test(password) || Buffer.byteLength(password, "utf8") > 1024)
+    throw new HttpError(400, "Password must contain at least 8 characters, including letters and numbers, and at most 1024 bytes", "INVALID_PASSWORD");
 }
 export async function hashPassword(password: string): Promise<string> {
   passwordInput(password);
@@ -27,7 +29,7 @@ export async function hashPassword(password: string): Promise<string> {
 let dummyHash: Promise<string> | undefined;
 export async function verifyPassword(hash: string | null | undefined, password: unknown): Promise<boolean> {
   if (typeof password !== "string" || Buffer.byteLength(password, "utf8") > 1024) return false;
-  dummyHash ||= hashPassword(randomBytes(32).toString("base64url"));
+  dummyHash ||= hashPassword(`a1${randomBytes(32).toString("base64url")}`);
   try {
     const verified = await argon2.verify(hash || await dummyHash, password);
     return Boolean(hash && verified);
@@ -44,20 +46,40 @@ export function getCookie(req: Request, name: string): string | undefined {
 export async function nativeSession(req: Request, _res: Response, next: NextFunction) {
   try {
     const token = getCookie(req, SESSION_COOKIE);
-    if (token && /^[A-Za-z0-9_-]{43}$/.test(token)) {
+    if (!token) return next();
+    let subject: string | undefined;
+    let mode: "native" | "jwt";
+    try {
+      mode = sessionMode();
+      if (mode === "jwt") {
+        subject = await verifySessionJwt(token);
+        if (!subject) return next();
+      } else if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return next();
+    } catch (error) {
+      // Fail closed without breaking anonymous public routes, even with stale cookies.
+      // Credential issuance still exposes an explicit 503 configuration error.
+      if (error instanceof HttpError && error.code === "AUTH_SESSION_UNCONFIGURED") return next();
+      throw error;
+    }
+    {
       const [row] = await db.select({ userId: authSessions.userId, tokenHash: authSessions.tokenHash })
         .from(authSessions).innerJoin(users, eq(users.id, authSessions.userId))
         .where(and(eq(authSessions.tokenHash, digest(token)), gt(authSessions.expiresAt, new Date()),
           isNull(authSessions.revokedAt), eq(users.status, "active"))).limit(1);
-      if (row) { (req as any).authUserId = row.userId; (req as any).authSessionHash = row.tokenHash; }
+      if (row && (mode === "native" || row.userId === subject)) {
+        (req as any).authUserId = row.userId; (req as any).authSessionHash = row.tokenHash;
+      }
     }
     next();
   } catch (error) { next(error); }
 }
 export async function createSession(res: Response, userId: string) {
-  const token = randomBytes(32).toString("base64url");
+  const mode = sessionMode();
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const token = mode === "jwt" ? await signSessionJwt(userId, issuedAt) : randomBytes(32).toString("base64url");
+  const expiresAt = new Date(mode === "jwt" ? issuedAt * 1000 + SESSION_AGE : Date.now() + SESSION_AGE);
   await db.delete(authSessions).where(lt(authSessions.expiresAt, new Date()));
-  await db.insert(authSessions).values({ tokenHash: digest(token), userId, expiresAt: new Date(Date.now() + SESSION_AGE) });
+  await db.insert(authSessions).values({ tokenHash: digest(token), userId, expiresAt });
   res.cookie(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_AGE });
 }
 export async function revokeSession(req: Request, res: Response) {

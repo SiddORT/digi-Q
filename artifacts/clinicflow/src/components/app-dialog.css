@@ -16,3 +16,24 @@
   .app-dialog-body .form-footer>*,.app-dialog-footer>*{flex:1 1 auto}
   .app-dialog [data-radix-dialog-close],.app-dialog>button[type=button]:last-child{min-width:44px;min-height:44px}
 }
+/* Custom close button replaces the default Radix close (hidden) */
+.app-dialog>button[type=button]:last-child{display:none}
+.app-dialog-close-wrap{position:absolute;top:.35rem;right:.4rem;display:inline-flex}
+.app-dialog-close{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;border-radius:10px;color:hsl(var(--muted-foreground));background:transparent;border:0;cursor:pointer;transition:background-color .15s,color .15s}
+.app-dialog-close:hover:not(:disabled){background:hsl(var(--muted));color:hsl(var(--foreground))}
+.app-dialog-close:focus-visible{outline:2px solid hsl(var(--ring));outline-offset:2px}
+.app-dialog-close:disabled{opacity:.45;cursor:not-allowed}
+.app-discard-scrim{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:1rem;background:hsl(var(--foreground)/.28);animation:appDiscardIn .15s ease-out}
+.app-discard-panel{width:100%;max-width:380px;background:hsl(var(--card,var(--background)));border:1px solid hsl(var(--border));border-radius:12px;padding:1.1rem 1.2rem;box-shadow:0 12px 32px hsl(var(--foreground)/.18)}
+.app-discard-title{font-size:1rem;font-weight:700;color:hsl(var(--foreground));margin:0}
+.app-discard-desc{margin:.35rem 0 1rem;font-size:.85rem;line-height:1.45;color:hsl(var(--muted-foreground))}
+.app-discard-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.app-discard-btn{min-height:44px;padding:0 1rem;border-radius:10px;font-size:.88rem;font-weight:600;cursor:pointer;border:1px solid hsl(var(--border))}
+.app-discard-btn:focus-visible{outline:2px solid hsl(var(--ring));outline-offset:2px}
+.app-discard-keep{background:hsl(var(--background));color:hsl(var(--foreground))}
+.app-discard-keep:hover{background:hsl(var(--muted))}
+.app-discard-danger{background:hsl(var(--destructive));color:hsl(var(--destructive-foreground));border-color:transparent}
+.app-discard-danger:hover{opacity:.92}
+@media (max-width:639px){.app-discard-actions>*{flex:1 1 auto}}
+@keyframes appDiscardIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.app-discard-scrim{animation:none}}

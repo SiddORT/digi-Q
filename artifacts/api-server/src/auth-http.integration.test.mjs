@@ -19,6 +19,7 @@ const transportBundle = resolve(root, `.auth-transport-test-${process.pid}.mjs`)
 process.env.NODE_ENV = "production";
 process.env.LOG_LEVEL = "silent";
 process.env.SESSION_SECRET = "disposable-test-signing-key-not-for-production-123";
+process.env.AUTH_SESSION_MODE = "native";
 process.env.CLINICFLOW_PUBLIC_ORIGIN = "https://example.test";
 Object.assign(process.env, { SMTP_HOST: "localhost", SMTP_PORT: "587", SMTP_USER: "test",
   SMTP_PASSWORD: "test-not-a-credential", SMTP_FROM: "test@example.test" });

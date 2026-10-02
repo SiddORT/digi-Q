@@ -60,7 +60,7 @@ export function SetPassword() {
       {!token && <div className="error-box" role="alert" data-testid="status-invitation-error">This password setup link is incomplete. Request a new one.</div>}
       {error && <div className="error-box" role="alert" data-testid="status-invitation-error">{error}</div>}
       {token && <form onSubmit={save}>
-        <label>New password<input data-testid="input-invitation-password" type="password" autoComplete="new-password" required minLength={12} value={password} onChange={event => setPassword(event.target.value)} /></label>
+        <label>New password<input data-testid="input-invitation-password" type="password" autoComplete="new-password" required minLength={8} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,}" title="At least 8 characters, including letters and numbers" value={password} onChange={event => setPassword(event.target.value)} /></label>
         <button className="button auth-submit" data-testid="button-set-invitation-password" disabled={busy}>{busy ? "Setting password…" : "Set password"}</button>
       </form>}
       <div className="auth-links"><Link href="/sign-in" data-testid="link-invitation-staff-login">Staff login</Link></div>

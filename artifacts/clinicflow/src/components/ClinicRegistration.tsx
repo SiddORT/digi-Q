@@ -58,7 +58,7 @@ function RegistrationAccount() {
         {step === "details" ? <>
           <label>Your name<input type="text" autoComplete="name" required value={fullName} onChange={event => setFullName(event.target.value)}/></label>
           <label>Email address<input type="email" autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)}/></label>
-          <label>Password<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={event => setPassword(event.target.value)}/></label>
+          <label>Password<input type="password" autoComplete="new-password" minLength={8} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,}" title="At least 8 characters, including letters and numbers" required value={password} onChange={event => setPassword(event.target.value)}/></label>
         </> : <label>Code emailed to {email}<input type="text" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)}/></label>}
         {error && <div className="error-box" role="alert">{error}</div>}
         <button className="button auth-submit" type="submit" disabled={busy}>{busy ? "Please wait…" : step === "details" ? "Send verification code" : "Verify and continue"}</button>

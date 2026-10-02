@@ -14,6 +14,7 @@ import { guestRequestsRouter } from "./guest-requests";
 import { clinicExpansionRouter } from "./clinic-expansion";
 import { presenceRouter } from "./presence";
 import { demoRouter } from "./demo";
+import { integrationsRouter } from "./integrations";
 
 const router: IRouter = Router();
 
@@ -26,6 +27,7 @@ router.use(authRouter);
 router.use(demoRouter);
 router.use(identityRouter);
 router.use(otpRouter);
+router.use(integrationsRouter);
 router.use(resourcesRouter);
 router.use(durationRouter);
 router.use(appointmentsRouter);

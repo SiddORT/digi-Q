@@ -7,6 +7,7 @@ import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2,
 import { Logo } from "./App";
 import { WorkspaceNav, navLabel } from "./components/WorkspaceNav";
 import { DemoClinicManagement } from "./components/DemoClinicManagement";
+import { IntegrationSettings } from "./components/IntegrationSettings";
 import { Users } from "./Users";
 import { Editor, Empty, ErrorNotice, ResourcePage, resources, profileFields, settingsFields, title, today } from "./resources";
 import { SearchableSelect } from "./components/SearchableSelect";
@@ -322,6 +323,9 @@ export function DoctorClinics({ identity, embedded = false }: { identity: api.Id
 }
 
 function PlatformSettings(){
+ return <><PlatformPreferences/><IntegrationSettings/></>;
+}
+function PlatformPreferences(){
  const q=api.useGetSettings();const client=useQueryClient();const mutation=usePendingGuard(api.useUpdateSettings({mutation:{onSuccess:()=>client.invalidateQueries()}}));
   return <section className="panel padded platform-preferences"><h2>Platform preferences</h2><ErrorNotice error={q.error||mutation.error}/>{q.isLoading&&<div className="skeleton">Loading platform preferences…</div>}{q.error&&<button onClick={()=>q.refetch()}>Retry settings</button>}{q.error&&q.data&&<p className="notice" role="alert">Settings could not refresh. Review them after reconnecting before saving.</p>}<details className="settings-integration-note"><summary>Integrations and session limits</summary><p>General notifications are not connected. Session timeout is managed by the authentication service; platform preferences do not change your authentication session.</p><p>SMS provider: {q.isLoading?"Loading…":q.error?"Unavailable":q.data?.otpProviderConfigured?"Configured":"Not connected"} · Queue refresh: 30 seconds</p></details>{mutation.isSuccess&&<p className="notice" role="status">Settings saved.</p>}{q.data&&<fieldset disabled={!!q.error||q.isFetching||mutation.isPending}><Editor initial={q.data} fields={settingsFields} busy={mutation.isPending} onSave={data=>{if(!mutation.isPending)mutation.mutate({data});}}/></fieldset>}</section>;
 }
