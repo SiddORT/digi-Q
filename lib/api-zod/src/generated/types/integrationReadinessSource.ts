@@ -20,10 +20,11 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { IntegrationReadiness } from './integrationReadiness';
 
-export interface IntegrationSettings {
-  editable?: boolean;
-  smtp: IntegrationReadiness;
-  sms: IntegrationReadiness;
-}
+export type IntegrationReadinessSource = typeof IntegrationReadinessSource[keyof typeof IntegrationReadinessSource];
+
+
+export const IntegrationReadinessSource = {
+  environment: 'environment',
+  database: 'database',
+} as const;

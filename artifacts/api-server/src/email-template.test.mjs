@@ -16,6 +16,8 @@ const bundle = await build({
   plugins: [{
     name: "isolated-email",
     setup(builder) {
+      builder.onResolve({ filter: /integration-vault$/ }, () => ({ path: "vault", namespace: "vault-fixture" }));
+      builder.onLoad({ filter: /.*/, namespace: "vault-fixture" }, () => ({ contents: "export const resolvedIntegration=async()=>({env:{}});" }));
       builder.onResolve({ filter: /integration-config$/ }, () => ({ path: "config", namespace: "fixture" }));
       builder.onResolve({ filter: /^\.\/http$/ }, () => ({ path: "http", namespace: "fixture" }));
       builder.onResolve({ filter: /^nodemailer$/ }, () => ({ path: "mail", namespace: "fixture" }));

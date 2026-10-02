@@ -20,10 +20,19 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { IntegrationReadiness } from './integrationReadiness';
+import type { IntegrationUpdateMode } from './integrationUpdateMode';
+import type { IntegrationUpdateProvider } from './integrationUpdateProvider';
+import type { IntegrationUpdateValues } from './integrationUpdateValues';
 
-export interface IntegrationSettings {
-  editable?: boolean;
-  smtp: IntegrationReadiness;
-  sms: IntegrationReadiness;
+export interface IntegrationUpdate {
+  provider: IntegrationUpdateProvider;
+  mode: IntegrationUpdateMode;
+  /** @nullable */
+  revision: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 1024
+     */
+  currentPassword: string;
+  values: IntegrationUpdateValues;
 }

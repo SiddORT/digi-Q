@@ -45,11 +45,11 @@ The user says development was done here, pushed through Git and deployed, then C
 
 **How to apply:** Treat deployed JWT as user-reported, not independently verified. Scope further analysis as reconciliation of potentially divergent implementations, not automatically a new JWT migration. Do not repeat requests for the unavailable deployment files or claim public endpoint checks prove token format.
 
-Third-party credentials, including SMTP, belong in deployment environment/secrets with a separately documented configuration template, not an in-app credential editor.
+Use hybrid configuration: private server environment/.env for database, signing and encryption keys; supported integration credentials can be managed by Super Admin through the website and stored encrypted.
 
-**Why:** The user chose “Deployment secrets only” and asked for a separate configuration/environment/settings place to manage third-party authentication.
+**Why:** The user explicitly chose “Private .env + website settings” to support independent self-hosting, superseding the earlier deployment-only choice.
 
-**How to apply:** Keep templates placeholder-only. A Super Admin readiness/test action may use configured credentials but must never expose or edit them. Keep real SMTP delivery distinct from fake-transport tests.
+**How to apply:** Keep templates placeholder-only and real values out of Git/browser responses/logs. Retain server-environment operation, require password confirmation for website changes, and keep bootstrap keys outside the UI. Never make the website rewrite .env. Keep real delivery distinct from fake-transport tests.
 
 Initial JWT compatibility work preserves the existing fixed 12-hour session policy instead of introducing refresh-token behavior at the same time.
 

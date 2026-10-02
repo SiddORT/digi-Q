@@ -14,6 +14,8 @@ await build({
   stdin: { contents: 'export * from "./lib/report-order"; export {metricSql} from "./lib/list-query";', resolveDir: import.meta.dirname },
   outfile: join(dir, "sort.mjs"), bundle: true, platform: "node", format: "esm",
   plugins: [{ name: "isolated-db", setup(b) {
+    b.onResolve({ filter: /integration-vault$/ }, () => ({ path: "vault", namespace: "vault-fixture" }));
+    b.onLoad({ filter: /.*/, namespace: "vault-fixture" }, () => ({ contents: "export const resolvedIntegration=async()=>({env:{},source:'environment'});" }));
     b.onResolve({ filter: /^@workspace\/db$/ }, () => ({ path: "db", namespace: "isolated" }));
     b.onLoad({ filter: /.*/, namespace: "isolated" }, () => ({ contents: 'export const db={};' + ["users","doctors","assignments","branches","clinics","settings","auditLogs"].map(name=>`export const ${name}="${name}";`).join("") }));
   } }],

@@ -31,6 +31,7 @@ export function integrationReadiness(env: NodeJS.ProcessEnv = process.env) {
     key(env, "OTP_PROVIDER", value => value === "twilio" || (value === "development" && env.NODE_ENV === "development")),
     key(env, "TWILIO_ACCOUNT_SID", value => /^AC[a-f0-9]{32}$/i.test(value)),
     key(env, "TWILIO_MESSAGING_SERVICE_SID", value => /^MG[a-f0-9]{32}$/i.test(value)),
+    key(env, "TWILIO_AUTH_TOKEN", value => /^[a-f0-9]{32}$/i.test(value)),
   ];
   return { smtp: { ready: ready(smtp), keys: smtp }, sms: { ready: ready(sms), keys: sms } };
 }

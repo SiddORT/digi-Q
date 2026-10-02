@@ -29,6 +29,8 @@ await build({
   stdin: {contents:'export * from "./lib/list-query"; export * from "./lib/queue-list";',resolveDir:import.meta.dirname}, outfile: join(dir, "query.mjs"),
   bundle: true, platform: "node", format: "esm",
   plugins: [{ name: "isolated-db", setup(b) {
+    b.onResolve({ filter: /integration-vault$/ }, () => ({ path: "vault", namespace: "vault-fixture" }));
+    b.onLoad({ filter: /.*/, namespace: "vault-fixture" }, () => ({ contents: "export const resolvedIntegration=async()=>({env:{},source:'environment'});" }));
     b.onResolve({ filter: /^@workspace\/db$/ }, () => ({ path: "db", namespace: "fixture" }));
     b.onLoad({ filter: /.*/, namespace: "fixture" }, () => ({ contents: "export const db = {};" + ["settings", "auditLogs", "clinics", "doctors", "users", "assignments", "branches"].map(name => `export const ${name}='${name}';`).join("") }));
   } }],

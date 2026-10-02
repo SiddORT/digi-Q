@@ -101,6 +101,7 @@ import type {
   HealthStatus,
   Identity,
   IntegrationSettings,
+  IntegrationUpdate,
   ListAppointmentsParams,
   ListAuditLogsParams,
   ListAvailabilityExceptionsParams,
@@ -192,6 +193,88 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getUpdateIntegrationSettingsUrl = () => {
+
+
+
+
+  return `/api/settings/integrations`
+}
+
+export const updateIntegrationSettings = async (integrationUpdate: IntegrationUpdate, options?: Parameters<typeof customFetch>[1]): Promise<IntegrationSettings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<IntegrationSettings>(getUpdateIntegrationSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(integrationUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateIntegrationSettingsMutationKey = () => ['updateIntegrationSettings'] as const;
+
+export const getUpdateIntegrationSettingsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateIntegrationSettings>>, TError,UpdateIntegrationSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateIntegrationSettings>>, TError,UpdateIntegrationSettingsMutationVariables, TContext> => {
+
+const mutationKey = getUpdateIntegrationSettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateIntegrationSettings>>, UpdateIntegrationSettingsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateIntegrationSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateIntegrationSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateIntegrationSettings>>>
+    export type UpdateIntegrationSettingsMutationBody = BodyType<IntegrationUpdate>
+    export type UpdateIntegrationSettingsMutationError = ErrorType<ErrorResponse>
+    export type UpdateIntegrationSettingsMutationVariables = {data: BodyType<IntegrationUpdate>}
+
+    export const useUpdateIntegrationSettings = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateIntegrationSettings>>, TError,UpdateIntegrationSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateIntegrationSettings>>,
+        TError,
+        UpdateIntegrationSettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateIntegrationSettingsMutationOptions(options));
+    }
 
 export const getGetIntegrationSettingsUrl = () => {
 

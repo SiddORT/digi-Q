@@ -23,11 +23,25 @@
 import * as zod from 'zod';
 
 
-/**
- * Super Admin only. Environment readiness only; never returns configuration values.
- */
-export const GetIntegrationSettingsResponse = zod.object({
+export const updateIntegrationSettingsBodyCurrentPasswordMax = 1024;
+
+export const updateIntegrationSettingsBodyValuesMaxOne = 2048;
+
+
+
+export const UpdateIntegrationSettingsBody = zod.object({
+  "provider": zod.enum(['smtp', 'sms']),
+  "mode": zod.enum(['database', 'environment']),
+  "revision": zod.string().nullable(),
+  "currentPassword": zod.string().min(1).max(updateIntegrationSettingsBodyCurrentPasswordMax),
+  "values": zod.record(zod.string(), zod.string().max(updateIntegrationSettingsBodyValuesMaxOne))
+})
+
+export const UpdateIntegrationSettingsResponse = zod.object({
+  "editable": zod.boolean().optional(),
   "smtp": zod.object({
+  "source": zod.enum(['environment', 'database']).optional(),
+  "revision": zod.string().nullish(),
   "ready": zod.boolean(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
@@ -35,6 +49,34 @@ export const GetIntegrationSettingsResponse = zod.object({
 }))
 }),
   "sms": zod.object({
+  "source": zod.enum(['environment', 'database']).optional(),
+  "revision": zod.string().nullish(),
+  "ready": zod.boolean(),
+  "keys": zod.array(zod.object({
+  "key": zod.string(),
+  "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
+}))
+})
+})
+
+
+/**
+ * Super Admin only. Environment readiness only; never returns configuration values.
+ */
+export const GetIntegrationSettingsResponse = zod.object({
+  "editable": zod.boolean().optional(),
+  "smtp": zod.object({
+  "source": zod.enum(['environment', 'database']).optional(),
+  "revision": zod.string().nullish(),
+  "ready": zod.boolean(),
+  "keys": zod.array(zod.object({
+  "key": zod.string(),
+  "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
+}))
+}),
+  "sms": zod.object({
+  "source": zod.enum(['environment', 'database']).optional(),
+  "revision": zod.string().nullish(),
   "ready": zod.boolean(),
   "keys": zod.array(zod.object({
   "key": zod.string(),

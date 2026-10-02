@@ -63,6 +63,8 @@ await build({
     name: "isolated-persistence",
     setup(b) {
       b.onResolve({ filter: /^@workspace\/api-zod$/ }, () => ({path:resolve(root,"../../../lib/api-zod/src/index.ts")}));
+      b.onResolve({ filter: /integration-vault$/ }, () => ({ path: "vault", namespace: "vault-fixture" }));
+      b.onLoad({ filter: /.*/, namespace: "vault-fixture" }, () => ({ contents: "export const resolvedIntegration=async()=>({env:{},source:'environment'});" }));
       b.onResolve({ filter: /^(audit-fixture|@workspace\/db|drizzle-orm)$/ }, a => ({path:a.path,namespace:"fixture"}));
       b.onResolve({ filter: /\/store$/ }, () => ({path:"audit-fixture",namespace:"fixture"}));
       // Authentication endpoints have their own DB-backed integration suite. This

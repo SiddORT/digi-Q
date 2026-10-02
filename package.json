@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "build:selfhost": "pnpm run typecheck && PORT=3000 BASE_PATH=/ pnpm --filter @workspace/clinicflow run build && pnpm --filter @workspace/api-server run build",
+    "start:selfhost": "node --env-file=.env --enable-source-maps artifacts/api-server/dist/index.mjs",
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",

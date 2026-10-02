@@ -24,6 +24,24 @@ security:
   - NativeSession: []
 paths:
   /settings/integrations:
+    put:
+      operationId: updateIntegrationSettings
+      tags: [settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IntegrationUpdate" }
+      responses:
+        "200":
+          description: Updated readiness; credentials are never returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IntegrationSettings" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
     get:
       operationId: getIntegrationSettings
       description: Super Admin only. Environment readiness only; never returns configuration values.
@@ -943,6 +961,8 @@ components:
       type: object
       required: [ready, keys]
       properties:
+        source: { type: string, enum: [environment, database] }
+        revision: { type: [string, "null"] }
         ready: { type: boolean }
         keys:
           type: array
@@ -951,8 +971,21 @@ components:
       type: object
       required: [smtp, sms]
       properties:
+        editable: { type: boolean }
         smtp: { $ref: "#/components/schemas/IntegrationReadiness" }
         sms: { $ref: "#/components/schemas/IntegrationReadiness" }
+    IntegrationUpdate:
+      type: object
+      additionalProperties: false
+      required: [provider, mode, revision, currentPassword, values]
+      properties:
+        provider: { type: string, enum: [smtp, sms] }
+        mode: { type: string, enum: [database, environment] }
+        revision: { type: [string, "null"] }
+        currentPassword: { type: string, minLength: 1, maxLength: 1024 }
+        values:
+          type: object
+          additionalProperties: { type: string, maxLength: 2048 }
     SmtpTestInput:
       type: object
       additionalProperties: false

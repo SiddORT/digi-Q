@@ -111,6 +111,12 @@ export const auditLogs = pgTable("audit_logs", {
   action: text("action").notNull(), entityType: text("entity_type").notNull(), entityId: text("entity_id").notNull(), summary: text("summary").notNull(), createdAt: created(),
 }, t => [index("audit_scope_idx").on(t.clinicId, t.branchId, t.createdAt)]);
 export const settings = pgTable("settings", { id: id(), data: data() });
+// Deliberately separate from the generic settings/resources APIs.
+export const integrationCredentials = pgTable("integration_credentials", {
+  provider: text("provider").primaryKey(),
+  encrypted: text("encrypted").notNull(),
+  revision: text("revision").notNull(),
+});
 export const otpChallenges = pgTable("otp_challenges", {
   id: id(), userId: text("user_id").notNull().references(() => users.id), mobile: text("mobile").notNull(),
   codeHash: text("code_hash").notNull(), expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),

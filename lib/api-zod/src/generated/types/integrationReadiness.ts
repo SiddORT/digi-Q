@@ -21,8 +21,12 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { IntegrationKeyStatus } from './integrationKeyStatus';
+import type { IntegrationReadinessSource } from './integrationReadinessSource';
 
 export interface IntegrationReadiness {
+  source?: IntegrationReadinessSource;
+  /** @nullable */
+  revision?: string | null;
   ready: boolean;
   keys: IntegrationKeyStatus[];
 }

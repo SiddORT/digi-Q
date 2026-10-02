@@ -15,6 +15,8 @@ await build({
   bundle: true, platform: "node", format: "esm",
   plugins: [{ name: "no-application-database", setup(b) {
     b.onResolve({ filter: /^@workspace\/db$/ }, () => ({ path: "db", namespace: "isolated" }));
+    b.onResolve({ filter: /integration-vault$/ }, () => ({ path: "vault", namespace: "vault-fixture" }));
+    b.onLoad({ filter: /.*/, namespace: "vault-fixture" }, () => ({ contents: "export const resolvedIntegration=async()=>({env:{},source:'environment'});" }));
     b.onLoad({ filter: /.*/, namespace: "isolated" }, () => ({ contents: "export const db = {execute: (...args) => globalThis.fixtureExecute(...args)};" + ["users","doctors","assignments","branches","clinics","settings","auditLogs"].map(t=>`export const ${t}="${t}";`).join("") }));
   } }],
 });

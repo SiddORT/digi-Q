@@ -34,7 +34,7 @@ export const defaultSettings = {
 export async function getSettings(conn: any = db, clinicId?: string) {
   const [row] = await conn.select().from(settings).where(eq(settings.id, "platform"));
   const clinic = clinicId ? await one(clinics, clinicId, conn) : null;
-  return { ...defaultSettings, ...row?.data, ...(clinic?.policies || {}), otpProviderConfigured: otpDeliveryConfigured(), queuePollSeconds: 30 };
+  return { ...defaultSettings, ...row?.data, ...(clinic?.policies || {}), otpProviderConfigured: await otpDeliveryConfigured(conn), queuePollSeconds: 30 };
 }
 export function filtered(rows: any[], q: any) {
   return rows.filter(r => {

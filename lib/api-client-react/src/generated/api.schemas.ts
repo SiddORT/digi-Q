@@ -35,14 +35,57 @@ export interface IntegrationKeyStatus {
   status: IntegrationKeyStatusStatus;
 }
 
+export type IntegrationReadinessSource = typeof IntegrationReadinessSource[keyof typeof IntegrationReadinessSource];
+
+
+export const IntegrationReadinessSource = {
+  environment: 'environment',
+  database: 'database',
+} as const;
+
 export interface IntegrationReadiness {
+  source?: IntegrationReadinessSource;
+  /** @nullable */
+  revision?: string | null;
   ready: boolean;
   keys: IntegrationKeyStatus[];
 }
 
 export interface IntegrationSettings {
+  editable?: boolean;
   smtp: IntegrationReadiness;
   sms: IntegrationReadiness;
+}
+
+export type IntegrationUpdateProvider = typeof IntegrationUpdateProvider[keyof typeof IntegrationUpdateProvider];
+
+
+export const IntegrationUpdateProvider = {
+  smtp: 'smtp',
+  sms: 'sms',
+} as const;
+
+export type IntegrationUpdateMode = typeof IntegrationUpdateMode[keyof typeof IntegrationUpdateMode];
+
+
+export const IntegrationUpdateMode = {
+  database: 'database',
+  environment: 'environment',
+} as const;
+
+export type IntegrationUpdateValues = {[key: string]: string};
+
+export interface IntegrationUpdate {
+  provider: IntegrationUpdateProvider;
+  mode: IntegrationUpdateMode;
+  /** @nullable */
+  revision: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 1024
+     */
+  currentPassword: string;
+  values: IntegrationUpdateValues;
 }
 
 export interface SmtpTestInput {

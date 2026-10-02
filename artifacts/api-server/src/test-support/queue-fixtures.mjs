@@ -1,4 +1,5 @@
 export const queueFixtureSql = `
+CREATE TABLE integration_credentials (provider text PRIMARY KEY, encrypted text NOT NULL, revision text NOT NULL);
   create table users(id text primary key, clerk_id text, password_hash text, email_verified_at timestamptz, password_changed_at timestamptz, email text, full_name text, mobile text, role text, managing_admin_id text, invitation_status text default 'notRequired',status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
   create table auth_sessions(id text primary key, user_id text, token_hash text, created_at timestamptz default now(), expires_at timestamptz, revoked_at timestamptz);
   create table clinics(id text primary key,owner_id text,admin_id text,status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());

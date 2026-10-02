@@ -1,11 +1,14 @@
 import { Router } from "express";
 import { ipKeyGenerator } from "express-rate-limit";
 import nodemailer from "nodemailer";
-import { SendSmtpTestEmailBody, GetIntegrationSettingsResponse } from "@workspace/api-zod";
+import { SendSmtpTestEmailBody, GetIntegrationSettingsResponse, UpdateIntegrationSettingsBody } from "@workspace/api-zod";
+import { db, users } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { requireUser, roles } from "../lib/auth";
 import { HttpError } from "../lib/http";
-import { integrationReadiness, smtpConfig, validEmailAddress } from "../lib/integration-config";
-import { consumeRateLimit } from "../lib/native-auth";
+import { smtpConfig, validEmailAddress } from "../lib/integration-config";
+import { consumeRateLimit, verifyPassword } from "../lib/native-auth";
+import { integrationSettings, resolvedIntegration, saveIntegration, integrationFields } from "../lib/integration-vault";
 
 export const integrationsRouter = Router();
 const path = "/settings/integrations";
@@ -17,8 +20,24 @@ integrationsRouter.use(path, async (req, res, next) => {
   res.locals.integrationActor = user.id;
   next();
 });
-integrationsRouter.get(path, (_req, res) => {
-  res.json(GetIntegrationSettingsResponse.parse(integrationReadiness()));
+integrationsRouter.get(path, async (_req, res) => {
+  res.json(GetIntegrationSettingsResponse.parse(await integrationSettings()));
+});
+integrationsRouter.put(path, async (req, res) => {
+  await consumeRateLimit(`integration-edit:ip:${ipKeyGenerator(req.ip || "unknown")}`, 20, 900_000);
+  await consumeRateLimit(`integration-edit:actor:${res.locals.integrationActor}`, 5, 900_000);
+  const parsed = UpdateIntegrationSettingsBody.strict().safeParse(req.body);
+  if (!parsed.success) throw new HttpError(400, "Invalid configuration request", "INTEGRATION_INVALID");
+  const body = parsed.data;
+  const allowed: readonly string[] = integrationFields[body.provider];
+  if (Object.keys(body.values).some(key => !allowed.includes(key)) ||
+      (body.mode === "environment" && Object.keys(body.values).length))
+    throw new HttpError(400, "Unsupported configuration fields", "INTEGRATION_INVALID");
+  const [actor] = await db.select().from(users).where(eq(users.id, res.locals.integrationActor));
+  if (!await verifyPassword(actor?.passwordHash, body.currentPassword))
+    throw new HttpError(403, "Password confirmation failed", "PASSWORD_CONFIRMATION_FAILED");
+  await saveIntegration(body.provider, body.values, body.revision, body.mode, res.locals.integrationActor);
+  res.json(GetIntegrationSettingsResponse.parse(await integrationSettings()));
 });
 integrationsRouter.post(`${path}/smtp/test-email`, async (req, res) => {
   try {
@@ -32,7 +51,7 @@ integrationsRouter.post(`${path}/smtp/test-email`, async (req, res) => {
   const parsed = SendSmtpTestEmailBody.strict().safeParse(req.body);
   if (!parsed.success || !validEmailAddress(parsed.data.recipient))
     throw new HttpError(400, "Enter one valid recipient email address", "INVALID_RECIPIENT");
-  const cfg = smtpConfig();
+  const cfg = smtpConfig((await resolvedIntegration("smtp")).env);
   try {
     const transport = nodemailer.createTransport({
       host: cfg.host, port: cfg.port, secure: cfg.secure, requireTLS: !cfg.secure && cfg.requireTLS,
