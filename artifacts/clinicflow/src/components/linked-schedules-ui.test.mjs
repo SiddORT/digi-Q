@@ -61,11 +61,12 @@ test("appointment and report filters apply drafts, with status-only tabs and col
     assert.doesNotMatch(source, /<SearchableSelect label="Sort"/);
   }
   assert.match(appointments, /onSortChange=\{setSort\}/);
-  assert.match(appointments, /<StatusTabs value=\{status\}/);
-  assert.match(appointments, /<label>Visit range<select/);
-  assert.match(appointments, /<label>Sort appointments<select aria-label="Sort appointments"/);
-  assert.match(appointments, /<option value="-createdAt">Newest created<\/option>/);
-  assert.match(appointments, /<option value="date">Visit date: earliest first<\/option>/);
+  // Status tabs sit in the compact toolbar's status slot; range and sort use the accessible SearchableSelect.
+  assert.match(appointments, /status=\{<StatusTabs value=\{status\}/);
+  assert.match(appointments, /<SearchableSelect label="Visit range" value=\{view\}/);
+  assert.match(appointments, /<SearchableSelect label="Sort appointments" value=\{sort\}/);
+  assert.match(appointments, /\{value:"-createdAt",label:"Newest created"\}/);
+  assert.match(appointments, /\{value:"date",label:"Visit date: earliest first"\}/);
 });
 test("old branch list edit opens the authorised clinic hours editor instead of generic CRUD", () => {
   const portal = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");

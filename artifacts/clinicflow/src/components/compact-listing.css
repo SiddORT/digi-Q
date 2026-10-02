@@ -1,0 +1,103 @@
+/* Compact data-first listing + desktop icon-rail sidebar (user-approved revision).
+   Applies to every listing that uses FilterBar/AdminListing (staff, doctors, receptionists,
+   patients, clinics, schedules, audit) and the shared shell. Not forms, public booking, tickets or QR. */
+
+/* Toolbar: title left; status, search, filter, add right; wraps on narrow screens */
+.workspace .filter-bar-row.has-title{flex-wrap:wrap;gap:var(--space-2);row-gap:var(--space-2)}
+.workspace .filter-bar-title{display:flex;align-items:baseline;gap:var(--space-2);flex:1 1 auto;min-width:0;order:-2}
+.workspace .filter-bar-title h2{margin:0;font-size:var(--type-section);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.workspace .listing-count{font-size:var(--type-label);font-weight:650;font-variant-numeric:tabular-nums;color:var(--soft);background:#eef3fa;border-radius:var(--radius-badge);padding:0 var(--space-2);line-height:20px}
+.workspace .filter-bar-status{order:-1;flex:0 0 auto;display:flex;align-items:center}
+.workspace .filter-bar-status .sq-status-tabs{margin:0;flex-wrap:nowrap;gap:var(--space-1)}
+.workspace .filter-bar-status .sq-status-tabs button{min-height:32px;padding:var(--space-1) var(--space-3)}
+.workspace .filter-bar-status .status-tabs .count{margin-left:var(--space-1)}
+.workspace .has-title .filter-bar-primary{flex:0 1 300px}
+.workspace .has-title .filter-bar-tools{margin-left:0}
+.workspace .admin-listing-filter .has-title .filter-bar-primary>:first-child{flex:0 1 300px;max-width:340px}
+.workspace .admin-listing-filter,.workspace .filter-bar{margin-bottom:var(--space-2)}
+
+/* Rows: tighter vertical rhythm, text sizes untouched */
+.workspace .admin-listing-table td.col-created,.workspace .admin-listing-table th.col-created{width:132px}
+.workspace .created-cell{display:flex;flex-direction:column;line-height:1.3;white-space:nowrap}
+.workspace .created-cell .created-time{margin-top:0;color:var(--soft)}
+.workspace .admin-listing-table td.col-status .status-sub{margin-top:0;line-height:1.3}
+.workspace .admin-listing-table .admin-record small{margin-top:0}
+
+/* Secondary disclosures (account recovery) collapsed to one quiet line below the list */
+.workspace details.listing-disclosure{margin:var(--space-2) 0 0;box-shadow:none}
+.workspace details.listing-disclosure>summary{min-height:36px;padding:var(--space-2) var(--space-3);font-size:var(--type-label)}
+
+/* Bulk outcome summary: one line, failures visible without expanding */
+.workspace .result-summary{margin:0 0 var(--space-2);border:1px solid var(--dq-line-soft,#e2e9f3);border-radius:var(--radius-control);background:var(--dq-surface,#fff);font-size:var(--type-label)}
+.workspace .result-summary.has-failures{border-color:#efc3bf;background:#fff8f6}
+.workspace .result-summary>summary{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);min-height:34px;padding:var(--space-1) var(--space-3);cursor:pointer;list-style:none}
+.workspace .result-summary>summary::-webkit-details-marker{display:none}
+.workspace .result-summary>summary>span{color:var(--soft)}
+.workspace .result-summary .result-failed{color:#a2302a;font-weight:650;text-decoration:underline;text-underline-offset:2px}
+.workspace .result-summary .result-dismiss{margin-left:auto;min-height:26px;width:26px;padding:0;border:0;background:none;font-size:16px;line-height:1}
+.workspace .result-summary ul{margin:0;padding:0 var(--space-3) var(--space-2) var(--space-6);max-height:180px;overflow:auto}
+.workspace .result-summary li{overflow-wrap:anywhere}
+.workspace .result-summary li.failed{color:#a2302a}
+
+/* Pagination: single slim footer row */
+.workspace .admin-listing-table .pagination{border-top:1px solid var(--dq-line-soft,#e2e9f3)}
+.workspace .pagination label{margin:0}
+
+/* Sidebar collapse toggle (desktop only) */
+.workspace .sidebar-collapse-toggle{display:none}
+@media screen and (min-width:901px){
+  .workspace .sidebar-collapse-toggle{display:flex;align-items:center;gap:var(--space-2);width:100%;min-height:30px;margin:0 0 var(--space-1);padding:var(--space-1) var(--space-3);border:0;background:none;color:var(--soft);font-size:var(--type-label);justify-content:flex-start}
+  .workspace .sidebar-collapse-toggle:hover{background:var(--surface-hover);color:var(--dq-blue)}
+  .workspace.sidebar-collapsed .sidebar{width:var(--sidebar-width-collapsed);padding-inline:var(--space-2);overflow-x:hidden}
+  .workspace.sidebar-collapsed .workspace-main{margin-left:var(--sidebar-width-collapsed);width:calc(100% - var(--sidebar-width-collapsed))}
+  /* Visually hide labels but keep them as accessible names */
+  .workspace.sidebar-collapsed .wnav-label,.workspace.sidebar-collapsed .workspace-label,.workspace.sidebar-collapsed .help-card{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .workspace.sidebar-collapsed .wnav-link,.workspace.sidebar-collapsed .sidebar-collapse-toggle,.workspace.sidebar-collapsed .logout{justify-content:center;padding-inline:0}
+  .workspace.sidebar-collapsed .wnav-chevron{display:none}
+  .workspace.sidebar-collapsed .wnav-group.flat{display:flex;flex-direction:column;gap:var(--space-1);padding-top:var(--space-1);border-top:1px solid var(--dq-line-soft,#e2e9f3)}
+  .workspace.sidebar-collapsed .brand{justify-content:center;overflow:hidden;max-width:100%}
+  .workspace.sidebar-collapsed .brand img,.workspace.sidebar-collapsed .brand-logo{max-width:44px;object-fit:contain;object-position:left}
+}
+
+@media(max-width:767px){
+  .workspace .filter-bar-title{flex-basis:100%}
+  .workspace .filter-bar-status{flex-basis:100%}
+  .workspace .filter-bar-status>*{width:100%;overflow-x:auto}
+  .workspace .has-title .filter-bar-primary,.workspace .admin-listing-filter .has-title .filter-bar-primary>:first-child{flex:1 1 100%;max-width:none}
+  .workspace .has-title .filter-bar-tools{width:100%}
+  .workspace .admin-listing-table td.col-created{width:100%}
+}
+@media(max-width:767px),(pointer:coarse){
+  .workspace .filter-bar-status .sq-status-tabs button{min-height:44px}
+  .workspace details.listing-disclosure>summary,.workspace .result-summary>summary{min-height:44px}
+  .workspace .result-summary .result-dismiss{min-height:44px;width:44px}
+}
+
+/* Laptop/tablet (640–1024px): keep the compact table instead of legacy stacked cards.
+   Legacy layered rules turn every table into 1-record-tall cards at <=1024px; restore real table
+   semantics here (unlayered, so it wins) and scroll horizontally inside .table-scroll only. */
+@media screen and (min-width:640px) and (max-width:1024px){
+  .workspace .table-scroll{overflow-x:auto;max-width:100%;padding:0;border:0}
+  .workspace .table-panel .table-scroll{padding:0}
+  .workspace .table-scroll table{display:table;width:100%;min-width:760px}
+  .workspace .table-scroll thead{display:table-header-group}
+  .workspace .table-scroll tbody{display:table-row-group}
+  .workspace .table-scroll thead tr{position:static;top:auto;left:auto}
+  .workspace .table-scroll tr{display:table-row;margin:0;border:0;border-radius:0;box-shadow:none;background:transparent;overflow:visible;padding:0}
+  .workspace .table-scroll th,.workspace .table-scroll td{display:table-cell;width:auto;min-height:0;position:static;border-bottom:1px solid var(--dq-line-soft,#e2e9f3)}
+  .workspace .table-scroll td::before{content:none;display:none}
+  .workspace .table-scroll td.col-select,.workspace .table-scroll th.col-select{width:44px;min-width:44px}
+  .workspace .table-scroll td.col-actions,.workspace .table-scroll th.col-actions{width:132px;min-width:132px;white-space:nowrap;text-align:right}
+  .workspace .appt-table .table-scroll td.col-actions,.workspace .appt-table .table-scroll th.col-actions{width:220px;min-width:220px}
+  .workspace .table-scroll .row-actions{display:flex;flex-wrap:nowrap;justify-content:flex-end;gap:var(--space-1);min-width:0}
+  .workspace .table-scroll .row-actions>*{width:auto}
+  .workspace .table-scroll .row-menu-list{position:absolute;width:auto;min-width:180px;margin-top:0}
+}
+
+/* Mobile drawer: explicit in-panel close; the scrim is a pointer-only backdrop */
+.workspace .sidebar-close{display:none}
+@media (max-width:900px){
+  .workspace .sidebar-close{display:flex;align-items:center;justify-content:center;position:absolute;top:var(--space-2);right:var(--space-2);width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:var(--radius-control);background:none;color:var(--soft);z-index:1}
+  .workspace .sidebar-close:hover{background:var(--surface-hover);color:var(--dq-blue)}
+  .workspace .sidebar.open .brand{padding-right:48px}
+}

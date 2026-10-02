@@ -39,7 +39,7 @@ test("CSS parses and explicit v3 central tokens have exactly the approved values
     "--type-label": "13px", "--type-table": "13px", "--type-table-heading": "12px",
     "--radius-control": "8px", "--radius-card": "12px",
     "--radius-dialog": "14px", "--radius-badge": "6px",
-    "--workspace-width": "1540px", "--sidebar-width": "245px",
+    "--workspace-width": "1540px", "--sidebar-width": "216px", "--sidebar-width-collapsed": "64px",
     "--font-heading": "'Manrope', sans-serif", "--font-body": "'DM Sans', sans-serif",
   })) {
     assert.equal(token(name), value, name);
@@ -77,7 +77,7 @@ test("workspace typography overrides legacy layers and dashboard selectors", () 
 test("workspace dimensions, approved spacing and role-specific radii are consumed", () => {
   for (const [selector, prop, value] of [
     [".workspace .content", "max-width", "var(--workspace-width)"],
-    [".workspace .content", "padding", "var(--space-6)"],
+    [".workspace .content", "padding", "var(--space-4) var(--space-5)"],
     [".workspace .sidebar", "width", "var(--sidebar-width)"],
     [".workspace .form-grid", "gap", "var(--space-4)"],
     [".workspace .stat-card", "padding", "var(--space-5)"],

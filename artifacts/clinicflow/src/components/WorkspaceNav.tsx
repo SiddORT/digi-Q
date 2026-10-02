@@ -23,19 +23,21 @@ const layout: Entry[] = [
   { kind: "group", id: "admin", name: "Administration", icon: ShieldCheck, pages: ["masters", "demo"] },
 ];
 
-export function WorkspaceNav({ navigation, role, page, onNavigate }: { navigation: string[]; role: string; page: string; onNavigate: () => void }) {
+export function WorkspaceNav({ navigation, role, page, onNavigate, collapsed = false }: { navigation: string[]; role: string; page: string; onNavigate: () => void; collapsed?: boolean }) {
   const activeGroup = layout.find(e => e.kind === "group" && e.pages.includes(page)) as Extract<Entry, { kind: "group" }> | undefined;
   const [open, setOpen] = useState<Record<string, boolean>>(() => (activeGroup ? { [activeGroup.id]: true } : {}));
   useEffect(() => { if (activeGroup) setOpen(o => (o[activeGroup.id] ? o : { ...o, [activeGroup.id]: true })); }, [activeGroup?.id]);
   const leaf = (p: string, child = false) => {
     const Icon = icons[p] || FileText;
-    return <Link key={p} href={`/${role}/${p}`} className={`wnav-link${child ? " child" : ""}${p === page ? " active" : ""}`} aria-current={p === page ? "page" : undefined} onClick={onNavigate} data-testid={`nav-${p}`}><Icon size={18} aria-hidden /><span className="wnav-label">{navLabel(p, role)}</span></Link>;
+    return <Link key={p} href={`/${role}/${p}`} className={`wnav-link${child ? " child" : ""}${p === page ? " active" : ""}`} title={collapsed ? navLabel(p, role) : undefined} aria-current={p === page ? "page" : undefined} onClick={onNavigate} data-testid={`nav-${p}`}><Icon size={18} aria-hidden /><span className="wnav-label">{navLabel(p, role)}</span></Link>;
   };
   return <nav className="wnav" aria-label="Workspace">{layout.map(e => {
     if (e.kind === "link") return navigation.includes(e.page) ? leaf(e.page) : null;
     const pages = e.pages.filter(p => navigation.includes(p));
     if (!pages.length) return null;
     if (pages.length === 1) return leaf(pages[0]);
+    // Icon rail: flatten groups. Labels stay in the DOM (visually hidden) so accessible names are unchanged.
+    if (collapsed) return <div className="wnav-group flat" key={e.id} role="group" aria-label={e.name}>{pages.map(p => leaf(p))}</div>;
     const expanded = !!open[e.id]; const id = `wnav-${e.id}`; const Icon = e.icon;
     return <div className="wnav-group" key={e.id}>
       <button type="button" className={`wnav-link wnav-parent${activeGroup?.id === e.id ? " has-active" : ""}`} aria-expanded={expanded} aria-controls={id} onClick={() => setOpen(o => ({ ...o, [e.id]: !expanded }))} data-testid={`nav-group-${e.id}`}>

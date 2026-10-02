@@ -40,7 +40,7 @@
 .admin-listing-pagination label{white-space:nowrap;font-size:12px}
 .admin-qr-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-start}
 @media(max-width:1024px),(pointer:coarse){.admin-bulk-bar button{min-height:44px}.admin-listing-table input[type=checkbox]{width:22px;height:22px;min-height:22px}}
-@media(max-width:1024px){
+@media(max-width:1024px) and (pointer:coarse){
   .admin-listing-table col.col-actions{width:176px}
   .admin-listing-table td.col-select{width:auto;min-width:0;max-width:none;min-height:44px;padding:4px 12px;text-align:left}
   .admin-listing-table td.col-select::before{content:none}
@@ -48,7 +48,7 @@
   .admin-listing-table .row-actions button,.admin-listing-table .row-menu > summary{width:44px;min-width:44px;min-height:44px;height:44px}
   .admin-listing-table th.col-actions,.admin-listing-table td.col-actions{width:176px;min-width:176px;max-width:none}
 }
-@media(max-width:760px){
+@media(max-width:639px){
   .admin-listing-filter .filter-bar-primary > :first-child{flex-basis:100%}
   .admin-listing-filter .filter-bar-tools{flex-wrap:wrap}
   .admin-listing-filter .filter-bar-primary > :not(:first-child){max-width:none}

@@ -34,7 +34,7 @@
 
 /* Tables: compact only */
 .workspace th{padding:var(--space-2) var(--space-3);font-size:var(--type-table-heading);letter-spacing:.4px;vertical-align:middle}
-.workspace td{padding:var(--space-2) var(--space-3);font-size:var(--type-table);line-height:1.4;vertical-align:middle}
+.workspace td{padding:6px var(--space-3);font-size:var(--type-table);line-height:1.4;vertical-align:middle}
 .workspace td small{margin-top:var(--space-1)}
 .workspace th .sort-button,.workspace th button.sort{display:inline-flex;align-items:center;gap:var(--space-1);width:100%;justify-content:flex-start;min-height:28px;padding:var(--space-1);margin:0;border:0;border-radius:var(--radius-control);background:none;font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit}
 .workspace th .sort-button:hover{background:var(--surface-hover);color:var(--cw-blue-strong)}

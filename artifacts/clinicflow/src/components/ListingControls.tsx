@@ -227,9 +227,13 @@ export interface FilterBarProps {
   label?: string;
   onOpen?: () => void;
   onApply?: () => void;
+  /** Compact toolbar title (left). Typically the record type and result count. */
+  title?: React.ReactNode;
+  /** Status filter (Active / Inactive / All), placed on the toolbar row before search. */
+  status?: React.ReactNode;
 }
 
-export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, label = "Filters", onOpen, onApply }: FilterBarProps) {
+export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, label = "Filters", onOpen, onApply, title, status }: FilterBarProps) {
   const advancedActiveCount = chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
@@ -267,7 +271,9 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
 
   return (
     <section className="filter-bar" aria-label={label}>
-      <div className="filter-bar-row">
+      <div className={cn("filter-bar-row", (title || status) && "has-title")}>
+        {title && <div className="filter-bar-title" data-testid="text-listing-title">{title}</div>}
+        {status && <div className="filter-bar-status">{status}</div>}
         {children && <div className="filter-bar-primary">{children}</div>}
         <div className="filter-bar-tools">
           {advanced && (

@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=Manrope:wght@400;500;600;650;700;750;800&display=swap');
 @import "tailwindcss";
 @import "./compact-workspace.css";
+@import "./components/compact-listing.css";
 
 @layer components {
   .workspace .sidebar { padding-top: 16px; padding-bottom: 12px; }
@@ -84,7 +85,8 @@
     --radius-dialog: 14px;
     --radius-badge: 6px;
     --workspace-width: 1540px;
-    --sidebar-width: 245px;
+    --sidebar-width: 216px;
+    --sidebar-width-collapsed: 64px;
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
@@ -702,10 +704,10 @@
     background: var(--dq-bg);
     --radius: var(--radius-control);
   }
-  .workspace .content { max-width: var(--workspace-width); padding: var(--space-6); }
-  .workspace .sidebar { width: var(--sidebar-width); padding: var(--space-4) var(--space-5) var(--space-3); }
+  .workspace .content { max-width: var(--workspace-width); padding: var(--space-4) var(--space-5); }
+  .workspace .sidebar { width: var(--sidebar-width); padding: var(--space-3) var(--space-3) var(--space-3); }
   .workspace .workspace-main { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); }
-  .workspace .topbar { padding-inline: var(--space-6); }
+  .workspace .topbar { padding-inline: var(--space-5); height: 52px; }
   .workspace .workspace-label { margin: var(--space-4) var(--space-3) var(--space-2); font-size: var(--type-label); }
   .workspace .workspace-label span { font-size: var(--type-label); border-radius: var(--radius-badge); padding: var(--space-1) var(--space-2); }
   .workspace .sidebar .help-card { padding: var(--space-3); border-radius: var(--radius-card); font-size: var(--type-label); }
@@ -760,20 +762,22 @@
   .workspace .panel-heading { padding: var(--space-5); }
   .workspace .stat-grid, .workspace .dashboard-grid { gap: var(--space-4); margin-bottom: var(--space-4); }
   .workspace .toolbar { gap: var(--space-2); margin-bottom: var(--space-3); }
-  .workspace .page-heading { gap: var(--space-3); margin-bottom: var(--space-4); }
+  .workspace .page-heading { gap: var(--space-3); margin-bottom: var(--space-3); }
+  .workspace .page-heading h1 { margin: 0; line-height: 1.2; }
   .workspace .notice, .workspace .error-box { padding: var(--space-3) var(--space-4); margin: var(--space-3) 0; }
 
   .workspace table, .workspace td, .workspace td strong, .workspace td small,
   .workspace td .muted, .workspace .cell-sub { font-size: var(--type-table); }
   .workspace th, .workspace td::before { font-size: var(--type-table-heading); }
-  .workspace th, .workspace td { padding: var(--space-2) var(--space-3); }
+  .workspace th { padding: var(--space-2) var(--space-3); }
+  .workspace td { padding: 6px var(--space-3); }
   .workspace tr:hover td, .workspace tr:hover td.col-actions { background: var(--surface-hover); }
   .workspace td small { margin-top: var(--space-1); }
   .workspace .badge, .workspace .filter-count, .workspace .filter-chips li {
     font-size: var(--type-label); border-radius: var(--radius-badge); padding: var(--space-1) var(--space-2);
   }
   .workspace .pagination, .workspace .pagination-current { font-size: var(--type-label); }
-  .workspace .pagination { padding: var(--space-2) var(--space-3); gap: var(--space-2); }
+  .workspace .pagination { padding: var(--space-1) var(--space-3); gap: var(--space-2); min-height: 40px; }
   /* Weekly schedule listing: capacity has three flex items (count, patients,
      prefix/duration). Keep them inside their fixed-layout cell, not over Open. */
   .workspace .admin-listing-table td[data-label="Capacity"] .cap-chip {

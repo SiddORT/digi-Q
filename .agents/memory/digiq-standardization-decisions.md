@@ -9,6 +9,12 @@ Treat the DigiQ standardization prompt itself as the user's approved design spec
 
 **How to apply:** Use explicit values from the prompt. Distinguish missing referenced values from contradictions; do not invent missing tokens.
 
+The user approved a compact, data-first workspace revision: narrower/collapsible sidebar, consolidated listing toolbars, reduced vertical spacing and row padding, and collapsed secondary panels.
+
+**Why:** The user wants more actual data visible rather than space consumed by stacked controls and navigation. This deliberately supersedes the earlier 245px sidebar and 24px workspace-padding dimensions.
+
+**How to apply:** Apply density changes to workspace listings while preserving readability, accessible controls, responsive behavior, forms, public booking, printed tickets and QR geometry.
+
 Completion must cover the prompt's cross-cutting requirements as well as the numbered findings. A zero-pending finding register is not full-prompt acceptance.
 
 **Why:** A later comparison found omitted weekly-editor, dropdown, patient-form and visual-standard requirements despite the earlier register reporting no local implementation gaps.

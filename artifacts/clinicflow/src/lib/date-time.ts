@@ -68,7 +68,8 @@ export function formatConfiguredTimestamp(value: string | Date, timezone?: strin
   if (typeof value === "string" && (!/T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/i.test(value) || !isCanonicalDate(value.slice(0, 10)))) return "Invalid date";
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.getTime())) return "Invalid date";
-  if (!timezone) return `${date.toISOString()} (timezone unavailable)`;
+  // Honest short fallback: without a configured zone, show the instant in UTC and say so.
+  if (!timezone) return utcFallback(date, options, preferences);
   try {
     const parts = new Intl.DateTimeFormat("en-GB", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date);
     const p = Object.fromEntries(parts.map(part => [part.type, part.value]));
@@ -85,4 +86,21 @@ export function configuredGreeting(timezone?: string, now = new Date()) {
     const hour = Number(new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "numeric", hourCycle: "h23" }).format(now));
     return `Good ${hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening"}`;
   } catch { return "Hello"; }
+}
+function utcFallback(date: Date, options: Intl.DateTimeFormatOptions, preferences?: Preferences) {
+  const iso = date.toISOString();
+  const day = formatDate(iso.slice(0, 10), preferences);
+  const time = `${formatTime(iso.slice(11, 16), preferences)} UTC`;
+  const onlyTime = (options.hour || options.timeStyle) && !(options.year || options.month || options.day || options.dateStyle);
+  const onlyDate = (options.year || options.month || options.day || options.dateStyle) && !(options.hour || options.timeStyle);
+  return onlyTime ? time : onlyDate ? day : `${day}, ${time}`;
+}
+/** Listing cells: separate readable date and time lines. Time carries "UTC" when no zone is configured. */
+export function formatTimestampParts(value: string | Date | null | undefined, timezone?: string, preferences?: Preferences): { date: string; time: string; full: string } | null {
+  if (!value) return null;
+  const full = formatConfiguredTimestamp(value, timezone, {}, preferences);
+  if (/^Invalid/.test(full)) return { date: full, time: "", full };
+  const date = formatConfiguredTimestamp(value, timezone, { dateStyle: "medium" }, preferences);
+  const time = formatConfiguredTimestamp(value, timezone, { timeStyle: "short" }, preferences);
+  return { date, time, full };
 }

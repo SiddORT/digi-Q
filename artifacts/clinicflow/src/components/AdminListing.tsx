@@ -8,6 +8,7 @@ import { LoadingButton } from "./LoadingButton";
 import { friendlyError } from "@/lib/friendly-error";
 import { notifyBulk } from "@/lib/notify";
 import type { BulkOutcome } from "@/lib/bulk-summary";
+import { formatTimestampParts } from "@/lib/date-time";
 import "./admin-listing.css";
 
 export const recordName = (row:any) => row.fullName || row.name || row.code || row.id;
@@ -112,11 +113,25 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
       {resource==="qrs"&&<><button data-testid="button-print-selected-qrs" disabled={busy} onClick={()=>qrDocument(true)}>Print selected QRs</button><button data-testid="button-download-selected-qrs" disabled={busy} onClick={()=>qrDocument(false)}>Download QR sheet</button><button data-testid="button-copy-selected-qr-links" disabled={busy} onClick={copyQrLinks}>Copy booking links</button></>}
     </div>}
     {busy&&<p role="status">Processing selected records. Please wait…</p>}
-    {!!results.length&&<details open className="notice"><summary>Per-record results</summary><ul>{results.map((result,index)=><li key={index}>{result}</li>)}</ul></details>}
+    {!!results.length&&<ResultSummary title="Selected records" testId="details-bulk-results" items={results.map(result=>({label:result,ok:!/failed|blocked/i.test(result)}))}/>}
     {action&&<AppDialog open title={`${action==="active"?"Activate":"Deactivate"} selected records?`} busy={busy} onClose={()=>{if(!busy)setAction(null);}}>
       <p>{action==="inactive"?"Inactive accounts lose access; inactive clinics, branches and doctors may no longer be available for booking. Existing history is retained.":"These records will become active and may be available for access or booking again."} Permissions and ownership protections are checked for every record. You cannot deactivate yourself. Administrator ownership must be transferred first; the last active super administrator is protected. Failures do not roll back successful changes.</p>
       <ul>{selection.selected.map(row=><li key={row.id}>{recordName(row)} → {action}</li>)}</ul>
       <div className="app-dialog-footer confirm-dialog-footer"><button type="button" className="button secondary small" disabled={busy} onClick={()=>setAction(null)}>Cancel</button><LoadingButton data-testid="button-confirm-bulk-status" className={`button small${action==="inactive"?" danger-solid":""}`} loading={busy} loadingText="Updating…" disabled={!selection.selected.length} onClick={()=>run(action)}>{action==="active"?`Activate ${selection.selected.length}`:`Deactivate ${selection.selected.length}`}</LoadingButton></div>
     </AppDialog>}
   </div>;
+}
+/** Readable created date with time on a quiet second line; full value kept as a tooltip. */
+export function CreatedCell({value,timezone,preferences}:{value?:string|null;timezone?:string;preferences?:any}) {
+  const parts=formatTimestampParts(value,timezone,preferences);
+  if(!parts)return <span className="muted">—</span>;
+  return <span className="created-cell" title={parts.full} data-testid="text-created"><span className="created-date">{parts.date}</span>{parts.time&&<small className="created-time">{parts.time}</small>}</span>;
+}
+/** Compact, collapsed-by-default outcome summary. Failure count is always in the visible line and failures list first. */
+export function ResultSummary({title,items,testId,onDismiss}:{title:string;items:{label:string;ok:boolean;message?:string}[];testId?:string;onDismiss?:()=>void}) {
+  const failed=items.filter(item=>!item.ok), ok=items.length-failed.length;
+  return <details className={`result-summary${failed.length?" has-failures":""}`} data-testid={testId}>
+    <summary role="status"><strong>{title}</strong><span>{ok} succeeded</span>{failed.length>0&&<span className="result-failed">{failed.length} failed — view details</span>}{onDismiss&&<button type="button" className="result-dismiss" aria-label={`Dismiss ${title.toLowerCase()}`} onClick={event=>{event.preventDefault();onDismiss();}}>×</button>}</summary>
+    <ul>{[...failed,...items.filter(item=>item.ok)].map((item,index)=><li key={index} className={item.ok?"ok":"failed"}>{item.label}{item.message?`: ${item.message}`:""}</li>)}</ul>
+  </details>;
 }
