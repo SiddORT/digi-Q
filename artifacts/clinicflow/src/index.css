@@ -645,3 +645,19 @@
   .app-toast-close { width: 24px; height: 24px; }
   .sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
 }
+
+/* Shared controls: intrinsic-width safety without clipping data or changing QR/display geometry. */
+.searchable-select-popup{max-width:calc(100vw - 24px);max-height:var(--radix-popover-content-available-height,300px)}
+.searchable-select-options [cmdk-item] span{overflow-wrap:anywhere}
+.searchable-select-options [cmdk-input-wrapper]{flex-shrink:0}
+.searchable-select-options [cmdk-input]{min-width:0}
+.phone-input{display:grid;min-width:0;max-width:100%;gap:8px}
+.phone-input>*{min-width:0;max-width:100%;box-sizing:border-box}
+.form-field-label,.form-field-help,.form-field-error,.filter-chips li{overflow-wrap:anywhere}
+.filter-bar-tools,.filter-bar-tools>label,.filter-panel-fields>*,.pagination>div{min-width:0;max-width:100%}
+.filter-bar select,.pagination select{min-width:0;max-width:100%}
+.searchable-select-remove{min-width:24px;min-height:24px}
+@media(max-width:767px),(pointer:coarse){
+  .searchable-select-remove{min-width:44px!important;min-height:44px!important}
+  .filter-chips li button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+}

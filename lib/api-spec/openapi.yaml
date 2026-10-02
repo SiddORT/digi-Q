@@ -267,10 +267,12 @@ paths:
   /auth/verify-device:
     post:
       operationId: verifyStaffDevice
+      deprecated: true
+      description: Retired compatibility tombstone. Use staff email and password login; no payload can create a session.
       security: []
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthCodeInput" } } } }
       responses:
-        "200": { description: Session created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
+        "410": { description: "Device verification retired; code AUTH_METHOD_REMOVED. No session is issued." }
         "503": { description: "Session issuance unavailable; code AUTH_SESSION_UNCONFIGURED when session mode or signing key is invalid." }
   /auth/patient/start:
     post:

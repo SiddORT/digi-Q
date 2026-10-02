@@ -2244,7 +2244,11 @@ export const getVerifyStaffDeviceUrl = () => {
   return `/api/auth/verify-device`
 }
 
-export const verifyStaffDevice = async (authCodeInput: AuthCodeInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthAuthenticated> => {
+/**
+ * Retired compatibility tombstone. Use staff email and password login; no payload can create a session.
+ * @deprecated
+ */
+export const verifyStaffDevice = async (authCodeInput: AuthCodeInput, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -2260,7 +2264,7 @@ export const verifyStaffDevice = async (authCodeInput: AuthCodeInput, options?: 
     }
     return headers;
   };
-return customFetch<AuthAuthenticated>(getVerifyStaffDeviceUrl(),
+return customFetch<unknown>(getVerifyStaffDeviceUrl(),
   {
     ...options,
     method: 'POST',
@@ -2307,7 +2311,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type VerifyStaffDeviceMutationError = ErrorType<void>
     export type VerifyStaffDeviceMutationVariables = {data: BodyType<AuthCodeInput>}
 
-    export const useVerifyStaffDevice = <TError = ErrorType<void>,
+    /**
+ * @deprecated
+ */
+export const useVerifyStaffDevice = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyStaffDevice>>, TError,VerifyStaffDeviceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof verifyStaffDevice>>,

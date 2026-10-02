@@ -30,3 +30,14 @@ connection matched the explicitly queried development database rather than produ
 database fingerprint through the actual workspace connection against explicitly
 selected development and production query results. Prefer a disposable database.
 Stop on ambiguity; never print credentials or reset existing users.
+
+In intercepted browser tests, register specific CSRF responses after broad API
+handlers and verify the response consumed by the app itself.
+
+**Why:** Broad fixture routes repeatedly returned list/status envelopes for the
+app's CSRF request, creating false missing-token failures even when a separate
+direct fetch appeared correct. Playwright's last matching handler takes priority.
+
+**How to apply:** Match the actual app-page request and expected response shape;
+fix fixture precedence rather than weakening CSRF checks or declaring a backend
+failure. Intercepted mutations do not prove real email delivery or authentication.

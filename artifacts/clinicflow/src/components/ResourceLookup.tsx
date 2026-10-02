@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type AriaAttributes } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { SearchableSelect } from "./SearchableSelect";
@@ -8,7 +8,7 @@ import { selectedIdBatches, retainSelectedRecords } from "./relation-validity";
 
 const lists: Record<string, any> = { clinics: api.listClinics, branches: api.listBranches, doctors: api.listDoctors, patients: api.listPatients, users: api.listUsers, masters: api.listMasters };
 const getters: Record<string, any> = { clinics: api.getClinic, branches: api.getBranch, doctors: api.getDoctor, patients: api.getPatient, users: api.getUser, masters: api.getMaster };
-type Props = { resource: string; value: string; onChange: (value: string) => void; label?: string; id?: string; error?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean; onSelectedRecords?: (records: any[], verifiedMissing: string[]) => void };
+type Props = Pick<AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> & { resource: string; value: string; onChange: (value: string) => void; label?: string; id?: string; error?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean; onSelectedRecords?: (records: any[], verifiedMissing: string[]) => void };
 type MultiProps = Omit<Props, "value" | "onChange"> & { value: string[]; onChange: (value: string[]) => void; onRecords?: (records: any[]) => void; isOptionDisabled?: (record:any)=>boolean };
 
 function lookupName(resource: string) {

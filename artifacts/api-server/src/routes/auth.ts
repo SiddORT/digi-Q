@@ -93,30 +93,11 @@ authRouter.post("/auth/login", async (req, res) => {
     user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role, status: user.status },
   });
 });
-authRouter.post("/auth/verify-device", async (req, res) => {
-  await consumeRateLimit(`device:${req.ip || "unknown"}`, 25);
-  const { challengeId, code: submitted } = req.body || {};
-  if (typeof challengeId !== "string" || typeof submitted !== "string") throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
-  const userId = await challengeUserId(challengeId);
-  const token = await db.transaction(async tx => {
-    await lockCredentials(tx, userId);
-    // Commit failed-code attempt counters, while rolling back successful
-    // consumption if a later identity/session write fails.
-    let challenge;
-    try { challenge = await consumeChallenge(challengeId, "device", submitted, tx); }
-    catch (error) {
-      if (error instanceof HttpError && error.code === "INVALID_VERIFICATION") return undefined;
-      throw error;
-    }
-    const [user] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
-    if (!user || challenge.userId !== user.id || user.status !== "active" || !isStaffRole(user.role) || !user.passwordHash ||
-        user.email.toLowerCase() !== challenge.email)
-      throw new HttpError(401, "Invalid verification", "INVALID_VERIFICATION");
-    return insertSession(tx, user.id);
-  });
-  if (!token) throw new HttpError(400, "Invalid or expired verification", "INVALID_VERIFICATION");
-  sessionCookie(res, token);
-  res.set("Cache-Control", "no-store").json({ authenticated: true });
+// No runtime issuer remains. Retain a fail-closed compatibility tombstone for
+// stale clients, including any still-valid historical device challenge.
+authRouter.post("/auth/verify-device", (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  throw new HttpError(410, "Device verification is retired. Use staff email and password.", "AUTH_METHOD_REMOVED");
 });
 authRouter.post("/auth/logout", async (req, res) => {
   await revokeSession(req, res);

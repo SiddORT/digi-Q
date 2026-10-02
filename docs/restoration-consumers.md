@@ -15,7 +15,7 @@ This report covers the screen consumers migrated in this change. It does not des
 | Reports | Existing shared scoped selectors retained and audited | Date validation, dependent clearing, export consistency and server pagination |
 | Clinic Admin setup | Action, dialog and failure copy standardized | Atomic onboarding request, duplicate-submit guard and ownership semantics |
 | Check-in scanner | Capitalization and progress/action copy standardized | Staff-only access, QR resolution, camera/file scanning and idempotent check-in |
-| Home, provider entry and authentication | “Staff login” / “Patient login” terminology standardized | Clerk staff password flow, patient email-code flow, invitation tickets and redirects |
+| Home and authentication | “Staff login” / “Patient login” terminology standardized | Native staff password flow, separate patient email-code flow, single-use invitation links and redirects; historical provider entry is retired |
 
 ## Search matrix
 

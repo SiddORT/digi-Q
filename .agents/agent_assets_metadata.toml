@@ -181,14 +181,14 @@ content_type = "text/html"
 id = "fkPbDgM2KDL-ayJqU2U5R"
 uri = "file://docs/digiq-final-status.md"
 type = "text"
-title = "DigiQ verification and remaining scope"
-description = "Final test evidence, implementation status, unresolved decisions and live-system verification limits."
+title = "DigiQ — completed work and remaining checks"
+description = "Updated three-part status: completed fixes, remaining verification, and decisions/live-system prerequisites."
 logical_id = "5650f124-0c15-4726-aae5-416e3f14b346"
-content_hash = "sha256:3d6d2def7746d2dfa07073ac28c455e9e2cf4fe46cfde46118a83a5ece772a17"
-size = 13414
-mtime_ms = 1790956095861
-storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/5650f124-0c15-4726-aae5-416e3f14b346/9453a187-b482-42b8-a018-a6d742f94d83"
-storage_version_token = "1790956111219347"
+content_hash = "sha256:5faa7def1a4a36627221329267ad7f1dd9175ab3de7c9548516db7032e646107"
+size = 18185
+mtime_ms = 1790958064917
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/5650f124-0c15-4726-aae5-416e3f14b346/b841d755-7950-46f1-84b3-8806dd86cf3e"
+storage_version_token = "1790958130121880"
 content_type = "text/markdown"
 
 [[outputs]]
@@ -203,4 +203,18 @@ size = 138528
 mtime_ms = 1790955898913
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/97499168-2ee4-4277-9c9a-6e6307ea955f/aab4d633-5f1a-4c6f-af9a-d12368766164"
 storage_version_token = "1790956112520066"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "I4zPUERMjwB8ad-OsZXY_"
+uri = "file://docs/digiq-release-readiness.md"
+type = "text"
+title = "DigiQ — release readiness"
+description = "Development account readiness, restored database guards, backup/restore rehearsal and publish-time checks."
+logical_id = "b252d1b0-f094-4c45-a1dd-f5bea2354542"
+content_hash = "sha256:bd87a50d2d44c0da97ad7ca91e671dbc47b156336212d392cab68b9300545851"
+size = 14430
+mtime_ms = 1790957337481
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/b252d1b0-f094-4c45-a1dd-f5bea2354542/9e1355bf-4824-450d-99ea-94556ad7a67d"
+storage_version_token = "1790958131689612"
 content_type = "text/markdown"

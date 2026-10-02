@@ -289,7 +289,7 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
                 <div id={panelId} ref={panelRef} role="dialog" aria-label={label} className={cn("filter-bar-advanced", alignRight && "align-right")}>
                   <div className="filter-panel-fields">{advanced}</div>
                   <div className="filter-panel-foot">
-                    {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); setOpen(false); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
+                    {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); setOpen(false); toggleRef.current?.focus(); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
                     <button type="button" className="filter-done" onClick={() => { onApply?.(); setOpen(false); toggleRef.current?.focus(); }} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
                   </div>
                 </div>

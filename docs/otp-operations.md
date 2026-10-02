@@ -1,6 +1,6 @@
 # Mobile verification
 
-ClinicFlow authentication uses Clerk. Mobile verification is a separate, authenticated challenge bound to the current ClinicFlow account, not a substitute for signing in.
+ClinicFlow uses native PostgreSQL identity and local staff password sessions (optional fixed-12-hour JWT transport). Mobile verification is a separate, authenticated challenge bound to the current ClinicFlow account, not a substitute for signing in. Retired staff device-email verification is not this mobile workflow.
 
 ## Development
 

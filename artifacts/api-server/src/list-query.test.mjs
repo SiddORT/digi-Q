@@ -71,6 +71,72 @@ const admin = { id: "admin1", role: "clinicAdmin", clinicIds: Array.from({ lengt
 const doctor = { id: "u1", role: "doctor", doctorId: "d1", managingAdminId: "admin1", clinicIds: ["c1"], branchIds: ["b1"] };
 after(async () => { delete globalThis.fixtureExecute; delete globalThis.scopeFixtures; await database.close(); await rm(dir, { recursive: true, force: true }); });
 
+test("booking patient lookup matches authorized visit location as well as registration without widening read scope", async () => {
+  await database.exec(`
+    insert into patients(id,clinic_id,branch_id,status,data) values
+      ('diag-visit','c61','b61','active','{"fullName":"Diagnostic Deepa visit"}'),
+      ('diag-registration','c1','b1','active','{"fullName":"Diagnostic Deepa registration"}'),
+      ('diag-other-doctor','c61','b61','active','{"fullName":"Diagnostic Deepa other doctor"}'),
+      ('diag-other-branch','c61','b61','active','{"fullName":"Diagnostic Deepa other branch"}'),
+      ('diag-unrelated','c61','b61','active','{"fullName":"Diagnostic Deepa unrelated"}'),
+      ('diag-inactive','c61','b61','inactive','{"fullName":"Diagnostic Deepa inactive"}'),
+      ('diag-global',null,null,'active','{"fullName":"Diagnostic Deepa global"}'),
+      ('diag-no-branch','c1',null,'active','{"fullName":"Diagnostic Deepa no branch"}');
+    insert into appointments(id,patient_id,doctor_id,clinic_id,branch_id,date,status,data) values
+      ('diag-ap-visit','diag-visit','d1','c1','b1','2030-01-05','completed','{}'),
+      ('diag-ap-doctor','diag-other-doctor','d2','c1','b1','2030-01-05','completed','{}'),
+      ('diag-ap-branch','diag-other-branch','d1','c1','b2','2030-01-05','completed','{}'),
+      ('diag-ap-inactive','diag-inactive','d1','c1','b1','2030-01-05','completed','{}');
+  `);
+  try {
+    const receptionist={id:"r1",role:"receptionist",clinicIds:["c1"],branchIds:["b1"]};
+    const q={search:"Diagnostic Deepa",clinicId:"c1",branchId:"b1",status:"active",sort:"fullName",pageSize:100};
+    const ids=async(actor,params=q)=>(await queryPage(actor,"patients",params,undefined,conn)).items.map(row=>row.id).sort();
+    assert.deepEqual(await ids(admin),["diag-other-doctor","diag-registration","diag-visit"]);
+    assert.deepEqual(await ids(receptionist),["diag-other-doctor","diag-registration","diag-visit"]);
+    assert.deepEqual(await ids(doctor),["diag-visit"]);
+    assert.deepEqual(await ids({...receptionist,clinicIds:[],branchIds:[]}),[]);
+    assert.deepEqual(await ids({...doctor,clinicIds:[],branchIds:[]}),[]);
+    // Patient self-service retains its existing profile filter contract, not staff lookup behavior.
+    assert.deepEqual(await ids({id:"patient",role:"patient",patientId:"diag-visit",clinicIds:[],branchIds:[]}),[]);
+    assert.deepEqual(await ids({id:"patient",role:"patient",patientId:"diag-visit",clinicIds:[],branchIds:[]},{...q,clinicId:undefined,branchId:undefined}),["diag-visit"]);
+    assert.deepEqual(await ids({id:"patient",role:"patient",patientId:"diag-unrelated",clinicIds:[],branchIds:[]}),[]);
+    assert.deepEqual(await ids(doctor,{...q,status:undefined}),["diag-inactive","diag-visit"]);
+    assert.deepEqual(await ids(admin,{...q,branchId:undefined}),["diag-no-branch","diag-other-branch","diag-other-doctor","diag-registration","diag-visit"]);
+    const paged=await queryPage(admin,"patients",{...q,pageSize:1,page:2},undefined,conn);
+    assert.equal(paged.total,3);assert.equal(paged.items.length,1);
+    assert.deepEqual(await ids(receptionist,{...q,clinicId:"c61",branchId:"b61"}),["diag-other-doctor","diag-visit"]);
+  } finally {
+    await database.exec("delete from appointments where id like 'diag-%'; delete from patients where id like 'diag-%';");
+  }
+});
+
+test("address suggestions use exact active local-master category and search; empty responses are genuine", async () => {
+  await database.exec(`
+    insert into masters(id,category,code,status,data) values
+      ('diag-city','city','diag-city','active','{"name":"Fixture Mumbai"}'),
+      ('diag-city-inactive','city','diag-city-inactive','inactive','{"name":"Fixture Hidden"}'),
+      ('diag-state','state','diag-state','active','{"name":"Fixture Maharashtra"}'),
+      ('diag-country','country','diag-country','active','{"name":"Fixture India"}'),
+      ('diag-area','area','diag-area','active','{"name":"Fixture Karanjade"}'),
+      ('diag-pincode','pincode','diag-pincode','active','{"name":"Fixture 410206"}');
+  `);
+  try {
+    for(const category of ["city","state","country","area","pincode"]){
+      const result=await queryPage(doctor,"masters",{category,status:"active",search:"Fixture",pageSize:20},undefined,conn);
+      assert.equal(result.total,1);
+      assert.equal(result.items[0].category,category);
+      assert.equal(result.items[0].status,"active");
+    }
+    assert.equal((await queryPage(admin,"masters",{category:"city",status:"active",search:"Fixture Mumbai"},undefined,conn)).total,1);
+    assert.equal((await queryPage(admin,"masters",{category:"city",status:"active",search:"Fixture Missing"},undefined,conn)).total,0);
+    assert.equal((await queryPage(admin,"masters",{category:"qualification",status:"active"},undefined,conn)).total,0);
+    assert.equal((await queryPage(admin,"masters",{category:"city",status:"active",search:"Hidden"},undefined,conn)).total,0);
+  } finally {
+    await database.exec("delete from masters where id like 'diag-%';");
+  }
+});
+
 test("120-clinic scoped combined search/filter/sort, boundaries, empty page and accurate totals", async () => {
   const q = { search: "Clinic 0", city: "Pune", status: "active", sort: "name", page: 3, pageSize: 20 };
   const result = await queryPage(admin, "clinics", q, undefined, conn);

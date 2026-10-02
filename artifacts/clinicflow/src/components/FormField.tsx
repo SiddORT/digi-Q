@@ -4,6 +4,7 @@ import "./shared-feedback.css";
 
 export interface FieldA11yProps {
   id: string;
+  "aria-labelledby": string;
   "aria-invalid"?: true;
   "aria-describedby"?: string;
   "aria-required"?: true;
@@ -34,6 +35,7 @@ export function FormField({ label, id, required, optional, helper, error, info, 
   const describedBy = [errorId, helpId].filter(Boolean).join(" ") || undefined;
   const a11y: FieldA11yProps = {
     id: controlId,
+    "aria-labelledby": `${controlId}-label`,
     ...(error ? { "aria-invalid": true as const } : {}),
     ...(describedBy ? { "aria-describedby": describedBy } : {}),
     ...(required ? { "aria-required": true as const } : {}),
@@ -44,7 +46,7 @@ export function FormField({ label, id, required, optional, helper, error, info, 
   return (
     <div className={["form-field", className].filter(Boolean).join(" ")} data-invalid={error ? "" : undefined}>
       <span className="form-field-label">
-        <label htmlFor={controlId}>
+        <label id={`${controlId}-label`} htmlFor={controlId}>
           {label}
           {required ? <span className="form-field-required" aria-hidden="true"> *</span> : optional ? <span className="form-field-optional"> (optional)</span> : null}
         </label>

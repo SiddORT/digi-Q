@@ -37,13 +37,13 @@ export function readScope(user: any, kind: string): SQL {
   if (["schedules", "availability-exceptions"].includes(kind)) result = sql`${result} and ${clinicalMembership(raw("r.doctor_id"), raw("r.branch_id"))}`;
   return result;
 }
-export function documentSql(kind: string): SQL {
+export function documentSql(kind: string, assignmentDocument?: SQL): SQL {
   // Transform physical columns to the public camelCase contract; JSON data remains extensible.
   let doc = raw(`coalesce(to_jsonb(r)->'data','{}'::jsonb) || (select jsonb_object_agg((select string_agg(case when n=1 then word else initcap(word) end,'' order by n) from unnest(string_to_array(k,'_')) with ordinality t(word,n)),v) from jsonb_each(to_jsonb(r)-'data'-'password_hash'-'token_hash') e(k,v))`);
   // Users use a credential column, not extensible data. Never project that
   // column through generic list/export serialization.
   if (kind === "users") doc = sql`(${doc}) - 'passwordHash' - 'password_hash' - 'tokenHash' - 'token_hash' - 'clerkId'`;
-  if (["users", "doctors"].includes(kind)) doc = sql`${doc} || jsonb_build_object('clinicIds',coalesce((select jsonb_agg(distinct l.clinic_id) from (${links(kind)}) l),'[]'::jsonb),'branchIds',coalesce((select jsonb_agg(distinct l.branch_id) filter(where l.branch_id is not null) from (${links(kind)}) l),'[]'::jsonb))`;
+  if (["users", "doctors"].includes(kind)) doc = sql`${doc} || ${assignmentDocument || sql`jsonb_build_object('clinicIds',coalesce((select jsonb_agg(distinct l.clinic_id) from (${links(kind)}) l),'[]'::jsonb),'branchIds',coalesce((select jsonb_agg(distinct l.branch_id) filter(where l.branch_id is not null) from (${links(kind)}) l),'[]'::jsonb))`}`;
   if (kind === "doctors") doc = sql`${doc} || (select jsonb_build_object('fullName',u.full_name,'email',u.email,'mobile',coalesce(u.mobile,''),'passwordEnabled',u.password_hash is not null,'managingAdminId',r.owner_admin_id,'managingAdminName',(select full_name from users where id=r.owner_admin_id),'invitationStatus',case when u.password_hash is not null then 'notRequired' else u.invitation_status end,'status',case when u.status<>'active' then 'inactive' else r.status end) from users u where u.id=r.user_id) || jsonb_build_object('specializationName',(select data->>'name' from masters where id=r.specialization_id),'qualificationNames',coalesce((select jsonb_agg(data->>'name') from masters where id in (select jsonb_array_elements_text(coalesce(r.data->'qualificationIds','[]'::jsonb)))),'[]'::jsonb))`;
   if (kind === "users") doc = sql`${doc} || jsonb_build_object('mobile',coalesce(r.mobile,''),'passwordEnabled',r.password_hash is not null,'managingAdminName',(select full_name from users where id=r.managing_admin_id),'invitationStatus',case when r.password_hash is not null then 'notRequired' else r.invitation_status end)`;
   if (kind === "clinics") doc = sql`${doc} || jsonb_build_object('adminName',(select full_name from users where id=r.admin_id))`;
@@ -87,15 +87,20 @@ export function filterSql(q: any): SQL {
 }
 export function sourceSql(user: any, kind: string, extra: SQL = raw("true")) {
   assert(names[kind], 400, "Unsupported resource");
-  let document = documentSql(kind);
-  if (["users", "doctors"].includes(kind) && user.role !== "superAdmin") {
+  if (["users", "doctors"].includes(kind)) {
     const own = kind === "users" ? sql`r.id=${user.id}` : sql`r.id=${user.doctorId || ""}`;
     const peer = kind === "users" ? sql`r.role='receptionist' and ${["clinicAdmin", "doctor"].includes(user.role)} and r.managing_admin_id=${(user.role === "clinicAdmin" ? user.id : user.managingAdminId) || ""}` : raw("false");
-    document = sql`${document} || case when (${own} or (${peer})) then '{}'::jsonb else jsonb_build_object(
-      'clinicIds',coalesce((select jsonb_agg(distinct l.clinic_id) from (${links(kind)}) l where ${inList(raw("l.clinic_id"), user.clinicIds)}),'[]'::jsonb),
-      'branchIds',coalesce((select jsonb_agg(distinct l.branch_id) filter(where l.branch_id is not null) from (${links(kind)}) l where ${operationalScope(user, raw("l.clinic_id"), raw("l.branch_id"))}),'[]'::jsonb)) end`;
+    const unrestricted = user.role === "superAdmin" ? raw("true") : sql`(${own} or (${peer}))`;
+    // Aggregate the same assignment relation once, rather than separate
+    // correlated scans for clinic IDs, branch IDs, then scoped replacements.
+    const assignmentDocument = sql`jsonb_build_object(
+      'clinicIds',coalesce(jsonb_agg(distinct l.clinic_id) filter(where ${unrestricted} or ${inList(raw("l.clinic_id"), user.clinicIds)}),'[]'::jsonb),
+      'branchIds',coalesce(jsonb_agg(distinct l.branch_id) filter(where l.branch_id is not null and (${unrestricted} or ${operationalScope(user, raw("l.clinic_id"), raw("l.branch_id"))})),'[]'::jsonb))`;
+    return sql`select ${documentSql(kind, raw("assignment_doc.doc"))} as doc from ${raw(names[kind])} r
+      cross join lateral (select ${assignmentDocument} as doc from (${links(kind)}) l) assignment_doc
+      where (${readScope(user, kind)}) and (${extra})`;
   }
-  return sql`select ${document} as doc from ${raw(names[kind])} r where (${readScope(user, kind)}) and (${extra})`;
+  return sql`select ${documentSql(kind)} as doc from ${raw(names[kind])} r where (${readScope(user, kind)}) and (${extra})`;
 }
 export const metricSql = sql`count(*)::int as appointments,
   count(*) filter(where doc->>'status' in ('booked','checkedIn','waiting'))::int as waiting,
@@ -137,6 +142,19 @@ export async function queryPage(user: any, kind: string, q: any = {}, extra?: SQ
   if (kind === "branches" && q.doctorId) {
     extra = sql`(${extra || raw("true")}) and ${clinicalMembership(sql`${q.doctorId}`, raw("r.id"))}`;
     effectiveQuery = { ...q, doctorId: undefined };
+  }
+  if (kind === "patients" && (q.clinicId || q.branchId)) {
+    // A patient may be registered elsewhere but have an authorized visit here.
+    // Match both requested dimensions on the SAME visit, retaining readScope
+    // and the actor's operational/own-doctor restrictions independently.
+    const registered = sql`${q.clinicId ? sql`r.clinic_id=${q.clinicId}` : raw("true")} and ${q.branchId ? sql`r.branch_id=${q.branchId}` : raw("true")}`;
+    const visited = sql`exists(select 1 from appointments ap where ap.patient_id=r.id
+      and ${q.clinicId ? sql`ap.clinic_id=${q.clinicId}` : raw("true")}
+      and ${q.branchId ? sql`ap.branch_id=${q.branchId}` : raw("true")}
+      and ${operationalScope(user, raw("ap.clinic_id"), raw("ap.branch_id"))}
+      ${user.role === "doctor" ? sql`and ap.doctor_id=${user.doctorId || ""}` : raw("")})`;
+    extra = sql`(${extra || raw("true")}) and ((${registered}) or ${visited})`;
+    effectiveQuery = { ...effectiveQuery, clinicId: undefined, branchId: undefined };
   }
   const source = sourceSql(user, kind, extra), filter = filterSql(effectiveQuery);
   const matching = withStatusCounts

@@ -86,7 +86,16 @@ await build({
           const values=s=>s?.values?.flatMap(v=>v?.values?values(v):[v])||[];
           const textOf=s=>(s?.strings||[]).join("")+(s?.values||[]).filter(v=>v?.strings).map(textOf).join("");
           export async function queryPage(user,kind,q={},extra) {
-            let rows=await Promise.all((state.rows[kind==="audit-logs"?"auditLogs":kind]||[]).map(r=>enrich(kind,flatten(r))));
+            let rows=await Promise.all((state.rows[kind==="audit-logs"?"auditLogs":kind]||[]).map(async r=>{
+              const row=await enrich(kind,flatten(r));
+              if (["users","doctors"].includes(kind)) {
+                // The production list SQL projects this boolean before safe
+                // serialization; enrich() alone is not that SQL projection.
+                const account=kind==="users"?r:state.rows.users.find(u=>u.id===r.userId);
+                row.passwordEnabled=account?.passwordHash != null;
+              }
+              return row;
+            }));
             rows=await scoped(user,kind,rows);
             rows=await Promise.all(rows.map(r=>projectAssignmentScope(user,kind,r)));
             const text=textOf(extra), args=values(extra);
@@ -207,6 +216,8 @@ const localBundle = join(root, ".backend-flow-test.mjs");
 const { copyFile } = await import("node:fs/promises");
 await copyFile(join(directory,"suite.mjs"),localBundle);
 const api = await import(localBundle);
+await build({entryPoints:[resolve(root,"../../clinicflow/src/staff-controls.ts")],outfile:join(directory,"staff-controls.mjs"),bundle:true,platform:"node",format:"esm"});
+const {resendStaffInvitations,staffInvitationRestriction}=await import(join(directory,"staff-controls.mjs"));
 const { after } = await import("node:test");
 after(async () => { await rm(localBundle,{force:true}); await rm(directory,{recursive:true,force:true}); });
 
@@ -671,6 +682,7 @@ test("staff resource uses native password enrollment, never serializes credentia
   const result=await route(api.resourcesRouter,"get","/users");
   assert.equal(result.items.find(user=>user.id==="du").passwordEnabled,true);
   assert.equal(result.items.find(user=>user.id==="admin").passwordEnabled,false);
+  assert.ok(result.items.every(user=>typeof user.passwordEnabled==="boolean"));
   assert.doesNotMatch(JSON.stringify(result), /\\$argon2id\\$private|private-token/);
   for (const item of result.items) for (const key of ["passwordHash","tokenHash","clerkId"]) assert.equal(key in item,false);
 });
@@ -751,4 +763,67 @@ test("deactivating a staff account revokes its native database sessions", async 
   await route(api.resourcesRouter,"patch","/doctors/:id",{fullName:"Doctor",email:"d@example.com",status:"inactive"},{},{id:"d"});
   assert.ok(api.state.rows.authSessions.find(session=>session.id==="owned").revokedAt instanceof Date);
   assert.equal(api.state.rows.authSessions.find(session=>session.id==="other").revokedAt,null);
+});
+test("single invitation replacement retains account status and sessions; delivery 503 is explicit and marks failed", async () => {
+  seed();
+  api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
+  const account=api.state.rows.users.find(user=>user.id==="du");
+  Object.assign(account,{email:"doctor@example.test",invitationStatus:"sent"});
+  api.state.rows.authChallenges=[{id:"old",userId:"du",purpose:"invitation",consumedAt:null}];
+  api.state.rows.authSessions=[{id:"session",userId:"du",revokedAt:null}];
+  api.state.delivery=async()=>{throw Object.assign(new Error("Fixture mail service unavailable"),{status:503});};
+  await assert.rejects(route(api.resourcesRouter,"post","/users/:id/resend-invitation",{},{},{id:"du"}),error=>error.status===503);
+  assert.equal(account.invitationStatus,"failed");
+  assert.equal(account.status,"active");
+  assert.equal(api.state.rows.authSessions[0].revokedAt,null);
+  assert.ok(api.state.rows.authChallenges[0].consumedAt instanceof Date);
+  assert.deepEqual(api.state.notifications,[]);
+  api.state.delivery=null;
+  const result=await route(api.resourcesRouter,"post","/users/:id/resend-invitation",{},{},{id:"du"});
+  assert.equal(result.invitationStatus,"sent");
+  assert.equal(api.state.notifications.length,1);
+  assert.equal(api.state.rows.authChallenges.filter(row=>!row.consumedAt).length,1);
+  assert.equal(api.state.rows.authSessions[0].revokedAt,null);
+});
+test("selected invitation replacement consolidates mixed results without treating resend as deactivation", async () => {
+  seed();
+  api.state.actor={id:"super",role:"superAdmin",clinicIds:[],branchIds:[]};
+  const records=[
+    {id:"good",userId:"good-account",fullName:"Eligible",status:"active"},
+    {id:"inactive",userId:"inactive-account",fullName:"Inactive",status:"inactive"},
+    {id:"enrolled",userId:"enrolled-account",fullName:"Enrolled",status:"active",passwordEnabled:true},
+    {id:"fail",userId:"fail-account",fullName:"Mail failure",status:"active"},
+    {id:"missing",fullName:"Missing account",status:"active"},
+  ];
+  for(const row of records.filter(row=>row.userId))api.state.rows.users.push({id:row.userId,role:"doctor",fullName:row.fullName,email:`${row.id}@example.test`,status:row.status,invitationStatus:"failed",...(row.passwordEnabled?{passwordHash:"fixture-credential"}:{})});
+  const calls=[];
+  api.state.delivery=async account=>{if(account.id==="fail-account")throw Object.assign(new Error("Fixture unavailable"),{status:503});};
+  const outcomes=await resendStaffInvitations(records,"doctors",async id=>{calls.push(id);return route(api.resourcesRouter,"post","/users/:id/resend-invitation",{},{},{id});},error=>error.message);
+  assert.deepEqual(calls,["good-account","fail-account"]);
+  assert.deepEqual(outcomes.map(row=>row.ok),[true,false,false,false,false]);
+  assert.match(outcomes[1].message,/Reactivate/);
+  assert.match(outcomes[2].message,/password recovery/);
+  assert.match(outcomes[3].message,/unavailable/);
+  assert.match(outcomes[4].message,/linked account/);
+  assert.equal(api.state.notifications.length,1);
+  assert.equal(api.state.rows.users.find(row=>row.id==="good-account").status,"active");
+  assert.equal(api.state.rows.users.find(row=>row.id==="inactive-account").status,"inactive");
+  assert.match(staffInvitationRestriction(records[1],"doctors"),/Reactivate/);
+});
+test("invitation route rejects inactive, enrolled and unauthorized staff without delivering mail", async () => {
+  seed();
+  const account=api.state.rows.users.find(row=>row.id==="du");
+  account.email="doctor@example.test";
+  api.state.actor={id:"admin",role:"clinicAdmin",clinicIds:["c"],branchIds:[]};
+  account.status="inactive";
+  await assert.rejects(route(api.resourcesRouter,"post","/users/:id/resend-invitation",{},{},{id:"du"}),error=>error.status===403);
+  account.status="active";account.passwordHash="fixture-password";
+  await assert.rejects(route(api.resourcesRouter,"post","/users/:id/resend-invitation",{},{},{id:"du"}),error=>error.status===409);
+  delete account.passwordHash;
+  api.state.actor={id:"another-doctor",role:"doctor",doctorId:"another-profile",managingAdminId:"admin",clinicIds:["c"],branchIds:["b"]};
+  await assert.rejects(route(api.resourcesRouter,"post","/users/:id/resend-invitation",{},{},{id:"du"}),error=>error.status===403);
+  api.state.actor={id:"unrelated",role:"clinicAdmin",clinicIds:["outside"],branchIds:[]};
+  await assert.rejects(route(api.resourcesRouter,"post","/users/:id/resend-invitation",{},{},{id:"du"}),error=>error.status===403);
+  assert.deepEqual(api.state.notifications,[]);
+  assert.equal(api.state.rows.authChallenges,undefined);
 });

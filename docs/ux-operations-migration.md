@@ -23,7 +23,7 @@
 | Queue, patients | Bounded searchable own-appointment lookup, selected appointment context, existing own-token/wait estimate display. No staff entries shown. |
 | Doctor clinics | Assigned clinics and administrator-network clinics independently searched and paged. No first-100 truncation or client subtraction of only the current assigned page. Network list explicitly includes existing assignments. |
 | Profile | Existing fields/permissions retained; loading/error/retry, save success and duplicate guard. |
-| Settings | Explicit loading/error/retry, save success and duplicate guard; integration boundaries and Clerk-owned session behavior unchanged. |
+| Settings | Explicit loading/error/retry, save success and duplicate guard; integration boundaries retained. Authentication now uses native database-backed sessions, not Clerk. |
 | Reports | Server-paged date/clinic/doctor grouping; from/to and dependent scope filters; loading/error/retry and grouped responsive columns. Explicit **Export all results CSV** fetches all matching report pages only on user demand, not merely the displayed page. |
 
 ## Dropdown audit

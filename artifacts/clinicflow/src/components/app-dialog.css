@@ -37,3 +37,8 @@
 @media (max-width:639px){.app-discard-actions>*{flex:1 1 auto}}
 @keyframes appDiscardIn{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.app-discard-scrim{animation:none}}
+/* Reflow long labels rather than widening or cropping an editor at zoom. */
+.app-dialog-header,.app-dialog-body{min-width:0;overflow-wrap:anywhere}
+.app-dialog-body :is(input:not([type=checkbox]):not([type=radio]),select,textarea){min-width:0;max-width:100%;box-sizing:border-box}
+.app-dialog-body .form-grid>*{min-width:0}
+.app-discard-panel{min-width:0;max-height:100%;overflow:auto;overflow-wrap:anywhere}

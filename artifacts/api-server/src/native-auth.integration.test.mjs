@@ -1,6 +1,8 @@
 // Isolated Unix-socket PostgreSQL; never reads DATABASE_URL or contacts SMTP.
 import { after, before, beforeEach, test } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { decodeJwt } from "jose";
 import { build } from "esbuild";
 import { readFile, rm } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -25,7 +27,7 @@ before(async () => {
   await h.control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0012_native_auth_additive.sql"), "utf8"));
   globalThis.nativeAuthDb = h.db;
   await build({
-    stdin: { contents: 'export * from "./lib/native-auth"; export * from "./lib/auth-email"; export * from "./routes/auth";',
+    stdin: { contents: 'export * from "./lib/native-auth"; export * from "./lib/jwt-session"; export * from "./lib/auth-email"; export * from "./routes/auth";',
       resolveDir: root },
     outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
     plugins: [{ name: "isolated-auth", setup(b) {
@@ -104,7 +106,7 @@ test("Argon2id staff login immediately issues a secure session without device em
   await resolveSession(revoked);
   assert.equal(revoked.authUserId, undefined);
 });
-test("standalone device challenge is HMAC-bound, single-use, and requires active staff identity", async () => {
+test("retired device endpoint rejects even valid historical challenges without consuming or issuing credentials", async () => {
   const hash = await api.hashPassword("standalone device fixture password 123");
   await h.control.query("insert into users(id,email,full_name,role,password_hash) values ($1,$2,$3,$4,$5)",
     ["device-staff", "device@example.test", "Device Staff", "doctor", hash]);
@@ -115,18 +117,91 @@ test("standalone device challenge is HMAC-bound, single-use, and requires active
   assert.notEqual(challenge.token_hash, code);
   assert.match(challenge.token_hash, /^[0-9a-f]{64}$/);
   await assert.rejects(() => api.consumeChallenge(challengeId, "device", "000000"), /Invalid or expired/);
-  const verified = await route("/auth/verify-device", { challengeId, code });
-  assert.equal(verified.res.body.authenticated, true);
-  assert.equal(verified.res.cookies[api.SESSION_COOKIE].options.secure, true);
-  assert.deepEqual((await h.control.query("select data from auth_challenges where id=$1", [challengeId])).rows[0].data, {});
-  await assert.rejects(() => api.consumeChallenge(challengeId, "device", code), /Invalid or expired/);
-  await assert.rejects(() => route("/auth/verify-device", { challengeId, code }), /Invalid or expired/);
-  const inactiveChallenge = await api.createChallenge({ userId: "device-staff", email: "device@example.test",
-    purpose: "device", secret: "654321", ttlMs: 600_000 });
-  await h.control.query("update users set status='inactive' where id='device-staff'");
-  await assert.rejects(() => route("/auth/verify-device", { challengeId: inactiveChallenge, code: "654321" }),
-    error => error.code === "INVALID_VERIFICATION" && error.status === 401);
+  for (const body of [{ challengeId, code }, {}, { challengeId, code: "000000" }]) {
+    const res = response();
+    const layer = api.authRouter.stack.find(l => l.route?.path === "/auth/verify-device");
+    await assert.rejects(async () => layer.route.stack[0].handle(request(body), res),
+      error => error.code === "AUTH_METHOD_REMOVED" && error.status === 410);
+    assert.equal(res.headers["Cache-Control"], "no-store");
+    assert.deepEqual(res.cookies, {});
+  }
+  assert.equal((await h.control.query("select consumed_at from auth_challenges where id=$1", [challengeId])).rows[0].consumed_at, null);
+  assert.equal((await h.control.query("select count(*)::int n from auth_sessions")).rows[0].n, 0);
   assert.equal(globalThis.nativeAuthMail.length, 0);
+});
+test("disposable single-key cutover forces reauth; compromise revocation prevents old-key rollback resurrection", async () => {
+  const keys = ["AUTH_SESSION_MODE", "JWT_SIGNING_KEY", "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
+  const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  const oldKey = "disposable-cutover-old-key-never-used-outside-tests";
+  const newKey = "disposable-cutover-new-key-never-used-outside-tests";
+  const password = "disposable key cutover password 123";
+  const hash = await api.hashPassword(password);
+  const digest = value => createHash("sha256").update(value).digest("hex");
+  const identity = async () => (await h.control.query("select id,email,full_name,role,status,password_hash,clerk_id from users order by id")).rows;
+  const session = async token => {
+    const req = request({}, `${api.SESSION_COOKIE}=${token}`);
+    await resolveSession(req);
+    return req;
+  };
+  try {
+    for (const key of keys.filter(key => key.startsWith("SMTP_"))) delete process.env[key];
+    await h.control.query("insert into users(id,email,full_name,role,password_hash,clerk_id) values ('cutover','cutover@example.test','Cutover','doctor',$1,'preserved-provider-mapping')", [hash]);
+    const baseline = await identity();
+    process.env.AUTH_SESSION_MODE = "jwt";
+    process.env.JWT_SIGNING_KEY = oldKey;
+    const old = (await route("/auth/login", { email: "cutover@example.test", password })).res.cookies[api.SESSION_COOKIE].value;
+    assert.equal((await session(old)).authUserId, "cutover");
+    // Coordinated one-key replacement: no overlap/refresh support is asserted.
+    process.env.JWT_SIGNING_KEY = newKey;
+    assert.equal((await session(old)).authUserId, undefined);
+    assert.equal((await h.control.query("select revoked_at from auth_sessions where token_hash=$1", [digest(old)])).rows[0].revoked_at, null);
+    const fresh = (await route("/auth/login", { email: "cutover@example.test", password })).res.cookies[api.SESSION_COOKIE].value;
+    assert.equal((await session(fresh)).authUserId, "cutover");
+    assert.equal(decodeJwt(fresh).exp - decodeJwt(fresh).iat, 43200);
+    const parts = fresh.split(".");
+    parts[1] = Buffer.from(JSON.stringify({ ...decodeJwt(fresh), sub: "attacker" })).toString("base64url");
+    assert.equal((await session(parts.join("."))).authUserId, undefined);
+    // Knowing a signing key alone cannot create the required DB proof.
+    const forged = await api.signSessionJwt("cutover");
+    assert.equal((await session(forged)).authUserId, undefined);
+    await api.revokeSession(await session(fresh), response());
+    assert.equal((await session(fresh)).authUserId, undefined);
+    // Demonstrate the rollback hazard, then the durable compromise response.
+    process.env.JWT_SIGNING_KEY = oldKey;
+    assert.equal((await session(old)).authUserId, "cutover", "restoring an unrevoked old key resurrects its session");
+    await h.control.query("update auth_sessions set revoked_at=now() where revoked_at is null");
+    assert.equal((await session(old)).authUserId, undefined);
+    process.env.JWT_SIGNING_KEY = newKey;
+    assert.equal((await session(fresh)).authUserId, undefined);
+    const after = (await route("/auth/login", { email: "cutover@example.test", password })).res.cookies[api.SESSION_COOKIE].value;
+    assert.equal((await session(after)).authUserId, "cutover");
+    await api.revokeUserSessions("cutover");
+    assert.equal((await session(after)).authUserId, undefined);
+    assert.deepEqual(await identity(), baseline, "IDs, mapping, role, status and password hash unchanged");
+    assert.equal(globalThis.nativeAuthMail.length, 0);
+    assert.equal((await h.control.query("select count(*)::int n from auth_challenges")).rows[0].n, 0);
+  } finally {
+    for (const key of keys) {
+      if (saved[key] === undefined) delete process.env[key];
+      else process.env[key] = saved[key];
+    }
+  }
+});
+test("native default sessions survive optional JWT key replacement without mode activation", async () => {
+  const savedMode = process.env.AUTH_SESSION_MODE, savedKey = process.env.JWT_SIGNING_KEY;
+  try {
+    delete process.env.AUTH_SESSION_MODE;
+    await h.control.query("insert into users(id,email,full_name,role) values ('native','native@example.test','Native','doctor')");
+    const res = response();
+    await api.createSession(res, "native");
+    process.env.JWT_SIGNING_KEY = "disposable-native-mode-unused-replacement-key";
+    const req = request({}, `${api.SESSION_COOKIE}=${res.cookies[api.SESSION_COOKIE].value}`);
+    await resolveSession(req);
+    assert.equal(req.authUserId, "native");
+  } finally {
+    if (savedMode === undefined) delete process.env.AUTH_SESSION_MODE; else process.env.AUTH_SESSION_MODE = savedMode;
+    if (savedKey === undefined) delete process.env.JWT_SIGNING_KEY; else process.env.JWT_SIGNING_KEY = savedKey;
+  }
 });
 test("unknown email has no session, bad tokens avoid hash work, and absent SMTP fails explicitly", async () => {
   await assert.rejects(() => route("/auth/login", { email: "unknown@example.test", password: "disposable password 123" }),

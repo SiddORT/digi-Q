@@ -92,6 +92,7 @@ export function AppDialog({
     >
       <DialogContent
         className="app-dialog sm:max-w-2xl bg-white border border-border shadow-xl"
+        {...(!description ? { "aria-describedby": undefined } : {})}
         aria-busy={busy || undefined}
         onInteractOutside={(e) => {
           e.preventDefault();
@@ -103,7 +104,7 @@ export function AppDialog({
           else requestClose();
         }}
       >
-        <DialogHeader className="app-dialog-header bg-slate-50/50 space-y-0">
+        <DialogHeader className="app-dialog-header bg-slate-50/50 space-y-0" inert={confirming ? true : undefined}>
           <DialogTitle className="app-dialog-title text-foreground">{title}</DialogTitle>
           {description && (
             <DialogDescription className="app-dialog-desc text-muted-foreground">

@@ -165,7 +165,14 @@ export async function deliverInvitation(userId: string, redirectUrl?: string) {
   await db.update(authChallenges).set({ consumedAt: new Date() }).where(and(
     eq(authChallenges.userId, userId), eq(authChallenges.purpose, "invitation"),
   ));
-  await inviteStaff(null, account);
+  try {
+    await inviteStaff(null, account);
+  } catch (error) {
+    // A failed resend must not leave an old "sent" indicator after its link
+    // was superseded. Preserve the delivery error; never claim mail was sent.
+    await change(users, userId, { invitationStatus: "failed" });
+    throw error;
+  }
 }
 export async function createClinicAdminOnboarding(actor: any, body: any, redirectUrl?: string) {
   roles(actor, ["superAdmin"]);
@@ -467,11 +474,9 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
 function discardedIncomingSave(kind: string, table: any, user: any, body: any, old?: any) {
   await authorizeWrite(user, kind, body, old);
   if (kind === "users" || kind === "doctors") body.email = body.email.toLowerCase();
-  let provisionedClerkId: string | undefined;
   if (!old && (kind === "users" || kind === "doctors")) {
     const existing = (await all(users)).find(u => u.email === body.email);
     assert(!existing, 409, "Email already belongs to an existing profile; roles cannot be silently changed");
-    provisionedClerkId = (await provisionIdentity(body.email)).clerkId;
   }
   return db.transaction(async tx => {
     const proposed = { ...old, ...body };
@@ -552,7 +557,7 @@ function discardedIncomingSave(kind: string, table: any, user: any, body: any, o
     }
     if (kind === "users" || kind === "doctors") {
       const userId = kind === "users" ? id : old?.userId || uid();
-      const uf: any = { fullName: body.fullName, email: body.email, mobile: body.mobile, role: kind === "users" ? body.role : "doctor", status: fields.status, ...(!old && provisionedClerkId ? { clerkId: provisionedClerkId } : {}) };
+      const uf: any = { fullName: body.fullName, email: body.email, mobile: body.mobile, role: kind === "users" ? body.role : "doctor", status: fields.status };
       if (kind === "doctors") {
         fields.ownerAdminId = old?.ownerAdminId || (user.role === "clinicAdmin" ? user.id : body.ownerAdminId);
         assert(fields.ownerAdminId, 400, "Please select a Clinic Admin");
@@ -614,9 +619,11 @@ for (const [kind, table, schema, listSchema] of definitions) {
     const result = await queryPage(user, kind, q);
     if (kind === "clinics") result.items = result.items.map((row: any) => ({ ...row, ...clinicDisplayPreferences(row) }));
     if (kind === "branches") {
-      const parents = new Map<string, any>();
+      const parentIds = [...new Set(result.items.map((row: any) => row.clinicId))] as string[];
+      const parentRows = parentIds.length ? (await db.execute(sql`select id, data from clinics where id in (${sql.join(parentIds.map(id => sql`${id}`), sql`,`)})`)).rows : [];
+      const parents = new Map(parentRows.map((row: any) => [row.id, { ...row.data, ...row }]));
       for (const row of result.items) {
-        if (!parents.has(row.clinicId)) parents.set(row.clinicId, await one(clinics, row.clinicId));
+        assert(parents.has(row.clinicId), 404, "Record not found");
         Object.assign(row, clinicDisplayPreferences(parents.get(row.clinicId)));
       }
     }
@@ -633,7 +640,8 @@ for (const [kind, table, schema, listSchema] of definitions) {
         const branchIds = row.branchIds.filter((id: string) => unrestricted || branchRows.some(b => b.id === id && scope(user, b.clinicId as string, id)));
         return { ...row, clinicIds, branchIds, clinicNames: clinicRows.filter(c => clinicIds.includes(c.id)).map(c => c.name), branchNames: branchRows.filter(b => branchIds.includes(b.id)).map(b => b.name) };
       });
-      result.items = await Promise.all(result.items.map((row: any) => withPasswordState(row)));
+      // queryPage already projects passwordEnabled from the credential column;
+      // re-reading each user's credential would add one query per listed staff.
     }
     res.json(result);
   });
@@ -738,7 +746,10 @@ resourcesRouter.post("/users/:id/resend-invitation", async (req, res) => {
   const actor = await requireUser(req), target = await enrich("users", await one(users, req.params.id as string));
   roles(actor, ["superAdmin", "clinicAdmin", "doctor"]);
   assert(["clinicAdmin", "doctor", "receptionist"].includes(target.role), 400, "Invitations are available for staff profiles only");
+  if (actor.role === "doctor") assert(target.role === "receptionist", 403, "Doctors may manage receptionists only");
+  if (actor.role === "clinicAdmin") assert(["doctor", "receptionist"].includes(target.role), 403, "Cannot manage another administrator's invitation");
   assert(await canRead(actor, "users", target), 403, "User outside your management scope");
+  assert(target.status === "active", 403, "Reactivate this staff account before sending an invitation");
   const [credential] = await db.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, target.id));
   assert(!credential?.passwordHash, 409, "This staff account has a password. Use password recovery assistance instead.");
   await consumeRateLimit(`staff-invite:${target.id}`, 3);

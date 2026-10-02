@@ -12,8 +12,8 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> &
 export const PhoneInput = forwardRef<HTMLInputElement, Props>(function PhoneInput({value,onChange,...props}, ref) {
   const [code,setCode]=useState(suggestedCallingCode);
   return <span className="phone-input">
-    <SearchableSelect label="Country calling code" value={code} onChange={setCode} options={callingCodes.map(([,value,label])=>({value,label:`${label} ${value}`}))}/>
-    <label>Other calling code (optional)<input type="tel" inputMode="tel" aria-label="Other country calling code" placeholder="+ country code" value={code} onChange={event=>setCode(event.target.value.replace(/[^\d+]/g,""))}/></label>
+    <SearchableSelect label="Country calling code" disabled={props.disabled} value={code} onChange={setCode} options={callingCodes.map(([,value,label])=>({value,label:`${label} ${value}`}))}/>
+    <label>Other calling code (optional)<input type="tel" inputMode="tel" disabled={props.disabled} readOnly={props.readOnly} aria-label="Other country calling code" placeholder="+ country code" value={code} onChange={event=>setCode(event.target.value.replace(/[^\d+]/g,""))}/></label>
     <input {...props} ref={ref} type="tel" inputMode="tel" autoComplete="tel" value={value} placeholder={props.placeholder||"+ country code and number"} onChange={event=>onChange(event.target.value)} onBlur={event=>{const raw=value.trim();if(raw&&!raw.startsWith("+")&&/^\+[1-9]\d{0,3}$/.test(code))onChange(normalizePhone(`${code}${raw}`));else if(raw)onChange(normalizePhone(raw));props.onBlur?.(event);}}/>
     <small className="muted">Enter + followed by your country code and number. A local number uses the calling code above when you leave the field.</small>
   </span>;

@@ -1,15 +1,16 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type AriaAttributes } from "react";
 import { Check, Loader2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 
-type SuggestionInputProps = {
+type SuggestionInputProps = Pick<AriaAttributes, "aria-label" | "aria-labelledby" | "aria-describedby" | "aria-invalid" | "aria-required"> & {
   value: string;
   onChange: (value: string) => void;
   options: string[];
   placeholder: string;
   loading?: boolean;
   error?: string;
+  emptyMessage?: string;
   /** Retry action shown with the error; typed value is kept. */
   onRetry?: () => void;
   onSearchChange?: (value: string) => void;
@@ -29,11 +30,17 @@ export function SuggestionInput({
   placeholder,
   loading = false,
   error,
+  emptyMessage = "No matching suggestions. You can keep your own text.",
   onRetry,
   onSearchChange,
   disabled = false,
   id,
   clearLabel = "Clear text",
+  "aria-label": accessibleLabel,
+  "aria-labelledby": labelledBy,
+  "aria-describedby": describedBy,
+  "aria-invalid": invalid,
+  "aria-required": required,
 }: SuggestionInputProps) {
   const generatedId = useId();
   const inputId = id || generatedId;
@@ -58,11 +65,12 @@ export function SuggestionInput({
     onChange(option);
     onSearchChange?.(option);
     setOpen(false);
+    setActiveIndex(-1);
   };
 
   return (
     <Popover open={open && !disabled} onOpenChange={setOpen}>
-      <div className="w-full">
+      <div className="min-w-0 max-w-full w-full">
         <PopoverAnchor asChild>
           <div className="relative flex items-center">
             <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" />
@@ -73,9 +81,12 @@ export function SuggestionInput({
               aria-autocomplete="list"
               aria-controls={listId}
               aria-expanded={open && !disabled}
-              aria-activedescendant={activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
-              aria-invalid={!!error}
-              aria-describedby={error ? `${inputId}-error` : undefined}
+              aria-activedescendant={open && activeIndex >= 0 ? `${listId}-${activeIndex}` : undefined}
+              aria-label={accessibleLabel || (labelledBy ? undefined : placeholder)}
+              aria-labelledby={labelledBy}
+              aria-required={required}
+              aria-invalid={invalid ?? !!error}
+              aria-describedby={[describedBy, error ? `${inputId}-error` : undefined].filter(Boolean).join(" ") || undefined}
               disabled={disabled}
               value={value}
               placeholder={placeholder}
@@ -105,6 +116,9 @@ export function SuggestionInput({
                   event.preventDefault();
                   event.stopPropagation();
                   setOpen(false);
+                } else if (event.key === "Tab") {
+                  setOpen(false);
+                  setActiveIndex(-1);
                 }
               }}
             />
@@ -159,17 +173,17 @@ export function SuggestionInput({
             aria-selected={option === value}
             id={`${listId}-${index}`}
             key={option}
-            className={cn("flex w-full items-center rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50", index === activeIndex && "bg-slate-50")}
+            className={cn("flex w-full min-w-0 items-center rounded-md px-3 py-2 text-left text-sm hover:bg-slate-50", index === activeIndex && "bg-slate-50")}
             onPointerDown={event => event.preventDefault()}
             onMouseEnter={() => setActiveIndex(index)}
             onClick={() => choose(option)}
           >
             <Check className={cn("mr-2 h-4 w-4", option === value ? "opacity-100" : "opacity-0")} />
-            {option}
+            <span className="min-w-0 break-words">{option}</span>
           </button>
         )) : (
           <p className="px-3 py-2 text-sm text-muted-foreground">
-            {loading ? "Loading suggestions…" : "No matching suggestions. You can keep your own text."}
+            {loading ? "Loading suggestions…" : error ? "Suggestions are unavailable. Retry above or enter your own text." : emptyMessage}
           </p>
         )}
       </PopoverContent>

@@ -2,15 +2,43 @@
 
 ## Conclusion
 
-**Not all 137 findings are complete; no release or UAT certification.** Final root typecheck passed; recursive API/UI `src/**/*.test.mjs` run **321/321 passed, zero skipped, 45.48 seconds**. Ticket CLI **24/24**, final mobile registration and protected401 browser checks passed. Queue server pagination/guest search and auth-cache/lifecycle work are included. No other implementation work is reported running.
+**Local implementation/investigation scope is complete; not all137 findings are browser/UAT closed and no release certification is claimed.** Current root typecheck **passed**. Latest recursive API/UI run: **333 tests,332 passed, one stale repository-double failure**. The fixture was corrected to mirror production SQL's `passwordEnabled` projection, then the full backend-flow file passed **38/38**. **333 tests verified across combined + targeted runs**, not a clean single full run; overlapping runs are not summed. No runtime bug or production credential reread restoration was involved. Final scoped browser invitation continuation passed; no work remains running.
 
 The appended **Current disposition register — all 137 items** in [the QA report](digiq-ui-qa-report.md) is authoritative for individual statuses. Original audit text is preserved as history. Implemented-awaiting-browser is neither a missing implementation nor a successful live retest. Existing-behavior-verified means source tracing unless expressly stated otherwise.
 
-This reconciliation performed no source edits, test execution or browser run. New test files are not automatically evidence of passing tests.
+This documentation reconciliation performed no code edits, test execution, workflow operation or browser run. New test files are not automatically evidence of passing tests.
 
-The register validates **137 unique dispositions, none missing**: **40** verified-with-test-evidence, **50** implemented-awaiting-browser, **6** existing-behavior-verified, **12** pending-implementation, **19** held-product-decision and **10** blocked-external. Tests certify cited assertions, not original UAT incident causes. These are not completion percentages.
+The register validates **137 unique dispositions, none missing:52 scoped-evidence verified,59 implemented-awaiting-browser,6 existing source behavior,10 optional policy-held,10 external,0 local pending**. These are not52 browser-covered findings,59 missing implementations or completion percentages. Tests certify cited assertions, not original UAT incident causes.
 
-Of the 12 pending items, **23/35/77/89 are performance measurement**, **38/40/41/61/87 are specific unresolved action/data diagnostics**, and **111/125/129 are key-lifecycle/legacy-auth cleanup work**. They are not twelve proven missing features. The 50 awaiting-browser entries already have implementation; remaining visual coverage is not mislabeled as missing code.
+## Three current closure lists
+
+### Implemented and verified within the stated scope
+
+- Current root typecheck;333 source tests verified across combined/targeted evidence, with the stale fixture failure preserved in chronology.
+- Local list-performance measurement/repairs and queue diagnosis; invitation/action/error/partial-result tests; authorized-visit patient SQL repair; local-master SQL/static rendering; source accessibility sweep; key-lifecycle/legacy-retirement disposable rehearsal.
+- Current browser partial pass: patient listing has no unsupported badge; shared Gender select keyboard selection; required FormField inline error/ARIA/focus; draft discard and resend confirmation copy;390px/640px no document overflow. These are scoped fixture checks, not all-caller certification.
+- Final same-page invitation continuation passed after dedicated CSRF route precedence corrected a fixture error: one actual app resend POST/fake sent response showed row plus toast “Set-password invitation sent”; bulk three selected gave one fake success, one503 failure and one password-enabled skip, with1 of3 sent, per-row results and summary. Findings38/40/41 have source/scoped fixture-interaction evidence; no real email or original SMTP-incident resolution claimed.
+- Patient own upcoming booking notice, reload persistence and details link `/patient/appointments?view=all&search=REF` matching the request passed; app requests `statusGroup=waiting` without client patientID. Cross-tab logout passed with fake shared-server auth/BroadcastChannel: other private tab reached sign-in, no rebroadcast loop after1s. All intercepted data/responses fictional; actual server revocation remains separately isolated-tested, not live-UAT proof.
+- Development guards restored exactly with no row/count/mapping changes; disposable source-migrated backup/restore passed. Neither proves production parity.
+
+### Implemented, still needing browser evidence
+
+- Visit-linked staff booking patient lookup; actual200% zoom, screen-reader/nested controls and unexercised signed-in role/list/dialog callers. Isolated SQL/lifecycle passes do not prove these UI cases. Patient notice reload and scoped cross-tab logout are now fixture-verified, not pending.
+- Other source-wired register entries remain source-verified/awaiting-browser where their actual scenarios were not exercised, not a list of missing implementation.
+
+### Requires actual live input, authorization or optional policy approval
+
+- Authoritative target build/auth/schema/account readiness, original recurring-UAT data/provider diagnostics, real delivery, actual-target recovery/cutover/key/provider retirement and user-owned publication.
+- Full approved JSON and literal finite-selector/bounded-preview standard interpretation; deployed network/render/load evidence.
+- Optional extensions described below; none silently overrides the current explicit policies.
+
+The historical baseline had12 pending local tasks: **23/35/77/89 performance**, **38/40/41/61/87 action/data diagnostics**, **111/125/129 key lifecycle/legacy retirement**. All twelve now have local work/evidence in [performance](digiq-performance.md), [diagnostics](digiq-remaining-diagnostics.md) and [auth compatibility](digiq-auth-compatibility.md). Local API measurement, invitation replacement/partial-result tests, authorized-visit patient SQL repair and local-master error handling are complete; disposable key-cutover/compromise rehearsal and repository retirement are complete. No local implementation gap is currently established.
+
+## Current-policy recommendations versus optional extensions
+
+These are **not19 required unimplemented features**. Current recommendations are done:64 optional-sign-in copy;106 unsupported mobileVerified listing/export column removed;102 no standalone clinic login helper;75 explanation of existing reschedule restrictions;83/84 existing positive/nonnegative integer minima/helpers, with no invented maximum;88 deactivate-with-history recommendation and wording already present;104 status-effects helper;93 actual supplied cooldown shown. Source completion does not certify their interactive browser presentation.
+
+Separate optional approval-held scope remains family/consent, cross-clinic/extended-day rules, emergency bypass, new maxima, permanent deletion/retention, automatic notification channels, verified email-change policy, short-access/refresh/overlapping keys or destructive auth-schema retirement. “Do all” does not silently replace existing explicit policies. Existing fixed12h/native-default, role/privacy, queue authority, rescheduling and history-preservation rules remain intact.
 
 ## Implementation now present in callers
 
@@ -25,53 +53,48 @@ Of the 12 pending items, **23/35/77/89 are performance measurement**, **38/40/41
 
 ## Confirmed test evidence and limits
 
-1. Earlier `docs/digiq-progress.md` records TypeScript, selected authentication/integration/dialog suites and limited fixture-browser checks. These predate much of the latest work.
+1. Current root typecheck passed; recursive333 had332 passes and one stale fixture failure; corrected complete backend-flow38/38 passed. See the performance report's fixture-parity addendum. No clean333/333 single-run result is claimed.
 2. Main agent reports **13 authentication-contention tests passed**, including registration-resend protections/concurrency.
 3. Main reports **six appointment-confirmation tests passed with fake transport**. No real message was sent; provider acceptance is not confirmed inbox delivery.
-4. Earlier root suite: **280/284**, followed by targeted **8** and **58** passes after stale expectations and real first-receipt `confirmationEmail` mismatch/intended nonpatient allowlist correction. Superseded by final typecheck and **321/321, zero skipped**. Evidence: `/tmp/replit-shell-output-logs/T2YACJF5WN1AM491ZZZRG/log`; suites overlap and must not be added.
+4. Historical root chronology:280/284, targeted8 and58 after earlier expectation/first-receipt/allowlist corrections, then321/321 zero skipped45.48s. Evidence `/tmp/replit-shell-output-logs/T2YACJF5WN1AM491ZZZRG/log`. This predates the current333 combined/targeted evidence; overlapping totals are never added.
 5. Latest ticket suite: **24/24 passed**, including mixed-format records after approved-format fixture updates; `/tmp/ticket-regression-approved-formats.txt`. Workflow card may retain an older failure; current CLI result passed. Seven CSRF tests also passed separately; not included in `.test.mjs` count.
 6. One fixture-browser pass: availability rendered and accepted exact `08:32`; invalid `31 Feb` blocked Continue; registration Back retained values/format preview and cleared validation; password toggle/required behavior passed; completed appointment row had no Ticket action. Original availability crash **not reproduced**, not diagnosed as a wrong route. Main separately reports the specific trailing-hyphen slug keystroke fix proven.
-7. Browser found real mobile registration overflow, then **verified repair at 390×844 for Locations and Opening hours**: document width 375 within viewport 390, no horizontal overflow. Protected-action401 replaced private workspace with `/sign-in`; **one POST, no write retry**. Missing mock-CSRF setup was corrected before checking the actual401. No real users/email used. Cross-tab/logout and patient-notification **visuals untested**; isolated tests pass in321.
+7. Historical browser found mobile registration overflow, then **verified repair at390×844 for Locations and Opening hours**: document375 within viewport390. Protected-action401 reached `/sign-in`; **one POST, no retry**, after mock-CSRF setup correction. No real users/email. Cross-tab/logout and patient notices were untested in that pass; current scoped fixture checks above now pass. Live revocation/UAT is not browser-certified.
 8. Queue SQL pagination/guest search, same-lock summary/full-list compatibility/privacy and real contention pass in321. Ten lifecycle tests cover401/no replay,60-second status polling, cross-tab logout and stale/abort safety. Demo actions use custom confirmation/friendly errors. All fixture checks remain distinct from live UAT.
 
-## Numbered remaining actionable scope
+## Precise remaining verification and external scope
 
-### Genuine gaps, standards scope and explicit implementation choices
+This is the remaining evidence/authorization boundary, not a proposal for follow-up tasks or a list of unimplemented local features.
 
-1. **Remaining full-screen/accessibility scope (#27/shared standard).** Mobile Locations/Opening-hours overflow is fixed and verified, no longer a gap. Audit remaining screens for keyboard/focus/200%-zoom and full-token compliance; a two-screen mobile pass does not certify every dialog/listing.
-2. **Call-next specification difference (#80).** `artifacts/clinicflow/src/components/queue/SessionQueue.tsx` now immediately previews the candidate with awaiting-server language and reconciles response/failure. Literal optimistic authoritative queue-state mutation remains intentionally absent. Confirm this safety-preserving presentation satisfies the request; do not mark patients actually called ahead of server approval. Performance remains unmeasured.
-3. **JWT key lifecycle (#111).** API auth/session key handling has dedicated key validation, not completed overlap rotation/compromise rehearsal. Implement only against agreed fixed-duration mode/rotation policy; activation also needs external key/deployment readiness.
-4. **Remaining auth visuals (#116/117/135).** Protected401 redirect/cache isolation/no write replay now passes browser check; AuthStatus contract and ten lifecycle tests pass. Cross-tab/logout visuals were not exercised. This is a verification limit, not an unimplemented cache-clear feature; refresh renewal remains conditional on held policy.
-5. **Legacy compatibility cleanup (#125/129).** `artifacts/clinicflow/src/auth/StaffLogin.tsx`, API auth legacy device endpoints and dormant Clerk helpers/scripts/docs require explicit purpose inventory and safe retirement/archive decisions. Ordinary password login must remain SMTP-independent.
-6. **Complete listing/standard sweep.** Staff queue SQL pagination and guest search/sort are implemented and tested; no longer gaps. Audit remaining native-select callers, bounded preview interpretation and per-list mobile/keyboard controls. Full JSON is needed for exact token certification, not independently established accessibility repairs.
+1. **Remaining interactive coverage.** Current tester's exact scoped pass list is above, including invitations, patient notice/reload/link and cross-tab logout; earlier Locations/Opening-hours390×844 and protected401 checks passed. These do not prove all listings, dialogs, role screens, visit-linked staff booking lookup or dataset variations. [Accessibility coverage](digiq-accessibility-coverage.md) records source repairs and8/8 contracts, not full opened-control/screen-reader/200%-zoom certification. No aggregate browser-findings coverage claim.
+2. **Exact standard interpretation/certification.** Full approved JSON remains unavailable. Finite native selectors and bounded dashboard/feed/public summaries were inventoried; their accessible source behavior is not a blanket literal every-dropdown-searchable/every-collection certification. Missing JSON does not block the already completed functional repairs.
+3. **Actual deployed latency.** Local benchmark/diagnosis for23/35/77/89 is complete. Doctor20 median69.65→32.20ms; staff20 query count23→3; branch100101→2 in the stated disposable fixture. Queue remained20 statements; no queue speedup claimed. Browser/render/network, auth overhead, deployment load/hardware and original incident latency remain unmeasured. Five broad queue membership reads are documented, not speculative evidence for changing shared safety code.
+4. **Exact original-UAT incident attribution, only where still reproducible.** Availability/weekday/queue incidents have fixture evidence but no original reproduction. Invitation38/40/41 means replacing invitations, not revoking sessions/deactivating; original503 still needs actual delivery diagnostics. Patient61 now has a real authorized-visit SQL repair, but Deepa's exact deployed context is unavailable. Address87 uses local city/state/country/area/pincode masters; actual deployed catalog/response remains unknown, not a proven geocoder-key gap. No account/catalog mutation to make screenshots pass.
+5. **Authoritative target/auth cutover and real delivery.** Actual UAT/VPS build/mode/middleware/proxy/schema, account/password/invitation readiness, real recovery/setup/patient-code/appointment mail, provider configuration retirement and actual signing-key replacement remain unverified/authorization-gated. Repository111/125/129 work is complete. Ordinary staff login remains SMTP-independent, fixed12h/native-default; no unapproved refresh/overlap.
+6. **Actual-target recoverability and publication.** Disposable source-migrated backup/restore passed; not production backup/recovery proof. User owns Publish/schema-diff/rename review and release decision; no unconditional cutover/publish readiness claim.
 
-### Concrete diagnostic/verification work — not established missing features
+## Development readiness and anonymous UAT evidence
 
-7. **Availability original-incident reconciliation (#24).** Current fixture `/admin/availability` renders successfully and accepts `08:32`; this is no longer an established broken workspace route. Original UAT crash remains unreproduced. Capture original deployment/data exception only if it recurs; no speculative route fix.
-8. **Original weekday/queue incidents (#53/54/76/95), only if recurring.** 321 now passes Friday/Sunday selected-date generation, numeric Sunday 0, independent sessions/date exceptions, real SQL skip/order/CURRENT-NEXT and queue contention. These are not known missing implementations. Original UAT incidents remain unreplicated; compare exact deployed data/context before speculative rule changes.
-9. **Data/lookup incidents (#61/87; conditional #11).** Signup active allowlisted reference tests pass; no proved category-list implementation gap. Still inspect original “Deepa” booking patient scope and address local-master categories/responses. Missing data is not automatically an external maps-key blocker.
-10. **Original mutation incidents (#38/40/41; conditional #29/45/67/68).** Creation/settings/scope tests and deactivation semantics now have evidence; do not blanket-mark them broken. Exact revoke semantics/reported errors still need role/action/payload reproduction. Distinguish invite revoke from status change, successful persistence from email failure and inactive-All view from failed deletion.
-11. **Patient booking notice visuals (#25).** Own-record persistence/eligibility/authorized-link behavior passes isolated tests, but dashboard notification visuals/reload interaction were not exercised. Verify those browser cases without reclassifying the implemented notice design as a missing notification center.
-12. **Measured performance (#23/35/77/89).** Profile resource/query enrichment and UI timings. Skeletons, pagination and retained refresh content are implemented, but no measured original latency reduction is established.
-13. **Remaining browser/accessibility verification.** Final combined321/321, tickets24/24 and mobile/401 results are available, not pending tasks. Cover still-unexercised keyboard/200%-zoom/long-form and signed-in role screens. SQL role/privacy and HTTPS transport are tested; live UAT/deployed proxy checks are not.
-
-### Product decisions — do not implement silently
-
-14. **Operational/data proposals:** after-hours and cross-clinic check-in, consent, rescheduling eligibility, hard deletion/retention, family booking, status notifications, unsupported mobile verification and location credentials remain held (#52/58/64/69/75/88/90/93/98/102/104/106). Safe explanatory copy is implemented where noted; it does not approve new behavior.
-15. **Schedule limits/powers (#83/84 and shared review):** integer validation/helpers exist, but general maxTokens/buffer maximum is not in existing general schedule contract. Approve actual maxima and any extended-day/out-of-hours/midnight/DST model change; do not borrow unrelated endpoint limits.
-16. **Authentication policy/schema/release (#109/114/124/128/131):** short access/refresh, email-change verification/revocation, extra auth schema and explicit cutoff/rollback need approval. Fixed 12-hour/native-default behavior remains.
-
-### External evidence or release prerequisites
-
-17. **Exact design certification:** obtain full approved JSON; existing tokens and supplied recommendations are retained. Functional/copy work is not blocked by missing JSON.
-18. **Authoritative UAT/VPS reconciliation (#108/136):** inspect actual deployed JWT/native implementation, revision, proxy/scripts/migrations/key readiness. Workspace source is not deployed evidence.
-19. **Genuine recovery/confirmation delivery (#10/65/66/92/137):** controlled provider/inbox verification with authorized recipient, preserving neutral recovery behavior. Fake tests cannot prove the original recipient incident resolved.
-20. **Identity/release inventory (#123/126/127/130/137):** aggregate email-collision/password/invitation readiness, controlled former-provider enrollment, verified provider-config retirement, backup/restore rehearsal and preserved-count comparison. No automatic account merges or destructive cleanup.
+- Development aggregate inventory:17 users/9 clinics/6 branches/7 doctors/3 appointments; normalized-email collisions0/0. **14/14 active development staff lack password material**; this is not proof about published accounts and does not authorize resets.
+- Initial inventory found three existing booking unique guards absent. Separately authorized development-only restoration used exact migration definitions after duplicate0/0/0 and alternative-guard0 preflight, repeated under transaction lock. Now **3/3 booking guards and7/7 source unique guards**; counts/mappings identical and no rows changed. This gap is repaired, not carried forward as missing. No blind DB repair or production DDL.
+- Disposable backup/restore applied all14 source migrations, restored to a separate empty database, matched schema and aggregates20 tables/67 indexes/80 constraints/10 enabled application triggers, and passed8 guard-rejection assertions. No live backup/restore or real-target recovery claim.
+- Actual anonymous UAT reads: root/sign-in HTML200 without HSTS; health200 with HSTS; auth/status200 anonymous/no-store with HSTS. Public reachability/header observations **do not prove authenticated source parity, cookies, CSRF, expiry or role authorization**.
+- See [release readiness](digiq-release-readiness.md) for exact boundaries. No credentials, secrets, live email or published account changes were made by this reconciliation.
 
 ## Safety and evidence boundaries
 
+### Auth lifecycle completion addendum — disposable evidence
+
+- Command: `node --test artifacts/api-server/src/native-auth.integration.test.mjs artifacts/api-server/src/jwt-session.test.mjs artifacts/api-server/src/auth-http.integration.test.mjs artifacts/api-server/src/auth-contention.integration.test.mjs artifacts/clinicflow/src/auth/auth-retirement.test.mjs`.
+- **33/33 passed, zero skipped, 21.77 seconds**; evidence `/tmp/auth-retirement-rehearsal-final.txt`. This overlaps prior321 and must not be added to that count.
+- Existing isolated tests plus new cutover/compromise tests prove old-key rejection despite an unrevoked row, new-key login, fixed12h lifetime, tamper rejection, missing-DB-proof rejection even with the signing key, logout/user revocation, old-key restoration hazard and durable all-session cutoff preventing resurrection. Native-default opaque sessions survive an unused JWT-key change. IDs/email/role/status/password hash/provider mapping remain identical. No SMTP calls/challenges from ordinary login.
+- HTTPS/real Express test proves missing CSRF403 precedes retired endpoint410, no-store response, no Set-Cookie/session/email. Direct disposable tests additionally reject valid historical challenges without consuming their stored hashes. Frontend source regression verifies removal of the dead branch/helper.
+- OpenAPI generation, library build/typecheck (`pnpm -w run typecheck:libs`), API package typecheck and `git diff --check` passed. UI package typecheck at this run reported out-of-scope errors in `Users.tsx:180` (nullable invitationFeedback) and `staff-controls.ts:6` (not all paths return); no auth-file error was reported. The earlier full typecheck result is historical, not this run's certification.
+- Static screenshot of already-running anonymous `/sign-in` at1280×850 shows the native email/password form rendering; no interactive login, signed-in UI, tester, UAT or delivery verification was performed.
+- These changes do not modify actual environment/secrets, deploy, seed, send real email, run old provider fixtures or change native-default policy. Only disposable test-process configuration changes. Actual incident revocation/key replacement remains separately authorization-gated.
+
 - Original screenshots resolve target identity only. #24 is render failure; #82 is conditional exception-session requirement; #102 is **location credentials**, not SMTP.
-- Main alone applied approved **development JSON default backfill to nine clinics**. Before/after counts identical: **17 users, 9 clinics, 6 branches, 7 doctors, 3 appointments**. Production unchanged; no other data migration claimed. Migration tests use disposable databases.
+- Main applied approved **development JSON default backfill to nine clinics**; the later authorized development-only restoration of three existing unique indexes is recorded above. Counts/mappings preserved; production unchanged. Rehearsal data remains disposable.
 - No JWT activation, real email send, live UAT login/enrollment action or production deployment is asserted.
 - Accounts/hashes/roles/ownership/assignments and canonical records remain protected. The 24 passing ticket browser checks cover screen/export formatting, freshness and QR behavior; live printer/UAT certification is not claimed.
-- Publishing remains separately approval-gated. This report's remaining tasks are separated into actual gaps, diagnostics, product decisions and external evidence—not indiscriminately labeled blockers.
+- Publishing remains user-owned and approval-gated. Current recommended local scope, browser evidence limits, optional policy extensions and actual-target prerequisites are separated—not indiscriminately labeled unimplemented features or release-ready.

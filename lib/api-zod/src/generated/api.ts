@@ -1296,6 +1296,10 @@ export const NativeStaffLoginResponse = zod.object({
 })
 
 
+/**
+ * Retired compatibility tombstone. Use staff email and password login; no payload can create a session.
+ * @deprecated
+ */
 export const verifyStaffDeviceBodyCodeMin = 6;
 export const verifyStaffDeviceBodyCodeMax = 6;
 
@@ -1306,9 +1310,7 @@ export const VerifyStaffDeviceBody = zod.object({
   "code": zod.string().min(verifyStaffDeviceBodyCodeMin).max(verifyStaffDeviceBodyCodeMax)
 })
 
-export const VerifyStaffDeviceResponse = zod.object({
-  "authenticated": zod.boolean()
-})
+export const VerifyStaffDeviceResponse = zod.void()
 
 
 export const startPatientEmailBodyEmailMax = 254;

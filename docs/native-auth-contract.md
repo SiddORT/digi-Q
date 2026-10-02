@@ -5,7 +5,7 @@ All endpoints are under `/api` and use same-origin `HttpOnly` session cookies. B
 | Endpoint | Request | Response |
 | --- | --- | --- |
 | `POST /api/auth/login` | `{email,password}` | `{authenticated:true,user:{id,email,fullName,role,status}}`; creates a staff session directly after password verification, without an email challenge |
-| `POST /api/auth/verify-device` | `{challengeId,code}` | `{authenticated:true}` |
+| `POST /api/auth/verify-device` | any legacy payload | retired: `410 AUTH_METHOD_REMOVED` after normal CSRF/origin middleware; never creates a session |
 | `GET /api/auth/status` | none | `{role,staffPasswordVerified,requiresStaffPassword}`; never sets a CSRF cookie |
 | `POST /api/auth/logout` | `{}` | `{authenticated:false}` |
 | `POST /api/auth/forgot-password` | `{email}` | generic `{sent:true}` irrespective of account |

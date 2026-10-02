@@ -5,7 +5,7 @@ import { Plus, Pencil, Send, ArrowDown, ArrowUp, ArrowDownUp } from "lucide-reac
 import { Link } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { assignmentTargetRole, type StaffTab } from "./staff-input";
-import { clinicScopedStaffInput } from "./staff-controls";
+import { clinicScopedStaffInput, resendStaffInvitations, staffInvitationRestriction } from "./staff-controls";
 import { ErrorNotice, Empty, title } from "./resources";
 import { Form } from "@/components/ui/form";
 import { ResourceLookup, ResourceMultiLookup } from "./components/ResourceLookup";
@@ -19,7 +19,8 @@ import { FormField } from "./components/FormField";
 import { useConfirm } from "./components/ConfirmDialog";
 import { friendlyError } from "./lib/friendly-error";
 import { required, validatePersonName, validateEmail, validatePhone, normalizePhone } from "./lib/validators";
-import { notifySuccess, notifyWarning } from "./lib/notify";
+import { notifySuccess, notifyWarning, notifyError, notifyBulk } from "./lib/notify";
+import type { BulkOutcome } from "./lib/bulk-summary";
 import { PhoneInput } from "./components/PhoneInput";
 import { formatConfiguredTimestamp } from "./lib/date-time";
 
@@ -99,7 +100,26 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
      onSettled:()=>{void client.invalidateQueries({queryKey:["users-tab"]});},
    });
   const recovery = api.useRequestUserPasswordReset();
-  const resendInvitation = api.useResendUserInvitation({ mutation: { onSuccess: (result:any) => { if(result.invitationStatus==="failed")notifyWarning("Invitation not sent. Please retry the invitation later.");else notifySuccess("Invitation request completed."); client.invalidateQueries(); } } });
+  const [invitationFeedback,setInvitationFeedback]=useState<{rowId:string;message:string}|null>(null);
+  const [bulkInvitationResults,setBulkInvitationResults]=useState<BulkOutcome[]>([]);
+  useEffect(()=>{setInvitationFeedback(null);setBulkInvitationResults([]);},[selectionContext]);
+  const resendInvitation=useMutation({
+    mutationFn:({row,staffTab}:{row:any;staffTab:StaffTab})=>api.resendUserInvitation(staffTab==="doctors"?row.userId:row.id),
+    onMutate:()=>setInvitationFeedback(null),
+    onSuccess:(result,variables)=>{
+      const sent=result.invitationStatus==="sent";
+      const message=sent?"Set-password invitation sent.":"Invitation was not sent. Reload the account and retry if setup is still required.";
+      setInvitationFeedback({rowId:variables.row.id,message});
+      if(sent)notifySuccess(message);else notifyWarning(message);
+    },
+    onError:(error,variables)=>{setInvitationFeedback({rowId:variables.row.id,message:friendlyError(error,"save")});notifyError(error,"save","Invitation not sent");},
+    onSettled:()=>{void client.invalidateQueries();},
+  });
+  const bulkInvitations=useMutation({
+    mutationFn:({rows,staffTab}:{rows:any[];staffTab:StaffTab})=>resendStaffInvitations(rows,staffTab,api.resendUserInvitation,error=>friendlyError(error,"save")),
+    onSuccess:async outcomes=>{setBulkInvitationResults(outcomes);notifyBulk(outcomes,"sent an invitation");selection.clear();await client.invalidateQueries();},
+  });
+  const invitationBusy=resendInvitation.isPending||bulkInvitations.isPending;
    const active = !!(context.sort !== "-createdAt" || context.search || context.status || (!clinicId&&context.clinicId) || context.branchId || context.managingAdminId || context.specializationId);
    const reset = () => {change({ search: "", status: "", clinicId: "", branchId: "", managingAdminId: "", specializationId:"", sort: "-createdAt" });setDraft(defaultContext());};
    const beginEdit = (row: any) => { setDirty(false); setBusy(false); setEditing(row.id?row:{...row,...(clinicId&&tab!=="admins"?{clinicIds:[clinicId]}:{})}); };
@@ -130,7 +150,6 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     </FilterBar>
     {success && <p role="status" className="notice">{success}</p>}
      {statusError&&<div role="alert" className="error-box">{statusError} <button type="button" onClick={()=>setStatusError("")}>Dismiss</button></div>}
-    <ErrorNotice error={resendInvitation.error} />
     <ErrorNotice error={settings.error} />
     {role !== "doctor" && <details className="panel padded" style={{ marginBottom: 14 }}>
       <summary>Account recovery assistance</summary><p className="muted">Search linked staff accounts for secure account recovery steps. This action does not send an email.</p>
@@ -139,6 +158,11 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open secure password recovery</Link></div>}
     </details>}
     <ListingBulk selection={selection} resource={tab==="doctors"?"doctors":"users"} columns={["fullName","email","mobile","role","clinicNames","branchNames","status"]} identity={identity} context={selectionContext}/>
+    {!!selection.selected.length&&<div className="admin-bulk-bar"><HelpTip text="Replace pending invitations and send new set-password links. This does not deactivate staff or sign them out. Ineligible records are skipped with an explanation."><button type="button" disabled={invitationBusy||selection.selected.every(row=>!!staffInvitationRestriction(row,tab))} onClick={async()=>{
+      const rows=[...selection.selected],staffTab=tab;
+      if(!invitationBusy&&await confirmAction.ask({title:`Resend invitations for ${rows.length} selected staff?`,description:"Replace pending set-password invitations and request new emails. This does not deactivate accounts or revoke sessions. Inactive accounts and staff with passwords are skipped. Each eligible account is checked by the server; failures do not undo successful sends.",confirmLabel:"Resend selected invitations"}))bulkInvitations.mutate({rows,staffTab});
+    }}>{bulkInvitations.isPending?"Sending invitations…":"Resend selected invitations"}</button></HelpTip></div>}
+    {!!bulkInvitationResults.length&&<details open className="notice"><summary>Invitation results</summary><ul>{bulkInvitationResults.map((result,index)=><li key={index}>{result.label}: {result.ok?"invitation sent":result.message}</li>)}</ul></details>}
     <section className="panel table-panel admin-listing-table">
       {query.isLoading ? <div className="skeleton" role="status">Loading {tabs.find(item=>item.id===tab)?.label.toLowerCase()}…</div> : query.error ? <><div className="error-box" role="alert">{friendlyError(query.error,"load")}</div><button onClick={() => query.refetch()}>Retry {tabs.find(item=>item.id===tab)?.label.toLowerCase()}</button></> : query.data?.items.length ? <div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>
          <thead><tr><th scope="col" className="col-select">{selection.header}</th><th aria-sort={context.sort==="fullName"?"ascending":context.sort==="-fullName"?"descending":undefined}>{sortable("fullName","Staff member")}</th>{isSuperAdmin && tab !== "admins" && <th>Managing admin</th>}<th>{tab === "admins" ? "Owned clinics" : "Assignments"}</th><th className="col-status">Account status</th><th aria-sort={context.sort==="createdAt"?"ascending":context.sort==="-createdAt"?"descending":undefined}>{sortable("createdAt","Created")}</th><th className="col-actions">Actions</th></tr></thead>
@@ -150,10 +174,10 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
            <td data-label="Account status"><label className="check-label status-switch staff-status-switch" title={row.id===identity.user?.id||row.userId===identity.user?.id?"You cannot deactivate your own account.":tab==="admins"&&row.status==="active"&&row.clinicIds?.length?"Transfer clinic ownership before deactivation.":undefined}><input type="checkbox" role="switch" aria-label={`Account active for ${row.fullName}`} aria-checked={row.status==="active"} checked={row.status==="active"} disabled={statusUpdate.isPending||row.id===identity.user?.id||row.userId===identity.user?.id||(tab==="admins"&&row.status==="active"&&!!row.clinicIds?.length)} onChange={async event=>{const next=event.target.checked?"active":"inactive";if(next==="inactive"&&!await confirmAction.ask({title:`Deactivate ${row.fullName}?`,description:"They will lose access. Clinic ownership restrictions may prevent this change. Historical records are preserved.",confirmLabel:"Deactivate",tone:"danger"}))return;setStatusError("");setStatusTarget({id:row.id,userId:row.userId,name:row.fullName,status:next});statusUpdate.mutate({row,status:next,staffTab:tab});}}/><span className="status-switch-track" aria-hidden="true"/>{statusUpdate.isPending&&statusTarget?.id===row.id?"Saving…":title(row.status||"")}</label><small>{row.passwordEnabled === true ? "Password set" : row.invitationStatus === "sent" ? "Pending setup" : row.invitationStatus === "failed" ? "Invitation not sent" : "Needs password setup"}</small></td>
           <td data-label="Created">{row.createdAt ? formatConfiguredTimestamp(row.createdAt,settings.data?.timezone,{dateStyle:"medium"},row) : "—"}</td>
           <td data-label="Actions" className="col-actions"><div className="row-actions">
-            {row.invitationStatus !== "notRequired" && <HelpTip text={row.status==="inactive"?"Reactivate this account before sending an invitation.":"Revoke the pending invitation and send a new set-password invitation"}><button aria-label="Resend set-password invitation" disabled={resendInvitation.isPending||row.status==="inactive"} onClick={async () => { if (!resendInvitation.isPending && await confirmAction.ask({title:"Resend invitation?",description:"The pending invitation will be revoked and a new set-password invitation requested.",confirmLabel:"Resend invitation"})) resendInvitation.mutate({ id: tab === "doctors" ? row.userId : row.id }); }}><Send size={15} /></button></HelpTip>}
+            {row.invitationStatus !== "notRequired" && <HelpTip text={staffInvitationRestriction(row,tab)||"Replace the pending invitation and send a new set-password link. This does not deactivate the account or revoke sessions."}><button aria-label={`Resend set-password invitation for ${row.fullName}`} disabled={invitationBusy||!!staffInvitationRestriction(row,tab)} onClick={async () => { if (!invitationBusy && await confirmAction.ask({title:"Resend invitation?",description:"The pending invitation will be replaced and a new set-password email requested. This does not deactivate the account or revoke sessions.",confirmLabel:"Resend invitation"})) resendInvitation.mutate({row,staffTab:tab}); }}><Send size={15} /></button></HelpTip>}
             <HelpTip text="Edit staff details and assignments"><button aria-label="Edit" onClick={() => beginEdit(row)}><Pencil size={15} /></button></HelpTip>
              {row.status==="inactive"&&<HelpTip text="This account is inactive. Historical records are preserved."><span className="badge inactive">Inactive</span></HelpTip>}
-          </div></td>
+          </div>{invitationFeedback&&invitationFeedback.rowId===row.id&&<small role="status">{invitationFeedback.message}</small>}</td>
         </tr>)}</tbody>
       </table></div> : active ? <div className="empty"><h3>No matching staff</h3><p>Try another search or clear your filters.</p><button onClick={reset}>Clear filters</button></div> : <Empty label={tab} />}
       {!query.error && <Pagination page={context.page} pageSize={context.pageSize} total={query.data?.total || 0} onPageChange={page => change({ page })} onPageSizeChange={pageSize => change({ pageSize })} />}

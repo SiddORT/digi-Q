@@ -58,7 +58,10 @@ async function browserFetch(path, options = {}) {
         record.setCookie = res.headers["set-cookie"] || [];
         if (options.credentials !== "omit") rememberCookies(res.headers["set-cookie"] || []);
         resolvePromise(new Response(Buffer.concat(chunks), {
-          status: res.statusCode, headers: { "content-type": res.headers["content-type"] || "application/json" },
+          status: res.statusCode,
+          headers: Object.fromEntries(Object.entries(res.headers)
+            .filter(([, value]) => value !== undefined)
+            .map(([name, value]) => [name, Array.isArray(value) ? value.join(", ") : value])),
         }));
       });
       res.on("error", reject);
@@ -212,6 +215,25 @@ test("actual HTTPS frontend transport completes Argon2 staff login, session and 
   }
 });
 
+test("retired device compatibility URL fails closed over HTTPS without cookies or email", async () => {
+  const missingCsrf = await browserFetch("/api/auth/verify-device", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ challengeId: "stale", code: "123456" }),
+  });
+  assert.equal(missingCsrf.status, 403, "tombstone does not bypass normal CSRF");
+  const csrf = await (await browserFetch("/api/auth/csrf")).json();
+  const retired = await browserFetch("/api/auth/verify-device", {
+    method: "POST", headers: { "Content-Type": "application/json", "x-csrf-token": csrf.csrfToken },
+    body: JSON.stringify({ challengeId: "stale", code: "123456" }),
+  });
+  assert.equal(retired.status, 410);
+  assert.equal((await retired.json()).code, "AUTH_METHOD_REMOVED");
+  assert.equal(retired.headers.get("Cache-Control"), "no-store");
+  assert.deepEqual(sent.at(-1).setCookie, []);
+  assert.equal(jar.has("digiq_session"), false);
+  assert.equal(globalThis.nativeAuthMail.length, 0);
+  assert.equal((await harness.control.query("select count(*)::int n from auth_sessions")).rows[0].n, 0);
+});
 test("origin gate rejects cross-site mutations even with valid CSRF; patient OTP shares transport", async () => {
   const token = (await (await browserFetch("/api/auth/csrf")).json()).csrfToken;
   await expectBlocked(await post("patient/start", { email: "patient@example.test" },
