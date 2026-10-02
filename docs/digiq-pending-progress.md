@@ -50,6 +50,16 @@ This tracks the remaining requirements in `attached_assets/DigiQ_Replit_Prompt_v
 
 ## Separate boundaries
 
+### Additional non-email check — 2026-10-03
+
+- SMTP testing is paused at the user's request; no real emails were sent during this check.
+- All 209 backend tests passed with no skips, run serially against isolated fixtures/disposable PostgreSQL or PGlite. Coverage includes authentication/session behavior, permissions, booking/queue contention, historical migration compatibility and report/list queries. SMTP transports in these tests are fake.
+- All 24 existing ticket/QR Playwright regressions passed: current signed QR data in print/download, stale revisions, API failures, cancellation/rescheduling, missing QR, formatting inheritance, long/hostile names and bulk exports.
+- Project-wide typechecking passed. The latest prior frontend test run remains 185/185; it was not needlessly repeated in this check.
+- ClinicFlow production frontend and API builds passed. The plain root workspace build initially stopped because shell execution did not supply the artifact runner's required PORT/BASE_PATH; the app build passed with command-local PORT=5173 and BASE_PATH=/. No persistent environment configuration was changed.
+- Non-blocking build observations: main JavaScript bundle approximately 1.07 MB minified / 333 KB gzip; two source-map reporting warnings. These are not measured production performance results.
+- No new application defect was established by these tests. Screen-reader operation, genuine browser 200% zoom, exhaustive all-findings acceptance and actual-target authenticated UAT/production verification remain uncertified. Test success does not establish live account readiness or production backup recoverability.
+
 - Development email check on 2026-10-03: after the user corrected SMTP_FROM, configuration validation and SMTP connection/authentication passed. Sending through the application's standard email helper failed; a diagnostic retry reported EMESSAGE, SMTP 554 at DATA, classified from the provider response as sender rejection/authorization failure. No successful send or inbox arrival is confirmed. The sender must be authorized by the SMTP provider before retrying. No accounts were changed or reset.
 
 - Live email/inbox checks, original deployed incident attribution, deployed performance and actual-target account/recovery readiness remain unverified.
