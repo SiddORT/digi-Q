@@ -146,6 +146,8 @@ import type {
   Report,
   RequestPasswordRecovery200,
   ResetNativePassword200,
+  ResolveBranchSlugParams,
+  ResolveClinicSlugParams,
   Schedule,
   ScheduleInput,
   ScheduleList,
@@ -1293,17 +1295,26 @@ export function useCheckSlugAvailability<TData = Awaited<ReturnType<typeof check
 
 
 
-export const getResolveClinicSlugUrl = (clinicSlug: string,) => {
+export const getResolveClinicSlugUrl = (clinicSlug: string,
+    params?: ResolveClinicSlugParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/public/clinics-by-slug/${clinicSlug}`
+  return stringifiedParams.length > 0 ? `/api/public/clinics-by-slug/${clinicSlug}?${stringifiedParams}` : `/api/public/clinics-by-slug/${clinicSlug}`
 }
 
-export const resolveClinicSlug = async (clinicSlug: string, options?: Parameters<typeof customFetch>[1]): Promise<PublicClinicContext> => {
+export const resolveClinicSlug = async (clinicSlug: string,
+    params?: ResolveClinicSlugParams, options?: Parameters<typeof customFetch>[1]): Promise<PublicClinicContext> => {
 
-  return customFetch<PublicClinicContext>(getResolveClinicSlugUrl(clinicSlug),
+  return customFetch<PublicClinicContext>(getResolveClinicSlugUrl(clinicSlug,params),
   {
     ...options,
     method: 'GET'
@@ -1316,23 +1327,25 @@ export const resolveClinicSlug = async (clinicSlug: string, options?: Parameters
 
 
 
-export const getResolveClinicSlugQueryKey = (clinicSlug: string,) => {
+export const getResolveClinicSlugQueryKey = (clinicSlug: string,
+    params?: ResolveClinicSlugParams,) => {
     return [
-    `/api/public/clinics-by-slug/${clinicSlug}`
+    `/api/public/clinics-by-slug/${clinicSlug}`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getResolveClinicSlugQueryOptions = <TData = Awaited<ReturnType<typeof resolveClinicSlug>>, TError = ErrorType<unknown>>(clinicSlug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveClinicSlug>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getResolveClinicSlugQueryOptions = <TData = Awaited<ReturnType<typeof resolveClinicSlug>>, TError = ErrorType<unknown>>(clinicSlug: string,
+    params?: ResolveClinicSlugParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveClinicSlug>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getResolveClinicSlugQueryKey(clinicSlug);
+  const queryKey =  queryOptions?.queryKey ?? getResolveClinicSlugQueryKey(clinicSlug,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof resolveClinicSlug>>> = ({ signal }) => resolveClinicSlug(clinicSlug, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof resolveClinicSlug>>> = ({ signal }) => resolveClinicSlug(clinicSlug,params, { signal, ...requestOptions });
 
 
 
@@ -1347,11 +1360,12 @@ export type ResolveClinicSlugQueryError = ErrorType<unknown>
 
 
 export function useResolveClinicSlug<TData = Awaited<ReturnType<typeof resolveClinicSlug>>, TError = ErrorType<unknown>>(
- clinicSlug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveClinicSlug>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ clinicSlug: string,
+    params?: ResolveClinicSlugParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveClinicSlug>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getResolveClinicSlugQueryOptions(clinicSlug,options)
+  const queryOptions = getResolveClinicSlugQueryOptions(clinicSlug,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -1365,18 +1379,27 @@ export function useResolveClinicSlug<TData = Awaited<ReturnType<typeof resolveCl
 
 
 export const getResolveBranchSlugUrl = (clinicSlug: string,
-    branchSlug: string,) => {
+    branchSlug: string,
+    params?: ResolveBranchSlugParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/public/clinics-by-slug/${clinicSlug}/${branchSlug}`
+  return stringifiedParams.length > 0 ? `/api/public/clinics-by-slug/${clinicSlug}/${branchSlug}?${stringifiedParams}` : `/api/public/clinics-by-slug/${clinicSlug}/${branchSlug}`
 }
 
 export const resolveBranchSlug = async (clinicSlug: string,
-    branchSlug: string, options?: Parameters<typeof customFetch>[1]): Promise<PublicClinicContext> => {
+    branchSlug: string,
+    params?: ResolveBranchSlugParams, options?: Parameters<typeof customFetch>[1]): Promise<PublicClinicContext> => {
 
-  return customFetch<PublicClinicContext>(getResolveBranchSlugUrl(clinicSlug,branchSlug),
+  return customFetch<PublicClinicContext>(getResolveBranchSlugUrl(clinicSlug,branchSlug,params),
   {
     ...options,
     method: 'GET'
@@ -1390,24 +1413,26 @@ export const resolveBranchSlug = async (clinicSlug: string,
 
 
 export const getResolveBranchSlugQueryKey = (clinicSlug: string,
-    branchSlug: string,) => {
+    branchSlug: string,
+    params?: ResolveBranchSlugParams,) => {
     return [
-    `/api/public/clinics-by-slug/${clinicSlug}/${branchSlug}`
+    `/api/public/clinics-by-slug/${clinicSlug}/${branchSlug}`, ...(params ? [params] : [])
     ] as const;
     }
 
 
 export const getResolveBranchSlugQueryOptions = <TData = Awaited<ReturnType<typeof resolveBranchSlug>>, TError = ErrorType<unknown>>(clinicSlug: string,
-    branchSlug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveBranchSlug>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    branchSlug: string,
+    params?: ResolveBranchSlugParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveBranchSlug>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getResolveBranchSlugQueryKey(clinicSlug,branchSlug);
+  const queryKey =  queryOptions?.queryKey ?? getResolveBranchSlugQueryKey(clinicSlug,branchSlug,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof resolveBranchSlug>>> = ({ signal }) => resolveBranchSlug(clinicSlug,branchSlug, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof resolveBranchSlug>>> = ({ signal }) => resolveBranchSlug(clinicSlug,branchSlug,params, { signal, ...requestOptions });
 
 
 
@@ -1423,11 +1448,12 @@ export type ResolveBranchSlugQueryError = ErrorType<unknown>
 
 export function useResolveBranchSlug<TData = Awaited<ReturnType<typeof resolveBranchSlug>>, TError = ErrorType<unknown>>(
  clinicSlug: string,
-    branchSlug: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveBranchSlug>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+    branchSlug: string,
+    params?: ResolveBranchSlugParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveBranchSlug>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getResolveBranchSlugQueryOptions(clinicSlug,branchSlug,options)
+  const queryOptions = getResolveBranchSlugQueryOptions(clinicSlug,branchSlug,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

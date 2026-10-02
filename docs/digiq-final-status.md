@@ -1,5 +1,7 @@
 # DigiQ final-status reconciliation — 2 October 2026
 
+> **Superseded scope conclusion:** A subsequent comparison with the complete v3 prompt found implementation gaps in its cross-cutting requirements. The historical “local scope complete” and register counts below are not full-prompt completion claims. See [current point-by-point progress](digiq-pending-progress.md).
+
 ## Conclusion
 
 **Local implementation/investigation scope is complete; not all137 findings are browser/UAT closed and no release certification is claimed.** Current root typecheck **passed**. Latest recursive API/UI run: **333 tests,332 passed, one stale repository-double failure**. The fixture was corrected to mirror production SQL's `passwordEnabled` projection, then the full backend-flow file passed **38/38**. **333 tests verified across combined + targeted runs**, not a clean single full run; overlapping runs are not summed. No runtime bug or production credential reread restoration was involved. Final scoped browser invitation continuation passed; no work remains running.

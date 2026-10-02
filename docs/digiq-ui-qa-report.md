@@ -1604,6 +1604,8 @@ Only this audit report and a pending-status progress checklist were created. No 
 
 ## Current disposition register — all 137 items
 
+> **Scope correction:** These historical finding dispositions do not cover every cross-cutting prompt requirement. The later review found genuine implementation gaps; [current point-by-point progress](digiq-pending-progress.md) takes precedence for ongoing completion status.
+
 **Reconciliation: 2 October 2026, final current closure evidence.** Root typecheck **passed**. Main reports the latest recursive API/UI source run had **333 tests: 332 passed and one stale repository-double failure**. After correcting the test fixture to reproduce production SQL's `passwordEnabled` boolean projection, the full targeted backend-flow file passed **38/38**. Thus **333 tests are verified across combined + targeted runs**, not a fabricated clean single full run; overlapping totals are not added. No production credential reread was restored. Earlier 321/321 and browser evidence remain historical below. Current browser continuation passed within the scope below; no work remains running. No code, global tests, workflows or browser sessions were run by this documentation worker.
 
 ### Evidence and status semantics

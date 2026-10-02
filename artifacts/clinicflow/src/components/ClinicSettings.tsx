@@ -16,6 +16,7 @@ import type { DateTimePreferences } from "../lib/date-time";
 import { DateTimePreferencesProvider } from "./DateTimePreferences";
 import { notifySuccess } from "../lib/notify";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { SearchableSelect } from "./SearchableSelect";
 
 const sections = [["general","General"],["locations","Locations & Hours"],["sessions","Doctors & Sessions"],["policies","Booking Rules"],["staff","Staff"],["qrs","Booking Links & QR"],["history","Activity history"]] as const;
 
@@ -52,7 +53,7 @@ export function ClinicSettings({identity}:{identity:api.Identity}){
   <ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Select Clinic Group to configure":"Your Clinic Group"} value={clinicId} onChange={id=>{setClinic(id);setSection(null);closeBranch();save.reset();}}/>
  <ErrorNotice error={query.error||clinics.error}/>{query.error&&<button onClick={()=>query.refetch()}>Retry clinic settings</button>}
  {!clinicId?<p className="empty">Select a clinic to manage its settings. Platform settings are separate.</p>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&!query.error&&<>
-  <label className="clinic-section-mobile workspace-section-select">Clinic section<select aria-label="Clinic section" value={view} onChange={event=>selectView(event.target.value)}>{sections.map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
+  <div className="clinic-section-mobile workspace-section-select"><SearchableSelect label="Clinic section" value={view} onChange={value=>{if(value)selectView(value);}} options={sections.map(([value,label])=>({value,label}))}/></div>
   <div className="clinic-workspace-layout clinic-workspace"><nav className="clinic-section-menu workspace-section-nav" aria-label="Clinic configuration sections">{sections.map(([key,label])=><button key={key} type="button" aria-current={view===key?"page":undefined} onClick={()=>selectView(key)}>{label}</button>)}</nav><div className="clinic-workspace-content">
  <div hidden={view!=="general"}>
   <section className="panel padded"><h2>Date and time display</h2><p>Inherited by all clinics in this Clinic Group.</p><button type="button" onClick={()=>{setFormats({dateFormat:data.clinic.dateFormat,timeFormat:data.clinic.timeFormat});setConfirmFormats(false);save.reset();}}>Edit date and time format</button></section>

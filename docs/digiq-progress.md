@@ -1,5 +1,7 @@
 # DigiQ implementation progress — 2 October 2026
 
+> **Current work:** The full-prompt comparison identified additional implementation gaps beyond the numbered-finding register. See [current point-by-point progress](digiq-pending-progress.md). Earlier zero-pending counts below remain historical, not acceptance of the complete prompt.
+
 ## Current conclusion
 
 Current recommended local implementation/investigation scope is complete; **root typecheck passed**. Latest recursive API/UI run had **333 tests:332 passed, one stale repository-double failure**. Correcting the fixture to reproduce production SQL's `passwordEnabled` boolean projection yielded **38/38 passing** in the complete targeted backend-flow file. **333 tests verified across combined + targeted runs**, not a fabricated clean single full run or333+38 total. No runtime defect or production credential reread restoration was involved. Final scoped browser invitation continuation passed; no work remains running. Not all137 findings are browser/UAT closed or release-certified.

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import * as api from "@workspace/api-client-react";
 import { friendlyError } from "../lib/friendly-error";
+import { SearchableSelect } from "./SearchableSelect";
 
 export type LinkedSchedule = { enabled: boolean; doctorId?: string; maxTokens?: number; consultationMinutes?: number; tokenPrefix?: string; queueMode?: "mixed" | "appointmentsOnly" | "walkInsOnly" };
 
@@ -13,7 +14,7 @@ export function LinkedScheduleControls({ value, onChange, disabled = false }: { 
       <label>Patients per session<input type="number" required min="1" step="1" value={value.maxTokens ?? ""} onChange={e => onChange({ ...value, maxTokens: e.target.value ? Number(e.target.value) : undefined })}/></label>
       <label>Consultation duration (minutes)<input type="number" required min="1" step="1" value={value.consultationMinutes ?? ""} onChange={e => onChange({ ...value, consultationMinutes: e.target.value ? Number(e.target.value) : undefined })}/></label>
       <label>Ticket prefix<input value={value.tokenPrefix || "A"} maxLength={8} onChange={e => onChange({ ...value, tokenPrefix: e.target.value.toUpperCase() })}/></label>
-      <label>Booking mode<select value={value.queueMode || "mixed"} onChange={e => onChange({ ...value, queueMode: e.target.value as LinkedSchedule["queueMode"] })}><option value="mixed">Appointments and walk-ins</option><option value="appointmentsOnly">Appointments only</option><option value="walkInsOnly">Walk-ins only (no online bookings)</option></select></label>
+      <SearchableSelect label="Booking mode" disabled={disabled} value={value.queueMode || "mixed"} onChange={queueMode => { if (queueMode) onChange({ ...value, queueMode: queueMode as LinkedSchedule["queueMode"] }); }} options={[{value:"mixed",label:"Appointments and walk-ins"},{value:"appointmentsOnly",label:"Appointments only"},{value:"walkInsOnly",label:"Walk-ins only (no online bookings)"}]}/>
     </div>}
   </fieldset>;
 }

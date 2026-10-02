@@ -20,27 +20,13 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { PageMeta } from './pageMeta';
-import type { PublicBranchSummary } from './publicBranchSummary';
-import type { PublicClinicSummary } from './publicClinicSummary';
-import type { PublicDoctor } from './publicDoctor';
 
-export interface PublicClinicContext {
-  directoryPagination?: PageMeta;
-  /**
-     * Active clinic count before directory search.
-     * @minimum 0
-     */
-  branchCount?: number;
-  /**
-     * Active doctors at the resolved clinic before directory search.
-     * @minimum 0
-     */
-  branchDoctorCount?: number;
-  clinic: PublicClinicSummary;
-  branches: PublicBranchSummary[];
-  branch: PublicBranchSummary | null;
-  /** @nullable */
-  qrReference: string | null;
-  doctors: PublicDoctor[];
-}
+export type PublicDirectoryPageSizeParameter = typeof PublicDirectoryPageSizeParameter[keyof typeof PublicDirectoryPageSizeParameter];
+
+
+export const PublicDirectoryPageSizeParameter = {
+  NUMBER_10: 10,
+  NUMBER_25: 25,
+  NUMBER_50: 50,
+  NUMBER_100: 100,
+} as const;

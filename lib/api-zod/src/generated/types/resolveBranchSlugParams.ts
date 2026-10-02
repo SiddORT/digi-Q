@@ -20,27 +20,30 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { PageMeta } from './pageMeta';
-import type { PublicBranchSummary } from './publicBranchSummary';
-import type { PublicClinicSummary } from './publicClinicSummary';
-import type { PublicDoctor } from './publicDoctor';
+import type { PublicDirectoryPageParameter } from './publicDirectoryPageParameter';
+import type { PublicDirectoryPageSizeParameter } from './publicDirectoryPageSizeParameter';
+import type { PublicDirectoryParameter } from './publicDirectoryParameter';
+import type { PublicDirectorySearchParameter } from './publicDirectorySearchParameter';
+import type { PublicDirectorySortParameter } from './publicDirectorySortParameter';
 
-export interface PublicClinicContext {
-  directoryPagination?: PageMeta;
-  /**
-     * Active clinic count before directory search.
-     * @minimum 0
-     */
-  branchCount?: number;
-  /**
-     * Active doctors at the resolved clinic before directory search.
-     * @minimum 0
-     */
-  branchDoctorCount?: number;
-  clinic: PublicClinicSummary;
-  branches: PublicBranchSummary[];
-  branch: PublicBranchSummary | null;
-  /** @nullable */
-  qrReference: string | null;
-  doctors: PublicDoctor[];
-}
+export type ResolveBranchSlugParams = {
+/**
+ * Opt in to scoped server pagination; omitted preserves the legacy context arrays.
+ */
+directory?: PublicDirectoryParameter;
+/**
+ * @minimum 1
+ * @maximum 1000000
+ */
+page?: PublicDirectoryPageParameter;
+pageSize?: PublicDirectoryPageSizeParameter;
+/**
+ * Matches public clinic name/address/city or doctor name/specialization only.
+ * @maxLength 200
+ */
+search?: PublicDirectorySearchParameter;
+/**
+ * Public name with optional minus prefix; sorting never uses private fields.
+ */
+sort?: PublicDirectorySortParameter;
+};

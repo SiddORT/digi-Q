@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { SearchableSelect } from "./SearchableSelect";
 
 // Export useDebouncedValue directly from here for convenience as requested
 export { useDebouncedValue };
@@ -74,23 +75,17 @@ export function Pagination({
         </span>
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
-            <label htmlFor={sizeId}>Rows:</label>
-            <select
+            <SearchableSelect
               id={sizeId}
-              value={pageSize}
-              onChange={(e) => {
-                onPageSizeChange(Number(e.target.value));
+               label="Rows per page"
+               value={String(pageSize)}
+               onChange={(value) => {
+                 if (!value) return;
+                 onPageSizeChange(Number(value));
                 if (resetPageOnSizeChange) onPageChange(1);
               }}
-              className="h-8 w-auto rounded-md border border-border bg-white px-2 py-1 text-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium text-foreground"
-              style={{ minHeight: "auto", margin: 0, paddingRight: "28px" }}
-            >
-              {pageSizeOptions(pageSize).map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
+               options={pageSizeOptions(pageSize).map((size) => ({ value: String(size), label: String(size) }))}
+             />
           </div>
         )}
       </div>

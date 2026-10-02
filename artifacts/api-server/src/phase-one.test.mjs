@@ -822,6 +822,75 @@ test("actual TAT is nullable without completed timestamps and independent of con
   assert.equal((await api.queryMetrics({role:"superAdmin"},{})).averageConsultationMinutes,12);
 });
 
+test("public directory paginates and sorts scoped public fields without changing booking context", async () => {
+  await seed();
+  await api.change(t.clinics, "c", { data: { name: "Clinic", slug: "public-clinic" } });
+  await api.change(t.branches, "b", { data: { name: "Main", slug: "main-branch", timezone: "UTC" } });
+  for (let i = 0; i < 110; i++) await api.put(t.branches, {
+    id: `directory-${String(i).padStart(3, "0")}`, clinicId: "c",
+    data: { name: `Clinic ${String(i).padStart(3, "0")}`, slug: `clinic-${i}`, city: "Public City", secretStaffField: "not-public" },
+  });
+  await api.put(t.branches, { id: "hidden", clinicId: "c", status: "inactive", data: { name: "Clinic hidden" } });
+  await api.put(t.clinics, { id: "other", status: "active", data: { name: "Other", slug: "other-clinic" } });
+  await api.put(t.branches, { id: "other-branch", clinicId: "other", data: { name: "Clinic outside" } });
+  const resolve = (q = {}, branchSlug) => route(api.clinicExpansionRouter, "get", "/public/clinics-by-slug/:clinicSlug{/:branchSlug}",
+    null, {}, { clinicSlug: "public-clinic", ...(branchSlug ? { branchSlug } : {}) }, q);
+  const legacy = await resolve();
+  assert.equal(legacy.directoryPagination, undefined);
+  assert.equal(legacy.branches.length, 100);
+  assert.equal((await resolve({directory:"false"})).directoryPagination, undefined);
+  const first = await resolve({directory:"true",pageSize:"10",search:"Clinic",sort:"name"});
+  assert.deepEqual(first.directoryPagination, {total:110,page:1,pageSize:10,totalPages:11});
+  assert.equal(first.branchCount,112);
+  assert.equal(first.branch,null);
+  assert.equal(first.branches[0].name,"Clinic 000");
+  assert.equal(JSON.stringify(first).includes("secretStaffField"),false);
+  const last = await resolve({directory:"true",pageSize:"10",search:"Clinic",sort:"name",page:"999"});
+  assert.equal(last.directoryPagination.page,11);
+  assert.equal(last.branches[9].name,"Clinic 109");
+  const reverse = await resolve({directory:"true",pageSize:"10",search:"Clinic",sort:"-name"});
+  assert.equal(reverse.branches[0].name,"Clinic 109");
+  assert.equal((await resolve({directory:"true",search:"Public City"})).directoryPagination.total,110);
+  for (const size of [25,50,100]) {
+    const sized = await resolve({directory:"true",pageSize:String(size),search:"Clinic"});
+    assert.equal(sized.branches.length,size);
+    assert.equal(sized.directoryPagination.pageSize,size);
+  }
+  assert.equal((await resolve({directory:"true",search:"%"})).directoryPagination.total,0);
+  assert.equal((await resolve({directory:"true",search:"not-public"})).directoryPagination.total,0);
+  const farBranch = await resolve({directory:"true",search:"no match"},"clinic-109");
+  assert.equal(farBranch.branch.slug,"clinic-109");
+  assert.equal(farBranch.branchCount,112);
+  for (let i = 0; i < 12; i++) {
+    await api.put(t.users, { id: `directory-user-${i}`, role: "doctor", fullName: `Specialist ${String(i).padStart(2,"0")}`, email: `private-${i}@example.com` });
+    await api.put(t.doctors, { id: `directory-doctor-${i}`, userId: `directory-user-${i}`, ownerAdminId:"admin" });
+    await api.put(t.assignments, { id: `directory-assignment-${i}`, userId: `directory-user-${i}`, clinicId:"c", branchId:"b" });
+  }
+  await api.change(t.users,"directory-user-11",{status:"inactive"});
+  await api.put(t.masters,{id:"directory-specialization",category:"specialization",data:{name:"Cardiology"}});
+  await api.change(t.doctors,"directory-doctor-0",{specializationId:"directory-specialization"});
+  const specialty = await resolve({directory:"true",search:"cardiology"},"main-branch");
+  assert.equal(specialty.directoryPagination.total,1);
+  assert.equal(specialty.doctors[0].id,"directory-doctor-0");
+  const team = await resolve({directory:"true",pageSize:"10",search:"Specialist",sort:"-name"},"main-branch");
+  assert.equal(team.branch.id,"b");
+  assert.equal(team.branchDoctorCount,12);
+  assert.equal(team.directoryPagination.total,11);
+  assert.equal(team.doctors.length,10);
+  assert.equal(team.doctors[0].fullName,"Specialist 10");
+  assert.equal(JSON.stringify(team).includes("private-"),false);
+  assert.equal(team.doctors[0].averageConsultationMinutes,null);
+  const noTeam = await resolve({directory:"true",search:"private-"},"main-branch");
+  assert.equal(noTeam.directoryPagination.total,0);
+  assert.equal(noTeam.branch.id,"b");
+  assert.equal(noTeam.qrReference,team.qrReference);
+  await api.change(t.clinics,"c",{status:"inactive"});
+  await assert.rejects(resolve({directory:"true"}),/Clinic page not found/);
+  await api.change(t.clinics,"c",{status:"active"});
+  await assert.rejects(resolve({directory:"true",sort:"email"}),/Invalid enum value/);
+  await assert.rejects(resolve({directory:"true",pageSize:"20"}),/Invalid literal value/);
+});
+
 test("atomic owned clinic setup rolls back on branch slug conflict and retains one owner", async () => {
   await seed();
   const admin = await api.one(t.users,"admin");

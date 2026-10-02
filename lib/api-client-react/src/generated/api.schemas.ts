@@ -620,6 +620,14 @@ export interface PublicBranchSummary {
   openingHours?: OpeningHour[] | null;
 }
 
+export interface PageMeta {
+  /** @minimum 0 */
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages?: number;
+}
+
 export interface PublicDoctor {
   /**
      * Actual mean of valid completed consultation timestamps
@@ -644,6 +652,17 @@ export interface PublicDoctor {
 }
 
 export interface PublicClinicContext {
+  directoryPagination?: PageMeta;
+  /**
+     * Active clinic count before directory search.
+     * @minimum 0
+     */
+  branchCount?: number;
+  /**
+     * Active doctors at the resolved clinic before directory search.
+     * @minimum 0
+     */
+  branchDoctorCount?: number;
   clinic: PublicClinicSummary;
   branches: PublicBranchSummary[];
   branch: PublicBranchSummary | null;
@@ -885,14 +904,6 @@ export const BookingSource = {
   phone: 'phone',
   qr: 'qr',
 } as const;
-
-export interface PageMeta {
-  /** @minimum 0 */
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages?: number;
-}
 
 export interface ProfileInput {
   /** @minLength 1 */
@@ -1836,6 +1847,36 @@ export type SelectedIdsParameter = string;
 
 export type SearchParameter = string;
 
+/**
+ * Opt in to scoped server pagination; omitted preserves the legacy context arrays.
+ */
+export type PublicDirectoryParameter = boolean;
+
+export type PublicDirectoryPageParameter = number;
+
+export type PublicDirectoryPageSizeParameter = typeof PublicDirectoryPageSizeParameter[keyof typeof PublicDirectoryPageSizeParameter];
+
+
+export const PublicDirectoryPageSizeParameter = {
+  NUMBER_10: 10,
+  NUMBER_25: 25,
+  NUMBER_50: 50,
+  NUMBER_100: 100,
+} as const;
+
+/**
+ * Matches public clinic name/address/city or doctor name/specialization only.
+ */
+export type PublicDirectorySearchParameter = string;
+
+export type PublicDirectorySortParameter = typeof PublicDirectorySortParameter[keyof typeof PublicDirectorySortParameter];
+
+
+export const PublicDirectorySortParameter = {
+  name: 'name',
+  '-name': '-name',
+} as const;
+
 export type PageParameter = number;
 
 export type PageSizeParameter = number;
@@ -1890,6 +1931,50 @@ export type CheckSlugAvailabilityParams = {
  */
 slug: string;
 clinicId?: string;
+};
+
+export type ResolveClinicSlugParams = {
+/**
+ * Opt in to scoped server pagination; omitted preserves the legacy context arrays.
+ */
+directory?: PublicDirectoryParameter;
+/**
+ * @minimum 1
+ * @maximum 1000000
+ */
+page?: PublicDirectoryPageParameter;
+pageSize?: PublicDirectoryPageSizeParameter;
+/**
+ * Matches public clinic name/address/city or doctor name/specialization only.
+ * @maxLength 200
+ */
+search?: PublicDirectorySearchParameter;
+/**
+ * Public name with optional minus prefix; sorting never uses private fields.
+ */
+sort?: PublicDirectorySortParameter;
+};
+
+export type ResolveBranchSlugParams = {
+/**
+ * Opt in to scoped server pagination; omitted preserves the legacy context arrays.
+ */
+directory?: PublicDirectoryParameter;
+/**
+ * @minimum 1
+ * @maximum 1000000
+ */
+page?: PublicDirectoryPageParameter;
+pageSize?: PublicDirectoryPageSizeParameter;
+/**
+ * Matches public clinic name/address/city or doctor name/specialization only.
+ * @maxLength 200
+ */
+search?: PublicDirectorySearchParameter;
+/**
+ * Public name with optional minus prefix; sorting never uses private fields.
+ */
+sort?: PublicDirectorySortParameter;
 };
 
 export type GetDoctorPresenceParams = {

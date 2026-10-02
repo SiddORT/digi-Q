@@ -66,22 +66,47 @@ clinicExpansionRouter.get("/public/slug-availability", anonymousLimit, async (re
 });
 clinicExpansionRouter.get("/public/clinics-by-slug/:clinicSlug{/:branchSlug}", anonymousLimit, async (req, res) => {
   const clinicSlug = req.params.clinicSlug as string, branchSlug = req.params.branchSlug as string | undefined;
+  const q = query(branchSlug ? z.ResolveBranchSlugQueryParams : z.ResolveClinicSlugQueryParams, req);
+  const directory = q.directory === true && req.query.directory !== "false", pageSize = q.pageSize ?? 25;
+  const term = q.search?.trim() || "";
+  const pattern = `%${term.replace(/[\\%_]/g, "\\$&")}%`;
+  const direction = q.sort === "-name" ? sql`desc` : sql`asc`;
   assert(validSlug(clinicSlug) && (!branchSlug || validSlug(branchSlug)), 404, "Clinic page not found");
   const [record] = (await db.execute(sql`select * from clinics where status='active' and data->>'slug'=${clinicSlug} limit 1`)).rows;
   assert(record, 404, "Clinic page not found");
   const clinic = flatten({ ...record, adminId: (record as any).admin_id });
-  const branchRecords = (await db.execute(sql`select * from branches where clinic_id=${clinic.id} and status='active' order by id limit 100`)).rows;
-  const branchList = branchRecords.map((r: any) => {
+  const branchScope = sql`clinic_id=${clinic.id} and status='active'`;
+  const [branchCounts] = (await db.execute(sql`select count(*)::int as count from branches where ${branchScope}`)).rows;
+  const branchCount = Number(branchCounts.count);
+  const selectedRecords = branchSlug || branchCount === 1
+    ? (await db.execute(sql`select * from branches where ${branchScope} ${branchSlug ? sql`and data->>'slug'=${branchSlug}` : sql``} order by id limit 1`)).rows : [];
+  assert(!branchSlug || selectedRecords.length, 404, "Branch page not found");
+  const branchSearch = term ? sql`and (data->>'name' ilike ${pattern} or data->>'address' ilike ${pattern} or data->>'city' ilike ${pattern})` : sql``;
+  const doctorScope = selectedRecords.length ? clinicalMembership(sql`d.id`, sql`${selectedRecords[0].id}`) : sql`false`;
+  const doctorSearch = term ? sql`and (u.full_name ilike ${pattern} or exists(select 1 from masters m where m.id=d.specialization_id and m.data->>'name' ilike ${pattern}))` : sql``;
+  const [doctorCounts] = (await db.execute(sql`select count(*)::int as count from doctors d where ${doctorScope}`)).rows;
+  const branchDoctorCount = Number(doctorCounts.count);
+  const [matching] = directory ? (await db.execute(selectedRecords.length
+    ? sql`select count(*)::int as count from doctors d join users u on u.id=d.user_id where ${doctorScope} ${doctorSearch}`
+    : sql`select count(*)::int as count from branches where ${branchScope} ${branchSearch}`)).rows : [{ count: 0 }];
+  const total = Number(matching.count), totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(q.page ?? 1, totalPages), offset = (page - 1) * pageSize;
+  const branchRecords = directory
+    ? selectedRecords.length ? selectedRecords : (await db.execute(sql`select * from branches where ${branchScope} ${branchSearch} order by lower(data->>'name') ${direction},id limit ${pageSize} offset ${offset}`)).rows
+    : (await db.execute(sql`select * from branches where ${branchScope} order by id limit 100`)).rows;
+  const summarizeBranch = (r: any) => {
     const b = flatten(r);
     return { ...clinicDisplayPreferences(clinic), id: b.id, name: b.name, slug: b.slug || null, address: b.address || null, city: b.city || null, timezone: b.timezone || "Asia/Kolkata",
       effectiveEmail: (b.inheritEmail ?? !b.email) ? clinic.email || null : b.email || null,
       effectivePhone: (b.inheritPhone ?? !b.phone) ? clinic.phone || null : b.phone || null, openingHours: b.openingHours ?? null };
-  });
-  const branch = branchSlug ? branchList.find(b => b.slug === branchSlug) : branchList.length === 1 ? branchList[0] : null;
-  assert(!branchSlug || branch, 404, "Branch page not found");
+  };
+  const branchList = branchRecords.map(summarizeBranch);
+  const branch = selectedRecords.length ? summarizeBranch(selectedRecords[0]) : null;
   const publicDoctors = [];
   if (branch) {
-    const candidates = (await db.execute(sql`select d.id from doctors d where ${clinicalMembership(sql`d.id`, sql`${branch.id}`)} order by d.id limit 100`)).rows;
+    const candidates = (await db.execute(directory
+      ? sql`select d.id from doctors d join users u on u.id=d.user_id where ${doctorScope} ${doctorSearch} order by lower(u.full_name) ${direction},d.id limit ${pageSize} offset ${offset}`
+      : sql`select d.id from doctors d where ${doctorScope} order by d.id limit 100`)).rows;
     for (const row of candidates) {
       const id = row.id as string;
       const metric = await queryMetrics({ role: "superAdmin" }, { clinicId: clinic.id, branchId: branch.id, doctorId: id });
@@ -93,6 +118,8 @@ clinicExpansionRouter.get("/public/clinics-by-slug/:clinicSlug{/:branchSlug}", a
   const references = branch ? (await db.execute(sql`select public_reference from qrs where clinic_id=${clinic.id} and branch_id=${branch.id} and doctor_id is null and status='active' order by created_at,id limit 1`)).rows : [];
   const [counts] = (await db.execute(sql`select count(*)::int as count from doctors d where exists(select 1 from branches b where b.clinic_id=${clinic.id} and ${clinicalMembership(sql`d.id`, sql`b.id`)})`)).rows;
   const metric = await queryMetrics({ role: "superAdmin" }, { clinicId: clinic.id });
-  res.set("Cache-Control", "no-store").json({ clinic: { ...clinicDisplayPreferences(clinic), id: clinic.id, name: clinic.name, slug: clinic.slug, address: clinic.address || null, email: clinic.email || null, phone: clinic.phone || null, doctorCount: Number(counts.count), averageConsultationMinutes: metric.averageConsultationMinutes },
-    branches: branchList, branch: branch || null, qrReference: references[0]?.public_reference || null, doctors: publicDoctors });
+  const result = { clinic: { ...clinicDisplayPreferences(clinic), id: clinic.id, name: clinic.name, slug: clinic.slug, address: clinic.address || null, email: clinic.email || null, phone: clinic.phone || null, doctorCount: Number(counts.count), averageConsultationMinutes: metric.averageConsultationMinutes },
+    branches: branchList, branch: branch || null, qrReference: references[0]?.public_reference || null, doctors: publicDoctors,
+    ...(directory ? { branchCount, branchDoctorCount, directoryPagination: { total, page, pageSize, totalPages } } : {}) };
+  res.set("Cache-Control", "no-store").json(z.ResolveClinicSlugResponse.parse(result));
 });

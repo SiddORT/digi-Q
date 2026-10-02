@@ -218,3 +218,17 @@ mtime_ms = 1790957337481
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/b252d1b0-f094-4c45-a1dd-f5bea2354542/9e1355bf-4824-450d-99ea-94556ad7a67d"
 storage_version_token = "1790958131689612"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "FNfPa2iQhOWw_9x4UCEYK"
+uri = "file://docs/digiq-pending-progress.md"
+type = "text"
+title = "DigiQ — point-by-point progress"
+description = "Implemented changes, passing checks, browser-discovered fixes and remaining acceptance work."
+logical_id = "2a71929e-e8fd-4054-be4e-bf4097797631"
+content_hash = "sha256:10e801584a1b072bfe76cdff0e0106be4704d2676826bbd0153c8e0c44cde1f8"
+size = 6073
+mtime_ms = 1790961176621
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/2a71929e-e8fd-4054-be4e-bf4097797631/847d1e7a-38fb-4058-bd7e-0f0d80020cb4"
+storage_version_token = "1790961200427508"
+content_type = "text/markdown"

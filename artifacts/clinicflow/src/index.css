@@ -15,8 +15,9 @@
 
 @theme inline {
   --color-border: hsl(var(--border));
-  --color-background: hsl(var(--background));
-  --color-primary: hsl(var(--primary));
+  --color-background: var(--dq-bg);
+  --color-primary: var(--dq-blue);
+  --color-accent: var(--dq-cyan);
   --color-primary-foreground: hsl(var(--primary-foreground));
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
@@ -26,9 +27,11 @@
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-ring: hsl(var(--ring));
   
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 2px);
+  --radius-sm: var(--radius-badge);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-control);
+  --radius-xl: var(--radius-card);
+  --radius-2xl: var(--radius-dialog);
 }
 
 @layer base {
@@ -55,7 +58,7 @@
     
     --radius: .75rem;
     --navy: #0d2350;
-    --teal: #1552b0;
+    --teal: var(--dq-blue);
     --ink: #172a4a;
     --soft: #56657d;
     /* Approved NEEDS_RECOMMENDATION values (prompt §4) — central, change here only. */
@@ -63,6 +66,34 @@
     --surface-hover: #EEF4FB;
     --shadow-dropdown: 0 4px 12px rgba(23,42,74,0.12);
     --shadow-dialog: 0 12px 32px rgba(23,42,74,0.18);
+    /* Explicit DigiQ v3 §9 values. Unspecified semantic colors remain current. */
+    --dq-blue: #1552B0;
+    --dq-cyan: #0E8FB3;
+    --dq-bg: #F3F7FC;
+    --dq-surface: #FFFFFF;
+    --font-heading: 'Manrope', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --type-page: 24px;
+    --type-section: 20px;
+    --type-body: 14px;
+    --type-label: 13px;
+    --type-table: 13px;
+    --type-table-heading: 12px;
+    --radius-control: 8px;
+    --radius-card: 12px;
+    --radius-dialog: 14px;
+    --radius-badge: 6px;
+    --workspace-width: 1540px;
+    --sidebar-width: 245px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 32px;
+    --space-8: 40px;
+    --space-9: 48px;
   }
 }
 
@@ -445,9 +476,8 @@
 /* ==== DigiQ Doctors blue system: tokens, density, brand (final layer) ==== */
 @layer components {
   :root{
-    --dq-navy:#0d2350;--dq-blue:#1552b0;--dq-blue-strong:#0f3f8c;--dq-cyan:#0e8fb3;--dq-cyan-soft:#e3f6fc;
-    --dq-bg:#f3f7fc;--dq-surface:#fff;--dq-surface-2:#f7faff;--dq-line:#d7e2f0;--dq-line-soft:#e8eef7;
-    --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;
+    --dq-navy:#0d2350;--dq-blue-strong:#0f3f8c;--dq-cyan-soft:#e3f6fc;
+    --dq-surface-2:#f7faff;--dq-line:#d7e2f0;--dq-line-soft:#e8eef7;
     --control-h:40px;--control-h-sm:34px;--touch:44px;--field-height:40px;
     --ok:#1f7a4a;--warn:#855b00;--danger:#b3261e;
   }
@@ -660,4 +690,141 @@
 @media(max-width:767px),(pointer:coarse){
   .searchable-select-remove{min-width:44px!important;min-height:44px!important}
   .filter-chips li button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+}
+
+/* DigiQ v3 explicit standards win over legacy density rules (including unlayered
+   rules above). Screen-only: ticket/QR print geometry and brand images stay current.
+   Do not replace unspecified semantic palettes, control geometry, or shadows. */
+@media screen {
+  .workspace {
+    font-family: var(--font-body);
+    font-size: var(--type-body);
+    background: var(--dq-bg);
+    --radius: var(--radius-control);
+  }
+  .workspace .content { max-width: var(--workspace-width); padding: var(--space-6); }
+  .workspace .sidebar { width: var(--sidebar-width); padding: var(--space-4) var(--space-5) var(--space-3); }
+  .workspace .workspace-main { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); }
+  .workspace .topbar { padding-inline: var(--space-6); }
+  .workspace .workspace-label { margin: var(--space-4) var(--space-3) var(--space-2); font-size: var(--type-label); }
+  .workspace .workspace-label span { font-size: var(--type-label); border-radius: var(--radius-badge); padding: var(--space-1) var(--space-2); }
+  .workspace .sidebar .help-card { padding: var(--space-3); border-radius: var(--radius-card); font-size: var(--type-label); }
+  .workspace .help-card p, .workspace .logout, .workspace .breadcrumb,
+  .workspace .topbar-right, .workspace .topbar-right strong, .workspace .topbar-right small,
+  .workspace .secure-label, .workspace .avatar, .workspace .content-footer { font-size: var(--type-label); }
+  .workspace .wnav-link, .workspace .wnav-link.child { font-size: var(--type-label); padding: var(--space-2) var(--space-3); gap: var(--space-2); border-radius: var(--radius-control); }
+  .workspace .wnav-link:hover { background: var(--surface-hover); }
+  .workspace .wnav-link.active, .workspace .wnav-link.active svg,
+  .workspace .wnav-parent.has-active, .workspace .wnav-parent.has-active svg { color: var(--dq-blue); }
+  .workspace .sidebar nav.wnav { gap: var(--space-1); padding: var(--space-1); }
+  .workspace .wnav-children { gap: var(--space-1); margin: var(--space-1) 0 var(--space-1) var(--space-5); padding-left: var(--space-2); }
+
+  .workspace h1, .workspace h2, .workspace h3, .workspace h4 { font-family: var(--font-heading); }
+  .workspace h1, .workspace .page-heading h1 { font-size: var(--type-page); margin: var(--space-1) 0; }
+  .workspace h2, .workspace h3, .workspace h4, .workspace .panel-heading h2,
+  .workspace .care-card h2 { font-size: var(--type-section); }
+  .workspace .page-heading p, .workspace .panel-heading p, .workspace .care-card p,
+  .workspace .empty p, .workspace .notice, .workspace .notice p, .workspace .error-box,
+  .workspace .report-methodology, .workspace .settings-integration-note,
+  .workspace .session-queue .sq-note, .workspace .section-heading p { font-size: var(--type-body); }
+  .workspace .eyebrow, .workspace .stat-card > div, .workspace .stat-card small,
+  .workspace .activity-list strong, .workspace .activity-list small { font-size: var(--type-label); }
+  .workspace .stat-card > strong, .workspace .session-queue .sq-banner strong { font-size: var(--type-page); }
+  .workspace .session-queue .sq-banner small { font-size: var(--type-label); }
+  .workspace .weekly-overview .day, .workspace .weekly-overview .day button.slot,
+  .workspace .booking-steps > div, .workspace .booking-steps span { font-size: var(--type-label); }
+  .workspace label, .workspace .form-field-label { font-size: var(--type-label); }
+  .workspace .form-field-help, .workspace .form-field-error { font-size: var(--type-label); }
+  .workspace .form-field-help, .workspace .form-field-error { margin-top: var(--space-1); }
+  .workspace .password-checklist { font-size: var(--type-label); margin-top: var(--space-1); gap: var(--space-1) var(--space-3); }
+  .workspace .empty-state { padding: var(--space-7) var(--space-5); }
+  .workspace .empty-state p { font-size: var(--type-body); }
+  .workspace .form-grid { gap: var(--space-4); margin-top: var(--space-4); }
+  .workspace .form-footer { gap: var(--space-2); margin-top: var(--space-4); padding-top: var(--space-3); }
+
+  .workspace button, .workspace .button, .workspace .button.small,
+  .workspace .row-menu > summary { border-radius: var(--radius-control); }
+  .workspace .search { border-radius: var(--radius-control); }
+  .workspace input:not([type=checkbox]):not([type=radio]), .workspace select, .workspace textarea {
+    font-size: var(--type-body); border-radius: var(--radius-control);
+    padding: var(--space-2) var(--space-3); margin-top: var(--space-1);
+  }
+  .workspace .workspace-search input { padding-inline: var(--space-8); }
+  .workspace .password-input > input { padding-right: var(--space-9); }
+  .workspace .search input { margin-top: 0; }
+  .workspace .search input, .workspace .resource-toolbar .search input { font-size: var(--type-body); }
+  .workspace .panel, .workspace .stat-card, .workspace .care-card,
+  .workspace .weekly-overview .day { border-radius: var(--radius-card); }
+  .workspace .panel .panel { border-radius: 0; }
+  .workspace .stat-card, .workspace .care-card, .workspace .padded { padding: var(--space-5); }
+  .workspace .panel-heading { padding: var(--space-5); }
+  .workspace .stat-grid, .workspace .dashboard-grid { gap: var(--space-4); margin-bottom: var(--space-4); }
+  .workspace .toolbar { gap: var(--space-2); margin-bottom: var(--space-3); }
+  .workspace .page-heading { gap: var(--space-3); margin-bottom: var(--space-4); }
+  .workspace .notice, .workspace .error-box { padding: var(--space-3) var(--space-4); margin: var(--space-3) 0; }
+
+  .workspace table, .workspace td, .workspace td strong, .workspace td small,
+  .workspace td .muted, .workspace .cell-sub { font-size: var(--type-table); }
+  .workspace th, .workspace td::before { font-size: var(--type-table-heading); }
+  .workspace th, .workspace td { padding: var(--space-2) var(--space-3); }
+  .workspace tr:hover td, .workspace tr:hover td.col-actions { background: var(--surface-hover); }
+  .workspace td small { margin-top: var(--space-1); }
+  .workspace .badge, .workspace .filter-count, .workspace .filter-chips li {
+    font-size: var(--type-label); border-radius: var(--radius-badge); padding: var(--space-1) var(--space-2);
+  }
+  .workspace .pagination, .workspace .pagination-current { font-size: var(--type-label); }
+  .workspace .pagination { padding: var(--space-2) var(--space-3); gap: var(--space-2); }
+  /* Weekly schedule listing: capacity has three flex items (count, patients,
+     prefix/duration). Keep them inside their fixed-layout cell, not over Open. */
+  .workspace .admin-listing-table td[data-label="Capacity"] .cap-chip {
+    flex-wrap: wrap; min-width: 0; max-width: 100%; gap: var(--space-1);
+    white-space: normal; overflow-wrap: anywhere;
+  }
+  .workspace .admin-listing-table td[data-label="Capacity"] .cap-chip .cell-sub {
+    flex-basis: 100%; min-width: 0; max-width: 100%; display: block;
+    white-space: normal; overflow-wrap: anywhere; overflow: visible; -webkit-line-clamp: unset;
+  }
+  .workspace .filter-chips { gap: var(--space-2); }
+  .workspace .filter-panel-fields { gap: var(--space-4); }
+  .workspace .filter-bar-advanced, .workspace .row-menu-list {
+    border-radius: var(--radius-control); box-shadow: var(--shadow-dropdown);
+  }
+  .workspace .row-menu-list button { border-radius: var(--radius-control); padding: var(--space-2) var(--space-3); }
+  .workspace .modal { border-radius: var(--radius-dialog); box-shadow: var(--shadow-dialog); }
+  .workspace button:disabled, .workspace input:disabled, .workspace select:disabled,
+  .workspace textarea:disabled, .app-dialog button:disabled { color: var(--text-disabled); }
+
+  /* Shared portaled controls cannot inherit .workspace styles. */
+  .app-dialog.app-dialog { font-family: var(--font-body); font-size: var(--type-body); border-radius: var(--radius-dialog); box-shadow: var(--shadow-dialog); }
+  .app-dialog .app-dialog-title, .app-dialog .app-discard-title { font-family: var(--font-heading); font-size: var(--type-section); }
+  .app-dialog .app-dialog-desc, .app-dialog .app-discard-desc { font-size: var(--type-body); }
+  .app-dialog .app-dialog-header { padding: var(--space-5); padding-right: var(--space-9); }
+  .app-dialog .app-dialog-body { padding: var(--space-5) var(--space-5) 0; }
+  .app-dialog .app-dialog-body > :last-child { margin-bottom: var(--space-4); }
+  .app-dialog .app-dialog-body .form-grid { gap: var(--space-4); }
+  .app-dialog .app-dialog-body .form-footer, .app-dialog .app-dialog-body > .button:last-child,
+  .app-dialog .app-dialog-footer { margin: var(--space-4) calc(-1 * var(--space-5)) 0; padding: var(--space-4) var(--space-5); gap: var(--space-2); }
+  .app-dialog .app-dialog-body > .button:last-child { margin-left: auto; margin-right: 0; }
+  .app-dialog label, .app-dialog .form-field-label, .app-dialog .form-field-help,
+  .app-dialog .form-field-error { font-size: var(--type-label); }
+  .app-dialog input:not([type=checkbox]):not([type=radio]), .app-dialog select, .app-dialog textarea {
+    font-size: var(--type-body); border-radius: var(--radius-control); padding: var(--space-2) var(--space-3);
+  }
+  .app-dialog .password-input > input { padding-right: var(--space-9); }
+  .app-dialog button, .app-dialog .button { border-radius: var(--radius-control); font-size: var(--type-label); }
+  .app-dialog .app-dialog-close-wrap { top: var(--space-1); right: var(--space-1); }
+  .app-dialog .app-discard-panel { border-radius: var(--radius-dialog); padding: var(--space-5); box-shadow: var(--shadow-dialog); }
+  .searchable-select-popup { font-family: var(--font-body); font-size: var(--type-body); border-radius: var(--radius-control); box-shadow: var(--shadow-dropdown); }
+  .searchable-select-options [cmdk-item], .searchable-select-options [cmdk-input],
+  .searchable-select-options [cmdk-empty] { font-size: var(--type-body); }
+  .searchable-select-options [cmdk-item][data-selected=true] { background: var(--surface-hover); }
+}
+@media screen and (max-width: 900px) {
+  .workspace .sidebar { width: min(var(--sidebar-width), 86vw); padding: var(--space-4) var(--space-3); }
+  .workspace .workspace-main { margin-left: 0; width: 100%; }
+}
+@media screen and (max-width: 639px) {
+  .workspace .content { padding: var(--space-4); }
+  .workspace .topbar { padding-inline: var(--space-4); }
+  .workspace .form-grid, .app-dialog .form-grid { grid-template-columns: 1fr; }
 }

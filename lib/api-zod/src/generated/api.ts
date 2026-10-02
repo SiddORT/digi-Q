@@ -831,6 +831,26 @@ export const ResolveClinicSlugParams = zod.object({
   "clinicSlug": zod.coerce.string()
 })
 
+export const resolveClinicSlugQueryPageMax = 1000000;
+
+export const resolveClinicSlugQuerySearchMax = 200;
+
+
+
+export const ResolveClinicSlugQueryParams = zod.object({
+  "directory": zod.coerce.boolean().optional().describe('Opt in to scoped server pagination; omitted preserves the legacy context arrays.'),
+  "page": zod.coerce.number().int().min(1).max(resolveClinicSlugQueryPageMax).optional(),
+  "pageSize": zod.union([zod.literal(10),zod.literal(25),zod.literal(50),zod.literal(100)]).optional(),
+  "search": zod.coerce.string().max(resolveClinicSlugQuerySearchMax).optional().describe('Matches public clinic name/address/city or doctor name/specialization only.'),
+  "sort": zod.enum(['name', '-name']).optional().describe('Public name with optional minus prefix; sorting never uses private fields.')
+})
+
+export const resolveClinicSlugResponseDirectoryPaginationTotalMin = 0;
+
+export const resolveClinicSlugResponseBranchCountMin = 0;
+
+export const resolveClinicSlugResponseBranchDoctorCountMin = 0;
+
 export const resolveClinicSlugResponseBranchesItemOpeningHoursItemDayOfWeekMin = 0;
 export const resolveClinicSlugResponseBranchesItemOpeningHoursItemDayOfWeekMax = 6;
 
@@ -840,6 +860,14 @@ export const resolveClinicSlugResponseBranchOneOpeningHoursItemDayOfWeekMax = 6;
 
 
 export const ResolveClinicSlugResponse = zod.object({
+  "directoryPagination": zod.object({
+  "total": zod.number().int().min(resolveClinicSlugResponseDirectoryPaginationTotalMin),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
+}).optional(),
+  "branchCount": zod.number().int().min(resolveClinicSlugResponseBranchCountMin).optional().describe('Active clinic count before directory search.'),
+  "branchDoctorCount": zod.number().int().min(resolveClinicSlugResponseBranchDoctorCountMin).optional().describe('Active doctors at the resolved clinic before directory search.'),
   "clinic": zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -909,6 +937,26 @@ export const ResolveBranchSlugParams = zod.object({
   "branchSlug": zod.coerce.string()
 })
 
+export const resolveBranchSlugQueryPageMax = 1000000;
+
+export const resolveBranchSlugQuerySearchMax = 200;
+
+
+
+export const ResolveBranchSlugQueryParams = zod.object({
+  "directory": zod.coerce.boolean().optional().describe('Opt in to scoped server pagination; omitted preserves the legacy context arrays.'),
+  "page": zod.coerce.number().int().min(1).max(resolveBranchSlugQueryPageMax).optional(),
+  "pageSize": zod.union([zod.literal(10),zod.literal(25),zod.literal(50),zod.literal(100)]).optional(),
+  "search": zod.coerce.string().max(resolveBranchSlugQuerySearchMax).optional().describe('Matches public clinic name/address/city or doctor name/specialization only.'),
+  "sort": zod.enum(['name', '-name']).optional().describe('Public name with optional minus prefix; sorting never uses private fields.')
+})
+
+export const resolveBranchSlugResponseDirectoryPaginationTotalMin = 0;
+
+export const resolveBranchSlugResponseBranchCountMin = 0;
+
+export const resolveBranchSlugResponseBranchDoctorCountMin = 0;
+
 export const resolveBranchSlugResponseBranchesItemOpeningHoursItemDayOfWeekMin = 0;
 export const resolveBranchSlugResponseBranchesItemOpeningHoursItemDayOfWeekMax = 6;
 
@@ -918,6 +966,14 @@ export const resolveBranchSlugResponseBranchOneOpeningHoursItemDayOfWeekMax = 6;
 
 
 export const ResolveBranchSlugResponse = zod.object({
+  "directoryPagination": zod.object({
+  "total": zod.number().int().min(resolveBranchSlugResponseDirectoryPaginationTotalMin),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int(),
+  "totalPages": zod.number().int().optional()
+}).optional(),
+  "branchCount": zod.number().int().min(resolveBranchSlugResponseBranchCountMin).optional().describe('Active clinic count before directory search.'),
+  "branchDoctorCount": zod.number().int().min(resolveBranchSlugResponseBranchDoctorCountMin).optional().describe('Active doctors at the resolved clinic before directory search.'),
   "clinic": zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),

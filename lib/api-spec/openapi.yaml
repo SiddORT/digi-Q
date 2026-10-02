@@ -166,6 +166,11 @@ paths:
       security: []
       parameters:
         - { name: clinicSlug, in: path, required: true, schema: { type: string } }
+        - { $ref: "#/components/parameters/PublicDirectory" }
+        - { $ref: "#/components/parameters/PublicDirectoryPage" }
+        - { $ref: "#/components/parameters/PublicDirectoryPageSize" }
+        - { $ref: "#/components/parameters/PublicDirectorySearch" }
+        - { $ref: "#/components/parameters/PublicDirectorySort" }
       responses:
         "200": { description: Active clinic context, content: { application/json: { schema: { $ref: "#/components/schemas/PublicClinicContext" } } } }
   /public/clinics-by-slug/{clinicSlug}/{branchSlug}:
@@ -175,6 +180,11 @@ paths:
       parameters:
         - { name: clinicSlug, in: path, required: true, schema: { type: string } }
         - { name: branchSlug, in: path, required: true, schema: { type: string } }
+        - { $ref: "#/components/parameters/PublicDirectory" }
+        - { $ref: "#/components/parameters/PublicDirectoryPage" }
+        - { $ref: "#/components/parameters/PublicDirectoryPageSize" }
+        - { $ref: "#/components/parameters/PublicDirectorySearch" }
+        - { $ref: "#/components/parameters/PublicDirectorySort" }
       responses:
         "200": { description: Active branch context, content: { application/json: { schema: { $ref: "#/components/schemas/PublicClinicContext" } } } }
   /doctors/{id}/presence:
@@ -905,6 +915,11 @@ components:
     SelectedIds: { name: selectedIds, in: query, description: Comma-separated exact IDs within existing scope (maximum 100)., schema: { type: string, maxLength: 10000 } }
     Id: { name: id, in: path, required: true, schema: { type: string } }
     Search: { name: search, in: query, schema: { type: string } }
+    PublicDirectory: { name: directory, in: query, description: Opt in to scoped server pagination; omitted preserves the legacy context arrays., schema: { type: boolean } }
+    PublicDirectoryPage: { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 1000000 } }
+    PublicDirectoryPageSize: { name: pageSize, in: query, schema: { type: integer, enum: [10, 25, 50, 100] } }
+    PublicDirectorySearch: { name: search, in: query, description: Matches public clinic name/address/city or doctor name/specialization only., schema: { type: string, maxLength: 200 } }
+    PublicDirectorySort: { name: sort, in: query, description: Public name with optional minus prefix; sorting never uses private fields., schema: { type: string, enum: [name, "-name"] } }
     Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
     PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
     Sort: { name: sort, in: query, description: Allowlisted field with optional minus prefix for descending order, schema: { type: string } }
@@ -1203,6 +1218,9 @@ components:
       type: object
       required: [clinic, branches, branch, qrReference, doctors]
       properties:
+        directoryPagination: { $ref: "#/components/schemas/PageMeta" }
+        branchCount: { type: integer, minimum: 0, description: Active clinic count before directory search. }
+        branchDoctorCount: { type: integer, minimum: 0, description: Active doctors at the resolved clinic before directory search. }
         clinic: { $ref: "#/components/schemas/PublicClinicSummary" }
         branches: { type: array, items: { $ref: "#/components/schemas/PublicBranchSummary" } }
         branch: { anyOf: [{ $ref: "#/components/schemas/PublicBranchSummary" }, { type: "null" }] }
