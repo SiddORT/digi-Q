@@ -7,7 +7,7 @@ export { smtpConfig } from "./integration-config";
 /** Transport can be injected by tests; never expose codes or tokens in response/logs. */
 export async function sendAuthEmail(to: string, subject: string, text: string,
   transport?: { sendMail: (options: { from: string; to: string; subject: string; text: string }) => Promise<unknown> },
-  rendered?: { text: string; html: string }) {
+  rendered?: { text: string; html: string; logoPath?: string }) {
   const cfg = smtpConfig((await resolvedIntegration("smtp")).env);
   const client = transport || nodemailer.createTransport({
     host: cfg.host, port: cfg.port, secure: cfg.secure,
@@ -16,8 +16,14 @@ export async function sendAuthEmail(to: string, subject: string, text: string,
     disableFileAccess: true, disableUrlAccess: true,
   });
   try {
+    const attachments = [];
+    if (rendered?.logoPath) {
+      const { loadLogoBytes } = await import("./logo-bytes");
+      attachments.push({ filename: "clinic-logo.png", content: await loadLogoBytes(rendered.logoPath), contentType: "image/png", cid: "clinic-logo" });
+    }
     const result = await client.sendMail({
       from: cfg.from, to, subject, ...(rendered || systemEmailTemplate(subject, text)),
+      attachments,
       disableFileAccess: true, disableUrlAccess: true,
     });
     // Legacy injected transports return undefined. SMTP results must not silently

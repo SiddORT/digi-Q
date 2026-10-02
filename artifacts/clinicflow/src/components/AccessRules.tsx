@@ -1,30 +1,107 @@
+import { SearchableSelect } from "./SearchableSelect";
 import { Link } from "wouter";
-import { useState } from "react";
-import { SearchInput } from "./ListingControls";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useSavePermissionPolicy } from "@workspace/api-client-react";
+import { AppDialog } from "./AppDialog";
+import { LoadingButton } from "./LoadingButton";
+import { SUPER_ADMIN, permKey, isAllowed, toggle, sameSet, serialize, label } from "./permission-matrix";
 
-// A readable description of existing fixed role boundaries, NOT a grant editor.
-const rules = [
-  ["Platform configuration", "Super Admin", "Read and update platform preferences, provider configuration and platform templates", "Server-private bootstrap keys are never editable here."],
-  ["Clinic configuration", "Super Admin / owning Clinic Admin", "Read and update clinic details, timezone, opening hours and display preferences", "Doctors and receptionists cannot change clinic configuration."],
-  ["Clinic Admin accounts", "Super Admin", "Create with first clinic; manage account status and explicit ownership transfers", "Do not deactivate an owning admin until ownership is resolved."],
-  ["Doctors", "Super Admin / managing Clinic Admin", "Create, update, assign and deactivate in authorized ownership scope", "A consulting Clinic Admin retains its own identity and cannot be transferred as an ordinary doctor."],
-  ["Reception staff", "Super Admin / Clinic Admin / authorized Doctor", "Existing scoped staff-management permissions apply", "Doctors may manage receptionists only within the existing managing-admin and assignment rules."],
-  ["Patients and appointments", "Scoped staff / patient", "Staff actions depend on clinic, clinical membership, status and appointment policy; patients access their own records", "A role alone never grants access to another clinic or patient."],
-  ["Queue and consultation", "Scoped staff", "Desk and clinical operations remain governed by session membership and transition permissions", "Owning administration is distinct from doctor consultation capability."],
-  ["Email templates", "Super Admin / owning Clinic Admin", "Read, save draft, publish and reset platform or own-clinic templates", "Publishing content is not an instruction to send email or enable automatic events."],
-  ["Audit and integrations", "Super Admin", "View audit records and manage integrations through dedicated modules", "Audit records are not editable; credentials are not returned to the browser."],
-  ["Deactivation and deletion", "Authorized managing role", "Deactivate supported entities while preserving historical records", "No general permanent-delete power; self-lockout and last-active-admin protections remain."],
-];
+const status = (e: any) => e?.status ?? e?.response?.status;
 
+/** Super Admin only (gated by caller). Edits baseline action restrictions; never custom grants. */
 export function AccessRules() {
-  const [search, setSearch] = useState("");
-  const rows = rules.filter(row => row.join(" ").toLowerCase().includes(search.toLowerCase()));
-  return <section className="panel padded">
+  const queryClient = useQueryClient();
+  const queryKey = getGetPermissionPolicyQueryKey();
+  const policy = useGetPermissionPolicy({ query: { queryKey } });
+  const save = useSavePermissionPolicy();
+  const [denied, setDenied] = useState<Set<string>>(new Set());
+  const [role, setRole] = useState("");
+  const [module, setModule] = useState("all");
+  const [confirm, setConfirm] = useState(false);
+  const [conflict, setConflict] = useState(false);
+  const [notice, setNotice] = useState("");
+  const base = useRef<{ revision: number; denied: Set<string> } | null>(null);
+  const data = policy.data;
+
+  useEffect(() => {
+    if (!data) return;
+    if (base.current && base.current.revision !== data.revision && !sameSet(denied, base.current.denied)) { setConflict(true); return; }
+    if (!base.current || base.current.revision !== data.revision) {
+      const d = new Set(data.denied);
+      base.current = { revision: data.revision, denied: d };
+      setDenied(new Set(d));
+    }
+  }, [data, denied]);
+
+  const roles = useMemo(() => (data?.roles ?? []).filter(r => r !== SUPER_ADMIN), [data]);
+  useEffect(() => { if (!role && roles.length) setRole(roles[0]); }, [role, roles]);
+  const modules = data?.modules ?? [];
+  const actions = data?.actions ?? [];
+  const shown = module === "all" ? modules : modules.filter(m => m === module);
+  const dirty = !!base.current && !sameSet(denied, base.current.denied);
+  const changes = useMemo(() => {
+    if (!base.current) return 0;
+    let n = 0; const b = base.current.denied;
+    for (const k of denied) if (!b.has(k)) n++;
+    for (const k of b) if (!denied.has(k)) n++;
+    return n;
+  }, [denied]);
+
+  const set = (key: string, allow: boolean) => { setNotice(""); setDenied(d => toggle(d, key, allow)); };
+  const setRow = (m: string, allow: boolean) => { setNotice(""); setDenied(d => actions.reduce((acc, a) => toggle(acc, permKey(role, m, a), allow), d)); };
+  const resetLocal = () => { if (base.current) setDenied(new Set(base.current.denied)); setNotice(""); save.reset(); };
+  const reload = () => { base.current = null; setConflict(false); save.reset(); void policy.refetch(); };
+
+  function run() {
+    if (!base.current) return;
+    save.mutate({ data: { revision: base.current.revision, denied: serialize(denied) } }, {
+      onSuccess: next => {
+        base.current = { revision: next.revision, denied: new Set(next.denied) };
+        setDenied(new Set(next.denied));
+        queryClient.setQueryData(queryKey, next);
+        setConfirm(false); setConflict(false); setNotice("Permission policy saved.");
+      },
+      onError: e => { setConfirm(false); if (status(e) === 409) setConflict(true); },
+    });
+  }
+
+  return <section className="panel padded" data-testid="access-rules">
     <h2>Roles &amp; access rules</h2>
-    <p>Current fixed role-policy summary. Record ownership, clinic assignments and workflow state are checked by the API on each operation.</p>
-    <p className="notice">This is not a configurable permission editor or a complete per-action effective-permission matrix. Custom grants are not enabled.</p>
-    <div className="filter-bar-row"><SearchInput value={search} onChange={setSearch} placeholder="Search access rules…"/><div className="filter-bar-tools"><Link className="button secondary" href="/admin/users">Manage users &amp; assignments</Link></div></div>
-    <div className="table-scroll"><table><thead><tr><th>Module</th><th>Roles</th><th>Supported operations</th><th>Safeguards</th></tr></thead><tbody>{rows.map(([module, roles, actions, safeguards]) => <tr key={module}><td data-label="Module">{module}</td><td data-label="Roles">{roles}</td><td data-label="Supported operations">{actions}</td><td data-label="Safeguards">{safeguards}</td></tr>)}</tbody></table></div>
-    {!rows.length && <p>No matching rules. <button type="button" onClick={() => setSearch("")}>Clear search</button></p>}
+    <p>Restrict which baseline actions each role may perform. A checked box means the action stays allowed; clearing it denies it.</p>
+    <div role="note" className="notice" data-testid="text-permission-limits">
+      <strong>Restrictions only.</strong> Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out.
+    </div>
+    {policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
+      : policy.isError || !data ? <div role="alert" className="error-box" data-testid="state-error">The permission policy could not be loaded. <button type="button" onClick={() => policy.refetch()} data-testid="button-retry">Retry</button></div>
+      : <>
+        <div className="filter-bar-row">
+          <div className="access-filter">Role <SearchableSelect label="Role" testId="select-role" value={role} onChange={v => { if (v) setRole(v); }} options={roles.map(r => ({ value: r, label: label(r) }))}/></div>
+          <div className="access-filter">Module <SearchableSelect label="Module" testId="select-module" value={module} onChange={v => setModule(v || "all")} options={[{ value: "all", label: "All modules" }, ...modules.map(m => ({ value: m, label: label(m) }))]}/></div>
+          <div className="filter-bar-tools"><span data-testid="text-revision">Revision {data.revision}</span><Link className="button secondary" href="/admin/users">Manage users &amp; assignments</Link></div>
+        </div>
+        {!roles.length ? <p data-testid="state-empty">No restrictable roles are defined.</p> :
+        <div className="table-scroll"><table className="perm-matrix" data-testid="table-permissions"><thead><tr><th>Module</th>{actions.map(a => <th key={a} style={{ textAlign: "center" }}>{label(a)}</th>)}<th>Row</th></tr></thead>
+          <tbody>{shown.map(m => <tr key={m}><td data-label="Module">{label(m)}</td>
+            {actions.map(a => { const k = permKey(role, m, a); const changed = base.current && base.current.denied.has(k) !== denied.has(k);
+              return <td key={a} data-label={label(a)} style={{ textAlign: "center", background: changed ? "hsl(45 90% 90%)" : undefined }}>
+                <input type="checkbox" aria-label={`${label(role)} ${label(m)} ${label(a)}`} checked={isAllowed(denied, role, m, a)} disabled={save.isPending || conflict} onChange={e => set(k, e.target.checked)} data-testid={`checkbox-${k}`} /></td>; })}
+            <td data-label="Row"><button type="button" className="secondary" disabled={conflict} onClick={() => setRow(m, true)} data-testid={`button-allow-row-${m}`}>All</button> <button type="button" className="secondary" disabled={conflict} onClick={() => setRow(m, false)} data-testid={`button-deny-row-${m}`}>None</button></td>
+          </tr>)}</tbody></table></div>}
+        {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Another Super Admin changed this policy. Your unsaved edits are kept on screen. <button type="button" onClick={reload} data-testid="button-reload">Discard my edits and reload</button></div>}
+        {save.isError && !conflict && <p role="alert" className="error-box">The policy was not saved. Try again.</p>}
+        {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
+        <div className="et-actions">
+          <LoadingButton type="button" loading={save.isPending} disabled={!dirty || conflict || save.isPending} onClick={() => setConfirm(true)} data-testid="button-save-permissions">Save policy{changes ? ` (${changes})` : ""}</LoadingButton>
+          <button type="button" className="secondary" disabled={!dirty || save.isPending} onClick={resetLocal} data-testid="button-reset-local">Reset changes</button>
+        </div>
+      </>}
+    <AppDialog open={confirm} onClose={() => !save.isPending && setConfirm(false)} title="Save permission policy?" busy={save.isPending}>
+      <div className="et-dialog"><p>{changes} change{changes === 1 ? "" : "s"} take effect immediately for every user in the affected roles. Built-in ownership and workflow rules still apply; Super Admin is unaffected.</p>
+        <div className="et-actions">
+          <LoadingButton type="button" loading={save.isPending} onClick={run} data-testid="button-confirm-save">Save policy</LoadingButton>
+          <button type="button" className="secondary" disabled={save.isPending} onClick={() => setConfirm(false)} data-testid="button-confirm-cancel">Go back</button>
+        </div></div>
+    </AppDialog>
   </section>;
 }

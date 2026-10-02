@@ -23,6 +23,33 @@ servers:
 security:
   - NativeSession: []
 paths:
+  /management/permissions:
+    get:
+      operationId: getPermissionPolicy
+      responses:
+        "200": { description: Role capability restrictions, content: { application/json: { schema: { $ref: "#/components/schemas/PermissionPolicy" } } } }
+    put:
+      operationId: savePermissionPolicy
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PermissionPolicyInput" } } }
+      responses:
+        "200": { description: Saved policy, content: { application/json: { schema: { $ref: "#/components/schemas/PermissionPolicy" } } } }
+  /management/logos:
+    post:
+      operationId: requestLogoUpload
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/LogoUploadInput" } } }
+      responses:
+        "200": { description: Upload reservation, content: { application/json: { schema: { type: object, required: [id, uploadUrl], properties: { id: { type: string }, uploadUrl: { type: string } } } } } }
+  /management/logos/{id}/complete:
+    post:
+      operationId: completeLogoUpload
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Validated logo, content: { application/json: { schema: { type: object, required: [logoUrl], properties: { logoUrl: { type: string } } } } } }
   /management/templates:
     get:
       operationId: getNotificationTemplates
@@ -977,6 +1004,29 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    PermissionPolicyInput:
+      type: object
+      required: [revision, denied]
+      properties:
+        revision: { type: integer }
+        denied: { type: array, items: { type: string } }
+    PermissionPolicy:
+      allOf:
+        - { $ref: "#/components/schemas/PermissionPolicyInput" }
+        - type: object
+          required: [modules, actions, roles]
+          properties:
+            modules: { type: array, items: { type: string } }
+            actions: { type: array, items: { type: string } }
+            roles: { type: array, items: { type: string } }
+    LogoUploadInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string }
+        size: { type: integer }
+        contentType: { type: string }
+        clinicId: { type: string }
     NotificationTemplateContent:
       type: object
       required: [subject, body, prefix, footer, logoUrl]

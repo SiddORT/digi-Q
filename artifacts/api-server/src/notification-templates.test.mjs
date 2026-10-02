@@ -5,6 +5,7 @@ import { rm } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createQueueHarness } from "./test-support/postgres-queue.mjs";
 import { queueFixtureSql } from "./test-support/queue-fixtures.mjs";
+import { drizzle } from "drizzle-orm/node-postgres";
 
 const bundle = resolve(import.meta.dirname, `.notification-templates-${process.pid}.mjs`);
 let h, api;
@@ -15,7 +16,7 @@ before(async () => {
   await h.control.query("insert into clinics(id,admin_id,data) values('c','ca','{\"name\":\"Actual Clinic\",\"email\":\"clinic@example.invalid\"}'),('foreign','other','{}')");
   globalThis.notificationTestDb = h.db;
   await build({
-    stdin: { contents: `export * from "./lib/notification-templates"; export * from "./lib/notification-template-store";`, resolveDir: import.meta.dirname },
+    stdin: { contents: `export * from "./lib/notification-templates"; export * from "./lib/notification-template-store"; export * from "./lib/notification-outbox"; export * from "./lib/permission-policy";`, resolveDir: import.meta.dirname },
     outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
     plugins: [{ name: "isolated", setup(b) {
       b.onResolve({ filter: /^@workspace\/db$/ }, () => ({ path: "db", namespace: "fixture" }));
@@ -65,4 +66,53 @@ test("HTML escapes data and template text; substituted values are not recursivel
   assert.ok(!rendered.html.includes("<script>"));
   assert.ok(!rendered.html.includes("<img onerror="));
   assert.match(rendered.html, /&lt;script&gt;/);
+});
+test("configured restrictions deny targeted requests and never restrict Super Admin", async () => {
+  await h.control.query("insert into settings(id,data) values('permission-policy',$1)", [JSON.stringify({ revision: 1, denied: ["doctor:appointments:cancel", "doctor:patients:read"] })]);
+  await assert.rejects(api.enforcePermissionPolicy({ role: "doctor" }, { method: "POST", path: "/appointments/a/actions", body: { action: "cancel" } }), { status: 403 });
+  await assert.rejects(api.enforcePermissionPolicy({ role: "doctor" }, { method: "GET", path: "/patients" }), { status: 403 });
+  await api.enforcePermissionPolicy(sa, { method: "GET", path: "/patients" });
+  await api.enforcePermissionPolicy({ role: "doctor" }, { method: "GET", path: "/appointments" });
+});
+test("reminder timing follows session timezone and rejects terminal or checked-in visits", () => {
+  const row = { date: "2030-06-14", startTime: "10:00", timezone: "Asia/Kolkata", status: "waiting" };
+  const now = Date.parse("2030-06-14T03:30:00Z");
+  assert.equal(api.reminderDue(row, now), true);
+  assert.equal(api.reminderDue(row, now + 3 * 60000), false);
+  assert.equal(api.reminderDue({ ...row, status: "cancelled" }, now), false);
+  assert.equal(api.reminderDue({ ...row, checkedInAt: "yes" }, now), false);
+});
+test("outbox is durable, idempotent, renders variables and never re-sends accepted or unknown deliveries", async () => {
+  await h.control.query("insert into users(id,role,email,full_name) values('ca','clinicAdmin','owner@example.invalid','Owner')");
+  await h.control.query("insert into settings(id,data) values('platform','{\"notificationsEnabled\":true}')");
+  await api.enqueueEvent(h.db, "onboarding", { id: "c", clinicId: "c" });
+  await api.enqueueEvent(h.db, "onboarding", { id: "c", clinicId: "c" });
+  let sent = 0;
+  const fake = async (to, subject, text) => { sent++; assert.equal(to, "owner@example.invalid"); assert.match(text, /Actual Clinic/); };
+  await api.processNotifications(h.db, fake);
+  await api.processNotifications(h.db, fake);
+  assert.equal(sent, 1);
+  await api.enqueueEvent(h.db, "onboarding", { id: "c", clinicId: "c", revision: 1 });
+  const fail = async () => { sent++; throw Error("unknown SMTP outcome"); };
+  await api.processNotifications(h.db, fail);
+  await api.processNotifications(h.db, fail);
+  assert.equal(sent, 2);
+  const result = await h.control.query("select data->>'state' as state from settings where id like 'mail-outbox:%' order by id");
+  assert.deepEqual(result.rows.map(r => r.state).sort(), ["delivery_unknown", "provider_accepted"]);
+});
+test("concurrent workers claim a durable event once; known pre-dispatch failures back off", async () => {
+  await api.enqueueEvent(h.db, "onboarding", { id: "c", clinicId: "c", revision: 2 });
+  let calls = 0;
+  const fake = async () => { calls++; await new Promise(resolve => setTimeout(resolve, 20)); };
+  const first = await h.connect(), second = await h.connect();
+  const firstPid = await first.query("select pg_backend_pid() as pid"), secondPid = await second.query("select pg_backend_pid() as pid");
+  assert.notEqual(firstPid.rows[0].pid, secondPid.rows[0].pid);
+  await Promise.all([api.processNotifications(drizzle(first), fake), api.processNotifications(drizzle(second), fake)]);
+  assert.equal(calls, 1);
+  await api.enqueueEvent(h.db, "onboarding", { id: "c", clinicId: "c", revision: 3 });
+  const before = Date.now();
+  await api.processNotifications(h.db, async () => { const error = new Error("Not configured"); error.code = "EMAIL_UNCONFIGURED"; throw error; });
+  const result = await h.control.query("select data from settings where id='mail-outbox:onboarding:c:3'");
+  assert.equal(result.rows[0].data.state, "pending");
+  assert.ok(result.rows[0].data.dueAt > before + 59000);
 });

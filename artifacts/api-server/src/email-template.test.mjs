@@ -16,6 +16,8 @@ const bundle = await build({
   plugins: [{
     name: "isolated-email",
     setup(builder) {
+      builder.onResolve({ filter: /logo-bytes$/ }, () => ({ path: "logo", namespace: "logo-fixture" }));
+      builder.onLoad({ filter: /.*/, namespace: "logo-fixture" }, () => ({ contents: 'export const loadLogoBytes=async()=>{throw Error("No real storage access in email tests")};' }));
       builder.onResolve({ filter: /integration-vault$/ }, () => ({ path: "vault", namespace: "vault-fixture" }));
       builder.onLoad({ filter: /.*/, namespace: "vault-fixture" }, () => ({ contents: "export const resolvedIntegration=async()=>({env:{}});" }));
       builder.onResolve({ filter: /integration-config$/ }, () => ({ path: "config", namespace: "fixture" }));

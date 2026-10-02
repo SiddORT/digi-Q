@@ -20,6 +20,24 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export interface PermissionPolicyInput {
+  revision: number;
+  denied: string[];
+}
+
+export type PermissionPolicy = PermissionPolicyInput & {
+  modules: string[];
+  actions: string[];
+  roles: string[];
+};
+
+export interface LogoUploadInput {
+  name: string;
+  size: number;
+  contentType: string;
+  clinicId?: string;
+}
+
 export interface NotificationTemplateContent {
   /**
      * @minLength 1
@@ -2027,6 +2045,15 @@ export type DateParameter = string;
 export type FromParameter = string;
 
 export type ToParameter = string;
+
+export type RequestLogoUpload200 = {
+  id: string;
+  uploadUrl: string;
+};
+
+export type CompleteLogoUpload200 = {
+  logoUrl: string;
+};
 
 export type GetNotificationTemplatesParams = {
 clinicId?: string;

@@ -1,3 +1,4 @@
+import { EmailInput } from "@/components/EmailInput";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { BRAND_NAME } from "../branding";
@@ -56,7 +57,7 @@ export function StaffLogin() {
       {confirmation && <div className="notice" data-testid="status-password-confirmation">{confirmation}</div>}
         <form onSubmit={submit} noValidate>
           <FormField label="Email address" required error={fieldErrors.email}>
-            <input data-testid="input-staff-email" name="email" type="email" autoComplete="username" disabled={busy} value={email} onChange={event => { setEmail(event.target.value); if (fieldErrors.email) setFieldErrors(p => ({ ...p, email: undefined })); }} />
+            <EmailInput trimOnBlur={false} data-testid="input-staff-email" name="email" autoComplete="username" disabled={busy} value={email} onChange={event => { setEmail(event.target.value); if (fieldErrors.email) setFieldErrors(p => ({ ...p, email: undefined })); }} />
           </FormField>
           <FormField label="Password" required error={fieldErrors.password}>
             <PasswordInput data-testid="input-staff-password" name="password" autoComplete="current-password" disabled={busy} value={password} onChange={event => { setPassword(event.target.value); if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: undefined })); }} />

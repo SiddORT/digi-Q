@@ -23,6 +23,53 @@
 import * as zod from 'zod';
 
 
+export const GetPermissionPolicyResponse = zod.object({
+  "revision": zod.number().int(),
+  "denied": zod.array(zod.string())
+}).and(zod.object({
+  "modules": zod.array(zod.string()),
+  "actions": zod.array(zod.string()),
+  "roles": zod.array(zod.string())
+}))
+
+
+export const SavePermissionPolicyBody = zod.object({
+  "revision": zod.number().int(),
+  "denied": zod.array(zod.string())
+})
+
+export const SavePermissionPolicyResponse = zod.object({
+  "revision": zod.number().int(),
+  "denied": zod.array(zod.string())
+}).and(zod.object({
+  "modules": zod.array(zod.string()),
+  "actions": zod.array(zod.string()),
+  "roles": zod.array(zod.string())
+}))
+
+
+export const RequestLogoUploadBody = zod.object({
+  "name": zod.string(),
+  "size": zod.number().int(),
+  "contentType": zod.string(),
+  "clinicId": zod.string().optional()
+})
+
+export const RequestLogoUploadResponse = zod.object({
+  "id": zod.string(),
+  "uploadUrl": zod.string()
+})
+
+
+export const CompleteLogoUploadParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const CompleteLogoUploadResponse = zod.object({
+  "logoUrl": zod.string()
+})
+
+
 export const GetNotificationTemplatesQueryParams = zod.object({
   "clinicId": zod.coerce.string().optional()
 })

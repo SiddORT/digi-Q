@@ -1,3 +1,4 @@
+import { EmailInput } from "@/components/EmailInput";
 import { useEffect, useRef, useState } from "react";
 import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
@@ -217,7 +218,7 @@ function UserEditor({ tab, initial, onClose, isSuperAdmin, onDirtyChange, onBusy
   };
   return <Form {...form}>{confirmAction.dialog}<form className="form-grid" noValidate onSubmit={form.handleSubmit(onSubmit)}>
     <FormField label="Full name" required error={form.formState.errors.fullName?.message as string}><input {...form.register("fullName", { validate: (v:unknown) => required()(v)||validatePersonName(v)||true })}/></FormField>
-    <FormField label="Email" required error={form.formState.errors.email?.message as string}><input type="email" {...form.register("email", { validate: (v:unknown) => required()(v)||validateEmail(v)||true })}/></FormField>
+    <FormField label="Email" required error={form.formState.errors.email?.message as string}><EmailInput data-testid="input-user-email" {...form.register("email", { validate: (v:unknown) => required()(v)||validateEmail(v)||true })}/></FormField>
     <Controller name="mobile" control={form.control} rules={{validate:(v:unknown)=>validatePhone(v)||true}} render={({field})=><FormField label="Mobile" optional error={form.formState.errors.mobile?.message as string}><PhoneInput {...field} value={field.value||""}/></FormField>}/>
     {tab === "doctors" && <><label>Registration number<input {...form.register("registrationNumber")} /></label><label>Experience years<input type="number" min="0" {...form.register("experienceYears", { valueAsNumber: true })} /></label></>}
     {tab === "admins" && !initial.id && <p className="wide notice">Admin accounts have no clinic access until clinic ownership is assigned. Use Clinic Admin setup to create an admin and their first clinic together.</p>}

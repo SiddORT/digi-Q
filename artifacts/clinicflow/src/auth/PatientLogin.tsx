@@ -1,3 +1,4 @@
+import { EmailInput } from "@/components/EmailInput";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { QrCode, CalendarDays } from "lucide-react";
@@ -59,7 +60,7 @@ export function PatientLogin() {
       </div>
       <div className="patient-login-separator">Or sign in to your patient account</div>
       {step === "email" ? <form onSubmit={sendCode}>
-        <label>Email address<input data-testid="input-patient-email" type="email" autoComplete="email" required value={email} onChange={event => setEmail(event.target.value)} /></label>
+        <label>Email address<EmailInput trimOnBlur={false} data-testid="input-patient-email" required value={email} onChange={event => setEmail(event.target.value)} /></label>
         {error && <div className="error-box" role="alert" data-testid="status-patient-login-error">{error}</div>}
         <button className="button auth-submit" data-testid="button-send-patient-code" type="submit" disabled={busy}>{busy ? "Sending…" : "Send login code"}</button>
       </form> : <form onSubmit={verifyCode}>

@@ -20,6 +20,8 @@ export interface SearchableSelectProps extends Pick<React.AriaAttributes, "aria-
   /** Shown as a Retry action in the error state; the selected value is kept. */
   onRetry?: () => void;
   id?: string;
+  /** Test id applied to the trigger button. */
+  testId?: string;
 }
 
 export function SearchableSelect({
@@ -37,6 +39,7 @@ export function SearchableSelect({
   required = false,
   onRetry,
   id,
+  testId,
   "aria-describedby": describedBy,
   "aria-invalid": invalid,
   "aria-required": ariaRequired,
@@ -122,6 +125,7 @@ export function SearchableSelect({
         >
           <PopoverTrigger asChild>
             <button
+              data-testid={testId}
               type="button"
               id={controlId}
               aria-haspopup="dialog"

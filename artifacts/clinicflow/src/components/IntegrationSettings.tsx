@@ -1,3 +1,4 @@
+import { EmailInput } from "@/components/EmailInput";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { IntegrationEditor } from "./IntegrationEditor";
@@ -34,7 +35,7 @@ export function IntegrationSettings() {
       <form onSubmit={form.handleSubmit(data => send.mutate({ data }))}>
         <FormField control={form.control} name="recipient" rules={{ required: "Enter a recipient", maxLength: { value: 254, message: "Address is too long" } }} render={({ field }) => <FormItem>
           <FormLabel>Test recipient</FormLabel>
-          <FormControl><input {...field} type="email" autoComplete="off" required maxLength={254} data-testid="input-smtp-test-recipient" onChange={event => { field.onChange(event); send.reset(); }} /></FormControl>
+          <FormControl><EmailInput {...field} autoComplete="off" required data-testid="input-smtp-test-recipient" onChange={event => { field.onChange(event); send.reset(); }} /></FormControl>
           <FormMessage />
         </FormItem>} />
         <button type="submit" data-testid="button-send-smtp-test" disabled={!query.data?.smtp.ready || query.isError || send.isPending}>{send.isPending ? "Sending…" : "Send test email"}</button>

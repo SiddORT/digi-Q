@@ -35,7 +35,7 @@ export async function templateCatalog(user: any, clinicId?: string) {
     const preview = renderNotification(local.draft || content, values);
     items.push({ event, title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
-      delivery: event === "booking" ? "Used for eligible booking confirmations; existing notification and delivery settings still apply." : "Template ready to manage. Automatic event delivery is not enabled by this editor." });
+      delivery: event === "booking" ? "Used for eligible booking confirmations; notification and delivery settings apply." : event === "reminder" ? "Production worker sends one hour before the session start when clinic notifications are enabled. Not an exact consultation-time promise." : "Queued automatically for this event when clinic notifications are enabled. Production worker delivers; development never sends automatically." });
   }
   return { scopeName: clinic?.name || "Platform defaults", variables: [...templateVariables], items };
 }

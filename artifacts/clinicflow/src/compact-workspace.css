@@ -105,3 +105,7 @@
  .workspace .search input{min-height:42px}
 }
 @media(prefers-reduced-motion:reduce){.workspace .status-switch-track,.workspace .status-switch-track::after{transition:none}}
+/* Day open/closed uses the same switch primitive as status edits; meaning and labels stay "Working"/"Off". */
+.day-open-switch{display:inline-flex;align-items:center;gap:var(--space-2);cursor:pointer}
+.day-open-switch input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.day-open-switch:has(input:disabled){opacity:.55;cursor:not-allowed}

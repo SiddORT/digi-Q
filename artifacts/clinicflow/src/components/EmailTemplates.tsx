@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
-import { useGetNotificationTemplates, getGetNotificationTemplatesQueryKey, useSaveNotificationTemplate } from "@workspace/api-client-react";
+import { useGetNotificationTemplates, getGetNotificationTemplatesQueryKey, useSaveNotificationTemplate, useRequestLogoUpload, useCompleteLogoUpload } from "@workspace/api-client-react";
+import { logoFileError, putToSignedUrl, LOGO_TYPES } from "./logo-upload";
 import { AppDialog } from "./AppDialog";
 import { FormField } from "./FormField";
 import { SearchableSelect } from "./SearchableSelect";
@@ -17,11 +18,11 @@ const FIELDS: [keyof Content, string, number, string][] = [
   ["prefix", "Subject prefix", 60, "Optional short label placed before the subject."],
   ["body", "Body", 8000, "Required. Plain text; variables are filled in at send time."],
   ["footer", "Footer", 500, "Optional closing text shown below the body."],
-  ["logoUrl", "Logo URL (HTTPS)", 1000, "Paste an HTTPS image address. Logos are referenced by URL, not uploaded."],
+  ["logoUrl", "Logo", 1000, "Upload a PNG, JPEG or WebP (max 2 MB, max 2048×2048 px) or paste an https:// image address. Nothing is published until you save."],
 ];
 const MODE_COPY: Record<Mode, { title: string; text: string; action: string }> = {
   draft: { title: "Save draft?", text: "The draft is stored for later review. Live emails keep using the published version.", action: "Save draft" },
-  publish: { title: "Publish template?", text: "The published version replaces the current one for this scope. Only booking emails are sent automatically today.", action: "Publish" },
+  publish: { title: "Publish template?", text: "The published version replaces the current one for this scope. Delivery follows clinic notification settings. Publishing does not send a message.", action: "Publish" },
   reset: { title: "Reset to default?", text: "This removes the customised template and any draft for this scope and returns to the inherited default.", action: "Reset" },
 };
 
@@ -29,6 +30,12 @@ const MODE_COPY: Record<Mode, { title: string; text: string; action: string }> =
 export function previewText(text: string, scopeName: string) {
   return text.replace(/\{\{\s*([a-z0-9_]+)\s*\}\}/gi, (_m, name: string) => name === "clinic_name" ? scopeName : `[${name.replace(/_/g, " ")}]`);
 }
+/** Same-origin logo stored by ClinicFlow: /api/branding/logos/<uuid>. Embedded as an attachment when sent. */
+export const INTERNAL_LOGO = /^\/api\/branding\/logos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isInternalLogo(value: string) { return INTERNAL_LOGO.test(value); }
+export function isValidLogo(value: string) { return isInternalLogo(value) || isHttpsUrl(value); }
+/** Preview-only resolution; the stored value stays the relative internal path. */
+export function logoPreviewSrc(value: string) { return value; } // API is served at the site root, so the relative path previews as-is.
 export function isHttpsUrl(value: string) {
   if (!value) return true;
   try { return new URL(value).protocol === "https:"; } catch { return false; }
@@ -51,6 +58,14 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
   const [conflict, setConflict] = useState(false);
   const [notice, setNotice] = useState("");
   const [showLogo, setShowLogo] = useState(false);
+  const [upload, setUpload] = useState<{ state: "idle" | "requesting" | "uploading" | "verifying" | "done" | "error"; pct: number; msg: string }>({ state: "idle", pct: 0, msg: "" });
+  const uploadAbort = useRef<AbortController | null>(null);
+  useEffect(() => {
+    setUpload({ state: "idle", pct: 0, msg: "" });
+    return () => { uploadAbort.current?.abort(); };
+  }, [clinicId, event]);
+  const requestLogo = useRequestLogoUpload();
+  const completeLogo = useCompleteLogoUpload();
   const loadedFor = useRef("");
   const editBase = useRef<{ scope: string; revision: number; content: Content } | null>(null);
   const queryClient = useQueryClient();
@@ -83,12 +98,12 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
   const errors = form ? {
     subject: !form.subject.trim() ? "Subject is required." : undefined,
     body: !form.body.trim() ? "Body is required." : undefined,
-    logoUrl: !isHttpsUrl(form.logoUrl) ? "Use an https:// address." : undefined,
+    logoUrl: !isValidLogo(form.logoUrl) ? "Upload an image or use an https:// address." : undefined,
   } : {};
   const invalid = Object.values(errors).some(Boolean) || unknown.length > 0;
 
   const guard = (go: () => void) => { if (dirty) setPendingNav(() => go); else go(); };
-  const resetLocal = () => { loadedFor.current = ""; editBase.current = null; save.reset(); setConflict(false); setNotice(""); setForm(null); };
+  const resetLocal = () => { uploadAbort.current?.abort(); setUpload({ state: "idle", pct: 0, msg: "" }); loadedFor.current = ""; editBase.current = null; save.reset(); setConflict(false); setNotice(""); setForm(null); };
 
   function run(mode: Mode) {
     if (!item || !form) return;
@@ -109,6 +124,32 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
     });
   }
 
+  const uploading = upload.state === "requesting" || upload.state === "uploading" || upload.state === "verifying";
+  async function onLogoFile(file: File | undefined) {
+    if (!file) return;
+    const bad = logoFileError(file);
+    if (bad) { setUpload({ state: "error", pct: 0, msg: bad }); return; }
+    uploadAbort.current?.abort();
+    const ctrl = new AbortController(); uploadAbort.current = ctrl;
+    try {
+      setUpload({ state: "requesting", pct: 0, msg: "Preparing upload…" });
+      const { id, uploadUrl } = await requestLogo.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type, clinicId: clinicId || undefined } });
+      if (ctrl.signal.aborted) return;
+      setUpload({ state: "uploading", pct: 0, msg: "Uploading…" });
+      await putToSignedUrl(uploadUrl, file, pct => setUpload({ state: "uploading", pct, msg: "Uploading…" }), ctrl.signal);
+      if (ctrl.signal.aborted) return;
+      setUpload({ state: "verifying", pct: 100, msg: "Checking image…" });
+      const { logoUrl } = await completeLogo.mutateAsync({ id });
+      if (ctrl.signal.aborted) return;
+      set("logoUrl", logoUrl); setShowLogo(true);
+      setUpload({ state: "done", pct: 100, msg: "Logo uploaded. Save a draft or publish to use it." });
+    } catch (e: any) {
+      if (ctrl.signal.aborted) return;
+      const code = status(e);
+      setUpload({ state: "error", pct: 0, msg: code === 400 || code === 413 || code === 422 ? "The server rejected this image. Use PNG, JPEG or WebP up to 2 MB and 2048×2048 px." : e?.message && !code ? e.message : "The logo could not be uploaded. Try again." });
+    }
+  }
+
   const set = (k: keyof Content, v: string) => { setNotice(""); setForm(f => f ? { ...f, [k]: v } : f); };
   const preview = form ? { subject: previewText(`${form.prefix ? form.prefix + " " : ""}${form.subject}`, scopeName), body: previewText(form.body, scopeName), footer: previewText(form.footer, scopeName) } : null;
 
@@ -116,7 +157,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
     <header className="et-head">
       <div><h2>Email templates</h2><p>Edit the wording patients receive. Saving here never sends an email.</p></div>
     </header>
-    <p role="note" className="et-limit" data-testid="text-delivery-limit">Only booking confirmations are sent automatically right now. Other events can be prepared here and will be used once their automation is ready.</p>
+    <p role="note" className="et-limit" data-testid="text-delivery-limit">Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically.</p>
 
     <div className="et-scope">
       {superAdmin ? <FormField label="Scope" optional helper="Leave empty to edit platform defaults.">
@@ -146,7 +187,19 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
           {FIELDS.map(([k, label, max, help]) => <FormField key={k} label={label} required={k === "subject" || k === "body"} optional={k !== "subject" && k !== "body"} helper={help} error={(errors as any)[k]}>
             {(a) => k === "body" || k === "footer"
               ? <textarea {...a} rows={k === "body" ? 10 : 3} maxLength={max} value={form[k]} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />
-              : <input {...a} type={k === "logoUrl" ? "url" : "text"} maxLength={max} value={form[k]} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} spellCheck={k !== "logoUrl"} />}
+              : k === "logoUrl" ? <div className="et-logo-field">
+                <input {...a} type="text" inputMode="url" maxLength={max} value={form[k]} onChange={e => { set(k, e.target.value); setShowLogo(false); }} placeholder="https://… or upload below" data-testid="input-logoUrl" spellCheck={false} disabled={uploading} />
+                <div className="et-actions">
+                  <label className="button secondary" data-testid="label-logo-file">{uploading ? "Uploading…" : "Choose image file"}
+                    <input type="file" hidden accept={LOGO_TYPES.join(",")} disabled={uploading} onChange={e => { void onLogoFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-logo-file" /></label>
+                  {uploading && <button type="button" className="secondary" onClick={() => uploadAbort.current?.abort()} data-testid="button-cancel-upload">Cancel upload</button>}
+                  {form.logoUrl && !uploading && <button type="button" className="secondary" onClick={() => { set(k, ""); setUpload({ state: "idle", pct: 0, msg: "" }); }} data-testid="button-remove-logo">Remove logo</button>}
+                </div>
+                <small>PNG, JPEG or WebP · max 2 MB · max 2048×2048 px (checked by the server)</small>
+                {upload.state === "uploading" && <progress max={100} value={upload.pct} aria-label="Upload progress" data-testid="progress-logo" />}
+                {upload.msg && <p role={upload.state === "error" ? "alert" : "status"} className={upload.state === "error" ? "error-box" : "et-notice"} data-testid="status-logo-upload">{upload.msg}</p>}
+              </div>
+              : <input {...a} type="text" maxLength={max} value={form[k]} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />}
           </FormField>)}
           <div className="et-vars" data-testid="list-variables">
             <span>Available variables</span>
@@ -168,8 +221,8 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
         <aside className="panel padded et-preview" aria-label="Live preview" data-testid="panel-preview">
           <h3>Preview</h3>
           <p className="et-hint">Sample placeholders only. No patient data is used.</p>
-          {form.logoUrl && isHttpsUrl(form.logoUrl) && (showLogo
-            ? <img src={form.logoUrl} alt="Logo preview" className="et-logo" referrerPolicy="no-referrer" data-testid="img-logo" />
+          {form.logoUrl && isValidLogo(form.logoUrl) && ((showLogo || isInternalLogo(form.logoUrl))
+            ? <img src={logoPreviewSrc(form.logoUrl)} alt="Logo preview" className="et-logo" referrerPolicy="no-referrer" data-testid="img-logo" />
             : <button type="button" className="secondary" onClick={() => setShowLogo(true)} data-testid="button-load-logo">Load logo preview (contacts the image host)</button>)}
           <div className="et-mail">
             <div className="et-subject" data-testid="text-preview-subject">{preview!.subject}</div>

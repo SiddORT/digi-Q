@@ -1,5 +1,63 @@
 # Approved management and uniform-controls scope
 
+## Latest implementation: remaining management features
+
+The four areas requested in the follow-on implementation are now coded:
+
+- **Automatic event emails and reminders:** durable PostgreSQL outbox for clinic
+  onboarding, reschedule, cancellation and completion; one-hour session reminders;
+  obsolete-reminder checks; cross-process dispatch claims; bounded retries for
+  preparation failures and known unconfigured SMTP. Uncertain delivery is never
+  automatically resent. Production worker respects clinic notification settings;
+  development does not run automated delivery.
+- **Configurable permissions:** Super Admin role/module/action restriction editor,
+  revision checks and audit. Changes are enforced by authenticated API requests.
+  Re-enabling a capability restores the existing role ceiling; it cannot bypass
+  ownership, assignment or workflow rules. Super Admin is not restrictable.
+- **Logo uploads:** provisioned App Storage; scoped upload reservations; direct
+  signed uploads; server byte/type/dimension verification and raster re-encoding;
+  separate immutable validated objects; safe public PNG serving; embedded CID
+  logo attachments in email. External HTTPS logo URLs remain supported.
+- **Shared controls:** email fields across management, onboarding, guest booking,
+  generic editors and authentication; auth preserves its existing input semantics.
+  Permission selectors use the shared searchable control. Weekly Working/Off uses
+  the shared switch track without changing its meaning.
+
+### Release boundaries
+
+- This does not certify live SMTP acceptance or inbox delivery. SMTP must work and
+  notifications must be enabled before production delivery is expected.
+- Uploaded logos use Replit App Storage and its sidecar. An independent non-Replit
+  deployment needs an equivalent storage adapter/configuration; a passing self-host
+  build is not proof that this storage provider is available there.
+- Permission configuration restricts existing roles; this is not an arbitrary
+  custom-role or field-level grants engine.
+- A verified account-email-change workflow, unified all-user directory and other
+  broader 40-item acceptance work are not implied by shared email input styling.
+- No production publish, production data migration or real messages were performed.
+
+### Verification
+
+- Workspace type checks and self-host build passed.
+- Serialized combined run: 381/383 passed; the two failures were test-bundle mocks.
+  Those were corrected, and the affected backend files passed focused reruns.
+- Dedicated PostgreSQL tests verify scoped templates, persistence, revisions,
+  event deduplication, distinct-connection competing workers, retry backoff and
+  reminder timezone eligibility. Raster tests reject SVG, corrupt files, oversize
+  inputs and invalid dimensions.
+- Browser testing uses intercepted fictional identities and writes, not live data
+  or a live cloud upload; its results must be described with that boundary.
+- The focused browser pass passed: permission save/conflict retention and Clinic
+  Admin exclusion; logo validation, upload/publish payloads and scope isolation;
+  shared email validation; 390px permissions/template layouts without overflow.
+- Final targeted notification, permission, upload and template checks passed.
+  Competing-worker verification used distinct PostgreSQL backend connections.
+
+## Historical baseline before the follow-on implementation
+
+The sections below record the preceding batch. Pending labels below are historical;
+the current status for these four areas is given above.
+
 This is an implementation tracker, not a release certificate. The full approved
 40-item scope is **not complete**. Existing functionality is not counted as new
 work merely because it remains present.

@@ -11,12 +11,12 @@ test("uses generated hooks and patches the same query on success", () => {
 test("no password required, no email sending, delivery limitation shown", () => {
   assert.ok(!/password/i.test(src));
   assert.ok(!/sendSmtpTestEmail/.test(src));
-  assert.ok(src.includes("Only booking confirmations are sent automatically"));
+  assert.ok(src.includes("Development never sends these queued emails automatically"));
 });
 test("conflict keeps drafts and offers explicit reload; logo preview opt-in", () => {
   assert.match(src, /=== 409\) setConflict\(true\)/);
   assert.ok(src.includes("button-reload"));
-  assert.match(src, /showLogo\s*\n?\s*\? <img/);
+  assert.match(src, /\(showLogo \|\| isInternalLogo\(form\.logoUrl\)\)\s*\n?\s*\? <img/);
 });
 test("unsaved guard wraps scope and event navigation", () => {
   assert.equal((src.match(/guard\(\(\) =>/g) || []).length, 3);

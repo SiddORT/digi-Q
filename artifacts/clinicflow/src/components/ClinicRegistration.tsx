@@ -1,3 +1,4 @@
+import { EmailInput } from "@/components/EmailInput";
 import { useEffect, useRef, useState } from "react";
 import { useNativeAuth, authRequest } from "../auth/native-auth";
 import { Link } from "wouter";
@@ -91,7 +92,7 @@ function RegistrationAccount() {
       <form onSubmit={submit}>
         {step === "details" ? <>
           <FormField label="Your name" required id="registration-account-fullName" error={fieldErrors.fullName}><input type="text" autoComplete="name" value={fullName} onChange={event => {setFullName(event.target.value);setFieldErrors(current=>({...current,fullName:undefined}));}}/></FormField>
-          <FormField label="Email address" required id="registration-account-email" error={fieldErrors.email}><input type="email" autoComplete="email" value={email} onChange={event => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}}/></FormField>
+          <FormField label="Email address" required id="registration-account-email" error={fieldErrors.email}><EmailInput data-testid="input-registration-email" value={email} onChange={event => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}}/></FormField>
           <FormField label="Password" required id="registration-account-password" error={fieldErrors.password}><PasswordInput autoComplete="new-password" showChecklist value={password} onChange={event => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}}/></FormField>
         </> : step === "review" ? <section aria-label="Account details review">
           <p>Check your details before we send your verification code.</p>

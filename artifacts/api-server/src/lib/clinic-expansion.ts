@@ -146,6 +146,8 @@ export async function createOwnedClinic(actor: any, admin: any, input: any, conn
   const clinic = await put(clinics, { id, ownerId: actor.id, adminId: admin.id, data: { ...clinicDisplayPreferences(input.clinic), ...input.clinic, code: input.clinic.code || `CLN-${id.slice(0,8)}`, timezone: input.clinic.timezone || "Asia/Kolkata" } }, conn);
   await conn.insert(assignments).values({ id: uid(), userId: admin.id, clinicId: id }).onConflictDoNothing();
   await audit(actor, "create", "clinics", clinic, conn);
+  const { enqueueEvent } = await import("./notification-outbox");
+  await enqueueEvent(conn, "onboarding", { ...clinic, clinicId: clinic.id });
   const result = await saveClinicSetup({ ...admin, role: "clinicAdmin" }, id, { branches: input.branches || [], policies: input.policies }, conn);
   const priorDoctor = input.ownDoctor ? (await all(doctors, conn)).find(d => d.userId === admin.id) : null;
   const doctor = input.ownDoctor ? await attachOwnDoctor(admin, { branchIds: [...new Set([...(priorDoctor?.branchIds || []), ...result.branches.map(b => b.id)])], specializationId: input.specializationId, qualificationIds: input.qualificationIds }, conn) : null;

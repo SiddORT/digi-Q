@@ -16,6 +16,8 @@ import { presenceRouter } from "./presence";
 import { demoRouter } from "./demo";
 import { integrationsRouter } from "./integrations";
 import { notificationTemplatesRouter } from "./notification-templates";
+import { permissionPolicyRouter } from "./permission-policy";
+import { logosRouter } from "./logos";
 
 const router: IRouter = Router();
 
@@ -30,6 +32,8 @@ router.use(identityRouter);
 router.use(otpRouter);
 router.use(integrationsRouter);
 router.use(notificationTemplatesRouter);
+router.use(permissionPolicyRouter);
+router.use(logosRouter);
 router.use(resourcesRouter);
 router.use(durationRouter);
 router.use(appointmentsRouter);

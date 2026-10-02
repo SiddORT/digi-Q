@@ -55,6 +55,8 @@ export async function requireUser(req: Request) {
   if (isStaffRole(user.role)) await requireStaffSessionProof(req);
   if (user.demoFixture === DEMO_FIXTURE)
     assert(demoWriteAllowed(req.method, req.path), 403, "Demo account cannot modify clinic structure or staff");
+  const { enforcePermissionPolicy } = await import("./permission-policy");
+  await enforcePermissionPolicy(user, req);
   return user;
 }
 export function roles(user: any, allowed: string[]) { assert(allowed.includes(user.role), 403, "Permission denied"); }

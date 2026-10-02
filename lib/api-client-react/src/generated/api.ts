@@ -72,6 +72,7 @@ import type {
   ClinicSettingsInput,
   ClinicSettingsPreview,
   ClinicSettingsResult,
+  CompleteLogoUpload200,
   Dashboard,
   DemoLoginInput,
   DemoSetupAction,
@@ -119,6 +120,7 @@ import type {
   ListSchedulesParams,
   ListUsersParams,
   LiveQueue,
+  LogoUploadInput,
   LogoutNativeSession200,
   Master,
   MasterInput,
@@ -136,6 +138,8 @@ import type {
   Patient,
   PatientInput,
   PatientList,
+  PermissionPolicy,
+  PermissionPolicyInput,
   ProfileInput,
   PublicClinicContext,
   PublicDisplay,
@@ -148,6 +152,7 @@ import type {
   RegistrationChallengeReference,
   RegistrationOptions,
   Report,
+  RequestLogoUpload200,
   RequestPasswordRecovery200,
   ResetNativePassword200,
   ResolveBranchSlugParams,
@@ -196,6 +201,309 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetPermissionPolicyUrl = () => {
+
+
+
+
+  return `/api/management/permissions`
+}
+
+export const getPermissionPolicy = async ( options?: Parameters<typeof customFetch>[1]): Promise<PermissionPolicy> => {
+
+  return customFetch<PermissionPolicy>(getGetPermissionPolicyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPermissionPolicyQueryKey = () => {
+    return [
+    `/api/management/permissions`
+    ] as const;
+    }
+
+
+export const getGetPermissionPolicyQueryOptions = <TData = Awaited<ReturnType<typeof getPermissionPolicy>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPermissionPolicy>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPermissionPolicyQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPermissionPolicy>>> = ({ signal }) => getPermissionPolicy({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPermissionPolicy>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPermissionPolicyQueryResult = NonNullable<Awaited<ReturnType<typeof getPermissionPolicy>>>
+export type GetPermissionPolicyQueryError = ErrorType<unknown>
+
+
+
+export function useGetPermissionPolicy<TData = Awaited<ReturnType<typeof getPermissionPolicy>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPermissionPolicy>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPermissionPolicyQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSavePermissionPolicyUrl = () => {
+
+
+
+
+  return `/api/management/permissions`
+}
+
+export const savePermissionPolicy = async (permissionPolicyInput: PermissionPolicyInput, options?: Parameters<typeof customFetch>[1]): Promise<PermissionPolicy> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PermissionPolicy>(getSavePermissionPolicyUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(permissionPolicyInput)
+  }
+);}
+
+
+
+
+
+export const getSavePermissionPolicyMutationKey = () => ['savePermissionPolicy'] as const;
+
+export const getSavePermissionPolicyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePermissionPolicy>>, TError,SavePermissionPolicyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof savePermissionPolicy>>, TError,SavePermissionPolicyMutationVariables, TContext> => {
+
+const mutationKey = getSavePermissionPolicyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof savePermissionPolicy>>, SavePermissionPolicyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  savePermissionPolicy(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SavePermissionPolicyMutationResult = NonNullable<Awaited<ReturnType<typeof savePermissionPolicy>>>
+    export type SavePermissionPolicyMutationBody = BodyType<PermissionPolicyInput>
+    export type SavePermissionPolicyMutationError = ErrorType<unknown>
+    export type SavePermissionPolicyMutationVariables = {data: BodyType<PermissionPolicyInput>}
+
+    export const useSavePermissionPolicy = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof savePermissionPolicy>>, TError,SavePermissionPolicyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof savePermissionPolicy>>,
+        TError,
+        SavePermissionPolicyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSavePermissionPolicyMutationOptions(options));
+    }
+
+export const getRequestLogoUploadUrl = () => {
+
+
+
+
+  return `/api/management/logos`
+}
+
+export const requestLogoUpload = async (logoUploadInput: LogoUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<RequestLogoUpload200> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RequestLogoUpload200>(getRequestLogoUploadUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(logoUploadInput)
+  }
+);}
+
+
+
+
+
+export const getRequestLogoUploadMutationKey = () => ['requestLogoUpload'] as const;
+
+export const getRequestLogoUploadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestLogoUpload>>, TError,RequestLogoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestLogoUpload>>, TError,RequestLogoUploadMutationVariables, TContext> => {
+
+const mutationKey = getRequestLogoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestLogoUpload>>, RequestLogoUploadMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestLogoUpload(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestLogoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof requestLogoUpload>>>
+    export type RequestLogoUploadMutationBody = BodyType<LogoUploadInput>
+    export type RequestLogoUploadMutationError = ErrorType<unknown>
+    export type RequestLogoUploadMutationVariables = {data: BodyType<LogoUploadInput>}
+
+    export const useRequestLogoUpload = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestLogoUpload>>, TError,RequestLogoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestLogoUpload>>,
+        TError,
+        RequestLogoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestLogoUploadMutationOptions(options));
+    }
+
+export const getCompleteLogoUploadUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/logos/${id}/complete`
+}
+
+export const completeLogoUpload = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CompleteLogoUpload200> => {
+
+  return customFetch<CompleteLogoUpload200>(getCompleteLogoUploadUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCompleteLogoUploadMutationKey = () => ['completeLogoUpload'] as const;
+
+export const getCompleteLogoUploadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeLogoUpload>>, TError,CompleteLogoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeLogoUpload>>, TError,CompleteLogoUploadMutationVariables, TContext> => {
+
+const mutationKey = getCompleteLogoUploadMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeLogoUpload>>, CompleteLogoUploadMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  completeLogoUpload(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteLogoUploadMutationResult = NonNullable<Awaited<ReturnType<typeof completeLogoUpload>>>
+
+    export type CompleteLogoUploadMutationError = ErrorType<unknown>
+    export type CompleteLogoUploadMutationVariables = {id: string}
+
+    export const useCompleteLogoUpload = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeLogoUpload>>, TError,CompleteLogoUploadMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeLogoUpload>>,
+        TError,
+        CompleteLogoUploadMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteLogoUploadMutationOptions(options));
+    }
 
 export const getGetNotificationTemplatesUrl = (params?: GetNotificationTemplatesParams,) => {
   const normalizedParams = new URLSearchParams();

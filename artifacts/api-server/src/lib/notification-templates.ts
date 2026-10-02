@@ -10,6 +10,7 @@ export const templateContent = z.object({
   footer: z.string().trim().max(500),
   logoUrl: z.string().max(1000).refine(value => {
     if (!value) return true;
+    if (/^\/api\/branding\/logos\/[a-f0-9-]{36}$/.test(value)) return true;
     try { const u = new URL(value); return u.protocol === "https:" && !u.username && !u.password; } catch { return false; }
   }, "Use an HTTPS logo URL without credentials"),
 }).strict().superRefine((value, ctx) => {
@@ -51,6 +52,7 @@ export function renderNotification(content: TemplateContent, values: Record<stri
   const subject = [substitute(content.prefix, values), substitute(content.subject, values)].filter(Boolean).join(" ").replace(/[\r\n]+/g, " ");
   const body = substitute(content.body, values), footer = substitute(content.footer, values);
   const escape = (v: string) => v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-  return { subject, text: [body, footer].filter(Boolean).join("\n\n"),
-    html: `<!doctype html><html><body style="font:16px/1.6 Arial,sans-serif;color:#17243b"><main style="max-width:600px;margin:auto;padding:24px">${content.logoUrl ? `<img src="${escape(content.logoUrl)}" alt="${escape(values.clinic_name || "Clinic")} logo" style="max-width:180px;max-height:80px">` : ""}<h1 style="font-size:22px">${escape(subject)}</h1><div style="white-space:pre-wrap">${escape(body)}</div><p style="font-size:12px;color:#53647b;white-space:pre-wrap">${escape(footer)}</p></main></body></html>` };
+  const logoPath = content.logoUrl.startsWith("/api/branding/logos/") ? content.logoUrl : undefined;
+  return { subject, logoPath, text: [body, footer].filter(Boolean).join("\n\n"),
+    html: `<!doctype html><html><body style="font:16px/1.6 Arial,sans-serif;color:#17243b"><main style="max-width:600px;margin:auto;padding:24px">${content.logoUrl ? `<img src="${escape(logoPath ? "cid:clinic-logo" : content.logoUrl)}" alt="${escape(values.clinic_name || "Clinic")} logo" style="max-width:180px;max-height:80px">` : ""}<h1 style="font-size:22px">${escape(subject)}</h1><div style="white-space:pre-wrap">${escape(body)}</div><p style="font-size:12px;color:#53647b;white-space:pre-wrap">${escape(footer)}</p></main></body></html>` };
 }

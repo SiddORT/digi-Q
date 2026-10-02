@@ -1,3 +1,4 @@
+import { EmailInput } from "@/components/EmailInput";
 import { useEffect, useState, type ReactNode } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useLocation } from "wouter";
@@ -92,7 +93,7 @@ export function ClinicRegistrationWizard({ adminMode, initial, categories, speci
       <TimezoneSelect value={branch.timezone} onChange={timezone=>updateBranch(index,{timezone})}/>
       <button type="button" className="text-link" onClick={()=>updateBranch(index,{slug:normalizeClinicSlug(branch.name)})}>Suggest URL from clinic name</button>
       <label className="registration-check"><input type="checkbox" checked={branch.inheritEmail} onChange={e=>updateBranch(index,{inheritEmail:e.target.checked})}/>Use Clinic Group email</label>
-      {!branch.inheritEmail&&<FormField label="Clinic email" optional error={validateEmail(branch.email)}><input type="email" value={branch.email} onChange={e=>updateBranch(index,{email:e.target.value})}/></FormField>}
+      {!branch.inheritEmail&&<FormField label="Clinic email" optional error={validateEmail(branch.email)}><EmailInput data-testid={`input-branch-email-${index}`} value={branch.email} onChange={e=>updateBranch(index,{email:e.target.value})}/></FormField>}
       <label className="registration-check"><input type="checkbox" checked={branch.inheritPhone} onChange={e=>updateBranch(index,{inheritPhone:e.target.checked})}/>Use Clinic Group phone</label>
       {!branch.inheritPhone&&<FormField label="Clinic phone" optional error={validatePhone(branch.phone)}><PhoneInput value={branch.phone} onChange={phone=>updateBranch(index,{phone})}/></FormField>}
     </div>{values.branches.length>1&&<button type="button" className="text-link" onClick={()=>set("branches",values.branches.filter((_,i)=>i!==index),{shouldDirty:true})}>Remove clinic</button>}</details>)}<button type="button" className="button secondary" onClick={()=>set("branches",[...values.branches,newBranch()],{shouldDirty:true})}><Plus size={16}/>Add another clinic</button></>}

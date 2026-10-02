@@ -1,3 +1,4 @@
+import { EmailInput } from "@/components/EmailInput";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { authErrorMessage } from "./errors";
@@ -31,7 +32,7 @@ export function ForgotPassword() {
     <AuthCard title="Reset staff password" description="If this email belongs to an active staff account, we'll send a secure, single-use password reset link.">
       {sent ? <div className="notice" role="status" data-testid="status-password-reset-requested">If the account exists, check your email for a password reset link.</div> : <form onSubmit={send} noValidate>
         <FormField label="Staff email" required error={emailError}>
-          <input data-testid="input-reset-email" name="reset-email" type="email" autoComplete="username" disabled={busy} value={email} onChange={event => { setEmail(event.target.value); if (emailError) setEmailError(undefined); }} />
+          <EmailInput trimOnBlur={false} data-testid="input-reset-email" name="reset-email" autoComplete="username" disabled={busy} value={email} onChange={event => { setEmail(event.target.value); if (emailError) setEmailError(undefined); }} />
         </FormField>
         {error && <div className="error-box" role="alert">{error}</div>}
         <LoadingButton className="button auth-submit" data-testid="button-send-reset-code" type="submit" loading={busy} loadingText="Requesting…">Send password reset link</LoadingButton>

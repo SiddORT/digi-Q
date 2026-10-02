@@ -51,5 +51,7 @@ export async function reschedule(user: any, id: string, body: any, tx: any) {
   const updated = await change(appointments, id, { status: "waiting", doctorId: body.doctorId, branchId: body.branchId, date: body.date, tokenNumber, data }, tx);
   await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, fromStatus: row.status, toStatus: "waiting" }, tx);
   await audit(user, "reschedule", "appointments", updated, tx);
+  const { enqueueEvent } = await import("./notification-outbox");
+  await enqueueEvent(tx, "rescheduled", updated, row);
   return appointmentView(updated, user);
 }

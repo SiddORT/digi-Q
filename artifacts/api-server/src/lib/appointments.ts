@@ -94,6 +94,10 @@ export async function transition(user: any, id: string, body: any, conn: any = d
   const updated = await change(appointments, id, { status: rule.to, data }, conn);
   await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, fromStatus: row.status, toStatus: rule.to }, conn);
   await audit(user, body.action, "appointments", updated, conn);
+  if (["cancel", "complete"].includes(body.action)) {
+    const { enqueueEvent } = await import("./notification-outbox");
+    await enqueueEvent(conn, body.action === "cancel" ? "cancelled" : "completed", updated);
+  }
   if (body.action === "complete") {
     const next = orderedReservations(rows.filter(a => pendingStatuses.includes(a.status)))[0];
     if (next) {

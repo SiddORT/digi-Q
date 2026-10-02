@@ -10,3 +10,4 @@
 - [Patient booking contract](patient-booking-contract.md) — Book Now immediately issues a private ticket; guest contact is optional and queue operations stay staff-facing.
 - [Booking readiness](booking-readiness.md) — location opening hours are not doctor sessions; never imply booking readiness or guess patient capacity from hours alone.
 - [DigiQ standardization](digiq-standardization-decisions.md) — prompt is the approved reference; surface conflicts, inherit parent display formats, and use in-app warnings.
+- [Notification safety](notification-delivery-safety.md) — retry only known pre-dispatch failures; reminders refer to sessions, not promised consultation times.
