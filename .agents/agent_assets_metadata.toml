@@ -232,3 +232,17 @@ mtime_ms = 1790966847634
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/2a71929e-e8fd-4054-be4e-bf4097797631/73349189-5cbe-4c52-8051-61be140d3e0c"
 storage_version_token = "1790966870242411"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "RqFq6ociPIR6nhLOIE_q7"
+uri = "file://reports/digiq-release-checklist-2026-10-03.html"
+type = "html"
+title = "DigiQ — complete 137-point release checklist"
+description = "Searchable checklist with all 137 numbered items, 26 shared-requirement checks, fresh test results, confirmed gaps and release blockers. Includes Print / save PDF."
+logical_id = "18233ec1-8051-491b-be27-e721b9d88432"
+content_hash = "sha256:1ffa5fb267c9bf98d17f7dbd369ac597ce808b82d5c17b44b04f73a039be79e0"
+size = 129111
+mtime_ms = 1790970713930
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/18233ec1-8051-491b-be27-e721b9d88432/972034c8-d6fc-4da8-8013-b879664e7ab1"
+storage_version_token = "1790970753293251"
+content_type = "text/html"

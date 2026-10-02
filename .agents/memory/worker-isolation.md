@@ -3,6 +3,12 @@ name: Worker execution failures
 description: Distinguishing a failed helper environment from a broken shared application
 ---
 
+Avoid overlapping full builds, disposable PostgreSQL suites and multi-worker browser suites in this workspace when doing release verification.
+
+**Why:** An overlapping run produced an esbuild `EAGAIN`, PostgreSQL connection resets and browser page-setup timeouts. The affected tests passed unchanged when rerun after heavy work finished, with one browser worker. This supports resource-pressure suspicion, not definitive attribution of every failure.
+
+**How to apply:** Serialize these resource-heavy checks. If they fail this way, inspect the actual errors and retry only affected tests without competing work. Preserve the first-run failures and label focused-rerun evidence honestly; do not claim a clean full run.
+
 A helper's `SERVER unexpectedly disconnected` error can be isolated to that helper even while parent tools and another helper remain healthy.
 
 **Why:** During the initial ClinicFlow build, the frontend design helper could not read or write any files, including on retry, while the backend helper completed and parent shell access continued to work. Restarting or rolling back the shared application would not have addressed the observed failure.
