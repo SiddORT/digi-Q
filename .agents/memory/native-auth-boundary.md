@@ -27,8 +27,8 @@ Cookie-transport fixes require a network-level test through the real Express mid
 
 **How to apply:** Include first-visit bootstrap, overlapping status responses, cookie/header mismatch rejection, and session establishment over HTTPS using isolated data. Distinguish a Node cookie-jar integration from real browser or live-UAT verification.
 
-The user specifically wants app-owned JWT authentication, not merely removal of Clerk, and requires reviewing a complete change list together before approving implementation.
+The user's reason for considering app-owned JWT is that their team is more familiar with JWT than OAuth. They want a comparison with Clerk-managed authentication and native database sessions, plus a complete change list reviewed together before implementation approval.
 
-**Why:** The user explicitly requested JWT migration analysis and withheld implementation approval.
+**Why:** The user clarified the motivation and requested live-deployment verification rather than assuming the workspace migration is deployed.
 
-**How to apply:** Distinguish JWT migration work from existing native session functionality. Do not treat approval of an audit or checklist as permission to change authentication.
+**How to apply:** Explain that JWT is a token format, OAuth an authorization protocol, and Clerk a provider. Treat JWT as an architecture choice, not a prerequisite for removing Clerk. Verify each deployment independently; do not treat approval of an audit or checklist as permission to change authentication.

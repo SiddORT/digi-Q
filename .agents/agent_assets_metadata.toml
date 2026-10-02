@@ -134,3 +134,17 @@ mtime_ms = 1790424537599
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/253e4d68-6554-4d0d-94ab-54466433d18b/935865e5-1bf5-4457-99eb-65edc596e904"
 storage_version_token = "1790424555872852"
 content_type = "text/html"
+
+[[outputs]]
+id = "kY4GPR_S3xsZOd1Pe3WiV"
+uri = "file://reports/digiq-auth-and-qa-review.html"
+type = "html"
+title = "DigiQ — Complete authentication and QA review"
+description = "Three-way comparison, live-site observations, 30 authentication items, 18 shared work areas, all 107 QA findings, and approval decisions."
+logical_id = "9ed1476d-bfbd-45a8-861b-0309fe37658e"
+content_hash = "sha256:e8af84e1722f533f752fe2183caece13fa3a49b0b193e9d99fd09b1de4feb96e"
+size = 31718
+mtime_ms = 1790947090556
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/9ed1476d-bfbd-45a8-861b-0309fe37658e/e31127d7-fa4c-402e-9e80-f72aae311ec8"
+storage_version_token = "1790947092506921"
+content_type = "text/html"
