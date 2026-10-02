@@ -22,6 +22,7 @@
  */
 import type { BranchIdParameter } from './branchIdParameter';
 import type { ClinicIdParameter } from './clinicIdParameter';
+import type { GetStaffAssignmentOptionsSort } from './getStaffAssignmentOptionsSort';
 import type { GetStaffAssignmentOptionsTargetRole } from './getStaffAssignmentOptionsTargetRole';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
@@ -29,6 +30,10 @@ import type { SearchParameter } from './searchParameter';
 
 export type GetStaffAssignmentOptionsParams = {
 targetRole: GetStaffAssignmentOptionsTargetRole;
+/**
+ * Server ordering within each authorized clinic and branch catalog. ID in the selected direction breaks ties.
+ */
+sort?: GetStaffAssignmentOptionsSort;
 /**
  * Existing doctor being edited.
  */

@@ -38,6 +38,9 @@ export type GetReportsParams = {
  * @maxLength 200
  */
 search?: string;
+/**
+ * Outcomes orders by cancelled then no-show then residual Other counts. Other equals visits minus completed minus cancelled minus no-show. Group key ascending breaks ties.
+ */
 sort?: GetReportsSort;
 sessionId?: SessionIdParameter;
 startTime?: StartTimeParameter;

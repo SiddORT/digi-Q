@@ -716,7 +716,7 @@ resourcesRouter.get("/staff-assignment-options", async (req, res) => {
     assert(!managingAdminId || managingAdminId === q.managingAdminId, 403, "Managing Admin outside this assignment catalog");
     managingAdminId = q.managingAdminId;
   }
-  const options = { ...q, managingAdminId: undefined, sort: "name" };
+   const options = { ...q, managingAdminId: undefined, sort: q.sort || "name" };
   // Management catalog intentionally differs from operational assignments.
   const catalogUser = { role: "superAdmin" };
   const retained = q.selectedIds ? retainedUserId : undefined;

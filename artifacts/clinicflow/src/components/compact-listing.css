@@ -7,8 +7,8 @@
 .workspace .filter-bar-title{display:flex;align-items:baseline;gap:var(--space-2);flex:1 1 auto;min-width:0;order:-2}
 .workspace .filter-bar-title h2{margin:0;font-size:var(--type-section);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .workspace .listing-count{font-size:var(--type-label);font-weight:650;font-variant-numeric:tabular-nums;color:var(--soft);background:#eef3fa;border-radius:var(--radius-badge);padding:0 var(--space-2);line-height:20px}
-.workspace .filter-bar-status{order:-1;flex:0 0 auto;display:flex;align-items:center}
-.workspace .filter-bar-status .sq-status-tabs{margin:0;flex-wrap:nowrap;gap:var(--space-1)}
+.workspace .filter-bar-status{order:-1;flex:0 1 auto;display:flex;align-items:center;min-width:0;max-width:100%}
+.workspace .filter-bar-status .sq-status-tabs{margin:0;flex-wrap:nowrap;gap:var(--space-1);min-width:0;max-width:100%;overflow-x:auto}
 .workspace .filter-bar-status .sq-status-tabs button{min-height:32px;padding:var(--space-1) var(--space-3)}
 .workspace .filter-bar-status .status-tabs .count{margin-left:var(--space-1)}
 .workspace .has-title .filter-bar-primary{flex:0 1 300px}

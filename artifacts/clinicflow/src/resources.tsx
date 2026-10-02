@@ -423,7 +423,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  }, [config.fields, identity, resource, editing]);
 
   const searchPlaceholder=resource==="doctors"?"Search doctors by name, email or specialization…":resource==="patients"?"Search patients by name, email or mobile…":resource==="audit"?"Search audit events…":`Search ${config.name}…`;
-   const singularName=resource==="availability"?"schedule":resource==="qrs"?"QR code":resource==="masters"?"master value":resource.replace(/s$/,"");
+   const singularName=resource==="branches"?"branch":resource==="availability"?"schedule":resource==="qrs"?"QR code":resource==="masters"?"master value":resource.replace(/s$/,"");
   const sortOptions=[{value:"-createdAt",label:"Newest first"},{value:"createdAt",label:"Oldest first"},...(["clinics","branches","masters","qrs"].includes(resource)?[{value:"name",label:"Name A–Z"},{value:"-name",label:"Name Z–A"}]:[]),...(["doctors","patients","users"].includes(resource)?[{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"}]:[]),...(resource==="exceptions"?[{value:"date",label:"Earliest date"},{value:"-date",label:"Latest date"}]:[]),...(config.fields.some(field=>field.key==="status")?[{value:"status",label:"Status A–Z"},{value:"-status",label:"Status Z–A"}]:[])];
   const sortableColumns=new Set(["name","fullName","date","status","code","email"]);
   const hasAdvanced=resource==="clinics"?identity?.user?.role==="superAdmin":["doctors","patients","qrs","availability","audit"].includes(resource)||resource==="branches"&&!fixedClinicId;

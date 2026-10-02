@@ -218,6 +218,22 @@ test("selected assignment hydration includes only retained inactive assignments 
   assert.equal((await queryPage({role:"superAdmin"},"branches",{selectedIds:"retained-b"},assignmentCatalogPredicate("branches","admin1","r1"),conn)).total,1);
   assert.equal((await queryPage({role:"superAdmin"},"clinics",{...q,status:"active"},undefined,conn)).total,0);
 });
+test("assignment catalog name and creation ordering paginate the full authorized network with stable ID ties", async () => {
+  const actor={role:"superAdmin"}, predicate=assignmentCatalogPredicate("clinics","admin1");
+  const ascending=await queryPage(actor,"clinics",{sort:"name",pageSize:2},predicate,conn);
+  const descending=await queryPage(actor,"clinics",{sort:"-name",pageSize:2},predicate,conn);
+  assert.equal(ascending.total,60);
+  assert.equal(descending.total,60);
+  assert.deepEqual(ascending.items.map(r=>r.id),["c1","c2"]);
+  assert.deepEqual(descending.items.map(r=>r.id),["c60","c59"]);
+  const next=await queryPage(actor,"clinics",{sort:"-name",pageSize:2,page:2},predicate,conn);
+  assert.deepEqual(next.items.map(r=>r.id),["c58","c57"]);
+  for(const sort of ["createdAt","-createdAt"]){
+    const tied=await queryPage(actor,"clinics",{sort,pageSize:2},predicate,conn);
+    assert.deepEqual(tied.items.map(r=>r.id),sort==="createdAt"?["c1","c10"]:["c9","c8"]);
+  }
+  assert.equal((await queryPage(actor,"clinics",{sort:"-name",search:"Clinic 120"},predicate,conn)).total,0);
+});
 test("actual SQL authorization equals prior canRead across all roles and resource families", async () => {
   // Include a legacy inconsistent foreign-managed receptionist sharing a branch:
   // ownership must still take precedence over the shared assignment.

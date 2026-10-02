@@ -6,6 +6,11 @@ import { formatConfiguredTimestamp, formatTimestampParts } from "../lib/date-tim
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 const css = read("./compact-listing.css");
 
+test("long status tabs shrink within the toolbar and scroll without widening the document", () => {
+  assert.match(css, /\.workspace \.filter-bar-status\{[^}]*flex:0 1 auto[^}]*min-width:0;max-width:100%/);
+  assert.match(css, /\.workspace \.filter-bar-status \.sq-status-tabs\{[^}]*min-width:0;max-width:100%;overflow-x:auto/);
+});
+
 test("toolbar puts title left and status/search/filter/add on one wrapping row", () => {
   const controls = read("./ListingControls.tsx");
   assert.match(controls, /filter-bar-title/);

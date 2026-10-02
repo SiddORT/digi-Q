@@ -2211,6 +2211,10 @@ sort?: SortParameter;
 export type GetStaffAssignmentOptionsParams = {
 targetRole: GetStaffAssignmentOptionsTargetRole;
 /**
+ * Server ordering within each authorized clinic and branch catalog. ID in the selected direction breaks ties.
+ */
+sort?: GetStaffAssignmentOptionsSort;
+/**
  * Existing doctor being edited.
  */
 doctorId?: string;
@@ -2247,6 +2251,16 @@ export type GetStaffAssignmentOptionsTargetRole = typeof GetStaffAssignmentOptio
 export const GetStaffAssignmentOptionsTargetRole = {
   doctor: 'doctor',
   receptionist: 'receptionist',
+} as const;
+
+export type GetStaffAssignmentOptionsSort = typeof GetStaffAssignmentOptionsSort[keyof typeof GetStaffAssignmentOptionsSort];
+
+
+export const GetStaffAssignmentOptionsSort = {
+  name: 'name',
+  '-name': '-name',
+  createdAt: 'createdAt',
+  '-createdAt': '-createdAt',
 } as const;
 
 export type ListPatientsParams = {
@@ -2445,6 +2459,9 @@ export type GetReportsParams = {
  * @maxLength 200
  */
 search?: string;
+/**
+ * Outcomes orders by cancelled then no-show then residual Other counts. Other equals visits minus completed minus cancelled minus no-show. Group key ascending breaks ties.
+ */
 sort?: GetReportsSort;
 sessionId?: SessionIdParameter;
 startTime?: StartTimeParameter;
@@ -2475,6 +2492,10 @@ export const GetReportsSort = {
   '-label': '-label',
   appointments: 'appointments',
   '-appointments': '-appointments',
+  outcomes: 'outcomes',
+  '-outcomes': '-outcomes',
+  other: 'other',
+  '-other': '-other',
   registrations: 'registrations',
   '-registrations': '-registrations',
   waiting: 'waiting',

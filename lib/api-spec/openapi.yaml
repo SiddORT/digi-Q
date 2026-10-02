@@ -602,6 +602,7 @@ paths:
       description: Management catalog only. It does not grant clinical or operational access. Doctors may request receptionist options only.
       parameters:
         - { name: targetRole, in: query, required: true, schema: { type: string, enum: [doctor, receptionist] } }
+        - { name: sort, in: query, description: Server ordering within each authorized clinic and branch catalog. ID in the selected direction breaks ties., schema: { type: string, enum: [name, "-name", createdAt, "-createdAt"], default: name } }
         - { name: doctorId, in: query, schema: { type: string }, description: Existing doctor being edited. }
         - { name: userId, in: query, schema: { type: string }, description: Existing receptionist being edited. }
         - { name: managingAdminId, in: query, schema: { type: string }, description: Narrows the catalog owner; cannot override an actor or edited staff owner. }
@@ -866,7 +867,7 @@ paths:
       operationId: getReports
       parameters:
         - { name: search, in: query, description: Trimmed report search text, schema: { type: string, maxLength: 200 } }
-        - { name: sort, in: query, schema: { type: string, enum: [key, "-key", label, "-label", appointments, "-appointments", registrations, "-registrations", waiting, "-waiting", checkedIn, "-checkedIn", completed, "-completed", noShow, "-noShow", cancelled, "-cancelled", averageWaitMinutes, "-averageWaitMinutes", averageConsultationMinutes, "-averageConsultationMinutes"] } }
+        - { name: sort, in: query, description: Outcomes orders by cancelled then no-show then residual Other counts. Other equals visits minus completed minus cancelled minus no-show. Group key ascending breaks ties., schema: { type: string, enum: [key, "-key", label, "-label", appointments, "-appointments", outcomes, "-outcomes", other, "-other", registrations, "-registrations", waiting, "-waiting", checkedIn, "-checkedIn", completed, "-completed", noShow, "-noShow", cancelled, "-cancelled", averageWaitMinutes, "-averageWaitMinutes", averageConsultationMinutes, "-averageConsultationMinutes"] } }
         - { $ref: "#/components/parameters/SessionId" }
         - { $ref: "#/components/parameters/StartTime" }
         - { $ref: "#/components/parameters/Page" }

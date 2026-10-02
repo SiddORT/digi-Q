@@ -21,34 +21,12 @@
  * OpenAPI spec version: 1.0.0
  */
 
-export type GetReportsSort = typeof GetReportsSort[keyof typeof GetReportsSort];
+export type GetStaffAssignmentOptionsSort = typeof GetStaffAssignmentOptionsSort[keyof typeof GetStaffAssignmentOptionsSort];
 
 
-export const GetReportsSort = {
-  key: 'key',
-  '-key': '-key',
-  label: 'label',
-  '-label': '-label',
-  appointments: 'appointments',
-  '-appointments': '-appointments',
-  outcomes: 'outcomes',
-  '-outcomes': '-outcomes',
-  other: 'other',
-  '-other': '-other',
-  registrations: 'registrations',
-  '-registrations': '-registrations',
-  waiting: 'waiting',
-  '-waiting': '-waiting',
-  checkedIn: 'checkedIn',
-  '-checkedIn': '-checkedIn',
-  completed: 'completed',
-  '-completed': '-completed',
-  noShow: 'noShow',
-  '-noShow': '-noShow',
-  cancelled: 'cancelled',
-  '-cancelled': '-cancelled',
-  averageWaitMinutes: 'averageWaitMinutes',
-  '-averageWaitMinutes': '-averageWaitMinutes',
-  averageConsultationMinutes: 'averageConsultationMinutes',
-  '-averageConsultationMinutes': '-averageConsultationMinutes',
+export const GetStaffAssignmentOptionsSort = {
+  name: 'name',
+  '-name': '-name',
+  createdAt: 'createdAt',
+  '-createdAt': '-createdAt',
 } as const;

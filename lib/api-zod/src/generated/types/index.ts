@@ -106,6 +106,7 @@ export * from './getReportsParams';
 export * from './getReportsSort';
 export * from './getSessionContextsParams';
 export * from './getStaffAssignmentOptionsParams';
+export * from './getStaffAssignmentOptionsSort';
 export * from './getStaffAssignmentOptionsTargetRole';
 export * from './guestDecisionInput';
 export * from './guestDecisionInputAction';

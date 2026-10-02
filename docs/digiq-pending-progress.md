@@ -28,11 +28,25 @@ This tracks the remaining requirements in `attached_assets/DigiQ_Replit_Prompt_v
 
 ## Remaining listing/acceptance boundaries
 
-- Doctor network directory remains fixed to server name ordering: its assignment-options endpoint does not expose arbitrary sort parameters.
-- Composite report Outcomes/Other headers lack a server aggregate-sort field; supported individual outcomes remain sortable.
+- Doctor-network server sorting is now implemented for name and creation date in both directions, with stable scoped ordering and page-reset behavior.
+- Report composite Outcomes and Other sorting is now implemented after the same filtering/grouping as the displayed counts, with stable group-key tie-breaks. Outcomes compares cancelled, no-show and residual Other in displayed order.
 - Patient and appointment CSV exports fetch authorized pages, detect incomplete/changing counts or duplicate traversal and abort on failures. They do not guarantee a point-in-time snapshot if records change without their IDs/count changing.
 - Dashboard bounded previews, operational feeds, public queues and embedded summaries are not all-purpose listings. No private/public access expansion was introduced to impose blanket listing controls.
 - Full literal compliance across all component CSS, all listing contexts and all browser callers remains uncertified; scoped fixes must not be relabeled complete global acceptance.
+
+## Latest acceptance continuation
+
+- Sorting implementation: 22 targeted API tests passed; six existing report-outcome UI tests passed; regenerated API contracts and API/UI typechecks passed. Report grouping now uses PostgreSQL-safe grouping expressions.
+- Main verification: project-wide typecheck passed; final frontend suite passed 185/185 with UI typecheck clean, including public navigation and toolbar-overflow regression checks. Overlapping test groups are not summed.
+- Public directory fixture-browser checks passed: server search/sort/page/pageSize request wiring, debounce, page reset, URL reload preservation, empty-state Clear search, doctor sorting, keyboard searchable controls and visible focus. Layouts at 1024px and 390px had no document overflow.
+- That browser pass found Choose another clinic lost booking mode. The link now preserves book/display mode while leaving doctor-directory filters behind. Its regression test covers both modes and ordinary browsing.
+- Public fixtures did not perform booking submission. Accessible names were inspected, but neither a real screen reader nor genuine browser 200% zoom was exercised.
+- Appointment browser checks passed: active filters survived sorting, a two-page export downloaded 150 matching records, and failed-page/cancelled exports produced no file.
+- Report browser checks passed: Outcomes and Other in both directions preserved search/grouping/dates; accessible header sort state, filtered CSV and Escape/focus return worked.
+- Queue search/status/token sorting passed. Mobile checking found the status strip widened the document to 524px; its flex bounds were fixed. Retest measured document width 375px at a 390px viewport, and the final tab was reachable by internal strip scrolling.
+- Clinic Groups and locations rendered as compact tables at 1024px and contained cards at 390px, without document overflow. The location Add label's singularization typo was also corrected.
+- Doctor-network sorting passed in a separate fictional doctor context: name descending, created ascending and created descending generated the correct assignment-options requests and displayed matching fixture order.
+- No workers remain running. These checks cover the changed journeys, not formal sign-off of every original finding, every component style or every role's accessibility matrix.
 
 ## Separate boundaries
 

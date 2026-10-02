@@ -3228,6 +3228,7 @@ export const ResendUserInvitationResponse = zod.object({
 /**
  * Management catalog only. It does not grant clinical or operational access. Doctors may request receptionist options only.
  */
+export const getStaffAssignmentOptionsQuerySortDefault = `name`;
 export const getStaffAssignmentOptionsQueryPageDefault = 1;
 
 export const getStaffAssignmentOptionsQueryPageSizeDefault = 20;
@@ -3239,6 +3240,7 @@ export const getStaffAssignmentOptionsQuerySelectedIdsMax = 10000;
 
 export const GetStaffAssignmentOptionsQueryParams = zod.object({
   "targetRole": zod.enum(['doctor', 'receptionist']),
+  "sort": zod.enum(['name', '-name', 'createdAt', '-createdAt']).default(getStaffAssignmentOptionsQuerySortDefault).describe('Server ordering within each authorized clinic and branch catalog. ID in the selected direction breaks ties.'),
   "doctorId": zod.coerce.string().optional().describe('Existing doctor being edited.'),
   "userId": zod.coerce.string().optional().describe('Existing receptionist being edited.'),
   "managingAdminId": zod.coerce.string().optional().describe('Narrows the catalog owner; cannot override an actor or edited staff owner.'),
@@ -5246,7 +5248,7 @@ export const getReportsQueryGroupByDefault = `date`;
 
 export const GetReportsQueryParams = zod.object({
   "search": zod.coerce.string().max(getReportsQuerySearchMax).optional().describe('Trimmed report search text'),
-  "sort": zod.enum(['key', '-key', 'label', '-label', 'appointments', '-appointments', 'registrations', '-registrations', 'waiting', '-waiting', 'checkedIn', '-checkedIn', 'completed', '-completed', 'noShow', '-noShow', 'cancelled', '-cancelled', 'averageWaitMinutes', '-averageWaitMinutes', 'averageConsultationMinutes', '-averageConsultationMinutes']).optional(),
+  "sort": zod.enum(['key', '-key', 'label', '-label', 'appointments', '-appointments', 'outcomes', '-outcomes', 'other', '-other', 'registrations', '-registrations', 'waiting', '-waiting', 'checkedIn', '-checkedIn', 'completed', '-completed', 'noShow', '-noShow', 'cancelled', '-cancelled', 'averageWaitMinutes', '-averageWaitMinutes', 'averageConsultationMinutes', '-averageConsultationMinutes']).optional().describe('Outcomes orders by cancelled then no-show then residual Other counts. Other equals visits minus completed minus cancelled minus no-show. Group key ascending breaks ties.'),
   "sessionId": zod.coerce.string().optional(),
   "startTime": zod.coerce.string().optional(),
   "page": zod.coerce.number().int().min(1).default(getReportsQueryPageDefault),
