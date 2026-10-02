@@ -148,3 +148,17 @@ mtime_ms = 1790948037903
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/9ed1476d-bfbd-45a8-861b-0309fe37658e/e6765be6-db00-4b27-ab14-46c571c33372"
 storage_version_token = "1790948039629646"
 content_type = "text/html"
+
+[[outputs]]
+id = "oeohhfQ_X3mmmc2vXcVg5"
+uri = "file://reports/digiq-master-checklist-137.html"
+type = "html"
+title = "DigiQ — Complete 137-item master checklist"
+description = "Original QA findings 1–107 plus authentication review 108–137, with shared requirements and approval boundaries. Downloadable and printable."
+logical_id = "257e4ad6-13b0-4567-aeb6-e504ce393cbb"
+content_hash = "sha256:73d8b46c243cbc15350507dc4b229d5ec1786b10b45058b8f0d2ce6cce2e8d88"
+size = 50535
+mtime_ms = 1790948556499
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/257e4ad6-13b0-4567-aeb6-e504ce393cbb/a22c1510-10e3-4ec0-89d7-a2c8e61dea3a"
+storage_version_token = "1790948558299868"
+content_type = "text/html"
