@@ -50,3 +50,9 @@ The user wants predefined booking, clinic-onboarding, rescheduling, post-checkou
 **Why:** These are explicit requested workflow capabilities, not a claim that current templates, scheduling or permission-editor UI already implement them.
 
 **How to apply:** Distinguish existing role enforcement from a configurable permission matrix. Resolve queue-versus-fixed appointment timing before promising precisely timed reminders. Preserve solo Clinic Admin-doctor and staffed-clinic operation.
+
+Super Admin management modules must be visible in navigation. Both Super Admin and Clinic Admin must be able to manage notification templates, including logos and prefixes. Super Admin can work with dynamic variables; Clinic Admin should see actual clinic names/details in readable previews.
+
+**Why:** The user explicitly approved the expanded management/template scope and requested visible modules, correct mappings, frequent coding progress and regression checks without making the system unresponsive.
+
+**How to apply:** Scope clinic edits to owned clinics. Resolve appointment-specific recipient/doctor details at send time rather than freezing preview values into templates. Report completed, in-progress and blocked work distinctly; verify existing flows before claiming completion.
