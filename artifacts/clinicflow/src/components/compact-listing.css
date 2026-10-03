@@ -9,10 +9,8 @@
 .workspace .listing-count{font-size:var(--type-label);font-weight:650;font-variant-numeric:tabular-nums;color:var(--soft);background:#eef3fa;border-radius:var(--radius-badge);padding:0 var(--space-2);line-height:20px}
 .workspace .filter-bar-status{order:-1;flex:0 1 auto;display:flex;align-items:center;min-width:0;max-width:100%}
 .workspace .filter-bar-status .sq-status-tabs{margin:0;flex-wrap:nowrap;gap:var(--space-1);min-width:0;max-width:100%;overflow-x:auto}
-.workspace .filter-bar-status .sq-status-tabs button{min-height:32px;padding:var(--space-1) var(--space-3)}
+.workspace .filter-bar-status .sq-status-tabs button{min-height:var(--cw-ctl-sm);padding:var(--space-1) var(--space-3)}
 .workspace .filter-bar-status .status-tabs .count{margin-left:var(--space-1)}
-.workspace .has-title .filter-bar-primary{flex:0 1 300px}
-.workspace .has-title .filter-bar-tools{margin-left:0}
 .workspace .admin-listing-filter .has-title .filter-bar-primary>:first-child{flex:0 1 300px;max-width:340px}
 .workspace .admin-listing-filter,.workspace .filter-bar{margin-bottom:var(--space-2)}
 
@@ -25,7 +23,7 @@
 
 /* Secondary disclosures (account recovery) collapsed to one quiet line below the list */
 .workspace details.listing-disclosure{margin:var(--space-2) 0 0;box-shadow:none}
-.workspace details.listing-disclosure>summary{min-height:36px;padding:var(--space-2) var(--space-3);font-size:var(--type-label)}
+.workspace details.listing-disclosure>summary{min-height:var(--cw-ctl);padding:var(--space-2) var(--space-3);font-size:var(--type-label)}
 
 /* Bulk outcome summary: one line, failures visible without expanding */
 .workspace .result-summary{margin:0 0 var(--space-2);border:1px solid var(--dq-line-soft,#e2e9f3);border-radius:var(--radius-control);background:var(--dq-surface,#fff);font-size:var(--type-label)}

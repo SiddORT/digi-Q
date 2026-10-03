@@ -32,3 +32,9 @@ Apply the screenshot-inspired compactness across all pages, with reduced padding
 **Why:** The user reiterated that compactness must not be limited to one page and felt the previously described compact UI could still be smaller.
 
 **How to apply:** Check final computed spacing and each listing's control arrangement. Shared compact styles and functional navigation tests alone do not prove that every page meets the requested density.
+
+Density verification must assert toolbar height as well as page overflow.
+
+**Why:** A fixed filter-group width can stack controls into a tall column while the page still passes overflow and control-size checks.
+
+**How to apply:** Measure representative simple and multi-filter toolbars at desktop widths, and inspect their child arrangement. Keep legitimate narrow-screen wrapping instead of forcing every toolbar into one row.

@@ -1,12 +1,12 @@
 /* DigiQ Doctors — compact-only staff workspace contract. See docs/compact-style-contract.md.
    Scoped under .workspace so patient tickets, print, auth and public pages are untouched. */
-:root{--cw-gap:var(--space-2);--cw-gap-lg:var(--space-3);--cw-ctl:36px;--cw-ctl-sm:30px;--cw-line:#dbe4f0;--cw-line-soft:#e8eef6;--cw-blue:var(--dq-blue);--cw-blue-strong:var(--dq-blue-strong);--cw-ink:var(--ink);--cw-soft:var(--soft);--cw-surface:var(--surface-hover)}
+:root{--cw-gap:var(--space-2);--cw-gap-lg:var(--space-3);--cw-ctl:32px;--cw-ctl-sm:28px;--cw-pad:var(--space-3);--type-panel:16px;--type-page-compact:20px;--cw-line:#dbe4f0;--cw-line-soft:#e8eef6;--cw-blue:var(--dq-blue);--cw-blue-strong:var(--dq-blue-strong);--cw-ink:var(--ink);--cw-soft:var(--soft);--cw-surface:var(--surface-hover)}
 
 /* Workspace shell + section navigation (not tabs) */
 .workspace .clinic-workspace{display:grid;grid-template-columns:200px minmax(0,1fr);gap:var(--cw-gap-lg);align-items:start}
 .workspace .clinic-workspace>*{min-width:0}
 .workspace .workspace-section-nav{position:sticky;top:var(--space-3);display:flex;flex-direction:column;gap:var(--space-1);padding:var(--space-2);background:var(--dq-surface);border:1px solid var(--cw-line-soft);border-radius:var(--radius-card)}
-.workspace .workspace-section-nav a,.workspace .workspace-section-nav button{display:flex;align-items:center;gap:var(--space-2);justify-content:flex-start;width:100%;min-height:34px;padding:var(--space-2) var(--space-3);border:0;border-radius:var(--radius-control);background:none;font-size:var(--type-label);font-weight:550;color:#40577a;text-align:left}
+.workspace .workspace-section-nav a,.workspace .workspace-section-nav button{display:flex;align-items:center;gap:var(--space-2);justify-content:flex-start;width:100%;min-height:var(--cw-ctl);padding:var(--space-1) var(--space-3);border:0;border-radius:var(--radius-control);background:none;font-size:var(--type-label);font-weight:550;color:#40577a;text-align:left}
 .workspace .workspace-section-nav a:hover,.workspace .workspace-section-nav button:hover{background:var(--cw-surface);color:var(--cw-blue)}
 .workspace .workspace-section-nav [aria-current],.workspace .workspace-section-nav .active{background:#e6effb;color:var(--cw-blue-strong);font-weight:650;box-shadow:inset 3px 0 0 var(--cw-blue)}
 .workspace .workspace-section-select{display:none}
@@ -24,11 +24,11 @@
 .workspace .resource-toolbar-actions,.workspace .toolbar-actions{display:flex;align-items:center;gap:var(--space-2);margin-left:auto;flex-wrap:wrap}
 .workspace .toolbar{align-items:center}
 .workspace .toolbar .search{max-width:360px;flex:1 1 240px}
-.workspace .toolbar .search input,.workspace .search input{min-height:34px;font-size:var(--type-body)}
+.workspace .toolbar .search input,.workspace .search input{min-height:calc(var(--cw-ctl) - 2px);font-size:var(--type-body)}
 
 /* Status tabs — the only tab pattern allowed (Active / Inactive / All) */
 .workspace .status-tabs{display:inline-flex;gap:var(--space-1);padding:var(--space-1);background:#eef3fa;border:1px solid var(--cw-line);border-radius:var(--radius-control)}
-.workspace .status-tabs [role=tab],.workspace .status-tabs button{min-height:30px;padding:var(--space-1) var(--space-3);border:0;border-radius:var(--radius-control);background:transparent;font-size:var(--type-label);font-weight:600;color:#40577a;gap:var(--space-2)}
+.workspace .status-tabs [role=tab],.workspace .status-tabs button{min-height:var(--cw-ctl-sm);padding:var(--space-1) var(--space-3);border:0;border-radius:var(--radius-control);background:transparent;font-size:var(--type-label);font-weight:600;color:#40577a;gap:var(--space-2)}
 .workspace .status-tabs [aria-selected=true],.workspace .status-tabs [aria-pressed=true]{background:#fff;color:var(--cw-blue-strong);box-shadow:0 1px 2px #0d235026}
 .workspace .status-tabs .count{font-size:var(--type-label);font-variant-numeric:tabular-nums;color:var(--cw-soft)}
 
@@ -58,27 +58,26 @@
 .workspace .button-group{display:inline-flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
 .workspace .button-group .danger,.workspace .button.danger{color:#a2302a;border-color:#efc3bf;background:#fff}
 .workspace .button-group .danger:first-child{margin-right:auto}
-.workspace .button{min-height:var(--cw-ctl);padding:var(--space-2) var(--space-4);font-size:var(--type-label);gap:var(--space-2);border-radius:var(--radius-control);box-shadow:none}
+.workspace .button{min-height:var(--cw-ctl);padding:var(--space-1) var(--space-3);font-size:var(--type-label);gap:var(--space-2);border-radius:var(--radius-control);box-shadow:none}
 .workspace .button.small{min-height:var(--cw-ctl-sm);padding:var(--space-1) var(--space-3);font-size:var(--type-label)}
-.workspace button:not(.button){min-height:var(--cw-ctl-sm);padding:var(--space-1) var(--space-3);font-size:var(--type-label);border-radius:var(--radius-control)}
+.workspace button:not(.button){min-height:var(--cw-ctl-sm);padding:2px var(--space-3);font-size:var(--type-label);border-radius:var(--radius-control)}
 
 /* Card / panel headers: title left, actions right, vertically centred */
-.workspace .panel-heading{align-items:center;padding:var(--space-5);min-height:48px}
+.workspace .panel-heading{align-items:center;min-height:40px}
 .workspace .panel-heading>div:first-child{min-width:0}
-.workspace .panel-heading h2{font-size:var(--type-section);line-height:1.3}
+.workspace .panel-heading h2{font-size:var(--type-panel);line-height:1.3}
 .workspace .panel-heading p{margin-top:var(--space-1)}
 .workspace .panel-actions,.workspace .panel-heading>.button-group{display:flex;gap:var(--space-2);align-items:center;flex-shrink:0}
 .workspace .panel+.panel{margin-top:var(--cw-gap-lg)}
 
 /* Forms: consistent footer, compact fields */
-.workspace input:not([type=checkbox]):not([type=radio]),.workspace select,.workspace textarea{--field-height:36px;padding:var(--space-2) var(--space-3);font-size:var(--type-body);margin-top:var(--space-1);border-radius:var(--radius-control)}
-.workspace .workspace-search input{padding-left:40px;padding-right:40px}
+.workspace input:not([type=checkbox]):not([type=radio]),.workspace select,.workspace textarea{--field-height:var(--cw-ctl);min-height:var(--cw-ctl);padding:6px var(--space-3);font-size:var(--type-body);margin-top:var(--space-1);border-radius:var(--radius-control)}
+.workspace .workspace-search input{height:var(--cw-ctl);min-height:var(--cw-ctl);padding-block:var(--space-1);padding-left:40px;padding-right:40px}
 .workspace .filter-bar-primary>.workspace-search{max-width:360px}
 .workspace .workspace-search button{min-height:28px}
-.workspace textarea{min-height:76px}
+.workspace textarea{min-height:68px}
 .workspace label{font-size:var(--type-label)}
-.workspace .form-grid{gap:var(--space-4);margin-top:var(--space-4)}
-.workspace .form-footer,.workspace .modal-footer{display:flex;align-items:center;justify-content:flex-end;gap:var(--space-2);margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--cw-line-soft)}
+.workspace .form-footer,.workspace .modal-footer{display:flex;align-items:center;justify-content:flex-end;border-top:1px solid var(--cw-line-soft)}
 .workspace .form-footer .danger{margin-right:auto}
 
 /* Mobile: section select, stacked toolbar, 44px targets */
@@ -111,27 +110,34 @@
 .day-open-switch:has(input:disabled){opacity:.55;cursor:not-allowed}
 
 /* ---- Compact density pass (approved reference) ---- */
-/* Shared FilterBar: title left, controls right, status on a deliberate compact second row. */
-.workspace .filter-bar .filter-bar-row,.workspace .filter-bar .filter-bar-row.has-title{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr) auto;grid-template-areas:"title primary tools" "status status status";align-items:center;column-gap:var(--space-3);row-gap:var(--space-2);flex-wrap:nowrap}
-.workspace .filter-bar .filter-bar-row:not(.has-title){grid-template-areas:"primary primary tools"}
-.workspace .filter-bar .filter-bar-title{grid-area:title;order:0;flex:none;align-self:center}
-.workspace .filter-bar .filter-bar-status{grid-area:status;order:0;flex:none;max-width:100%}
-.workspace .filter-bar .filter-bar-primary,.workspace .filter-bar .has-title .filter-bar-primary{grid-area:primary;display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:var(--space-2);min-width:0;max-width:none}
-.workspace .filter-bar .filter-bar-primary>.workspace-search{flex:1 1 220px;max-width:320px}
+/* Shared FilterBar: one flex row. Title + status left, scoped filters/search + tools right.
+   Wraps only when content genuinely does not fit (e.g. wide appointment status tabs). */
+.workspace .filter-bar .filter-bar-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3)}
+.workspace .filter-bar .filter-bar-title{order:0;flex:0 1 auto;align-self:center}
+.workspace .filter-bar .filter-bar-status{order:1;flex:0 1 auto;max-width:100%}
+.workspace .filter-bar .filter-bar-primary{order:2;flex:1 1 260px;display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:var(--space-2);min-width:0;max-width:none;margin-left:auto}
+.workspace .filter-bar .filter-bar-row:not(.has-title) .filter-bar-primary{justify-content:flex-start;margin-left:0}
+.workspace .filter-bar .filter-bar-primary>.workspace-search{flex:1 1 200px;max-width:300px}
 .workspace .filter-bar .filter-bar-primary>:not(.workspace-search){flex:0 1 auto;min-width:0}
-.workspace .filter-bar .filter-bar-tools,.workspace .filter-bar .has-title .filter-bar-tools{grid-area:tools;margin-left:0;flex-wrap:nowrap;justify-content:flex-end;width:auto}
-.workspace .filter-bar .filter-bar-row:not(.has-title) .filter-bar-primary{justify-content:flex-start}
+.workspace .filter-bar .filter-bar-tools{order:3;flex:0 0 auto;margin-left:0;flex-wrap:nowrap;justify-content:flex-end;width:auto}
+.workspace .filter-bar .filter-bar-tools>.button,.workspace .filter-bar .filter-toggle,.workspace .filter-bar .filter-clear{min-height:var(--cw-ctl)}
+.workspace .filter-bar .filter-bar-tools .sort-menu .searchable-select-field>label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.workspace .searchable-select-control,.app-dialog .searchable-select-control{min-height:var(--cw-ctl);padding:4px 8px;line-height:22px}
+.workspace .filter-bar .searchable-select-control>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.workspace .pagination .searchable-select-field{display:flex;flex-direction:row;align-items:center;gap:var(--space-2)}
+.workspace .pagination .searchable-select-field>label{white-space:nowrap}
+.workspace .pagination .searchable-select-control{min-width:64px}
+.workspace .filter-bar input:not([type=checkbox]):not([type=radio]),.workspace .filter-bar select{--field-height:var(--cw-ctl);min-height:var(--cw-ctl)}
 .workspace .listing-count-label{font-size:var(--type-label);font-weight:600;color:var(--cw-soft);white-space:nowrap}
 .workspace .listing-count-label .listing-count{color:var(--cw-ink);font-variant-numeric:tabular-nums}
 .workspace .filter-chips{margin-top:var(--space-2)}
-@media(max-width:1100px){.workspace .filter-bar .filter-bar-row,.workspace .filter-bar .filter-bar-row.has-title{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"title tools" "primary primary" "status status"}.workspace .filter-bar .filter-bar-row:not(.has-title){grid-template-areas:"primary tools" "status status"}.workspace .filter-bar .filter-bar-primary{justify-content:flex-start}}
-@media(max-width:767px){.workspace .filter-bar .filter-bar-row,.workspace .filter-bar .filter-bar-row.has-title,.workspace .filter-bar .filter-bar-row:not(.has-title){grid-template-columns:minmax(0,1fr);grid-template-areas:"title" "primary" "tools" "status"}.workspace .filter-bar .filter-bar-primary>*{flex:1 1 100%;max-width:none}.workspace .filter-bar .filter-bar-tools{flex-wrap:wrap;justify-content:flex-start}}
+@media(max-width:767px){.workspace .filter-bar .filter-bar-row>*{flex:1 1 100%;max-width:none}.workspace .filter-bar .filter-bar-primary{justify-content:flex-start;margin-left:0}.workspace .filter-bar .filter-bar-primary>*{flex:1 1 100%;max-width:none}.workspace .filter-bar .filter-bar-tools{flex-wrap:wrap;justify-content:flex-start}}
 
 /* Reports: center stack keeps filter controls together instead of spreading. */
 .workspace .reports-compact .filter-bar .filter-bar-primary{justify-content:flex-start}
 @media(min-width:768px){
- .workspace .filter-bar .filter-bar-primary>.searchable-select-field{width:200px;flex:0 1 200px;max-width:240px}
- .workspace .filter-bar .filter-bar-primary>.workspace-search{width:220px;flex:1 1 180px;max-width:280px;align-self:flex-end}
+ .workspace .filter-bar .filter-bar-primary>.searchable-select-field{width:140px;flex:0 1 140px;max-width:160px}
+ .workspace .filter-bar .filter-bar-primary>.workspace-search{width:200px;flex:1 1 160px;max-width:220px;align-self:flex-end}
  .workspace .reports-compact .filter-bar .filter-bar-primary>.searchable-select-field{width:180px;flex-basis:180px}
  .workspace .reports-compact .filter-bar .filter-bar-primary{align-items:flex-end}
  .workspace .reports-compact .filter-bar .filter-bar-primary>label{flex:0 1 155px;width:155px}
@@ -160,13 +166,15 @@
 /* Dense shell: narrower sidebar, short header, tighter content gaps */
 @media(min-width:901px){
  .workspace{--sidebar-width:208px}
- .workspace .topbar{height:48px}
- .workspace .content{padding:var(--space-4) var(--space-5) 0}
- .workspace .page-heading{margin-bottom:var(--space-3)}
  .workspace .page-heading p{margin-top:2px}
- .workspace .panel-heading{padding:var(--space-3) var(--space-4);min-height:44px}
+ .workspace .pagination button{height:28px}
  .workspace .help-card{display:none}
 }
+
+/* Portaled control geometry; section spacing lives in index.css final screen rules. */
+.app-dialog input:not([type=checkbox]):not([type=radio]),.app-dialog select{--field-height:var(--cw-ctl);min-height:var(--cw-ctl);padding:6px var(--space-3)}
+.app-dialog .button{min-height:var(--cw-ctl);padding:var(--space-1) var(--space-4)}
+@media(max-width:767px),(pointer:coarse){.app-dialog .button,.app-dialog button,.app-dialog input:not([type=checkbox]):not([type=radio]),.app-dialog select,.workspace .filter-bar .filter-bar-tools>.button,.workspace .filter-bar .filter-toggle,.workspace .filter-bar .filter-clear,.workspace .filter-bar input:not([type=checkbox]):not([type=radio]),.workspace .filter-bar select,.workspace .pagination button,.workspace .searchable-select-control,.app-dialog .searchable-select-control{min-height:44px}.workspace .pagination button{height:44px}}
 
 /* Dialogs: one scroll region only (the body); no nested scroll inside long forms. */
 .app-dialog-body .form-grid,.app-dialog-body .panel,.app-dialog-body section{max-height:none;overflow:visible}

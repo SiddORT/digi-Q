@@ -69,6 +69,55 @@ async function go(path) { await page.goto(origin + path); await page.waitForTime
 async function select(testId, text) { await page.getByTestId(testId).click(); await page.getByRole("option", { name: text, exact: true }).click(); }
 await mkdir("screenshots/management-acceptance", { recursive: true });
 try {
+  if (process.env.DENSITY_AUDIT) await check("Density audit across administration pages and viewport sizes", async () => {
+    const metrics = [], problems = [];
+    const paths = ["dashboard","clinics","branches","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions","demo","templates","permissions","integrations","system-users"];
+    for (const width of [1440, 1024, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const path of paths) {
+        await go(`/admin/${path}`);
+        await expect(page.locator(".workspace")).toBeVisible();
+        await expect(page.getByText("Something went wrong", { exact: true })).toHaveCount(0);
+        const measured = await page.evaluate(() => {
+          const visible = el => el.getBoundingClientRect().width > 0 && el.getBoundingClientRect().height > 0;
+          const style = el => { const s = getComputedStyle(el), r = el.getBoundingClientRect(); return { height: Math.round(r.height), top: Math.round(r.top), padding: s.padding, gap: s.gap, display: s.display }; };
+          return {
+            scrollWidth: document.documentElement.scrollWidth, viewport: innerWidth,
+            headers: [...document.querySelectorAll(".workspace .panel-heading")].filter(visible).map(style),
+            toolbars: [...document.querySelectorAll(".workspace .filter-bar-row")].filter(visible).map(el => ({ ...style(el), children: [...el.children].filter(visible).map(c => ({ className: c.className, ...style(c) })) })),
+            controls: [...document.querySelectorAll(".workspace .filter-bar input,.workspace .filter-bar button,.workspace .filter-bar select")].filter(visible).map(el => ({ tag: el.tagName, ...style(el) })),
+            content: document.querySelector(".workspace .content") ? style(document.querySelector(".workspace .content")) : null,
+            tableRows: [...document.querySelectorAll(".workspace tbody tr")].slice(0, 2).map(style),
+          };
+        });
+        metrics.push({ path, width, ...measured });
+        if (measured.scrollWidth > width + 1) problems.push(`${path} at ${width}: page overflow ${measured.scrollWidth}`);
+        const toolbarLimit = ["clinics", "branches", "patients", "qrs", "audit"].includes(path) ? 44 : ["system-users", "appointments", "reports"].includes(path) ? 70 : null;
+        if (width === 1440 && toolbarLimit && measured.toolbars.some(bar => bar.height > toolbarLimit)) problems.push(`${path}: unnecessary toolbar height exceeds ${toolbarLimit}px`);
+        if (width === 1440 && measured.headers.some(h => Number.parseFloat(h.padding) > 14)) problems.push(`${path}: header padding exceeds 14px`);
+        if (width === 390 && measured.controls.some(c => c.height < 43)) problems.push(`${path}: mobile toolbar target below 44px`);
+        if (width === 1440 || ["clinics", "appointments", "reports", "templates"].includes(path)) {
+          await page.screenshot({ path: `screenshots/management-acceptance/density-${width}-${path}.png` });
+        }
+        if (width === 1440 && ["clinics", "branches", "patients", "masters", "qrs", "availability", "exceptions"].includes(path)) {
+          const create = page.getByRole("button", { name: /^(Add|New|Create) / }).first();
+          if (await create.count() && await create.isEnabled()) {
+            await create.click();
+            if (await page.getByRole("dialog").count()) {
+              await expect(page.getByRole("dialog")).toBeVisible();
+              const dialog = await page.getByRole("dialog").evaluate(el => ({ width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height, scrollWidth: el.scrollWidth, clientWidth: el.clientWidth }));
+              metrics.push({ path, width, dialog });
+              if (dialog.scrollWidth > dialog.clientWidth + 1) problems.push(`${path}: dialog horizontal overflow`);
+              await page.screenshot({ path: `screenshots/management-acceptance/density-${path}-dialog.png` });
+              await page.keyboard.press("Escape");
+            }
+          }
+        }
+      }
+    }
+    await writeFile("screenshots/management-acceptance/density-metrics.json", JSON.stringify({ metrics, problems }, null, 2));
+    if (problems.length) throw Error(problems.join("; "));
+  });
   await check("Role deletion requires acknowledging existing bindings and persists both removals", async () => {
     await go("/admin/permissions");
     await page.getByRole("button", { name: "Delete Limited desk" }).click();

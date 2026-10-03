@@ -118,7 +118,7 @@ export function SearchableSelect({
       <Popover open={open} onOpenChange={setOpen}>
         <div
           className={cn(
-            "relative flex min-w-0 max-w-full min-h-[43px] w-full items-center justify-between rounded-lg border border-border bg-white px-3 py-2 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15",
+            "searchable-select-control relative flex min-w-0 max-w-full min-h-[43px] w-full items-center justify-between rounded-lg border border-border bg-white px-3 py-2 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-primary/15",
             disabled && "opacity-50 cursor-not-allowed bg-slate-50",
             error && "border-destructive focus-within:border-destructive focus-within:ring-destructive/15"
           )}

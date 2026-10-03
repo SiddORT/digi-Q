@@ -1,0 +1,5316 @@
+{
+  "metrics": [
+    {
+      "path": "dashboard",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [
+        {
+          "height": 40,
+          "top": 328,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        },
+        {
+          "height": 64,
+          "top": 568,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 798,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "clinics",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 34,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 146,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 141,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 140,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 298,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": [
+        {
+          "height": 47,
+          "top": 227,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "table-row"
+        }
+      ]
+    },
+    {
+      "path": "clinics",
+      "width": 1440,
+      "dialog": {
+        "width": 1040,
+        "height": 810,
+        "scrollWidth": 1038,
+        "clientWidth": 1038
+      }
+    },
+    {
+      "path": "branches",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 34,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 146,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 141,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 140,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 348,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "branches",
+      "width": 1440,
+      "dialog": {
+        "width": 1040,
+        "height": 810,
+        "scrollWidth": 1038,
+        "clientWidth": 1038
+      }
+    },
+    {
+      "path": "users",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 38,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 148,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 38,
+              "top": 139,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 142,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 142,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 28,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 28,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 28,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 142,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 142,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        }
+      ],
+      "content": {
+        "height": 495,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "patients",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 34,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 146,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 141,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 140,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 28,
+          "top": 142,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 348,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "patients",
+      "width": 1440,
+      "dialog": {
+        "width": 1040,
+        "height": 663.609375,
+        "scrollWidth": 1038,
+        "clientWidth": 1038
+      }
+    },
+    {
+      "path": "masters",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 59,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 158,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 153,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 59,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 151,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 153,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 153,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 153,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 166,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 165,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 152,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 156,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 152,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 373,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "masters",
+      "width": 1440,
+      "dialog": {
+        "width": 1040,
+        "height": 361.15625,
+        "scrollWidth": 1038,
+        "clientWidth": 1038
+      }
+    },
+    {
+      "path": "appointments",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 59,
+          "top": 160,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 179,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 174,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 59,
+              "top": 160,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 59,
+              "top": 160,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 174,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 174,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 174,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 174,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 174,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 174,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 186,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 185,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 189,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 173,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 185,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 189,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 359,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "queue",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [
+        {
+          "height": 64,
+          "top": 176,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [
+        {
+          "height": 57,
+          "top": 465,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 478,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 57,
+              "top": 465,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 478,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 490,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        }
+      ],
+      "content": {
+        "height": 697,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "reports",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 59,
+          "top": 160,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 179,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 59,
+              "top": 160,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 173,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 186,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 185,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 189,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 186,
+          "padding": "4px 12px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 186,
+          "padding": "4px 12px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 173,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 173,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 324,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "settings",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 344,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "audit",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 34,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 146,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 140,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 348,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "qrs",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 34,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 146,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 141,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 140,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 141,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 419,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "qrs",
+      "width": 1440,
+      "dialog": {
+        "width": 1040,
+        "height": 359.90625,
+        "scrollWidth": 1038,
+        "clientWidth": 1038
+      }
+    },
+    {
+      "path": "book",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 615,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "availability",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [
+        {
+          "height": 64,
+          "top": 161,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [
+        {
+          "height": 125,
+          "top": 284,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 336,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 125,
+              "top": 284,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 330,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 311,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 310,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 310,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 376,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 331,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 331,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 335,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 331,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 633,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "availability",
+      "width": 1440,
+      "dialog": {
+        "width": 1040,
+        "height": 810,
+        "scrollWidth": 1038,
+        "clientWidth": 1038
+      }
+    },
+    {
+      "path": "exceptions",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [
+        {
+          "height": 64,
+          "top": 161,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [
+        {
+          "height": 125,
+          "top": 284,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 336,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 125,
+              "top": 284,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 330,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 311,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 310,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 310,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 376,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 376,
+          "padding": "4px 12px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 331,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 335,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 331,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 584,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "exceptions",
+      "width": 1440,
+      "dialog": {
+        "width": 1040,
+        "height": 638.640625,
+        "scrollWidth": 1038,
+        "clientWidth": 1038
+      }
+    },
+    {
+      "path": "demo",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 260,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "templates",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 1343,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "permissions",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 81,
+          "top": 273,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "access-filter",
+              "height": 81,
+              "top": 273,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "block"
+            },
+            {
+              "className": "access-filter",
+              "height": 81,
+              "top": 273,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "block"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 298,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [],
+      "content": {
+        "height": 785,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": [
+        {
+          "height": 46,
+          "top": 390,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "table-row"
+        },
+        {
+          "height": 45,
+          "top": 436,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "table-row"
+        }
+      ]
+    },
+    {
+      "path": "integrations",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 737,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "system-users",
+      "width": 1440,
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 59,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 158,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 153,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 59,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 152,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 153,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 153,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 153,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 166,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 165,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 165,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 300,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": [
+        {
+          "height": 40,
+          "top": 243,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "table-row"
+        }
+      ]
+    },
+    {
+      "path": "dashboard",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [
+        {
+          "height": 40,
+          "top": 367,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        },
+        {
+          "height": 87,
+          "top": 606,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 859,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "clinics",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 74,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 145,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 140,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 179,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 139,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 184,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 339,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": [
+        {
+          "height": 48,
+          "top": 267,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "table-row"
+        }
+      ]
+    },
+    {
+      "path": "branches",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 74,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 145,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 140,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 179,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 139,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 184,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 388,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "users",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 38,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 148,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 38,
+              "top": 139,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 142,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 142,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 28,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 28,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 28,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 142,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 142,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        }
+      ],
+      "content": {
+        "height": 495,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "patients",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 74,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 145,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 140,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 179,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 139,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 184,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 28,
+          "top": 182,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 388,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "masters",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 101,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 158,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 153,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 59,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 206,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 153,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 153,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 153,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 166,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 165,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 207,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 211,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 207,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 415,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "appointments",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 97,
+          "top": 160,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 165,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 160,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 59,
+              "top": 199,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 59,
+              "top": 199,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 160,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 160,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 160,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 160,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 160,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 160,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 225,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 224,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 228,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 212,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 224,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 228,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 398,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "queue",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [
+        {
+          "height": 64,
+          "top": 176,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [
+        {
+          "height": 97,
+          "top": 465,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 478,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 57,
+              "top": 465,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 530,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 478,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 490,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        }
+      ],
+      "content": {
+        "height": 737,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "reports",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 124,
+          "top": 160,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 211,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 124,
+              "top": 160,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 206,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 186,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 185,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 189,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 251,
+          "padding": "4px 12px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 251,
+          "padding": "4px 12px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 206,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 206,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 389,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "settings",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 344,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "audit",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 34,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 146,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 140,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 140,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 140,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 144,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 348,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "qrs",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 74,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 145,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 140,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 32,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 179,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 140,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 139,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 184,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 180,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 459,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "book",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 615,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "availability",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [
+        {
+          "height": 64,
+          "top": 161,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [
+        {
+          "height": 167,
+          "top": 284,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 336,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 125,
+              "top": 284,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 417,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 311,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 310,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 310,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 376,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 418,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 418,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 422,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 418,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 697,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "exceptions",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [
+        {
+          "height": 64,
+          "top": 161,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [
+        {
+          "height": 230,
+          "top": 284,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 389,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 230,
+              "top": 284,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 34,
+              "top": 382,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 284,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 350,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 350,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 416,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 482,
+          "padding": "4px 12px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 383,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 24,
+          "top": 387,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 383,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 690,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "demo",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 282,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "templates",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 1475,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "permissions",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 81,
+          "top": 296,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "access-filter",
+              "height": 81,
+              "top": 296,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "block"
+            },
+            {
+              "className": "access-filter",
+              "height": 81,
+              "top": 296,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "block"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 320,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [],
+      "content": {
+        "height": 930,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": [
+        {
+          "height": 46,
+          "top": 413,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "table-row"
+        },
+        {
+          "height": 46,
+          "top": 459,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "table-row"
+        }
+      ]
+    },
+    {
+      "path": "integrations",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 759,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "system-users",
+      "width": 1024,
+      "scrollWidth": 1024,
+      "viewport": 1024,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 125,
+          "top": 139,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 191,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 31,
+              "top": 186,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 125,
+              "top": 139,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 32,
+              "top": 186,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 186,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 186,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 31,
+          "top": 186,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 32,
+          "top": 166,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 165,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 32,
+          "top": 231,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 542,
+        "top": 95,
+        "padding": "12px 16px 0px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": [
+        {
+          "height": 242,
+          "top": 273,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "block"
+        }
+      ]
+    },
+    {
+      "path": "dashboard",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [
+        {
+          "height": 40,
+          "top": 625,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        },
+        {
+          "height": 155,
+          "top": 887,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 1289,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "clinics",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 239,
+          "top": 167,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 167,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 44,
+              "top": 196,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 44,
+              "top": 248,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 106,
+              "top": 300,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 248,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 305,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 301,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 305,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 362,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 839,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": [
+        {
+          "height": 276,
+          "top": 425,
+          "padding": "12px",
+          "gap": "normal",
+          "display": "block"
+        }
+      ]
+    },
+    {
+      "path": "branches",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 239,
+          "top": 167,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 167,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 44,
+              "top": 196,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 44,
+              "top": 248,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 106,
+              "top": 300,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 248,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 305,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 301,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 305,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 362,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 608,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "users",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 187,
+          "top": 167,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 167,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 54,
+              "top": 196,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 44,
+              "top": 258,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 44,
+              "top": 310,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 201,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 201,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 201,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 258,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 310,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        }
+      ],
+      "content": {
+        "height": 723,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "patients",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 239,
+          "top": 167,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 167,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 44,
+              "top": 196,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 44,
+              "top": 248,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 106,
+              "top": 300,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 248,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 305,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 301,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 305,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 362,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 362,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 608,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "masters",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 263,
+          "top": 167,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 167,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 44,
+              "top": 196,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 121,
+              "top": 248,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 54,
+              "top": 376,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 248,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 325,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 377,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 381,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 381,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 655,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "appointments",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 350,
+          "top": 244,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 244,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 44,
+              "top": 273,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 131,
+              "top": 325,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 131,
+              "top": 463,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 273,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 273,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 273,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 273,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 273,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 273,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 325,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 402,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 406,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 463,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 541,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 545,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 800,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "queue",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [
+        {
+          "height": 87,
+          "top": 225,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [
+        {
+          "height": 173,
+          "top": 737,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-status",
+              "height": 44,
+              "top": 737,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 69,
+              "top": 789,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 44,
+              "top": 866,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 737,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 737,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 737,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 737,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 737,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 737,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 814,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        }
+      ],
+      "content": {
+        "height": 1154,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "reports",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 365,
+          "top": 188,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 188,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 284,
+              "top": 217,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 44,
+              "top": 509,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 217,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 294,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 298,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 380,
+          "padding": "4px 12px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 457,
+          "padding": "4px 12px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 509,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 509,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 728,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "settings",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 452,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "audit",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 135,
+          "top": 167,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 167,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 44,
+              "top": 196,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 54,
+              "top": 248,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 253,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 249,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 253,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 526,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "qrs",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 239,
+          "top": 167,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 167,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 44,
+              "top": 196,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 44,
+              "top": 248,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 106,
+              "top": 300,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 248,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 305,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 301,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 305,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 362,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 746,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "book",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 994,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "availability",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [
+        {
+          "height": 87,
+          "top": 189,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [
+        {
+          "height": 416,
+          "top": 355,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 355,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 274,
+              "top": 383,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 106,
+              "top": 665,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 383,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 461,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 537,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 614,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 670,
+          "padding": "2px 12px",
+          "gap": "6px",
+          "display": "inline-flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 666,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 670,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 727,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 1111,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "exceptions",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [
+        {
+          "height": 87,
+          "top": 189,
+          "padding": "8px 12px",
+          "gap": "15px",
+          "display": "flex"
+        }
+      ],
+      "toolbars": [
+        {
+          "height": 441,
+          "top": 355,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 355,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 350,
+              "top": 383,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 54,
+              "top": 742,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 383,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 461,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 537,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 614,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 690,
+          "padding": "4px 12px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 52,
+          "top": 743,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 747,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 747,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 1020,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "demo",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 394,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "templates",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 2260,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "permissions",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 262,
+          "top": 346,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "access-filter",
+              "height": 101,
+              "top": 346,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "block"
+            },
+            {
+              "className": "access-filter",
+              "height": 101,
+              "top": 455,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "block"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 44,
+              "top": 564,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [],
+      "content": {
+        "height": 1975,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": [
+        {
+          "height": 398,
+          "top": 608,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "height": 393,
+          "top": 1016,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "block"
+        }
+      ]
+    },
+    {
+      "path": "integrations",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [],
+      "controls": [],
+      "content": {
+        "height": 1146,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": []
+    },
+    {
+      "path": "system-users",
+      "width": 390,
+      "scrollWidth": 390,
+      "viewport": 390,
+      "headers": [],
+      "toolbars": [
+        {
+          "height": 330,
+          "top": 167,
+          "padding": "0px",
+          "gap": "8px",
+          "display": "flex",
+          "children": [
+            {
+              "className": "filter-bar-title",
+              "height": 21,
+              "top": 167,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-status",
+              "height": 44,
+              "top": 196,
+              "padding": "0px",
+              "gap": "normal",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-primary",
+              "height": 197,
+              "top": 248,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            },
+            {
+              "className": "filter-bar-tools",
+              "height": 44,
+              "top": 453,
+              "padding": "0px",
+              "gap": "8px",
+              "display": "flex"
+            }
+          ]
+        }
+      ],
+      "controls": [
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 196,
+          "padding": "4px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "INPUT",
+          "height": 44,
+          "top": 248,
+          "padding": "4px 40px",
+          "gap": "normal",
+          "display": "block"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 325,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        },
+        {
+          "tag": "BUTTON",
+          "height": 44,
+          "top": 402,
+          "padding": "2px 12px",
+          "gap": "8px",
+          "display": "flex"
+        }
+      ],
+      "content": {
+        "height": 856,
+        "top": 119,
+        "padding": "16px",
+        "gap": "normal",
+        "display": "block"
+      },
+      "tableRows": [
+        {
+          "height": 258,
+          "top": 506,
+          "padding": "0px",
+          "gap": "normal",
+          "display": "block"
+        }
+      ]
+    }
+  ],
+  "problems": []
+}

@@ -53,8 +53,8 @@ test("CSS parses and explicit v3 central tokens have exactly the approved values
 
 test("workspace typography overrides legacy layers and dashboard selectors", () => {
   for (const [selector, name] of [
-    [".workspace .page-heading h1", "--type-page"],
-    [".workspace .panel-heading h2", "--type-section"],
+    [".workspace .page-heading h1", "--type-page-compact"],
+    [".workspace .panel-heading h2", "--type-panel"],
     [".workspace .care-card h2", "--type-section"],
     [".workspace .stat-card > strong", "--type-page"],
     [".workspace .session-queue .sq-banner strong", "--type-page"],
@@ -66,7 +66,7 @@ test("workspace typography overrides legacy layers and dashboard selectors", () 
     [".workspace td", "--type-table"], [".workspace td strong", "--type-table"],
     [".workspace td small", "--type-table"], [".workspace th", "--type-table-heading"],
     [".workspace td::before", "--type-table-heading"],
-    [".app-dialog .app-dialog-title", "--type-section"],
+    [".app-dialog .app-dialog-title", "--type-panel"],
     [".app-dialog .app-dialog-desc", "--type-body"],
     [".searchable-select-options [cmdk-item]", "--type-body"],
   ]) final(selector, "font-size", `var(${name})`);
@@ -77,11 +77,11 @@ test("workspace typography overrides legacy layers and dashboard selectors", () 
 test("workspace dimensions, approved spacing and role-specific radii are consumed", () => {
   for (const [selector, prop, value] of [
     [".workspace .content", "max-width", "var(--workspace-width)"],
-    [".workspace .content", "padding", "var(--space-4) var(--space-5)"],
+    [".workspace .content", "padding", "var(--space-3) var(--space-4) 0"],
     [".workspace .sidebar", "width", "var(--sidebar-width)"],
-    [".workspace .form-grid", "gap", "var(--space-4)"],
-    [".workspace .stat-card", "padding", "var(--space-5)"],
-    [".workspace .panel-heading", "padding", "var(--space-5)"],
+    [".workspace .form-grid", "gap", "var(--space-3)"],
+    [".workspace .stat-card", "padding", "var(--cw-pad)"],
+    [".workspace .panel-heading", "padding", "var(--space-2) var(--cw-pad)"],
     [".workspace .panel", "border-radius", "var(--radius-card)"],
     [".workspace .button", "border-radius", "var(--radius-control)"],
     [".workspace .badge", "border-radius", "var(--radius-badge)"],

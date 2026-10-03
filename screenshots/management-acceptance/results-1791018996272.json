@@ -3,6 +3,5 @@
     "Density audit across administration pages and viewport sizes"
   ],
   "failures": [],
-  "crashes": [],
-  "writes": []
+  "crashes": []
 }

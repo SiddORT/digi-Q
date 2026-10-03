@@ -694,8 +694,8 @@
   .filter-chips li button{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
 }
 
-/* DigiQ v3 explicit standards win over legacy density rules (including unlayered
-   rules above). Screen-only: ticket/QR print geometry and brand images stay current.
+/* Final workspace standards and density. Keep shared spacing here rather than
+   competing overrides in page styles. Screen-only: ticket/QR print geometry stays current.
    Do not replace unspecified semantic palettes, control geometry, or shadows. */
 @media screen {
   .workspace {
@@ -704,10 +704,10 @@
     background: var(--dq-bg);
     --radius: var(--radius-control);
   }
-  .workspace .content { max-width: var(--workspace-width); padding: var(--space-4) var(--space-5); }
+  .workspace .content { max-width: var(--workspace-width); padding: var(--space-3) var(--space-4) 0; }
   .workspace .sidebar { width: var(--sidebar-width); padding: var(--space-3) var(--space-3) var(--space-3); }
   .workspace .workspace-main { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); }
-  .workspace .topbar { padding-inline: var(--space-5); height: 52px; }
+  .workspace .topbar { padding-inline: var(--space-4); height: 44px; }
   .workspace .workspace-label { margin: var(--space-4) var(--space-3) var(--space-2); font-size: var(--type-label); }
   .workspace .workspace-label span { font-size: var(--type-label); border-radius: var(--radius-badge); padding: var(--space-1) var(--space-2); }
   .workspace .sidebar .help-card { padding: var(--space-3); border-radius: var(--radius-card); font-size: var(--type-label); }
@@ -722,9 +722,10 @@
   .workspace .wnav-children { gap: var(--space-1); margin: var(--space-1) 0 var(--space-1) var(--space-5); padding-left: var(--space-2); }
 
   .workspace h1, .workspace h2, .workspace h3, .workspace h4 { font-family: var(--font-heading); }
-  .workspace h1, .workspace .page-heading h1 { font-size: var(--type-page); margin: var(--space-1) 0; }
+  .workspace h1, .workspace .page-heading h1 { font-size: var(--type-page-compact); margin: var(--space-1) 0; }
   .workspace h2, .workspace h3, .workspace h4, .workspace .panel-heading h2,
   .workspace .care-card h2 { font-size: var(--type-section); }
+  .workspace .panel-heading h2 { font-size: var(--type-panel); }
   .workspace .page-heading p, .workspace .panel-heading p, .workspace .care-card p,
   .workspace .empty p, .workspace .notice, .workspace .notice p, .workspace .error-box,
   .workspace .report-methodology, .workspace .settings-integration-note,
@@ -739,17 +740,17 @@
   .workspace .form-field-help, .workspace .form-field-error { font-size: var(--type-label); }
   .workspace .form-field-help, .workspace .form-field-error { margin-top: var(--space-1); }
   .workspace .password-checklist { font-size: var(--type-label); margin-top: var(--space-1); gap: var(--space-1) var(--space-3); }
-  .workspace .empty-state { padding: var(--space-7) var(--space-5); }
+  .workspace .empty-state { padding: var(--space-4) var(--space-3); }
   .workspace .empty-state p { font-size: var(--type-body); }
-  .workspace .form-grid { gap: var(--space-4); margin-top: var(--space-4); }
-  .workspace .form-footer { gap: var(--space-2); margin-top: var(--space-4); padding-top: var(--space-3); }
+  .workspace .form-grid { gap: var(--space-3); margin-top: var(--space-3); }
+  .workspace .form-footer { gap: var(--space-2); margin-top: var(--space-3); padding-top: var(--space-2); }
 
   .workspace button, .workspace .button, .workspace .button.small,
   .workspace .row-menu > summary { border-radius: var(--radius-control); }
   .workspace .search { border-radius: var(--radius-control); }
   .workspace input:not([type=checkbox]):not([type=radio]), .workspace select, .workspace textarea {
     font-size: var(--type-body); border-radius: var(--radius-control);
-    padding: var(--space-2) var(--space-3); margin-top: var(--space-1);
+    padding: var(--space-1) var(--space-3); margin-top: var(--space-1);
   }
   .workspace .workspace-search input { padding-inline: var(--space-8); }
   .workspace .password-input > input { padding-right: var(--space-9); }
@@ -758,13 +759,13 @@
   .workspace .panel, .workspace .stat-card, .workspace .care-card,
   .workspace .weekly-overview .day { border-radius: var(--radius-card); }
   .workspace .panel .panel { border-radius: 0; }
-  .workspace .stat-card, .workspace .care-card, .workspace .padded { padding: var(--space-5); }
-  .workspace .panel-heading { padding: var(--space-5); }
-  .workspace .stat-grid, .workspace .dashboard-grid { gap: var(--space-4); margin-bottom: var(--space-4); }
+  .workspace .stat-card, .workspace .care-card, .workspace .padded { padding: var(--cw-pad); }
+  .workspace .panel-heading { padding: var(--space-2) var(--cw-pad); }
+  .workspace .stat-grid, .workspace .dashboard-grid { gap: var(--space-3); margin-bottom: var(--space-3); }
   .workspace .toolbar { gap: var(--space-2); margin-bottom: var(--space-3); }
-  .workspace .page-heading { gap: var(--space-3); margin-bottom: var(--space-3); }
+  .workspace .page-heading { gap: var(--space-3); margin-bottom: var(--space-2); }
   .workspace .page-heading h1 { margin: 0; line-height: 1.2; }
-  .workspace .notice, .workspace .error-box { padding: var(--space-3) var(--space-4); margin: var(--space-3) 0; }
+  .workspace .notice, .workspace .error-box { padding: var(--space-2) var(--space-3); margin: var(--space-2) 0; }
 
   .workspace table, .workspace td, .workspace td strong, .workspace td small,
   .workspace td .muted, .workspace .cell-sub { font-size: var(--type-table); }
@@ -777,7 +778,7 @@
     font-size: var(--type-label); border-radius: var(--radius-badge); padding: var(--space-1) var(--space-2);
   }
   .workspace .pagination, .workspace .pagination-current { font-size: var(--type-label); }
-  .workspace .pagination { padding: var(--space-1) var(--space-3); gap: var(--space-2); min-height: 40px; }
+  .workspace .pagination { padding: 2px var(--space-3); gap: var(--space-2); min-height: 36px; }
   /* Weekly schedule listing: capacity has three flex items (count, patients,
      prefix/duration). Keep them inside their fixed-layout cell, not over Open. */
   .workspace .admin-listing-table td[data-label="Capacity"] .cap-chip {
@@ -789,7 +790,7 @@
     white-space: normal; overflow-wrap: anywhere; overflow: visible; -webkit-line-clamp: unset;
   }
   .workspace .filter-chips { gap: var(--space-2); }
-  .workspace .filter-panel-fields { gap: var(--space-4); }
+  .workspace .filter-panel-fields { gap: var(--space-3); }
   .workspace .filter-bar-advanced, .workspace .row-menu-list {
     border-radius: var(--radius-control); box-shadow: var(--shadow-dropdown);
   }
@@ -800,19 +801,19 @@
 
   /* Shared portaled controls cannot inherit .workspace styles. */
   .app-dialog.app-dialog { font-family: var(--font-body); font-size: var(--type-body); border-radius: var(--radius-dialog); box-shadow: var(--shadow-dialog); }
-  .app-dialog .app-dialog-title, .app-dialog .app-discard-title { font-family: var(--font-heading); font-size: var(--type-section); }
+  .app-dialog .app-dialog-title, .app-dialog .app-discard-title { font-family: var(--font-heading); font-size: var(--type-panel); }
   .app-dialog .app-dialog-desc, .app-dialog .app-discard-desc { font-size: var(--type-body); }
-  .app-dialog .app-dialog-header { padding: var(--space-5); padding-right: var(--space-9); }
-  .app-dialog .app-dialog-body { padding: var(--space-5) var(--space-5) 0; }
-  .app-dialog .app-dialog-body > :last-child { margin-bottom: var(--space-4); }
-  .app-dialog .app-dialog-body .form-grid { gap: var(--space-4); }
+  .app-dialog .app-dialog-header { padding: var(--space-3) var(--space-4); padding-right: var(--space-9); }
+  .app-dialog .app-dialog-body { padding: var(--space-3) var(--space-4) 0; }
+  .app-dialog .app-dialog-body > :last-child { margin-bottom: var(--space-3); }
+  .app-dialog .app-dialog-body .form-grid { gap: var(--space-3); margin-top: var(--space-2); }
   .app-dialog .app-dialog-body .form-footer, .app-dialog .app-dialog-body > .button:last-child,
-  .app-dialog .app-dialog-footer { margin: var(--space-4) calc(-1 * var(--space-5)) 0; padding: var(--space-4) var(--space-5); gap: var(--space-2); }
+  .app-dialog .app-dialog-footer { margin: var(--space-3) calc(-1 * var(--space-4)) 0; padding: var(--space-2) var(--space-4); gap: var(--space-2); }
   .app-dialog .app-dialog-body > .button:last-child { margin-left: auto; margin-right: 0; }
   .app-dialog label, .app-dialog .form-field-label, .app-dialog .form-field-help,
   .app-dialog .form-field-error { font-size: var(--type-label); }
   .app-dialog input:not([type=checkbox]):not([type=radio]), .app-dialog select, .app-dialog textarea {
-    font-size: var(--type-body); border-radius: var(--radius-control); padding: var(--space-2) var(--space-3);
+    font-size: var(--type-body); border-radius: var(--radius-control); padding: var(--space-1) var(--space-3);
   }
   .app-dialog .password-input > input { padding-right: var(--space-9); }
   .app-dialog button, .app-dialog .button { border-radius: var(--radius-control); font-size: var(--type-label); }
