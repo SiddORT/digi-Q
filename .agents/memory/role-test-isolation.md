@@ -41,3 +41,9 @@ direct fetch appeared correct. Playwright's last matching handler takes priority
 **How to apply:** Match the actual app-page request and expected response shape;
 fix fixture precedence rather than weakening CSRF checks or declaring a backend
 failure. Intercepted mutations do not prove real email delivery or authentication.
+
+Assert visible page content and the absence of an error boundary, not just the absence of browser `pageerror` events or horizontal overflow.
+
+**Why:** React caught malformed-fixture errors without emitting `pageerror`; the error page also fit a mobile viewport. Those assertions alone could falsely pass a broken template screen.
+
+**How to apply:** Confirm the intended form/table is visible before checking layout. Reconcile fixture response shapes and accessible control names with real contracts before attributing a failure to the application.

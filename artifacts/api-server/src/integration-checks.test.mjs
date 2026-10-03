@@ -10,7 +10,7 @@ test("integration checks report verified access separately from delivery and nev
   globalThis.checkFetch = async () => { fetched++; return { ok: true, json: async () => ({ status: "active", account_sid: "AC" + "a".repeat(32) }) }; };
   await build({ stdin: { contents: 'export {checkIntegration} from "./lib/integration-checks";', resolveDir: import.meta.dirname }, outfile: path, bundle: true, platform: "node", format: "esm", packages: "external", plugins: [{ name: "isolated", setup(b) {
     b.onResolve({ filter: /^(nodemailer)$|integration-vault$|objectStorage$|local-media$/ }, a => ({ path: a.path, namespace: "fixture" }));
-    b.onLoad({ filter: /.*/, namespace: "fixture" }, ({ path }) => ({ contents: path === "nodemailer" ? "export default {createTransport:()=>({verify:globalThis.checkVerify,close(){},sendMail(){throw Error('Must not send')}})}" : path.endsWith("integration-vault") ? `export async function resolvedIntegration(){return {source:"database",env:{SMTP_HOST:"smtp.example.invalid",SMTP_PORT:"465",SMTP_USER:"fixture",SMTP_PASSWORD:"fixture",SMTP_FROM:"test@example.invalid",OTP_PROVIDER:"twilio",TWILIO_ACCOUNT_SID:"AC${"a".repeat(32)}",TWILIO_AUTH_TOKEN:"${"b".repeat(32)}",TWILIO_MESSAGING_SERVICE_SID:"MG${"c".repeat(32)}"}}}` : path.endsWith("local-media") ? 'export const mediaConfig=()=>({driver:"object"});' : 'export class ObjectStorageService{getPrivateObjectDir(){return "/fixture/private"}};export const objectStorageClient={bucket:()=>({getMetadata:async()=>[{}]})};' }));
+    b.onLoad({ filter: /.*/, namespace: "fixture" }, ({ path }) => ({ contents: path === "nodemailer" ? "export default {createTransport:()=>({verify:globalThis.checkVerify,close(){},sendMail(){throw Error('Must not send')}})}" : path.endsWith("integration-vault") ? `export async function resolvedIntegration(){return {source:"database",env:{SMTP_HOST:"smtp.example.invalid",SMTP_PORT:"465",SMTP_USER:"fixture",SMTP_PASSWORD:"fixture",SMTP_FROM:"test@example.invalid",OTP_PROVIDER:"twilio",TWILIO_ACCOUNT_SID:"AC${"a".repeat(32)}",TWILIO_AUTH_TOKEN:"${"b".repeat(32)}",TWILIO_MESSAGING_SERVICE_SID:"MG${"c".repeat(32)}"}}}` : path.endsWith("local-media") ? 'export const mediaConfig=()=>({driver:"object"});' : 'export class ObjectStorageService{getPrivateObjectDir(){return "/fixture/private"}};export const objectStorageClient={bucket:()=>({iam:{testPermissions:async()=>[globalThis.storagePermissions || {"storage.objects.get":true,"storage.objects.create":true}]},getMetadata(){throw Error("Bucket metadata permission is not required")}})};' }));
   }}] });
   const oldFetch = globalThis.fetch;
   globalThis.fetch = globalThis.checkFetch;
@@ -22,10 +22,14 @@ test("integration checks report verified access separately from delivery and nev
       assert.ok(result.checks.some(c => c.status === "not_verified"));
     }
     assert.equal(verified, 1); assert.equal(fetched, 2);
+    globalThis.storagePermissions = { "storage.objects.get": true, "storage.objects.create": false };
+    const denied = await checkIntegration("storage");
+    assert.equal(denied.checks.find(c => c.name === "Read objects").status, "passed");
+    assert.equal(denied.checks.find(c => c.name === "Create objects").status, "failed");
     globalThis.checkFetch = async () => { throw Error("secret provider diagnostics"); };
     globalThis.fetch = globalThis.checkFetch;
     const failed = await checkIntegration("sms");
     assert.equal(failed.checks[0].status, "failed");
     assert.ok(!JSON.stringify(failed).includes("secret provider diagnostics"));
-  } finally { globalThis.fetch = oldFetch; delete globalThis.checkFetch; delete globalThis.checkVerify; await rm(path, { force: true }); }
+  } finally { globalThis.fetch = oldFetch; delete globalThis.checkFetch; delete globalThis.checkVerify; delete globalThis.storagePermissions; await rm(path, { force: true }); }
 });

@@ -1,0 +1,43 @@
+{
+  "passed": [
+    "Integration save preserves fields on conflict, clears password and confirms environment restore"
+  ],
+  "failures": [],
+  "crashes": [],
+  "writes": [
+    {
+      "path": "/settings/integrations",
+      "data": {
+        "provider": "smtp",
+        "mode": "database",
+        "revision": null,
+        "currentPassword": "fictional-password",
+        "values": {
+          "SMTP_HOST": "smtp.example.invalid"
+        }
+      }
+    },
+    {
+      "path": "/settings/integrations",
+      "data": {
+        "provider": "smtp",
+        "mode": "database",
+        "revision": null,
+        "currentPassword": "fictional-password",
+        "values": {
+          "SMTP_HOST": "smtp.example.invalid"
+        }
+      }
+    },
+    {
+      "path": "/settings/integrations",
+      "data": {
+        "provider": "smtp",
+        "mode": "environment",
+        "revision": "fixture-revision",
+        "currentPassword": "fictional-password",
+        "values": {}
+      }
+    }
+  ]
+}

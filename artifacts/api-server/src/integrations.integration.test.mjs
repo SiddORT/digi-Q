@@ -53,7 +53,7 @@ before(async () => {
       b.onResolve({ filter: /^@workspace\/api-zod$/ }, () => ({ path: resolve(root, "../../../lib/api-zod/src/index.ts") }));
       b.onResolve({ filter: /^nodemailer$/ }, () => ({ path: "mail", namespace: "fake-mail" }));
       b.onLoad({ filter: /.*/, namespace: "fake-mail" }, () => ({ contents: `
-        export default {createTransport(options){globalThis.integrationTransport=options;return {async sendMail(message){
+        export default {createTransport(options){globalThis.integrationTransport=options;return {async verify(){if(globalThis.integrationFailure)throw new Error("private fixture-password smtp diagnostics");return true;},close(){},async sendMail(message){
           if(globalThis.integrationFailure) throw new Error("private fixture-password smtp diagnostics");
           globalThis.integrationMail.push(message);
           return {accepted:[message.to],rejected:[]};
@@ -85,6 +85,26 @@ test("unauthenticated and every non-Super Admin role denied on both endpoints", 
     for (const method of ["GET", "POST"])
       assert.equal((await request(user, method)).status, user ? 403 : 401);
   assert.equal(globalThis.integrationMail.length, 0);
+});
+test("connection checks and storage configuration remain admin-only and checks never send mail", async () => {
+  const root = `${origin}/settings/integrations`;
+  for (const user of ["clinicAdmin", "doctor", "receptionist", "patient"]) {
+    assert.equal((await fetch(`${root}/storage`, { headers: { "x-test-user": user } })).status, 403);
+    assert.equal((await fetch(`${root}/smtp/check`, { method: "POST", headers: { "x-test-user": user } })).status, 403);
+  }
+  const before = globalThis.integrationMail.length;
+  const response = await fetch(`${root}/smtp/check`, { method: "POST", headers: { "x-test-user": "admin11" } });
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.equal(result.checks[0].status, "passed");
+  assert.equal(result.checks[1].status, "not_verified");
+  assert.equal(globalThis.integrationMail.length, before);
+  assert.equal((await fetch(`${root}/unknown/check`, { method: "POST", headers: { "x-test-user": "admin11" } })).status, 400);
+  globalThis.integrationFailure = true;
+  const failed = await (await fetch(`${root}/smtp/check`, { method: "POST", headers: { "x-test-user": "admin11" } })).json();
+  assert.equal(failed.checks[0].status, "failed");
+  assert.ok(!JSON.stringify(failed).includes("fixture-password"));
+  globalThis.integrationFailure = false;
 });
 test("readiness contains key names/statuses only; invalid and missing configuration", async () => {
   const result = await request("superAdmin");
