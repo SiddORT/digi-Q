@@ -23,6 +23,103 @@
 import * as zod from 'zod';
 
 
+export const CheckIntegrationConnectionParams = zod.object({
+  "provider": zod.enum(['smtp', 'sms', 'storage'])
+})
+
+export const CheckIntegrationConnectionResponse = zod.object({
+  "provider": zod.string(),
+  "source": zod.string(),
+  "checkedAt": zod.string(),
+  "checks": zod.array(zod.object({
+  "name": zod.string(),
+  "status": zod.enum(['passed', 'failed', 'not_verified']),
+  "message": zod.string()
+}))
+})
+
+
+export const GetStorageConfigurationResponse = zod.object({
+  "provider": zod.string(),
+  "source": zod.string(),
+  "publicPath": zod.string(),
+  "configured": zod.boolean()
+})
+
+
+export const GetSystemUsersQueryParams = zod.object({
+  "page": zod.coerce.number().int().optional(),
+  "search": zod.coerce.string().optional(),
+  "role": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "clinicId": zod.coerce.string().optional()
+})
+
+export const GetSystemUsersResponse = zod.object({
+  "data": zod.array(zod.object({
+  "id": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string(),
+  "clinics": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}))
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int()
+})
+
+
+export const GetCustomRolesResponse = zod.object({
+  "revision": zod.number().int(),
+  "roles": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "baseRole": zod.enum(['clinicAdmin', 'doctor', 'receptionist']),
+  "denied": zod.array(zod.string())
+})),
+  "bindings": zod.array(zod.object({
+  "userId": zod.string(),
+  "roleId": zod.string(),
+  "clinicId": zod.string().optional()
+}))
+})
+
+
+export const SaveCustomRolesBody = zod.object({
+  "revision": zod.number().int(),
+  "roles": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "baseRole": zod.enum(['clinicAdmin', 'doctor', 'receptionist']),
+  "denied": zod.array(zod.string())
+})),
+  "bindings": zod.array(zod.object({
+  "userId": zod.string(),
+  "roleId": zod.string(),
+  "clinicId": zod.string().optional()
+}))
+})
+
+export const SaveCustomRolesResponse = zod.object({
+  "revision": zod.number().int(),
+  "roles": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "baseRole": zod.enum(['clinicAdmin', 'doctor', 'receptionist']),
+  "denied": zod.array(zod.string())
+})),
+  "bindings": zod.array(zod.object({
+  "userId": zod.string(),
+  "roleId": zod.string(),
+  "clinicId": zod.string().optional()
+}))
+})
+
+
 export const GetPermissionPolicyResponse = zod.object({
   "revision": zod.number().int(),
   "denied": zod.array(zod.string())
@@ -81,7 +178,8 @@ export const CompleteLogoUploadResponse = zod.object({
 
 
 export const GetNotificationTemplatesQueryParams = zod.object({
-  "clinicId": zod.coerce.string().optional()
+  "clinicId": zod.coerce.string().optional(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional()
 })
 
 export const getNotificationTemplatesResponseItemsItemContentSubjectMax = 180;
@@ -111,10 +209,12 @@ export const GetNotificationTemplatesResponse = zod.object({
   "variables": zod.array(zod.string()),
   "items": zod.array(zod.object({
   "event": zod.string(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
   "title": zod.string(),
   "revision": zod.number().int(),
   "source": zod.string(),
   "content": zod.object({
+  "enabled": zod.boolean().optional(),
   "subject": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemContentSubjectMax),
   "body": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemContentBodyMax),
   "prefix": zod.string().max(getNotificationTemplatesResponseItemsItemContentPrefixMax),
@@ -122,6 +222,7 @@ export const GetNotificationTemplatesResponse = zod.object({
   "logoUrl": zod.string().max(getNotificationTemplatesResponseItemsItemContentLogoUrlMax)
 }),
   "draft": zod.object({
+  "enabled": zod.boolean().optional(),
   "subject": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemDraftSubjectMax),
   "body": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemDraftBodyMax),
   "prefix": zod.string().max(getNotificationTemplatesResponseItemsItemDraftPrefixMax),
@@ -150,11 +251,13 @@ export const saveNotificationTemplateBodyContentLogoUrlMax = 1000;
 
 
 export const SaveNotificationTemplateBody = zod.object({
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
   "clinicId": zod.string().optional(),
   "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
   "revision": zod.number().int().min(saveNotificationTemplateBodyRevisionMin),
   "mode": zod.enum(['draft', 'publish', 'reset']),
   "content": zod.object({
+  "enabled": zod.boolean().optional(),
   "subject": zod.string().min(1).max(saveNotificationTemplateBodyContentSubjectMax),
   "body": zod.string().min(1).max(saveNotificationTemplateBodyContentBodyMax),
   "prefix": zod.string().max(saveNotificationTemplateBodyContentPrefixMax),
@@ -190,10 +293,12 @@ export const SaveNotificationTemplateResponse = zod.object({
   "variables": zod.array(zod.string()),
   "items": zod.array(zod.object({
   "event": zod.string(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
   "title": zod.string(),
   "revision": zod.number().int(),
   "source": zod.string(),
   "content": zod.object({
+  "enabled": zod.boolean().optional(),
   "subject": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemContentSubjectMax),
   "body": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemContentBodyMax),
   "prefix": zod.string().max(saveNotificationTemplateResponseItemsItemContentPrefixMax),
@@ -201,6 +306,7 @@ export const SaveNotificationTemplateResponse = zod.object({
   "logoUrl": zod.string().max(saveNotificationTemplateResponseItemsItemContentLogoUrlMax)
 }),
   "draft": zod.object({
+  "enabled": zod.boolean().optional(),
   "subject": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemDraftSubjectMax),
   "body": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemDraftBodyMax),
   "prefix": zod.string().max(saveNotificationTemplateResponseItemsItemDraftPrefixMax),

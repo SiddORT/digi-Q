@@ -18,8 +18,10 @@ import { integrationsRouter } from "./integrations";
 import { notificationTemplatesRouter } from "./notification-templates";
 import { permissionPolicyRouter } from "./permission-policy";
 import { logosRouter } from "./logos";
+import { systemUsersRouter } from "./system-users";
 
 const router: IRouter = Router();
+router.use(systemUsersRouter);
 
 router.use(healthRouter);
 router.use(clinicExpansionRouter);

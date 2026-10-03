@@ -73,6 +73,7 @@ import type {
   ClinicSettingsPreview,
   ClinicSettingsResult,
   CompleteLogoUpload200,
+  CustomRoleConfiguration,
   Dashboard,
   DemoLoginInput,
   DemoSetupAction,
@@ -95,6 +96,7 @@ import type {
   GetReportsParams,
   GetSessionContextsParams,
   GetStaffAssignmentOptionsParams,
+  GetSystemUsersParams,
   GuestDecisionInput,
   GuestReceipt,
   GuestReceiptInput,
@@ -102,6 +104,7 @@ import type {
   GuestRequestList,
   HealthStatus,
   Identity,
+  IntegrationCheck,
   IntegrationSettings,
   IntegrationUpdate,
   ListAppointmentsParams,
@@ -170,6 +173,8 @@ import type {
   StaffGuestRequest,
   StaffLoginResponse,
   StartClinicRegistrationInput,
+  StorageConfiguration,
+  SystemUsersPage,
   User,
   UserInput,
   UserList
@@ -201,6 +206,376 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getCheckIntegrationConnectionUrl = (provider: 'smtp' | 'sms' | 'storage',) => {
+
+
+
+
+  return `/api/settings/integrations/${provider}/check`
+}
+
+export const checkIntegrationConnection = async (provider: 'smtp' | 'sms' | 'storage', options?: Parameters<typeof customFetch>[1]): Promise<IntegrationCheck> => {
+
+  return customFetch<IntegrationCheck>(getCheckIntegrationConnectionUrl(provider),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCheckIntegrationConnectionMutationKey = () => ['checkIntegrationConnection'] as const;
+
+export const getCheckIntegrationConnectionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkIntegrationConnection>>, TError,CheckIntegrationConnectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkIntegrationConnection>>, TError,CheckIntegrationConnectionMutationVariables, TContext> => {
+
+const mutationKey = getCheckIntegrationConnectionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkIntegrationConnection>>, CheckIntegrationConnectionMutationVariables> = (props) => {
+          const {provider} = props ?? {};
+
+          return  checkIntegrationConnection(provider,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckIntegrationConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof checkIntegrationConnection>>>
+
+    export type CheckIntegrationConnectionMutationError = ErrorType<unknown>
+    export type CheckIntegrationConnectionMutationVariables = {provider: 'smtp' | 'sms' | 'storage'}
+
+    export const useCheckIntegrationConnection = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkIntegrationConnection>>, TError,CheckIntegrationConnectionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkIntegrationConnection>>,
+        TError,
+        CheckIntegrationConnectionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCheckIntegrationConnectionMutationOptions(options));
+    }
+
+export const getGetStorageConfigurationUrl = () => {
+
+
+
+
+  return `/api/settings/integrations/storage`
+}
+
+export const getStorageConfiguration = async ( options?: Parameters<typeof customFetch>[1]): Promise<StorageConfiguration> => {
+
+  return customFetch<StorageConfiguration>(getGetStorageConfigurationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStorageConfigurationQueryKey = () => {
+    return [
+    `/api/settings/integrations/storage`
+    ] as const;
+    }
+
+
+export const getGetStorageConfigurationQueryOptions = <TData = Awaited<ReturnType<typeof getStorageConfiguration>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStorageConfiguration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStorageConfigurationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStorageConfiguration>>> = ({ signal }) => getStorageConfiguration({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStorageConfiguration>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStorageConfigurationQueryResult = NonNullable<Awaited<ReturnType<typeof getStorageConfiguration>>>
+export type GetStorageConfigurationQueryError = ErrorType<unknown>
+
+
+
+export function useGetStorageConfiguration<TData = Awaited<ReturnType<typeof getStorageConfiguration>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStorageConfiguration>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStorageConfigurationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSystemUsersUrl = (params?: GetSystemUsersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/management/system-users?${stringifiedParams}` : `/api/management/system-users`
+}
+
+export const getSystemUsers = async (params?: GetSystemUsersParams, options?: Parameters<typeof customFetch>[1]): Promise<SystemUsersPage> => {
+
+  return customFetch<SystemUsersPage>(getGetSystemUsersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSystemUsersQueryKey = (params?: GetSystemUsersParams,) => {
+    return [
+    `/api/management/system-users`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSystemUsersQueryOptions = <TData = Awaited<ReturnType<typeof getSystemUsers>>, TError = ErrorType<unknown>>(params?: GetSystemUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystemUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSystemUsersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSystemUsers>>> = ({ signal }) => getSystemUsers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSystemUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSystemUsersQueryResult = NonNullable<Awaited<ReturnType<typeof getSystemUsers>>>
+export type GetSystemUsersQueryError = ErrorType<unknown>
+
+
+
+export function useGetSystemUsers<TData = Awaited<ReturnType<typeof getSystemUsers>>, TError = ErrorType<unknown>>(
+ params?: GetSystemUsersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSystemUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSystemUsersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCustomRolesUrl = () => {
+
+
+
+
+  return `/api/management/custom-roles`
+}
+
+export const getCustomRoles = async ( options?: Parameters<typeof customFetch>[1]): Promise<CustomRoleConfiguration> => {
+
+  return customFetch<CustomRoleConfiguration>(getGetCustomRolesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCustomRolesQueryKey = () => {
+    return [
+    `/api/management/custom-roles`
+    ] as const;
+    }
+
+
+export const getGetCustomRolesQueryOptions = <TData = Awaited<ReturnType<typeof getCustomRoles>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomRoles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCustomRolesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCustomRoles>>> = ({ signal }) => getCustomRoles({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCustomRoles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCustomRolesQueryResult = NonNullable<Awaited<ReturnType<typeof getCustomRoles>>>
+export type GetCustomRolesQueryError = ErrorType<unknown>
+
+
+
+export function useGetCustomRoles<TData = Awaited<ReturnType<typeof getCustomRoles>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomRoles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCustomRolesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveCustomRolesUrl = () => {
+
+
+
+
+  return `/api/management/custom-roles`
+}
+
+export const saveCustomRoles = async (customRoleConfiguration: CustomRoleConfiguration, options?: Parameters<typeof customFetch>[1]): Promise<CustomRoleConfiguration> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<CustomRoleConfiguration>(getSaveCustomRolesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(customRoleConfiguration)
+  }
+);}
+
+
+
+
+
+export const getSaveCustomRolesMutationKey = () => ['saveCustomRoles'] as const;
+
+export const getSaveCustomRolesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveCustomRoles>>, TError,SaveCustomRolesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveCustomRoles>>, TError,SaveCustomRolesMutationVariables, TContext> => {
+
+const mutationKey = getSaveCustomRolesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveCustomRoles>>, SaveCustomRolesMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveCustomRoles(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveCustomRolesMutationResult = NonNullable<Awaited<ReturnType<typeof saveCustomRoles>>>
+    export type SaveCustomRolesMutationBody = BodyType<CustomRoleConfiguration>
+    export type SaveCustomRolesMutationError = ErrorType<unknown>
+    export type SaveCustomRolesMutationVariables = {data: BodyType<CustomRoleConfiguration>}
+
+    export const useSaveCustomRoles = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveCustomRoles>>, TError,SaveCustomRolesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveCustomRoles>>,
+        TError,
+        SaveCustomRolesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveCustomRolesMutationOptions(options));
+    }
 
 export const getGetPermissionPolicyUrl = () => {
 

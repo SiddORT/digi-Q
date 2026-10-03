@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 import { createQueueHarness } from "./test-support/postgres-queue.mjs";
 import { queueFixtureSql } from "./test-support/queue-fixtures.mjs";
 import { drizzle } from "drizzle-orm/node-postgres";
+import express from "express";
 
 const bundle = resolve(import.meta.dirname, `.notification-templates-${process.pid}.mjs`);
 let h, api;
@@ -16,7 +17,7 @@ before(async () => {
   await h.control.query("insert into clinics(id,admin_id,data) values('c','ca','{\"name\":\"Actual Clinic\",\"email\":\"clinic@example.invalid\"}'),('foreign','other','{}')");
   globalThis.notificationTestDb = h.db;
   await build({
-    stdin: { contents: `export * from "./lib/notification-templates"; export * from "./lib/notification-template-store"; export * from "./lib/notification-outbox"; export * from "./lib/permission-policy";`, resolveDir: import.meta.dirname },
+    stdin: { contents: `export * from "./lib/notification-templates"; export * from "./lib/notification-template-store"; export * from "./lib/notification-outbox"; export * from "./lib/permission-policy"; export * from "./lib/custom-roles"; export {systemUsersRouter} from "./routes/system-users"; export {errors} from "./lib/http";`, resolveDir: import.meta.dirname },
     outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
     plugins: [{ name: "isolated", setup(b) {
       b.onResolve({ filter: /^@workspace\/db$/ }, () => ({ path: "db", namespace: "fixture" }));
@@ -115,4 +116,71 @@ test("concurrent workers claim a durable event once; known pre-dispatch failures
   const result = await h.control.query("select data from settings where id='mail-outbox:onboarding:c:3'");
   assert.equal(result.rows[0].data.state, "pending");
   assert.ok(result.rows[0].data.dueAt > before + 59000);
+});
+test("custom roles enforce clinic restrictions, revisions, base-role and assignment safeguards", async () => {
+  const input = { revision: 0, roles: [{ id: "limited-admin", name: "Clinic observer", baseRole: "clinicAdmin", denied: ["appointments:create"] }], bindings: [{ userId: "ca", roleId: "limited-admin", clinicId: "c" }] };
+  await assert.rejects(api.saveCustomRoles(ca, input), { status: 403 });
+  const saved = await api.saveCustomRoles(sa, input);
+  assert.equal(saved.revision, 1);
+  await assert.rejects(api.saveCustomRoles(sa, input), { status: 409 });
+  await assert.rejects(api.enforcePermissionPolicy(ca, { method: "POST", path: "/appointments", body: { clinicId: "c" } }), { status: 403 });
+  await assert.rejects(api.enforcePermissionPolicy(ca, { method: "POST", path: "/appointments" }), { status: 403 });
+  await api.enforcePermissionPolicy(ca, { method: "POST", path: "/appointments", body: { clinicId: "foreign" } });
+  await api.enforcePermissionPolicy(sa, { method: "POST", path: "/appointments", body: { clinicId: "c" } });
+  await assert.rejects(api.saveCustomRoles(sa, { ...saved, roles: [] }), { status: 400 });
+  await assert.rejects(api.saveCustomRoles(sa, { ...saved, roles: [{ ...saved.roles[0], baseRole: "doctor" }] }), { status: 400 });
+  await assert.rejects(api.saveCustomRoles(sa, { ...saved, bindings: [{ ...saved.bindings[0], clinicId: "foreign" }] }), { status: 400 });
+  await api.saveCustomRoles(sa, { ...saved, roles: [], bindings: [] });
+});
+test("recipient templates are isolated, secondary channels opt in and onboarding stays admin-only", async () => {
+  assert.equal(api.defaultTemplate("booking", "doctor").enabled, false);
+  const before = await api.resolvedTemplate("booking", "c");
+  const doctor = { ...api.defaultTemplate("booking", "doctor"), enabled: true, subject: "Doctor visit notice" };
+  await api.saveTemplate(ca, { clinicId: "c", recipient: "doctor", event: "booking", revision: 0, mode: "publish", content: doctor });
+  assert.equal((await api.resolvedTemplate("booking", "c", h.db, "doctor")).content.subject, doctor.subject);
+  assert.deepEqual((await api.resolvedTemplate("booking", "c")).content, before.content);
+  assert.equal((await api.templateCatalog(ca, "c", "doctor")).items.every(i => i.recipient === "doctor" && i.event !== "onboarding"), true);
+  await assert.rejects(api.saveTemplate(ca, { clinicId: "c", recipient: "patient", event: "onboarding", revision: 0, mode: "publish", content: doctor }), { status: 400 });
+});
+test("system staff directory excludes patients and credential fields, scopes filters and denies non-admins", async () => {
+  await h.control.query("insert into users(id,role,email,full_name,status) values('sa','superAdmin','system@example.invalid','System Admin','active'),('patient-account','patient','patient@example.invalid','Patient Account','active')");
+  const app = express();
+  app.use((req, _res, next) => { req.authUserId = req.get("x-test-user"); req.authSessionHash = "isolated-proof"; next(); });
+  app.use(api.systemUsersRouter); app.use(api.errors);
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise(resolve => server.once("listening", resolve));
+  try {
+    const url = `http://127.0.0.1:${server.address().port}/management/system-users`;
+    const response = await fetch(url, { headers: { "x-test-user": "sa" } });
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.ok(body.data.some(u => u.role === "superAdmin"));
+    assert.ok(body.data.every(u => u.role !== "patient" && !("passwordHash" in u) && !("data" in u)));
+    const scoped = await (await fetch(url + "?clinicId=c", { headers: { "x-test-user": "sa" } })).json();
+    assert.deepEqual(scoped.data.map(u => u.id), ["ca"]);
+    assert.equal((await fetch(url, { headers: { "x-test-user": "ca" } })).status, 403);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+test("recipient delivery deduplicates multi-role staff and retries and respects opt-outs", async () => {
+  await h.control.query(`insert into users(id,role,email,status) values('staff-doctor','doctor','owner@example.invalid','active'),('reception','receptionist','reception@example.invalid','active');
+    insert into patients(id,clinic_id,data) values('recipient-patient','c','{"email":"patient-notices@example.invalid","fullName":"Example patient"}');
+    insert into doctors(id,user_id,owner_admin_id) values('recipient-doctor','staff-doctor','ca');
+    insert into assignments(id,user_id,clinic_id) values('recipient-link','reception','c');
+    insert into appointments(id,patient_id,doctor_id,clinic_id,date,token_number,data) values('recipient-visit','recipient-patient','recipient-doctor','c','2026-11-01',1,'{"startTime":"10:00","endTime":"11:00","timezone":"UTC"}')`);
+  const row = { id: "recipient-visit", patientId: "recipient-patient", doctorId: "recipient-doctor", clinicId: "c", date: "2026-11-01", startTime: "10:00", endTime: "11:00", timezone: "UTC", revision: 0 };
+  for (const recipient of ["clinicAdmin", "doctor", "receptionist"]) {
+    await api.saveTemplate(ca, { clinicId: "c", event: "completed", recipient, revision: 0, mode: "publish", content: { ...api.defaultTemplate("completed", recipient), enabled: true } });
+  }
+  await api.enqueueEvent(h.db, "completed", row); await api.enqueueEvent(h.db, "completed", row);
+  const jobs = await h.control.query("select id from settings where id like 'mail-outbox:completed:recipient-visit:%'");
+  assert.equal(jobs.rows.length, 3); // Patient, shared admin/doctor address, receptionist.
+  const delivered = [];
+  await api.processNotifications(h.db, async email => { delivered.push(email); }, Date.now() + 100);
+  assert.deepEqual(delivered.sort(), ["owner@example.invalid", "patient-notices@example.invalid", "reception@example.invalid"]);
+  await api.processNotifications(h.db, async () => { throw Error("Duplicate delivery"); }, Date.now() + 200);
+  const content = { ...api.defaultTemplate("completed", "receptionist"), enabled: false };
+  await api.saveTemplate(ca, { clinicId: "c", event: "completed", recipient: "receptionist", revision: 1, mode: "publish", content });
+  await api.enqueueEvent(h.db, "completed", { ...row, revision: 1 });
+  const newer = await h.control.query("select data from settings where id like 'mail-outbox:completed:recipient-visit:1%'");
+  assert.equal(newer.rows.length, 2);
 });

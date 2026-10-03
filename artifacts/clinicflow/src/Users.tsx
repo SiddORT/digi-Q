@@ -130,7 +130,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
    const applyFilters=()=>{setContexts(previous=>({...previous,[draftTab]:{...defaultContext(),...previous[draftTab],...draft,page:1,clinicId:clinicId||draft.clinicId}}));setTab(draftTab);};
    return <>{confirmAction.dialog}
      {counts.some(item=>item.error)&&<div role="alert" className="error-box">Unable to load staff status counts. <button type="button" onClick={()=>counts.forEach(item=>{if(item.error)void item.refetch();})}>Retry counts</button></div>}
-     <FilterBar title={<><h2>{tabs.find(item=>item.id===tab)?.label}</h2>{query.data&&!query.error&&<span className="listing-count">{query.data.total}</span>}</>} status={<div className="status-tabs" role="group" aria-label="Account status">
+     <FilterBar title={query.data&&!query.error?<span className="listing-count-label"><span className="listing-count">{query.data.total}</span> {(tabs.find(item=>item.id===tab)?.label||"").toLowerCase()}</span>:undefined} status={<div className="status-tabs" role="group" aria-label="Account status">
        {(["","active","inactive"] as const).map((status,index)=><button type="button" key={status||"all"} className={`tab ${context.status===status?"active":""}`} aria-pressed={context.status===status} onClick={()=>change({status})} data-testid={`tab-staff-${status||"all"}`}>{status?title(status):"All"}{counts[index].data?<span className="count">{counts[index].data.total}</span>:null}</button>)}
      </div>} actions={tab==="admins" ? embedded?<Link className="button small" href="/admin/users?tab=admins">Set up a Clinic Admin</Link>:null : <button className="button small" onClick={() => beginEdit({})} data-testid={`button-add-${tab}`}><Plus size={17} /> Add {tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}</button>} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter staff" chips={[
       ...(context.search?[{key:"search",label:`Search: ${context.search}`,onRemove:()=>change({search:""})}]:[]),
@@ -182,7 +182,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open secure password recovery</Link></div>}
     </details>}
      {isSuperAdmin && tab === "admins" && !embedded && <details className="panel padded"><summary>Set up a new Clinic Admin and their first clinic</summary><ClinicAdminOnboarding /></details>}
-    {editing && <AppDialog open onClose={() => setEditing(null)} title={`${editing.id ? "Edit" : "Add"} ${tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}`} dirty={dirty} busy={busy}>
+    {editing && <AppDialog open size="wide" onClose={() => setEditing(null)} title={`${editing.id ? "Edit" : "Add"} ${tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}`} dirty={dirty} busy={busy}>
        <UserEditor tab={tab} initial={editing} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onClose={(result:any) => { const wasEdit=!!editing.id;setEditing(null);if(!wasEdit&&result.invitationStatus==="failed")notifyWarning(`${tab==="doctors"?"Doctor":"Staff member"} added, but the invitation could not be sent.`);else notifySuccess(wasEdit?"Updated successfully":"Staff member added successfully."); }} />
     </AppDialog>}
   </>;

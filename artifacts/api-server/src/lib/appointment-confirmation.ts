@@ -62,7 +62,6 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send: 
   try {
     claimed = await conn.transaction(async (tx: any) => {
       const row = await lockConfirmation(tx,id);
-      if (row.confirmationEmail) return { outcome: row.confirmationEmail };
       if (["completed","cancelled","noShow"].includes(row.status)) {
         await saveOutcome(tx,id,"not_attempted"); return {outcome:"not_attempted"};
       }
@@ -70,6 +69,9 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send: 
       if (!config.notificationsEnabled) {
         await saveOutcome(tx,id,"disabled"); return {outcome:"disabled"};
       }
+      const { enqueueEvent } = await import("./notification-outbox");
+      await enqueueEvent(tx, "booking", { ...row, revision: 0 });
+      if (row.confirmationEmail) return { outcome: row.confirmationEmail };
       const patient = await one(patients,row.patientId,tx);
       const recipient = await confirmationRecipient(patient,tx);
       if (!validEmailAddress(recipient)) {
@@ -77,6 +79,9 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send: 
       }
       const clinic = await one(clinics,row.clinicId,tx);
       const template = await resolvedTemplate("booking", row.clinicId, tx);
+      if (!template.content.enabled) {
+        await saveOutcome(tx,id,"disabled"); return {outcome:"disabled"};
+      }
       const rendered = template.source === "default" ? undefined : renderNotification(template.content, {
         clinic_name: clinic.name, patient_name: patient.fullName || "Patient",
         doctor_name: row.doctorName || "Your doctor", appointment_details: confirmationText(row, clinic),

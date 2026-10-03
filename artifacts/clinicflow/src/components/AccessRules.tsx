@@ -69,9 +69,7 @@ export function AccessRules() {
   return <section className="panel padded" data-testid="access-rules">
     <h2>Roles &amp; access rules</h2>
     <p>Restrict which baseline actions each role may perform. A checked box means the action stays allowed; clearing it denies it.</p>
-    <div role="note" className="notice" data-testid="text-permission-limits">
-      <strong>Restrictions only.</strong> Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out.
-    </div>
+    <details className="help-disclosure" data-testid="text-permission-limits"><summary>How restrictions work</summary><p> Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out.</p></details>
     {policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : policy.isError || !data ? <div role="alert" className="error-box" data-testid="state-error">The permission policy could not be loaded. <button type="button" onClick={() => policy.refetch()} data-testid="button-retry">Retry</button></div>
       : <>

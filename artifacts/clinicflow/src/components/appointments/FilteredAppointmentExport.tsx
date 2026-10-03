@@ -1,3 +1,4 @@
+import { HelpTip } from "../HelpTip";
 import { useEffect, useRef, useState } from "react";
 import * as api from "@workspace/api-client-react";
 import { friendlyError } from "../../lib/friendly-error";
@@ -37,10 +38,10 @@ export function FilteredAppointmentExport({ params, disabled, contextKey }: { pa
       setBusy(false); setProgress("");
     }
   }
-  return <section className="toolbar" aria-label="Export filtered appointments">
-    <button type="button" disabled={disabled || busy} onClick={()=>void download()} data-testid="button-export-filtered-appointments">{busy ? "Exporting…" : "Export all matching appointments"}</button>
+  return <section className="toolbar export-compact" aria-label="Export filtered appointments">
+    <button type="button" disabled={disabled || busy} onClick={()=>void download()} data-testid="button-export-filtered-appointments">{busy ? "Exporting…" : "Export all matching"}</button>
     {busy && <button type="button" onClick={()=>controller.current?.abort()} data-testid="button-cancel-appointment-export">Cancel export</button>}
-    <small>Exports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.</small>
+    <HelpTip text="Exports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export."/>
     {(progress || message) && <p role="status">{progress || message}</p>}
     {error && <p role="alert">{error}</p>}
   </section>;

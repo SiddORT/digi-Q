@@ -23,8 +23,10 @@
 import type { NotificationTemplateContent } from './notificationTemplateContent';
 import type { NotificationTemplateSaveEvent } from './notificationTemplateSaveEvent';
 import type { NotificationTemplateSaveMode } from './notificationTemplateSaveMode';
+import type { NotificationTemplateSaveRecipient } from './notificationTemplateSaveRecipient';
 
 export interface NotificationTemplateSave {
+  recipient?: NotificationTemplateSaveRecipient;
   clinicId?: string;
   event: NotificationTemplateSaveEvent;
   /** @minimum 0 */

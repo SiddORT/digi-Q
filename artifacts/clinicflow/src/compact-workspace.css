@@ -109,3 +109,84 @@
 .day-open-switch{display:inline-flex;align-items:center;gap:var(--space-2);cursor:pointer}
 .day-open-switch input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
 .day-open-switch:has(input:disabled){opacity:.55;cursor:not-allowed}
+
+/* ---- Compact density pass (approved reference) ---- */
+/* Shared FilterBar: title left, controls right, status on a deliberate compact second row. */
+.workspace .filter-bar .filter-bar-row,.workspace .filter-bar .filter-bar-row.has-title{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr) auto;grid-template-areas:"title primary tools" "status status status";align-items:center;column-gap:var(--space-3);row-gap:var(--space-2);flex-wrap:nowrap}
+.workspace .filter-bar .filter-bar-row:not(.has-title){grid-template-areas:"primary primary tools"}
+.workspace .filter-bar .filter-bar-title{grid-area:title;order:0;flex:none;align-self:center}
+.workspace .filter-bar .filter-bar-status{grid-area:status;order:0;flex:none;max-width:100%}
+.workspace .filter-bar .filter-bar-primary,.workspace .filter-bar .has-title .filter-bar-primary{grid-area:primary;display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:var(--space-2);min-width:0;max-width:none}
+.workspace .filter-bar .filter-bar-primary>.workspace-search{flex:1 1 220px;max-width:320px}
+.workspace .filter-bar .filter-bar-primary>:not(.workspace-search){flex:0 1 auto;min-width:0}
+.workspace .filter-bar .filter-bar-tools,.workspace .filter-bar .has-title .filter-bar-tools{grid-area:tools;margin-left:0;flex-wrap:nowrap;justify-content:flex-end;width:auto}
+.workspace .filter-bar .filter-bar-row:not(.has-title) .filter-bar-primary{justify-content:flex-start}
+.workspace .listing-count-label{font-size:var(--type-label);font-weight:600;color:var(--cw-soft);white-space:nowrap}
+.workspace .listing-count-label .listing-count{color:var(--cw-ink);font-variant-numeric:tabular-nums}
+.workspace .filter-chips{margin-top:var(--space-2)}
+@media(max-width:1100px){.workspace .filter-bar .filter-bar-row,.workspace .filter-bar .filter-bar-row.has-title{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"title tools" "primary primary" "status status"}.workspace .filter-bar .filter-bar-row:not(.has-title){grid-template-areas:"primary tools" "status status"}.workspace .filter-bar .filter-bar-primary{justify-content:flex-start}}
+@media(max-width:767px){.workspace .filter-bar .filter-bar-row,.workspace .filter-bar .filter-bar-row.has-title,.workspace .filter-bar .filter-bar-row:not(.has-title){grid-template-columns:minmax(0,1fr);grid-template-areas:"title" "primary" "tools" "status"}.workspace .filter-bar .filter-bar-primary>*{flex:1 1 100%;max-width:none}.workspace .filter-bar .filter-bar-tools{flex-wrap:wrap;justify-content:flex-start}}
+
+/* Reports: center stack keeps filter controls together instead of spreading. */
+.workspace .reports-compact .filter-bar .filter-bar-primary{justify-content:flex-start}
+@media(min-width:768px){
+ .workspace .filter-bar .filter-bar-primary>.searchable-select-field{width:200px;flex:0 1 200px;max-width:240px}
+ .workspace .filter-bar .filter-bar-primary>.workspace-search{width:220px;flex:1 1 180px;max-width:280px;align-self:flex-end}
+ .workspace .reports-compact .filter-bar .filter-bar-primary>.searchable-select-field{width:180px;flex-basis:180px}
+ .workspace .reports-compact .filter-bar .filter-bar-primary{align-items:flex-end}
+ .workspace .reports-compact .filter-bar .filter-bar-primary>label{flex:0 1 155px;width:155px}
+}
+
+/* Appointment bulk bar: hidden at zero, blue/white bar at 1+. */
+.workspace .appt-bulk{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;padding:var(--space-2) var(--space-3);margin:0 0 var(--space-2);background:var(--cw-blue);color:#fff;border-radius:var(--radius-control)}
+.workspace .appt-bulk strong{margin-right:var(--space-2);font-size:var(--type-label)}
+.workspace .appt-bulk button{background:#fff;color:var(--cw-blue-strong);border:1px solid #fff;min-height:var(--cw-ctl-sm);padding:var(--space-1) var(--space-3);font-weight:600}
+.workspace .appt-bulk button:hover:not(:disabled){background:#e6effb}
+.workspace .appt-bulk button:last-of-type{background:transparent;color:#fff;border-color:#ffffff80;margin-left:auto}
+.workspace .appt-bulk button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.workspace .appt-bulk .help-tip button,.workspace .appt-bulk [class*=help] button{background:transparent;color:#fff;border-color:transparent;margin-left:0}
+
+/* Compact export metadata */
+.workspace .export-compact{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;margin:0 0 var(--space-2)}
+.workspace .export-compact p{margin:0;font-size:var(--type-label);color:var(--cw-soft)}
+.workspace .content>p.muted{margin:0 0 var(--space-1);font-size:var(--type-label)}
+
+/* Help disclosure replacing permanently long notes */
+.help-disclosure{margin:var(--space-2) 0 var(--space-3);border:1px solid var(--cw-line-soft);border-radius:var(--radius-control);background:var(--cw-surface)}
+.help-disclosure>summary{cursor:pointer;padding:var(--space-2) var(--space-3);font-size:var(--type-label);font-weight:600;color:var(--cw-blue-strong);list-style-position:inside}
+.help-disclosure>summary:focus-visible{outline:2px solid #12a4cc;outline-offset:2px}
+.help-disclosure>p{padding:0 var(--space-3) var(--space-3);font-size:var(--type-label);color:var(--cw-soft)}
+
+/* Dense shell: narrower sidebar, short header, tighter content gaps */
+@media(min-width:901px){
+ .workspace{--sidebar-width:208px}
+ .workspace .topbar{height:48px}
+ .workspace .content{padding:var(--space-4) var(--space-5) 0}
+ .workspace .page-heading{margin-bottom:var(--space-3)}
+ .workspace .page-heading p{margin-top:2px}
+ .workspace .panel-heading{padding:var(--space-3) var(--space-4);min-height:44px}
+ .workspace .help-card{display:none}
+}
+
+/* Dialogs: one scroll region only (the body); no nested scroll inside long forms. */
+.app-dialog-body .form-grid,.app-dialog-body .panel,.app-dialog-body section{max-height:none;overflow:visible}
+.app-dialog-wide{max-width:min(1040px,calc(100vw - 1.5rem))}
+@media(min-width:900px){.app-dialog-wide .app-dialog-body .form-grid,.app-dialog-body .form-grid.two-col{grid-template-columns:repeat(2,minmax(0,1fr))}.app-dialog-wide .app-dialog-body .form-grid>:is(.full,.check-label,:has(textarea),:has(fieldset),:has(table)){grid-column:1/-1}}
+@media(max-width:639px){.app-dialog-wide{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border-radius:0}}
+
+/* Custom roles (inline full-width editor, not a dialog) */
+.custom-roles{margin-top:var(--space-3)}
+.cr-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);flex-wrap:wrap}
+.cr-head p{font-size:var(--type-label);color:var(--cw-soft)}
+.cr-editor-bar{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3)}
+.cr-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,240px) auto;gap:var(--space-3);align-items:end}
+.cr-sub{display:flex;align-items:baseline;gap:var(--space-2);margin:var(--space-4) 0 var(--space-2);font-size:var(--type-section)}
+.cr-sub small{font-size:var(--type-label);font-weight:500;color:var(--cw-soft)}
+.cr-matrix td,.cr-matrix th{text-align:center}.cr-matrix th[scope=row],.cr-matrix thead th:first-child{text-align:left}
+.cr-bind-form{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;gap:var(--space-3);align-items:end}
+.cr-bind-list{list-style:none;margin:var(--space-2) 0 0;padding:0;border:1px solid var(--cw-line-soft);border-radius:var(--radius-control)}
+.cr-bind-list li{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,220px) auto;gap:var(--space-3);align-items:center;padding:var(--space-2) var(--space-3);border-top:1px solid var(--cw-line-soft)}
+.cr-bind-list li:first-child{border-top:0}
+.cr-savebar{display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-2);margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--cw-line-soft)}
+.cr-notice{font-size:var(--type-label);color:#23704a}
+@media(max-width:767px){.cr-fields,.cr-bind-form,.cr-bind-list li{grid-template-columns:1fr}.cr-savebar{align-items:stretch}}

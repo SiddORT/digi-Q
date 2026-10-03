@@ -20,6 +20,84 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export interface StorageConfiguration {
+  provider: string;
+  source: string;
+  publicPath: string;
+  configured: boolean;
+}
+
+export type IntegrationCheckChecksItemStatus = typeof IntegrationCheckChecksItemStatus[keyof typeof IntegrationCheckChecksItemStatus];
+
+
+export const IntegrationCheckChecksItemStatus = {
+  passed: 'passed',
+  failed: 'failed',
+  not_verified: 'not_verified',
+} as const;
+
+export type IntegrationCheckChecksItem = {
+  name: string;
+  status: IntegrationCheckChecksItemStatus;
+  message: string;
+};
+
+export interface IntegrationCheck {
+  provider: string;
+  source: string;
+  checkedAt: string;
+  checks: IntegrationCheckChecksItem[];
+}
+
+export type CustomRoleBaseRole = typeof CustomRoleBaseRole[keyof typeof CustomRoleBaseRole];
+
+
+export const CustomRoleBaseRole = {
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+} as const;
+
+export interface CustomRole {
+  id: string;
+  name: string;
+  baseRole: CustomRoleBaseRole;
+  denied: string[];
+}
+
+export interface CustomRoleBinding {
+  userId: string;
+  roleId: string;
+  clinicId?: string;
+}
+
+export interface CustomRoleConfiguration {
+  revision: number;
+  roles: CustomRole[];
+  bindings: CustomRoleBinding[];
+}
+
+export type SystemUserClinicsItem = {
+  id: string;
+  name: string;
+};
+
+export interface SystemUser {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  status: string;
+  clinics: SystemUserClinicsItem[];
+}
+
+export interface SystemUsersPage {
+  data: SystemUser[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export type LogoBinary = Blob;
 
 export interface PermissionPolicyInput {
@@ -41,6 +119,7 @@ export interface LogoUploadInput {
 }
 
 export interface NotificationTemplateContent {
+  enabled?: boolean;
   /**
      * @minLength 1
      * @maxLength 180
@@ -58,6 +137,16 @@ export interface NotificationTemplateContent {
   /** @maxLength 1000 */
   logoUrl: string;
 }
+
+export type NotificationTemplateSaveRecipient = typeof NotificationTemplateSaveRecipient[keyof typeof NotificationTemplateSaveRecipient];
+
+
+export const NotificationTemplateSaveRecipient = {
+  patient: 'patient',
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+} as const;
 
 export type NotificationTemplateSaveEvent = typeof NotificationTemplateSaveEvent[keyof typeof NotificationTemplateSaveEvent];
 
@@ -81,6 +170,7 @@ export const NotificationTemplateSaveMode = {
 } as const;
 
 export interface NotificationTemplateSave {
+  recipient?: NotificationTemplateSaveRecipient;
   clinicId?: string;
   event: NotificationTemplateSaveEvent;
   /** @minimum 0 */
@@ -89,8 +179,19 @@ export interface NotificationTemplateSave {
   content?: NotificationTemplateContent;
 }
 
+export type NotificationTemplateCatalogItemsItemRecipient = typeof NotificationTemplateCatalogItemsItemRecipient[keyof typeof NotificationTemplateCatalogItemsItemRecipient];
+
+
+export const NotificationTemplateCatalogItemsItemRecipient = {
+  patient: 'patient',
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+} as const;
+
 export type NotificationTemplateCatalogItemsItem = {
   event: string;
+  recipient?: NotificationTemplateCatalogItemsItemRecipient;
   title: string;
   revision: number;
   source: string;
@@ -2048,6 +2149,14 @@ export type FromParameter = string;
 
 export type ToParameter = string;
 
+export type GetSystemUsersParams = {
+page?: number;
+search?: string;
+role?: string;
+status?: string;
+clinicId?: string;
+};
+
 export type RequestLogoUpload200 = {
   id: string;
   uploadUrl: string;
@@ -2059,7 +2168,18 @@ export type CompleteLogoUpload200 = {
 
 export type GetNotificationTemplatesParams = {
 clinicId?: string;
+recipient?: GetNotificationTemplatesRecipient;
 };
+
+export type GetNotificationTemplatesRecipient = typeof GetNotificationTemplatesRecipient[keyof typeof GetNotificationTemplatesRecipient];
+
+
+export const GetNotificationTemplatesRecipient = {
+  patient: 'patient',
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+} as const;
 
 export type GetSessionContextsParams = {
 doctorId: string;

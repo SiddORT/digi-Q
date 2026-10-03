@@ -25,3 +25,4 @@
 .et-skeleton{display:grid;gap:.5rem}.et-skeleton span{height:2.2rem;border-radius:6px;background:hsl(var(--muted,210 20% 94%));animation:et-pulse 1.2s ease-in-out infinite}
 @keyframes et-pulse{50%{opacity:.5}}
 .et-dialog p{margin-top:0}
+.et-toggle{display:grid;gap:.2rem;padding:.5rem .65rem;border:1px solid hsl(var(--border,210 20% 88%));border-radius:6px;font-size:.88rem}.et-toggle small{opacity:.75}

@@ -16,9 +16,14 @@ test("toolbar puts title left and status/search/filter/add on one wrapping row",
   assert.match(controls, /filter-bar-title/);
   assert.match(controls, /filter-bar-status/);
   const clinic = read("../clinic.tsx");
-  assert.match(clinic, /<FilterBar title=\{<><h2>Appointments<\/h2>[^]*?status=\{<StatusTabs/);
-  assert.match(clinic, /<FilterBar title=\{<><h2>Report<\/h2>/);
-  assert.match(read("./queue/SessionQueue.tsx"), /<FilterBar title=\{<h2>Queue<\/h2>\} status=\{<StatusTabs/);
+  assert.match(clinic, /<FilterBar title=\{q\.data&&!q\.error\?<span className=\"listing-count-label\">[^]*?status=\{<StatusTabs/);
+  assert.doesNotMatch(clinic, /<h2>Appointments<\/h2>/, "page h1 is the only Appointments heading");
+  assert.match(clinic, /<FilterBar title=\{q\.data&&!q\.error\?<span className="listing-count-label"><span className="listing-count">\{total\}/);
+  assert.doesNotMatch(clinic, /<h2>Report<\/h2>/);
+  assert.match(read("./queue/SessionQueue.tsx"), /<FilterBar status=\{<StatusTabs/);
+  assert.doesNotMatch(read("./queue/SessionQueue.tsx"), /<h2>Queue<\/h2>/);
+  for (const page of ["../Users.tsx", "../resources.tsx"]) assert.doesNotMatch(read(page), /FilterBar title=\{<><h2>/, `${page} has no duplicate list heading`);
+  assert.match(read("../resources.tsx"), /listName=resource==="branches"\?"locations"/);
   for (const page of ["../Users.tsx", "../resources.tsx"]) {
     const src = read(page);
     assert.match(src, /<FilterBar title=\{/, `${page} uses toolbar title`);

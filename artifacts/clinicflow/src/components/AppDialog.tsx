@@ -18,6 +18,8 @@ export interface AppDialogProps {
   children: React.ReactNode;
   dirty?: boolean;
   busy?: boolean;
+  /** "wide" for long forms: wider on desktop so fields group into two columns; full-screen on phones. */
+  size?: "default" | "wide";
 }
 
 export function AppDialog({
@@ -28,6 +30,7 @@ export function AppDialog({
   children,
   dirty = false,
   busy = false,
+  size = "default",
 }: AppDialogProps) {
   const [confirming, setConfirming] = useState(false);
   const keepRef = useRef<HTMLButtonElement>(null);
@@ -91,7 +94,7 @@ export function AppDialog({
       }}
     >
       <DialogContent
-        className="app-dialog sm:max-w-2xl bg-white border border-border shadow-xl"
+        className={`app-dialog ${size==="wide"?"app-dialog-wide sm:max-w-5xl":"sm:max-w-2xl"} bg-white border border-border shadow-xl`}
         {...(!description ? { "aria-describedby": undefined } : {})}
         aria-busy={busy || undefined}
         onInteractOutside={(e) => {

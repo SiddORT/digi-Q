@@ -35,7 +35,7 @@ test("clinic owners can find opening hours, doctor sessions and scoped audit", (
   assert.match(listing, /notice-schedule-vs-opening-hours/);
   assert.match(listing, /notice-qr-readiness/);
   // Clinic Admins keep audit via scoped links; Super Admin-only modules stay hidden from them.
-  assert.match(workspace, /!\["masters","demo","permissions","integrations","audit"\]\.includes\(p\)/);
+  assert.match(workspace, /!\["masters","demo","permissions","integrations","audit","system-users"\]\.includes\(p\)/);
   assert.match(nav, /kind: "link", page: "audit"/);
 });
 

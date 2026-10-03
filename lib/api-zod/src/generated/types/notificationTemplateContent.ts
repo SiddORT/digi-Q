@@ -22,6 +22,7 @@
  */
 
 export interface NotificationTemplateContent {
+  enabled?: boolean;
   /**
      * @minLength 1
      * @maxLength 180

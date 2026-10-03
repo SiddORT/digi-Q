@@ -8,14 +8,14 @@ const filters = readFileSync(new URL("./ListingControls.tsx", import.meta.url), 
 test("lists have one compact density and status-only tabs", () => {
   assert.match(resource, /const density="compact"/);
   assert.doesNotMatch(resource, /digiq-density:|density-toggle|setDensity/);
-  assert.match(resource, /aria-label=\{`\$\{title\(config\.name\)\} status`\}/);
+  assert.match(resource, /aria-label=\{`\$\{title\(listName\)\} status`\}/);
   assert.doesNotMatch(resource, /label="Status" placeholder="All statuses"/);
 });
 
 test("sort is outside filters, column headers expose direction", () => {
   assert.match(resource, /aria-sort=\{sortableColumns\.has\(c\)/);
   // Sort is a labelled SearchableSelect in the toolbar actions, not inside the filter panel.
-  assert.match(resource, /actions=\{<><div className="sort-menu"[^>]*><SearchableSelect label=\{`Sort \$\{config\.name\}`\}/);
+  assert.match(resource, /actions=\{<><div className="sort-menu"[^>]*><SearchableSelect label=\{`Sort \$\{listName\}`\}/);
   assert.match(resource, /hasAdvanced\?<>\s*\{resource==="clinics"/);
   assert.doesNotMatch(resource, /<SearchableSelect label="Sort"/);
 });

@@ -33,7 +33,7 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel }: {
     });
   }}>
     <h4>{provider === "smtp" ? "SMTP email credentials" : "Twilio SMS credentials"}</h4>
-    <p>Stored values are never displayed. Leave a field blank to keep its current value. Saving applies immediately to new sends; it does not send a message.</p>
+    <p>Stored values are never displayed. Leave a field blank to keep its current value. Saved website settings replace the whole .env configuration for this service. Saving does not send a message.</p>
     <fieldset disabled={save.isPending}>
       <legend>Configuration source</legend>
       <label><input type="radio" name={`${provider}-source`} checked={mode === "database"} onChange={() => setMode("database")} /> Encrypted website settings</label>

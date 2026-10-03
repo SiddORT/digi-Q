@@ -1,21 +1,58 @@
-import { db, settings, appointments, clinics, patients, users } from "@workspace/db";
+import { db, settings, appointments, clinics, patients, users, doctors, assignments } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { one, getSettings } from "./store";
-import { templateEvents, renderNotification, type TemplateEvent } from "./notification-templates";
+import { templateRecipients, defaultRecipient, renderNotification, type TemplateEvent } from "./notification-templates";
 import { resolvedTemplate } from "./notification-template-store";
 import { sendAuthEmail } from "./auth-email";
 import { confirmationText } from "./appointment-confirmation";
 import { validEmailAddress } from "./integration-config";
+import { createHash } from "node:crypto";
+const emailKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {
   if (!(await getSettings(conn, row.clinicId)).notificationsEnabled) return;
   if (typeof previousDetails === "object") previousDetails = confirmationText(previousDetails, await one(clinics, row.clinicId, conn)).replace("Your appointment is confirmed.", "Previous visit details:");
+  const usedEmails = new Set<string>();
+  if (row.patientId && (await resolvedTemplate(event, row.clinicId, conn, "patient")).content.enabled) {
+    const patient = await one(patients, row.patientId, conn);
+    const account = patient.userId ? await one(users, patient.userId, conn) : null;
+    usedEmails.add(String(account?.email || patient.email || "").toLowerCase());
+  }
+  for (const group of templateRecipients) {
+  if (event === "onboarding" && group !== "clinicAdmin") continue;
+  if (event === "booking" && group === "patient") continue; // Existing confirmation claim owns this recipient.
+  const template = await resolvedTemplate(event, row.clinicId, conn, group);
+  if (!template.content.enabled) continue;
+  const primary = group === defaultRecipient(event);
+  let targets: any[] = [null];
+  if (!primary) {
+    if (group === "clinicAdmin") targets = [await one(users, (await one(clinics, row.clinicId, conn)).adminId, conn)];
+    if (group === "doctor") targets = row.doctorId ? [await one(users, (await one(doctors, row.doctorId, conn)).userId, conn)] : [];
+    if (group === "receptionist") {
+      const links = await conn.select().from(assignments).where(eq(assignments.clinicId, row.clinicId));
+      targets = [];
+      for (const link of links) if (!link.branchId || link.branchId === row.branchId) {
+        const account = await one(users, link.userId, conn);
+        if (account.role === "receptionist") targets.push(account);
+      }
+    }
+  }
+  for (const target of targets) {
+  if (target) {
+    const email = String(target.email || "").toLowerCase();
+    if (target.status !== "active" || !validEmailAddress(email) || usedEmails.has(email)) continue;
+    usedEmails.add(email);
+  }
   const id = `mail-outbox:${event}:${row.id}:${row.revision || 0}`;
-  await conn.insert(settings).values({ id, data: {
+  await conn.insert(settings).values({ id: primary ? id : `${id}:recipient:${emailKey(target.email)}`, data: {
+    recipientGroup: group, recipientUserId: target?.id,
+    recipientEmailKey: target ? emailKey(target.email) : undefined,
     event, appointmentId: event === "onboarding" ? undefined : row.id, clinicId: row.clinicId,
     previousDetails, snapshot: row, state: "pending", attempts: 0, dueAt: Date.now(), createdAt: Date.now(),
   } }).onConflictDoNothing();
+  }
+  }
 }
 export function reminderDue(row: any, now = Date.now()) {
   if (!row.date || !row.startTime || !row.timezone || !["waiting", "booked"].includes(row.status) || row.checkedInAt) return false;
@@ -56,6 +93,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       if (!(await getSettings(tx, data.clinicId)).notificationsEnabled) { await update({ state: "disabled" }); return null; }
       const clinic = await one(clinics, data.clinicId, tx);
       const current = data.appointmentId ? await one(appointments, data.appointmentId, tx) : null;
+      if (data.appointmentId && !current) { await update({ state: "obsolete" }); return null; }
       if (data.event === "reminder" && (!current || !reminderDue(current, now) || current.revision !== data.snapshot.revision)) {
         await update({ state: "obsolete" }); return null;
       }
@@ -65,8 +103,21 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
         const account = patient.userId ? await one(users, patient.userId, tx) : null;
         recipient = account?.email || patient.email || "";
       } else recipient = (await one(users, clinic.adminId, tx)).email || "";
+      if (data.recipientUserId) {
+        const account = await one(users, data.recipientUserId, tx);
+        let member = data.recipientGroup === "clinicAdmin" && clinic.adminId === account.id;
+        if (data.recipientGroup === "doctor" && current?.doctorId) member = (await one(doctors, current.doctorId, tx)).userId === account.id;
+        if (data.recipientGroup === "receptionist") {
+          const links = await tx.select().from(assignments).where(eq(assignments.userId, account.id));
+          member = account.role === "receptionist" && links.some((l: any) => l.clinicId === data.clinicId && (!l.branchId || l.branchId === current?.branchId));
+        }
+        if (!member || account.status !== "active") { await update({ state: "obsolete" }); return null; }
+        recipient = account.email || "";
+        if (data.recipientEmailKey && emailKey(recipient) !== data.recipientEmailKey) { await update({ state: "obsolete" }); return null; }
+      }
       if (!validEmailAddress(recipient)) { await update({ state: "no_recipient" }); return null; }
-      const template = await resolvedTemplate(data.event, data.clinicId, tx);
+      const template = await resolvedTemplate(data.event, data.clinicId, tx, data.recipientGroup || defaultRecipient(data.event));
+      if (!template.content.enabled) { await update({ state: "disabled" }); return null; }
       const row = data.snapshot;
       const rendered = renderNotification(template.content, { clinic_name: clinic.name, patient_name: patient?.fullName || "", doctor_name: row.doctorName || "",
         appointment_details: current ? confirmationText(row, clinic).replace("Your appointment is confirmed.", "Visit details:") : "",

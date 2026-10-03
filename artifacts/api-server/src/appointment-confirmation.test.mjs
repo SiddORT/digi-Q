@@ -11,6 +11,8 @@ await build({
  stdin:{contents:'export * from "./lib/appointment-confirmation"; export * from "fixture";',resolveDir:import.meta.dirname},
  outfile:join(dir,"test.mjs"),bundle:true,platform:"node",format:"esm",
  plugins:[{name:"isolated-mail",setup(b){
+  b.onResolve({filter:/\/notification-outbox$/},()=>({path:"outbox",namespace:"outbox-fixture"}));
+  b.onLoad({filter:/.*/,namespace:"outbox-fixture"},()=>({contents:"export const enqueueEvent=async()=>{};"}));
   b.onResolve({filter:/^fixture$|^@workspace\/db$|^drizzle-orm$|\/store$|\/auth-email$|\/notification-template-store$|^\.\/appointments$/},a=>({path:a.path,namespace:"fixture"}));
   b.onLoad({filter:/.*/,namespace:"fixture"},a=>{
    if(a.path==="fixture")return {contents:`
@@ -27,7 +29,7 @@ await build({
     };`};
    if(a.path==="@workspace/db")return {contents:'export {conn as db} from "fixture"; export const appointments={id:"id",data:"data"},patients="patients",clinics="clinics",users="users";'};
    if(a.path==="drizzle-orm")return {contents:'export const sql=(strings,...values)=>({strings,values});export const eq=(_,id)=>({id});'};
-   if(a.path.endsWith("/notification-template-store"))return {contents:'export const resolvedTemplate=async()=>({source:"default"});'};
+   if(a.path.endsWith("/notification-template-store"))return {contents:'export const resolvedTemplate=async()=>({source:"default",content:{enabled:true}});'};
    if(a.path.endsWith("/auth-email"))return {contents:'export const sendAuthEmail=()=>{throw Error("Real SMTP forbidden in tests")};'};
    if(a.path==="./appointments")return {contents:'export const lockQueue=async()=>{};'};
    return {contents:'import {state} from "fixture"; export const one=async(table,id)=>state.rows[typeof table==="string"?table:"appointments"].find(r=>r.id===id);export const getSettings=async()=>({notificationsEnabled:state.enabled});'};

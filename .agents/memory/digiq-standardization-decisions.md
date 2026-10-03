@@ -62,3 +62,9 @@ Uniform elements and styling are part of the entire approved scope: the same fun
 **Why:** The user explicitly reinforced this requirement and requested analysis before coding.
 
 **How to apply:** Inventory all callers and control states before changing shared controls. Distinguish a status-editing toggle from a status filter or read-only badge; preserve those semantic differences while standardizing their respective patterns.
+
+Custom roles are restrictive specializations of existing staff roles, not independent cross-clinic privilege grants. Multiple restrictions combine; clinic-ambiguous operations fail closed.
+
+**Why:** Named roles must not weaken the existing clinic ownership and workflow boundaries or turn an unscoped request into a restriction bypass.
+
+**How to apply:** Keep effective-permission explanations conditional on built-in authorization, and do not label an unrestricted capability as unconditional record access.

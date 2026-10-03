@@ -20,10 +20,12 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { NotificationTemplateCatalogItemsItemRecipient } from './notificationTemplateCatalogItemsItemRecipient';
 import type { NotificationTemplateContent } from './notificationTemplateContent';
 
 export type NotificationTemplateCatalogItemsItem = {
   event: string;
+  recipient?: NotificationTemplateCatalogItemsItemRecipient;
   title: string;
   revision: number;
   source: string;

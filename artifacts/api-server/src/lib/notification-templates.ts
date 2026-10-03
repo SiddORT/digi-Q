@@ -2,8 +2,12 @@ import { z } from "zod";
 
 export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder"] as const;
 export type TemplateEvent = typeof templateEvents[number];
+export const templateRecipients = ["patient", "clinicAdmin", "doctor", "receptionist"] as const;
+export type TemplateRecipient = typeof templateRecipients[number];
+export const defaultRecipient = (event: TemplateEvent): TemplateRecipient => event === "onboarding" ? "clinicAdmin" : "patient";
 export const templateVariables = ["clinic_name", "patient_name", "doctor_name", "appointment_details", "previous_details", "reference", "timezone", "clinic_contact"] as const;
 export const templateContent = z.object({
+  enabled: z.boolean().default(true),
   subject: z.string().trim().min(1).max(180).refine(v => !/[\r\n]/.test(v), "Subject must be one line"),
   body: z.string().trim().min(1).max(8000),
   prefix: z.string().trim().max(60).refine(v => !/[\r\n]/.test(v), "Prefix must be one line"),
@@ -25,6 +29,7 @@ export const templateContent = z.object({
 });
 export type TemplateContent = z.infer<typeof templateContent>;
 export const templateSave = z.object({
+  recipient: z.enum(templateRecipients).optional(),
   clinicId: z.string().min(1).max(100).optional(), event: z.enum(templateEvents),
   revision: z.number().int().min(0), mode: z.enum(["draft", "publish", "reset"]),
   content: templateContent.optional(),
@@ -41,8 +46,8 @@ const bodies: Record<TemplateEvent, string> = {
   completed: "Hello {{patient_name}},\n\nThank you for visiting {{clinic_name}}. Your visit is now complete.\nFor further assistance, contact your clinic.\n{{clinic_contact}}",
   reminder: "Hello {{patient_name}},\n\nA reminder of your upcoming session at {{clinic_name}}.\n{{appointment_details}}\nReference: {{reference}}\nQueue-based visits do not guarantee an exact consultation time.",
 };
-export function defaultTemplate(event: TemplateEvent): TemplateContent {
-  return { subject: `${eventTitles[event]} — {{clinic_name}}`, body: bodies[event], prefix: "", logoUrl: "", footer: "This is an automated clinic message. Contact your clinic for assistance." };
+export function defaultTemplate(event: TemplateEvent, recipient: TemplateRecipient = defaultRecipient(event)): TemplateContent {
+  return { enabled: recipient === defaultRecipient(event), subject: `${eventTitles[event]} — {{clinic_name}}`, body: recipient === defaultRecipient(event) ? bodies[event] : `Clinic notification: ${eventTitles[event]}\nPatient: {{patient_name}}\nDoctor: {{doctor_name}}\n{{appointment_details}}\nReference: {{reference}}\n{{clinic_contact}}`, prefix: "", logoUrl: "", footer: "This is an automated clinic message. Contact your clinic for assistance." };
 }
 export function substitute(text: string, values: Record<string, string>): string {
   // A single replacement pass: patient-supplied braces can never become another variable.

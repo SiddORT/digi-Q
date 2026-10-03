@@ -25,6 +25,8 @@ await build({
   stdin: { contents: 'export {canRead} from "./auth";', resolveDir: join(import.meta.dirname, "lib") },
   outfile: join(dir, "legacy-scope.mjs"), bundle: true, platform: "node", format: "esm",
   plugins: [{ name: "scope-only-fixtures", setup(b) {
+    b.onResolve({ filter: /\/custom-roles$/ }, () => ({ path: "roles", namespace: "custom-role-fixture" }));
+    b.onLoad({ filter: /.*/, namespace: "custom-role-fixture" }, () => ({ contents: "export const enforceCustomRoles=async()=>{};" }));
     b.onResolve({ filter: /^@workspace\/db$|\/store$/ }, a => ({ path: a.path, namespace: "scope-fixture" }));
     b.onLoad({ filter: /.*/, namespace: "scope-fixture" }, a => {
       if (a.path.endsWith("/store")) return { contents: "export const all=async t=>globalThis.scopeFixtures[t]||[]; export const one=async(t,id)=>(await all(t)).find(r=>r.id===id); export const flatten=r=>r; export const uid=()=>'';" };

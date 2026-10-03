@@ -109,7 +109,7 @@ export function SearchableSelect({
       );
 
   return (
-    <div className="flex min-w-0 max-w-full flex-col gap-1.5 w-full">
+    <div className="searchable-select-field flex min-w-0 max-w-full flex-col gap-1.5 w-full">
       {label && (
         <label htmlFor={controlId} className="text-sm font-semibold text-foreground">
           {label} {required && <span className="text-destructive">*</span>}

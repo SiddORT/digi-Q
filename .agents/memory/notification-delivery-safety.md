@@ -20,3 +20,9 @@ queue-based care does not promise exact consultation times.
 
 **How to apply:** Preserve the development safety boundary and recheck visit eligibility
 at dispatch rather than trusting an earlier reminder snapshot.
+
+Additional staff recipient groups start disabled; enabling them is an explicit publication decision. Shared addresses across staff roles receive one message for an event.
+
+**Why:** Adding recipient-aware configuration must not silently expand delivery to existing staff or duplicate messages for multi-role identities.
+
+**How to apply:** Preserve primary-recipient compatibility and address-based deduplication when adding recipient groups or changing role assignments.

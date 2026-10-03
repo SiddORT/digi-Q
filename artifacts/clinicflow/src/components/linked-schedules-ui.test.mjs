@@ -50,7 +50,7 @@ test("legacy routes remain, while navigation consolidates clinic, staff and sche
   assert.match(text, /<DoctorClinics identity=\{identity\} embedded/);
   assert.match(navigation, /My profile & consultation/);
   // Approved explicit management modules are visible in admin navigation.
-  assert.match(text, /admin:\["dashboard","appointments","queue","patients","clinics","branches","users","availability","reports","masters","settings","templates","permissions","integrations","audit","demo"\]/);
+  assert.match(text, /admin:\["dashboard","appointments","queue","patients","clinics","branches","users","system-users","availability","reports","masters","settings","templates","permissions","integrations","audit","demo"\]/);
 });
 test("appointment and report filters apply drafts, with status-only tabs and column sorting", () => {
   const text = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");

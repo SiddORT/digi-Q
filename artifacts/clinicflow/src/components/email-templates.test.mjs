@@ -19,9 +19,16 @@ test("conflict keeps drafts and offers explicit reload; logo preview opt-in", ()
   assert.match(src, /\(showLogo \|\| isInternalLogo\(form\.logoUrl\)\)\s*\n?\s*\? <img/);
 });
 test("unsaved guard wraps scope and event navigation", () => {
-  assert.equal((src.match(/guard\(\(\) =>/g) || []).length, 3);
+  assert.equal((src.match(/guard\(\(\) =>/g) || []).length, 4);
 });
 test("background revision refresh preserves edits and saves use the editing revision", () => {
   assert.match(src, /!same\(form, editBase\.current\.content\)/);
   assert.match(src, /revision: editBase\.current\?\.revision \?\? item\.revision/);
+});
+test("recipient-aware: onboarding only for clinic admin, recipient sent on save", async () => {
+  assert.ok(src.includes('e !== "onboarding" || recipient === "clinicAdmin"'));
+  assert.ok(src.includes('event === "onboarding" ? "clinicAdmin" : current'));
+  assert.match(src, /NotificationTemplateSaveEvent, recipient, revision/);
+  assert.match(src, /useState<Recipient>\("patient"\)/);
+  assert.ok(src.includes("adds real emails"));
 });

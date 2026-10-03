@@ -13,7 +13,19 @@ import "./email-templates.css";
 type Content = api.NotificationTemplateContent;
 type Mode = "draft" | "publish" | "reset";
 const EVENTS = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder"] as const;
-const FIELDS: [keyof Content, string, number, string][] = [
+type Recipient = "patient" | "clinicAdmin" | "doctor" | "receptionist";
+export const RECIPIENTS: { value: Recipient; label: string; who: string }[] = [
+  { value: "patient", label: "Patient", who: "the patient on the appointment" },
+  { value: "clinicAdmin", label: "Clinic admin", who: "the admin who owns the clinic" },
+  { value: "doctor", label: "Doctor", who: "the doctor on the appointment" },
+  { value: "receptionist", label: "Receptionist", who: "receptionists assigned to the clinic" },
+];
+/** Onboarding is addressed to the clinic admin only; every other recipient omits it. */
+export function eventsFor(recipient: Recipient) { return EVENTS.filter(e => e !== "onboarding" || recipient === "clinicAdmin"); }
+/** Event switches may force a recipient: onboarding always targets the clinic admin. */
+export function recipientForEvent(event: string, current: Recipient): Recipient { return event === "onboarding" ? "clinicAdmin" : current; }
+type TextKey = Exclude<keyof Content, "enabled">;
+const FIELDS: [TextKey, string, number, string][] = [
   ["subject", "Subject", 180, "Required. Variables such as {{clinic_name}} are kept as written."],
   ["prefix", "Subject prefix", 60, "Optional short label placed before the subject."],
   ["body", "Body", 8000, "Required. Plain text; variables are filled in at send time."],
@@ -45,13 +57,14 @@ export function unknownVariables(content: Content, allowed: string[]) {
   for (const v of Object.values(content)) for (const m of String(v).matchAll(/\{\{\s*([a-z0-9_]+)\s*\}\}/gi)) if (!allowed.includes(m[1])) found.add(m[1]);
   return [...found];
 }
-const same = (a?: Content, b?: Content) => !!a && !!b && FIELDS.every(([k]) => a[k] === b[k]);
+const same = (a?: Content, b?: Content) => !!a && !!b && FIELDS.every(([k]) => a[k] === b[k]) && (a.enabled ?? null) === (b.enabled ?? null);
 const status = (e: any) => e?.status ?? e?.response?.status;
 
 export function EmailTemplates({ identity }: { identity: api.Identity }) {
   const superAdmin = identity.user?.role === "superAdmin";
   const [clinicId, setClinicId] = useState("");
   const [event, setEvent] = useState<string>("booking");
+  const [recipient, setRecipient] = useState<Recipient>("patient");
   const [form, setForm] = useState<Content | null>(null);
   const [confirm, setConfirm] = useState<Mode | null>(null);
   const [pendingNav, setPendingNav] = useState<null | (() => void)>(null);
@@ -63,24 +76,24 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
   useEffect(() => {
     setUpload({ state: "idle", pct: 0, msg: "" });
     return () => { uploadAbort.current?.abort(); };
-  }, [clinicId, event]);
+  }, [clinicId, event, recipient]);
   const requestLogo = useRequestLogoUpload();
   const completeLogo = useCompleteLogoUpload();
   const loadedFor = useRef("");
   const editBase = useRef<{ scope: string; revision: number; content: Content } | null>(null);
   const queryClient = useQueryClient();
-  const params = clinicId ? { clinicId } : undefined;
+  const params = clinicId ? { clinicId, recipient } : { recipient };
   const enabled = superAdmin || !!clinicId;
   const queryKey = getGetNotificationTemplatesQueryKey(params);
   const catalog = useGetNotificationTemplates(params, { query: { enabled, queryKey } });
   const save = useSaveNotificationTemplate();
-  const item = catalog.data?.items.find(i => i.event === event);
+  const item = catalog.data?.items.find(i => i.event === event && (i.recipient ?? "patient") === recipient);
   const base = item ? (item.draft ?? item.content) : undefined;
-  const key = `${clinicId}|${event}|${item?.revision ?? ""}`;
+  const key = `${clinicId}|${event}|${recipient}|${item?.revision ?? ""}`;
 
   useEffect(() => {
     if (item && loadedFor.current !== key && !conflict) {
-      const scope = `${clinicId}|${event}`;
+      const scope = `${clinicId}|${event}|${recipient}`;
       if (editBase.current?.scope === scope && form && !same(form, editBase.current.content)) {
         setConflict(true);
         return;
@@ -89,7 +102,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
       editBase.current = { scope, revision: item.revision, content };
       loadedFor.current = key; setForm(content); setShowLogo(false);
     }
-  }, [item, key, conflict, clinicId, event, form]);
+  }, [item, key, conflict, clinicId, event, recipient, form]);
 
   const dirty = !!form && !!base && !same(form, base);
   const variables = catalog.data?.variables ?? [];
@@ -107,14 +120,14 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
 
   function run(mode: Mode) {
     if (!item || !form) return;
-    save.mutate({ data: { clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : form } }, {
+    save.mutate({ data: { clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, recipient, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : form } }, {
       onSuccess: next => {
         queryClient.setQueryData(queryKey, next);
-        const fresh = next.items.find(i => i.event === event);
+        const fresh = next.items.find(i => i.event === event && (i.recipient ?? "patient") === recipient);
         loadedFor.current = "";
         if (fresh) {
           const content = { ...(fresh.draft ?? fresh.content) };
-          editBase.current = { scope: `${clinicId}|${event}`, revision: fresh.revision, content };
+          editBase.current = { scope: `${clinicId}|${event}|${recipient}`, revision: fresh.revision, content };
           setForm(content);
         }
         setConfirm(null); setConflict(false);
@@ -150,12 +163,15 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
     }
   }
 
-  const set = (k: keyof Content, v: string) => { setNotice(""); setForm(f => f ? { ...f, [k]: v } : f); };
+  const set = (k: TextKey, v: string) => { setNotice(""); setForm(f => f ? { ...f, [k]: v } : f); };
+  const setEnabled = (v: boolean) => { setNotice(""); setForm(f => f ? { ...f, enabled: v } : f); };
+  const recipientInfo = RECIPIENTS.find(r => r.value === recipient)!;
+  const isOn = form ? (form.enabled ?? recipient === "patient") : false;
   const preview = form ? { subject: previewText(`${form.prefix ? form.prefix + " " : ""}${form.subject}`, scopeName), body: previewText(form.body, scopeName), footer: previewText(form.footer, scopeName) } : null;
 
   return <section className="email-templates" data-testid="email-templates">
     <header className="et-head">
-      <div><h2>Email templates</h2><p>Edit the wording patients receive. Saving here never sends an email.</p></div>
+      <div><h2>Email templates</h2><p>Edit the wording each recipient receives per event. Saving here never sends an email.</p></div>
     </header>
     <p role="note" className="et-limit" data-testid="text-delivery-limit">Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically.</p>
 
@@ -165,9 +181,13 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
       </FormField> : <FormField label="Clinic group" required helper="Choose a clinic group you manage.">
         {(a) => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => guard(() => { setClinicId(v); resetLocal(); })} />}
       </FormField>}
-      <FormField label="Event">
-        {(a) => <SearchableSelect {...a} value={event} onChange={v => guard(() => { setEvent(v); resetLocal(); })}
-          options={EVENTS.map(e => ({ value: e, label: catalog.data?.items.find(i => i.event === e)?.title ?? e }))} />}
+      <FormField label="Recipient" helper={`Sent to ${recipientInfo.who}.`}>
+        {(a) => <SearchableSelect {...a} value={recipient} onChange={v => guard(() => { const r = v as Recipient; setRecipient(r); if (!eventsFor(r).includes(event as any)) setEvent("booking"); resetLocal(); })}
+          options={RECIPIENTS.map(r => ({ value: r.value, label: r.label }))} />}
+      </FormField>
+      <FormField label="Event" helper={recipient === "clinicAdmin" ? undefined : "Onboarding is available for the Clinic admin recipient."}>
+        {(a) => <SearchableSelect {...a} value={event} onChange={v => guard(() => { setEvent(v); setRecipient(r => recipientForEvent(v, r)); resetLocal(); })}
+          options={eventsFor(recipient).map(e => ({ value: e, label: catalog.data?.items.find(i => i.event === e)?.title ?? e }))} />}
       </FormField>
     </div>
 
@@ -183,6 +203,10 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
             <span className={`et-chip ${item.delivery === "active" || event === "booking" ? "live" : ""}`}>{item.delivery}</span>
             {item.draft && <span className="et-chip draft">Unpublished draft</span>}
             <span className="et-rev">Revision {item.revision}</span>
+          </div>
+          <div className="et-toggle" data-testid="row-enabled">
+            <label><input type="checkbox" checked={isOn} onChange={e => setEnabled(e.target.checked)} data-testid="input-enabled" /> Send this email to {recipientInfo.label.toLowerCase()}s for this event</label>
+            <small>{recipient === "patient" ? "Turning this off stops the patient email for this event." : `Off by default. Publishing with this on adds real emails to ${recipientInfo.who}. An address that is already a target for this event receives one email, not duplicates.`}</small>
           </div>
           {FIELDS.map(([k, label, max, help]) => <FormField key={k} label={label} required={k === "subject" || k === "body"} optional={k !== "subject" && k !== "body"} helper={help} error={(errors as any)[k]}>
             {(a) => k === "body" || k === "footer"

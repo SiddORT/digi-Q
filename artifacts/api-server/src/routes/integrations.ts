@@ -9,6 +9,8 @@ import { HttpError } from "../lib/http";
 import { smtpConfig, validEmailAddress } from "../lib/integration-config";
 import { consumeRateLimit, verifyPassword } from "../lib/native-auth";
 import { integrationSettings, resolvedIntegration, saveIntegration, integrationFields } from "../lib/integration-vault";
+import { checkIntegration } from "../lib/integration-checks";
+import { mediaConfig } from "../lib/local-media";
 
 export const integrationsRouter = Router();
 const path = "/settings/integrations";
@@ -22,6 +24,16 @@ integrationsRouter.use(path, async (req, res, next) => {
 });
 integrationsRouter.get(path, async (_req, res) => {
   res.json(GetIntegrationSettingsResponse.parse(await integrationSettings()));
+});
+integrationsRouter.get(`${path}/storage`, async (_req, res) => {
+  const config = mediaConfig();
+  res.json({ provider: config.driver, source: "environment", publicPath: config.url, configured: config.driver === "object" ? !!process.env.PRIVATE_OBJECT_DIR : !!config.root });
+});
+integrationsRouter.post(`${path}/:provider/check`, async (req, res) => {
+  const provider = String(req.params.provider);
+  if (!["smtp", "sms", "storage"].includes(provider)) throw new HttpError(400, "Unsupported provider");
+  await consumeRateLimit(`integration-check:${res.locals.integrationActor}`, 10, 900000);
+  res.json(await checkIntegration(provider as "smtp" | "sms" | "storage"));
 });
 integrationsRouter.put(path, async (req, res) => {
   await consumeRateLimit(`integration-edit:ip:${ipKeyGenerator(req.ip || "unknown")}`, 20, 900_000);

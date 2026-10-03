@@ -24,4 +24,6 @@ export async function enforcePermissionPolicy(user: any, req: { method: string; 
   if (parts.includes("actions") && ["cancel", "complete"].includes(req.body?.action)) action = req.body.action;
   const policy = await permissionPolicy();
   assert(!policy.denied.includes(`${user.role}:${module}:${action}`), 403, "This operation is disabled by your administrator");
+  const { enforceCustomRoles } = await import("./custom-roles");
+  await enforceCustomRoles(user, req, module, action);
 }
