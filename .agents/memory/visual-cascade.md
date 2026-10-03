@@ -50,3 +50,9 @@ Reduce visible information, not only spacing: technical references and repeated 
 **Why:** The user rejected lists with two or three lines of database-oriented information and duplicate status explanations, even after the spacing pass.
 
 **How to apply:** Default to the information needed to identify and act on the record. Preserve hidden fields in storage, search and Details; use accessible focus/tap pop-ups for secondary non-sensitive context. Do not hide critical patient identification or warnings.
+
+Ticket compactness and the current representation review must preserve all existing information, links, actions, QR codes and explanations.
+
+**Why:** The user explicitly clarified: "do not remove any info or links or anything from it" when discussing the shorter ticket and revised header layout.
+
+**How to apply:** Improve grouping, alignment and spacing without dropping content, shrinking text to fit or clipping overflow. Target a ticket that fits typical desktop viewports, while retaining scrolling when small screens or long content require it.
