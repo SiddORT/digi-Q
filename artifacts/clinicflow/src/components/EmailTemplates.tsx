@@ -5,6 +5,7 @@ import { useGetNotificationTemplates, getGetNotificationTemplatesQueryKey, useSa
 import { logoFileError, putToSignedUrl, LOGO_TYPES } from "./logo-upload";
 import { AppDialog } from "./AppDialog";
 import { FormField } from "./FormField";
+import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
 import { LoadingButton } from "./LoadingButton";
 import { ResourceLookup } from "./ResourceLookup";
@@ -170,11 +171,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
   const preview = form ? { subject: previewText(`${form.prefix ? form.prefix + " " : ""}${form.subject}`, scopeName), body: previewText(form.body, scopeName), footer: previewText(form.footer, scopeName) } : null;
 
   return <section className="email-templates" data-testid="email-templates">
-    <header className="et-head">
-      <div><h2>Email templates</h2><p>Edit the wording each recipient receives per event. Saving here never sends an email.</p></div>
-    </header>
-    <p role="note" className="et-limit" data-testid="text-delivery-limit">Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically.</p>
-
+    <p className="et-intro muted">Edit the wording each recipient receives per event. Saving here never sends an email. <span role="note" className="et-limit-tip" data-testid="text-delivery-limit"><HelpTip text="Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically." /></span></p>
     <div className="et-scope">
       {superAdmin ? <FormField label="Scope" optional helper="Leave empty to edit platform defaults.">
         {(a) => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => guard(() => { setClinicId(v); resetLocal(); })} placeholder="Platform defaults" />}

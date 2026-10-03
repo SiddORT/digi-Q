@@ -78,12 +78,12 @@ test("old branch list edit opens the authorised clinic hours editor instead of g
   assert.match(settings, /const closeBranch=\(\)=>\{setBranch\(null\)/);
   assert.match(settings, /This location is not available in the selected clinic/);
 });
-test("custom-hour setup is a disclosure in the one scheduling workspace", () => {
+test("custom-hour setup is a drawer in the one scheduling workspace", () => {
   const settings=source("ClinicSettings.tsx");
   const scheduling=source("SchedulingWorkspace.tsx");
   assert.match(settings, /<SchedulingWorkspace[^>]*clinicId=\{clinicId\} onLinkOwner=/);
   assert.doesNotMatch(settings, /<ClinicSessionSetup/);
-  assert.match(scheduling, /<details[^>]*><summary>Copy opening hours into custom doctor sessions<\/summary>/);
+  assert.match(scheduling, /<AppDialog open variant="drawer"[\s\S]*?title="Copy opening hours into custom doctor sessions"/);
   assert.match(scheduling, /<ClinicSessionSetup[^>]*clinicId=\{clinicId\}/);
   assert.match(scheduling, /resource=\{selectedPage\}/);
   assert.match(scheduling, /url\.searchParams\.set\("schedule",target\)/);

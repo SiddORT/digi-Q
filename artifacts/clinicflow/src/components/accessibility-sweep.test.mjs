@@ -58,7 +58,10 @@ test("discard confirmation makes both underlying header and body inert", () => {
 });
 
 test("resetting advanced filters restores keyboard focus", () => {
-  assert.match(read("./ListingControls.tsx"), /onReset\(\); setOpen\(false\); toggleRef\.current\?\.focus\(\)/);
+  const source = read("./ListingControls.tsx");
+  assert.match(source, /onReset\(\); closeFilters\(\)/);
+  assert.match(source, /requestAnimationFrame\(\(\) => toggleRef\.current\?\.focus\(\)\)/);
+  assert.match(source, /<AppDialog open=\{open\} onClose=\{closeFilters\} title=\{label\} variant="drawer"/);
 });
 
 test("public account copy does not imply mandatory login and rescheduling explanation does not change eligibility", () => {

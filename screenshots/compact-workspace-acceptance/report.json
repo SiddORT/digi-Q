@@ -1,0 +1,1253 @@
+{
+  "origin": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev",
+  "pass": [
+    "21 admin destinations at 1440/1024/390: visible workspace, boundary, overflow and pre-table/control geometry",
+    "Templates visible; draft/editor preserved without sending messages",
+    "Settings, scheduling, role drawer and integration confirmation surfaces render",
+    "Advanced filter drawer overlays listing and restores focus on Escape",
+    "Scheduling copy-hours drawer opens without sending or saving",
+    "Custom role editor drawer guards unsaved discard",
+    "Integration test send requires explicit confirmation; actual API is intercepted",
+    "Public/auth routes render views or their expected app-level not-found without boundary",
+    "Patient live-search query results and no-result feedback"
+  ],
+  "fail": [
+    {
+      "name": "Appointments populated compact actions, All status tab, long cell and search suggestions",
+      "error": "expect(locator).toBeVisible() failed\n\nLocator: getByTestId('status-empty')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" getByTestId('status-empty') with timeout 5000ms\n  - waiting for getByTestId('status-empty')\n"
+    }
+  ],
+  "gaps": [
+    "/access-check: public/auth fixture route showed error boundary (response contract not represented by generic fixture)",
+    "/clinic/fictional-northside: public/auth fixture route showed error boundary (response contract not represented by generic fixture)"
+  ],
+  "measures": [
+    {
+      "route": "dashboard",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "0 AM\n\tCompleted\t\nDetails\nOperational activity\nRecent care and business updates. Authentication and password-verification events remain in the separate security audit, not this feed.\nLive data\n\nNo operational updates yet. Bookings, check-ins and schedule changes appear here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Good morning, Fixture.",
+      "preTable": 273,
+      "filterRows": [],
+      "heads": [
+        {
+          "top": 328,
+          "height": 40,
+          "width": 1198
+        },
+        {
+          "top": 652,
+          "height": 48,
+          "width": 1198
+        }
+      ],
+      "controls": 13
+    },
+    {
+      "route": "clinics",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "t\nAdd clinic\n\tName\n\tStatus\n\tACTIONS\n\t\nFictional Northside Clinic\n10 Fictional Way · Example City · clinic@example.invalid\n\tActive\t\nBooking and display actions\nConfigure this clinic\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Clinics",
+      "preTable": 89,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 36,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "branches",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "ons\nNewest first\nAdd location\n\tName\n\tTIMEZONE\tStatus\n\tACTIONS\n\t\nNorthside Branch\nExample City · Fictional Northside Clinic\n\tUTC\tActive\t\nBooking and display actions\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Locations",
+      "preTable": 89,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 36,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 22
+    },
+    {
+      "route": "users",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "example.invalid · Clinic admin\n\t\n—\n\t\nActive\nNeeds password setup\n\t—\t\nReplace the pending invitation and send a new set-password link. This does not deactivate the account or revoke sessions.\nEdit staff details and assignments\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Users & staff",
+      "preTable": 91,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 38,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "patients",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "elected-row export is separate.\nAdd patient\n\tFull Name\n\tMOBILE\tGENDER\tACTIONS\n\t\nAlexandria Verylongpatientname Example-Surname\npatient@example.invalid\n\t555-0101\t—\t\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Patients",
+      "preTable": 89,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 36,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "masters",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "e\nInactive\nCategory\nAll categories\nSort master values\nNewest first\nAdd master value\n\tName\n\tCATEGORY\tStatus\n\tACTIONS\n\t\nFictional Specialty\n—\n\tspecialization\tActive\t\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Master data",
+      "preTable": 112,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 59,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "appointments",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "en 2 · Session 9:20 AM–9:40 AM\n\tChecked In\t\nCheck in\nDetails\nTicket\n\n\t\nJamie Fiction\nFX-1003\n\tDr. Rowan Example\nFictional Northside Clinic · Northside Branch\n\t02 Mar 2026\nToken 3 · Session 9:40 AM–10:00 AM\n\tCompleted\t\nDetails\nShowing 1–3 of 3\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Appointments",
+      "preTable": 205,
+      "filterRows": [
+        {
+          "top": 160,
+          "height": 131,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 37
+    },
+    {
+      "route": "queue",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "nic\nLocation\nSearch clinics…\nDoctor\nSearch doctors…\nDate\nQueue session\nSelect session…\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch this session\nSort queue listing\nQueue position\nValidate appointment QR\n\nSelect clinic, location, doctor and session to view a session.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Live queue",
+      "preTable": null,
+      "filterRows": [
+        {
+          "top": 465,
+          "height": 61,
+          "width": 1200
+        }
+      ],
+      "heads": [
+        {
+          "top": 176,
+          "height": 64,
+          "width": 1174
+        }
+      ],
+      "controls": 15
+    },
+    {
+      "route": "reports",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "lled\nno-show\nNaN other (booked, waiting, called, in consultation or other statuses)\n\t\tmin\t—\nInvalid date\tappointments\ncompleted\n\tcancelled\nno-show\nNaN other (booked, waiting, called, in consultation or other statuses)\n\t\tmin\t—\nShowing 1–2 of 2\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Reports",
+      "preTable": 135,
+      "filterRows": [
+        {
+          "top": 160,
+          "height": 61,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "settings",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "udit log\nAdministration\nSign out\nWorkspace\nClinic workspace\nSecure workspace\nFA\nFixture Admin\nSuper Admin\nClinic workspace\nSettings\nClinic workspace\nPlatform settings\nClinic Group\nSearch clinic groups…\n\nSelect a clinic to manage its settings. Platform settings are separate.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Clinic workspace",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 3
+    },
+    {
+      "route": "audit",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "space\nFA\nFixture Admin\nSuper Admin\nAudit log\n1 audit events\nFilters\nSort audit events\nNewest first\n\tCREATED AT\tACTOR NAME\tACTION\tENTITY TYPE\tSUMMARY\n\t\n01 Mar 2026\n8:00 AM\n\tFixture Admin\tcreated\tclinic\tCreated fictional clinic\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Audit log",
+      "preTable": 89,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 36,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 13
+    },
+    {
+      "route": "qrs",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "ons with capacity in Weekly schedule before sharing it.\n\n\tName\n\tStatus\n\tACTIONS\n\t\nNorthside QR\nFX-QR-1\nFictional Northside Clinic\n\tActive\t\nView booking QR and link\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Booking QR codes",
+      "preTable": 115,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 36,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 22
+    },
+    {
+      "route": "book",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "ns.\n\nBooking source\nPhone / advance\nWalk-in today\nClinic Group\nc1\nClinic\nSearch clinics…\nDoctor\nSearch doctors…\nVisit date *\nConsulting session\nSelect session…\n\nSelect a Clinic Group, clinic and doctor to load available sessions. Only authorized clinics are listed.\n\nContinue\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Book appointment",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 9
+    },
+    {
+      "route": "availability",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": ") for this session. Consultation minutes are the expected duration per patient; remaining availability also depends on existing bookings and queue policy.\n\tClosed\t\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Schedule",
+      "preTable": 242,
+      "filterRows": [
+        {
+          "top": 177,
+          "height": 125,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "exceptions",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "ptions\nSchedule\nWeekly sessions\nDate exceptions\n0 date exceptions\nClinic\nSearch clinic groups…\nLocation\nSearch clinics…\nDoctor\nSearch doctors…\nDate\nSort date exceptions\nNewest first\nAdd exception\nNo date exceptions yet\n\nWhen date exceptions are added, you'll find them here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Schedule · exceptions",
+      "preTable": null,
+      "filterRows": [
+        {
+          "top": 177,
+          "height": 125,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 10
+    },
+    {
+      "route": "demo",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "dmin\nSuper Admin\nDemo clinic\nSUPER ADMIN ONLY · FICTIONAL DEMO\nPublished demo clinic\n\nSetup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo.\n\nCreate demo clinic\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Demo clinic",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [
+        {
+          "top": 152,
+          "height": 59,
+          "width": 1174
+        }
+      ],
+      "controls": 1
+    },
+    {
+      "route": "templates",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "ublished until you save.\nAvailable variables\n{{clinic_name}}\n{{patient_name}}\nPublish\nSave draft\nCancel changes\nReset to default\nPreview\n\nSample placeholders only. No patient data is used.\n\nVisit update\nHello [patient name]\nContact Fictional Northside Clinic\nServer rendering\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Email templates",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 16
+    },
+    {
+      "route": "permissions",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "al rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen.\n\nNew custom role\nROLE\tBASE ROLE\tRESTRICTIONS\tASSIGNED\t\nACTIONS\n\nLimited desk\tReceptionist\t1 removed\tStaff member\t\nEdit\nDiscard changes\nSave custom roles\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Roles & permissions",
+      "preTable": 193,
+      "filterRows": [
+        {
+          "top": 230,
+          "height": 59,
+          "width": 1174
+        }
+      ],
+      "heads": [
+        {
+          "top": 152,
+          "height": 70,
+          "width": 1174
+        }
+      ],
+      "controls": 25
+    },
+    {
+      "route": "integrations",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "on ready\nSource: server environment\n\nRefresh\nConfigure SMTP\nSend test email\nSMTP_HOST: configured\nSMTP_PORT: configured\nSMTP_USER: configured\nSMTP_PASSWORD: configured\nSMTP_FROM: configured\nCheck connection\nVerifies settings and reachability only. No message or file is sent.\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Integrations",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 6
+    },
+    {
+      "route": "system-users",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "em users\n1 account\nAll\nActive\nInactive\nRole\nAll roles\nClinic\nSearch clinic groups…\nRoles & permissions\nNAME\tEMAIL\tROLE\tSTATUS\tCLINICS\t\nPERMISSIONS\n\nRiley Fiction\triley@example.invalid\tReceptionist\tActive\tFictional Northside Clinic\tPermissions\nShowing 1–1 of 1\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "System users",
+      "preTable": 112,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 59,
+          "width": 1200
+        }
+      ],
+      "heads": [],
+      "controls": 12
+    },
+    {
+      "route": "profile",
+      "width": 1440,
+      "workspace": true,
+      "error": false,
+      "errorText": "0 AM\n\tCompleted\t\nDetails\nOperational activity\nRecent care and business updates. Authentication and password-verification events remain in the separate security audit, not this feed.\nLive data\n\nNo operational updates yet. Bookings, check-ins and schedule changes appear here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Good morning, Fixture.",
+      "preTable": 273,
+      "filterRows": [],
+      "heads": [
+        {
+          "top": 328,
+          "height": 40,
+          "width": 1198
+        },
+        {
+          "top": 652,
+          "height": 48,
+          "width": 1198
+        }
+      ],
+      "controls": 13
+    },
+    {
+      "route": "dashboard",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "0 AM\n\tCompleted\t\nDetails\nOperational activity\nRecent care and business updates. Authentication and password-verification events remain in the separate security audit, not this feed.\nLive data\n\nNo operational updates yet. Bookings, check-ins and schedule changes appear here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Good morning, Fixture.",
+      "preTable": 312,
+      "filterRows": [],
+      "heads": [
+        {
+          "top": 367,
+          "height": 40,
+          "width": 782
+        },
+        {
+          "top": 909,
+          "height": 48,
+          "width": 782
+        }
+      ],
+      "controls": 13
+    },
+    {
+      "route": "clinics",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "t\nAdd clinic\n\tName\n\tStatus\n\tACTIONS\n\t\nFictional Northside Clinic\n10 Fictional Way · Example City · clinic@example.invalid\n\tActive\t\nBooking and display actions\nConfigure this clinic\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Clinics",
+      "preTable": 131,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 78,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "branches",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "ons\nNewest first\nAdd location\n\tName\n\tTIMEZONE\tStatus\n\tACTIONS\n\t\nNorthside Branch\nExample City · Fictional Northside Clinic\n\tUTC\tActive\t\nBooking and display actions\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Locations",
+      "preTable": 131,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 78,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 22
+    },
+    {
+      "route": "users",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "example.invalid · Clinic admin\n\t\n—\n\t\nActive\nNeeds password setup\n\t—\t\nReplace the pending invitation and send a new set-password link. This does not deactivate the account or revoke sessions.\nEdit staff details and assignments\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Users & staff",
+      "preTable": 131,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 78,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "patients",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "elected-row export is separate.\nAdd patient\n\tFull Name\n\tMOBILE\tGENDER\tACTIONS\n\t\nAlexandria Verylongpatientname Example-Surname\npatient@example.invalid\n\t555-0101\t—\t\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Patients",
+      "preTable": 131,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 78,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "masters",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "e\nInactive\nCategory\nAll categories\nSort master values\nNewest first\nAdd master value\n\tName\n\tCATEGORY\tStatus\n\tACTIONS\n\t\nFictional Specialty\n—\n\tspecialization\tActive\t\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Master data",
+      "preTable": 154,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 101,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "appointments",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "en 2 · Session 9:20 AM–9:40 AM\n\tChecked In\t\nCheck in\nDetails\nTicket\n\n\t\nJamie Fiction\nFX-1003\n\tDr. Rowan Example\nFictional Northside Clinic · Northside Branch\n\t02 Mar 2026\nToken 3 · Session 9:40 AM–10:00 AM\n\tCompleted\t\nDetails\nShowing 1–3 of 3\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Appointments",
+      "preTable": 244,
+      "filterRows": [
+        {
+          "top": 160,
+          "height": 170,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 37
+    },
+    {
+      "route": "queue",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "ected branch\n\nAddress not provided · 03 Oct 2026\n\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch this session\nSort queue listing\nQueue position\nValidate appointment QR\nMulti-doctor sessions · quick switch\n\nSelect clinic, location, doctor and session to view a session.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Live queue",
+      "preTable": null,
+      "filterRows": [
+        {
+          "top": 508,
+          "height": 101,
+          "width": 784
+        }
+      ],
+      "heads": [
+        {
+          "top": 176,
+          "height": 64,
+          "width": 758
+        }
+      ],
+      "controls": 17
+    },
+    {
+      "route": "reports",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "lled\nno-show\nNaN other (booked, waiting, called, in consultation or other statuses)\n\t\tmin\t—\nInvalid date\tappointments\ncompleted\n\tcancelled\nno-show\nNaN other (booked, waiting, called, in consultation or other statuses)\n\t\tmin\t—\nShowing 1–2 of 2\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Reports",
+      "preTable": 201,
+      "filterRows": [
+        {
+          "top": 160,
+          "height": 127,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "settings",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "Email templates\nAudit log\nAdministration\nSign out\nWorkspace\nClinic workspace\nFA\nFixture Admin\nSuper Admin\nClinic workspace\nSettings\nClinic workspace\nPlatform settings\nClinic Group\nSearch clinic groups…\n\nSelect a clinic to manage its settings. Platform settings are separate.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Clinic workspace",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 3
+    },
+    {
+      "route": "audit",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "t log\nFA\nFixture Admin\nSuper Admin\nAudit log\n1 audit events\nFilters\nSort audit events\nNewest first\n\tCREATED AT\tACTOR NAME\tACTION\tENTITY TYPE\tSUMMARY\n\t\n01 Mar 2026\n8:00 AM\n\tFixture Admin\tcreated\tclinic\tCreated fictional clinic\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Audit log",
+      "preTable": 89,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 36,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 13
+    },
+    {
+      "route": "qrs",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "ons with capacity in Weekly schedule before sharing it.\n\n\tName\n\tStatus\n\tACTIONS\n\t\nNorthside QR\nFX-QR-1\nFictional Northside Clinic\n\tActive\t\nView booking QR and link\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Booking QR codes",
+      "preTable": 175,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 78,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 22
+    },
+    {
+      "route": "book",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "\nPhone / advance\nWalk-in today\nClinic Group\nSearch clinic groups…\nClinic\nSearch clinics…\nDoctor\nSearch doctors…\nVisit date *\nConsulting session\nSelect session…\n\nSelect a Clinic Group, clinic and doctor to load available sessions. Only authorized clinics are listed.\n\nContinue\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Book appointment",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 8
+    },
+    {
+      "route": "availability",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": ") for this session. Consultation minutes are the expected duration per patient; remaining availability also depends on existing bookings and queue policy.\n\tClosed\t\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Schedule",
+      "preTable": 302,
+      "filterRows": [
+        {
+          "top": 177,
+          "height": 167,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 21
+    },
+    {
+      "route": "exceptions",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "ptions\nSchedule\nWeekly sessions\nDate exceptions\n0 date exceptions\nClinic\nSearch clinic groups…\nLocation\nSearch clinics…\nDoctor\nSearch doctors…\nDate\nSort date exceptions\nNewest first\nAdd exception\nNo date exceptions yet\n\nWhen date exceptions are added, you'll find them here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Schedule · exceptions",
+      "preTable": null,
+      "filterRows": [
+        {
+          "top": 177,
+          "height": 234,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 10
+    },
+    {
+      "route": "demo",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "dmin\nSuper Admin\nDemo clinic\nSUPER ADMIN ONLY · FICTIONAL DEMO\nPublished demo clinic\n\nSetup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo.\n\nCreate demo clinic\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Demo clinic",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [
+        {
+          "top": 152,
+          "height": 59,
+          "width": 758
+        }
+      ],
+      "controls": 1
+    },
+    {
+      "route": "templates",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "ublished until you save.\nAvailable variables\n{{clinic_name}}\n{{patient_name}}\nPublish\nSave draft\nCancel changes\nReset to default\nPreview\n\nSample placeholders only. No patient data is used.\n\nVisit update\nHello [patient name]\nContact Fictional Northside Clinic\nServer rendering\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Email templates",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 16
+    },
+    {
+      "route": "permissions",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "veral rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen.\n\nNew custom role\nROLE\nBASE ROLE\nRESTRICTIONS\nASSIGNED\nACTIONS\nLimited desk\nReceptionist\n1 removed\nStaff member\nEdit\nDiscard changes\nSave custom roles\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Roles & permissions",
+      "preTable": 193,
+      "filterRows": [
+        {
+          "top": 230,
+          "height": 59,
+          "width": 758
+        }
+      ],
+      "heads": [
+        {
+          "top": 152,
+          "height": 70,
+          "width": 758
+        }
+      ],
+      "controls": 25
+    },
+    {
+      "route": "integrations",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "on ready\nSource: server environment\n\nRefresh\nConfigure SMTP\nSend test email\nSMTP_HOST: configured\nSMTP_PORT: configured\nSMTP_USER: configured\nSMTP_PASSWORD: configured\nSMTP_FROM: configured\nCheck connection\nVerifies settings and reachability only. No message or file is sent.\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Integrations",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 6
+    },
+    {
+      "route": "system-users",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "stem users\n1 account\nAll\nActive\nInactive\nRole\nAll roles\nClinic\nSearch clinic groups…\nRoles & permissions\nNAME\nEMAIL\nROLE\nSTATUS\nCLINICS\nPERMISSIONS\nRiley Fiction\nriley@example.invalid\nReceptionist\nActive\nFictional Northside Clinic\nPermissions\nShowing 1–1 of 1\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "System users",
+      "preTable": 178,
+      "filterRows": [
+        {
+          "top": 139,
+          "height": 125,
+          "width": 784
+        }
+      ],
+      "heads": [],
+      "controls": 12
+    },
+    {
+      "route": "profile",
+      "width": 1024,
+      "workspace": true,
+      "error": false,
+      "errorText": "0 AM\n\tCompleted\t\nDetails\nOperational activity\nRecent care and business updates. Authentication and password-verification events remain in the separate security audit, not this feed.\nLive data\n\nNo operational updates yet. Bookings, check-ins and schedule changes appear here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Good morning, Fixture.",
+      "preTable": 312,
+      "filterRows": [],
+      "heads": [
+        {
+          "top": 367,
+          "height": 40,
+          "width": 782
+        },
+        {
+          "top": 909,
+          "height": 48,
+          "width": 782
+        }
+      ],
+      "controls": 13
+    },
+    {
+      "route": "dashboard",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": ":00 AM\nCompleted\nDetails\nOperational activity\nRecent care and business updates. Authentication and password-verification events remain in the separate security audit, not this feed.\nLive data\n\nNo operational updates yet. Bookings, check-ins and schedule changes appear here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Good morning, Fixture.",
+      "preTable": 546,
+      "filterRows": [],
+      "heads": [
+        {
+          "top": 625,
+          "height": 40,
+          "width": 356
+        },
+        {
+          "top": 1887,
+          "height": 61,
+          "width": 356
+        }
+      ],
+      "controls": 13
+    },
+    {
+      "route": "clinics",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "\nSort clinic groups\nNewest first\nAdd clinic\nFictional Northside Clinic\n10 Fictional Way · Example City · clinic@example.invalid\nActive\nBooking and display actions\nConfigure this clinic\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Clinics",
+      "preTable": 310,
+      "filterRows": [
+        {
+          "top": 167,
+          "height": 243,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 17
+    },
+    {
+      "route": "branches",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "\nAll\nActive\nInactive\nFilters\nSort locations\nNewest first\nAdd location\nNorthside Branch\nExample City · Fictional Northside Clinic\nUTC\nActive\nBooking and display actions\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Locations",
+      "preTable": 310,
+      "filterRows": [
+        {
+          "top": 167,
+          "height": 243,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 18
+    },
+    {
+      "route": "users",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "ion\nriley@example.invalid · Clinic admin\n—\nActive\nNeeds password setup\n—\nReplace the pending invitation and send a new set-password link. This does not deactivate the account or revoke sessions.\nEdit staff details and assignments\nShowing 1–1 of 1\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Users & staff",
+      "preTable": 310,
+      "filterRows": [
+        {
+          "top": 167,
+          "height": 243,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 17
+    },
+    {
+      "route": "patients",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "h, filters and sort, not only this page. Selected-row export is separate.\nAdd patient\nAlexandria Verylongpatientname Example-Surname\npatient@example.invalid\n555-0101\n—\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Patients",
+      "preTable": 310,
+      "filterRows": [
+        {
+          "top": 167,
+          "height": 243,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 18
+    },
+    {
+      "route": "masters",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "FA\nMaster data\n1 master values\nAll\nActive\nInactive\nCategory\nAll categories\nSort master values\nNewest first\nAdd master value\nFictional Specialty\n—\nspecialization\nActive\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Master data",
+      "preTable": 334,
+      "filterRows": [
+        {
+          "top": 167,
+          "height": 267,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 17
+    },
+    {
+      "route": "appointments",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": " Mar 2026\nToken 2 · Session 9:20 AM–9:40 AM\nChecked In\nCheck in\nDetails\nTicket\nJamie Fiction\nFX-1003\nDr. Rowan Example\nFictional Northside Clinic · Northside Branch\n02 Mar 2026\nToken 3 · Session 9:40 AM–10:00 AM\nCompleted\nDetails\nShowing 1–3 of 3\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Appointments",
+      "preTable": 575,
+      "filterRows": [
+        {
+          "top": 244,
+          "height": 431,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 36
+    },
+    {
+      "route": "queue",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "ected branch\n\nAddress not provided · 03 Oct 2026\n\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch this session\nSort queue listing\nQueue position\nValidate appointment QR\nMulti-doctor sessions · quick switch\n\nSelect clinic, location, doctor and session to view a session.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Live queue",
+      "preTable": null,
+      "filterRows": [
+        {
+          "top": 830,
+          "height": 263,
+          "width": 358
+        }
+      ],
+      "heads": [
+        {
+          "top": 225,
+          "height": 87,
+          "width": 332
+        }
+      ],
+      "controls": 17
+    },
+    {
+      "route": "reports",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "ted\ncancelled\nno-show\nNaN other (booked, waiting, called, in consultation or other statuses)\nmin\n—\nInvalid date\nappointments\ncompleted\ncancelled\nno-show\nNaN other (booked, waiting, called, in consultation or other statuses)\nmin\n—\nShowing 1–2 of 2\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Reports",
+      "preTable": 534,
+      "filterRows": [
+        {
+          "top": 188,
+          "height": 446,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 20
+    },
+    {
+      "route": "settings",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "in sync.\n\nYour workspace stays connected with live queue updates.\n\nSign out\nWorkspace\nClinic workspace\nFA\nClinic workspace\nSettings\nClinic workspace\nPlatform settings\nClinic Group\nSearch clinic groups…\n\nSelect a clinic to manage its settings. Platform settings are separate.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Clinic workspace",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 3
+    },
+    {
+      "route": "audit",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": ".\n\nYour workspace stays connected with live queue updates.\n\nSign out\nWorkspace\nAudit log\nFA\nAudit log\n1 audit events\nFilters\nSort audit events\nNewest first\n01 Mar 2026\n8:00 AM\nFixture Admin\ncreated\nclinic\nCreated fictional clinic\nShowing 1–1 of 1\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Audit log",
+      "preTable": 206,
+      "filterRows": [
+        {
+          "top": 167,
+          "height": 139,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 11
+    },
+    {
+      "route": "qrs",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "octor has active bookable sessions with capacity in Weekly schedule before sharing it.\n\nNorthside QR\nFX-QR-1\nFictional Northside Clinic\nActive\nView booking QR and link\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Booking QR codes",
+      "preTable": 390,
+      "filterRows": [
+        {
+          "top": 167,
+          "height": 243,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 18
+    },
+    {
+      "route": "book",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "\nPhone / advance\nWalk-in today\nClinic Group\nSearch clinic groups…\nClinic\nSearch clinics…\nDoctor\nSearch doctors…\nVisit date *\nConsulting session\nSelect session…\n\nSelect a Clinic Group, clinic and doctor to load available sessions. Only authorized clinics are listed.\n\nContinue\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Book appointment",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 8
+    },
+    {
+      "route": "availability",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "tokens) for this session. Consultation minutes are the expected duration per patient; remaining availability also depends on existing bookings and queue policy.\nClosed\nEdit this record\nDeactivate; historical records are preserved\nShowing 1–1 of 1\nRows per page\n20\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Schedule",
+      "preTable": 612,
+      "filterRows": [
+        {
+          "top": 229,
+          "height": 420,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 19
+    },
+    {
+      "route": "exceptions",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "ptions\nSchedule\nWeekly sessions\nDate exceptions\n0 date exceptions\nClinic\nSearch clinic groups…\nLocation\nSearch clinics…\nDoctor\nSearch doctors…\nDate\nSort date exceptions\nNewest first\nAdd exception\nNo date exceptions yet\n\nWhen date exceptions are added, you'll find them here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Schedule · exceptions",
+      "preTable": null,
+      "filterRows": [
+        {
+          "top": 229,
+          "height": 445,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 10
+    },
+    {
+      "route": "demo",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "e\nDemo clinic\nFA\nDemo clinic\nSUPER ADMIN ONLY · FICTIONAL DEMO\nPublished demo clinic\n\nSetup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo.\n\nCreate demo clinic\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Demo clinic",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [
+        {
+          "top": 180,
+          "height": 59,
+          "width": 332
+        }
+      ],
+      "controls": 1
+    },
+    {
+      "route": "templates",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "ublished until you save.\nAvailable variables\n{{clinic_name}}\n{{patient_name}}\nPublish\nSave draft\nCancel changes\nReset to default\nPreview\n\nSample placeholders only. No patient data is used.\n\nVisit update\nHello [patient name]\nContact Fictional Northside Clinic\nServer rendering\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Email templates",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 16
+    },
+    {
+      "route": "permissions",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "veral rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen.\n\nNew custom role\nROLE\nBASE ROLE\nRESTRICTIONS\nASSIGNED\nACTIONS\nLimited desk\nReceptionist\n1 removed\nStaff member\nEdit\nDiscard changes\nSave custom roles\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Roles & permissions",
+      "preTable": 421,
+      "filterRows": [
+        {
+          "top": 323,
+          "height": 217,
+          "width": 332
+        }
+      ],
+      "heads": [
+        {
+          "top": 180,
+          "height": 135,
+          "width": 332
+        }
+      ],
+      "controls": 25
+    },
+    {
+      "route": "integrations",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "on ready\nSource: server environment\n\nRefresh\nConfigure SMTP\nSend test email\nSMTP_HOST: configured\nSMTP_PORT: configured\nSMTP_USER: configured\nSMTP_PASSWORD: configured\nSMTP_FROM: configured\nCheck connection\nVerifies settings and reachability only. No message or file is sent.\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Integrations",
+      "preTable": null,
+      "filterRows": [],
+      "heads": [],
+      "controls": 6
+    },
+    {
+      "route": "system-users",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": "A\nSystem users\n1 account\nAll\nActive\nInactive\nRole\nAll roles\nClinic\nSearch clinic groups…\nRoles & permissions\nNAME\nEMAIL\nROLE\nSTATUS\nCLINICS\nPERMISSIONS\nRiley Fiction\nriley@example.invalid\nReceptionist\nActive\nFictional Northside Clinic\nPermissions\nShowing 1–1 of 1\nPage 1 of 1\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "System users",
+      "preTable": 391,
+      "filterRows": [
+        {
+          "top": 167,
+          "height": 334,
+          "width": 358
+        }
+      ],
+      "heads": [],
+      "controls": 11
+    },
+    {
+      "route": "profile",
+      "width": 390,
+      "workspace": true,
+      "error": false,
+      "errorText": ":00 AM\nCompleted\nDetails\nOperational activity\nRecent care and business updates. Authentication and password-verification events remain in the separate security audit, not this feed.\nLive data\n\nNo operational updates yet. Bookings, check-ins and schedule changes appear here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link.",
+      "overflow": 0,
+      "title": "Good morning, Fixture.",
+      "preTable": 546,
+      "filterRows": [],
+      "heads": [
+        {
+          "top": 625,
+          "height": 40,
+          "width": 356
+        },
+        {
+          "top": 1887,
+          "height": 61,
+          "width": 356
+        }
+      ],
+      "controls": 13
+    }
+  ],
+  "writes": [],
+  "apiRequestCount": 488,
+  "apiRequests": [
+    "GET /auth/status",
+    "GET /me",
+    "GET /settings",
+    "GET /dashboard",
+    "GET /clinics",
+    "GET /branches",
+    "GET /users",
+    "GET /patients",
+    "GET /masters",
+    "GET /appointments",
+    "GET /doctors",
+    "GET /branches/b1",
+    "GET /session-contexts",
+    "GET /reports",
+    "GET /audit-logs",
+    "GET /qrs",
+    "GET /clinics/c1",
+    "GET /doctors/d1",
+    "GET /public/availability/sessions",
+    "GET /schedules",
+    "GET /availability-exceptions",
+    "GET /demo/setup",
+    "GET /management/templates",
+    "GET /management/permissions",
+    "GET /management/custom-roles",
+    "GET /settings/integrations",
+    "GET /management/system-users",
+    "GET /public/clinics-by-slug/access-check",
+    "GET /public/registration-options",
+    "GET /public/clinics-by-slug/clinic/fictional-northside",
+    "GET /public/clinics"
+  ],
+  "browserErrors": []
+}

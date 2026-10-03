@@ -106,19 +106,20 @@ export function DemoClinicManagement() {
 
   const forward = `Try ${BRAND_NAME}' fictional demo clinic (please do not enter real patient information).\nClinic: ${clinicUrl}\nGuest booking: ${bookingUrl}\nYou can scan the booking QR on the clinic page or open the booking link directly. Guest booking requires no login and issues a ticket immediately.`;
   return <>{confirmDialog.dialog}<div className="panel padded" data-testid="demo-management">
-    <span className="eyebrow">SUPER ADMIN ONLY · FICTIONAL DEMO</span>
-    <h2>Published demo clinic</h2>
-    <p>Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo.</p>
+    <div className="panel-heading demo-head"><div><span className="eyebrow">SUPER ADMIN ONLY · FICTIONAL DEMO</span><h2>Published demo clinic</h2></div>
+      {status?.configured && <div className="row-actions">
+        <span className={`badge ${status.enabled ? "" : "muted"}`} data-testid="status-demo-access">{status.enabled ? "Demo access enabled" : "Demo access disabled"}</span>
+        <button className="button secondary small" disabled={busy} onClick={() => void change(status.enabled ? "disable" : "enable")} data-testid="button-toggle-demo">{status.enabled ? "Disable demo access" : "Enable demo access"}</button>
+        <button className="button secondary small" disabled={busy} onClick={() => void change("rotate-password")} data-testid="button-rotate-demo-password">Rotate demo password</button>
+      </div>}
+    </div>
+    <p className="listing-hint">Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo.</p>
     {error && <div className="error-box" role="alert">{error}<button onClick={() => setRevision(value => value + 1)}>Retry</button></div>}
     {notice && <div className="notice" role="status">{notice}</div>}
     {!status && !error && <p role="status">Checking demo setup…</p>}
     {status && !status.configured && <button className="button" disabled={busy} onClick={() => void change("create")} data-testid="button-create-demo">Create demo clinic</button>}
     {status?.configured && <>
-      <p><strong>{status.clinicName}</strong> · {status.doctorName} · {status.enabled ? "Demo access enabled" : "Demo access disabled"}</p>
-      <div className="form-footer">
-        <button className="button secondary" disabled={busy} onClick={() => void change(status.enabled ? "disable" : "enable")} data-testid="button-toggle-demo">{status.enabled ? "Disable demo access" : "Enable demo access"}</button>
-        <button className="button secondary" disabled={busy} onClick={() => void change("rotate-password")} data-testid="button-rotate-demo-password">Rotate demo password</button>
-      </div>
+      <p><strong>{status.clinicName}</strong> · {status.doctorName}</p>
       {credentials && <section className="notice" aria-label="One-time demo credentials">
         <h3>Save these credentials now</h3><p>The password is shown only once. Share it privately, separately from the public clinic link.</p>
         <p>Username: <strong>{credentials.username}</strong></p>
@@ -127,16 +128,21 @@ export function DemoClinicManagement() {
         <button type="button" onClick={() => download("clinicflow-demo-credentials.txt", `Username: ${credentials.username}\nPassword: ${credentials.password}\nLogin: ${loginUrl}\n`, "text/plain")}>Download private credentials</button>
         <button type="button" onClick={() => setCredentials(null)}>Hide credentials</button>
       </section>}
-      <h3>Shareable patient links</h3>
-      <p><a href={clinicUrl} target="_blank" rel="noreferrer">{clinicUrl}</a></p>
-      <p><a href={bookingUrl} target="_blank" rel="noreferrer">{bookingUrl}</a></p>
-      <p>Staff login: <Link href={status.loginPath || "/demo-login"}>{loginUrl}</Link></p>
-      {qr && <div><img src={qr} alt={`Booking QR for ${status.clinicName}`} width="220" height="220"/><br/><button type="button" onClick={() => {
-        const anchor = document.createElement("a"); anchor.href = qr; anchor.download = "clinicflow-demo-booking-qr.png"; anchor.click();
-      }}>Download booking QR</button></div>}
+      <div className="demo-share">
+      <div className="demo-share-main">
+      <dl className="settings-facts">
+        <div><dt>Clinic page</dt><dd><a href={clinicUrl} target="_blank" rel="noreferrer">{clinicUrl}</a></dd></div>
+        <div><dt>Booking link</dt><dd><a href={bookingUrl} target="_blank" rel="noreferrer">{bookingUrl}</a></dd></div>
+        <div><dt>Staff login</dt><dd><Link href={status.loginPath || "/demo-login"}>{loginUrl}</Link></dd></div>
+      </dl>
       <h3>Patient sharing message</h3>
       <textarea readOnly rows={6} value={forward} aria-label="Public demo sharing message"/>
       <button type="button" onClick={() => void navigator.clipboard.writeText(forward).then(() => setNotice("Public sharing message copied. Credentials are not included.")).catch(() => setError("Clipboard unavailable. Select and copy the message above."))}>Copy public message</button>
+      </div>
+      {qr && <div className="demo-qr"><img src={qr} alt={`Booking QR for ${status.clinicName}`} width="220" height="220"/><br/><button type="button" onClick={() => {
+        const anchor = document.createElement("a"); anchor.href = qr; anchor.download = "clinicflow-demo-booking-qr.png"; anchor.click();
+      }}>Download booking QR</button></div>}
+      </div>
     </>}
   </div></>;
 }

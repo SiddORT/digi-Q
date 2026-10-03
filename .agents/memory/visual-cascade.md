@@ -38,3 +38,9 @@ Density verification must assert toolbar height as well as page overflow.
 **Why:** A fixed filter-group width can stack controls into a tall column while the page still passes overflow and control-size checks.
 
 **How to apply:** Measure representative simple and multi-filter toolbars at desktop widths, and inspect their child arrangement. Keep legitimate narrow-screen wrapping instead of forcing every toolbar into one row.
+
+Filters and contextual pop-ups must overlay the page or open in a right-side drawer, not push the listing down. Searches should show matching permitted records while typing.
+
+**Why:** The user explicitly added these requirements to the app-wide compact-layout scope.
+
+**How to apply:** Preserve scope, actual data, keyboard navigation and unsaved edits. Judge density by the entire pre-listing area, including metadata/export/help outside the toolbar, not just smaller controls.

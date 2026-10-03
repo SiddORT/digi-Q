@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { ErrorNotice } from "../../resources";
-import { Pagination, SearchInput, useDebouncedValue } from "../ListingControls";
+import { Pagination, SearchInput, useDebouncedValue, listingSuggestions } from "../ListingControls";
 import { SearchableSelect } from "../SearchableSelect";
 import { useFreshWorkspace } from "./useFreshWorkspace";
 import { AppDialog } from "../AppDialog";
@@ -36,7 +36,7 @@ export function GuestRequests({clinicId,branchId,doctorId,date,sessionId,startTi
   <ErrorNotice error={requests.error}/><ErrorNotice error={decision.error}/>
   {decision.error&&<p>Confirmation may fail if the session is full or availability changed. Refresh and review the request before trying again.</p>}
   {message&&<p role="status" data-testid="guest-decision-result">{message}</p>}
-  <div className="toolbar"><SearchInput value={search} onChange={setSearch} label="Search earlier requests" placeholder="Search name, email, mobile or token…"/><SearchableSelect label="Sort earlier requests" value={sort} onChange={value=>setSort(value as typeof sort)} options={[{value:"-createdAt",label:"Newest requests"},{value:"createdAt",label:"Oldest requests"},{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"},{value:"date",label:"Earliest visit"},{value:"-date",label:"Latest visit"}]}/></div>
+  <div className="toolbar"><SearchInput value={search} onChange={setSearch} label="Search earlier requests" placeholder="Search name, email, mobile or token…" suggestions={requests.error?[]:listingSuggestions(requests.data?.items,item=>({id:item.id,label:item.fullName,description:item.doctorName,value:item.fullName}))} loading={requests.isFetching} error={requests.error?"Unable to load requests.":null} onRetry={()=>void requests.refetch()} total={requests.data?.total} settledQuery={debounced} scopeKey={JSON.stringify({clinicId,branchId,doctorId,date,sessionId,startTime,sort,pageSize})}/><SearchableSelect label="Sort earlier requests" value={sort} onChange={value=>setSort(value as typeof sort)} options={[{value:"-createdAt",label:"Newest requests"},{value:"createdAt",label:"Oldest requests"},{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"},{value:"date",label:"Earliest visit"},{value:"-date",label:"Latest visit"}]}/></div>
   {fresh.stale&&!requests.isLoading&&<p role="alert">Requests are offline or out of date. Refresh before deciding.</p>}
   <button className="button secondary small" data-testid="button-refresh-requests" onClick={()=>requests.refetch()} disabled={requests.isFetching}>Refresh requests</button>
   {requests.isLoading?<p role="status">Loading requests…</p>:requests.error?null:requests.data?.items.length?<div className="activity-list">{requests.data.items.map(item=><article key={item.id} style={{padding:"16px 0",borderBottom:"1px solid var(--color-border)"}}>

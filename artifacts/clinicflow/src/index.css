@@ -835,3 +835,58 @@
 }
 .phone-input{grid-template-columns:minmax(9rem,40%) minmax(0,1fr);align-items:start}
 @media (max-width:480px){.phone-input{grid-template-columns:1fr}}
+
+/* Compact workspace bars (schedules, settings scope, hints). Counts/state left, actions right. */
+.section-nav{display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 4px;flex:0 1 auto;min-width:0}
+.section-nav-label{font-size:12px;font-weight:600;color:var(--soft,#4f6b94);margin-right:6px}
+.section-nav>button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--soft,#4f6b94);padding:4px 8px;font-size:13px;font-weight:600;min-height:30px;white-space:nowrap;box-shadow:none}
+.section-nav>button:hover{color:var(--ink)}
+.section-nav>button[aria-current=page]{color:var(--ink);border-bottom-color:var(--dq-blue,#1d5fbf)}
+.schedule-bar,.settings-scope{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-bottom:10px}
+.schedule-bar-hint,.settings-scope-meta{font-size:12px}
+.schedule-bar-actions{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.settings-scope{align-items:flex-end}
+.settings-scope-lookup{flex:0 1 320px;min-width:200px}
+.settings-scope-meta{align-self:center}
+.listing-hint{margin:0 0 8px;font-size:12.5px;color:var(--soft,#4f6b94);line-height:1.45}
+.text-link{background:none;border:0;padding:0;min-height:0;font:inherit;text-decoration:underline;cursor:pointer;box-shadow:none}
+.settings-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px 20px;margin:12px 0 0}
+.settings-facts>div{min-width:0}.settings-facts dt{font-size:12px;font-weight:600;color:var(--soft,#4f6b94)}
+.settings-facts dd{margin:2px 0 0;overflow-wrap:anywhere}
+.workspace .filter-bar-actions>.export-inline{display:inline-flex;flex-direction:row;align-items:center;gap:6px;flex-wrap:wrap}
+.compact-heading{margin-bottom:8px}.compact-heading p{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:13px}
+@media (max-width:640px){.schedule-bar-actions{margin-left:0;width:100%}.settings-scope-lookup{flex:1 1 100%}.section-nav{width:100%}}
+.empty-inline{margin:0;padding:14px 18px;color:var(--soft,#4f6b94);font-size:13px;border-top:1px dashed var(--line,#d8e2ee)}
+.dashboard-compact .panel-heading h2{display:flex;align-items:center;gap:6px}
+.export-inline{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
+.export-status{font-size:12px;color:var(--soft,#4f6b94);max-width:240px}.export-status.error{color:#b42318}
+.listing-updated{font-size:12px;white-space:nowrap;align-self:center}
+/* Listing tables: wrap long text inside cells; keep short state/date/action cells on one line. */
+.workspace .admin-listing-table td{overflow-wrap:anywhere;word-break:normal}
+.workspace .admin-listing-table td.col-created,.workspace .admin-listing-table th.col-status,
+.workspace .admin-listing-table td[data-label="Status"],.workspace .admin-listing-table td.col-actions{white-space:nowrap;overflow-wrap:normal}
+.workspace .admin-listing-table .admin-record strong{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px}
+.workspace .admin-listing-table .admin-record small{display:block;overflow-wrap:anywhere}
+/* Compact table empty states: one short block inside the panel, not a hero. */
+.workspace .table-panel .empty{padding:20px 18px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.workspace .table-panel .empty .empty-icon{display:none}
+.workspace .table-panel .empty h3{font-size:15px;margin:0}
+.workspace .table-panel .empty p{font-size:13px}
+@media(max-width:1024px){.workspace .admin-listing-table td[data-label="Status"],.workspace .admin-listing-table td.col-actions{white-space:normal}}
+.demo-share{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:flex-start;margin-top:10px}
+.demo-share-main{flex:1 1 360px;min-width:0;display:grid;gap:8px}.demo-share-main .settings-facts{margin:0}
+.demo-share-main textarea{width:100%}.demo-share-main>button{justify-self:start}
+.demo-qr{flex:0 0 auto;display:grid;gap:6px;justify-items:center}
+/* Booking: step header with the binary source as a labelled radio toggle on the right. */
+.booking-step-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px;margin-bottom:12px}
+.booking-step-head .section-heading{flex:1 1 320px;min-width:0;margin:0}
+.booking-source{border:0;margin:0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.booking-source legend{float:left;font-size:12px;font-weight:600;color:var(--soft,#4f6b94);margin-right:6px;padding:0}
+.booking-source label{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line,#d8e2ee);border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap}
+.booking-source label.selected{border-color:var(--dq-blue,#1d5fbf);color:var(--dq-blue,#1d5fbf);background:#f2f7fe}
+.booking-source input{margin:0;accent-color:var(--dq-blue,#1d5fbf)}
+.workspace .booking-panel{padding:var(--space-4)}
+.workspace .booking-steps{padding-bottom:var(--space-3);margin-bottom:var(--space-3)}
+.workspace .booking-panel h2{font-size:18px}
+.workspace .booking-panel .form-grid{gap:var(--space-3)}
+@media(max-width:640px){.booking-source{width:100%}.booking-source label{flex:1;justify-content:center}}

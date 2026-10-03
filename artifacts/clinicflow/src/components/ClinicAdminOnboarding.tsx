@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
@@ -7,16 +7,18 @@ import { ClinicRegistrationWizard, type RegistrationValues } from "./ClinicRegis
 import { ClinicRegistrationComplete } from "./ClinicRegistrationComplete";
 import { friendlyError } from "../lib/friendly-error";
 
-export function ClinicAdminOnboarding({ guided = false }: { guided?: boolean }) {
-  if (guided) return <GuidedAdminSetup/>;
+type SetupProps = { guided?: boolean; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void };
+export function ClinicAdminOnboarding({ guided = false, ...state }: SetupProps) {
+  if (guided) return <GuidedAdminSetup {...state}/>;
   return <section className="panel padded" style={{ marginBottom: 20 }}><h3>Clinic Admin setup</h3><p className="muted">Invite a clinic owner and create their clinic, locations and hours together. Existing ownership is never transferred.</p><Link className="button small" href="/register-clinic" data-testid="button-setup-clinic-admin"><Plus size={17}/>Set up Clinic Admin</Link></section>;
 }
 
-function GuidedAdminSetup() {
+function GuidedAdminSetup({ onDirtyChange, onBusyChange }: Omit<SetupProps, "guided">) {
   const client = useQueryClient();
   const locked = useRef(false);
   const [completed, setCompleted] = useState<api.ClinicAdminOnboardingResult | null>(null);
   const setup = api.useOnboardClinicAdmin();
+  useEffect(() => { onBusyChange?.(setup.isPending); }, [setup.isPending, onBusyChange]);
   const references = api.useGetRegistrationOptions();
   async function finish(values: RegistrationValues) {
     if (locked.current) return;
@@ -30,11 +32,12 @@ function GuidedAdminSetup() {
         ...(values.alsoConsult && values.linkConsultationHours ? { ownerSchedule: { maxTokens: Number(values.sessionCapacity), consultationMinutes: Number(values.consultationMinutes), tokenPrefix: "A", queueMode: "mixed" as const } } : {}),
       } });
       setCompleted(result);
+      onDirtyChange?.(false);
       await client.invalidateQueries();
     } finally { locked.current = false; }
   }
    if (completed) return <ClinicRegistrationComplete result={completed} invitationStatus={completed.admin.invitationStatus}/>;
   if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
   if (references.error && !references.data) return <div className="error-box" role="alert">{friendlyError(references.error,"load")}<button data-testid="admin-registration-retry-options" onClick={() => references.refetch()}>Try again</button></div>;
-   return <ClinicRegistrationWizard adminMode onStepChange={setup.reset} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?friendlyError(setup.error,"save"):undefined}/>;
+   return <ClinicRegistrationWizard adminMode onDirtyChange={onDirtyChange} onStepChange={setup.reset} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?friendlyError(setup.error,"save"):undefined}/>;
 }

@@ -29,5 +29,6 @@ test("chosen clinic includes its bindings; other users and super admin unaffecte
 test("panel copy: not restricted never overrides built-in rules; choose clinic prompt", () => {
   assert.match(src, /Built-in clinic ownership, assignments and workflow checks still apply/);
   assert.match(src, /Choose a clinic to include them/);
-  assert.match(src, /aria-expanded=\{expanded === u\.id\}/);
+  assert.match(src, /variant="drawer"/);
+  assert.doesNotMatch(src, /effective-panel-/);
 });

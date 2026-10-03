@@ -28,10 +28,10 @@ export type RegistrationValues = {
 };
 const newBranch = (): RegistrationBranch => ({ name: "", slug: "", address: "", city: "", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", email: "", phone: "", inheritEmail: true, inheritPhone: true, hours: newWeek() });
 type Option = { id: string; name: string };
-type Props = { adminMode?: boolean; initial?: Partial<RegistrationValues>; categories: Option[]; specialities: Option[]; qualifications: Option[]; onSubmit: (values: RegistrationValues) => Promise<void>; checkSlug: (slug: string) => Promise<boolean>; busy: boolean; error?: string; referenceError?: string; finishSecurity?: ReactNode; onStepChange?: () => void };
+type Props = { adminMode?: boolean; initial?: Partial<RegistrationValues>; categories: Option[]; specialities: Option[]; qualifications: Option[]; onSubmit: (values: RegistrationValues) => Promise<void>; checkSlug: (slug: string) => Promise<boolean>; busy: boolean; error?: string; referenceError?: string; finishSecurity?: ReactNode; onStepChange?: () => void; onDirtyChange?: (dirty: boolean) => void };
 const steps = ["Clinic identity", "Locations", "Opening hours", "Your practice", "Care team", "Review"];
 
-export function ClinicRegistrationWizard({ adminMode, initial, categories, specialities, qualifications, onSubmit, checkSlug, busy, error, referenceError, finishSecurity, onStepChange }: Props) {
+export function ClinicRegistrationWizard({ adminMode, initial, categories, specialities, qualifications, onSubmit, checkSlug, busy, error, referenceError, finishSecurity, onStepChange, onDirtyChange }: Props) {
   const confirmation=useConfirm();
   const [,navigate]=useLocation();
   const [step, setStep] = useState(0);
@@ -40,6 +40,7 @@ export function ClinicRegistrationWizard({ adminMode, initial, categories, speci
   const [slugStatus, setSlugStatus] = useState<{ slug: string; available: boolean } | null>(null);
   const [checking, setChecking] = useState(false);
   const form = useForm<RegistrationValues>({ defaultValues: { dateFormat: "DD MMM YYYY", timeFormat: "12h", fullName: "", email: "", mobile: "", name: "", slug: "", categoryId: "", specialityIds: [], referralCode: "", clinicEmail: "", phone: "", branches: [newBranch()], alsoConsult: false, specializationId: "", qualificationIds: [], linkConsultationHours: true, sessionCapacity: "", consultationMinutes: "", ...initial } });
+  useEffect(() => { onDirtyChange?.(form.formState.isDirty); }, [form.formState.isDirty, onDirtyChange]);
   const values = form.watch();
   const set = form.setValue;
   const updateBranch = (index: number, patch: Partial<RegistrationBranch>) => set("branches", values.branches.map((b, i) => i === index ? { ...b, ...patch } : b), { shouldDirty: true });

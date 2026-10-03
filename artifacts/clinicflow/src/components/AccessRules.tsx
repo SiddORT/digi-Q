@@ -1,3 +1,4 @@
+import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
 import { Link } from "wouter";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -67,16 +68,14 @@ export function AccessRules() {
   }
 
   return <section className="panel padded" data-testid="access-rules">
-    <h2>Roles &amp; access rules</h2>
-    <p>Restrict which baseline actions each role may perform. A checked box means the action stays allowed; clearing it denies it.</p>
-    <details className="help-disclosure" data-testid="text-permission-limits"><summary>How restrictions work</summary><p> Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out.</p></details>
+    <div className="panel-heading compact-heading"><div><h2>Access rules</h2><p className="muted">A checked box keeps the action allowed; clearing it denies it. <span data-testid="text-permission-limits"><HelpTip text="Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out." /></span></p></div></div>
     {policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : policy.isError || !data ? <div role="alert" className="error-box" data-testid="state-error">The permission policy could not be loaded. <button type="button" onClick={() => policy.refetch()} data-testid="button-retry">Retry</button></div>
       : <>
         <div className="filter-bar-row">
-          <div className="access-filter">Role <SearchableSelect label="Role" testId="select-role" value={role} onChange={v => { if (v) setRole(v); }} options={roles.map(r => ({ value: r, label: label(r) }))}/></div>
-          <div className="access-filter">Module <SearchableSelect label="Module" testId="select-module" value={module} onChange={v => setModule(v || "all")} options={[{ value: "all", label: "All modules" }, ...modules.map(m => ({ value: m, label: label(m) }))]}/></div>
-          <div className="filter-bar-tools"><span data-testid="text-revision">Revision {data.revision}</span><Link className="button secondary" href="/admin/users">Manage users &amp; assignments</Link></div>
+          <div className="access-filter"><SearchableSelect label="Role" testId="select-role" value={role} onChange={v => { if (v) setRole(v); }} options={roles.map(r => ({ value: r, label: label(r) }))}/></div>
+          <div className="access-filter"><SearchableSelect label="Module" testId="select-module" value={module} onChange={v => setModule(v || "all")} options={[{ value: "all", label: "All modules" }, ...modules.map(m => ({ value: m, label: label(m) }))]}/></div>
+          <div className="filter-bar-tools"><span className="muted" data-testid="text-revision">Revision {data.revision}</span><Link className="button secondary small" href="/admin/users">Manage users &amp; assignments</Link></div>
         </div>
         {!roles.length ? <p data-testid="state-empty">No restrictable roles are defined.</p> :
         <div className="table-scroll"><table className="perm-matrix" data-testid="table-permissions"><thead><tr><th>Module</th>{actions.map(a => <th key={a} style={{ textAlign: "center" }}>{label(a)}</th>)}<th>Row</th></tr></thead>

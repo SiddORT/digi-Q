@@ -1,0 +1,86 @@
+[
+  {
+    "path": "/",
+    "title": "Hello, Fixture.",
+    "boundary": false,
+    "overflow": 0,
+    "body": "Recent care and business updates. Authentication and password-verification events remain in the separate security audit, not this feed.\nLive data\nLoading operational activity…\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/sign-in",
+    "title": "Good care starts\nwith a connection.",
+    "boundary": false,
+    "overflow": 0,
+    "body": "identity. Personal care.\n← Back to home\nStaff login\n\nUse your DigiQ Doctors staff email and password.\n\nEmail address *\nPassword *\nSign in\nForgot password?\nPatient login\nBring your clinic together.\n\nSet up your locations, hours and care team.\n\nRegister a Clinic\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/patient-login",
+    "title": "Good care starts\nwith a connection.",
+    "boundary": false,
+    "overflow": 0,
+    "body": "\n\nSecure identity. Personal care.\n← Back to home\nPatient login\n\nEnter your email and we’ll send a one-time login code.\n\nBooking a visit? No account needed.\n\nScan QR code\nGuest booking\nOr sign in to your patient account\nEmail address\nSend login code\nStaff login\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/demo-login",
+    "title": "Good morning, Fixture.",
+    "boundary": false,
+    "overflow": 0,
+    "body": "assword-verification events remain in the separate security audit, not this feed.\nLive data\n\nNo operational updates yet. Bookings, check-ins and schedule changes appear here.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/forgot-password",
+    "title": "Good care starts\nwith a connection.",
+    "boundary": false,
+    "overflow": 0,
+    "body": " path to your next visit.\n\nSecure identity. Personal care.\n← Back to home\nReset staff password\n\nIf this email belongs to an active staff account, we'll send a secure, single-use password reset link.\n\nStaff email *\nSend password reset link\nReturn to staff login\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/reset-password",
+    "title": "Good care starts\nwith a connection.",
+    "boundary": false,
+    "overflow": 0,
+    "body": " path to your next visit.\n\nSecure identity. Personal care.\n← Back to home\nReset staff password\n\nIf this email belongs to an active staff account, we'll send a secure, single-use password reset link.\n\nStaff email *\nSend password reset link\nReturn to staff login\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/access-check",
+    "title": "Something went wrong",
+    "boundary": true,
+    "overflow": 0,
+    "body": "Something went wrong\n\nThis part of the app hit an error. The rest of the app is still running.\n\nCannot read properties of undefined (reading 'name')\nTry again\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/register-clinic",
+    "title": "Clinic identity",
+    "boundary": false,
+    "overflow": 0,
+    "body": "-flow-new-platform.replit.app/your-clinic\n\nUse lowercase letters, numbers and hyphens. Reserved application paths cannot be used. This address becomes permanent after registration; changing the clinic name will not change existing patient links.\n\nBack\nContinue\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/register-doctor",
+    "title": "Good care starts\nwith a connection.",
+    "boundary": false,
+    "overflow": 0,
+    "body": " a clearer path to your next visit.\n\nSecure identity. Personal care.\n← Back to home\nAlready invited?\n\nHealthcare providers cannot self-register. Ask your clinic administrator to invite you; if your account is already set up, sign in to connect it.\n\nStaff login\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/clinic/fictional-northside",
+    "title": "Something went wrong",
+    "boundary": true,
+    "overflow": 0,
+    "body": "Something went wrong\n\nThis part of the app hit an error. The rest of the app is still running.\n\nCannot read properties of undefined (reading 'name')\nTry again\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/guest-booking",
+    "title": "Guest booking",
+    "boundary": false,
+    "overflow": 0,
+    "body": "OUNT REQUIRED\nGuest booking\n\nFind your clinic and location, then review the doctor and session before booking. If there is only one option, it is selected for you.\n\nClinic\nSearch clinics…\nLocation\nSearch locations…\n\nHave a clinic QR code? Scan QR code instead\n\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  },
+  {
+    "path": "/book",
+    "title": "Page not found",
+    "boundary": false,
+    "overflow": 0,
+    "body": "Page not found\nReturn home\nThis is a temporary development preview, and these links are not for public use. Publish your app for secure sharing or use an invite link."
+  }
+]

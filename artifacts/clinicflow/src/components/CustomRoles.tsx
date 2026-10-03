@@ -1,8 +1,9 @@
+import { HelpTip } from "./HelpTip";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { useGetCustomRoles, getGetCustomRolesQueryKey, useSaveCustomRoles, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetSystemUsers, getGetSystemUsersQueryKey } from "@workspace/api-client-react";
-import { AppDialog } from "./AppDialog";
+import { AppDialog, useAppDialogClose } from "./AppDialog";
 import { LoadingButton } from "./LoadingButton";
 import { SearchableSelect } from "./SearchableSelect";
 import { label } from "./permission-matrix";
@@ -27,6 +28,7 @@ export function CustomRoles() {
   const [conflict, setConflict] = useState(false);
   const [notice, setNotice] = useState("");
   const [deleting, setDeleting] = useState<CustomRole | null>(null);
+  const [roleDirty, setRoleDirty] = useState(false);
   const names = useRef(new Map<string, SystemUser>());
 
   const dirty = !!draft && !!base.current && !configsEqual(draft, base.current);
@@ -68,16 +70,17 @@ export function CustomRoles() {
 
   return <section className="panel padded custom-roles" data-testid="custom-roles" aria-labelledby="custom-roles-title">
     <div className="cr-head">
-      <div><h2 id="custom-roles-title">Custom roles</h2><p>Named variations of a base role for specific staff.</p></div>
-      {!editing && draft && <button type="button" className="button small" onClick={() => setEditing({ id: newRoleId(draft.roles), name: "", baseRole: "receptionist", denied: [] })} data-testid="button-add-custom-role"><Plus size={16} aria-hidden /> New custom role</button>}
+      <div><h2 id="custom-roles-title">Custom roles</h2><p className="muted">Named variations of a base role for specific staff. <HelpTip text="A custom role starts from its base role and can only remove actions; it never grants access beyond the base role and never crosses clinic ownership. Assign it to staff who already have that base role. Leave the clinic empty to apply it in all of that person's clinics. When several rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen." /></p></div>
+      {draft && <button type="button" className="button small" onClick={() => setEditing({ id: newRoleId(draft.roles), name: "", baseRole: "receptionist", denied: [] })} data-testid="button-add-custom-role"><Plus size={16} aria-hidden /> New custom role</button>}
     </div>
-    <details className="help-disclosure"><summary>How custom roles work</summary><p>A custom role starts from its base role and can only remove actions; it never grants access beyond the base role and never crosses clinic ownership. Assign it to staff who already have that base role. Leave the clinic empty to apply it in all of that person's clinics. When several rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen.</p></details>
     {query.isLoading || policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-custom-roles-loading"><span /><span /><span /></div>
       : query.isError || policy.isError || !draft ? <div role="alert" className="error-box">Custom roles could not be loaded. <button type="button" onClick={() => { void query.refetch(); void policy.refetch(); }}>Retry</button></div>
-      : editing ? <RoleEditor key={editing.id} role={editing} config={draft} modules={modules} actions={actions} names={names.current}
-          onBack={() => setEditing(null)} onChange={role => { commitRole(role); setEditing(role); }} onConfig={c => { setNotice(""); setDraft(c); }} />
       : <RoleList config={draft} names={names.current} onEdit={setEditing} onDelete={setDeleting} />}
     {draft && saveBar}
+    {editing && draft && <AppDialog open variant="drawer" dirty={roleDirty} onClose={() => { setRoleDirty(false); setEditing(null); }} title={draft.roles.some(r => r.id === editing.id) ? `Edit ${editing.name || "custom role"}` : "New custom role"} description="Changes apply to the draft. Use Save custom roles to publish them.">
+      <RoleEditor key={editing.id} role={editing} config={draft} modules={modules} actions={actions} names={names.current}
+        onBack={() => setEditing(null)} onChange={role => { commitRole(role); setEditing(role); }} onConfig={c => { setNotice(""); setDraft(c); }} onDirtyChange={setRoleDirty} />
+    </AppDialog>}
 
     <AppDialog open={confirm} onClose={() => !save.isPending && setConfirm(false)} title="Save custom roles?" busy={save.isPending}>
       <p>Changes take effect immediately for every assigned staff member. Base-role rules, clinic ownership and workflow checks still apply.</p>
@@ -112,8 +115,14 @@ function RoleList({ config, names, onEdit, onDelete }: { config: CustomRoleConfi
   </tbody></table></div>;
 }
 
-function RoleEditor({ role, config, modules, actions, names, onBack, onChange, onConfig }: { role: CustomRole; config: CustomRoleConfig; modules: string[]; actions: string[]; names: Map<string, SystemUser>; onBack: () => void; onChange: (r: CustomRole) => void; onConfig: (c: CustomRoleConfig) => void }) {
+function RoleEditor({ role, config, modules, actions, names, onBack, onChange, onConfig, onDirtyChange }: { role: CustomRole; config: CustomRoleConfig; modules: string[]; actions: string[]; names: Map<string, SystemUser>; onBack: () => void; onChange: (r: CustomRole) => void; onConfig: (c: CustomRoleConfig) => void; onDirtyChange?: (dirty: boolean) => void }) {
   const [local, setLocal] = useState<CustomRole>(role);
+  const guardedClose = useAppDialogClose();
+  const close = () => (guardedClose ? guardedClose() : onBack());
+  const localDirty = local.name.trim() !== role.name.trim() || local.baseRole !== role.baseRole || [...new Set(local.denied)].sort().join("|") !== [...new Set(role.denied)].sort().join("|");
+  const dirtyRef = useRef(onDirtyChange); dirtyRef.current = onDirtyChange;
+  useEffect(() => { dirtyRef.current?.(localDirty); }, [localDirty]);
+  useEffect(() => () => { dirtyRef.current?.(false); }, []);
   const [touched, setTouched] = useState(false);
   const exists = config.roles.some(r => r.id === role.id);
   const error = validateRole(local, config.roles);
@@ -126,7 +135,7 @@ function RoleEditor({ role, config, modules, actions, names, onBack, onChange, o
   const pending = !exists || JSON.stringify(config.roles.find(r => r.id === role.id)) !== JSON.stringify({ ...local, name: local.name.trim(), denied: [...new Set(local.denied)].sort() });
 
   return <div className="cr-editor" data-testid="custom-role-editor">
-    <div className="cr-editor-bar"><button type="button" onClick={onBack} data-testid="button-back-custom-roles"><ArrowLeft size={15} aria-hidden /> All custom roles</button>{!exists && <span className="badge">New</span>}</div>
+    <div className="cr-editor-bar"><button type="button" onClick={close} data-testid="button-back-custom-roles">Close</button>{!exists && <span className="badge">New</span>}</div>
     <div className="cr-fields">
       <label>Role name<input value={local.name} maxLength={80} onChange={e => update({ name: e.target.value })} onBlur={() => setTouched(true)} aria-invalid={touched && !!error} data-testid="input-custom-role-name" /></label>
       <SearchableSelect label="Base role" value={local.baseRole} onChange={v => { if (v) update({ baseRole: v as BaseRole }); }} options={BASE_ROLES.map(r => ({ value: r, label: label(r) }))} testId="select-base-role" />

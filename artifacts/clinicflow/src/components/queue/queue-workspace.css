@@ -13,4 +13,9 @@
 .appt-table td small{font-size:12px;margin-top:5px;color:var(--color-muted-foreground)}
 .appt-table input[type=checkbox]{width:16px;height:16px}
 .sq-context{padding:14px 18px;border-left:3px solid #0e8fb3;background:var(--color-input);border-radius:8px;margin:12px 0}
-@media(max-width:640px){.sq-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.sq-summary>div{padding:12px}}
+@media(max-width:640px){.sq-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.sq-summary>div{padding:12px}}/* Compact session context: inline bar, selector capped, notices beside it. */
+.sq-context{padding:6px 10px;margin:0 0 8px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px}
+.session-selector{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 10px;min-width:0;width:100%}
+.session-selector>:first-child{flex:0 1 340px;min-width:220px}
+.session-selector>.notice,.session-selector>small{flex:1 1 260px;margin:0;font-size:12.5px}
+@media(max-width:640px){.session-selector>:first-child{flex:1 1 100%}}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import {
   Dialog,
@@ -10,6 +10,10 @@ import {
 import { decideCloseRequest } from "./app-dialog-close";
 import "./app-dialog.css";
 
+const AppDialogCloseContext = createContext<(() => void) | null>(null);
+/** Inside an AppDialog: returns its guarded close (honours dirty/busy, asks before discarding). Outside: null. */
+export function useAppDialogClose() { return useContext(AppDialogCloseContext); }
+
 export interface AppDialogProps {
   open: boolean;
   onClose: () => void;
@@ -20,6 +24,8 @@ export interface AppDialogProps {
   busy?: boolean;
   /** "wide" for long forms: wider on desktop so fields group into two columns; full-screen on phones. */
   size?: "default" | "wide";
+  /** "drawer" docks the panel to the right edge (full-screen sheet on phones). Same close/dirty lifecycle. */
+  variant?: "modal" | "drawer";
 }
 
 export function AppDialog({
@@ -31,6 +37,7 @@ export function AppDialog({
   dirty = false,
   busy = false,
   size = "default",
+  variant = "modal",
 }: AppDialogProps) {
   const [confirming, setConfirming] = useState(false);
   const keepRef = useRef<HTMLButtonElement>(null);
@@ -94,7 +101,7 @@ export function AppDialog({
       }}
     >
       <DialogContent
-        className={`app-dialog ${size==="wide"?"app-dialog-wide sm:max-w-5xl":"sm:max-w-2xl"} bg-white border border-border shadow-xl`}
+        className={`app-dialog ${variant==="drawer"?"app-dialog-drawer":size==="wide"?"app-dialog-wide sm:max-w-5xl":"sm:max-w-2xl"} bg-white border border-border shadow-xl`}
         {...(!description ? { "aria-describedby": undefined } : {})}
         aria-busy={busy || undefined}
         onInteractOutside={(e) => {
@@ -134,7 +141,7 @@ export function AppDialog({
         {/* Single internal scroll area for the content. Kept mounted during
             discard confirmation so form values are preserved. */}
         <div className="app-dialog-body bg-white" aria-hidden={confirming || undefined} inert={confirming ? true : undefined}>
-          {children}
+          <AppDialogCloseContext.Provider value={requestClose}>{children}</AppDialogCloseContext.Provider>
         </div>
 
         {confirming && (

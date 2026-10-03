@@ -11,7 +11,7 @@ import { useNativeAuth } from "../auth/native-auth";
 import { ClinicDisplay } from "./ClinicDisplay";
 import { PublicClinicLive } from "./PublicClinicLive";
 import { PublicClinicBookingQr } from "./PublicClinicBookingQr";
-import { FilterBar, Pagination, SearchInput, useDebouncedValue } from "./ListingControls";
+import { FilterBar, Pagination, SearchInput, listingSuggestions, useDebouncedValue } from "./ListingControls";
 import { SearchableSelect } from "./SearchableSelect";
 import "./clinic-registration.css";
 
@@ -84,7 +84,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
   const directoryControls = <div aria-busy={query.isFetching}><FilterBar label={`${itemsLabel} directory filters`} active={!!committedSearch}
     chips={committedSearch ? [{ key: "search", label: `Search: ${committedSearch}`, onRemove: clearSearch }] : []}
     actions={committedSearch ? <button type="button" className="text-link" data-testid="public-directory-clear-all" onClick={clearSearch}>Clear all</button> : undefined}>
-    <SearchInput value={searchText} onChange={setSearchText} placeholder={`Search ${itemsLabel}…`}/>
+    <SearchInput value={searchText} onChange={setSearchText} placeholder={`Search ${itemsLabel}…`} suggestions={query.error?[]:branch?listingSuggestions(doctors,d=>({id:d.id,label:d.fullName,value:d.fullName})):listingSuggestions(branches,b=>({id:b.id,label:b.name,value:b.name}))} loading={query.isFetching} error={query.error?"Unable to load the directory.":null} onRetry={()=>void query.refetch()} total={data.directoryPagination?.total} settledQuery={committedSearch} scopeKey={JSON.stringify({clinicSlug,branchSlug,sort,pageSize})}/>
     <SearchableSelect label="Sort by" value={sort} onChange={value => updateDirectory({ sort: value, page: undefined })}
       options={[{ value: "name", label: "Name ↑ (A–Z)" }, { value: "-name", label: "Name ↓ (Z–A)" }]}/>
   </FilterBar>{query.isFetching && <p role="status" data-testid="public-directory-searching">Updating {itemsLabel}…</p>}</div>;

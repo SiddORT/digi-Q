@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Filter } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { SearchableSelect } from "./SearchableSelect";
+import { AppDialog } from "./AppDialog";
 
 // Export useDebouncedValue directly from here for convenience as requested
 export { useDebouncedValue };
@@ -162,45 +163,22 @@ export function Pagination({
 }
 
 // --- SearchInput ---
+// The live-search primitive lives in LiveSearchInput.tsx; re-exported so every
+// listing keeps importing from ListingControls.
+export { SearchInput } from "./LiveSearchInput";
+export type { SearchInputProps } from "./LiveSearchInput";
 
-export interface SearchInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  label?: string;
-}
-
-export function SearchInput({ value, onChange, placeholder = "Search…", label }: SearchInputProps) {
-  const inputId = React.useId();
-  return (
-    <div className="workspace-search flex flex-col gap-1.5 w-full md:max-w-sm">
-      {label && <label htmlFor={inputId} className="text-sm font-semibold text-foreground">{label}</label>}
-      <div className="relative flex items-center group">
-        <Search aria-hidden="true" className="absolute left-3.5 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-        <input
-          id={inputId}
-          type="search"
-          aria-label={label ? undefined : placeholder.replace(/…|\.\.\.$/, "")}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="h-[38px] w-full rounded-lg border border-border bg-white pl-10 pr-9 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm transition-all"
-          style={{ margin: 0, paddingInlineStart: "2.5rem", paddingInlineEnd: "2.5rem" }}
-        />
-        {value && (
-          <button
-            type="button"
-            onClick={() => onChange("")}
-            className="absolute right-2 h-7 w-7 flex items-center justify-center text-muted-foreground hover:text-foreground border-none bg-transparent hover:bg-slate-100 rounded-md transition-colors"
-            style={{ minHeight: "auto", padding: 0 }}
-            aria-label="Clear search"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-    </div>
-  );
+export interface ListingSuggestion { id: string; label: string; description?: string; value: string }
+/** Map the rows of the current, already-scoped listing query into search suggestions.
+ *  Rows without a backend-searchable value (name/reference) are skipped. */
+export function listingSuggestions<T>(rows: readonly T[] | undefined | null, map: (row: T) => ListingSuggestion | null | undefined, limit = 8): ListingSuggestion[] {
+  const out: ListingSuggestion[] = [];
+  for (const row of rows || []) {
+    const item = map(row);
+    if (item && item.value) out.push(item);
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 // --- FilterBar ---
@@ -237,37 +215,11 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
   const advancedActiveCount = chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
-  const wrapRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [alignRight, setAlignRight] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    // Move focus into the panel once, without changing any filter state.
-    const first = panelRef.current?.querySelector<HTMLElement>("input,select,textarea,button,[tabindex]:not([tabindex='-1'])");
-    first?.focus({ preventScroll: true });
-    const r = wrapRef.current?.getBoundingClientRect();
-    if (r) setAlignRight(r.left + 340 > window.innerWidth);
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      // Let nested popovers (selects, tooltips) close first.
-      if (e.defaultPrevented) return;
-      e.stopPropagation();
-      setOpen(false);
-      toggleRef.current?.focus();
-    };
-    const onDown = (e: PointerEvent) => {
-      const t = e.target as Node;
-      if (wrapRef.current?.contains(t)) return;
-      // Portalled listboxes/tooltips from children live outside; ignore them.
-      if ((t as Element).closest?.("[role=listbox],[role=option],[role=tooltip],[data-radix-popper-content-wrapper]")) return;
-      setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onDown);
-    return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown); };
-  }, [open]);
+  const closeFilters = () => {
+    setOpen(false);
+    requestAnimationFrame(() => toggleRef.current?.focus());
+  };
 
   return (
     <section className="filter-bar" aria-label={label}>
@@ -277,7 +229,7 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
         {children && <div className="filter-bar-primary">{children}</div>}
         <div className="filter-bar-tools">
           {advanced && (
-            <div className="filter-pop" ref={wrapRef}>
+            <div className="filter-pop">
               <button type="button" ref={toggleRef} className={cn("filter-toggle", advancedActiveCount > 0 && "has-active")}
                 aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
                 aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
@@ -286,15 +238,15 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
                 <span className="filter-toggle-text">Filters</span>
                 {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
               </button>
-              {open && (
-                <div id={panelId} ref={panelRef} role="dialog" aria-label={label} className={cn("filter-bar-advanced", alignRight && "align-right")}>
+              <AppDialog open={open} onClose={closeFilters} title={label} variant="drawer">
+                <div id={panelId} className="filter-drawer-content">
                   <div className="filter-panel-fields">{advanced}</div>
                   <div className="filter-panel-foot">
-                    {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); setOpen(false); toggleRef.current?.focus(); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
-                    <button type="button" className="filter-done" onClick={() => { onApply?.(); setOpen(false); toggleRef.current?.focus(); }} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
+                    {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); closeFilters(); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
+                    <button type="button" className="filter-done" onClick={() => { onApply?.(); closeFilters(); }} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
                   </div>
                 </div>
-              )}
+              </AppDialog>
             </div>
           )}
           {onReset && active && (

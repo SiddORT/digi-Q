@@ -19,6 +19,7 @@ import { PublicClinicPage } from "./components/PublicClinicPage";
 import { PatientScanner } from "./components/PatientScanner";
 import { GuestClinicFinder } from "./components/GuestClinicFinder";
 import { DemoLogin } from "./auth/DemoLogin";
+import { AuthShell, AuthCard } from "./auth/AuthShell";
 import { ToastHost } from "./components/ToastHost";
 import { friendlyError } from "./lib/friendly-error";
 
@@ -50,24 +51,11 @@ function ResetPasswordRoute() {
 function RegisterDoctor(){
   useEffect(()=>{sessionStorage.setItem("clinicflow-intent","doctor");},[]);
   return (
-    <div className="auth-layout">
-      <aside>
-        <Logo/>
-        <div>
-          <span className="eyebrow">PROVIDER ACCOUNT</span>
-          <h1>Care begins with an invitation.</h1>
-          <p>Healthcare providers cannot self-register directly. Please contact your clinic administrator to be invited to their workspace.</p>
-        </div>
-      </aside>
-      <main style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', textAlign: 'center' }}>
-        <h2>Already invited?</h2>
-        <p className="muted" style={{ marginBottom: '2rem' }}>If your administrator has already set up your account, sign in to connect it.</p>
-        <Link href="/sign-in" className="button">Staff login</Link>
-        <div style={{ marginTop: '2rem' }}>
-          <Link href="/" className="text-link">← Return to home</Link>
-        </div>
-      </main>
-    </div>
+    <AuthShell eyebrow="PROVIDER ACCOUNT">
+      <AuthCard title="Already invited?" description="Healthcare providers cannot self-register. Ask your clinic administrator to invite you; if your account is already set up, sign in to connect it.">
+        <Link href="/sign-in" className="button" data-testid="link-register-doctor-sign-in">Staff login</Link>
+      </AuthCard>
+    </AuthShell>
   );
 }
 function Guard({role, page}: {role:string;page:string}) {

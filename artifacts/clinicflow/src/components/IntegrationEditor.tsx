@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAppDialogClose } from "./AppDialog";
 import { useUpdateIntegrationSettings, type IntegrationReadiness } from "@workspace/api-client-react";
 
 const fields = {
@@ -15,8 +16,9 @@ const fields = {
   ],
 };
 
-export function IntegrationEditor({ provider, settings, onDone, onCancel }: {
+export function IntegrationEditor({ provider, settings, onDone, onCancel, onDirtyChange, onBusyChange }: {
   provider: "smtp" | "sms"; settings: IntegrationReadiness; onDone: () => void; onCancel: () => void;
+  onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void;
 }) {
   const revision = useRef(settings.revision ?? null);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -24,7 +26,13 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel }: {
   const [mode, setMode] = useState<"database" | "environment">("database");
   const [confirmed, setConfirmed] = useState(false);
   const save = useUpdateIntegrationSettings();
-  return <form className="panel padded" aria-label={`Configure ${provider}`} autoComplete="off" onSubmit={event => {
+  const guardedClose = useAppDialogClose();
+  const dirty = mode !== "database" || password !== "" || Object.values(values).some(value => value !== "");
+  const dirtyRef = useRef(onDirtyChange); dirtyRef.current = onDirtyChange;
+  const busyRef = useRef(onBusyChange); busyRef.current = onBusyChange;
+  useEffect(() => { dirtyRef.current?.(dirty); }, [dirty]);
+  useEffect(() => { busyRef.current?.(save.isPending); }, [save.isPending]);
+  return <form className="int-editor" aria-label={`Configure ${provider}`} autoComplete="off" onSubmit={event => {
     event.preventDefault();
     const changes = mode === "environment" ? {} : Object.fromEntries(Object.entries(values).filter(([, value]) => value !== ""));
     save.mutate({ data: { provider, mode, revision: revision.current, currentPassword: password, values: changes } }, {
@@ -32,7 +40,6 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel }: {
       onError: () => setPassword(""),
     });
   }}>
-    <h4>{provider === "smtp" ? "SMTP email credentials" : "Twilio SMS credentials"}</h4>
     <p>Stored values are never displayed. Leave a field blank to keep its current value. Saved website settings replace the whole .env configuration for this service. Saving does not send a message.</p>
     <fieldset disabled={save.isPending}>
       <legend>Configuration source</legend>
@@ -53,7 +60,7 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel }: {
           value={password} onChange={event => setPassword(event.target.value)} />
       </div>
       <button type="submit" disabled={save.isPending || (mode === "environment" && !confirmed)}>{save.isPending ? "Saving…" : "Save configuration"}</button>
-      <button type="button" className="secondary" onClick={onCancel}>Cancel</button>
+      <button type="button" className="secondary" onClick={() => (guardedClose ? guardedClose() : onCancel())}>Cancel</button>
     </fieldset>
     {save.isError && <p role="alert">Configuration was not saved. Check your password, required fields and server encryption key. If another administrator changed settings, cancel, refresh and try again.</p>}
   </form>;

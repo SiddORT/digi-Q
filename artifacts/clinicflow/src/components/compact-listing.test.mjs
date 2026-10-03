@@ -68,7 +68,8 @@ test("recovery is collapsed and bulk results are compact with visible failures",
   const listing = read("./AdminListing.tsx");
   assert.doesNotMatch(users + read("../resources.tsx"), /<details open/);
   assert.doesNotMatch(listing, /<details open/);
-  assert.match(users, /details className="panel listing-disclosure"/);
+  assert.match(users, /recoveryOpen && role !== "doctor" && <AppDialog/);
+  assert.doesNotMatch(users, /listing-disclosure/);
   assert.match(listing, /failed — view details/);
   assert.match(listing, /\[\.\.\.failed,\.\.\.items\.filter/);
   assert.match(users, /ResultSummary title="Invitations"/);

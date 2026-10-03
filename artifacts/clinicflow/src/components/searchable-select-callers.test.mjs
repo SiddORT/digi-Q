@@ -37,7 +37,6 @@ function change(label, value, context) {
 
 test("navigation and sort selectors retain non-empty enum choices when cleared", () => {
   for (const [label, callback, value] of [
-    ["Settings area", "setTab", "platform"],
     ["Clinic section", "selectView", "history"],
     ["Sort appointments", "setSort", "-date"],
     ["Sort reports", "setSort", "-appointments"],

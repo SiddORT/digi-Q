@@ -1,1 +1,12 @@
 .int-chooser{display:grid;grid-template-columns:auto minmax(0,14rem);gap:.4rem .75rem;align-items:center;margin:.75rem 0}.int-chooser small{grid-column:2;opacity:.75}.int-check{display:grid;gap:.3rem;margin:.75rem 0}.int-check li[data-status=failed]{color:hsl(var(--destructive,0 70% 45%))}.int-docs{display:grid;grid-template-columns:auto 1fr;gap:.25rem .75rem}.int-keys{columns:2;font-size:.88rem}@media(max-width:767px){.int-keys{columns:1}.int-chooser{grid-template-columns:1fr}.int-chooser small{grid-column:1}}
+/* Compact header: title left, service/provider controls right; configure/test open as overlays. */
+.int-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:.75rem 1.25rem}
+.int-head-title{flex:1 1 320px;min-width:0}.int-head-title p{margin-top:.2rem;font-size:.82rem}
+.int-settings .int-chooser{display:flex;flex-wrap:wrap;gap:.6rem;margin:0;align-items:flex-end}
+.int-field{display:grid;gap:.2rem;min-width:10rem}.int-field label{font-size:.78rem;font-weight:600}
+.int-status{margin-top:.75rem;display:grid;gap:.5rem}
+.int-status-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem}
+.int-status-row p{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+.int-editor{display:grid;gap:.6rem}.int-editor fieldset{display:grid;gap:.5rem;border:0;padding:0;margin:0}
+.int-test-form{display:grid;gap:.6rem}
+@media(max-width:767px){.int-settings .int-chooser{width:100%}.int-field{flex:1 1 100%}}

@@ -2,7 +2,7 @@ import { EmailInput } from "@/components/EmailInput";
 import { useEffect, useRef, useState } from "react";
 import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
-import { Plus, Pencil, Send, ArrowDown, ArrowUp, ArrowDownUp } from "lucide-react";
+import { Plus, Pencil, Send, KeyRound, ArrowDown, ArrowUp, ArrowDownUp } from "lucide-react";
 import { Link } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { assignmentTargetRole, type StaffTab } from "./staff-input";
@@ -10,7 +10,7 @@ import { clinicScopedStaffInput, resendStaffInvitations, staffInvitationRestrict
 import { ErrorNotice, Empty, title } from "./resources";
 import { Form } from "@/components/ui/form";
 import { ResourceLookup, ResourceMultiLookup } from "./components/ResourceLookup";
-import { Pagination, SearchInput, FilterBar, useDebouncedValue } from "./components/ListingControls";
+import { Pagination, SearchInput, FilterBar, useDebouncedValue, listingSuggestions } from "./components/ListingControls";
 import { AppDialog } from "./components/AppDialog";
 import { ClinicAdminOnboarding } from "./components/ClinicAdminOnboarding";
 import { SearchableSelect } from "./components/SearchableSelect";
@@ -82,6 +82,10 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   }, [query.data, context.page, context.pageSize]);
   const client = useQueryClient();
    const [recoveryId, setRecoveryId] = useState("");
+   const [recoveryOpen, setRecoveryOpen] = useState(false);
+   const [setupOpen, setSetupOpen] = useState(false);
+   const [setupDirty, setSetupDirty] = useState(false);
+   const [setupBusy, setSetupBusy] = useState(false);
    const [statusTarget,setStatusTarget]=useState<{id:string;userId?:string;name:string;status:"active"|"inactive"}|null>(null);
    const [statusError,setStatusError]=useState("");
    const statusUpdate=useMutation({
@@ -132,7 +136,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
      {counts.some(item=>item.error)&&<div role="alert" className="error-box">Unable to load staff status counts. <button type="button" onClick={()=>counts.forEach(item=>{if(item.error)void item.refetch();})}>Retry counts</button></div>}
      <FilterBar title={query.data&&!query.error?<span className="listing-count-label"><span className="listing-count">{query.data.total}</span> {(tabs.find(item=>item.id===tab)?.label||"").toLowerCase()}</span>:undefined} status={<div className="status-tabs" role="group" aria-label="Account status">
        {(["","active","inactive"] as const).map((status,index)=><button type="button" key={status||"all"} className={`tab ${context.status===status?"active":""}`} aria-pressed={context.status===status} onClick={()=>change({status})} data-testid={`tab-staff-${status||"all"}`}>{status?title(status):"All"}{counts[index].data?<span className="count">{counts[index].data.total}</span>:null}</button>)}
-     </div>} actions={tab==="admins" ? embedded?<Link className="button small" href="/admin/users?tab=admins">Set up a Clinic Admin</Link>:null : <button className="button small" onClick={() => beginEdit({})} data-testid={`button-add-${tab}`}><Plus size={17} /> Add {tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}</button>} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter staff" chips={[
+     </div>} actions={<>{role !== "doctor" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setRecoveryOpen(true)} data-testid="button-open-account-recovery"><KeyRound size={15} aria-hidden /> Recovery</button>}{tab==="admins" ? embedded?<Link className="button small" href="/admin/users?tab=admins">Set up a Clinic Admin</Link>:isSuperAdmin?<button type="button" className="button small" aria-haspopup="dialog" onClick={() => setSetupOpen(true)} data-testid="button-setup-clinic-admin"><Plus size={17} /> Set up Clinic Admin</button>:null : <button className="button small" onClick={() => beginEdit({})} data-testid={`button-add-${tab}`}><Plus size={17} /> Add {tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}</button>}</>} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter staff" chips={[
       ...(context.search?[{key:"search",label:`Search: ${context.search}`,onRemove:()=>change({search:""})}]:[]),
        ...(!clinicId&&context.clinicId?[{key:"clinicId",label:"Clinic selected",onRemove:()=>change({clinicId:"",branchId:""})}]:[]),
       ...(context.branchId?[{key:"branchId",label:"Clinic selected",onRemove:()=>change({branchId:""})}]:[]),
@@ -146,7 +150,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
        {!clinicId&&draftTab !== "admins"&&<ResourceLookup resource="assignment:clinics" label="Clinic" params={{targetRole:assignmentTargetRole(draftTab)}} value={draft.clinicId} onChange={value=>draftChange({clinicId:value,branchId:""})}/>}
        {draftTab === "receptionists" && <ResourceLookup resource="assignment:branches" label="Clinic" params={{targetRole:assignmentTargetRole(draftTab),clinicId:clinicId||draft.clinicId||undefined}} value={draft.branchId} onChange={branchId=>draftChange({branchId})}/>}
     </>}>
-      <SearchInput value={context.search} onChange={search => change({ search })} placeholder={tab==="doctors"?"Search doctors by name, email or specialization…":tab==="receptionists"?"Search receptionists by name, email or mobile…":"Search Clinic Admins by name, email or mobile…"} />
+      <SearchInput value={context.search} onChange={search => change({ search })} placeholder={tab==="doctors"?"Search doctors by name, email or specialization…":tab==="receptionists"?"Search receptionists by name, email or mobile…":"Search Clinic Admins by name, email or mobile…"} suggestions={query.error||query.isPlaceholderData?[]:listingSuggestions(query.data?.items,(row:any)=>({id:row.id,label:row.fullName,description:row.email,value:row.fullName}))} loading={query.isFetching} error={query.error?friendlyError(query.error,"load"):null} onRetry={()=>void query.refetch()} total={query.data?.total} settledQuery={term} scopeKey={JSON.stringify([tab,{...params,search:undefined,page:undefined}])} />
     </FilterBar>
     {success && <p role="status" className="notice">{success}</p>}
      {statusError&&<div role="alert" className="error-box">{statusError} <button type="button" onClick={()=>setStatusError("")}>Dismiss</button></div>}
@@ -175,13 +179,12 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
       </table></div> : active ? <div className="empty"><h3>No matching staff</h3><p>Try another search or clear your filters.</p><button onClick={reset}>Clear filters</button></div> : <Empty label={tab} />}
       {!query.error && <Pagination page={context.page} pageSize={context.pageSize} total={query.data?.total || 0} onPageChange={page => change({ page })} onPageSizeChange={pageSize => change({ pageSize })} />}
     </section>
-    {role !== "doctor" && <details className="panel listing-disclosure" data-testid="details-account-recovery">
-      <summary>Account recovery assistance</summary><p className="muted">Search linked staff accounts for secure account recovery steps. This action does not send an email.</p>
-       <div className="inline-form"><ResourceLookup resource="users" label="Staff account" params={{ role: tab === "admins" ? "clinicAdmin" : tab === "doctors" ? "doctor" : "receptionist", linkedOnly: true,clinicId:clinicId||undefined }} value={recoveryId} onChange={id => { setRecoveryId(id); recovery.reset(); }} />
+    {recoveryOpen && role !== "doctor" && <AppDialog open variant="drawer" onClose={() => { setRecoveryOpen(false); setRecoveryId(""); recovery.reset(); }} busy={recovery.isPending} title="Account recovery assistance" description="Search linked staff accounts for secure account recovery steps. This action does not send an email.">
+      <div className="inline-form" data-testid="details-account-recovery"><ResourceLookup resource="users" label="Staff account" params={{ role: tab === "admins" ? "clinicAdmin" : tab === "doctors" ? "doctor" : "receptionist", linkedOnly: true,clinicId:clinicId||undefined }} value={recoveryId} onChange={id => { setRecoveryId(id); recovery.reset(); }} />
         <button disabled={!recoveryId || recovery.isPending} onClick={() => { if (!recovery.isPending) recovery.mutate({ id: recoveryId }); }} data-testid="button-password-help">{recovery.isPending ? "Loading…" : "Get recovery steps"}</button></div>
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open secure password recovery</Link></div>}
-    </details>}
-     {isSuperAdmin && tab === "admins" && !embedded && <details className="panel padded"><summary>Set up a new Clinic Admin and their first clinic</summary><ClinicAdminOnboarding /></details>}
+    </AppDialog>}
+    {setupOpen && isSuperAdmin && <AppDialog open size="wide" onClose={() => { setSetupOpen(false); setSetupDirty(false); }} dirty={setupDirty} busy={setupBusy} title="Set up a new Clinic Admin and their first clinic"><ClinicAdminOnboarding guided onDirtyChange={setSetupDirty} onBusyChange={setSetupBusy}/></AppDialog>}
     {editing && <AppDialog open size="wide" onClose={() => setEditing(null)} title={`${editing.id ? "Edit" : "Add"} ${tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}`} dirty={dirty} busy={busy}>
        <UserEditor tab={tab} initial={editing} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onClose={(result:any) => { const wasEdit=!!editing.id;setEditing(null);if(!wasEdit&&result.invitationStatus==="failed")notifyWarning(`${tab==="doctors"?"Doctor":"Staff member"} added, but the invitation could not be sent.`);else notifySuccess(wasEdit?"Updated successfully":"Staff member added successfully."); }} />
     </AppDialog>}
