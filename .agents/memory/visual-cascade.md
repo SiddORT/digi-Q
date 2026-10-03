@@ -26,3 +26,9 @@ Keep the clinic administration interface compact-only and reserve tabs for statu
 **Why:** The user explicitly rejected density choices, tab-like section navigation, and pages that repeat most of the same controls with only a few differences. The goal is fewer competing places to manage information, not merely smaller spacing.
 
 **How to apply:** Use section navigation for configuration, labelled toggles for binary staff activation and column arrows for sorting. Reuse canonical editors from contextual entry points while preserving role scopes, unique actions, historical links and distinct appointment/queue workflows.
+
+Apply the screenshot-inspired compactness across all pages, with reduced padding and overall sizing. Listing headers should use the left and right sections rather than waste extra rows.
+
+**Why:** The user reiterated that compactness must not be limited to one page and felt the previously described compact UI could still be smaller.
+
+**How to apply:** Check final computed spacing and each listing's control arrangement. Shared compact styles and functional navigation tests alone do not prove that every page meets the requested density.
