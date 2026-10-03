@@ -214,8 +214,8 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
                 <div className="et-actions">
                   <label className="button secondary" data-testid="label-logo-file">{uploading ? "Uploading…" : "Choose image file"}
                     <input type="file" hidden accept={LOGO_TYPES.join(",")} disabled={uploading} onChange={e => { void onLogoFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-logo-file" /></label>
-                  {uploading && <button type="button" className="secondary" onClick={() => { uploadAbort.current?.abort(); setUpload({ state: "idle", pct: 0, msg: "Upload cancelled." }); }} data-testid="button-cancel-upload">Cancel upload</button>}
-                  {form.logoUrl && !uploading && <button type="button" className="secondary" onClick={() => { set(k, ""); setUpload({ state: "idle", pct: 0, msg: "" }); }} data-testid="button-remove-logo">Remove logo</button>}
+                  {uploading && <button type="button" className="button secondary" onClick={() => { uploadAbort.current?.abort(); setUpload({ state: "idle", pct: 0, msg: "Upload cancelled." }); }} data-testid="button-cancel-upload">Cancel upload</button>}
+                  {form.logoUrl && !uploading && <button type="button" className="button secondary" onClick={() => { set(k, ""); setUpload({ state: "idle", pct: 0, msg: "" }); }} data-testid="button-remove-logo">Remove logo</button>}
                 </div>
                 <small>PNG, JPEG or WebP · max 2 MB · max 2048×2048 px (checked by the server)</small>
                 {upload.state === "uploading" && <progress max={100} value={upload.pct} aria-label="Upload progress" data-testid="progress-logo" />}
@@ -234,9 +234,9 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
           {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
           <div className="et-actions">
             <LoadingButton type="submit" loading={save.isPending && confirm === "publish"} disabled={save.isPending || invalid || conflict} data-testid="button-publish">Publish</LoadingButton>
-            <button type="button" className="secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save draft</button>
-            <button type="button" className="secondary" disabled={save.isPending || !dirty} onClick={() => { setForm({ ...base! }); setNotice(""); }} data-testid="button-cancel">Cancel changes</button>
-            <button type="button" className="secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to default</button>
+            <button type="button" className="button secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save draft</button>
+            <button type="button" className="button secondary" disabled={save.isPending || !dirty} onClick={() => { setForm({ ...base! }); setNotice(""); }} data-testid="button-cancel">Cancel changes</button>
+            <button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to default</button>
           </div>
         </form>
 
@@ -244,13 +244,13 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
           <h3>Preview <HelpTip text="Sample placeholders only. No patient data is used."/></h3>
           {form.logoUrl && isValidLogo(form.logoUrl) && ((showLogo || isInternalLogo(form.logoUrl))
             ? <img src={logoPreviewSrc(form.logoUrl)} alt="Logo preview" className="et-logo" referrerPolicy="no-referrer" data-testid="img-logo" />
-            : <button type="button" className="secondary" onClick={() => setShowLogo(true)} data-testid="button-load-logo">Load logo preview (contacts the image host)</button>)}
+            : <button type="button" className="button secondary" onClick={() => setShowLogo(true)} data-testid="button-load-logo">Load logo preview (contacts the image host)</button>)}
           <div className="et-mail">
             <div className="et-subject" data-testid="text-preview-subject">{preview!.subject}</div>
             <div className="et-body" data-testid="text-preview-body">{preview!.body}</div>
             {preview!.footer && <div className="et-footer">{preview!.footer}</div>}
           </div>
-          {!dirty && <button type="button" className="secondary small et-server-open" aria-haspopup="dialog" onClick={() => setServerOpen(true)} data-testid="button-server-rendering">Server rendering</button>}
+          {!dirty && <button type="button" className="button secondary small et-server-open" aria-haspopup="dialog" onClick={() => setServerOpen(true)} data-testid="button-server-rendering">Server rendering</button>}
           {serverOpen && <AppDialog open variant="drawer" onClose={() => setServerOpen(false)} title="Server rendering"><div className="et-server"><div>{item.previewSubject}</div><pre>{item.previewBody}</pre></div></AppDialog>}
         </aside>
       </div>}
@@ -259,14 +259,14 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
       {confirm && <div className="et-dialog"><p>{MODE_COPY[confirm].text}</p>
         <div className="et-actions">
           <LoadingButton type="button" loading={save.isPending} onClick={() => run(confirm)} className={confirm === "reset" ? "danger" : undefined} data-testid="button-confirm-save">{MODE_COPY[confirm].action}</LoadingButton>
-          <button type="button" className="secondary" disabled={save.isPending} onClick={() => setConfirm(null)} data-testid="button-confirm-cancel">Go back</button>
+          <button type="button" className="button secondary" disabled={save.isPending} onClick={() => setConfirm(null)} data-testid="button-confirm-cancel">Go back</button>
         </div></div>}
     </AppDialog>
     <AppDialog open={!!pendingNav} onClose={() => setPendingNav(null)} title="Discard unsaved changes?">
       <div className="et-dialog"><p>You have edits that are not saved. Leaving this template discards them.</p>
         <div className="et-actions">
           <button type="button" className="danger" onClick={() => { const go = pendingNav; setPendingNav(null); go?.(); }} data-testid="button-discard">Discard and continue</button>
-          <button type="button" className="secondary" onClick={() => setPendingNav(null)} data-testid="button-keep-editing">Keep editing</button>
+          <button type="button" className="button secondary" onClick={() => setPendingNav(null)} data-testid="button-keep-editing">Keep editing</button>
         </div></div>
     </AppDialog>
   </section>;

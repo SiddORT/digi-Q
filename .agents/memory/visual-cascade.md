@@ -56,3 +56,9 @@ Ticket compactness and the current representation review must preserve all exist
 **Why:** The user explicitly clarified: "do not remove any info or links or anything from it" when discussing the shorter ticket and revised header layout.
 
 **How to apply:** Improve grouping, alignment and spacing without dropping content, shrinking text to fit or clipping overflow. Target a ticket that fits typical desktop viewports, while retaining scrolling when small screens or long content require it.
+
+Use wide search beside listing titles, with Export beside the primary Add/Book action. Header actions should have matching outer heights and a clearly emphasized primary action. Appointment details belong in a structured right-side drawer; tickets remain centred documents.
+
+**Why:** The user approved this representation across all pages after the previous compactness pass still left stacked toolbars and unstructured popup contents.
+
+**How to apply:** Apply the common header to relevant listings, while retaining page-specific scope controls, responsive wrapping, full content and existing behavior. Improve grouping inside overlays rather than just changing where the old vertical list opens.

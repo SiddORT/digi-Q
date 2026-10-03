@@ -69,7 +69,7 @@ export function CustomRoles() {
   </div>;
 
   return <section className="panel padded custom-roles" data-testid="custom-roles" aria-labelledby="custom-roles-title">
-    <div className="cr-head">
+    <div className="cr-head section-head">
       <div><h2 id="custom-roles-title">Custom roles <HelpTip text="Named variations of a base role for specific staff. A custom role starts from its base role and can only remove actions; it never grants access beyond the base role and never crosses clinic ownership. Assign it to staff who already have that base role. Leave the clinic empty to apply it in all of that person's clinics. When several rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen." /></h2></div>
       {draft && <button type="button" className="button small" onClick={() => setEditing({ id: newRoleId(draft.roles), name: "", baseRole: "receptionist", denied: [] })} data-testid="button-add-custom-role"><Plus size={16} aria-hidden /> New custom role</button>}
     </div>

@@ -107,7 +107,7 @@ export function DemoClinicManagement() {
 
   const forward = `Try ${BRAND_NAME}' fictional demo clinic (please do not enter real patient information).\nClinic: ${clinicUrl}\nGuest booking: ${bookingUrl}\nYou can scan the booking QR on the clinic page or open the booking link directly. Guest booking requires no login and issues a ticket immediately.`;
   return <>{confirmDialog.dialog}<div className="panel padded" data-testid="demo-management">
-    <div className="panel-heading demo-head"><div><span className="eyebrow">SUPER ADMIN ONLY · FICTIONAL DEMO</span><h2>Published demo clinic <HelpTip text="Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo."/></h2></div>
+    <div className="panel-heading demo-head section-head"><div><span className="eyebrow">SUPER ADMIN ONLY · FICTIONAL DEMO</span><h2>Published demo clinic <HelpTip text="Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo."/></h2></div>
       {status?.configured && <div className="row-actions">
         <span className={`badge ${status.enabled ? "" : "muted"}`} data-testid="status-demo-access">{status.enabled ? "Demo access enabled" : "Demo access disabled"}</span>
         <button className="button secondary small" disabled={busy} onClick={() => void change(status.enabled ? "disable" : "enable")} data-testid="button-toggle-demo">{status.enabled ? "Disable demo access" : "Enable demo access"}</button>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, createContext, useContext } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -181,6 +181,20 @@ export function listingSuggestions<T>(rows: readonly T[] | undefined | null, map
   return out;
 }
 
+// --- Page title ownership ---
+/** The workspace shell provides the page title; the first mounted list header renders it as the page <h1>
+ *  on row 1 (beside search and actions) so listing pages do not repeat a separate heading row. */
+export interface ListPageTitle { title: React.ReactNode; eyebrow?: React.ReactNode; owner: React.MutableRefObject<string | null> }
+export const ListPageTitleContext = createContext<ListPageTitle | null>(null);
+function usePageTitleOwnership() {
+  const ctx = useContext(ListPageTitleContext);
+  const id = React.useId();
+  if (ctx && !ctx.owner.current) ctx.owner.current = id;
+  const owns = !!ctx && ctx.owner.current === id;
+  useEffect(() => () => { if (ctx && ctx.owner.current === id) ctx.owner.current = null; }, [ctx, id]);
+  return owns ? ctx : null;
+}
+
 // --- FilterBar ---
 
 export interface FilterChip {
@@ -190,28 +204,32 @@ export interface FilterChip {
 }
 
 export interface FilterBarProps {
-  /** Primary controls. Always visible inline (search, required queue/booking scope). Never hidden. */
+  /** Primary controls (search first). Rendered on the header's first row beside the title. Never hidden. */
   children?: React.ReactNode;
-  /** Secondary controls, shown in a compact popup opened from the filter icon. */
+  /** Secondary controls, shown in a right-side drawer opened from the Filters button. */
   advanced?: React.ReactNode;
   onReset?: () => void;
   active?: boolean;
-  /** Active filter chips shown under the toolbar (only rendered when present). */
+  /** Active filter chips shown under the header (only rendered when present). */
   chips?: FilterChip[];
   /** Kept for API compatibility; the panel never auto-opens on state changes. */
   defaultAdvancedOpen?: boolean;
-  /** Optional trailing actions (e.g. export, add). Aligned on the same row. */
+  /** Header actions on the first row, right side: Export / secondary actions then the primary Add/Book action. */
   actions?: React.ReactNode;
   label?: string;
   onOpen?: () => void;
   onApply?: () => void;
-  /** Compact toolbar title (left). Typically the record type and result count. */
+  /** Header title (left of the search). Typically the record type and result count. */
   title?: React.ReactNode;
-  /** Status filter (Active / Inactive / All), placed on the toolbar row before search. */
+  /** Status tabs on the second row. */
   status?: React.ReactNode;
+  /** Second-row scope/range, sort, last-updated and help controls, aligned with Filters. */
+  meta?: React.ReactNode;
 }
 
-export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, label = "Filters", onOpen, onApply, title, status }: FilterBarProps) {
+/** Shared list header. Row 1: title, wide search, actions. Row 2 (only when needed): status tabs, scope/meta, Filters/Clear.
+ *  Row 1 is always rendered first and in the same position so the search input never remounts while typing. */
+export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, label = "Filters", onOpen, onApply, title, status, meta }: FilterBarProps) {
   const advancedActiveCount = chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
@@ -220,43 +238,55 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
     setOpen(false);
     requestAnimationFrame(() => toggleRef.current?.focus());
   };
+  const pageTitle = usePageTitleOwnership();
+  const showClear = !!(onReset && active);
+  // With a page title on row 1, the record count becomes secondary row-2 metadata (no duplicate heading).
+  const countInSub = !!(pageTitle && title);
+  const hasSubRow = !!(status || meta || advanced || showClear || countInSub);
 
   return (
-    <section className="filter-bar" aria-label={label}>
-      <div className={cn("filter-bar-row", (title || status) && "has-title")}>
-        {title && <div className="filter-bar-title" data-testid="text-listing-title">{title}</div>}
-        {status && <div className="filter-bar-status">{status}</div>}
-        {children && <div className="filter-bar-primary">{children}</div>}
-        <div className="filter-bar-tools">
-          {advanced && (
-            <div className="filter-pop">
-              <button type="button" ref={toggleRef} className={cn("filter-toggle", advancedActiveCount > 0 && "has-active")}
-                aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
-                aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
-                onClick={() => { if (!open) onOpen?.(); setOpen(v => !v); }} data-testid="button-toggle-advanced-filters">
-                <Filter aria-hidden className="h-4 w-4" />
-                <span className="filter-toggle-text">Filters</span>
-                {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
-              </button>
-              <AppDialog open={open} onClose={closeFilters} title={label} variant="drawer">
-                <div id={panelId} className="filter-drawer-content">
-                  <div className="filter-panel-fields">{advanced}</div>
-                  <div className="filter-panel-foot">
-                    {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); closeFilters(); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
-                    <button type="button" className="filter-done" onClick={() => { onApply?.(); closeFilters(); }} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
-                  </div>
-                </div>
-              </AppDialog>
-            </div>
-          )}
-          {onReset && active && (
-            <button type="button" className="filter-clear" onClick={onReset} data-testid="button-clear-filters">
-              <X aria-hidden className="h-3.5 w-3.5" />Clear
-            </button>
-          )}
-          {actions}
-        </div>
+    <section className="filter-bar list-header" aria-label={label} data-testid="list-header">
+      <div className={cn("filter-bar-row lh-row lh-top", (title || status) && "has-title")}>
+        {pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1></div>
+          : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>}
+        {children && <div className="filter-bar-primary lh-search">{children}</div>}
+        {actions && <div className="lh-actions" data-testid="list-header-actions">{actions}</div>}
       </div>
+      {hasSubRow && (
+        <div className="lh-row lh-sub" data-testid="list-header-subrow">
+          {countInSub && <div className="filter-bar-title lh-count" data-testid="text-listing-title">{title}</div>}
+          {status && <div className="filter-bar-status lh-status">{status}</div>}
+          <div className="filter-bar-tools lh-tools">
+            {meta && <div className="lh-meta">{meta}</div>}
+            {advanced && (
+              <div className="filter-pop">
+                <button type="button" ref={toggleRef} className={cn("filter-toggle", advancedActiveCount > 0 && "has-active")}
+                  aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
+                  aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
+                  onClick={() => { if (!open) onOpen?.(); setOpen(v => !v); }} data-testid="button-toggle-advanced-filters">
+                  <Filter aria-hidden className="h-4 w-4" />
+                  <span className="filter-toggle-text">Filters</span>
+                  {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
+                </button>
+                <AppDialog open={open} onClose={closeFilters} title={label} variant="drawer">
+                  <div id={panelId} className="filter-drawer-content">
+                    <div className="filter-panel-fields">{advanced}</div>
+                    <div className="filter-panel-foot">
+                      {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); closeFilters(); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
+                      <button type="button" className="filter-done" onClick={() => { onApply?.(); closeFilters(); }} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
+                    </div>
+                  </div>
+                </AppDialog>
+              </div>
+            )}
+            {showClear && (
+              <button type="button" className="filter-clear" onClick={onReset} data-testid="button-clear-filters">
+                <X aria-hidden className="h-3.5 w-3.5" />Clear
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {chips.length > 0 && (
         <ul className="filter-chips" aria-label="Active filters">
           {chips.map(chip => (

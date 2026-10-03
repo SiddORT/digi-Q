@@ -54,7 +54,7 @@ export function AppointmentRows({appointments,selectionKey="",disabled=false,sel
  </div></details>}</>;})()}
  </div></td></tr>)}</tbody></table></div>
  <AppDialog open={!!ticket} onClose={()=>setTicket("")} title="Appointment ticket">{ticket&&<AppointmentTicket id={ticket}/>}</AppDialog>
- <AppDialog open={!!detailId} onClose={()=>setDetailId("")} title="Appointment details"><ErrorNotice error={detail.error}/>{detail.error?<button onClick={()=>detail.refetch()}>Retry details</button>:detail.isLoading?<p role="status">Loading details…</p>:detail.data&&<AppointmentDetails appointment={detail.data}/>}</AppDialog>
+ <AppDialog open={!!detailId} variant="drawer" onClose={()=>setDetailId("")} title="Appointment details"><ErrorNotice error={detail.error}/>{detail.error?<button onClick={()=>detail.refetch()}>Retry details</button>:detail.isLoading?<p role="status">Loading details…</p>:detail.data&&<AppointmentDetails appointment={detail.data}/>}</AppDialog>
  <AppDialog open={!!reschedule} size="wide" onClose={()=>setReschedule(null)} title="Reschedule appointment" dirty>{reschedule&&<RescheduleAppointment key={reschedule.id} appointment={reschedule} onDone={()=>{setReschedule(null);setTicket(reschedule.id);}}/>}</AppDialog>
   <AppDialog open={!!pending} onClose={()=>setPending(null)} title={pending?actionLabel(pending.next):"Update appointment"} busy={action.isPending} dirty={!!reason}><form onSubmit={e=>{e.preventDefault();if(pending)void transition(pending.appointment,pending.next);}}>
   {blocked&&<p role="alert">Updates are disabled while offline or stale. Refresh before continuing.</p>}

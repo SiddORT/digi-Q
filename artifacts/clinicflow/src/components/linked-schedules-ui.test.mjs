@@ -54,7 +54,7 @@ test("legacy routes remain, while navigation consolidates clinic, staff and sche
 });
 test("appointment and report filters apply drafts, with status-only tabs and column sorting", () => {
   const text = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");
-  const appointments=text.slice(text.indexOf("function Appointments(){"),text.indexOf("function Booking("));
+  const appointments=text.slice(text.indexOf("function Appointments("),text.indexOf("function Booking("));
   const reports=text.slice(text.indexOf("function Reports(){"));
   for(const source of [appointments,reports]){
     assert.match(source, /onOpen=\{openFilters\} onApply=\{applyFilters\}/);

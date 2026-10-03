@@ -110,17 +110,21 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
   return <article className="vt" data-testid={testId} aria-label="Visit ticket">
     <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>Visit ticket</h2></div><span className="vt-badge" data-testid="ticket-status">{ticket.statusLabel || "Booked"}</span></header>
     <div className="vt-body">
-      <div>
-        <p className="vt-number-label">Waiting number</p>
-        <p className="vt-number" data-testid="ticket-waiting-number">{ticket.waitingNumber || "—"}</p>
-        {ticket.reference && <p className="vt-ref" data-testid="ticket-reference">Ref {ticket.reference}</p>}
-         <p className="vt-name">{ticket.patientName}</p>
-         <div className="vt-visit"><small>Date · Location</small><strong>{formatDate(ticket.date,ticket)} · {ticket.branchName}</strong><span>Session {sessionRange(ticket)}</span></div>
-        <dl className="vt-dl">
-          <dt>Clinic</dt><dd>{ticket.clinicName}</dd>
-          {ticket.address && <><dt>Address</dt><dd>{ticket.address}</dd></>}
-          <dt>Doctor</dt><dd>{ticket.doctorName}</dd>
-        </dl>
+      <div className="vt-info">
+        <div className="vt-main">
+          <p className="vt-number-label">Waiting number</p>
+          <p className="vt-number" data-testid="ticket-waiting-number">{ticket.waitingNumber || "—"}</p>
+          {ticket.reference && <p className="vt-ref" data-testid="ticket-reference">Ref {ticket.reference}</p>}
+          <p className="vt-name" data-testid="ticket-patient-name">{ticket.patientName}</p>
+        </div>
+        <div className="vt-facts">
+          <div className="vt-visit"><small>Date · Location</small><strong>{formatDate(ticket.date,ticket)} · {ticket.branchName}</strong><span>Session {sessionRange(ticket)}</span></div>
+          <dl className="vt-dl">
+            <dt>Clinic</dt><dd>{ticket.clinicName}</dd>
+            {ticket.address && <><dt>Address</dt><dd>{ticket.address}</dd></>}
+            <dt>Doctor</dt><dd>{ticket.doctorName}</dd>
+          </dl>
+        </div>
       </div>
       <div className="vt-qr">{qr ? <img src={qr} alt="Personal visit QR"/> : qrError ? <div role="alert" style={{ width: 160 }}><p style={{margin:"0 0 8px"}}>{qrError}</p><button type="button" className="button secondary" data-testid="button-retry-ticket-qr" onClick={() => setQrTry(n => n + 1)}>Retry QR</button></div> : <div style={{ width: 160, height: 160 }} role="status" aria-label="Loading QR"/>}<small>Personal QR for reception. Keep it private.</small></div>
     </div>

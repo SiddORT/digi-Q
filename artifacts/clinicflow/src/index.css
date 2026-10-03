@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @import "./compact-workspace.css";
 @import "./components/compact-listing.css";
+@import "./components/uniformity.css";
 
 @layer components {
   .workspace .sidebar { padding-top: 16px; padding-bottom: 12px; }

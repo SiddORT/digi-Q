@@ -33,7 +33,7 @@ export function GuestRequests({clinicId,branchId,doctorId,date,sessionId,startTi
  }
  if(!requests.isLoading&&!requests.error&&!requests.data?.total&&!message&&!decision.error&&!decision.isPending&&!search&&!debounced)return null;
  return <section className="panel" aria-label="Earlier booking requests">
-  <div className="panel-heading"><div><h2>Earlier booking requests <span className="badge" data-testid="guest-pending-count">{requests.error?"Unavailable":requests.data?.total??"…"}</span></h2></div><HelpTip text="These requests predate immediate booking and still need a decision. New bookings receive their ticket automatically."/></div>
+  <div className="panel-heading section-head"><div><h2>Earlier booking requests <span className="badge" data-testid="guest-pending-count">{requests.error?"Unavailable":requests.data?.total??"…"}</span></h2></div><HelpTip text="These requests predate immediate booking and still need a decision. New bookings receive their ticket automatically."/></div>
   <ErrorNotice error={requests.error}/><ErrorNotice error={decision.error}/>
   {decision.error&&<p>Confirmation may fail if the session is full or availability changed. Refresh and review the request before trying again.</p>}
   {message&&<p role="status" data-testid="guest-decision-result">{message}</p>}

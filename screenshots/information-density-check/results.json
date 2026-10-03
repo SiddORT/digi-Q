@@ -5,17 +5,17 @@
       "status": "pass",
       "details": {
         "title": "Appointments",
-        "body": "03 OCT 2026\nAppointments\nBook appointment\n2 appointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch appointments\nVisit range\nToday & upcoming\nFilters\nUpdated 03 Oct 2026, 11:12 AM\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexandria Verylongpatientname Example-Surname\n\tDr. Rowan Example\nNorthside Branch\n\t02 Mar 2026 \nFictional Northside Clinic · Northside Branch. Session 9:00 AM–9:20 AM. Token and booking reference are available in Details and Ticket.\n\tBooked\t\nCheck in\nDetails\n\n\t\nMorgan Sample\n\tDr. Rowan Example\nNorthside Branch\n\t02 Mar 2026 \nFictional Northside Clinic · Northside Branch. Session 9:20 AM–9:40 AM. Token and booking reference are available in Details and Ticket.\n\tChecked In\t\nCheck in\nDetails\nShowing 1–2 of 2\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.",
+        "body": "03 OCT 2026\nAppointments\nSearch appointments\nVisit range\nToday & upcoming\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\nBook appointment\n2\nappointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nUpdated 03 Oct 2026, 12:02 PM\nFilters\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexandria Verylongpatientname Example-Surname\n\tDr. Rowan Example\nNorthside Branch\n\t02 Mar 2026 \nFictional Northside Clinic · Northside Branch. Session 9:00 AM–9:20 AM. Token and booking reference are available in Details and Ticket.\n\tBooked\t\nCheck in\nDetails\n\n\t\nMorgan Sample\n\tDr. Rowan Example\nNorthside Branch\n\t02 Mar 2026 \nFictional Northside Clinic · Northside Branch. Session 9:20 AM–9:40 AM. Token and booking reference are available in Details and Ticket.\n\tChecked In\t\nCheck in\nDetails\nShowing 1–2 of 2\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.",
         "overflow": 0,
-        "tableTop": 135,
+        "tableTop": 134,
         "row": {
-          "top": 275,
-          "height": 77
+          "top": 274,
+          "height": 81
         },
         "controls": [
           {
-            "top": 160,
-            "height": 61
+            "top": 107,
+            "height": 67
           }
         ]
       }
@@ -25,7 +25,7 @@
       "status": "pass",
       "details": {
         "overflow": 0,
-        "preTable": 173,
+        "preTable": 200,
         "row": 89.75,
         "filterRows": 1,
         "tableScroll": {
@@ -57,7 +57,7 @@
         "url": "/admin/users",
         "title": "Users & staff",
         "main": true,
-        "text": "WORKSPACE\nAdmin\nCollapse\nOverview\nAppointments\nLive queue\nPatients\nClinic\nClinics\nLocations\nUsers & staff\nSchedule\nReports\nClinic workspace\nEmail templates\nMy profile & consultation\nSign out\nWorkspace\nUsers & staff\nSecure workspace\nFU\nFixture User\nClinic Admin\nUsers & staff\n1 doctors\nAll\n1\nActive\n1\nInactive\n1\nFilters\nRecovery\nAdd Doctor\n\tSTAFF MEMBER\n\tASSIGNMENTS\tACCOUNT STATUS\tACTIONS\n\t\nDr. Rowan Example\n\tNone\t\nActive\nNeeds password setup\n\t\nThis staff record has no linked account. Reload the list.\nEdit staff details and assignments\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary develo",
+        "text": "WORKSPACE\nAdmin\nCollapse\nOverview\nAppointments\nLive queue\nPatients\nClinic\nClinics\nLocations\nUsers & staff\nSchedule\nReports\nClinic workspace\nEmail templates\nMy profile & consultation\nSign out\nWorkspace\nUsers & staff\nSecure workspace\nFU\nFixture User\nClinic Admin\nUsers & staff\nRecovery\nAdd Doctor\n1\ndoctors\nAll\n1\nActive\n1\nInactive\n1\nFilters\n\tSTAFF MEMBER\n\tASSIGNMENTS\tACCOUNT STATUS\tACTIONS\n\t\nDr. Rowan Example\n\tNone\t\nActive\nNeeds password setup\n\t\nThis staff record has no linked account. Reload the list.\nEdit staff details and assignments\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary develo",
         "overflow": 0
       }
     },
@@ -68,7 +68,7 @@
         "url": "/doctor/appointments",
         "title": "Appointments",
         "main": true,
-        "text": "WORKSPACE\nDoctor\nCollapse\nOverview\nAppointments\nLive queue\nPatients\nSchedule\nMy profile & clinics\nSign out\nWorkspace\nAppointments\nSecure workspace\nFU\nFixture User\nDoctor\n03 OCT 2026\nAppointments\nBook appointment\n2 appointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch appointments\nVisit range\nToday & upcoming\nFilters\nUpdated 03 Oct 2026, 11:12 AM\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexa",
+        "text": "WORKSPACE\nDoctor\nCollapse\nOverview\nAppointments\nLive queue\nPatients\nSchedule\nMy profile & clinics\nSign out\nWorkspace\nAppointments\nSecure workspace\nFU\nFixture User\nDoctor\n03 OCT 2026\nAppointments\nSearch appointments\nVisit range\nToday & upcoming\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\nBook appointment\n2\nappointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nUpdated 03 Oct 2026, 12:02 PM\nFilters\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexa",
         "overflow": 0
       }
     },
@@ -79,7 +79,7 @@
         "url": "/receptionist/appointments",
         "title": "Appointments",
         "main": true,
-        "text": "WORKSPACE\nReceptionist\nCollapse\nOverview\nAppointments\nLive queue\nPatients\nSchedule\nSign out\nWorkspace\nAppointments\nSecure workspace\nFU\nFixture User\nReceptionist\n03 OCT 2026\nAppointments\nBook appointment\n2 appointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch appointments\nVisit range\nToday & upcoming\nFilters\nUpdated 03 Oct 2026, 11:12 AM\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexandria Ver",
+        "text": "WORKSPACE\nReceptionist\nCollapse\nOverview\nAppointments\nLive queue\nPatients\nSchedule\nSign out\nWorkspace\nAppointments\nSecure workspace\nFU\nFixture User\nReceptionist\n03 OCT 2026\nAppointments\nSearch appointments\nVisit range\nToday & upcoming\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\nBook appointment\n2\nappointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nUpdated 03 Oct 2026, 12:02 PM\nFilters\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexandria Ver",
         "overflow": 0
       }
     },
@@ -90,7 +90,7 @@
         "url": "/patient/appointments",
         "title": "Appointments",
         "main": true,
-        "text": "YOUR CARE\nPatient\nCollapse\nOverview\nBook Now\nAppointments\nBooking status\nProfile\nSign out\nWorkspace\nAppointments\nSecure workspace\nFU\nFixture User\nPatient\n03 OCT 2026\nAppointments\nBook Now\n2 appointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch appointments\nVisit range\nToday & upcoming\nFilters\nUpdated 03 Oct 2026, 11:12 AM\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexandria Verylongpatientnam",
+        "text": "YOUR CARE\nPatient\nCollapse\nOverview\nBook Now\nAppointments\nBooking status\nProfile\nSign out\nWorkspace\nAppointments\nSecure workspace\nFU\nFixture User\nPatient\n03 OCT 2026\nAppointments\nSearch appointments\nVisit range\nToday & upcoming\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\nBook Now\n2\nappointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nUpdated 03 Oct 2026, 12:02 PM\nFilters\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexandria Verylongpatientnam",
         "overflow": 0
       }
     },

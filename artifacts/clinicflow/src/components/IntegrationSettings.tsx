@@ -23,7 +23,7 @@ function ConnectionCheck({ provider }: { provider: Service }) {
   const check = useCheckIntegrationConnection();
   const [resultsOpen, setResultsOpen] = useState(false);
   return <div className="int-check">
-    <button type="button" className="secondary" data-testid={`button-check-${provider}`} disabled={check.isPending}
+    <button type="button" className="button secondary" data-testid={`button-check-${provider}`} disabled={check.isPending}
       onClick={() => check.mutate({ provider }, { onSuccess: () => setResultsOpen(true) })}>{check.isPending ? "Checking…" : "Check connection"}</button>
     <HelpTip text="Verifies settings and reachability only. No message or file is sent."/>
     {check.isError && <p role="alert" data-testid={`status-check-${provider}-error`}>The check could not run. Try again shortly.</p>}
@@ -33,7 +33,7 @@ function ConnectionCheck({ provider }: { provider: Service }) {
       </li>)}
       <li><small>Source: {check.data.source} · {new Date(check.data.checkedAt).toLocaleString()}</small></li>
     </ul></AppDialog>}
-    {check.data && !resultsOpen && <button type="button" className="secondary small" aria-haspopup="dialog" onClick={() => setResultsOpen(true)} data-testid={`button-check-results-${provider}`}>{check.data.checks.some(c => c.status === "failed") ? "Failed" : "Results"} · view diagnostics</button>}
+    {check.data && !resultsOpen && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setResultsOpen(true)} data-testid={`button-check-results-${provider}`}>{check.data.checks.some(c => c.status === "failed") ? "Failed" : "Results"} · view diagnostics</button>}
   </div>;
 }
 
@@ -41,7 +41,7 @@ function StoragePanel() {
   const storage = useGetStorageConfiguration({ query: { queryKey: getGetStorageConfigurationQueryKey() } });
   return <div data-testid="panel-storage">
     {storage.isLoading && <p role="status">Loading storage status…</p>}
-    {storage.isError && <p role="alert">Storage status is unavailable. <button type="button" className="secondary" onClick={() => storage.refetch()}>Retry</button></p>}
+    {storage.isError && <p role="alert">Storage status is unavailable. <button type="button" className="button secondary" onClick={() => storage.refetch()}>Retry</button></p>}
     {storage.data && <p data-testid="status-storage">{storage.data.configured ? "Configured" : "Not configured"} — provider: {storage.data.provider}, source: {storage.data.source}{storage.data.publicPath ? `, public path ${storage.data.publicPath}` : ""}</p>}
     <p role="note">Server environment only; not editable here. <HelpTip text="MEDIA_STORAGE: storage backend for uploaded media. MEDIA_ROOT: writable server directory where files are written. MEDIA_URL: public URL path files are served from."/></p>
     <ConnectionCheck provider="storage" />
@@ -64,7 +64,7 @@ export function IntegrationSettings() {
   const label = service === "smtp" ? "SMTP" : "Twilio";
   const closeTest = () => { setTestOpen(false); setConfirmSend(false); form.reset(); send.reset(); };
   return <section className="panel padded int-settings" aria-labelledby="integration-title">
-    <div className="int-head">
+    <div className="int-head section-head">
       <div className="int-head-title"><h2 id="integration-title">Third-party integrations <HelpTip text="Saved website settings replace the whole server environment configuration for that service; values are never mixed. Secrets stay encrypted and are never displayed."/></h2></div>
       <div className="int-chooser">
         <div className="int-field"><label htmlFor="int-service">Service</label>
@@ -83,12 +83,12 @@ export function IntegrationSettings() {
     {service === "storage" ? <StoragePanel /> : <>
       {saved && <p role="status" className="notice">Configuration saved. New sends use the selected source. No test message was sent.</p>}
       {query.isLoading && <p role="status" data-testid="status-integrations-loading">Loading readiness…</p>}
-      {query.isError && <p role="alert" className="error-box" data-testid="status-integrations-error">Integration readiness is unavailable. <button type="button" className="secondary" onClick={() => query.refetch()}>Retry</button></p>}
+      {query.isError && <p role="alert" className="error-box" data-testid="status-integrations-error">Integration readiness is unavailable. <button type="button" className="button secondary" onClick={() => query.refetch()}>Retry</button></p>}
       {data && !query.isError && <div className="int-status">
         <div className="int-status-row">
           <p data-testid={`status-integration-${service}`}><span className={`badge ${data[service].ready ? "" : "muted"}`}>{data[service].ready ? "Configuration ready" : "Configuration required"}</span> <span className="muted">Source: {data[service].source === "database" ? "encrypted website settings" : "server environment"}</span></p>
           <div className="row-actions">
-            <button type="button" className="secondary" data-testid="button-refresh-integrations" disabled={query.isFetching} onClick={() => query.refetch()}>Refresh</button>
+            <button type="button" className="button secondary" data-testid="button-refresh-integrations" disabled={query.isFetching} onClick={() => query.refetch()}>Refresh</button>
             <button type="button" className="button small" aria-haspopup="dialog" disabled={!data.editable} onClick={() => { setSaved(false); setEditorDirty(false); setEditing(true); }} data-testid={`button-configure-${service}`}>Configure {label}</button>
             {service === "smtp" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setTestOpen(true)} data-testid="button-open-smtp-test">Send test email</button>}
           </div>
@@ -112,7 +112,7 @@ export function IntegrationSettings() {
             <label className="check-label"><input type="checkbox" checked={confirmSend} onChange={e => setConfirmSend(e.target.checked)} data-testid="checkbox-confirm-smtp-test" /> Yes, send a real email to this address</label>
             {send.isSuccess && <p role="status" className="notice" data-testid="status-smtp-test-success">{send.data.message}</p>}
             {send.isError && <p role="alert" className="error-box" data-testid="status-smtp-test-error">Test email failed. Check the recipient and configuration, or wait 15 minutes if the attempt limit was reached.</p>}
-            <div className="form-footer"><button type="button" className="secondary" onClick={closeTest} disabled={send.isPending}>Close</button><button type="submit" className="button" data-testid="button-send-smtp-test" disabled={!confirmSend || !data?.smtp.ready || query.isError || send.isPending}>{send.isPending ? "Sending…" : "Send test email"}</button></div>
+            <div className="form-footer"><button type="button" className="button secondary" onClick={closeTest} disabled={send.isPending}>Close</button><button type="submit" className="button" data-testid="button-send-smtp-test" disabled={!confirmSend || !data?.smtp.ready || query.isError || send.isPending}>{send.isPending ? "Sending…" : "Send test email"}</button></div>
           </form>
         </Form>
       </AppDialog>}
