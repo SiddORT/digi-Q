@@ -1,0 +1,42 @@
+# Information-density completion
+
+The pagewise implementation below was integrated with the appointment-row changes and verified in a focused browser pass.
+
+Checks: TypeScript passes and all 235 unit/style tests pass. All 14 focused local Playwright checks passed with intercepted fictional API responses. See `screenshots/information-density-check/results.json` and `scripts/information-density-check.mjs`.
+
+Populated appointments were checked at 1440/1024/390 with no page-level overflow and one coordinated desktop/tablet filter row. Search selection, authorized Details, patient editing, assignment names, role/profile screens, audit payload, QR details, template rendering and integration diagnostics were exercised. Queue tokens remain visible; duration opens one drawer with verified clean dismissal and dirty Keep/Discard.
+
+Tablet tables retain internal horizontal scrolling. Long names remain available in Details. This is focused changed-screen verification, not exhaustive production or live-backend testing. No real API/database mutations, bookings, accounts or messages were issued.
+
+Final review also preserved doctor/location/date/session/token metadata in authorized Appointment Details, reduced Ticket to an accessible icon action, and removed duplicate mobile registration introductions.
+Updated assertions: `searchable-select-callers` no longer expects a "Sort reports" select, because report sorting is now done from the column headers. `integration-settings` accepts `check.mutate({ provider }, { onSuccess })`, which still sends only the provider.
+
+Legend: **Edited** = code changed · **Inspected** = read, and no change was justified.
+
+| # | Area | Status | What changed / why |
+|---|---|---|---|
+| 1 | Appointments toolbar (clinic.tsx) | Edited | Sort moved into the Filters drawer. The "Updated …" text became a clock-icon HelpTip ("Last updated"; tap/focus shows the full timestamp). The export button reads "Export" (aria-label keeps "Export all matching appointments", testid unchanged). Row 1 holds count, status tabs, search and visit range; tools sit on the right. Live suggestions show doctor and date; the selected value is still the reference, so backend search is unchanged. |
+| 2 | Shared resource rows (resources.tsx) | Edited | The code/reference `<small>` and the address·city·clinic·speciality·email concatenation were removed. New `recordSecondary()` shows one human context line, and skips any value already shown in a column (clinic: city, location: clinic group, doctor: speciality, patient: mobile/email, QR: clinic/location/doctor). Suggestion descriptions no longer contain codes or references. All fields remain in data, search and editors. |
+| 3 | Users / staff (Users.tsx) | Edited | Name plus speciality (doctors only). The repeated role (implied by the tab), email and mobile were removed from rows; they stay in the edit Details form. Assignments now use the new `AssignmentSummary`: a count button ("2 Clinic Groups · 5 clinics", or the name if there is only one) that opens an accessible drawer with the full lists. The Created column was removed. The default sort (newest) and the sort chip are unchanged. |
+| 4 | SystemUsers | Edited | Role and Clinic filters moved into the Filters drawer (chips are counted as advanced). Clinics use `AssignmentSummary`. The Status column is hidden when a status tab already states it. |
+| 5 | Queue (SessionQueue.tsx) | Edited | Session context is one line: location · date, with the address in a HelpTip. "How waits are estimated" is a HelpTip. Expected duration and multi-doctor quick switch open as AppDialog drawers (choosing a doctor closes the drawer). The "Clear all resets…" paragraph became a HelpTip on the Clear all button. Suggestion descriptions show the token only, not the reference. Operational tokens and rows are unchanged (owned by main). |
+| 6 | Guest requests | Edited | Each request is one row: name · contact · session hours, then Approve/Decline. Doctor, date, location and timezone (already the queue context) are in a HelpTip. The intro paragraph became a HelpTip. |
+| 7 | Schedules / exceptions | Edited | Weekly sessions drop the Doctor/Location columns while that doctor/location filter is active, so context appears once in the filter. Exceptions already had no IDs (Inspected). |
+| 8 | QR | Edited/Inspected | The list shows the human name plus destination (clinic/location/doctor). The reference and URL are only in the View QR dialog. Download, copy and regenerate are retained unchanged. |
+| 9 | Audit | Edited | Columns: time, actor, readable action (title-cased), summary + Details. The Details drawer shows Time, Actor · role, Action, Record type, Summary, plus a "Technical payload" disclosure with the full raw JSON, so investigation is preserved. The entity type column moved into the drawer. |
+| 10 | Reports | Edited | The redundant sort select was removed; column headers already sort. Export reads "Export CSV" (full aria-label). Visits is one line: "N · M completed". Outcomes went from 3 lines to 2. Group labels are already human (no IDs). |
+| 11 | Dashboard | Edited | Activity rows are a single-line truncated summary (full text in `title`) plus actor · time. The patient confirmations intro paragraph and the per-row timezone were removed. Appointment rows are owned by main. |
+| 12 | Settings (ClinicSettings.tsx) | Edited | The inherited date/time note, the linked-hours explanation, the policies disclaimer, the locations/QR hints, the consultation-locations intro and the opening-hours note are now HelpTips or single short hints. |
+| 13 | Templates | Edited | Recipient-toggle explanation and preview "sample placeholders" are HelpTips. Server rendering opens in a drawer instead of an inline `<details>`. Editor field sizes, the variables list, drafts, publish, the conflict flow and the dirty guard are unchanged. |
+| 14 | Permissions (AccessRules/CustomRoles) | Edited | The explanation sentences moved into the heading HelpTips (no repeated muted paragraph). The "Allowed actions" subtext became a HelpTip. Source and assignment UI are unchanged. |
+| 15 | Integrations | Edited | The intro became a HelpTip. The connection-check caption is a HelpTip. Diagnostics open in a drawer automatically on completion and can be reopened with a "Results/Failed · view diagnostics" button. The storage env docs are condensed into one HelpTip. The SMTP "Yes, send a real email" confirmation and the editor dirty/busy guards are unchanged. |
+| 16 | Booking 3 steps | Edited | The Step 1 subtitle was removed. The date/time format explanation is a HelpTip beside the timezone. The patient-linked notice is one line. The review notice became a short line plus HelpTip. Validation, consent, optional contact and all booking logic are unchanged. |
+| 17 | Profile | Edited | The mobile-verification sentence is a HelpTip. The duplicate "profile saved" panel was removed (a toast already confirms). No IDs are shown. |
+| 18 | Demo links | Edited | Long URLs were replaced with Copy/Open actions; the full URL is in the aria-label and title. The intro became a heading HelpTip. The sharing message textarea is shorter. The QR (220px) and its download are retained. |
+| 19 | Public clinic/doctor listing | Edited | Per-doctor stats are one line (testids kept). The per-doctor repeated methodology note became one section HelpTip. No admin metadata is shown (Inspected). |
+| 20 | Patient tickets / token / QR | Inspected | The ticket keeps the waiting number, reference, name, date/location/session, clinic, doctor and QR. These are critical visit facts, so nothing was removed. The queue patient line is a single notice. |
+| 21 | Auth / recovery / registration | Edited | On registration, the AuthShell aside no longer shows the general intro on top of the registration intro (repeated panel). Font sizes are untouched. |
+
+Shared: `HelpTip` gained optional `icon` and `label` props (backward compatible). New `components/AssignmentSummary.tsx`. Final-cascade rules were appended at the end of `index.css`, scoped to the new class names, with no `!important`.
+
+Expected duration: SessionQueue renders DurationEditor directly inside a fieldset that is disabled while the session is stale. DurationEditor has the only trigger (`button-queue-duration`) and its own AppDialog, now `variant="drawer"`. That drawer counts as dirty only when the minutes differ from their value at opening, the effect is not "futureOnly", or the running-session confirmation is ticked.

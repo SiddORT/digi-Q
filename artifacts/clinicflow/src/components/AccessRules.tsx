@@ -68,7 +68,7 @@ export function AccessRules() {
   }
 
   return <section className="panel padded" data-testid="access-rules">
-    <div className="panel-heading compact-heading"><div><h2>Access rules</h2><p className="muted">A checked box keeps the action allowed; clearing it denies it. <span data-testid="text-permission-limits"><HelpTip text="Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out." /></span></p></div></div>
+    <div className="panel-heading compact-heading"><div><h2>Access rules <span data-testid="text-permission-limits"><HelpTip text="A checked box keeps the action allowed; clearing it denies it. Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out." /></span></h2></div></div>
     {policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : policy.isError || !data ? <div role="alert" className="error-box" data-testid="state-error">The permission policy could not be loaded. <button type="button" onClick={() => policy.refetch()} data-testid="button-retry">Retry</button></div>
       : <>

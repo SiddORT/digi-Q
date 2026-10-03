@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { HelpTip } from "./HelpTip";
 import { Link, useLocation, useSearch } from "wouter";
 import { Building2, MapPin, Stethoscope } from "lucide-react";
 import * as api from "@workspace/api-client-react";
@@ -110,14 +111,13 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
     </section>
     {!branch && <section aria-label="Clinic directory">{directoryControls}<div className="public-clinic-grid">{branches.map(b => <article className="public-clinic-card" key={b.id}><MapPin size={22}/><h2>{b.name}</h2><p>{[b.address, b.city].filter(Boolean).join(", ")}</p>{b.slug ? <Link className="button secondary" href={`/${clinicSlug}/${b.slug}${mode ? `?${mode}=1` : ""}`} data-testid={`public-select-branch-${b.id}`}>Choose clinic</Link> : <p>Online access is not available for this clinic. Contact the clinic.</p>}</article>)}</div>{!branches.length && emptyDirectory}{directoryPagination}</section>}
     {branch && <div className="public-clinic-grid">
-      <section className="public-clinic-card"><span className="eyebrow">YOUR CARE TEAM</span><h2><Stethoscope size={20}/> Specialists</h2>
+      <section className="public-clinic-card"><span className="eyebrow">YOUR CARE TEAM</span><h2><Stethoscope size={20}/> Specialists <HelpTip text="Actual averages use completed consultations, not planned slot lengths. Your visit may take a different amount of time."/></h2>
         {directoryControls}
         {doctors.length ? doctors.map(doctor => <article className="public-clinic-session" key={doctor.id}>
           <strong>{doctor.fullName}</strong>
           <p>{doctor.specializationName || "Specialization not listed"}{doctor.qualificationNames?.length ? ` · ${doctor.qualificationNames.join(", ")}` : ""}</p>
           {doctor.about && <p>{doctor.about}</p>}
-          <dl><div><dt>Average actual consultation</dt><dd data-testid={`public-doctor-average-${doctor.id}`}>{doctor.averageConsultationMinutes == null ? "Not yet available" : `${Math.round(doctor.averageConsultationMinutes * 10) / 10} minutes`}</dd></div><div><dt>Planned consultation</dt><dd data-testid={`public-doctor-duration-${doctor.id}`}>{doctor.expectedDurationMinutes == null ? "Not configured" : `${doctor.expectedDurationMinutes} minutes`}</dd></div></dl>
-          <small className="registration-note">Actual averages use completed consultations, not planned slot lengths. Your visit may take a different amount of time.</small>
+          <p className="muted">Average actual consultation <span data-testid={`public-doctor-average-${doctor.id}`}>{doctor.averageConsultationMinutes == null ? "not yet available" : `${Math.round(doctor.averageConsultationMinutes * 10) / 10} minutes`}</span> · Planned <span data-testid={`public-doctor-duration-${doctor.id}`}>{doctor.expectedDurationMinutes == null ? "not configured" : `${doctor.expectedDurationMinutes} minutes`}</span></p>
         </article>) : emptyDirectory}
         {directoryPagination}
       </section>

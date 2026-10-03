@@ -5,6 +5,7 @@ import { csrfToken } from "../lib/csrf";
 import { BRAND_NAME } from "../branding";
 import { useConfirm } from "./ConfirmDialog";
 import { friendlyError } from "../lib/friendly-error";
+import { HelpTip } from "./HelpTip";
 
 type DemoStatus = {
   configured: boolean;
@@ -106,14 +107,13 @@ export function DemoClinicManagement() {
 
   const forward = `Try ${BRAND_NAME}' fictional demo clinic (please do not enter real patient information).\nClinic: ${clinicUrl}\nGuest booking: ${bookingUrl}\nYou can scan the booking QR on the clinic page or open the booking link directly. Guest booking requires no login and issues a ticket immediately.`;
   return <>{confirmDialog.dialog}<div className="panel padded" data-testid="demo-management">
-    <div className="panel-heading demo-head"><div><span className="eyebrow">SUPER ADMIN ONLY · FICTIONAL DEMO</span><h2>Published demo clinic</h2></div>
+    <div className="panel-heading demo-head"><div><span className="eyebrow">SUPER ADMIN ONLY · FICTIONAL DEMO</span><h2>Published demo clinic <HelpTip text="Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo."/></h2></div>
       {status?.configured && <div className="row-actions">
         <span className={`badge ${status.enabled ? "" : "muted"}`} data-testid="status-demo-access">{status.enabled ? "Demo access enabled" : "Demo access disabled"}</span>
         <button className="button secondary small" disabled={busy} onClick={() => void change(status.enabled ? "disable" : "enable")} data-testid="button-toggle-demo">{status.enabled ? "Disable demo access" : "Enable demo access"}</button>
         <button className="button secondary small" disabled={busy} onClick={() => void change("rotate-password")} data-testid="button-rotate-demo-password">Rotate demo password</button>
       </div>}
     </div>
-    <p className="listing-hint">Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo.</p>
     {error && <div className="error-box" role="alert">{error}<button onClick={() => setRevision(value => value + 1)}>Retry</button></div>}
     {notice && <div className="notice" role="status">{notice}</div>}
     {!status && !error && <p role="status">Checking demo setup…</p>}
@@ -131,12 +131,13 @@ export function DemoClinicManagement() {
       <div className="demo-share">
       <div className="demo-share-main">
       <dl className="settings-facts">
-        <div><dt>Clinic page</dt><dd><a href={clinicUrl} target="_blank" rel="noreferrer">{clinicUrl}</a></dd></div>
-        <div><dt>Booking link</dt><dd><a href={bookingUrl} target="_blank" rel="noreferrer">{bookingUrl}</a></dd></div>
-        <div><dt>Staff login</dt><dd><Link href={status.loginPath || "/demo-login"}>{loginUrl}</Link></dd></div>
+        {([["Clinic page", clinicUrl], ["Booking link", bookingUrl]] as const).map(([name, url]) => <div key={name}><dt>{name}</dt><dd className="demo-link-actions">
+          <button type="button" className="button secondary small" aria-label={`Copy ${name.toLowerCase()}: ${url}`} onClick={() => void navigator.clipboard.writeText(url).then(() => setNotice(`${name} copied.`)).catch(() => setError("Clipboard unavailable."))}>Copy</button>
+          <a className="button secondary small" href={url} target="_blank" rel="noreferrer" title={url} aria-label={`Open ${name.toLowerCase()}: ${url}`}>Open</a></dd></div>)}
+        <div><dt>Staff login</dt><dd className="demo-link-actions"><button type="button" className="button secondary small" aria-label={`Copy staff login: ${loginUrl}`} onClick={() => void navigator.clipboard.writeText(loginUrl).then(() => setNotice("Staff login copied.")).catch(() => setError("Clipboard unavailable."))}>Copy</button><Link className="button secondary small" href={status.loginPath || "/demo-login"} title={loginUrl} aria-label={`Open staff login: ${loginUrl}`}>Open</Link></dd></div>
       </dl>
       <h3>Patient sharing message</h3>
-      <textarea readOnly rows={6} value={forward} aria-label="Public demo sharing message"/>
+      <textarea readOnly rows={4} value={forward} aria-label="Public demo sharing message"/>
       <button type="button" onClick={() => void navigator.clipboard.writeText(forward).then(() => setNotice("Public sharing message copied. Credentials are not included.")).catch(() => setError("Clipboard unavailable. Select and copy the message above."))}>Copy public message</button>
       </div>
       {qr && <div className="demo-qr"><img src={qr} alt={`Booking QR for ${status.clinicName}`} width="220" height="220"/><br/><button type="button" onClick={() => {

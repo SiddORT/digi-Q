@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { HelpCircle } from "lucide-react";
 import "./help-tip.css";
 
-export interface HelpTipProps { text: string; children?: ReactNode }
+export interface HelpTipProps { text: string; children?: ReactNode; icon?: ReactNode; label?: string }
 
 type ChildProps = {
   disabled?: boolean;
@@ -54,7 +54,7 @@ function Bubble({ anchor, text, id }: { anchor: RefObject<HTMLSpanElement | null
  * - Disabled child: wrapped in a focusable span so help remains reachable.
  * Escape and outside tap dismiss.
  */
-export function HelpTip({ text, children }: HelpTipProps) {
+export function HelpTip({ text, children, icon, label }: HelpTipProps) {
   const [open, setOpen] = useState(false);
   const [pinned, setPinned] = useState(false);
   const id = useId();
@@ -115,10 +115,10 @@ export function HelpTip({ text, children }: HelpTipProps) {
   }
 
   return <span className="helptip" ref={ref} {...hoverProps}>
-    <button type="button" className="helptip-trigger" aria-label="Help" aria-describedby={id} aria-expanded={open}
+    <button type="button" className="helptip-trigger" aria-label={label ?? "Help"} aria-describedby={id} aria-expanded={open}
       onFocus={() => setOpen(true)} onBlur={() => { if (!pinned) setOpen(false); }}
       onClick={() => { const n = !pinned; setPinned(n); setOpen(n); }} data-testid="button-help-tip">
-      {children ?? <HelpCircle size={15} aria-hidden="true" />}
+      {children ?? icon ?? <HelpCircle size={15} aria-hidden="true" />}
     </button>
     <span id={id} className="sr-only-helptip">{text}</span>
     {bubble}

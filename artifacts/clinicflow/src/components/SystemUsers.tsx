@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
+import { AssignmentSummary } from "./AssignmentSummary";
 import { ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { useGetSystemUsers, getGetSystemUsersQueryKey, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetCustomRoles, getGetCustomRolesQueryKey } from "@workspace/api-client-react";
@@ -79,19 +80,18 @@ export function SystemUsers() {
       title={data && !q.error ? <span className="listing-count-label"><span className="listing-count">{data.total}</span> {data.total === 1 ? "account" : "accounts"}</span> : undefined}
       status={<div className="sq-status-tabs" role="tablist" aria-label="Account status">{[["", "All"], ["active", "Active"], ["inactive", "Inactive"]].map(([v, l]) => <button type="button" key={v} role="tab" aria-selected={status === v} onClick={() => setStatus(v)} data-testid={`tab-system-users-${v || "all"}`}>{l}</button>)}</div>}
       active={active} onReset={reset}
-      chips={[...(role ? [{ key: "role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "clinic", label: "Clinic selected", onRemove: () => setClinicId("") }] : [])]}
+      advanced={<><SearchableSelect label="Role" value={role} onChange={setRole} placeholder="All roles" options={[{ value: "", label: "All roles" }, ...ROLES.map(r => ({ value: r, label: label(r) }))]} testId="select-system-user-role" /><ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={setClinicId} /></>}
+      chips={[...(role ? [{ key: "adv:role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "adv:clinic", label: "Clinic selected", onRemove: () => setClinicId("") }] : [])]}
       actions={<Link className="button secondary small" href="/admin/permissions">Roles &amp; permissions</Link>}>
       <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" suggestions={q.error||q.isPlaceholderData?[]:listingSuggestions(data?.data,u=>({id:u.id,label:u.fullName,description:u.email,value:u.fullName}))} loading={q.isFetching} error={q.error?"Accounts could not be loaded.":null} onRetry={()=>void q.refetch()} total={data?.total} settledQuery={debounced} scopeKey={JSON.stringify({role,status,clinicId})} />
-      <SearchableSelect label="Role" value={role} onChange={setRole} placeholder="All roles" options={[{ value: "", label: "All roles" }, ...ROLES.map(r => ({ value: r, label: label(r) }))]} testId="select-system-user-role" />
-      <ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={setClinicId} />
     </FilterBar>
     <section className="panel table-panel" aria-busy={q.isFetching} data-testid="system-users">
       {q.isLoading ? <div className="skeleton" role="status">Loading accounts…</div>
         : q.error ? <div className="error-box" role="alert">Accounts could not be loaded. <button type="button" onClick={() => void q.refetch()}>Retry</button></div>
-        : data?.data.length ? <><div className="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Clinics</th><th className="col-actions"><span className="sr-only">Permissions</span></th></tr></thead><tbody>
-          {data.data.map(u => <Fragment key={u.id}><tr data-testid={`row-system-user-${u.id}`}><td><strong>{u.fullName}</strong></td><td>{u.email}</td><td>{label(u.role)}</td>
-            <td><span className={`badge ${u.status === "active" ? "" : "muted"}`}>{label(u.status)}</span></td>
-            <td>{u.clinics.length ? u.clinics.map(c => c.name).join(", ") : <span className="muted">{u.role === "superAdmin" ? "Platform-wide" : "None"}</span>}</td>
+        : data?.data.length ? <><div className="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th>{!status && <th>Status</th>}<th>Clinics</th><th className="col-actions"><span className="sr-only">Permissions</span></th></tr></thead><tbody>
+          {data.data.map(u => <Fragment key={u.id}><tr data-testid={`row-system-user-${u.id}`}><td><strong title={u.fullName}>{u.fullName}</strong></td><td>{u.email}</td><td>{label(u.role)}</td>
+            {!status && <td><span className={`badge ${u.status === "active" ? "" : "muted"}`}>{label(u.status)}</span></td>}
+            <td>{u.clinics.length ? <AssignmentSummary owner={u.fullName} clinics={u.clinics.map(c => c.name)} testId={`button-system-assignments-${u.id}`}/> : <span className="muted">{u.role === "superAdmin" ? "Platform-wide" : "None"}</span>}</td>
             <td className="col-actions"><button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setExpanded(u.id)} data-testid={`button-effective-${u.id}`}>Permissions <ChevronRight size={14} aria-hidden /></button></td></tr></Fragment>)}
         </tbody></table></div><Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPageChange={setPage} /></>
         : <div className="empty" data-testid="status-empty"><h3>{active ? "No matching accounts" : "No accounts yet"}</h3>{active && <button type="button" onClick={reset}>Clear filters</button>}</div>}

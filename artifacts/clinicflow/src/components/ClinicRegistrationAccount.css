@@ -41,6 +41,12 @@
 .registration-account-review dt { font-weight: 700; }
 .registration-account-review dd { margin: 0 0 8px; overflow-wrap: anywhere; }
 
+@media (max-width: 639px) {
+  .auth-layout.registration-auth-layout > aside { min-height: 0; padding: 18px 24px; }
+  .auth-layout.registration-auth-layout > aside > div { margin-top: 12px; }
+  .auth-layout.registration-auth-layout > aside h1 { display: none; }
+}
+
 @media (min-width: 1100px) {
   .registration-auth-layout > aside .auth-general-intro {
     display: none;

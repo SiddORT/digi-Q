@@ -1,4 +1,5 @@
 import "./integration-settings.css";
+import { HelpTip } from "./HelpTip";
 import { EmailInput } from "@/components/EmailInput";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
@@ -20,17 +21,19 @@ export const SERVICES: { value: Service; label: string; providers: { value: stri
 
 function ConnectionCheck({ provider }: { provider: Service }) {
   const check = useCheckIntegrationConnection();
+  const [resultsOpen, setResultsOpen] = useState(false);
   return <div className="int-check">
     <button type="button" className="secondary" data-testid={`button-check-${provider}`} disabled={check.isPending}
-      onClick={() => check.mutate({ provider })}>{check.isPending ? "Checking…" : "Check connection"}</button>
-    <small>Verifies settings and reachability only. No message or file is sent.</small>
+      onClick={() => check.mutate({ provider }, { onSuccess: () => setResultsOpen(true) })}>{check.isPending ? "Checking…" : "Check connection"}</button>
+    <HelpTip text="Verifies settings and reachability only. No message or file is sent."/>
     {check.isError && <p role="alert" data-testid={`status-check-${provider}-error`}>The check could not run. Try again shortly.</p>}
-    {check.data && <ul aria-label="Connection check results" data-testid={`list-check-${provider}`}>
+    {check.data && resultsOpen && <AppDialog open variant="drawer" onClose={() => setResultsOpen(false)} title="Connection check results"><ul aria-label="Connection check results" data-testid={`list-check-${provider}`}>
       {check.data.checks.map(c => <li key={c.name} data-status={c.status}>
         <strong>{c.status === "passed" ? "Passed" : c.status === "failed" ? "Failed" : "Not verified"}</strong> {c.name}: {c.message}
       </li>)}
       <li><small>Source: {check.data.source} · {new Date(check.data.checkedAt).toLocaleString()}</small></li>
-    </ul>}
+    </ul></AppDialog>}
+    {check.data && !resultsOpen && <button type="button" className="secondary small" aria-haspopup="dialog" onClick={() => setResultsOpen(true)} data-testid={`button-check-results-${provider}`}>{check.data.checks.some(c => c.status === "failed") ? "Failed" : "Results"} · view diagnostics</button>}
   </div>;
 }
 
@@ -40,12 +43,7 @@ function StoragePanel() {
     {storage.isLoading && <p role="status">Loading storage status…</p>}
     {storage.isError && <p role="alert">Storage status is unavailable. <button type="button" className="secondary" onClick={() => storage.refetch()}>Retry</button></p>}
     {storage.data && <p data-testid="status-storage">{storage.data.configured ? "Configured" : "Not configured"} — provider: {storage.data.provider}, source: {storage.data.source}{storage.data.publicPath ? `, public path ${storage.data.publicPath}` : ""}</p>}
-    <p role="note">Storage is configured only in the private server environment and cannot be edited here.</p>
-    <dl className="int-docs">
-      <dt><code>MEDIA_STORAGE</code></dt><dd>Storage backend the server uses for uploaded media.</dd>
-      <dt><code>MEDIA_ROOT</code></dt><dd>Server directory where files are written. Must be writable by the app.</dd>
-      <dt><code>MEDIA_URL</code></dt><dd>Public URL path files are served from.</dd>
-    </dl>
+    <p role="note">Server environment only; not editable here. <HelpTip text="MEDIA_STORAGE: storage backend for uploaded media. MEDIA_ROOT: writable server directory where files are written. MEDIA_URL: public URL path files are served from."/></p>
     <ConnectionCheck provider="storage" />
   </div>;
 }
@@ -67,8 +65,7 @@ export function IntegrationSettings() {
   const closeTest = () => { setTestOpen(false); setConfirmSend(false); form.reset(); send.reset(); };
   return <section className="panel padded int-settings" aria-labelledby="integration-title">
     <div className="int-head">
-      <div className="int-head-title"><h2 id="integration-title">Third-party integrations</h2>
-        <p className="muted">Saved website settings replace the whole server environment configuration for that service; values are never mixed. Secrets stay encrypted and are never displayed.</p></div>
+      <div className="int-head-title"><h2 id="integration-title">Third-party integrations <HelpTip text="Saved website settings replace the whole server environment configuration for that service; values are never mixed. Secrets stay encrypted and are never displayed."/></h2></div>
       <div className="int-chooser">
         <div className="int-field"><label htmlFor="int-service">Service</label>
           <select id="int-service" value={service} data-testid="select-service"
@@ -103,7 +100,7 @@ export function IntegrationSettings() {
             onCancel={() => setEditing(false)} onDone={() => { setEditorDirty(false); setEditing(false); setSaved(true); send.reset(); void query.refetch(); }} />
         </AppDialog>}
       </div>}
-      {service === "sms" && <p className="listing-hint">SMS connects directly to Twilio using your account credentials. Development OTP is not a production SMS provider.</p>}
+      {service === "sms" && <p className="listing-hint">SMS connects directly to Twilio <HelpTip text="Uses your Twilio account credentials. Development OTP is not a production SMS provider."/></p>}
       {service === "smtp" && testOpen && <AppDialog open onClose={closeTest} busy={send.isPending} dirty={!!form.watch("recipient") && !send.isSuccess} title="Send an SMTP test" description="Sends one fixed DigiQ Doctors message to the address you enter. Provider acceptance does not confirm inbox delivery. Limited to 3 attempts per user and 10 per IP every 15 minutes.">
         <Form {...form}>
           <form className="int-test-form" onSubmit={form.handleSubmit(d => { if (confirmSend) send.mutate({ data: d }, { onSettled: () => setConfirmSend(false) }); })}>

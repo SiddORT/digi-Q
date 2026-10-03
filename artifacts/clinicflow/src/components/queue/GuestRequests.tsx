@@ -6,6 +6,7 @@ import { Pagination, SearchInput, useDebouncedValue, listingSuggestions } from "
 import { SearchableSelect } from "../SearchableSelect";
 import { useFreshWorkspace } from "./useFreshWorkspace";
 import { AppDialog } from "../AppDialog";
+import { HelpTip } from "../HelpTip";
 import { formatDate } from "../../lib/date-time";
 import { formatSessionHours } from "./SessionSelector";
 
@@ -32,17 +33,16 @@ export function GuestRequests({clinicId,branchId,doctorId,date,sessionId,startTi
  }
  if(!requests.isLoading&&!requests.error&&!requests.data?.total&&!message&&!decision.error&&!decision.isPending&&!search&&!debounced)return null;
  return <section className="panel" aria-label="Earlier booking requests">
-  <div className="panel-heading"><div><h2>Earlier booking requests <span className="badge" data-testid="guest-pending-count">{requests.error?"Unavailable":requests.data?.total??"…"}</span></h2><p>These requests predate immediate booking and still need a decision. New bookings receive their ticket automatically.</p></div></div>
+  <div className="panel-heading"><div><h2>Earlier booking requests <span className="badge" data-testid="guest-pending-count">{requests.error?"Unavailable":requests.data?.total??"…"}</span></h2></div><HelpTip text="These requests predate immediate booking and still need a decision. New bookings receive their ticket automatically."/></div>
   <ErrorNotice error={requests.error}/><ErrorNotice error={decision.error}/>
   {decision.error&&<p>Confirmation may fail if the session is full or availability changed. Refresh and review the request before trying again.</p>}
   {message&&<p role="status" data-testid="guest-decision-result">{message}</p>}
   <div className="toolbar"><SearchInput value={search} onChange={setSearch} label="Search earlier requests" placeholder="Search name, email, mobile or token…" suggestions={requests.error?[]:listingSuggestions(requests.data?.items,item=>({id:item.id,label:item.fullName,description:item.doctorName,value:item.fullName}))} loading={requests.isFetching} error={requests.error?"Unable to load requests.":null} onRetry={()=>void requests.refetch()} total={requests.data?.total} settledQuery={debounced} scopeKey={JSON.stringify({clinicId,branchId,doctorId,date,sessionId,startTime,sort,pageSize})}/><SearchableSelect label="Sort earlier requests" value={sort} onChange={value=>setSort(value as typeof sort)} options={[{value:"-createdAt",label:"Newest requests"},{value:"createdAt",label:"Oldest requests"},{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"},{value:"date",label:"Earliest visit"},{value:"-date",label:"Latest visit"}]}/></div>
   {fresh.stale&&!requests.isLoading&&<p role="alert">Requests are offline or out of date. Refresh before deciding.</p>}
   <button className="button secondary small" data-testid="button-refresh-requests" onClick={()=>requests.refetch()} disabled={requests.isFetching}>Refresh requests</button>
-  {requests.isLoading?<p role="status">Loading requests…</p>:requests.error?null:requests.data?.items.length?<div className="activity-list">{requests.data.items.map(item=><article key={item.id} style={{padding:"16px 0",borderBottom:"1px solid var(--color-border)"}}>
-   <strong>{item.fullName}</strong><p>{item.doctorName} · {formatDate(item.date,item)}<br/>{item.branchName} · {formatSessionHours(item)} · {item.timezone}</p>
-   <p className="muted">{[item.email,item.mobile].filter(Boolean).join(" · ")||"No contact details provided"}</p>
-   <div className="toolbar"><button className="button" data-testid={`button-approve-${item.id}`} disabled={fresh.stale||requests.isFetching||decision.isPending} onClick={()=>void act(item.id,"confirm","Confirmed by reception after reviewing the guest request.")}>{decision.isPending&&decision.variables?.id===item.id?"Updating…":"Approve"}</button><button className="button secondary" data-testid={`button-decline-${item.id}`} disabled={fresh.stale||requests.isFetching||decision.isPending} onClick={()=>{decision.reset();setDeclining(item);setReason("");}}>Decline</button></div>
+  {requests.isLoading?<p role="status">Loading requests…</p>:requests.error?null:requests.data?.items.length?<div className="activity-list">{requests.data.items.map(item=><article key={item.id} className="guest-request-row">
+   <div className="guest-request-main"><strong title={item.fullName}>{item.fullName}</strong><span className="muted">{[item.mobile||item.email||"No contact details",formatSessionHours(item)].join(" · ")}</span><HelpTip label={`Request details for ${item.fullName}`} text={[item.doctorName,formatDate(item.date,item),item.branchName,item.timezone,item.email,item.mobile].filter(Boolean).join(" · ")}/></div>
+   <div className="toolbar guest-request-actions"><button className="button small" data-testid={`button-approve-${item.id}`} disabled={fresh.stale||requests.isFetching||decision.isPending} onClick={()=>void act(item.id,"confirm","Confirmed by reception after reviewing the guest request.")}>{decision.isPending&&decision.variables?.id===item.id?"Updating…":"Approve"}</button><button className="button secondary small" data-testid={`button-decline-${item.id}`} disabled={fresh.stale||requests.isFetching||decision.isPending} onClick={()=>{decision.reset();setDeclining(item);setReason("");}}>Decline</button></div>
   </article>)}</div>:<p>No requests awaiting confirmation for this session.</p>}
   <Pagination page={page} pageSize={pageSize} total={requests.data?.total??0} onPageChange={setPage} onPageSizeChange={setPageSize}/>
   <AppDialog title="Decline request" open={!!declining} onClose={()=>setDeclining(null)} busy={decision.isPending}>

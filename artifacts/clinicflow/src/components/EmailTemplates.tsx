@@ -67,6 +67,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
   const [event, setEvent] = useState<string>("booking");
   const [recipient, setRecipient] = useState<Recipient>("patient");
   const [form, setForm] = useState<Content | null>(null);
+  const [serverOpen, setServerOpen] = useState(false);
   const [confirm, setConfirm] = useState<Mode | null>(null);
   const [pendingNav, setPendingNav] = useState<null | (() => void)>(null);
   const [conflict, setConflict] = useState(false);
@@ -203,7 +204,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
           </div>
           <div className="et-toggle" data-testid="row-enabled">
             <label><input type="checkbox" checked={isOn} onChange={e => setEnabled(e.target.checked)} data-testid="input-enabled" /> Send this email to {recipientInfo.label.toLowerCase()}s for this event</label>
-            <small>{recipient === "patient" ? "Turning this off stops the patient email for this event." : `Off by default. Publishing with this on adds real emails to ${recipientInfo.who}. An address that is already a target for this event receives one email, not duplicates.`}</small>
+            <HelpTip text={recipient === "patient" ? "Turning this off stops the patient email for this event." : `Off by default. Publishing with this on adds real emails to ${recipientInfo.who}. An address that is already a target for this event receives one email, not duplicates.`}/>
           </div>
           {FIELDS.map(([k, label, max, help]) => <FormField key={k} label={label} required={k === "subject" || k === "body"} optional={k !== "subject" && k !== "body"} helper={help} error={(errors as any)[k]}>
             {(a) => k === "body" || k === "footer"
@@ -240,8 +241,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
         </form>
 
         <aside className="panel padded et-preview" aria-label="Live preview" data-testid="panel-preview">
-          <h3>Preview</h3>
-          <p className="et-hint">Sample placeholders only. No patient data is used.</p>
+          <h3>Preview <HelpTip text="Sample placeholders only. No patient data is used."/></h3>
           {form.logoUrl && isValidLogo(form.logoUrl) && ((showLogo || isInternalLogo(form.logoUrl))
             ? <img src={logoPreviewSrc(form.logoUrl)} alt="Logo preview" className="et-logo" referrerPolicy="no-referrer" data-testid="img-logo" />
             : <button type="button" className="secondary" onClick={() => setShowLogo(true)} data-testid="button-load-logo">Load logo preview (contacts the image host)</button>)}
@@ -250,7 +250,8 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
             <div className="et-body" data-testid="text-preview-body">{preview!.body}</div>
             {preview!.footer && <div className="et-footer">{preview!.footer}</div>}
           </div>
-          {!dirty && <details className="et-server"><summary>Server rendering</summary><div>{item.previewSubject}</div><pre>{item.previewBody}</pre></details>}
+          {!dirty && <button type="button" className="secondary small et-server-open" aria-haspopup="dialog" onClick={() => setServerOpen(true)} data-testid="button-server-rendering">Server rendering</button>}
+          {serverOpen && <AppDialog open variant="drawer" onClose={() => setServerOpen(false)} title="Server rendering"><div className="et-server"><div>{item.previewSubject}</div><pre>{item.previewBody}</pre></div></AppDialog>}
         </aside>
       </div>}
 

@@ -1,0 +1,204 @@
+{
+  "checks": [
+    {
+      "name": "Admin appointments: populated default rows, compact controls, token retained without reference/status noise, date content and row height",
+      "status": "pass",
+      "details": {
+        "title": "Appointments",
+        "body": "03 OCT 2026\nAppointments\nBook appointment\n2 appointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch appointments\nVisit range\nToday & upcoming\nFilters\nUpdated 03 Oct 2026, 11:12 AM\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexandria Verylongpatientname Example-Surname\n\tDr. Rowan Example\nNorthside Branch\n\t02 Mar 2026 \nFictional Northside Clinic · Northside Branch. Session 9:00 AM–9:20 AM. Token and booking reference are available in Details and Ticket.\n\tBooked\t\nCheck in\nDetails\n\n\t\nMorgan Sample\n\tDr. Rowan Example\nNorthside Branch\n\t02 Mar 2026 \nFictional Northside Clinic · Northside Branch. Session 9:20 AM–9:40 AM. Token and booking reference are available in Details and Ticket.\n\tChecked In\t\nCheck in\nDetails\nShowing 1–2 of 2\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.",
+        "overflow": 0,
+        "tableTop": 135,
+        "row": {
+          "top": 275,
+          "height": 77
+        },
+        "controls": [
+          {
+            "top": 160,
+            "height": 61
+          }
+        ]
+      }
+    },
+    {
+      "name": "Appointments 1024px measure pre-table layout and row height",
+      "status": "pass",
+      "details": {
+        "overflow": 0,
+        "preTable": 173,
+        "row": 89.75,
+        "filterRows": 1,
+        "tableScroll": {
+          "clientWidth": 782,
+          "scrollWidth": 991,
+          "overflowX": "auto"
+        }
+      }
+    },
+    {
+      "name": "Appointments mobile width has no horizontal page overflow",
+      "status": "pass",
+      "details": {
+        "overflow": 0,
+        "rows": 2
+      }
+    },
+    {
+      "name": "Appointment live search selection and no-result state",
+      "status": "pass",
+      "details": {
+        "selected": "FX-1001"
+      }
+    },
+    {
+      "name": "clinicAdmin relevant screen /admin/users",
+      "status": "pass",
+      "details": {
+        "url": "/admin/users",
+        "title": "Users & staff",
+        "main": true,
+        "text": "WORKSPACE\nAdmin\nCollapse\nOverview\nAppointments\nLive queue\nPatients\nClinic\nClinics\nLocations\nUsers & staff\nSchedule\nReports\nClinic workspace\nEmail templates\nMy profile & consultation\nSign out\nWorkspace\nUsers & staff\nSecure workspace\nFU\nFixture User\nClinic Admin\nUsers & staff\n1 doctors\nAll\n1\nActive\n1\nInactive\n1\nFilters\nRecovery\nAdd Doctor\n\tSTAFF MEMBER\n\tASSIGNMENTS\tACCOUNT STATUS\tACTIONS\n\t\nDr. Rowan Example\n\tNone\t\nActive\nNeeds password setup\n\t\nThis staff record has no linked account. Reload the list.\nEdit staff details and assignments\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone.\nThis is a temporary develo",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "doctor relevant screen /doctor/appointments",
+      "status": "pass",
+      "details": {
+        "url": "/doctor/appointments",
+        "title": "Appointments",
+        "main": true,
+        "text": "WORKSPACE\nDoctor\nCollapse\nOverview\nAppointments\nLive queue\nPatients\nSchedule\nMy profile & clinics\nSign out\nWorkspace\nAppointments\nSecure workspace\nFU\nFixture User\nDoctor\n03 OCT 2026\nAppointments\nBook appointment\n2 appointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch appointments\nVisit range\nToday & upcoming\nFilters\nUpdated 03 Oct 2026, 11:12 AM\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexa",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "receptionist relevant screen /receptionist/appointments",
+      "status": "pass",
+      "details": {
+        "url": "/receptionist/appointments",
+        "title": "Appointments",
+        "main": true,
+        "text": "WORKSPACE\nReceptionist\nCollapse\nOverview\nAppointments\nLive queue\nPatients\nSchedule\nSign out\nWorkspace\nAppointments\nSecure workspace\nFU\nFixture User\nReceptionist\n03 OCT 2026\nAppointments\nBook appointment\n2 appointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch appointments\nVisit range\nToday & upcoming\nFilters\nUpdated 03 Oct 2026, 11:12 AM\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexandria Ver",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "patient relevant screen /patient/appointments",
+      "status": "pass",
+      "details": {
+        "url": "/patient/appointments",
+        "title": "Appointments",
+        "main": true,
+        "text": "YOUR CARE\nPatient\nCollapse\nOverview\nBook Now\nAppointments\nBooking status\nProfile\nSign out\nWorkspace\nAppointments\nSecure workspace\nFU\nFixture User\nPatient\n03 OCT 2026\nAppointments\nBook Now\n2 appointments\nActive\nWaiting\nAbsent\nCompleted\nCancelled\nAll\nSearch appointments\nVisit range\nToday & upcoming\nFilters\nUpdated 03 Oct 2026, 11:12 AM\nExport\nExports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export.\n\tPATIENT\tDOCTOR & LOCATION\tVisit date\n\tSTATUS\tACTIONS \nCHECK IN STARTS CONSULTATION. CHECK OUT COMPLETES IT AND CALLS THE NEXT ELIGIBLE PATIENT. A CALLED PATIENT STILL NEEDS EXPLICIT CHECK-IN.\n\n\t\nAlexandria Verylongpatientnam",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "Queue token row and expected-duration drawer: single drawer, clean Escape, dirty Keep editing then Discard",
+      "status": "pass",
+      "details": {
+        "queueToken": "7",
+        "singleDrawer": true,
+        "cleanClose": true,
+        "dirtyGuard": "Keep editing retained 30 minutes; Discard closed drawer"
+      }
+    },
+    {
+      "name": "Staff assignment count opens drawer with human clinic names",
+      "status": "pass",
+      "details": "Assignments · Taylor Fictional Staff\nClinics\nNorthside Group\nWestside Group"
+    },
+    {
+      "name": "Shared patient resource hides identifiers in row and retains full contact in edit details",
+      "status": "pass",
+      "details": {
+        "row": "\t\nAlexandria Verylongpatientname Example-Surname\npatient@example.invalid\n\t555-0101\t—\t\nEdit this record\nDeactivate; historical records are preserved",
+        "contactInputs": [
+          {
+            "name": "fullName",
+            "type": "text",
+            "value": "Alexandria Verylongpatientname Example-Surname"
+          },
+          {
+            "name": "mobile",
+            "type": "tel",
+            "value": "(555) 010-1"
+          },
+          {
+            "name": "email",
+            "type": "email",
+            "value": "patient@example.invalid"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Clinic Admin profile uses legal /admin/profile route, not the inaccessible super-admin shortcut",
+      "status": "pass",
+      "details": {
+        "url": "/admin/profile",
+        "title": "My profile & consultation",
+        "main": true
+      }
+    },
+    {
+      "name": "Public/auth spotcheck: landing, staff sign-in and recovery render without a boundary",
+      "status": "pass",
+      "details": [
+        {
+          "url": "/",
+          "title": "A healthier way\nto manage\nyour next visit.",
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "url": "/sign-in",
+          "title": "Good care starts\nwith a connection.",
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "url": "/forgot-password",
+          "title": "Good care starts\nwith a connection.",
+          "boundary": false,
+          "overflow": 0
+        }
+      ]
+    },
+    {
+      "name": "Audit payload details drawer, QR details, server-rendering drawer and diagnostics surface",
+      "status": "pass",
+      "details": {
+        "auditRows": 1,
+        "payload": 1,
+        "qrRows": 1,
+        "qrDialog": true,
+        "templateDrawer": true,
+        "integrationDiagnostics": true
+      }
+    }
+  ],
+  "screenshots": [
+    "screenshots/information-density-check/appointments-1440.png",
+    "screenshots/information-density-check/appointment-details.png",
+    "screenshots/information-density-check/appointments-1024.png",
+    "screenshots/information-density-check/appointments-mobile.png",
+    "screenshots/information-density-check/receptionist-appointments.png",
+    "screenshots/information-density-check/queue-duration-drawer.png",
+    "screenshots/information-density-check/patient-details-editor.png",
+    "screenshots/information-density-check/public-sign-in.png",
+    "screenshots/information-density-check/audit-details.png",
+    "screenshots/information-density-check/qr-details.png",
+    "screenshots/information-density-check/template-rendering.png",
+    "screenshots/information-density-check/integration-diagnostics.png"
+  ],
+  "fixtureNotes": [],
+  "apiWrites": [
+    {
+      "role": "superAdmin",
+      "path": "/settings/integrations/smtp/check"
+    }
+  ],
+  "errors": []
+}

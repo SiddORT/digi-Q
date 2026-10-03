@@ -39,7 +39,7 @@ export function FilteredAppointmentExport({ params, disabled, contextKey }: { pa
     }
   }
   return <div className="export-inline" role="group" aria-label="Export filtered appointments">
-    <button type="button" className="button secondary small" disabled={disabled || busy} onClick={()=>void download()} data-testid="button-export-filtered-appointments">{busy ? "Exporting…" : "Export all matching"}</button>
+    <button type="button" className="button secondary small" aria-label={busy ? "Exporting matching appointments" : "Export all matching appointments"} disabled={disabled || busy} onClick={()=>void download()} data-testid="button-export-filtered-appointments">{busy ? "Exporting…" : "Export"}</button>
     {busy && <button type="button" onClick={()=>controller.current?.abort()} data-testid="button-cancel-appointment-export">Cancel export</button>}
     <HelpTip text="Exports all pages using the current filters and each clinic’s date and time format. Changing filters cancels an in-progress export."/>
     {(progress || message) && <span role="status" className="export-status">{progress || message}</span>}

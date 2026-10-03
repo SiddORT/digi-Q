@@ -1,5 +1,5 @@
 import type { Appointment } from "@workspace/api-client-react";
-import { formatConfiguredTimestamp } from "../../lib/date-time";
+import { formatConfiguredTimestamp, formatDate, formatTime } from "../../lib/date-time";
 import { title } from "../../resources";
 
 /** Private, authorized appointment data only; never render on a public ticket. */
@@ -8,6 +8,11 @@ export function AppointmentDetails({ appointment: a }: { appointment: Appointmen
   return <section aria-label="Appointment details">
     <p><strong>{a.patientName}</strong> · {a.reference}</p>
     <dl>
+      <dt>Doctor</dt><dd>{a.doctorName}</dd>
+      <dt>Clinic group / location</dt><dd>{a.clinicName} · {a.branchName}</dd>
+      <dt>Visit date</dt><dd>{formatDate(a.date, a)}</dd>
+      <dt>Session</dt><dd>{a.startTime ? formatTime(a.startTime, a) : "—"}–{a.endTime ? formatTime(a.endTime, a) : "—"}{a.timezone ? ` · ${a.timezone}` : ""}</dd>
+      <dt>Token</dt><dd>{a.token || "Not assigned"}</dd>
       <dt>Notes</dt><dd style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{a.notes?.trim() || "No notes recorded."}</dd>
       <dt>Consultation check-in</dt><dd>{a.checkedInAt ? timestamp(a.checkedInAt) : "Not recorded"}</dd>
       <dt>Consultation completed</dt><dd>{a.completedAt ? timestamp(a.completedAt) : "Not recorded"}</dd>

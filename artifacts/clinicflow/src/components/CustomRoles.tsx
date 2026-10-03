@@ -70,7 +70,7 @@ export function CustomRoles() {
 
   return <section className="panel padded custom-roles" data-testid="custom-roles" aria-labelledby="custom-roles-title">
     <div className="cr-head">
-      <div><h2 id="custom-roles-title">Custom roles</h2><p className="muted">Named variations of a base role for specific staff. <HelpTip text="A custom role starts from its base role and can only remove actions; it never grants access beyond the base role and never crosses clinic ownership. Assign it to staff who already have that base role. Leave the clinic empty to apply it in all of that person's clinics. When several rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen." /></p></div>
+      <div><h2 id="custom-roles-title">Custom roles <HelpTip text="Named variations of a base role for specific staff. A custom role starts from its base role and can only remove actions; it never grants access beyond the base role and never crosses clinic ownership. Assign it to staff who already have that base role. Leave the clinic empty to apply it in all of that person's clinics. When several rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen." /></h2></div>
       {draft && <button type="button" className="button small" onClick={() => setEditing({ id: newRoleId(draft.roles), name: "", baseRole: "receptionist", denied: [] })} data-testid="button-add-custom-role"><Plus size={16} aria-hidden /> New custom role</button>}
     </div>
     {query.isLoading || policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-custom-roles-loading"><span /><span /><span /></div>
@@ -143,7 +143,7 @@ function RoleEditor({ role, config, modules, actions, names, onBack, onChange, o
     </div>
     {touched && error && <p role="alert" className="field-error">{error}</p>}
     {baseChanged && <p className="notice" role="status">Changing the base role removes this role's current assignments when applied.</p>}
-    <h3 className="cr-sub">Allowed actions <small>Unchecked actions are removed from {label(local.baseRole)}.</small></h3>
+    <h3 className="cr-sub">Allowed actions <HelpTip text={`Unchecked actions are removed from ${label(local.baseRole)}.`}/></h3>
     {!modules.length ? <p className="muted">No restrictable actions are defined.</p> :
       <div className="table-wrap cr-matrix"><table><thead><tr><th scope="col">Module</th>{actions.map(a => <th key={a} scope="col">{label(a)}</th>)}<th scope="col"><span className="sr-only">Row</span></th></tr></thead><tbody>
         {modules.map(m => <tr key={m}><th scope="row">{label(m)}</th>{actions.map(a => { const k = capKey(m, a); return <td key={a}><input type="checkbox" checked={!denied.has(k)} onChange={e => toggle(k, e.target.checked)} aria-label={`${label(m)}: ${label(a)}`} data-testid={`cap-${m}-${a}`} /></td>; })}

@@ -7,7 +7,7 @@ test("only supported providers, storage env-only with docs", () => {
   assert.ok(src.includes('{ value: "smtp", label: "SMTP" }') && src.includes('{ value: "twilio", label: "Twilio" }'));
   for (const k of ["MEDIA_STORAGE", "MEDIA_ROOT", "MEDIA_URL"]) assert.ok(src.includes(k));
   assert.match(src, /useCheckIntegrationConnection\(\)/);
-  assert.match(src, /check\.mutate\(\{ provider \}\)/);
+  assert.match(src, /check\.mutate\(\{ provider \}(\)|, \{ onSuccess)/);
   assert.match(src, /useGetStorageConfiguration\(/);
 });
 test("smtp test requires explicit confirmation", () => {

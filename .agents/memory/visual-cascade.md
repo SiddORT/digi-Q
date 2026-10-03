@@ -44,3 +44,9 @@ Filters and contextual pop-ups must overlay the page or open in a right-side dra
 **Why:** The user explicitly added these requirements to the app-wide compact-layout scope.
 
 **How to apply:** Preserve scope, actual data, keyboard navigation and unsaved edits. Judge density by the entire pre-listing area, including metadata/export/help outside the toolbar, not just smaller controls.
+
+Reduce visible information, not only spacing: technical references and repeated metadata do not belong beneath every record. Keep operational tokens visible in queues and tickets.
+
+**Why:** The user rejected lists with two or three lines of database-oriented information and duplicate status explanations, even after the spacing pass.
+
+**How to apply:** Default to the information needed to identify and act on the record. Preserve hidden fields in storage, search and Details; use accessible focus/tap pop-ups for secondary non-sensitive context. Do not hide critical patient identification or warnings.
