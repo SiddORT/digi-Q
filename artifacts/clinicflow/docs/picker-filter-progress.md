@@ -56,6 +56,9 @@ Columns, saved views and export stay in the `secondary` group (compact "More"). 
 - Updated source-contract tests that encoded the superseded "status tabs inline / sort outside filters" decision: compact-listing, resource-controls, linked-schedules-ui, uniformity, staff-controls, information-density-pages, searchable-select-callers and accessibility-sweep. Each now asserts the approved drawer contract with equal or greater specificity. None were deleted.
 
 ## 5. Remaining Gaps (Truthful)
+### External accessibility acceptance handoff
+The user will arrange the real-device accessibility acceptance pass separately. These checks remain **unverified**, not passed: screen-reader announcements; native browser zoom/reflow; physical touch targets; nested Escape and focus return; calendar month/year navigation; exact-minute entry; validation announcements; and Apply/Reset. Existing fictional-data browser checks are not certification of these behaviors with assistive technology or physical devices. No live account changes, emails, booking submissions or publication are authorized by this handoff.
+
 ### Final verification
 - Broad frontend run: 309 checks passed; after the final Escape/message fixes, the 21 focused checks and frontend typecheck passed.
 - Backend date/range and feature integration run: 18 checks passed; API typecheck passed.
