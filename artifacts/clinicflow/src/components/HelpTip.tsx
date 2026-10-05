@@ -19,6 +19,9 @@ type ChildProps = {
   onPointerDown?: (e: ReactPointerEvent) => void;
 };
 
+export const DISMISS_TOOLTIPS = "dq:dismiss-tooltips";
+export const dismissTooltips = () => window.dispatchEvent(new Event(DISMISS_TOOLTIPS));
+
 /** Tooltip rendered in a body portal, positioned against the anchor with flip + viewport clamp. */
 function Bubble({ anchor, text, id }: { anchor: RefObject<HTMLSpanElement | null>; text: string; id?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -62,6 +65,8 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
   const timer = useRef<number | undefined>(undefined);
 
   const close = () => { setOpen(false); setPinned(false); };
+  // Menus and popovers broadcast this so a trigger's tooltip never overlaps the opened menu.
+  useEffect(() => { const dismiss = () => { setOpen(false); setPinned(false); }; window.addEventListener(DISMISS_TOOLTIPS, dismiss); return () => window.removeEventListener(DISMISS_TOOLTIPS, dismiss); }, []);
 
   useEffect(() => {
     if (!open) return;

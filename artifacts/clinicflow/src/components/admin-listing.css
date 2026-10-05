@@ -66,3 +66,6 @@
   .admin-listing-table table{min-width:0}
   .admin-bulk-bar strong{flex-basis:100%}
 }
+.admin-bulk-bar.bulk-compact{padding:8px 12px;gap:8px;background:#eef5fc;border-color:#cfe0f3;border-radius:12px}
+.admin-bulk-bar.bulk-compact strong{margin-right:0}
+.admin-bulk-bar.bulk-compact .bulk-scope{margin-right:auto;font-size:var(--type-caption);color:var(--soft)}

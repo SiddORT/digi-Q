@@ -4,6 +4,7 @@ import { Download, Printer } from "lucide-react";
 import { IconAction } from "../IconAction";
 import { BRAND_LOGO_URL, BRAND_NAME } from "../../branding";
 import "./visit-ticket.css";
+import { downloadTicketPdf } from "./ticket-pdf";
 import { formatDate, formatTime, type DateTimePreferences } from "../../lib/date-time";
 
 export type TicketData = Partial<DateTimePreferences> & {
@@ -84,7 +85,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
     qrImage(ticket.qrUrl).then(v => { if (live) setQr(v); }).catch(e => { if (live) setQrError(e.message); });
     return () => { live = false; };
   }, [ticket.qrUrl, qrTry]);
-  const file = `clinicflow-ticket-${(ticket.reference || ticket.waitingNumber || "visit").replace(/[^a-z0-9-]/gi, "")}.html`;
+  const file = `clinicflow-ticket-${(ticket.reference || ticket.waitingNumber || "visit").replace(/[^a-z0-9-]/gi, "")}.pdf`;
   async function run(kind:"print"|"download") {
     if (lock.current) return; lock.current = true; setErr(""); setBusy(kind);
     const w = kind === "print" ? window.open("", "_blank", "width=680,height=820") : null;
@@ -101,9 +102,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
         if (w.closed) throw new Error("Print window closed. Try again.");
         w.focus(); w.print();
       } else {
-        const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-        const a = document.createElement("a"); a.href = url; a.download = file; document.body.append(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        await downloadTicketPdf(html, file);
       }
     } catch (e) { w?.close(); setErr(e instanceof Error ? e.message : "Ticket could not be prepared. Try again."); }
     finally { lock.current = false; setBusy(""); }
@@ -114,7 +113,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
       <div className="vt-head-tools">
         <span className="vt-badge" data-testid="ticket-status" aria-label={`Booking Status: ${ticket.statusLabel || "Booked"}`}>{ticket.statusLabel || "Booked"}</span>
         <div className="vt-actions" role="group" aria-label="Ticket Actions">
-          <IconAction className="vt-icon-action" testId="button-download-ticket" label={busy==="download"?"Checking Ticket…":"Download Ticket"} icon={<Download size={16} aria-hidden/>} onClick={() => void run("download")} disabled={disabled} disabledReason={busy?"Checking the latest ticket first.":!qr?"Personal QR is still loading.":"Reconnect and refresh the ticket first."}/>
+          <IconAction className="vt-icon-action" testId="button-download-ticket" label={busy==="download"?"Preparing PDF…":"Download Ticket PDF"} icon={<Download size={16} aria-hidden/>} onClick={() => void run("download")} disabled={disabled} disabledReason={busy?"Checking the latest ticket first.":!qr?"Personal QR is still loading.":"Reconnect and refresh the ticket first."}/>
           <IconAction className="vt-icon-action" testId="button-print-ticket" label={busy==="print"?"Checking Ticket…":"Print Ticket"} icon={<Printer size={16} aria-hidden/>} onClick={() => void run("print")} disabled={disabled} disabledReason={busy?"Checking the latest ticket first.":!qr?"Personal QR is still loading.":"Reconnect and refresh the ticket first."}/>
         </div>
       </div>

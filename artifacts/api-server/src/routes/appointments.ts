@@ -8,16 +8,32 @@ import { availability, localNow, minutes } from "../lib/availability";
 import { enrich } from "../lib/entities";
 import { appointmentView, appointmentViewWithBranch, appointmentViews, transition, lockQueue } from "../lib/appointments";
 import { resolveQr } from "./public";
-import { queryAppointmentPage } from "../lib/list-query";
+import { queryAppointmentPage, queryAppointmentCalendar } from "../lib/list-query";
 import { snapshotDuration, allocateToken } from "../lib/session-duration";
 import { reschedule } from "../lib/reschedule";
 import { rank, sessionRows } from "../lib/queue-order";
 import { confirmAppointmentEmail, initialConfirmationEmail } from "../lib/appointment-confirmation";
 export const appointmentsRouter = Router();
+import { ticketEmailPreview, emailTicket } from "../lib/ticket-email";
+import { z as validator } from "zod";
+appointmentsRouter.get("/appointments/:id/email-ticket", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(await ticketEmailPreview(await requireUser(req), req.params.id as string));
+});
+appointmentsRouter.post("/appointments/:id/email-ticket", async (req, res) => {
+  const body = validator.object({ requestId: validator.string().uuid(), recipient: validator.string().email() }).parse(req.body);
+  res.setHeader("Cache-Control", "no-store");
+  res.json(await emailTicket(await requireUser(req), req.params.id as string, body.requestId, body.recipient));
+});
 appointmentsRouter.get("/appointments", async (req, res) => {
   const user = await requireUser(req), q = query(z.ListAppointmentsQueryParams, req);
   const result = await queryAppointmentPage(user, q);
   res.json({ ...result, items: await appointmentViews(result.items, user) });
+});
+appointmentsRouter.get("/appointments/calendar", async (req, res) => {
+  const user = await requireUser(req), q = query(z.ListAppointmentsQueryParams, req);
+  res.setHeader("Cache-Control", "no-store");
+  res.json(await queryAppointmentCalendar(user, q));
 });
 appointmentsRouter.get("/appointments/:id", async (req, res) => {
   const user = await requireUser(req), row = await one(appointments, req.params.id as string);

@@ -7,6 +7,12 @@ Treat the DigiQ standardization prompt itself as the user's approved design spec
 
 Use icon-only secondary row actions with hover/focus tooltips, but retain labelled clinical primary actions. Booking QR access belongs in Booking Details, not a separate appointment-row action. Hidden-action menus must remain fully visible and usable.
 
+The approved follow-on puts Ticket & QR beside the booking reference and keeps it collapsed in reopened Details. Default tables use a status symbol beside the waiting number; selection uses a compact readable bulk toolbar. Downloads must be actual PDFs, not HTML.
+
+**Why:** The user corrected the placement and rejected long drawers, faint arrows, wide tables and the oversized blue bulk-selection bar.
+
+**How to apply:** Keep full text/status information accessible via tooltips, Details and optional columns. Preserve immediate confirmation tickets, existing saved views and individual-only clinical actions.
+
 **Why:** The user explicitly approved this compact-action direction to recover space without obscuring important actions.
 
 **How to apply:** Apply consistently to relevant listings; preserve permissions, ticket information and immediate post-booking confirmation. Keep expansion separate from operational actions.

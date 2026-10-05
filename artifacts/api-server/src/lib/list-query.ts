@@ -164,6 +164,19 @@ export async function queryPage(user: any, kind: string, q: any = {}, extra?: SQ
   const { items, total, statusCounts } = result.rows[0];
   return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize), ...(withStatusCounts ? { statusCounts } : {}) };
 }
+export async function queryAppointmentCalendar(user: any, q: any, conn: any = db) {
+  assert(q.from && q.to && q.from <= q.to, 400, "Choose a valid calendar range");
+  assert((Date.parse(q.to) - Date.parse(q.from)) / 86400000 <= 62, 400, "Calendar range cannot exceed 63 days");
+  const result = await conn.execute(sql`with visible as (${sourceSql(user, "appointments")})
+    select doc->>'date' as date, doc->>'status' as status, count(*)::int as count
+    from visible where ${filterSql(q)} group by doc->>'date', doc->>'status' order by date`);
+  const days = new Map<string, {date:string;total:number;byStatus:Record<string,number>}>();
+  for (const row of result.rows) {
+    const day: {date:string;total:number;byStatus:Record<string,number>} = days.get(row.date) || { date: row.date, total: 0, byStatus: {} };
+    day.byStatus[row.status] = Number(row.count); day.total += Number(row.count); days.set(row.date, day);
+  }
+  return { days: [...days.values()], total: [...days.values()].reduce((sum, d) => sum + d.total, 0) };
+}
 export function queryAppointmentPage(user: any, q: any, conn: any = db) {
   return queryPage(user, "appointments", q, undefined, conn, user.role !== "patient");
 }

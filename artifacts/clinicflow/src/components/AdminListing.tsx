@@ -106,11 +106,11 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
     }catch(error){setResults([...outcomes,`Copy failed — ${friendlyError(error)}`]);}finally{lock.current=false;setBusy(false);}
   }
   return <div className="admin-listing-bulk">
-    {selection.selected.length>0&&<div className="admin-bulk-bar" aria-label="Selected record actions"><strong>{selection.selected.length} selected on this page</strong>
-      <button data-testid="button-clear-selected" disabled={busy} onClick={selection.clear}>Clear Selection</button>
+    {selection.selected.length>0&&<div className="admin-bulk-bar bulk-compact" role="region" aria-label="Selected record actions"><strong data-testid="text-selected-count">{selection.selected.length} selected</strong><span className="bulk-scope">this page only</span>
       <button data-testid="button-export-selected" disabled={busy} onClick={()=>download([columns.map(csvCell).join(","),...selection.selected.map(row=>columns.map(key=>csvCell(row[key])).join(","))].join("\r\n"),`${resource}-selected.csv`,"text/csv;charset=utf-8")}>Export Selected CSV</button>
       {canStatus&&<><button data-testid="button-activate-selected" disabled={busy} onClick={()=>setAction("active")}>Activate</button><button data-testid="button-deactivate-selected" disabled={busy} onClick={()=>setAction("inactive")}>Deactivate</button></>}
       {resource==="qrs"&&<><button data-testid="button-print-selected-qrs" disabled={busy} onClick={()=>qrDocument(true)}>Print Selected QRs</button><button data-testid="button-download-selected-qrs" disabled={busy} onClick={()=>qrDocument(false)}>Download QR Sheet</button><button data-testid="button-copy-selected-qr-links" disabled={busy} onClick={copyQrLinks}>Copy Booking Links</button></>}
+      <button data-testid="button-clear-selected" disabled={busy} onClick={selection.clear}>Clear</button>
     </div>}
     {busy&&<p role="status">Processing selected records. Please wait…</p>}
     {!!results.length&&<ResultSummary title="Selected Records" testId="details-bulk-results" items={results.map(result=>({label:result,ok:!/failed|blocked/i.test(result)}))}/>}

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { MoreHorizontal } from "lucide-react";
 import { Link } from "wouter";
-import { HelpTip } from "./HelpTip";
+import { HelpTip, dismissTooltips } from "./HelpTip";
 import { computeMenuPosition, type MenuPosition } from "./row-menu-position";
 
 export type RowMenuItem = { key: string; label: string; onSelect?: () => void; href?: string; hint?: string; disabled?: boolean; danger?: boolean; testId?: string };
@@ -60,7 +60,7 @@ export function RowMenu({ label, items, testId }: { label: string; items: RowMen
   const toggle = () => {
     if (open) { close(false); return; }
     setHost(trigger.current?.closest<HTMLElement>('[role="dialog"]') ?? document.body);
-    setOpen(true);
+    setOpen(true); dismissTooltips();
   };
   return <>
     <HelpTip text="More Actions"><button ref={trigger} type="button" className="row-menu-trigger icon-action" aria-haspopup="menu" aria-expanded={open} aria-label={label} data-testid={testId} onClick={toggle}><MoreHorizontal aria-hidden size={16} /></button></HelpTip>

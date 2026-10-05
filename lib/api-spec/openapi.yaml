@@ -846,6 +846,30 @@ paths:
       responses:
         "201": { description: Booking confirmation, content: { application/json: { schema: { $ref: "#/components/schemas/Appointment" } } } }
         "409": { $ref: "#/components/responses/Error" }
+  /appointments/{id}/email-ticket:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getTicketEmailPreview
+      responses:
+        "200": { description: Recipient and eligibility, content: { application/json: { schema: { $ref: "#/components/schemas/TicketEmailPreview" } } } }
+    post:
+      operationId: sendTicketEmail
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/TicketEmailInput" } } } }
+      responses:
+        "200": { description: Dispatch result, content: { application/json: { schema: { $ref: "#/components/schemas/TicketEmailResult" } } } }
+  /appointments/calendar:
+    get:
+      operationId: getAppointmentCalendar
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+        - { name: clinicId, in: query, schema: { type: string } }
+        - { name: branchId, in: query, schema: { type: string } }
+        - { name: doctorId, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Scoped daily counts, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentCalendar" } } } }
   /appointments/{id}:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     get:
@@ -1147,6 +1171,37 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    TicketEmailInput:
+      type: object
+      required: [requestId, recipient]
+      properties:
+        requestId: { type: string, format: uuid }
+        recipient: { type: string, format: email }
+    TicketEmailPreview:
+      type: object
+      required: [recipient, eligible, reason]
+      properties:
+        recipient: { type: string }
+        eligible: { type: boolean }
+        reason: { type: string }
+    TicketEmailResult:
+      type: object
+      required: [state]
+      properties:
+        state: { type: string, enum: [provider_accepted, unknown] }
+    AppointmentCalendarDay:
+      type: object
+      required: [date, total, byStatus]
+      properties:
+        date: { type: string }
+        total: { type: integer }
+        byStatus: { type: object, additionalProperties: { type: integer } }
+    AppointmentCalendar:
+      type: object
+      required: [days, total]
+      properties:
+        days: { type: array, items: { $ref: "#/components/schemas/AppointmentCalendarDay" } }
+        total: { type: integer }
     DocumentBinary: { type: string, format: binary }
     WorkspaceNotification:
       type: object

@@ -402,3 +402,46 @@
   .workspace .appt-table .row-actions .helptip>.icon-action,.workspace .appt-table .row-actions .row-menu-trigger{width:44px;min-width:44px;height:44px;min-height:44px}
   .row-lead>.row-expand-toggle{width:44px;min-width:44px;height:44px;min-height:44px}
 }
+/* Compact row menus and navigation (approved density pass). */
+.row-menu-portal{min-width:170px;padding:4px;border-radius:12px}
+.row-menu-portal :is(button,a){min-height:32px;padding:8px 12px}
+@media (min-width:901px){.workspace .wnav-link{min-height:32px;padding-block:8px}.workspace .sidebar .help-card{padding:12px 12px;font-size:var(--type-caption)}.workspace .sidebar .help-card p{margin:4px 0 0}}
+/* Reference row: full width so Copy and Ticket & QR stay inline; only the code wraps. */
+.appt-detail-grid>div:has(.appt-detail-ref){grid-column:1/-1}
+.appt-detail-ref{flex-wrap:nowrap}
+.appt-detail-ref>code{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.appt-detail-ref>button{flex:0 0 auto;white-space:nowrap}
+.appt-detail-ref>small{flex-basis:100%}
+.appt-detail-ref:has(>small){flex-wrap:wrap}
+/* Desktop default appointment table fits the content width at 1280 (no min-width floor).
+   Optional Status / Booking Reference columns restore a floor and scroll horizontally. */
+@media (min-width:641px){
+  .workspace .table-scroll.appt-table table{table-layout:fixed;width:100%;min-width:0}
+  .workspace .table-scroll.appt-table :is(th,td){min-width:0;max-width:none}
+  .workspace .table-scroll.appt-table :is(th,td).col-select{width:40px}
+  .workspace .table-scroll.appt-table :is(th,td).col-serial{width:40px}
+  .workspace .table-scroll.appt-table :is(th,td).col-date{width:14%}
+  .workspace .table-scroll.appt-table :is(th,td).col-patient{width:19%}
+  .workspace .table-scroll.appt-table :is(th,td).col-token{width:88px}
+  .workspace .table-scroll.appt-table :is(th,td).col-location{width:15%}
+  .workspace .table-scroll.appt-table :is(th,td).col-doctor{width:13%}
+  .workspace .table-scroll.appt-table :is(th,td).col-createdAt{width:13%}
+  .workspace .table-scroll.appt-table :is(th,td).col-status{width:112px}
+  .workspace .table-scroll.appt-table :is(th,td).col-reference{width:140px}
+  .workspace .table-scroll.appt-table :is(th,td).col-actions{width:196px;min-width:0}
+  .workspace .table-scroll.appt-table td.col-actions .row-actions{width:auto;justify-content:flex-end;gap:4px}
+  .workspace .table-scroll.appt-table table:has(:is(th.col-status,th.col-reference)){min-width:1140px}
+}
+@media (min-width:641px){
+  .workspace .table-scroll.appt-table :is(th,td).col-serial{width:64px}
+  .workspace .table-scroll.appt-table :is(th,td).col-token{width:96px}
+  .workspace .table-scroll.appt-table :is(th,td).col-actions{width:168px}
+  .workspace .table-scroll.appt-table td.col-token{overflow:visible}
+}
+@media (min-width:641px){.workspace .table-scroll.appt-table :is(th,td).col-actions{width:176px}.workspace .table-scroll.appt-table :is(th,td).col-token{width:90px}}
+/* Actions fit: Check Out primary (~94px with 8px padding, 4px icon gap) + Details 32 + More 32 + 2x4px gaps
+   + 2x12px cell padding = 190px. 196px keeps both labels intact without wrapping. */
+@media (min-width:641px){
+  .workspace .table-scroll.appt-table :is(th,td).col-actions{width:196px}
+  .workspace .table-scroll.appt-table td.col-actions .row-actions>button.row-primary{padding:4px 8px;gap:4px}
+}

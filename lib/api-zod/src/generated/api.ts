@@ -4619,6 +4619,51 @@ export const CreateAppointmentResponse = zod.object({
 }))
 
 
+export const GetTicketEmailPreviewParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetTicketEmailPreviewResponse = zod.object({
+  "recipient": zod.string(),
+  "eligible": zod.boolean(),
+  "reason": zod.string()
+})
+
+
+export const SendTicketEmailParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SendTicketEmailBody = zod.object({
+  "requestId": zod.string().uuid(),
+  "recipient": zod.string().email()
+})
+
+export const SendTicketEmailResponse = zod.object({
+  "state": zod.enum(['provider_accepted', 'unknown'])
+})
+
+
+export const GetAppointmentCalendarQueryParams = zod.object({
+  "from": zod.date(),
+  "to": zod.date(),
+  "clinicId": zod.coerce.string().optional(),
+  "branchId": zod.coerce.string().optional(),
+  "doctorId": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "search": zod.coerce.string().optional()
+})
+
+export const GetAppointmentCalendarResponse = zod.object({
+  "days": zod.array(zod.object({
+  "date": zod.string(),
+  "total": zod.number().int(),
+  "byStatus": zod.record(zod.string(), zod.number().int())
+})),
+  "total": zod.number().int()
+})
+
+
 export const GetAppointmentParams = zod.object({
   "id": zod.coerce.string()
 })

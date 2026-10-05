@@ -21,7 +21,7 @@ test("appointments header carries Export beside a full-size Book appointment; up
   const clinic = read("../clinic.tsx");
   const appts = clinic.slice(clinic.indexOf("function Appointments("), clinic.indexOf("function Booking("));
   assert.match(appts, /secondary=\{<><FilteredAppointmentExport[^]*?actions=\{<><Link className="button" href=\{`\/\$\{role\}\/book`\} data-testid="link-page-book-appointment">/);
-  assert.match(appts, /meta=\{<>\{q\.dataUpdatedAt>0\?<span className="listing-updated-tip"/);
+  assert.match(appts, /meta=\{<>[\s\S]*?\{q\.dataUpdatedAt>0\?<span className="listing-updated-tip"/);
   assert.doesNotMatch(appts, /meta=\{<><SearchableSelect label="Visit Range"/, "visit range is a drawer filter");
   assert.doesNotMatch(clinic, /className="button small" href=\{`\/\$\{role\}\/book`\}/);
 });

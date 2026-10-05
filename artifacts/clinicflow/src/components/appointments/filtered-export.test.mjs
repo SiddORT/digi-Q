@@ -85,9 +85,9 @@ test("export control supports cancel, ignores list pagination changes and blocks
   assert.match(read("../../clinic.tsx"), /contextKey=\{search\}/);
   assert.match(read("../../clinic.tsx"), /FilteredAppointmentExport params=\{params\}[^>]*search!==debounced/);
   const bulk = read("./BulkAppointments.tsx");
-  assert.match(bulk, /Export Selected CSV/);
-  assert.match(bulk, /selected on this page/);
-  assert.match(bulk, /rows on other pages are not included/);
+  assert.match(bulk, /Export CSV/);
+  assert.match(bulk, /this page only/);
+  assert.match(bulk, /[Rr]ows on other pages are not included/);
 });
 
 test("queue clear-all resets optional list filters, not required session or page size", () => {

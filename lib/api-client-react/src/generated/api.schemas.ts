@@ -20,6 +20,42 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export interface TicketEmailInput {
+  requestId: string;
+  recipient: string;
+}
+
+export interface TicketEmailPreview {
+  recipient: string;
+  eligible: boolean;
+  reason: string;
+}
+
+export type TicketEmailResultState = typeof TicketEmailResultState[keyof typeof TicketEmailResultState];
+
+
+export const TicketEmailResultState = {
+  provider_accepted: 'provider_accepted',
+  unknown: 'unknown',
+} as const;
+
+export interface TicketEmailResult {
+  state: TicketEmailResultState;
+}
+
+export type AppointmentCalendarDayByStatus = {[key: string]: number};
+
+export interface AppointmentCalendarDay {
+  date: string;
+  total: number;
+  byStatus: AppointmentCalendarDayByStatus;
+}
+
+export interface AppointmentCalendar {
+  days: AppointmentCalendarDay[];
+  total: number;
+}
+
 export type DocumentBinary = Blob;
 
 export type WorkspaceNotificationKind = typeof WorkspaceNotificationKind[keyof typeof WorkspaceNotificationKind];
@@ -2828,6 +2864,16 @@ pageSize?: PageSizeParameter;
  * Allowlisted field with optional minus prefix for descending order
  */
 sort?: SortParameter;
+};
+
+export type GetAppointmentCalendarParams = {
+from: string;
+to: string;
+clinicId?: string;
+branchId?: string;
+doctorId?: string;
+status?: string;
+search?: string;
 };
 
 export type GetQueueParams = {

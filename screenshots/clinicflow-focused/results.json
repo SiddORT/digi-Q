@@ -1,0 +1,255 @@
+{
+  "fixtureOnly": true,
+  "screenshots": [
+    "screenshots/clinicflow-focused/appointments-1280.png",
+    "screenshots/clinicflow-focused/calendar-1280.png",
+    "screenshots/clinicflow-focused/bulk-toolbar-1280.png",
+    "screenshots/clinicflow-focused/email-preview.png",
+    "screenshots/clinicflow-focused/details-ticket-1280.png",
+    "screenshots/clinicflow-focused/appointments-1024.png",
+    "screenshots/clinicflow-focused/appointments-390.png"
+  ],
+  "checks": [
+    {
+      "name": "bulk-tickets.pdf PDF signature/page count",
+      "status": "pass",
+      "bytes": 12808928,
+      "pages": 3
+    },
+    {
+      "name": "single-ticket.pdf PDF signature/page count",
+      "status": "pass",
+      "bytes": 7683348,
+      "pages": 1
+    },
+    {
+      "name": "desktop table fits without overflow, sort arrow and status tooltip",
+      "status": "pass",
+      "desktopScroll": {
+        "client": 1038,
+        "scroll": 1038
+      },
+      "menuBox": {
+        "x": 481.09375,
+        "y": 320.59375,
+        "width": 190,
+        "height": 129.390625
+      }
+    },
+    {
+      "name": "390px More menu bounds",
+      "status": "pass",
+      "bounds": {
+        "x": 8,
+        "y": 631.578125,
+        "width": 190,
+        "height": 166.1875
+      }
+    },
+    {
+      "name": "date presets/custom, cancel/apply, calendar aggregate/drilldown, selection, email unknown/idempotent resend, single/bulk PDF",
+      "status": "pass"
+    }
+  ],
+  "interceptedWrites": [
+    {
+      "path": "/appointments/fx-appt-1/email-ticket",
+      "body": "{\"requestId\":\"5739e0db-32eb-443e-a9a7-a975782eaf94\",\"recipient\":\"person1@example.invalid\"}"
+    },
+    {
+      "path": "/appointments/fx-appt-2/email-ticket",
+      "body": "{\"requestId\":\"8f4ef352-98d2-4f0f-a04d-c034e3d23819\",\"recipient\":\"person2@example.invalid\"}"
+    },
+    {
+      "path": "/appointments/fx-appt-1/email-ticket",
+      "body": "{\"requestId\":\"5739e0db-32eb-443e-a9a7-a975782eaf94\",\"recipient\":\"person1@example.invalid\"}"
+    }
+  ],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&to=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-03&to=2026-10-04&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/calendar",
+      "search": "?from=2026-10-01&to=2026-10-31"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-03&to=2026-10-03&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/email-ticket",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-2/email-ticket",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-3/email-ticket",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-4/email-ticket",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/csrf",
+      "search": ""
+    },
+    {
+      "method": "POST",
+      "path": "/appointments/fx-appt-1/email-ticket",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/csrf",
+      "search": ""
+    },
+    {
+      "method": "POST",
+      "path": "/appointments/fx-appt-2/email-ticket",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/csrf",
+      "search": ""
+    },
+    {
+      "method": "POST",
+      "path": "/appointments/fx-appt-1/email-ticket",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-2",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-2/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-3",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-4",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-4/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/queue",
+      "search": "?doctorId=fx-doc&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-03&to=2026-10-03&statusGroup=all&sort=date&page=1&pageSize=20"
+    }
+  ],
+  "fixtureNotes": [
+    "All /api/** calls were intercepted with fictional identities, appointments, previews, QR data and synthetic unknown email results.",
+    "Non-GET requests were intercepted; no live auth, backend data, email, deployment or provider writes.",
+    "Print button visibility was checked; print dialog execution intentionally skipped."
+  ]
+}

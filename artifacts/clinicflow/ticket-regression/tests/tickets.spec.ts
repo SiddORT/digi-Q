@@ -1,5 +1,8 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
-import { readFile } from "node:fs/promises";
+import { readFile, mkdtemp, readdir } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const qrUrl = "https://tickets.example.invalid/check-in/signed-private-fixture";
 const guestSecret = "a".repeat(64);
@@ -113,8 +116,27 @@ async function download(page: Page) {
   const event = page.waitForEvent("download");
   await page.getByTestId("button-download-ticket").click();
   const item = await event;
-  expect(item.suggestedFilename()).toMatch(/^clinicflow-ticket-.*\.html$/);
-  return readFile(await item.path(), "utf8");
+  expect(item.suggestedFilename()).toMatch(/^clinicflow-ticket-.*\.pdf$/);
+  return readPdf(await item.path());
+}
+type Pdf = { bytes: Buffer; pages: number; images: string[] };
+/** Downloads are rasterised PDFs: check magic bytes, count pages and render each page with pdftoppm. */
+async function readPdf(file: string): Promise<Pdf> {
+  const bytes = await readFile(file);
+  expect(bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+  expect(bytes.subarray(-1024).toString("latin1")).toContain("%%EOF");
+  const pages = Number(/Pages:\s+(\d+)/.exec(execFileSync("pdfinfo", [file], { encoding: "utf8" }))?.[1] ?? 0);
+  const dir = await mkdtemp(join(tmpdir(), "ticket-pdf-"));
+  execFileSync("pdftoppm", ["-r", "110", "-png", file, join(dir, "p")]);
+  const names = (await readdir(dir)).filter(n => n.endsWith(".png")).sort();
+  const images = await Promise.all(names.map(async n => `data:image/png;base64,${(await readFile(join(dir, n))).toString("base64")}`));
+  expect(images).toHaveLength(pages);
+  return { bytes, pages, images };
+}
+/** The rendered PDF page must carry a scannable private QR (decoded in the harness page via jsQR). */
+async function verifyPdf(page: Page, pdf: Pdf, pages = 1) {
+  expect(pdf.pages).toBe(pages);
+  for (const image of pdf.images) expect(await decode(page, image)).toBe(qrUrl);
 }
 async function verifyHtml(page: Page, html: string, expected: { name: string; status: string; token: string; date?: string; session?: string }) {
   const dom = new DOMParserShim(html);
@@ -217,7 +239,8 @@ for (const mode of ["guest", "appointment"] as const) {
       const current = { name: mode === "guest" ? "Current Guest" : "Current Account", status: "Booked", token: mode === "guest" ? "G-99" : "A-99", date: "14 Jun 2030" };
       if (kind === "print") await interceptPrint(page);
       f.calls.length = 0;
-      const html = kind === "download" ? await download(page) : await print(page);
+      if (kind === "download") { const pdf = await download(page); assertFreshOrder(f, mode); await verifyPdf(page, pdf); return; }
+      const html = await print(page);
       assertFreshOrder(f, mode);
       await verifyHtml(page, html, current);
     });
@@ -247,10 +270,7 @@ for (const mode of ["guest", "appointment"] as const) {
     else f.mutateAppointment = n => ({ body: n === 1 ? appointment : { ...appointment, status: "cancelled", date: "2030-06-21", startTime: "14:00", endTime: "16:00", token: "A-71", revision: 5 } });
     await mount(page, mode, f, true);
     f.calls.length = 0;
-    const exported = await download(page);
-    expect(exported).toContain("Cancelled");
-    expect(exported).toContain("21 Jun 2030");
-    expect(exported).toContain("2:00 PM – 4:00 PM");
+    await verifyPdf(page, await download(page));
     assertFreshOrder(f, mode);
     await interceptPrint(page);
     await expect(page.getByTestId("button-print-ticket")).toBeEnabled();
@@ -302,7 +322,7 @@ test("different clinics retain their own date and clock preferences on screen an
     await verifyScreen(other, americanExpected);
     // Opening a second clinic must not replace the first record's preferences.
     await verifyScreen(page, europeanExpected);
-    await verifyHtml(page, await download(page), europeanExpected);
+    await verifyPdf(page, await download(page));
     await interceptPrint(other);
     await verifyHtml(other, await print(other), americanExpected);
   } finally {
@@ -396,8 +416,7 @@ test("guest immediate creation commits recoverable receipt without account", asy
   const saved = await page.evaluate(() => [sessionStorage.getItem("clinicflow-guest:fixture-qr"), sessionStorage.getItem("clinicflow-guest:fixture-qr:committed")]);
   expect(JSON.parse(saved[0]!).requestId).toBe(saved[1]);
   expect(f.calls).toContain("POST /api/public/guest-requests");
-  const html = await download(page);
-  expect(html).toContain("Walk-in Guest");
+  await verifyPdf(page, await download(page));
   expect(f.calls.slice(-2)).toEqual(["POST /api/public/guest-receipt", "POST /api/public/guest-receipt"]);
 });
 
@@ -433,23 +452,14 @@ for (const mode of ["guest", "appointment"] as const) {
     const width = await page.evaluate(() => ({ body: document.documentElement.scrollWidth, viewport: innerWidth }));
     expect(width.body).toBeLessThanOrEqual(width.viewport);
     if (kind === "print") await interceptPrint(page);
-    const html = kind === "download" ? await download(page) : await print(page, async popup => {
+    if (kind === "download") { await verifyPdf(page, await download(page)); return; }
+    const html = await print(page, async popup => {
       await popup.setViewportSize({ width: 320, height: 800 });
       await assertExportNotClipped(popup);
     });
     expect(html).not.toContain("<script>alert");
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain("VeryLongUnbrokenPatientName");
-    if (kind === "download") {
-      const offline = await page.context().newPage();
-      await offline.setViewportSize({ width: 320, height: 800 });
-      try {
-        await offline.setContent(html);
-        await assertExportNotClipped(offline);
-      } finally {
-        await offline.close();
-      }
-    }
   });
   }
 }
@@ -468,17 +478,21 @@ for (const kind of ["download", "print"] as const) {
       await route.fulfill({ status: reply.status ?? 200, json: reply.body });
     });
     await page.goto("/?mode=bulk");
-    let html: string;
+    let html = "";
     if (kind === "download") {
       const event = page.waitForEvent("download");
-      await page.getByRole("button", { name: "Download QR tickets" }).click();
+      await page.getByTestId("menu-bulk-more").click();
+      await page.getByRole("menuitem", { name: "Download Tickets PDF" }).click();
       const item = await event;
-      expect(item.suggestedFilename()).toBe("private-appointment-tickets.html");
-      html = await readFile(await item.path(), "utf8");
+      expect(item.suggestedFilename()).toBe("private-appointment-tickets.pdf");
+      const pdf = await readPdf(await item.path());
+      expect(f.calls).toEqual(["/api/appointments/appointment-1", "/api/appointments/appointment-1/qr"]);
+      await verifyPdf(page, pdf);
+      return;
     } else {
       await interceptPrint(page);
       const event = page.waitForEvent("popup");
-      await page.getByRole("button", { name: "Print QR tickets" }).click();
+      await page.getByRole("button", { name: "Print Tickets" }).click();
       const popup = await event;
       await expect.poll(() => page.evaluate(() => (window as Window & { printCount?: number }).printCount)).toBe(1);
       html = await popup.content();

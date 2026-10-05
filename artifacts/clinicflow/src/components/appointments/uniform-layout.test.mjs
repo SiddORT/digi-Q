@@ -6,7 +6,7 @@ test("appointment columns follow the approved default order and distinguish toke
   const s = r("./AppointmentRows.tsx");
   const order = ["serial", "date", "patient", "token", "location", "doctor", "createdAt", "status", "reference"].map(k => s.indexOf(`{key:"${k}"`));
   assert.ok(order.every((v, i) => v > 0 && (i === 0 || v > order[i - 1])), String(order));
-  assert.match(s, /defaultHidden:\["reference"\]/);
+  assert.match(s, /defaultHidden:\["reference","status"\]/);
   assert.match(s, /a\.patientCode/);
   assert.match(s, /serialOffset\+i\+1/);
   assert.match(s, /formatConfiguredTimestamp\(a\.createdAt/);
@@ -71,7 +71,7 @@ test("row menu flips, scrolls internally, tracks scrolling, portals into dialogs
   assert.match(m, /maxHeight/);
   assert.match(m, /addEventListener\("scroll", reflow, true\)/);
   assert.match(m, /trigger\.current\?\.focus\(\)/);
-  assert.match(r("../uniformity.css"), /\.row-menu-portal\{overflow-y:auto/);
+  assert.match(r("../uniformity.css"), /\.row-menu-portal\{[^}]*overflow-y:auto/);
 });
 test("actions column is reduced", () => {
   assert.match(r("../uniformity.css"), /\.appt-table :is\(th,td\)\.col-actions\{width:200px;min-width:200px\}/);

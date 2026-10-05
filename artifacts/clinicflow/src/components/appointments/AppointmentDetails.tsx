@@ -19,17 +19,18 @@ export function AppointmentDetails({ appointment: a }: { appointment: Appointmen
     navigator.clipboard.writeText(a.reference).then(() => setCopied("done"), () => setCopied("failed"));
   };
   const session = `${a.startTime ? formatTime(a.startTime, a) : "—"}–${a.endTime ? formatTime(a.endTime, a) : "—"}`;
-  const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
+  const [ticketOpen, setTicketOpen] = useState(false);
   return <section aria-label="Appointment details" className="appt-detail" data-testid="appointment-details">
     <header className="appt-detail-summary">
       <div>
         <h3 data-testid="text-detail-patient">{a.patientName}</h3>
         <div className="appt-detail-status"><span>Current status</span><span className={`badge ${a.status}`} data-testid="text-detail-status">{statusText(a.status)}</span>
-          {canShowAppointmentTicket(a) && <button type="button" className="appt-detail-jump" onClick={() => jump(`appt-ticket-${a.id}`)} data-testid="button-detail-jump-ticket"><QrCode size={13} aria-hidden />Ticket &amp; QR</button>}</div>
+</div>
       </div>
       <div className="appt-detail-token" data-testid="text-detail-token"><small>Token</small><strong>{a.token || "Not assigned"}</strong></div>
     </header>
 
+    <div className="appt-detail-cols">
     <div className="appt-detail-block" data-testid="section-detail-patient">
       <h4>Patient</h4>
       <dl className="appt-detail-grid">
@@ -58,18 +59,18 @@ export function AppointmentDetails({ appointment: a }: { appointment: Appointmen
     <div className="appt-detail-block" data-testid="section-detail-booking">
       <h4>Booking</h4>
       <dl className="appt-detail-grid">
-        <div><dt>Reference</dt><dd className="appt-detail-ref"><code data-testid="text-detail-reference">{a.reference}</code><button type="button" onClick={copyReference} aria-label={`Copy reference ${a.reference}`} data-testid="button-copy-reference">{copied === "done" ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}{copied === "done" ? "Copied" : "Copy"}</button>{copied === "failed" && <small role="alert">Copy unavailable. Select the reference to copy it.</small>}</dd></div>
+        <div><dt>Reference</dt><dd className="appt-detail-ref"><code data-testid="text-detail-reference">{a.reference}</code><button type="button" onClick={copyReference} aria-label={`Copy reference ${a.reference}`} data-testid="button-copy-reference">{copied === "done" ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}{copied === "done" ? "Copied" : "Copy"}</button>{canShowAppointmentTicket(a) && <button type="button" className="appt-detail-jump" aria-expanded={ticketOpen} aria-controls={`appt-ticket-${a.id}`} onClick={() => setTicketOpen(v => !v)} data-testid="button-detail-jump-ticket"><QrCode size={13} aria-hidden />{ticketOpen ? "Hide Ticket & QR" : "Ticket & QR"}</button>}{copied === "failed" && <small role="alert">Copy unavailable. Select the reference to copy it.</small>}</dd></div>
         <div><dt>Booked at</dt><dd data-testid="text-detail-booked">{timestamp(a.createdAt)}<small>When the booking was created, not the visit time.</small></dd></div>
         <div className="span-2"><dt>Notes</dt><dd><p className={`appt-detail-notes${a.notes?.trim() ? "" : " appt-detail-empty"}`} data-testid="text-detail-notes">{a.notes?.trim() || "No notes recorded."}</p></dd></div>
       </dl>
     </div>
 
-    <div className="appt-detail-block appt-detail-ticket" id={`appt-ticket-${a.id}`} data-testid="section-detail-ticket">
+    {(ticketOpen || !canShowAppointmentTicket(a)) && <div className="appt-detail-block appt-detail-ticket span-2" style={{ gridColumn: "1/-1" }} id={`appt-ticket-${a.id}`} data-testid="section-detail-ticket">
       <h4>Ticket &amp; QR</h4>
       {canShowAppointmentTicket(a)
         ? <AppointmentTicket id={a.id} />
         : <p className="appt-detail-empty" data-testid="text-detail-ticket-unavailable">Completed visits do not need a ticket. The booking reference above remains available for records.</p>}
-    </div>
+    </div>}
 
     <div className="appt-detail-block">
       <h4>Consultation</h4>
@@ -85,6 +86,7 @@ export function AppointmentDetails({ appointment: a }: { appointment: Appointmen
         <strong>{title(event.action || event.status)}</strong> · {timestamp(event.occurredAt)}
         {event.reason && <p>{event.reason}</p>}
       </li>)}</ol> : <p className="appt-detail-empty">No history recorded.</p>}
+    </div>
     </div>
   </section>;
 }

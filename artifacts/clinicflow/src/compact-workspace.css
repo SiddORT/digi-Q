@@ -144,13 +144,13 @@
 }
 
 /* Appointment bulk bar: hidden at zero, blue/white bar at 1+. */
-.workspace .appt-bulk{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;padding:var(--space-2) var(--space-3);margin:0 0 var(--space-2);background:var(--cw-blue);color:#fff;border-radius:var(--radius-control)}
+.workspace .appt-bulk{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;padding:var(--space-2) var(--space-3);margin:0 0 var(--space-2);background:#eef5fc;color:var(--ink);border:1px solid #cfe0f3;border-radius:var(--radius-control)}
 .workspace .appt-bulk strong{margin-right:var(--space-2);font-size:var(--type-label)}
-.workspace .appt-bulk button{background:var(--dq-surface);color:var(--cw-blue-strong);border:1px solid #fff;min-height:var(--cw-ctl-sm);padding:var(--space-1) var(--space-3);font-weight:600}
+.workspace .appt-bulk button{background:var(--dq-surface);color:var(--cw-blue-strong);border:1px solid var(--color-border);min-height:var(--cw-ctl-sm);padding:var(--space-1) var(--space-3);font-weight:600}
 .workspace .appt-bulk button:hover:not(:disabled){background:#e6effb}
-.workspace .appt-bulk button:last-of-type{background:transparent;color:#fff;border-color:#ffffff80;margin-left:auto}
-.workspace .appt-bulk button:focus-visible{outline:2px solid #fff;outline-offset:2px}
-.workspace .appt-bulk .help-tip button,.workspace .appt-bulk [class*=help] button{background:transparent;color:#fff;border-color:transparent;margin-left:0}
+.workspace .appt-bulk button:last-of-type{background:transparent;color:var(--cw-blue-strong);border-color:var(--color-border);margin-left:auto}
+.workspace .appt-bulk button:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px}
+.workspace .appt-bulk .help-tip button,.workspace .appt-bulk [class*=help] button{background:transparent;color:var(--cw-blue-strong);border-color:transparent;margin-left:0}
 
 /* Compact export metadata */
 .workspace .export-compact{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap;margin:0 0 var(--space-2)}

@@ -1,0 +1,90 @@
+.ticket-email-list{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px;max-height:50vh;overflow:auto}
+.ticket-email-list li{display:grid;gap:4px;padding:8px 12px;border:1px solid hsl(var(--border));border-radius:8px;font-size:var(--type-label)}
+.ticket-email-list .ok{color:#1f7a50}
+/* Month calendar: explicit seven-column grid */
+.appt-cal{display:grid;gap:var(--space-3);padding:var(--space-4)}
+.appt-cal-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--space-3)}
+.appt-cal-nav{display:flex;align-items:center;gap:var(--space-2)}
+.appt-cal-totals{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3);font-size:var(--type-label)}
+.appt-cal-total{display:inline-flex;align-items:center;gap:4px}
+.appt-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;width:100%}
+.appt-cal-dow{display:block;text-align:center;font-size:var(--type-caption);font-weight:650;color:var(--soft);padding:4px 0}
+.appt-cal-pad{display:block;min-height:88px}
+.appt-cal-day{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:4px;min-width:0;min-height:88px;padding:8px;border-radius:var(--radius-control);text-align:left}
+.appt-cal-day.is-empty{background:#f8fafd;color:var(--soft)}
+.appt-cal-day.is-today{border-color:var(--dq-blue);box-shadow:inset 0 0 0 1px var(--dq-blue)}
+.appt-cal-num{font-size:var(--type-label);font-weight:600}
+.appt-cal-count{font-family:var(--font-heading);font-size:var(--type-card);line-height:1.1}
+.appt-cal-dots{display:flex;flex-wrap:wrap;gap:2px 8px;font-size:var(--type-caption)}
+.appt-cal-dots>span{display:inline-flex;align-items:center;gap:3px}
+.appt-cal-skel{display:block;width:60%;height:12px;border-radius:4px;background:#e7edf5}
+@media (max-width:640px){.appt-cal-day,.appt-cal-pad{min-height:56px;padding:4px}.appt-cal-dots{display:none}}
+.appt-cal-grid{grid-auto-rows:auto}
+.appt-cal-grid>.appt-cal-day,.appt-cal-grid>.appt-cal-pad{height:88px}
+.appt-cal-day .appt-cal-count{font-size:var(--type-section);color:var(--dq-blue)}
+.appt-cal-day:not(.is-empty){color:var(--ink);background:var(--dq-surface)}
+/* Layout toggle */
+/* Reopened details use available desktop width, without widening other drawers. */
+@media(min-width:900px){
+  .app-dialog.app-dialog-drawer:has(.appt-detail-cols){width:min(880px,calc(100vw - 32px));max-width:calc(100vw - 32px)}
+  .app-dialog .appt-detail-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px}
+  .app-dialog .appt-detail-cols>.appt-detail-block{min-width:0;margin:0;padding:12px 0}
+  .app-dialog .appt-detail-cols>[data-testid="section-detail-booking"]{grid-column:1/-1}
+}
+.workspace .appt-bulk{display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:#eef5fc;color:var(--ink);border:1px solid #cfe0f3;padding:8px 12px;margin:8px 0;border-radius:var(--radius-control);font-size:var(--type-label)}
+.workspace .appt-bulk>strong{font-size:var(--type-label);color:var(--ink)}
+.workspace .appt-bulk .bulk-scope{color:var(--soft);font-size:var(--type-caption)}
+.workspace .appt-bulk button{min-height:32px;padding:4px 10px;font-size:var(--type-label)}
+.workspace .appt-bulk .bulk-clear{margin-left:auto}
+@media(max-width:640px),(pointer:coarse){.workspace .appt-bulk button{min-height:44px}.appt-token-wrap>button.appt-status-dot{min-width:44px!important;min-height:44px!important}}
+.appt-mode{display:inline-flex;border:1px solid #d6e0ee;border-radius:var(--radius-control);overflow:hidden}
+.appt-mode>button{border:0;border-radius:0;padding:4px 12px;min-height:32px;font-size:var(--type-label);gap:4px}
+.appt-mode>button[aria-pressed=true]{background:#e8f0fb;color:var(--dq-blue);font-weight:600}
+/* Visit range picker */
+.vrp{position:relative;display:inline-flex}
+.vrp-trigger-row{display:inline-flex;align-items:center;gap:4px}
+.vrp-trigger{white-space:nowrap;min-height:32px;padding:4px 12px;gap:6px;font-size:var(--type-label);max-width:280px}
+.vrp-trigger>span{overflow:hidden;text-overflow:ellipsis}
+.workspace .vrp-icon{width:32px;height:32px;min-height:32px;padding:0;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;color:var(--ink)}
+.workspace .vrp-icon svg,.workspace .row-expand-toggle svg{flex:none;width:16px;height:16px;stroke-width:2;color:var(--ink)}
+.workspace .row-lead>.row-expand-toggle{padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--ink)}
+.vrp-pop{position:absolute;top:calc(100% + 6px);right:0;z-index:60;display:grid;grid-template-columns:150px minmax(0,1fr);gap:var(--space-3);width:min(520px,calc(100vw - 32px));padding:var(--space-3);background:var(--dq-surface);border:1px solid #d6e0ee;border-radius:var(--radius-card);box-shadow:0 12px 28px #1b2f5a1f}
+.vrp-presets{display:grid;gap:2px;align-content:start}
+.vrp-presets>button{justify-content:flex-start;border:0;padding:6px 10px;min-height:30px;font-size:var(--type-label)}
+.vrp-presets>button[aria-pressed=true]{background:#e8f0fb;color:var(--dq-blue);font-weight:600}
+.vrp-cal{display:grid;gap:var(--space-2);min-width:0}
+.vrp-cal-head{display:flex;align-items:center;gap:4px}
+.vrp-cal-head select{margin:0;min-height:32px;padding:4px 8px}
+.vrp-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.vrp-dow{text-align:center;font-size:var(--type-caption);color:var(--soft)}
+.vrp-grid>button{padding:0;min-height:30px;font-size:var(--type-label);border-color:transparent}
+.vrp-grid>button[aria-pressed=true],.vrp-grid>button.is-edge{background:var(--dq-blue);color:#fbfdff}
+.vrp-grid>button.in-range{background:#e8f0fb}
+.vrp-hint{font-size:var(--type-caption);color:var(--soft)}
+.vrp-actions{display:flex;justify-content:flex-end;gap:var(--space-2)}
+@media (max-width:640px){.vrp-pop{grid-template-columns:1fr;right:auto;left:0}}
+/* Status symbol beside waiting number */
+.appt-token-wrap{display:inline-flex;align-items:center;gap:6px;position:relative}
+.appt-status-dot{position:relative;display:inline-block;width:12px;height:12px;min-height:0;padding:0;border-radius:50%;border:2px solid transparent;background:#8a9bb5;flex:0 0 auto}
+button.appt-status-dot:hover{background:#8a9bb5}
+.appt-status-dot.booked{background:#2f6fd0}
+.appt-status-dot.waiting{background:#d08a1f;border-radius:2px}
+.appt-status-dot.called{background:#7a4fd0;border-radius:0;border-color:#4b2f8f}
+.appt-status-dot.inConsultation{background:#0f8f8a;border-color:#0b5f5c}
+.appt-status-dot.completed{background:#2e8b57}
+.appt-status-dot.cancelled{background:transparent;border-color:#b5475a}
+.appt-status-dot.noShow{background:transparent;border-color:#6b778c;border-style:dashed}
+.appt-status-tip{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);white-space:nowrap;padding:3px 8px;border-radius:6px;background:#1b2f5a;color:#f4f7fc;font-size:var(--type-caption);z-index:20;pointer-events:none}
+.appt-token-wrap>button.appt-status-dot,.appt-cal i.appt-status-dot{width:12px;height:12px;min-width:12px;min-height:12px;max-width:12px;padding:0;box-sizing:border-box}
+.appt-cal-day:not(.is-empty) .appt-cal-num{color:var(--ink)}
+/* Status symbol as a 24px transparent hit target with the 12px shape drawn inside. */
+.appt-token-wrap>button.appt-status-dot{width:24px!important;height:24px!important;min-width:24px!important;min-height:24px!important;max-width:24px;padding:0!important;border:0!important;border-radius:50%;background:transparent!important;box-shadow:none;display:inline-flex;align-items:center;justify-content:center}
+.appt-token-wrap>button.appt-status-dot:focus-visible{outline:2px solid var(--dq-blue);outline-offset:1px}
+.appt-token-wrap>button.appt-status-dot::before{content:"";width:12px;height:12px;box-sizing:border-box;border-radius:50%;background:#8a9bb5;border:2px solid transparent}
+.appt-token-wrap>.appt-status-dot.booked::before{background:#2f6fd0}
+.appt-token-wrap>.appt-status-dot.waiting::before{background:#d08a1f;border-radius:2px}
+.appt-token-wrap>.appt-status-dot.called::before{background:#7a4fd0;border-radius:0;border-color:#4b2f8f}
+.appt-token-wrap>.appt-status-dot.inConsultation::before{background:#0f8f8a;border-color:#0b5f5c}
+.appt-token-wrap>.appt-status-dot.completed::before{background:#2e8b57}
+.appt-token-wrap>.appt-status-dot.cancelled::before{background:transparent;border-color:#b5475a}
+.appt-token-wrap>.appt-status-dot.noShow::before{background:transparent;border-color:#6b778c;border-style:dashed}

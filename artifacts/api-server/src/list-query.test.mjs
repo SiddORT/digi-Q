@@ -20,7 +20,7 @@ await build({
     b.onLoad({ filter: /.*/, namespace: "isolated" }, () => ({ contents: "export const db = {execute: (...args) => globalThis.fixtureExecute(...args)};" + ["users","doctors","assignments","branches","clinics","settings","auditLogs"].map(t=>`export const ${t}="${t}";`).join("") }));
   } }],
 });
-const { queryPage, queryMetrics, assignmentCatalogPredicate, sourceSql } = await import(join(dir, "query.mjs"));
+const { queryPage, queryMetrics, assignmentCatalogPredicate, sourceSql, queryAppointmentCalendar } = await import(join(dir, "query.mjs"));
 await build({
   stdin: { contents: 'export {canRead} from "./auth";', resolveDir: join(import.meta.dirname, "lib") },
   outfile: join(dir, "legacy-scope.mjs"), bundle: true, platform: "node", format: "esm",
@@ -74,6 +74,18 @@ await database.exec(`
 const admin = { id: "admin1", role: "clinicAdmin", clinicIds: Array.from({ length: 60 }, (_, n) => `c${n+1}`), branchIds: [] };
 const doctor = { id: "u1", role: "doctor", doctorId: "d1", managingAdminId: "admin1", clinicIds: ["c1"], branchIds: ["b1"] };
 after(async () => { delete globalThis.fixtureExecute; delete globalThis.scopeFixtures; await database.close(); await rm(dir, { recursive: true, force: true }); });
+test("calendar aggregates the complete scoped range rather than one page", async () => {
+  const range = { from: "2030-01-01", to: "2030-01-31", pageSize: 1 };
+  const all = await queryAppointmentCalendar({ role: "superAdmin" }, range, conn);
+  assert.equal(all.total, 600);
+  assert.equal(all.days[0].byStatus.waiting, 300);
+  assert.equal(all.days[0].byStatus.completed, 300);
+  const scoped = await queryAppointmentCalendar({ role: "patient", patientId: "p1" }, range, conn);
+  assert.equal(scoped.total, 1);
+  const filtered = await queryAppointmentCalendar({ role: "superAdmin" }, { ...range, status: "waiting" }, conn);
+  assert.equal(filtered.total, 300);
+  await assert.rejects(queryAppointmentCalendar({ role: "superAdmin" }, {from:"2030-01-01",to:"2031-01-01"}, conn));
+});
 
 test("booking patient lookup matches authorized visit location as well as registration without widening read scope", async () => {
   await database.exec(`
