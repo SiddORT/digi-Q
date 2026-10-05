@@ -1,0 +1,665 @@
+{
+  "PROJECT_NAME": "DigiQ Enterprise Healthcare Operations Platform",
+  "VERSION": "3.0",
+  "MODE": "STRICT_ENTERPRISE_DESIGN_SYSTEM_ENFORCEMENT",
+
+  "PRIMARY_OBJECTIVE": {
+    "goal": "Transform DigiQ into a fully standardized enterprise-grade healthcare operations platform with one unified design language, one component library, one interaction system, one spacing system, one typography system, and one UX architecture.",
+    "success_criteria": [
+      "Every screen feels like it belongs to the same product",
+      "Every component follows the same design language",
+      "Every future feature inherits the exact same visual system",
+      "No UI drift",
+      "No duplicated UX patterns",
+      "No inconsistent implementations"
+    ]
+  },
+
+  "ABSOLUTE_NON_NEGOTIABLE_RULES": [
+    "This is NOT a redesign project.",
+    "This is a design system standardization project.",
+    "Do not create alternative styles.",
+    "Do not create similar-looking components.",
+    "Do not create component variations unless explicitly defined.",
+    "Do not introduce new spacing scales.",
+    "Do not introduce new typography scales.",
+    "Do not introduce new radius values.",
+    "Do not introduce new shadow systems.",
+    "Do not introduce new modal patterns.",
+    "Do not introduce new drawer patterns.",
+    "Do not introduce new table patterns.",
+    "Do not introduce new form patterns.",
+    "Do not introduce new interaction patterns.",
+    "Future modules must inherit existing approved patterns.",
+    "Consistency takes precedence over creativity.",
+    "Scalability takes precedence over visual experimentation.",
+    "Every new component must belong to an existing component family.",
+    "No one-off components are allowed.",
+    "No one-off pages are allowed.",
+    "No visual drift is allowed.",
+    "No exceptions."
+  ],
+
+  "DESIGN_PHILOSOPHY": {
+    "keywords": [
+      "Healthcare",
+      "Operational",
+      "Enterprise",
+      "Clinical",
+      "Professional",
+      "Minimal",
+      "Structured",
+      "Scalable",
+      "Accessible",
+      "Data First",
+      "Workflow Driven",
+      "Trustworthy",
+      "Fast",
+      "Consistent"
+    ],
+
+    "avoid": [
+      "Dribbble UI",
+      "Fancy UI",
+      "Glassmorphism",
+      "Neumorphism",
+      "Heavy Gradients",
+      "Consumer App Styling",
+      "Playful Design",
+      "Decorative UI",
+      "Visual Clutter",
+      "Multiple Design Languages",
+      "Random Component Variations",
+      "Inconsistent Layouts"
+    ]
+  },
+
+  "DESIGN_SYSTEM_GOVERNANCE": {
+    "strict_mode": true,
+    "allow_visual_deviation": false,
+    "allow_component_deviation": false,
+    "allow_new_design_language": false,
+    "allow_new_color_system": false,
+    "allow_new_spacing_system": false,
+    "allow_new_radius_system": false,
+    "allow_new_shadow_system": false,
+    "allow_new_typography_system": false,
+    "allow_new_interaction_patterns": false,
+    "allow_new_modal_styles": false,
+    "allow_new_drawer_styles": false,
+    "allow_new_table_styles": false,
+    "allow_new_form_styles": false
+  },
+
+  "VISUAL_FOUNDATIONS": {
+    "fonts": {
+      "primary": "Inter",
+      "fallback": "system-ui, sans-serif"
+    },
+
+    "typography": {
+      "page_title": {
+        "size": 24,
+        "weight": 600
+      },
+      "section_title": {
+        "size": 20,
+        "weight": 600
+      },
+      "card_title": {
+        "size": 18,
+        "weight": 600
+      },
+      "table_header": {
+        "size": 13,
+        "weight": 600
+      },
+      "body_large": {
+        "size": 16,
+        "weight": 400
+      },
+      "body": {
+        "size": 14,
+        "weight": 400
+      },
+      "body_small": {
+        "size": 13,
+        "weight": 400
+      },
+      "caption": {
+        "size": 12,
+        "weight": 400
+      },
+      "tooltip": {
+        "size": 12,
+        "weight": 400
+      }
+    },
+
+    "spacing": {
+      "xs": 4,
+      "sm": 8,
+      "md": 12,
+      "lg": 16,
+      "xl": 24,
+      "xxl": 32,
+      "section": 40,
+      "page": 48
+    },
+
+    "radius": {
+      "xs": 6,
+      "sm": 8,
+      "md": 12,
+      "lg": 16,
+      "pill": 999
+    },
+
+    "controls": {
+      "compact": 32,
+      "default": 40,
+      "comfortable": 44,
+      "touch": 48
+    }
+  },
+
+  "INFORMATION_DENSITY_RULES": {
+    "goal": "Show maximum useful information with minimum visual clutter.",
+    "dashboard": "No unnecessary whitespace.",
+    "tables": "Prioritize data visibility.",
+    "forms": "Use multi-column layouts wherever possible.",
+    "cards": "Must provide operational value.",
+    "modals": "Keep minimal.",
+    "drawers": "Preferred for detailed workflows.",
+    "screens": "Optimize for productivity."
+  },
+
+  "NAVIGATION_SYSTEM": {
+    "sidebar": {
+      "expanded": true,
+      "collapsed": true,
+      "nested_navigation": true,
+      "accordion_navigation": true,
+      "favorites": true,
+      "recent_items": true,
+      "permission_based_visibility": true,
+      "tooltip_support": true
+    },
+
+    "topbar": {
+      "global_search": true,
+      "notifications": true,
+      "quick_actions": true,
+      "profile_menu": true,
+      "workspace_switcher": true
+    },
+
+    "breadcrumbs": true
+  },
+
+  "GLOBAL_SEARCH_SYSTEM": {
+    "command_palette": true,
+    "shortcut": "CMD+K",
+    "searchable_entities": [
+      "Patients",
+      "Appointments",
+      "Doctors",
+      "Clinics",
+      "Users",
+      "Schedules",
+      "Reports",
+      "Audit Logs",
+      "Queues",
+      "Locations"
+    ],
+
+    "features": [
+      "Recent Searches",
+      "Saved Searches",
+      "Grouped Results",
+      "Quick Actions",
+      "Search Suggestions",
+      "Search History",
+      "Search Shortcuts"
+    ]
+  },
+
+  "DASHBOARD_SYSTEM": {
+    "widgets": [
+      "Appointments Today",
+      "Patients Waiting",
+      "Patients In Consultation",
+      "Completed Appointments",
+      "Average Wait Time",
+      "Longest Wait Time",
+      "Queue Health",
+      "Doctor Availability",
+      "Clinic Capacity",
+      "Session Utilization",
+      "No Shows",
+      "Cancelled Appointments",
+      "Active Clinics",
+      "Queue Analytics"
+    ],
+
+    "states": [
+      "Loading",
+      "Success",
+      "Warning",
+      "Critical",
+      "Empty"
+    ]
+  },
+
+  "TABLE_SYSTEM": {
+    "table_types": [
+      "Standard Table",
+      "Compact Table",
+      "High Density Table",
+      "Expandable Table",
+      "Grouped Table",
+      "Tree Table",
+      "Timeline Table",
+      "Virtualized Table",
+      "Responsive Table",
+      "Card Table"
+    ],
+
+    "mandatory_features": [
+      "Sticky Headers",
+      "Sticky Action Columns",
+      "Bulk Selection",
+      "Bulk Actions",
+      "Column Visibility",
+      "Column Pinning",
+      "Column Reordering",
+      "Saved Views",
+      "Inline Actions",
+      "Row Expansion",
+      "Hover Actions",
+      "Pagination",
+      "Sorting",
+      "Export",
+      "Filters",
+      "Search"
+    ],
+
+    "hover_actions": [
+      "View",
+      "Edit",
+      "History",
+      "Queue",
+      "Ticket"
+    ],
+
+    "row_expansion": [
+      "Summary",
+      "Notes",
+      "Timeline",
+      "History",
+      "Queue Status"
+    ],
+
+    "rules": [
+      "No cropped text",
+      "No overlapping columns",
+      "Smart column widths",
+      "Responsive behavior required",
+      "Support large datasets"
+    ]
+  },
+
+  "BULK_ACTION_SYSTEM": [
+    "Bulk Check-In",
+    "Bulk Complete",
+    "Bulk Cancel",
+    "Bulk Reschedule",
+    "Bulk Reassign",
+    "Bulk Export",
+    "Bulk Print",
+    "Bulk SMS",
+    "Bulk Email"
+  ],
+
+  "FILTER_SYSTEM": {
+    "quick_filters": [
+      "Today",
+      "Tomorrow",
+      "This Week",
+      "Waiting",
+      "In Consultation",
+      "Completed",
+      "Cancelled",
+      "Absent"
+    ],
+
+    "advanced_filters": [
+      "Clinic",
+      "Doctor",
+      "Location",
+      "Session",
+      "Queue Status",
+      "Appointment Status",
+      "Date Range",
+      "Time Range"
+    ],
+
+    "features": [
+      "Saved Filters",
+      "Filter Presets",
+      "Filter Drawer",
+      "Filter Chips",
+      "Filter Summary",
+      "Filter Groups"
+    ]
+  },
+
+  "FORM_SYSTEM": {
+    "layouts": [
+      "Single Column",
+      "Two Column",
+      "Three Column",
+      "Wizard",
+      "Drawer Form",
+      "Modal Form",
+      "Inline Form"
+    ],
+
+    "controls": [
+      "Input",
+      "Textarea",
+      "Dropdown",
+      "Searchable Dropdown",
+      "Autocomplete",
+      "Country Code Selector",
+      "Timezone Selector",
+      "Date Picker",
+      "Date Range Picker",
+      "Time Picker",
+      "Time Range Picker",
+      "Checkbox",
+      "Radio",
+      "Toggle",
+      "Multi Select",
+      "Tag Selector",
+      "File Upload",
+      "Avatar Upload",
+      "OTP Input"
+    ],
+
+    "country_selector": {
+      "show_code": true,
+      "show_flag": true,
+      "hover_country_name": true,
+      "searchable": true
+    },
+
+    "timezone_selector": {
+      "strict_dropdown": true,
+      "searchable": true,
+      "manual_entry": false
+    },
+
+    "address": {
+      "country": "autocomplete",
+      "state": "dependent",
+      "city": "dependent"
+    },
+
+    "validation": {
+      "inline": true,
+      "real_time": true,
+      "helper_text": true
+    }
+  },
+
+  "DRAWER_SYSTEM": {
+    "preferred_over_modals": true,
+
+    "drawer_types": [
+      "Patient Drawer",
+      "Appointment Drawer",
+      "Doctor Drawer",
+      "Clinic Drawer",
+      "Queue Drawer",
+      "Filter Drawer",
+      "Audit Drawer",
+      "History Drawer",
+      "Profile Drawer"
+    ]
+  },
+
+  "MODAL_SYSTEM": {
+    "allowed_usage": [
+      "Confirmation",
+      "Delete",
+      "Warning",
+      "Short Forms",
+      "Approvals"
+    ],
+
+    "avoid_for": [
+      "Large Detail Screens",
+      "Complex Workflows",
+      "Long Forms"
+    ]
+  },
+
+  "TOOLTIPS_AND_HOVER_SYSTEM": {
+    "tooltip": true,
+    "rich_tooltip": true,
+    "hover_card": true,
+    "popover": true,
+    "context_menu": true,
+
+    "required_on": [
+      "Icons",
+      "Badges",
+      "Statuses",
+      "Truncated Text",
+      "Actions",
+      "Table Controls"
+    ]
+  },
+
+  "NOTIFICATION_SYSTEM": {
+    "notification_center": true,
+
+    "tabs": [
+      "All",
+      "Appointments",
+      "System",
+      "Mentions"
+    ],
+
+    "types": [
+      "Success",
+      "Warning",
+      "Error",
+      "Info"
+    ]
+  },
+
+  "STATUS_SYSTEM": {
+    "allowed_statuses": [
+      "Scheduled",
+      "Waiting",
+      "Called Next",
+      "Checked In",
+      "In Consultation",
+      "Completed",
+      "Cancelled",
+      "Absent",
+      "No Show"
+    ],
+
+    "no_custom_statuses": true
+  },
+
+  "HEALTHCARE_COMPONENTS": {
+    "appointments": [
+      "Appointment Card",
+      "Appointment Drawer",
+      "Appointment Timeline",
+      "Appointment History",
+      "Appointment Ticket",
+      "Appointment QR",
+      "Appointment Notes",
+      "Appointment Audit Trail"
+    ],
+
+    "queue": [
+      "Live Queue",
+      "Queue Board",
+      "Queue Timeline",
+      "Queue Analytics",
+      "Queue Health",
+      "Now Serving",
+      "Next In Queue",
+      "Queue Ticket"
+    ],
+
+    "patients": [
+      "Patient Profile",
+      "Patient Summary",
+      "Patient Timeline",
+      "Patient History",
+      "Patient Notes",
+      "Patient Documents",
+      "Patient Activity Feed"
+    ],
+
+    "doctors": [
+      "Doctor Profile",
+      "Doctor Availability",
+      "Doctor Schedule",
+      "Doctor Sessions"
+    ],
+
+    "scheduling": [
+      "Calendar",
+      "Session Builder",
+      "Availability Planner",
+      "Capacity Planner",
+      "Recurring Rules",
+      "Holiday Rules",
+      "Leave Rules",
+      "Conflict Detection"
+    ],
+
+    "clinics": [
+      "Clinic Profile",
+      "Clinic Capacity",
+      "Location Management",
+      "Operational Statistics"
+    ]
+  },
+
+  "REPORTING_SYSTEM": {
+    "kpis": true,
+
+    "charts": [
+      "Line",
+      "Bar",
+      "Donut",
+      "Heatmap"
+    ],
+
+    "exports": [
+      "PDF",
+      "Excel",
+      "CSV"
+    ]
+  },
+
+  "TIMELINE_SYSTEM": [
+    "Patient Timeline",
+    "Appointment Timeline",
+    "Queue Timeline",
+    "Activity Timeline",
+    "Audit Timeline"
+  ],
+
+  "LOADING_EMPTY_ERROR_STATES": {
+    "loading": [
+      "Skeleton",
+      "Loading Cards",
+      "Loading Tables",
+      "Loading Drawers"
+    ],
+
+    "empty": [
+      "No Data",
+      "No Patients",
+      "No Appointments",
+      "No Clinics",
+      "No Queue",
+      "No Results"
+    ],
+
+    "error": [
+      "Network Error",
+      "Validation Error",
+      "Permission Error"
+    ]
+  },
+
+  "RESPONSIVE_RULES": {
+    "desktop": true,
+    "tablet": true,
+    "mobile": true,
+
+    "requirements": [
+      "No cropped text",
+      "No overlapping components",
+      "No hidden critical actions",
+      "No broken tables",
+      "No broken drawers",
+      "No broken modals"
+    ]
+  },
+
+  "ACCESSIBILITY": {
+    "keyboard_navigation": true,
+    "focus_states": true,
+    "screen_reader_support": true,
+    "high_contrast": true,
+    "zoom_150_percent": true
+  },
+
+  "QUALITY_GATE_CHECKLIST": [
+    "No text truncation",
+    "No overlapping elements",
+    "No inconsistent spacing",
+    "No inconsistent typography",
+    "No inconsistent buttons",
+    "No inconsistent cards",
+    "No inconsistent forms",
+    "No inconsistent modals",
+    "No inconsistent drawers",
+    "No inconsistent tables",
+    "No inconsistent badges",
+    "No inconsistent filters",
+    "No inconsistent tooltips",
+    "No inconsistent search patterns",
+    "No inconsistent status colors",
+    "No inconsistent hover behaviors",
+    "No duplicated components",
+    "No visual drift"
+  ],
+
+  "FUTURE_DEVELOPMENT_ENFORCEMENT": {
+    "instruction": "Every future page, module, workflow, popup, modal, drawer, wizard, report, dashboard widget, appointment feature, queue feature, clinic feature, patient feature, doctor feature, analytics feature, mobile screen, tablet screen, settings screen, configuration screen, admin feature and user-facing feature MUST inherit this exact design system.",
+    "strict_enforcement": true,
+    "new_components_must_follow_existing_patterns": true,
+    "new_components_must_use_existing_tokens": true,
+    "new_components_must_use_existing_spacing": true,
+    "new_components_must_use_existing_typography": true,
+    "new_components_must_use_existing_radius": true,
+    "new_components_must_use_existing_colors": true,
+    "new_components_must_use_existing_interactions": true,
+    "visual_deviation_allowed": false,
+    "design_language_changes_allowed": false,
+    "component_family_deviation_allowed": false
+  }
+}
