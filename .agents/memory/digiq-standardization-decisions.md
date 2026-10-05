@@ -87,8 +87,8 @@ Custom roles are restrictive specializations of existing staff roles, not indepe
 
 **How to apply:** Keep effective-permission explanations conditional on built-in authorization, and do not label an unrestricted capability as unconditional record access.
 
-The user repeatedly said “do all” for the approved scope, including its remaining acceptance checks.
+The user repeatedly said “do all” for the approved scope, including its remaining acceptance checks, and clarified “do all, not partially” after an incomplete styling-first delivery.
 
 **Why:** The user asked to complete the authorized work rather than stop with unfinished checks proposed as follow-ups.
 
-**How to apply:** Continue remaining independent work and fix discovered issues. Ask only for genuine external blockers such as missing provider credentials or the recipient/confirmation required for a live send.
+**How to apply:** Continue remaining independent work and fix discovered issues. Do not replace unfinished authorized scope with proposed follow-up tasks or call a styling-only pass completion. Ask for genuine external blockers and conflicting clinical requirements that need the user's decision.
