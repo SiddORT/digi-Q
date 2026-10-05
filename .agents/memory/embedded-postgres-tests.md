@@ -14,3 +14,9 @@ Pass the active transaction connection through nested settings/readiness lookups
 **Why:** Adding a global-connection credential lookup inside a booking transaction stalled the PGlite regressions: the lookup waited outside the transaction that was itself waiting for the lookup. Isolated provider tests did not expose this.
 
 **How to apply:** Helpers called within transactions must accept and reuse the caller's connection. Also extend isolated module doubles when a shared helper gains a database dependency; do not let a unit test accidentally resolve the real database module.
+
+Run the full backend suite serially when it includes disposable native PostgreSQL clusters.
+
+**Why:** Parallel cluster initialization on this container exceeded the harness's initdb timeout, producing environment failures unrelated to the feature under test.
+
+**How to apply:** Use Node's `--test-concurrency=1` for the combined backend suite; keep focused pure-unit runs separate.

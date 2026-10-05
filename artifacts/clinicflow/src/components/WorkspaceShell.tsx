@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { Star, Clock3, LogOut, ChevronDown, UserRound, Plus, Activity, QrCode, Building2, Check } from "lucide-react";
+import { OverflowText } from "./OverflowText";
+import { menuKeyDown } from "@/lib/tabs-a11y";
 import * as api from "@/lib/api";
 import { navLabel } from "./WorkspaceNav";
 import { quickActions } from "./WorkspaceSearch";
@@ -26,52 +29,56 @@ export function SidebarShortcuts({ navigation, role, page, userId, onNavigate }:
 
 const actionIcon: Record<string, any> = { book: Plus, queue: Activity, "check-in": QrCode, profile: UserRound };
 
-/** Topbar profile menu: identity, permitted quick actions, current-page favorite toggle and sign out.
- *  Workspace section shows the real scope from the identity; switching is not offered because no switch API exists. */
-export const SWITCH_UNAVAILABLE = "Switching is not available yet. Your session scope is set by the server when you sign in, and there is no switch service.";
-
-/** Current scope and real clinic memberships from the signed-in identity. Read-only: never fakes a switch. */
-export function WorkspaceScope({ role, roleLabel, clinicIds, open }: { role: string; roleLabel: string; clinicIds: string[]; open: boolean }) {
-  const staffWithClinics = role !== "patient" && role !== "superAdmin" && clinicIds.length > 0;
-  const params = { pageSize: 100 };
-  const clinics = api.useListClinics(params, { query: { queryKey: api.getListClinicsQueryKey(params), enabled: open && staffWithClinics, staleTime: 60000 } });
-  const names = new Map((clinics.data?.items ?? []).map(c => [c.id, c.name]));
-  const scope = role === "superAdmin" ? "Platform-Wide" : role === "patient" ? "Your Patient Account" : clinicIds.length === 0 ? "No Clinic Assigned" : clinicIds.length === 1 ? (names.get(clinicIds[0]) || "One Clinic") : `${clinicIds.length} Clinics`;
+/** Server-authorized workspace switching: narrows scope to one assigned clinic, never expands it.
+ *  Caches are cleared on switch so no data from the previous scope can render. */
+export function WorkspaceScope({ role, roleLabel, open }: { role: string; roleLabel: string; open: boolean }) {
+  const staff = role !== "patient" && role !== "superAdmin";
+  const client = useQueryClient();
+  const q = api.useListWorkspaces({ query: { queryKey: api.getListWorkspacesQueryKey(), enabled: open && staff, staleTime: 60000 } });
+  const select = api.useSelectWorkspace({ mutation: { onSuccess: () => { void client.cancelQueries(); client.clear(); window.location.reload(); } } });
+  const list = q.data?.workspaces ?? [];
+  const active = q.data?.activeClinicId ?? null;
+  const scope = role === "superAdmin" ? "Platform-Wide" : role === "patient" ? "Your Patient Account" : q.isLoading ? "Loading…" : !list.length ? "No Clinic Assigned" : active ? (list.find(w => w.id === active)?.name || "One Clinic") : list.length === 1 ? list[0].name : `All ${list.length} Clinics`;
   return <div className="pm-scope" role="group" aria-label="Workspace" data-testid="menu-workspace">
     <small className="pm-scope-label">Workspace</small>
-    <div className="pm-scope-current"><Building2 size={15} aria-hidden /><span className="ov-text" title={`${roleLabel} · ${scope}`}>{roleLabel} · {scope}</span></div>
-    {staffWithClinics && clinicIds.length > 1 && <ul className="pm-scope-list" aria-label="Your clinic memberships">
-      {clinics.isLoading ? <li className="muted">Loading clinics…</li>
-        : clinics.error ? <li className="muted" role="alert">Clinic names could not be loaded. <button type="button" className="text-link" onClick={() => void clinics.refetch()}>Retry</button></li>
-        : clinicIds.map(id => <li key={id}><Check size={14} aria-hidden /><span className="ov-text" title={names.get(id) || "Clinic outside your list view"}>{names.get(id) || "Clinic Outside Your List View"}</span></li>)}
+    <div className="pm-scope-current"><Building2 size={15} aria-hidden /><OverflowText value={`${roleLabel} · ${scope}`} /></div>
+    {staff && q.error && <p className="muted" role="alert">Workspaces could not be loaded. <button type="button" className="text-link" onClick={() => void q.refetch()}>Retry</button></p>}
+    {q.data?.switchable && <ul className="pm-scope-list" aria-label="Switch workspace">
+      {[{ id: "", name: `All My Clinics (${list.length})` }, ...list].map(w => { const on = (w.id || null) === active; return <li key={w.id || "all"}>
+        <button type="button" role="menuitemradio" aria-checked={on} disabled={select.isPending} onClick={() => { if (!on) select.mutate({ data: { clinicId: w.id || null } }); }} data-testid={`menu-workspace-${w.id || "all"}`} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", minWidth: 0 }}>
+          {on ? <Check size={14} aria-hidden /> : <span style={{ width: 14 }} aria-hidden />}<OverflowText value={w.name} />
+        </button></li>; })}
     </ul>}
-    <button type="button" role="menuitem" disabled aria-disabled="true" aria-description={SWITCH_UNAVAILABLE} data-testid="menu-switch-workspace">Switch Workspace</button>
-    <small className="muted pm-scope-reason" data-testid="text-switch-unavailable">{SWITCH_UNAVAILABLE}</small>
+    {select.isPending && <small className="muted" role="status">Switching workspace…</small>}
+    {select.isError && <small className="field-error" role="alert">Switch failed. You may no longer be assigned to that clinic.</small>}
   </div>;
 }
 
-export function ProfileMenu({ name, roleLabel, role, navigation, page, userId, clinicIds = [], onSignOut }: { name: string; roleLabel: string; role: string; navigation: string[]; page: string; userId: string; clinicIds?: string[]; onSignOut: () => void }) {
+export function ProfileMenu({ name, roleLabel, role, navigation, page, userId, onSignOut }: { name: string; roleLabel: string; role: string; navigation: string[]; page: string; userId: string; clinicIds?: string[]; onSignOut: () => void }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const { prefs, toggleFavorite } = useNavigationPreferences(userId, role);
   useEffect(() => {
     if (!open) return;
     const outside = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); trigger.current?.focus(); } };
     document.addEventListener("mousedown", outside); document.addEventListener("keydown", key);
+    // Move focus into the menu so arrow keys work immediately.
+    requestAnimationFrame(() => panel.current?.querySelector<HTMLElement>('[role="menuitem"],[role="menuitemradio"]')?.focus());
     return () => { document.removeEventListener("mousedown", outside); document.removeEventListener("keydown", key); };
   }, [open]);
   useEffect(() => setOpen(false), [page]);
   const initials = name.split(" ").map(n => n[0]).slice(0, 2).join("");
   const fav = prefs.favorites.includes(page);
   return <div className="profile-menu" ref={root}>
-    <button type="button" ref={trigger} className="profile-menu-trigger" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(v => !v)} data-testid="button-profile-menu">
+    <button type="button" ref={trigger} className="profile-menu-trigger" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(v => !v)} onKeyDown={e => { if (e.key === "ArrowDown" && !open) { e.preventDefault(); setOpen(true); } }} data-testid="button-profile-menu">
       <span className="avatar" aria-hidden>{initials}</span><span className="pm-name"><strong>{name}</strong><small>{roleLabel}</small></span><ChevronDown size={14} aria-hidden />
     </button>
-    {open && <div className="profile-menu-panel" role="menu" aria-label="Account">
+    {open && <div className="profile-menu-panel" role="menu" aria-label="Account" ref={panel} onKeyDown={e => { if (e.key === "Tab") setOpen(false); else menuKeyDown(e); }}>
       <div className="pm-head"><strong>{name}</strong><br /><small className="muted">{roleLabel}</small></div>
-      <WorkspaceScope role={role} roleLabel={roleLabel} clinicIds={clinicIds} open={open} />
+      <WorkspaceScope role={role} roleLabel={roleLabel} open={open} />
       {quickActions(role, navigation).map(a => { const Icon = actionIcon[a.id] || Plus; return <Link key={a.id} role="menuitem" href={a.href} onClick={() => setOpen(false)} data-testid={`menu-${a.id}`}><Icon size={15} aria-hidden />{a.label}</Link>; })}
       {navigation.includes(page) && <button type="button" role="menuitem" aria-pressed={fav} onClick={() => toggleFavorite(page)} data-testid="menu-toggle-favorite"><Star size={15} fill={fav ? "currentColor" : "none"} aria-hidden />{fav ? "Remove page from favorites" : "Add page to favorites"}</button>}
       <button type="button" role="menuitem" onClick={() => { setOpen(false); onSignOut(); }} data-testid="menu-signout"><LogOut size={15} aria-hidden />Sign Out</button>

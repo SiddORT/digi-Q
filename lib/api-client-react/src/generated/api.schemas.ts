@@ -20,6 +20,182 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export type DocumentBinary = Blob;
+
+export type WorkspaceNotificationKind = typeof WorkspaceNotificationKind[keyof typeof WorkspaceNotificationKind];
+
+
+export const WorkspaceNotificationKind = {
+  appointments: 'appointments',
+  queue: 'queue',
+  system: 'system',
+} as const;
+
+export interface WorkspaceNotification {
+  id: string;
+  kind: WorkspaceNotificationKind;
+  title: string;
+  body?: string;
+  createdAt: string;
+  read: boolean;
+  appointmentId?: string | null;
+  date?: string | null;
+}
+
+export interface NotificationList {
+  items: WorkspaceNotification[];
+  unread: number;
+}
+
+export interface NotificationUnread {
+  unread: number;
+}
+
+export interface NotificationReadInput {
+  /**
+     * @maxItems 100
+     * @items.maxLength 120
+     */
+  ids?: string[];
+  all?: boolean;
+}
+
+export interface WorkspaceOption {
+  id: string;
+  name: string;
+}
+
+export interface WorkspaceList {
+  activeClinicId?: string | null;
+  switchable: boolean;
+  workspaces: WorkspaceOption[];
+}
+
+export interface WorkspaceSelect {
+  clinicId: string | null;
+}
+
+export interface PatientDocument {
+  id: string;
+  patientId: string;
+  clinicId: string;
+  clinicName?: string;
+  name: string;
+  contentType: string;
+  size: number;
+  createdAt: string;
+  uploadedByName?: string;
+}
+
+export interface PatientDocumentList {
+  items: PatientDocument[];
+  uploadClinicIds: string[];
+}
+
+export interface PatientActivityItem {
+  id: string;
+  appointmentId: string;
+  fromStatus?: string | null;
+  toStatus: string;
+  occurredAt: string;
+  reference: string;
+  doctorName: string;
+  date: string;
+  actorName?: string | null;
+}
+
+export interface PatientActivityPage {
+  items: PatientActivityItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ReportTrendPoint {
+  date: string;
+  appointments: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+  waiting: number;
+}
+
+export interface ReportTrend {
+  from: string;
+  to: string;
+  points: ReportTrendPoint[];
+}
+
+export interface RecordSearchItem {
+  id: string;
+  /** Visit clinic */
+  clinicId: string;
+  branchId: string;
+  doctorId: string;
+  /** Session start time when the visit belongs to a timed session. */
+  startTime?: string | null;
+  sessionId?: string | null;
+  reference: string;
+  patientName: string;
+  doctorName: string;
+  tokenNumber: number;
+  token?: string;
+  date: string;
+  status: string;
+  today: boolean;
+}
+
+export interface RecordSearchResult {
+  items: RecordSearchItem[];
+}
+
+export interface SavedViewColumns {
+  /**
+     * @maxItems 40
+     * @items.maxLength 60
+     */
+  order: string[];
+  /**
+     * @maxItems 40
+     * @items.maxLength 60
+     */
+  hidden: string[];
+  /** @maxLength 60 */
+  pinned?: string | null;
+}
+
+export type SavedViewInputFilters = {[key: string]: string};
+
+export interface SavedViewInput {
+  /** @maxLength 60 */
+  tableKey: string;
+  /**
+     * @minLength 1
+     * @maxLength 60
+     */
+  name: string;
+  filters: SavedViewInputFilters;
+  columns?: SavedViewColumns;
+  shareWithRole?: boolean;
+}
+
+export type SavedViewRecordFilters = {[key: string]: string};
+
+export interface SavedViewRecord {
+  id: string;
+  tableKey: string;
+  name: string;
+  filters: SavedViewRecordFilters;
+  columns?: SavedViewColumns;
+  ownedByMe: boolean;
+  shared: boolean;
+}
+
+export interface SavedViewList {
+  items: SavedViewRecord[];
+  canShare: boolean;
+}
+
 export interface StorageConfiguration {
   provider: string;
   source: string;
@@ -2817,4 +2993,62 @@ export const ListAuditLogsActivityType = {
   operational: 'operational',
   security: 'security',
 } as const;
+
+export type ListNotificationsParams = {
+kind?: ListNotificationsKind;
+};
+
+export type ListNotificationsKind = typeof ListNotificationsKind[keyof typeof ListNotificationsKind];
+
+
+export const ListNotificationsKind = {
+  all: 'all',
+  appointments: 'appointments',
+  queue: 'queue',
+  system: 'system',
+} as const;
+
+export type UploadPatientDocumentParams = {
+/**
+ * @minLength 1
+ * @maxLength 160
+ */
+name: string;
+clinicId?: string;
+};
+
+export type ListPatientActivityParams = {
+/**
+ * @minimum 1
+ */
+page?: PageParameter;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: PageSizeParameter;
+};
+
+export type GetReportTrendsParams = {
+from?: FromParameter;
+to?: ToParameter;
+clinicId?: ClinicIdParameter;
+branchId?: BranchIdParameter;
+doctorId?: DoctorIdParameter;
+};
+
+export type SearchRecordsParams = {
+/**
+ * @minLength 2
+ * @maxLength 100
+ */
+q: string;
+};
+
+export type ListSavedViewsParams = {
+/**
+ * @maxLength 60
+ */
+tableKey: string;
+};
 

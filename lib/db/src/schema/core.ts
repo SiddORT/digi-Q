@@ -1,4 +1,4 @@
-import { pgTable, text, jsonb, timestamp, integer, boolean, index, uniqueIndex, check, foreignKey, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTable, text, jsonb, timestamp, integer, boolean, index, uniqueIndex, check, foreignKey, type AnyPgColumn, primaryKey } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 const id = () => text("id").primaryKey();
@@ -161,3 +161,25 @@ export const authRateLimits = pgTable("auth_rate_limits", {
   attempts: integer("attempts").notNull().default(0),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 }, t => [index("auth_rate_limit_expiry_idx").on(t.expiresAt)]);
+/** Per-user read markers for derived in-app notifications (no message copies stored). */
+export const notificationReads = pgTable("notification_reads", {
+  userId: text("user_id").notNull().references(() => users.id),
+  notificationId: text("notification_id").notNull(),
+  readAt: timestamp("read_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.userId, t.notificationId] })]);
+/** Private patient documents. Bytes live in private storage; never publicly addressable. */
+export const patientDocuments = pgTable("patient_documents", {
+  id: id(), patientId: text("patient_id").notNull().references(() => patients.id),
+  clinicId: text("clinic_id").notNull().references(() => clinics.id),
+  uploadedBy: text("uploaded_by").notNull().references(() => users.id),
+  name: text("name").notNull(), contentType: text("content_type").notNull(), size: integer("size").notNull(),
+  provider: text("provider").notNull(), storageKey: text("storage_key").notNull(),
+  status: text("status").notNull().default("active"), createdAt: created(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, t => [index("patient_document_patient_idx").on(t.patientId, t.clinicId)]);
+/** Synced listing views. Only allowlisted structured filters and column layout; never search text. */
+export const savedViews = pgTable("saved_views", {
+  id: id(), userId: text("user_id").notNull().references(() => users.id), tableKey: text("table_key").notNull(),
+  name: text("name").notNull(), data: data(), sharedRole: text("shared_role"),
+  clinicIds: jsonb("clinic_ids").$type<string[]>().notNull().default([]), createdAt: created(),
+}, t => [index("saved_view_owner_idx").on(t.userId, t.tableKey), index("saved_view_shared_idx").on(t.sharedRole, t.tableKey)]);

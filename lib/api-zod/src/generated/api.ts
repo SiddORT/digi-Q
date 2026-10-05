@@ -5777,3 +5777,326 @@ export const UpdateSettingsResponse = zod.object({
 }))
 
 
+/**
+ * In-app events derived from real scoped appointment status history and, for administrators, operational audit records from the last 30 days. Per-user persistent read state. No email is sent.
+ */
+export const listNotificationsQueryKindDefault = `all`;
+
+export const ListNotificationsQueryParams = zod.object({
+  "kind": zod.enum(['all', 'appointments', 'queue', 'system']).default(listNotificationsQueryKindDefault)
+})
+
+export const ListNotificationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['appointments', 'queue', 'system']),
+  "title": zod.string(),
+  "body": zod.string().optional(),
+  "createdAt": zod.coerce.date(),
+  "read": zod.boolean(),
+  "appointmentId": zod.string().nullish(),
+  "date": zod.string().nullish()
+})),
+  "unread": zod.number().int()
+})
+
+
+export const markNotificationsReadBodyIdsItemMax = 120;
+
+export const markNotificationsReadBodyIdsMax = 100;
+
+
+
+export const MarkNotificationsReadBody = zod.object({
+  "ids": zod.array(zod.string().max(markNotificationsReadBodyIdsItemMax)).max(markNotificationsReadBodyIdsMax).optional(),
+  "all": zod.boolean().optional()
+})
+
+export const MarkNotificationsReadResponse = zod.object({
+  "unread": zod.number().int()
+})
+
+
+/**
+ * Clinic memberships of the signed-in staff user and the active workspace. Switching only narrows scope to one assigned clinic.
+ */
+export const ListWorkspacesResponse = zod.object({
+  "activeClinicId": zod.string().nullish(),
+  "switchable": zod.boolean(),
+  "workspaces": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}))
+})
+
+
+export const SelectWorkspaceBody = zod.object({
+  "clinicId": zod.string().nullable()
+})
+
+export const SelectWorkspaceResponse = zod.object({
+  "activeClinicId": zod.string().nullish(),
+  "switchable": zod.boolean(),
+  "workspaces": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+}))
+})
+
+
+export const ListPatientDocumentsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ListPatientDocumentsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "patientId": zod.string(),
+  "clinicId": zod.string(),
+  "clinicName": zod.string().optional(),
+  "name": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "uploadedByName": zod.string().optional()
+})),
+  "uploadClinicIds": zod.array(zod.string())
+})
+
+
+/**
+ * Private upload (PDF, PNG, JPEG, WebP or plain text, at most 10 MB). Requires CSRF header. Stored privately; never publicly addressable.
+ */
+export const UploadPatientDocumentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const uploadPatientDocumentQueryNameMax = 160;
+
+
+
+export const UploadPatientDocumentQueryParams = zod.object({
+  "name": zod.coerce.string().min(1).max(uploadPatientDocumentQueryNameMax),
+  "clinicId": zod.coerce.string().optional()
+})
+
+export const UploadPatientDocumentResponse = zod.object({
+  "id": zod.string(),
+  "patientId": zod.string(),
+  "clinicId": zod.string(),
+  "clinicName": zod.string().optional(),
+  "name": zod.string(),
+  "contentType": zod.string(),
+  "size": zod.number().int(),
+  "createdAt": zod.coerce.date(),
+  "uploadedByName": zod.string().optional()
+})
+
+
+export const DownloadPatientDocumentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DownloadPatientDocumentResponse = zod.unknown()
+
+
+export const DeletePatientDocumentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeletePatientDocumentResponse = zod.void()
+
+
+/**
+ * All recorded appointment status changes for this patient within your scope, newest first.
+ */
+export const ListPatientActivityParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const listPatientActivityQueryPageDefault = 1;
+
+export const listPatientActivityQueryPageSizeDefault = 20;
+export const listPatientActivityQueryPageSizeMax = 100;
+
+
+
+export const ListPatientActivityQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).default(listPatientActivityQueryPageDefault),
+  "pageSize": zod.coerce.number().int().min(1).max(listPatientActivityQueryPageSizeMax).default(listPatientActivityQueryPageSizeDefault)
+})
+
+export const ListPatientActivityResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "appointmentId": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string(),
+  "occurredAt": zod.coerce.date(),
+  "reference": zod.string(),
+  "doctorName": zod.string(),
+  "date": zod.string(),
+  "actorName": zod.string().nullish()
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int()
+})
+
+
+export const GetReportTrendsQueryParams = zod.object({
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "clinicId": zod.coerce.string().optional(),
+  "branchId": zod.coerce.string().optional(),
+  "doctorId": zod.coerce.string().optional()
+})
+
+export const GetReportTrendsResponse = zod.object({
+  "from": zod.string(),
+  "to": zod.string(),
+  "points": zod.array(zod.object({
+  "date": zod.string(),
+  "appointments": zod.number().int(),
+  "completed": zod.number().int(),
+  "cancelled": zod.number().int(),
+  "noShow": zod.number().int(),
+  "waiting": zod.number().int()
+}))
+})
+
+
+/**
+ * Scoped queue and appointment record search by token, reference or patient name. Search text is never stored.
+ */
+export const searchRecordsQueryQMin = 2;
+export const searchRecordsQueryQMax = 100;
+
+
+
+export const SearchRecordsQueryParams = zod.object({
+  "q": zod.coerce.string().min(searchRecordsQueryQMin).max(searchRecordsQueryQMax)
+})
+
+export const SearchRecordsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "clinicId": zod.string().describe('Visit clinic'),
+  "branchId": zod.string(),
+  "doctorId": zod.string(),
+  "startTime": zod.string().nullish().describe('Session start time when the visit belongs to a timed session.'),
+  "sessionId": zod.string().nullish(),
+  "reference": zod.string(),
+  "patientName": zod.string(),
+  "doctorName": zod.string(),
+  "tokenNumber": zod.number().int(),
+  "token": zod.string().optional(),
+  "date": zod.string(),
+  "status": zod.string(),
+  "today": zod.boolean()
+}))
+})
+
+
+export const listSavedViewsQueryTableKeyMax = 60;
+
+
+
+export const ListSavedViewsQueryParams = zod.object({
+  "tableKey": zod.coerce.string().max(listSavedViewsQueryTableKeyMax)
+})
+
+export const listSavedViewsResponseItemsItemColumnsOrderItemMax = 60;
+
+export const listSavedViewsResponseItemsItemColumnsOrderMax = 40;
+
+export const listSavedViewsResponseItemsItemColumnsHiddenItemMax = 60;
+
+export const listSavedViewsResponseItemsItemColumnsHiddenMax = 40;
+
+export const listSavedViewsResponseItemsItemColumnsPinnedMax = 60;
+
+
+
+export const ListSavedViewsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "tableKey": zod.string(),
+  "name": zod.string(),
+  "filters": zod.record(zod.string(), zod.string()),
+  "columns": zod.object({
+  "order": zod.array(zod.string().max(listSavedViewsResponseItemsItemColumnsOrderItemMax)).max(listSavedViewsResponseItemsItemColumnsOrderMax),
+  "hidden": zod.array(zod.string().max(listSavedViewsResponseItemsItemColumnsHiddenItemMax)).max(listSavedViewsResponseItemsItemColumnsHiddenMax),
+  "pinned": zod.string().max(listSavedViewsResponseItemsItemColumnsPinnedMax).nullish()
+}).optional(),
+  "ownedByMe": zod.boolean(),
+  "shared": zod.boolean()
+})),
+  "canShare": zod.boolean()
+})
+
+
+export const createSavedViewBodyTableKeyMax = 60;
+
+export const createSavedViewBodyNameMax = 60;
+
+export const createSavedViewBodyFiltersMaxOne = 80;
+
+export const createSavedViewBodyColumnsOrderItemMax = 60;
+
+export const createSavedViewBodyColumnsOrderMax = 40;
+
+export const createSavedViewBodyColumnsHiddenItemMax = 60;
+
+export const createSavedViewBodyColumnsHiddenMax = 40;
+
+export const createSavedViewBodyColumnsPinnedMax = 60;
+
+
+
+export const CreateSavedViewBody = zod.object({
+  "tableKey": zod.string().max(createSavedViewBodyTableKeyMax),
+  "name": zod.string().min(1).max(createSavedViewBodyNameMax),
+  "filters": zod.record(zod.string(), zod.string().max(createSavedViewBodyFiltersMaxOne)),
+  "columns": zod.object({
+  "order": zod.array(zod.string().max(createSavedViewBodyColumnsOrderItemMax)).max(createSavedViewBodyColumnsOrderMax),
+  "hidden": zod.array(zod.string().max(createSavedViewBodyColumnsHiddenItemMax)).max(createSavedViewBodyColumnsHiddenMax),
+  "pinned": zod.string().max(createSavedViewBodyColumnsPinnedMax).nullish()
+}).optional(),
+  "shareWithRole": zod.boolean().optional()
+})
+
+export const createSavedViewResponseColumnsOrderItemMax = 60;
+
+export const createSavedViewResponseColumnsOrderMax = 40;
+
+export const createSavedViewResponseColumnsHiddenItemMax = 60;
+
+export const createSavedViewResponseColumnsHiddenMax = 40;
+
+export const createSavedViewResponseColumnsPinnedMax = 60;
+
+
+
+export const CreateSavedViewResponse = zod.object({
+  "id": zod.string(),
+  "tableKey": zod.string(),
+  "name": zod.string(),
+  "filters": zod.record(zod.string(), zod.string()),
+  "columns": zod.object({
+  "order": zod.array(zod.string().max(createSavedViewResponseColumnsOrderItemMax)).max(createSavedViewResponseColumnsOrderMax),
+  "hidden": zod.array(zod.string().max(createSavedViewResponseColumnsHiddenItemMax)).max(createSavedViewResponseColumnsHiddenMax),
+  "pinned": zod.string().max(createSavedViewResponseColumnsPinnedMax).nullish()
+}).optional(),
+  "ownedByMe": zod.boolean(),
+  "shared": zod.boolean()
+})
+
+
+export const DeleteSavedViewParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const DeleteSavedViewResponse = zod.void()
+
+

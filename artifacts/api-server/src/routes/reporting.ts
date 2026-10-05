@@ -88,6 +88,19 @@ reportingRouter.get("/reports", async (req, res) => {
   const { rows, total } = result.rows[0] as any;
   res.json({ from: q.from, to: q.to, groupBy, rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
 });
+reportingRouter.get("/reports/trends", async (req, res) => {
+  const user = await requireUser(req); roles(user, ["superAdmin", "clinicAdmin", "doctor", "receptionist"]);
+  const q: any = query(z.GetReportTrendsQueryParams, req), today = localNow((await getSettings()).timezone).date;
+  await authorizeReportContext(user, q);
+  q.from ||= today.slice(0, 7) + "-01"; q.to ||= today;
+  assert(q.from <= q.to, 400, "Invalid report date range");
+  assert((Date.parse(q.to) - Date.parse(q.from)) / 86400000 <= 366, 400, "Trend range is limited to one year");
+  const result = await db.execute(sql`with records as (select doc from (${sourceSql(user, "appointments")}) s where ${filterSql({ from: q.from, to: q.to, clinicId: q.clinicId, branchId: q.branchId, doctorId: q.doctorId })}),
+    grouped as (select doc->>'date' as date, ${metricSql} from records group by 1)
+    select to_char(d, 'YYYY-MM-DD') as date, coalesce(g.appointments,0) as appointments, coalesce(g.completed,0) as completed, coalesce(g.cancelled,0) as cancelled, coalesce(g."noShow",0) as "noShow", coalesce(g.waiting,0) as waiting
+    from generate_series(${q.from}::date, ${q.to}::date, interval '1 day') d left join grouped g on g.date = to_char(d, 'YYYY-MM-DD') order by 1`);
+  res.json({ from: q.from, to: q.to, points: result.rows });
+});
 reportingRouter.get("/audit-logs", async (req, res) => {
   const user = await requireUser(req); roles(user, ["superAdmin", "clinicAdmin"]);
   const q = query(z.ListAuditLogsQueryParams, req);

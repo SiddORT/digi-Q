@@ -1,5 +1,7 @@
 # DigiQ enterprise UX: completion matrix
 
+> Historical listing-controls record. Notifications, workspace switching, synced/shared views, extended search, patient activity/documents and trends are now implemented. See [the current 41-point ledger](functional-completion-acceptance.md); the older “Requires backend” list below is superseded.
+
 Frontend only (`artifacts/clinicflow`). No backend, data or auth changes. Preferences are stored on the device and scoped by user, role and table.
 
 This records the earlier listing-controls pass. Current Title Case, truncation, responsive More controls and final browser verification are documented in `docs/eight-section-ui-checklist.md`; that document supersedes older wrapping guidance here.

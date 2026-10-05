@@ -19,6 +19,8 @@ import { notificationTemplatesRouter } from "./notification-templates";
 import { permissionPolicyRouter } from "./permission-policy";
 import { logosRouter } from "./logos";
 import { systemUsersRouter } from "./system-users";
+import { workspaceFeaturesRouter } from "./workspace-features";
+import { patientRecordsRouter } from "./patient-records";
 
 const router: IRouter = Router();
 router.use(systemUsersRouter);
@@ -36,6 +38,8 @@ router.use(integrationsRouter);
 router.use(notificationTemplatesRouter);
 router.use(permissionPolicyRouter);
 router.use(logosRouter);
+router.use(workspaceFeaturesRouter);
+router.use(patientRecordsRouter);
 router.use(resourcesRouter);
 router.use(durationRouter);
 router.use(appointmentsRouter);

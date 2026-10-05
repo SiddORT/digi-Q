@@ -1020,6 +1020,99 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/SettingsInput" } } } }
       responses:
         "200": { description: Saved, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } }
+  /notifications:
+    get:
+      operationId: listNotifications
+      description: In-app events derived from real scoped appointment status history and, for administrators, operational audit records from the last 30 days. Per-user persistent read state. No email is sent.
+      parameters:
+        - { name: kind, in: query, schema: { type: string, enum: [all, appointments, queue, system], default: all } }
+      responses:
+        "200": { description: Notifications, content: { application/json: { schema: { $ref: "#/components/schemas/NotificationList" } } } }
+  /notifications/read:
+    post:
+      operationId: markNotificationsRead
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/NotificationReadInput" } } } }
+      responses:
+        "200": { description: Updated unread count, content: { application/json: { schema: { $ref: "#/components/schemas/NotificationUnread" } } } }
+  /workspaces:
+    get:
+      operationId: listWorkspaces
+      description: Clinic memberships of the signed-in staff user and the active workspace. Switching only narrows scope to one assigned clinic.
+      responses:
+        "200": { description: Workspaces, content: { application/json: { schema: { $ref: "#/components/schemas/WorkspaceList" } } } }
+  /workspaces/active:
+    put:
+      operationId: selectWorkspace
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/WorkspaceSelect" } } } }
+      responses:
+        "200": { description: Active workspace, content: { application/json: { schema: { $ref: "#/components/schemas/WorkspaceList" } } } }
+  /patients/{id}/documents:
+    get:
+      operationId: listPatientDocuments
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: Documents visible in your clinic scope, content: { application/json: { schema: { $ref: "#/components/schemas/PatientDocumentList" } } } }
+    post:
+      operationId: uploadPatientDocument
+      description: Private upload (PDF, PNG, JPEG, WebP or plain text, at most 10 MB). Requires CSRF header. Stored privately; never publicly addressable.
+      parameters:
+        - { $ref: "#/components/parameters/Id" }
+        - { name: name, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 160 } }
+        - { name: clinicId, in: query, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream: { schema: { $ref: "#/components/schemas/DocumentBinary" } }
+      responses:
+        "201": { description: Stored, content: { application/json: { schema: { $ref: "#/components/schemas/PatientDocument" } } } }
+  /patient-documents/{id}:
+    get:
+      operationId: downloadPatientDocument
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: File bytes, content: { application/octet-stream: { schema: { $ref: "#/components/schemas/DocumentBinary" } } } }
+    delete:
+      operationId: deletePatientDocument
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: Removed and audited }
+  /patients/{id}/activity:
+    get:
+      operationId: listPatientActivity
+      description: All recorded appointment status changes for this patient within your scope, newest first.
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: Activity page, content: { application/json: { schema: { $ref: "#/components/schemas/PatientActivityPage" } } } }
+  /reports/trends:
+    get:
+      operationId: getReportTrends
+      parameters: [{ $ref: "#/components/parameters/From" }, { $ref: "#/components/parameters/To" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { $ref: "#/components/parameters/DoctorId" }]
+      responses:
+        "200": { description: Daily scoped aggregates, content: { application/json: { schema: { $ref: "#/components/schemas/ReportTrend" } } } }
+  /search/records:
+    get:
+      operationId: searchRecords
+      description: Scoped queue and appointment record search by token, reference or patient name. Search text is never stored.
+      parameters: [{ name: q, in: query, required: true, schema: { type: string, minLength: 2, maxLength: 100 } }]
+      responses:
+        "200": { description: Matches, content: { application/json: { schema: { $ref: "#/components/schemas/RecordSearchResult" } } } }
+  /saved-views:
+    get:
+      operationId: listSavedViews
+      parameters: [{ name: tableKey, in: query, required: true, schema: { type: string, maxLength: 60 } }]
+      responses:
+        "200": { description: Own and role-shared views, content: { application/json: { schema: { $ref: "#/components/schemas/SavedViewList" } } } }
+    post:
+      operationId: createSavedView
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/SavedViewInput" } } } }
+      responses:
+        "201": { description: Saved, content: { application/json: { schema: { $ref: "#/components/schemas/SavedViewRecord" } } } }
+  /saved-views/{id}:
+    delete:
+      operationId: deleteSavedView
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: Deleted }
 components:
   securitySchemes:
     NativeSession:
@@ -1054,6 +1147,161 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    DocumentBinary: { type: string, format: binary }
+    WorkspaceNotification:
+      type: object
+      required: [id, kind, title, createdAt, read]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [appointments, queue, system] }
+        title: { type: string }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+        read: { type: boolean }
+        appointmentId: { type: string, nullable: true }
+        date: { type: string, nullable: true }
+    NotificationList:
+      type: object
+      required: [items, unread]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/WorkspaceNotification" } }
+        unread: { type: integer }
+    NotificationUnread:
+      type: object
+      required: [unread]
+      properties: { unread: { type: integer } }
+    NotificationReadInput:
+      type: object
+      properties:
+        ids: { type: array, maxItems: 100, items: { type: string, maxLength: 120 } }
+        all: { type: boolean }
+    WorkspaceOption:
+      type: object
+      required: [id, name]
+      properties: { id: { type: string }, name: { type: string } }
+    WorkspaceList:
+      type: object
+      required: [switchable, workspaces]
+      properties:
+        activeClinicId: { type: string, nullable: true }
+        switchable: { type: boolean }
+        workspaces: { type: array, items: { $ref: "#/components/schemas/WorkspaceOption" } }
+    WorkspaceSelect:
+      type: object
+      required: [clinicId]
+      properties: { clinicId: { type: string, nullable: true } }
+    PatientDocument:
+      type: object
+      required: [id, patientId, clinicId, name, contentType, size, createdAt]
+      properties:
+        id: { type: string }
+        patientId: { type: string }
+        clinicId: { type: string }
+        clinicName: { type: string }
+        name: { type: string }
+        contentType: { type: string }
+        size: { type: integer }
+        createdAt: { type: string, format: date-time }
+        uploadedByName: { type: string }
+    PatientDocumentList:
+      type: object
+      required: [items, uploadClinicIds]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/PatientDocument" } }
+        uploadClinicIds: { type: array, items: { type: string } }
+    PatientActivityItem:
+      type: object
+      required: [id, appointmentId, toStatus, occurredAt, reference, doctorName, date]
+      properties:
+        id: { type: string }
+        appointmentId: { type: string }
+        fromStatus: { type: string, nullable: true }
+        toStatus: { type: string }
+        occurredAt: { type: string, format: date-time }
+        reference: { type: string }
+        doctorName: { type: string }
+        date: { type: string }
+        actorName: { type: string, nullable: true }
+    PatientActivityPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/PatientActivityItem" } }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    ReportTrendPoint:
+      type: object
+      required: [date, appointments, completed, cancelled, noShow, waiting]
+      properties:
+        date: { type: string }
+        appointments: { type: integer }
+        completed: { type: integer }
+        cancelled: { type: integer }
+        noShow: { type: integer }
+        waiting: { type: integer }
+    ReportTrend:
+      type: object
+      required: [from, to, points]
+      properties:
+        from: { type: string }
+        to: { type: string }
+        points: { type: array, items: { $ref: "#/components/schemas/ReportTrendPoint" } }
+    RecordSearchItem:
+      type: object
+      required: [id, reference, patientName, doctorName, tokenNumber, date, status, today, clinicId, branchId, doctorId]
+      properties:
+        id: { type: string }
+        clinicId: { type: string, description: Visit clinic, used to open the exact queue session. }
+        branchId: { type: string }
+        doctorId: { type: string }
+        startTime: { type: string, nullable: true, description: Session start time when the visit belongs to a timed session. }
+        sessionId: { type: string, nullable: true }
+        reference: { type: string }
+        patientName: { type: string }
+        doctorName: { type: string }
+        tokenNumber: { type: integer }
+        token: { type: string }
+        date: { type: string }
+        status: { type: string }
+        today: { type: boolean }
+    RecordSearchResult:
+      type: object
+      required: [items]
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/RecordSearchItem" } } }
+    SavedViewColumns:
+      type: object
+      required: [order, hidden]
+      properties:
+        order: { type: array, maxItems: 40, items: { type: string, maxLength: 60 } }
+        hidden: { type: array, maxItems: 40, items: { type: string, maxLength: 60 } }
+        pinned: { type: string, nullable: true, maxLength: 60 }
+    SavedViewInput:
+      type: object
+      required: [tableKey, name, filters]
+      properties:
+        tableKey: { type: string, maxLength: 60 }
+        name: { type: string, minLength: 1, maxLength: 60 }
+        filters: { type: object, additionalProperties: { type: string, maxLength: 80 } }
+        columns: { $ref: "#/components/schemas/SavedViewColumns" }
+        shareWithRole: { type: boolean }
+    SavedViewRecord:
+      type: object
+      required: [id, tableKey, name, filters, ownedByMe, shared]
+      properties:
+        id: { type: string }
+        tableKey: { type: string }
+        name: { type: string }
+        filters: { type: object, additionalProperties: { type: string } }
+        columns: { $ref: "#/components/schemas/SavedViewColumns" }
+        ownedByMe: { type: boolean }
+        shared: { type: boolean }
+    SavedViewList:
+      type: object
+      required: [items, canShare]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/SavedViewRecord" } }
+        canShare: { type: boolean }
     StorageConfiguration:
       type: object
       required: [provider, source, publicPath, configured]

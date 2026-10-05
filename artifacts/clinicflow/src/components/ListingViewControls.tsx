@@ -36,9 +36,14 @@ export function ColumnSettings({ columns, layout, label, onChange, onReset, reor
 }
 
 /** Saved filter presets. Search text is never stored; only structured filters, sort and page size. */
-export function SavedViews({ views, canSave, onApply, onSave, onDelete }: {
-  views: SavedView[]; canSave: boolean; onApply: (view: SavedView) => void; onSave: (name: string) => boolean; onDelete: (id: string) => void;
+export function SavedViews({ views, canSave, canShare = false, legacyViews = [], onImport, onApply, onSave, onDelete }: {
+  views: SavedView[]; canSave: boolean; canShare?: boolean; legacyViews?: SavedView[]; onImport?: (view: SavedView) => Promise<boolean>; onApply: (view: SavedView) => void; onSave: (view: { name: string; share: boolean }) => boolean | Promise<boolean>; onDelete: (id: string) => void;
 }) {
+  const [share, setShare] = useState(false);
+  const [importing, setImporting] = useState<string | null>(null);
+  const [importMsg, setImportMsg] = useState("");
+  const accountNames = new Set(views.filter(v => v.ownedByMe !== false).map(v => v.name.trim().toLowerCase()));
+  const [pending, setPending] = useState(false);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
@@ -49,19 +54,29 @@ export function SavedViews({ views, canSave, onApply, onSave, onDelete }: {
       <Bookmark size={15} aria-hidden /><span>Views{views.length ? ` · ${views.length}` : ""}</span>
     </button>
     <AppDialog open={open} onClose={() => { setOpen(false); setError(""); setSaved(""); }} title="Saved Views" variant="drawer">
-      <p className="muted">Saved views keep filters, sort, page size and the column layout for your account and role on this device. Search text is never saved.</p>
+      <p className="muted">Saved views keep filters, sort, page size and the column layout for your account, synced across your devices. Search text is never saved.</p>
       {views.length ? <ul className="lvc-views">{views.map(v => <li key={v.id}>
-        <button type="button" className="lvc-view-apply" onClick={() => { onApply(v); setOpen(false); }} data-testid={`button-apply-view-${v.id}`}><strong>{v.name}</strong><small>{Object.keys(v.filters).length} filter settings{v.columns ? " · column layout" : ""}</small></button>
-        <button type="button" aria-label={`Delete view ${v.name}`} onClick={() => onDelete(v.id)} data-testid={`button-delete-view-${v.id}`}><Trash2 size={14} aria-hidden /></button>
+        <button type="button" className="lvc-view-apply" onClick={() => { onApply(v); setOpen(false); }} data-testid={`button-apply-view-${v.id}`}><strong>{v.name}</strong><small>{Object.keys(v.filters).length} filter settings{v.columns ? " · column layout" : ""}{v.shared ? (v.ownedByMe === false ? " · shared with your role" : " · you shared this") : ""}</small></button>
+        {v.ownedByMe !== false && <button type="button" aria-label={`Delete view ${v.name}`} onClick={() => onDelete(v.id)} data-testid={`button-delete-view-${v.id}`}><Trash2 size={14} aria-hidden /></button>}
       </li>)}</ul> : <p className="empty-inline">No saved views yet.</p>}
-      <form className="lvc-save" onSubmit={e => { e.preventDefault(); if (!name.trim()) { setError("Enter a view name."); return; } if (!onSave(name)) { setError("Browser storage is unavailable; the view was not saved."); return; } const label = name.trim(); setName(""); setError(""); setSaved(`View "${label}" saved.`); }}>
+      {legacyViews.length > 0 && onImport && <section className="lvc-legacy" aria-label="Views on this device" data-testid="legacy-views">
+        <h3>On This Device Only</h3>
+        <p className="muted">Saved before account sync. They stay on this device until you import them; importing copies only filters, sort and columns.</p>
+        <ul className="lvc-views">{legacyViews.map(v => { const done = accountNames.has(v.name.trim().toLowerCase()); return <li key={`legacy-${v.id}`}>
+          <button type="button" className="lvc-view-apply" onClick={() => { onApply(v); setOpen(false); }} data-testid={`button-apply-legacy-view-${v.id}`}><strong>{v.name}</strong><small>{Object.keys(v.filters).length} filter settings · this device</small></button>
+          <button type="button" className="button secondary small" disabled={done || importing === v.id} onClick={async () => { setImporting(v.id); const ok = await onImport(v); setImporting(null); setImportMsg(ok ? `View "${v.name}" imported to your account.` : `View "${v.name}" could not be imported.`); }} data-testid={`button-import-view-${v.id}`}>{done ? "Imported" : importing === v.id ? "Importing…" : "Import to Account"}</button>
+        </li>; })}</ul>
+        <small role="status" aria-live="polite">{importMsg}</small>
+      </section>}
+      <form className="lvc-save" onSubmit={async e => { e.preventDefault(); if (!name.trim()) { setError("Enter a view name."); return; } setPending(true); const ok = await onSave({ name, share: canShare && share }); setPending(false); if (!ok) { setError("The view could not be saved. Check your connection and try again."); return; } const label = name.trim(); setName(""); setShare(false); setError(""); setSaved(`View "${label}" saved.`); }}>
         <label htmlFor={inputId}>Save current filters and columns as</label>
         <small className="muted" id={`${inputId}-hint`}>Use a descriptive name such as a status or date range. Do not enter patient names or other patient details.</small>
         <input id={inputId} aria-describedby={`${inputId}-hint`} maxLength={60} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Inactive this month" disabled={!canSave} data-testid="input-view-name" />
         {!canSave && <small className="muted">Apply a filter or sort, or change the column layout, to save a view.</small>}
         {error && <small role="alert" className="field-error">{error}</small>}
         <small role="status" aria-live="polite">{saved}</small>
-        <button type="submit" className="button small" disabled={!canSave} data-testid="button-save-view">Save View</button>
+        {canShare && <label className="lvc-share"><input type="checkbox" checked={share} onChange={e => setShare(e.target.checked)} disabled={!canSave} data-testid="checkbox-share-view" /> Share with staff in my clinics (super admins: with super admins)</label>}
+        <button type="submit" className="button small" disabled={!canSave || pending} data-testid="button-save-view">{pending ? "Saving…" : "Save View"}</button>
       </form>
     </AppDialog>
   </>;

@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { assert, HttpError } from "./http";
 import { all, flatten, one, uid } from "./store";
 import { isClinicalMember } from "./clinical-membership";
+import { narrowToWorkspace } from "./feature-policy";
 import { DEMO_FIXTURE, demoWriteAllowed } from "./demo-policy";
 export const STAFF_ROLES = ["superAdmin", "clinicAdmin", "doctor", "receptionist"] as const;
 export function isStaffRole(role: string | null | undefined): boolean {
@@ -47,9 +48,19 @@ export async function findUser(userId: string) {
   const [patient] = await db.select().from(patients).where(eq(patients.userId, user.id));
   return { ...user, mobile: user.mobile || "", managingAdminId: user.role === "doctor" ? doctor?.ownerAdminId || null : user.managingAdminId || null, clinicIds: [...new Set(links.map(a => a.clinicId))], branchIds: [...new Set(links.filter(a => a.branchId).map(a => a.branchId))], doctorId: doctor?.id || null, patientId: patient?.id || null };
 }
+/** Applies the server-stored active workspace. Only narrows to an already-assigned clinic. */
+export async function applyWorkspace<T extends { id: string; role: string; clinicIds: string[]; branchIds: string[] }>(user: T) {
+  if (user.role === "superAdmin" || user.role === "patient" || user.clinicIds.length < 2) return { ...user, activeClinicId: null as string | null };
+  const [row] = await db.select().from(settings).where(eq(settings.id, `workspace:${user.id}`));
+  const active = (row?.data as any)?.clinicId as string | undefined;
+  if (!active) return { ...user, activeClinicId: null as string | null };
+  const branchRows = await db.select({ id: branches.id, clinicId: branches.clinicId }).from(branches).where(eq(branches.clinicId, active));
+  return narrowToWorkspace(user, active, new Map(branchRows.map(b => [b.id, b.clinicId])));
+}
 export async function requireUser(req: Request) {
-  const user = await findUser(requireIdentity(req));
-  assert(user, 403, "Complete onboarding first");
+  const found = await findUser(requireIdentity(req));
+  assert(found, 403, "Complete onboarding first");
+  const user = await applyWorkspace(found!);
   assert(user.status === "active", 403, "Account inactive");
   // This session was issued only after locally verified credentials and code.
   if (isStaffRole(user.role)) await requireStaffSessionProof(req);

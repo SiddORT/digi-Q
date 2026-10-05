@@ -11,6 +11,7 @@ import { label } from "./permission-matrix";
 import { useTableColumns, readTableColumns, writeTableColumns } from "./TableColumns";
 import { SavedViews } from "./ListingViewControls";
 import { useListingLayout } from "@/lib/listing-views";
+import { tabListKeyDown } from "@/lib/tabs-a11y";
 import { OverflowText } from "./OverflowText";
 const SYSTEM_USER_VIEW_KEYS = ["role", "status", "clinicId"];
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
@@ -87,13 +88,13 @@ export function SystemUsers() {
   const sysLayout = useListingLayout("system-users", viewer?.id, viewer?.role, SYSTEM_USER_VIEW_KEYS);
   const sysFilters: Record<string, string> = { role, status, clinicId };
   const sysCols = () => readTableColumns("system-users", viewer?.id, viewer?.role);
-  const systemViews = <SavedViews views={sysLayout.layout.views} canSave={Object.values(sysFilters).some(Boolean) || !!sysCols()} onSave={name => sysLayout.saveView(name, sysFilters, sysCols())} onDelete={sysLayout.deleteView}
+  const systemViews = <SavedViews canShare={sysLayout.canShare} legacyViews={sysLayout.legacyViews} onImport={sysLayout.importLegacyView} views={sysLayout.layout.views} canSave={Object.values(sysFilters).some(Boolean) || !!sysCols()} onSave={view=>sysLayout.saveView(view, sysFilters, sysCols())} onDelete={sysLayout.deleteView}
     onApply={v => { writeTableColumns("system-users", viewer?.id, viewer?.role, v.columns); setRole(v.filters.role || ""); setStatus(["active", "inactive"].includes(v.filters.status) ? v.filters.status : ""); setClinicId(v.filters.clinicId || ""); }} />;
   const sysCell = (k: string, u: SystemUser) => k === "name" ? <OverflowText as="strong" value={u.fullName} testId={`text-system-user-${u.id}`}/> : k === "email" ? <OverflowText value={u.email}/> : k === "role" ? label(u.role) : k === "status" ? <span className={`badge ${u.status === "active" ? "" : "muted"}`}>{label(u.status)}</span> : k === "clinics" ? (u.clinics.length ? <AssignmentSummary owner={u.fullName} clinics={u.clinics.map(c => c.name)} testId={`button-system-assignments-${u.id}`}/> : <span className="muted">{u.role === "superAdmin" ? "Platform-wide" : "None"}</span>) : null;
   return <>
     <FilterBar label="System User Filters"
       title={data && !q.error ? <span className="listing-count-label"><span className="listing-count">{data.total}</span> {data.total === 1 ? "account" : "accounts"}</span> : undefined}
-      status={<div className="sq-status-tabs" role="tablist" aria-label="Account status">{[["", "All"], ["active", "Active"], ["inactive", "Inactive"]].map(([v, l]) => <button type="button" key={v} role="tab" aria-selected={status === v} onClick={() => setStatus(v)} data-testid={`tab-system-users-${v || "all"}`}>{l}</button>)}</div>}
+      status={<div className="sq-status-tabs" role="tablist" aria-label="Account status" onKeyDown={e => tabListKeyDown(e, ["", "active", "inactive"], status, setStatus)}>{[["", "All"], ["active", "Active"], ["inactive", "Inactive"]].map(([v, l]) => <button type="button" key={v} role="tab" tabIndex={status === v ? 0 : -1} aria-selected={status === v} onClick={() => setStatus(v)} data-testid={`tab-system-users-${v || "all"}`}>{l}</button>)}</div>}
       active={active} onReset={reset}
       advanced={<><SearchableSelect label="Role" value={role} onChange={setRole} placeholder="All roles" options={[{ value: "", label: "All Roles" }, ...ROLES.map(r => ({ value: r, label: label(r) }))]} testId="select-system-user-role" /><ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={setClinicId} /></>}
       chips={[...(role ? [{ key: "adv:role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "adv:clinic", label: "Clinic Selected", onRemove: () => setClinicId("") }] : [])]}

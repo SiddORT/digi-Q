@@ -1,5 +1,7 @@
 # DigiQ eight-section UI checklist
 
+> Historical UI-pass record. The former unavailable backend surfaces have since been implemented. Current point-by-point status and deferred acceptance are in [functional completion acceptance](functional-completion-acceptance.md); implementation details are in [the functional report](functional-completion-implementation.md). Older “not connected” and browser-pending statements below describe that earlier pass, not current functionality.
+
 Frontend only (`artifacts/clinicflow`). No backend, API, data, auth, clinical order or status changes. Bulk check-in is still rejected.
 
 Status key:

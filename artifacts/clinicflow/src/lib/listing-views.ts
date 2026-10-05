@@ -1,3 +1,5 @@
+import { useQueryClient } from "@tanstack/react-query";
+import * as api from "./api";
 import { usePreference } from "./workspace-preferences";
 
 /** Keys that may never be stored in a saved view (patient-identifying search terms, paging). */
@@ -8,7 +10,7 @@ export const SAFE_VALUE = /^[A-Za-z0-9_\-:.,]+$/;
 
 export type ViewColumns = { order: string[]; hidden: string[]; pinned: string | null };
 /** `columns` is optional so views saved before column snapshots existed still load. */
-export type SavedView = { id: string; name: string; filters: Record<string, string>; columns?: ViewColumns };
+export type SavedView = { id: string; name: string; filters: Record<string, string>; columns?: ViewColumns; ownedByMe?: boolean; shared?: boolean };
 export type ListingLayout = { order: string[]; hidden: string[]; pinned: string | null; views: SavedView[] };
 
 const EMPTY: ListingLayout = { order: [], hidden: [], pinned: null, views: [] };
@@ -43,15 +45,45 @@ export function arrangeColumns(columns: string[], layout: ListingLayout) {
   return { ordered, visible: pinned ? [pinned, ...visible.filter(c => c !== pinned)] : visible, hidden: ordered.filter(c => !visible.includes(c)), pinned, required };
 }
 
+/** Server record to client view, re-sanitized against this list's allowlist. */
+export function fromServerView(v: { id: string; name: string; filters: Record<string, string>; columns?: { order: string[]; hidden: string[]; pinned?: string | null }; ownedByMe: boolean; shared: boolean }, allowed: readonly string[]): SavedView {
+  return { id: v.id, name: v.name, filters: sanitizeViewFilters(v.filters || {}, allowed), columns: v.columns ? { order: str(v.columns.order), hidden: str(v.columns.hidden), pinned: v.columns.pinned ?? null } : undefined, ownedByMe: v.ownedByMe, shared: v.shared };
+}
+export const savedViewsQueryKey = (tableKey: string, userId: string | undefined, role: string | undefined) =>
+  [...api.getListSavedViewsQueryKey({ tableKey }), userId || "anon", role || "none"] as const;
+export const viewTableKey = (resource: string) => resource.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 60);
+
+/** Column layout stays on this device; saved views sync through the server for this account (and optionally its role). */
 export function useListingLayout(resource: string, userId: string | undefined, role: string | undefined, allowedFilterKeys: readonly string[]) {
   const key = `digiq-listing:${userId || "anon"}:${role || "none"}:${resource}`;
   const [layout, set] = usePreference(key, EMPTY, sanitize(allowedFilterKeys));
+  const client = useQueryClient();
+  const tableKey = viewTableKey(resource);
+  const params = { tableKey };
+  // Identity is part of the key: a cached list from another account or role can never be shown.
+  const remote = api.useListSavedViews(params, { query: { queryKey: savedViewsQueryKey(tableKey, userId, role), enabled: !!userId, staleTime: 60000 } });
+  const refresh = () => client.invalidateQueries({ queryKey: savedViewsQueryKey(tableKey, userId, role) });
+  const views = (remote.data?.items ?? []).map(v => fromServerView(v, allowedFilterKeys));
   return {
-    layout,
+    layout: { ...layout, views },
+    /** Views saved on this device before account sync. Never auto-uploaded or deleted; the user imports explicitly. */
+    legacyViews: layout.views,
+    importLegacyView: async (view: SavedView) => {
+      try {
+        // The server re-sanitizes; the local record is kept untouched.
+        await api.createSavedView({ tableKey, name: view.name.trim().slice(0, 60), filters: sanitizeViewFilters(view.filters, allowedFilterKeys), columns: view.columns ?? { order: [], hidden: [], pinned: null }, shareWithRole: false });
+        await refresh(); return true;
+      } catch { return false; }
+    },
+    canShare: !!remote.data?.canShare,
+    viewsError: !!remote.error,
     setLayout: (next: Partial<ListingLayout>) => set({ ...layout, ...next }),
-    saveView: (name: string, filters: Record<string, unknown>, columns?: ViewColumns) => {
-      const view: SavedView = { id: `v${Date.now().toString(36)}`, name: name.trim().slice(0, 60), filters: sanitizeViewFilters(filters, allowedFilterKeys), columns: columns ?? { order: layout.order, hidden: layout.hidden, pinned: layout.pinned } };
-      return set({ ...layout, views: [...layout.views.filter(v => v.name !== view.name), view].slice(-12) });
+    saveView: async (input: string | { name: string; share?: boolean }, filters: Record<string, unknown>, columns?: ViewColumns) => {
+      const { name, share } = typeof input === "string" ? { name: input, share: false } : input;
+      try {
+        await api.createSavedView({ tableKey, name: name.trim().slice(0, 60), filters: sanitizeViewFilters(filters, allowedFilterKeys), columns: columns ?? { order: layout.order, hidden: layout.hidden, pinned: layout.pinned }, shareWithRole: !!share });
+        await refresh(); return true;
+      } catch { return false; }
     },
     /** Restore a view's column snapshot, limited to columns currently permitted. Old views without a snapshot keep the current layout. */
     applyViewColumns: (view: SavedView, permitted: string[]) => {
@@ -59,7 +91,7 @@ export function useListingLayout(resource: string, userId: string | undefined, r
       const keep = (list: string[]) => list.filter(c => permitted.includes(c));
       set({ ...layout, order: keep(view.columns.order), hidden: keep(view.columns.hidden).filter(c => c !== permitted[0]), pinned: view.columns.pinned && permitted.includes(view.columns.pinned) ? view.columns.pinned : null });
     },
-    deleteView: (id: string) => set({ ...layout, views: layout.views.filter(v => v.id !== id) }),
+    deleteView: (id: string) => { void api.deleteSavedView(id).then(refresh, () => undefined); },
     resetColumns: () => set({ ...layout, order: [], hidden: [], pinned: null }),
   };
 }

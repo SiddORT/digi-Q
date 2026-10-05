@@ -5,6 +5,7 @@ import * as api from "@workspace/api-client-react";
 import { AppDialog } from "./AppDialog";
 import { navLabel } from "./WorkspaceNav";
 import { useNavigationPreferences, recordRecentPage } from "@/lib/workspace-preferences";
+import { queueRecordHref, reportSearchHref, reportSearchRange } from "@/lib/search-links";
 import "./workspace-search.css";
 
 /** Real, permitted quick actions only: each target is an existing route for this role. */
@@ -65,6 +66,23 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
       };
       add("appointments", "Appointments", () => api.listAppointments(params, options), a => ({ id: a.id, label: a.patientName, detail: `${a.reference} · ${a.doctorName}`, href: `/${role}/appointments?view=all&search=${encodeURIComponent(a.reference)}` }));
       if (role !== "patient") {
+        // Scoped appointment-record search (token, reference, patient name). Today's visits open the exact queue session.
+        if (navigation.includes("queue") || navigation.includes("appointments")) {
+          jobs.push(api.searchRecords({ q: search }, options).then(data => ({ name: "Queue & Appointment Records", results: data.items.map(r => ({
+            id: `rec-${r.id}`, label: `Token ${r.token || r.tokenNumber} · ${r.patientName}`, detail: `${r.reference} · ${r.doctorName} · ${r.date} · ${r.status}${r.today ? " · today" : ""}`,
+            href: queueRecordHref(role, r, navigation.includes("queue")),
+          })) })).catch(() => ({ name: "Queue & Appointment Records", results: [], error: "Unable to search queue and appointment records." })));
+        }
+        // Report groups (clinic and doctor names) over an explicit 30-day window, shown in the heading.
+        if (navigation.includes("reports")) {
+          const range = reportSearchRange(new Date().toISOString().slice(0, 10));
+          const name = `Reports · ${range.from} to ${range.to}`;
+          const groups = (["clinic", "doctor"] as const).filter(g => g === "doctor" || role !== "doctor");
+          jobs.push(Promise.all(groups.map(groupBy => api.getReports({ ...range, groupBy, search, page: 1, pageSize: 5 }, options).then(rep => rep.rows.map(row => ({
+            id: `rep-${groupBy}-${row.key}`, label: row.label, detail: `${groupBy === "clinic" ? "Clinic" : "Doctor"} · ${row.appointments} visits · ${row.completed} completed`,
+            href: reportSearchHref(role, { groupBy, ...range, search: row.label }),
+          }))))).then(lists => ({ name, results: lists.flat() })).catch(() => ({ name, results: [], error: "Unable to search reports." })));
+        }
         add("patients", "Patients", () => api.listPatients(params, options), p => ({ id: p.id, label: p.fullName, detail: p.code, href: href("patients", p.fullName) }));
         if (role !== "doctor") add("clinics", "Clinics", () => api.listClinics(params, options), c => ({ id: c.id, label: c.name, detail: c.code, href: href("clinics", c.name) }));
         add("branches", "Locations", () => api.listBranches(params, options), b => ({ id: b.id, label: b.name, detail: b.clinicName, href: href("branches", b.name) }));

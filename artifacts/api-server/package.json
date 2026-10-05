@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:auth": "node --test ./src/native-auth.integration.test.mjs ./src/auth-http.integration.test.mjs ./src/jwt-session.test.mjs",
     "test:jwt": "node --test ./src/jwt-session.test.mjs",
-    "test:queue-contention": "node --test ./src/queue-contention.test.mjs"
+    "test:queue-contention": "node --test ./src/queue-contention.test.mjs",
+    "test:features": "node --test ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.2.0",
