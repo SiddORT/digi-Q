@@ -246,3 +246,17 @@ mtime_ms = 1790970713930
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/18233ec1-8051-491b-be27-e721b9d88432/972034c8-d6fc-4da8-8013-b879664e7ab1"
 storage_version_token = "1790970753293251"
 content_type = "text/html"
+
+[[outputs]]
+id = "juYnYjg6Td7oH-vCvdlkx"
+uri = "file://exports/digiq-ui-design-system.json"
+type = "unspecified"
+title = "DigiQ — Complete UI Design System Export"
+description = "Structured JSON covering all 15 requested sections, 72 route entries, component props and usage locations, exact CSS declarations, states and responsive overrides. Application unchanged."
+logical_id = "812a8fd1-a3f9-4835-a7bd-9a3dc872c058"
+content_hash = "sha256:81f2793bc35026f7c85af400a76ad904d1502bade1088bfb50bc8b9fb2120c89"
+size = 26608890
+mtime_ms = 1791201243452
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/812a8fd1-a3f9-4835-a7bd-9a3dc872c058/823c36c8-0412-4fd8-8f94-92ad9df6b7d7"
+storage_version_token = "1791201257049703"
+content_type = "application/octet-stream"
