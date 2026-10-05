@@ -93,6 +93,12 @@ The user repeatedly said “do all” for the approved scope, including its rema
 
 **How to apply:** Continue remaining independent work and fix discovered issues. Do not replace unfinished authorized scope with proposed follow-up tasks or call a styling-only pass completion. Ask for genuine external blockers and conflicting clinical requirements that need the user's decision.
 
+Complete all UI/UX work first and report progress before moving on to remaining backend-dependent enterprise capabilities.
+
+**Why:** The user explicitly asked “do all ui ux things first” and to be told once done, with progress updates.
+
+**How to apply:** Complete functional interactions using existing APIs and honest empty/error states. Do not present new data-dependent screens as working by filling them with fictional metrics or unsupported controls.
+
 Reject all bulk check-in attempts with an error, including selections involving different doctors. Patients must be checked in individually. A doctor may have only one active checked-in/in-consultation patient across locations and sessions; different doctors may each have an active patient.
 
 **Why:** The user explicitly chose “No—reject all bulk check-in; check patients in individually.” This supersedes the enterprise brief's bulk check-in requirement.

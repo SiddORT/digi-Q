@@ -8,6 +8,11 @@ import { AppDialog } from "./AppDialog";
 import { SearchableSelect } from "./SearchableSelect";
 import { ResourceLookup } from "./ResourceLookup";
 import { label } from "./permission-matrix";
+import { useTableColumns, readTableColumns, writeTableColumns } from "./TableColumns";
+import { SavedViews } from "./ListingViewControls";
+import { useListingLayout } from "@/lib/listing-views";
+const SYSTEM_USER_VIEW_KEYS = ["role", "status", "clinicId"];
+import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import type { CustomRoleConfig, SystemUser } from "./custom-roles";
 import { SearchableSelect as ScopeSelect } from "./SearchableSelect";
 
@@ -75,6 +80,15 @@ export function SystemUsers() {
   const active = !!(search || role || status || clinicId);
   const reset = () => { setSearch(""); setRole(""); setStatus(""); setClinicId(""); };
 
+  const me = useGetMe({ query: { queryKey: getGetMeQueryKey(), staleTime: 60000 } });
+  const cols = useTableColumns("system-users", me.data?.user?.id, me.data?.user?.role, [{ key: "name", label: "Name" }, { key: "email", label: "Email" }, { key: "role", label: "Role" }, ...(!status ? [{ key: "status", label: "Status" }] : []), { key: "clinics", label: "Clinics" }]);
+  const viewer = me.data?.user;
+  const sysLayout = useListingLayout("system-users", viewer?.id, viewer?.role, SYSTEM_USER_VIEW_KEYS);
+  const sysFilters: Record<string, string> = { role, status, clinicId };
+  const sysCols = () => readTableColumns("system-users", viewer?.id, viewer?.role);
+  const systemViews = <SavedViews views={sysLayout.layout.views} canSave={Object.values(sysFilters).some(Boolean) || !!sysCols()} onSave={name => sysLayout.saveView(name, sysFilters, sysCols())} onDelete={sysLayout.deleteView}
+    onApply={v => { writeTableColumns("system-users", viewer?.id, viewer?.role, v.columns); setRole(v.filters.role || ""); setStatus(["active", "inactive"].includes(v.filters.status) ? v.filters.status : ""); setClinicId(v.filters.clinicId || ""); }} />;
+  const sysCell = (k: string, u: SystemUser) => k === "name" ? <strong title={u.fullName}>{u.fullName}</strong> : k === "email" ? u.email : k === "role" ? label(u.role) : k === "status" ? <span className={`badge ${u.status === "active" ? "" : "muted"}`}>{label(u.status)}</span> : k === "clinics" ? (u.clinics.length ? <AssignmentSummary owner={u.fullName} clinics={u.clinics.map(c => c.name)} testId={`button-system-assignments-${u.id}`}/> : <span className="muted">{u.role === "superAdmin" ? "Platform-wide" : "None"}</span>) : null;
   return <>
     <FilterBar label="System user filters"
       title={data && !q.error ? <span className="listing-count-label"><span className="listing-count">{data.total}</span> {data.total === 1 ? "account" : "accounts"}</span> : undefined}
@@ -82,17 +96,16 @@ export function SystemUsers() {
       active={active} onReset={reset}
       advanced={<><SearchableSelect label="Role" value={role} onChange={setRole} placeholder="All roles" options={[{ value: "", label: "All roles" }, ...ROLES.map(r => ({ value: r, label: label(r) }))]} testId="select-system-user-role" /><ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={setClinicId} /></>}
       chips={[...(role ? [{ key: "adv:role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "adv:clinic", label: "Clinic selected", onRemove: () => setClinicId("") }] : [])]}
+      meta={<>{cols.settings}{systemViews}</>}
       actions={<Link className="button secondary small" href="/admin/permissions">Roles &amp; permissions</Link>}>
       <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" suggestions={q.error||q.isPlaceholderData?[]:listingSuggestions(data?.data,u=>({id:u.id,label:u.fullName,description:u.email,value:u.fullName}))} loading={q.isFetching} error={q.error?"Accounts could not be loaded.":null} onRetry={()=>void q.refetch()} total={data?.total} settledQuery={debounced} scopeKey={JSON.stringify({role,status,clinicId})} />
     </FilterBar>
     <section className="panel table-panel" aria-busy={q.isFetching} data-testid="system-users">
       {q.isLoading ? <div className="skeleton" role="status">Loading accounts…</div>
         : q.error ? <div className="error-box" role="alert">Accounts could not be loaded. <button type="button" onClick={() => void q.refetch()}>Retry</button></div>
-        : data?.data.length ? <><div className="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th>{!status && <th>Status</th>}<th>Clinics</th><th className="col-actions"><span className="sr-only">Permissions</span></th></tr></thead><tbody>
-          {data.data.map(u => <Fragment key={u.id}><tr data-testid={`row-system-user-${u.id}`}><td><strong title={u.fullName}>{u.fullName}</strong></td><td>{u.email}</td><td>{label(u.role)}</td>
-            {!status && <td><span className={`badge ${u.status === "active" ? "" : "muted"}`}>{label(u.status)}</span></td>}
-            <td>{u.clinics.length ? <AssignmentSummary owner={u.fullName} clinics={u.clinics.map(c => c.name)} testId={`button-system-assignments-${u.id}`}/> : <span className="muted">{u.role === "superAdmin" ? "Platform-wide" : "None"}</span>}</td>
-            <td className="col-actions"><button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setExpanded(u.id)} data-testid={`button-effective-${u.id}`}>Permissions <ChevronRight size={14} aria-hidden /></button></td></tr></Fragment>)}
+        : data?.data.length ? <><div className="table-wrap"><table><thead><tr>{cols.visible.map(k => <th key={k} className={cols.cls(k)}>{cols.label(k)}</th>)}<th className="col-actions sticky"><span className="sr-only">Permissions</span></th></tr></thead><tbody>
+          {data.data.map(u => <Fragment key={u.id}><tr data-testid={`row-system-user-${u.id}`}>{cols.visible.map(k => <td key={k} data-label={cols.label(k)} className={cols.cls(k)}>{sysCell(k, u)}</td>)}
+            <td className="col-actions sticky">{cols.toggle(u.id, u.fullName)}<button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setExpanded(u.id)} data-testid={`button-effective-${u.id}`}>Permissions <ChevronRight size={14} aria-hidden /></button></td></tr>{cols.expansion(u.id, cols.visible.length + 1, k => sysCell(k, u))}</Fragment>)}
         </tbody></table></div><Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPageChange={setPage} /></>
         : <div className="empty" data-testid="status-empty"><h3>{active ? "No matching accounts" : "No accounts yet"}</h3>{active && <button type="button" onClick={reset}>Clear filters</button>}</div>}
     </section>

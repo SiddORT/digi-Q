@@ -303,13 +303,13 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {scanError && <div className="error-box" role="alert">{scanError}</div>}
       <div className="toolbar" style={{ justifyContent: "center" }}>
-        <button className={`button small ${mode === "camera" ? "" : "light"}`} onClick={() => setMode("camera")}><Camera size={16}/> Camera</button>
-        <button className={`button small ${mode === "file" ? "" : "light"}`} onClick={() => setMode("file")}><ImageIcon size={16}/> Image file</button>
+        <button type="button" aria-pressed={mode === "camera"} className={`button small ${mode === "camera" ? "" : "light"}`} onClick={() => setMode("camera")} data-testid="button-scan-camera"><Camera size={16}/> Camera</button>
+        <button type="button" aria-pressed={mode === "file"} className={`button small ${mode === "file" ? "" : "light"}`} onClick={() => setMode("file")} data-testid="button-scan-file"><ImageIcon size={16}/> Image file</button>
       </div>
       
       {mode === "camera" ? (
         <div style={{ position: "relative", width: "100%", aspectRatio: "1", background: "#000", borderRadius: "12px", overflow: "hidden" }}>
-          <video ref={videoRef} playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <video ref={videoRef} playsInline aria-label="Camera preview for scanning the appointment QR code" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "60%", height: "60%", border: "2px solid rgba(255,255,255,0.5)", borderRadius: "16px" }} />
         </div>
       ) : (

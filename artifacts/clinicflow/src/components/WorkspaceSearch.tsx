@@ -4,25 +4,27 @@ import { Search, Star, Clock3 } from "lucide-react";
 import * as api from "@workspace/api-client-react";
 import { AppDialog } from "./AppDialog";
 import { navLabel } from "./WorkspaceNav";
+import { useNavigationPreferences, recordRecentPage } from "@/lib/workspace-preferences";
 import "./workspace-search.css";
+
+/** Real, permitted quick actions only: each target is an existing route for this role. */
+export function quickActions(role: string, navigation: string[]) {
+  const out: { id: string; label: string; href: string }[] = [];
+  if (role === "patient" ? navigation.includes("book") : navigation.includes("appointments")) out.push({ id: "book", label: role === "patient" ? "Book Now" : "Book appointment", href: `/${role}/book` });
+  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "queue", label: "Open live queue", href: `/${role}/queue` });
+  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "check-in", label: "Validate appointment QR", href: "/check-in" });
+  if (navigation.includes("profile")) out.push({ id: "profile", label: "My profile", href: `/${role}/profile` });
+  return out;
+}
+
 
 type Result = { id: string; label: string; detail?: string; href: string };
 type Group = { name: string; results: Result[]; error?: string };
-type Preferences = { favorites: string[]; recent: string[] };
-const readPreferences = (key: string): Preferences => {
-  try {
-    const stored = JSON.parse(localStorage.getItem(key) || "{}");
-    const strings = (value: unknown) => Array.isArray(value) ? value.filter((v): v is string => typeof v === "string").slice(0, 30) : [];
-    return { favorites: strings(stored.favorites), recent: strings(stored.recent) };
-  } catch { return { favorites: [], recent: [] }; }
-};
-
 /** Only page identifiers are persisted, never search terms or patient records. */
 export function WorkspaceSearch({ navigation, role, page, userId }: {
   navigation: string[]; role: string; page: string; userId: string;
 }) {
-  const storageKey = `digiq-navigation:${userId}:${role}`;
-  const [preferences, setPreferences] = useState(() => readPreferences(storageKey));
+  const { prefs: preferences, toggleFavorite } = useNavigationPreferences(userId, role);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [groups, setGroups] = useState<Group[]>([]);
@@ -31,18 +33,10 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [, navigate] = useLocation();
   const allowed = navigation.join("|");
-  const save = (next: Preferences) => {
-    setPreferences(next);
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); setStorageUnavailable(false); }
-    catch { setStorageUnavailable(true); }
-  };
   useEffect(() => {
-    const current = readPreferences(storageKey);
-    const next = { ...current, recent: [page, ...current.recent.filter(p => p !== page)].slice(0, 8) };
-    setPreferences(next);
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { setStorageUnavailable(true); }
+    if (navigation.includes(page) && !recordRecentPage(userId, role, page)) setStorageUnavailable(true);
     setOpen(false); setQuery(""); setGroups([]);
-  }, [storageKey, page]);
+  }, [userId, role, page]);
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k" && !document.querySelector('[role="dialog"]')) {
@@ -98,13 +92,14 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
         <input id="workspace-command-query" type="search" autoComplete="off" value={query} onChange={e => setQuery(e.target.value)} placeholder="Patient, appointment, clinic, location or page…" />
         <p className="muted">Record searches require two characters. Favorites and recent pages are saved on this device; patient results and search terms are not saved.</p>
         {storageUnavailable && <p role="status">Browser storage is unavailable. Shortcuts will not persist after this session.</p>}
+        {(() => { const actions = quickActions(role, navigation).filter(a => !query || a.label.toLowerCase().includes(query.toLowerCase())); return actions.length ? <section><h3>Quick actions</h3><div className="workspace-shortcuts">{actions.map(a => <Link key={a.id} href={a.href} onClick={close} data-testid={`quick-action-${a.id}`}>{a.label}</Link>)}</div></section> : null; })()}
         {!query && <>
           <section><h3><Star size={14} aria-hidden/> Favorites</h3><div className="workspace-shortcuts">{shortcutList(preferences.favorites).length ? shortcutList(preferences.favorites).map(pageLink) : <p>No favorites. Use the star beside a page below.</p>}</div></section>
-          <section><h3><Clock3 size={14} aria-hidden/> Recent pages</h3><div className="workspace-shortcuts">{shortcutList(preferences.recent).map(pageLink)}</div></section>
+          <section><h3><Clock3 size={14} aria-hidden/> Recent pages</h3><div className="workspace-shortcuts">{shortcutList(preferences.recent).filter(p => p !== page).length ? shortcutList(preferences.recent).filter(p => p !== page).map(pageLink) : <p>Pages you visit appear here.</p>}</div></section>
         </>}
-        <section><h3>Pages and quick actions</h3><ul className="workspace-command-pages">{pages.map(p => <li key={p}>
+        <section><h3>{query ? "Suggested pages" : "All pages"}</h3><ul className="workspace-command-pages">{pages.map(p => <li key={p}>
           <button type="button" onClick={() => { close(); navigate(`/${role}/${p}`); }}>{navLabel(p, role)}</button>
-          <button type="button" aria-label={`${preferences.favorites.includes(p) ? "Remove" : "Add"} ${navLabel(p, role)} ${preferences.favorites.includes(p) ? "from" : "to"} favorites`} aria-pressed={preferences.favorites.includes(p)} onClick={() => save({ ...preferences, favorites: preferences.favorites.includes(p) ? preferences.favorites.filter(v => v !== p) : [...preferences.favorites, p] })}><Star size={16} fill={preferences.favorites.includes(p) ? "currentColor" : "none"} aria-hidden/></button>
+          <button type="button" aria-label={`${preferences.favorites.includes(p) ? "Remove" : "Add"} ${navLabel(p, role)} ${preferences.favorites.includes(p) ? "from" : "to"} favorites`} aria-pressed={preferences.favorites.includes(p)} onClick={() => toggleFavorite(p)}><Star size={16} fill={preferences.favorites.includes(p) ? "currentColor" : "none"} aria-hidden/></button>
         </li>)}</ul>{!pages.length && <p>No matching pages.</p>}</section>
         <div aria-live="polite" aria-busy={loading}>{loading && <p role="status">Searching permitted records…</p>}
           {groups.map(group => <section key={group.name}><h3>{group.name}</h3>{group.error ? <p role="alert">{group.error} <button type="button" onClick={() => setRetry(v => v + 1)}>Retry</button></p> : group.results.length ? <ul className="workspace-command-results">{group.results.map(result => <li key={result.id}><Link href={result.href} onClick={close}><strong>{result.label}</strong><small>{result.detail}</small></Link></li>)}</ul> : <p>No matching records.</p>}</section>)}

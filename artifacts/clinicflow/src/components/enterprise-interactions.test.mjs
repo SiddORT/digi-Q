@@ -31,8 +31,10 @@ test("workspace search respects navigation scope and cancels stale requests", ()
 
 test("navigation preferences are user-role scoped and contain page IDs, not patient search history", () => {
   const search = read("./WorkspaceSearch.tsx");
-  assert.match(search, /digiq-navigation:\$\{userId\}:\$\{role\}/);
-  assert.match(search, /type Preferences = \{ favorites: string\[\]; recent: string\[\] \}/);
+  const store = read("../lib/workspace-preferences.ts");
+  assert.match(store, /digiq-navigation:\$\{userId\}:\$\{role\}/);
+  assert.match(store, /type NavigationPreferences = \{ favorites: string\[\]; recent: string\[\] \}/);
+  assert.match(search, /useNavigationPreferences\(userId, role\)/);
   assert.match(search, /items.filter\(p => navigation.includes\(p\)\)/);
   assert.match(search, /patient results and search terms are not saved/);
   assert.match(search, /Browser storage is unavailable/);

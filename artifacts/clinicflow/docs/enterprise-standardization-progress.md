@@ -1,5 +1,7 @@
 # DigiQ enterprise standardization: progress
 
+Current UI interaction completion is documented in `docs/enterprise-ux-completion-matrix.md` at the workspace root. The historical pending list below predates the column controls, saved views and shell work now delivered. Backend-dependent capabilities remain pending; bulk check-in is prohibited by the user's later decision.
+
 Scope: visual and token standardization of the existing UI (v3 spec plus HIGH_DENSITY_OPERATIONAL). No backend or auth logic changed.
 
 ## Tokens (single source: `src/index.css` `:root`)

@@ -43,6 +43,7 @@ export function AppDialog({
   const keepRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
@@ -104,6 +105,17 @@ export function AppDialog({
         className={`app-dialog ${variant==="drawer"?"app-dialog-drawer":size==="wide"?"app-dialog-wide sm:max-w-5xl":"sm:max-w-2xl"} bg-white border border-border shadow-xl`}
         {...(!description ? { "aria-describedby": undefined } : {})}
         aria-busy={busy || undefined}
+        onOpenAutoFocus={() => {
+          openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        }}
+        onCloseAutoFocus={(event) => {
+          // Controlled dialogs have no Radix DialogTrigger to restore focus to.
+          const opener = openerRef.current;
+          if (opener?.isConnected && opener !== document.body) {
+            event.preventDefault();
+            opener.focus({ preventScroll: true });
+          }
+        }}
         onInteractOutside={(e) => {
           e.preventDefault();
           if (!confirming) requestClose();

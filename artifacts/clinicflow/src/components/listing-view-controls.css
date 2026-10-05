@@ -1,0 +1,80 @@
+.lvc-trigger{display:inline-flex;align-items:center;gap:8px;height:var(--control-sm);padding:0 12px;border:1px solid var(--border-color,hsl(var(--border)));border-radius:8px;background:var(--dq-surface);color:var(--ink);font:inherit;font-size:var(--type-label);font-weight:500;cursor:pointer;white-space:nowrap}
+.lvc-trigger:hover{background:var(--surface-hover)}
+.lvc-trigger:focus-visible,.lvc-columns button:focus-visible,.lvc-views button:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px}
+.lvc-columns,.lvc-views{list-style:none;margin:12px 0;padding:0;display:grid;gap:4px}
+.lvc-columns li,.lvc-views li{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:var(--control-md);padding:4px 8px;border:1px solid hsl(var(--border));border-radius:8px}
+.lvc-columns label{display:flex;align-items:center;gap:8px;font-size:var(--type-label);margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
+.lvc-row-actions{display:flex;gap:4px}
+.lvc-row-actions button,.lvc-views li>button:last-child{width:32px;height:32px;min-height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid hsl(var(--border));border-radius:8px;background:var(--dq-surface);color:var(--ink)}
+.lvc-row-actions button[aria-pressed="true"]{background:var(--dq-blue);color:var(--dq-surface);border-color:var(--dq-blue)}
+.lvc-row-actions button:disabled{opacity:.4}
+.lvc-view-apply{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:4px;border:0;background:transparent;text-align:left;padding:4px;font:inherit;color:var(--ink);cursor:pointer;min-height:auto}
+.lvc-view-apply small{font-size:var(--type-caption);color:var(--soft)}
+.lvc-save{display:grid;gap:8px;margin-top:16px}
+/* Pinned first column and sticky actions inside horizontally scrolling tables */
+.table-scroll th.col-pinned,.table-scroll td.col-pinned{position:sticky;left:0;z-index:2;background:var(--dq-surface);box-shadow:1px 0 0 hsl(var(--border))}
+.table-scroll th.col-actions.sticky,.table-scroll td.col-actions.sticky{position:sticky;right:0;z-index:2;background:var(--dq-surface);box-shadow:-1px 0 0 hsl(var(--border))}
+.table-scroll thead th.col-pinned,.table-scroll thead th.col-actions.sticky{z-index:3}
+.row-expand-toggle{width:32px;height:32px;min-height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid hsl(var(--border));border-radius:6px;background:var(--dq-surface);color:var(--ink);margin-left:4px}
+.row-expand-toggle[aria-expanded="true"] svg{transform:rotate(90deg)}
+tr.row-expansion td{background:var(--surface-hover);padding:8px 16px}
+.row-expansion dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px 24px;margin:0}
+.row-expansion dt{font-size:var(--type-caption);color:var(--soft)}
+.row-expansion dd{margin:0;font-size:var(--type-label);overflow-wrap:anywhere}
+/* Sidebar shortcuts */
+.wnav-shortcuts{margin:8px 0;padding-top:8px;border-top:1px solid hsl(var(--border))}
+.wnav-shortcuts h2{display:flex;align-items:center;gap:8px;font-size:var(--type-caption);font-weight:600;color:var(--soft);margin:8px 12px 4px;text-transform:uppercase;letter-spacing:.04em}
+.sidebar-collapsed .wnav-shortcuts h2 span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+/* Profile menu */
+.profile-menu{position:relative}
+.profile-menu-trigger{display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:4px;border-radius:8px;font:inherit;color:inherit;cursor:pointer;min-height:var(--control-md);text-align:left}
+.profile-menu-trigger:hover{background:var(--surface-hover)}
+.profile-menu-trigger:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px}
+.profile-menu-trigger strong,.profile-menu-trigger small{display:block}
+.profile-menu-panel{position:absolute;right:0;top:calc(100% + 4px);z-index:40;min-width:240px;max-width:min(320px,90vw);background:var(--dq-surface);border:1px solid hsl(var(--border));border-radius:12px;box-shadow:0 8px 24px hsl(210 40% 20% / .12);padding:8px;display:grid;gap:4px}
+.profile-menu-panel .pm-head{padding:8px;border-bottom:1px solid hsl(var(--border));margin-bottom:4px;font-size:var(--type-label);overflow-wrap:anywhere}
+.profile-menu-panel a,.profile-menu-panel button{display:flex;align-items:center;gap:8px;width:100%;min-height:var(--control-md);padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:inherit;font-size:var(--type-label);text-decoration:none;cursor:pointer;justify-content:flex-start}
+.profile-menu-panel a:hover,.profile-menu-panel button:hover,.profile-menu-panel a:focus-visible,.profile-menu-panel button:focus-visible{background:var(--surface-hover);outline:none}
+@media (max-width:640px){.profile-menu-trigger .pm-name{display:none}}
+
+/* Bespoke table column tools (appointments, session queue) */
+.table-tools{display:flex;justify-content:flex-end;gap:8px;padding:0 0 8px;flex-wrap:wrap}
+/* Only one pinned column exists, always rendered first, so left:0 never overlaps. */
+th.col-pinned,td.col-pinned{position:sticky;left:0;z-index:2;background:hsl(var(--card))}
+/* With a selection column, both stick: select at 0, the pinned column offset by the fixed select width. */
+tr:has(> .col-select) > th.col-select,tr:has(> .col-select) > td.col-select{position:sticky;left:0;z-index:3;background:hsl(var(--card));width:var(--col-select-w,40px);min-width:var(--col-select-w,40px);max-width:var(--col-select-w,40px)}
+.col-select ~ .col-pinned{left:var(--col-select-w,40px)}
+th.col-actions.sticky,td.col-actions.sticky{position:sticky;right:0;z-index:2;background:hsl(var(--card))}
+.row-expansion dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:8px 16px;margin:0}
+.row-expansion dd{margin:0;overflow-wrap:anywhere}
+.lvc-trigger:focus-visible,.row-expand-toggle:focus-visible{outline:2px solid hsl(var(--ring));outline-offset:2px}
+/* 150% zoom / narrow widths: drop sticky so cards don't overlap, wrap controls */
+@media (max-width:900px){tr > th.col-select,tr > td.col-select,th.col-pinned,td.col-pinned,th.col-actions.sticky,td.col-actions.sticky{position:static}.lvc-row-actions{flex-wrap:wrap}.lvc-save input{min-width:0;width:100%}}
+@media (prefers-reduced-motion:reduce){.row-expand-toggle svg{transition:none}}
+
+/* Audit: 150% zoom (~853px viewport on 1280) and reflow at 320 CSS px */
+@media (max-width:900px){
+  .form-grid{grid-template-columns:minmax(0,1fr)}
+  .form-grid .wide{grid-column:1/-1}
+  .form-footer{flex-wrap:wrap;position:sticky;bottom:0;background:hsl(var(--card))}
+  .filter-bar-meta{flex-wrap:wrap}
+  .row-actions{flex-wrap:wrap}
+}
+.table-scroll td,.table-scroll th{overflow-wrap:anywhere}
+/* Approved target scale: 32px desktop, 44px touch/mobile */
+.row-actions button,.row-actions summary,.lvc-trigger,.row-expand-toggle,.lvc-row-actions button,.lvc-views button,.profile-menu button,.sidebar-shortcuts button{min-width:32px;min-height:32px}
+@media (max-width:767px),(pointer:coarse){.row-actions button,.row-actions summary,.lvc-trigger,.row-expand-toggle,.lvc-row-actions button,.lvc-views button,.profile-menu button,.sidebar-shortcuts button,.lvc-columns input[type=checkbox]{min-width:44px;min-height:44px}}
+@media (max-width:767px),(pointer:coarse){
+  .workspace .content .list-header{--lh-h:var(--control-lg)}
+  .workspace .table-scroll .col-select input[type=checkbox]{min-width:44px;min-height:44px}
+  .workspace .table-scroll .col-select label{min-width:44px;min-height:44px}
+  .workspace .session-queue .filter-bar button,
+  .workspace .session-queue .filter-bar .button,
+  .workspace .session-queue .filter-bar input:not([type=checkbox]):not([type=radio]),
+  .workspace .session-queue .filter-bar .searchable-select-control{min-height:44px}
+}
+@media(max-width:640px){
+  .workspace .table-scroll tr>td.col-select{position:static;width:auto;min-width:0;max-width:none;padding:4px 12px;min-height:44px}
+  .workspace .table-scroll tr>td.col-select::before{content:none}
+  .workspace .table-scroll tr>td.col-select input[type=checkbox]{min-width:44px;min-height:44px}
+}

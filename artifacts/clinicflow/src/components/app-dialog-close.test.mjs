@@ -17,6 +17,14 @@ test("clean closes immediately", () => {
   assert.equal(decideCloseRequest({ busy: false, dirty: false, confirming: false }), "close");
 });
 
+test("controlled drawers restore the connected opener without a Radix trigger", () => {
+  const src = readFileSync(new URL("./AppDialog.tsx", import.meta.url), "utf8");
+  assert.ok(src.includes("onOpenAutoFocus"));
+  assert.ok(src.includes("onCloseAutoFocus"));
+  assert.ok(src.includes("opener?.isConnected"));
+  assert.ok(src.includes("opener.focus({ preventScroll: true })"));
+});
+
 test("AppDialog no longer uses window.confirm and exposes accessible discard dialog", () => {
   const src = readFileSync(new URL("./AppDialog.tsx", import.meta.url), "utf8");
   assert.ok(!src.includes("window.confirm"));
