@@ -99,6 +99,18 @@ Complete all UI/UX work first and report progress before moving on to remaining 
 
 **How to apply:** Complete functional interactions using existing APIs and honest empty/error states. Do not present new data-dependent screens as working by filling them with fictional metrics or unsupported controls.
 
+Use Title Case for interface headings, labels, buttons and links, preserving acronyms. Prioritize desktop/laptop administration. At narrow widths, keep logo and hamburger on one header row rather than wrapping the navigation into stacked lines.
+
+**Why:** The user explicitly requested uniform Staff Login/Scan QR Code button presentation, standardized capitalization, desktop/laptop-first administration and hamburger navigation instead of stacked branding/menu.
+
+**How to apply:** Preserve different action destinations while sharing control styles. Do not recase stored names, emails, URLs or free text. Provide a page-by-page checklist before implementation when requested.
+
+For long text in compact listings and controls, use ellipsis with the full value available on hover; also support keyboard focus and touch access.
+
+**Why:** The user's latest instruction explicitly requests text ending with “...” and the full text on hover, superseding earlier no-truncation/wrap-everything guidance for compact UI presentation.
+
+**How to apply:** Preserve complete underlying values, details and exports. Do not silently apply display truncation to data or hide critical clinical warnings.
+
 Reject all bulk check-in attempts with an error, including selections involving different doctors. Patients must be checked in individually. A doctor may have only one active checked-in/in-consultation patient across locations and sessions; different doctors may each have an active patient.
 
 **Why:** The user explicitly chose “No—reject all bulk check-in; check patients in individually.” This supersedes the enterprise brief's bulk check-in requirement.
