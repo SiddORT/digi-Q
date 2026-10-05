@@ -23,6 +23,16 @@ test("settings requires preview and blocks conflicting apply", () => {
   assert.match(text, /disabled=\{busy \|\| !result.allowed\}/);
   assert.match(text, /result.conflicts.map/);
   assert.match(source("ClinicSettings.tsx"), /submitLabel="Review Changes"/);
+  assert.match(text, /useEffect\(\(\) => \{ void preview\(\); \}, \[\]\)/);
+  assert.doesNotMatch(text, />Preview changes<\/button>/);
+});
+test("copy location hours uses authorized source groups and only edits the destination draft", () => {
+  const text=source("ClinicSettings.tsx");
+  assert.match(text,/label="Source Clinic Group"/);
+  assert.match(text,/useGetClinicSettings\(sourceClinicId/);
+  assert.match(text,/source\.openingHours\.map\(hour=>\(\{\.\.\.hour\}\)\)/);
+  assert.match(text,/setHoursChanged\(true\);changed\(\)/);
+  assert.match(text,/Times use the destination timezone/);
 });
 test("all clinic configuration sections have retained-clinic navigation", () => {
   const text = source("ClinicSettings.tsx");

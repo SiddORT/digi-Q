@@ -114,6 +114,10 @@ export function ConsultationManagement({identity}:{identity:api.Identity}){
 }
 
 function BranchSettings({branch,clinicId,busy,onDirtyChange,onSave}:{branch:api.Branch;clinicId:string;busy:boolean;onDirtyChange:(value:boolean)=>void;onSave:(value:api.ClinicBranchSetup)=>void}){
+ const [sourceClinicId,setSourceClinicId]=useState(clinicId);
+ const sources=api.useGetClinicSettings(sourceClinicId,{query:{queryKey:api.getGetClinicSettingsQueryKey(sourceClinicId),enabled:!!sourceClinicId}});
+ const [copySource,setCopySource]=useState("");
+ const [copyMessage,setCopyMessage]=useState("");
  const [hours,setHours]=useState<api.OpeningHour[]>(branch.openingHours||[]);
  const [hoursChanged,setHoursChanged]=useState(false);
  const [linked,setLinked]=useState<LinkedSchedule>(branch.linkedSchedule || {enabled:false});
@@ -128,6 +132,21 @@ function BranchSettings({branch,clinicId,busy,onDirtyChange,onSave}:{branch:api.
    let parent=(event.target as HTMLElement).parentElement;
    while(parent){if(parent instanceof HTMLDetailsElement)parent.open=true;parent=parent.parentElement;}
   }} style={{border:0,padding:0,minWidth:0}}>
+   <section className="notice" aria-label="Copy location opening hours">
+    <h3>Copy Opening Hours From Another Location</h3>
+    <p>Destination: <strong>{branch.name}</strong>. Copying replaces this location's draft hours only. Contacts, timezone and doctor assignments are not copied. Review Changes checks linked sessions before anything is saved.</p>
+    <ResourceLookup resource="clinics" label="Source Clinic Group" value={sourceClinicId} onChange={value=>{setSourceClinicId(value);setCopySource("");setCopyMessage("");}}/>
+    <SearchableSelect label="Source Location" value={copySource} onChange={setCopySource} disabled={sources.isFetching||!!sources.error} placeholder="Choose a source location" options={(sources.data?.branches||[]).filter(item=>item.id!==branch.id&&item.status==="active"&&item.openingHours!=null).map(item=>({value:item.id,label:`${item.name}${item.timezone?` · ${item.timezone}`:""}`}))}/>
+    {sourceClinicId&&!sources.isFetching&&!sources.error&&sources.data&&!sources.data.branches.some(item=>item.id!==branch.id&&item.status==="active"&&item.openingHours!=null)&&<p>No other active locations with configured hours in this group. Choose another authorized Clinic Group or enter hours below.</p>}
+    {sources.error&&<p role="alert">Unable to load source locations. <button type="button" onClick={()=>void sources.refetch()}>Retry</button></p>}
+    <button type="button" disabled={!copySource||sources.isFetching||!!sources.error} onClick={()=>{
+     const source=sources.data?.branches.find(item=>item.id===copySource&&item.id!==branch.id&&item.status==="active");
+     if(!source||source.openingHours==null)return;
+     setHours(source.openingHours.map(hour=>({...hour})));setHoursChanged(true);changed();
+     setCopyMessage(`Copied hours from ${source.name} to ${branch.name} in this draft. Times use the destination timezone. Review Changes, then Apply to save.`);
+    }}>Copy Hours to Draft</button>
+    {copyMessage&&<p role="status">{copyMessage}</p>}
+   </section>
    {validation&&<p role="alert" className="error-box">{validation}</p>}
    <Editor initial={branch} fields={resources.branches.fields.filter(field=>field.key!=="clinicId"&&field.key!=="status")} busy={busy} submitLabel="Review Changes" reviewOnly onDirtyChange={onDirtyChange} onSave={value=>{const invalid=newWeek().map(day=>({...day,isOpen:hours.some(hour=>hour.dayOfWeek===day.dayOfWeek),sessions:hours.filter(hour=>hour.dayOfWeek===day.dayOfWeek)})).map(dayError).find(Boolean);if(invalid){setValidation(invalid);return;}setPending({...value,id:branch.id,linkedSchedule:linked,...(hoursChanged||branch.openingHours!=null?{openingHours:hours}:{})});}}>
     <div className="wide"><OpeningHoursEditor value={hours} onChange={value=>{setHours(value);setHoursChanged(true);changed();}}/></div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as api from "@workspace/api-client-react";
 import { friendlyError } from "../lib/friendly-error";
 import { SearchableSelect } from "./SearchableSelect";
@@ -29,11 +29,15 @@ export function ClinicChangeReview({ clinicId, change, onSave, busy }: { clinicI
     catch (e) { setError(friendlyError(e,"save")); }
     finally { setChecking(false); }
   }
+  // The parent mounts a new review for each submitted draft. Review Changes
+  // starts the read-only conflict check; only Apply writes configuration.
+  useEffect(() => { void preview(); }, []);
   return <section className="notice" aria-label="Review configuration impact">
     <h3>Review Before Applying</h3>
     <p>Nothing has been saved. Preview checks session changes and conflicts. Applying rechecks everything atomically; existing appointments will not be moved or cancelled.</p>
     {error && <p role="alert">{error}</p>}
-    {!result && <button type="button" className="button" disabled={busy || checking} onClick={() => void preview()}>{checking ? "Checking impact…" : "Preview changes"}</button>}
+    {checking && <p role="status">Checking session changes and conflicts…</p>}
+    {!result && error && <button type="button" className="button" disabled={busy || checking} onClick={() => void preview()}>Retry Review</button>}
     {result && <><ul>{result.impacts.map(item => <li key={item.branchId}>{item.create} session(s) created · {item.update} updated · {item.retire} retired{item.unlink ? " · existing sessions become custom" : ""}</li>)}</ul>{result.conflicts.length > 0 && <div role="alert"><strong>Resolve these conflicts before saving:</strong><ul>{result.conflicts.map((item, i) => <li key={i}>{item}</li>)}</ul></div>}<button type="button" className="button" disabled={busy || !result.allowed} onClick={onSave}>{busy ? "Applying…" : "Apply reviewed changes"}</button><button type="button" disabled={busy} onClick={() => void preview()}>Recheck</button></>}
   </section>;
 }
