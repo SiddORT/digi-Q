@@ -92,3 +92,9 @@ The user repeatedly said “do all” for the approved scope, including its rema
 **Why:** The user asked to complete the authorized work rather than stop with unfinished checks proposed as follow-ups.
 
 **How to apply:** Continue remaining independent work and fix discovered issues. Do not replace unfinished authorized scope with proposed follow-up tasks or call a styling-only pass completion. Ask for genuine external blockers and conflicting clinical requirements that need the user's decision.
+
+Reject all bulk check-in attempts with an error, including selections involving different doctors. Patients must be checked in individually. A doctor may have only one active checked-in/in-consultation patient across locations and sessions; different doctors may each have an active patient.
+
+**Why:** The user explicitly chose “No—reject all bulk check-in; check patients in individually.” This supersedes the enterprise brief's bulk check-in requirement.
+
+**How to apply:** Do not implement an enabled bulk check-in workflow. Preserve individual check-in and enforce the doctor's active-patient restriction regardless of location or session. Do not infer restrictions on other bulk operations from this decision.
