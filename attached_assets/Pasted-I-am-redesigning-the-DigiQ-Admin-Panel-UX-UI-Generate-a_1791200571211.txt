@@ -1,0 +1,250 @@
+I am redesigning the DigiQ Admin Panel UX/UI.
+
+Generate a COMPLETE UI DESIGN SYSTEM EXPORT for the current application.
+
+Do NOT summarize.
+
+Return everything in structured JSON.
+
+Include:
+
+# 1. Brand Tokens
+
+- Primary colors
+- Secondary colors
+- Accent colors
+- Success colors
+- Warning colors
+- Error colors
+- Neutral palette
+- Background colors
+- Border colors
+- Text colors
+- Hover colors
+- Active colors
+- Disabled colors
+
+# 2. Typography System
+
+For every text style:
+
+- Name
+- Font family
+- Font size
+- Font weight
+- Line height
+- Letter spacing
+
+Include:
+
+- Page title
+- Section title
+- Card title
+- Table header
+- Table cell
+- Button text
+- Form label
+- Input text
+- Helper text
+- Tooltip text
+- Modal title
+- Modal body
+- Status badge text
+
+# 3. Spacing System
+
+Provide:
+
+- Base spacing unit
+- Margin scale
+- Padding scale
+- Gap scale
+
+Example:
+
+4
+8
+12
+16
+20
+24
+32
+40
+48
+64
+
+# 4. Border Radius System
+
+Provide all radius values used.
+
+Example:
+
+sm
+md
+lg
+xl
+
+and exact pixel values.
+
+# 5. Shadows
+
+Provide all elevation levels.
+
+Example:
+
+card
+dropdown
+modal
+tooltip
+
+Include CSS values.
+
+# 6. Layout System
+
+Provide:
+
+- Sidebar width
+- Header height
+- Content max width
+- Container spacing
+- Table spacing
+- Card spacing
+
+# 7. Button System
+
+For every button variant:
+
+- Primary
+- Secondary
+- Tertiary
+- Ghost
+- Danger
+- Icon button
+
+Provide:
+
+- Height
+- Padding
+- Radius
+- Font style
+- Hover state
+- Active state
+- Disabled state
+
+# 8. Form Components
+
+For:
+
+- Input
+- Textarea
+- Select
+- Search field
+- Date picker
+- Time picker
+- Checkbox
+- Radio
+- Toggle
+- Multi-select
+
+Provide exact styling tokens.
+
+# 9. Table System
+
+For all tables provide:
+
+- Row height
+- Header height
+- Pagination style
+- Hover behavior
+- Selected row behavior
+- Status badge styles
+- Action column behavior
+
+# 10. Modal System
+
+For all modals:
+
+- Width variants
+- Header style
+- Footer style
+- Close button style
+- Scroll behavior
+- Mobile behavior
+
+# 11. Badge System
+
+For:
+
+- Waiting
+- Called
+- Active
+- Completed
+- Cancelled
+- Absent
+- Error
+
+Provide exact styles.
+
+# 12. Navigation System
+
+Provide:
+
+- Sidebar styles
+- Expanded state
+- Collapsed state
+- Active item
+- Hover item
+- Nested menu item
+
+# 13. Card Components
+
+For every card type:
+
+- Dashboard card
+- Statistics card
+- Info card
+- Queue card
+- Patient card
+
+Provide exact tokens.
+
+# 14. Existing Screens
+
+List all screens/routes.
+
+Example:
+
+Overview
+Appointments
+Live Queue
+Patients
+Clinics
+Locations
+Users
+Schedules
+Reports
+Audit Logs
+Administration
+
+For each screen provide:
+
+- Purpose
+- Major components used
+- Tables used
+- Forms used
+- Modals used
+
+# 15. Component Inventory
+
+List every reusable component currently existing in the codebase.
+
+Include:
+
+- Name
+- Props
+- Usage locations
+
+Return JSON only.
+Do not explain.
+Do not summarize.
+Do not omit anything.
