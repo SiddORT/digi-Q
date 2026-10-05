@@ -1,23 +1,23 @@
 /* Clinic settings: section nav (not tabs), compact grouped panels. Uses compact-workspace tokens. */
-.clinic-settings { display: grid; gap: 10px; }
+.clinic-settings { display: grid; gap:12px; }
 .clinic-settings [hidden] { display: none !important; }
-.clinic-settings-tabs { display:flex; gap:2px; overflow-x:auto; padding:3px; background:#eef3fa; border:1px solid var(--dq-line,#d7e2f0); border-radius:10px; width:max-content; max-width:100%; scrollbar-width:thin; }
-.clinic-settings-tabs button { flex:0 0 auto; min-height:34px; padding:6px 12px; font-size:13px; font-weight:600; border:0; border-radius:7px; background:transparent; color:#40577a; }
-.clinic-settings-tabs button:hover { background:#fff; color:var(--dq-blue,#1552b0); }
-.clinic-settings-tabs button[aria-pressed=true], .clinic-settings-tabs button[aria-current] { background:#fff; color:var(--dq-blue,#1552b0); box-shadow:0 1px 2px #0d235022, inset 0 -2px 0 var(--dq-blue,#1552b0); }
+.clinic-settings-tabs { display:flex; gap:4px; overflow-x:auto; padding:4px; background:#eef3fa; border:1px solid var(--dq-line,#d7e2f0); border-radius:12px; width:max-content; max-width:100%; scrollbar-width:thin; }
+.clinic-settings-tabs button { flex:0 0 auto; min-height:var(--control-sm); padding:8px 12px; font-size:var(--type-label); font-weight:600; border:0; border-radius:8px; background:transparent; color:#40577a; }
+.clinic-settings-tabs button:hover { background:var(--dq-surface); color:var(--dq-blue,var(--dq-blue)); }
+.clinic-settings-tabs button[aria-pressed=true], .clinic-settings-tabs button[aria-current] { background:var(--dq-surface); color:var(--dq-blue,var(--dq-blue)); box-shadow:0 1px 2px #0d235022, inset 0 -2px 0 var(--dq-blue,var(--dq-blue)); }
 .clinic-settings .panel { margin:0; }
 .clinic-settings .panel-heading { align-items:center; }
-.clinic-settings details { padding: 8px 0; border-bottom: 1px solid var(--dq-line-soft,#e3eaf4); }
+.clinic-settings details { padding:8px 0; border-bottom: 1px solid var(--dq-line-soft,#e3eaf4); }
 .clinic-settings summary, .branch-hours summary { cursor: pointer; font-weight: 600; min-height:32px; display:flex; align-items:center; }
-.branch-hours { padding: 10px 12px; border: 1px solid var(--dq-line-soft,#e3eaf4); border-radius: 10px; }
-.branch-hours details { padding: 6px 0; }
-.branch-hours button { margin: 6px 6px 6px 0; }
+.branch-hours { padding:12px 12px; border: 1px solid var(--dq-line-soft,#e3eaf4); border-radius:12px; }
+.branch-hours details { padding:8px 0; }
+.branch-hours button { margin:8px 8px 8px 0; }
 .clinic-settings .cap-chip { white-space: nowrap; word-break: normal; overflow-wrap: normal; min-width: max-content; }
 .clinic-settings th { word-break: normal; overflow-wrap: normal; }
 [aria-label="Scheduling workspace"] .cap-chip { white-space: nowrap; word-break: normal; overflow-wrap: normal; min-width: max-content; }
 [aria-label="Scheduling workspace"] th { word-break: normal; overflow-wrap: normal; }
-.registration-session input[type="range"] { width: 100%; min-height: 44px; padding: 0; accent-color: var(--dq-blue); }
+.registration-session input[type="range"] { width: 100%; min-height: 44px; padding:0; accent-color: var(--dq-blue); }
 .registration-session label { min-width: 0; }
-.registration-inline { display: flex; flex-wrap: wrap; gap: 8px; }
+.registration-inline { display: flex; flex-wrap: wrap; gap:8px; }
 @media(max-width:640px){.registration-session{grid-template-columns:1fr}.registration-session button{min-height:44px}}
 @media(max-width:760px),(pointer:coarse){.clinic-settings-tabs{width:100%}.clinic-settings-tabs button,.clinic-settings summary,.branch-hours summary{min-height:44px}}

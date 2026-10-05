@@ -1,4 +1,4 @@
-import { forwardRef, useState, type InputHTMLAttributes } from "react";
+import { forwardRef, useEffect, useId, useState, type InputHTMLAttributes } from "react";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 import { passwordChecklist } from "@/lib/validators";
 import "./shared-feedback.css";
@@ -6,21 +6,29 @@ import "./shared-feedback.css";
 export interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   /** Show the live letters/numbers/length checklist under the field (new-password flows). */
   showChecklist?: boolean;
+  /** Accessible description for non-password secrets such as an SMTP credential. */
+  visibilityLabel?: string;
 }
 
 /** Password field with an accessible Eye/EyeOff visibility toggle (spec §7.1). Autocomplete is preserved. */
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(function PasswordInput(
-  { showChecklist, className, value, ...props }, ref,
+  { showChecklist, visibilityLabel = "password", className, value, ...props }, ref,
 ) {
   const [visible, setVisible] = useState(false);
+  const generatedId = useId();
+  const inputId = props.id ?? `secret-${generatedId}`;
+  useEffect(() => { setVisible(false); }, [props.name]);
+  useEffect(() => { if (value === "") setVisible(false); }, [value]);
   const text = typeof value === "string" ? value : "";
   return (
     <>
       <div className="password-input">
-        <input ref={ref} {...props} value={value} type={visible ? "text" : "password"} className={className} />
+        <input ref={ref} {...props} id={inputId} value={value} type={visible ? "text" : "password"} className={className} />
         <button type="button" className="password-toggle" onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? "Hide password" : "Show password"} aria-pressed={visible}
-          aria-controls={props.id} disabled={props.disabled}>
+          onMouseDown={event => event.preventDefault()}
+          aria-label={`${visible ? "Hide" : "Show"} ${visibilityLabel}`} aria-pressed={visible}
+          title={`${visible ? "Hide" : "Show"} ${visibilityLabel}`}
+          aria-controls={inputId} disabled={props.disabled}>
           {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
         </button>
       </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PasswordInput } from "../components/PasswordInput";
 import { Link, Redirect, useLocation } from "wouter";
 import { AuthCard, AuthShell } from "./AuthShell";
 import { csrfFetch } from "../lib/csrf";
@@ -36,7 +37,7 @@ export function DemoLogin() {
   return <AuthShell eyebrow="DEMO STAFF ACCESS"><AuthCard title="Demo clinic login" description="Explore the fictional clinic with the dedicated demo account. Never enter real patient information.">
     <div className="notice"><strong>Demo login:</strong> clinicflow-demo · no email inbox needed</div>
     <form onSubmit={signIn}>
-      <label>Demo password<input type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required data-testid="input-demo-password"/></label>
+      <label htmlFor="demo-password">Demo password</label><PasswordInput id="demo-password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required data-testid="input-demo-password"/>
       {error && <div className="error-box" role="alert">{error}</div>}
       <button className="button" type="submit" disabled={busy || !password} data-testid="button-demo-login">{busy ? "Signing in…" : "Enter demo workspace"}</button>
     </form>

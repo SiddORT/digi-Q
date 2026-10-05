@@ -24,7 +24,8 @@ test("approved prompt §4 tokens are central", () => {
 });
 test("password toggle has accessible name", () => {
   const s = read("./PasswordInput.tsx");
-  assert.ok(s.includes('"Hide password" : "Show password"'));
+  assert.ok(s.includes('visibilityLabel = "password"'));
+  assert.ok(s.includes('${visible ? "Hide" : "Show"} ${visibilityLabel}'));
 });
 
 test("auth screens use PasswordInput and the shared 8-char rule; no raw account error", () => {

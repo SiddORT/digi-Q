@@ -36,18 +36,20 @@ test("CSS parses and explicit v3 central tokens have exactly the approved values
     "--dq-blue": "#1552B0", "--dq-cyan": "#0E8FB3",
     "--dq-bg": "#F3F7FC", "--dq-surface": "#FFFFFF",
     "--type-page": "24px", "--type-section": "20px", "--type-body": "14px",
-    "--type-label": "13px", "--type-table": "13px", "--type-table-heading": "12px",
+    "--type-label": "13px", "--type-table": "13px", "--type-table-heading": "13px",
+    "--type-card": "18px", "--type-caption": "12px", "--weight-heading": "600",
+    "--radius-pill": "999px", "--control-sm": "32px", "--control-md": "40px", "--control-lg": "44px", "--control-xl": "48px",
     "--radius-control": "8px", "--radius-card": "12px",
-    "--radius-dialog": "14px", "--radius-badge": "6px",
+    "--radius-dialog": "16px", "--radius-badge": "6px",
     "--workspace-width": "1540px", "--sidebar-width": "216px", "--sidebar-width-collapsed": "64px",
-    "--font-heading": "'Manrope', sans-serif", "--font-body": "'DM Sans', sans-serif",
+    "--font-sans": "'Inter', system-ui, sans-serif", "--font-heading": "var(--font-sans)", "--font-body": "var(--font-sans)",
   })) {
     assert.equal(token(name), value, name);
     let definitions = 0;
     index.walkDecls(name, () => definitions++);
     assert.equal(definitions, 1, `${name} must have one source`);
   }
-  [4, 8, 12, 16, 20, 24, 32, 40, 48].forEach((size, i) =>
+  [4, 8, 12, 16, 24, 24, 32, 40, 48].forEach((size, i) =>
     assert.equal(token(`--space-${i + 1}`), `${size}px`));
 });
 

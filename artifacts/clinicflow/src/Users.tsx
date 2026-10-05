@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { Plus, Pencil, Send, KeyRound, ArrowDown, ArrowUp, ArrowDownUp } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { assignmentTargetRole, type StaffTab } from "./staff-input";
 import { clinicScopedStaffInput, resendStaffInvitations, staffInvitationRestriction } from "./staff-controls";
@@ -41,6 +41,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     ...(["superAdmin", "clinicAdmin"].includes(role) ? [{ id: "doctors" as const, label: "Doctors" }] : []),
     { id: "receptionists", label: "Receptionists" },
   ];
+  const routeSearch = useSearch();
   const [tab, setTab] = useState<StaffTab>(tabs.find(t => t.id === new URLSearchParams(window.location.search).get("tab"))?.id || tabs[0].id);
    const [contexts, setContexts] = useState<Partial<Record<StaffTab,StaffContext>>>({});
    const context:StaffContext = contexts[tab] || defaultContext();
@@ -54,6 +55,15 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState("");
   useEffect(()=>{setContexts({});setEditing(null);},[clinicId]);
+  useEffect(() => {
+    const query = new URLSearchParams(routeSearch);
+    if (!query.has("search")) return;
+    const requested = tabs.find(t => t.id === query.get("tab"))?.id ?? tabs[0].id;
+    const next = { ...defaultContext(), search: query.get("search") ?? "" };
+    setTab(requested); setDraftTab(requested);
+    setContexts(previous => ({ ...previous, [requested]: next }));
+    setDraft(next);
+  }, [routeSearch, clinicId, role]);
   useEffect(() => {
     const url = new URL(window.location.href);
     url.searchParams.set("tab", tab);

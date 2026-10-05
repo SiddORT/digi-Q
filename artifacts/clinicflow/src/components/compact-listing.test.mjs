@@ -49,8 +49,8 @@ test("sidebar collapse is desktop-only, persisted, and keeps accessible names", 
 
 test("rows are compact without shrinking table text", () => {
   const index = read("../index.css");
-  assert.match(index, /\.workspace td \{ padding: 6px var\(--space-3\); \}/);
-  assert.match(read("../compact-workspace.css"), /\.workspace td\{padding:6px var\(--space-3\);font-size:var\(--type-table\)/);
+  assert.match(index, /\.workspace td \{ padding:8px var\(--space-3\); \}/);
+  assert.match(read("../compact-workspace.css"), /\.workspace td\{padding:8px var\(--space-3\);font-size:var\(--type-table\)/);
   assert.match(css, /\.created-cell\{[^}]*white-space:nowrap/);
 });
 

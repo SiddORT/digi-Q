@@ -11,7 +11,7 @@ test("shared list header: title + search on row 1 with actions right; status/met
   assert.match(bar, /const hasSubRow = !!\(status \|\| meta \|\| advanced \|\| showClear \|\| countInSub\)/);
   assert.match(bar, /\{hasSubRow && \(/);
   const css = read("./uniformity.css");
-  assert.match(css, /\.list-header\{--lh-h:38px/);
+  assert.match(css, /\.list-header\{--lh-h:var\(--control-md\)/);
   assert.match(css, /\.lh-actions :is\(\.button,a\.button,button\.button\)\{min-height:var\(--lh-h\)/);
   assert.match(css, /\.workspace-search input\{min-height:var\(--lh-h\)/);
   assert.match(css, /\.export-status\{white-space:normal;max-width:260px;overflow:visible/);
@@ -69,5 +69,5 @@ test("whole-app consistency: shared section heads, grouped editors, outlined sec
   assert.match(res, /className="editor-section wide"/);
   assert.match(res, /collapsed\?<div hidden className="wide" data-testid=\{`collapsed-\$\{field\.key\}`\}>/);
   const css = read("./uniformity.css");
-  for (const re of [/\.workspace \.section-head\{display:flex/, /\.workspace \.editor-section\{/, /\.workspace \.button\.secondary\{background:#fff/]) assert.match(css, re);
+  for (const re of [/\.workspace \.section-head\{display:flex/, /\.workspace \.editor-section\{/, /\.workspace \.button\.secondary\{background:var\(--dq-surface\)/]) assert.match(css, re);
 });

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAppDialogClose } from "./AppDialog";
+import { PasswordInput } from "./PasswordInput";
 import { useUpdateIntegrationSettings, type IntegrationReadiness } from "@workspace/api-client-react";
 
 const fields = {
@@ -47,16 +48,18 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel, onDirt
       <label><input type="radio" name={`${provider}-source`} checked={mode === "environment"} onChange={() => setMode("environment")} /> Use server environment instead</label>
       {mode === "database" ? fields[provider].map(([key, label, type]) => <div key={key} className="form-field">
         <label htmlFor={`integration-${key}`}>{label}</label>
-        <input id={`integration-${key}`} name={key} type={type} autoComplete="off" spellCheck={false} maxLength={2048}
+        {type === "password" ? <PasswordInput id={`integration-${key}`} name={key} visibilityLabel={label} autoComplete="off" spellCheck={false} maxLength={2048}
           value={values[key] ?? ""} placeholder={settings.keys.find(item => item.key === key)?.status === "configured" ? "Configured — leave blank to keep" : "Enter a value"}
-          onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} />
+          onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} /> : <input id={`integration-${key}`} name={key} type={type} autoComplete="off" spellCheck={false} maxLength={2048}
+          value={values[key] ?? ""} placeholder={settings.keys.find(item => item.key === key)?.status === "configured" ? "Configured — leave blank to keep" : "Enter a value"}
+          onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} />}
       </div>) : <>
         <p role="note">This removes the saved website configuration. Email or SMS will stop working if the server environment is incomplete. It does not change the server’s .env file.</p>
         <label><input type="checkbox" required checked={confirmed} onChange={event => setConfirmed(event.target.checked)} /> I understand and want to use server configuration.</label>
       </>}
       <div className="form-field">
         <label htmlFor={`confirm-${provider}`}>Confirm your current Super Admin password</label>
-        <input id={`confirm-${provider}`} type="password" autoComplete="current-password" required maxLength={1024}
+        <PasswordInput id={`confirm-${provider}`} autoComplete="current-password" required maxLength={1024}
           value={password} onChange={event => setPassword(event.target.value)} />
       </div>
       <button type="submit" disabled={save.isPending || (mode === "environment" && !confirmed)}>{save.isPending ? "Saving…" : "Save configuration"}</button>

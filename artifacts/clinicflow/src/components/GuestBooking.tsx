@@ -123,7 +123,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   {selection.sessions.length===1&&!availability.error?<div className="guest-session"><strong>Consulting session</strong><span>{formatSessionHours(selection.sessions[0])} · {selection.sessions[0].timezone}</span><small>Only session listed for this date. Availability is checked again when you book.</small></div>:<SessionSelector selection={selection}/>}
  <label>Patient's name<input data-testid="input-guest-name" autoComplete="name" maxLength={150} {...form.register("fullName",{required:true,validate:v=>!!v.trim()})}/></label>
  </div>
- <details><summary data-testid="toggle-guest-contact" style={{padding:"14px 0",cursor:"pointer"}}>Add contact details (optional)</summary><div className="form-grid">
+ <details><summary data-testid="toggle-guest-contact" style={{padding:"12px 0",cursor:"pointer"}}>Add contact details (optional)</summary><div className="form-grid">
  <label>Email (optional)<EmailInput data-testid="input-guest-email" {...form.register("email", { validate: (v:unknown) => validateEmail(v)||true })}/></label>
  <Controller name="mobile" control={form.control} rules={{validate:v=>!v?.trim()||!validatePhone(v)}} render={({field})=><label>Mobile (optional)<PhoneInput {...field} value={field.value||""} data-testid="input-guest-mobile"/></label>}/>
  </div></details>

@@ -1,5 +1,5 @@
 .vt{--vt-ink:#10274e;--vt-paper:#ffffff;--vt-accent:#087cb7;--vt-soft:#e9f8fc;--vt-line:#c9e3ed;
- font-family:"DM Sans",system-ui,sans-serif;color:var(--vt-ink);background:var(--vt-paper);border:1px solid var(--vt-line);border-radius:18px;max-width:640px;overflow:hidden;box-shadow:0 18px 40px -24px hsl(222 40% 20% / .35);animation:vt-in .45s cubic-bezier(.2,.8,.2,1)}
+ font-family:var(--font-body);color:var(--vt-ink);background:var(--vt-paper);border:1px solid var(--vt-line);border-radius:18px;max-width:640px;overflow:hidden;box-shadow:0 18px 40px -24px hsl(222 40% 20% / .35);animation:vt-in .45s cubic-bezier(.2,.8,.2,1)}
 @keyframes vt-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .vt-head{background:#edfaff;color:var(--vt-ink);padding:4px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--vt-line)}
 .vt-head-brand{display:flex;align-items:center;gap:8px;min-width:0}
@@ -10,8 +10,8 @@
 .vt-body>div,.vt-dl dd{min-width:0;overflow-wrap:anywhere}
 .vt-ref,.vt-name{overflow-wrap:anywhere}
 .vt-number-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;opacity:.7;margin:0}
-.vt-number{font-family:"Space Mono",ui-monospace,monospace;font-size:clamp(2.6rem,9vw,4rem);line-height:1;margin:4px 0 10px;color:var(--vt-accent);font-weight:700}
-.vt-ref{font-family:"Space Mono",ui-monospace,monospace;font-size:.85rem;margin:0 0 8px}
+.vt-number{font-family:var(--font-mono);font-size:clamp(2.6rem,9vw,4rem);line-height:1;margin:4px 0 10px;color:var(--vt-accent);font-weight:700}
+.vt-ref{font-family:var(--font-mono);font-size:.85rem;margin:0 0 8px}
 .vt-name{font-size:1.2rem;font-weight:700;margin:0 0 8px}
 .vt-visit{display:flex;flex-direction:column;gap:3px;background:#edfaff;border:1px solid var(--vt-line);border-radius:9px;padding:9px 11px;margin:0 0 10px;overflow-wrap:anywhere}
 .vt-visit small{text-transform:uppercase;letter-spacing:.09em;font-size:11px;opacity:.7}

@@ -41,7 +41,7 @@ export function AppointmentDetails({ appointment: a }: { appointment: Appointmen
         <div><dt>Consultation check-in</dt><dd data-testid="text-detail-checked-in">{a.checkedInAt ? timestamp(a.checkedInAt) : "Not recorded"}</dd></div>
         <div><dt>Consultation completed</dt><dd data-testid="text-detail-completed">{a.completedAt ? timestamp(a.completedAt) : "Not recorded"}</dd></div>
       </dl>
-      <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>Consultation check-in records entry into consultation, not arrival at the clinic.</p>
+      <p className="muted" style={{ marginTop: 8, fontSize: "var(--type-label)" }}>Consultation check-in records entry into consultation, not arrival at the clinic.</p>
     </div>
     <div className="appt-detail-block">
       <h4>Status and reason history</h4>

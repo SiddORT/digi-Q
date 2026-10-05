@@ -2,18 +2,18 @@
    deliberately wins over the older compact rules without !important. Colours and fonts are the existing DigiQ tokens. */
 
 /* ---------- Shared list header ---------- */
-.workspace .list-header{--lh-h:38px;display:flex;flex-direction:column;gap:var(--space-2);margin:0 0 var(--space-3)}
+.workspace .list-header{--lh-h:var(--control-md);display:flex;flex-direction:column;gap:var(--space-2);margin:0 0 var(--space-3)}
 .workspace .list-header .lh-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3);width:100%;min-width:0}
 .workspace .list-header .lh-top .lh-title{order:0;flex:0 0 auto;align-self:center;margin:0;white-space:nowrap}
-.workspace .list-header .lh-top .lh-title .listing-count-label{font-family:var(--font-heading);font-size:16px;font-weight:700;color:var(--ink);display:inline-flex;align-items:center;gap:var(--space-2)}
+.workspace .list-header .lh-top .lh-title .listing-count-label{font-family:var(--font-heading);font-size:var(--type-body-lg);font-weight:700;color:var(--ink);display:inline-flex;align-items:center;gap:var(--space-2)}
 .workspace .list-header .lh-top .lh-search{order:1;flex:1 1 360px;display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-start;gap:var(--space-2);min-width:0;max-width:none;margin:0}
 .workspace .list-header .lh-top .lh-search>.workspace-search{flex:1 1 280px;max-width:none;min-width:200px}
 .workspace .list-header .lh-top .lh-search>:not(.workspace-search){flex:0 1 auto;min-width:0}
 .workspace .list-header .workspace-search input{min-height:var(--lh-h);height:var(--lh-h);margin:0}
 .workspace .list-header .lh-actions{order:2;display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2);margin-left:auto;flex:0 1 auto;min-width:0}
-.workspace .list-header .lh-actions :is(.button,a.button,button.button){min-height:var(--lh-h);padding:0 16px;font-size:14px;font-weight:600;gap:8px;border-radius:var(--radius-control);line-height:1.2}
+.workspace .list-header .lh-actions :is(.button,a.button,button.button){min-height:var(--lh-h);padding:0 16px;font-size:var(--type-body);font-weight:600;gap:8px;border-radius:var(--radius-control);line-height:1.2}
 .workspace .list-header .lh-actions .button:not(.secondary):not(.light){background:var(--dq-blue);border-color:var(--dq-blue);color:#fff}
-.workspace .list-header .lh-actions .button.secondary{background:#fff;color:var(--dq-blue);border:1px solid #9fbbe2}
+.workspace .list-header .lh-actions .button.secondary{background:var(--dq-surface);color:var(--dq-blue);border:1px solid #9fbbe2}
 .workspace .list-header .lh-actions .button.secondary:hover{background:var(--surface-hover);border-color:var(--dq-blue)}
 .workspace .list-header .lh-actions>button:not(.button){min-height:var(--lh-h)}
 .workspace .list-header .lh-actions .export-inline{flex-wrap:wrap}
@@ -22,17 +22,17 @@
 .workspace .list-header .lh-sub .lh-status{order:0;flex:0 1 auto;min-width:0;max-width:100%;display:flex;align-items:center}
 .workspace .list-header .lh-sub .lh-tools{order:1;display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);margin-left:auto;flex:0 1 auto;width:auto;justify-content:flex-end;min-width:0}
 .workspace .list-header .lh-meta{display:flex;align-items:center;flex-wrap:wrap;gap:var(--space-2);min-width:0}
-.workspace .list-header .lh-meta>label{display:flex;align-items:center;gap:6px;margin:0;white-space:nowrap}
-.workspace .list-header .lh-meta>label input{margin:0;min-height:34px;width:150px}
-.workspace .list-header .lh-sub :is(.filter-toggle,.filter-clear){min-height:34px}
+.workspace .list-header .lh-meta>label{display:flex;align-items:center;gap:8px;margin:0;white-space:nowrap}
+.workspace .list-header .lh-meta>label input{margin:0;min-height:var(--control-sm);width:150px}
+.workspace .list-header .lh-sub :is(.filter-toggle,.filter-clear){min-height:var(--control-sm)}
 .workspace .list-header .lh-page-title{order:0;flex:0 0 auto;min-width:0;max-width:100%;display:flex;flex-direction:column;justify-content:center}
 .workspace .list-header .lh-page-title h1{margin:0;font-size:var(--type-page);line-height:1.2;white-space:nowrap}
-.workspace .list-header .lh-page-title .eyebrow{margin:0 0 2px;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#4f6b94}
+.workspace .list-header .lh-page-title .eyebrow{margin:0 0 4px;font-size:var(--type-caption);letter-spacing:1px;text-transform:uppercase;color:#4f6b94}
 .workspace .list-header .lh-top{flex-wrap:nowrap}
 .workspace .list-header .lh-top .lh-search{flex:1 1 220px;min-width:220px}
 .workspace .list-header .lh-top .lh-search>.workspace-search{flex:1 1 220px;min-width:200px}
 .workspace .list-header .lh-sub .lh-count{order:-1;flex:0 0 auto;margin:0;white-space:nowrap}
-.workspace .list-header .lh-sub .lh-count .listing-count-label{font-size:13px;font-weight:600;color:var(--soft);display:inline-flex;align-items:center;gap:6px}
+.workspace .list-header .lh-sub .lh-count .listing-count-label{font-size:var(--type-label);font-weight:600;color:var(--soft);display:inline-flex;align-items:center;gap:8px}
 /* Desktop (incl. 1024) keeps title + search + actions on one line; wrap intentionally only on narrow screens. */
 @media (max-width:900px){
   .workspace .list-header .lh-top{flex-wrap:wrap}
@@ -50,33 +50,33 @@
   .workspace .list-header .lh-meta>label input{width:100%}
 }
 /* Page-heading primary button: same 38px control height as list headers (was 32px "small"). */
-.workspace .page-heading .button{min-height:38px;padding:0 16px;font-size:14px;font-weight:600}
+.workspace .page-heading .button{min-height:var(--control-md);padding:0 16px;font-size:var(--type-body);font-weight:600}
 
 /* ---------- Appointment details drawer ---------- */
 .appt-detail{display:grid;gap:var(--space-4);min-width:0}
 .appt-detail-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:center;padding:var(--space-3) var(--space-4);border:1px solid hsl(var(--border));border-radius:var(--radius-card);background:#f6f9fe}
-.appt-detail-summary h3{font-family:var(--font-heading);font-size:18px;margin:0 0 4px;overflow-wrap:anywhere}
-.appt-detail-status{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);font-size:13px;color:var(--soft)}
-.appt-detail-token{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:84px;padding:6px 12px;border-radius:var(--radius-control);background:#fff;border:1px solid #cddcf1}
-.appt-detail-token small{font-size:11px;letter-spacing:.08em;text-transform:uppercase}
-.appt-detail-token strong{font-family:var(--font-heading);font-size:24px;line-height:1.15;color:var(--dq-blue);overflow-wrap:anywhere}
+.appt-detail-summary h3{font-family:var(--font-heading);font-size:var(--type-card);margin:0 0 4px;overflow-wrap:anywhere}
+.appt-detail-status{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);font-size:var(--type-label);color:var(--soft)}
+.appt-detail-token{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:84px;padding:8px 12px;border-radius:var(--radius-control);background:var(--dq-surface);border:1px solid #cddcf1}
+.appt-detail-token small{font-size:var(--type-caption);letter-spacing:.08em;text-transform:uppercase}
+.appt-detail-token strong{font-family:var(--font-heading);font-size:var(--type-page);line-height:1.15;color:var(--dq-blue);overflow-wrap:anywhere}
 .appt-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3) var(--space-4);margin:0}
 .appt-detail-grid>div{min-width:0}
-.appt-detail-grid dt,.appt-detail-block>h4{font-size:12px;font-weight:650;color:var(--soft);margin:0 0 2px;text-transform:none}
-.appt-detail-grid dd{margin:0;font-size:14px;color:var(--ink);overflow-wrap:anywhere}
-.appt-detail-grid dd small{margin-top:2px}
+.appt-detail-grid dt,.appt-detail-block>h4{font-size:var(--type-caption);font-weight:650;color:var(--soft);margin:0 0 4px;text-transform:none}
+.appt-detail-grid dd{margin:0;font-size:var(--type-body);color:var(--ink);overflow-wrap:anywhere}
+.appt-detail-grid dd small{margin-top:4px}
 .appt-detail-grid .span-2{grid-column:1/-1}
 .appt-detail-ref{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
-.appt-detail-ref code{font-family:"Space Mono",ui-monospace,monospace;font-size:13px;overflow-wrap:anywhere;background:#f1f5fb;border-radius:var(--radius-badge);padding:1px 6px}
-.appt-detail-ref button{min-height:28px;padding:2px 10px;font-size:12px}
+.appt-detail-ref code{font-family:var(--font-mono);font-size:var(--type-label);overflow-wrap:anywhere;background:#f1f5fb;border-radius:var(--radius-badge);padding:0 8px}
+.appt-detail-ref button{min-height:28px;padding:4px 12px;font-size:var(--type-caption)}
 .appt-detail-block{border-top:1px solid hsl(var(--border));padding-top:var(--space-3);min-width:0}
-.appt-detail-block>h4{font-family:var(--font-body);font-size:13px;color:var(--ink);margin-bottom:var(--space-2)}
-.appt-detail-notes{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font-size:14px}
+.appt-detail-block>h4{font-family:var(--font-body);font-size:var(--type-label);color:var(--ink);margin-bottom:var(--space-2)}
+.appt-detail-notes{white-space:pre-wrap;overflow-wrap:anywhere;margin:0;font-size:var(--type-body)}
 .appt-detail-empty{color:var(--soft);font-style:italic}
-.appt-detail-history{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid #d6e3f5;display:grid;gap:var(--space-2)}
-.appt-detail-history li{position:relative;font-size:13px}
-.appt-detail-history li::before{content:"";position:absolute;left:-20px;top:7px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--dq-blue)}
-.appt-detail-history p{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--soft)}
+.appt-detail-history{list-style:none;margin:0;padding:0 0 0 16px;border-left:2px solid #d6e3f5;display:grid;gap:var(--space-2)}
+.appt-detail-history li{position:relative;font-size:var(--type-label)}
+.appt-detail-history li::before{content:"";position:absolute;left:-20px;top:7px;width:10px;height:10px;border-radius:50%;background:var(--dq-surface);border:2px solid var(--dq-blue)}
+.appt-detail-history p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--soft)}
 @media (max-width:520px){.appt-detail-grid{grid-template-columns:1fr}.appt-detail-summary{grid-template-columns:1fr}.appt-detail-token{align-items:flex-start}}
 
 /* ---------- On-screen ticket (export/print HTML is generated separately and unchanged) ---------- */
@@ -114,8 +114,8 @@
 @media (max-width:620px){.appt-ticket-info{grid-template-columns:1fr}}
 
 /* ---------- Shared drawer/dialog headings and footers ---------- */
-.app-dialog-title{font-family:var(--font-heading);font-size:17px;font-weight:750}
-.app-dialog-body .form-footer .button,.app-dialog-footer .button{min-height:38px}
+.app-dialog-title{font-family:var(--font-heading);font-size:var(--type-card);font-weight:var(--weight-heading)}
+.app-dialog-body .form-footer .button,.app-dialog-footer .button{min-height:var(--control-md)}
 
 /* ---------- Reports numeric columns ---------- */
 .reports-compact td[data-label="Visits"],.reports-compact td[data-label="Registrations"],.reports-compact td[data-label="Average queue wait"],.reports-compact td[data-label="TAT"]{font-variant-numeric:tabular-nums}
@@ -123,23 +123,23 @@
 
 /* ---------- Settings / editors: consistent field width and action area ---------- */
 .workspace .form-footer{gap:var(--space-2)}
-.workspace .form-footer .button,.workspace .form-footer>button{min-height:38px}
+.workspace .form-footer .button,.workspace .form-footer>button{min-height:var(--control-md)}
 .workspace .list-header .lh-meta>:is(div,.sort-menu){flex:0 1 210px;min-width:170px}
 .workspace .list-header .lh-meta>:is(.listing-updated-tip,.report-method-tip){flex:0 0 auto;min-width:0}
 
 /* ---------- Dashboard: readable card labels/captions (enlarged, never reduced) ---------- */
-.workspace .stat-card>div{font-size:13px}
-.workspace .stat-card small{font-size:12px}
-.workspace .activity-list strong{font-size:13px}
-.workspace .activity-list small{font-size:12px}
+.workspace .stat-card>div{font-size:var(--type-label)}
+.workspace .stat-card small{font-size:var(--type-caption)}
+.workspace .activity-list strong{font-size:var(--type-label)}
+.workspace .activity-list small{font-size:var(--type-caption)}
 
 /* ---------- Audit drawer: structured facts + wrapped technical payload ---------- */
 .audit-technical{border-top:1px solid hsl(var(--border));padding-top:var(--space-3)}
-.audit-technical summary{cursor:pointer;font-weight:600;font-size:13px}
-.audit-technical pre{margin:var(--space-2) 0 0;padding:var(--space-3);background:#f4f7fc;border:1px solid hsl(var(--border));border-radius:var(--radius-control);font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.audit-technical summary{cursor:pointer;font-weight:600;font-size:var(--type-label)}
+.audit-technical pre{margin:var(--space-2) 0 0;padding:var(--space-3);background:#f4f7fc;border:1px solid hsl(var(--border));border-radius:var(--radius-control);font-size:var(--type-caption);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 
 /* ---------- QR cards: full URL always wraps, actions aligned ---------- */
-.workspace .qr-card>a:not(.button){font-size:12px;overflow-wrap:anywhere;word-break:break-all}
+.workspace .qr-card>a:not(.button){font-size:var(--type-caption);overflow-wrap:anywhere;word-break:break-all}
 
 /* =====================================================================
    Whole-app consistency system (item 4). Shared by settings, templates, permissions, custom roles,
@@ -149,16 +149,16 @@
 .workspace .section-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--space-2) var(--space-3);margin:0 0 var(--space-3);padding:0 0 var(--space-3);border-bottom:1px solid hsl(var(--border))}
 .workspace .panel.table-panel>.section-head,.workspace .panel:not(.padded)>.section-head{padding:var(--space-3) var(--space-4);margin:0}
 .workspace .section-head>div:first-child{flex:1 1 280px;min-width:0}
-.workspace .section-head h2{font-family:var(--font-heading);font-size:18px;line-height:1.3;margin:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-.workspace .section-head p{margin:4px 0 0;font-size:13px;line-height:1.45;color:var(--soft)}
-.workspace .section-head .eyebrow{display:block;margin:0 0 2px}
+.workspace .section-head h2{font-family:var(--font-heading);font-size:var(--type-card);line-height:1.3;margin:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.workspace .section-head p{margin:4px 0 0;font-size:var(--type-label);line-height:1.45;color:var(--soft)}
+.workspace .section-head .eyebrow{display:block;margin:0 0 4px}
 .workspace .section-head>:not(:first-child){display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
-.workspace .section-head :is(.button,button.button){min-height:38px}
+.workspace .section-head :is(.button,button.button){min-height:var(--control-md)}
 
 /* Panels: same inner rhythm everywhere. */
 .workspace .panel.padded{padding:var(--space-4)}
 .workspace .panel.padded+.panel,.workspace .panel+.panel.padded{margin-top:var(--space-4)}
-.workspace .panel.padded h3{font-size:15px;margin:var(--space-3) 0 var(--space-2)}
+.workspace .panel.padded h3{font-size:var(--type-body);margin:var(--space-3) 0 var(--space-2)}
 
 /* Fields: consistent two-column grid, readable max widths, full width on phones. */
 .workspace .form-grid{gap:var(--space-3) var(--space-4)}
@@ -166,22 +166,22 @@
 .workspace .form-grid :is(input:not([type=checkbox]):not([type=radio]),select,textarea){width:100%;min-height:var(--field-height)}
 .workspace .panel.padded>label,.workspace .panel.padded>form:not(.form-grid)>label,.workspace .int-field{max-width:560px}
 .workspace .panel.padded>label :is(input,select,textarea){width:100%}
-.workspace .editor-section{grid-column:1/-1;margin:var(--space-2) 0 0;padding:var(--space-2) 0 0;border-top:1px solid hsl(var(--border));font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#4f6b94}
+.workspace .editor-section{grid-column:1/-1;margin:var(--space-2) 0 0;padding:var(--space-2) 0 0;border-top:1px solid hsl(var(--border));font-family:var(--font-body);font-size:var(--type-caption);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#4f6b94}
 .workspace .form-grid>.editor-section:first-of-type{border-top:0;padding-top:0;margin-top:0}
 @media (max-width:640px){.workspace .form-grid{grid-template-columns:1fr}}
 
 /* Action groups: secondary = outlined, primary = filled, same height; footers right-aligned. */
 .workspace :is(.et-actions,.row-actions,.demo-link-actions,.guest-request-actions,.int-status-row,.inline-form){display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
-.workspace :is(.et-actions,.demo-link-actions,.guest-request-actions,.int-status-row) :is(.button,button){min-height:36px}
-.workspace .button.secondary{background:#fff;color:var(--dq-blue);border:1px solid #9fbbe2}
+.workspace :is(.et-actions,.demo-link-actions,.guest-request-actions,.int-status-row) :is(.button,button){min-height:var(--control-md)}
+.workspace .button.secondary{background:var(--dq-surface);color:var(--dq-blue);border:1px solid #9fbbe2}
 .workspace .button.secondary:hover{background:var(--surface-hover);border-color:var(--dq-blue)}
 .workspace .button.secondary.danger{color:var(--danger,#b3261e);border-color:#e3b3ae}
 .workspace .form-footer{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center}
 @media (max-width:640px){.workspace .form-footer>:is(.button,button){flex:1 1 auto;min-height:44px}}
 
 /* Notices and empty states share one shape. */
-.workspace :is(.notice,.et-notice,.listing-hint){border-radius:var(--radius-control);font-size:13px;line-height:1.5}
-.workspace :is(.empty,.et-empty){text-align:center;padding:var(--space-5) var(--space-4);color:var(--soft)}
+.workspace :is(.notice,.et-notice,.listing-hint){border-radius:var(--radius-control);font-size:var(--type-label);line-height:1.5}
+.workspace :is(.empty,.et-empty){text-align:left;padding:var(--space-3) var(--space-4);color:var(--soft)}
 .workspace :is(.empty,.et-empty) :is(h3,p){margin:0 0 var(--space-2)}
 
 /* Guest requests: aligned rows, actions to the right on desktop. */
@@ -189,7 +189,7 @@
 .workspace .guest-request-main{flex:1 1 280px;min-width:0;overflow-wrap:anywhere}
 
 /* Booking: every step uses the same heading treatment. */
-.booking-section-head h2,.booking-step-head h2,.booking-panel .section-heading h2{font-family:var(--font-heading);font-size:20px;margin:0 0 var(--space-3)}
+.booking-section-head h2,.booking-step-head h2,.booking-panel .section-heading h2{font-family:var(--font-heading);font-size:var(--type-section);margin:0 0 var(--space-3)}
 
 /* Custom roles / integrations headers adopt section-head; keep their own extras. */
 .workspace .int-head.section-head .int-chooser{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-end}
@@ -197,7 +197,7 @@
 /* Public and auth screens: same control heights and readable widths (outside the workspace shell). */
 .auth-card .button.auth-submit{min-height:44px;width:100%}
 .auth-card :is(input:not([type=checkbox]),select){min-height:var(--field-height,40px)}
-.auth-links{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--space-2);font-size:14px}
+.auth-links{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--space-2);font-size:var(--type-body)}
 .public-clinic-card{min-width:0;overflow-wrap:anywhere}
 .public-clinic-card .button{min-height:40px}
 
@@ -210,7 +210,7 @@
 .workspace .list-header .lh-top>.filter-bar-primary.lh-search{display:flex;align-items:center;align-self:center;margin:0}
 .workspace .list-header .lh-top>.filter-bar-primary.lh-search>*{align-self:center;margin-top:0;margin-bottom:0}
 .workspace .list-header .lh-top>.filter-bar-primary.lh-search>.workspace-search{flex:1 1 220px;width:auto;min-width:200px;max-width:none;gap:0}
-.workspace .list-header .lh-top .workspace-search>label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.workspace .list-header .lh-top .workspace-search>label{position:absolute;width:1px;height:1px;padding:0;margin:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .workspace .list-header .lh-top>.lh-page-title,.workspace .list-header .lh-top>.lh-title,.workspace .list-header .lh-top>.lh-actions{align-self:center;margin-top:0;margin-bottom:0}
 .workspace .list-header .lh-top>.lh-page-title h1{margin:0}
 
@@ -242,6 +242,6 @@
   .workspace .list-header .lh-meta:has(.listing-updated-tip){flex-wrap:nowrap;flex:0 0 auto}
   .workspace .list-header .lh-meta:has(.listing-updated-tip)>.searchable-select-field{flex:0 0 auto;flex-direction:row;align-items:center;gap:8px;width:auto;min-width:0}
   .workspace .list-header .lh-meta:has(.listing-updated-tip)>.searchable-select-field>label{white-space:nowrap;margin:0}
-  .workspace .list-header .lh-meta:has(.listing-updated-tip) .searchable-select-control{width:210px;min-height:34px}
+  .workspace .list-header .lh-meta:has(.listing-updated-tip) .searchable-select-control{width:210px;min-height:var(--control-sm)}
   .workspace .list-header .lh-meta>.listing-updated-tip{flex:0 0 auto;margin:0}
 }

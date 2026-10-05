@@ -9,6 +9,18 @@ Treat the DigiQ standardization prompt itself as the user's approved design spec
 
 **How to apply:** Use explicit values from the prompt. Distinguish missing referenced values from contradictions; do not invent missing tokens.
 
+The later enterprise brief and HIGH_DENSITY_OPERATIONAL addendum supersede earlier visual foundations. Scope includes every existing role and public/authentication surface, not only administrator listings. The user requests visible progress during implementation.
+
+**Why:** After reviewing the page-wise comparison, the user asked for the changes throughout all pages, user roles and screens.
+
+**How to apply:** Keep existing-screen standardization distinct from new enterprise functionality. Do not claim the full brief is complete because tokens reach every route. Preserve clinical semantics and disclose unimplemented features.
+
+Do not persist patient search terms or record results in browser navigation preferences by default.
+
+**Why:** Clinic workstations can be shared; navigation convenience should not create a second persistent store of patient information.
+
+**How to apply:** Persist only user/role-scoped page identifiers for favorites and recent navigation. Any future saved patient-search feature needs an explicit retention and access design.
+
 The user wants HIGH_DENSITY_OPERATIONAL UI: more useful information per viewport, less scrolling/navigation/modal dependency, no oversized padding, large empty cards, single-metric full rows, unnecessary one-field rows, or centered empty states. Earlier compact-workspace direction remains relevant.
 
 **Why:** The user wants more actual data visible rather than space consumed by stacked controls and navigation. This deliberately supersedes the earlier 245px sidebar and 24px workspace-padding dimensions.

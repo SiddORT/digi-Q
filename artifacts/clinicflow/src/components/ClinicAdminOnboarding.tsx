@@ -10,7 +10,7 @@ import { friendlyError } from "../lib/friendly-error";
 type SetupProps = { guided?: boolean; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void };
 export function ClinicAdminOnboarding({ guided = false, ...state }: SetupProps) {
   if (guided) return <GuidedAdminSetup {...state}/>;
-  return <section className="panel padded" style={{ marginBottom: 20 }}><h3>Clinic Admin setup</h3><p className="muted">Invite a clinic owner and create their clinic, locations and hours together. Existing ownership is never transferred.</p><Link className="button small" href="/register-clinic" data-testid="button-setup-clinic-admin"><Plus size={17}/>Set up Clinic Admin</Link></section>;
+  return <section className="panel padded" style={{ marginBottom: 24 }}><h3>Clinic Admin setup</h3><p className="muted">Invite a clinic owner and create their clinic, locations and hours together. Existing ownership is never transferred.</p><Link className="button small" href="/register-clinic" data-testid="button-setup-clinic-admin"><Plus size={17}/>Set up Clinic Admin</Link></section>;
 }
 
 function GuidedAdminSetup({ onDirtyChange, onBusyChange }: Omit<SetupProps, "guided">) {

@@ -30,7 +30,7 @@ export function CheckInScanner() {
     return (
       <div className="landing">
         <header className="public-header"><Logo/></header>
-        <main style={{ padding: "40px 20px", maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
+        <main style={{ padding: "40px 24px", maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
           <h2>Staff access required</h2>
           <p>The check-in scanner is available for clinic staff only.</p>
         </main>
@@ -41,7 +41,7 @@ export function CheckInScanner() {
   return (
     <div className="landing">
       <header className="public-header"><Logo/></header>
-      <main style={{ padding: "40px 20px", maxWidth: "600px", margin: "0 auto" }}>
+      <main style={{ padding: "40px 24px", maxWidth: "600px", margin: "0 auto" }}>
         <section className="panel padded">
           <span className="eyebrow">CLINIC STAFF</span>
            <h2>Validate appointment QR</h2>
@@ -251,11 +251,11 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
       const { appointment, eligible, alreadyCheckedIn, message } = resolved;
       if (checkIn.isSuccess && checkIn.data) {
          return (
-            <div role="status" style={{ textAlign: "center", padding: "20px 0" }}>
+            <div role="status" style={{ textAlign: "center", padding: "24px 0" }}>
              <span className="confirmation-check"><Check size={34}/></span>
               <h2>{checkIn.data.alreadyCheckedIn ? "Already checked in" : "Checked in"}</h2>
              <p>{checkIn.data.message || `${checkIn.data.appointment.patientName} has been checked in successfully.`}</p>
-             <div className="confirmation-token" style={{ margin: "20px auto" }}>
+             <div className="confirmation-token" style={{ margin: "24px auto" }}>
                <small>TOKEN</small>
                <strong>{checkIn.data.appointment.token || "—"}</strong>
                <span>{formatDate(checkIn.data.appointment.date,checkIn.data.appointment)} · {formatSessionHours(checkIn.data.appointment)} · {checkIn.data.appointment.status.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase())}</span>
@@ -300,7 +300,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {scanError && <div className="error-box" role="alert">{scanError}</div>}
       <div className="toolbar" style={{ justifyContent: "center" }}>
         <button className={`button small ${mode === "camera" ? "" : "light"}`} onClick={() => setMode("camera")}><Camera size={16}/> Camera</button>

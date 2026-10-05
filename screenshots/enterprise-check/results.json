@@ -1,0 +1,845 @@
+{
+  "startedAt": "2026-10-05T13:45:54.322Z",
+  "sourceDocs": [
+    "artifacts/clinicflow/docs/uniformity-completion.md",
+    "artifacts/clinicflow/src/components/uniformity.css"
+  ],
+  "checks": [
+    {
+      "name": "Appointments desktop row layout at 1024x640 and 1440x900",
+      "status": "pass",
+      "details": {
+        "1024x640": {
+          "viewport": {
+            "width": 1024,
+            "height": 640
+          },
+          "overflow": 0,
+          "title": {
+            "x": 224,
+            "y": 135,
+            "width": 163,
+            "height": 29
+          },
+          "header": {
+            "x": 224,
+            "y": 112,
+            "width": 784,
+            "height": 52
+          },
+          "search": {
+            "x": 399,
+            "y": 116,
+            "width": 281,
+            "height": 44
+          },
+          "actions": [
+            {
+              "x": 692,
+              "y": 118,
+              "width": 125,
+              "height": 40
+            },
+            {
+              "x": 826,
+              "y": 118,
+              "width": 182,
+              "height": 40
+            }
+          ],
+          "primarySecondary": [
+            {
+              "text": "Export",
+              "height": 40
+            },
+            {
+              "text": "Book appointment",
+              "height": 40
+            }
+          ],
+          "subrow": {
+            "x": 224,
+            "y": 172,
+            "width": 784,
+            "height": 74
+          },
+          "rows": [
+            {
+              "x": 224,
+              "y": 112,
+              "width": 784,
+              "height": 52
+            }
+          ],
+          "main": {
+            "x": 208,
+            "y": 100,
+            "width": 816,
+            "height": 537
+          }
+        },
+        "rowItems1024": [
+          {
+            "selector": ".list-header .lh-page-title h1",
+            "x": 224,
+            "y": 135,
+            "width": 163,
+            "height": 29,
+            "center": 149
+          },
+          {
+            "selector": ".list-header .workspace-search input",
+            "x": 399,
+            "y": 120,
+            "width": 281,
+            "height": 40,
+            "center": 140
+          },
+          {
+            "selector": ".list-header .lh-actions .button.secondary",
+            "x": 692,
+            "y": 118,
+            "width": 78,
+            "height": 40,
+            "center": 138
+          },
+          {
+            "selector": ".list-header .lh-actions .button:not(.secondary)",
+            "x": 826,
+            "y": 118,
+            "width": 182,
+            "height": 40,
+            "center": 138
+          }
+        ],
+        "1440x900": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "overflow": 0,
+          "title": {
+            "x": 224,
+            "y": 135,
+            "width": 163,
+            "height": 29
+          },
+          "header": {
+            "x": 224,
+            "y": 112,
+            "width": 1200,
+            "height": 52
+          },
+          "search": {
+            "x": 399,
+            "y": 116,
+            "width": 697,
+            "height": 44
+          },
+          "actions": [
+            {
+              "x": 1108,
+              "y": 118,
+              "width": 125,
+              "height": 40
+            },
+            {
+              "x": 1242,
+              "y": 118,
+              "width": 182,
+              "height": 40
+            }
+          ],
+          "primarySecondary": [
+            {
+              "text": "Export",
+              "height": 40
+            },
+            {
+              "text": "Book appointment",
+              "height": 40
+            }
+          ],
+          "subrow": {
+            "x": 224,
+            "y": 172,
+            "width": 1200,
+            "height": 34
+          },
+          "rows": [
+            {
+              "x": 224,
+              "y": 112,
+              "width": 1200,
+              "height": 52
+            }
+          ],
+          "main": {
+            "x": 208,
+            "y": 100,
+            "width": 1232,
+            "height": 462
+          }
+        },
+        "rowItems1440": [
+          {
+            "selector": ".list-header .lh-page-title h1",
+            "x": 224,
+            "y": 135,
+            "width": 163,
+            "height": 29,
+            "center": 149
+          },
+          {
+            "selector": ".list-header .workspace-search input",
+            "x": 399,
+            "y": 120,
+            "width": 697,
+            "height": 40,
+            "center": 140
+          },
+          {
+            "selector": ".list-header .lh-actions .button.secondary",
+            "x": 1108,
+            "y": 118,
+            "width": 78,
+            "height": 40,
+            "center": 138
+          },
+          {
+            "selector": ".list-header .lh-actions .button:not(.secondary)",
+            "x": 1242,
+            "y": 118,
+            "width": 182,
+            "height": 40,
+            "center": 138
+          }
+        ],
+        "slowTypeSelection": "Previously passed: focus retained while typing; Alexandria suggestion selected and corresponding row remained visible."
+      }
+    },
+    {
+      "name": "Appointments detail drawer preserves grouped references, copy action, empty and populated history fields",
+      "status": "pass",
+      "details": {
+        "drawer": {
+          "x": 886,
+          "width": 560,
+          "height": 900
+        },
+        "fields": [
+          "notes",
+          "consultation/check-in",
+          "history",
+          "long reference + copy"
+        ],
+        "retained": true
+      }
+    },
+    {
+      "name": "Long ticket at 390px allows safe scrolling without horizontal clipping",
+      "status": "pass",
+      "details": {
+        "overflow": 0,
+        "dialog": {
+          "x": 0,
+          "y": 0,
+          "width": 390,
+          "height": 844,
+          "top": 0,
+          "right": 390,
+          "bottom": 844,
+          "left": 0
+        },
+        "scroll": 1149,
+        "client": 794,
+        "patient": {
+          "x": 32,
+          "y": 438.15625,
+          "width": 326,
+          "height": 61.4375,
+          "top": 438.15625,
+          "right": 358,
+          "bottom": 499.59375,
+          "left": 32
+        }
+      }
+    },
+    {
+      "name": "Doctor identity /doctor/clinics assignments route",
+      "status": "pass",
+      "details": {
+        "url": "/doctor/clinics",
+        "title": "My clinics",
+        "main": true,
+        "boundary": false,
+        "overflow": 0,
+        "text": "My clinics\nCurrently assigned clinics\n\nClinics where you actively practice and manage appointments.\n\nSort assigned clinics\nName A–Z\nName\n\tCITY\tPHONE\tSTATUS\nFictional Northside Clinic\tExample City\t—\tActive\nShowing 1–1 of 1\nRows per page\n20\nPrevious\n1\nNext\nClinics in your network\n\nClinics managed by your administrator, including existing assignments. Contact your Clinic Admin for clinical assignments.\n\nSearch and sorting apply to the full authorized network.\n\nSort network clinics\nName A–Z\n\nNo clinics are available in your administrator's network.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone."
+      }
+    },
+    {
+      "name": "Patient identity /patient/queue",
+      "status": "pass",
+      "details": {
+        "url": "/patient/queue",
+        "title": "Booking status",
+        "main": true,
+        "boundary": false,
+        "overflow": 0,
+        "text": "Booking status\n\nChoose a session date below to view queue activity · refreshed every 30 seconds.\n\nSession\n\nSelect the clinic, doctor and consulting session to run this queue.\n\nYour appointment\nSearch your appointments…\n\nSelect your appointment to view a session.\n\nDigiQ Doctors · Care, connected.\nAll times follow your clinic's configured timezone."
+      }
+    },
+    {
+      "name": "WorkspaceSearch navigation, scoped favorites, permitted record search and mobile command dialog",
+      "status": "pass",
+      "details": {
+        "favoriteState": {
+          "key": "digiq-navigation:fx-clinicAdmin:admin",
+          "value": "{\"favorites\":[\"appointments\"],\"recent\":[\"dashboard\"]}"
+        },
+        "forbiddenChecked": [
+          "Master data",
+          "Demo clinic",
+          "Roles & permissions",
+          "Integrations",
+          "Audit log",
+          "System users"
+        ],
+        "mobile": {
+          "overflow": 0,
+          "topbar": {
+            "x": 0,
+            "y": 75,
+            "width": 390,
+            "height": 105,
+            "top": 75,
+            "right": 390,
+            "bottom": 180,
+            "left": 0
+          },
+          "dialog": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 844,
+            "top": 0,
+            "right": 390,
+            "bottom": 844,
+            "left": 0
+          },
+          "font": "Inter, system-ui, sans-serif"
+        }
+      }
+    },
+    {
+      "name": "Actual clinicAdmin, doctor, receptionist and patient fixtures render their role screens",
+      "status": "pass",
+      "details": [
+        {
+          "role": "clinicAdmin",
+          "url": "/admin/dashboard",
+          "title": "Good afternoon, Fixture.",
+          "main": true,
+          "signIn": false,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "role": "doctor",
+          "url": "/doctor/dashboard",
+          "title": "Good afternoon, Fixture.",
+          "main": true,
+          "signIn": false,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "role": "receptionist",
+          "url": "/receptionist/dashboard",
+          "title": "Good afternoon, Fixture.",
+          "main": true,
+          "signIn": false,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "role": "patient",
+          "url": "/patient/dashboard",
+          "title": "Good afternoon, Fixture.",
+          "main": true,
+          "signIn": false,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "patientSearch": {
+            "patientResults": false,
+            "restrictedRequests": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Password visibility toggles are keyboard accessible, preserve values and do not submit; saved integration secrets stay hidden",
+      "status": "pass",
+      "details": {
+        "staff": {
+          "type": "text",
+          "value": "FictionalPass123!",
+          "focused": "Hide password"
+        },
+        "demoValueRetained": true,
+        "integrationSavedSecret": "blank and placeholder-only",
+        "noWrites": true
+      }
+    },
+    {
+      "name": "WorkspaceSearch appointment, patient, receptionist and doctor results navigate to scoped lists",
+      "status": "pass",
+      "details": {
+        "appointmentUrl": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/admin/appointments?view=all&search=8e14f6a2-77b1-4ae3-b5c9-93c1a7d28f64",
+        "patientUrl": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/admin/patients?search=Alexandria%20Verylongpatientname%20Example-Surname",
+        "userUrl": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/admin/users?search=Casey+Fictional+Receptionist&tab=receptionists",
+        "doctorUrl": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/admin/users?search=Dr.+Rowan+Example&tab=doctors"
+      }
+    },
+    {
+      "name": "Normal appointment ticket fits at 1024x640 without unnecessary scrolling; Inter and approved tokens",
+      "status": "pass",
+      "details": {
+        "pageOverflow": 0,
+        "bodyScrollHeight": 541,
+        "bodyClientHeight": 541,
+        "scrolls": false,
+        "dialog": {
+          "x": 52,
+          "y": 26.125,
+          "width": 920,
+          "height": 587.75,
+          "top": 26.125,
+          "right": 972,
+          "bottom": 613.875,
+          "left": 52
+        },
+        "fonts": [
+          "Inter, system-ui, sans-serif",
+          "Inter, system-ui, sans-serif",
+          "Inter, system-ui, sans-serif",
+          "Inter, system-ui, sans-serif"
+        ],
+        "tokens": {
+          "--font-sans": "'Inter', system-ui, sans-serif",
+          "--font-heading": "'Inter', system-ui, sans-serif",
+          "--dq-blue": "#1552B0",
+          "--control-md": "40px"
+        }
+      }
+    },
+    {
+      "name": "Main admin route matrix: rendered at 1024x640, no error boundary/page overflow; layout headers recorded",
+      "status": "pass",
+      "details": [
+        {
+          "route": "/admin/dashboard",
+          "url": "/admin/dashboard",
+          "title": "Good afternoon, Fixture.",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/admin/appointments",
+          "url": "/admin/appointments",
+          "title": "Appointments",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 112,
+            "height": 52
+          }
+        },
+        {
+          "route": "/admin/patients",
+          "url": "/admin/patients",
+          "title": "Patients",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 112,
+            "height": 44
+          }
+        },
+        {
+          "route": "/admin/clinics",
+          "url": "/admin/clinics",
+          "title": "Clinics",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 112,
+            "height": 44
+          }
+        },
+        {
+          "route": "/admin/branches",
+          "url": "/admin/branches",
+          "title": "Locations",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 112,
+            "height": 44
+          }
+        },
+        {
+          "route": "/admin/users",
+          "url": "/admin/users",
+          "title": "Users & staff",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 112,
+            "height": 44
+          }
+        },
+        {
+          "route": "/admin/masters",
+          "url": "/admin/masters",
+          "title": "Master data",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 112,
+            "height": 44
+          }
+        },
+        {
+          "route": "/admin/reports",
+          "url": "/admin/reports",
+          "title": "Reports",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 112,
+            "height": 52
+          }
+        },
+        {
+          "route": "/admin/settings",
+          "url": "/admin/settings",
+          "title": "Clinic workspace",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/admin/audit",
+          "url": "/admin/audit",
+          "title": "Audit log",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 112,
+            "height": 44
+          }
+        },
+        {
+          "route": "/admin/qrs",
+          "url": "/admin/qrs",
+          "title": "Booking QR codes",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 148,
+            "height": 44
+          }
+        },
+        {
+          "route": "/admin/availability",
+          "url": "/admin/availability",
+          "title": "Schedule",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 192,
+            "height": 44
+          }
+        },
+        {
+          "route": "/admin/exceptions",
+          "url": "/admin/exceptions",
+          "title": "Schedule · exceptions",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 192,
+            "height": 44
+          }
+        },
+        {
+          "route": "/admin/demo",
+          "url": "/admin/demo",
+          "title": "Demo clinic",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/admin/templates",
+          "url": "/admin/templates",
+          "title": "Email templates",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/admin/permissions",
+          "url": "/admin/permissions",
+          "title": "Roles & permissions",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/admin/integrations",
+          "url": "/admin/integrations",
+          "title": "Integrations",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/admin/system-users",
+          "url": "/admin/system-users",
+          "title": "System users",
+          "main": true,
+          "boundary": false,
+          "overflow": 0,
+          "header": {
+            "y": 112,
+            "height": 44
+          }
+        }
+      ]
+    },
+    {
+      "name": "ClinicAdmin profile route identity",
+      "status": "pass",
+      "details": {
+        "url": "/admin/profile",
+        "title": "My profile & consultation",
+        "main": true,
+        "overflow": 0
+      }
+    },
+    {
+      "name": "Queue, booking, doctor clinics and edit surfaces",
+      "status": "pass",
+      "details": [
+        {
+          "route": "/admin/queue",
+          "title": "Live queue",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/admin/book",
+          "title": "Book appointment",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/admin/dashboard",
+          "title": "Good afternoon, Fixture.",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "resourceEditor": {
+            "groups": [
+              "Details",
+              "Assignment and scope",
+              "Status"
+            ],
+            "fieldCount": 8,
+            "closed": true
+          }
+        },
+        {
+          "scheduleEditor": {
+            "groups": [
+              "Assignment and scope",
+              "Day",
+              "Timing",
+              "Capacity",
+              "Queue window"
+            ],
+            "fields": 12
+          }
+        },
+        {
+          "mobile": {
+            "url": "/admin/appointments",
+            "overflow": 0,
+            "main": true,
+            "boundary": false
+          }
+        },
+        {
+          "mobile": {
+            "url": "/admin/availability",
+            "overflow": 0,
+            "main": true,
+            "boundary": false
+          }
+        },
+        {
+          "mobile": {
+            "url": "/admin/users",
+            "overflow": 0,
+            "main": true,
+            "boundary": false
+          }
+        },
+        {
+          "mobile": {
+            "url": "/admin/sign-in",
+            "overflow": 0,
+            "main": false,
+            "boundary": false
+          }
+        },
+        {
+          "mobile": {
+            "url": "/sign-in",
+            "overflow": 0,
+            "main": true,
+            "boundary": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Public directory, patient views and auth routes",
+      "status": "pass",
+      "details": [
+        {
+          "route": "/fictional-northside",
+          "url": "/fictional-northside",
+          "title": "Fictional Northside Clinic",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/fictional-northside/northside-branch",
+          "url": "/fictional-northside/northside-branch",
+          "title": "Fictional Northside Clinic",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/patient/appointments",
+          "url": "/sign-in",
+          "title": "Good care starts\nwith a connection.",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/patient/queue",
+          "url": "/sign-in",
+          "title": "Good care starts\nwith a connection.",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/sign-up",
+          "url": "/patient-login",
+          "title": "Good care starts\nwith a connection.",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/sign-in",
+          "url": "/sign-in",
+          "title": "Good care starts\nwith a connection.",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "route": "/forgot-password",
+          "url": "/forgot-password",
+          "title": "Good care starts\nwith a connection.",
+          "main": true,
+          "boundary": false,
+          "overflow": 0
+        },
+        {
+          "mobile": {
+            "route": "/",
+            "overflow": 0,
+            "boundary": false
+          }
+        },
+        {
+          "mobile": {
+            "route": "/sign-in",
+            "overflow": 0,
+            "boundary": false
+          }
+        },
+        {
+          "mobile": {
+            "route": "/demo-login",
+            "overflow": 0,
+            "boundary": false
+          }
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    "screenshots/enterprise-check/appointments-1024x640-current.png",
+    "screenshots/enterprise-check/appointments-1440x900.png",
+    "screenshots/enterprise-check/appointments-1024x640-current.png",
+    "screenshots/enterprise-check/appointment-details-drawer.png",
+    "screenshots/enterprise-check/ticket-longname-390.png",
+    "screenshots/enterprise-check/workspace-command-390.png",
+    "screenshots/enterprise-check/staff-signin-390.png",
+    "screenshots/enterprise-check/ticket-normal-short-1024x640.png",
+    "screenshots/enterprise-check/settings-1024x640.png",
+    "screenshots/enterprise-check/admin-route-last-1024x640.png",
+    "screenshots/enterprise-check/resource-edit-drawer.png",
+    "screenshots/enterprise-check/schedule-editor.png",
+    "screenshots/enterprise-check/appointments-mobile-390.png",
+    "screenshots/enterprise-check/public-clinic-directory-1024x640.png",
+    "screenshots/enterprise-check/auth-signin-1024x640.png",
+    "screenshots/enterprise-check/public-landing-mobile-390.png",
+    "screenshots/enterprise-check/auth-signin-mobile-390.png",
+    "screenshots/enterprise-check/demo-signin-mobile-390.png"
+  ],
+  "fixtureNotes": [
+    "Fictional fixture data only; all /api traffic intercepted."
+  ],
+  "apiWrites": [],
+  "errors": []
+}
