@@ -57,7 +57,7 @@ function DefaultFallback({ error, resetError }: ErrorFallbackProps) {
           onClick={resetError}
           className="mt-4 rounded bg-gray-900 px-4 py-2 text-sm text-white hover:bg-gray-700"
         >
-          Try again
+          Try Again
         </button>
       </div>
     </div>

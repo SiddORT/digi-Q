@@ -67,7 +67,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
     const p = planWeek(rows, week, template, SHORT);
     const total = p.creates.length + p.updates.length + p.deactivations.length;
     if (!total) { if (p.adopt.length) setWeek(w => reconcileDraft(w, Object.fromEntries(p.adopt.map(x => [x.key, x.id])))); setResult("No changes to save."); return; }
-    if (p.deactivations.length && !await confirmation.ask({ title: "Deactivate removed sessions?", description: `${p.deactivations.length} session${p.deactivations.length > 1 ? "s" : ""} (${p.deactivations.map(d => d.label).join(", ")}) will be deactivated, not deleted. Past appointments and history stay. Deactivation runs last, and only if every other change saved. Each change is checked by the server's existing rules and may be refused.`, confirmLabel: "Deactivate and save", tone: "danger" })) return;
+    if (p.deactivations.length && !await confirmation.ask({ title: "Deactivate Removed Sessions?", description: `${p.deactivations.length} session${p.deactivations.length > 1 ? "s" : ""} (${p.deactivations.map(d => d.label).join(", ")}) will be deactivated, not deleted. Past appointments and history stay. Deactivation runs last, and only if every other change saved. Each change is checked by the server's existing rules and may be refused.`, confirmLabel: "Deactivate and Save", tone: "danger" })) return;
     setBusy(true); setResult("");
     const draftAtSave = week;
     const r = await executePlan(p, { update: (id, body) => api.updateSchedule(id, body), create: body => api.createSchedule(body), deactivate: id => api.deleteSchedule(id), message: e => friendlyError(e, "save") });
@@ -97,14 +97,14 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
 
   return <section className="panel padded" data-testid="panel-weekly-editor" aria-busy={busy}>
     {confirmation.dialog}
-    <div className="panel-heading"><div><h3>Weekly schedule</h3><p className="muted">{branch.data ? `Clinic timezone: ${branch.data.timezone}` : "Loading clinic hours…"}</p></div></div>
-    {branch.error && <p role="alert">Clinic hours could not be loaded. <button type="button" onClick={() => void branch.refetch()}>Retry clinic hours</button></p>}
+    <div className="panel-heading"><div><h3>Weekly Schedule</h3><p className="muted">{branch.data ? `Clinic timezone: ${branch.data.timezone}` : "Loading clinic hours…"}</p></div></div>
+    {branch.error && <p role="alert">Clinic hours could not be loaded. <button type="button" onClick={() => void branch.refetch()}>Retry Clinic Hours</button></p>}
     <p className="notice" data-testid="text-week-summary">{weekSummary(week, SHORT, fmt)}</p>
     <p className="muted">Slide in 15-minute steps or type exact minutes, for example 8:32 PM. Shaded bands show clinic hours. Add as many sessions as needed (more than {SUGGESTED_SESSIONS_PER_DAY} in a day shows a reminder); overnight sessions are not supported. Session names, breaks and capacity per session are edited with Details.</p>
-    {needsTemplate && <fieldset className="registration-day" data-testid="fieldset-session-defaults"><legend>Settings for new sessions</legend><p className="muted">This doctor has no sessions here yet. New sessions use these values; edit each one later with Details.</p><div className="form-grid">
+    {needsTemplate && <fieldset className="registration-day" data-testid="fieldset-session-defaults"><legend>Settings for New Sessions</legend><p className="muted">This doctor has no sessions here yet. New sessions use these values; edit each one later with Details.</p><div className="form-grid">
       <label>Token prefix<span className="required"> *</span><input maxLength={8} value={defaults.tokenPrefix} onChange={e => setDefaults(v => ({ ...v, tokenPrefix: e.target.value.replace(/[^A-Za-z0-9]/g, "") }))} data-testid="input-default-token-prefix"/></label>
       <label>Max tokens<span className="required"> *</span><input type="number" min={1} step={1} value={defaults.maxTokens} onChange={e => setDefaults(v => ({ ...v, maxTokens: e.target.value }))} data-testid="input-default-max-tokens"/></label>
-      <SearchableSelect label="Expected consultation duration" required value={defaults.consultationMinutes} onChange={value => setDefaults(v => ({ ...v, consultationMinutes: value }))} placeholder="Select duration…" options={[20, 30, 60].map(v => ({ value: String(v), label: `${v} minutes` }))}/>
+      <SearchableSelect label="Expected Consultation Duration" required value={defaults.consultationMinutes} onChange={value => setDefaults(v => ({ ...v, consultationMinutes: value }))} placeholder="Select duration…" options={[20, 30, 60].map(v => ({ value: String(v), label: `${v} minutes` }))}/>
     </div></fieldset>}
     <div className="registration-hours">{ORDER.map(dayIndex => {
       const day = week[dayIndex]; const hours = hoursFor(dayIndex); const errs = errors[dayIndex]; const warns = dayWarnings(day);
@@ -139,31 +139,31 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
             {out && <p className="notice">This time is outside {clinicName}'s hours ({hours.map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ")}).</p>}
           </div>;
         })}
-          <button type="button" className="text-link" disabled={busy} onClick={() => setDay({ ...day, sessions: [...day.sessions, newSession(dayIndex)] })} data-testid={`button-add-session-${dayIndex}`}><Plus size={14}/> Add session</button>
+          <button type="button" className="text-link" disabled={busy} onClick={() => setDay({ ...day, sessions: [...day.sessions, newSession(dayIndex)] })} data-testid={`button-add-session-${dayIndex}`}><Plus size={14}/> Add Session</button>
         </div>}
         {warns.length > 0 && <p className="notice" data-testid={`warning-day-${dayIndex}`}>{warns.join(" ")}</p>}
         {errs.length > 0 && <p id={`week-error-${dayIndex}`} className="field-error" role="alert">{errs.join(" ")}</p>}
         <details><summary>Copy {DAYS[dayIndex]}</summary><div className="registration-inline">{ORDER.filter(t => t !== dayIndex).map(t => <label className="registration-check" key={t}><input type="checkbox" checked={(targets[dayIndex] || []).includes(t)} onChange={e => setTargets(c => ({ ...c, [dayIndex]: e.target.checked ? [...(c[dayIndex] || []), t] : (c[dayIndex] || []).filter(x => x !== t) }))}/>{SHORT[t]}</label>)}</div>
-          <button type="button" disabled={busy || errs.length > 0 || !targets[dayIndex]?.length} onClick={() => { setWeek(w => copyDay(w, dayIndex, targets[dayIndex] || [])); setTargets(c => ({ ...c, [dayIndex]: [] })); }} data-testid={`button-copy-selected-${dayIndex}`}>Copy to selected days</button>
-          <button type="button" disabled={busy || errs.length > 0} onClick={() => setWeek(w => copyDay(w, dayIndex, ORDER.filter(t => t !== dayIndex && !(opening !== null && !hoursFor(t).length))))} data-testid={`button-copy-all-${dayIndex}`}>Copy to all days</button>
+          <button type="button" disabled={busy || errs.length > 0 || !targets[dayIndex]?.length} onClick={() => { setWeek(w => copyDay(w, dayIndex, targets[dayIndex] || [])); setTargets(c => ({ ...c, [dayIndex]: [] })); }} data-testid={`button-copy-selected-${dayIndex}`}>Copy to Selected Days</button>
+          <button type="button" disabled={busy || errs.length > 0} onClick={() => setWeek(w => copyDay(w, dayIndex, ORDER.filter(t => t !== dayIndex && !(opening !== null && !hoursFor(t).length))))} data-testid={`button-copy-all-${dayIndex}`}>Copy to All Days</button>
           <small className="muted">Copy replaces editable sessions on the chosen days in this draft only. Clinic-linked sessions are kept; days the clinic is closed are skipped by Copy to all days. Nothing is saved until you select Save weekly schedule.</small>
         </details>
       </section>;
     })}</div>
     {needsTemplate && !template && <p className="field-error" role="alert">Enter token prefix, max tokens and consultation duration for new sessions.</p>}
     <div className="form-footer">
-      <button type="button" disabled={busy || !dirty} onClick={() => { setWeek(buildWeek(rows)); setResult(""); }} data-testid="button-reset-week">Discard changes</button>
-      <button type="button" className="button" disabled={busy || !dirty || hasErrors || (needsTemplate && !template)} onClick={save} data-testid="button-save-week">{busy ? "Saving…" : `Save weekly schedule${dirty ? ` (${plan.creates.length + plan.updates.length + plan.deactivations.length})` : ""}`}</button>
+      <button type="button" disabled={busy || !dirty} onClick={() => { setWeek(buildWeek(rows)); setResult(""); }} data-testid="button-reset-week">Discard Changes</button>
+      <button type="button" className="button" disabled={busy || !dirty || hasErrors || (needsTemplate && !template)} onClick={save} data-testid="button-save-week">{busy ? "Saving…" : `Save Weekly Schedule${dirty ? ` (${plan.creates.length + plan.updates.length + plan.deactivations.length})` : ""}`}</button>
     </div>
     <small className="muted">Each session is saved separately; this is not an atomic weekly update. Changed and new sessions save first; removed sessions are deactivated (never deleted) only after all of those succeed. If anything fails, successful changes remain, failures are listed and your unsaved edits stay in the editor.</small>
     {result && <p className="notice" role="status" data-testid="status-week-save">{result}</p>}
-    {outside && <AppDialog open onClose={() => setOutside(null)} title="Outside clinic hours">
+    {outside && <AppDialog open onClose={() => setOutside(null)} title="Outside Clinic Hours">
       <p>{outside.length} session{outside.length > 1 ? "s are" : " is"} outside {clinicName}'s hours: {outside.map(o => { const s = week[o.day].sessions.find(x => x.key === o.key); return s ? `${SHORT[o.day]} ${fmt(s.startTime)} – ${fmt(s.endTime)} (clinic ${hoursFor(o.day).map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ")})` : ""; }).join("; ")}.</p>
       <p className="muted">Approval for saving weekly sessions outside clinic hours is still on hold, so this editor does not create or change exceptions. "Submit as entered" sends each session as typed; the server's existing rules and your permissions decide whether it is accepted, and any refusal is listed with your edit kept for retry. Existing dated doctor exceptions stay in Date exceptions.</p>
       <div className="form-footer">
         <button type="button" onClick={() => setOutside(null)} data-testid="button-outside-cancel">Cancel</button>
-        <button type="button" onClick={() => { setWeek(w => w.map(d => ({ ...d, sessions: d.sessions.map(s => outside.some(o => o.key === s.key) ? adjustToHours(s, hoursFor(d.dayOfWeek)) : s) }))); setOutside(null); }} data-testid="button-outside-adjust">Adjust to clinic hours</button>
-        <button type="button" className="button" onClick={() => { setOutside(null); void execute(); }} data-testid="button-outside-submit">Submit as entered</button>
+        <button type="button" onClick={() => { setWeek(w => w.map(d => ({ ...d, sessions: d.sessions.map(s => outside.some(o => o.key === s.key) ? adjustToHours(s, hoursFor(d.dayOfWeek)) : s) }))); setOutside(null); }} data-testid="button-outside-adjust">Adjust to Clinic Hours</button>
+        <button type="button" className="button" onClick={() => { setOutside(null); void execute(); }} data-testid="button-outside-submit">Submit as Entered</button>
       </div>
     </AppDialog>}
   </section>;

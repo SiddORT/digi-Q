@@ -108,7 +108,7 @@ export function SearchInput({
         </div>)}
       </div>
       {!queryPending && error && <div className="live-search-message" role="alert">
-        <p>{error}</p>{onRetry && <button type="button" onClick={onRetry}>Retry search</button>}
+        <p>{error}</p>{onRetry && <button type="button" onClick={onRetry}>Retry Search</button>}
       </div>}
       {!queryPending && !error && !matches.length && <p className="live-search-message">Try a different search or review the applied filters.</p>}
       {!queryPending && !error && matches.length > 0 && <button type="button" className="live-search-all"

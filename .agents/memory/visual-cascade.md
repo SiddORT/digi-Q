@@ -39,6 +39,12 @@ Density verification must assert toolbar height as well as page overflow.
 
 **How to apply:** Measure representative simple and multi-filter toolbars at desktop widths, and inspect their child arrangement. Keep legitimate narrow-screen wrapping instead of forcing every toolbar into one row.
 
+Popup and toolbar checks must inspect visible text bounds, not only element boxes or document scroll width.
+
+**Why:** A toolbar passed box-overlap checks while its long label spilled over another control; an anchored popup was clipped off-screen without causing document overflow.
+
+**How to apply:** Check label containment and popup edges at narrow widths, including actual touch input. A clean horizontal-scroll check alone does not establish usability.
+
 Filters and contextual pop-ups must overlay the page or open in a right-side drawer, not push the listing down. Searches should show matching permitted records while typing.
 
 **Why:** The user explicitly added these requirements to the app-wide compact-layout scope.

@@ -22,7 +22,7 @@ test("settings requires preview and blocks conflicting apply", () => {
   assert.match(text, /previewClinicSettings/);
   assert.match(text, /disabled=\{busy \|\| !result.allowed\}/);
   assert.match(text, /result.conflicts.map/);
-  assert.match(source("ClinicSettings.tsx"), /submitLabel="Review changes"/);
+  assert.match(source("ClinicSettings.tsx"), /submitLabel="Review Changes"/);
 });
 test("all clinic configuration sections have retained-clinic navigation", () => {
   const text = source("ClinicSettings.tsx");
@@ -64,10 +64,10 @@ test("appointment and report filters apply drafts, with status-only tabs and col
   assert.match(appointments, /onSortChange=\{setSort\}/);
   // Status tabs sit in the compact toolbar's status slot; range and sort use the accessible SearchableSelect.
   assert.match(appointments, /status=\{<StatusTabs value=\{status\}/);
-  assert.match(appointments, /<SearchableSelect label="Visit range" value=\{view\}/);
-  assert.match(appointments, /<SearchableSelect label="Sort appointments" value=\{sort\}/);
-  assert.match(appointments, /\{value:"-createdAt",label:"Newest created"\}/);
-  assert.match(appointments, /\{value:"date",label:"Visit date: earliest first"\}/);
+  assert.match(appointments, /<SearchableSelect label="Visit Range" value=\{view\}/);
+  assert.match(appointments, /<SearchableSelect label="Sort Appointments" value=\{sort\}/);
+  assert.match(appointments, /\{value:"-createdAt",label:"Newest Created"\}/);
+  assert.match(appointments, /\{value:"date",label:"Visit Date: Earliest First"\}/);
 });
 test("old branch list edit opens the authorised clinic hours editor instead of generic CRUD", () => {
   const portal = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");
@@ -87,5 +87,5 @@ test("custom-hour setup is a drawer in the one scheduling workspace", () => {
   assert.match(scheduling, /<ClinicSessionSetup[^>]*clinicId=\{clinicId\}/);
   assert.match(scheduling, /resource=\{selectedPage\}/);
   assert.match(scheduling, /url\.searchParams\.set\("schedule",target\)/);
-  assert.match(scheduling, /Edit linked owner hours/);
+  assert.match(scheduling, /Edit Linked Owner Hours/);
 });

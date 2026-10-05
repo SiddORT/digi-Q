@@ -108,11 +108,11 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
   }
   const disabled = !!busy || exportDisabled || !qr;
   return <article className="vt" data-testid={testId} aria-label="Visit ticket">
-    <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>Visit ticket</h2></div><span className="vt-badge" data-testid="ticket-status">{ticket.statusLabel || "Booked"}</span></header>
+    <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>Visit Ticket</h2></div><span className="vt-badge" data-testid="ticket-status">{ticket.statusLabel || "Booked"}</span></header>
     <div className="vt-body">
       <div className="vt-info">
         <div className="vt-main">
-          <p className="vt-number-label">Waiting number</p>
+          <p className="vt-number-label">Waiting Number</p>
           <p className="vt-number" data-testid="ticket-waiting-number">{ticket.waitingNumber || "—"}</p>
           {ticket.reference && <p className="vt-ref" data-testid="ticket-reference">Ref {ticket.reference}</p>}
           <p className="vt-name" data-testid="ticket-patient-name">{ticket.patientName}</p>
@@ -131,8 +131,8 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
     <footer className="vt-foot">
       <p>{note || "Show this ticket at reception. The session is a time range, not an exact consultation time."}</p>
       <div className="vt-actions">
-        <button type="button" className="button" data-testid="button-download-ticket" onClick={() => void run("download")} disabled={disabled}>{busy==="download"?"Checking ticket…":"Download ticket"}</button>
-        <button type="button" className="button secondary" data-testid="button-print-ticket" onClick={() => void run("print")} disabled={disabled}>{busy==="print"?"Checking ticket…":"Print ticket"}</button>
+        <button type="button" className="button" data-testid="button-download-ticket" onClick={() => void run("download")} disabled={disabled}>{busy==="download"?"Checking ticket…":"Download Ticket"}</button>
+        <button type="button" className="button secondary" data-testid="button-print-ticket" onClick={() => void run("print")} disabled={disabled}>{busy==="print"?"Checking ticket…":"Print Ticket"}</button>
       </div>
       {err && <p role="alert" data-testid="ticket-export-error">{err}</p>}
     </footer>

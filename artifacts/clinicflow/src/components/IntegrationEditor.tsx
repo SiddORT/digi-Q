@@ -43,7 +43,7 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel, onDirt
   }}>
     <p>Stored values are never displayed. Leave a field blank to keep its current value. Saved website settings replace the whole .env configuration for this service. Saving does not send a message.</p>
     <fieldset disabled={save.isPending}>
-      <legend>Configuration source</legend>
+      <legend>Configuration Source</legend>
       <label><input type="radio" name={`${provider}-source`} checked={mode === "database"} onChange={() => setMode("database")} /> Encrypted website settings</label>
       <label><input type="radio" name={`${provider}-source`} checked={mode === "environment"} onChange={() => setMode("environment")} /> Use server environment instead</label>
       {mode === "database" ? fields[provider].map(([key, label, type]) => <div key={key} className="form-field">

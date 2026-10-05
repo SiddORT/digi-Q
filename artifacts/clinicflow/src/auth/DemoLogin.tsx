@@ -34,13 +34,13 @@ export function DemoLogin() {
       setError(caught instanceof Error ? caught.message : "Demo sign-in failed. Please try again.");
     } finally { setBusy(false); }
   }
-  return <AuthShell eyebrow="DEMO STAFF ACCESS"><AuthCard title="Demo clinic login" description="Explore the fictional clinic with the dedicated demo account. Never enter real patient information.">
+  return <AuthShell eyebrow="Demo Staff Access"><AuthCard title="Demo Clinic Login" description="Explore the fictional clinic with the dedicated demo account. Never enter real patient information.">
     <div className="notice"><strong>Demo login:</strong> clinicflow-demo · no email inbox needed</div>
     <form onSubmit={signIn}>
-      <label htmlFor="demo-password">Demo password</label><PasswordInput id="demo-password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required data-testid="input-demo-password"/>
+      <label htmlFor="demo-password">Demo Password</label><PasswordInput id="demo-password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required data-testid="input-demo-password"/>
       {error && <div className="error-box" role="alert">{error}</div>}
       <button className="button" type="submit" disabled={busy || !password} data-testid="button-demo-login">{busy ? "Signing in…" : "Enter demo workspace"}</button>
     </form>
-    <p className="registration-note">This login is for the designated demo account only. <Link href="/sign-in">Regular staff login</Link></p>
+    <p className="registration-note">This login is for the designated demo account only. <Link href="/sign-in">Regular Staff Login</Link></p>
   </AuthCard></AuthShell>;
 }

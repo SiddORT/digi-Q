@@ -1,3 +1,4 @@
+import { titleCase } from "@/lib/title-case";
 import type { ReactNode } from "react";
 import { AlertTriangle, Inbox, RotateCw, SearchX } from "lucide-react";
 import { friendlyError, type ErrorContext } from "@/lib/friendly-error";
@@ -25,12 +26,12 @@ export function EmptyState({ title, description, icon, action, variant = "empty"
 
 /** "No matching {items}" with Clear search (spec §6B). */
 export function NoResults({ items, onClear }: { items: string; onClear?: () => void }) {
-  return <EmptyState variant="no-results" title={`No matching ${items}`}
-    action={onClear && <button type="button" className="button secondary small" onClick={onClear}>Clear search</button>} />;
+  return <EmptyState variant="no-results" title={titleCase(`No matching ${items}`)}
+    action={onClear && <button type="button" className="button secondary small" onClick={onClear}>Clear Search</button>} />;
 }
 
 /** Friendly error with Retry; never shows raw HTTP text. */
-export function ErrorState({ error, context = "load", onRetry, title = "Something went wrong" }: { error: unknown; context?: ErrorContext; onRetry?: () => void; title?: string }) {
+export function ErrorState({ error, context = "load", onRetry, title = "Something Went Wrong" }: { error: unknown; context?: ErrorContext; onRetry?: () => void; title?: string }) {
   return (
     <div className="empty-state error-state" role="alert">
       <span className="empty-state-icon" aria-hidden="true"><AlertTriangle className="h-5 w-5" /></span>

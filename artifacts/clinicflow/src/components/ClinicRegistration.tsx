@@ -82,7 +82,7 @@ function RegistrationAccount() {
     } catch (caught) { setError(friendlyError(caught,"auth")); }
     finally { setBusy(false); }
   }
-  return <AuthShell eyebrow="REGISTER A CLINIC" registration><div className="auth-card registration-account-card">
+  return <AuthShell eyebrow="Register a Clinic" registration><div className="auth-card registration-account-card">
     <h1>Start with your secure account.</h1>
     <p>Create an account with a verified email and password. Then we’ll guide you through your clinic, locations and opening hours.</p>
     <nav aria-label="Account registration progress"><ol className="registration-account-steps">
@@ -91,8 +91,8 @@ function RegistrationAccount() {
     <div className="registration-account-container"><h2 ref={stepHeading} tabIndex={-1} className="registration-form-title">{step === "details" ? "Create your account" : step === "review" ? "Review your account" : "Verify your email"}</h2>
       <form onSubmit={submit}>
         {step === "details" ? <>
-          <FormField label="Your name" required id="registration-account-fullName" error={fieldErrors.fullName}><input type="text" autoComplete="name" value={fullName} onChange={event => {setFullName(event.target.value);setFieldErrors(current=>({...current,fullName:undefined}));}}/></FormField>
-          <FormField label="Email address" required id="registration-account-email" error={fieldErrors.email}><EmailInput data-testid="input-registration-email" value={email} onChange={event => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}}/></FormField>
+          <FormField label="Your Name" required id="registration-account-fullName" error={fieldErrors.fullName}><input type="text" autoComplete="name" value={fullName} onChange={event => {setFullName(event.target.value);setFieldErrors(current=>({...current,fullName:undefined}));}}/></FormField>
+          <FormField label="Email Address" required id="registration-account-email" error={fieldErrors.email}><EmailInput data-testid="input-registration-email" value={email} onChange={event => {setEmail(event.target.value);setFieldErrors(current=>({...current,email:undefined}));}}/></FormField>
           <FormField label="Password" required id="registration-account-password" error={fieldErrors.password}><PasswordInput autoComplete="new-password" showChecklist value={password} onChange={event => {setPassword(event.target.value);setFieldErrors(current=>({...current,password:undefined}));}}/></FormField>
         </> : step === "review" ? <section aria-label="Account details review">
           <p>Check your details before we send your verification code.</p>
@@ -101,12 +101,12 @@ function RegistrationAccount() {
             <dt>Email address</dt><dd>{email.trim().toLowerCase()}</dd>
             <dt>Password</dt><dd>Entered securely. Not displayed in this summary.</dd>
           </dl>
-          <button className="text-link" type="button" disabled={busy} onClick={() => { setError(""); setFieldErrors({}); setStep("details"); }}>Edit account details</button>
-        </section> : <FormField label={`Code emailed to ${email.trim().toLowerCase()}`} required id="registration-account-code"><input type="text" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)}/></FormField>}
+          <button className="text-link" type="button" disabled={busy} onClick={() => { setError(""); setFieldErrors({}); setStep("details"); }}>Edit Account Details</button>
+        </section> : <FormField label={`Code Emailed to ${email.trim().toLowerCase()}`} required id="registration-account-code"><input type="text" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)}/></FormField>}
         {error && <div className="error-box" role="alert">{error}</div>}
         {step==="verify"&&resendNotice&&<p role="status">{resendNotice}</p>}
         <button className="button auth-submit" type="submit" disabled={busy}>{busy ? "Please wait…" : step === "details" ? "Review account details" : step === "review" ? "Send verification code" : "Verify and continue"}</button>
-        {step === "verify" && <><button className="text-link" type="button" disabled={busy||cooldown>0} onClick={()=>void resendCode()} data-testid="registration-resend-code">{cooldown>0?`Resend in ${cooldown}s`:"Resend code"}</button><button className="text-link" type="button" disabled={busy} onClick={() => { setStep("details"); setCode(""); setChallengeId(""); setError("");setResendNotice("");setCooldown(0); }}>Change details</button></>}
+        {step === "verify" && <><button className="text-link" type="button" disabled={busy||cooldown>0} onClick={()=>void resendCode()} data-testid="registration-resend-code">{cooldown>0?`Resend in ${cooldown}s`:"Resend code"}</button><button className="text-link" type="button" disabled={busy} onClick={() => { setStep("details"); setCode(""); setChallengeId(""); setError("");setResendNotice("");setCooldown(0); }}>Change Details</button></>}
       </form>
     </div><p className="registration-note"><span className="registration-existing-signin">Already have a staff account? <Link href="/sign-in">Sign in to your workspace.</Link> </span>Existing patient or staff accounts cannot be converted through clinic registration.</p>
   </div></AuthShell>;
@@ -115,12 +115,12 @@ function RegistrationAccount() {
 function RegistrationIdentity() {
   const me = api.useGetMe({ query: { queryKey: api.getGetMeQueryKey(), staleTime: 0 } });
   if (me.isLoading) return <div className="page-loading">Checking your account…</div>;
-  if (me.error) return <div className="error-box" role="alert">{friendlyError(me.error,"load")}<button onClick={() => me.refetch()} data-testid="registration-retry-account">Try again</button></div>;
+  if (me.error) return <div className="error-box" role="alert">{friendlyError(me.error,"load")}<button onClick={() => me.refetch()} data-testid="registration-retry-account">Try Again</button></div>;
   if (me.data?.user?.role === "superAdmin") return <AuthAccess><ClinicAdminOnboarding guided/></AuthAccess>;
    if (me.data?.user?.role === "clinicAdmin" && !me.data.user.clinicIds?.length) return <RegistrationForm/>;
   if (me.data?.user) {
     const role = me.data.user.role === "clinicAdmin" ? "admin" : me.data.user.role;
-    return <div className="clinic-registration"><Logo/><main className="registration-card"><h1>You already have a {BRAND_NAME} account.</h1><p>Clinic registration is for a new clinic owner. Your existing role and permissions will not change.</p><Link className="button" href={`/${role}/dashboard`} data-testid="registration-existing-workspace">Go to your workspace</Link></main></div>;
+    return <div className="clinic-registration"><Logo/><main className="registration-card"><h1>You already have a {BRAND_NAME} account.</h1><p>Clinic registration is for a new clinic owner. Your existing role and permissions will not change.</p><Link className="button" href={`/${role}/dashboard`} data-testid="registration-existing-workspace">Go to Your Workspace</Link></main></div>;
   }
    return <div className="error-box" role="alert">Unable to prepare clinic registration for this account. Please sign out and retry.</div>;
 }
@@ -156,6 +156,6 @@ function RegistrationForm() {
    if (me.isLoading) return <div className="page-loading">Loading your account…</div>;
    if (me.error || !me.data?.user) return <div className="error-box" role="alert">Unable to load your account. <button onClick={() => me.refetch()}>Retry</button></div>;
   if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
-  if (references.error && !references.data) return <div className="error-box" role="alert">{friendlyError(references.error,"load")}<button data-testid="registration-retry-options" onClick={() => references.refetch()}>Try again</button></div>;
-    return <ClinicRegistrationWizard onStepChange={registration.reset} initial={{ fullName: me.data.user.fullName || "", email: me.data.user.email || "" }} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={registration.isPending} error={registration.error?friendlyError(registration.error,"save"):undefined} finishSecurity={<FormField label="Confirm your account password" required helper="Verified securely before staff access is created. Never stored in your registration draft."><PasswordInput autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} data-testid="registration-confirm-password"/></FormField>}/>;
+  if (references.error && !references.data) return <div className="error-box" role="alert">{friendlyError(references.error,"load")}<button data-testid="registration-retry-options" onClick={() => references.refetch()}>Try Again</button></div>;
+    return <ClinicRegistrationWizard onStepChange={registration.reset} initial={{ fullName: me.data.user.fullName || "", email: me.data.user.email || "" }} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={registration.isPending} error={registration.error?friendlyError(registration.error,"save"):undefined} finishSecurity={<FormField label="Confirm Your Account Password" required helper="Verified securely before staff access is created. Never stored in your registration draft."><PasswordInput autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} data-testid="registration-confirm-password"/></FormField>}/>;
 }

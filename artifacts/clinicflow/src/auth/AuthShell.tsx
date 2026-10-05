@@ -11,7 +11,7 @@ export function AuthShell({ children, eyebrow = `WELCOME TO ${BRAND_NAME.toUpper
         <Logo />
         <div>
           <span className="eyebrow">{eyebrow}</span>
-          <h1>Good care starts<br />with a connection.</h1>
+          <h1>Good Care Starts<br />with a connection.</h1>
           {!registration && <p className="auth-general-intro">Your appointments, your care team, and a clearer path to your next visit.</p>}
           <ShieldCheck size={36} />
         </div>

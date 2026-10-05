@@ -198,3 +198,21 @@
 .cr-savebar{display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-2);margin-top:var(--space-4);padding-top:var(--space-3);border-top:1px solid var(--cw-line-soft)}
 .cr-notice{font-size:var(--type-label);color:#23704a}
 @media(max-width:767px){.cr-fields,.cr-bind-form,.cr-bind-list li{grid-template-columns:1fr}.cr-savebar{align-items:stretch}}
+
+/* Eight-section checklist: one-row topbar at every width; secondary items tuck into the profile menu. */
+.workspace .topbar{display:flex;flex-wrap:nowrap;align-items:center;min-width:0}
+.workspace .topbar .breadcrumb{min-width:0;flex:1 1 auto;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.workspace .topbar .topbar-right{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;min-width:0;flex:0 1 auto}
+@media (max-width:1366px){.workspace .topbar .secure-label{display:none}}
+@media (max-width:900px){.workspace .topbar .breadcrumb{font-size:var(--type-caption)}.workspace .topbar .breadcrumb>:not(strong){display:none}}
+/* Compact table toolbars on desktop/laptop: controls share one row and scroll rather than stack. */
+/* Toolbars: one row only when there is room (1280+). Between 901 and 1279 the actions group may drop to a
+   second row instead of pushing the page wider. Nothing in the header may exceed the content width. */
+.workspace .list-header,.workspace .list-header .lh-row{max-width:100%;min-width:0}
+.workspace .list-header .lh-actions{max-width:100%}
+@media (min-width:901px) and (max-width:1279px){.workspace .list-header .lh-top{flex-wrap:wrap}}
+.workspace .topbar .topbar-right>*{min-width:0}
+.workspace .topbar .topbar-right .workspace-search{flex:0 1 280px}
+.workspace-main{min-width:0}
+.workspace .button.small,.workspace .row-actions>button,.workspace .row-actions>a{min-height:32px;display:inline-flex;align-items:center;gap:8px}
+.workspace .button.small svg,.workspace .row-actions svg{width:15px;height:15px;flex:none}

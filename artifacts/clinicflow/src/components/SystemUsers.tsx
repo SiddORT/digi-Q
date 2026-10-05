@@ -11,6 +11,7 @@ import { label } from "./permission-matrix";
 import { useTableColumns, readTableColumns, writeTableColumns } from "./TableColumns";
 import { SavedViews } from "./ListingViewControls";
 import { useListingLayout } from "@/lib/listing-views";
+import { OverflowText } from "./OverflowText";
 const SYSTEM_USER_VIEW_KEYS = ["role", "status", "clinicId"];
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import type { CustomRoleConfig, SystemUser } from "./custom-roles";
@@ -49,7 +50,7 @@ function EffectivePanel({ user }: { user: SystemUser }) {
   const rows = onlyDenied ? result.rows.filter(r => r.denied) : result.rows;
   return <div className="su-effective" data-testid={`effective-${user.id}`}>
     <div className="su-effective-bar">
-      <ScopeSelect label="Scope" value={clinicId} onChange={setClinicId} options={[{ value: "", label: "Platform (all-scope assignments only)" }, ...user.clinics.map(c => ({ value: c.id, label: c.name }))]} testId={`select-effective-scope-${user.id}`} />
+      <ScopeSelect label="Scope" value={clinicId} onChange={setClinicId} options={[{ value: "", label: "Platform (All-Scope Assignments Only)" }, ...user.clinics.map(c => ({ value: c.id, label: c.name }))]} testId={`select-effective-scope-${user.id}`} />
       <label className="check-label"><input type="checkbox" checked={onlyDenied} onChange={e => setOnlyDenied(e.target.checked)} /> Denied only</label>
       <span className="muted">{result.rows.filter(r => r.denied).length} denied of {result.rows.length}</span>
     </div>
@@ -88,16 +89,16 @@ export function SystemUsers() {
   const sysCols = () => readTableColumns("system-users", viewer?.id, viewer?.role);
   const systemViews = <SavedViews views={sysLayout.layout.views} canSave={Object.values(sysFilters).some(Boolean) || !!sysCols()} onSave={name => sysLayout.saveView(name, sysFilters, sysCols())} onDelete={sysLayout.deleteView}
     onApply={v => { writeTableColumns("system-users", viewer?.id, viewer?.role, v.columns); setRole(v.filters.role || ""); setStatus(["active", "inactive"].includes(v.filters.status) ? v.filters.status : ""); setClinicId(v.filters.clinicId || ""); }} />;
-  const sysCell = (k: string, u: SystemUser) => k === "name" ? <strong title={u.fullName}>{u.fullName}</strong> : k === "email" ? u.email : k === "role" ? label(u.role) : k === "status" ? <span className={`badge ${u.status === "active" ? "" : "muted"}`}>{label(u.status)}</span> : k === "clinics" ? (u.clinics.length ? <AssignmentSummary owner={u.fullName} clinics={u.clinics.map(c => c.name)} testId={`button-system-assignments-${u.id}`}/> : <span className="muted">{u.role === "superAdmin" ? "Platform-wide" : "None"}</span>) : null;
+  const sysCell = (k: string, u: SystemUser) => k === "name" ? <OverflowText as="strong" value={u.fullName} testId={`text-system-user-${u.id}`}/> : k === "email" ? <OverflowText value={u.email}/> : k === "role" ? label(u.role) : k === "status" ? <span className={`badge ${u.status === "active" ? "" : "muted"}`}>{label(u.status)}</span> : k === "clinics" ? (u.clinics.length ? <AssignmentSummary owner={u.fullName} clinics={u.clinics.map(c => c.name)} testId={`button-system-assignments-${u.id}`}/> : <span className="muted">{u.role === "superAdmin" ? "Platform-wide" : "None"}</span>) : null;
   return <>
-    <FilterBar label="System user filters"
+    <FilterBar label="System User Filters"
       title={data && !q.error ? <span className="listing-count-label"><span className="listing-count">{data.total}</span> {data.total === 1 ? "account" : "accounts"}</span> : undefined}
       status={<div className="sq-status-tabs" role="tablist" aria-label="Account status">{[["", "All"], ["active", "Active"], ["inactive", "Inactive"]].map(([v, l]) => <button type="button" key={v} role="tab" aria-selected={status === v} onClick={() => setStatus(v)} data-testid={`tab-system-users-${v || "all"}`}>{l}</button>)}</div>}
       active={active} onReset={reset}
-      advanced={<><SearchableSelect label="Role" value={role} onChange={setRole} placeholder="All roles" options={[{ value: "", label: "All roles" }, ...ROLES.map(r => ({ value: r, label: label(r) }))]} testId="select-system-user-role" /><ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={setClinicId} /></>}
-      chips={[...(role ? [{ key: "adv:role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "adv:clinic", label: "Clinic selected", onRemove: () => setClinicId("") }] : [])]}
-      meta={<>{cols.settings}{systemViews}</>}
-      actions={<Link className="button secondary small" href="/admin/permissions">Roles &amp; permissions</Link>}>
+      advanced={<><SearchableSelect label="Role" value={role} onChange={setRole} placeholder="All roles" options={[{ value: "", label: "All Roles" }, ...ROLES.map(r => ({ value: r, label: label(r) }))]} testId="select-system-user-role" /><ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={setClinicId} /></>}
+      chips={[...(role ? [{ key: "adv:role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "adv:clinic", label: "Clinic Selected", onRemove: () => setClinicId("") }] : [])]}
+
+      secondary={<><Link className="button secondary small" href="/admin/permissions">Roles &amp; Permissions</Link>{cols.settings}{systemViews}</>}>
       <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" suggestions={q.error||q.isPlaceholderData?[]:listingSuggestions(data?.data,u=>({id:u.id,label:u.fullName,description:u.email,value:u.fullName}))} loading={q.isFetching} error={q.error?"Accounts could not be loaded.":null} onRetry={()=>void q.refetch()} total={data?.total} settledQuery={debounced} scopeKey={JSON.stringify({role,status,clinicId})} />
     </FilterBar>
     <section className="panel table-panel" aria-busy={q.isFetching} data-testid="system-users">
@@ -107,8 +108,8 @@ export function SystemUsers() {
           {data.data.map(u => <Fragment key={u.id}><tr data-testid={`row-system-user-${u.id}`}>{cols.visible.map(k => <td key={k} data-label={cols.label(k)} className={cols.cls(k)}>{sysCell(k, u)}</td>)}
             <td className="col-actions sticky">{cols.toggle(u.id, u.fullName)}<button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setExpanded(u.id)} data-testid={`button-effective-${u.id}`}>Permissions <ChevronRight size={14} aria-hidden /></button></td></tr>{cols.expansion(u.id, cols.visible.length + 1, k => sysCell(k, u))}</Fragment>)}
         </tbody></table></div><Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPageChange={setPage} /></>
-        : <div className="empty" data-testid="status-empty"><h3>{active ? "No matching accounts" : "No accounts yet"}</h3>{active && <button type="button" onClick={reset}>Clear filters</button>}</div>}
+        : <div className="empty" data-testid="status-empty"><h3>{active ? "No matching accounts" : "No accounts yet"}</h3>{active && <button type="button" onClick={reset}>Clear Filters</button>}</div>}
     </section>
-    {(() => { const u = data?.data.find(x => x.id === expanded); return u ? <AppDialog open variant="drawer" onClose={() => setExpanded("")} title={`Effective permissions · ${u.fullName}`} description={`${label(u.role)} · ${u.email}`}><EffectivePanel user={u} /></AppDialog> : null; })()}
+    {(() => { const u = data?.data.find(x => x.id === expanded); return u ? <AppDialog open variant="drawer" onClose={() => setExpanded("")} title={`Effective Permissions · ${u.fullName}`} description={`${label(u.role)} · ${u.email}`}><EffectivePanel user={u} /></AppDialog> : null; })()}
   </>;
 }

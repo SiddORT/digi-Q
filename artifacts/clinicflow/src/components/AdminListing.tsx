@@ -86,7 +86,7 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
       }catch(error){outcomes.push(`${recordName(selected)}: failed — ${friendlyError(error)}`);}
       setResults(outcomes);
       if(cards.length){
-        const documentHtml=`<!doctype html><html><head><meta charset="utf-8"><title>Selected booking QR codes</title><style>body{font-family:sans-serif;color:#173332}section{text-align:center;break-inside:avoid;padding:24px;border-bottom:1px solid #ccc}img{width:240px}p{overflow-wrap:anywhere}@media print{button{display:none}}</style></head><body>${print?'<button onclick="window.print()">Print QR codes</button>':""}${cards.join("")}</body></html>`;
+        const documentHtml=`<!doctype html><html><head><meta charset="utf-8"><title>Selected booking QR codes</title><style>body{font-family:sans-serif;color:#173332}section{text-align:center;break-inside:avoid;padding:24px;border-bottom:1px solid #ccc}img{width:240px}p{overflow-wrap:anywhere}@media print{button{display:none}}</style></head><body>${print?'<button onclick="window.print()">Print QR Codes</button>':""}${cards.join("")}</body></html>`;
         if(popup){popup.document.open();popup.document.write(documentHtml);popup.document.close();}
         else download(documentHtml,"selected-booking-qrs.html","text/html;charset=utf-8");
       }else popup?.close();
@@ -107,14 +107,14 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
   }
   return <div className="admin-listing-bulk">
     {selection.selected.length>0&&<div className="admin-bulk-bar" aria-label="Selected record actions"><strong>{selection.selected.length} selected on this page</strong>
-      <button data-testid="button-clear-selected" disabled={busy} onClick={selection.clear}>Clear selection</button>
-      <button data-testid="button-export-selected" disabled={busy} onClick={()=>download([columns.map(csvCell).join(","),...selection.selected.map(row=>columns.map(key=>csvCell(row[key])).join(","))].join("\r\n"),`${resource}-selected.csv`,"text/csv;charset=utf-8")}>Export selected CSV</button>
+      <button data-testid="button-clear-selected" disabled={busy} onClick={selection.clear}>Clear Selection</button>
+      <button data-testid="button-export-selected" disabled={busy} onClick={()=>download([columns.map(csvCell).join(","),...selection.selected.map(row=>columns.map(key=>csvCell(row[key])).join(","))].join("\r\n"),`${resource}-selected.csv`,"text/csv;charset=utf-8")}>Export Selected CSV</button>
       {canStatus&&<><button data-testid="button-activate-selected" disabled={busy} onClick={()=>setAction("active")}>Activate</button><button data-testid="button-deactivate-selected" disabled={busy} onClick={()=>setAction("inactive")}>Deactivate</button></>}
-      {resource==="qrs"&&<><button data-testid="button-print-selected-qrs" disabled={busy} onClick={()=>qrDocument(true)}>Print selected QRs</button><button data-testid="button-download-selected-qrs" disabled={busy} onClick={()=>qrDocument(false)}>Download QR sheet</button><button data-testid="button-copy-selected-qr-links" disabled={busy} onClick={copyQrLinks}>Copy booking links</button></>}
+      {resource==="qrs"&&<><button data-testid="button-print-selected-qrs" disabled={busy} onClick={()=>qrDocument(true)}>Print Selected QRs</button><button data-testid="button-download-selected-qrs" disabled={busy} onClick={()=>qrDocument(false)}>Download QR Sheet</button><button data-testid="button-copy-selected-qr-links" disabled={busy} onClick={copyQrLinks}>Copy Booking Links</button></>}
     </div>}
     {busy&&<p role="status">Processing selected records. Please wait…</p>}
-    {!!results.length&&<ResultSummary title="Selected records" testId="details-bulk-results" items={results.map(result=>({label:result,ok:!/failed|blocked/i.test(result)}))}/>}
-    {action&&<AppDialog open title={`${action==="active"?"Activate":"Deactivate"} selected records?`} busy={busy} onClose={()=>{if(!busy)setAction(null);}}>
+    {!!results.length&&<ResultSummary title="Selected Records" testId="details-bulk-results" items={results.map(result=>({label:result,ok:!/failed|blocked/i.test(result)}))}/>}
+    {action&&<AppDialog open title={`${action==="active"?"Activate":"Deactivate"} Selected Records?`} busy={busy} onClose={()=>{if(!busy)setAction(null);}}>
       <p>{action==="inactive"?"Inactive accounts lose access; inactive clinics, branches and doctors may no longer be available for booking. Existing history is retained.":"These records will become active and may be available for access or booking again."} Permissions and ownership protections are checked for every record. You cannot deactivate yourself. Administrator ownership must be transferred first; the last active super administrator is protected. Failures do not roll back successful changes.</p>
       <ul>{selection.selected.map(row=><li key={row.id}>{recordName(row)} → {action}</li>)}</ul>
       <div className="app-dialog-footer confirm-dialog-footer"><button type="button" className="button secondary small" disabled={busy} onClick={()=>setAction(null)}>Cancel</button><LoadingButton data-testid="button-confirm-bulk-status" className={`button small${action==="inactive"?" danger-solid":""}`} loading={busy} loadingText="Updating…" disabled={!selection.selected.length} onClick={()=>run(action)}>{action==="active"?`Activate ${selection.selected.length}`:`Deactivate ${selection.selected.length}`}</LoadingButton></div>

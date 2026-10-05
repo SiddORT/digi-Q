@@ -16,7 +16,7 @@ type Service = "smtp" | "sms" | "storage";
 export const SERVICES: { value: Service; label: string; providers: { value: string; label: string }[] }[] = [
   { value: "smtp", label: "Email", providers: [{ value: "smtp", label: "SMTP" }] },
   { value: "sms", label: "SMS", providers: [{ value: "twilio", label: "Twilio" }] },
-  { value: "storage", label: "Storage", providers: [{ value: "env", label: "Server environment (private)" }] },
+  { value: "storage", label: "Storage", providers: [{ value: "env", label: "Server Environment (Private)" }] },
 ];
 
 function ConnectionCheck({ provider }: { provider: Service }) {
@@ -27,7 +27,7 @@ function ConnectionCheck({ provider }: { provider: Service }) {
       onClick={() => check.mutate({ provider }, { onSuccess: () => setResultsOpen(true) })}>{check.isPending ? "Checking…" : "Check connection"}</button>
     <HelpTip text="Verifies settings and reachability only. No message or file is sent."/>
     {check.isError && <p role="alert" data-testid={`status-check-${provider}-error`}>The check could not run. Try again shortly.</p>}
-    {check.data && resultsOpen && <AppDialog open variant="drawer" onClose={() => setResultsOpen(false)} title="Connection check results"><ul aria-label="Connection check results" data-testid={`list-check-${provider}`}>
+    {check.data && resultsOpen && <AppDialog open variant="drawer" onClose={() => setResultsOpen(false)} title="Connection Check Results"><ul aria-label="Connection check results" data-testid={`list-check-${provider}`}>
       {check.data.checks.map(c => <li key={c.name} data-status={c.status}>
         <strong>{c.status === "passed" ? "Passed" : c.status === "failed" ? "Failed" : "Not verified"}</strong> {c.name}: {c.message}
       </li>)}
@@ -65,7 +65,7 @@ export function IntegrationSettings() {
   const closeTest = () => { setTestOpen(false); setConfirmSend(false); form.reset(); send.reset(); };
   return <section className="panel padded int-settings" aria-labelledby="integration-title">
     <div className="int-head section-head">
-      <div className="int-head-title"><h2 id="integration-title">Third-party integrations <HelpTip text="Saved website settings replace the whole server environment configuration for that service; values are never mixed. Secrets stay encrypted and are never displayed."/></h2></div>
+      <div className="int-head-title"><h2 id="integration-title">Third-Party Integrations <HelpTip text="Saved website settings replace the whole server environment configuration for that service; values are never mixed. Secrets stay encrypted and are never displayed."/></h2></div>
       <div className="int-chooser">
         <div className="int-field"><label htmlFor="int-service">Service</label>
           <select id="int-service" value={service} data-testid="select-service"
@@ -90,7 +90,7 @@ export function IntegrationSettings() {
           <div className="row-actions">
             <button type="button" className="button secondary" data-testid="button-refresh-integrations" disabled={query.isFetching} onClick={() => query.refetch()}>Refresh</button>
             <button type="button" className="button small" aria-haspopup="dialog" disabled={!data.editable} onClick={() => { setSaved(false); setEditorDirty(false); setEditing(true); }} data-testid={`button-configure-${service}`}>Configure {label}</button>
-            {service === "smtp" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setTestOpen(true)} data-testid="button-open-smtp-test">Send test email</button>}
+            {service === "smtp" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setTestOpen(true)} data-testid="button-open-smtp-test">Send Test Email</button>}
           </div>
         </div>
         <ul className="int-keys">{data[service].keys.map(item => <li key={item.key} data-testid={`status-key-${item.key}`}><code>{item.key}</code>: {item.status}</li>)}</ul>
@@ -101,7 +101,7 @@ export function IntegrationSettings() {
         </AppDialog>}
       </div>}
       {service === "sms" && <p className="listing-hint">SMS connects directly to Twilio <HelpTip text="Uses your Twilio account credentials. Development OTP is not a production SMS provider."/></p>}
-      {service === "smtp" && testOpen && <AppDialog open onClose={closeTest} busy={send.isPending} dirty={!!form.watch("recipient") && !send.isSuccess} title="Send an SMTP test" description="Sends one fixed DigiQ Doctors message to the address you enter. Provider acceptance does not confirm inbox delivery. Limited to 3 attempts per user and 10 per IP every 15 minutes.">
+      {service === "smtp" && testOpen && <AppDialog open onClose={closeTest} busy={send.isPending} dirty={!!form.watch("recipient") && !send.isSuccess} title="Send an SMTP Test" description="Sends one fixed DigiQ Doctors message to the address you enter. Provider acceptance does not confirm inbox delivery. Limited to 3 attempts per user and 10 per IP every 15 minutes.">
         <Form {...form}>
           <form className="int-test-form" onSubmit={form.handleSubmit(d => { if (confirmSend) send.mutate({ data: d }, { onSettled: () => setConfirmSend(false) }); })}>
             <FormField control={form.control} name="recipient" rules={{ required: "Enter a recipient", maxLength: { value: 254, message: "Address is too long" } }} render={({ field }) => <FormItem>

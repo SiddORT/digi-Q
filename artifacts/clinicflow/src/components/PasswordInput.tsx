@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useId, useState, type InputHTMLAttributes } from "react";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 import { passwordChecklist } from "@/lib/validators";
+import { titleCase } from "@/lib/title-case";
 import "./shared-feedback.css";
 
 export interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
@@ -27,7 +28,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(fu
         <button type="button" className="password-toggle" onClick={() => setVisible((v) => !v)}
           onMouseDown={event => event.preventDefault()}
           aria-label={`${visible ? "Hide" : "Show"} ${visibilityLabel}`} aria-pressed={visible}
-          title={`${visible ? "Hide" : "Show"} ${visibilityLabel}`}
+          title={titleCase(`${visible ? "Hide" : "Show"} ${visibilityLabel}`)}
           aria-controls={inputId} disabled={props.disabled}>
           {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
         </button>

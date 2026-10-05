@@ -63,28 +63,28 @@ export function CustomRoles() {
     {save.isError && !conflict && <p role="alert" className="error-box">Custom roles were not saved. Try again.</p>}
     {notice && <p role="status" className="cr-notice">{notice}</p>}
     <div className="button-group">
-      <button type="button" className="button secondary small" disabled={!dirty || save.isPending} onClick={discard} data-testid="button-discard-custom-roles">Discard changes</button>
-      <button type="button" className="button small" disabled={!dirty || save.isPending || conflict} onClick={() => setConfirm(true)} data-testid="button-save-custom-roles">Save custom roles</button>
+      <button type="button" className="button secondary small" disabled={!dirty || save.isPending} onClick={discard} data-testid="button-discard-custom-roles">Discard Changes</button>
+      <button type="button" className="button small" disabled={!dirty || save.isPending || conflict} onClick={() => setConfirm(true)} data-testid="button-save-custom-roles">Save Custom Roles</button>
     </div>
   </div>;
 
   return <section className="panel padded custom-roles" data-testid="custom-roles" aria-labelledby="custom-roles-title">
     <div className="cr-head section-head">
-      <div><h2 id="custom-roles-title">Custom roles <HelpTip text="Named variations of a base role for specific staff. A custom role starts from its base role and can only remove actions; it never grants access beyond the base role and never crosses clinic ownership. Assign it to staff who already have that base role. Leave the clinic empty to apply it in all of that person's clinics. When several rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen." /></h2></div>
-      {draft && <button type="button" className="button small" onClick={() => setEditing({ id: newRoleId(draft.roles), name: "", baseRole: "receptionist", denied: [] })} data-testid="button-add-custom-role"><Plus size={16} aria-hidden /> New custom role</button>}
+      <div><h2 id="custom-roles-title">Custom Roles <HelpTip text="Named variations of a base role for specific staff. A custom role starts from its base role and can only remove actions; it never grants access beyond the base role and never crosses clinic ownership. Assign it to staff who already have that base role. Leave the clinic empty to apply it in all of that person's clinics. When several rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen." /></h2></div>
+      {draft && <button type="button" className="button small" onClick={() => setEditing({ id: newRoleId(draft.roles), name: "", baseRole: "receptionist", denied: [] })} data-testid="button-add-custom-role"><Plus size={16} aria-hidden /> New Custom Role</button>}
     </div>
     {query.isLoading || policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-custom-roles-loading"><span /><span /><span /></div>
       : query.isError || policy.isError || !draft ? <div role="alert" className="error-box">Custom roles could not be loaded. <button type="button" onClick={() => { void query.refetch(); void policy.refetch(); }}>Retry</button></div>
       : <RoleList config={draft} names={names.current} onEdit={setEditing} onDelete={setDeleting} />}
     {draft && saveBar}
-    {editing && draft && <AppDialog open variant="drawer" dirty={roleDirty} onClose={() => { setRoleDirty(false); setEditing(null); }} title={draft.roles.some(r => r.id === editing.id) ? `Edit ${editing.name || "custom role"}` : "New custom role"} description="Changes apply to the draft. Use Save custom roles to publish them.">
+    {editing && draft && <AppDialog open variant="drawer" dirty={roleDirty} onClose={() => { setRoleDirty(false); setEditing(null); }} title={draft.roles.some(r => r.id === editing.id) ? `Edit ${editing.name || "Custom Role"}` : "New custom role"} description="Changes apply to the draft. Use Save custom roles to publish them.">
       <RoleEditor key={editing.id} role={editing} config={draft} modules={modules} actions={actions} names={names.current}
         onBack={() => setEditing(null)} onChange={role => { commitRole(role); setEditing(role); }} onConfig={c => { setNotice(""); setDraft(c); }} onDirtyChange={setRoleDirty} />
     </AppDialog>}
 
     <AppDialog open={confirm} onClose={() => !save.isPending && setConfirm(false)} title="Save custom roles?" busy={save.isPending}>
       <p>Changes take effect immediately for every assigned staff member. Base-role rules, clinic ownership and workflow checks still apply.</p>
-      <div className="form-footer"><button type="button" onClick={() => setConfirm(false)} disabled={save.isPending}>Keep editing</button><LoadingButton className="button" loading={save.isPending} onClick={run} data-testid="button-confirm-custom-roles">Save now</LoadingButton></div>
+      <div className="form-footer"><button type="button" onClick={() => setConfirm(false)} disabled={save.isPending}>Keep Editing</button><LoadingButton className="button" loading={save.isPending} onClick={run} data-testid="button-confirm-custom-roles">Save now</LoadingButton></div>
     </AppDialog>
     {deleting && draft && <DeleteRoleDialog role={deleting} count={bindingsFor(draft, deleting.id).length} onCancel={() => setDeleting(null)} onConfirm={removeAll => {
       const result = deleteRole(draft, deleting.id, removeAll);
@@ -100,13 +100,13 @@ function DeleteRoleDialog({ role, count, onCancel, onConfirm }: { role: CustomRo
     {count ? <><p>This role is assigned {count} time{count === 1 ? "" : "s"}. Remove the assignments first, or remove them together with the role.</p>
       <label className="check-label"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} data-testid="checkbox-remove-bindings" /> Also remove its {count} assignment{count === 1 ? "" : "s"}</label></>
       : <p>The role has no assignments. It is removed when you save custom roles.</p>}
-    <div className="form-footer"><button type="button" onClick={onCancel}>Cancel</button><button type="button" className="button danger" disabled={!!count && !ack} onClick={() => onConfirm(!!count)} data-testid="button-confirm-delete-role">Delete role</button></div>
+    <div className="form-footer"><button type="button" onClick={onCancel}>Cancel</button><button type="button" className="button danger" disabled={!!count && !ack} onClick={() => onConfirm(!!count)} data-testid="button-confirm-delete-role">Delete Role</button></div>
   </AppDialog>;
 }
 
 function RoleList({ config, names, onEdit, onDelete }: { config: CustomRoleConfig; names: Map<string, SystemUser>; onEdit: (r: CustomRole) => void; onDelete: (r: CustomRole) => void }) {
-  if (!config.roles.length) return <div className="empty" data-testid="state-custom-roles-empty"><h3>No custom roles yet</h3><p>Create one to narrow what specific staff can do.</p></div>;
-  return <div className="table-wrap"><table><thead><tr><th>Role</th><th>Base role</th><th>Restrictions</th><th>Assigned</th><th className="col-actions"><span className="sr-only">Actions</span></th></tr></thead><tbody>
+  if (!config.roles.length) return <div className="empty" data-testid="state-custom-roles-empty"><h3>No Custom Roles Yet</h3><p>Create one to narrow what specific staff can do.</p></div>;
+  return <div className="table-wrap"><table><thead><tr><th>Role</th><th>Base Role</th><th>Restrictions</th><th>Assigned</th><th className="col-actions"><span className="sr-only">Actions</span></th></tr></thead><tbody>
     {config.roles.map(r => { const b = bindingsFor(config, r.id); return <tr key={r.id} data-testid={`row-custom-role-${r.id}`}>
       <td><strong>{r.name}</strong></td><td>{label(r.baseRole)}</td><td>{r.denied.length ? `${r.denied.length} removed` : "Same as base"}</td>
       <td>{b.length ? b.slice(0, 2).map(x => names.get(x.userId)?.fullName || "Staff member").join(", ") + (b.length > 2 ? ` +${b.length - 2}` : "") : "—"}</td>
@@ -138,12 +138,12 @@ function RoleEditor({ role, config, modules, actions, names, onBack, onChange, o
     <div className="cr-editor-bar"><button type="button" onClick={close} data-testid="button-back-custom-roles">Close</button>{!exists && <span className="badge">New</span>}</div>
     <div className="cr-fields">
       <label>Role name<input value={local.name} maxLength={80} onChange={e => update({ name: e.target.value })} onBlur={() => setTouched(true)} aria-invalid={touched && !!error} data-testid="input-custom-role-name" /></label>
-      <SearchableSelect label="Base role" value={local.baseRole} onChange={v => { if (v) update({ baseRole: v as BaseRole }); }} options={BASE_ROLES.map(r => ({ value: r, label: label(r) }))} testId="select-base-role" />
+      <SearchableSelect label="Base Role" value={local.baseRole} onChange={v => { if (v) update({ baseRole: v as BaseRole }); }} options={BASE_ROLES.map(r => ({ value: r, label: label(r) }))} testId="select-base-role" />
       <div className="cr-apply"><button type="button" className="button small" disabled={!pending} onClick={apply} data-testid="button-apply-role">{exists ? "Apply to draft" : "Add to draft"}</button></div>
     </div>
     {touched && error && <p role="alert" className="field-error">{error}</p>}
     {baseChanged && <p className="notice" role="status">Changing the base role removes this role's current assignments when applied.</p>}
-    <h3 className="cr-sub">Allowed actions <HelpTip text={`Unchecked actions are removed from ${label(local.baseRole)}.`}/></h3>
+    <h3 className="cr-sub">Allowed Actions <HelpTip text={`Unchecked actions are removed from ${label(local.baseRole)}.`}/></h3>
     {!modules.length ? <p className="muted">No restrictable actions are defined.</p> :
       <div className="table-wrap cr-matrix"><table><thead><tr><th scope="col">Module</th>{actions.map(a => <th key={a} scope="col">{label(a)}</th>)}<th scope="col"><span className="sr-only">Row</span></th></tr></thead><tbody>
         {modules.map(m => <tr key={m}><th scope="row">{label(m)}</th>{actions.map(a => { const k = capKey(m, a); return <td key={a}><input type="checkbox" checked={!denied.has(k)} onChange={e => toggle(k, e.target.checked)} aria-label={`${label(m)}: ${label(a)}`} data-testid={`cap-${m}-${a}`} /></td>; })}
@@ -172,12 +172,12 @@ function Bindings({ role, config, names, onConfig }: { role: CustomRole; config:
     setUserId(""); setClinicId(""); setErr("");
   };
   return <div className="cr-bindings">
-    <h3 className="cr-sub">Assigned staff <small>{list.length}</small></h3>
+    <h3 className="cr-sub">Assigned Staff <small>{list.length}</small></h3>
     <div className="cr-bind-form">
-      <SearchableSelect label={`Staff member (${label(role.baseRole)})`} value={userId} onChange={v => { setUserId(v); setClinicId(""); setErr(""); }} onSearchChange={setSearch} loading={users.isFetching} error={users.isError ? "Unable to load staff." : undefined} onRetry={() => void users.refetch()}
+      <SearchableSelect label={`Staff Member (${label(role.baseRole)})`} value={userId} onChange={v => { setUserId(v); setClinicId(""); setErr(""); }} onSearchChange={setSearch} loading={users.isFetching} error={users.isError ? "Unable to load staff." : undefined} onRetry={() => void users.refetch()}
         options={known.map(u => ({ value: u.id, label: `${u.fullName} · ${u.email}` }))} placeholder="Search active staff…" testId="select-binding-user" />
       <SearchableSelect label="Clinic" value={clinicId} onChange={v => { setClinicId(v); setErr(""); }} disabled={!selected} placeholder="All of their clinics"
-        options={[{ value: "", label: "All of their clinics" }, ...(selected?.clinics ?? []).map(c => ({ value: c.id, label: c.name }))]} testId="select-binding-clinic" />
+        options={[{ value: "", label: "All of Their Clinics" }, ...(selected?.clinics ?? []).map(c => ({ value: c.id, label: c.name }))]} testId="select-binding-clinic" />
       <button type="button" className="button small" disabled={!userId} onClick={add} data-testid="button-add-binding"><Plus size={15} aria-hidden /> Assign</button>
     </div>
     {err && <p role="alert" className="field-error">{err}</p>}

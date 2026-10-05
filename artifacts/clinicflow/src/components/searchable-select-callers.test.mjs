@@ -37,8 +37,8 @@ function change(label, value, context) {
 
 test("navigation and sort selectors retain non-empty enum choices when cleared", () => {
   for (const [label, callback, value] of [
-    ["Clinic section", "selectView", "history"],
-    ["Sort appointments", "setSort", "-date"],
+    ["Clinic Section", "selectView", "history"],
+    ["Sort Appointments", "setSort", "-date"],
   ]) {
     const calls = [];
     const context = { [callback]: next => calls.push(next) };
@@ -52,9 +52,9 @@ test("navigation and sort selectors retain non-empty enum choices when cleared",
 test("visit range selection resets dates only after choosing a non-empty view", () => {
   const calls = [];
   const context = Object.fromEntries(["setView", "setFrom", "setTo"].map(key => [key, value => calls.push([key, value])]));
-  change("Visit range", "", context);
+  change("Visit Range", "", context);
   assert.deepEqual(calls, []);
-  change("Visit range", "all", context);
+  change("Visit Range", "all", context);
   assert.deepEqual(calls, [["setView", "all"], ["setFrom", ""], ["setTo", ""]]);
 });
 
@@ -62,30 +62,30 @@ test("page size remains numeric, retains caller-owned reset behavior, and ignore
   for (const resetPageOnSizeChange of [true, false]) {
     const calls = [];
     const context = { resetPageOnSizeChange, onPageSizeChange: value => calls.push(["size", value]), onPageChange: value => calls.push(["page", value]) };
-    change("Rows per page", "", context);
+    change("Rows per Page", "", context);
     assert.deepEqual(calls, []);
-    change("Rows per page", "25", context);
+    change("Rows per Page", "25", context);
     assert.deepEqual(calls, resetPageOnSizeChange ? [["size", 25], ["page", 1]] : [["size", 25]]);
   }
-  assert.match(controls.get("Rows per page").options, /pageSizeOptions\(pageSize\)/);
+  assert.match(controls.get("Rows per Page").options, /pageSizeOptions\(pageSize\)/);
 });
 
 test("linked booking mode keeps queue enums and existing schedule fields", () => {
   const calls = [];
   const value = { enabled: true, maxTokens: 25, queueMode: "mixed" };
   const context = { value, onChange: next => calls.push(next) };
-  change("Booking mode", "", context);
+  change("Booking Mode", "", context);
   assert.deepEqual(calls, []);
-  change("Booking mode", "walkInsOnly", context);
+  change("Booking Mode", "walkInsOnly", context);
   assert.equal(calls[0].queueMode, "walkInsOnly");
   assert.equal(calls[0].maxTokens, 25);
-  assert.equal(controls.get("Booking mode").disabled, "disabled");
+  assert.equal(controls.get("Booking Mode").disabled, "disabled");
 });
 
 test("duration choices preserve numeric payloads and clear running-session confirmation", () => {
   for (const [label, callback, value, expected] of [
-    ["New expected duration", "setMinutes", "60", 60],
-    ["Apply change", "setEffect", "runningSession", "runningSession"],
+    ["New Expected Duration", "setMinutes", "60", 60],
+    ["Apply Change", "setEffect", "runningSession", "runningSession"],
   ]) {
     const calls = [];
     const context = { [callback]: value => calls.push(value), setConfirm: value => calls.push(value) };

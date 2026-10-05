@@ -6,7 +6,7 @@
 @media (max-width:860px){.et-grid{grid-template-columns:1fr}}
 .et-form{display:grid;gap:8px}.et-form textarea{width:100%;font-family:inherit;resize:vertical}
 .et-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.et-chip{font-size:var(--type-caption);padding:0 8px;border-radius:999px;border:1px solid hsl(var(--border,210 15% 85%));text-transform:capitalize}
+.et-chip{font-size:var(--type-caption);padding:0 8px;border-radius:999px;border:1px solid hsl(var(--border,210 15% 85%));}
 .et-chip.live{border-color:hsl(150 45% 40%);color:hsl(150 45% 28%)}.et-chip.draft{border-color:hsl(38 80% 45%);color:hsl(32 80% 32%)}
 .et-rev{margin-left:auto;font-size:var(--type-caption);opacity:.65}
 .et-vars{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:var(--type-label)}.et-vars>span{opacity:.7;margin-right:4px}

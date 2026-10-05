@@ -20,22 +20,22 @@ test("shared list header: title + search on row 1 with actions right; status/met
 test("appointments header carries Export beside a full-size Book appointment; updated tip in meta", () => {
   const clinic = read("../clinic.tsx");
   const appts = clinic.slice(clinic.indexOf("function Appointments("), clinic.indexOf("function Booking("));
-  assert.match(appts, /actions=\{<><FilteredAppointmentExport[^]*?<Link className="button" href=\{`\/\$\{role\}\/book`\} data-testid="link-page-book-appointment">/);
-  assert.match(appts, /meta=\{<><SearchableSelect label="Visit range"[^]*?\{q\.dataUpdatedAt>0\?<span className="listing-updated-tip"/);
-  assert.doesNotMatch(appts, /<SearchableSelect label="Visit range"[^]*?<\/SearchableSelect>?\/><\/FilterBar>/, "search is the only row-1 child");
+  assert.match(appts, /secondary=\{<><FilteredAppointmentExport[^]*?actions=\{<><Link className="button" href=\{`\/\$\{role\}\/book`\} data-testid="link-page-book-appointment">/);
+  assert.match(appts, /meta=\{<><SearchableSelect label="Visit Range"[^]*?\{q\.dataUpdatedAt>0\?<span className="listing-updated-tip"/);
+  assert.doesNotMatch(appts, /<SearchableSelect label="Visit Range"[^]*?<\/SearchableSelect>?\/><\/FilterBar>/, "search is the only row-1 child");
   assert.doesNotMatch(clinic, /className="button small" href=\{`\/\$\{role\}\/book`\}/);
 });
 
 test("appointment details keep every field, empty state and explanation in grouped structure", () => {
   const d = read("./appointments/AppointmentDetails.tsx");
-  for (const s of ["a.patientName", "a.status", "a.token", "Not assigned", "a.doctorName", "a.clinicName", "a.branchName", "formatDate(a.date", "a.startTime", "a.endTime", "a.timezone", "a.reference", "navigator.clipboard.writeText(a.reference)", "No notes recorded.", "a.checkedInAt", "a.completedAt", "Not recorded", "not arrival at the clinic", "Status and reason history", "No history recorded.", "event.reason", "Session window, not a promised consultation time."]) assert.ok(d.includes(s), s);
+  for (const s of ["a.patientName", "a.status", "a.token", "Not assigned", "a.doctorName", "a.clinicName", "a.branchName", "formatDate(a.date", "a.startTime", "a.endTime", "a.timezone", "a.reference", "navigator.clipboard.writeText(a.reference)", "No notes recorded.", "a.checkedInAt", "a.completedAt", "Not recorded", "not arrival at the clinic", "Status and Reason History", "No history recorded.", "event.reason", "Session window, not a promised consultation time."]) assert.ok(d.includes(s), s);
   assert.match(d, /className="appt-detail-grid"/);
   assert.match(read("./appointments/AppointmentRows.tsx"), /open=\{!!detailId\} variant="drawer"/);
 });
 
 test("ticket popup retains all information, links and export actions", () => {
   const t = read("./appointments/AppointmentTicket.tsx");
-  for (const s of ["confirmationEmailMessage", "link-ticket-patient-live", "{patientLiveUrl}", "Doctor status:", "Calling is paused; your booking is kept.", "patients ahead", "An estimate only, not a countdown", "Booking status updates unavailable or offline", "QR is for authorized staff validation", "Status refreshes every 30 seconds while connected. Printed tickets do not update.", "Open booking status", "Appointment history", "Ticket is offline or stale", "Retry QR"]) assert.ok(t.includes(s), s);
+  for (const s of ["confirmationEmailMessage", "link-ticket-patient-live", "{patientLiveUrl}", "Doctor status:", "Calling is paused; your booking is kept.", "patients ahead", "An estimate only, not a countdown", "Booking status updates unavailable or offline", "QR is for authorized staff validation", "Status refreshes every 30 seconds while connected. Printed tickets do not update.", "Open Booking Status", "Appointment History", "Ticket is offline or stale", "Retry QR"]) assert.ok(t.includes(s), s);
   const v = read("./tickets/VisitTicket.tsx");
   for (const s of ["button-download-ticket", "button-print-ticket", "Personal QR for reception. Keep it private.", "ticket.address", "ticket.doctorName", "ticket.clinicName", "sessionRange(ticket)", "ticket.reference", "ticket.patientName"]) assert.ok(v.includes(s), s);
   // Exported/printed HTML still includes every field.

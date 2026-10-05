@@ -12,7 +12,7 @@ export const notifyWarning = (title: string, description?: string) =>
 export const notifyCritical = (title: string, description?: string) =>
   toast.error(title, { description, duration: TOAST_DURATION.critical });
 /** Friendly translated error toast. Never raw HTTP text. */
-export const notifyError = (error: unknown, context: ErrorContext = "generic", title = "Action failed") =>
+export const notifyError = (error: unknown, context: ErrorContext = "generic", title = "Action Failed") =>
   notifyCritical(title, friendlyError(error, context));
 
 /** One consolidated message for a bulk action (finding 79). */

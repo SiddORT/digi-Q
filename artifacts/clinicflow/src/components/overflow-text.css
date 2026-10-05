@@ -1,0 +1,9 @@
+/* Truncation contract must beat legacy cell/strong rules in every context (desktop, mobile cards, drawers). */
+.ov-text{display:block!important;max-width:100%;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;border-radius:6px}
+.ov-text.ov-2{white-space:normal!important;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ov-text[tabindex="0"]{cursor:help}
+.ov-text:focus-visible{outline:2px solid #2f6fd6;outline-offset:2px}
+td .ov-text{max-width:min(28ch,100%)}
+.ov-pop{z-index:1100;max-width:min(420px,calc(100vw - 16px));padding:8px 12px;border-radius:8px;background:#0d2350;color:#eaf2fb;font-size:var(--type-label,13px);line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 10px 24px -12px rgba(13,35,80,.5);animation:ovin .12s ease}
+@keyframes ovin{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.ov-pop{animation:none}}

@@ -28,16 +28,16 @@ export function ForgotPassword() {
     } catch (caught) { setError(authErrorMessage(caught, "Unable to request password recovery. Please retry.")); }
     finally { setBusy(false); }
   }
-  return <AuthShell eyebrow="STAFF PASSWORD RECOVERY">
-    <AuthCard title="Reset staff password" description="If this email belongs to an active staff account, we'll send a secure, single-use password reset link.">
+  return <AuthShell eyebrow="Staff Password Recovery">
+    <AuthCard title="Reset Staff Password" description="If this email belongs to an active staff account, we'll send a secure, single-use password reset link.">
       {sent ? <div className="notice" role="status" data-testid="status-password-reset-requested">If the account exists, check your email for a password reset link.</div> : <form onSubmit={send} noValidate>
-        <FormField label="Staff email" required error={emailError}>
+        <FormField label="Staff Email" required error={emailError}>
           <EmailInput trimOnBlur={false} data-testid="input-reset-email" name="reset-email" autoComplete="username" disabled={busy} value={email} onChange={event => { setEmail(event.target.value); if (emailError) setEmailError(undefined); }} />
         </FormField>
         {error && <div className="error-box" role="alert">{error}</div>}
         <LoadingButton className="button auth-submit" data-testid="button-send-reset-code" type="submit" loading={busy} loadingText="Requesting…">Send password reset link</LoadingButton>
       </form>}
-      <div className="auth-links"><Link href="/sign-in" data-testid="link-return-staff-login">Return to staff login</Link></div>
+      <div className="auth-links"><Link href="/sign-in" data-testid="link-return-staff-login">Return to Staff Login</Link></div>
     </AuthCard>
   </AuthShell>;
 }
@@ -70,17 +70,17 @@ export function SetPassword() {
       setError(authErrorMessage(caught, "This link is invalid or expired. Request a new one."));
     } finally { setBusy(false); }
   }
-  return <AuthShell eyebrow={reset ? "STAFF PASSWORD RECOVERY" : "STAFF INVITATION"}>
+  return <AuthShell eyebrow={reset ? "Staff Password Recovery" : "Staff Invitation"}>
     <AuthCard title={reset ? "Reset your staff password" : "Set your staff password"} description="Choose a secure password, then sign in from the staff login page.">
       {!token && <div className="error-box" role="alert" data-testid="status-invitation-error">This password setup link is incomplete. Request a new one.</div>}
       {error && <div className="error-box" role="alert" data-testid="status-invitation-error">{error}</div>}
       {token && <form onSubmit={save} noValidate>
-        <FormField label="New password" required helper={PASSWORD_RULE} error={fieldError}>
+        <FormField label="New Password" required helper={PASSWORD_RULE} error={fieldError}>
           <PasswordInput data-testid="input-invitation-password" name="new-password" autoComplete="new-password" showChecklist disabled={busy} value={password} onChange={event => { setPassword(event.target.value); if (fieldError) setFieldError(validatePassword(event.target.value)); }} />
         </FormField>
         <LoadingButton className="button auth-submit" data-testid="button-set-invitation-password" type="submit" loading={busy} loadingText="Setting password…">Set password</LoadingButton>
       </form>}
-      <div className="auth-links"><Link href="/sign-in" data-testid="link-invitation-staff-login">Staff login</Link></div>
+      <div className="auth-links"><Link href="/sign-in" data-testid="link-invitation-staff-login">Staff Login</Link></div>
     </AuthCard>
   </AuthShell>;
 }

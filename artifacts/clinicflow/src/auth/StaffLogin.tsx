@@ -52,20 +52,20 @@ export function StaffLogin() {
     } finally { setBusy(false); }
   }
 
-  return <AuthShell eyebrow="STAFF WORKSPACE">
-    <AuthCard title="Staff login" description={`Use your ${BRAND_NAME} staff email and password.`}>
+  return <AuthShell eyebrow="Staff Workspace">
+    <AuthCard title="Staff Login" description={`Use your ${BRAND_NAME} staff email and password.`}>
       {confirmation && <div className="notice" data-testid="status-password-confirmation">{confirmation}</div>}
         <form onSubmit={submit} noValidate>
-          <FormField label="Email address" required error={fieldErrors.email}>
+          <FormField label="Email Address" required error={fieldErrors.email}>
             <EmailInput trimOnBlur={false} data-testid="input-staff-email" name="email" autoComplete="username" disabled={busy} value={email} onChange={event => { setEmail(event.target.value); if (fieldErrors.email) setFieldErrors(p => ({ ...p, email: undefined })); }} />
           </FormField>
           <FormField label="Password" required error={fieldErrors.password}>
             <PasswordInput data-testid="input-staff-password" name="password" autoComplete="current-password" disabled={busy} value={password} onChange={event => { setPassword(event.target.value); if (fieldErrors.password) setFieldErrors(p => ({ ...p, password: undefined })); }} />
           </FormField>
           {error && <div className="error-box" role="alert" data-testid="status-staff-login-error">{error}</div>}
-          <LoadingButton className="button auth-submit" data-testid="button-staff-login" type="submit" loading={busy} loadingText="Signing in…">Sign in</LoadingButton>
+          <LoadingButton className="button auth-submit" data-testid="button-staff-login" type="submit" loading={busy} loadingText="Signing in…">Sign In</LoadingButton>
         </form>
-        <div className="auth-links"><Link href="/forgot-password" data-testid="link-forgot-password">Forgot password?</Link><Link href="/patient-login" data-testid="link-patient-login">Patient login</Link></div>
+        <div className="auth-links"><Link href="/forgot-password" data-testid="link-forgot-password">Forgot password?</Link><Link href="/patient-login" data-testid="link-patient-login">Patient Login</Link></div>
         <div className="register-clinic-entry"><div><strong>Bring your clinic together.</strong><p>Set up your locations, hours and care team.</p></div><Link className="button register-clinic-button" href="/register-clinic" data-testid="link-register-clinic">Register a Clinic</Link></div>
     </AuthCard>
   </AuthShell>;

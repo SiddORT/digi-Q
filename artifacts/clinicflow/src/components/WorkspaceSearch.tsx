@@ -10,10 +10,10 @@ import "./workspace-search.css";
 /** Real, permitted quick actions only: each target is an existing route for this role. */
 export function quickActions(role: string, navigation: string[]) {
   const out: { id: string; label: string; href: string }[] = [];
-  if (role === "patient" ? navigation.includes("book") : navigation.includes("appointments")) out.push({ id: "book", label: role === "patient" ? "Book Now" : "Book appointment", href: `/${role}/book` });
-  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "queue", label: "Open live queue", href: `/${role}/queue` });
-  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "check-in", label: "Validate appointment QR", href: "/check-in" });
-  if (navigation.includes("profile")) out.push({ id: "profile", label: "My profile", href: `/${role}/profile` });
+  if (role === "patient" ? navigation.includes("book") : navigation.includes("appointments")) out.push({ id: "book", label: role === "patient" ? "Book Now" : "Book Appointment", href: `/${role}/book` });
+  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "queue", label: "Open Live Queue", href: `/${role}/queue` });
+  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "check-in", label: "Validate Appointment QR", href: "/check-in" });
+  if (navigation.includes("profile")) out.push({ id: "profile", label: "My Profile", href: `/${role}/profile` });
   return out;
 }
 
@@ -86,16 +86,16 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
     <button type="button" className="workspace-search-trigger" onClick={() => setOpen(true)} aria-label="Search workspace (Control or Command K)" title="Search workspace · Ctrl/Cmd+K">
       <Search size={16} aria-hidden/><span>Search workspace</span><kbd>⌘/Ctrl K</kbd>
     </button>
-    <AppDialog open={open} onClose={close} title="Search workspace">
+    <AppDialog open={open} onClose={close} title="Search Workspace">
       <div className="workspace-command">
-        <label htmlFor="workspace-command-query">Search pages and permitted records</label>
+        <label htmlFor="workspace-command-query">Search Pages and Permitted Records</label>
         <input id="workspace-command-query" type="search" autoComplete="off" value={query} onChange={e => setQuery(e.target.value)} placeholder="Patient, appointment, clinic, location or page…" />
         <p className="muted">Record searches require two characters. Favorites and recent pages are saved on this device; patient results and search terms are not saved.</p>
         {storageUnavailable && <p role="status">Browser storage is unavailable. Shortcuts will not persist after this session.</p>}
-        {(() => { const actions = quickActions(role, navigation).filter(a => !query || a.label.toLowerCase().includes(query.toLowerCase())); return actions.length ? <section><h3>Quick actions</h3><div className="workspace-shortcuts">{actions.map(a => <Link key={a.id} href={a.href} onClick={close} data-testid={`quick-action-${a.id}`}>{a.label}</Link>)}</div></section> : null; })()}
+        {(() => { const actions = quickActions(role, navigation).filter(a => !query || a.label.toLowerCase().includes(query.toLowerCase())); return actions.length ? <section><h3>Quick Actions</h3><div className="workspace-shortcuts">{actions.map(a => <Link key={a.id} href={a.href} onClick={close} data-testid={`quick-action-${a.id}`}>{a.label}</Link>)}</div></section> : null; })()}
         {!query && <>
           <section><h3><Star size={14} aria-hidden/> Favorites</h3><div className="workspace-shortcuts">{shortcutList(preferences.favorites).length ? shortcutList(preferences.favorites).map(pageLink) : <p>No favorites. Use the star beside a page below.</p>}</div></section>
-          <section><h3><Clock3 size={14} aria-hidden/> Recent pages</h3><div className="workspace-shortcuts">{shortcutList(preferences.recent).filter(p => p !== page).length ? shortcutList(preferences.recent).filter(p => p !== page).map(pageLink) : <p>Pages you visit appear here.</p>}</div></section>
+          <section><h3><Clock3 size={14} aria-hidden/> Recent Pages</h3><div className="workspace-shortcuts">{shortcutList(preferences.recent).filter(p => p !== page).length ? shortcutList(preferences.recent).filter(p => p !== page).map(pageLink) : <p>Pages you visit appear here.</p>}</div></section>
         </>}
         <section><h3>{query ? "Suggested pages" : "All pages"}</h3><ul className="workspace-command-pages">{pages.map(p => <li key={p}>
           <button type="button" onClick={() => { close(); navigate(`/${role}/${p}`); }}>{navLabel(p, role)}</button>

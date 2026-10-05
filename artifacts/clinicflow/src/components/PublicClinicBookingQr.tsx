@@ -14,6 +14,6 @@ export function PublicClinicBookingQr({ bookingUrl, branchName }: { bookingUrl: 
   const current = result.url === bookingUrl ? result : null;
   return <section className="public-clinic-booking-qr" aria-label="Scan to book">
     {current?.image ? <a href={bookingUrl} data-testid="public-booking-qr-link"><img width={144} height={144} src={current.image} alt={`Scan to book at ${branchName}`} data-testid="public-booking-qr"/></a> : current?.error ? <div role="alert"><p>{current.error}</p><button type="button" className="text-link" data-testid="public-booking-qr-retry" onClick={() => setAttempt(n => n + 1)}>Retry QR</button></div> : <p role="status">Preparing booking QR…</p>}
-    <div><strong>Scan to book</strong><p>Open booking for {branchName} on your phone.</p><a href={bookingUrl} className="text-link" data-testid="public-booking-qr-url">Open booking link</a></div>
+    <div><strong>Scan to book</strong><p>Open booking for {branchName} on your phone.</p><a href={bookingUrl} className="text-link" data-testid="public-booking-qr-url">Open Booking Link</a></div>
   </section>;
 }

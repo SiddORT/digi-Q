@@ -21,7 +21,7 @@ test("searchable controls link generated labels, validation and selected-value d
 
 test("remote option pagination is available without scrolling or a pointer", () => {
   for (const file of ["./SearchableSelect.tsx", "./SearchableMultiSelect.tsx"]) {
-    assert.ok(read(file).includes('onClick={onLoadMore}>Load more options</button>'));
+    assert.ok(read(file).includes('onClick={onLoadMore}>Load More Options</button>'));
     assert.ok(read(file).includes('if (event.key === "Enter" || event.key === " ") event.stopPropagation()'), "button activation must not also select cmdk's active option");
   }
 });
@@ -66,7 +66,7 @@ test("resetting advanced filters restores keyboard focus", () => {
 
 test("public account copy does not imply mandatory login and rescheduling explanation does not change eligibility", () => {
   const clinic = read("../clinic.tsx");
-  assert.ok(clinic.includes("Sign in to your account"));
+  assert.ok(clinic.includes("Sign In to Your Account"));
   assert.ok(clinic.includes("<GuestBooking key={reference}"));
   const rows = read("./appointments/AppointmentRows.tsx");
   assert.ok(rows.includes('const canReschedule=["booked","waiting","called"].includes(a.status)&&!a.checkedInAt&&a.allowedActions.includes("cancel")'));

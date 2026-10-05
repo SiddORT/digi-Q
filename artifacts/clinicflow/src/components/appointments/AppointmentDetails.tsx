@@ -44,7 +44,7 @@ export function AppointmentDetails({ appointment: a }: { appointment: Appointmen
       <p className="muted" style={{ marginTop: 8, fontSize: "var(--type-label)" }}>Consultation check-in records entry into consultation, not arrival at the clinic.</p>
     </div>
     <div className="appt-detail-block">
-      <h4>Status and reason history</h4>
+      <h4>Status and Reason History</h4>
       {a.history?.length ? <ol className="appt-detail-history">{a.history.map((event, index) => <li key={`${event.occurredAt}-${index}`}>
         <strong>{title(event.action || event.status)}</strong> · {timestamp(event.occurredAt)}
         {event.reason && <p>{event.reason}</p>}

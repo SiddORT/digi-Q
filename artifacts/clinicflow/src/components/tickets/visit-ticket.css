@@ -5,16 +5,16 @@
 .vt-head-brand{display:flex;align-items:center;gap:8px;min-width:0}
 .vt-head-brand img{display:block;width:108px;height:54px;object-fit:contain;flex:none}
 .vt-head h2{margin:0;font-size:1.05rem;letter-spacing:.02em}
-.vt-badge{font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;background:#d9f2fb;color:#10274e;padding:4px 10px;border-radius:99px}
+.vt-badge{font-size:.75rem;letter-spacing:.12em;background:#d9f2fb;color:#10274e;padding:4px 10px;border-radius:99px}
 .vt-body{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:16px 18px}
 .vt-body>div,.vt-dl dd{min-width:0;overflow-wrap:anywhere}
 .vt-ref,.vt-name{overflow-wrap:anywhere}
-.vt-number-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.14em;opacity:.7;margin:0}
+.vt-number-label{font-size:.72rem;letter-spacing:.14em;opacity:.7;margin:0}
 .vt-number{font-family:var(--font-mono);font-size:clamp(2.6rem,9vw,4rem);line-height:1;margin:4px 0 10px;color:var(--vt-accent);font-weight:700}
 .vt-ref{font-family:var(--font-mono);font-size:.85rem;margin:0 0 8px}
 .vt-name{font-size:1.2rem;font-weight:700;margin:0 0 8px}
 .vt-visit{display:flex;flex-direction:column;gap:3px;background:#edfaff;border:1px solid var(--vt-line);border-radius:9px;padding:9px 11px;margin:0 0 10px;overflow-wrap:anywhere}
-.vt-visit small{text-transform:uppercase;letter-spacing:.09em;font-size:11px;opacity:.7}
+.vt-visit small{letter-spacing:.09em;font-size:11px;opacity:.7}
 .vt-visit strong{font-size:1.02rem}
 .vt-visit span{font-size:.85rem}
 .vt-dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:.88rem}

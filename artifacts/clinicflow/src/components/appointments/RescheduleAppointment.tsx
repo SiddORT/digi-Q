@@ -21,14 +21,14 @@ export function RescheduleAppointment({appointment:a,onDone}:{appointment:api.Ap
  <p>{a.reference} · {a.clinicName}. Changes are permitted only before check-in and the clinic cancellation cutoff. Your reference and history remain; the destination issues a new token. A failed change leaves your original booking intact.</p>
  <p>Current reservation: {original.doctorName} · {original.branchName} · {original.date} · Token {original.token} · {original.status}</p>
  <ErrorNotice error={mutation.error||availability.error||current.error}/>
- {(availability.error||current.error)&&<button type="button" onClick={()=>{availability.refetch();current.refetch();}}>Refresh original and destination</button>}
- <CareLookup kind="branches" publicAccess label="Destination branch" value={branchId} disabled={mutation.isPending} params={{clinicId:a.clinicId}} onChange={v=>{setBranch(v);setDoctor("");setConfirmed(false);}}/>
- <CareLookup kind="doctors" publicAccess label="Destination doctor" value={doctorId} disabled={!branchId||mutation.isPending} params={{clinicId:a.clinicId,branchId}} onChange={v=>{setDoctor(v);setConfirmed(false);}}/>
+ {(availability.error||current.error)&&<button type="button" onClick={()=>{availability.refetch();current.refetch();}}>Refresh Original and Destination</button>}
+ <CareLookup kind="branches" publicAccess label="Destination Branch" value={branchId} disabled={mutation.isPending} params={{clinicId:a.clinicId}} onChange={v=>{setBranch(v);setDoctor("");setConfirmed(false);}}/>
+ <CareLookup kind="doctors" publicAccess label="Destination Doctor" value={doctorId} disabled={!branchId||mutation.isPending} params={{clinicId:a.clinicId,branchId}} onChange={v=>{setDoctor(v);setConfirmed(false);}}/>
  <label>Destination date<DateFormatInput data-testid="input-reschedule-date" disabled={mutation.isPending} min={today(availability.data?.timezone)} value={date} onChange={value=>{setDate(value);setConfirmed(false);}}/></label>
  <SessionSelector selection={{...selection,setSessionId:id=>{selection.setSessionId(id);setConfirmed(false);}}}/>
  <p role="status">{availability.isFetching?"Checking destination…":availability.data?.available?`${availability.data.remainingTokens} remaining · ${formatSessionHours(availability.data)}${availability.data.breakStart&&availability.data.breakEnd?` · Break ${formatTime(availability.data.breakStart,availability.data)}–${formatTime(availability.data.breakEnd,availability.data)}`:""}`:availability.data?.reason||"Select a destination."}</p>
  <label>Reason (optional)<textarea value={reason} onChange={e=>setReason(e.target.value)} maxLength={1000}/></label>
  <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>Replace this booking with the selected destination and a new token.</label>
- <button data-testid="button-confirm-reschedule" className="button" disabled={!valid||!confirmed||mutation.isPending}>{mutation.isPending?"Rescheduling…":"Confirm reschedule"}</button>
+ <button data-testid="button-confirm-reschedule" className="button" disabled={!valid||!confirmed||mutation.isPending}>{mutation.isPending?"Rescheduling…":"Confirm Reschedule"}</button>
  </form>;
 }

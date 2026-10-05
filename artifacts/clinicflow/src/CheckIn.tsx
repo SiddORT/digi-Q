@@ -23,7 +23,7 @@ export function CheckInScanner() {
     return <Redirect to={`/sign-in?redirect=${encoded}`} />;
   }
   if (me.error || !me.data?.user) {
-    return <main className="public-book"><div className="error-box" role="alert"><h2>Unable to verify staff access</h2><p>Please retry before scanning an appointment.</p><button className="button secondary" onClick={() => me.refetch()}>Retry</button></div></main>;
+    return <main className="public-book"><div className="error-box" role="alert"><h2>Unable to Verify Staff Access</h2><p>Please retry before scanning an appointment.</p><button className="button secondary" onClick={() => me.refetch()}>Retry</button></div></main>;
   }
   
   if (me.data?.user?.role === "patient") {
@@ -31,7 +31,7 @@ export function CheckInScanner() {
       <div className="landing">
         <header className="public-header"><Logo/></header>
         <main style={{ padding: "40px 24px", maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
-          <h2>Staff access required</h2>
+          <h2>Staff Access Required</h2>
           <p>The check-in scanner is available for clinic staff only.</p>
         </main>
       </div>
@@ -43,8 +43,8 @@ export function CheckInScanner() {
       <header className="public-header"><Logo/></header>
       <main style={{ padding: "40px 24px", maxWidth: "600px", margin: "0 auto" }}>
         <section className="panel padded">
-          <span className="eyebrow">CLINIC STAFF</span>
-           <h2>Validate appointment QR</h2>
+          <span className="eyebrow">Clinic Staff</span>
+           <h2>Validate Appointment QR</h2>
            <p>Scanning only verifies the ticket. Confirm check-in explicitly when the patient enters consultation.</p>
           <ScannerCore initialPayload={payloadFromUrl} />
         </section>
@@ -244,7 +244,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
     if (resolveError) return (
        <div className="error-box" role="alert">
         <ErrorNotice error={resolveError}/>
-        <button onClick={reset}>Scan again</button>
+        <button onClick={reset}>Scan Again</button>
       </div>
     );
     if (resolved) {
@@ -260,7 +260,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
                <strong>{checkIn.data.appointment.token || "—"}</strong>
                <span>{formatDate(checkIn.data.appointment.date,checkIn.data.appointment)} · {formatSessionHours(checkIn.data.appointment)} · {checkIn.data.appointment.status.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase())}</span>
              </div>
-              <button className="button" onClick={reset}>Scan next</button>
+              <button className="button" onClick={reset}>Scan Next</button>
            </div>
          );
       }
@@ -269,7 +269,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
            {checkIn.error && <><ErrorNotice error={checkIn.error}/><p>Check-in was not confirmed. Retry safely; an existing check-in will not be duplicated.</p></>}
           <div>
             {freshness.stale&&<p role="alert">Verification is stale or you are offline. Scan again after reconnecting before checking in.</p>}
-            <small>PATIENT</small>
+            <small>Patient</small>
             <h3>{appointment.patientName}</h3>
             <p>{appointment.doctorName} · {appointment.branchName}</p>
           </div>
@@ -290,7 +290,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
                 });
               }}
             >
-              {checkIn.isPending ? "Checking in…" : "Check in — enter consultation"}
+              {checkIn.isPending ? "Checking in…" : "Check In — Enter Consultation"}
             </button>
           )}
           <button className="button secondary" disabled={checkIn.isPending} onClick={reset}>Cancel / Scan another</button>
@@ -304,7 +304,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
       {scanError && <div className="error-box" role="alert">{scanError}</div>}
       <div className="toolbar" style={{ justifyContent: "center" }}>
         <button type="button" aria-pressed={mode === "camera"} className={`button small ${mode === "camera" ? "" : "light"}`} onClick={() => setMode("camera")} data-testid="button-scan-camera"><Camera size={16}/> Camera</button>
-        <button type="button" aria-pressed={mode === "file"} className={`button small ${mode === "file" ? "" : "light"}`} onClick={() => setMode("file")} data-testid="button-scan-file"><ImageIcon size={16}/> Image file</button>
+        <button type="button" aria-pressed={mode === "file"} className={`button small ${mode === "file" ? "" : "light"}`} onClick={() => setMode("file")} data-testid="button-scan-file"><ImageIcon size={16}/> Image File</button>
       </div>
       
       {mode === "camera" ? (

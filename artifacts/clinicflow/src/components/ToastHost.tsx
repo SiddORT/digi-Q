@@ -12,7 +12,7 @@ export function ToastHost() {
       toastOptions={{
         classNames: {
           toast: "app-toast",
-          title: "app-toast-title",
+          title: "App-Toast-Title",
           description: "app-toast-desc",
           closeButton: "app-toast-close",
         },

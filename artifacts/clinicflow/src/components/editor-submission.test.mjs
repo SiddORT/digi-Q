@@ -30,7 +30,7 @@ test("actual save still prevents duplicate submissions until busy cycle resets i
 test("branch hours and linked controls are children of the one validating Editor form", () => {
   const settings = readFileSync(new URL("./ClinicSettings.tsx", import.meta.url), "utf8");
   const branch = settings.slice(settings.indexOf("function BranchSettings"), settings.indexOf("export function OpeningHoursEditor"));
-  assert.match(branch, /<Editor[^\n]*submitLabel="Review changes" reviewOnly/);
+  assert.match(branch, /<Editor[^\n]*submitLabel="Review Changes" reviewOnly/);
   assert.ok(branch.indexOf("<Editor") < branch.indexOf("<OpeningHoursEditor"));
   assert.ok(branch.indexOf("<LinkedScheduleControls") < branch.indexOf("</Editor>"));
   assert.match(branch, /onInvalidCapture/);

@@ -278,7 +278,7 @@ export function SearchableMultiSelect({
                     className="py-3 text-center text-sm text-muted-foreground flex items-center justify-center gap-2"
                   >
                     {isActuallyLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {isActuallyLoading ? <span role="status">Loading more...</span> : <button type="button" className="button secondary small" onKeyDown={event => { if (event.key === "Enter" || event.key === " ") event.stopPropagation(); }} onClick={onLoadMore}>Load more options</button>}
+                    {isActuallyLoading ? <span role="status">Loading more...</span> : <button type="button" className="button secondary small" onKeyDown={event => { if (event.key === "Enter" || event.key === " ") event.stopPropagation(); }} onClick={onLoadMore}>Load More Options</button>}
                   </div>
                 )}
               </CommandGroup>

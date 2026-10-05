@@ -35,18 +35,18 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
         {day.isOpen && <div className="registration-sessions">{day.sessions.map((session, index) => {
           const change = (patch: Partial<typeof session>) => update({ ...day, sessions: day.sessions.map((item, i) => i === index ? { ...item, ...patch } : item) });
           return <div className="registration-session" key={index}>
-            <TimeRangeSlider {...session} onChange={change} label={`${days[day.dayOfWeek]} session ${index+1}`}/>
+            <TimeRangeSlider {...session} onChange={change} label={`${days[day.dayOfWeek]} Session ${index+1}`}/>
             {(["startTime", "endTime"] as const).map(key => <label key={key}>{key === "startTime" ? "Opens" : "Closes"} · {formatTime(session[key], preferences)}
               <TimeFormatInput required value={session[key]} preferences={preferences} aria-invalid={!!error} aria-describedby={error ? `hours-error-${day.dayOfWeek}` : undefined} data-testid={`hours-${key}-${day.dayOfWeek}-${index}`} onChange={value => change({ [key]: value })}/>
             </label>)}
             <button type="button" className="text-link" aria-label={`Remove ${days[day.dayOfWeek]} session ${index + 1}`} disabled={day.sessions.length === 1} onClick={() => update({ ...day, sessions: day.sessions.filter((_, i) => i !== index) })}>Remove</button>
           </div>;
-        })}<button type="button" className="text-link" onClick={() => update({ ...day, sessions: [...day.sessions, { startTime: "", endTime: "" }] })}>Add session</button></div>}
+        })}<button type="button" className="text-link" onClick={() => update({ ...day, sessions: [...day.sessions, { startTime: "", endTime: "" }] })}>Add Session</button></div>}
         {error && <p id={`hours-error-${day.dayOfWeek}`} className="field-error" role="alert">{error}</p>}
-        <details><summary>Copy {days[day.dayOfWeek]} hours</summary><div className="registration-inline">{days.map((name, target) => target !== day.dayOfWeek && <label className="registration-check" key={name}><input type="checkbox" checked={(targets[day.dayOfWeek] || []).includes(target)} onChange={e => setTargets(current => ({ ...current, [day.dayOfWeek]: e.target.checked ? [...(current[day.dayOfWeek] || []), target] : (current[day.dayOfWeek] || []).filter(id => id !== target) }))}/>{name}</label>)}</div><button type="button" disabled={!!error || !targets[day.dayOfWeek]?.length} onClick={() => copy(day, targets[day.dayOfWeek] || [])}>Copy to selected days</button><button type="button" disabled={!!error} onClick={() => copy(day, days.map((_, i) => i))}>Copy to all days</button></details>
+        <details><summary>Copy {days[day.dayOfWeek]} hours</summary><div className="registration-inline">{days.map((name, target) => target !== day.dayOfWeek && <label className="registration-check" key={name}><input type="checkbox" checked={(targets[day.dayOfWeek] || []).includes(target)} onChange={e => setTargets(current => ({ ...current, [day.dayOfWeek]: e.target.checked ? [...(current[day.dayOfWeek] || []), target] : (current[day.dayOfWeek] || []).filter(id => id !== target) }))}/>{name}</label>)}</div><button type="button" disabled={!!error || !targets[day.dayOfWeek]?.length} onClick={() => copy(day, targets[day.dayOfWeek] || [])}>Copy to Selected Days</button><button type="button" disabled={!!error} onClick={() => copy(day, days.map((_, i) => i))}>Copy to All Days</button></details>
       </section>;
     })}
-    <details><summary>Weekly summary</summary>{value.map(day => <p key={day.dayOfWeek}>{days[day.dayOfWeek]}: {day.isOpen ? day.sessions.map(s => `${formatTime(s.startTime, preferences)}–${formatTime(s.endTime, preferences)}`).join(", ") : "Closed"}</p>)}</details>
+    <details><summary>Weekly Summary</summary>{value.map(day => <p key={day.dayOfWeek}>{days[day.dayOfWeek]}: {day.isOpen ? day.sessions.map(s => `${formatTime(s.startTime, preferences)}–${formatTime(s.endTime, preferences)}`).join(", ") : "Closed"}</p>)}</details>
   </div>;
 }
 export function validateWeek(week: RegistrationDay[]) {

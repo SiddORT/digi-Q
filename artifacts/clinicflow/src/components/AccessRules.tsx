@@ -68,13 +68,13 @@ export function AccessRules() {
   }
 
   return <section className="panel padded" data-testid="access-rules">
-    <div className="panel-heading compact-heading section-head"><div><h2>Access rules <span data-testid="text-permission-limits"><HelpTip text="A checked box keeps the action allowed; clearing it denies it. Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out." /></span></h2></div></div>
+    <div className="panel-heading compact-heading section-head"><div><h2>Access Rules <span data-testid="text-permission-limits"><HelpTip text="A checked box keeps the action allowed; clearing it denies it. Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out." /></span></h2></div></div>
     {policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : policy.isError || !data ? <div role="alert" className="error-box" data-testid="state-error">The permission policy could not be loaded. <button type="button" onClick={() => policy.refetch()} data-testid="button-retry">Retry</button></div>
       : <>
         <div className="filter-bar-row">
           <div className="access-filter"><SearchableSelect label="Role" testId="select-role" value={role} onChange={v => { if (v) setRole(v); }} options={roles.map(r => ({ value: r, label: label(r) }))}/></div>
-          <div className="access-filter"><SearchableSelect label="Module" testId="select-module" value={module} onChange={v => setModule(v || "all")} options={[{ value: "all", label: "All modules" }, ...modules.map(m => ({ value: m, label: label(m) }))]}/></div>
+          <div className="access-filter"><SearchableSelect label="Module" testId="select-module" value={module} onChange={v => setModule(v || "all")} options={[{ value: "all", label: "All Modules" }, ...modules.map(m => ({ value: m, label: label(m) }))]}/></div>
           <div className="filter-bar-tools"><span className="muted" data-testid="text-revision">Revision {data.revision}</span><Link className="button secondary small" href="/admin/users">Manage users &amp; assignments</Link></div>
         </div>
         {!roles.length ? <p data-testid="state-empty">No restrictable roles are defined.</p> :
@@ -85,19 +85,19 @@ export function AccessRules() {
                 <input type="checkbox" aria-label={`${label(role)} ${label(m)} ${label(a)}`} checked={isAllowed(denied, role, m, a)} disabled={save.isPending || conflict} onChange={e => set(k, e.target.checked)} data-testid={`checkbox-${k}`} /></td>; })}
             <td data-label="Row"><button type="button" className="button secondary" disabled={conflict} onClick={() => setRow(m, true)} data-testid={`button-allow-row-${m}`}>All</button> <button type="button" className="button secondary" disabled={conflict} onClick={() => setRow(m, false)} data-testid={`button-deny-row-${m}`}>None</button></td>
           </tr>)}</tbody></table></div>}
-        {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Another Super Admin changed this policy. Your unsaved edits are kept on screen. <button type="button" onClick={reload} data-testid="button-reload">Discard my edits and reload</button></div>}
+        {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Another Super Admin changed this policy. Your unsaved edits are kept on screen. <button type="button" onClick={reload} data-testid="button-reload">Discard My Edits and Reload</button></div>}
         {save.isError && !conflict && <p role="alert" className="error-box">The policy was not saved. Try again.</p>}
         {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
         <div className="et-actions">
           <LoadingButton type="button" loading={save.isPending} disabled={!dirty || conflict || save.isPending} onClick={() => setConfirm(true)} data-testid="button-save-permissions">Save policy{changes ? ` (${changes})` : ""}</LoadingButton>
-          <button type="button" className="button secondary" disabled={!dirty || save.isPending} onClick={resetLocal} data-testid="button-reset-local">Reset changes</button>
+          <button type="button" className="button secondary" disabled={!dirty || save.isPending} onClick={resetLocal} data-testid="button-reset-local">Reset Changes</button>
         </div>
       </>}
     <AppDialog open={confirm} onClose={() => !save.isPending && setConfirm(false)} title="Save permission policy?" busy={save.isPending}>
       <div className="et-dialog"><p>{changes} change{changes === 1 ? "" : "s"} take effect immediately for every user in the affected roles. Built-in ownership and workflow rules still apply; Super Admin is unaffected.</p>
         <div className="et-actions">
           <LoadingButton type="button" loading={save.isPending} onClick={run} data-testid="button-confirm-save">Save policy</LoadingButton>
-          <button type="button" className="button secondary" disabled={save.isPending} onClick={() => setConfirm(false)} data-testid="button-confirm-cancel">Go back</button>
+          <button type="button" className="button secondary" disabled={save.isPending} onClick={() => setConfirm(false)} data-testid="button-confirm-cancel">Go Back</button>
         </div></div>
     </AppDialog>
   </section>;

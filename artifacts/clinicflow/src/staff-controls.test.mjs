@@ -24,7 +24,7 @@ test("status is the only tab category and filters have no status/sort dropdown",
   assert.doesNotMatch(ui,/<SearchableSelect label="Sort"/);
   assert.match(ui,/aria-sort=/);
   assert.match(ui,/<StatusSwitch label=\{`Account active for/);
-  assert.match(ui,/<StatusSwitch label="Staff account active"/);
+  assert.match(ui,/<StatusSwitch label="Staff Account Active"/);
   assert.doesNotMatch(ui,/type="checkbox" role="switch"/);
 });
 test("scoped assignment payload explicitly preserves foreign clinic and unknown branches",()=>{

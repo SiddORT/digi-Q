@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { SearchableSelect } from "./SearchableSelect";
 import { AppDialog } from "./AppDialog";
+import { ResponsiveActionGroup } from "./ResponsiveActionGroup";
 
 // Export useDebouncedValue directly from here for convenience as requested
 export { useDebouncedValue };
@@ -78,7 +79,7 @@ export function Pagination({
           <div className="flex items-center gap-2">
             <SearchableSelect
               id={sizeId}
-               label="Rows per page"
+               label="Rows per Page"
                value={String(pageSize)}
                onChange={(value) => {
                  if (!value) return;
@@ -216,6 +217,8 @@ export interface FilterBarProps {
   defaultAdvancedOpen?: boolean;
   /** Header actions on the first row, right side: Export / secondary actions then the primary Add/Book action. */
   actions?: React.ReactNode;
+  /** Secondary actions (Export, Columns, Saved Views, Recovery). Inline at 1280px+, behind "More" from 901px to 1279px. */
+  secondary?: React.ReactNode;
   label?: string;
   onOpen?: () => void;
   onApply?: () => void;
@@ -229,7 +232,7 @@ export interface FilterBarProps {
 
 /** Shared list header. Row 1: title, wide search, actions. Row 2 (only when needed): status tabs, scope/meta, Filters/Clear.
  *  Row 1 is always rendered first and in the same position so the search input never remounts while typing. */
-export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, label = "Filters", onOpen, onApply, title, status, meta }: FilterBarProps) {
+export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta }: FilterBarProps) {
   const advancedActiveCount = chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
@@ -250,7 +253,7 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
         {pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1></div>
           : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>}
         {children && <div className="filter-bar-primary lh-search">{children}</div>}
-        {actions && <div className="lh-actions" data-testid="list-header-actions">{actions}</div>}
+        {(actions || secondary) && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup secondary={secondary}>{actions}</ResponsiveActionGroup></div>}
       </div>
       {hasSubRow && (
         <div className="lh-row lh-sub" data-testid="list-header-subrow">

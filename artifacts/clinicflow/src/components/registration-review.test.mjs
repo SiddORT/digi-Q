@@ -18,7 +18,7 @@ test("review shows normalized identity but never displays or persists the passwo
   const review = source.slice(source.indexOf('<section aria-label="Account details review">'), source.indexOf('</section> : <FormField'));
   assert.match(review, /fullName\.trim\(\)/);
   assert.match(review, /email\.trim\(\)\.toLowerCase\(\)/);
-  assert.match(review, /Edit account details/);
+  assert.match(review, /Edit Account Details/);
   assert.doesNotMatch(review, /\{password\}/);
   assert.doesNotMatch(source, /(?:localStorage|sessionStorage)\.setItem/);
   assert.match(source, /setPassword\(""\);\s*setStep\("verify"\)/);

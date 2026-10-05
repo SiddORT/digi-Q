@@ -92,8 +92,8 @@ export function PatientScanner() {
   return <div className="public-book">
     <Logo/>
     <main className="panel padded">
-      <span className="eyebrow">PATIENT ACCESS · NO LOGIN NEEDED</span>
-      <h1>Scan a clinic booking QR code</h1>
+      <span className="eyebrow">Patient Access · No Login Needed</span>
+      <h1>Scan a Clinic Booking QR Code</h1>
       <p>Scan the QR displayed at your clinic. We’ll show the clinic and location before you request a visit. You can also use your phone’s camera app to open the QR link directly.</p>
       <button className="button" type="button" data-testid="button-start-patient-scan" onClick={() => {completed.current = false; setError(""); setScanning(value => !value);}}><Camera size={18}/>{scanning ? "Stop camera" : "Start camera"}</button>
       {scanning && <video className="patient-scan-video" ref={video} playsInline muted aria-label="Camera preview for clinic booking QR"/>}
@@ -101,7 +101,7 @@ export function PatientScanner() {
         <input data-testid="input-patient-qr-image" type="file" accept="image/png,image/jpeg,image/webp" onChange={event => {void upload(event.target.files?.[0]);event.target.value = "";}}/>
       </label>
       {error && <div className="error-box" role="alert" data-testid="status-patient-scan-error">{error}</div>}
-      <p className="muted">No QR code? <Link href="/guest-booking" className="text-link" data-testid="link-scanner-guest">Choose a clinic for Guest booking</Link></p>
+      <p className="muted">No QR code? <Link href="/guest-booking" className="text-link" data-testid="link-scanner-guest">Choose a Clinic for Guest Booking</Link></p>
     </main>
   </div>;
 }

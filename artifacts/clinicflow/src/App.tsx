@@ -22,6 +22,7 @@ import { DemoLogin } from "./auth/DemoLogin";
 import { AuthShell, AuthCard } from "./auth/AuthShell";
 import { ToastHost } from "./components/ToastHost";
 import { friendlyError } from "./lib/friendly-error";
+import { PublicHeader } from "./components/PublicHeader";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 15000 } } });
@@ -31,13 +32,13 @@ function Home() {
   const { isSignedIn } = useNativeAuth();
   if (isSignedIn) return <AuthAccess><Redirect to="/onboarding"/></AuthAccess>;
   return <div className="landing">
-    <header className="public-header"><Logo/><nav><a href="#how-it-works">How it works</a><a href="#for-clinics">For clinics</a><Link href="/register-clinic" data-testid="landing-register-clinic">Register a Clinic</Link><Link href="/guest-booking" data-testid="landing-guest-booking">Guest booking</Link><Link href="/patient-login">Patient login</Link><Link className="button small" href="/sign-in">Staff login <ArrowUpRight size={16}/></Link></nav></header>
+    <PublicHeader/>
     <main>
-      <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="dot"/> BETTER CARE. LESS WAITING.</span><h1>A healthier way to manage <em>your next visit.</em></h1><p>Find your clinic, book an appointment, and follow your place in line. A little less waiting. A lot more peace of mind.</p><div className="hero-actions"><Link className="button" href="/scan-qr" data-testid="landing-scan-qr"><QrCode size={19}/> Scan QR code</Link><Link className="button secondary" href="/guest-booking" data-testid="landing-book-guest">Guest booking <ArrowUpRight size={19}/></Link><Link className="text-link" href="/register-doctor">I'm a healthcare provider <ChevronRight size={17}/></Link></div><div className="trust"><ShieldCheck size={17}/> No login needed to request a visit <span/> Real-time queue updates</div></div>
-      <div className="hero-art"><div className="art-grid"/><div className="art-heading"><span className="mini-mark"><Activity/></span><span>CONNECTED CARE<br/><strong>From booking to better.</strong></span></div><div className="care-orbit orbit-one"/><div className="care-orbit orbit-two"/><div className="care-center"><Stethoscope size={78} strokeWidth={1.25}/></div><div className="float-card card-a"><span className="icon-box"><CalendarDays/></span><div><strong>Your visit, simplified</strong><p>Appointments that fit your day</p></div></div><div className="float-card card-b"><span className="live-dot"/><div><strong>Stay in the know</strong><p>Follow your queue, wherever you are</p></div></div><div className="art-footer">Thoughtfully designed around you <ShieldCheck size={18}/></div></div></section>
-      <section id="how-it-works" className="journey"><div><span className="eyebrow">CARE WITHOUT THE COMPLICATIONS</span><h2>Less admin. More living.</h2></div><div className="journey-grid">{[[Building2,"01","Find your care","Choose a clinic, location and doctor that work for you."],[CalendarDays,"02","Plan your visit","See actual availability and reserve your appointment."],[Clock3,"03","Skip the uncertainty","Check your token and live queue before you arrive."]].map(([Icon,n,title,body]: any)=><article key={n}><div className="journey-top"><Icon size={25}/><span>{n}</span></div><h3>{title}</h3><p>{body}</p></article>)}</div></section>
-      <section id="for-clinics" className="provider-banner"><div><span className="eyebrow">FOR PEOPLE WHO CARE FOR PEOPLE</span><h2>Your practice. Working together.</h2><p>One workspace for your clinics, appointments, schedules and patient flow.</p></div><Link href="/register-clinic" className="button light" data-testid="landing-register-clinic-banner">Register a Clinic <ArrowUpRight size={18}/></Link></section>
-    </main><footer><Logo compact/><span>Thoughtful technology. Human care.</span><span>© {new Date().getFullYear()} {BRAND_NAME}</span></footer>
+      <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="dot"/> Better Care. Less Waiting.</span><h1>A Healthier Way to Manage <em>Your Next Visit.</em></h1><p>Find your clinic, book an appointment, and follow your place in line. A little less waiting. A lot more peace of mind.</p><div className="hero-actions"><Link className="button public-primary" href="/scan-qr" data-testid="landing-scan-qr"><QrCode size={19} aria-hidden/> Scan QR Code</Link><Link className="button secondary" href="/guest-booking" data-testid="landing-book-guest">Guest Booking <ArrowUpRight size={19}/></Link><Link className="text-link" href="/register-doctor">I'm a Healthcare Provider <ChevronRight size={17}/></Link></div><div className="trust"><ShieldCheck size={17}/> No login needed to request a visit <span/> Real-Time Queue Updates</div></div>
+      <div className="hero-art"><div className="art-grid"/><div className="art-heading"><span className="mini-mark"><Activity/></span><span>Connected Care<br/><strong>From Booking to Better</strong></span></div><div className="care-orbit orbit-one"/><div className="care-orbit orbit-two"/><div className="care-center"><Stethoscope size={78} strokeWidth={1.25}/></div><div className="float-card card-a"><span className="icon-box"><CalendarDays/></span><div><strong>Your Visit, Simplified</strong><p>Appointments That Fit Your Day</p></div></div><div className="float-card card-b"><span className="live-dot"/><div><strong>Stay in the Know</strong><p>Follow Your Queue, Wherever You Are</p></div></div><div className="art-footer">Thoughtfully Designed Around You <ShieldCheck size={18}/></div></div></section>
+      <section id="how-it-works" className="journey"><div><span className="eyebrow">Care Without the Complications</span><h2>Less Admin. More Living.</h2></div><div className="journey-grid">{[[Building2,"01","Find Your Care","Choose a clinic, location and doctor that work for you."],[CalendarDays,"02","Plan Your Visit","See actual availability and reserve your appointment."],[Clock3,"03","Skip the Uncertainty","Check your token and live queue before you arrive."]].map(([Icon,n,title,body]: any)=><article key={n}><div className="journey-top"><Icon size={25}/><span>{n}</span></div><h3>{title}</h3><p>{body}</p></article>)}</div></section>
+      <section id="for-clinics" className="provider-banner"><div><span className="eyebrow">For People Who Care for People</span><h2>Your Practice. Working Together.</h2><p>One workspace for your clinics, appointments, schedules and patient flow.</p></div><Link href="/register-clinic" className="button light" data-testid="landing-register-clinic-banner">Register a Clinic <ArrowUpRight size={18}/></Link></section>
+    </main><footer><Logo compact/><span>Thoughtful Technology. Human Care.</span><span>© {new Date().getFullYear()} {BRAND_NAME}</span></footer>
   </div>;
 }
 function SignUpRoute() {
@@ -51,9 +52,9 @@ function ResetPasswordRoute() {
 function RegisterDoctor(){
   useEffect(()=>{sessionStorage.setItem("clinicflow-intent","doctor");},[]);
   return (
-    <AuthShell eyebrow="PROVIDER ACCOUNT">
+    <AuthShell eyebrow="Provider Account">
       <AuthCard title="Already invited?" description="Healthcare providers cannot self-register. Ask your clinic administrator to invite you; if your account is already set up, sign in to connect it.">
-        <Link href="/sign-in" className="button" data-testid="link-register-doctor-sign-in">Staff login</Link>
+        <Link href="/sign-in" className="button" data-testid="link-register-doctor-sign-in">Staff Login</Link>
       </AuthCard>
     </AuthShell>
   );
@@ -63,7 +64,7 @@ function Guard({role, page}: {role:string;page:string}) {
   const me = api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
   if (!isLoaded || (isSignedIn && me.isLoading)) return <div className="page-loading">Preparing your workspace…</div>;
   if (!isSignedIn) return <Redirect to="/login"/>;
-  if (me.error) return <div className="error-box" role="alert">Unable to load your account. {friendlyError(me.error,"load")}<button onClick={()=>me.refetch()}>Try again</button></div>;
+  if (me.error) return <div className="error-box" role="alert">Unable to load your account. {friendlyError(me.error,"load")}<button onClick={()=>me.refetch()}>Try Again</button></div>;
   if (!me.data?.user || me.data.needsOnboarding) return <Redirect to="/onboarding"/>;
   const actual = ["superAdmin","clinicAdmin"].includes(me.data.user.role) ? "admin" : me.data.user.role;
   if(actual !== role) return <Redirect to={`/${actual}/dashboard`}/>;
@@ -107,7 +108,7 @@ function Providers(){
     {Object.entries(routes).flatMap(([role,pages])=>[<Route key={role} path={`/${role}`}><AuthAccess><Redirect to={`/${role}/dashboard`}/></AuthAccess></Route>,...pages.map(page=><Route key={`${role}/${page}`} path={`/${role}/${page}`}><AuthAccess><Guard role={role} page={page}/></AuthAccess></Route>)])}
     <Route path="/:clinicSlug/:branchSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug} branchSlug={p.branchSlug}/>}</Route>
     <Route path="/:clinicSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug}/>}</Route>
-    <Route><div className="empty"><h1>Page not found</h1><Link href="/">Return home</Link></div></Route>
+    <Route><div className="empty"><h1>Page Not Found</h1><Link href="/">Return Home</Link></div></Route>
    </Switch><ToastHost/></NativeAuthProvider></QueryClientProvider>;
 }
 export default function App(){ return <Router base={basePath}><Providers/></Router>; }

@@ -33,7 +33,7 @@ export function AppointmentTicket({id}:{id:string}) {
     return {dateFormat:confirmed.dateFormat,timeFormat:confirmed.timeFormat,patientName:confirmed.patientName,clinicName:confirmed.clinicName,branchName:confirmed.branchName,address:confirmed.branchAddress,doctorName:confirmed.doctorName,date:confirmed.date,startTime:confirmed.startTime,endTime:confirmed.endTime,timezone:confirmed.timezone,waitingNumber:confirmed.token,reference:confirmed.reference,statusLabel:bookingStatusLabel(confirmed.status),qrUrl:code.checkInUrl};
   }
   const estimate=queue.error||!online?<p role="alert" className="span-2">Booking status updates unavailable or offline. No estimate is shown. <button onClick={()=>queue.refetch()}>Retry</button></p>:queue.isLoading?<p role="status">Loading booking status…</p>:queue.data?.ownEntry?<p className="notice" data-testid="text-ticket-estimate">{queue.data.ownEntry.patientsAhead} patients ahead · Approx. wait {queue.data.ownEntry.estimatedWaitMinutes==null?"unavailable — duration not configured":`${queue.data.ownEntry.estimatedWaitMinutes} minutes`}<br/><small>An estimate only, not a countdown or appointment time. Breaks and delays may extend the wait.</small></p>:null;
-  return <div className="appt-ticket"><ErrorNotice error={appointment.error}/>{appointment.error&&<button onClick={()=>appointment.refetch()}>Refresh ticket</button>}{!a?<p role="status">Loading ticket…</p>:<>
+  return <div className="appt-ticket"><ErrorNotice error={appointment.error}/>{appointment.error&&<button onClick={()=>appointment.refetch()}>Refresh Ticket</button>}{!a?<p role="status">Loading ticket…</p>:<>
     {confirmationEmailMessage(a.confirmationEmail)&&<p role="status">{confirmationEmailMessage(a.confirmationEmail)}</p>}
     <VisitTicket testId="appointment-ticket" ticket={{dateFormat:a.dateFormat,timeFormat:a.timeFormat,patientName:a.patientName,clinicName:a.clinicName,branchName:a.branchName,address:a.branchAddress,doctorName:a.doctorName,date:a.date,startTime:a.startTime,endTime:a.endTime,timezone:a.timezone,waitingNumber:a.token,reference:a.reference,statusLabel:bookingStatusLabel(a.status),qrUrl:qr.data?.checkInUrl}} prepareExport={prepareExport} exportDisabled={freshness.stale||!online||appointment.isFetching||!!appointment.error}/>
     {qr.error&&<><ErrorNotice error={qr.error}/><button onClick={()=>qr.refetch()} data-testid="button-retry-appointment-qr">Retry QR</button></>}
@@ -45,10 +45,10 @@ export function AppointmentTicket({id}:{id:string}) {
       <p data-testid="text-ticket-qr-warning">QR is for authorized staff validation, not public access to patient details. Staff check you in when your consultation begins.</p>
       <p className="muted" data-testid="text-ticket-refresh-notice">Status refreshes every 30 seconds while connected. Printed tickets do not update.</p>
       {(root||!!a.history?.length)&&<div className="appt-ticket-links span-2">
-        {root&&<Link className="text-link" href={`/${root}/queue?appointment=${encodeURIComponent(id)}`} data-testid="link-ticket-open-status">Open booking status</Link>}
-        {!!a.history?.length&&<details><summary>Appointment history</summary><ul>{a.history.map((event,index)=><li key={index}>{new Date(event.occurredAt).toLocaleString()} · {statusLabel(event.status)}{event.reason&&` · ${event.reason}`}</li>)}</ul></details>}
+        {root&&<Link className="text-link" href={`/${root}/queue?appointment=${encodeURIComponent(id)}`} data-testid="link-ticket-open-status">Open Booking Status</Link>}
+        {!!a.history?.length&&<details><summary>Appointment History</summary><ul>{a.history.map((event,index)=><li key={index}>{new Date(event.occurredAt).toLocaleString()} · {statusLabel(event.status)}{event.reason&&` · ${event.reason}`}</li>)}</ul></details>}
       </div>}
-      {freshness.stale&&<p role="alert" className="span-2">Ticket is offline or stale. Reconnect and refresh before printing. <button disabled={!online} onClick={()=>appointment.refetch()}>Refresh ticket</button></p>}
+      {freshness.stale&&<p role="alert" className="span-2">Ticket is offline or stale. Reconnect and refresh before printing. <button disabled={!online} onClick={()=>appointment.refetch()}>Refresh Ticket</button></p>}
     </div>
   </>}</div>;
 }

@@ -62,8 +62,8 @@ test("registration resends by retained challenge only, with server-aligned coold
 test("doctor weekly editing keeps independent saves explicit and shades only comparable clinic times",()=>{
   const ui=source("./schedule/WeeklyOverview.tsx");
   assert.match(ui,/not an atomic weekly update/);
-  assert.match(ui,/Copy to selected days/);
-  assert.match(ui,/>Add session</);
+  assert.match(ui,/Copy to Selected Days/);
+  assert.match(ui,/>Add Session</);
   assert.match(source("../resources.tsx"),/clinicHours=\{matchingTimezone\?clinicHours:\[\]\}/);
   assert.match(source("../resources.tsx"),/existing server rules decide whether it can be saved/);
   assert.doesNotMatch(source("../resources.tsx"),/\.toLocaleString\(/);

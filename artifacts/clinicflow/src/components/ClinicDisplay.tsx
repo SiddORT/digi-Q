@@ -67,7 +67,7 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
     return <div className="cd-root cd-center" data-testid="display-revoked">
       <div className="cd-notice"><QrCode size={44} strokeWidth={1.4} /><h1>This display link is no longer active</h1>
         <p>The booking QR for this branch was revoked or doesn't exist. Ask reception to open the display from a current branch QR.</p>
-        <button className="cd-btn" onClick={() => q.refetch()} data-testid="button-retry-display"><RefreshCw size={18} /> Check again</button></div>
+        <button className="cd-btn" onClick={() => q.refetch()} data-testid="button-retry-display"><RefreshCw size={18} /> Check Again</button></div>
     </div>;
   }
 
@@ -94,10 +94,10 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
 
     <main className="cd-main">
       <section className="cd-book" aria-label="Book a queue place">
-        <span className="cd-eyebrow">Scan to book</span>
-        <h2>Reserve your place<br /><em>from your phone.</em></h2>
+        <span className="cd-eyebrow">Scan to Book</span>
+        <h2>Reserve Your Place<br /><em>from your phone.</em></h2>
         <div className="cd-qr" data-testid="img-booking-qr">
-          {qr ? <img src={qr} alt="QR code linking to this branch's booking page" /> : qrFailed ? <div role="alert"><p>QR image could not be generated. You can use the booking link below.</p><button onClick={()=>setQrAttempt(n=>n+1)}>Retry QR image</button></div> : <span className="cd-sk cd-sk-qr" />}
+          {qr ? <img src={qr} alt="QR code linking to this branch's booking page" /> : qrFailed ? <div role="alert"><p>QR image could not be generated. You can use the booking link below.</p><button onClick={()=>setQrAttempt(n=>n+1)}>Retry QR Image</button></div> : <span className="cd-sk cd-sk-qr" />}
         </div>
         <ol className="cd-steps">
           <li><span>1</span>Open your phone camera and point it at the code.</li>
@@ -108,10 +108,10 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
       </section>
 
       <section className="cd-queues" aria-label="Live doctor queues" aria-live="polite">
-        <div className="cd-queues-head"><span className="cd-eyebrow">Now serving</span>{data && <span className="cd-date">{formatDate(data.date,data)}</span>}</div>
+        <div className="cd-queues-head"><span className="cd-eyebrow">Now Serving</span>{data && <span className="cd-date">{formatDate(data.date,data)}</span>}</div>
         {q.isLoading && online ? <div className="cd-grid">{[0, 1].map(i => <div key={i} className="cd-card"><span className="cd-sk cd-sk-line" /><span className="cd-sk cd-sk-token" /><span className="cd-sk cd-sk-line" /></div>)}</div>
           : !data ? <div className="cd-empty"><WifiOff size={34} strokeWidth={1.4} /><p>Live queue hidden while offline.</p></div>
-          : data.sessions.length === 0 ? <div className="cd-empty" data-testid="status-no-sessions"><Clock3 size={34} strokeWidth={1.4} /><h3>No consultations scheduled today</h3><p>You can still book an upcoming visit using the QR code.</p></div>
+          : data.sessions.length === 0 ? <div className="cd-empty" data-testid="status-no-sessions"><Clock3 size={34} strokeWidth={1.4} /><h3>No Consultations Scheduled Today</h3><p>You can still book an upcoming visit using the QR code.</p></div>
           : <div className={`cd-grid ${data.sessions.length === 1 ? "one" : ""}`}>
             {data.sessions.map((s: DisplaySession) => {
               const hours = [fmtTime(s.startTime,data), fmtTime(s.endTime,data)].filter(Boolean).join(" – ");
@@ -119,12 +119,12 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
               return <article key={`${s.doctorId}-${s.startTime}`} className="cd-card" data-testid={`card-doctor-queue-${s.doctorId}`}>
                 <div className="cd-card-top"><h3>{s.doctorName}</h3>{hours && <span className="cd-hours"><Clock3 size={14} /> {hours}</span>}</div>
                 <div className={`cd-now ${s.currentStatus === "called" ? "called" : ""}`}>
-                  <div><label data-testid={`text-current-status-${s.doctorId}`}>{s.currentToken ? (s.currentStatus === "inConsultation" ? "In consultation" : s.currentStatus === "called" ? "Called next — please proceed" : "Now serving") : "No one called yet"}</label><strong className="cd-token-big" data-testid={`text-current-token-${s.doctorId}`}>{s.currentToken ?? "—"}</strong></div>
-                  <div className="cd-next"><label>Up next</label><strong data-testid={`text-next-token-${s.doctorId}`}>{s.nextToken ?? "—"}</strong></div>
+                  <div><label data-testid={`text-current-status-${s.doctorId}`}>{s.currentToken ? (s.currentStatus === "inConsultation" ? "In Consultation" : s.currentStatus === "called" ? "Called Next — Please Proceed" : "Now Serving") : "No One Called Yet"}</label><strong className="cd-token-big" data-testid={`text-current-token-${s.doctorId}`}>{s.currentToken ?? "—"}</strong></div>
+                  <div className="cd-next"><label>Up Next</label><strong data-testid={`text-next-token-${s.doctorId}`}>{s.nextToken ?? "—"}</strong></div>
                 </div>
                 <div className="cd-waiting">
                   <label><Users size={14} /> Waiting · <b data-testid={`text-waiting-count-${s.doctorId}`}>{s.waitingCount}</b></label>
-                  <div className="cd-chips">{upcoming.length ? <>{upcoming.slice(0, 10).map(t => <span key={t}>{t}</span>)}{upcoming.length > 10 && <span className="more">+{upcoming.length - 10}</span>}</> : <em>No one else waiting</em>}</div>
+                  <div className="cd-chips">{upcoming.length ? <>{upcoming.slice(0, 10).map(t => <span key={t}>{t}</span>)}{upcoming.length > 10 && <span className="more">+{upcoming.length - 10}</span>}</> : <em>No One Else Waiting</em>}</div>
                 </div>
                 <div className="cd-foot">{s.completedCount} seen today</div>
               </article>;

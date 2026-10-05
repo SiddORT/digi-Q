@@ -30,7 +30,7 @@ export function ColumnSettings({ columns, layout, label, onChange, onReset, reor
           {pinnable && <button type="button" aria-pressed={pinned === c} aria-label={pinned === c ? `Unpin ${label(c)}` : `Pin ${label(c)} as the one pinned column`} disabled={hidden.includes(c)} onClick={() => onChange({ pinned: pinned === c ? null : c })}>{pinned === c ? <PinOff size={14} aria-hidden /> : <Pin size={14} aria-hidden />}</button>}
         </span>
       </li>)}</ul>
-      <div className="filter-panel-foot"><button type="button" className="filter-clear" onClick={onReset} data-testid="button-reset-columns">Reset columns</button><button type="button" className="filter-done" onClick={() => setOpen(false)}>Done</button></div>
+      <div className="filter-panel-foot"><button type="button" className="filter-clear" onClick={onReset} data-testid="button-reset-columns">Reset Columns</button><button type="button" className="filter-done" onClick={() => setOpen(false)}>Done</button></div>
     </AppDialog>
   </>;
 }
@@ -48,7 +48,7 @@ export function SavedViews({ views, canSave, onApply, onSave, onDelete }: {
     <button type="button" className="lvc-trigger" onClick={() => setOpen(true)} aria-haspopup="dialog" data-testid="button-saved-views">
       <Bookmark size={15} aria-hidden /><span>Views{views.length ? ` · ${views.length}` : ""}</span>
     </button>
-    <AppDialog open={open} onClose={() => { setOpen(false); setError(""); setSaved(""); }} title="Saved views" variant="drawer">
+    <AppDialog open={open} onClose={() => { setOpen(false); setError(""); setSaved(""); }} title="Saved Views" variant="drawer">
       <p className="muted">Saved views keep filters, sort, page size and the column layout for your account and role on this device. Search text is never saved.</p>
       {views.length ? <ul className="lvc-views">{views.map(v => <li key={v.id}>
         <button type="button" className="lvc-view-apply" onClick={() => { onApply(v); setOpen(false); }} data-testid={`button-apply-view-${v.id}`}><strong>{v.name}</strong><small>{Object.keys(v.filters).length} filter settings{v.columns ? " · column layout" : ""}</small></button>
@@ -61,7 +61,7 @@ export function SavedViews({ views, canSave, onApply, onSave, onDelete }: {
         {!canSave && <small className="muted">Apply a filter or sort, or change the column layout, to save a view.</small>}
         {error && <small role="alert" className="field-error">{error}</small>}
         <small role="status" aria-live="polite">{saved}</small>
-        <button type="submit" className="button small" disabled={!canSave} data-testid="button-save-view">Save view</button>
+        <button type="submit" className="button small" disabled={!canSave} data-testid="button-save-view">Save View</button>
       </form>
     </AppDialog>
   </>;

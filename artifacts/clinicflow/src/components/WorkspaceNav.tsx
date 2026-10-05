@@ -7,11 +7,11 @@ const icons: Record<string, any> = { dashboard: LayoutDashboard, appointments: C
 
 export function navLabel(p: string, role: string) {
   if (p === "templates") return "Email templates";
-  if (p === "permissions") return "Roles & permissions";
+  if (p === "permissions") return "Roles & Permissions";
   if (p === "integrations") return "Integrations";
   if (p === "users") return "Users & staff";
   if (p === "system-users") return "System users";
-  if (p === "book") return role === "patient" ? "Book Now" : "Book appointment";
+  if (p === "book") return role === "patient" ? "Book Now" : "Book Appointment";
   if (p === "queue" && role === "patient") return "Booking status";
   if (p === "profile" && role === "admin") return "My profile & consultation";
   if (p === "profile" && role === "doctor") return "My profile & clinics";

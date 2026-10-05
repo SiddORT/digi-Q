@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { titleCase } from "../lib/title-case";
 import * as api from "@workspace/api-client-react";
 import { useGetNotificationTemplates, getGetNotificationTemplatesQueryKey, useSaveNotificationTemplate, useRequestLogoUpload, useCompleteLogoUpload } from "@workspace/api-client-react";
 import { logoFileError, putToSignedUrl, LOGO_TYPES } from "./logo-upload";
@@ -17,7 +18,7 @@ const EVENTS = ["booking", "onboarding", "rescheduled", "cancelled", "completed"
 type Recipient = "patient" | "clinicAdmin" | "doctor" | "receptionist";
 export const RECIPIENTS: { value: Recipient; label: string; who: string }[] = [
   { value: "patient", label: "Patient", who: "the patient on the appointment" },
-  { value: "clinicAdmin", label: "Clinic admin", who: "the admin who owns the clinic" },
+  { value: "clinicAdmin", label: "Clinic Admin", who: "the admin who owns the clinic" },
   { value: "doctor", label: "Doctor", who: "the doctor on the appointment" },
   { value: "receptionist", label: "Receptionist", who: "receptionists assigned to the clinic" },
 ];
@@ -28,15 +29,15 @@ export function recipientForEvent(event: string, current: Recipient): Recipient 
 type TextKey = Exclude<keyof Content, "enabled">;
 const FIELDS: [TextKey, string, number, string][] = [
   ["subject", "Subject", 180, "Required. Variables such as {{clinic_name}} are kept as written."],
-  ["prefix", "Subject prefix", 60, "Optional short label placed before the subject."],
+  ["prefix", "Subject Prefix", 60, "Optional short label placed before the subject."],
   ["body", "Body", 8000, "Required. Plain text; variables are filled in at send time."],
   ["footer", "Footer", 500, "Optional closing text shown below the body."],
   ["logoUrl", "Logo", 1000, "Upload a PNG, JPEG or WebP (max 2 MB, max 2048×2048 px) or paste an https:// image address. Nothing is published until you save."],
 ];
 const MODE_COPY: Record<Mode, { title: string; text: string; action: string }> = {
-  draft: { title: "Save draft?", text: "The draft is stored for later review. Live emails keep using the published version.", action: "Save draft" },
-  publish: { title: "Publish template?", text: "The published version replaces the current one for this scope. Delivery follows clinic notification settings. Publishing does not send a message.", action: "Publish" },
-  reset: { title: "Reset to default?", text: "This removes the customised template and any draft for this scope and returns to the inherited default.", action: "Reset" },
+  draft: { title: "Save Draft?", text: "The draft is stored for later review. Live emails keep using the published version.", action: "Save Draft" },
+  publish: { title: "Publish Template?", text: "The published version replaces the current one for this scope. Delivery follows clinic notification settings. Publishing does not send a message.", action: "Publish" },
+  reset: { title: "Reset to Default?", text: "This removes the customised template and any draft for this scope and returns to the inherited default.", action: "Reset" },
 };
 
 /** Renders a readable preview: clinic_name uses the scope name, every other variable becomes an explicit placeholder. */
@@ -176,7 +177,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
     <div className="et-scope">
       {superAdmin ? <FormField label="Scope" optional helper="Leave empty to edit platform defaults.">
         {(a) => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => guard(() => { setClinicId(v); resetLocal(); })} placeholder="Platform defaults" />}
-      </FormField> : <FormField label="Clinic group" required helper="Choose a clinic group you manage.">
+      </FormField> : <FormField label="Clinic Group" required helper="Choose a clinic group you manage.">
         {(a) => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => guard(() => { setClinicId(v); resetLocal(); })} />}
       </FormField>}
       <FormField label="Recipient" helper={`Sent to ${recipientInfo.who}.`}>
@@ -185,7 +186,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
       </FormField>
       <FormField label="Event" helper={recipient === "clinicAdmin" ? undefined : "Onboarding is available for the Clinic admin recipient."}>
         {(a) => <SearchableSelect {...a} value={event} onChange={v => guard(() => { setEvent(v); setRecipient(r => recipientForEvent(v, r)); resetLocal(); })}
-          options={eventsFor(recipient).map(e => ({ value: e, label: catalog.data?.items.find(i => i.event === e)?.title ?? e }))} />}
+          options={eventsFor(recipient).map(e => ({ value: e, label: titleCase(catalog.data?.items.find(i => i.event === e)?.title ?? e) }))} />}
       </FormField>
     </div>
 
@@ -196,10 +197,10 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
       : <div className="et-grid">
         <form className="panel padded et-form" onSubmit={e => { e.preventDefault(); setConfirm("publish"); }}>
           <div className="et-meta" data-testid="text-template-meta">
-            <strong>{item.title}</strong>
-            <span className="et-chip">{item.source}</span>
-            <span className={`et-chip ${item.delivery === "active" || event === "booking" ? "live" : ""}`}>{item.delivery}</span>
-            {item.draft && <span className="et-chip draft">Unpublished draft</span>}
+            <strong>{titleCase(item.title)}</strong>
+            <span className="et-chip">{titleCase(item.source.replace(/[_-]/g, " "))}</span>
+            <span className={`et-chip ${item.delivery === "active" || event === "booking" ? "live" : ""}`}>{titleCase(item.delivery.replace(/[_-]/g, " "))}</span>
+            {item.draft && <span className="et-chip draft">Unpublished Draft</span>}
             <span className="et-rev">Revision {item.revision}</span>
           </div>
           <div className="et-toggle" data-testid="row-enabled">
@@ -212,10 +213,10 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
               : k === "logoUrl" ? <div className="et-logo-field">
                 <input {...a} type="text" inputMode="url" maxLength={max} value={form[k]} onChange={e => { set(k, e.target.value); setShowLogo(false); }} placeholder="https://… or upload below" data-testid="input-logoUrl" spellCheck={false} disabled={uploading} />
                 <div className="et-actions">
-                  <label className="button secondary" data-testid="label-logo-file">{uploading ? "Uploading…" : "Choose image file"}
+                  <label className="button secondary" data-testid="label-logo-file">{uploading ? "Uploading…" : "Choose Image File"}
                     <input type="file" hidden accept={LOGO_TYPES.join(",")} disabled={uploading} onChange={e => { void onLogoFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-logo-file" /></label>
-                  {uploading && <button type="button" className="button secondary" onClick={() => { uploadAbort.current?.abort(); setUpload({ state: "idle", pct: 0, msg: "Upload cancelled." }); }} data-testid="button-cancel-upload">Cancel upload</button>}
-                  {form.logoUrl && !uploading && <button type="button" className="button secondary" onClick={() => { set(k, ""); setUpload({ state: "idle", pct: 0, msg: "" }); }} data-testid="button-remove-logo">Remove logo</button>}
+                  {uploading && <button type="button" className="button secondary" onClick={() => { uploadAbort.current?.abort(); setUpload({ state: "idle", pct: 0, msg: "Upload cancelled." }); }} data-testid="button-cancel-upload">Cancel Upload</button>}
+                  {form.logoUrl && !uploading && <button type="button" className="button secondary" onClick={() => { set(k, ""); setUpload({ state: "idle", pct: 0, msg: "" }); }} data-testid="button-remove-logo">Remove Logo</button>}
                 </div>
                 <small>PNG, JPEG or WebP · max 2 MB · max 2048×2048 px (checked by the server)</small>
                 {upload.state === "uploading" && <progress max={100} value={upload.pct} aria-label="Upload progress" data-testid="progress-logo" />}
@@ -224,19 +225,19 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
               : <input {...a} type="text" maxLength={max} value={form[k]} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />}
           </FormField>)}
           <div className="et-vars" data-testid="list-variables">
-            <span>Available variables</span>
+            <span>Available Variables</span>
             {variables.map(v => <button type="button" key={v} className="et-var" onClick={() => set("body", `${form.body}{{${v}}}`)} data-testid={`button-variable-${v}`}>{`{{${v}}}`}</button>)}
           </div>
           {unknown.length > 0 && <p role="alert" className="error-box">Unknown variables: {unknown.join(", ")}. Use only the variables listed above.</p>}
           {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Someone else changed this template. Your edits are kept here.
-            <button type="button" onClick={() => { resetLocal(); void catalog.refetch(); }} data-testid="button-reload">Discard my edits and reload</button></div>}
+            <button type="button" onClick={() => { resetLocal(); void catalog.refetch(); }} data-testid="button-reload">Discard My Edits and Reload</button></div>}
           {save.isError && !conflict && <p role="alert" className="error-box">The template was not saved. Check the fields and try again.</p>}
           {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
           <div className="et-actions">
             <LoadingButton type="submit" loading={save.isPending && confirm === "publish"} disabled={save.isPending || invalid || conflict} data-testid="button-publish">Publish</LoadingButton>
-            <button type="button" className="button secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save draft</button>
-            <button type="button" className="button secondary" disabled={save.isPending || !dirty} onClick={() => { setForm({ ...base! }); setNotice(""); }} data-testid="button-cancel">Cancel changes</button>
-            <button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to default</button>
+            <button type="button" className="button secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save Draft</button>
+            <button type="button" className="button secondary" disabled={save.isPending || !dirty} onClick={() => { setForm({ ...base! }); setNotice(""); }} data-testid="button-cancel">Cancel Changes</button>
+            <button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to Default</button>
           </div>
         </form>
 
@@ -244,14 +245,14 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
           <h3>Preview <HelpTip text="Sample placeholders only. No patient data is used."/></h3>
           {form.logoUrl && isValidLogo(form.logoUrl) && ((showLogo || isInternalLogo(form.logoUrl))
             ? <img src={logoPreviewSrc(form.logoUrl)} alt="Logo preview" className="et-logo" referrerPolicy="no-referrer" data-testid="img-logo" />
-            : <button type="button" className="button secondary" onClick={() => setShowLogo(true)} data-testid="button-load-logo">Load logo preview (contacts the image host)</button>)}
+            : <button type="button" className="button secondary" onClick={() => setShowLogo(true)} data-testid="button-load-logo">Load Logo Preview (Contacts the Image Host)</button>)}
           <div className="et-mail">
             <div className="et-subject" data-testid="text-preview-subject">{preview!.subject}</div>
             <div className="et-body" data-testid="text-preview-body">{preview!.body}</div>
             {preview!.footer && <div className="et-footer">{preview!.footer}</div>}
           </div>
-          {!dirty && <button type="button" className="button secondary small et-server-open" aria-haspopup="dialog" onClick={() => setServerOpen(true)} data-testid="button-server-rendering">Server rendering</button>}
-          {serverOpen && <AppDialog open variant="drawer" onClose={() => setServerOpen(false)} title="Server rendering"><div className="et-server"><div>{item.previewSubject}</div><pre>{item.previewBody}</pre></div></AppDialog>}
+          {!dirty && <button type="button" className="button secondary small et-server-open" aria-haspopup="dialog" onClick={() => setServerOpen(true)} data-testid="button-server-rendering">Server Rendering</button>}
+          {serverOpen && <AppDialog open variant="drawer" onClose={() => setServerOpen(false)} title="Server Rendering"><div className="et-server"><div>{item.previewSubject}</div><pre>{item.previewBody}</pre></div></AppDialog>}
         </aside>
       </div>}
 
@@ -259,14 +260,14 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
       {confirm && <div className="et-dialog"><p>{MODE_COPY[confirm].text}</p>
         <div className="et-actions">
           <LoadingButton type="button" loading={save.isPending} onClick={() => run(confirm)} className={confirm === "reset" ? "danger" : undefined} data-testid="button-confirm-save">{MODE_COPY[confirm].action}</LoadingButton>
-          <button type="button" className="button secondary" disabled={save.isPending} onClick={() => setConfirm(null)} data-testid="button-confirm-cancel">Go back</button>
+          <button type="button" className="button secondary" disabled={save.isPending} onClick={() => setConfirm(null)} data-testid="button-confirm-cancel">Go Back</button>
         </div></div>}
     </AppDialog>
     <AppDialog open={!!pendingNav} onClose={() => setPendingNav(null)} title="Discard unsaved changes?">
       <div className="et-dialog"><p>You have edits that are not saved. Leaving this template discards them.</p>
         <div className="et-actions">
-          <button type="button" className="danger" onClick={() => { const go = pendingNav; setPendingNav(null); go?.(); }} data-testid="button-discard">Discard and continue</button>
-          <button type="button" className="button secondary" onClick={() => setPendingNav(null)} data-testid="button-keep-editing">Keep editing</button>
+          <button type="button" className="danger" onClick={() => { const go = pendingNav; setPendingNav(null); go?.(); }} data-testid="button-discard">Discard and Continue</button>
+          <button type="button" className="button secondary" onClick={() => setPendingNav(null)} data-testid="button-keep-editing">Keep Editing</button>
         </div></div>
     </AppDialog>
   </section>;

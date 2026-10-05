@@ -68,14 +68,14 @@ export function DemoClinicManagement() {
   async function change(action: "create" | "enable" | "disable" | "rotate-password") {
     if (busy) return;
     if (action === "create" && !(await confirmDialog.ask({
-      title: "Create demo clinic?",
+      title: "Create Demo Clinic?",
       description: "Create a fictional demo clinic, location, doctor, schedule and staff identity on this environment?",
-      confirmLabel: "Create demo clinic",
+      confirmLabel: "Create Demo Clinic",
     }))) return;
     if (action === "rotate-password" && !(await confirmDialog.ask({
-      title: "Rotate demo password?",
+      title: "Rotate Demo Password?",
       description: "Rotate the demo password? The previous shared password will stop working.",
-      confirmLabel: "Rotate password",
+      confirmLabel: "Rotate Password",
       tone: "danger",
     }))) return;
     setBusy(true); setError(""); setNotice(""); setCredentials(null);
@@ -107,26 +107,26 @@ export function DemoClinicManagement() {
 
   const forward = `Try ${BRAND_NAME}' fictional demo clinic (please do not enter real patient information).\nClinic: ${clinicUrl}\nGuest booking: ${bookingUrl}\nYou can scan the booking QR on the clinic page or open the booking link directly. Guest booking requires no login and issues a ticket immediately.`;
   return <>{confirmDialog.dialog}<div className="panel padded" data-testid="demo-management">
-    <div className="panel-heading demo-head section-head"><div><span className="eyebrow">SUPER ADMIN ONLY · FICTIONAL DEMO</span><h2>Published demo clinic <HelpTip text="Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo."/></h2></div>
+    <div className="panel-heading demo-head section-head"><div><span className="eyebrow">Super Admin Only · Fictional Demo</span><h2>Published Demo Clinic <HelpTip text="Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo."/></h2></div>
       {status?.configured && <div className="row-actions">
         <span className={`badge ${status.enabled ? "" : "muted"}`} data-testid="status-demo-access">{status.enabled ? "Demo access enabled" : "Demo access disabled"}</span>
         <button className="button secondary small" disabled={busy} onClick={() => void change(status.enabled ? "disable" : "enable")} data-testid="button-toggle-demo">{status.enabled ? "Disable demo access" : "Enable demo access"}</button>
-        <button className="button secondary small" disabled={busy} onClick={() => void change("rotate-password")} data-testid="button-rotate-demo-password">Rotate demo password</button>
+        <button className="button secondary small" disabled={busy} onClick={() => void change("rotate-password")} data-testid="button-rotate-demo-password">Rotate Demo Password</button>
       </div>}
     </div>
     {error && <div className="error-box" role="alert">{error}<button onClick={() => setRevision(value => value + 1)}>Retry</button></div>}
     {notice && <div className="notice" role="status">{notice}</div>}
     {!status && !error && <p role="status">Checking demo setup…</p>}
-    {status && !status.configured && <button className="button" disabled={busy} onClick={() => void change("create")} data-testid="button-create-demo">Create demo clinic</button>}
+    {status && !status.configured && <button className="button" disabled={busy} onClick={() => void change("create")} data-testid="button-create-demo">Create Demo Clinic</button>}
     {status?.configured && <>
       <p><strong>{status.clinicName}</strong> · {status.doctorName}</p>
       {credentials && <section className="notice" aria-label="One-time demo credentials">
-        <h3>Save these credentials now</h3><p>The password is shown only once. Share it privately, separately from the public clinic link.</p>
+        <h3>Save These Credentials Now</h3><p>The password is shown only once. Share it privately, separately from the public clinic link.</p>
         <p>Username: <strong>{credentials.username}</strong></p>
         <p>Password: <strong data-testid="demo-one-time-password">{credentials.password}</strong></p>
-        <button type="button" onClick={() => void navigator.clipboard.writeText(`Username: ${credentials.username}\nPassword: ${credentials.password}\nLogin: ${loginUrl}`).then(() => setNotice("Demo credentials copied. Keep them private.")).catch(() => setError("Clipboard access is unavailable; use the download option."))}>Copy private credentials</button>
-        <button type="button" onClick={() => download("clinicflow-demo-credentials.txt", `Username: ${credentials.username}\nPassword: ${credentials.password}\nLogin: ${loginUrl}\n`, "text/plain")}>Download private credentials</button>
-        <button type="button" onClick={() => setCredentials(null)}>Hide credentials</button>
+        <button type="button" onClick={() => void navigator.clipboard.writeText(`Username: ${credentials.username}\nPassword: ${credentials.password}\nLogin: ${loginUrl}`).then(() => setNotice("Demo credentials copied. Keep them private.")).catch(() => setError("Clipboard access is unavailable; use the download option."))}>Copy Private Credentials</button>
+        <button type="button" onClick={() => download("clinicflow-demo-credentials.txt", `Username: ${credentials.username}\nPassword: ${credentials.password}\nLogin: ${loginUrl}\n`, "text/plain")}>Download Private Credentials</button>
+        <button type="button" onClick={() => setCredentials(null)}>Hide Credentials</button>
       </section>}
       <div className="demo-share">
       <div className="demo-share-main">
@@ -136,13 +136,13 @@ export function DemoClinicManagement() {
           <a className="button secondary small" href={url} target="_blank" rel="noreferrer" title={url} aria-label={`Open ${name.toLowerCase()}: ${url}`}>Open</a></dd></div>)}
         <div><dt>Staff login</dt><dd className="demo-link-actions"><button type="button" className="button secondary small" aria-label={`Copy staff login: ${loginUrl}`} onClick={() => void navigator.clipboard.writeText(loginUrl).then(() => setNotice("Staff login copied.")).catch(() => setError("Clipboard unavailable."))}>Copy</button><Link className="button secondary small" href={status.loginPath || "/demo-login"} title={loginUrl} aria-label={`Open staff login: ${loginUrl}`}>Open</Link></dd></div>
       </dl>
-      <h3>Patient sharing message</h3>
+      <h3>Patient Sharing Message</h3>
       <textarea readOnly rows={4} value={forward} aria-label="Public demo sharing message"/>
-      <button type="button" onClick={() => void navigator.clipboard.writeText(forward).then(() => setNotice("Public sharing message copied. Credentials are not included.")).catch(() => setError("Clipboard unavailable. Select and copy the message above."))}>Copy public message</button>
+      <button type="button" onClick={() => void navigator.clipboard.writeText(forward).then(() => setNotice("Public sharing message copied. Credentials are not included.")).catch(() => setError("Clipboard unavailable. Select and copy the message above."))}>Copy Public Message</button>
       </div>
       {qr && <div className="demo-qr"><img src={qr} alt={`Booking QR for ${status.clinicName}`} width="220" height="220"/><br/><button type="button" onClick={() => {
         const anchor = document.createElement("a"); anchor.href = qr; anchor.download = "clinicflow-demo-booking-qr.png"; anchor.click();
-      }}>Download booking QR</button></div>}
+      }}>Download Booking QR</button></div>}
       </div>
     </>}
   </div></>;

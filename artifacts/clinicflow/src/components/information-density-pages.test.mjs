@@ -5,8 +5,8 @@ const read = p => readFileSync(new URL(p, import.meta.url), "utf8");
 const clinic = read("../clinic.tsx"), resources = read("../resources.tsx"), users = read("../Users.tsx"), queue = read("./queue/SessionQueue.tsx");
 
 test("appointment toolbar: sort lives in the filter drawer, updated time is an icon tip, suggestions omit references", () => {
-  assert.match(clinic, /advanced=\{<><SearchableSelect label="Sort appointments"/);
-  assert.match(clinic, /<HelpTip label="Last updated"/);
+  assert.match(clinic, /advanced=\{<><SearchableSelect label="Sort Appointments"/);
+  assert.match(clinic, /<HelpTip label="Last Updated"/);
   assert.match(clinic, /description:\[a\.doctorName,formatDate\(a\.date,a\)\]/);
   assert.match(clinic, /value:a\.reference/); // selection still searches the backend reference
 });

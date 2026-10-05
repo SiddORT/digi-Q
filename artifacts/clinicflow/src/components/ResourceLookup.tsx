@@ -103,6 +103,6 @@ export function ResourceMultiLookup({ resource, value, onChange, params = {}, on
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
 }
 function LookupError({ error, retry }: { error: unknown; retry: () => void }) {
-  return error ? <div role="alert" className="error-box">Unable to load options. Your selection has been retained. <button type="button" onClick={retry}>Retry options</button></div> : null;
+  return error ? <div role="alert" className="error-box">Unable to load options. Your selection has been retained. <button type="button" onClick={retry}>Retry Options</button></div> : null;
 }
 export default ResourceLookup;

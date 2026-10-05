@@ -51,12 +51,12 @@ export function PatientLogin() {
     finally { setBusy(false); }
   }
 
-  return <AuthShell eyebrow="PATIENT ACCESS">
-    <AuthCard title="Patient login" description={step === "email" ? "Enter your email and we’ll send a one-time login code." : `Enter the code sent to ${email}.`}>
+  return <AuthShell eyebrow="Patient Access">
+    <AuthCard title="Patient Login" description={step === "email" ? "Enter your email and we’ll send a one-time login code." : `Enter the code sent to ${email}.`}>
       <div className="patient-entry-options" aria-label="Book without logging in">
         <p>Booking a visit? No account needed.</p>
-        <Link className="button" href="/scan-qr" data-testid="link-patient-scan"><QrCode size={18}/> Scan QR code</Link>
-        <Link className="button secondary" href="/guest-booking" data-testid="link-patient-guest"><CalendarDays size={18}/> Guest booking</Link>
+        <Link className="button" href="/scan-qr" data-testid="link-patient-scan"><QrCode size={18}/> Scan QR Code</Link>
+        <Link className="button secondary" href="/guest-booking" data-testid="link-patient-guest"><CalendarDays size={18}/> Guest Booking</Link>
       </div>
       <div className="patient-login-separator">Or sign in to your patient account</div>
       {step === "email" ? <form onSubmit={sendCode}>
@@ -67,9 +67,9 @@ export function PatientLogin() {
         <label>One-time code<input data-testid="input-patient-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)} /></label>
         {error && <div className="error-box" role="alert" data-testid="status-patient-code-error">{error}</div>}
         <button className="button auth-submit" data-testid="button-verify-patient-code" type="submit" disabled={busy}>{busy ? "Verifying…" : "Verify and continue"}</button>
-        <div className="auth-links"><button type="button" className="text-link" data-testid="button-change-patient-email" onClick={() => { setStep("email"); setCode(""); setChallengeId(""); setError(""); }}>Change email</button><button type="button" className="text-link" data-testid="button-resend-patient-code" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}</button></div>
+        <div className="auth-links"><button type="button" className="text-link" data-testid="button-change-patient-email" onClick={() => { setStep("email"); setCode(""); setChallengeId(""); setError(""); }}>Change Email</button><button type="button" className="text-link" data-testid="button-resend-patient-code" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}</button></div>
       </form>}
-      <div className="auth-links"><Link href="/sign-in" data-testid="link-staff-login">Staff login</Link></div>
+      <div className="auth-links"><Link href="/sign-in" data-testid="link-staff-login">Staff Login</Link></div>
     </AuthCard>
   </AuthShell>;
 }

@@ -27,7 +27,7 @@
 .workspace .list-header .lh-sub :is(.filter-toggle,.filter-clear){min-height:var(--control-sm)}
 .workspace .list-header .lh-page-title{order:0;flex:0 0 auto;min-width:0;max-width:100%;display:flex;flex-direction:column;justify-content:center}
 .workspace .list-header .lh-page-title h1{margin:0;font-size:var(--type-page);line-height:1.2;white-space:nowrap}
-.workspace .list-header .lh-page-title .eyebrow{margin:0 0 4px;font-size:var(--type-caption);letter-spacing:1px;text-transform:uppercase;color:#4f6b94}
+.workspace .list-header .lh-page-title .eyebrow{margin:0 0 4px;font-size:var(--type-caption);letter-spacing:1px;color:#4f6b94}
 .workspace .list-header .lh-top{flex-wrap:nowrap}
 .workspace .list-header .lh-top .lh-search{flex:1 1 220px;min-width:220px}
 .workspace .list-header .lh-top .lh-search>.workspace-search{flex:1 1 220px;min-width:200px}
@@ -58,7 +58,7 @@
 .appt-detail-summary h3{font-family:var(--font-heading);font-size:var(--type-card);margin:0 0 4px;overflow-wrap:anywhere}
 .appt-detail-status{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);font-size:var(--type-label);color:var(--soft)}
 .appt-detail-token{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:84px;padding:8px 12px;border-radius:var(--radius-control);background:var(--dq-surface);border:1px solid #cddcf1}
-.appt-detail-token small{font-size:var(--type-caption);letter-spacing:.08em;text-transform:uppercase}
+.appt-detail-token small{font-size:var(--type-caption);letter-spacing:.08em;}
 .appt-detail-token strong{font-family:var(--font-heading);font-size:var(--type-page);line-height:1.15;color:var(--dq-blue);overflow-wrap:anywhere}
 .appt-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3) var(--space-4);margin:0}
 .appt-detail-grid>div{min-width:0}
@@ -118,7 +118,7 @@
 .app-dialog-body .form-footer .button,.app-dialog-footer .button{min-height:var(--control-md)}
 
 /* ---------- Reports numeric columns ---------- */
-.reports-compact td[data-label="Visits"],.reports-compact td[data-label="Registrations"],.reports-compact td[data-label="Average queue wait"],.reports-compact td[data-label="TAT"]{font-variant-numeric:tabular-nums}
+.reports-compact td[data-label="Visits"],.reports-compact td[data-label="Registrations"],.reports-compact td[data-label="Average Queue Wait"],.reports-compact td[data-label="TAT · Actual Average Consultation"]{font-variant-numeric:tabular-nums}
 @media (min-width:1025px){.reports-compact th:nth-child(n+4),.reports-compact td:nth-child(n+4){text-align:right}}
 
 /* ---------- Settings / editors: consistent field width and action area ---------- */
@@ -166,7 +166,7 @@
 .workspace .form-grid :is(input:not([type=checkbox]):not([type=radio]),select,textarea){width:100%;min-height:var(--field-height)}
 .workspace .panel.padded>label,.workspace .panel.padded>form:not(.form-grid)>label,.workspace .int-field{max-width:560px}
 .workspace .panel.padded>label :is(input,select,textarea){width:100%}
-.workspace .editor-section{grid-column:1/-1;margin:var(--space-2) 0 0;padding:var(--space-2) 0 0;border-top:1px solid hsl(var(--border));font-family:var(--font-body);font-size:var(--type-caption);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#4f6b94}
+.workspace .editor-section{grid-column:1/-1;margin:var(--space-2) 0 0;padding:var(--space-2) 0 0;border-top:1px solid hsl(var(--border));font-family:var(--font-body);font-size:var(--type-caption);font-weight:700;letter-spacing:.06em;color:#4f6b94}
 .workspace .form-grid>.editor-section:first-of-type{border-top:0;padding-top:0;margin-top:0}
 @media (max-width:640px){.workspace .form-grid{grid-template-columns:1fr}}
 
@@ -195,7 +195,8 @@
 .workspace .int-head.section-head .int-chooser{display:flex;flex-wrap:wrap;gap:var(--space-2);align-items:flex-end}
 
 /* Public and auth screens: same control heights and readable widths (outside the workspace shell). */
-.auth-card .button.auth-submit{min-height:44px;width:100%}
+.auth-card .button.auth-submit{min-height:40px;width:100%}
+@media (pointer:coarse){.auth-card .button.auth-submit{min-height:44px}}
 .auth-card :is(input:not([type=checkbox]),select){min-height:var(--field-height,40px)}
 .auth-links{display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--space-2);font-size:var(--type-body)}
 .public-clinic-card{min-width:0;overflow-wrap:anywhere}
@@ -245,3 +246,5 @@
   .workspace .list-header .lh-meta:has(.listing-updated-tip) .searchable-select-control{width:210px;min-height:var(--control-sm)}
   .workspace .list-header .lh-meta>.listing-updated-tip{flex:0 0 auto;margin:0}
 }
+
+.appt-columns-slot{display:contents}

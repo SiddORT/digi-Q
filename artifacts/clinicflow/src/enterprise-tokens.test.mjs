@@ -79,5 +79,5 @@ test("spacing and radius use the approved scales (ticket/QR/scanner geometry exc
 test("landing removes decorative art but keeps the content", () => {
   assert.match(index, /\.landing \.hero-art :is\(\.art-grid, \.care-orbit, \.care-center\) \{ display: none; \}/);
   const app = read("./App.tsx");
-  for (const t of ["From booking to better.", "Your visit, simplified", "Stay in the know", "Thoughtfully designed around you"]) assert.ok(app.includes(t), t);
+  for (const t of ["From Booking to Better", "Your Visit, Simplified", "Stay in the Know", "Thoughtfully Designed Around You"]) assert.ok(app.includes(t), t);
 });
