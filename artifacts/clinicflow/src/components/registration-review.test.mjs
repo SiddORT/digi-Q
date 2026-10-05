@@ -3,6 +3,20 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const source = readFileSync(new URL("./ClinicRegistration.tsx", import.meta.url), "utf8");
+test("registration distinguishes group and location and uses selectable duration", () => {
+  const wizard = readFileSync(new URL("./ClinicRegistrationWizard.tsx", import.meta.url), "utf8");
+  assert.match(wizard, /Clinic location name/);
+  assert.match(wizard, /Use Clinic Group Name for This Location/);
+  assert.match(wizard, /Controller name="consultationMinutes"/);
+  assert.match(wizard, /Expected Consultation Duration/);
+});
+test("copy hours synchronizes targets and announces draft-only feedback", () => {
+  const hours = readFileSync(new URL("./ClinicRegistrationHours.tsx", import.meta.url), "utf8");
+  assert.match(hours, /target !== day.dayOfWeek/);
+  assert.match(hours, /setTargets\(current =>/);
+  assert.match(hours, /role="status" data-testid="registration-copy-result"/);
+  assert.match(hours, /finish registration to save/);
+});
 
 test("registration details advance to review without sending a registration request", () => {
   const details = source.slice(source.indexOf('if(step==="details"){'), source.indexOf('setBusy(true); setError("");'));

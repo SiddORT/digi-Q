@@ -39,7 +39,9 @@ async function mailCode(address: string, purpose: string, userId?: string, data?
   smtpConfig((await resolvedIntegration("smtp")).env);
   const secret = String(code());
   const challengeId = await createChallenge({ userId, email: address, purpose, secret, ttlMs: CODE_AGE, data });
-  await sendAuthEmail(address, "DigiQ Doctors verification", `Your verification code is ${secret}. It expires in 10 minutes.`);
+  await sendAuthEmail(address, purpose === "register" ? "Verify your DigiQ clinic registration" : "DigiQ Doctors verification",
+    purpose === "register" ? `Your clinic administrator registration code is ${secret}. It expires in 10 minutes. Verify your email to continue setting up your clinic. This is not a doctor invitation. If you did not start this registration, ignore this email.`
+      : `Your verification code is ${secret}. It expires in 10 minutes.`);
   return challengeId;
 }
 async function mailLink(req: any, address: string, userId: string, purpose: string, route: string) {
@@ -206,7 +208,7 @@ authRouter.post("/auth/registration/resend", async (req, res) => {
   smtpConfig((await resolvedIntegration("smtp")).env);
   try {
     const challengeId = await resendRegistrationChallenge(id, (address, secret) =>
-      sendAuthEmail(address, "DigiQ Doctors verification", `Your verification code is ${secret}. Use it before your original registration code expires.`));
+      sendAuthEmail(address, "Verify your DigiQ clinic registration", `Your clinic administrator registration code is ${secret}. Use it before your original registration code expires. Verify your email to continue setting up your clinic. This is not a doctor invitation. If you did not start this registration, ignore this email.`));
     res.json({ challengeId });
   } catch (error) {
     if (error instanceof HttpError && error.code === "REGISTRATION_RESEND_COOLDOWN")

@@ -23,9 +23,16 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
   const inherited=useDateTimePreferences();
   preferences=preferences||inherited;
   const [targets, setTargets] = useState<Record<number, number[]>>({});
+  const [copyNotice, setCopyNotice] = useState("");
   const update = (day: RegistrationDay) => onChange(value.map(item => item.dayOfWeek === day.dayOfWeek ? day : item));
-  const copy = (day: RegistrationDay, selected: number[]) => onChange(value.map(item => selected.includes(item.dayOfWeek) ? { ...item, isOpen: day.isOpen, sessions: day.sessions.map(s => ({ ...s })) } : item));
+  const copy = (day: RegistrationDay, selected: number[]) => {
+    const destinations = selected.filter(target => target !== day.dayOfWeek);
+    onChange(value.map(item => destinations.includes(item.dayOfWeek) ? { ...item, isOpen: day.isOpen, sessions: day.sessions.map(s => ({ ...s })) } : item));
+    setTargets(current => ({ ...current, [day.dayOfWeek]: destinations }));
+    setCopyNotice(`Copied ${days[day.dayOfWeek]} ${day.isOpen ? "opening hours" : "closed status"} to ${destinations.map(target => days[target]).join(", ")}. These changes are in your registration draft; finish registration to save.`);
+  };
   return <div className="registration-hours">
+    {copyNotice && <p className="notice" role="status" data-testid="registration-copy-result">{copyNotice}</p>}
     {timezone && <p>Clinic timezone: {timezone}</p>}
     <p className="registration-note">Use the start and end sliders in 15-minute steps, or type exact minutes. Overnight sessions are not supported. Copy replaces the selected days' hours.</p>
     {[...value].sort((a,b) => (a.dayOfWeek + 6) % 7 - (b.dayOfWeek + 6) % 7).map(day => {

@@ -300,7 +300,10 @@ test("account limiter and single-use challenge persist across requests", async (
 test("verified registration and patient email create separate roles without an email provider", async () => {
   const register = await route("/auth/register/start", { email: "clinic@example.test",
     fullName: "Clinic Admin", password: "disposable clinic passphrase 123" });
-  const registerCode = /code is (\d{6})/.exec(globalThis.nativeAuthMail.pop().text)[1];
+  const registrationMail = globalThis.nativeAuthMail.pop();
+  assert.equal(registrationMail.subject, "Verify your DigiQ clinic registration");
+  assert.match(registrationMail.text, /clinic administrator registration/);
+  const registerCode = /code is (\d{6})/.exec(registrationMail.text)[1];
   const confirmed = await route("/auth/register/verify",
     { challengeId: register.res.body.challengeId, code: registerCode });
   assert.equal(confirmed.res.body.authenticated, true);
