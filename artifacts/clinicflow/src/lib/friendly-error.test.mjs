@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+test("read timeout has actionable feedback", () => {
+  assert.equal(friendlyError(Object.assign(new Error("timed out"),{name:"TimeoutError"}),"load"),"Loading took too long. Check your connection and retry.");
+});
 test("rate limit preserves safe actionable retry duration", () => {
   assert.equal(friendlyError({status:429,data:{error:"Too many attempts. Try again in 58 seconds."}}), "Too many attempts. Try again in 58 seconds.");
   assert.equal(friendlyError({status:429,data:{error:"provider internal details"}}), FRIENDLY.rateLimited);

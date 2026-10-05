@@ -24,17 +24,18 @@ function useOptions(resource: string, selected: string[], params: Record<string,
   const kind = resource.split(":")[1];
   const query = useInfiniteQuery({
     queryKey: ["remote-options", resource, params, debounced],
+    retry: false,
     initialPageParam: 1,
     enabled,
     queryFn: async ({ pageParam }) => {
       const request = { ...params, search: debounced || undefined, page: pageParam, pageSize: 20 };
       const load=async (scope:Record<string,unknown>)=>{
         if (assignment) {
-          const result: any = await api.getStaffAssignmentOptions(scope as any);
+          const result: any = await api.getStaffAssignmentOptions(scope as any,{signal:AbortSignal.timeout(20000)});
           const metadata = result.pagination?.[kind];
           return { items: result[kind] || [], total: metadata?.total ?? result[kind]?.length ?? 0, page: pageParam };
         }
-        return lists[resource](scope);
+        return lists[resource](scope,{signal:AbortSignal.timeout(20000)});
       };
       // Branch catalogs accept one clinic per request. Each clinic request stays bounded and searchable.
       const clinicIds=String(params.clinicId||"").split(",").filter(Boolean);
@@ -52,6 +53,7 @@ function useOptions(resource: string, selected: string[], params: Record<string,
    const missing = selected.filter(id => !rows.some(row => row.id === id));
   const selectedQuery = useQuery({
      queryKey: ["remote-selected", resource, missing.join(","), params],
+     retry: false,
      enabled: enabled && missing.length > 0 && (!query.isPending || query.isError),
     queryFn: async () => {
       if (assignment) {
@@ -60,12 +62,12 @@ function useOptions(resource: string, selected: string[], params: Record<string,
          const clinicIds = kind === "branches" ? String(params.clinicId || "").split(",").filter(Boolean) : [];
          const scopes = clinicIds.length ? clinicIds.map(clinicId => ({ ...params, clinicId })) : [params];
          const results: any[] = await Promise.all(scopes.flatMap(scope => selectedIdBatches(missing).map(ids =>
-           api.getStaffAssignmentOptions({ ...scope, search: undefined, selectedIds: ids.join(","), pageSize: 100 } as any))));
+           api.getStaffAssignmentOptions({ ...scope, search: undefined, selectedIds: ids.join(","), pageSize: 100 } as any,{signal:AbortSignal.timeout(20000)}))));
          if (results.some(result => result.pagination?.[kind]?.total > (result[kind] || []).length))
            throw new Error("Selected options were only partially loaded. Please retry.");
          return [...new Map(results.flatMap(result => result[kind] || []).map(row => [row.id, row])).values()];
       }
-       return Promise.all(missing.map(id => getters[resource](id)));
+       return Promise.all(missing.map(id => getters[resource](id,{signal:AbortSignal.timeout(20000)})));
     },
      staleTime: 120000,
   });

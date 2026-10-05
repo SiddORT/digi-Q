@@ -62,6 +62,8 @@ const contextFallback = (c: ErrorContext) =>
 
 /** Map any thrown value to friendly user-facing text. */
 export function friendlyError(error: unknown, context: ErrorContext = "generic", fallback?: string): string {
+  if (error instanceof Error && error.name === "TimeoutError")
+    return "Loading took too long. Check your connection and retry.";
   const status = errorStatus(error);
   if (context === "auth" && error && typeof error === "object") {
     const code = field((error as {data?: unknown}).data, "code");

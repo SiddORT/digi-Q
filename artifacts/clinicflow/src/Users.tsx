@@ -80,9 +80,13 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     recovery.reset();
   }, [tab]);
    const params = { ...context, search: term || undefined, status: context.status || undefined, clinicId: clinicId || context.clinicId || undefined, branchId: context.branchId || undefined, specializationId:context.specializationId||undefined, managingAdminId: isSuperAdmin ? context.managingAdminId || undefined : undefined };
-   const fetchStaff = (staffTab:StaffTab, options: typeof params) => staffTab==="doctors" ? api.listDoctors(options) : api.listUsers({...options,role:staffTab==="admins"?"clinicAdmin":"receptionist"});
+   const fetchStaff = (staffTab:StaffTab, options: typeof params) => {
+     const request={signal:AbortSignal.timeout(20000)};
+     return staffTab==="doctors" ? api.listDoctors(options,request) : api.listUsers({...options,role:staffTab==="admins"?"clinicAdmin":"receptionist"},request);
+   };
   const query = useQuery<any>({
     queryKey: ["users-tab", identity.user?.id, role, tab, params],
+    retry: false,
     refetchInterval: 30000,
     refetchOnWindowFocus: true,
     placeholderData: (previous:any) => previous,
@@ -132,7 +136,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     onMutate:()=>setInvitationFeedback(null),
     onSuccess:(result,variables)=>{
       const sent=result.invitationStatus==="sent";
-      const message=sent?"Set-password invitation sent.":"Invitation was not sent. Reload the account and retry if setup is still required.";
+      const message=sent?"Set-password invitation accepted by the email service. Inbox delivery is not confirmed; check spam as well.":"Invitation was not sent. Reload the account and retry if setup is still required.";
       setInvitationFeedback({rowId:variables.row.id,message});
       if(sent)notifySuccess(message);else notifyWarning(message);
     },
@@ -179,6 +183,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
       <SearchInput value={context.search} onChange={search => change({ search })} placeholder={tab==="doctors"?"Search doctors by name, email or specialization…":tab==="receptionists"?"Search receptionists by name, email or mobile…":"Search Clinic Admins by name, email or mobile…"} suggestions={query.error||query.isPlaceholderData?[]:listingSuggestions(query.data?.items,(row:any)=>({id:row.id,label:row.fullName,description:row.email,value:row.fullName}))} loading={query.isFetching} error={query.error?friendlyError(query.error,"load"):null} onRetry={()=>void query.refetch()} total={query.data?.total} settledQuery={term} scopeKey={JSON.stringify([tab,{...params,search:undefined,page:undefined}])} />
     </FilterBar>
     {success && <p role="status" className="notice">{success}</p>}
+    <p className="listing-hint">Account status and invitation status are separate. Inactive staff cannot sign in. Activating an account does not send an invitation or reset its password; use the account's invitation or recovery action when needed. Existing history is retained.</p>
      {statusError&&<div role="alert" className="error-box">{statusError} <button type="button" onClick={()=>setStatusError("")}>Dismiss</button></div>}
     <ErrorNotice error={settings.error} />
     <ListingBulk selection={selection} resource={tab==="doctors"?"doctors":"users"} columns={["fullName","email","mobile","role","clinicNames","branchNames","status"]} identity={identity} context={selectionContext}/>
