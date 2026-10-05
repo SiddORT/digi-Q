@@ -5,6 +5,12 @@ description: User-confirmed specification source, display-format ownership, and 
 
 Treat the DigiQ standardization prompt itself as the user's approved design specification. List conflicts for the user to decide rather than silently resolving them against older specifications.
 
+Use icon-only secondary row actions with hover/focus tooltips, but retain labelled clinical primary actions. Booking QR access belongs in Booking Details, not a separate appointment-row action. Hidden-action menus must remain fully visible and usable.
+
+**Why:** The user explicitly approved this compact-action direction to recover space without obscuring important actions.
+
+**How to apply:** Apply consistently to relevant listings; preserve permissions, ticket information and immediate post-booking confirmation. Keep expansion separate from operational actions.
+
 **Why:** The user explicitly clarified that the approved design specs are in the prompt and requested each conflict before deciding.
 
 **How to apply:** Use explicit values from the prompt. Distinguish missing referenced values from contradictions; do not invent missing tokens.

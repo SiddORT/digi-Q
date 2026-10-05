@@ -1,4 +1,5 @@
 import { RowMenu } from "./components/RowMenu";
+import { IconAction } from "./components/IconAction";
 import { EmailInput } from "@/components/EmailInput";
 import { AssignmentSummary } from "./components/AssignmentSummary";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -190,13 +191,13 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
       {query.isLoading ? <div className="skeleton" role="status">Loading {tabs.find(item=>item.id===tab)?.label.toLowerCase()}…</div> : query.error ? <><div className="error-box" role="alert">{friendlyError(query.error,"load")}</div><button onClick={() => query.refetch()}>Retry {tabs.find(item=>item.id===tab)?.label.toLowerCase()}</button></> : query.data?.items.length ? <div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>
          <thead><tr><th scope="col" className="col-select">{selection.header}</th>{cols.visible.map(k=>k==="member"?<th key={k} className={cols.cls(k)} aria-sort={context.sort==="fullName"?"ascending":context.sort==="-fullName"?"descending":undefined}>{sortable("fullName","Staff member")}</th>:<th key={k} className={cols.cls(k,k==="status"?"col-status":undefined)}>{cols.label(k)}</th>)}<th className="col-actions sticky">Actions</th></tr></thead>
         <tbody>{query.data.items.map((row: any) => <Fragment key={row.id}><tr>
-          <td data-label="Select" className="col-select">{selection.checkbox(row)}</td>
+          <td data-label="Select" className="col-select"><span className="row-lead">{selection.checkbox(row)}{cols.toggle(row.id,row.fullName)}</span></td>
           {cols.visible.map(k=><td key={k} data-label={cols.label(k)} className={cols.cls(k,k==="member"?"admin-record":k==="status"?"col-status":undefined)}>{userCell(k,row)}</td>)}
 
 
 
-          <td data-label="Actions" className="col-actions sticky"><div className="row-actions">{cols.toggle(row.id,row.fullName)}
-            <HelpTip text="Edit staff details and assignments"><button type="button" aria-label={`Edit ${row.fullName}`} onClick={() => beginEdit(row)} data-testid={`button-edit-staff-${row.id}`}><Pencil size={15} /></button></HelpTip>
+          <td data-label="Actions" className="col-actions sticky"><div className="row-actions">
+            <IconAction label={`Edit ${row.fullName}`} hint="Edit staff details and assignments" icon={<Pencil size={15} aria-hidden />} onClick={() => beginEdit(row)} testId={`button-edit-staff-${row.id}`} />
             {row.invitationStatus !== "notRequired" && <RowMenu label={`More actions for ${row.fullName}`} testId={`menu-staff-${row.id}`} items={[{key:"resend",label:"Resend Invitation",hint:staffInvitationRestriction(row,tab)||"Replace the pending invitation and send a new set-password link. This does not deactivate the account or revoke sessions.",disabled:invitationBusy||!!staffInvitationRestriction(row,tab),testId:`action-resend-invitation-${row.id}`,onSelect:()=>{void (async()=>{ if (!invitationBusy && await confirmAction.ask({title:"Resend Invitation?",description:"The pending invitation will be replaced and a new set-password email requested. This does not deactivate the account or revoke sessions.",confirmLabel:"Resend Invitation"})) resendInvitation.mutate({row,staffTab:tab}); })();}}]}/>}
           </div>{invitationFeedback&&invitationFeedback.rowId===row.id&&<small role="status">{invitationFeedback.message}</small>}</td>
         </tr>{cols.expansion(row.id,cols.visible.length+2,k=>userCell(k,row))}</Fragment>)}</tbody>

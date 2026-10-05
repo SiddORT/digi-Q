@@ -65,18 +65,19 @@ const go=async path=>{await page.goto(origin+path,{waitUntil:"domcontentloaded",
 const shot=async name=>{const file=`${out}/${name}.png`;await page.screenshot({path:file});result.screenshots.push(file);await save();return file;};
 const save=async()=>writeFile(`${out}/results.json`,JSON.stringify(result,null,2));
 async function check(name,fn){const c={name,status:"pass"};try{c.details=await fn();}catch(e){c.status="fail";c.error=String(e.message).slice(0,2000);}result.checks.push(c);await save();console.log(`${c.status.toUpperCase()} ${name}${c.error?`: ${c.error}`:""}`);return c;}
+const openTicket=async(id="fx-appt-1")=>{await page.getByTestId(`details-${id}`).click();const d=page.getByRole("dialog",{name:"Appointment Details"});await expect(d).toBeVisible();const sec=d.getByTestId("section-detail-ticket");await sec.scrollIntoViewIfNeeded();await expect(sec.getByTestId("appointment-ticket")).toBeVisible({timeout:6000});return sec;};
 const metrics=()=>page.evaluate(()=>({overflow:document.documentElement.scrollWidth-innerWidth,viewport:innerWidth,main:document.querySelector("main")?.innerText.slice(0,260),title:document.querySelector("main h1")?.innerText}));
 try {
  if(targeted){
   const checkAppointmentLayout=async(width,name,columnsLayout=null)=>{
    await setup(width,900,columnsLayout);await go("/admin/appointments");await expect(page.getByTestId("appointment-fx-appt-1")).toBeVisible();
-   const info=await page.evaluate(()=>{const h=document.querySelector(".appt-table th.col-date"),b=h?.querySelector("button"),rows=[...document.querySelectorAll(".appt-table tbody tr[data-testid^='appointment-']")].slice(0,3),rect=e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}},actions=rows.map(row=>{const group=row.querySelector(".row-actions"),buttons=[...(group?.querySelectorAll(".row-primary,.row-details,.row-ticket,.row-menu-trigger,.row-expand-toggle")||[])].map(el=>{const r=rect(el),range=document.createRange();range.selectNodeContents(el);const text=range.getBoundingClientRect();return{label:(el.innerText||"").trim()||el.getAttribute("aria-label")||"",aria:el.getAttribute("aria-label"),rect:r,textRect:rect({getBoundingClientRect:()=>text}),inside:!text.width||(text.left>=r.x-1&&text.right<=r.right+1)}});const expansion=row.querySelector(".row-expand-toggle");return{height:rect(row).height,buttons,expansionInActions:!!expansion&&expansion.parentElement===group};});
+   const info=await page.evaluate(()=>{const h=document.querySelector(".appt-table th.col-date"),b=h?.querySelector("button"),rows=[...document.querySelectorAll(".appt-table tbody tr[data-testid^='appointment-']")].slice(0,3),rect=e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}},actions=rows.map(row=>{const group=row.querySelector(".row-actions"),buttons=[...(group?.querySelectorAll(".row-primary,.row-details,.row-ticket,.row-menu-trigger,.row-expand-toggle")||[])].map(el=>{const r=rect(el),range=document.createRange();range.selectNodeContents(el);const text=range.getBoundingClientRect();return{label:(el.innerText||"").trim()||el.getAttribute("aria-label")||"",aria:el.getAttribute("aria-label"),rect:r,textRect:rect({getBoundingClientRect:()=>text}),inside:!text.width||(text.left>=r.x-1&&text.right<=r.right+1)}});const expansion=row.querySelector(".row-expand-toggle");return{height:rect(row).height,buttons,expansionAtRowStart:!expansion||(!group.contains(expansion)&&!!expansion.closest("td")&&[...row.querySelectorAll("td")].slice(0,2).includes(expansion.closest("td"))),ticketInRow:!!row.querySelector("[data-testid^='ticket-']")};});
     return{dateHeader:{text:h?.innerText,rect:rect(h),buttonRect:b&&rect(b),whiteSpace:h&&getComputedStyle(h).whiteSpace},headers:[...document.querySelectorAll(".appt-table thead th")].map(e=>e.innerText.trim()),rowHeights:rows.map(row=>rect(row).height),actions,documentOverflow:document.documentElement.scrollWidth-innerWidth,tableScroll:{client:document.querySelector(".appt-table")?.clientWidth,scroll:document.querySelector(".appt-table")?.scrollWidth}};
    });
     await shot(`appointments-${name}`);console.log("TARGET_APPOINTMENT_METRICS",name,JSON.stringify(info));
    expect(info.documentOverflow).toBeLessThanOrEqual(1);expect(info.dateHeader.rect.height).toBeLessThanOrEqual(64);expect(info.dateHeader.buttonRect.height).toBeLessThanOrEqual(40);
    expect(info.rowHeights.every(h=>h>30&&h<=104)).toBe(true);
-   for(const row of info.actions){expect(row.expansionInActions).toBe(true);expect(row.buttons.map(b=>b.label).join(" ")).toMatch(/Check (In|Out)/);expect(row.buttons.map(b=>b.label).join(" ")).toMatch(/Details/);expect(row.buttons.map(b=>b.label).join(" ")).toMatch(/Ticket/);expect(row.buttons.map(b=>b.label).join(" ")).toMatch(/More/);expect(row.buttons.every(b=>b.inside)).toBe(true);}
+   for(const row of info.actions){expect(row.expansionAtRowStart).toBe(true);expect(row.ticketInRow).toBe(false);expect(row.buttons.map(b=>b.label).join(" ")).toMatch(/Check (In|Out)/);expect(row.buttons.map(b=>b.label).join(" ")).toMatch(/Details/);expect(row.buttons.map(b=>b.label).join(" ")).toMatch(/More/);expect(row.buttons.every(b=>b.inside)).toBe(true);}
    const visibleHeaders=info.headers.filter(Boolean).map(x=>x.startsWith("Actions")?"Actions":x);if(columnsLayout)expect(visibleHeaders).toEqual(["#","Visit Date","Patient","Waiting No.","Actions"]);else expect(visibleHeaders.slice(0,9)).toEqual(["#","Visit Date","Patient","Waiting No.","Clinic / Location","Doctor","Booked At","Status","Actions"]);
    result.checks.push({name:`${width}px appointments ${columnsLayout?"narrow saved columns":"default columns"}: compact date header, sensible rows, complete one-line actions and in-row expansion`,status:"pass",details:info});await save();console.log(`PASS ${width}px appointments ${name}`);
   };
@@ -96,11 +97,11 @@ try {
   await check("390px appointment breakpoint: no page overflow and primary/details/ticket/More actions remain usable",async()=>{
    const mobileInfo=await mob.evaluate(row=>{const group=row.querySelector(".row-actions"),rect=e=>{const r=e.getBoundingClientRect();return{x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom}},buttons=[...group.querySelectorAll(".row-primary,.row-details,.row-ticket,.row-menu-trigger,.row-expand-toggle")].map(el=>({label:(el.innerText||"").trim()||el.getAttribute("aria-label"),...rect(el)}));return{overflow:document.documentElement.scrollWidth-innerWidth,scrollHeight:document.scrollingElement?.scrollHeight,actionsWidth:rect(group).width,buttons};});
    if(mobileInfo.overflow>1)throw Error(`document overflow ${mobileInfo.overflow}px`);
-   await expect(page.getByTestId("action-checkIn-fx-appt-1")).toBeVisible();await expect(page.getByTestId("details-fx-appt-1")).toBeVisible();await expect(page.getByTestId("ticket-fx-appt-1")).toBeVisible();
+   await expect(page.getByTestId("action-checkIn-fx-appt-1")).toBeVisible();await expect(page.getByTestId("details-fx-appt-1")).toBeVisible();await expect(page.getByTestId("ticket-fx-appt-1")).toHaveCount(0);
    const offscreen=mobileInfo.buttons.filter(b=>b.x<0||b.right>390||b.y<0||b.bottom>844);if(offscreen.length)throw Error(`mobile action controls are offscreen/clipped: ${JSON.stringify({actionsWidth:mobileInfo.actionsWidth,buttons:offscreen,overflow:mobileInfo.overflow})}`);
    await page.getByTestId("menu-fx-appt-1").click();await expect(page.getByRole("menu").getByRole("menuitem",{name:"Cancel"})).toBeVisible();await page.keyboard.press("Escape");return mobileInfo;
   });await closeContext();
-  await setup(1280,900);await go("/admin/appointments");await page.getByTestId("ticket-fx-appt-1").click();await expect(page.getByTestId("text-ticket-confirmation")).toBeVisible();
+  await setup(1280,900);await go("/admin/appointments");await openTicket();await expect(page.getByTestId("text-ticket-confirmation")).toBeVisible();
   const inspectTicket=async(name,width,height)=>{const confirmation=page.getByTestId("text-ticket-confirmation");const ticketLayout=await confirmation.evaluate(el=>{const strong=el.querySelector("strong"),link=el.querySelector("[data-testid='link-ticket-open-status']"),warning=el.querySelector(".appt-ticket-delivery"),r=e=>{const b=e.getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height,right:b.right,bottom:b.bottom}};return{direction:getComputedStyle(el).flexDirection,headingWeight:getComputedStyle(strong).fontWeight,confirmation:r(el),heading:r(strong),link:r(link),linkText:link?.innerText,warning:r(warning),warningFlexBasis:warning&&getComputedStyle(warning).flexBasis,overflow:document.documentElement.scrollWidth-innerWidth};});
    await shot(`ticket-confirmation-${name}`);expect(ticketLayout.direction).toBe("row");expect(Number(ticketLayout.headingWeight)).toBeGreaterThanOrEqual(700);expect(ticketLayout.heading.x).toBeLessThan(ticketLayout.link.x);expect(ticketLayout.link.right).toBeLessThanOrEqual(ticketLayout.confirmation.right+1);expect(ticketLayout.warningFlexBasis).toBe("100%");expect(ticketLayout.warning.y).toBeGreaterThanOrEqual(Math.max(ticketLayout.heading.bottom,ticketLayout.link.bottom)-1);expect(ticketLayout.overflow).toBeLessThanOrEqual(1);result.checks.push({name:`${width}px ticket confirmation hierarchy: bold heading left, named status link right, full-width delivery warning below`,status:"pass",details:ticketLayout});await save();};
   await inspectTicket("1280",1280,900);await page.setViewportSize({width:390,height:844});await page.waitForTimeout(300);
@@ -138,17 +139,87 @@ try {
   const trigger=page.getByTestId("menu-fx-appt-1");await trigger.click();const menu=page.getByRole("menu");await expect(menu).toBeVisible();await expect(menu.getByRole("menuitem",{name:"Cancel"})).toBeVisible();await expect(menu.getByRole("menuitem",{name:"Reschedule"})).toBeVisible();
   const placement=await menu.evaluate(el=>{const r=el.getBoundingClientRect();return{parent:el.parentElement?.tagName,top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:innerWidth,height:innerHeight,scrollParent:el.closest(".table-scroll")!==null};});
   expect(placement.parent).toBe("BODY");expect(placement.bottom).toBeLessThanOrEqual(placement.height+1);expect(placement.right).toBeLessThanOrEqual(placement.width+1);await shot("06-more-menu-1280");await page.keyboard.press("Escape");await expect(menu).toHaveCount(0);await expect(trigger).toBeFocused();
-  await expect(page.getByTestId("action-checkIn-fx-appt-1")).toBeVisible();await expect(page.getByTestId("details-fx-appt-1")).toBeVisible();await expect(page.getByTestId("ticket-fx-appt-1")).toBeVisible();
+  await expect(page.getByTestId("action-checkIn-fx-appt-1")).toBeVisible();await expect(page.getByTestId("details-fx-appt-1")).toBeVisible();await expect(page.getByTestId("ticket-fx-appt-1")).toHaveCount(0);
   await page.getByTestId("menu-fx-appt-2").click();const secondMenu=page.getByRole("menu");await expect(secondMenu.getByRole("menuitem",{name:"Skip Absent"})).toBeVisible();await expect(secondMenu.getByRole("menuitem",{name:"Cancel"})).toBeVisible();await page.keyboard.press("Escape");
   await expect(page.getByTestId("action-complete-fx-appt-3")).toContainText("Check Out");await page.getByTestId("menu-fx-appt-3").click();await expect(page.getByRole("menu").getByRole("menuitem",{name:"Call"})).toBeVisible();await page.keyboard.press("Escape");
   return {placement,escapeFocus:"trigger",row1:"Check In, Details, Ticket, Reschedule/Cancel",row2:"Check In, Details, Ticket, Cancel/Skip Absent",row3:"Check Out, Details, Ticket, Call",noTransitionsTriggered:true};
  });
  await check("Details drawer and ticket hierarchy/status/guidance without transitions",async()=>{
   await page.getByTestId("details-fx-appt-1").click();const detail=page.getByRole("dialog",{name:"Appointment Details"});await expect(detail).toBeVisible();await expect(detail).toContainText("M-01");await expect(detail).toContainText("FX-APPT-1001");await shot("07-appointment-details");await page.keyboard.press("Escape");
-  await page.getByTestId("ticket-fx-appt-1").click();const ticket=page.getByTestId("appointment-ticket");await expect(ticket).toBeVisible();await expect(page.getByTestId("text-ticket-confirmation")).toContainText("Booking Confirmed");await expect(page.getByTestId("text-ticket-delivery")).toBeVisible();
+  await openTicket();const ticket=page.getByTestId("appointment-ticket");await expect(ticket).toBeVisible();await expect(page.getByTestId("text-ticket-confirmation")).toContainText("Booking Confirmed");await expect(page.getByTestId("text-ticket-delivery")).toBeVisible();
   await expect(page.getByTestId("ticket-status")).toBeVisible();await expect(page.getByRole("group",{name:"Ticket Actions"})).toBeVisible();await expect(page.getByTestId("text-ticket-booking-status")).toContainText("Patient Booking Status Page");await expect(page.getByTestId("text-ticket-qr-warning")).toBeVisible();await expect(page.getByTestId("text-ticket-refresh-notice")).toBeVisible();
   const styles=await page.getByTestId("text-ticket-confirmation").evaluate(el=>({headingWeight:getComputedStyle(el.querySelector("strong")).fontWeight,warningSeparate:!!el.querySelector("[data-testid='text-ticket-delivery']"),warningText:el.querySelector("[data-testid='text-ticket-delivery']")?.textContent}));
   await shot("08-appointment-ticket-1280");return {...styles,status:"fixture waiting",actions:"visible; not activated",namedStatusLink:await page.getByTestId("link-ticket-patient-live").innerText()};
+ });
+
+ await check("Compact actions: reduced Actions width, icon tooltips by keyboard, chevron at row start, no row ticket",async()=>{
+  await go("/admin/appointments");await expect(page.getByTestId("appointment-fx-appt-1")).toBeVisible();
+  const width=await page.locator(".appt-table th.col-actions").evaluate(el=>({th:el.getBoundingClientRect().width,group:document.querySelector("[data-testid='appointment-fx-appt-1'] .row-actions").getBoundingClientRect().width,table:document.querySelector(".appt-table table").getBoundingClientRect().width,scroll:document.querySelector(".appt-table").clientWidth}));if(width.group>200)throw Error(`Actions group too wide: ${JSON.stringify(width)}`);
+  await expect(page.locator("[data-testid^='ticket-fx-appt']")).toHaveCount(0);
+  const details=page.getByTestId("details-fx-appt-1");await details.focus();const tip=page.locator(".helptip-bubble").filter({hasText:"Details, ticket and QR"});await expect(tip).toBeVisible();
+  const tb=await tip.boundingBox();if(tb.x<0||tb.y<0||tb.x+tb.width>1280)throw Error(`tooltip outside viewport ${JSON.stringify(tb)}`);await shot("20-tooltip-keyboard-details");
+  await page.keyboard.press("Escape");await expect(tip).toHaveCount(0);await expect(details).toBeFocused();
+  const name=await details.getAttribute("aria-label");expect(name).toContain("Details for");
+  const clinical=await page.getByTestId("action-checkIn-fx-appt-1").innerText();expect(clinical).toContain("Check In");
+  return {actionsWidth:width,tooltip:tb,accessibleName:name,clinicalText:clinical};
+ });
+ await check("Menu: every trigger has items; edge-row flip, internal scroll, scroll tracking, viewport bounds",async()=>{
+  const triggers=page.locator(".appt-table .row-menu-trigger");const n=await triggers.count();const counts=[];
+  for(let i=0;i<n;i++){await triggers.nth(i).click();await page.getByRole("menu").getByRole("menuitem").first().waitFor();const items=await page.getByRole("menu").getByRole("menuitem").count();counts.push(items);if(!items)throw Error(`empty menu at trigger ${i}`);await page.keyboard.press("Escape");}
+  await page.setViewportSize({width:1280,height:520});await page.waitForTimeout(250);
+  const last=page.locator(".appt-table .row-menu-trigger").last();await last.scrollIntoViewIfNeeded();await page.evaluate(()=>{const t=[...document.querySelectorAll(".appt-table .row-menu-trigger")].at(-1);const r=t.getBoundingClientRect();scrollBy(0,r.bottom-innerHeight+12);});await page.waitForTimeout(150);
+  await last.click();const menu=page.getByRole("menu");await expect(menu).toBeVisible();await page.waitForTimeout(100);
+  const edge=await menu.evaluate(el=>{const r=el.getBoundingClientRect(),t=document.querySelector('[aria-expanded="true"].row-menu-trigger').getBoundingClientRect();return{placement:el.dataset.placement,menu:r.toJSON(),trigger:t.toJSON(),vh:innerHeight,vw:innerWidth}});
+  if(edge.menu.bottom>edge.vh+1||edge.menu.top<0||edge.menu.right>edge.vw+1)throw Error(`edge menu outside viewport ${JSON.stringify(edge)}`);
+  if(edge.trigger.bottom+edge.menu.height>edge.vh&&edge.placement!=="above")throw Error(`edge menu did not flip ${JSON.stringify(edge)}`);await shot("21-menu-edge-row-flip");
+  await page.mouse.wheel(0,-30);await page.waitForTimeout(200);
+  const tracked=await page.evaluate(()=>{const m=document.querySelector(".row-menu-portal"),t=document.querySelector('[aria-expanded="true"].row-menu-trigger');if(!m)return{closed:true};const a=m.getBoundingClientRect(),b=t.getBoundingClientRect();return{gap:Math.min(Math.abs(a.bottom-b.top),Math.abs(a.top-b.bottom))}});
+  if(!tracked.closed&&tracked.gap>12)throw Error(`menu did not track scrolling ${JSON.stringify(tracked)}`);
+  await page.keyboard.press("Escape");await expect(menu).toHaveCount(0);
+  await page.setViewportSize({width:1280,height:220});await page.waitForTimeout(250);await page.evaluate(()=>scrollTo(0,0));
+  const first=page.getByTestId("menu-fx-appt-1");await first.scrollIntoViewIfNeeded();await first.click();
+  const small=await page.getByRole("menu").evaluate(el=>{const r=el.getBoundingClientRect();return{rect:r.toJSON(),overflowY:getComputedStyle(el).overflowY,scrollH:el.scrollHeight,clientH:el.clientHeight,vh:innerHeight}});
+  if(small.rect.top<0||small.rect.bottom>small.vh+1)throw Error(`short viewport menu escapes ${JSON.stringify(small)}`);expect(small.overflowY).toBe("auto");await shot("22-menu-short-viewport");await page.keyboard.press("Escape");
+  await page.setViewportSize({width:1280,height:900});await page.waitForTimeout(250);
+  return {itemCounts:counts,edge,tracked,small};
+ });
+ await check("Menu inside table horizontal scroll at 1024 tracks trigger; Escape restores focus; menu item opens dialog with focus inside",async()=>{
+  await page.setViewportSize({width:1024,height:768});await go("/admin/appointments");await expect(page.getByTestId("appointment-fx-appt-1")).toBeVisible();
+  const trigger=page.getByTestId("menu-fx-appt-2");await trigger.scrollIntoViewIfNeeded();await trigger.click();const menu=page.getByRole("menu");await expect(menu).toBeVisible();
+  const before=await menu.boundingBox();await page.locator(".appt-table").evaluate(el=>{el.scrollLeft=Math.max(0,el.scrollLeft-40);});await page.waitForTimeout(150);
+  const after=await page.evaluate(()=>{const m=document.querySelector(".row-menu-portal");return m?m.getBoundingClientRect().toJSON():null});
+  if(before.x<0||before.x+before.width>1024)throw Error(`menu outside 1024 viewport ${JSON.stringify(before)}`);
+  await page.keyboard.press("Escape");await expect(page.getByRole("menu")).toHaveCount(0);await expect(trigger).toBeFocused();
+  await trigger.click();await page.getByRole("menu").getByRole("menuitem",{name:"Cancel"}).click();const dlg=page.getByRole("dialog",{name:"Cancel"});await expect(dlg).toBeVisible();
+  const focusInside=await page.evaluate(()=>!!document.activeElement?.closest('[role="dialog"]'));if(!focusInside)throw Error("focus did not move into dialog");await shot("23-menu-to-dialog-focus");
+  await dlg.getByRole("button",{name:"Back"}).click();await expect(dlg).toHaveCount(0);const writes=result.interceptedWrites.length;
+  await page.setViewportSize({width:1280,height:900});return{before,after,focusInside,writesSoFar:writes};
+ });
+ await check("Details drawer holds Ticket & QR with download/print/status/guidance; icon tooltips; containment at 1280/1024/390",async()=>{
+  const out=[];
+  for(const [w,h] of [[1280,900],[1024,768],[390,844]]){
+   await page.setViewportSize({width:w,height:h});await go("/admin/appointments");await expect(page.getByTestId("appointment-fx-appt-1")).toBeVisible();
+   const sec=await openTicket();const d=page.getByRole("dialog",{name:"Appointment Details"});
+   for(const id of ["section-detail-patient","section-detail-visit","section-detail-provider","section-detail-booking"])await expect(d.getByTestId(id)).toBeVisible();
+   await expect(sec.locator(".vt-qr img")).toBeVisible({timeout:6000});await expect(sec.getByTestId("button-download-ticket")).toBeVisible();await expect(sec.getByTestId("button-print-ticket")).toBeVisible();
+   await expect(sec.getByTestId("ticket-status")).toBeVisible();await expect(sec.getByTestId("text-ticket-qr-warning")).toBeVisible();await expect(sec.getByTestId("text-ticket-refresh-notice")).toBeVisible();await expect(sec.getByTestId("link-ticket-patient-live")).toBeVisible();
+   const dl=sec.getByTestId("button-download-ticket");expect(await dl.getAttribute("aria-label")).toMatch(/Download Ticket|Checking/);
+   if(w!==390){const dis=await dl.isDisabled();if(dis)await sec.getByTestId("helptip-disabled-wrapper").first().focus();else await dl.focus();await expect(page.locator(".helptip-bubble").filter({hasText:/Download Ticket|Checking/})).toBeVisible();await page.keyboard.press("Escape");}
+   const geo=await d.evaluate(el=>{const r=el.getBoundingClientRect(),kids=[...el.querySelectorAll(".appt-detail-block,.vt,.vt-qr img")].map(k=>k.getBoundingClientRect()).filter(k=>k.right>r.right+1||k.left<r.left-1);return{rect:r.toJSON(),overflowKids:kids.length,doc:document.documentElement.scrollWidth-innerWidth,vw:innerWidth}});
+   if(geo.rect.left<-1||geo.rect.right>w+1||geo.overflowKids||geo.doc>1)throw Error(`details not contained at ${w}: ${JSON.stringify(geo)}`);
+   await shot(`24-details-ticket-qr-${w}`);await page.keyboard.press("Escape");await expect(d).toHaveCount(0);await expect(page.getByTestId("details-fx-appt-1")).toBeFocused();out.push({w,geo});
+  }
+  await page.setViewportSize({width:1280,height:900});return out;
+ });
+ await check("Patients/staff/custom roles: icon Edit/Details with tooltips, chevron at start, menus non-empty",async()=>{
+  const ev=[];
+  for(const path of ["/admin/patients","/admin/system-users","/admin/clinics"]){
+   await go(path);await page.waitForTimeout(300);const icons=await page.locator("tbody .row-actions .icon-action").count();
+   const menus=page.locator("tbody .row-menu-trigger");const mc=await menus.count();for(let i=0;i<mc;i++){await menus.nth(i).click();await page.getByRole("menu").getByRole("menuitem").first().waitFor().catch(()=>{});const k=await page.getByRole("menu").getByRole("menuitem").count();if(!k)throw Error(`${path} empty menu`);await page.keyboard.press("Escape");}
+   const strayChevron=await page.locator("tbody .row-actions .row-expand-toggle").count();if(strayChevron)throw Error(`${path} chevron still in actions`);
+   ev.push({path,icons,menus:mc});
+  }
+  return ev;
  });
  await check("Resources, staff/custom roles, reports and schedule route family render",async()=>{
   const evidence=[];
@@ -167,13 +238,13 @@ try {
    const m=await metrics(),scroll=await page.locator(".table-scroll").evaluate(el=>({clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,overflowX:getComputedStyle(el).overflowX}));
    const dateHeader=await page.locator(".appt-table th.col-date").evaluate(el=>({text:el.innerText, height:el.getBoundingClientRect().height, width:el.getBoundingClientRect().width, whiteSpace:getComputedStyle(el).whiteSpace, buttonHeight:el.querySelector("button")?.getBoundingClientRect().height}));
    if(m.overflow>1)throw Error(`document horizontal overflow ${m.overflow}px`);
-   const row=page.getByTestId("appointment-fx-appt-1"),actionBox=await row.locator(".row-actions").boundingBox();await expect(page.getByTestId("details-fx-appt-1")).toBeVisible();await expect(page.getByTestId("ticket-fx-appt-1")).toBeVisible();
+   const row=page.getByTestId("appointment-fx-appt-1"),actionBox=await row.locator(".row-actions").boundingBox();await expect(page.getByTestId("details-fx-appt-1")).toBeVisible();await expect(page.getByTestId("ticket-fx-appt-1")).toHaveCount(0);
    await shot(`11-appointments-${name}`);if(width===1024&&dateHeader.height>100)throw Error(`Visit Date header wraps into an excessively tall cell at 1024px: ${JSON.stringify(dateHeader)}`);
    return{viewport:width,documentOverflow:m.overflow,tableScroll:scroll,dateHeader,actionsBox:actionBox,actionsRemainAvailable:true};
   });
   await check(`Menu and ticket at ${name}px`,async()=>{
    const trigger=page.getByTestId("menu-fx-appt-1");await trigger.click();const menu=page.getByRole("menu");await expect(menu).toBeVisible();const box=await menu.boundingBox();if(box.x<0||box.x+box.width>width||box.y<0||box.y+box.height>height)throw Error(`portal outside viewport: ${JSON.stringify(box)}`);await shot(`12-menu-${name}`);await page.keyboard.press("Escape");await expect(trigger).toBeFocused();
-   await page.getByTestId("ticket-fx-appt-1").click();const dialog=page.getByRole("dialog");await expect(dialog).toBeVisible();await expect(page.getByTestId("appointment-ticket")).toBeVisible();const d=await dialog.locator(".app-dialog-body").evaluate(el=>({clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY,rect:el.getBoundingClientRect().toJSON()}));if(width===390&&d.scrollHeight<=d.clientHeight)throw Error(`mobile ticket content does not scroll: ${JSON.stringify(d)}`);await shot(`13-ticket-${name}`);await page.keyboard.press("Escape");return{menu:box,dialogBody:d,documentOverflow:await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)};
+   await openTicket();const dialog=page.getByRole("dialog");await expect(dialog).toBeVisible();await expect(page.getByTestId("appointment-ticket")).toBeVisible();const d=await dialog.locator(".app-dialog-body").evaluate(el=>({clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY,rect:el.getBoundingClientRect().toJSON()}));if(width===390&&d.scrollHeight<=d.clientHeight)throw Error(`mobile ticket content does not scroll: ${JSON.stringify(d)}`);await shot(`13-ticket-${name}`);await page.keyboard.press("Escape");return{menu:box,dialogBody:d,documentOverflow:await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)};
   });
  }
  }

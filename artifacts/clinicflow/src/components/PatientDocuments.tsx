@@ -1,3 +1,4 @@
+import { IconAction } from "./IconAction";
 import { useId, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Download, FileText, Trash2, Upload } from "lucide-react";
@@ -69,7 +70,7 @@ export function PatientDocuments({ patientId, timezone }: { patientId: string; t
       <div className="pd-item"><div className="pd-row"><OverflowText as="strong" value={doc.name} /><small className="muted">{size(doc.size)}</small></div>
         <small className="muted">{formatConfiguredTimestamp(doc.createdAt, timezone)}{doc.uploadedByName ? ` · ${doc.uploadedByName}` : ""}{doc.clinicName ? ` · ${doc.clinicName}` : ""}</small>
         <div className="pd-doc-actions">
-          <button type="button" className="button secondary small" disabled={busy === doc.id} onClick={() => void download(doc)} data-testid={`button-download-document-${doc.id}`}><Download size={15} aria-hidden />Download</button>
+          <IconAction label={`Download ${doc.name}`} hint="Download" icon={<Download size={15} aria-hidden />} disabled={busy === doc.id} disabledReason="Download in progress." onClick={() => void download(doc)} testId={`button-download-document-${doc.id}`} />
           {confirm?.id === doc.id
             ? <><button type="button" className="button small danger" disabled={busy === doc.id} onClick={() => void remove(doc)} data-testid={`button-confirm-delete-document-${doc.id}`}>Confirm Delete</button><button type="button" className="button secondary small" onClick={() => setConfirm(null)}>Keep</button></>
             : <button type="button" className="button secondary small" onClick={() => setConfirm(doc)} aria-label={`Delete ${doc.name}`} data-testid={`button-delete-document-${doc.id}`}><Trash2 size={15} aria-hidden />Delete</button>}

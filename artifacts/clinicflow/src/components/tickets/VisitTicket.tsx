@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { Download, Printer } from "lucide-react";
+import { IconAction } from "../IconAction";
 import { BRAND_LOGO_URL, BRAND_NAME } from "../../branding";
 import "./visit-ticket.css";
 import { formatDate, formatTime, type DateTimePreferences } from "../../lib/date-time";
@@ -112,8 +114,8 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
       <div className="vt-head-tools">
         <span className="vt-badge" data-testid="ticket-status" aria-label={`Booking Status: ${ticket.statusLabel || "Booked"}`}>{ticket.statusLabel || "Booked"}</span>
         <div className="vt-actions" role="group" aria-label="Ticket Actions">
-          <button type="button" className="button" data-testid="button-download-ticket" onClick={() => void run("download")} disabled={disabled}>{busy==="download"?"Checking Ticket…":"Download Ticket"}</button>
-          <button type="button" className="button secondary" data-testid="button-print-ticket" onClick={() => void run("print")} disabled={disabled}>{busy==="print"?"Checking Ticket…":"Print Ticket"}</button>
+          <IconAction className="vt-icon-action" testId="button-download-ticket" label={busy==="download"?"Checking Ticket…":"Download Ticket"} icon={<Download size={16} aria-hidden/>} onClick={() => void run("download")} disabled={disabled} disabledReason={busy?"Checking the latest ticket first.":!qr?"Personal QR is still loading.":"Reconnect and refresh the ticket first."}/>
+          <IconAction className="vt-icon-action" testId="button-print-ticket" label={busy==="print"?"Checking Ticket…":"Print Ticket"} icon={<Printer size={16} aria-hidden/>} onClick={() => void run("print")} disabled={disabled} disabledReason={busy?"Checking the latest ticket first.":!qr?"Personal QR is still loading.":"Reconnect and refresh the ticket first."}/>
         </div>
       </div>
     </header>

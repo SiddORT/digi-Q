@@ -20,7 +20,7 @@ test("FilterBar routes secondary through the group and keeps primary actions vis
   assert.match(bar, /<ResponsiveActionGroup secondary=\{secondary\}>\{actions\}<\/ResponsiveActionGroup>/);
   const clinic = read("../clinic.tsx"), users = read("../Users.tsx"), res = read("../resources.tsx"), sys = read("./SystemUsers.tsx");
   assert.match(clinic, /secondary=\{<><FilteredAppointmentExport[^]*?\{appointmentViews\}<\/>\} actions=\{<><Link className="button" href=\{`\/\$\{role\}\/book`\}/);
-  assert.match(clinic, /secondary=\{<><button className="button secondary small" aria-label="Export all report results as CSV"[^]*?\{reportCols\.settings\}\{reportViews\}<\/>\}/);
+  assert.match(clinic, /secondary=\{<><HelpTip text=[^]*?<button className="button secondary small report-export" aria-label="Export all report results as CSV"[^]*?\{reportCols\.settings\}\{reportViews\}<\/>\}/);
   assert.match(users, /secondary=\{<>[^]*?Recovery<\/button>\}\{cols\.settings\}\{staffViews\}<\/>\} actions=/);
   assert.match(res, /secondary=\{<>\{resource==="patients"&&<PatientFilteredExport[^]*?\{viewControls\}<\/>\} actions=/);
   assert.match(sys, /secondary=\{<><Link[^>]*>Roles &amp; Permissions<\/Link>\{cols\.settings\}\{systemViews\}<\/>\}/);

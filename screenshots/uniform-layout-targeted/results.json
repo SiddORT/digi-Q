@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-10-05T20:05:40.487Z",
+  "startedAt": "2026-10-05T20:40:40.327Z",
   "fixtureOnly": true,
   "scope": "Targeted CSS-cascade regression only",
   "authNote": "Protected staff routes were rendered with intercepted fictional auth fixtures; authorization was not tested.",
@@ -15,19 +15,19 @@
         "dateHeader": {
           "text": "Visit Date",
           "rect": {
-            "x": 317,
+            "x": 349.859375,
             "y": 224.578125,
             "width": 150,
             "height": 49,
-            "right": 467,
+            "right": 499.859375,
             "bottom": 273.578125
           },
           "buttonRect": {
-            "x": 329,
+            "x": 361.859375,
             "y": 232.578125,
             "width": 109.28125,
             "height": 32,
-            "right": 438.28125,
+            "right": 471.140625,
             "bottom": 264.578125
           },
           "whiteSpace": "nowrap"
@@ -57,89 +57,47 @@
                 "label": "Check In",
                 "aria": null,
                 "rect": {
-                  "x": 667.6875,
+                  "x": 823.203125,
                   "y": 291.375,
                   "width": 99.796875,
                   "height": 32,
-                  "right": 767.484375,
+                  "right": 923,
                   "bottom": 323.375
                 },
                 "textRect": {
-                  "x": 680.6875,
+                  "x": 836.203125,
                   "y": 298.96875,
                   "width": 73.796875,
                   "height": 15.90625,
-                  "right": 754.484375,
+                  "right": 910,
                   "bottom": 314.875
                 },
                 "inside": true
               },
               {
-                "label": "Details",
-                "aria": null,
+                "label": "Details for Alexandria Verylongpatientname Example-Surname",
+                "aria": "Details for Alexandria Verylongpatientname Example-Surname",
                 "rect": {
-                  "x": 771.484375,
-                  "y": 291.375,
-                  "width": 64.53125,
-                  "height": 32,
-                  "right": 836.015625,
-                  "bottom": 323.375
-                },
-                "textRect": {
-                  "x": 784.484375,
-                  "y": 298.96875,
-                  "width": 38.53125,
-                  "height": 15,
-                  "right": 823.015625,
-                  "bottom": 313.96875
-                },
-                "inside": true
-              },
-              {
-                "label": "Ticket",
-                "aria": "Ticket",
-                "rect": {
-                  "x": 840.015625,
+                  "x": 927,
                   "y": 291.375,
                   "width": 32,
                   "height": 32,
-                  "right": 872.015625,
+                  "right": 959,
                   "bottom": 323.375
                 },
                 "textRect": {
-                  "x": 848.515625,
+                  "x": 935.5,
                   "y": 299.875,
                   "width": 15,
                   "height": 15,
-                  "right": 863.515625,
+                  "right": 950.5,
                   "bottom": 314.875
                 },
                 "inside": true
               },
               {
-                "label": "More",
+                "label": "More actions for Alexandria Verylongpatientname Example-Surname",
                 "aria": "More actions for Alexandria Verylongpatientname Example-Surname",
-                "rect": {
-                  "x": 876.015625,
-                  "y": 291.375,
-                  "width": 78.984375,
-                  "height": 32,
-                  "right": 955,
-                  "bottom": 323.375
-                },
-                "textRect": {
-                  "x": 889.015625,
-                  "y": 298.96875,
-                  "width": 52.984375,
-                  "height": 16.796875,
-                  "right": 942,
-                  "bottom": 315.765625
-                },
-                "inside": true
-              },
-              {
-                "label": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
-                "aria": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
                 "rect": {
                   "x": 963,
                   "y": 291.375,
@@ -159,7 +117,8 @@
                 "inside": true
               }
             ],
-            "expansionInActions": true
+            "expansionAtRowStart": true,
+            "ticketInRow": false
           },
           {
             "height": 68.59375,
@@ -168,89 +127,47 @@
                 "label": "Check In",
                 "aria": null,
                 "rect": {
-                  "x": 667.6875,
+                  "x": 823.203125,
                   "y": 359.96875,
                   "width": 99.796875,
                   "height": 32,
-                  "right": 767.484375,
+                  "right": 923,
                   "bottom": 391.96875
                 },
                 "textRect": {
-                  "x": 680.6875,
+                  "x": 836.203125,
                   "y": 367.5625,
                   "width": 73.796875,
                   "height": 15.90625,
-                  "right": 754.484375,
+                  "right": 910,
                   "bottom": 383.46875
                 },
                 "inside": true
               },
               {
-                "label": "Details",
-                "aria": null,
+                "label": "Details for Morgan Sample Patient",
+                "aria": "Details for Morgan Sample Patient",
                 "rect": {
-                  "x": 771.484375,
-                  "y": 359.96875,
-                  "width": 64.53125,
-                  "height": 32,
-                  "right": 836.015625,
-                  "bottom": 391.96875
-                },
-                "textRect": {
-                  "x": 784.484375,
-                  "y": 367.5625,
-                  "width": 38.53125,
-                  "height": 15,
-                  "right": 823.015625,
-                  "bottom": 382.5625
-                },
-                "inside": true
-              },
-              {
-                "label": "Ticket",
-                "aria": "Ticket",
-                "rect": {
-                  "x": 840.015625,
+                  "x": 927,
                   "y": 359.96875,
                   "width": 32,
                   "height": 32,
-                  "right": 872.015625,
+                  "right": 959,
                   "bottom": 391.96875
                 },
                 "textRect": {
-                  "x": 848.515625,
+                  "x": 935.5,
                   "y": 368.46875,
                   "width": 15,
                   "height": 15,
-                  "right": 863.515625,
+                  "right": 950.5,
                   "bottom": 383.46875
                 },
                 "inside": true
               },
               {
-                "label": "More",
+                "label": "More actions for Morgan Sample Patient",
                 "aria": "More actions for Morgan Sample Patient",
-                "rect": {
-                  "x": 876.015625,
-                  "y": 359.96875,
-                  "width": 78.984375,
-                  "height": 32,
-                  "right": 955,
-                  "bottom": 391.96875
-                },
-                "textRect": {
-                  "x": 889.015625,
-                  "y": 367.5625,
-                  "width": 52.984375,
-                  "height": 16.796875,
-                  "right": 942,
-                  "bottom": 384.359375
-                },
-                "inside": true
-              },
-              {
-                "label": "Show hidden columns for Morgan Sample Patient",
-                "aria": "Show hidden columns for Morgan Sample Patient",
                 "rect": {
                   "x": 963,
                   "y": 359.96875,
@@ -270,7 +187,8 @@
                 "inside": true
               }
             ],
-            "expansionInActions": true
+            "expansionAtRowStart": true,
+            "ticketInRow": false
           },
           {
             "height": 68.59375,
@@ -279,89 +197,47 @@
                 "label": "Check Out",
                 "aria": null,
                 "rect": {
-                  "x": 614.546875,
+                  "x": 770.0625,
                   "y": 428.5625,
                   "width": 109.9375,
                   "height": 32,
-                  "right": 724.484375,
+                  "right": 880,
                   "bottom": 460.5625
                 },
                 "textRect": {
-                  "x": 627.546875,
+                  "x": 783.0625,
                   "y": 436.15625,
                   "width": 83.9375,
                   "height": 15.90625,
-                  "right": 711.484375,
+                  "right": 867,
                   "bottom": 452.0625
                 },
                 "inside": true
               },
               {
-                "label": "Details",
-                "aria": null,
+                "label": "Details for Jordan Placeholder Person",
+                "aria": "Details for Jordan Placeholder Person",
                 "rect": {
-                  "x": 728.484375,
-                  "y": 428.5625,
-                  "width": 64.53125,
-                  "height": 32,
-                  "right": 793.015625,
-                  "bottom": 460.5625
-                },
-                "textRect": {
-                  "x": 741.484375,
-                  "y": 436.15625,
-                  "width": 38.53125,
-                  "height": 15,
-                  "right": 780.015625,
-                  "bottom": 451.15625
-                },
-                "inside": true
-              },
-              {
-                "label": "Ticket",
-                "aria": "Ticket",
-                "rect": {
-                  "x": 840.015625,
+                  "x": 884,
                   "y": 428.5625,
                   "width": 32,
                   "height": 32,
-                  "right": 872.015625,
+                  "right": 916,
                   "bottom": 460.5625
                 },
                 "textRect": {
-                  "x": 848.515625,
+                  "x": 892.5,
                   "y": 437.0625,
                   "width": 15,
                   "height": 15,
-                  "right": 863.515625,
+                  "right": 907.5,
                   "bottom": 452.0625
                 },
                 "inside": true
               },
               {
-                "label": "More",
+                "label": "More actions for Jordan Placeholder Person",
                 "aria": "More actions for Jordan Placeholder Person",
-                "rect": {
-                  "x": 876.015625,
-                  "y": 428.5625,
-                  "width": 78.984375,
-                  "height": 32,
-                  "right": 955,
-                  "bottom": 460.5625
-                },
-                "textRect": {
-                  "x": 889.015625,
-                  "y": 436.15625,
-                  "width": 52.984375,
-                  "height": 16.796875,
-                  "right": 942,
-                  "bottom": 452.953125
-                },
-                "inside": true
-              },
-              {
-                "label": "Show hidden columns for Jordan Placeholder Person",
-                "aria": "Show hidden columns for Jordan Placeholder Person",
                 "rect": {
                   "x": 963,
                   "y": 428.5625,
@@ -381,13 +257,14 @@
                 "inside": true
               }
             ],
-            "expansionInActions": true
+            "expansionAtRowStart": true,
+            "ticketInRow": false
           }
         ],
         "documentOverflow": 0,
         "tableScroll": {
           "client": 782,
-          "scroll": 1805
+          "scroll": 1683
         }
       }
     },
@@ -398,19 +275,19 @@
         "dateHeader": {
           "text": "Visit Date",
           "rect": {
-            "x": 313,
+            "x": 345.859375,
             "y": 224.578125,
             "width": 150,
             "height": 49,
-            "right": 463,
+            "right": 495.859375,
             "bottom": 273.578125
           },
           "buttonRect": {
-            "x": 325,
+            "x": 357.859375,
             "y": 232.578125,
             "width": 109.28125,
             "height": 32,
-            "right": 434.28125,
+            "right": 467.140625,
             "bottom": 264.578125
           },
           "whiteSpace": "nowrap"
@@ -440,89 +317,47 @@
                 "label": "Check In",
                 "aria": null,
                 "rect": {
-                  "x": 907.6875,
+                  "x": 1071.203125,
                   "y": 291.375,
                   "width": 99.796875,
                   "height": 32,
-                  "right": 1007.484375,
+                  "right": 1171,
                   "bottom": 323.375
                 },
                 "textRect": {
-                  "x": 920.6875,
+                  "x": 1084.203125,
                   "y": 298.96875,
                   "width": 73.796875,
                   "height": 15.90625,
-                  "right": 994.484375,
+                  "right": 1158,
                   "bottom": 314.875
                 },
                 "inside": true
               },
               {
-                "label": "Details",
-                "aria": null,
+                "label": "Details for Alexandria Verylongpatientname Example-Surname",
+                "aria": "Details for Alexandria Verylongpatientname Example-Surname",
                 "rect": {
-                  "x": 1015.484375,
-                  "y": 291.375,
-                  "width": 64.53125,
-                  "height": 32,
-                  "right": 1080.015625,
-                  "bottom": 323.375
-                },
-                "textRect": {
-                  "x": 1028.484375,
-                  "y": 298.96875,
-                  "width": 38.53125,
-                  "height": 15,
-                  "right": 1067.015625,
-                  "bottom": 313.96875
-                },
-                "inside": true
-              },
-              {
-                "label": "Ticket",
-                "aria": "Ticket",
-                "rect": {
-                  "x": 1088.015625,
+                  "x": 1179,
                   "y": 291.375,
                   "width": 32,
                   "height": 32,
-                  "right": 1120.015625,
+                  "right": 1211,
                   "bottom": 323.375
                 },
                 "textRect": {
-                  "x": 1096.515625,
+                  "x": 1187.5,
                   "y": 299.875,
                   "width": 15,
                   "height": 15,
-                  "right": 1111.515625,
+                  "right": 1202.5,
                   "bottom": 314.875
                 },
                 "inside": true
               },
               {
-                "label": "More",
+                "label": "More actions for Alexandria Verylongpatientname Example-Surname",
                 "aria": "More actions for Alexandria Verylongpatientname Example-Surname",
-                "rect": {
-                  "x": 1128.015625,
-                  "y": 291.375,
-                  "width": 78.984375,
-                  "height": 32,
-                  "right": 1207,
-                  "bottom": 323.375
-                },
-                "textRect": {
-                  "x": 1141.015625,
-                  "y": 298.96875,
-                  "width": 52.984375,
-                  "height": 16.796875,
-                  "right": 1194,
-                  "bottom": 315.765625
-                },
-                "inside": true
-              },
-              {
-                "label": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
-                "aria": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
                 "rect": {
                   "x": 1219,
                   "y": 291.375,
@@ -542,7 +377,8 @@
                 "inside": true
               }
             ],
-            "expansionInActions": true
+            "expansionAtRowStart": true,
+            "ticketInRow": false
           },
           {
             "height": 68.59375,
@@ -551,89 +387,47 @@
                 "label": "Check In",
                 "aria": null,
                 "rect": {
-                  "x": 907.6875,
+                  "x": 1071.203125,
                   "y": 359.96875,
                   "width": 99.796875,
                   "height": 32,
-                  "right": 1007.484375,
+                  "right": 1171,
                   "bottom": 391.96875
                 },
                 "textRect": {
-                  "x": 920.6875,
+                  "x": 1084.203125,
                   "y": 367.5625,
                   "width": 73.796875,
                   "height": 15.90625,
-                  "right": 994.484375,
+                  "right": 1158,
                   "bottom": 383.46875
                 },
                 "inside": true
               },
               {
-                "label": "Details",
-                "aria": null,
+                "label": "Details for Morgan Sample Patient",
+                "aria": "Details for Morgan Sample Patient",
                 "rect": {
-                  "x": 1015.484375,
-                  "y": 359.96875,
-                  "width": 64.53125,
-                  "height": 32,
-                  "right": 1080.015625,
-                  "bottom": 391.96875
-                },
-                "textRect": {
-                  "x": 1028.484375,
-                  "y": 367.5625,
-                  "width": 38.53125,
-                  "height": 15,
-                  "right": 1067.015625,
-                  "bottom": 382.5625
-                },
-                "inside": true
-              },
-              {
-                "label": "Ticket",
-                "aria": "Ticket",
-                "rect": {
-                  "x": 1088.015625,
+                  "x": 1179,
                   "y": 359.96875,
                   "width": 32,
                   "height": 32,
-                  "right": 1120.015625,
+                  "right": 1211,
                   "bottom": 391.96875
                 },
                 "textRect": {
-                  "x": 1096.515625,
+                  "x": 1187.5,
                   "y": 368.46875,
                   "width": 15,
                   "height": 15,
-                  "right": 1111.515625,
+                  "right": 1202.5,
                   "bottom": 383.46875
                 },
                 "inside": true
               },
               {
-                "label": "More",
+                "label": "More actions for Morgan Sample Patient",
                 "aria": "More actions for Morgan Sample Patient",
-                "rect": {
-                  "x": 1128.015625,
-                  "y": 359.96875,
-                  "width": 78.984375,
-                  "height": 32,
-                  "right": 1207,
-                  "bottom": 391.96875
-                },
-                "textRect": {
-                  "x": 1141.015625,
-                  "y": 367.5625,
-                  "width": 52.984375,
-                  "height": 16.796875,
-                  "right": 1194,
-                  "bottom": 384.359375
-                },
-                "inside": true
-              },
-              {
-                "label": "Show hidden columns for Morgan Sample Patient",
-                "aria": "Show hidden columns for Morgan Sample Patient",
                 "rect": {
                   "x": 1219,
                   "y": 359.96875,
@@ -653,7 +447,8 @@
                 "inside": true
               }
             ],
-            "expansionInActions": true
+            "expansionAtRowStart": true,
+            "ticketInRow": false
           },
           {
             "height": 68.59375,
@@ -662,89 +457,47 @@
                 "label": "Check Out",
                 "aria": null,
                 "rect": {
-                  "x": 850.546875,
+                  "x": 1014.0625,
                   "y": 428.5625,
                   "width": 109.9375,
                   "height": 32,
-                  "right": 960.484375,
+                  "right": 1124,
                   "bottom": 460.5625
                 },
                 "textRect": {
-                  "x": 863.546875,
+                  "x": 1027.0625,
                   "y": 436.15625,
                   "width": 83.9375,
                   "height": 15.90625,
-                  "right": 947.484375,
+                  "right": 1111,
                   "bottom": 452.0625
                 },
                 "inside": true
               },
               {
-                "label": "Details",
-                "aria": null,
+                "label": "Details for Jordan Placeholder Person",
+                "aria": "Details for Jordan Placeholder Person",
                 "rect": {
-                  "x": 968.484375,
-                  "y": 428.5625,
-                  "width": 64.53125,
-                  "height": 32,
-                  "right": 1033.015625,
-                  "bottom": 460.5625
-                },
-                "textRect": {
-                  "x": 981.484375,
-                  "y": 436.15625,
-                  "width": 38.53125,
-                  "height": 15,
-                  "right": 1020.015625,
-                  "bottom": 451.15625
-                },
-                "inside": true
-              },
-              {
-                "label": "Ticket",
-                "aria": "Ticket",
-                "rect": {
-                  "x": 1088.015625,
+                  "x": 1132,
                   "y": 428.5625,
                   "width": 32,
                   "height": 32,
-                  "right": 1120.015625,
+                  "right": 1164,
                   "bottom": 460.5625
                 },
                 "textRect": {
-                  "x": 1096.515625,
+                  "x": 1140.5,
                   "y": 437.0625,
                   "width": 15,
                   "height": 15,
-                  "right": 1111.515625,
+                  "right": 1155.5,
                   "bottom": 452.0625
                 },
                 "inside": true
               },
               {
-                "label": "More",
+                "label": "More actions for Jordan Placeholder Person",
                 "aria": "More actions for Jordan Placeholder Person",
-                "rect": {
-                  "x": 1128.015625,
-                  "y": 428.5625,
-                  "width": 78.984375,
-                  "height": 32,
-                  "right": 1207,
-                  "bottom": 460.5625
-                },
-                "textRect": {
-                  "x": 1141.015625,
-                  "y": 436.15625,
-                  "width": 52.984375,
-                  "height": 16.796875,
-                  "right": 1194,
-                  "bottom": 452.953125
-                },
-                "inside": true
-              },
-              {
-                "label": "Show hidden columns for Jordan Placeholder Person",
-                "aria": "Show hidden columns for Jordan Placeholder Person",
                 "rect": {
                   "x": 1219,
                   "y": 428.5625,
@@ -764,13 +517,14 @@
                 "inside": true
               }
             ],
-            "expansionInActions": true
+            "expansionAtRowStart": true,
+            "ticketInRow": false
           }
         ],
         "documentOverflow": 0,
         "tableScroll": {
           "client": 1038,
-          "scroll": 1821
+          "scroll": 1691
         }
       }
     },
@@ -781,19 +535,19 @@
         "dateHeader": {
           "text": "Visit Date",
           "rect": {
-            "x": 313,
+            "x": 356.640625,
             "y": 224.578125,
-            "width": 150,
+            "width": 163.390625,
             "height": 49,
-            "right": 463,
+            "right": 520.03125,
             "bottom": 273.578125
           },
           "buttonRect": {
-            "x": 325,
+            "x": 368.640625,
             "y": 232.578125,
             "width": 109.28125,
             "height": 32,
-            "right": 434.28125,
+            "right": 477.921875,
             "bottom": 264.578125
           },
           "whiteSpace": "nowrap"
@@ -819,89 +573,47 @@
                 "label": "Check In",
                 "aria": null,
                 "rect": {
-                  "x": 907.6875,
+                  "x": 1071.203125,
                   "y": 291.375,
                   "width": 99.796875,
                   "height": 32,
-                  "right": 1007.484375,
+                  "right": 1171,
                   "bottom": 323.375
                 },
                 "textRect": {
-                  "x": 920.6875,
+                  "x": 1084.203125,
                   "y": 298.96875,
                   "width": 73.796875,
                   "height": 15.90625,
-                  "right": 994.484375,
+                  "right": 1158,
                   "bottom": 314.875
                 },
                 "inside": true
               },
               {
-                "label": "Details",
-                "aria": null,
+                "label": "Details for Alexandria Verylongpatientname Example-Surname",
+                "aria": "Details for Alexandria Verylongpatientname Example-Surname",
                 "rect": {
-                  "x": 1015.484375,
-                  "y": 291.375,
-                  "width": 64.53125,
-                  "height": 32,
-                  "right": 1080.015625,
-                  "bottom": 323.375
-                },
-                "textRect": {
-                  "x": 1028.484375,
-                  "y": 298.96875,
-                  "width": 38.53125,
-                  "height": 15,
-                  "right": 1067.015625,
-                  "bottom": 313.96875
-                },
-                "inside": true
-              },
-              {
-                "label": "Ticket",
-                "aria": "Ticket",
-                "rect": {
-                  "x": 1088.015625,
+                  "x": 1179,
                   "y": 291.375,
                   "width": 32,
                   "height": 32,
-                  "right": 1120.015625,
+                  "right": 1211,
                   "bottom": 323.375
                 },
                 "textRect": {
-                  "x": 1096.515625,
+                  "x": 1187.5,
                   "y": 299.875,
                   "width": 15,
                   "height": 15,
-                  "right": 1111.515625,
+                  "right": 1202.5,
                   "bottom": 314.875
                 },
                 "inside": true
               },
               {
-                "label": "More",
+                "label": "More actions for Alexandria Verylongpatientname Example-Surname",
                 "aria": "More actions for Alexandria Verylongpatientname Example-Surname",
-                "rect": {
-                  "x": 1128.015625,
-                  "y": 291.375,
-                  "width": 78.984375,
-                  "height": 32,
-                  "right": 1207,
-                  "bottom": 323.375
-                },
-                "textRect": {
-                  "x": 1141.015625,
-                  "y": 298.96875,
-                  "width": 52.984375,
-                  "height": 16.796875,
-                  "right": 1194,
-                  "bottom": 315.765625
-                },
-                "inside": true
-              },
-              {
-                "label": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
-                "aria": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
                 "rect": {
                   "x": 1219,
                   "y": 291.375,
@@ -921,7 +633,8 @@
                 "inside": true
               }
             ],
-            "expansionInActions": true
+            "expansionAtRowStart": true,
+            "ticketInRow": false
           },
           {
             "height": 68.59375,
@@ -930,89 +643,47 @@
                 "label": "Check In",
                 "aria": null,
                 "rect": {
-                  "x": 907.6875,
+                  "x": 1071.203125,
                   "y": 359.96875,
                   "width": 99.796875,
                   "height": 32,
-                  "right": 1007.484375,
+                  "right": 1171,
                   "bottom": 391.96875
                 },
                 "textRect": {
-                  "x": 920.6875,
+                  "x": 1084.203125,
                   "y": 367.5625,
                   "width": 73.796875,
                   "height": 15.90625,
-                  "right": 994.484375,
+                  "right": 1158,
                   "bottom": 383.46875
                 },
                 "inside": true
               },
               {
-                "label": "Details",
-                "aria": null,
+                "label": "Details for Morgan Sample Patient",
+                "aria": "Details for Morgan Sample Patient",
                 "rect": {
-                  "x": 1015.484375,
-                  "y": 359.96875,
-                  "width": 64.53125,
-                  "height": 32,
-                  "right": 1080.015625,
-                  "bottom": 391.96875
-                },
-                "textRect": {
-                  "x": 1028.484375,
-                  "y": 367.5625,
-                  "width": 38.53125,
-                  "height": 15,
-                  "right": 1067.015625,
-                  "bottom": 382.5625
-                },
-                "inside": true
-              },
-              {
-                "label": "Ticket",
-                "aria": "Ticket",
-                "rect": {
-                  "x": 1088.015625,
+                  "x": 1179,
                   "y": 359.96875,
                   "width": 32,
                   "height": 32,
-                  "right": 1120.015625,
+                  "right": 1211,
                   "bottom": 391.96875
                 },
                 "textRect": {
-                  "x": 1096.515625,
+                  "x": 1187.5,
                   "y": 368.46875,
                   "width": 15,
                   "height": 15,
-                  "right": 1111.515625,
+                  "right": 1202.5,
                   "bottom": 383.46875
                 },
                 "inside": true
               },
               {
-                "label": "More",
+                "label": "More actions for Morgan Sample Patient",
                 "aria": "More actions for Morgan Sample Patient",
-                "rect": {
-                  "x": 1128.015625,
-                  "y": 359.96875,
-                  "width": 78.984375,
-                  "height": 32,
-                  "right": 1207,
-                  "bottom": 391.96875
-                },
-                "textRect": {
-                  "x": 1141.015625,
-                  "y": 367.5625,
-                  "width": 52.984375,
-                  "height": 16.796875,
-                  "right": 1194,
-                  "bottom": 384.359375
-                },
-                "inside": true
-              },
-              {
-                "label": "Show hidden columns for Morgan Sample Patient",
-                "aria": "Show hidden columns for Morgan Sample Patient",
                 "rect": {
                   "x": 1219,
                   "y": 359.96875,
@@ -1032,7 +703,8 @@
                 "inside": true
               }
             ],
-            "expansionInActions": true
+            "expansionAtRowStart": true,
+            "ticketInRow": false
           },
           {
             "height": 68.59375,
@@ -1041,89 +713,47 @@
                 "label": "Check Out",
                 "aria": null,
                 "rect": {
-                  "x": 850.546875,
+                  "x": 1014.0625,
                   "y": 428.5625,
                   "width": 109.9375,
                   "height": 32,
-                  "right": 960.484375,
+                  "right": 1124,
                   "bottom": 460.5625
                 },
                 "textRect": {
-                  "x": 863.546875,
+                  "x": 1027.0625,
                   "y": 436.15625,
                   "width": 83.9375,
                   "height": 15.90625,
-                  "right": 947.484375,
+                  "right": 1111,
                   "bottom": 452.0625
                 },
                 "inside": true
               },
               {
-                "label": "Details",
-                "aria": null,
+                "label": "Details for Jordan Placeholder Person",
+                "aria": "Details for Jordan Placeholder Person",
                 "rect": {
-                  "x": 968.484375,
-                  "y": 428.5625,
-                  "width": 64.53125,
-                  "height": 32,
-                  "right": 1033.015625,
-                  "bottom": 460.5625
-                },
-                "textRect": {
-                  "x": 981.484375,
-                  "y": 436.15625,
-                  "width": 38.53125,
-                  "height": 15,
-                  "right": 1020.015625,
-                  "bottom": 451.15625
-                },
-                "inside": true
-              },
-              {
-                "label": "Ticket",
-                "aria": "Ticket",
-                "rect": {
-                  "x": 1088.015625,
+                  "x": 1132,
                   "y": 428.5625,
                   "width": 32,
                   "height": 32,
-                  "right": 1120.015625,
+                  "right": 1164,
                   "bottom": 460.5625
                 },
                 "textRect": {
-                  "x": 1096.515625,
+                  "x": 1140.5,
                   "y": 437.0625,
                   "width": 15,
                   "height": 15,
-                  "right": 1111.515625,
+                  "right": 1155.5,
                   "bottom": 452.0625
                 },
                 "inside": true
               },
               {
-                "label": "More",
+                "label": "More actions for Jordan Placeholder Person",
                 "aria": "More actions for Jordan Placeholder Person",
-                "rect": {
-                  "x": 1128.015625,
-                  "y": 428.5625,
-                  "width": 78.984375,
-                  "height": 32,
-                  "right": 1207,
-                  "bottom": 460.5625
-                },
-                "textRect": {
-                  "x": 1141.015625,
-                  "y": 436.15625,
-                  "width": 52.984375,
-                  "height": 16.796875,
-                  "right": 1194,
-                  "bottom": 452.953125
-                },
-                "inside": true
-              },
-              {
-                "label": "Show hidden columns for Jordan Placeholder Person",
-                "aria": "Show hidden columns for Jordan Placeholder Person",
                 "rect": {
                   "x": 1219,
                   "y": 428.5625,
@@ -1143,13 +773,14 @@
                 "inside": true
               }
             ],
-            "expansionInActions": true
+            "expansionAtRowStart": true,
+            "ticketInRow": false
           }
         ],
         "documentOverflow": 0,
         "tableScroll": {
           "client": 1038,
-          "scroll": 1084
+          "scroll": 1038
         }
       }
     },
@@ -1160,7 +791,7 @@
         "wrap": "nowrap",
         "items": [
           {
-            "label": "Timeline, activity and documents",
+            "label": "Details: timeline, activity and documents",
             "rect": {
               "x": 1139,
               "y": 274.453125,
@@ -1180,7 +811,7 @@
             }
           },
           {
-            "label": "More",
+            "label": "More Actions",
             "rect": {
               "x": 1219,
               "y": 274.453125,
@@ -1198,53 +829,35 @@
       "status": "pass",
       "details": {
         "overflow": 0,
-        "scrollHeight": 5789,
+        "scrollHeight": 6073,
         "actionsWidth": 314,
         "buttons": [
           {
             "label": "Check In",
             "x": 38,
-            "y": 400.15625,
+            "y": 399.96875,
             "width": 99.796875,
             "height": 44,
             "right": 137.796875,
-            "bottom": 444.15625
+            "bottom": 443.96875
           },
           {
-            "label": "Details",
+            "label": "Details for Alexandria Verylongpatientname Example-Surname",
             "x": 141.796875,
-            "y": 400.15625,
-            "width": 64.53125,
-            "height": 44,
-            "right": 206.328125,
-            "bottom": 444.15625
-          },
-          {
-            "label": "Ticket",
-            "x": 210.328125,
-            "y": 400.15625,
+            "y": 399.96875,
             "width": 44,
             "height": 44,
-            "right": 254.328125,
-            "bottom": 444.15625
+            "right": 185.796875,
+            "bottom": 443.96875
           },
           {
-            "label": "More",
-            "x": 258.328125,
-            "y": 400.15625,
-            "width": 78.984375,
-            "height": 44,
-            "right": 337.3125,
-            "bottom": 444.15625
-          },
-          {
-            "label": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
-            "x": 345.3125,
-            "y": 400.15625,
+            "label": "More actions for Alexandria Verylongpatientname Example-Surname",
+            "x": 189.796875,
+            "y": 399.96875,
             "width": 44,
             "height": 44,
-            "right": 389.3125,
-            "bottom": 444.15625
+            "right": 233.796875,
+            "bottom": 443.96875
           }
         ]
       }
@@ -1256,37 +869,37 @@
         "direction": "row",
         "headingWeight": "700",
         "confirmation": {
-          "x": 197,
-          "y": 172.640625,
-          "width": 886,
+          "x": 737,
+          "y": 100.34375,
+          "width": 526,
           "height": 67.578125,
-          "right": 1083,
-          "bottom": 240.21875
+          "right": 1263,
+          "bottom": 167.921875
         },
         "heading": {
-          "x": 197,
-          "y": 172.640625,
+          "x": 737,
+          "y": 100.34375,
           "width": 132.125,
           "height": 22.390625,
-          "right": 329.125,
-          "bottom": 195.03125
+          "right": 869.125,
+          "bottom": 122.734375
         },
         "link": {
-          "x": 943.78125,
-          "y": 172.640625,
+          "x": 1123.78125,
+          "y": 100.34375,
           "width": 139.21875,
           "height": 22.390625,
-          "right": 1083,
-          "bottom": 195.03125
+          "right": 1263,
+          "bottom": 122.734375
         },
         "linkText": "Open Booking Status",
         "warning": {
-          "x": 197,
-          "y": 203.03125,
-          "width": 886,
+          "x": 737,
+          "y": 130.734375,
+          "width": 526,
           "height": 37.1875,
-          "right": 1083,
-          "bottom": 240.21875
+          "right": 1263,
+          "bottom": 167.921875
         },
         "warningFlexBasis": "100%",
         "overflow": 0
@@ -1300,36 +913,36 @@
         "headingWeight": "700",
         "confirmation": {
           "x": 17,
-          "y": 61.390625,
+          "y": 103.5,
           "width": 356,
           "height": 86.765625,
           "right": 373,
-          "bottom": 148.15625
+          "bottom": 190.265625
         },
         "heading": {
           "x": 17,
-          "y": 61.390625,
+          "y": 103.5,
           "width": 132.125,
           "height": 22.390625,
           "right": 149.125,
-          "bottom": 83.78125
+          "bottom": 125.890625
         },
         "link": {
           "x": 233.78125,
-          "y": 61.390625,
+          "y": 103.5,
           "width": 139.21875,
           "height": 22.390625,
           "right": 373,
-          "bottom": 83.78125
+          "bottom": 125.890625
         },
         "linkText": "Open Booking Status",
         "warning": {
           "x": 17,
-          "y": 91.78125,
+          "y": 133.890625,
           "width": 356,
           "height": 56.375,
           "right": 373,
-          "bottom": 148.15625
+          "bottom": 190.265625
         },
         "warningFlexBasis": "100%",
         "overflow": 0
@@ -1563,13 +1176,13 @@
     },
     {
       "method": "GET",
-      "path": "/appointments/fx-appt-1/qr",
-      "search": ""
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
     },
     {
       "method": "GET",
-      "path": "/queue",
-      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
     }
   ],
   "interceptedWrites": [],

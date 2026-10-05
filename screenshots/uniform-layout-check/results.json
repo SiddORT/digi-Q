@@ -1,6 +1,7 @@
 {
-  "startedAt": "2026-10-05T19:48:12.969Z",
+  "startedAt": "2026-10-05T20:34:20.326Z",
   "fixtureOnly": true,
+  "scope": "Full uniform layout fixture journey",
   "authNote": "Protected staff routes were rendered with intercepted fictional auth fixtures; authorization was not tested.",
   "fixtureNotes": [
     "All /api/** requests intercepted; no live auth, DB, account, email, booking or backend writes.",
@@ -42,62 +43,47 @@
           {
             "text": " Check In",
             "rect": {
-              "x": 1023,
-              "y": 281.578125,
-              "width": 67.96875,
+              "x": 1071.203125,
+              "y": 291.375,
+              "width": 99.796875,
               "height": 32,
-              "top": 281.578125,
-              "right": 1090.96875,
-              "bottom": 313.578125,
-              "left": 1023
+              "top": 291.375,
+              "right": 1171,
+              "bottom": 323.375,
+              "left": 1071.203125
             },
-            "scroll": 70,
-            "client": 66
+            "scroll": 98,
+            "client": 98
           },
           {
-            "text": "Details",
+            "text": "Details, ticket and QR",
             "rect": {
-              "x": 1098.96875,
-              "y": 281.578125,
-              "width": 47.90625,
-              "height": 32,
-              "top": 281.578125,
-              "right": 1146.875,
-              "bottom": 313.578125,
-              "left": 1098.96875
-            },
-            "scroll": 46,
-            "client": 46
-          },
-          {
-            "text": "",
-            "rect": {
-              "x": 1154.875,
-              "y": 281.578125,
+              "x": 1179,
+              "y": 291.375,
               "width": 32,
               "height": 32,
-              "top": 281.578125,
-              "right": 1186.875,
-              "bottom": 313.578125,
-              "left": 1154.875
+              "top": 291.375,
+              "right": 1211,
+              "bottom": 323.375,
+              "left": 1179
             },
-            "scroll": 30,
-            "client": 30
+            "scroll": 32,
+            "client": 32
           },
           {
-            "text": "More",
+            "text": "More Actions",
             "rect": {
-              "x": 1194.875,
-              "y": 281.578125,
-              "width": 56.125,
+              "x": 1219,
+              "y": 291.375,
+              "width": 32,
               "height": 32,
-              "top": 281.578125,
+              "top": 291.375,
               "right": 1251,
-              "bottom": 313.578125,
-              "left": 1194.875
+              "bottom": 323.375,
+              "left": 1219
             },
-            "scroll": 54,
-            "client": 54
+            "scroll": 32,
+            "client": 32
           }
         ],
         "overflow": 0
@@ -107,15 +93,15 @@
       "name": "Columns drawer and hidden-column expansion alignment",
       "status": "pass",
       "details": {
-        "columns": "206.328px 206.328px 206.328px 206.328px 206.328px 206.328px",
+        "columns": "187.312px 187.312px 187.312px 187.312px 187.312px 187.312px 187.312px 187.312px",
         "rect": {
           "x": 237,
-          "y": 362.578125,
-          "width": 1358,
+          "y": 350.171875,
+          "width": 1666.546875,
           "height": 38.984375,
-          "top": 362.578125,
-          "right": 1595,
-          "bottom": 401.5625,
+          "top": 350.171875,
+          "right": 1903.546875,
+          "bottom": 389.15625,
           "left": 237
         }
       }
@@ -126,10 +112,10 @@
       "details": {
         "placement": {
           "parent": "BODY",
-          "top": 317.578125,
-          "bottom": 416.578125,
+          "top": 327.375,
+          "bottom": 426.375,
           "left": 8,
-          "right": 1280,
+          "right": 1272,
           "width": 1280,
           "height": 900,
           "scrollParent": false
@@ -152,6 +138,194 @@
         "actions": "visible; not activated",
         "namedStatusLink": "Patient Booking Status Page"
       }
+    },
+    {
+      "name": "Compact actions: reduced Actions width, icon tooltips by keyboard, chevron at row start, no row ticket",
+      "status": "pass",
+      "details": {
+        "actionsWidth": {
+          "th": 260.9375,
+          "group": 179.796875,
+          "table": 1690.546875,
+          "scroll": 1038
+        },
+        "tooltip": {
+          "x": 1115,
+          "y": 251,
+          "width": 156.546875,
+          "height": 33.546875
+        },
+        "accessibleName": "Details for Alexandria Verylongpatientname Example-Surname",
+        "clinicalText": "Check In"
+      }
+    },
+    {
+      "name": "Menu: every trigger has items; edge-row flip, internal scroll, scroll tracking, viewport bounds",
+      "status": "pass",
+      "details": {
+        "itemCounts": [
+          2,
+          3,
+          1,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "edge": {
+          "placement": "above",
+          "menu": {
+            "x": 8,
+            "y": 375.3125,
+            "width": 1264,
+            "height": 99,
+            "top": 375.3125,
+            "right": 1272,
+            "bottom": 474.3125,
+            "left": 8
+          },
+          "trigger": {
+            "x": 1219,
+            "y": 476.3125,
+            "width": 32,
+            "height": 32,
+            "top": 476.3125,
+            "right": 1251,
+            "bottom": 508.3125,
+            "left": 1219
+          },
+          "vh": 520,
+          "vw": 1280
+        },
+        "tracked": {
+          "gap": 2
+        },
+        "small": {
+          "rect": {
+            "x": 8,
+            "y": 8,
+            "width": 1264,
+            "height": 99,
+            "top": 8,
+            "right": 1272,
+            "bottom": 107,
+            "left": 8
+          },
+          "overflowY": "auto",
+          "scrollH": 97,
+          "clientH": 97,
+          "vh": 220
+        }
+      }
+    },
+    {
+      "name": "Menu inside table horizontal scroll at 1024 tracks trigger; Escape restores focus; menu item opens dialog with focus inside",
+      "status": "pass",
+      "details": {
+        "before": {
+          "x": 8,
+          "y": 395.96875,
+          "width": 1008,
+          "height": 139
+        },
+        "after": {
+          "x": 8,
+          "y": 395.96875,
+          "width": 1008,
+          "height": 139,
+          "top": 395.96875,
+          "right": 1016,
+          "bottom": 534.96875,
+          "left": 8
+        },
+        "focusInside": true,
+        "writesSoFar": 0
+      }
+    },
+    {
+      "name": "Details drawer holds Ticket & QR with download/print/status/guidance; icon tooltips; containment at 1280/1024/390",
+      "status": "pass",
+      "details": [
+        {
+          "w": 1280,
+          "geo": {
+            "rect": {
+              "x": 720,
+              "y": 0,
+              "width": 560,
+              "height": 876,
+              "top": 0,
+              "right": 1280,
+              "bottom": 876,
+              "left": 720
+            },
+            "overflowKids": 0,
+            "doc": 0,
+            "vw": 1280
+          }
+        },
+        {
+          "w": 1024,
+          "geo": {
+            "rect": {
+              "x": 464,
+              "y": 0,
+              "width": 560,
+              "height": 744,
+              "top": 0,
+              "right": 1024,
+              "bottom": 744,
+              "left": 464
+            },
+            "overflowKids": 0,
+            "doc": 0,
+            "vw": 1024
+          }
+        },
+        {
+          "w": 390,
+          "geo": {
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 390,
+              "height": 844,
+              "top": 0,
+              "right": 390,
+              "bottom": 844,
+              "left": 0
+            },
+            "overflowKids": 0,
+            "doc": 0,
+            "vw": 390
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients/staff/custom roles: icon Edit/Details with tooltips, chevron at start, menus non-empty",
+      "status": "pass",
+      "details": [
+        {
+          "path": "/admin/patients",
+          "icons": 3,
+          "menus": 1
+        },
+        {
+          "path": "/admin/system-users",
+          "icons": 0,
+          "menus": 0
+        },
+        {
+          "path": "/admin/clinics",
+          "icons": 2,
+          "menus": 1
+        }
+      ]
     },
     {
       "name": "Resources, staff/custom roles, reports and schedule route family render",
@@ -222,8 +396,30 @@
     },
     {
       "name": "Appointment table/actions at 1024px",
-      "status": "fail",
-      "error": "Visit Date header wraps into an excessively tall cell at 1024px: {\"text\":\"Visit Date\",\"height\":183.375,\"width\":82.859375,\"whiteSpace\":\"normal\",\"buttonHeight\":93.1875}"
+      "status": "pass",
+      "details": {
+        "viewport": 1024,
+        "documentOverflow": 0,
+        "tableScroll": {
+          "clientWidth": 782,
+          "scrollWidth": 1683,
+          "overflowX": "auto"
+        },
+        "dateHeader": {
+          "text": "Visit Date",
+          "height": 49,
+          "width": 150,
+          "whiteSpace": "nowrap",
+          "buttonHeight": 32
+        },
+        "actionsBox": {
+          "x": 823.203125,
+          "y": 291.375,
+          "width": 171.796875,
+          "height": 32
+        },
+        "actionsRemainAvailable": true
+      }
     },
     {
       "name": "Menu and ticket at 1024px",
@@ -231,23 +427,23 @@
       "details": {
         "menu": {
           "x": 8,
-          "y": 556.359375,
-          "width": 1016,
+          "y": 327.375,
+          "width": 1008,
           "height": 99
         },
         "dialogBody": {
-          "clientHeight": 654,
-          "scrollHeight": 654,
+          "clientHeight": 697,
+          "scrollHeight": 2069,
           "overflowY": "auto",
           "rect": {
-            "x": 53,
-            "y": 79.4453125,
-            "width": 918,
-            "height": 654.28125,
-            "top": 79.4453125,
-            "right": 971,
-            "bottom": 733.7265625,
-            "left": 53
+            "x": 465,
+            "y": 46.171875,
+            "width": 558,
+            "height": 697.21875,
+            "top": 46.171875,
+            "right": 1023,
+            "bottom": 743.390625,
+            "left": 465
           }
         },
         "documentOverflow": 0
@@ -265,17 +461,17 @@
           "overflowX": "auto"
         },
         "dateHeader": {
-          "text": "Visit Date",
-          "height": 61,
-          "width": 137.28125,
+          "text": "Visit Date ",
+          "height": 0,
+          "width": 0,
           "whiteSpace": "normal",
-          "buttonHeight": 44
+          "buttonHeight": 0
         },
         "actionsBox": {
-          "x": 42,
-          "y": 1209.953125,
-          "width": 0,
-          "height": 32
+          "x": 38,
+          "y": 881.96875,
+          "width": 314,
+          "height": 48
         },
         "actionsRemainAvailable": true
       }
@@ -286,13 +482,13 @@
       "details": {
         "menu": {
           "x": 8,
-          "y": 441.953125,
-          "width": 382,
+          "y": 447.96875,
+          "width": 374,
           "height": 99
         },
         "dialogBody": {
           "clientHeight": 794,
-          "scrollHeight": 1306,
+          "scrollHeight": 2734,
           "overflowY": "auto",
           "rect": {
             "x": 1,
@@ -318,6 +514,13 @@
     "screenshots/uniform-layout-check/06-more-menu-1280.png",
     "screenshots/uniform-layout-check/07-appointment-details.png",
     "screenshots/uniform-layout-check/08-appointment-ticket-1280.png",
+    "screenshots/uniform-layout-check/20-tooltip-keyboard-details.png",
+    "screenshots/uniform-layout-check/21-menu-edge-row-flip.png",
+    "screenshots/uniform-layout-check/22-menu-short-viewport.png",
+    "screenshots/uniform-layout-check/23-menu-to-dialog-focus.png",
+    "screenshots/uniform-layout-check/24-details-ticket-qr-1280.png",
+    "screenshots/uniform-layout-check/24-details-ticket-qr-1024.png",
+    "screenshots/uniform-layout-check/24-details-ticket-qr-390.png",
     "screenshots/uniform-layout-check/09-clinics-1280.png",
     "screenshots/uniform-layout-check/09-patients-1280.png",
     "screenshots/uniform-layout-check/09-staff-1280.png",
@@ -412,6 +615,331 @@
       "method": "GET",
       "path": "/appointments/fx-appt-1/qr",
       "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/patients",
+      "search": "?page=1&pageSize=20&sort=-createdAt"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=patients"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/management/system-users",
+      "search": "?page=1"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=system-users"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/clinics",
+      "search": "?page=1&pageSize=20&sort=-createdAt"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=clinics"
     },
     {
       "method": "GET",
@@ -705,13 +1233,13 @@
     },
     {
       "method": "GET",
-      "path": "/appointments/fx-appt-1/qr",
-      "search": ""
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
     },
     {
       "method": "GET",
-      "path": "/queue",
-      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
     },
     {
       "method": "GET",
@@ -755,13 +1283,13 @@
     },
     {
       "method": "GET",
-      "path": "/appointments/fx-appt-1/qr",
-      "search": ""
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
     },
     {
       "method": "GET",
-      "path": "/queue",
-      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
     }
   ],
   "interceptedWrites": [],

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
-import { Plus, Trash2, Lock } from "lucide-react";
+import { Plus, Trash2, Lock, Pencil } from "lucide-react";
+import { IconAction } from "../IconAction";
 import { TimeRangeSlider } from "../ClinicRegistrationHours";
 import { TimeFormatInput } from "../DateFormatInput";
 import { SearchableSelect } from "../SearchableSelect";
@@ -133,7 +134,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
             </>}
             <div className="row-actions">
               {row && !canOpenDetails(row) && <small className="muted" data-testid={`text-session-linked-${dayIndex}-${index}`}>Details are managed in Clinic settings for linked sessions.</small>}
-              {canOpenDetails(row) && <button type="button" className="text-link" disabled={busy} onClick={() => openDetails(row, onEdit)} data-testid={`button-session-details-${dayIndex}-${index}`}>Details</button>}
+              {canOpenDetails(row) && <IconAction label={`Edit details for ${label}`} hint="Edit session details" icon={<Pencil size={15} aria-hidden/>} disabled={busy} disabledReason="Wait for the current save to finish." onClick={() => openDetails(row, onEdit)} testId={`button-session-details-${dayIndex}-${index}`}/>}
               {!s.locked && <button type="button" className="text-link" aria-label={`Remove ${label}`} disabled={busy} onClick={() => setDay(day.sessions.length === 1 ? { ...day, isOpen: false, sessions: [] } : { ...day, sessions: day.sessions.filter(x => x.key !== s.key) })} data-testid={`button-remove-session-${dayIndex}-${index}`}><Trash2 size={14}/> Remove</button>}
             </div>
             {out && <p className="notice">This time is outside {clinicName}'s hours ({hours.map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ")}).</p>}

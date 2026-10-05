@@ -67,9 +67,9 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
     if (!open) return;
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
     const down = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) close(); };
-    document.addEventListener("keydown", key, true);
+    window.addEventListener("keydown", key, true);
     document.addEventListener("pointerdown", down);
-    return () => { document.removeEventListener("keydown", key, true); document.removeEventListener("pointerdown", down); };
+    return () => { window.removeEventListener("keydown", key, true); document.removeEventListener("pointerdown", down); };
   }, [open]);
   useEffect(() => () => window.clearTimeout(timer.current), []);
 

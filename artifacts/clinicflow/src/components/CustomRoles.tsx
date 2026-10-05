@@ -1,8 +1,9 @@
 import { RowMenu } from "./RowMenu";
+import { IconAction } from "./IconAction";
 import { HelpTip } from "./HelpTip";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, X } from "lucide-react";
+import { Pencil, Plus, X } from "lucide-react";
 import { useGetCustomRoles, getGetCustomRolesQueryKey, useSaveCustomRoles, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetSystemUsers, getGetSystemUsersQueryKey } from "@workspace/api-client-react";
 import { AppDialog, useAppDialogClose } from "./AppDialog";
 import { LoadingButton } from "./LoadingButton";
@@ -111,7 +112,7 @@ function RoleList({ config, names, onEdit, onDelete }: { config: CustomRoleConfi
     {config.roles.map(r => { const b = bindingsFor(config, r.id); return <tr key={r.id} data-testid={`row-custom-role-${r.id}`}>
       <td><strong>{r.name}</strong></td><td>{label(r.baseRole)}</td><td>{r.denied.length ? `${r.denied.length} removed` : "Same as base"}</td>
       <td>{b.length ? b.slice(0, 2).map(x => names.get(x.userId)?.fullName || "Staff member").join(", ") + (b.length > 2 ? ` +${b.length - 2}` : "") : "—"}</td>
-      <td><div className="row-actions row-actions-end"><button type="button" onClick={() => onEdit(r)} data-testid={`button-edit-role-${r.id}`}>Edit</button><RowMenu label={`More actions for ${r.name}`} testId={`menu-role-${r.id}`} items={[{ key: "delete", label: "Delete Role", danger: true, testId: `button-delete-role-${r.id}`, onSelect: () => onDelete(r) }]} /></div></td>
+      <td><div className="row-actions row-actions-end"><IconAction label={`Edit ${r.name}`} hint="Edit role" icon={<Pencil size={15} aria-hidden />} onClick={() => onEdit(r)} testId={`button-edit-role-${r.id}`} /><RowMenu label={`More actions for ${r.name}`} testId={`menu-role-${r.id}`} items={[{ key: "delete", label: "Delete Role", danger: true, testId: `button-delete-role-${r.id}`, onSelect: () => onDelete(r) }]} /></div></td>
     </tr>; })}
   </tbody></table></div>;
 }

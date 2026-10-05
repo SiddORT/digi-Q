@@ -361,3 +361,44 @@
   .workspace .appt-table .row-actions>*{width:auto;min-width:44px;min-height:44px;flex:0 0 auto}
   .workspace .appt-table tr.row-expansion>td{grid-column:1/-1}
 }
+
+/* ---------- Compact action refinement (approved) ----------
+   Details / Edit / More / Download / Print are icon buttons with hover+focus tooltips (HelpTip portal).
+   Clinical Check In / Check Out keep icon + text. Expansion chevrons sit at the start of the row. */
+.icon-action{display:inline-flex;align-items:center;justify-content:center;width:32px;min-width:32px;height:32px;min-height:32px;padding:0;border-radius:var(--radius-control);border:1px solid #c9d8ee;background:var(--dq-surface);color:var(--dq-blue);cursor:pointer;flex:0 0 auto;transition:background-color .12s,border-color .12s}
+.icon-action:hover:not(:disabled){background:var(--surface-hover);border-color:var(--dq-blue)}
+.icon-action:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px}
+.icon-action:disabled{opacity:.5;cursor:not-allowed}
+.icon-action.danger{color:#a2402f;border-color:#e3b3ae}
+.workspace .row-actions>.helptip>.icon-action,.workspace .row-actions .row-menu-trigger.icon-action{height:32px;min-height:32px;width:32px;padding:0}
+.workspace .row-actions>.helptip{display:inline-flex;flex:0 0 auto}
+.row-menu-trigger.icon-action span{display:none}
+.row-lead{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:100%}
+.row-lead>.row-expand-toggle{width:32px;min-width:32px;height:32px;min-height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;border-radius:var(--radius-control)}
+.row-lead>.row-expand-toggle svg{transition:transform .15s}
+.row-lead>.row-expand-toggle[aria-expanded="true"] svg{transform:rotate(90deg)}
+.row-lead>:not(.row-expand-toggle){min-width:0}
+@media (min-width:641px){
+  .workspace :is(.table-scroll,.table-wrap) td.col-select:has(.row-expand-toggle){width:76px;min-width:76px}
+  .workspace .appt-table :is(th,td).col-actions{width:200px;min-width:200px}
+  .appt-table th.col-actions,.appt-table td.col-actions{width:200px}
+  .workspace .appt-table :is(th,td).col-serial{width:72px;min-width:72px}
+}
+/* Portal menu: internal scroll when taller than the available space. */
+.row-menu-portal{right:auto;width:max-content;overflow-y:auto;overscroll-behavior:contain;max-width:calc(100vw - 16px)}
+.app-dialog .row-menu-portal{z-index:300;pointer-events:auto}
+/* Ticket header icon actions keep their row. */
+.vt-actions .helptip{display:inline-flex}
+.vt-actions .vt-icon-action{width:32px;min-width:32px;height:32px;min-height:32px}
+/* Details drawer: Ticket & QR section and skeleton. */
+.appt-detail-jump{display:inline-flex;align-items:center;gap:4px;min-height:24px;padding:4px 8px;font-size:var(--type-caption);border-radius:var(--radius-badge)}
+.appt-detail-ticket .appt-ticket{margin-top:4px}
+.appt-detail-ticket{scroll-margin-top:12px}
+.appt-detail-skeleton{display:grid;gap:8px}
+.appt-detail-skeleton span{display:block;height:56px;border-radius:var(--radius-card);background:linear-gradient(90deg,#eef3fa,#f7f9fd,#eef3fa);background-size:200% 100%;animation:apptSkel 1.2s linear infinite}
+.appt-detail-skeleton span:nth-child(2){height:120px}
+@keyframes apptSkel{to{background-position:-200% 0}}
+@media (max-width:640px){
+  .workspace .appt-table .row-actions .helptip>.icon-action,.workspace .appt-table .row-actions .row-menu-trigger{width:44px;min-width:44px;height:44px;min-height:44px}
+  .row-lead>.row-expand-toggle{width:44px;min-width:44px;height:44px;min-height:44px}
+}
