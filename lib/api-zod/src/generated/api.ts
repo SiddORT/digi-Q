@@ -23,6 +23,20 @@
 import * as zod from 'zod';
 
 
+export const searchGeographyQuerySearchMax = 100;
+
+
+
+export const SearchGeographyQueryParams = zod.object({
+  "kind": zod.enum(['country', 'state', 'city']),
+  "search": zod.coerce.string().max(searchGeographyQuerySearchMax).optional()
+})
+
+export const SearchGeographyResponse = zod.object({
+  "items": zod.array(zod.string())
+})
+
+
 export const CheckIntegrationConnectionParams = zod.object({
   "provider": zod.enum(['smtp', 'sms', 'storage'])
 })

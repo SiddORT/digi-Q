@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { geographyRouter } from "./geography";
 import healthRouter from "./health";
 import { identityRouter } from "./identity";
 import { publicRouter } from "./public";
@@ -23,6 +24,7 @@ import { workspaceFeaturesRouter } from "./workspace-features";
 import { patientRecordsRouter } from "./patient-records";
 
 const router: IRouter = Router();
+router.use(geographyRouter);
 router.use(systemUsersRouter);
 
 router.use(healthRouter);

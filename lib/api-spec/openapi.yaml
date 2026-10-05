@@ -23,6 +23,18 @@ servers:
 security:
   - NativeSession: []
 paths:
+  /geography:
+    get:
+      operationId: searchGeography
+      parameters:
+        - { in: query, name: kind, required: true, schema: { type: string, enum: [country, state, city] } }
+        - { in: query, name: search, schema: { type: string, maxLength: 100 } }
+      responses:
+        '200':
+          description: Offline geographic directory suggestions; manual entry remains supported.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GeographySuggestions' }
   /settings/integrations/{provider}/check:
     post:
       operationId: checkIntegrationConnection
@@ -1171,6 +1183,11 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    GeographySuggestions:
+      type: object
+      required: [items]
+      properties:
+        items: { type: array, items: { type: string } }
     TicketEmailInput:
       type: object
       required: [requestId, recipient]

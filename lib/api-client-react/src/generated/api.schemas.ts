@@ -20,6 +20,10 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export interface GeographySuggestions {
+  items: string[];
+}
+
 export interface TicketEmailInput {
   requestId: string;
   recipient: string;
@@ -2360,6 +2364,23 @@ export type DateParameter = string;
 export type FromParameter = string;
 
 export type ToParameter = string;
+
+export type SearchGeographyParams = {
+kind: SearchGeographyKind;
+/**
+ * @maxLength 100
+ */
+search?: string;
+};
+
+export type SearchGeographyKind = typeof SearchGeographyKind[keyof typeof SearchGeographyKind];
+
+
+export const SearchGeographyKind = {
+  country: 'country',
+  state: 'state',
+  city: 'city',
+} as const;
 
 export type GetSystemUsersParams = {
 page?: number;

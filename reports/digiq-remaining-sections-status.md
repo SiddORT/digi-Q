@@ -4,6 +4,15 @@ Source: the 2026-10-05 testing report (135 findings). This is not the older 137-
 
 ## Changes made in this pass
 
+### Subsequent remediation update
+
+- Country/state/city inputs now search an offline geographic directory and retain local catalog suggestions. No third-party address queries or real account changes. Area/postal-code fields still use local catalog/manual entry; neither street addresses nor postal codes are verified.
+- Disabled dependent lookups no longer show a loading spinner for a request that is not running.
+- Geographic and master-catalog reads are bounded and retain explicit retry/manual entry.
+- 341 frontend tests and both typechecks pass; two new geographic-directory tests pass. A separate isolated domain suite passed 54 tests.
+- The older mocked backend-flow suite currently fails to compile because its mocks omit newer exports. This is a test-harness gap, not evidence of a passing or failing app journey.
+- Protected-flow checks remain deferred at the user's direction. Do not label original save/creation/permission failures resolved without reproduction.
+
 - Registration timetable review now uses the selected time format instead of raw 24-hour values (#17).
 - Weekly-session Copy to All selects every destination day, excluding the source; existing confirmation, per-session outcomes and duplicate/overlap handling remain (#97).
 - Record search now classifies and sorts “today” using the location timezone, falling back to clinic and platform configuration. Added positive/negative timezone-boundary tests. This is a concrete date/filter correction, not proof that every report-filter complaint is resolved.
@@ -31,4 +40,4 @@ Source: the 2026-10-05 testing report (135 findings). This is not the older 137-
 
 ## Still open
 
-Live email delivery, deployed performance, exact reported authorization/save failures, geographic-catalog coverage, and screenshot-specific interaction/layout reproduction. Earlier sections' unresolved items remain open too. Passing local regression tests is not a claim that all 135 findings have passed acceptance.
+Live email delivery, deployed performance, exact reported authorization/save failures, area/postal-code catalog coverage, and screenshot-specific interaction/layout reproduction. Earlier sections' unresolved items remain open too. Passing local regression tests is not a claim that all 135 findings have passed acceptance.

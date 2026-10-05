@@ -1,4 +1,5 @@
 - [Worker execution failures](worker-isolation.md) — helper tool disconnections can be isolated; preserve healthy backend work rather than treating them as project-wide failures.
+- [Remediation reporting](remediation-reporting.md) — finish authorized sections continuously; distinguish actual fixes, unreproduced failures and deferred acceptance.
 - [Role test isolation](role-test-isolation.md) — verify actual browser identity and mapped role in fresh contexts; a helper handshake alone does not prove sign-in.
 - [Clinic Admin ownership](clinic-admin-ownership.md) — exactly one admin per clinic; doctor-created clinics inherit the doctor's single owning admin.
 - [Native authentication boundary](native-auth-boundary.md) — PostgreSQL-owned staff credentials are intentional; do not restore Clerk to solve deployment or email configuration.

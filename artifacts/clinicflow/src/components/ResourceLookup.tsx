@@ -48,6 +48,7 @@ function useOptions(resource: string, selected: string[], params: Record<string,
     getNextPageParam: (last: any, pages) => pages.reduce((n, p: any) => n + p.items.length, 0) < last.total ? pages.length + 1 : undefined,
      staleTime: 120000,
   });
+  const loading = enabled && ((query.isPending && !query.isError) || query.isFetching);
    const rows: any[] = query.data?.pages.flatMap((p: any) => p.items) || [];
    // A selected row on the current page needs no duplicate detail request.
    const missing = selected.filter(id => !rows.some(row => row.id === id));
@@ -79,7 +80,7 @@ function useOptions(resource: string, selected: string[], params: Record<string,
    // Hydration supplies labels at rest, but must not turn an empty search into a
    // false result (or make an out-of-scope selected row selectable).
    const visible = [...new Map([...(debounced ? rows : merged), ...selected.flatMap(id => retained.current.has(id) ? [retained.current.get(id)] : [])].map(row => [row.id, row])).values()];
-   return { query, selectedQuery, selectedPending: missing.length > 0 && selectedQuery.isPending, rows: merged, selectedRecords: [...rows, ...selectedRows].filter(row => selected.includes(row.id)), verifiedMissing, search: setSearch, options: visible.map(row => ({ value: row.id, label: `${row.name || row.fullName || row.id}${row.status==="inactive"?" · Inactive":""}`, disabled: !rows.some(option => option.id === row.id)||(params.status==="active"&&row.status==="inactive") })) };
+   return { query, loading, selectedQuery, selectedPending: enabled && missing.length > 0 && selectedQuery.isPending, rows: merged, selectedRecords: [...rows, ...selectedRows].filter(row => selected.includes(row.id)), verifiedMissing, search: setSearch, options: visible.map(row => ({ value: row.id, label: `${row.name || row.fullName || row.id}${row.status==="inactive"?" · Inactive":""}`, disabled: !rows.some(option => option.id === row.id)||(params.status==="active"&&row.status==="inactive") })) };
 }
 
 export function ResourceLookup({ resource, value, onChange, params = {}, onSelectedRecords, ...props }: Props) {
@@ -89,7 +90,7 @@ export function ResourceLookup({ resource, value, onChange, params = {}, onSelec
    const missingKey = lookup.verifiedMissing.join(",");
    useEffect(() => { if (!lookup.query.isPending && !lookup.query.error && !lookup.selectedPending && !lookup.selectedQuery.error) onSelectedRecords?.(lookup.selectedRecords, lookup.verifiedMissing); }, [scopeKey, recordsKey, missingKey, lookup.query.isPending, lookup.query.error, lookup.selectedPending, lookup.selectedQuery.error, onSelectedRecords]);
   const placeholder=props.placeholder||`Search ${lookupName(resource)}…`;
-   return <><SearchableSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options} onSearchChange={lookup.search} loading={(lookup.query.isPending && !lookup.query.isError) || lookup.query.isFetching} error={props.error||(lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{void lookup.query.refetch();if(value)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
+   return <><SearchableSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options} onSearchChange={lookup.search} loading={lookup.loading} error={props.error||(lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{void lookup.query.refetch();if(value)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
 }
 export function ResourceMultiLookup({ resource, value, onChange, params = {}, onRecords, onSelectedRecords, isOptionDisabled, ...props }: MultiProps) {
@@ -101,7 +102,7 @@ export function ResourceMultiLookup({ resource, value, onChange, params = {}, on
    const missingKey = lookup.verifiedMissing.join(",");
    useEffect(() => { if (!lookup.query.isPending && !lookup.query.error && !lookup.selectedPending && !lookup.selectedQuery.error) onSelectedRecords?.(lookup.selectedRecords, lookup.verifiedMissing); }, [scopeKey, selectedKey, missingKey, lookup.query.isPending, lookup.query.error, lookup.selectedPending, lookup.selectedQuery.error, onSelectedRecords]);
   const placeholder=props.placeholder||`Search ${lookupName(resource)}…`;
-   return <><SearchableMultiSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options.map(option=>({...option,disabled:option.disabled||(!value.includes(option.value)&&!!isOptionDisabled?.(lookup.rows.find(row=>row.id===option.value)))}))} onSearchChange={lookup.search} isLoading={(lookup.query.isPending && !lookup.query.isError) || lookup.query.isFetching} error={props.error||(lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{void lookup.query.refetch();if(value.length)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
+   return <><SearchableMultiSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options.map(option=>({...option,disabled:option.disabled||(!value.includes(option.value)&&!!isOptionDisabled?.(lookup.rows.find(row=>row.id===option.value)))}))} onSearchChange={lookup.search} isLoading={lookup.loading} error={props.error||(lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{void lookup.query.refetch();if(value.length)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
 }
 function LookupError({ error, retry }: { error: unknown; retry: () => void }) {

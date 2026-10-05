@@ -71,9 +71,20 @@ export const resources:Record<string,Resource>={
 function MasterTextInput({field,control}:any){
  const [search,setSearch]=useState("");
  const term=useDebouncedValue(search);
-  const q=useQuery({queryKey:["lookup","masters",field.category,term],queryFn:()=>api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any),staleTime:120000});
+ const geographic=["country","state","city"].includes(field.category);
+  const q=useQuery({queryKey:["lookup","geographic-masters",field.category,term],queryFn:async()=>{
+    const options={signal:AbortSignal.timeout(20000)};
+    if(geographic){
+      const [data,local]=await Promise.all([
+        api.searchGeography({kind:field.category,search:term},options),
+        api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any,options),
+      ]);
+      return {items:[...new Set([...local.items.map(row=>row.name),...data.items])].slice(0,20).map(name=>({name}))};
+    }
+    return api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any,options);
+  },retry:false,staleTime:120000});
  const fieldName=title(field.key).toLowerCase();
-  return <Controller name={field.key} control={control} rules={{validate:value=>!field.required||required()(value)||true}} render={({field:input})=><><SuggestionInput id={`input-${field.key}`} value={input.value||""} onChange={input.onChange} onSearchChange={setSearch} options={q.error?[]:(q.data?.items||[]).map(row=>row.name)} placeholder={`Type or search ${fieldName}…`} clearLabel={`Clear ${fieldName}`} loading={q.isFetching} onRetry={()=>void q.refetch()} emptyMessage={term?`No matching active ${fieldName} values in the local catalog. Enter your own text.`:`No active ${fieldName} values in the local catalog. Enter your own text.`} error={q.error ? `${friendlyError(q.error,"load")} You can still enter ${fieldName} manually.` : undefined}/><small className="muted">Optional suggestions from the local {fieldName} catalog; not an address search service. Manual entry is accepted.</small></>}/>;
+  return <Controller name={field.key} control={control} rules={{validate:value=>!field.required||required()(value)||true}} render={({field:input})=><><SuggestionInput id={`input-${field.key}`} value={input.value||""} onChange={input.onChange} onSearchChange={setSearch} options={q.error?[]:(q.data?.items||[]).map(row=>row.name)} placeholder={`Type or search ${fieldName}…`} clearLabel={`Clear ${fieldName}`} loading={q.isFetching} onRetry={()=>void q.refetch()} emptyMessage={`No matching ${fieldName} suggestions. Enter your own text.`} error={q.error ? `${friendlyError(q.error,"load")} You can still enter ${fieldName} manually.` : undefined}/><small className="muted">{geographic?"Search the offline country, state and city directory. Names may be shared by multiple places; verify your address.":"Optional suggestions from your local catalog."} Manual entry is accepted. Street addresses and postal codes are not verified.</small></>}/>;
 }
 function ExceptionSessionInput({form,label}:{form:ReturnType<typeof useForm>;label:string}){
  const preferences=useDateTimePreferences();

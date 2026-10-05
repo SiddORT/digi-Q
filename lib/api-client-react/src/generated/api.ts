@@ -87,6 +87,7 @@ import type {
   DoctorPresence,
   DoctorPresenceInput,
   ErrorResponse,
+  GeographySuggestions,
   GetAppointmentCalendarParams,
   GetAuthCsrf200,
   GetDashboardParams,
@@ -180,6 +181,7 @@ import type {
   Schedule,
   ScheduleInput,
   ScheduleList,
+  SearchGeographyParams,
   SearchRecordsParams,
   SessionContext,
   Settings,
@@ -230,6 +232,84 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getSearchGeographyUrl = (params: SearchGeographyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/geography?${stringifiedParams}` : `/api/geography`
+}
+
+export const searchGeography = async (params: SearchGeographyParams, options?: Parameters<typeof customFetch>[1]): Promise<GeographySuggestions> => {
+
+  return customFetch<GeographySuggestions>(getSearchGeographyUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchGeographyQueryKey = (params?: SearchGeographyParams,) => {
+    return [
+    `/api/geography`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchGeographyQueryOptions = <TData = Awaited<ReturnType<typeof searchGeography>>, TError = ErrorType<unknown>>(params: SearchGeographyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchGeography>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchGeographyQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchGeography>>> = ({ signal }) => searchGeography(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchGeography>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchGeographyQueryResult = NonNullable<Awaited<ReturnType<typeof searchGeography>>>
+export type SearchGeographyQueryError = ErrorType<unknown>
+
+
+
+export function useSearchGeography<TData = Awaited<ReturnType<typeof searchGeography>>, TError = ErrorType<unknown>>(
+ params: SearchGeographyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchGeography>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchGeographyQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getCheckIntegrationConnectionUrl = (provider: 'smtp' | 'sms' | 'storage',) => {
 
