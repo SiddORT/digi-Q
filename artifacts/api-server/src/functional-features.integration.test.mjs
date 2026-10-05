@@ -220,3 +220,17 @@ test("record search returns the visit's queue coordinates for exact deep links",
   const r = await h.call("rec", "GET", "/search/records?q=REF-A1");
   assert.deepEqual(r.data.items.map(i => [i.id, i.clinicId, i.branchId, i.doctorId, i.today]), [["a1", "c1", "b1", "d1", true]]);
 });
+test("record search uses the location's calendar date across timezone boundaries", async () => {
+  const original = (await rows("select data from branches where id='b1'"))[0].data;
+  try {
+    for (const zone of ["Pacific/Kiritimati", "Etc/GMT+12"]) {
+      await rows("update branches set data=jsonb_set(data,'{timezone}',to_jsonb($1::text)) where id='b1'", [zone]);
+      await rows("update appointments set date=to_char(now() at time zone $1,'YYYY-MM-DD') where id='a1'", [zone]);
+      const r = await h.call("rec", "GET", "/search/records?q=REF-A1");
+      assert.equal(r.data.items[0].today, true, zone);
+    }
+  } finally {
+    await rows("update branches set data=$1 where id='b1'", [JSON.stringify(original)]);
+    await rows("update appointments set date=$1 where id='a1'", [TODAY]);
+  }
+});

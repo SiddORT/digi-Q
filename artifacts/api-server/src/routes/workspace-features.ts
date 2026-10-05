@@ -6,7 +6,6 @@ import { requireUser, findUser } from "../lib/auth";
 import { parse, query, assert } from "../lib/http";
 import { audit, uid, getSettings } from "../lib/store";
 import { sourceSql } from "../lib/list-query";
-import { localNow } from "../lib/availability";
 import { notificationKind, sanitizeSavedView, SHARE_ROLES, shareAudience, receivesSharedView } from "../lib/feature-policy";
 
 export const workspaceFeaturesRouter = Router();
@@ -85,17 +84,19 @@ workspaceFeaturesRouter.get("/search/records", async (req, res) => {
   const user = await requireUser(req), q = query(z.SearchRecordsQueryParams, req);
   const term = q.q.trim(); assert(term.length >= 2, 400, "Enter at least 2 characters");
   const like = `%${term.replace(/[\\%_]/g, "\\$&")}%`, token = /^\d{1,6}$/.test(term) ? Number(term) : -1;
-  const today = localNow((await getSettings()).timezone).date;
+  const fallbackTimezone = (await getSettings()).timezone;
+  const isToday = sql`ap.date = to_char(now() at time zone coalesce(nullif(b.data->>'timezone',''),nullif(c.data->>'timezone',''),${fallbackTimezone}), 'YYYY-MM-DD')`;
   const result = await db.execute(sql`with a as (select doc from (${sourceSql(user, "appointments")}) s)
-    select ap.id, ap.clinic_id as "clinicId", ap.branch_id as "branchId", ap.doctor_id as "doctorId",
+    select ap.id, ap.clinic_id as "clinicId", ap.branch_id as "branchId", ap.doctor_id as "doctorId", (${isToday}) as today,
       ap.data->>'startTime' as "startTime", ap.data->>'sessionId' as "sessionId", ap.data->>'reference' as reference, ap.token_number as "tokenNumber", ap.data->>'token' as token, ap.date, ap.status,
       coalesce(p.data->>'fullName', pu.full_name, '') as "patientName", coalesce(du.full_name, '') as "doctorName"
     from a join appointments ap on ap.id = a.doc->>'id'
+    left join branches b on b.id = ap.branch_id left join clinics c on c.id = ap.clinic_id
     left join patients p on p.id = ap.patient_id left join users pu on pu.id = p.user_id
     left join doctors d on d.id = ap.doctor_id left join users du on du.id = d.user_id
     where ap.data->>'reference' ilike ${like} or ap.token_number = ${token} or coalesce(p.data->>'fullName', pu.full_name) ilike ${like}
-    order by (ap.date = ${today}) desc, ap.date desc, ap.token_number limit 10`);
-  res.json({ items: (result.rows as any[]).map(r => ({ ...r, reference: r.reference || "", token: r.token || undefined, today: r.date === today })) });
+    order by (${isToday}) desc, ap.date desc, ap.token_number limit 10`);
+  res.json({ items: (result.rows as any[]).map(r => ({ ...r, reference: r.reference || "", token: r.token || undefined })) });
 });
 
 const viewOut = (v: any, user: any) => ({ id: v.id, tableKey: v.tableKey, name: v.name, filters: v.data?.filters || {}, columns: v.data?.columns, ownedByMe: v.userId === user.id, shared: !!v.sharedRole });

@@ -19,6 +19,7 @@ export function WeeklyOverview({doctorId,branchId,onEdit}:{doctorId:string;branc
   const rows:any[]=q.data?.items||[];
   const copy=async(all=false)=>{
     if(busy||source==="")return;setBusy(true);setResult("");
+    if(all)setTargets([0,1,2,3,4,5,6].filter(day=>day!==Number(source)));
     const plan=planCopy(rows,Number(source),all?[0,1,2,3,4,5,6].filter(day=>day!==Number(source)):targets);let made=0;const failed:string[]=[];const outcomes:{label:string;ok:boolean;message?:string}[]=[];
     if(plan.creates.length&&!await confirmation.ask({title:"Copy Doctor Sessions?",description:`Create ${plan.creates.length} sessions. Each session saves separately; this is not an atomic weekly update. Existing sessions are never overwritten. Successful saves remain if another session fails.`,confirmLabel:"Copy Sessions"})){setBusy(false);return;}
     for(const body of plan.creates){const label=`${DAYS[body.dayOfWeek as number]} ${body.startTime}`;try{await api.createSchedule(body as any);made++;outcomes.push({label,ok:true});}catch(e){const message=friendlyError(e,"save");failed.push(`${label}: ${message}`);outcomes.push({label,ok:false,message});}}

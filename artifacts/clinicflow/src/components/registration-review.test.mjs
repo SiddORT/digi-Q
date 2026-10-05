@@ -9,6 +9,8 @@ test("registration distinguishes group and location and uses selectable duration
   assert.match(wizard, /Use Clinic Group Name for This Location/);
   assert.match(wizard, /Controller name="consultationMinutes"/);
   assert.match(wizard, /Expected Consultation Duration/);
+  assert.match(wizard, /formatTime\(session.startTime,values\)/);
+  assert.match(wizard, /formatTime\(session.endTime,values\)/);
 });
 test("copy hours synchronizes targets and announces draft-only feedback", () => {
   const hours = readFileSync(new URL("./ClinicRegistrationHours.tsx", import.meta.url), "utf8");
