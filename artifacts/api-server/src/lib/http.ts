@@ -35,6 +35,7 @@ export function query(schema: any, req: Request) {
     q.linkedOnly = String(q.linkedOnly) === "true";
   }
   const result = normalizeDates(schema.parse(q));
+  if (result.from && result.to) assert(result.from <= result.to, 400, "Start date must be on or before end date");
   for (const [key, value] of Object.entries(result)) assert(value !== "undefined", 400, `${key} is required`);
   return result;
 }

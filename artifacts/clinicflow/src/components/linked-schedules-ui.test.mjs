@@ -62,10 +62,11 @@ test("appointment and report filters apply drafts, with status-only tabs and col
     assert.doesNotMatch(source, /<SearchableSelect label="Sort"/);
   }
   assert.match(appointments, /onSortChange=\{setSort\}/);
-  // Status tabs sit in the compact toolbar's status slot; range and sort use the accessible SearchableSelect.
-  assert.match(appointments, /status=\{<StatusTabs value=\{status\}/);
-  assert.match(appointments, /<SearchableSelect label="Visit Range" value=\{view\}/);
-  assert.match(appointments, /<SearchableSelect label="Sort Appointments" value=\{sort\}/);
+  // Approved direction: status, range and sort are drafted drawer fields committed by Apply.
+  assert.match(appointments, /<SearchableSelect label="Status" testId="select-appointment-status" value=\{draft\.status\|\|"all"\}/);
+  assert.match(appointments, /<SearchableSelect label="Visit Range" testId="select-appointment-range" value=\{draft\.view\}/);
+  assert.match(appointments, /<SearchableSelect label="Sort Appointments" value=\{draft\.sort\}/);
+  assert.match(appointments, /setStatus\(draft\.status\);setSort\(draft\.sort\);setView\(draft\.view\)/);
   assert.match(appointments, /\{value:"-createdAt",label:"Newest Created"\}/);
   assert.match(appointments, /\{value:"date",label:"Visit Date: Earliest First"\}/);
 });

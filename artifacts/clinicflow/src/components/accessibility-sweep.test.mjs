@@ -59,7 +59,7 @@ test("discard confirmation makes both underlying header and body inert", () => {
 
 test("resetting advanced filters restores keyboard focus", () => {
   const source = read("./ListingControls.tsx");
-  assert.match(source, /onReset\(\); closeFilters\(\)/);
+  assert.match(source, /onReset\(\); setInvalidMessage\(""\); closeFilters\(\)/);
   assert.match(source, /requestAnimationFrame\(\(\) => toggleRef\.current\?\.focus\(\)\)/);
   assert.match(source, /<AppDialog open=\{open\} onClose=\{closeFilters\} title=\{label\} variant="drawer"/);
 });

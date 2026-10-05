@@ -198,6 +198,12 @@ function usePageTitleOwnership() {
 
 // --- FilterBar ---
 
+/** Summary line for a drawer whose fields failed constraint validation. Exported for tests. */
+export function drawerValidationMessage(form: { querySelectorAll: (s: string) => ArrayLike<unknown> }): string {
+  const n = form.querySelectorAll(":invalid:not(form)").length;
+  return n > 1 ? `Correct the ${n} highlighted filters before applying.` : "Correct the highlighted filter before applying.";
+}
+
 export interface FilterChip {
   key: string;
   label: string;
@@ -221,25 +227,43 @@ export interface FilterBarProps {
   secondary?: React.ReactNode;
   label?: string;
   onOpen?: () => void;
-  onApply?: () => void;
+  /** Return false to keep the drawer open (e.g. caller-side validation failed). */
+  onApply?: () => boolean | void;
   /** Header title (left of the search). Typically the record type and result count. */
   title?: React.ReactNode;
   /** Status tabs on the second row. */
   status?: React.ReactNode;
   /** Second-row scope/range, sort, last-updated and help controls, aligned with Filters. */
   meta?: React.ReactNode;
+  /** Explicit drawer active-filter count when chips do not use the "adv:" key prefix. */
+  activeCount?: number;
 }
 
 /** Shared list header. Row 1: title, wide search, actions. Row 2 (only when needed): status tabs, scope/meta, Filters/Clear.
  *  Row 1 is always rendered first and in the same position so the search input never remounts while typing. */
-export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta }: FilterBarProps) {
-  const advancedActiveCount = chips.filter(c => c.key.startsWith("adv:")).length;
+export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount }: FilterBarProps) {
+  const advancedActiveCount = activeCount ?? chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
   const closeFilters = () => {
     setOpen(false);
     requestAnimationFrame(() => toggleRef.current?.focus());
+  };
+  const formRef = useRef<HTMLFormElement>(null);
+  const [invalidMessage, setInvalidMessage] = useState("");
+  /** Apply is gated on the drawer form's constraint validity (DateFormatInput sets custom validity for
+   *  malformed, out-of-range or inverted dates) and on the caller's own validation result. */
+  const apply = () => {
+    const form = formRef.current;
+    if (form && !form.checkValidity()) {
+      setInvalidMessage(drawerValidationMessage(form));
+      form.querySelector<HTMLElement>(":invalid")?.focus();
+      return;
+    }
+    if (onApply?.() === false) { setInvalidMessage("Correct the highlighted filters before applying."); return; }
+    setInvalidMessage("");
+    closeFilters();
   };
   const pageTitle = usePageTitleOwnership();
   const showClear = !!(onReset && active);
@@ -266,19 +290,21 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
                 <button type="button" ref={toggleRef} className={cn("filter-toggle", advancedActiveCount > 0 && "has-active")}
                   aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
                   aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
-                  onClick={() => { if (!open) onOpen?.(); setOpen(v => !v); }} data-testid="button-toggle-advanced-filters">
+                  onClick={() => { if (!open) { onOpen?.(); setInvalidMessage(""); } setOpen(v => !v); }} data-testid="button-toggle-advanced-filters">
                   <Filter aria-hidden className="h-4 w-4" />
                   <span className="filter-toggle-text">Filters</span>
                   {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
                 </button>
                 <AppDialog open={open} onClose={closeFilters} title={label} variant="drawer">
-                  <div id={panelId} className="filter-drawer-content">
+                  <form id={panelId} ref={formRef} className="filter-drawer-content" noValidate data-testid="form-filter-drawer"
+                    onSubmit={e => e.preventDefault()}>
+                    {invalidMessage && <p role="alert" className="field-error filter-drawer-error" data-testid="text-filter-drawer-error">{invalidMessage}</p>}
                     <div className="filter-panel-fields">{advanced}</div>
                     <div className="filter-panel-foot">
-                      {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); closeFilters(); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
-                      <button type="button" className="filter-done" onClick={() => { onApply?.(); closeFilters(); }} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
+                      {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); setInvalidMessage(""); closeFilters(); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
+                      <button type="button" className="filter-done" onClick={apply} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
                     </div>
-                  </div>
+                  </form>
                 </AppDialog>
               </div>
             )}

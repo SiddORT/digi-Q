@@ -1,0 +1,453 @@
+{
+  "startedAt": "2026-10-05T18:29:07.330Z",
+  "fixtureOnly": true,
+  "apiRequests": [
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/me"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/notifications"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/settings"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/appointments?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/saved-views?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/clinics",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/clinics?status=active&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/branches?clinicId=fx-clinic&status=active&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/doctors",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/doctors?clinicId=fx-clinic&status=active&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/clinics/fx-clinic",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/clinics/fx-clinic"
+    },
+    {
+      "method": "GET",
+      "path": "/doctors",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/doctors?clinicId=fx-clinic&branchId=fx-branch&status=active&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/appointments?search=&statusGroup=waiting&clinicId=fx-clinic&branchId=fx-branch&doctorId=fx-doctor&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/branches/fx-branch",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/branches/fx-branch"
+    },
+    {
+      "method": "GET",
+      "path": "/doctors/fx-doctor",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/doctors/fx-doctor"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/me"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/notifications"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/settings"
+    },
+    {
+      "method": "GET",
+      "path": "/patients",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/patients?page=1&pageSize=25&sort=-createdAt"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/saved-views?tableKey=patients"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/me"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/notifications"
+    },
+    {
+      "method": "GET",
+      "path": "/reports/trends",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/reports/trends?from=2026-10-05&to=2026-10-05"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/saved-views?tableKey=reports"
+    },
+    {
+      "method": "GET",
+      "path": "/reports",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/reports?from=2026-10-05&to=2026-10-05&groupBy=date&page=1&pageSize=20&sort=key"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/settings"
+    },
+    {
+      "method": "GET",
+      "path": "/clinics",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/clinics?page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/me"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/notifications"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/settings"
+    },
+    {
+      "method": "GET",
+      "path": "/schedules",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/schedules?page=1&pageSize=20&sort=-createdAt"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/saved-views?tableKey=availability"
+    },
+    {
+      "method": "GET",
+      "path": "/clinics",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/clinics?page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/doctors",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/doctors?status=active&clinicId=fx-clinic&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/branches?clinicId=fx-clinic&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/clinics/fx-clinic",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/clinics/fx-clinic"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/me"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/notifications"
+    },
+    {
+      "method": "GET",
+      "path": "/clinics",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/clinics?status=active&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/clinics",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/clinics?status=active&page=1&pageSize=2"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/settings"
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/branches?clinicId=fx-clinic&status=active&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/branches",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/branches?status=active&page=1&pageSize=2&clinicId=fx-clinic"
+    },
+    {
+      "method": "GET",
+      "path": "/doctors",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/doctors?clinicId=fx-clinic&branchId=fx-branch&status=active&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/doctors",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/doctors?status=active&page=1&pageSize=2&clinicId=fx-clinic&branchId=fx-branch"
+    },
+    {
+      "method": "GET",
+      "path": "/branches/fx-branch",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/branches/fx-branch"
+    },
+    {
+      "method": "GET",
+      "path": "/session-contexts",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/session-contexts?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-05"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/public/qr/fx-public",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/public/qr/fx-public"
+    },
+    {
+      "method": "GET",
+      "path": "/public/availability/sessions",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/public/availability/sessions?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-05"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/me"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/notifications"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/settings"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/appointments?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/saved-views?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/clinics",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/clinics?status=active&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/auth/status"
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/me"
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/notifications"
+    },
+    {
+      "method": "GET",
+      "path": "/reports/trends",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/reports/trends?from=2026-10-05&to=2026-10-05"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/saved-views?tableKey=reports"
+    },
+    {
+      "method": "GET",
+      "path": "/reports",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/reports?from=2026-10-05&to=2026-10-05&groupBy=date&page=1&pageSize=20&sort=key"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/settings"
+    },
+    {
+      "method": "GET",
+      "path": "/clinics",
+      "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/api/clinics?page=1&pageSize=20"
+    }
+  ],
+  "interceptedWrites": [],
+  "checks": [
+    {
+      "name": "Appointments drafts, calendar leap day, invalid/inverted blocks, reset",
+      "status": "pass",
+      "details": {
+        "draftUrlBeforeApply": "",
+        "committedUrlAfterApply": null,
+        "leapDate": "29 Feb 2024",
+        "escape": "focused day closes picker, preserves parent"
+      }
+    },
+    {
+      "name": "Appointments Apply commits status/range; Patients pageSize=25 parses from URL",
+      "status": "pass",
+      "details": {
+        "committedAppointmentsUrl": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/admin/appointments?view=all&status=waiting&clinic=fx-clinic&branch=fx-branch&doctor=fx-doctor",
+        "resourcesUrl": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/admin/patients?pageSize=25",
+        "pageSize": "25",
+        "fixtureRows": 25
+      }
+    },
+    {
+      "name": "Reports draft dates/scope, inversion guard and reset",
+      "status": "pass",
+      "details": {
+        "appliedUrlBeforeReset": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/admin/reports",
+        "resetFrom": "05 Oct 2026",
+        "resetTo": "05 Oct 2026",
+        "invalidRangeBlocked": true
+      }
+    },
+    {
+      "name": "Schedule time exact-minute entry/list and invalid closing bound blocks save",
+      "status": "pass",
+      "details": {
+        "clinicPreference": "24h",
+        "rawExactMinuteAccepted": "09:07",
+        "exactMinutePickerOption": true,
+        "invalidEndBlocked": true
+      }
+    },
+    {
+      "name": "Session Queue invalid date pauses session/queue queries",
+      "status": "pass",
+      "details": {
+        "before": 1,
+        "after": 1,
+        "noNewSessionOrQueueQuery": true
+      }
+    },
+    {
+      "name": "Public guest booking date picker renders from fictional QR context",
+      "status": "pass",
+      "details": {
+        "route": "/book/fx-public",
+        "clinic": "Fictional Northside Clinic",
+        "noPatientOrBookingSubmitted": true
+      }
+    },
+    {
+      "name": "Mobile 390px Appointments and Reports drawers and nested date picker",
+      "status": "pass",
+      "details": {
+        "viewport": "390x844",
+        "appointmentsHorizontalOverflow": 0,
+        "reportsHorizontalOverflow": 0
+      }
+    }
+  ],
+  "errors": [],
+  "screenshots": "screenshots/picker-filter-check"
+}

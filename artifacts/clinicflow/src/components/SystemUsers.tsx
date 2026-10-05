@@ -11,7 +11,6 @@ import { label } from "./permission-matrix";
 import { useTableColumns, readTableColumns, writeTableColumns } from "./TableColumns";
 import { SavedViews } from "./ListingViewControls";
 import { useListingLayout } from "@/lib/listing-views";
-import { tabListKeyDown } from "@/lib/tabs-a11y";
 import { OverflowText } from "./OverflowText";
 const SYSTEM_USER_VIEW_KEYS = ["role", "status", "clinicId"];
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
@@ -80,7 +79,8 @@ export function SystemUsers() {
   const q = useGetSystemUsers(params, { query: { queryKey: getGetSystemUsersQueryKey(params), placeholderData: (p: unknown) => p, refetchOnWindowFocus: true } as never });
   const data = q.data as Page | undefined;
   const active = !!(search || role || status || clinicId);
-  const reset = () => { setSearch(""); setRole(""); setStatus(""); setClinicId(""); };
+  const [draft, setDraft] = useState({ role: "", status: "", clinicId: "" });
+  const reset = () => { setSearch(""); setRole(""); setStatus(""); setClinicId(""); setDraft({ role: "", status: "", clinicId: "" }); };
 
   const me = useGetMe({ query: { queryKey: getGetMeQueryKey(), staleTime: 60000 } });
   const cols = useTableColumns("system-users", me.data?.user?.id, me.data?.user?.role, [{ key: "name", label: "Name" }, { key: "email", label: "Email" }, { key: "role", label: "Role" }, ...(!status ? [{ key: "status", label: "Status" }] : []), { key: "clinics", label: "Clinics" }]);
@@ -94,10 +94,11 @@ export function SystemUsers() {
   return <>
     <FilterBar label="System User Filters"
       title={data && !q.error ? <span className="listing-count-label"><span className="listing-count">{data.total}</span> {data.total === 1 ? "account" : "accounts"}</span> : undefined}
-      status={<div className="sq-status-tabs" role="tablist" aria-label="Account status" onKeyDown={e => tabListKeyDown(e, ["", "active", "inactive"], status, setStatus)}>{[["", "All"], ["active", "Active"], ["inactive", "Inactive"]].map(([v, l]) => <button type="button" key={v} role="tab" tabIndex={status === v ? 0 : -1} aria-selected={status === v} onClick={() => setStatus(v)} data-testid={`tab-system-users-${v || "all"}`}>{l}</button>)}</div>}
-      active={active} onReset={reset}
-      advanced={<><SearchableSelect label="Role" value={role} onChange={setRole} placeholder="All roles" options={[{ value: "", label: "All Roles" }, ...ROLES.map(r => ({ value: r, label: label(r) }))]} testId="select-system-user-role" /><ResourceLookup resource="clinics" label="Clinic" value={clinicId} onChange={setClinicId} /></>}
-      chips={[...(role ? [{ key: "adv:role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "adv:clinic", label: "Clinic Selected", onRemove: () => setClinicId("") }] : [])]}
+      active={active} onReset={reset} activeCount={[role, status, clinicId].filter(Boolean).length}
+      onOpen={() => setDraft({ role, status, clinicId })}
+      onApply={() => { setRole(draft.role); setStatus(draft.status); setClinicId(draft.clinicId); }}
+      advanced={<><SearchableSelect label="Account Status" testId="select-system-user-status" value={draft.status || "all"} onChange={v => setDraft(d => ({ ...d, status: v === "active" || v === "inactive" ? v : "" }))} options={[{ value: "all", label: "All" }, { value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]} /><SearchableSelect label="Role" value={draft.role} onChange={v => setDraft(d => ({ ...d, role: v }))} placeholder="All roles" options={[{ value: "", label: "All Roles" }, ...ROLES.map(r => ({ value: r, label: label(r) }))]} testId="select-system-user-role" /><ResourceLookup resource="clinics" label="Clinic" value={draft.clinicId} onChange={v => setDraft(d => ({ ...d, clinicId: v }))} /></>}
+      chips={[...(status ? [{ key: "adv:status", label: label(status), onRemove: () => setStatus("") }] : []), ...(role ? [{ key: "adv:role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "adv:clinic", label: "Clinic Selected", onRemove: () => setClinicId("") }] : [])]}
 
       secondary={<><Link className="button secondary small" href="/admin/permissions">Roles &amp; Permissions</Link>{cols.settings}{systemViews}</>}>
       <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" suggestions={q.error||q.isPlaceholderData?[]:listingSuggestions(data?.data,u=>({id:u.id,label:u.fullName,description:u.email,value:u.fullName}))} loading={q.isFetching} error={q.error?"Accounts could not be loaded.":null} onRetry={()=>void q.refetch()} total={data?.total} settledQuery={debounced} scopeKey={JSON.stringify({role,status,clinicId})} />

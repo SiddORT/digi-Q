@@ -17,3 +17,8 @@ test("saved views on Users, SystemUsers and Reports carry column snapshots",()=>
   assert.match(r("./clinic.tsx"),/REPORT_VIEW_KEYS[^]*writeTableColumns\("reports"/);
 });
 test("touch targets follow 32px desktop / 44px touch scale",()=>{const c=r("./components/listing-view-controls.css");assert.match(c,/min-width:32px;min-height:32px/);assert.match(c,/pointer:coarse[^]*min-height:44px/);assert.doesNotMatch(c,/28px/);});
+test("resource listing accepts every approved page size including 25", async () => {
+  const { readFileSync } = await import("node:fs");
+  const src = readFileSync(new URL("./resources.tsx", import.meta.url), "utf8");
+  assert.match(src, /PAGE_SIZE_OPTIONS as readonly number\[\]\)\.includes\(sizeValue\)/);
+});

@@ -97,7 +97,7 @@ async function decode(page: Page, uri: string) {
 async function verifyScreen(page: Page, expected: { name: string; status: string; token: string; date?: string; session?: string }) {
   const ticket = page.getByRole("article", { name: "Visit ticket" });
   await expect(ticket.locator(".vt-head-brand img")).toBeVisible();
-  await expect(ticket.locator(".vt-head-brand")).toContainText("Visit ticket");
+  await expect(ticket.locator(".vt-head-brand")).toContainText("Visit Ticket");
   await expect(ticket.locator(".vt-name")).toHaveText(expected.name);
   await expect(ticket.getByTestId("ticket-status")).toHaveText(expected.status);
   await expect(ticket.getByTestId("ticket-waiting-number")).toHaveText(expected.token);

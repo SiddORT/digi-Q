@@ -38,7 +38,6 @@ function change(label, value, context) {
 test("navigation and sort selectors retain non-empty enum choices when cleared", () => {
   for (const [label, callback, value] of [
     ["Clinic Section", "selectView", "history"],
-    ["Sort Appointments", "setSort", "-date"],
   ]) {
     const calls = [];
     const context = { [callback]: next => calls.push(next) };
@@ -47,15 +46,22 @@ test("navigation and sort selectors retain non-empty enum choices when cleared",
     change(label, value, context);
     assert.deepEqual(calls, [value]);
   }
+  // Sort Appointments now drafts into the filter drawer; clearing still keeps the existing choice.
+  const calls = [];
+  const context = { updateDraft: next => calls.push(next) };
+  change("Sort Appointments", "", context);
+  assert.deepEqual(calls, []);
+  change("Sort Appointments", "-date", context);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ sort: "-date" }]);
 });
 
 test("visit range selection resets dates only after choosing a non-empty view", () => {
   const calls = [];
-  const context = Object.fromEntries(["setView", "setFrom", "setTo"].map(key => [key, value => calls.push([key, value])]));
+  const context = { updateDraft: value => calls.push(value) };
   change("Visit Range", "", context);
   assert.deepEqual(calls, []);
   change("Visit Range", "all", context);
-  assert.deepEqual(calls, [["setView", "all"], ["setFrom", ""], ["setTo", ""]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [{ view: "all", from: "", to: "" }]);
 });
 
 test("page size remains numeric, retains caller-owned reset behavior, and ignores clear", () => {

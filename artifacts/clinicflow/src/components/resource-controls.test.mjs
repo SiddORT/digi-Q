@@ -5,18 +5,19 @@ import { test } from "node:test";
 const resource = readFileSync(new URL("../resources.tsx", import.meta.url), "utf8");
 const filters = readFileSync(new URL("./ListingControls.tsx", import.meta.url), "utf8");
 
-test("lists have one compact density and status-only tabs", () => {
+test("lists have one compact density and status filters in the drawer", () => {
   assert.match(resource, /const density="compact"/);
   assert.doesNotMatch(resource, /digiq-density:|density-toggle|setDensity/);
-  assert.match(resource, /aria-label=\{`\$\{title\(listName\)\} status`\}/);
-  assert.doesNotMatch(resource, /label="Status" placeholder="All statuses"/);
+  assert.match(resource, /\{hasStatusTabs&&<SearchableSelect label="Status" testId=\{`select-\$\{resource\}-status`\} value=\{draft\.status\|\|"all"\}/);
+  assert.doesNotMatch(resource, /role="tablist" aria-label=\{`\$\{title\(listName\)\} status`\}/);
 });
 
-test("sort is outside filters, column headers expose direction", () => {
+test("sort is drafted in the filter drawer, column headers expose direction", () => {
   assert.match(resource, /aria-sort=\{sortableColumns\.has\(c\)/);
-  // Sort is a labelled SearchableSelect in the toolbar actions, not inside the filter panel.
-  assert.match(resource, /meta=\{<>[^]*?<div className="sort-menu"[^>]*><SearchableSelect label=\{`Sort \$\{listName\}`\}/);
-  assert.match(resource, /hasAdvanced\?<>\s*\{resource==="clinics"/);
+  // Approved direction: sort and every record filter live in the right drawer and apply together.
+  assert.match(resource, /advanced=\{hasAdvanced\?<>[^]*?<div className="sort-menu"[^>]*><SearchableSelect label=\{`Sort \$\{listName\}`\} value=\{[^}]*draft\.sort/);
+  assert.doesNotMatch(resource, / meta=\{<>/, "no inline record filters remain in the listing header");
+  assert.match(resource, /sort:draft\.sort\|\|"-createdAt",page:1/);
   assert.doesNotMatch(resource, /<SearchableSelect label="Sort"/);
 });
 
@@ -37,7 +38,7 @@ test("user status is an accessible switch and filters can apply a draft", () => 
   assert.match(resource, /\{confirmation\.dialog\}/, "shared confirmation is rendered");
   assert.doesNotMatch(resource, /window\.confirm/);
   assert.match(resource, /statusUpdate=useMutation/);
-  assert.match(resource, /onOpen=\{\(\)=>setDraft\(filters\)\} onApply=\{applyDraft\}/);
+  assert.match(resource, /onOpen=\{\(\)=>setDraft\(\{\.\.\.filters,sort\}\)\} onApply=\{applyDraft\}/);
   assert.match(filters, /onApply\?\.\(\)/);
   assert.match(filters, /"Apply filters" : "Done"/);
 });

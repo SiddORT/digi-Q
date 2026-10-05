@@ -1,5 +1,6 @@
 import "./integration-settings.css";
 import { HelpTip } from "./HelpTip";
+import { SearchableSelect } from "./SearchableSelect";
 import { EmailInput } from "@/components/EmailInput";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
@@ -67,15 +68,11 @@ export function IntegrationSettings() {
     <div className="int-head section-head">
       <div className="int-head-title"><h2 id="integration-title">Third-Party Integrations <HelpTip text="Saved website settings replace the whole server environment configuration for that service; values are never mixed. Secrets stay encrypted and are never displayed."/></h2></div>
       <div className="int-chooser">
-        <div className="int-field"><label htmlFor="int-service">Service</label>
-          <select id="int-service" value={service} data-testid="select-service"
-            onChange={e => { setService(e.target.value as Service); setSaved(false); setEditing(false); }}>
-            {SERVICES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select></div>
-        <div className="int-field"><label htmlFor="int-provider">Provider</label>
-          <select id="int-provider" value={current.providers[0].value} disabled data-testid="select-provider" aria-describedby="int-provider-help" title="Only supported providers are listed.">
-            {current.providers.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-          </select><small id="int-provider-help" className="sr-only">Only supported providers are listed.</small></div>
+        <div className="int-field"><SearchableSelect id="int-service" label="Service" testId="select-service" value={service}
+            onChange={v => { if (!v) return; setService(v as Service); setSaved(false); setEditing(false); }}
+            options={SERVICES.map(s => ({ value: s.value, label: s.label }))} /></div>
+        <div className="int-field"><SearchableSelect id="int-provider" label="Provider" testId="select-provider" value={current.providers[0].value} disabled onChange={() => {}}
+            aria-describedby="int-provider-help" options={current.providers.map(p => ({ value: p.value, label: p.label }))} /><small id="int-provider-help" className="sr-only">Only supported providers are listed.</small></div>
       </div>
     </div>
     {data && !data.editable && <p role="note" className="notice">Website editing is locked. Your server operator must configure INTEGRATIONS_ENCRYPTION_KEY (64 hexadecimal characters from 32 random bytes). Existing server-configured integrations remain available.</p>}

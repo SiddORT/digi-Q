@@ -16,7 +16,8 @@ test("toolbar puts title left and status/search/filter/add on one wrapping row",
   assert.match(controls, /filter-bar-title/);
   assert.match(controls, /filter-bar-status/);
   const clinic = read("../clinic.tsx");
-  assert.match(clinic, /<FilterBar title=\{q\.data&&!q\.error\?<span className=\"listing-count-label\">[^]*?status=\{<StatusTabs/);
+  assert.match(clinic, /<FilterBar title=\{q\.data&&!q\.error\?<span className=\"listing-count-label\">[^]*?advanced=\{<><SearchableSelect label="Status"/);
+  assert.doesNotMatch(clinic, /status=\{<StatusTabs/, "appointment status is a drawer filter");
   assert.doesNotMatch(clinic, /<h2>Appointments<\/h2>/, "page h1 is the only Appointments heading");
   assert.match(clinic, /<FilterBar title=\{q\.data&&!q\.error\?<span className="listing-count-label"><span className="listing-count">\{total\}/);
   assert.doesNotMatch(clinic, /<h2>Report<\/h2>/);
@@ -27,7 +28,8 @@ test("toolbar puts title left and status/search/filter/add on one wrapping row",
   for (const page of ["../Users.tsx", "../resources.tsx"]) {
     const src = read(page);
     assert.match(src, /<FilterBar title=\{/, `${page} uses toolbar title`);
-    assert.match(src, /status=\{/, `${page} places status in toolbar`);
+    assert.doesNotMatch(src, / status=\{</, `${page} keeps record status filters out of the toolbar`);
+    assert.match(src, /<SearchableSelect label="(Account )?Status"/, `${page} drafts status in the filter drawer`);
   }
   assert.match(css, /\.filter-bar-row\.has-title\{[^}]*flex-wrap:wrap/);
   assert.match(css, /@media\(max-width:767px\)\{[^]*\.filter-bar-title\{flex-basis:100%\}/);

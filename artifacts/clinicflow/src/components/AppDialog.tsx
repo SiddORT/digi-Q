@@ -118,10 +118,14 @@ export function AppDialog({
         }}
         onInteractOutside={(e) => {
           e.preventDefault();
+          if (e.target instanceof Element && e.target.closest(".dtp-popover")) return;
           if (!confirming) requestClose();
         }}
         onEscapeKeyDown={(e) => {
           e.preventDefault();
+          // An open date/time picker owns Escape: it closes the picker, not the dialog.
+          const target = e.target instanceof Element ? e.target : null;
+          if (target?.closest(".dtp-popover, [data-dtp-open]")) return;
           if (confirming) keepEditing();
           else requestClose();
         }}

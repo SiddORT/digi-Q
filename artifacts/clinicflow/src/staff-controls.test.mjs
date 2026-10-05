@@ -17,8 +17,9 @@ test("embedded staff queries always include the fixed clinic",()=>{
   assert.match(ui,/!clinicId&&draftTab !== "admins"/);
   assert.match(ui,/onOpen=\{openFilters\} onApply=\{applyFilters\}/);
 });
-test("status is the only tab category and filters have no status/sort dropdown",()=>{
-  assert.match(ui,/className="status-tabs"/);
+test("account status is a drafted drawer filter with read-only counts; no status/sort tabs",()=>{
+  assert.doesNotMatch(ui,/className="status-tabs"/);
+  assert.match(ui,/<SearchableSelect label="Account Status" testId="select-staff-status" value=\{draft\.status\|\|"all"\}[^]*?counts\[index\]\.data\.total/);
   assert.doesNotMatch(ui,/role="tablist" aria-label="Staff type"/);
   assert.doesNotMatch(ui,/<SearchableSelect label="Status"/);
   assert.doesNotMatch(ui,/<SearchableSelect label="Sort"/);

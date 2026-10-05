@@ -51,3 +51,6 @@
 .filter-drawer-content .filter-panel-fields>*{min-width:0;max-width:100%}
 .filter-drawer-content .filter-panel-foot{display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:var(--dq-surface);padding:12px 0;border-top:1px solid var(--cw-line-soft,#e8eef6);margin-top:16px}
 .filter-drawer-content .filter-done{background:var(--dq-blue,var(--dq-blue));color:#fff;border:1px solid transparent}
+.filter-quick{display:flex;flex-wrap:wrap;gap:8px}
+.filter-quick [aria-pressed="true"]{border-color:var(--dq-blue);color:var(--dq-blue)}
+.filter-drawer-error{margin:0 0 12px}
