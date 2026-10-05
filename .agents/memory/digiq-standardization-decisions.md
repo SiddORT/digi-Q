@@ -9,6 +9,12 @@ Treat the DigiQ standardization prompt itself as the user's approved design spec
 
 **How to apply:** Use explicit values from the prompt. Distinguish missing referenced values from contradictions; do not invent missing tokens.
 
+Use a right-side drawer for listing filters; move extra listing dropdown filters into it. Use date/time pickers everywhere dates/times are entered, with validated keyboard typing rather than unrestricted text fields, and all necessary validations.
+
+**Why:** The user wants more space for listing data and explicitly selected the right-side drawer and pickers-plus-validated-typing options.
+
+**How to apply:** Treat these as the approved control direction even where reference images retain inline filters. Preserve clinic format/timezone rules. Selection of this direction does not authorize coding while the user requests analysis only.
+
 The later enterprise brief and HIGH_DENSITY_OPERATIONAL addendum supersede earlier visual foundations. Scope includes every existing role and public/authentication surface, not only administrator listings. The user requests visible progress during implementation.
 
 **Why:** After reviewing the page-wise comparison, the user asked for the changes throughout all pages, user roles and screens.
