@@ -34,21 +34,24 @@ export function AppointmentTicket({id}:{id:string}) {
   }
   const estimate=queue.error||!online?<p role="alert" className="span-2">Booking status updates unavailable or offline. No estimate is shown. <button onClick={()=>queue.refetch()}>Retry</button></p>:queue.isLoading?<p role="status">Loading booking status…</p>:queue.data?.ownEntry?<p className="notice" data-testid="text-ticket-estimate">{queue.data.ownEntry.patientsAhead} patients ahead · Approx. wait {queue.data.ownEntry.estimatedWaitMinutes==null?"unavailable — duration not configured":`${queue.data.ownEntry.estimatedWaitMinutes} minutes`}<br/><small>An estimate only, not a countdown or appointment time. Breaks and delays may extend the wait.</small></p>:null;
   return <div className="appt-ticket"><ErrorNotice error={appointment.error}/>{appointment.error&&<button onClick={()=>appointment.refetch()}>Refresh Ticket</button>}{!a?<p role="status">Loading ticket…</p>:<>
-    {confirmationEmailMessage(a.confirmationEmail)&&<p role="status">{confirmationEmailMessage(a.confirmationEmail)}</p>}
+    {(()=>{const message=confirmationEmailMessage(a.confirmationEmail);const delivery=message?.replace(/^Booking confirmed\.\s*/, "");
+      // Describe the current booking, not a new creation event or a stale email outcome.
+      const heading=["booked","waiting","checkedIn","called","inConsultation"].includes(a.status)?"Booking Confirmed":a.status==="completed"?"Visit Completed":`Booking ${bookingStatusLabel(a.status)}`;
+      return <div className="appt-ticket-confirmation" role="status" data-testid="text-ticket-confirmation"><strong>{heading}</strong>
+        {root&&<Link className="text-link appt-ticket-status-link" href={`/${root}/queue?appointment=${encodeURIComponent(id)}`} data-testid="link-ticket-open-status">Open Booking Status</Link>}
+        {delivery&&<p className="appt-ticket-delivery" data-testid="text-ticket-delivery">{delivery}</p>}</div>;})()}
     <VisitTicket testId="appointment-ticket" ticket={{dateFormat:a.dateFormat,timeFormat:a.timeFormat,patientName:a.patientName,clinicName:a.clinicName,branchName:a.branchName,address:a.branchAddress,doctorName:a.doctorName,date:a.date,startTime:a.startTime,endTime:a.endTime,timezone:a.timezone,waitingNumber:a.token,reference:a.reference,statusLabel:bookingStatusLabel(a.status),qrUrl:qr.data?.checkInUrl}} prepareExport={prepareExport} exportDisabled={freshness.stale||!online||appointment.isFetching||!!appointment.error}/>
     {qr.error&&<><ErrorNotice error={qr.error}/><button onClick={()=>qr.refetch()} data-testid="button-retry-appointment-qr">Retry QR</button></>}
     <ErrorNotice error={queue.error}/>
     <div className="appt-ticket-info" data-testid="ticket-information">
-      <p className="span-2" data-testid="text-ticket-booking-status">Booking status (sign in with the account that owns this booking): <a data-testid="link-ticket-patient-live" href={patientLiveUrl} style={{overflowWrap:"anywhere"}}>{patientLiveUrl}</a></p>
+      <p className="span-2 appt-ticket-live" data-testid="text-ticket-booking-status"><span>Booking status (sign in with the account that owns this booking):</span> <a className="text-link" data-testid="link-ticket-patient-live" href={patientLiveUrl} title={patientLiveUrl}>Patient Booking Status Page</a></p>
       {!queue.error&&online&&queue.data?.presence&&<p className="notice" data-testid="text-ticket-doctor-status">Doctor status: {queue.data.presence.status==="onBreak"?"On break":queue.data.presence.status==="away"?"Away":"Available"}{queue.data.presence.status!=="available"&&" · Calling is paused; your booking is kept."}</p>}
       {estimate}
-      <p data-testid="text-ticket-qr-warning">QR is for authorized staff validation, not public access to patient details. Staff check you in when your consultation begins.</p>
-      <p className="muted" data-testid="text-ticket-refresh-notice">Status refreshes every 30 seconds while connected. Printed tickets do not update.</p>
       {(root||!!a.history?.length)&&<div className="appt-ticket-links span-2">
-        {root&&<Link className="text-link" href={`/${root}/queue?appointment=${encodeURIComponent(id)}`} data-testid="link-ticket-open-status">Open Booking Status</Link>}
         {!!a.history?.length&&<details><summary>Appointment History</summary><ul>{a.history.map((event,index)=><li key={index}>{new Date(event.occurredAt).toLocaleString()} · {statusLabel(event.status)}{event.reason&&` · ${event.reason}`}</li>)}</ul></details>}
       </div>}
       {freshness.stale&&<p role="alert" className="span-2">Ticket is offline or stale. Reconnect and refresh before printing. <button disabled={!online} onClick={()=>appointment.refetch()}>Refresh Ticket</button></p>}
+      <div className="appt-ticket-guidance span-2"><p data-testid="text-ticket-qr-warning">QR is for authorized staff validation, not public access to patient details. Staff check you in when your consultation begins.</p><p data-testid="text-ticket-refresh-notice">Status refreshes every 30 seconds while connected. Printed tickets do not update.</p></div>
     </div>
   </>}</div>;
 }

@@ -1,0 +1,1583 @@
+{
+  "startedAt": "2026-10-05T20:05:40.487Z",
+  "fixtureOnly": true,
+  "scope": "Targeted CSS-cascade regression only",
+  "authNote": "Protected staff routes were rendered with intercepted fictional auth fixtures; authorization was not tested.",
+  "fixtureNotes": [
+    "All /api/** requests intercepted; no live auth, DB, account, email, booking or backend writes.",
+    "Non-GET requests are recorded and answered by fixtures."
+  ],
+  "checks": [
+    {
+      "name": "1024px appointments default columns: compact date header, sensible rows, complete one-line actions and in-row expansion",
+      "status": "pass",
+      "details": {
+        "dateHeader": {
+          "text": "Visit Date",
+          "rect": {
+            "x": 317,
+            "y": 224.578125,
+            "width": 150,
+            "height": 49,
+            "right": 467,
+            "bottom": 273.578125
+          },
+          "buttonRect": {
+            "x": 329,
+            "y": 232.578125,
+            "width": 109.28125,
+            "height": 32,
+            "right": 438.28125,
+            "bottom": 264.578125
+          },
+          "whiteSpace": "nowrap"
+        },
+        "headers": [
+          "",
+          "#",
+          "Visit Date",
+          "Patient",
+          "Waiting No.",
+          "Clinic / Location",
+          "Doctor",
+          "Booked At",
+          "Status",
+          "Actions \nCheck in starts consultation. Check out completes it and calls the next eligible patient. A called patient still needs explicit check-in."
+        ],
+        "rowHeights": [
+          68.59375,
+          68.59375,
+          68.59375
+        ],
+        "actions": [
+          {
+            "height": 68.59375,
+            "buttons": [
+              {
+                "label": "Check In",
+                "aria": null,
+                "rect": {
+                  "x": 667.6875,
+                  "y": 291.375,
+                  "width": 99.796875,
+                  "height": 32,
+                  "right": 767.484375,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 680.6875,
+                  "y": 298.96875,
+                  "width": 73.796875,
+                  "height": 15.90625,
+                  "right": 754.484375,
+                  "bottom": 314.875
+                },
+                "inside": true
+              },
+              {
+                "label": "Details",
+                "aria": null,
+                "rect": {
+                  "x": 771.484375,
+                  "y": 291.375,
+                  "width": 64.53125,
+                  "height": 32,
+                  "right": 836.015625,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 784.484375,
+                  "y": 298.96875,
+                  "width": 38.53125,
+                  "height": 15,
+                  "right": 823.015625,
+                  "bottom": 313.96875
+                },
+                "inside": true
+              },
+              {
+                "label": "Ticket",
+                "aria": "Ticket",
+                "rect": {
+                  "x": 840.015625,
+                  "y": 291.375,
+                  "width": 32,
+                  "height": 32,
+                  "right": 872.015625,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 848.515625,
+                  "y": 299.875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 863.515625,
+                  "bottom": 314.875
+                },
+                "inside": true
+              },
+              {
+                "label": "More",
+                "aria": "More actions for Alexandria Verylongpatientname Example-Surname",
+                "rect": {
+                  "x": 876.015625,
+                  "y": 291.375,
+                  "width": 78.984375,
+                  "height": 32,
+                  "right": 955,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 889.015625,
+                  "y": 298.96875,
+                  "width": 52.984375,
+                  "height": 16.796875,
+                  "right": 942,
+                  "bottom": 315.765625
+                },
+                "inside": true
+              },
+              {
+                "label": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
+                "aria": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
+                "rect": {
+                  "x": 963,
+                  "y": 291.375,
+                  "width": 32,
+                  "height": 32,
+                  "right": 995,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 971.5,
+                  "y": 299.875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 986.5,
+                  "bottom": 314.875
+                },
+                "inside": true
+              }
+            ],
+            "expansionInActions": true
+          },
+          {
+            "height": 68.59375,
+            "buttons": [
+              {
+                "label": "Check In",
+                "aria": null,
+                "rect": {
+                  "x": 667.6875,
+                  "y": 359.96875,
+                  "width": 99.796875,
+                  "height": 32,
+                  "right": 767.484375,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 680.6875,
+                  "y": 367.5625,
+                  "width": 73.796875,
+                  "height": 15.90625,
+                  "right": 754.484375,
+                  "bottom": 383.46875
+                },
+                "inside": true
+              },
+              {
+                "label": "Details",
+                "aria": null,
+                "rect": {
+                  "x": 771.484375,
+                  "y": 359.96875,
+                  "width": 64.53125,
+                  "height": 32,
+                  "right": 836.015625,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 784.484375,
+                  "y": 367.5625,
+                  "width": 38.53125,
+                  "height": 15,
+                  "right": 823.015625,
+                  "bottom": 382.5625
+                },
+                "inside": true
+              },
+              {
+                "label": "Ticket",
+                "aria": "Ticket",
+                "rect": {
+                  "x": 840.015625,
+                  "y": 359.96875,
+                  "width": 32,
+                  "height": 32,
+                  "right": 872.015625,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 848.515625,
+                  "y": 368.46875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 863.515625,
+                  "bottom": 383.46875
+                },
+                "inside": true
+              },
+              {
+                "label": "More",
+                "aria": "More actions for Morgan Sample Patient",
+                "rect": {
+                  "x": 876.015625,
+                  "y": 359.96875,
+                  "width": 78.984375,
+                  "height": 32,
+                  "right": 955,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 889.015625,
+                  "y": 367.5625,
+                  "width": 52.984375,
+                  "height": 16.796875,
+                  "right": 942,
+                  "bottom": 384.359375
+                },
+                "inside": true
+              },
+              {
+                "label": "Show hidden columns for Morgan Sample Patient",
+                "aria": "Show hidden columns for Morgan Sample Patient",
+                "rect": {
+                  "x": 963,
+                  "y": 359.96875,
+                  "width": 32,
+                  "height": 32,
+                  "right": 995,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 971.5,
+                  "y": 368.46875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 986.5,
+                  "bottom": 383.46875
+                },
+                "inside": true
+              }
+            ],
+            "expansionInActions": true
+          },
+          {
+            "height": 68.59375,
+            "buttons": [
+              {
+                "label": "Check Out",
+                "aria": null,
+                "rect": {
+                  "x": 614.546875,
+                  "y": 428.5625,
+                  "width": 109.9375,
+                  "height": 32,
+                  "right": 724.484375,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 627.546875,
+                  "y": 436.15625,
+                  "width": 83.9375,
+                  "height": 15.90625,
+                  "right": 711.484375,
+                  "bottom": 452.0625
+                },
+                "inside": true
+              },
+              {
+                "label": "Details",
+                "aria": null,
+                "rect": {
+                  "x": 728.484375,
+                  "y": 428.5625,
+                  "width": 64.53125,
+                  "height": 32,
+                  "right": 793.015625,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 741.484375,
+                  "y": 436.15625,
+                  "width": 38.53125,
+                  "height": 15,
+                  "right": 780.015625,
+                  "bottom": 451.15625
+                },
+                "inside": true
+              },
+              {
+                "label": "Ticket",
+                "aria": "Ticket",
+                "rect": {
+                  "x": 840.015625,
+                  "y": 428.5625,
+                  "width": 32,
+                  "height": 32,
+                  "right": 872.015625,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 848.515625,
+                  "y": 437.0625,
+                  "width": 15,
+                  "height": 15,
+                  "right": 863.515625,
+                  "bottom": 452.0625
+                },
+                "inside": true
+              },
+              {
+                "label": "More",
+                "aria": "More actions for Jordan Placeholder Person",
+                "rect": {
+                  "x": 876.015625,
+                  "y": 428.5625,
+                  "width": 78.984375,
+                  "height": 32,
+                  "right": 955,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 889.015625,
+                  "y": 436.15625,
+                  "width": 52.984375,
+                  "height": 16.796875,
+                  "right": 942,
+                  "bottom": 452.953125
+                },
+                "inside": true
+              },
+              {
+                "label": "Show hidden columns for Jordan Placeholder Person",
+                "aria": "Show hidden columns for Jordan Placeholder Person",
+                "rect": {
+                  "x": 963,
+                  "y": 428.5625,
+                  "width": 32,
+                  "height": 32,
+                  "right": 995,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 971.5,
+                  "y": 437.0625,
+                  "width": 15,
+                  "height": 15,
+                  "right": 986.5,
+                  "bottom": 452.0625
+                },
+                "inside": true
+              }
+            ],
+            "expansionInActions": true
+          }
+        ],
+        "documentOverflow": 0,
+        "tableScroll": {
+          "client": 782,
+          "scroll": 1805
+        }
+      }
+    },
+    {
+      "name": "1280px appointments default columns: compact date header, sensible rows, complete one-line actions and in-row expansion",
+      "status": "pass",
+      "details": {
+        "dateHeader": {
+          "text": "Visit Date",
+          "rect": {
+            "x": 313,
+            "y": 224.578125,
+            "width": 150,
+            "height": 49,
+            "right": 463,
+            "bottom": 273.578125
+          },
+          "buttonRect": {
+            "x": 325,
+            "y": 232.578125,
+            "width": 109.28125,
+            "height": 32,
+            "right": 434.28125,
+            "bottom": 264.578125
+          },
+          "whiteSpace": "nowrap"
+        },
+        "headers": [
+          "",
+          "#",
+          "Visit Date",
+          "Patient",
+          "Waiting No.",
+          "Clinic / Location",
+          "Doctor",
+          "Booked At",
+          "Status",
+          "Actions \nCheck in starts consultation. Check out completes it and calls the next eligible patient. A called patient still needs explicit check-in."
+        ],
+        "rowHeights": [
+          68.59375,
+          68.59375,
+          68.59375
+        ],
+        "actions": [
+          {
+            "height": 68.59375,
+            "buttons": [
+              {
+                "label": "Check In",
+                "aria": null,
+                "rect": {
+                  "x": 907.6875,
+                  "y": 291.375,
+                  "width": 99.796875,
+                  "height": 32,
+                  "right": 1007.484375,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 920.6875,
+                  "y": 298.96875,
+                  "width": 73.796875,
+                  "height": 15.90625,
+                  "right": 994.484375,
+                  "bottom": 314.875
+                },
+                "inside": true
+              },
+              {
+                "label": "Details",
+                "aria": null,
+                "rect": {
+                  "x": 1015.484375,
+                  "y": 291.375,
+                  "width": 64.53125,
+                  "height": 32,
+                  "right": 1080.015625,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 1028.484375,
+                  "y": 298.96875,
+                  "width": 38.53125,
+                  "height": 15,
+                  "right": 1067.015625,
+                  "bottom": 313.96875
+                },
+                "inside": true
+              },
+              {
+                "label": "Ticket",
+                "aria": "Ticket",
+                "rect": {
+                  "x": 1088.015625,
+                  "y": 291.375,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1120.015625,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 1096.515625,
+                  "y": 299.875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1111.515625,
+                  "bottom": 314.875
+                },
+                "inside": true
+              },
+              {
+                "label": "More",
+                "aria": "More actions for Alexandria Verylongpatientname Example-Surname",
+                "rect": {
+                  "x": 1128.015625,
+                  "y": 291.375,
+                  "width": 78.984375,
+                  "height": 32,
+                  "right": 1207,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 1141.015625,
+                  "y": 298.96875,
+                  "width": 52.984375,
+                  "height": 16.796875,
+                  "right": 1194,
+                  "bottom": 315.765625
+                },
+                "inside": true
+              },
+              {
+                "label": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
+                "aria": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
+                "rect": {
+                  "x": 1219,
+                  "y": 291.375,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1251,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 1227.5,
+                  "y": 299.875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1242.5,
+                  "bottom": 314.875
+                },
+                "inside": true
+              }
+            ],
+            "expansionInActions": true
+          },
+          {
+            "height": 68.59375,
+            "buttons": [
+              {
+                "label": "Check In",
+                "aria": null,
+                "rect": {
+                  "x": 907.6875,
+                  "y": 359.96875,
+                  "width": 99.796875,
+                  "height": 32,
+                  "right": 1007.484375,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 920.6875,
+                  "y": 367.5625,
+                  "width": 73.796875,
+                  "height": 15.90625,
+                  "right": 994.484375,
+                  "bottom": 383.46875
+                },
+                "inside": true
+              },
+              {
+                "label": "Details",
+                "aria": null,
+                "rect": {
+                  "x": 1015.484375,
+                  "y": 359.96875,
+                  "width": 64.53125,
+                  "height": 32,
+                  "right": 1080.015625,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 1028.484375,
+                  "y": 367.5625,
+                  "width": 38.53125,
+                  "height": 15,
+                  "right": 1067.015625,
+                  "bottom": 382.5625
+                },
+                "inside": true
+              },
+              {
+                "label": "Ticket",
+                "aria": "Ticket",
+                "rect": {
+                  "x": 1088.015625,
+                  "y": 359.96875,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1120.015625,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 1096.515625,
+                  "y": 368.46875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1111.515625,
+                  "bottom": 383.46875
+                },
+                "inside": true
+              },
+              {
+                "label": "More",
+                "aria": "More actions for Morgan Sample Patient",
+                "rect": {
+                  "x": 1128.015625,
+                  "y": 359.96875,
+                  "width": 78.984375,
+                  "height": 32,
+                  "right": 1207,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 1141.015625,
+                  "y": 367.5625,
+                  "width": 52.984375,
+                  "height": 16.796875,
+                  "right": 1194,
+                  "bottom": 384.359375
+                },
+                "inside": true
+              },
+              {
+                "label": "Show hidden columns for Morgan Sample Patient",
+                "aria": "Show hidden columns for Morgan Sample Patient",
+                "rect": {
+                  "x": 1219,
+                  "y": 359.96875,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1251,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 1227.5,
+                  "y": 368.46875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1242.5,
+                  "bottom": 383.46875
+                },
+                "inside": true
+              }
+            ],
+            "expansionInActions": true
+          },
+          {
+            "height": 68.59375,
+            "buttons": [
+              {
+                "label": "Check Out",
+                "aria": null,
+                "rect": {
+                  "x": 850.546875,
+                  "y": 428.5625,
+                  "width": 109.9375,
+                  "height": 32,
+                  "right": 960.484375,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 863.546875,
+                  "y": 436.15625,
+                  "width": 83.9375,
+                  "height": 15.90625,
+                  "right": 947.484375,
+                  "bottom": 452.0625
+                },
+                "inside": true
+              },
+              {
+                "label": "Details",
+                "aria": null,
+                "rect": {
+                  "x": 968.484375,
+                  "y": 428.5625,
+                  "width": 64.53125,
+                  "height": 32,
+                  "right": 1033.015625,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 981.484375,
+                  "y": 436.15625,
+                  "width": 38.53125,
+                  "height": 15,
+                  "right": 1020.015625,
+                  "bottom": 451.15625
+                },
+                "inside": true
+              },
+              {
+                "label": "Ticket",
+                "aria": "Ticket",
+                "rect": {
+                  "x": 1088.015625,
+                  "y": 428.5625,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1120.015625,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 1096.515625,
+                  "y": 437.0625,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1111.515625,
+                  "bottom": 452.0625
+                },
+                "inside": true
+              },
+              {
+                "label": "More",
+                "aria": "More actions for Jordan Placeholder Person",
+                "rect": {
+                  "x": 1128.015625,
+                  "y": 428.5625,
+                  "width": 78.984375,
+                  "height": 32,
+                  "right": 1207,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 1141.015625,
+                  "y": 436.15625,
+                  "width": 52.984375,
+                  "height": 16.796875,
+                  "right": 1194,
+                  "bottom": 452.953125
+                },
+                "inside": true
+              },
+              {
+                "label": "Show hidden columns for Jordan Placeholder Person",
+                "aria": "Show hidden columns for Jordan Placeholder Person",
+                "rect": {
+                  "x": 1219,
+                  "y": 428.5625,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1251,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 1227.5,
+                  "y": 437.0625,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1242.5,
+                  "bottom": 452.0625
+                },
+                "inside": true
+              }
+            ],
+            "expansionInActions": true
+          }
+        ],
+        "documentOverflow": 0,
+        "tableScroll": {
+          "client": 1038,
+          "scroll": 1821
+        }
+      }
+    },
+    {
+      "name": "1280px appointments narrow saved columns: compact date header, sensible rows, complete one-line actions and in-row expansion",
+      "status": "pass",
+      "details": {
+        "dateHeader": {
+          "text": "Visit Date",
+          "rect": {
+            "x": 313,
+            "y": 224.578125,
+            "width": 150,
+            "height": 49,
+            "right": 463,
+            "bottom": 273.578125
+          },
+          "buttonRect": {
+            "x": 325,
+            "y": 232.578125,
+            "width": 109.28125,
+            "height": 32,
+            "right": 434.28125,
+            "bottom": 264.578125
+          },
+          "whiteSpace": "nowrap"
+        },
+        "headers": [
+          "",
+          "#",
+          "Visit Date",
+          "Patient",
+          "Waiting No.",
+          "Actions \nCheck in starts consultation. Check out completes it and calls the next eligible patient. A called patient still needs explicit check-in."
+        ],
+        "rowHeights": [
+          68.59375,
+          68.59375,
+          68.59375
+        ],
+        "actions": [
+          {
+            "height": 68.59375,
+            "buttons": [
+              {
+                "label": "Check In",
+                "aria": null,
+                "rect": {
+                  "x": 907.6875,
+                  "y": 291.375,
+                  "width": 99.796875,
+                  "height": 32,
+                  "right": 1007.484375,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 920.6875,
+                  "y": 298.96875,
+                  "width": 73.796875,
+                  "height": 15.90625,
+                  "right": 994.484375,
+                  "bottom": 314.875
+                },
+                "inside": true
+              },
+              {
+                "label": "Details",
+                "aria": null,
+                "rect": {
+                  "x": 1015.484375,
+                  "y": 291.375,
+                  "width": 64.53125,
+                  "height": 32,
+                  "right": 1080.015625,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 1028.484375,
+                  "y": 298.96875,
+                  "width": 38.53125,
+                  "height": 15,
+                  "right": 1067.015625,
+                  "bottom": 313.96875
+                },
+                "inside": true
+              },
+              {
+                "label": "Ticket",
+                "aria": "Ticket",
+                "rect": {
+                  "x": 1088.015625,
+                  "y": 291.375,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1120.015625,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 1096.515625,
+                  "y": 299.875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1111.515625,
+                  "bottom": 314.875
+                },
+                "inside": true
+              },
+              {
+                "label": "More",
+                "aria": "More actions for Alexandria Verylongpatientname Example-Surname",
+                "rect": {
+                  "x": 1128.015625,
+                  "y": 291.375,
+                  "width": 78.984375,
+                  "height": 32,
+                  "right": 1207,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 1141.015625,
+                  "y": 298.96875,
+                  "width": 52.984375,
+                  "height": 16.796875,
+                  "right": 1194,
+                  "bottom": 315.765625
+                },
+                "inside": true
+              },
+              {
+                "label": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
+                "aria": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
+                "rect": {
+                  "x": 1219,
+                  "y": 291.375,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1251,
+                  "bottom": 323.375
+                },
+                "textRect": {
+                  "x": 1227.5,
+                  "y": 299.875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1242.5,
+                  "bottom": 314.875
+                },
+                "inside": true
+              }
+            ],
+            "expansionInActions": true
+          },
+          {
+            "height": 68.59375,
+            "buttons": [
+              {
+                "label": "Check In",
+                "aria": null,
+                "rect": {
+                  "x": 907.6875,
+                  "y": 359.96875,
+                  "width": 99.796875,
+                  "height": 32,
+                  "right": 1007.484375,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 920.6875,
+                  "y": 367.5625,
+                  "width": 73.796875,
+                  "height": 15.90625,
+                  "right": 994.484375,
+                  "bottom": 383.46875
+                },
+                "inside": true
+              },
+              {
+                "label": "Details",
+                "aria": null,
+                "rect": {
+                  "x": 1015.484375,
+                  "y": 359.96875,
+                  "width": 64.53125,
+                  "height": 32,
+                  "right": 1080.015625,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 1028.484375,
+                  "y": 367.5625,
+                  "width": 38.53125,
+                  "height": 15,
+                  "right": 1067.015625,
+                  "bottom": 382.5625
+                },
+                "inside": true
+              },
+              {
+                "label": "Ticket",
+                "aria": "Ticket",
+                "rect": {
+                  "x": 1088.015625,
+                  "y": 359.96875,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1120.015625,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 1096.515625,
+                  "y": 368.46875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1111.515625,
+                  "bottom": 383.46875
+                },
+                "inside": true
+              },
+              {
+                "label": "More",
+                "aria": "More actions for Morgan Sample Patient",
+                "rect": {
+                  "x": 1128.015625,
+                  "y": 359.96875,
+                  "width": 78.984375,
+                  "height": 32,
+                  "right": 1207,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 1141.015625,
+                  "y": 367.5625,
+                  "width": 52.984375,
+                  "height": 16.796875,
+                  "right": 1194,
+                  "bottom": 384.359375
+                },
+                "inside": true
+              },
+              {
+                "label": "Show hidden columns for Morgan Sample Patient",
+                "aria": "Show hidden columns for Morgan Sample Patient",
+                "rect": {
+                  "x": 1219,
+                  "y": 359.96875,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1251,
+                  "bottom": 391.96875
+                },
+                "textRect": {
+                  "x": 1227.5,
+                  "y": 368.46875,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1242.5,
+                  "bottom": 383.46875
+                },
+                "inside": true
+              }
+            ],
+            "expansionInActions": true
+          },
+          {
+            "height": 68.59375,
+            "buttons": [
+              {
+                "label": "Check Out",
+                "aria": null,
+                "rect": {
+                  "x": 850.546875,
+                  "y": 428.5625,
+                  "width": 109.9375,
+                  "height": 32,
+                  "right": 960.484375,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 863.546875,
+                  "y": 436.15625,
+                  "width": 83.9375,
+                  "height": 15.90625,
+                  "right": 947.484375,
+                  "bottom": 452.0625
+                },
+                "inside": true
+              },
+              {
+                "label": "Details",
+                "aria": null,
+                "rect": {
+                  "x": 968.484375,
+                  "y": 428.5625,
+                  "width": 64.53125,
+                  "height": 32,
+                  "right": 1033.015625,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 981.484375,
+                  "y": 436.15625,
+                  "width": 38.53125,
+                  "height": 15,
+                  "right": 1020.015625,
+                  "bottom": 451.15625
+                },
+                "inside": true
+              },
+              {
+                "label": "Ticket",
+                "aria": "Ticket",
+                "rect": {
+                  "x": 1088.015625,
+                  "y": 428.5625,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1120.015625,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 1096.515625,
+                  "y": 437.0625,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1111.515625,
+                  "bottom": 452.0625
+                },
+                "inside": true
+              },
+              {
+                "label": "More",
+                "aria": "More actions for Jordan Placeholder Person",
+                "rect": {
+                  "x": 1128.015625,
+                  "y": 428.5625,
+                  "width": 78.984375,
+                  "height": 32,
+                  "right": 1207,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 1141.015625,
+                  "y": 436.15625,
+                  "width": 52.984375,
+                  "height": 16.796875,
+                  "right": 1194,
+                  "bottom": 452.953125
+                },
+                "inside": true
+              },
+              {
+                "label": "Show hidden columns for Jordan Placeholder Person",
+                "aria": "Show hidden columns for Jordan Placeholder Person",
+                "rect": {
+                  "x": 1219,
+                  "y": 428.5625,
+                  "width": 32,
+                  "height": 32,
+                  "right": 1251,
+                  "bottom": 460.5625
+                },
+                "textRect": {
+                  "x": 1227.5,
+                  "y": 437.0625,
+                  "width": 15,
+                  "height": 15,
+                  "right": 1242.5,
+                  "bottom": 452.0625
+                },
+                "inside": true
+              }
+            ],
+            "expansionInActions": true
+          }
+        ],
+        "documentOverflow": 0,
+        "tableScroll": {
+          "client": 1038,
+          "scroll": 1084
+        }
+      }
+    },
+    {
+      "name": "1280px Patients actions fit without wrapping/clipping; details, edit, More/Deactivate remain available",
+      "status": "pass",
+      "details": {
+        "wrap": "nowrap",
+        "items": [
+          {
+            "label": "Timeline, activity and documents",
+            "rect": {
+              "x": 1139,
+              "y": 274.453125,
+              "width": 32,
+              "height": 32,
+              "right": 1171
+            }
+          },
+          {
+            "label": "Edit this record",
+            "rect": {
+              "x": 1179,
+              "y": 274.453125,
+              "width": 32,
+              "height": 32,
+              "right": 1211
+            }
+          },
+          {
+            "label": "More",
+            "rect": {
+              "x": 1219,
+              "y": 274.453125,
+              "width": 32,
+              "height": 32,
+              "right": 1251
+            }
+          }
+        ],
+        "height": 32
+      }
+    },
+    {
+      "name": "390px appointment breakpoint: no page overflow and primary/details/ticket/More actions remain usable",
+      "status": "pass",
+      "details": {
+        "overflow": 0,
+        "scrollHeight": 5789,
+        "actionsWidth": 314,
+        "buttons": [
+          {
+            "label": "Check In",
+            "x": 38,
+            "y": 400.15625,
+            "width": 99.796875,
+            "height": 44,
+            "right": 137.796875,
+            "bottom": 444.15625
+          },
+          {
+            "label": "Details",
+            "x": 141.796875,
+            "y": 400.15625,
+            "width": 64.53125,
+            "height": 44,
+            "right": 206.328125,
+            "bottom": 444.15625
+          },
+          {
+            "label": "Ticket",
+            "x": 210.328125,
+            "y": 400.15625,
+            "width": 44,
+            "height": 44,
+            "right": 254.328125,
+            "bottom": 444.15625
+          },
+          {
+            "label": "More",
+            "x": 258.328125,
+            "y": 400.15625,
+            "width": 78.984375,
+            "height": 44,
+            "right": 337.3125,
+            "bottom": 444.15625
+          },
+          {
+            "label": "Show hidden columns for Alexandria Verylongpatientname Example-Surname",
+            "x": 345.3125,
+            "y": 400.15625,
+            "width": 44,
+            "height": 44,
+            "right": 389.3125,
+            "bottom": 444.15625
+          }
+        ]
+      }
+    },
+    {
+      "name": "1280px ticket confirmation hierarchy: bold heading left, named status link right, full-width delivery warning below",
+      "status": "pass",
+      "details": {
+        "direction": "row",
+        "headingWeight": "700",
+        "confirmation": {
+          "x": 197,
+          "y": 172.640625,
+          "width": 886,
+          "height": 67.578125,
+          "right": 1083,
+          "bottom": 240.21875
+        },
+        "heading": {
+          "x": 197,
+          "y": 172.640625,
+          "width": 132.125,
+          "height": 22.390625,
+          "right": 329.125,
+          "bottom": 195.03125
+        },
+        "link": {
+          "x": 943.78125,
+          "y": 172.640625,
+          "width": 139.21875,
+          "height": 22.390625,
+          "right": 1083,
+          "bottom": 195.03125
+        },
+        "linkText": "Open Booking Status",
+        "warning": {
+          "x": 197,
+          "y": 203.03125,
+          "width": 886,
+          "height": 37.1875,
+          "right": 1083,
+          "bottom": 240.21875
+        },
+        "warningFlexBasis": "100%",
+        "overflow": 0
+      }
+    },
+    {
+      "name": "390px ticket confirmation hierarchy: bold heading left, named status link right, full-width delivery warning below",
+      "status": "pass",
+      "details": {
+        "direction": "row",
+        "headingWeight": "700",
+        "confirmation": {
+          "x": 17,
+          "y": 61.390625,
+          "width": 356,
+          "height": 86.765625,
+          "right": 373,
+          "bottom": 148.15625
+        },
+        "heading": {
+          "x": 17,
+          "y": 61.390625,
+          "width": 132.125,
+          "height": 22.390625,
+          "right": 149.125,
+          "bottom": 83.78125
+        },
+        "link": {
+          "x": 233.78125,
+          "y": 61.390625,
+          "width": 139.21875,
+          "height": 22.390625,
+          "right": 373,
+          "bottom": 83.78125
+        },
+        "linkText": "Open Booking Status",
+        "warning": {
+          "x": 17,
+          "y": 91.78125,
+          "width": 356,
+          "height": 56.375,
+          "right": 373,
+          "bottom": 148.15625
+        },
+        "warningFlexBasis": "100%",
+        "overflow": 0
+      }
+    }
+  ],
+  "screenshots": [
+    "screenshots/uniform-layout-targeted/appointments-1024-default.png",
+    "screenshots/uniform-layout-targeted/appointments-1280-default.png",
+    "screenshots/uniform-layout-targeted/appointments-1280-narrowed.png",
+    "screenshots/uniform-layout-targeted/patients-actions-1280.png",
+    "screenshots/uniform-layout-targeted/appointments-actions-390.png",
+    "screenshots/uniform-layout-targeted/ticket-confirmation-1280.png",
+    "screenshots/uniform-layout-targeted/ticket-confirmation-390.png"
+  ],
+  "apiRequests": [
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/patients",
+      "search": "?page=1&pageSize=20&sort=-createdAt"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=patients"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+    }
+  ],
+  "interceptedWrites": [],
+  "errors": [],
+  "notTested": [
+    "Live authorization/access-control decisions",
+    "Real DB/account/email/booking writes",
+    "Print/download execution",
+    "Other routes or broader journeys"
+  ]
+}

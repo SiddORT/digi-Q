@@ -1,3 +1,4 @@
+import { RowMenu } from "./components/RowMenu";
 import { EmailInput } from "@/components/EmailInput";
 import { AssignmentSummary } from "./components/AssignmentSummary";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -195,8 +196,8 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
 
 
           <td data-label="Actions" className="col-actions sticky"><div className="row-actions">{cols.toggle(row.id,row.fullName)}
-            {row.invitationStatus !== "notRequired" && <HelpTip text={staffInvitationRestriction(row,tab)||"Replace the pending invitation and send a new set-password link. This does not deactivate the account or revoke sessions."}><button aria-label={`Resend set-password invitation for ${row.fullName}`} disabled={invitationBusy||!!staffInvitationRestriction(row,tab)} onClick={async () => { if (!invitationBusy && await confirmAction.ask({title:"Resend Invitation?",description:"The pending invitation will be replaced and a new set-password email requested. This does not deactivate the account or revoke sessions.",confirmLabel:"Resend Invitation"})) resendInvitation.mutate({row,staffTab:tab}); }}><Send size={15} /></button></HelpTip>}
             <HelpTip text="Edit staff details and assignments"><button type="button" aria-label={`Edit ${row.fullName}`} onClick={() => beginEdit(row)} data-testid={`button-edit-staff-${row.id}`}><Pencil size={15} /></button></HelpTip>
+            {row.invitationStatus !== "notRequired" && <RowMenu label={`More actions for ${row.fullName}`} testId={`menu-staff-${row.id}`} items={[{key:"resend",label:"Resend Invitation",hint:staffInvitationRestriction(row,tab)||"Replace the pending invitation and send a new set-password link. This does not deactivate the account or revoke sessions.",disabled:invitationBusy||!!staffInvitationRestriction(row,tab),testId:`action-resend-invitation-${row.id}`,onSelect:()=>{void (async()=>{ if (!invitationBusy && await confirmAction.ask({title:"Resend Invitation?",description:"The pending invitation will be replaced and a new set-password email requested. This does not deactivate the account or revoke sessions.",confirmLabel:"Resend Invitation"})) resendInvitation.mutate({row,staffTab:tab}); })();}}]}/>}
           </div>{invitationFeedback&&invitationFeedback.rowId===row.id&&<small role="status">{invitationFeedback.message}</small>}</td>
         </tr>{cols.expansion(row.id,cols.visible.length+2,k=>userCell(k,row))}</Fragment>)}</tbody>
       </table></div> : active ? <div className="empty"><h3>No Matching Staff</h3><p>Try another search or clear your filters.</p><button onClick={reset}>Clear Filters</button></div> : <Empty label={tab} />}

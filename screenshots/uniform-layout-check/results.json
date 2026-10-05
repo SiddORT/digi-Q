@@ -1,0 +1,776 @@
+{
+  "startedAt": "2026-10-05T19:48:12.969Z",
+  "fixtureOnly": true,
+  "authNote": "Protected staff routes were rendered with intercepted fictional auth fixtures; authorization was not tested.",
+  "fixtureNotes": [
+    "All /api/** requests intercepted; no live auth, DB, account, email, booking or backend writes.",
+    "Non-GET requests are recorded and answered by fixtures."
+  ],
+  "checks": [
+    {
+      "name": "Staff review overview → appointments, fixture route is visibly rendered",
+      "status": "pass",
+      "details": {
+        "overview": {
+          "overflow": 0,
+          "viewport": 1280,
+          "main": "05 Oct 2026\nGood evening, Fixture.\n\nHere's what's happening with your care workspace today.\n\nBook Appointment\nToday's Appointments\n3\nVisits scheduled for today\nWaiting in Queue\n1\nPatients ready for their next step\nCompleted Visits\n0\nVisits checked out today\nAv",
+          "title": "Good evening, Fixture."
+        },
+        "appointments": 11,
+        "staffRoleFixture": "superAdmin"
+      }
+    },
+    {
+      "name": "1280 appointment default order, data, one-line actions, no page overflow",
+      "status": "pass",
+      "details": {
+        "headers": [
+          "#",
+          "Visit Date",
+          "Patient",
+          "Waiting No.",
+          "Clinic / Location",
+          "Doctor",
+          "Booked At",
+          "Status",
+          "Actions Check in starts consultation. Check out completes it and calls the next eligible patient. A called patient still needs explicit check-in."
+        ],
+        "firstSerial": "1",
+        "bookedAt": true,
+        "actionChildren": [
+          {
+            "text": " Check In",
+            "rect": {
+              "x": 1023,
+              "y": 281.578125,
+              "width": 67.96875,
+              "height": 32,
+              "top": 281.578125,
+              "right": 1090.96875,
+              "bottom": 313.578125,
+              "left": 1023
+            },
+            "scroll": 70,
+            "client": 66
+          },
+          {
+            "text": "Details",
+            "rect": {
+              "x": 1098.96875,
+              "y": 281.578125,
+              "width": 47.90625,
+              "height": 32,
+              "top": 281.578125,
+              "right": 1146.875,
+              "bottom": 313.578125,
+              "left": 1098.96875
+            },
+            "scroll": 46,
+            "client": 46
+          },
+          {
+            "text": "",
+            "rect": {
+              "x": 1154.875,
+              "y": 281.578125,
+              "width": 32,
+              "height": 32,
+              "top": 281.578125,
+              "right": 1186.875,
+              "bottom": 313.578125,
+              "left": 1154.875
+            },
+            "scroll": 30,
+            "client": 30
+          },
+          {
+            "text": "More",
+            "rect": {
+              "x": 1194.875,
+              "y": 281.578125,
+              "width": 56.125,
+              "height": 32,
+              "top": 281.578125,
+              "right": 1251,
+              "bottom": 313.578125,
+              "left": 1194.875
+            },
+            "scroll": 54,
+            "client": 54
+          }
+        ],
+        "overflow": 0
+      }
+    },
+    {
+      "name": "Columns drawer and hidden-column expansion alignment",
+      "status": "pass",
+      "details": {
+        "columns": "206.328px 206.328px 206.328px 206.328px 206.328px 206.328px",
+        "rect": {
+          "x": 237,
+          "y": 362.578125,
+          "width": 1358,
+          "height": 38.984375,
+          "top": 362.578125,
+          "right": 1595,
+          "bottom": 401.5625,
+          "left": 237
+        }
+      }
+    },
+    {
+      "name": "More menu is portaled, unclipped, preserves actions; Escape restores focus",
+      "status": "pass",
+      "details": {
+        "placement": {
+          "parent": "BODY",
+          "top": 317.578125,
+          "bottom": 416.578125,
+          "left": 8,
+          "right": 1280,
+          "width": 1280,
+          "height": 900,
+          "scrollParent": false
+        },
+        "escapeFocus": "trigger",
+        "row1": "Check In, Details, Ticket, Reschedule/Cancel",
+        "row2": "Check In, Details, Ticket, Cancel/Skip Absent",
+        "row3": "Check Out, Details, Ticket, Call",
+        "noTransitionsTriggered": true
+      }
+    },
+    {
+      "name": "Details drawer and ticket hierarchy/status/guidance without transitions",
+      "status": "pass",
+      "details": {
+        "headingWeight": "700",
+        "warningSeparate": true,
+        "warningText": "Confirmation email could not be confirmed; keep your ticket.",
+        "status": "fixture waiting",
+        "actions": "visible; not activated",
+        "namedStatusLink": "Patient Booking Status Page"
+      }
+    },
+    {
+      "name": "Resources, staff/custom roles, reports and schedule route family render",
+      "status": "pass",
+      "details": {
+        "rendered": [
+          {
+            "path": "/admin/clinics",
+            "title": "Clinics",
+            "overflow": 0,
+            "tableRows": 1,
+            "sectionHeads": 0
+          },
+          {
+            "path": "/admin/patients",
+            "title": "Patients",
+            "overflow": 0,
+            "tableRows": 1,
+            "sectionHeads": 0
+          },
+          {
+            "path": "/admin/system-users",
+            "title": "System users",
+            "overflow": 0,
+            "tableRows": 1,
+            "sectionHeads": 0
+          },
+          {
+            "path": "/admin/permissions",
+            "title": "Roles & Permissions",
+            "overflow": 0,
+            "tableRows": 2,
+            "sectionHeads": 2
+          },
+          {
+            "path": "/admin/reports",
+            "title": "Reports",
+            "overflow": 0,
+            "tableRows": 0,
+            "sectionHeads": 0
+          },
+          {
+            "path": "/admin/availability",
+            "title": "Schedule",
+            "overflow": 0,
+            "tableRows": 1,
+            "sectionHeads": 0
+          }
+        ],
+        "notTestedRoleVariants": [
+          "doctor resources/appointments/queue/schedule",
+          "receptionist appointments/patients/queue",
+          "clinicAdmin staff restrictions/custom roles",
+          "patient routes",
+          "public/auth routes"
+        ]
+      }
+    },
+    {
+      "name": "Page URL pagination serial offset",
+      "status": "pass",
+      "details": {
+        "url": "https://fce40b3a-c256-43dd-b589-43400e5aa32b-00-oiv14f0f3na3.sisko.replit.dev/admin/appointments?page=2&size=10",
+        "serial": "11",
+        "pageOffsetExpected": 11,
+        "observedPageSerial": 11
+      }
+    },
+    {
+      "name": "Appointment table/actions at 1024px",
+      "status": "fail",
+      "error": "Visit Date header wraps into an excessively tall cell at 1024px: {\"text\":\"Visit Date\",\"height\":183.375,\"width\":82.859375,\"whiteSpace\":\"normal\",\"buttonHeight\":93.1875}"
+    },
+    {
+      "name": "Menu and ticket at 1024px",
+      "status": "pass",
+      "details": {
+        "menu": {
+          "x": 8,
+          "y": 556.359375,
+          "width": 1016,
+          "height": 99
+        },
+        "dialogBody": {
+          "clientHeight": 654,
+          "scrollHeight": 654,
+          "overflowY": "auto",
+          "rect": {
+            "x": 53,
+            "y": 79.4453125,
+            "width": 918,
+            "height": 654.28125,
+            "top": 79.4453125,
+            "right": 971,
+            "bottom": 733.7265625,
+            "left": 53
+          }
+        },
+        "documentOverflow": 0
+      }
+    },
+    {
+      "name": "Appointment table/actions at 390px",
+      "status": "pass",
+      "details": {
+        "viewport": 390,
+        "documentOverflow": 0,
+        "tableScroll": {
+          "clientWidth": 356,
+          "scrollWidth": 356,
+          "overflowX": "auto"
+        },
+        "dateHeader": {
+          "text": "Visit Date",
+          "height": 61,
+          "width": 137.28125,
+          "whiteSpace": "normal",
+          "buttonHeight": 44
+        },
+        "actionsBox": {
+          "x": 42,
+          "y": 1209.953125,
+          "width": 0,
+          "height": 32
+        },
+        "actionsRemainAvailable": true
+      }
+    },
+    {
+      "name": "Menu and ticket at 390px",
+      "status": "pass",
+      "details": {
+        "menu": {
+          "x": 8,
+          "y": 441.953125,
+          "width": 382,
+          "height": 99
+        },
+        "dialogBody": {
+          "clientHeight": 794,
+          "scrollHeight": 1306,
+          "overflowY": "auto",
+          "rect": {
+            "x": 1,
+            "y": 49.390625,
+            "width": 388,
+            "height": 793.609375,
+            "top": 49.390625,
+            "right": 389,
+            "bottom": 843,
+            "left": 1
+          }
+        },
+        "documentOverflow": 0
+      }
+    }
+  ],
+  "screenshots": [
+    "screenshots/uniform-layout-check/01-overview-1280.png",
+    "screenshots/uniform-layout-check/02-appointments-1280.png",
+    "screenshots/uniform-layout-check/03-appointment-default-order.png",
+    "screenshots/uniform-layout-check/04-columns-drawer.png",
+    "screenshots/uniform-layout-check/05-expanded-hidden-details.png",
+    "screenshots/uniform-layout-check/06-more-menu-1280.png",
+    "screenshots/uniform-layout-check/07-appointment-details.png",
+    "screenshots/uniform-layout-check/08-appointment-ticket-1280.png",
+    "screenshots/uniform-layout-check/09-clinics-1280.png",
+    "screenshots/uniform-layout-check/09-patients-1280.png",
+    "screenshots/uniform-layout-check/09-staff-1280.png",
+    "screenshots/uniform-layout-check/09-custom-roles-1280.png",
+    "screenshots/uniform-layout-check/09-reports-1280.png",
+    "screenshots/uniform-layout-check/09-schedule-1280.png",
+    "screenshots/uniform-layout-check/10-appointments-page-two.png",
+    "screenshots/uniform-layout-check/11-appointments-1024.png",
+    "screenshots/uniform-layout-check/12-menu-1024.png",
+    "screenshots/uniform-layout-check/13-ticket-1024.png",
+    "screenshots/uniform-layout-check/11-appointments-390.png",
+    "screenshots/uniform-layout-check/12-menu-390.png",
+    "screenshots/uniform-layout-check/13-ticket-390.png"
+  ],
+  "apiRequests": [
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/dashboard",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/clinics",
+      "search": "?page=1&pageSize=20&sort=-createdAt"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=clinics"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/patients",
+      "search": "?page=1&pageSize=20&sort=-createdAt"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=patients"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/management/system-users",
+      "search": "?page=1"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=system-users"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/management/permissions",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/management/custom-roles",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/reports/trends",
+      "search": "?from=2026-10-05&to=2026-10-05"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=reports"
+    },
+    {
+      "method": "GET",
+      "path": "/reports",
+      "search": "?from=2026-10-05&to=2026-10-05&groupBy=date&page=1&pageSize=20&sort=key"
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/schedules",
+      "search": "?page=1&pageSize=20&sort=-createdAt"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=availability"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=2&pageSize=10"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/auth/status",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/notifications",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/settings",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments",
+      "search": "?search=&from=2026-10-05&statusGroup=all&sort=-createdAt&page=1&pageSize=20"
+    },
+    {
+      "method": "GET",
+      "path": "/saved-views",
+      "search": "?tableKey=appointments"
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/appointments/fx-appt-1/qr",
+      "search": ""
+    },
+    {
+      "method": "GET",
+      "path": "/queue",
+      "search": "?doctorId=fx-doctor&branchId=fx-branch&date=2026-10-03&startTime=09%3A00&appointmentId=fx-appt-1"
+    }
+  ],
+  "interceptedWrites": [],
+  "errors": [],
+  "notTested": [
+    "Live authorization/access-control decisions",
+    "Real DB/account/email/booking writes",
+    "Print/download execution (separate pnpm test:tickets; avoided duplicate regression coverage)",
+    "All role-specific route pages not listed in rendered evidence",
+    "Animation/audio/external service behavior"
+  ]
+}

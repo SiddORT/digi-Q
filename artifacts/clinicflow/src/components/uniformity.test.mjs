@@ -35,7 +35,7 @@ test("appointment details keep every field, empty state and explanation in group
 
 test("ticket popup retains all information, links and export actions", () => {
   const t = read("./appointments/AppointmentTicket.tsx");
-  for (const s of ["confirmationEmailMessage", "link-ticket-patient-live", "{patientLiveUrl}", "Doctor status:", "Calling is paused; your booking is kept.", "patients ahead", "An estimate only, not a countdown", "Booking status updates unavailable or offline", "QR is for authorized staff validation", "Status refreshes every 30 seconds while connected. Printed tickets do not update.", "Open Booking Status", "Appointment History", "Ticket is offline or stale", "Retry QR"]) assert.ok(t.includes(s), s);
+  for (const s of ["confirmationEmailMessage", "link-ticket-patient-live", "href={patientLiveUrl}", "Patient Booking Status Page", "Doctor status:", "Calling is paused; your booking is kept.", "patients ahead", "An estimate only, not a countdown", "Booking status updates unavailable or offline", "QR is for authorized staff validation", "Status refreshes every 30 seconds while connected. Printed tickets do not update.", "Open Booking Status", "Appointment History", "Ticket is offline or stale", "Retry QR"]) assert.ok(t.includes(s), s);
   const v = read("./tickets/VisitTicket.tsx");
   for (const s of ["button-download-ticket", "button-print-ticket", "Personal QR for reception. Keep it private.", "ticket.address", "ticket.doctorName", "ticket.clinicName", "sessionRange(ticket)", "ticket.reference", "ticket.patientName"]) assert.ok(v.includes(s), s);
   // Exported/printed HTML still includes every field.

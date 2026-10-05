@@ -19,7 +19,7 @@
 .admin-listing-table table{width:100%;table-layout:fixed}
 .admin-listing-table col.col-select{width:44px}
 .admin-listing-table col.col-record{width:32%}
-.admin-listing-table col.col-actions{width:132px}
+.admin-listing-table col.col-actions{width:200px}
 .admin-listing-table th,.admin-listing-table td{vertical-align:middle;overflow-wrap:anywhere}
 .admin-listing-table th.col-record,.admin-listing-table td.col-record{min-width:0;width:32%}
 .admin-listing-table .admin-record small,.admin-listing-table .cell-sub{display:block;overflow:visible;-webkit-line-clamp:unset;-webkit-box-orient:initial}
@@ -29,7 +29,7 @@
 .admin-listing-table .row-actions > *{flex:0 0 auto}
 .admin-listing-table .row-actions button,.admin-listing-table .row-menu > summary{width:32px;min-width:32px;min-height:32px;height:32px;padding:4px;display:inline-flex;align-items:center;justify-content:center}
 .admin-listing-table .row-menu > summary::after{display:none}
-.admin-listing-table th.col-actions,.admin-listing-table td.col-actions{width:132px;min-width:132px;white-space:nowrap}
+.admin-listing-table th.col-actions,.admin-listing-table td.col-actions{width:200px;min-width:200px;white-space:nowrap}
 .admin-listing-table tr:has(.row-menu[open]) td.col-actions{z-index:6}
 .admin-listing-table .table-scroll{min-height:80px}
 .admin-listing-refresh{display:block;padding:4px 12px;color:var(--soft,#526580);font-size:var(--type-caption)}

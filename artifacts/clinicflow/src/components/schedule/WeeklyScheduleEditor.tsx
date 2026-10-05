@@ -97,7 +97,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
 
   return <section className="panel padded" data-testid="panel-weekly-editor" aria-busy={busy}>
     {confirmation.dialog}
-    <div className="panel-heading"><div><h3>Weekly Schedule</h3><p className="muted">{branch.data ? `Clinic timezone: ${branch.data.timezone}` : "Loading clinic hours…"}</p></div></div>
+    <div className="panel-heading section-head"><div><h3>Weekly Schedule</h3><p className="muted">{branch.data ? `Clinic timezone: ${branch.data.timezone}` : "Loading clinic hours…"}</p></div></div>
     {branch.error && <p role="alert">Clinic hours could not be loaded. <button type="button" onClick={() => void branch.refetch()}>Retry Clinic Hours</button></p>}
     <p className="notice" data-testid="text-week-summary">{weekSummary(week, SHORT, fmt)}</p>
     <p className="muted">Slide in 15-minute steps or type exact minutes, for example 8:32 PM. Shaded bands show clinic hours. Add as many sessions as needed (more than {SUGGESTED_SESSIONS_PER_DAY} in a day shows a reminder); overnight sessions are not supported. Session names, breaks and capacity per session are edited with Details.</p>

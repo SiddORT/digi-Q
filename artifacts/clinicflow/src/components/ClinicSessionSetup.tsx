@@ -87,7 +87,7 @@ export function ClinicSessionSetup({ clinicId, branches, ownDoctorId }: {
     }
   }
   return <section className="panel padded" aria-label="Booking readiness and doctor sessions">
-    <div className="panel-heading"><div><h2>Booking readiness · doctor sessions</h2><p>Owner-linked hours are configured in Locations &amp; Hours. Custom doctors can copy saved intervals here, then manage every session below.</p></div></div>
+    <div className="panel-heading section-head"><div><h2>Booking readiness · doctor sessions</h2><p>Owner-linked hours are configured in Locations &amp; Hours. Custom doctors can copy saved intervals here, then manage every session below.</p></div></div>
     <div className="form-grid">
       <SearchableSelect label="Clinic" disabled={busy} value={branchId} onChange={id=>{setBranchId(id);setChosen([]);setMessage("");}} options={active.map(b=>({value:b.id,label:b.name}))}/>
       {branchId&&<SearchableSelect label="Doctor" value={doctorId} disabled={busy||incompleteDoctors} loading={doctors.isFetching} error={doctors.error?"Unable to load doctors.":undefined} onRetry={()=>void doctors.refetch()} onChange={id=>{setDoctorId(id);setChosen([]);setMessage("");}} options={doctorOptions.map(d=>({value:d.id,label:`${d.fullName}${d.id===ownDoctorId?" (you)":""}`}))}/>}

@@ -10,7 +10,7 @@ test("default appointment rows omit technical references and duplicate waiting e
   assert.match(table, /data-label=\{cols\.label\(k\)\}/);
 });
 test("operational tokens remain prominent in session queues, not repeated session prose", () => {
-  assert.match(table, /sessionScoped\?<strong>\{a\.token\}<\/strong>/);
+  assert.match(table, /<strong className="appt-token"[^>]*>\{a\.token\}<\/strong>/);
   assert.doesNotMatch(table, /<small>\{sessionScoped/);
   assert.match(table, /Token and booking reference are available in Details and Ticket/);
 });

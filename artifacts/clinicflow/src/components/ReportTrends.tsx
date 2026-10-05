@@ -11,7 +11,7 @@ export function ReportTrends({ from, to, clinicId, branchId, doctorId, preferenc
   if (!valid || from === to) return null;
   const value = fromQuery(q, { isEmpty: d => !d.points.some(p => p.appointments), emptyMessage: "No visits were recorded in this date range.", errorMessage: "Trend data could not be loaded. The range may exceed one year." });
   return <section className="card report-trends" aria-label="Daily visit trend" data-testid="report-trends" style={{ padding: "12px 14px", margin: "10px 0" }}>
-    <h2 style={{ fontSize: 14, margin: "0 0 6px" }}>Daily Trend</h2>
+    <h2 className="section-subhead">Daily Trend</h2>
     <CapabilityView value={value} title="Trend" testId="report-trends">{d => <>
       <div style={{ width: "100%", height: 200 }}><ResponsiveContainer>
         <LineChart data={d.points} margin={{ top: 4, right: 8, bottom: 0, left: -18 }}>

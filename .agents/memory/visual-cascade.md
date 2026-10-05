@@ -68,3 +68,9 @@ Use wide search beside listing titles, with Export beside the primary Add/Book a
 **Why:** The user approved this representation across all pages after the previous compactness pass still left stacked toolbars and unstructured popup contents.
 
 **How to apply:** Apply the common header to relevant listings, while retaining page-specific scope controls, responsive wrapping, full content and existing behavior. Improve grouping inside overlays rather than just changing where the old vertical list opens.
+
+For responsive verification, wait for viewport-resize layout to settle and assert overlay/control bounds, not only page scroll width or CSS declarations. Tablet tables need intrinsic column floors; fixed-layout declared widths alone can still shrink under competing column rules.
+
+**Why:** Repeated layout passes left date headers clipped and mobile ticket contents off-screen while page-overflow and hierarchy assertions passed. An immediate post-resize capture also retained old dialog geometry.
+
+**How to apply:** Check actual header/control rectangles and text containment at desktop, tablet and phone sizes; constrain dialogs to the viewport and keep table scrolling internal. Preserve screenshots of corrected states, not only passing source tests.

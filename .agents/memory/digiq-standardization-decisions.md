@@ -125,6 +125,6 @@ Reject all bulk check-in attempts with an error, including selections involving 
 
 Appointment listings need predictable column widths and order: serial number, date, bold patient name with patient ID, waiting number, clinic/location, booking time and other relevant fields. Actions must not wrap into three lines; expanded details must align consistently. Booking confirmation text should be bold, with status/actions toward the popup's top right and secondary QR/terms guidance on the final line.
 
-**Why:** The user explicitly identified these alignment and hierarchy problems in UAT screenshots and requested page-by-page analysis before coding.
+**Why:** The user identified these alignment and hierarchy problems in UAT screenshots, then explicitly approved implementation: “do all, and not just for pages i shared” and “uniform, throughout.”
 
-**How to apply:** Distinguish visit date/session from booking-created time and waiting number from live queue position. Keep print/QR functionality intact. Analyze first; this request does not authorize implementation.
+**How to apply:** Apply the shared rules across all developed page families and roles, not only the supplied screenshots. Distinguish visit date/session from booking-created time and waiting number from live queue position. Keep print/QR functionality intact. Verify coverage and report progress; do not substitute proposed follow-ups for authorized work.

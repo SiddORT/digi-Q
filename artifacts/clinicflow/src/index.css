@@ -396,10 +396,13 @@
   .row-menu-list { position: absolute; right: 0; top: calc(100% + 4px); z-index: 30; background:var(--dq-surface); border: 1px solid var(--color-border); border-radius:12px; box-shadow: 0 12px 30px #173b3922; padding:4px; min-width: 180px; display: flex; flex-direction: column; }
   .row-menu-list button { border: 0; justify-content: flex-start; font-size:var(--type-label); padding:8px 12px; min-height: var(--control-md); border-radius:8px; text-align: left; }
   .row-menu-list button.danger { color: #a2402f; }
-  @media (min-width: 1025px) { .appt-table th.col-actions, .appt-table td.col-actions { width: 250px; } .appt-table tr:has(details[open]) td.col-actions { z-index: 6; } }
+  @media (min-width: 1025px) { .appt-table th.col-actions, .appt-table td.col-actions { width: 340px; } .appt-table tr:has(details[open]) td.col-actions { z-index: 6; } }
   @media (max-width: 1024px) {
     .session-queue .sq-banner { flex-wrap: wrap; }
     .session-queue .sq-table .table-scroll { max-height: none; min-height: 0; }
+  }
+  /* Card-style stacking for appointment rows only on phones; tablets keep the bounded table with internal scroll. */
+  @media (max-width: 640px) {
     .appt-table td { padding:12px 12px; overflow-wrap: anywhere; }
     .appt-table td::before { position: static; display: block; width: auto; padding:0; margin-bottom:4px; }
     .appt-table td small { display: block; margin:4px 0 0; }
@@ -409,6 +412,7 @@
     .appt-table .row-menu[open] { grid-column: 1 / -1; }
     .row-menu-list button { min-height: 44px; }
   }
+
   @media (max-width: 640px) {
     .session-queue .sq-banner .button { width: 100%; margin-left:0; min-height: 44px; }
     .session-queue .sq-toolbar { flex-wrap: wrap; }
@@ -919,7 +923,7 @@
 .workspace .table-panel .empty .empty-icon{display:none}
 .workspace .table-panel .empty h3{font-size:var(--type-body);margin:0}
 .workspace .table-panel .empty p{font-size:var(--type-label)}
-@media(max-width:1024px){.workspace .admin-listing-table td[data-label="Status"],.workspace .admin-listing-table td.col-actions{white-space:normal}}
+@media(max-width:640px){.workspace .admin-listing-table td[data-label="Status"],.workspace .admin-listing-table td.col-actions{white-space:normal}}
 .demo-share{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:flex-start;margin-top:12px}
 .demo-share-main{flex:1 1 360px;min-width:0;display:grid;gap:8px}.demo-share-main .settings-facts{margin:0}
 .demo-share-main textarea{width:100%}.demo-share-main>button{justify-self:start}

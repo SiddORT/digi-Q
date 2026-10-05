@@ -28,7 +28,7 @@ export function useTableColumns(tableId: string, userId: string | undefined, rol
   const [expanded, setExpanded] = useState<string | null>(null);
   const settings = <ColumnSettings columns={keys} layout={effective} label={label} reorderable={reorderable} pinnable={pinnable}
     onChange={next => set({ ...effective, ...next, touched: true })} onReset={() => set(EMPTY)} />;
-  const cls = (key: string, base?: string) => [base, key === arranged.pinned ? "col-pinned" : ""].filter(Boolean).join(" ") || undefined;
+  const cls = (key: string, base?: string) => [`col-${key}`, base, key === arranged.pinned ? "col-pinned" : ""].filter(Boolean).join(" ") || undefined;
   const toggle = (rowId: string, name: string) => arranged.hidden.length ? <button type="button" className="row-expand-toggle" aria-expanded={expanded === rowId} aria-controls={`expand-${tableId}-${rowId}`}
     aria-label={`${expanded === rowId ? "Hide" : "Show"} hidden columns for ${name}`} onClick={() => setExpanded(expanded === rowId ? null : rowId)} data-testid={`button-expand-${tableId}-${rowId}`}><ChevronRight size={14} aria-hidden /></button> : null;
   /** Expansion row lists hidden data columns only; row actions are never duplicated here. */

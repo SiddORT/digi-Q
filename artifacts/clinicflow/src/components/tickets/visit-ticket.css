@@ -25,8 +25,27 @@
 .vt-foot{border-top:2px dashed var(--vt-line);padding:11px 18px;background:var(--vt-soft);font-size:.85rem}
 .vt-foot p{margin:0}
 .vt-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.vt-head-tools{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-left:auto;min-width:0}
+.vt-head-tools .vt-actions{margin:0}
+.vt-head-tools .button{white-space:nowrap}
+@media screen and (max-width:560px){.vt-head-tools{width:100%;justify-content:space-between}.vt-head-tools .vt-actions{flex:0 1 auto}.vt-head-tools .button{min-height:44px}}
 @media (max-width:560px){.vt-body{grid-template-columns:1fr}.vt-qr{align-items:flex-start}.vt-qr small{text-align:left}.vt-actions .button{min-height:44px}}
 @media print{.vt{box-shadow:none}.vt-actions{display:none}}
 /* Center only the on-screen card; ticket/QR dimensions and printed layout stay unchanged. */
 @media screen{.vt{margin-inline:auto}}
 @media(prefers-reduced-motion:reduce){.vt{animation:none}}
+/* Screen-only ticket controls do not alter the self-contained print/download document. */
+@media screen {
+  .appt-ticket .appt-ticket-confirmation{display:flex;flex-direction:row;align-items:center;flex-wrap:wrap;gap:var(--space-2);text-align:left}
+  .appt-ticket .appt-ticket-confirmation>strong{font-size:var(--type-body);font-weight:700}
+  .appt-ticket .appt-ticket-status-link{margin-left:auto}
+  .appt-ticket .appt-ticket-confirmation>.appt-ticket-delivery{flex-basis:100%;margin:0}
+}
+@media screen and (max-width:639px){
+  .app-dialog:has(.appt-ticket){width:100vw!important;max-width:100vw!important;min-width:0;max-height:100dvh}
+  .app-dialog .appt-ticket,.app-dialog .appt-ticket>*,.app-dialog .appt-ticket .vt{min-width:0;max-width:100%;width:100%}
+  .app-dialog .appt-ticket .vt-body,.app-dialog .appt-ticket .vt-info{grid-template-columns:minmax(0,1fr)}
+  .app-dialog .appt-ticket-info{grid-template-columns:minmax(0,1fr)}
+  .app-dialog .appt-ticket .vt-head-tools{width:100%;min-width:0;justify-content:flex-start}
+  .app-dialog .appt-ticket .vt-actions{flex-wrap:wrap}
+}

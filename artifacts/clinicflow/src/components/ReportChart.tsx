@@ -13,7 +13,7 @@ export function ReportChart({ rows, page, totalPages }: { rows?: Row[]; page?: n
   if (!usable) return <section className="panel report-chart cap-state cap-unavailable" role="status" data-testid="report-chart-unavailable"><div><strong>Chart Unavailable</strong><p>Some report counts are missing or inconsistent, so no chart is drawn. The table below shows the counts as reported.</p></div></section>;
   const data = rows.slice(0, 20).map(r => ({ name: r.label || r.key, Completed: r.completed, Cancelled: r.cancelled, Absent: r.noShow, Other: r.appointments - r.completed - r.cancelled - r.noShow }));
   return <section className="panel report-chart" aria-label="Visit Outcomes by Group" data-testid="report-chart">
-    <div className="report-chart-head"><h2>Visit Outcomes by Group</h2>
+    <div className="report-chart-head section-head"><h2>Visit Outcomes by Group</h2>
       <small className="muted">{rows.length > 20 ? "First 20 rows of this page" : "Rows on this page"}{totalPages && totalPages > 1 ? ` · Page ${page ?? 1} of ${totalPages}` : ""}</small></div>
     <div className="report-chart-canvas"><ResponsiveContainer width="100%" height={240}>
       <BarChart accessibilityLayer data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
