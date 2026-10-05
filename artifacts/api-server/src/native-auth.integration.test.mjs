@@ -59,6 +59,11 @@ function request(body = {}, cookie = "") {
     headers: { cookie, origin: "https://example.test" },
     get(name) { return this.headers[name.toLowerCase()]; } };
 }
+test("rate-limit rejection reports remaining time without extending the window", async () => {
+  await api.consumeRateLimit("retry-duration-fixture", 1, 60000);
+  await assert.rejects(api.consumeRateLimit("retry-duration-fixture", 1, 60000),
+    error => error.code === "RATE_LIMITED" && /^Too many attempts\. Try again in (?:[1-9]|[1-5][0-9]|60) seconds\.$/.test(error.message));
+});
 function response() {
   return { cookies: {}, headers: {}, set(name, value) { this.headers[name] = value; return this; },
     cookie(name, value, options) { this.cookies[name] = { value, options }; return this; },

@@ -80,7 +80,7 @@ export function SetPassword() {
         </FormField>
         <LoadingButton className="button auth-submit" data-testid="button-set-invitation-password" type="submit" loading={busy} loadingText="Setting password…">Set password</LoadingButton>
       </form>}
-      <div className="auth-links"><Link href="/sign-in" data-testid="link-invitation-staff-login">Staff Login</Link></div>
+      <div className="auth-links">{reset && <Link href="/forgot-password" data-testid="link-request-new-reset">Request a new reset link</Link>}<Link href="/sign-in" data-testid="link-invitation-staff-login">Staff Login</Link></div>
     </AuthCard>
   </AuthShell>;
 }

@@ -6,6 +6,7 @@ import { HttpError, assert } from "../lib/http";
 import { uid, put, audit } from "../lib/store";
 import { isStaffRole, requireUser } from "../lib/auth";
 import { sendAuthEmail, smtpConfig } from "../lib/auth-email";
+import { resolvedIntegration } from "../lib/integration-vault";
 import { createSession, revokeSession, hashPassword, verifyPassword, issueCsrf,
   lockCredentials, invalidateStaffCredentials, insertSession, sessionCookie, challengeUserId,
   resendRegistrationChallenge,
@@ -35,14 +36,14 @@ async function limit(req: any, address: string, action: string, maximum = 5) {
   await consumeRateLimit(`${action}:ip:${req.ip || "unknown"}`, maximum * 10);
 }
 async function mailCode(address: string, purpose: string, userId?: string, data?: Record<string, unknown>) {
-  smtpConfig();
+  smtpConfig((await resolvedIntegration("smtp")).env);
   const secret = String(code());
   const challengeId = await createChallenge({ userId, email: address, purpose, secret, ttlMs: CODE_AGE, data });
   await sendAuthEmail(address, "DigiQ Doctors verification", `Your verification code is ${secret}. It expires in 10 minutes.`);
   return challengeId;
 }
 async function mailLink(req: any, address: string, userId: string, purpose: string, route: string) {
-  smtpConfig();
+  smtpConfig((await resolvedIntegration("smtp")).env);
   const secret = randomBytes(32).toString("base64url");
   const id = await createChallenge({ userId, email: address, purpose, secret, ttlMs: LINK_AGE });
   const url = new URL(route, publicOrigin(req));
@@ -107,7 +108,7 @@ authRouter.post("/auth/forgot-password", async (req, res) => {
   const address = email(req.body?.email);
   // Recovery has no per-account request cap; retain the existing IP abuse limit.
   await consumeRateLimit(`forgot-password:ip:${req.ip || "unknown"}`, 30);
-  smtpConfig();
+  smtpConfig((await resolvedIntegration("smtp")).env);
   const user = await localUser(address);
   if (user?.status === "active" && isStaffRole(user.role)) await mailLink(req, address, user.id, "reset", "/reset-password");
   res.set("Cache-Control", "no-store").json({ sent: true });
@@ -159,7 +160,7 @@ authRouter.post("/auth/change-password", async (req, res) => {
 authRouter.post("/auth/patient/start", async (req, res) => {
   const address = email(req.body?.email);
   await limit(req, address, "patient-login");
-  smtpConfig();
+  smtpConfig((await resolvedIntegration("smtp")).env);
   const user = await localUser(address);
   const challengeId = user && (user.status !== "active" || user.role !== "patient")
     ? randomBytes(18).toString("base64url")
@@ -190,7 +191,7 @@ authRouter.post("/auth/register/start", async (req, res) => {
   if (!name || name.length > 200) throw new HttpError(400, "Full name required", "INVALID_NAME");
   passwordInput(req.body?.password);
   await limit(req, address, "clinic-register", 3);
-  smtpConfig();
+  smtpConfig((await resolvedIntegration("smtp")).env);
   if (await localUser(address)) throw new HttpError(409, "Account already registered", "ACCOUNT_EXISTS");
   const hash = await hashPassword(req.body.password);
   const challengeId = await mailCode(address, "register", undefined, { fullName: name, passwordHash: hash });
@@ -202,7 +203,7 @@ authRouter.post("/auth/registration/resend", async (req, res) => {
   const id = req.body?.challengeId;
   if (typeof id !== "string" || !/^[A-Za-z0-9_-]{24}$/.test(id))
     throw new HttpError(400, "Invalid or expired verification", "INVALID_VERIFICATION");
-  smtpConfig();
+  smtpConfig((await resolvedIntegration("smtp")).env);
   try {
     const challengeId = await resendRegistrationChallenge(id, (address, secret) =>
       sendAuthEmail(address, "DigiQ Doctors verification", `Your verification code is ${secret}. Use it before your original registration code expires.`));

@@ -63,11 +63,21 @@ const contextFallback = (c: ErrorContext) =>
 /** Map any thrown value to friendly user-facing text. */
 export function friendlyError(error: unknown, context: ErrorContext = "generic", fallback?: string): string {
   const status = errorStatus(error);
+  if (context === "auth" && error && typeof error === "object") {
+    const code = field((error as {data?: unknown}).data, "code");
+    if (code === "EMAIL_UNCONFIGURED" || code === "PUBLIC_ORIGIN_UNCONFIGURED")
+      return "Email recovery or verification is not configured. Contact your clinic administrator. Staff password sign-in is still available.";
+    if (code === "EMAIL_DELIVERY_FAILED")
+      return "We could not confirm email delivery. Check your inbox and spam folder before requesting another message.";
+  }
   const fb = fallback ?? contextFallback(context);
   if (status === 401) return context === "auth" ? serverMessage(error) ?? FRIENDLY.sessionExpired : FRIENDLY.sessionExpired;
   if (status === 403) return serverMessage(error) ?? FRIENDLY.accessDenied;
   if (status === 404) return FRIENDLY.notFound;
-  if (status === 429) return FRIENDLY.rateLimited;
+  if (status === 429) {
+    const text = serverMessage(error);
+    return text && /^Too many attempts\. Try again in \d+ seconds\.$/.test(text) ? text : FRIENDLY.rateLimited;
+  }
   if (status !== undefined && status >= 500) return fb;
   if (error instanceof TypeError && /fetch|network|load failed/i.test(error.message)) return FRIENDLY.network;
   if (typeof error === "string") return isFriendlyText(error) ? error : fb;

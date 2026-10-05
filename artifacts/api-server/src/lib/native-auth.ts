@@ -143,8 +143,11 @@ export async function consumeRateLimit(key: string, max: number, windowMs = 600_
       on conflict ("key") do update
       set attempts=case when auth_rate_limits.expires_at<now() then 1 else auth_rate_limits.attempts+1 end,
           expires_at=case when auth_rate_limits.expires_at<now() then now() + (${windowMs} * interval '1 millisecond') else auth_rate_limits.expires_at end
-      returning attempts`);
-    if (Number(result.rows[0]?.attempts) > max) throw new HttpError(429, "Too many attempts; please try later", "RATE_LIMITED");
+      returning attempts, greatest(1,ceil(extract(epoch from (expires_at-now()))))::int as retry_seconds`);
+    if (Number(result.rows[0]?.attempts) > max) {
+      const seconds = Number(result.rows[0]?.retry_seconds);
+      throw new HttpError(429, `Too many attempts. Try again in ${seconds} seconds.`, "RATE_LIMITED");
+    }
   });
 }
 export async function createChallenge(input: { userId?: string; email: string; purpose: string; secret: string; ttlMs: number; data?: Record<string, unknown> }) {
