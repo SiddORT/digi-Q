@@ -22,3 +22,9 @@ Place branch selection in the top-right workspace header near notifications, not
 **Why:** The user proposed the header location and explicitly selected “Two or more locations.”
 
 **How to apply:** Preserve permissions, validate remembered selections, protect unsaved work, and keep operational pages consistent with the selected branch.
+
+Remove the Recent section from the sidebar across roles. Move routine explanatory text into contextual ?/info help instead of leaving repeated one- or two-line explanations on pages.
+
+**Why:** The user says Recent is not useful and makes sidebar options scroll, and explicitly requested contextual help across pages.
+
+**How to apply:** Keep the scope on sidebar Recent, not unrelated activity histories. Help must work on hover, keyboard focus and touch; essential errors and action-critical warnings must remain visible. The user requested analysis/checklisting before coding these changes.
