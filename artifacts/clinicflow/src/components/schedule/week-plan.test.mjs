@@ -5,6 +5,22 @@ const L = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const base = { doctorId: "d", clinicId: "c", branchId: "b", tokenPrefix: "A", maxTokens: 20, consultationMinutes: 15, isOpen: true, status: "active" };
 const rows = [{ ...base, id: "1", dayOfWeek: 1, startTime: "09:00", endTime: "12:00" }, { ...base, id: "2", dayOfWeek: 2, startTime: "09:00", endTime: "12:00", linkedBranchId: "b" }, { ...base, id: "3", dayOfWeek: 3, startTime: "16:00", endTime: "19:30" }];
 const sess = (n, start = 6) => Array.from({ length: n }, (_, i) => ({ key: `k${i}`, startTime: `${String(start + i * 2).padStart(2, "0")}:00`, endTime: `${String(start + i * 2 + 1).padStart(2, "0")}:00` }));
+test("copying short hours into all-day sessions fits queue windows on updates and creates",()=>{
+ const source=[{...base,id:"wide",dayOfWeek:1,startTime:"00:00",endTime:"23:59",queueOpenTime:"00:00",queueCloseTime:"23:59"},{...base,id:"short",dayOfWeek:3,startTime:"09:00",endTime:"10:00"}];
+ const p=planWeek(source,copyDay(buildWeek(source),3,[1,2]),source[0],L);
+ for(const write of [...p.updates,...p.creates]){
+  assert.equal(write.body.endTime,"10:00");
+  assert.equal(write.body.queueCloseTime,"10:00");
+  assert.equal(write.body.queueOpenTime,"00:00");
+ }
+ assert.equal(p.updates.length,1);assert.equal(p.creates.length,1);
+});
+test("moving a session beyond its old queue window resets invalid boundaries",()=>{
+ const source=[{...base,id:"old",dayOfWeek:1,startTime:"16:00",endTime:"19:00",queueOpenTime:"15:00",queueCloseTime:"18:00"}];
+ const week=buildWeek(source);week[1].sessions[0].startTime="09:00";week[1].sessions[0].endTime="10:00";
+ const body=planWeek(source,week,source[0],L).updates[0].body;
+ assert.equal(body.queueOpenTime,"09:00");assert.equal(body.queueCloseTime,"10:00");
+});
 const io = (fail = () => false) => { const calls = []; let n = 0; return { calls, update: async (id, b) => { calls.push(["update", id]); if (fail("update", id, b)) throw new Error("x"); }, create: async b => { calls.push(["create", b.startTime]); if (fail("create", b.startTime, b)) throw new Error("x"); return { id: `new${++n}` }; }, deactivate: async id => { calls.push(["deactivate", id]); if (fail("deactivate", id)) throw new Error("x"); }, message: () => "Unable to save changes" }; };
 
 test("unchanged week produces no writes", () => {

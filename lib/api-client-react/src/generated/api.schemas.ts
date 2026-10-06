@@ -1714,11 +1714,17 @@ export interface ScheduleInput {
      * @maxLength 8
      */
   tokenPrefix: string;
-  /** @minimum 1 */
+  /**
+     * @minimum 1
+     * @maximum 1000
+     */
   maxTokens: number;
   /** @minimum 1 */
   consultationMinutes: number;
-  /** @minimum 0 */
+  /**
+     * @minimum 0
+     * @maximum 1440
+     */
   bufferMinutes?: number;
   queueMode?: ScheduleInputQueueMode;
   queueOpenTime?: string;
@@ -1751,6 +1757,7 @@ export interface AvailabilityExceptionInput {
   breakEnd?: string | null;
   /**
      * @minimum 1
+     * @maximum 1000
      * @nullable
      */
   maxTokens?: number | null;

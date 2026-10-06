@@ -38,6 +38,7 @@ export interface AvailabilityExceptionInput {
   breakEnd?: string | null;
   /**
      * @minimum 1
+     * @maximum 1000
      * @nullable
      */
   maxTokens?: number | null;

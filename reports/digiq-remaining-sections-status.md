@@ -11,7 +11,7 @@ Source: the 2026-10-05 testing report (135 findings). This is not the older 137-
 - Geographic and master-catalog reads are bounded and retain explicit retry/manual entry.
 - 341 frontend tests and both typechecks pass; two new geographic-directory tests pass. A separate isolated domain suite passed 54 tests.
 - The older mocked backend-flow suite currently fails to compile because its mocks omit newer exports. This is a test-harness gap, not evidence of a passing or failing app journey.
-- Protected-flow checks remain deferred at the user's direction. Do not label original save/creation/permission failures resolved without reproduction.
+- The user subsequently authorized the listed exact-case protected checks. These run against a disposable private PostgreSQL cluster, not the development database; see `digiq-exact-case-acceptance.md`. Do not label unexercised findings resolved.
 
 - Registration timetable review now uses the selected time format instead of raw 24-hour values (#17).
 - Weekly-session Copy to All selects every destination day, excluding the source; existing confirmation, per-session outcomes and duplicate/overlap handling remain (#97).

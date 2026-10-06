@@ -21,6 +21,12 @@ Create booking fixtures through the real booking API when testing queue summarie
 
 **How to apply:** Use database setup only for identities, assignments and prerequisite configuration; exercise appointment creation through the API and compare raw queue responses with the displayed state before attributing a mismatch to the app.
 
+Use independent database connections for concurrent requests to a disposable full-app server.
+
+**Why:** An acceptance server using the migration/control connection for all HTTP requests produced parallel-booking failures while sequential bookings succeeded. That setup does not model the application's pooled transactions.
+
+**How to apply:** Keep migration setup separate from the request pool. Diagnose fixture-connection sharing before attributing concurrent failures to production behavior.
+
 Do not infer the workspace database target from `REPLIT_ENVIRONMENT` alone.
 
 **Why:** This workspace reported a production environment label while its database

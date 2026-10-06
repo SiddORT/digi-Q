@@ -62,6 +62,15 @@ export type WeekPlan = {
 
 const rowInput = (row: ScheduleRow) => ({ ...Object.fromEntries(INPUT_KEYS.filter(k => row[k] !== undefined && row[k] !== null && row[k] !== "").map(k => [k, row[k]])), breakStart: row.breakStart ?? null, breakEnd: row.breakEnd ?? null });
 
+/** Keep valid early queue opening; repair inherited windows invalidated by changed hours. */
+function fitQueueWindow(body: Record<string, unknown>): Record<string, unknown> {
+  const next = {...body};
+  const start = String(next.startTime), end = String(next.endTime);
+  if (next.queueOpenTime && String(next.queueOpenTime) >= end) next.queueOpenTime = start;
+  if (next.queueCloseTime && (String(next.queueCloseTime) > end || String(next.queueCloseTime) <= String(next.queueOpenTime || start))) next.queueCloseTime = end;
+  return next;
+}
+
 /**
  * Turns the draft into per-record writes. New sessions on a day first take over the record of a removed
  * editable session on that day (an update), so replacements never depend on deactivating something first.
@@ -84,10 +93,10 @@ export function planWeek(rows: ScheduleRow[], week: DraftDay[], template: Record
       if (!row) { row = spare.get(day.dayOfWeek)?.shift(); if (row) kept.add(row.id); }
       if (row) {
         if (row.startTime !== s.startTime || row.endTime !== s.endTime || row.dayOfWeek !== day.dayOfWeek || row.isOpen === false)
-          plan.updates.push({ id: row.id, key: s.key, label, body: { ...rowInput(row), dayOfWeek: day.dayOfWeek, isOpen: true, startTime: s.startTime, endTime: s.endTime } });
+          plan.updates.push({ id: row.id, key: s.key, label, body: fitQueueWindow({ ...rowInput(row), dayOfWeek: day.dayOfWeek, isOpen: true, startTime: s.startTime, endTime: s.endTime }) });
         else if (!s.id) plan.adopt.push({ key: s.key, id: row.id });
       } else if (template) {
-        plan.creates.push({ key: s.key, label, body: { ...Object.fromEntries(TEMPLATE_KEYS.filter(k => template[k] !== undefined && template[k] !== null && template[k] !== "").map(k => [k, template[k]])), breakStart: null, breakEnd: null, dayOfWeek: day.dayOfWeek, isOpen: true, startTime: s.startTime, endTime: s.endTime } });
+        plan.creates.push({ key: s.key, label, body: fitQueueWindow({ ...Object.fromEntries(TEMPLATE_KEYS.filter(k => template[k] !== undefined && template[k] !== null && template[k] !== "").map(k => [k, template[k]])), breakStart: null, breakEnd: null, dayOfWeek: day.dayOfWeek, isOpen: true, startTime: s.startTime, endTime: s.endTime }) });
       }
     }
   }

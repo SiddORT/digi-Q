@@ -4088,10 +4088,12 @@ export const listSchedulesResponseTwoItemsItemOneStartTimeRegExp = new RegExp('^
 export const listSchedulesResponseTwoItemsItemOneTimezoneDefault = `Asia/Kolkata`;
 export const listSchedulesResponseTwoItemsItemOneTokenPrefixMax = 8;
 
+export const listSchedulesResponseTwoItemsItemOneMaxTokensMax = 1000;
 
 
 export const listSchedulesResponseTwoItemsItemOneBufferMinutesDefault = 0;
 export const listSchedulesResponseTwoItemsItemOneBufferMinutesMin = 0;
+export const listSchedulesResponseTwoItemsItemOneBufferMinutesMax = 1440;
 
 export const listSchedulesResponseTwoItemsItemOneQueueModeDefault = `mixed`;
 
@@ -4113,9 +4115,9 @@ export const ListSchedulesResponse = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(listSchedulesResponseTwoItemsItemOneTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(listSchedulesResponseTwoItemsItemOneTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1),
+  "maxTokens": zod.number().int().min(1).max(listSchedulesResponseTwoItemsItemOneMaxTokensMax),
   "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(listSchedulesResponseTwoItemsItemOneBufferMinutesMin).default(listSchedulesResponseTwoItemsItemOneBufferMinutesDefault),
+  "bufferMinutes": zod.number().int().min(listSchedulesResponseTwoItemsItemOneBufferMinutesMin).max(listSchedulesResponseTwoItemsItemOneBufferMinutesMax).default(listSchedulesResponseTwoItemsItemOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(listSchedulesResponseTwoItemsItemOneQueueModeDefault),
   "queueOpenTime": zod.string().optional(),
   "queueCloseTime": zod.string().optional()
@@ -4137,10 +4139,12 @@ export const createScheduleBodyStartTimeRegExp = new RegExp('^[0-2][0-9]:[0-5][0
 export const createScheduleBodyTimezoneDefault = `Asia/Kolkata`;
 export const createScheduleBodyTokenPrefixMax = 8;
 
+export const createScheduleBodyMaxTokensMax = 1000;
 
 
 export const createScheduleBodyBufferMinutesDefault = 0;
 export const createScheduleBodyBufferMinutesMin = 0;
+export const createScheduleBodyBufferMinutesMax = 1440;
 
 export const createScheduleBodyQueueModeDefault = `mixed`;
 
@@ -4156,9 +4160,9 @@ export const CreateScheduleBody = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(createScheduleBodyTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(createScheduleBodyTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1),
+  "maxTokens": zod.number().int().min(1).max(createScheduleBodyMaxTokensMax),
   "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(createScheduleBodyBufferMinutesMin).default(createScheduleBodyBufferMinutesDefault),
+  "bufferMinutes": zod.number().int().min(createScheduleBodyBufferMinutesMin).max(createScheduleBodyBufferMinutesMax).default(createScheduleBodyBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(createScheduleBodyQueueModeDefault),
   "queueOpenTime": zod.string().optional(),
   "queueCloseTime": zod.string().optional()
@@ -4171,10 +4175,12 @@ export const createScheduleResponseOneStartTimeRegExp = new RegExp('^[0-2][0-9]:
 export const createScheduleResponseOneTimezoneDefault = `Asia/Kolkata`;
 export const createScheduleResponseOneTokenPrefixMax = 8;
 
+export const createScheduleResponseOneMaxTokensMax = 1000;
 
 
 export const createScheduleResponseOneBufferMinutesDefault = 0;
 export const createScheduleResponseOneBufferMinutesMin = 0;
+export const createScheduleResponseOneBufferMinutesMax = 1440;
 
 export const createScheduleResponseOneQueueModeDefault = `mixed`;
 
@@ -4190,9 +4196,9 @@ export const CreateScheduleResponse = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(createScheduleResponseOneTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(createScheduleResponseOneTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1),
+  "maxTokens": zod.number().int().min(1).max(createScheduleResponseOneMaxTokensMax),
   "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(createScheduleResponseOneBufferMinutesMin).default(createScheduleResponseOneBufferMinutesDefault),
+  "bufferMinutes": zod.number().int().min(createScheduleResponseOneBufferMinutesMin).max(createScheduleResponseOneBufferMinutesMax).default(createScheduleResponseOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(createScheduleResponseOneQueueModeDefault),
   "queueOpenTime": zod.string().optional(),
   "queueCloseTime": zod.string().optional()
@@ -4217,10 +4223,12 @@ export const updateScheduleBodyStartTimeRegExp = new RegExp('^[0-2][0-9]:[0-5][0
 export const updateScheduleBodyTimezoneDefault = `Asia/Kolkata`;
 export const updateScheduleBodyTokenPrefixMax = 8;
 
+export const updateScheduleBodyMaxTokensMax = 1000;
 
 
 export const updateScheduleBodyBufferMinutesDefault = 0;
 export const updateScheduleBodyBufferMinutesMin = 0;
+export const updateScheduleBodyBufferMinutesMax = 1440;
 
 export const updateScheduleBodyQueueModeDefault = `mixed`;
 
@@ -4236,9 +4244,9 @@ export const UpdateScheduleBody = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(updateScheduleBodyTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(updateScheduleBodyTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1),
+  "maxTokens": zod.number().int().min(1).max(updateScheduleBodyMaxTokensMax),
   "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(updateScheduleBodyBufferMinutesMin).default(updateScheduleBodyBufferMinutesDefault),
+  "bufferMinutes": zod.number().int().min(updateScheduleBodyBufferMinutesMin).max(updateScheduleBodyBufferMinutesMax).default(updateScheduleBodyBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(updateScheduleBodyQueueModeDefault),
   "queueOpenTime": zod.string().optional(),
   "queueCloseTime": zod.string().optional()
@@ -4251,10 +4259,12 @@ export const updateScheduleResponseOneStartTimeRegExp = new RegExp('^[0-2][0-9]:
 export const updateScheduleResponseOneTimezoneDefault = `Asia/Kolkata`;
 export const updateScheduleResponseOneTokenPrefixMax = 8;
 
+export const updateScheduleResponseOneMaxTokensMax = 1000;
 
 
 export const updateScheduleResponseOneBufferMinutesDefault = 0;
 export const updateScheduleResponseOneBufferMinutesMin = 0;
+export const updateScheduleResponseOneBufferMinutesMax = 1440;
 
 export const updateScheduleResponseOneQueueModeDefault = `mixed`;
 
@@ -4270,9 +4280,9 @@ export const UpdateScheduleResponse = zod.object({
   "breakEnd": zod.string().nullish(),
   "timezone": zod.string().default(updateScheduleResponseOneTimezoneDefault),
   "tokenPrefix": zod.string().min(1).max(updateScheduleResponseOneTokenPrefixMax),
-  "maxTokens": zod.number().int().min(1),
+  "maxTokens": zod.number().int().min(1).max(updateScheduleResponseOneMaxTokensMax),
   "consultationMinutes": zod.number().int().min(1),
-  "bufferMinutes": zod.number().int().min(updateScheduleResponseOneBufferMinutesMin).default(updateScheduleResponseOneBufferMinutesDefault),
+  "bufferMinutes": zod.number().int().min(updateScheduleResponseOneBufferMinutesMin).max(updateScheduleResponseOneBufferMinutesMax).default(updateScheduleResponseOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(updateScheduleResponseOneQueueModeDefault),
   "queueOpenTime": zod.string().optional(),
   "queueCloseTime": zod.string().optional()
@@ -4314,6 +4324,7 @@ export const ListAvailabilityExceptionsQueryParams = zod.object({
 
 export const listAvailabilityExceptionsResponseOneTotalMin = 0;
 
+export const listAvailabilityExceptionsResponseTwoItemsItemOneMaxTokensMax = 1000;
 
 
 
@@ -4334,13 +4345,14 @@ export const ListAvailabilityExceptionsResponse = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).nullish()
+  "maxTokens": zod.number().int().min(1).max(listAvailabilityExceptionsResponseTwoItemsItemOneMaxTokensMax).nullish()
 }).and(zod.object({
   "id": zod.string()
 })))
 }))
 
 
+export const createAvailabilityExceptionBodyMaxTokensMax = 1000;
 
 
 
@@ -4355,9 +4367,10 @@ export const CreateAvailabilityExceptionBody = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).nullish()
+  "maxTokens": zod.number().int().min(1).max(createAvailabilityExceptionBodyMaxTokensMax).nullish()
 })
 
+export const createAvailabilityExceptionResponseOneMaxTokensMax = 1000;
 
 
 
@@ -4372,7 +4385,7 @@ export const CreateAvailabilityExceptionResponse = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).nullish()
+  "maxTokens": zod.number().int().min(1).max(createAvailabilityExceptionResponseOneMaxTokensMax).nullish()
 }).and(zod.object({
   "id": zod.string()
 }))
@@ -4382,6 +4395,7 @@ export const UpdateAvailabilityExceptionParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updateAvailabilityExceptionBodyMaxTokensMax = 1000;
 
 
 
@@ -4396,9 +4410,10 @@ export const UpdateAvailabilityExceptionBody = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).nullish()
+  "maxTokens": zod.number().int().min(1).max(updateAvailabilityExceptionBodyMaxTokensMax).nullish()
 })
 
+export const updateAvailabilityExceptionResponseOneMaxTokensMax = 1000;
 
 
 
@@ -4413,7 +4428,7 @@ export const UpdateAvailabilityExceptionResponse = zod.object({
   "endTime": zod.string().nullish(),
   "breakStart": zod.string().nullish(),
   "breakEnd": zod.string().nullish(),
-  "maxTokens": zod.number().int().min(1).nullish()
+  "maxTokens": zod.number().int().min(1).max(updateAvailabilityExceptionResponseOneMaxTokensMax).nullish()
 }).and(zod.object({
   "id": zod.string()
 }))

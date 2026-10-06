@@ -2283,9 +2283,9 @@ components:
         breakEnd: { type: [string, "null"] }
         timezone: { type: string, default: Asia/Kolkata }
         tokenPrefix: { type: string, minLength: 1, maxLength: 8 }
-        maxTokens: { type: integer, minimum: 1 }
+        maxTokens: { type: integer, minimum: 1, maximum: 1000 }
         consultationMinutes: { type: integer, minimum: 1 }
-        bufferMinutes: { type: integer, minimum: 0, default: 0 }
+        bufferMinutes: { type: integer, minimum: 0, maximum: 1440, default: 0 }
         queueMode: { type: string, enum: [mixed, appointmentsOnly, walkInsOnly], default: mixed }
         queueOpenTime: { type: string }
         queueCloseTime: { type: string }
@@ -2315,7 +2315,7 @@ components:
         endTime: { type: [string, "null"] }
         breakStart: { type: [string, "null"] }
         breakEnd: { type: [string, "null"] }
-        maxTokens: { type: [integer, "null"], minimum: 1 }
+        maxTokens: { type: [integer, "null"], minimum: 1, maximum: 1000 }
     AvailabilityException:
       allOf:
         - { $ref: "#/components/schemas/AvailabilityExceptionInput" }
