@@ -91,14 +91,35 @@ function TimePanel({ value, min, max, step, onSelect, onClose, prefs, clearable 
     const alt = minutes.find(x => ok(h, x));
     if (alt !== undefined) onSelect(composeTime(h, alt));
   };
+  const colTarget = (col: Element) => col.querySelector<HTMLButtonElement>('[aria-selected="true"]:not(:disabled)') || col.querySelector<HTMLButtonElement>("button:not(:disabled)");
+  // Focus the selected option once the portaled panel is attached and visible. The popover mounts
+  // hidden for one frame while it is positioned, so retry on the next frames until focus lands.
   useEffect(() => {
-    rootRef.current?.querySelectorAll<HTMLElement>(".dtp-col").forEach(col => { const sel = col.querySelector<HTMLElement>('[aria-selected="true"]'); if (sel) col.scrollTop = sel.offsetTop - col.offsetTop - 48; });
-    rootRef.current?.querySelector<HTMLButtonElement>('.dtp-col [aria-selected="true"]:not(:disabled), .dtp-col button:not(:disabled)')?.focus();
+    const root = rootRef.current;
+    root?.querySelectorAll<HTMLElement>(".dtp-col").forEach(col => { const sel = col.querySelector<HTMLElement>('[aria-selected="true"]'); if (sel) col.scrollTop = sel.offsetTop - col.offsetTop - 48; });
+    let tries = 0, frame = 0;
+    const attempt = () => {
+      const first = root?.querySelector(".dtp-col"); const target = first && colTarget(first);
+      if (!root?.isConnected || !target) return;
+      if (!root.contains(document.activeElement)) target.focus({ preventScroll: true });
+      if (!root.contains(document.activeElement) && ++tries < 10) frame = requestAnimationFrame(attempt);
+    };
+    attempt();
+    return () => cancelAnimationFrame(frame);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const onKey = (e: KeyboardEvent) => {
     if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onClose(); return; }
     const active = document.activeElement as HTMLButtonElement | null;
     const cols = Array.from(rootRef.current?.querySelectorAll<HTMLElement>(".dtp-col") || []);
+    if (e.key === "Tab") {
+      // Tab cycles column -> column -> Clear -> Done inside the open panel instead of escaping to the next field.
+      const stops = [...cols.map(colTarget), ...Array.from(rootRef.current?.querySelectorAll<HTMLButtonElement>(".dtp-foot button:not(:disabled)") || [])].filter(Boolean) as HTMLButtonElement[];
+      if (!stops.length) return;
+      const at = stops.findIndex(el => el === active || (el.closest(".dtp-col") && el.closest(".dtp-col")!.contains(active)));
+      e.preventDefault();
+      stops[(at + (e.shiftKey ? -1 : 1) + stops.length) % stops.length].focus();
+      return;
+    }
     const ci = cols.findIndex(c => c.contains(active));
     if (ci < 0) return;
     const items = Array.from(cols[ci].querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
@@ -106,11 +127,11 @@ function TimePanel({ value, min, max, step, onSelect, onClose, prefs, clearable 
     if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); items[Math.max(0, Math.min(items.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))]?.focus(); }
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       const next = cols[ci + (e.key === "ArrowRight" ? 1 : -1)];
-      if (next) { e.preventDefault(); (next.querySelector<HTMLButtonElement>('[aria-selected="true"]:not(:disabled)') || next.querySelector<HTMLButtonElement>("button:not(:disabled)"))?.focus(); }
+      if (next) { e.preventDefault(); colTarget(next)?.focus(); }
     }
   };
   const opt = (key: string, label: string, selected: boolean, disabled: boolean, click: () => void, testId: string) =>
-    <button key={key} type="button" role="option" aria-selected={selected} disabled={disabled} className={`dtp-time-opt${selected ? " selected" : ""}`} onClick={click} data-testid={testId}>{label}</button>;
+    <button key={key} type="button" role="option" tabIndex={-1} aria-selected={selected} disabled={disabled} className={`dtp-time-opt${selected ? " selected" : ""}`} onClick={click} data-testid={testId}>{label}</button>;
   return <div className="dtp-panel dtp-time" role="dialog" aria-label="Choose time" onKeyDown={onKey} ref={rootRef}>
     <div className="dtp-cols">
       <div className="dtp-col" role="listbox" aria-label="Hour">
@@ -140,7 +161,7 @@ function TimePanel({ value, min, max, step, onSelect, onClose, prefs, clearable 
  *  bodies, table wrappers and cards. Position is recomputed on scroll/resize. */
 export function PickerPopover({ anchorRef, panelRef, children }: { anchorRef: RefObject<HTMLElement | null>; panelRef: RefObject<HTMLDivElement | null>; children: ReactNode }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
-  const [style, setStyle] = useState<CSSProperties>({ position: "absolute", top: 0, left: 0, visibility: "hidden" });
+  const [style, setStyle] = useState<CSSProperties>({ position: "absolute", top: 0, left: 0, opacity: 0, pointerEvents: "none" });
   useLayoutEffect(() => {
     setHost((anchorRef.current?.closest('[role="dialog"],[role="alertdialog"]') as HTMLElement | null) || document.body);
   }, [anchorRef]);
@@ -153,7 +174,7 @@ export function PickerPopover({ anchorRef, panelRef, children }: { anchorRef: Re
       const container = isBody ? { top: 0, left: 0, bottom: window.innerHeight, right: window.innerWidth, width: window.innerWidth, height: window.innerHeight } : host.getBoundingClientRect();
       const pos = placePanel(anchor.getBoundingClientRect(), container, { width: panel.offsetWidth, height: panel.offsetHeight }, 4, 8,
         isBody ? { x: window.scrollX, y: window.scrollY } : { x: host.scrollLeft, y: host.scrollTop });
-      setStyle({ position: "absolute", top: pos.top, left: pos.left, visibility: "visible" });
+      setStyle({ position: "absolute", top: pos.top, left: pos.left });
     };
     update();
     window.addEventListener("resize", update);
@@ -206,7 +227,9 @@ function FormattedInput({ value, onChange, preferences, mode, min, max, onValidi
     pendingEcho.current = canonical;
     onChange(canonical);
   };
-  const close = () => { setOpen(false); requestAnimationFrame(() => inputRef.current?.focus()); };
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  // Escape, Done and selection return focus to the trigger that opened the picker.
+  const close = () => { setOpen(false); requestAnimationFrame(() => (triggerRef.current && !triggerRef.current.disabled ? triggerRef.current : inputRef.current)?.focus()); };
   const pick = (canonical: string) => { commit(formatter(canonical, prefs)); close(); };
   // Column selection keeps the time panel open so hour, minute and period can each be chosen.
   const selectTime = (canonical: string) => commit(canonical ? formatter(canonical, prefs) : "");
@@ -214,7 +237,7 @@ function FormattedInput({ value, onChange, preferences, mode, min, max, onValidi
   const testBase = (props["data-testid" as keyof typeof props] as string | undefined) || `input-${mode}`;
   return <span className={`dtp-field${invalid ? " is-invalid" : ""}`} ref={wrapRef} data-dtp-open={open || undefined}
     // Escape from any focus inside the field, trigger or (portaled, React-bubbling) panel closes only the picker.
-    onKeyDown={e => { if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); setOpen(false); } }}>
+    onKeyDown={e => { if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); close(); } }}>
     <span className="dtp-control" ref={anchorRef}>
       <input {...props} type="text" inputMode={mode === "date" && prefs.dateFormat !== "DD MMM YYYY" ? "numeric" : "text"} autoComplete="off"
         value={text} placeholder={props.placeholder ?? example} aria-invalid={invalid || props["aria-invalid"]}
@@ -222,7 +245,7 @@ function FormattedInput({ value, onChange, preferences, mode, min, max, onValidi
         onKeyDown={e => { if (e.altKey && e.key === "ArrowDown") { e.preventDefault(); setOpen(true); } else if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); setOpen(false); } props.onKeyDown?.(e); }}
         onChange={event => commit(event.target.value)}
         ref={element => { inputRef.current = element; element?.setCustomValidity(invalid ? error : ""); }} />
-      <button type="button" className="dtp-trigger" disabled={props.disabled || props.readOnly} aria-haspopup="dialog" aria-expanded={open}
+      <button type="button" ref={triggerRef} className="dtp-trigger" disabled={props.disabled || props.readOnly} aria-haspopup="dialog" aria-expanded={open}
         aria-label={mode === "date" ? "Open calendar" : "Open time list"} title={mode === "date" ? "Choose a date" : "Choose hour and minute"} onClick={() => setOpen(v => !v)} data-testid={`${testBase}-picker`}>
         <Icon size={16} aria-hidden />
       </button>

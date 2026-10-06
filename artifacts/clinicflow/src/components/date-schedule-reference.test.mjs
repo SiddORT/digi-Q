@@ -59,3 +59,20 @@ test("all From/To filters use the shared range picker and weekly editors use exp
   assert.match(input, /aria-label="Hour"/); assert.match(input, /aria-label="Minute"/); assert.match(input, /is12 && <div className="dtp-col"/);
   assert.match(input, /closest\('\[role="dialog"\],\[role="alertdialog"\]'\)/, "picker portals inside dialogs for the focus trap");
 });
+
+test("time picker focus: lands after portal positioning, Tab stays in panel, close returns to trigger", () => {
+  const src = read("./DateFormatInput.tsx");
+  assert.doesNotMatch(src, /visibility: "hidden"/, "hidden popovers cannot receive focus while positioning");
+  assert.match(src, /opacity: 0, pointerEvents: "none"/);
+  assert.match(src, /root\.contains\(document\.activeElement\) && \+\+tries < 10\) frame = requestAnimationFrame\(attempt\)/, "focus retries until the portaled panel is attached");
+  assert.match(src, /if \(e\.key === "Tab"\) \{/); assert.match(src, /stops\[\(at \+ \(e\.shiftKey \? -1 : 1\) \+ stops\.length\) % stops\.length\]\.focus\(\)/);
+  assert.match(src, /role="option" tabIndex=\{-1\}/, "options are reached by arrows, not sequential Tab");
+  assert.match(src, /triggerRef\.current && !triggerRef\.current\.disabled \? triggerRef\.current : inputRef\.current/);
+  assert.match(src, /e\.key === "Escape" && open\) \{ e\.preventDefault\(\); e\.stopPropagation\(\); close\(\); \} \}\}>/);
+});
+
+test("weekly editor never prints an undefined timezone", () => {
+  const src = read("./schedule/WeeklyScheduleEditor.tsx");
+  assert.doesNotMatch(src, /Clinic timezone: \$\{branch\.data\.timezone\}`/);
+  assert.match(src, /\|\| "Not set"\}`/);
+});

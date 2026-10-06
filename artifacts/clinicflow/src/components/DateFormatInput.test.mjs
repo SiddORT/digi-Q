@@ -61,5 +61,5 @@ test("required, malformed, impossible and out-of-range values set an inline erro
 });
 test("Escape on any focus within the field (input, trigger, portaled panel) closes only the picker", async () => {
   const src = (await import("node:fs")).readFileSync(new URL("./DateFormatInput.tsx", import.meta.url), "utf8");
-  assert.match(src, /data-dtp-open=\{open \|\| undefined\}[^>]*onKeyDown=\{e => \{ if \(e\.key === "Escape" && open\) \{ e\.preventDefault\(\); e\.stopPropagation\(\); setOpen\(false\); \} \}\}/);
+  assert.match(src, /data-dtp-open=\{open \|\| undefined\}[^>]*onKeyDown=\{e => \{ if \(e\.key === "Escape" && open\) \{ e\.preventDefault\(\); e\.stopPropagation\(\); close\(\); \} \}\}/);
 });

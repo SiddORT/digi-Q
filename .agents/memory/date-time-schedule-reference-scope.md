@@ -16,3 +16,9 @@ The user approved email/SMS support for existing events plus queue alerts (patie
 **Why:** The user selected “Existing events plus queue alerts” when asked which notification events to implement.
 
 **How to apply:** Include queue alerts in implementation scope without enabling unsolicited real-recipient delivery during development or treating provider acceptance as confirmed receipt.
+
+Place branch selection in the top-right workspace header near notifications, not on sign-in. Show a selector for staff/doctors assigned to two or more accessible locations, and a fixed label for one.
+
+**Why:** The user proposed the header location and explicitly selected “Two or more locations.”
+
+**How to apply:** Preserve permissions, validate remembered selections, protect unsaved work, and keep operational pages consistent with the selected branch.

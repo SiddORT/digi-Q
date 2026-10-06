@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearch } from "wouter";
 import * as api from "@workspace/api-client-react";
+import { useWorkspaceBranch, usePinnedCare } from "../WorkspaceBranch";
 import { useQueryClient } from "@tanstack/react-query";
 import { CareLookup, useSelectedCare } from "../CareLookup";
 import { FilterBar, Pagination, SearchInput, useDebouncedValue, listingSuggestions } from "../ListingControls";
@@ -20,15 +21,17 @@ import { doctorWorkspaceScope } from "./session-scope";
 import { formatDate, formatConfiguredTimestamp } from "../../lib/date-time";
 
 export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:api.Appointment}){
+ const queuePin=useWorkspaceBranch();
  const searchParams=new URLSearchParams(useSearch());
  const {isDoctor,doctorId:restrictedDoctorId}=doctorWorkspaceScope(identity);
- const [retained]=useState(()=>{try{const value=JSON.parse(sessionStorage.getItem("clinicflow-staff-session")||"null");return identity.user?.role!=="patient"&&value?.staffId===identity.user?.id?value:null;}catch{return null;}});
- const [clinicId,setClinic]=useState(initial?.clinicId||searchParams.get("clinic")||retained?.clinicId||"");const [branchId,setBranch]=useState(initial?.branchId||searchParams.get("branch")||retained?.branchId||"");const [doctorId,setDoctor]=useState(restrictedDoctorId||initial?.doctorId||searchParams.get("doctor")||retained?.doctorId||"");const [date,setDate]=useState(initial?.date||searchParams.get("date")||retained?.date||today());const [appointmentId,setAppointment]=useState(initial?.id||searchParams.get("appointment")||"");
+ const [retained]=useState(()=>{try{const value=JSON.parse(sessionStorage.getItem("clinicflow-staff-session")||"null");return identity.user?.role!=="patient"&&value?.staffId===identity.user?.id&&(!queuePin||value?.branchId===queuePin.branchId)?value:null;}catch{return null;}});
+ const queueUrlStale=!!queuePin&&!!searchParams.get("branch")&&searchParams.get("branch")!==queuePin.branchId;const [clinicId,setClinic]=useState(queuePin?.clinicId||initial?.clinicId||searchParams.get("clinic")||retained?.clinicId||"");const [branchId,setBranch]=useState(queuePin?.branchId||initial?.branchId||searchParams.get("branch")||retained?.branchId||"");const [doctorId,setDoctor]=useState(restrictedDoctorId||(initial&&(!queuePin||initial.branchId===queuePin.branchId)?initial.doctorId:"")||(queueUrlStale?"":searchParams.get("doctor"))||retained?.doctorId||"");const [date,setDate]=useState(initial?.date||searchParams.get("date")||retained?.date||today());const [appointmentId,setAppointment]=useState(initial?.id||searchParams.get("appointment")||"");
  const [status,setStatus]=useState("");const [search,setSearch]=useState("");const debounced=useDebouncedValue(search);const [page,setPage]=useState(1);const [pageSize,setSize]=useState(20);const client=useQueryClient();const lock=useRef(false);
  const [showSummary,setShowSummary]=useState(false);
  const [callPreview,setCallPreview]=useState<{scope:string;token:string}|null>(null);
  const [sort,setSort]=useState("queueRank");
  const isPatient=identity.user?.role==="patient";const root=["superAdmin","clinicAdmin"].includes(identity.user!.role)?"admin":identity.user!.role;
+  usePinnedCare(clinicId,branchId,setClinic,setBranch);
   useSoleCareDefaults({enabled:!isPatient,clinicId,branchId,doctorId,setClinic,setBranch,setDoctor});
  // Only staff session selectors are retained. Never persist patient IDs, searches,
  // tickets, tokens, queue results, appointment IDs or booking form data.
@@ -70,8 +73,8 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  <div className="panel-heading section-head"><div><h2>Session</h2><p>Select the clinic, doctor and consulting session to run this queue.</p></div></div>
  <div className="form-grid">
  {isPatient?<CareLookup kind="appointments" label="Your Appointment" value={appointmentId} onChange={id=>{setAppointment(id);setDoctor("");setBranch("");}}/>:<>
- <CareLookup kind="clinics" label="Clinic" value={clinicId} onChange={v=>{setClinic(v);setBranch("");setDoctor(restrictedDoctorId);setAppointment("");}}/>
-  <CareLookup kind="branches" label="Location" value={branchId} disabled={!clinicId} params={{clinicId}} onChange={v=>{setBranch(v);setDoctor(restrictedDoctorId);setAppointment("");}}/>
+ <CareLookup kind="clinics" label="Clinic" value={clinicId} disabled={!!queuePin} onChange={v=>{setClinic(v);setBranch("");setDoctor(restrictedDoctorId);setAppointment("");}}/>
+  <CareLookup kind="branches" label="Location" value={branchId} disabled={!clinicId||!!queuePin} params={{clinicId}} onChange={v=>{setBranch(v);setDoctor(restrictedDoctorId);setAppointment("");}}/>
  <CareLookup kind="doctors" label="Doctor" value={doctorId} disabled={!branchId||isDoctor} params={{clinicId,branchId}} onChange={v=>{setDoctor(v);setAppointment("");}}/>
  <label>Date<DateFormatInput required data-testid="input-queue-date" value={date} onValidityChange={setDateValid} onChange={value=>{if(value){setDate(value);setAppointment("");}}}/></label></>}
  {!isPatient&&<OperationalSessionSelector selection={{...sessionSelection,setSelectionKey:key=>{sessionSelection.setSelectionKey(key);setAppointment("");}}}/>}

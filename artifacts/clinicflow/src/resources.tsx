@@ -43,6 +43,7 @@ import { PhoneInput } from "./components/PhoneInput";
 import { StatusSwitch } from "./components/StatusSwitch";
 import { useDateTimePreferences } from "./components/DateTimePreferences";
 import { TimeRangeSlider } from "./components/ClinicRegistrationHours";
+import { useWorkspaceBranch, useRegisterUnsaved } from "./components/WorkspaceBranch";
 
 export const title = (s:string) => titleCase({called:"Called Next",noShow:"Absent",branch:"Clinic",branches:"Clinics",branchName:"Clinic",branchNames:"Clinics",clinic:"Clinic Group",clinicName:"Clinic Group",clinicNames:"Clinic Groups"}[s] || s.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()));
 export const today = (timeZone?:string) => new Date().toLocaleDateString("en-CA",timeZone?{timeZone}:undefined);
@@ -377,11 +378,16 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  // Patient Details is read-only: shown to every role that can list patients. Edit/Deactivate stay gated by config.update.
  const hasActions=!!config.update||resource==="patients";
  const [dirty,setDirty]=useState(false);
+ useRegisterUnsaved(dirty);
+ // Workspace location: patients, weekly sessions and exceptions follow the top-bar location. Clinic settings (fixedClinicId) stay unrestricted.
+ const workspacePin=useWorkspaceBranch();
+ const branchPin=workspacePin&&!fixedClinicId&&["patients","availability","exceptions"].includes(resource)?workspacePin:null;
+ const pinDefaults:Record<string,string>=branchPin?{branchId:branchPin.branchId,...resource==="patients"?{}:{clinicId:branchPin.clinicId}}:{};
  const [success,setSuccess]=useState("");
  const term=useDebouncedValue(search);
  const supportsSearch=true;
-  const roleDefaults=useMemo<Record<string,string>>(()=>({...identity?.doctorId&&["doctor","clinicAdmin"].includes(identity.user?.role||"")&&["availability","exceptions"].includes(resource)?{doctorId:identity.doctorId as string}:{},...fixedClinicId?{clinicId:fixedClinicId}:{}}),[identity,resource,fixedClinicId]);
-  const filters:Record<string,string>={...roleDefaults,...Object.fromEntries(LIST_FILTER_KEYS.flatMap(key=>urlParams.get(key)?[[key,urlParams.get(key)!]]:[])),...fixedClinicId?{clinicId:fixedClinicId}:{}};
+  const roleDefaults=useMemo<Record<string,string>>(()=>({...identity?.doctorId&&["doctor","clinicAdmin"].includes(identity.user?.role||"")&&["availability","exceptions"].includes(resource)?{doctorId:identity.doctorId as string}:{},...fixedClinicId?{clinicId:fixedClinicId}:{},...pinDefaults}),[identity,branchPin,resource,fixedClinicId]);
+  const filters:Record<string,string>={...roleDefaults,...Object.fromEntries(LIST_FILTER_KEYS.flatMap(key=>urlParams.get(key)?[[key,urlParams.get(key)!]]:[])),...fixedClinicId?{clinicId:fixedClinicId}:{},...pinDefaults};
   // The URL is the source of truth so opening an editor and browser Back both retain list context.
   // Keep unrelated query parameters (e.g. links from clinic settings) intact.
   const changeUrl=(changes:Record<string,string|number>,replace=false)=>{
@@ -474,8 +480,8 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   ];
    return <><div className={`admin-listing-filter${embedded?" embedded":""}`}><FilterBar title={query.data&&!query.error?<span className="listing-count-label"><span className="listing-count">{query.data.total}</span> {listName}</span>:undefined} secondary={<>{resource==="patients"&&<PatientFilteredExport params={listParams} timezone={settings.data?.timezone} disabled={query.isLoading||query.isPlaceholderData||!!query.error||!query.data?.total}/>}{viewControls}</>} actions={<>{config.create&&allowCreate&&<button className="button small" onClick={()=>{save.reset();setDirty(false);setEditing({...defaults,...resource==="qrs"?Object.fromEntries(["clinicId","branchId","doctorId"].filter(key=>filters[key]).map(key=>[key,filters[key]])):{},...fixedClinicId?{clinicId:fixedClinicId}:{}});}} data-testid={`button-add-${resource}`}><Plus size={17}/> Add {singularName}</button>}</>} onReset={reset} active={active} chips={chips} label={`Filter ${listName}`} activeCount={chips.filter(c=>c.key!=="search").length} onOpen={()=>setDraft({...filters,sort})} onApply={applyDraft} advanced={hasAdvanced?<>
   {hasStatusTabs&&<SearchableSelect label="Status" testId={`select-${resource}-status`} value={draft.status||"all"} onChange={value=>draftFilter("status",value==="active"||value==="inactive"?value:"")} options={[{value:"all",label:"All"},{value:"active",label:"Active"},{value:"inactive",label:"Inactive"}]}/>}
-  {!fixedClinicId&&["availability","exceptions"].includes(resource)&&<ResourceLookup resource="clinics" label="Clinic" value={draft.clinicId||""} onChange={value=>draftFilter("clinicId",value)}/>}
-  {["availability","exceptions"].includes(resource)&&<><ResourceLookup resource="branches" label="Location" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/><ResourceLookup resource="doctors" label="Doctor" params={{clinicId:draft.clinicId||undefined,branchId:draft.branchId||undefined}} value={draft.doctorId||""} onChange={value=>draftFilter("doctorId",value)}/></>}
+  {!fixedClinicId&&!branchPin&&["availability","exceptions"].includes(resource)&&<ResourceLookup resource="clinics" label="Clinic" value={draft.clinicId||""} onChange={value=>draftFilter("clinicId",value)}/>}
+  {["availability","exceptions"].includes(resource)&&<>{branchPin?<p className="loc-fixed-note" data-testid="text-filter-location-fixed">Location: {branchPin.name} · change it from the top bar</p>:<ResourceLookup resource="branches" label="Location" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/>}<ResourceLookup resource="doctors" label="Doctor" params={{clinicId:draft.clinicId||undefined,branchId:draft.branchId||undefined}} value={draft.doctorId||""} onChange={value=>draftFilter("doctorId",value)}/></>}
   {resource==="exceptions"&&<label>Date<DateFormatInput data-testid="input-exceptions-date-filter" value={draft.date||""} onChange={value=>draftFilter("date",value)}/></label>}
   {resource==="masters"&&<SearchableSelect label="Category" placeholder="All categories" value={draft.category||""} onChange={value=>draftFilter("category",value)} options={Object.values(api.MasterInputCategory).map(category=>({value:category,label:title(category)}))}/>}
   <div className="sort-menu" data-testid={`select-sort-${resource}`}><SearchableSelect label={`Sort ${listName}`} value={sortOptions.some(option=>option.value===draft.sort)?draft.sort:"-createdAt"} onChange={value=>draftFilter("sort",value||"-createdAt")} options={sortOptions}/></div>
@@ -483,7 +489,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   {resource==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={draft.specializationId||""} onChange={value=>draftFilter("specializationId",value)}/>}
   {resource==="doctors"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Managing Admin" params={{role:"clinicAdmin"}} value={draft.managingAdminId||""} onChange={value=>draftFilter("managingAdminId",value)}/>}
   {["patients","audit"].includes(resource)&&<><DateRangeInput fromLabel="From date" toLabel="To date" testId={`${resource}-range`} fromTestId={`input-${resource}-from`} toTestId={`input-${resource}-to`} from={draft.from||""} to={draft.to||""} onChange={range=>{draftFilter("from",range.from);draftFilter("to",range.to);}}/>{draft.from&&draft.to&&draft.from>draft.to&&<p role="alert" className="field-error">Select an end date on or after the start date.</p>}</>}
-  {["doctors","patients"].includes(resource)&&<ResourceLookup resource="branches" label="Clinic" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/>}
+  {["doctors","patients"].includes(resource)&&!branchPin&&<ResourceLookup resource="branches" label="Clinic" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/>}
    {["branches","doctors","patients","qrs"].includes(resource)&&!fixedClinicId&&<ResourceLookup resource="clinics" label={resource==="patients"?"Registration clinic":"Clinic"} value={draft.clinicId||""} onChange={value=>draftFilter("clinicId",value)}/>}
    {resource==="qrs"&&<><ResourceLookup resource="branches" label="Location" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/><ResourceLookup resource="doctors" label="Doctor" params={{clinicId:draft.clinicId||undefined,branchId:draft.branchId||undefined}} value={draft.doctorId||""} onChange={value=>draftFilter("doctorId",value)}/></>}
   {resource==="availability"&&<SearchableSelect label="Day" placeholder="All days" value={draft.dayOfWeek||""} onChange={value=>draftFilter("dayOfWeek",value)} options={DAYS.map((label,index)=>({value:String(index),label}))}/>}

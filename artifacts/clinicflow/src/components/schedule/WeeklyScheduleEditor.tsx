@@ -14,6 +14,7 @@ import { formatTime } from "../../lib/date-time";
 import { friendlyError } from "../../lib/friendly-error";
 import { notifyBulk } from "../../lib/notify";
 import { useDateTimePreferences } from "../DateTimePreferences";
+import { useRegisterUnsaved } from "../WorkspaceBranch";
 import { buildWeek, canOpenDetails, openDetails, copyDay, dayErrors, dayWarnings, draftKey, executePlan, outsideHours, planWeek, reconcileDraft, weekSummary, SUGGESTED_SESSIONS_PER_DAY, type DraftDay, type DraftSession, type ScheduleRow } from "./week-plan";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -57,6 +58,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
   const baseline = useMemo(() => JSON.stringify(buildWeek(rows).map(d => [d.isOpen, d.sessions.map(s => [s.id, s.startTime, s.endTime])])), [rows]);
   const dirty = JSON.stringify(week.map(d => [d.isOpen, d.isOpen ? d.sessions.map(s => [s.id, s.startTime, s.endTime]) : []])) !== baseline;
   useEffect(() => { dirtyRef.current?.(dirty); }, [dirty]);
+  useRegisterUnsaved(dirty);
 
   const template = rows[0] ? (rows[0] as Record<string, unknown>) : branch.data && defaults.tokenPrefix.trim() && Number(defaults.maxTokens) >= 1 && Number(defaults.consultationMinutes) >= 1 ? { doctorId, branchId, clinicId: branch.data.clinicId, timezone: branch.data.timezone, tokenPrefix: defaults.tokenPrefix.trim(), maxTokens: Number(defaults.maxTokens), consultationMinutes: Number(defaults.consultationMinutes), queueMode: "mixed" } : undefined;
   const errors = week.map(dayErrors);
@@ -104,7 +106,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
 
   return <section className="panel padded" data-testid="panel-weekly-editor" aria-busy={busy}>
     {confirmation.dialog}
-    <div className="panel-heading section-head"><div><h3>Weekly Schedule</h3><p className="muted">{branch.data ? `Clinic timezone: ${branch.data.timezone}` : "Loading clinic hours…"}</p></div></div>
+    <div className="panel-heading section-head"><div><h3>Weekly Schedule</h3><p className="muted">{branch.data ? `Clinic timezone: ${branch.data.timezone || (rows[0] as { timezone?: string } | undefined)?.timezone || (inherited as { timezone?: string }).timezone || "Not set"}` : "Loading clinic hours…"}</p></div></div>
     {branch.error && <p role="alert">Clinic hours could not be loaded. <button type="button" onClick={() => void branch.refetch()}>Retry Clinic Hours</button></p>}
     <p className="notice" data-testid="text-week-summary">{weekSummary(week, SHORT, fmt)}</p>
     {dirty&&<p className="notice">When hours change, queue closing times beyond the new end are shortened to match. Queue windows that no longer fit are reset to session boundaries; valid early opening times are retained. Review individual settings with Details.</p>}

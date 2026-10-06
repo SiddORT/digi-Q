@@ -5,6 +5,7 @@ import { ClinicSessionSetup } from "./ClinicSessionSetup";
 import { DateTimePreferencesProvider } from "./DateTimePreferences";
 import { useState } from "react";
 import { AppDialog } from "./AppDialog";
+import { useWorkspaceBranch } from "./WorkspaceBranch";
 
 /** Both the clinic section and legacy schedule URLs render this one workflow. */
 export function SchedulingWorkspace({identity,page,onLinkOwner,clinicId:fixedClinicId}:{identity:api.Identity;page:"availability"|"exceptions";onLinkOwner?:()=>void;clinicId?:string}){
@@ -12,7 +13,9 @@ export function SchedulingWorkspace({identity,page,onLinkOwner,clinicId:fixedCli
  const [copyOpen,setCopyOpen]=useState(false);
  const search=useSearch();
  const params=new URLSearchParams(search);
- const clinicId=fixedClinicId||params.get("clinicId")||"";
+ const pin=useWorkspaceBranch();
+ const schedulePin=fixedClinicId?null:pin; // clinic settings stay unrestricted
+ const clinicId=fixedClinicId||schedulePin?.clinicId||params.get("clinicId")||"";
  const selectedPage=fixedClinicId?(params.get("schedule")==="exceptions"?"exceptions":"availability"):page;
  const role=identity.user?.role;
  const admin=role==="clinicAdmin"||role==="superAdmin";
@@ -35,6 +38,6 @@ export function SchedulingWorkspace({identity,page,onLinkOwner,clinicId:fixedCli
   </div>
    {admin&&selectedPage==="availability"&&<><ErrorNotice error={settings.error}/>{settings.error&&<button type="button" onClick={()=>void settings.refetch()}>Retry Clinic Configuration</button>}</>}
    {copyOpen&&settings.data&&<AppDialog open variant="drawer" onClose={()=>setCopyOpen(false)} title="Copy opening hours into custom doctor sessions" description="For owner-linked consultations, change location hours using the protected preview. For custom doctors, copy selected opening intervals here, then manage them in the list."><ClinicSessionSetup key={clinicId} clinicId={clinicId} branches={settings.data.branches} ownDoctorId={doctorId||undefined}/></AppDialog>}
-   <ResourcePage key={`${selectedPage}-${fixedClinicId||""}`} resource={selectedPage} identity={identity} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId} defaults={{clinicId,branchId:params.get("branchId")||"",doctorId:params.get("doctorId")||doctorId||"",isOpen:true}}/>
+   <ResourcePage key={`${selectedPage}-${fixedClinicId||""}`} resource={selectedPage} identity={identity} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId} defaults={{clinicId,branchId:schedulePin?.branchId||params.get("branchId")||"",doctorId:params.get("doctorId")||doctorId||"",isOpen:true}}/>
  </section></DateTimePreferencesProvider>;
 }
