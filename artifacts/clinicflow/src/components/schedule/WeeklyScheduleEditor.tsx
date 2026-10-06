@@ -118,7 +118,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
       const day = week[dayIndex]; const hours = hoursFor(dayIndex); const errs = errors[dayIndex]; const warns = dayWarnings(day);
       const clinicClosed = opening !== null && !hours.length && !day.sessions.some(s => s.id);
       const closedRows = rows.filter(r => r.dayOfWeek === dayIndex && r.isOpen === false);
-      const isExpanded = day.isOpen && (expandedDays.includes(dayIndex) || errs.length > 0);
+      const isExpanded = expandedDays.includes(dayIndex) || errs.length > 0; // closed rows expand to reach Copy only
       const bodyId = `week-day-body-${dayIndex}`;
       const summary = day.isOpen ? day.sessions.map(x => `${fmt(x.startTime)} – ${fmt(x.endTime)}`).join(" · ") || "No sessions yet" : clinicClosed ? "Clinic closed" : "Off";
       return <section key={dayIndex} className={`registration-day wdr-row${isExpanded ? " is-expanded" : ""}${day.isOpen ? "" : " is-off"}`} data-testid={`row-day-${dayIndex}`}>
@@ -128,12 +128,12 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
           </HelpTip>
           <strong className="wdr-day">{DAYS[dayIndex]}</strong>
           {!isExpanded && <span className="wdr-summary" data-testid={`text-day-summary-${dayIndex}`}>{summary}</span>}
-          <button type="button" className="wdr-toggle" aria-expanded={isExpanded} aria-controls={bodyId} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${DAYS[dayIndex]} sessions`} disabled={!day.isOpen || errs.length > 0} onClick={() => setExpanded(expandedDays.includes(dayIndex) ? expandedDays.filter(x => x !== dayIndex) : [...expandedDays, dayIndex])} data-testid={`button-expand-day-${dayIndex}`}><ChevronDown size={16} aria-hidden/></button>
+          <button type="button" className="wdr-toggle" aria-expanded={isExpanded} aria-controls={bodyId} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${DAYS[dayIndex]} sessions`} disabled={errs.length > 0} onClick={() => setExpanded(expandedDays.includes(dayIndex) ? expandedDays.filter(x => x !== dayIndex) : [...expandedDays, dayIndex])} data-testid={`button-expand-day-${dayIndex}`}><ChevronDown size={16} aria-hidden/></button>
         </div>
         {isExpanded && <div className="wdr-body" id={bodyId}>
         {branch.data && <small className="muted">Clinic: {opening === null ? "No hour limits set" : hours.length ? hours.map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ") : "Closed"}</small>}
         {closedRows.length > 0 && <small className="muted">Stored as closed: {closedRows.map(r => canOpenDetails(r) ? <button type="button" className="text-link" key={r.id} onClick={() => openDetails(r, onEdit)}>{fmt(r.startTime)} – {fmt(r.endTime)}</button> : <span key={r.id}>{fmt(r.startTime)} – {fmt(r.endTime)} (linked; managed in Clinic settings) </span>)}</small>}
-        <div className="registration-sessions">{day.sessions.map((s, index) => {
+        {day.isOpen && <div className="registration-sessions">{day.sessions.map((s, index) => {
           const change = (patch: Partial<DraftSession>) => setDay({ ...day, sessions: day.sessions.map(x => x.key === s.key ? { ...x, ...patch } : x) });
           const row = s.id ? rows.find(r => r.id === s.id) : undefined;
           const out = !s.locked && outsideHours(s, hours);
@@ -155,7 +155,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
           </div>;
         })}
           <button type="button" className="text-link" disabled={busy} onClick={() => setDay({ ...day, sessions: [...day.sessions, newSession(dayIndex)] })} data-testid={`button-add-session-${dayIndex}`}><Plus size={14}/> Add Session</button>
-        </div>
+        </div>}
         {warns.length > 0 && <p className="notice" data-testid={`warning-day-${dayIndex}`}>{warns.join(" ")}</p>}
         <details><summary>Copy {DAYS[dayIndex]}</summary><div className="registration-inline">{ORDER.filter(t => t !== dayIndex).map(t => <label className="registration-check" key={t}><input type="checkbox" checked={(targets[dayIndex] || []).includes(t)} onChange={e => setTargets(c => ({ ...c, [dayIndex]: e.target.checked ? [...(c[dayIndex] || []), t] : (c[dayIndex] || []).filter(x => x !== t) }))}/>{SHORT[t]}</label>)}</div>
           <button type="button" disabled={busy || errs.length > 0 || !targets[dayIndex]?.length} onClick={() => { setWeek(w => copyDay(w, dayIndex, targets[dayIndex] || [])); setTargets(c => ({ ...c, [dayIndex]: [] })); }} data-testid={`button-copy-selected-${dayIndex}`}>Copy to Selected Days</button>

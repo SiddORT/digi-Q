@@ -10,3 +10,9 @@ Use the user's three screenshot references for date/time and schedule structure,
 **Why:** The user explicitly repeated the scope restriction and distinguished reference layout/UX from colours/styles.
 
 **How to apply:** Cover all applicable pages and roles, not just pictured pages. Provide a numbered page-wise checklist for confirmation before coding. Do not infer natural-language date parsing, hotel pricing, or new role permissions from the screenshots.
+
+The user approved email/SMS support for existing events plus queue alerts (patient-called and approaching-turn), with configurable channels and recipients.
+
+**Why:** The user selected “Existing events plus queue alerts” when asked which notification events to implement.
+
+**How to apply:** Include queue alerts in implementation scope without enabling unsolicited real-recipient delivery during development or treating provider acceptance as confirmed receipt.

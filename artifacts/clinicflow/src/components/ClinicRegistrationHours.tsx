@@ -43,16 +43,16 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
     <p className="registration-note">Use the start and end sliders in 15-minute steps, or type exact minutes. Overnight sessions are not supported. Copy replaces the selected days' hours.</p>
     {[...value].sort((a,b) => (a.dayOfWeek + 6) % 7 - (b.dayOfWeek + 6) % 7).map(day => {
       const error = dayError(day);
-      const isExpanded = day.isOpen && (expanded.includes(day.dayOfWeek) || !!error);
+      const isExpanded = expanded.includes(day.dayOfWeek) || !!error; // closed rows expand to reach Copy only
       const bodyId = `hours-day-body-${day.dayOfWeek}`;
       return <section key={day.dayOfWeek} className={`registration-day wdr-row${isExpanded ? " is-expanded" : ""}${day.isOpen ? "" : " is-off"}`} data-testid={`row-hours-day-${day.dayOfWeek}`}>
         <div className="registration-day-heading wdr-head">
           <label className="registration-check status-switch day-open-switch"><input type="checkbox" role="switch" aria-checked={day.isOpen} aria-label={`${days[day.dayOfWeek]} open`} checked={day.isOpen} data-testid={`hours-open-${day.dayOfWeek}`} onChange={e => { update({ ...day, isOpen: e.target.checked, sessions: e.target.checked && !day.sessions.length ? [{ startTime: "09:00", endTime: "17:00" }] : day.sessions }); if (e.target.checked && !expanded.includes(day.dayOfWeek)) toggleExpanded(day.dayOfWeek); }}/><span className="status-switch-track" aria-hidden="true"/><span className="sr-only">{day.isOpen ? "Open" : "Closed"}</span></label>
           <strong className="wdr-day">{days[day.dayOfWeek]}</strong>
           {!isExpanded && <span className="wdr-summary" data-testid={`text-hours-summary-${day.dayOfWeek}`}>{summary(day)}</span>}
-          <button type="button" className="wdr-toggle" aria-expanded={isExpanded} aria-controls={bodyId} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${days[day.dayOfWeek]} hours`} disabled={!day.isOpen || !!error} onClick={() => toggleExpanded(day.dayOfWeek)} data-testid={`button-hours-expand-${day.dayOfWeek}`}><ChevronDown size={16} aria-hidden/></button>
+          <button type="button" className="wdr-toggle" aria-expanded={isExpanded} aria-controls={bodyId} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${days[day.dayOfWeek]} hours`} disabled={!!error} onClick={() => toggleExpanded(day.dayOfWeek)} data-testid={`button-hours-expand-${day.dayOfWeek}`}><ChevronDown size={16} aria-hidden/></button>
         </div>
-        {isExpanded && <div className="wdr-body" id={bodyId}><div className="registration-sessions">{day.sessions.map((session, index) => {
+        {isExpanded && <div className="wdr-body" id={bodyId}>{day.isOpen && <div className="registration-sessions">{day.sessions.map((session, index) => {
           const change = (patch: Partial<typeof session>) => update({ ...day, sessions: day.sessions.map((item, i) => i === index ? { ...item, ...patch } : item) });
           return <div className="registration-session" key={index}>
             <TimeRangeSlider {...session} onChange={change} label={`${days[day.dayOfWeek]} Session ${index+1}`}/>
@@ -61,7 +61,7 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
             </label>)}
             <button type="button" className="text-link" aria-label={`Remove ${days[day.dayOfWeek]} session ${index + 1}`} disabled={day.sessions.length === 1} onClick={() => update({ ...day, sessions: day.sessions.filter((_, i) => i !== index) })}>Remove</button>
           </div>;
-        })}<button type="button" className="text-link" onClick={() => update({ ...day, sessions: [...day.sessions, { startTime: "", endTime: "" }] })}>Add Session</button></div>
+        })}<button type="button" className="text-link" onClick={() => update({ ...day, sessions: [...day.sessions, { startTime: "", endTime: "" }] })}>Add Session</button></div>}
         <details><summary>Copy {days[day.dayOfWeek]} hours</summary><div className="registration-inline">{days.map((name, target) => target !== day.dayOfWeek && <label className="registration-check" key={name}><input type="checkbox" checked={(targets[day.dayOfWeek] || []).includes(target)} onChange={e => setTargets(current => ({ ...current, [day.dayOfWeek]: e.target.checked ? [...(current[day.dayOfWeek] || []), target] : (current[day.dayOfWeek] || []).filter(id => id !== target) }))}/>{name}</label>)}</div><button type="button" disabled={!!error || !targets[day.dayOfWeek]?.length} onClick={() => copy(day, targets[day.dayOfWeek] || [])}>Copy to Selected Days</button><button type="button" disabled={!!error} onClick={() => copy(day, days.map((_, i) => i))}>Copy to All Days</button></details></div>}
         {error && <p id={`hours-error-${day.dayOfWeek}`} className="field-error" role="alert">{error}</p>}
       </section>;
