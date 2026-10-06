@@ -32,3 +32,29 @@
 .dtp-title:focus-visible{outline:2px solid var(--dq-blue);outline-offset:1px}
 .dtp-grid.dtp-grid-3{grid-template-columns:repeat(3,1fr)}
 .dtp-grid-3 .dtp-day{height:40px}
+/* Time columns (hour / minute / period) */
+.dtp-time{width:auto;padding:8px}
+.dtp-cols{display:flex;gap:8px}
+.dtp-col{display:flex;flex-direction:column;gap:4px;max-height:228px;overflow-y:auto;min-width:52px;scrollbar-width:thin}
+.dtp-col-label{font-size:var(--type-caption);color:var(--dq-muted,#5b6b80);text-align:center;padding:4px 0;position:sticky;top:0;background:var(--dq-surface,#fbfcfe)}
+.dtp-col .dtp-time-opt{text-align:center;padding:4px 8px}
+.dtp-time-opt:disabled{opacity:.35;cursor:not-allowed}
+.dtp-time .dtp-foot{gap:8px}
+/* Connected range calendar */
+.dtp-range{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start;position:relative}
+.dtp-range>label{min-width:0}
+.dtp-range-open{grid-column:1/-1;justify-self:start;min-height:0!important;margin:0!important;padding:4px 8px;border:0;background:transparent;color:var(--dq-blue);font-weight:600;font-size:var(--type-caption);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.dtp-range-open:focus-visible{outline:2px solid var(--dq-blue);outline-offset:1px}
+.dtp-range-panel{width:auto}
+.dtp-months{display:grid;grid-template-columns:repeat(2,250px);gap:24px}
+.dtp-month-title{text-align:center;font-weight:600;margin:0 0 8px}
+.dtp-range-panel .dtp-grid{gap:4px 0}
+.dtp-range-panel .dtp-day{border-radius:0}
+.dtp-day.in-range{background:var(--cw-line-soft,#e8eef6)}
+.dtp-day.range-start,.dtp-day.range-end{background:var(--dq-blue);color:#fff}
+.dtp-day.range-start{border-radius:6px 0 0 6px}
+.dtp-day.range-end{border-radius:0 6px 6px 0}
+.dtp-day.range-start.range-end{border-radius:6px}
+.dtp-range-summary{margin:0;font-size:var(--type-caption);color:var(--dq-muted,#5b6b80)}
+.dtp-range-actions{display:flex;gap:8px;align-items:center}
+@media (max-width:640px){.dtp-months{grid-template-columns:min(280px,calc(100vw - 48px))}.dtp-months>.dtp-month+.dtp-month{display:none}.dtp-range{grid-template-columns:1fr}}

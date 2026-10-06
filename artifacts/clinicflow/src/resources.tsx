@@ -34,6 +34,7 @@ import { required, validatePersonName, validatePhone, validateEmail, validateDat
 import { formatDate, formatTime, formatConfiguredTimestamp } from "./lib/date-time";
 import { TimezoneSelect } from "./components/TimezoneSelect";
 import { DateFormatInput, TimeFormatInput } from "./components/DateFormatInput";
+import { DateRangeInput } from "./components/DateRangeInput";
 import { rangeError } from "./lib/date-picker-logic";
 import { FormField } from "./components/FormField";
 import { useConfirm } from "./components/ConfirmDialog";
@@ -481,7 +482,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   {resource==="clinics"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Clinic Admin" params={{role:"clinicAdmin"}} value={draft.adminId||""} onChange={value=>draftFilter("adminId",value)}/>}
   {resource==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={draft.specializationId||""} onChange={value=>draftFilter("specializationId",value)}/>}
   {resource==="doctors"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Managing Admin" params={{role:"clinicAdmin"}} value={draft.managingAdminId||""} onChange={value=>draftFilter("managingAdminId",value)}/>}
-  {["patients","audit"].includes(resource)&&<><label>From date<DateFormatInput value={draft.from||""} onChange={value=>draftFilter("from",value)}/></label><label>To date<DateFormatInput min={draft.from||undefined} value={draft.to||""} onChange={value=>draftFilter("to",value)}/></label>{draft.from&&draft.to&&draft.from>draft.to&&<p role="alert" className="field-error">Select an end date on or after the start date.</p>}</>}
+  {["patients","audit"].includes(resource)&&<><DateRangeInput fromLabel="From date" toLabel="To date" testId={`${resource}-range`} fromTestId={`input-${resource}-from`} toTestId={`input-${resource}-to`} from={draft.from||""} to={draft.to||""} onChange={range=>{draftFilter("from",range.from);draftFilter("to",range.to);}}/>{draft.from&&draft.to&&draft.from>draft.to&&<p role="alert" className="field-error">Select an end date on or after the start date.</p>}</>}
   {["doctors","patients"].includes(resource)&&<ResourceLookup resource="branches" label="Clinic" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/>}
    {["branches","doctors","patients","qrs"].includes(resource)&&!fixedClinicId&&<ResourceLookup resource="clinics" label={resource==="patients"?"Registration clinic":"Clinic"} value={draft.clinicId||""} onChange={value=>draftFilter("clinicId",value)}/>}
    {resource==="qrs"&&<><ResourceLookup resource="branches" label="Location" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/><ResourceLookup resource="doctors" label="Doctor" params={{clinicId:draft.clinicId||undefined,branchId:draft.branchId||undefined}} value={draft.doctorId||""} onChange={value=>draftFilter("doctorId",value)}/></>}

@@ -1,0 +1,18 @@
+/* Expandable Monday–Sunday rows: toggle, day, summary, chevron. Uses existing theme tokens only. */
+.wdr-list{display:grid;gap:8px}
+.wdr-row{border:1px solid var(--cw-line,#d9e2ee);border-radius:var(--radius-card,12px);background:var(--dq-surface,#fbfcfe);padding:0!important}
+.wdr-row.is-expanded{border-color:var(--dq-blue)}
+.wdr-row.is-off .wdr-day{color:var(--dq-muted,#5b6b80);font-weight:500}
+.wdr-head{display:flex;align-items:center;gap:12px;padding:8px 12px;min-width:0;flex-wrap:wrap}
+.wdr-head .registration-check{margin:0}
+.wdr-day{font-weight:700;min-width:92px}
+.wdr-summary{flex:1;min-width:0;color:var(--dq-muted,#5b6b80);font-size:var(--type-label);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wdr-toggle{margin-left:auto;width:32px;height:32px;min-height:0!important;padding:0!important;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;color:inherit;cursor:pointer}
+.wdr-toggle:hover:not(:disabled){background:var(--cw-line-soft,#e8eef6)}
+.wdr-toggle:focus-visible{outline:2px solid var(--dq-blue);outline-offset:1px}
+.wdr-toggle:disabled{opacity:.4;cursor:not-allowed}
+.wdr-toggle svg{transition:transform .18s ease}
+.wdr-row.is-expanded .wdr-toggle svg{transform:rotate(180deg)}
+.wdr-body{padding:0 12px 12px;border-top:1px solid var(--cw-line-soft,#e8eef6)}
+.wdr-row>.field-error,.wdr-row>.notice{margin:0 12px 12px}
+@media (max-width:600px){.wdr-summary{flex-basis:100%;order:3;white-space:normal}.wdr-day{min-width:0}}

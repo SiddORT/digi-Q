@@ -26,7 +26,7 @@ test("drawerValidationMessage pluralises the invalid count", async () => {
 test("reports, appointments and resources draft every filter and block invalid ranges", () => {
   const clinic = read("../clinic.tsx"), resources = read("../resources.tsx");
   assert.match(clinic, /const applyFilters=\(\)=>\{if\(draftRangeError\)return false;setFrom\(draft\.from\);setTo\(draft\.to\)/);
-  assert.match(clinic, /<DateFormatInput required data-testid="input-report-from" onValidityChange=\{setReportFromValid\} value=\{draft\.from\}/);
+  assert.match(clinic, /<DateRangeInput required testId="report-range" fromTestId="input-report-from" toTestId="input-report-to" onFromValidityChange=\{setReportFromValid\} onToValidityChange=\{setReportToValid\} from=\{draft\.from\} to=\{draft\.to\}/);
   assert.match(clinic, /const resetReport=\(\)=>\{const d=today\(\);setFrom\(d\);setTo\(d\);[^}]*setDraft\(\{from:d,to:d,/);
   assert.match(clinic, /onReset=\{resetReport\}/);
   assert.match(clinic, /if\(!fromValid\|\|!toValid\|\|draftRangeInvalid\)return false;/);
@@ -60,6 +60,6 @@ test("assigned/network sorts draft until Apply; queue pauses on invalid date tex
 test("reports pass typed-date validity into the range error", () => {
   const clinic = read("../clinic.tsx");
   assert.match(clinic, /rangeError\(draft\.from,draft\.to,true,!reportFromValid\|\|!reportToValid\)/);
-  assert.match(clinic, /input-report-from" onValidityChange=\{setReportFromValid\}/);
-  assert.match(clinic, /input-report-to" onValidityChange=\{setReportToValid\}/);
+  assert.match(clinic, /fromTestId="input-report-from"[^>]*onFromValidityChange=\{setReportFromValid\}/);
+  assert.match(clinic, /toTestId="input-report-to"[^>]*onToValidityChange=\{setReportToValid\}/);
 });

@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 import { formatDate, formatTime, parseDateInput, parseTimeInput, type DateTimePreferences } from "../lib/date-time";
 import { useDateTimePreferences } from "./DateTimePreferences";
-import { daysInMonth, jumpTo, calendarKeyTarget, initialFocus, isOutOfRange, monthGrid, placePanel, timeOptions } from "../lib/date-picker-logic";
+import { daysInMonth, jumpTo, calendarKeyTarget, initialFocus, isOutOfRange, monthGrid, placePanel, timeOptions, splitTime, hourOptions, toHour24, composeTime, minuteOptions, hourOutOfRange } from "../lib/date-picker-logic";
 import "./date-time-picker.css";
 
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "type" | "min" | "max"> & {
@@ -21,7 +21,7 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 function todayCanonical() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 
 /** Month calendar grid. Keyboard: arrows move a day/week, PageUp/PageDown move a month, Enter selects, Escape closes. */
-function CalendarPanel({ value, min, max, onPick, onClose, prefs }: { value: string; min?: string; max?: string; onPick: (v: string) => void; onClose: () => void; prefs: DateTimePreferences }) {
+function CalendarPanel({ value, min, max, onPick, onClose, onClear, prefs }: { value: string; min?: string; max?: string; onPick: (v: string) => void; onClose: () => void; onClear?: () => void; prefs: DateTimePreferences }) {
   const [focus, setFocus] = useState(() => initialFocus(value, todayCanonical(), min, max));
   const [y, m] = [Number(focus.slice(0, 4)), Number(focus.slice(5, 7)) - 1];
   const gridRef = useRef<HTMLDivElement>(null);
@@ -67,32 +67,70 @@ function CalendarPanel({ value, min, max, onPick, onClose, prefs }: { value: str
         : <span key={`e${i}`} />)}
     </div>
     <div className="dtp-foot">
+      {onClear && <button type="button" className="dtp-link" onClick={onClear} data-testid="button-picker-clear">Clear</button>}
       {!disabled(today) && <button type="button" className="dtp-link" onClick={() => onPick(today)} data-testid="button-picker-today">Today</button>}
       <button type="button" className="dtp-link" onClick={onClose} data-testid="button-picker-close">Close</button>
     </div>
   </div>;
 }
 
-/** Time list in the configured clock format; exact minutes remain typeable in the text field. */
-function TimePanel({ value, min, max, step, onPick, onClose, prefs }: { value: string; min?: string; max?: string; step: number; onPick: (v: string) => void; onClose: () => void; prefs: DateTimePreferences }) {
-  const listRef = useRef<HTMLDivElement>(null);
-  const options = timeOptions(step, min, max, value);
+/** Hour, minute and (12h only) AM/PM columns in the configured clock format. Each column click updates the
+ *  value immediately; Done closes. Arrow keys move within a column, Left/Right move between columns. */
+function TimePanel({ value, min, max, step, onSelect, onClose, prefs, clearable = true }: { clearable?: boolean; value: string; min?: string; max?: string; step: number; onSelect: (v: string) => void; onClose: () => void; prefs: DateTimePreferences }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const is12 = prefs.timeFormat === "12h";
+  const fallback = timeOptions(step, min, max).find(o => o >= "09:00") || timeOptions(step, min, max)[0] || "09:00";
+  const { hour, minute } = splitTime(value || fallback);
+  const period: "AM" | "PM" | null = is12 ? (hour >= 12 ? "PM" : "AM") : null;
+  const display = is12 ? (hour % 12 || 12) : hour;
+  const minutes = minuteOptions(step, value ? minute : undefined);
+  const ok = (h: number, m: number) => !isOutOfRange(composeTime(h, m), min, max);
+  /** Keep the chosen column value; if the other columns then fall outside min/max, use the nearest allowed minute. */
+  const choose = (h: number, m: number) => {
+    if (ok(h, m)) return onSelect(composeTime(h, m));
+    const alt = minutes.find(x => ok(h, x));
+    if (alt !== undefined) onSelect(composeTime(h, alt));
+  };
   useEffect(() => {
-    const target = value || options.find(o => o >= "09:00") || options[0];
-    listRef.current?.querySelector<HTMLButtonElement>(`[data-time="${target}"]`)?.focus();
+    rootRef.current?.querySelectorAll<HTMLElement>(".dtp-col").forEach(col => { const sel = col.querySelector<HTMLElement>('[aria-selected="true"]'); if (sel) col.scrollTop = sel.offsetTop - col.offsetTop - 48; });
+    rootRef.current?.querySelector<HTMLButtonElement>('.dtp-col [aria-selected="true"]:not(:disabled), .dtp-col button:not(:disabled)')?.focus();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const onKey = (e: KeyboardEvent) => {
-    const items = Array.from(listRef.current?.querySelectorAll<HTMLButtonElement>("button") || []);
-    const i = items.indexOf(document.activeElement as HTMLButtonElement);
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onClose(); return; }
+    const active = document.activeElement as HTMLButtonElement | null;
+    const cols = Array.from(rootRef.current?.querySelectorAll<HTMLElement>(".dtp-col") || []);
+    const ci = cols.findIndex(c => c.contains(active));
+    if (ci < 0) return;
+    const items = Array.from(cols[ci].querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
+    const i = items.indexOf(active!);
     if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); items[Math.max(0, Math.min(items.length - 1, i + (e.key === "ArrowDown" ? 1 : -1)))]?.focus(); }
-    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onClose(); }
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      const next = cols[ci + (e.key === "ArrowRight" ? 1 : -1)];
+      if (next) { e.preventDefault(); (next.querySelector<HTMLButtonElement>('[aria-selected="true"]:not(:disabled)') || next.querySelector<HTMLButtonElement>("button:not(:disabled)"))?.focus(); }
+    }
   };
-  return <div className="dtp-panel dtp-time" role="dialog" aria-label="Choose time" onKeyDown={onKey}>
-    <div className="dtp-times" role="listbox" ref={listRef}>
-      {options.map(o => <button key={o} type="button" role="option" data-time={o} aria-selected={o === value} className={`dtp-time-opt${o === value ? " selected" : ""}`} onClick={() => onPick(o)} data-testid={`button-picker-time-${o.replace(":", "")}`}>{formatTime(o, prefs)}</button>)}
-      {!options.length && <p className="dtp-empty">No times within the allowed range.</p>}
+  const opt = (key: string, label: string, selected: boolean, disabled: boolean, click: () => void, testId: string) =>
+    <button key={key} type="button" role="option" aria-selected={selected} disabled={disabled} className={`dtp-time-opt${selected ? " selected" : ""}`} onClick={click} data-testid={testId}>{label}</button>;
+  return <div className="dtp-panel dtp-time" role="dialog" aria-label="Choose time" onKeyDown={onKey} ref={rootRef}>
+    <div className="dtp-cols">
+      <div className="dtp-col" role="listbox" aria-label="Hour">
+        <span className="dtp-col-label" aria-hidden>Hr</span>
+        {hourOptions(is12 ? "12h" : "24h").map(h => { const h24 = toHour24(h, period); return opt(`h${h}`, pad(h), !!value && h === display, hourOutOfRange(h24, min, max), () => choose(h24, minute), `button-picker-hour-${h}`); })}
+      </div>
+      <div className="dtp-col" role="listbox" aria-label="Minute">
+        <span className="dtp-col-label" aria-hidden>Min</span>
+        {minutes.map(m => opt(`m${m}`, pad(m), !!value && m === minute, !ok(hour, m), () => choose(hour, m), `button-picker-minute-${m}`))}
+      </div>
+      {is12 && <div className="dtp-col" role="listbox" aria-label="AM or PM">
+        <span className="dtp-col-label" aria-hidden>&nbsp;</span>
+        {(["AM", "PM"] as const).map(p => { const h24 = toHour24(display, p); return opt(p, p, !!value && p === period, hourOutOfRange(h24, min, max), () => choose(h24, minute), `button-picker-period-${p.toLowerCase()}`); })}
+      </div>}
     </div>
-    <p className="dtp-hint">Type any exact minute in the field.</p>
+    {!timeOptions(1, min, max).length && <p className="dtp-empty">No times within the allowed range.</p>}
+    <div className="dtp-foot">
+      {clearable ? <button type="button" className="dtp-link" onClick={() => onSelect("")} data-testid="button-picker-clear">Clear</button> : <span />}
+      <button type="button" className="dtp-link" onClick={onClose} data-testid="button-picker-done">Done</button>
+    </div>
   </div>;
 }
 
@@ -100,7 +138,7 @@ function TimePanel({ value, min, max, step, onPick, onClose, prefs }: { value: s
 /** Portals the panel to the nearest dialog content (so Radix focus trap, outside-click and Escape
  *  handling still treat it as inside) or to document.body, escaping overflow clipping in drawer
  *  bodies, table wrappers and cards. Position is recomputed on scroll/resize. */
-function PickerPopover({ anchorRef, panelRef, children }: { anchorRef: RefObject<HTMLElement | null>; panelRef: RefObject<HTMLDivElement | null>; children: ReactNode }) {
+export function PickerPopover({ anchorRef, panelRef, children }: { anchorRef: RefObject<HTMLElement | null>; panelRef: RefObject<HTMLDivElement | null>; children: ReactNode }) {
   const [host, setHost] = useState<HTMLElement | null>(null);
   const [style, setStyle] = useState<CSSProperties>({ position: "absolute", top: 0, left: 0, visibility: "hidden" });
   useLayoutEffect(() => {
@@ -170,6 +208,8 @@ function FormattedInput({ value, onChange, preferences, mode, min, max, onValidi
   };
   const close = () => { setOpen(false); requestAnimationFrame(() => inputRef.current?.focus()); };
   const pick = (canonical: string) => { commit(formatter(canonical, prefs)); close(); };
+  // Column selection keeps the time panel open so hour, minute and period can each be chosen.
+  const selectTime = (canonical: string) => commit(canonical ? formatter(canonical, prefs) : "");
   const Icon = mode === "date" ? CalendarDays : Clock;
   const testBase = (props["data-testid" as keyof typeof props] as string | undefined) || `input-${mode}`;
   return <span className={`dtp-field${invalid ? " is-invalid" : ""}`} ref={wrapRef} data-dtp-open={open || undefined}
@@ -183,13 +223,13 @@ function FormattedInput({ value, onChange, preferences, mode, min, max, onValidi
         onChange={event => commit(event.target.value)}
         ref={element => { inputRef.current = element; element?.setCustomValidity(invalid ? error : ""); }} />
       <button type="button" className="dtp-trigger" disabled={props.disabled || props.readOnly} aria-haspopup="dialog" aria-expanded={open}
-        aria-label={mode === "date" ? "Open calendar" : "Open time list"} onClick={() => setOpen(v => !v)} data-testid={`${testBase}-picker`}>
+        aria-label={mode === "date" ? "Open calendar" : "Open time list"} title={mode === "date" ? "Choose a date" : "Choose hour and minute"} onClick={() => setOpen(v => !v)} data-testid={`${testBase}-picker`}>
         <Icon size={16} aria-hidden />
       </button>
     </span>
     {open && <PickerPopover anchorRef={anchorRef} panelRef={panelRef}>{mode === "date"
-      ? <CalendarPanel value={parsed && !invalid ? parsed : ""} min={min} max={max} prefs={prefs} onPick={pick} onClose={close} />
-      : <TimePanel value={parsed && !invalid ? parsed : ""} min={min} max={max} step={Math.max(1, minuteStep)} prefs={prefs} onPick={pick} onClose={close} />}</PickerPopover>}
+      ? <CalendarPanel value={parsed && !invalid ? parsed : ""} min={min} max={max} prefs={prefs} onPick={pick} onClose={close} onClear={props.required ? undefined : () => { commit(""); close(); }} />
+      : <TimePanel value={parsed && !invalid ? parsed : ""} min={min} max={max} step={Math.max(1, minuteStep)} prefs={prefs} onSelect={selectTime} onClose={close} clearable={!props.required} />}</PickerPopover>}
     {invalid && <span id={errorId} role="alert" className="field-error">{error}</span>}
   </span>;
 }

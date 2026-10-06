@@ -77,3 +77,27 @@ export function jumpTo(focus: string, year: number, monthIndex: number, min?: st
   const day = Math.min(Number(focus.slice(8, 10)) || 1, daysInMonth(year, monthIndex));
   return clampToRange(`${year}-${pad(monthIndex + 1)}-${pad(day)}`, min, max);
 }
+
+/** Hour/minute/period column model for the time picker (no natural-language parsing). */
+export function splitTime(value: string) { return { hour: Number(value.slice(0, 2)) || 0, minute: Number(value.slice(3, 5)) || 0 }; }
+/** Display hours for a clock format: 12h lists 12,1..11; 24h lists 0..23. */
+export function hourOptions(format: "12h" | "24h") { return format === "12h" ? [12, ...Array.from({ length: 11 }, (_, i) => i + 1)] : Array.from({ length: 24 }, (_, i) => i); }
+export function toHour24(display: number, period: "AM" | "PM" | null) { return period ? (display % 12) + (period === "PM" ? 12 : 0) : display; }
+export function composeTime(hour24: number, minute: number) { return `${pad(hour24)}:${pad(minute)}`; }
+/** Minutes at `step`, with the current exact minute merged so typed values stay selectable. */
+export function minuteOptions(step: number, selected?: number) {
+  const s = Math.max(1, Math.floor(step) || 15), out: number[] = [];
+  for (let m = 0; m < 60; m += s) out.push(m);
+  if (selected !== undefined && !out.includes(selected)) { out.push(selected); out.sort((a, b) => a - b); }
+  return out;
+}
+/** True when no minute of this 24h hour falls inside [min, max]. */
+export function hourOutOfRange(hour24: number, min?: string, max?: string) { return !!(min && `${pad(hour24)}:59` < min) || !!(max && `${pad(hour24)}:00` > max); }
+
+/** Two-click range selection: first click starts, second click ends (earlier second click restarts). */
+export function rangeClick(range: { from: string; to: string }, day: string): { from: string; to: string } {
+  if (!range.from || range.to || day < range.from) return { from: day, to: "" };
+  return { from: range.from, to: day };
+}
+/** First day of the month containing `date`, shifted by `months`. */
+export function monthOf(date: string, months = 0) { return addMonths(`${date.slice(0, 7)}-01`, months); }

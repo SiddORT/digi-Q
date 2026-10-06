@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
-import { Plus, Trash2, Lock, Pencil } from "lucide-react";
+import { Plus, Trash2, Lock, Pencil, ChevronDown } from "lucide-react";
+import "../weekly-day-rows.css";
 import { IconAction } from "../IconAction";
 import { TimeRangeSlider } from "../ClinicRegistrationHours";
 import { TimeFormatInput } from "../DateFormatInput";
@@ -40,6 +41,9 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState("");
   const [outside, setOutside] = useState<{ day: number; key: string }[] | null>(null);
+  // Expandable weekday rows; null means "not chosen yet" so the first working day opens once data loads.
+  const [expanded, setExpanded] = useState<number[] | null>(null);
+  const toggleExpanded = (d: number) => setExpanded(c => (c || []).includes(d) ? (c || []).filter(x => x !== d) : [...(c || []), d]);
   const initialized = useRef<string>("");
   const preserveDraft = useRef(false);
   const dirtyRef = useRef(onDirtyChange); dirtyRef.current = onDirtyChange;
@@ -92,6 +96,8 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
     void execute();
   };
 
+  const firstOpen = ORDER.find(d => week[d].isOpen);
+  const expandedDays = expanded ?? (firstOpen === undefined ? [] : [firstOpen]);
   if (q.isLoading) return <div className="skeleton" role="status">Loading weekly schedule…</div>;
   if (q.error) return <div className="error-box" role="alert">{friendlyError(q.error, "load")} <button type="button" onClick={() => void q.refetch()}>Retry</button></div>;
   const clinicName = branch.data?.name || "the clinic";
@@ -108,19 +114,26 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
       <label>Max tokens<span className="required"> *</span><input type="number" min={1} step={1} value={defaults.maxTokens} onChange={e => setDefaults(v => ({ ...v, maxTokens: e.target.value }))} data-testid="input-default-max-tokens"/></label>
       <SearchableSelect label="Expected Consultation Duration" required value={defaults.consultationMinutes} onChange={value => setDefaults(v => ({ ...v, consultationMinutes: value }))} placeholder="Select duration…" options={[20, 30, 60].map(v => ({ value: String(v), label: `${v} minutes` }))}/>
     </div></fieldset>}
-    <div className="registration-hours">{ORDER.map(dayIndex => {
+    <div className="registration-hours wdr-list">{ORDER.map(dayIndex => {
       const day = week[dayIndex]; const hours = hoursFor(dayIndex); const errs = errors[dayIndex]; const warns = dayWarnings(day);
       const clinicClosed = opening !== null && !hours.length && !day.sessions.some(s => s.id);
       const closedRows = rows.filter(r => r.dayOfWeek === dayIndex && r.isOpen === false);
-      return <section key={dayIndex} className="registration-day" data-testid={`row-day-${dayIndex}`}>
-        <div className="registration-day-heading"><strong>{DAYS[dayIndex]}</strong>
+      const isExpanded = day.isOpen && (expandedDays.includes(dayIndex) || errs.length > 0);
+      const bodyId = `week-day-body-${dayIndex}`;
+      const summary = day.isOpen ? day.sessions.map(x => `${fmt(x.startTime)} – ${fmt(x.endTime)}`).join(" · ") || "No sessions yet" : clinicClosed ? "Clinic closed" : "Off";
+      return <section key={dayIndex} className={`registration-day wdr-row${isExpanded ? " is-expanded" : ""}${day.isOpen ? "" : " is-off"}`} data-testid={`row-day-${dayIndex}`}>
+        <div className="registration-day-heading wdr-head">
           <HelpTip text={clinicClosed ? `${clinicName} is closed on ${DAYS[dayIndex]}. Change clinic opening hours in Clinic settings first.` : day.isOpen ? `Turn off to stop sessions on ${DAYS[dayIndex]}` : `Turn on to add sessions on ${DAYS[dayIndex]}`}>
-            <label className="registration-check status-switch day-open-switch"><input type="checkbox" role="switch" aria-checked={day.isOpen} checked={day.isOpen} disabled={busy || clinicClosed || day.sessions.some(s => s.locked)} onChange={e => setDay({ ...day, isOpen: e.target.checked, sessions: e.target.checked && !day.sessions.length ? [newSession(dayIndex)] : day.sessions })} data-testid={`switch-day-${dayIndex}`}/><span className="status-switch-track" aria-hidden="true"/>{day.isOpen ? "Working" : clinicClosed ? "Clinic closed" : "Off"}</label>
+            <label className="registration-check status-switch day-open-switch"><input type="checkbox" role="switch" aria-checked={day.isOpen} checked={day.isOpen} disabled={busy || clinicClosed || day.sessions.some(s => s.locked)} aria-label={`${DAYS[dayIndex]} working`} onChange={e => { setDay({ ...day, isOpen: e.target.checked, sessions: e.target.checked && !day.sessions.length ? [newSession(dayIndex)] : day.sessions }); if (e.target.checked && !expandedDays.includes(dayIndex)) setExpanded([...expandedDays, dayIndex]); }} data-testid={`switch-day-${dayIndex}`}/><span className="status-switch-track" aria-hidden="true"/><span className="sr-only">{day.isOpen ? "Working" : clinicClosed ? "Clinic closed" : "Off"}</span></label>
           </HelpTip>
-          {branch.data && <small className="muted">Clinic: {opening === null ? "No hour limits set" : hours.length ? hours.map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ") : "Closed"}</small>}
+          <strong className="wdr-day">{DAYS[dayIndex]}</strong>
+          {!isExpanded && <span className="wdr-summary" data-testid={`text-day-summary-${dayIndex}`}>{summary}</span>}
+          <button type="button" className="wdr-toggle" aria-expanded={isExpanded} aria-controls={bodyId} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${DAYS[dayIndex]} sessions`} disabled={!day.isOpen || errs.length > 0} onClick={() => setExpanded(expandedDays.includes(dayIndex) ? expandedDays.filter(x => x !== dayIndex) : [...expandedDays, dayIndex])} data-testid={`button-expand-day-${dayIndex}`}><ChevronDown size={16} aria-hidden/></button>
         </div>
+        {isExpanded && <div className="wdr-body" id={bodyId}>
+        {branch.data && <small className="muted">Clinic: {opening === null ? "No hour limits set" : hours.length ? hours.map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ") : "Closed"}</small>}
         {closedRows.length > 0 && <small className="muted">Stored as closed: {closedRows.map(r => canOpenDetails(r) ? <button type="button" className="text-link" key={r.id} onClick={() => openDetails(r, onEdit)}>{fmt(r.startTime)} – {fmt(r.endTime)}</button> : <span key={r.id}>{fmt(r.startTime)} – {fmt(r.endTime)} (linked; managed in Clinic settings) </span>)}</small>}
-        {day.isOpen && <div className="registration-sessions">{day.sessions.map((s, index) => {
+        <div className="registration-sessions">{day.sessions.map((s, index) => {
           const change = (patch: Partial<DraftSession>) => setDay({ ...day, sessions: day.sessions.map(x => x.key === s.key ? { ...x, ...patch } : x) });
           const row = s.id ? rows.find(r => r.id === s.id) : undefined;
           const out = !s.locked && outsideHours(s, hours);
@@ -142,14 +155,16 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
           </div>;
         })}
           <button type="button" className="text-link" disabled={busy} onClick={() => setDay({ ...day, sessions: [...day.sessions, newSession(dayIndex)] })} data-testid={`button-add-session-${dayIndex}`}><Plus size={14}/> Add Session</button>
-        </div>}
+        </div>
         {warns.length > 0 && <p className="notice" data-testid={`warning-day-${dayIndex}`}>{warns.join(" ")}</p>}
-        {errs.length > 0 && <p id={`week-error-${dayIndex}`} className="field-error" role="alert">{errs.join(" ")}</p>}
         <details><summary>Copy {DAYS[dayIndex]}</summary><div className="registration-inline">{ORDER.filter(t => t !== dayIndex).map(t => <label className="registration-check" key={t}><input type="checkbox" checked={(targets[dayIndex] || []).includes(t)} onChange={e => setTargets(c => ({ ...c, [dayIndex]: e.target.checked ? [...(c[dayIndex] || []), t] : (c[dayIndex] || []).filter(x => x !== t) }))}/>{SHORT[t]}</label>)}</div>
           <button type="button" disabled={busy || errs.length > 0 || !targets[dayIndex]?.length} onClick={() => { setWeek(w => copyDay(w, dayIndex, targets[dayIndex] || [])); setTargets(c => ({ ...c, [dayIndex]: [] })); }} data-testid={`button-copy-selected-${dayIndex}`}>Copy to Selected Days</button>
           <button type="button" disabled={busy || errs.length > 0} onClick={() => setWeek(w => copyDay(w, dayIndex, ORDER.filter(t => t !== dayIndex && !(opening !== null && !hoursFor(t).length))))} data-testid={`button-copy-all-${dayIndex}`}>Copy to All Days</button>
           <small className="muted">Copy replaces editable sessions on the chosen days in this draft only. Clinic-linked sessions are kept; days the clinic is closed are skipped by Copy to all days. Nothing is saved until you select Save weekly schedule.</small>
         </details>
+        </div>}
+        {!isExpanded && closedRows.length > 0 && <small className="muted wdr-body">Stored as closed: {closedRows.map(r => canOpenDetails(r) ? <button type="button" className="text-link" key={r.id} onClick={() => openDetails(r, onEdit)}>{fmt(r.startTime)} – {fmt(r.endTime)}</button> : <span key={r.id}>{fmt(r.startTime)} – {fmt(r.endTime)} (linked; managed in Clinic settings) </span>)}</small>}
+        {errs.length > 0 && <p id={`week-error-${dayIndex}`} className="field-error" role="alert">{errs.join(" ")}</p>}
       </section>;
     })}</div>
     {needsTemplate && !template && <p className="field-error" role="alert">Enter token prefix, max tokens and consultation duration for new sessions.</p>}

@@ -3,6 +3,8 @@ import { formatTime, isCanonicalTime, type DateTimePreferences } from "../lib/da
 import { TimeFormatInput } from "./DateFormatInput";
 import * as Slider from "@radix-ui/react-slider";
 import { useDateTimePreferences } from "./DateTimePreferences";
+import { ChevronDown } from "lucide-react";
+import "./weekly-day-rows.css";
 
 export type RegistrationDay = { dayOfWeek: number; isOpen: boolean; sessions: { startTime: string; endTime: string }[] };
 export const newWeek = (): RegistrationDay[] => Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, isOpen: false, sessions: [] }));
@@ -24,6 +26,10 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
   preferences=preferences||inherited;
   const [targets, setTargets] = useState<Record<number, number[]>>({});
   const [copyNotice, setCopyNotice] = useState("");
+  // Expandable weekday rows: the first open day starts expanded; days with errors always stay expanded.
+  const [expanded, setExpanded] = useState<number[]>(() => { const first = [1, 2, 3, 4, 5, 6, 0].find(d => value.find(v => v.dayOfWeek === d)?.isOpen); return first === undefined ? [] : [first]; });
+  const toggleExpanded = (d: number) => setExpanded(c => c.includes(d) ? c.filter(x => x !== d) : [...c, d]);
+  const summary = (day: RegistrationDay) => day.isOpen ? day.sessions.filter(s => isCanonicalTime(s.startTime) && isCanonicalTime(s.endTime)).map(s => `${formatTime(s.startTime, preferences)} – ${formatTime(s.endTime, preferences)}`).join(" · ") || "No sessions yet" : "Closed";
   const update = (day: RegistrationDay) => onChange(value.map(item => item.dayOfWeek === day.dayOfWeek ? day : item));
   const copy = (day: RegistrationDay, selected: number[]) => {
     const destinations = selected.filter(target => target !== day.dayOfWeek);
@@ -31,15 +37,22 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
     setTargets(current => ({ ...current, [day.dayOfWeek]: destinations }));
     setCopyNotice(`Copied ${days[day.dayOfWeek]} ${day.isOpen ? "opening hours" : "closed status"} to ${destinations.map(target => days[target]).join(", ")}. These changes are in your registration draft; finish registration to save.`);
   };
-  return <div className="registration-hours">
+  return <div className="registration-hours wdr-list">
     {copyNotice && <p className="notice" role="status" data-testid="registration-copy-result">{copyNotice}</p>}
     {timezone && <p>Clinic timezone: {timezone}</p>}
     <p className="registration-note">Use the start and end sliders in 15-minute steps, or type exact minutes. Overnight sessions are not supported. Copy replaces the selected days' hours.</p>
     {[...value].sort((a,b) => (a.dayOfWeek + 6) % 7 - (b.dayOfWeek + 6) % 7).map(day => {
       const error = dayError(day);
-      return <section key={day.dayOfWeek} className="registration-day">
-        <div className="registration-day-heading"><strong>{days[day.dayOfWeek]}</strong><label className="registration-check"><input type="checkbox" checked={day.isOpen} data-testid={`hours-open-${day.dayOfWeek}`} onChange={e => update({ ...day, isOpen: e.target.checked, sessions: e.target.checked && !day.sessions.length ? [{ startTime: "09:00", endTime: "17:00" }] : day.sessions })}/>{day.isOpen ? "Open" : "Closed"}</label></div>
-        {day.isOpen && <div className="registration-sessions">{day.sessions.map((session, index) => {
+      const isExpanded = day.isOpen && (expanded.includes(day.dayOfWeek) || !!error);
+      const bodyId = `hours-day-body-${day.dayOfWeek}`;
+      return <section key={day.dayOfWeek} className={`registration-day wdr-row${isExpanded ? " is-expanded" : ""}${day.isOpen ? "" : " is-off"}`} data-testid={`row-hours-day-${day.dayOfWeek}`}>
+        <div className="registration-day-heading wdr-head">
+          <label className="registration-check status-switch day-open-switch"><input type="checkbox" role="switch" aria-checked={day.isOpen} aria-label={`${days[day.dayOfWeek]} open`} checked={day.isOpen} data-testid={`hours-open-${day.dayOfWeek}`} onChange={e => { update({ ...day, isOpen: e.target.checked, sessions: e.target.checked && !day.sessions.length ? [{ startTime: "09:00", endTime: "17:00" }] : day.sessions }); if (e.target.checked && !expanded.includes(day.dayOfWeek)) toggleExpanded(day.dayOfWeek); }}/><span className="status-switch-track" aria-hidden="true"/><span className="sr-only">{day.isOpen ? "Open" : "Closed"}</span></label>
+          <strong className="wdr-day">{days[day.dayOfWeek]}</strong>
+          {!isExpanded && <span className="wdr-summary" data-testid={`text-hours-summary-${day.dayOfWeek}`}>{summary(day)}</span>}
+          <button type="button" className="wdr-toggle" aria-expanded={isExpanded} aria-controls={bodyId} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${days[day.dayOfWeek]} hours`} disabled={!day.isOpen || !!error} onClick={() => toggleExpanded(day.dayOfWeek)} data-testid={`button-hours-expand-${day.dayOfWeek}`}><ChevronDown size={16} aria-hidden/></button>
+        </div>
+        {isExpanded && <div className="wdr-body" id={bodyId}><div className="registration-sessions">{day.sessions.map((session, index) => {
           const change = (patch: Partial<typeof session>) => update({ ...day, sessions: day.sessions.map((item, i) => i === index ? { ...item, ...patch } : item) });
           return <div className="registration-session" key={index}>
             <TimeRangeSlider {...session} onChange={change} label={`${days[day.dayOfWeek]} Session ${index+1}`}/>
@@ -48,9 +61,9 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
             </label>)}
             <button type="button" className="text-link" aria-label={`Remove ${days[day.dayOfWeek]} session ${index + 1}`} disabled={day.sessions.length === 1} onClick={() => update({ ...day, sessions: day.sessions.filter((_, i) => i !== index) })}>Remove</button>
           </div>;
-        })}<button type="button" className="text-link" onClick={() => update({ ...day, sessions: [...day.sessions, { startTime: "", endTime: "" }] })}>Add Session</button></div>}
+        })}<button type="button" className="text-link" onClick={() => update({ ...day, sessions: [...day.sessions, { startTime: "", endTime: "" }] })}>Add Session</button></div>
+        <details><summary>Copy {days[day.dayOfWeek]} hours</summary><div className="registration-inline">{days.map((name, target) => target !== day.dayOfWeek && <label className="registration-check" key={name}><input type="checkbox" checked={(targets[day.dayOfWeek] || []).includes(target)} onChange={e => setTargets(current => ({ ...current, [day.dayOfWeek]: e.target.checked ? [...(current[day.dayOfWeek] || []), target] : (current[day.dayOfWeek] || []).filter(id => id !== target) }))}/>{name}</label>)}</div><button type="button" disabled={!!error || !targets[day.dayOfWeek]?.length} onClick={() => copy(day, targets[day.dayOfWeek] || [])}>Copy to Selected Days</button><button type="button" disabled={!!error} onClick={() => copy(day, days.map((_, i) => i))}>Copy to All Days</button></details></div>}
         {error && <p id={`hours-error-${day.dayOfWeek}`} className="field-error" role="alert">{error}</p>}
-        <details><summary>Copy {days[day.dayOfWeek]} hours</summary><div className="registration-inline">{days.map((name, target) => target !== day.dayOfWeek && <label className="registration-check" key={name}><input type="checkbox" checked={(targets[day.dayOfWeek] || []).includes(target)} onChange={e => setTargets(current => ({ ...current, [day.dayOfWeek]: e.target.checked ? [...(current[day.dayOfWeek] || []), target] : (current[day.dayOfWeek] || []).filter(id => id !== target) }))}/>{name}</label>)}</div><button type="button" disabled={!!error || !targets[day.dayOfWeek]?.length} onClick={() => copy(day, targets[day.dayOfWeek] || [])}>Copy to Selected Days</button><button type="button" disabled={!!error} onClick={() => copy(day, days.map((_, i) => i))}>Copy to All Days</button></details>
       </section>;
     })}
     <details><summary>Weekly Summary</summary>{value.map(day => <p key={day.dayOfWeek}>{days[day.dayOfWeek]}: {day.isOpen ? day.sessions.map(s => `${formatTime(s.startTime, preferences)}–${formatTime(s.endTime, preferences)}`).join(", ") : "Closed"}</p>)}</details>
