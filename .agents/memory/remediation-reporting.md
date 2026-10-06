@@ -11,9 +11,9 @@ Work through all pending report sections without stopping for approval between a
 
 When the user authorizes one checklist section, finish its shared components, custom-page adoption and verification before stopping; do not treat a shared foundation as completion or request permission to finish the same section.
 
-**Why:** The user explicitly objected to a partial Section A delivery and requested completion, while retaining control over starting the next section.
+**Why:** The user explicitly objected to a partial Section A delivery and requested completion.
 
-**How to apply:** Give progress updates during the authorized section and stop at its boundary, not at an intermediate implementation milestone.
+**How to apply:** Give progress updates and finish the whole section, not only an intermediate implementation milestone. The user subsequently requested continuous development of the remaining agreed sections, one after another, without repeatedly asking them to say “proceed.” Continue across those section boundaries with progress updates.
 
 Cross-check every original section requirement before claiming completion, and distinguish development completion from representative verification or unresolved acceptance coverage.
 
