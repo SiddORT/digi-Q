@@ -109,3 +109,17 @@ test("compound phone fields get full/double tracks and page footers never overla
   assert.match(c, /scroll-padding-bottom/);
   assert.match(read("../lib/field-width.ts"), /type === "tel"\) return "lg"/);
 });
+
+test("closure: action cells never clip/crowd; empty state offers real recovery; reports count once", () => {
+  const u = read("./uniformity.css");
+  assert.match(u, /\.workspace \.admin-listing-table td\.col-actions \.row-actions\{display:flex;flex-wrap:wrap/);
+  assert.match(u, /@media \(min-width:640px\) and \(max-width:1199px\)/);
+  assert.match(u, /appt-table table\{min-width:980px\}/);
+  assert.match(u, /appt-table td\.col-actions\{overflow:hidden;position:sticky;right:0/);
+  assert.match(u, /appt-table :is\(th,td\)\.col-actions\{width:236px\}/);
+  const c = read("../clinic.tsx");
+  assert.doesNotMatch(c, /Try All visits/);
+  assert.match(c, /data-testid="button-show-all-visits" onClick=\{\(\)=>\{setView\("all"\);setPage\(1\);\}\}>Show All Visits/);
+  assert.doesNotMatch(c, /listing-count">\{total\}/);
+  for (const f of ["../clinic.tsx", "../resources.tsx", "../Users.tsx", "./SystemUsers.tsx"]) assert.doesNotMatch(read(f), /className="form-footer"/, f);
+});

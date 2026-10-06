@@ -14,3 +14,9 @@ When the user authorizes one checklist section, finish its shared components, cu
 **Why:** The user explicitly objected to a partial Section A delivery and requested completion, while retaining control over starting the next section.
 
 **How to apply:** Give progress updates during the authorized section and stop at its boundary, not at an intermediate implementation milestone.
+
+Cross-check every original section requirement before claiming completion, and distinguish development completion from representative verification or unresolved acceptance coverage.
+
+**Why:** The user explicitly requested this after repeated contradictions about Section A being complete.
+
+**How to apply:** Keep an evidence checklist; do not substitute shared-component adoption or source-string tests for a complete requirement review.

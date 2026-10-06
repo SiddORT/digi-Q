@@ -445,3 +445,20 @@
   .workspace .table-scroll.appt-table :is(th,td).col-actions{width:196px}
   .workspace .table-scroll.appt-table td.col-actions .row-actions>button.row-primary{padding:4px 8px;gap:4px}
 }
+
+/* Section A closure: action cells never clip or crowd neighbouring data. */
+@media (max-width:639px){
+  .workspace .admin-listing-table td.col-actions,.workspace .admin-listing-table th.col-actions{display:block;width:100%;min-width:0;max-width:none;overflow:visible;white-space:normal;position:static}
+  .workspace .admin-listing-table td.col-actions .row-actions{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px;min-width:0;width:100%}
+  .workspace .admin-listing-table td.col-actions .row-actions>*{flex:0 0 auto;width:auto;min-width:44px;min-height:44px}
+  .workspace .admin-listing-table td.col-actions .row-actions :is(button,a){min-width:44px;min-height:44px}
+}
+@media (min-width:640px) and (max-width:1199px){
+  .workspace .admin-listing-table :is(th,td).col-actions{position:sticky;right:0;z-index:2;background:var(--dq-surface)}
+  .workspace .table-scroll.appt-table table{min-width:980px}
+  .workspace .table-scroll.appt-table :is(th,td).col-actions{width:236px}
+  .workspace .table-scroll.appt-table td.col-actions{overflow:hidden;position:sticky;right:0;z-index:2;background:var(--dq-surface)}
+  .workspace .table-scroll.appt-table td.col-actions .row-actions{flex-wrap:nowrap;justify-content:flex-end;gap:4px}
+  .workspace .table-scroll.appt-table td.col-actions .row-actions>*{flex:0 0 auto}
+  .workspace .table-scroll.appt-table td:not(.col-actions){overflow:hidden;text-overflow:ellipsis}
+}

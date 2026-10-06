@@ -19,7 +19,8 @@ test("toolbar puts title left and status/search/filter/add on one wrapping row",
   assert.match(clinic, /<FilterBar activeCount=[^]*?advanced=\{<><SearchableSelect label="Status"/, "appointment count lives only in pagination (Section A)");
   assert.doesNotMatch(clinic, /status=\{<StatusTabs/, "appointment status is a drawer filter");
   assert.doesNotMatch(clinic, /<h2>Appointments<\/h2>/, "page h1 is the only Appointments heading");
-  assert.match(clinic, /<FilterBar title=\{q\.data&&!q\.error\?<span className="listing-count-label"><span className="listing-count">\{total\}/);
+  // Section A5: the report total appears once, in pagination, not again in the toolbar.
+  assert.match(clinic, /<FilterBar label="Report Filters"/);
   assert.doesNotMatch(clinic, /<h2>Report<\/h2>/);
   assert.match(read("./queue/SessionQueue.tsx"), /<FilterBar status=\{<StatusTabs/);
   assert.doesNotMatch(read("./queue/SessionQueue.tsx"), /<h2>Queue<\/h2>/);
