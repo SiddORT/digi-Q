@@ -1,3 +1,4 @@
+import { FormActions } from "./FormActions";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HelpTip } from "./HelpTip";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -108,7 +109,7 @@ export function ConsultationManagement({identity}:{identity:api.Identity}){
     {(settings.data?.branches||[]).filter(item=>item.status==="active"||selected.includes(item.id)).map(item=><label className="check-label" key={item.id}><input type="checkbox" checked={selected.includes(item.id)} onChange={event=>toggle(item.id,event.target.checked)}/> {item.name} · {item.city||item.address}{item.status!=="active"&&" · Inactive — remove before saving"}</label>)}
     {!!otherIds.length&&<><h3>Previously Selected at Other Clinics</h3>{otherIds.map((id,index)=>{const item=other[index].data;return <div key={id}><label className="check-label"><input type="checkbox" checked={selected.includes(id)} onChange={event=>toggle(id,event.target.checked)}/> {item?`${item.name} · ${item.city||item.address}${item.status!=="active"?" · Inactive":""}`:`Location ${id} · ${other[index].error?"Unable to load — remove or retry":"Loading…"}`}</label>{other[index].error&&<button type="button" onClick={()=>void other[index].refetch()}>Retry Location</button>}</div>;})}</>}
     {!choice.canSave&&<p role="status">{choice.inactive.length?"Remove inactive locations. ":""}{choice.unknown.length?"Wait, retry or remove unavailable locations. ":""}{!choice.branchIds.length?"Choose an active location.":""}</p>}
-    <div className="form-footer"><button className="button" disabled={own.isPending||!choice.canSave}>{own.isPending?"Saving…":identity.doctorId?"Save Clinical Locations":"Enable My Doctor Profile"}</button></div>
+    <FormActions wide={false} busy={own.isPending} disabled={!choice.canSave} submitLabel={identity.doctorId?"Save Clinical Locations":"Enable My Doctor Profile"}/>
    </form></AppDialog>
  </section>;
 }

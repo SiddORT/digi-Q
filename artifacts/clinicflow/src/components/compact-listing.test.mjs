@@ -16,7 +16,7 @@ test("toolbar puts title left and status/search/filter/add on one wrapping row",
   assert.match(controls, /filter-bar-title/);
   assert.match(controls, /filter-bar-status/);
   const clinic = read("../clinic.tsx");
-  assert.match(clinic, /<FilterBar title=\{q\.data&&!q\.error\?<span className=\"listing-count-label\">[^]*?advanced=\{<><SearchableSelect label="Status"/);
+  assert.match(clinic, /<FilterBar activeCount=[^]*?advanced=\{<><SearchableSelect label="Status"/, "appointment count lives only in pagination (Section A)");
   assert.doesNotMatch(clinic, /status=\{<StatusTabs/, "appointment status is a drawer filter");
   assert.doesNotMatch(clinic, /<h2>Appointments<\/h2>/, "page h1 is the only Appointments heading");
   assert.match(clinic, /<FilterBar title=\{q\.data&&!q\.error\?<span className="listing-count-label"><span className="listing-count">\{total\}/);
@@ -27,7 +27,7 @@ test("toolbar puts title left and status/search/filter/add on one wrapping row",
   assert.match(read("../resources.tsx"), /listName=resource==="branches"\?"locations"/);
   for (const page of ["../Users.tsx", "../resources.tsx"]) {
     const src = read(page);
-    assert.match(src, /<FilterBar title=\{/, `${page} uses toolbar title`);
+    assert.doesNotMatch(src, /<FilterBar title=\{/, `${page} leaves the record count to pagination (Section A)`);
     assert.doesNotMatch(src, / status=\{</, `${page} keeps record status filters out of the toolbar`);
     assert.match(src, /<SearchableSelect label="(Account )?Status"/, `${page} drafts status in the filter drawer`);
   }

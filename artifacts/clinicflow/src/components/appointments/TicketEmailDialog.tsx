@@ -1,3 +1,4 @@
+import { FormActions } from "../FormActions";
 import { useEffect, useRef, useState } from "react";
 import * as api from "@workspace/api-client-react";
 import { AppDialog } from "../AppDialog";
@@ -61,9 +62,6 @@ export function TicketEmailDialog({ open, items, onClose }: { open: boolean; ite
         {r.state === "failed" && <span role="alert">Failed: {r.failure} <button type="button" disabled={busy} onClick={() => void send([r])} data-testid={`button-email-retry-${r.id}`}>Retry</button></span>}
       </li>)}</ul>}
     {done && <p role="status" data-testid="status-email-summary">{accepted} accepted, {unknown} unknown, {failed} failed, {rows.length - eligible.length} not eligible.</p>}
-    <div className="form-footer">
-      <button type="button" disabled={busy} onClick={onClose}>{done ? "Close" : "Cancel"}</button>
-      <button type="button" className="button" disabled={loading || busy || !pendingFirst.length} onClick={() => void send(pendingFirst)} data-testid="button-email-confirm">{busy ? "Sending…" : pendingFirst.length ? `Send ${pendingFirst.length} ${pendingFirst.length === 1 ? "Email" : "Emails"}` : "Nothing to Send"}</button>
-    </div>
+    <FormActions wide={false} onCancel={onClose} cancelLabel={done ? "Close" : "Cancel"} busy={busy} busyLabel="Sending…" disabled={loading || !pendingFirst.length} onSubmit={() => void send(pendingFirst)} submitTestId="button-email-confirm" submitLabel={pendingFirst.length ? `Send ${pendingFirst.length} ${pendingFirst.length === 1 ? "Email" : "Emails"}` : "Nothing to Send"} />
   </AppDialog>;
 }

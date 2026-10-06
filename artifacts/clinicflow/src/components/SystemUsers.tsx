@@ -93,7 +93,6 @@ export function SystemUsers() {
   const sysCell = (k: string, u: SystemUser) => k === "name" ? <OverflowText as="strong" value={u.fullName} testId={`text-system-user-${u.id}`}/> : k === "email" ? <OverflowText value={u.email}/> : k === "role" ? label(u.role) : k === "status" ? <span className={`badge ${u.status === "active" ? "" : "muted"}`}>{label(u.status)}</span> : k === "clinics" ? (u.clinics.length ? <AssignmentSummary owner={u.fullName} clinics={u.clinics.map(c => c.name)} testId={`button-system-assignments-${u.id}`}/> : <span className="muted">{u.role === "superAdmin" ? "Platform-wide" : "None"}</span>) : null;
   return <>
     <FilterBar label="System User Filters"
-      title={data && !q.error ? <span className="listing-count-label"><span className="listing-count">{data.total}</span> {data.total === 1 ? "account" : "accounts"}</span> : undefined}
       active={active} onReset={reset} activeCount={[role, status, clinicId].filter(Boolean).length}
       onOpen={() => setDraft({ role, status, clinicId })}
       onApply={() => { setRole(draft.role); setStatus(draft.status); setClinicId(draft.clinicId); }}

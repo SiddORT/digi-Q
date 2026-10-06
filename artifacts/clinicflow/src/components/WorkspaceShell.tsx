@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Star, Clock3, LogOut, ChevronDown, UserRound, Plus, Activity, QrCode, Building2, Check } from "lucide-react";
+import { Star, LogOut, ChevronDown, UserRound, Plus, Activity, QrCode, Building2, Check } from "lucide-react";
 import { OverflowText } from "./OverflowText";
 import { menuKeyDown } from "@/lib/tabs-a11y";
 import * as api from "@/lib/api";
@@ -9,21 +9,19 @@ import { navLabel } from "./WorkspaceNav";
 import { quickActions } from "./WorkspaceSearch";
 import { useNavigationPreferences } from "@/lib/workspace-preferences";
 
-/** Sidebar favorites and recent pages, sharing state with WorkspaceSearch. Only permitted pages render. */
+/** Sidebar favorites only (Recent was removed from the sidebar for all roles; recent pages remain in WorkspaceSearch). Only permitted pages render. */
 export function SidebarShortcuts({ navigation, role, page, userId, onNavigate }: { navigation: string[]; role: string; page: string; userId: string; onNavigate: () => void }) {
   const { prefs, toggleFavorite } = useNavigationPreferences(userId, role);
   const favorites = prefs.favorites.filter(p => navigation.includes(p));
-  const recent = prefs.recent.filter(p => navigation.includes(p) && p !== page && !favorites.includes(p)).slice(0, 4);
-  if (!favorites.length && !recent.length) return null;
+  if (!favorites.length) return null;
   const item = (p: string, fav: boolean) => <div key={p} className="wnav-shortcut-row" style={{ display: "flex", alignItems: "center" }}>
     <Link href={`/${role}/${p}`} className={`wnav-link child${p === page ? " active" : ""}`} aria-current={p === page ? "page" : undefined} onClick={onNavigate} title={navLabel(p, role)} data-testid={`nav-shortcut-${fav ? "fav" : "recent"}-${p}`} style={{ flex: 1, minWidth: 0 }}>
-      {fav ? <Star size={16} aria-hidden /> : <Clock3 size={16} aria-hidden />}<span className="wnav-label">{navLabel(p, role)}</span>
+      <Star size={16} aria-hidden /><span className="wnav-label">{navLabel(p, role)}</span>
     </Link>
     {fav && <button type="button" className="wnav-label" aria-label={`Remove ${navLabel(p, role)} from favorites`} onClick={() => toggleFavorite(p)} style={{ border: 0, background: "transparent", minHeight: 32, width: 32, padding: 0, color: "var(--soft)" }}>×</button>}
   </div>;
   return <nav className="wnav-shortcuts" aria-label="Shortcuts">
     {favorites.length > 0 && <><h2><Star size={12} aria-hidden /><span>Favorites</span></h2>{favorites.map(p => item(p, true))}</>}
-    {recent.length > 0 && <><h2><Clock3 size={12} aria-hidden /><span>Recent</span></h2>{recent.map(p => item(p, false))}</>}
   </nav>;
 }
 

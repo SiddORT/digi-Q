@@ -1,3 +1,4 @@
+import { FormActions } from "../FormActions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
@@ -170,11 +171,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
       </section>;
     })}</div>
     {needsTemplate && !template && <p className="field-error" role="alert">Enter token prefix, max tokens and consultation duration for new sessions.</p>}
-    <div className="form-footer">
-      <button type="button" disabled={busy || !dirty} onClick={() => { setWeek(buildWeek(rows)); setResult(""); }} data-testid="button-reset-week">Discard Changes</button>
-      <button type="button" className="button" disabled={busy || !dirty || hasErrors || (needsTemplate && !template)} onClick={save} data-testid="button-save-week">{busy ? "Saving…" : `Save Weekly Schedule${dirty ? ` (${plan.creates.length + plan.updates.length + plan.deactivations.length})` : ""}`}</button>
-    </div>
-    <small className="muted">Each session is saved separately; this is not an atomic weekly update. Changed and new sessions save first; removed sessions are deactivated (never deleted) only after all of those succeed. If anything fails, successful changes remain, failures are listed and your unsaved edits stay in the editor.</small>
+    <FormActions wide={false} onCancel={() => { setWeek(buildWeek(rows)); setResult(""); }} cancelLabel="Discard Changes" cancelDisabled={!dirty} cancelTestId="button-reset-week" busy={busy} disabled={!dirty || hasErrors || (needsTemplate && !template)} onSubmit={save} submitTestId="button-save-week" submitLabel={`Save Weekly Schedule${dirty ? ` (${plan.creates.length + plan.updates.length + plan.deactivations.length})` : ""}`} secondary={<small className="muted field-hint">Saved per session <HelpTip label="How weekly saving works" text="Each session is saved separately; this is not an atomic weekly update. Changed and new sessions save first; removed sessions are deactivated (never deleted) only after all of those succeed. If anything fails, successful changes remain, failures are listed and your unsaved edits stay in the editor." /></small>} />
     {result && <p className="notice" role="status" data-testid="status-week-save">{result}</p>}
     {outside && <AppDialog open onClose={() => setOutside(null)} title="Outside Clinic Hours">
       <p>{outside.length} session{outside.length > 1 ? "s are" : " is"} outside {clinicName}'s hours: {outside.map(o => { const s = week[o.day].sessions.find(x => x.key === o.key); return s ? `${SHORT[o.day]} ${fmt(s.startTime)} – ${fmt(s.endTime)} (clinic ${hoursFor(o.day).map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ")})` : ""; }).join("; ")}.</p>
