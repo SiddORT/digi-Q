@@ -176,11 +176,9 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
     {outside && <AppDialog open onClose={() => setOutside(null)} title="Outside Clinic Hours">
       <p>{outside.length} session{outside.length > 1 ? "s are" : " is"} outside {clinicName}'s hours: {outside.map(o => { const s = week[o.day].sessions.find(x => x.key === o.key); return s ? `${SHORT[o.day]} ${fmt(s.startTime)} – ${fmt(s.endTime)} (clinic ${hoursFor(o.day).map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ")})` : ""; }).join("; ")}.</p>
       <p className="muted">Approval for saving weekly sessions outside clinic hours is still on hold, so this editor does not create or change exceptions. "Submit as entered" sends each session as typed; the server's existing rules and your permissions decide whether it is accepted, and any refusal is listed with your edit kept for retry. Existing dated doctor exceptions stay in Date exceptions.</p>
-      <div className="form-footer">
-        <button type="button" onClick={() => setOutside(null)} data-testid="button-outside-cancel">Cancel</button>
-        <button type="button" onClick={() => { setWeek(w => w.map(d => ({ ...d, sessions: d.sessions.map(s => outside.some(o => o.key === s.key) ? adjustToHours(s, hoursFor(d.dayOfWeek)) : s) }))); setOutside(null); }} data-testid="button-outside-adjust">Adjust to Clinic Hours</button>
-        <button type="button" className="button" onClick={() => { setOutside(null); void execute(); }} data-testid="button-outside-submit">Submit as Entered</button>
-      </div>
+      <FormActions wide={false} onCancel={() => setOutside(null)} cancelTestId="button-outside-cancel"
+        extra={<button type="button" onClick={() => { setWeek(w => w.map(d => ({ ...d, sessions: d.sessions.map(s => outside.some(o => o.key === s.key) ? adjustToHours(s, hoursFor(d.dayOfWeek)) : s) }))); setOutside(null); }} data-testid="button-outside-adjust">Adjust to Clinic Hours</button>}
+        onSubmit={() => { setOutside(null); void execute(); }} submitLabel="Submit as Entered" submitTestId="button-outside-submit" />
     </AppDialog>}
   </section>;
 }

@@ -225,22 +225,49 @@
 
 /* Section A: shared editor field grid. Tracks follow container width; each field spans by its
    semantic width (fw-*) instead of forced half/full columns. Specificity beats legacy grid rules. */
-.editor-container{container-type:inline-size;min-width:0}
-.editor-container .form-grid.field-grid.field-grid.field-grid{grid-template-columns:minmax(0,1fr)}
-.editor-container .field-grid>*{grid-column:1/-1;min-width:0}
-.editor-container .field-grid>.field-cell>*{min-width:0}
-.editor-container .field-grid .field-cell input:is([type=number],[type=time],[type=tel],[inputmode=numeric]){max-width:none}
+.editor-container,.cf-form{container-type:inline-size;min-width:0}
+:is(.editor-container,.cf-form) .form-grid.field-grid.field-grid.field-grid{grid-template-columns:minmax(0,1fr)}
+:is(.editor-container,.cf-form) .field-grid>*{grid-column:1/-1;min-width:0}
+:is(.editor-container,.cf-form) .field-grid>.field-cell>*{min-width:0}
+:is(.editor-container,.cf-form) .field-grid .field-cell input:is([type=number],[type=time],[type=tel],[inputmode=numeric]){max-width:none}
 @container (min-width:560px){
-  .editor-container .form-grid.field-grid.field-grid.field-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
-  .editor-container .field-grid>.fw-xs{grid-column:span 2}
-  .editor-container .field-grid>.fw-sm,.editor-container .field-grid>.fw-md{grid-column:span 3}
-  .editor-container .field-grid>.fw-lg,.editor-container .field-grid>.fw-full{grid-column:1/-1}
+  :is(.editor-container,.cf-form) .form-grid.field-grid.field-grid.field-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
+  :is(.editor-container,.cf-form) .field-grid>.fw-xs{grid-column:span 2}
+  :is(.editor-container,.cf-form) .field-grid>.fw-sm,:is(.editor-container,.cf-form) .field-grid>.fw-md{grid-column:span 3}
+  :is(.editor-container,.cf-form) .field-grid>.fw-lg,:is(.editor-container,.cf-form) .field-grid>.fw-full{grid-column:1/-1}
 }
 @container (min-width:900px){
-  .editor-container .form-grid.field-grid.field-grid.field-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
-  .editor-container .field-grid>.fw-xs{grid-column:span 2}
-  .editor-container .field-grid>.fw-sm{grid-column:span 3}
-  .editor-container .field-grid>.fw-md{grid-column:span 4}
-  .editor-container .field-grid>.fw-lg{grid-column:span 6}
-  .editor-container .field-grid>.fw-full{grid-column:1/-1}
+  :is(.editor-container,.cf-form) .form-grid.field-grid.field-grid.field-grid{grid-template-columns:repeat(12,minmax(0,1fr))}
+  :is(.editor-container,.cf-form) .field-grid>.fw-xs{grid-column:span 2}
+  :is(.editor-container,.cf-form) .field-grid>.fw-sm{grid-column:span 3}
+  :is(.editor-container,.cf-form) .field-grid>.fw-md{grid-column:span 4}
+  :is(.editor-container,.cf-form) .field-grid>.fw-lg{grid-column:span 6}
+  :is(.editor-container,.cf-form) .field-grid>.fw-full{grid-column:1/-1}
 }
+
+/* Shared auto-sized track grid for custom forms (settings, onboarding, registration): tracks are
+   sized from content minimums, never forced halves; long blocks span the row. */
+.form-grid.cf-auto,.registration-card .registration-fields{grid-template-columns:repeat(auto-fill,minmax(min(100%,13.5rem),1fr))}
+.form-grid.cf-auto>:is(.wide,.full,.check-label,.notice,.registration-note,.registration-url,:has(textarea),:has(fieldset)),
+.registration-card .registration-fields>:is(.wide,.registration-check,.registration-url,.registration-note,.notice,:has(textarea)){grid-column:1/-1}
+.form-actions .button svg{flex-shrink:0}
+
+/* Compound controls (phone = country code + local number) never get a single auto track: they take
+   the full row, capped to a readable width, so neither part is squeezed. */
+.form-grid.cf-auto>:has(.phone-input),.registration-card .registration-fields>:has(.phone-input),
+.field-grid>.field-cell:has(.phone-input){grid-column:1/-1}
+.form-grid.cf-auto>:has(.phone-input) .phone-input,.registration-card .registration-fields>:has(.phone-input) .phone-input{max-width:34rem}
+@container (min-width:900px){:is(.editor-container,.cf-form) .field-grid>.field-cell.fw-lg:has(.phone-input){grid-column:span 6}}
+.phone-input{min-width:min(100%,17rem)}
+
+/* Page-level forms (registration, booking, settings) keep actions in normal flow so the footer can
+   never cover the last field; only dialog bodies keep a sticky footer, with scroll padding so a
+   focused field is scrolled clear of it. */
+.form-footer.form-actions{position:static}
+.app-dialog-body .form-footer.form-actions{position:sticky;bottom:0}
+.app-dialog-body{scroll-padding-bottom:88px}
+
+/* Integration status actions must wrap within their card rather than inherit table nowrap. */
+.workspace .int-settings .int-status-row{min-width:0}
+.workspace .int-settings .int-status-row>.row-actions{display:flex;flex-wrap:wrap;min-width:0;max-width:100%;white-space:normal}
+.workspace .int-settings .int-status-row>.row-actions>button{flex:0 1 auto;max-width:100%;white-space:normal}

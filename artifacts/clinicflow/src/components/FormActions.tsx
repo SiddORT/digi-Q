@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useAppDialogClose } from "./AppDialog";
 
 /**
  * Shared Save/Cancel footer used by every form surface, for every role. Fixed order:
@@ -20,12 +21,20 @@ export interface FormActionsProps {
   submitTestId?: string;
   cancelTestId?: string;
   wide?: boolean;
+  /** Extra actions placed between Cancel and the primary action (e.g. Save Draft). */
+  extra?: ReactNode;
+  submitClassName?: string;
+  /** Inside an AppDialog with no onCancel: Cancel uses the dialog's guarded close (asks before discarding dirty input). */
+  cancelClosesDialog?: boolean;
 }
 
-export function FormActions({ onCancel, onSubmit, busy = false, disabled = false, cancelDisabled = false, submitLabel = "Save Changes", busyLabel = "Saving…", cancelLabel = "Cancel", secondary, submitTestId = "button-save", cancelTestId = "button-cancel", wide = true }: FormActionsProps) {
+export function FormActions({ onCancel, onSubmit, busy = false, disabled = false, cancelDisabled = false, submitLabel = "Save Changes", busyLabel = "Saving…", cancelLabel = "Cancel", secondary, submitTestId = "button-save", cancelTestId = "button-cancel", wide = true, extra, submitClassName, cancelClosesDialog = false }: FormActionsProps) {
+  const dialogClose = useAppDialogClose();
+  const cancel = onCancel ?? (cancelClosesDialog ? dialogClose ?? undefined : undefined);
   return <div className={`${wide ? "wide " : ""}form-footer form-actions`} data-testid="form-actions">
     {secondary && <div className="form-actions-secondary">{secondary}</div>}
-    {onCancel && <button type="button" onClick={onCancel} disabled={busy || cancelDisabled} data-testid={cancelTestId}>{cancelLabel}</button>}
-    <button type={onSubmit ? "button" : "submit"} onClick={onSubmit} className="button" disabled={busy || disabled} aria-busy={busy || undefined} data-testid={submitTestId}>{busy ? busyLabel : submitLabel}</button>
+    {cancel && <button type="button" onClick={cancel} disabled={busy || cancelDisabled} data-testid={cancelTestId}>{cancelLabel}</button>}
+    {extra}
+    <button type={onSubmit ? "button" : "submit"} onClick={onSubmit} className={`button${submitClassName ? ` ${submitClassName}` : ""}`} disabled={busy || disabled} aria-busy={busy || undefined} data-testid={submitTestId}>{busy ? busyLabel : submitLabel}</button>
   </div>;
 }

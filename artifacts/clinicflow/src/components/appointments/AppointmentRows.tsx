@@ -1,3 +1,4 @@
+import { FormActions } from "../FormActions";
 import { createPortal } from "react-dom";
 import { Fragment, useEffect, useRef, useState } from "react";
 import * as api from "@workspace/api-client-react";
@@ -85,6 +86,6 @@ export function AppointmentRows({appointments,columnsTarget,selectionKey="",disa
  <ErrorNotice error={action.error}/>
  {pending&&["cancel","noShow","requeue"].includes(pending.next)&&<label>Required reason<textarea required value={reason} maxLength={1000} onChange={e=>setReason(e.target.value)}/></label>}
  {pending&&!pending.appointment.allowedActions.includes(pending.next)&&<p role="alert">This appointment changed. Close this dialog and review its current status.</p>}
-  <div className="form-footer"><button type="button" disabled={action.isPending} onClick={()=>setPending(null)}>Back</button><button className="button" disabled={blocked||action.isPending||!!(pending&&!pending.appointment.allowedActions.includes(pending.next))||!!(pending&&["cancel","noShow","requeue"].includes(pending.next)&&!reason.trim())||(pending?.next==="requeue"&&(!queue.data?.queueVersion||queue.isFetching||!!queue.error||!Number.isInteger(position)||position<1))}>{action.isPending?"Updating…":"Confirm"}</button></div>
+  <FormActions wide={false} onCancel={()=>setPending(null)} cancelLabel="Back" busy={action.isPending} busyLabel="Updating…" submitLabel="Confirm" disabled={blocked||!!(pending&&!pending.appointment.allowedActions.includes(pending.next))||!!(pending&&["cancel","noShow","requeue"].includes(pending.next)&&!reason.trim())||(pending?.next==="requeue"&&(!queue.data?.queueVersion||queue.isFetching||!!queue.error||!Number.isInteger(position)||position<1))}/>
  </form></AppDialog></>;
 }

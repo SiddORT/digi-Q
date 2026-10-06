@@ -56,3 +56,50 @@ test("remaining Editor guidance is HelpTip; validation stays inline", () => {
   assert.match(r, /This session extends outside a clinic opening interval/);
   assert.match(r, /role="alert" className="field-error">Closing time must follow opening time/);
 });
+
+test("custom form surfaces use the shared action footer", () => {
+  const files = ["./EmailTemplates.tsx", "./CustomRoles.tsx", "./appointments/AppointmentRows.tsx", "./IntegrationSettings.tsx", "./IntegrationEditor.tsx", "./ClinicRegistrationWizard.tsx", "./ClinicSettings.tsx", "./schedule/WeeklyScheduleEditor.tsx"];
+  for (const f of files) { const s = read(f); assert.match(s, /<FormActions /, f); assert.doesNotMatch(s, /<div className="form-footer">/, f); }
+  assert.doesNotMatch(read("./ClinicRegistrationWizard.tsx"), /registration-footer/);
+  for (const id of ["button-publish", "button-save-draft", "button-cancel", "button-reset", "button-confirm-save", "button-discard", "button-keep-editing"]) assert.match(read("./EmailTemplates.tsx"), new RegExp(id));
+  assert.match(read("./ClinicRegistrationWizard.tsx"), /cancelTestId="registration-back"[^]*submitTestId="registration-next"/);
+});
+test("FormActions cancel can use the AppDialog guarded close (dirty confirm preserved)", () => {
+  const f = read("./FormActions.tsx");
+  assert.match(f, /useAppDialogClose\(\)/);
+  assert.match(f, /cancelClosesDialog \? dialogClose/);
+  assert.match(read("./ClinicSettings.tsx"), /cancelClosesDialog busy=\{save\.isPending\}/);
+  assert.match(read("./IntegrationEditor.tsx"), /guardedClose \? guardedClose\(\) : onCancel\(\)/);
+});
+test("custom forms use shared content-sized track grids", () => {
+  const c = read("../compact-workspace.css");
+  assert.match(c, /:is\(\.editor-container,\.cf-form\) \.form-grid\.field-grid/);
+  assert.match(c, /\.form-grid\.cf-auto,\.registration-card \.registration-fields\{grid-template-columns:repeat\(auto-fill/);
+  assert.match(read("./IntegrationEditor.tsx"), /className="cf-form"><div className="form-grid field-grid">/);
+  assert.match(read("./ClinicSessionSetup.tsx"), /form-grid cf-auto/);
+});
+test("integration warnings stay visible; routine copy is help", () => {
+  const s = read("./IntegrationEditor.tsx");
+  assert.match(s, /<p role="note">This removes the saved website configuration/);
+  assert.match(s, /\{save\.isError && <p role="alert">/);
+  assert.match(s, /HelpTip label="About stored values"/);
+});
+
+test("booking and guest booking share action alignment and auto-sized grids (layout only)", () => {
+  const c = read("../clinic.tsx"), g = read("./GuestBooking.tsx");
+  assert.equal((c.match(/form-footer form-actions/g) || []).length >= 3, true);
+  assert.match(c, /form-actions-secondary"><button disabled=\{book\.isPending\} onClick=\{\(\)=>setStep\(1\)\}>Change Visit/);
+  assert.match(c, /data-testid="button-confirm-booking"/);
+  assert.match(g, /<div className="form-footer form-actions"><button className="button" data-testid="button-submit-guest"/);
+  assert.equal((g.match(/form-grid cf-auto/g) || []).length, 2);
+});
+
+test("compound phone fields get full/double tracks and page footers never overlay fields", async () => {
+  const c = read("../compact-workspace.css");
+  assert.match(c, /\.registration-card \.registration-fields>:has\(\.phone-input\)/);
+  assert.match(c, /\.form-grid\.cf-auto>:has\(\.phone-input\)/);
+  assert.match(c, /\.form-footer\.form-actions\{position:static\}/);
+  assert.match(c, /\.app-dialog-body \.form-footer\.form-actions\{position:sticky/);
+  assert.match(c, /scroll-padding-bottom/);
+  assert.match(read("../lib/field-width.ts"), /type === "tel"\) return "lg"/);
+});

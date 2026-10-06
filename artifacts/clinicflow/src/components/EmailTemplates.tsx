@@ -1,3 +1,4 @@
+import { FormActions } from "./FormActions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { titleCase } from "../lib/title-case";
@@ -8,7 +9,6 @@ import { AppDialog } from "./AppDialog";
 import { FormField } from "./FormField";
 import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
-import { LoadingButton } from "./LoadingButton";
 import { ResourceLookup } from "./ResourceLookup";
 import "./email-templates.css";
 
@@ -234,10 +234,10 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
           {save.isError && !conflict && <p role="alert" className="error-box">The template was not saved. Check the fields and try again.</p>}
           {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
           <div className="et-actions">
-            <LoadingButton type="submit" loading={save.isPending && confirm === "publish"} disabled={save.isPending || invalid || conflict} data-testid="button-publish">Publish</LoadingButton>
-            <button type="button" className="button secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save Draft</button>
-            <button type="button" className="button secondary" disabled={save.isPending || !dirty} onClick={() => { setForm({ ...base! }); setNotice(""); }} data-testid="button-cancel">Cancel Changes</button>
-            <button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to Default</button>
+            <FormActions wide={false} secondary={<button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to Default</button>}
+              onCancel={() => { setForm({ ...base! }); setNotice(""); }} cancelLabel="Cancel Changes" cancelDisabled={save.isPending || !dirty} cancelTestId="button-cancel"
+              extra={<button type="button" className="button secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save Draft</button>}
+              busy={save.isPending && confirm === "publish"} busyLabel="Publishing…" disabled={save.isPending || invalid || conflict} submitLabel="Publish" submitTestId="button-publish" />
           </div>
         </form>
 
@@ -258,17 +258,11 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
 
     <AppDialog open={!!confirm} onClose={() => !save.isPending && setConfirm(null)} title={confirm ? MODE_COPY[confirm].title : ""} busy={save.isPending}>
       {confirm && <div className="et-dialog"><p>{MODE_COPY[confirm].text}</p>
-        <div className="et-actions">
-          <LoadingButton type="button" loading={save.isPending} onClick={() => run(confirm)} className={confirm === "reset" ? "danger" : undefined} data-testid="button-confirm-save">{MODE_COPY[confirm].action}</LoadingButton>
-          <button type="button" className="button secondary" disabled={save.isPending} onClick={() => setConfirm(null)} data-testid="button-confirm-cancel">Go Back</button>
-        </div></div>}
+        <FormActions wide={false} onCancel={() => setConfirm(null)} cancelLabel="Go Back" cancelTestId="button-confirm-cancel" busy={save.isPending} onSubmit={() => run(confirm)} submitClassName={confirm === "reset" ? "danger" : undefined} submitLabel={MODE_COPY[confirm].action} submitTestId="button-confirm-save" /></div>}
     </AppDialog>
     <AppDialog open={!!pendingNav} onClose={() => setPendingNav(null)} title="Discard unsaved changes?">
       <div className="et-dialog"><p>You have edits that are not saved. Leaving this template discards them.</p>
-        <div className="et-actions">
-          <button type="button" className="danger" onClick={() => { const go = pendingNav; setPendingNav(null); go?.(); }} data-testid="button-discard">Discard and Continue</button>
-          <button type="button" className="button secondary" onClick={() => setPendingNav(null)} data-testid="button-keep-editing">Keep Editing</button>
-        </div></div>
+        <FormActions wide={false} onCancel={() => setPendingNav(null)} cancelLabel="Keep Editing" cancelTestId="button-keep-editing" onSubmit={() => { const go = pendingNav; setPendingNav(null); go?.(); }} submitClassName="danger" submitLabel="Discard and Continue" submitTestId="button-discard" /></div>
     </AppDialog>
   </section>;
 }

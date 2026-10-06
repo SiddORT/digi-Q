@@ -3,9 +3,9 @@
  * field is sized by its content (a PIN or number never takes half a dialog) while date/time
  * pickers keep enough room for the typed value plus the picker button.
  *  xs: short numbers, durations
- *  sm: dates, times, phones, choices
+ *  sm: dates, times, choices
  *  md: names, emails, single lookups, location text
- *  lg: multi-select lookups, street address
+ *  lg: multi-select lookups, street address, phones (country code + number)
  *  full: long text, switches, checkboxes, explanatory blocks
  */
 export type FieldWidth = "xs" | "sm" | "md" | "lg" | "full";
@@ -17,7 +17,8 @@ export function fieldWidth(field: { key: string; type?: string; resource?: strin
   if (resource) return key.endsWith("Ids") ? "lg" : "md";
   if (key === "pincode" || key === "tokenPrefix") return "xs";
   if (type === "number" || type === "duration") return "xs";
-  if (type === "date" || type === "time" || type === "tel" || type === "select" || key === "age") return "sm";
+  if (type === "tel") return "lg"; // composite: country code + local number needs two tracks
+  if (type === "date" || type === "time" || type === "select" || key === "age") return "sm";
   if (type === "session" || key === "timezone" || type === "array") return "md";
   return "md";
 }

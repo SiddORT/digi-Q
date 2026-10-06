@@ -1,3 +1,4 @@
+import { FormActions } from "./FormActions";
 import "./integration-settings.css";
 import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
@@ -109,7 +110,7 @@ export function IntegrationSettings() {
             <label className="check-label"><input type="checkbox" checked={confirmSend} onChange={e => setConfirmSend(e.target.checked)} data-testid="checkbox-confirm-smtp-test" /> Yes, send a real email to this address</label>
             {send.isSuccess && <p role="status" className="notice" data-testid="status-smtp-test-success">{send.data.message}</p>}
             {send.isError && <p role="alert" className="error-box" data-testid="status-smtp-test-error">Test email failed. Check the recipient and configuration, or wait 15 minutes if the attempt limit was reached.</p>}
-            <div className="form-footer"><button type="button" className="button secondary" onClick={closeTest} disabled={send.isPending}>Close</button><button type="submit" className="button" data-testid="button-send-smtp-test" disabled={!confirmSend || !data?.smtp.ready || query.isError || send.isPending}>{send.isPending ? "Sending…" : "Send test email"}</button></div>
+            <FormActions wide={false} onCancel={closeTest} cancelLabel="Close" busy={send.isPending} busyLabel="Sending…" disabled={!confirmSend || !data?.smtp.ready || query.isError} submitLabel="Send test email" submitTestId="button-send-smtp-test" />
           </form>
         </Form>
       </AppDialog>}

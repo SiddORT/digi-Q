@@ -1,3 +1,5 @@
+import { HelpTip } from "./HelpTip";
+import { FormActions } from "./FormActions";
 import { useEffect, useRef, useState } from "react";
 import { useAppDialogClose } from "./AppDialog";
 import { PasswordInput } from "./PasswordInput";
@@ -41,19 +43,19 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel, onDirt
       onError: () => setPassword(""),
     });
   }}>
-    <p>Stored values are never displayed. Leave a field blank to keep its current value. Saved website settings replace the whole .env configuration for this service. Saving does not send a message.</p>
+    <p className="muted field-hint">Leave a field blank to keep its current value <HelpTip label="About stored values" text="Stored values are never displayed. Leave a field blank to keep its current value. Saved website settings replace the whole .env configuration for this service. Saving does not send a message." /></p>
     <fieldset disabled={save.isPending}>
       <legend>Configuration Source</legend>
       <label><input type="radio" name={`${provider}-source`} checked={mode === "database"} onChange={() => setMode("database")} /> Encrypted website settings</label>
       <label><input type="radio" name={`${provider}-source`} checked={mode === "environment"} onChange={() => setMode("environment")} /> Use server environment instead</label>
-      {mode === "database" ? fields[provider].map(([key, label, type]) => <div key={key} className="form-field">
+      {mode === "database" ? <div className="cf-form"><div className="form-grid field-grid">{fields[provider].map(([key, label, type]) => <div key={key} className="form-field field-cell fw-md">
         <label htmlFor={`integration-${key}`}>{label}</label>
         {type === "password" ? <PasswordInput id={`integration-${key}`} name={key} visibilityLabel={label} autoComplete="off" spellCheck={false} maxLength={2048}
           value={values[key] ?? ""} placeholder={settings.keys.find(item => item.key === key)?.status === "configured" ? "Configured — leave blank to keep" : "Enter a value"}
           onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} /> : <input id={`integration-${key}`} name={key} type={type} autoComplete="off" spellCheck={false} maxLength={2048}
           value={values[key] ?? ""} placeholder={settings.keys.find(item => item.key === key)?.status === "configured" ? "Configured — leave blank to keep" : "Enter a value"}
           onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} />}
-      </div>) : <>
+      </div>)}</div></div> : <>
         <p role="note">This removes the saved website configuration. Email or SMS will stop working if the server environment is incomplete. It does not change the server’s .env file.</p>
         <label><input type="checkbox" required checked={confirmed} onChange={event => setConfirmed(event.target.checked)} /> I understand and want to use server configuration.</label>
       </>}
@@ -62,8 +64,7 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel, onDirt
         <PasswordInput id={`confirm-${provider}`} autoComplete="current-password" required maxLength={1024}
           value={password} onChange={event => setPassword(event.target.value)} />
       </div>
-      <button type="submit" disabled={save.isPending || (mode === "environment" && !confirmed)}>{save.isPending ? "Saving…" : "Save configuration"}</button>
-      <button type="button" className="secondary" onClick={() => (guardedClose ? guardedClose() : onCancel())}>Cancel</button>
+      <FormActions wide={false} onCancel={() => (guardedClose ? guardedClose() : onCancel())} busy={save.isPending} disabled={mode === "environment" && !confirmed} submitLabel="Save configuration" />
     </fieldset>
     {save.isError && <p role="alert">Configuration was not saved. Check your password, required fields and server encryption key. If another administrator changed settings, cancel, refresh and try again.</p>}
   </form>;

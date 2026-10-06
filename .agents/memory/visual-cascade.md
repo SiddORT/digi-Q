@@ -9,6 +9,12 @@ When changing ClinicFlow controls, verify computed styles and rendered layout ra
 
 **How to apply:** Keep legacy base styles, component styles, and utility precedence deliberate. Check search padding, semantic button hover colors, and filter layout at both tablet and desktop widths after shared style changes. Avoid blanket `!important` fixes.
 
+Compact layouts must size compound controls by the whole interaction, not by the input type alone, and verify child bounds against cards and footers.
+
+**Why:** Country-plus-phone controls were squeezed by otherwise valid compact grids, and a legacy sticky footer covered mobile inputs even when document overflow was zero.
+
+**How to apply:** Check composite fields at actual container widths, footer overlap, and action rows within their cards. Page-level horizontal-overflow checks alone do not establish readable controls.
+
 For narrow export documents, compare text and table internal scroll widths with their client widths, not only the document width.
 
 **Why:** A ticket container with hidden overflow can make the page appear to fit while silently clipping a long patient name.

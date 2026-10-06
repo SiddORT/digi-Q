@@ -1,3 +1,4 @@
+import { FormActions } from "./FormActions";
 import { RowMenu } from "./RowMenu";
 import { IconAction } from "./IconAction";
 import { HelpTip } from "./HelpTip";
@@ -6,7 +7,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, X } from "lucide-react";
 import { useGetCustomRoles, getGetCustomRolesQueryKey, useSaveCustomRoles, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetSystemUsers, getGetSystemUsersQueryKey } from "@workspace/api-client-react";
 import { AppDialog, useAppDialogClose } from "./AppDialog";
-import { LoadingButton } from "./LoadingButton";
 import { SearchableSelect } from "./SearchableSelect";
 import { label } from "./permission-matrix";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -86,7 +86,7 @@ export function CustomRoles() {
 
     <AppDialog open={confirm} onClose={() => !save.isPending && setConfirm(false)} title="Save custom roles?" busy={save.isPending}>
       <p>Changes take effect immediately for every assigned staff member. Base-role rules, clinic ownership and workflow checks still apply.</p>
-      <div className="form-footer"><button type="button" onClick={() => setConfirm(false)} disabled={save.isPending}>Keep Editing</button><LoadingButton className="button" loading={save.isPending} onClick={run} data-testid="button-confirm-custom-roles">Save now</LoadingButton></div>
+      <FormActions wide={false} onCancel={() => setConfirm(false)} cancelLabel="Keep Editing" busy={save.isPending} onSubmit={run} submitLabel="Save now" submitTestId="button-confirm-custom-roles" />
     </AppDialog>
     {deleting && draft && <DeleteRoleDialog role={deleting} count={bindingsFor(draft, deleting.id).length} onCancel={() => setDeleting(null)} onConfirm={removeAll => {
       const result = deleteRole(draft, deleting.id, removeAll);
@@ -102,7 +102,7 @@ function DeleteRoleDialog({ role, count, onCancel, onConfirm }: { role: CustomRo
     {count ? <><p>This role is assigned {count} time{count === 1 ? "" : "s"}. Remove the assignments first, or remove them together with the role.</p>
       <label className="check-label"><input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} data-testid="checkbox-remove-bindings" /> Also remove its {count} assignment{count === 1 ? "" : "s"}</label></>
       : <p>The role has no assignments. It is removed when you save custom roles.</p>}
-    <div className="form-footer"><button type="button" onClick={onCancel}>Cancel</button><button type="button" className="button danger" disabled={!!count && !ack} onClick={() => onConfirm(!!count)} data-testid="button-confirm-delete-role">Delete Role</button></div>
+    <FormActions wide={false} onCancel={onCancel} disabled={!!count && !ack} onSubmit={() => onConfirm(!!count)} submitClassName="danger" submitLabel="Delete Role" submitTestId="button-confirm-delete-role" />
   </AppDialog>;
 }
 
