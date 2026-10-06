@@ -21,3 +21,9 @@
 .registration-inline { display: flex; flex-wrap: wrap; gap:8px; }
 @media(max-width:640px){.registration-session{grid-template-columns:1fr}.registration-session button{min-height:44px}}
 @media(max-width:760px),(pointer:coarse){.clinic-settings-tabs{width:100%}.clinic-settings-tabs button,.clinic-settings summary,.branch-hours summary{min-height:44px}}
+/* Section B12: one compact clinic-wide scope marker, no repeated location count. */
+.settings-scope-badge{align-self:center;display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;border:1px solid hsl(var(--border));background:var(--dq-surface);font-size:var(--type-caption);font-weight:600;color:var(--soft,#4f6b94)}
+/* Section B14: content-sized location editor groups; inherit toggles align beside their field. */
+[data-location-editor] .field-cell:has(input[type=checkbox]){display:flex;align-items:flex-end;padding-bottom:8px}
+/* Section B15: fields scrolled into view stay clear of the sticky footer. */
+.app-dialog-body{scroll-padding-bottom:96px}

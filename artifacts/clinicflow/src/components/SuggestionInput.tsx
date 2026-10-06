@@ -72,7 +72,7 @@ export function SuggestionInput({
     <Popover open={open && !disabled} onOpenChange={setOpen}>
       <div className="min-w-0 max-w-full w-full">
         <PopoverAnchor asChild>
-          <div className="relative flex items-center">
+          <div className="suggestion-input-control relative flex items-center">
             <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" />
             <input
               ref={inputRef}

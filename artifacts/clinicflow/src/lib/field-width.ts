@@ -11,6 +11,7 @@
 export type FieldWidth = "xs" | "sm" | "md" | "lg" | "full";
 export function fieldWidth(field: { key: string; type?: string; resource?: string }): FieldWidth {
   const { key, type, resource } = field;
+  if (type === "checkbox" && key.startsWith("inherit")) return "md"; // B14: sits beside its email/phone field
   if (type === "textarea" || type === "checkbox") return "full";
   if (key === "status") return "sm";
   if (key === "address" || type === "tel") return "lg";

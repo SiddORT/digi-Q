@@ -28,6 +28,8 @@ export interface PaginationProps {
   onPageSizeChange?: (size: number) => void;
   /** Set false when the size callback already resets the page in URL state. */
   resetPageOnSizeChange?: boolean;
+  /** Optional, default false: omit "of {total}" when the list heading already shows the total. Range and page controls stay. */
+  hideTotal?: boolean;
 }
 
 export function Pagination({
@@ -37,6 +39,7 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
   resetPageOnSizeChange = true,
+  hideTotal = false,
 }: PaginationProps) {
   const sizeId = React.useId();
   if (total === 0) return null;
@@ -72,8 +75,8 @@ export function Pagination({
     <nav aria-label="Pagination" className="pagination flex flex-wrap items-center justify-between gap-2 py-2 px-3 text-xs text-muted-foreground border-t border-border">
       <div className="flex flex-wrap items-center gap-2">
         <span>
-          Showing <strong className="text-foreground font-medium">{startRecord}–{endRecord}</strong> of{" "}
-          <strong className="text-foreground font-medium">{total}</strong>
+          Showing <strong className="text-foreground font-medium">{startRecord}–{endRecord}</strong>{!hideTotal && <> of{" "}
+          <strong className="text-foreground font-medium">{total}</strong></>}
         </span>
         {onPageSizeChange && (
           <div className="flex items-center gap-2">

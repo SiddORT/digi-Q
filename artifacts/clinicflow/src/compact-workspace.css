@@ -271,3 +271,8 @@
 .workspace .int-settings .int-status-row{min-width:0}
 .workspace .int-settings .int-status-row>.row-actions{display:flex;flex-wrap:wrap;min-width:0;max-width:100%;white-space:normal}
 .workspace .int-settings .int-status-row>.row-actions>button{flex:0 1 auto;max-width:100%;white-space:normal}
+
+/* Keep suggestion text clear of both the leading icon and trailing clear/loading controls. */
+.suggestion-input-control>input[role="combobox"],
+.app-dialog .app-dialog-body .suggestion-input-control>input[role="combobox"],
+.workspace .form-grid .suggestion-input-control>input[role="combobox"]{padding-left:40px;padding-right:calc(2 * 32px)}
