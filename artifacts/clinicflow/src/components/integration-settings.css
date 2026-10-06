@@ -9,4 +9,6 @@
 .int-status-row p{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .int-editor{display:grid;gap:8px}.int-editor fieldset{display:grid;gap:8px;border:0;padding:0;margin:0}
 .int-test-form{display:grid;gap:8px}
+.int-editor fieldset>label:has(>input[type="radio"]){display:flex;align-items:center;gap:8px;min-height:40px;cursor:pointer}
+.int-editor fieldset>label>input[type="radio"]{display:inline-block;width:18px;height:18px;min-height:0;max-width:18px;flex:0 0 18px;margin:0;padding:0}
 @media(max-width:767px){.int-settings .int-chooser{width:100%}.int-field{flex:1 1 100%}}

@@ -3,6 +3,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 const read = p => readFileSync(new URL(p, import.meta.url), "utf8");
 
+test("integration source radios keep intrinsic dimensions and adjacent labels", () => {
+  const css = read("./integration-settings.css");
+  assert.match(css, /fieldset>label:has\(>input\[type="radio"\]\)\{display:flex;align-items:center/);
+  assert.match(css, /input\[type="radio"\]\{display:inline-block;width:18px;height:18px/);
+});
+
 test("sidebar no longer renders Recent for any role", () => {
   const s = read("./WorkspaceShell.tsx");
   assert.doesNotMatch(s, /<span>Recent<\/span>/);
