@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Redirect, useSearch } from "wouter";
+import { Link, Redirect, useSearch } from "wouter";
+import { AppDialog } from "./components/AppDialog";
 import { useNativeAuth } from "./auth/native-auth";
 import { Logo } from "./App";
 import { Check, Camera, Image as ImageIcon, QrCode } from "lucide-react";
@@ -47,10 +48,20 @@ export function CheckInScanner() {
            <h2>Validate Appointment QR</h2>
            <p>Scanning only verifies the ticket. Confirm check-in explicitly when the patient enters consultation.</p>
           <ScannerCore initialPayload={payloadFromUrl} />
+          <p className="qr-standalone-return"><Link href="/" className="button secondary small" data-testid="link-check-in-return">Back to Workspace</Link></p>
         </section>
       </main>
     </div>
   );
+}
+
+/** Section G: quick in-app validation. Closing returns to the exact origin (queue filters and scroll are untouched). */
+export function QrValidationDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  return <AppDialog open onClose={onClose} title="Validate Appointment QR" description="Scanning only verifies the ticket. Confirm check-in explicitly when the patient enters consultation.">
+    <ScannerCore initialPayload={null} />
+    <div className="form-actions"><button type="button" className="button secondary" onClick={onClose} data-testid="button-qr-validation-close">Close</button></div>
+  </AppDialog>;
 }
 
 function ScannerCore({ initialPayload }: { initialPayload: string | null }) {

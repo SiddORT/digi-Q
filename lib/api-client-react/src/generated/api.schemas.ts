@@ -22,6 +22,8 @@
  */
 export interface GeographySuggestions {
   items: string[];
+  /** Whether the given city belongs to the given state; true when the directory cannot judge */
+  compatible?: boolean;
 }
 
 export interface TicketEmailInput {
@@ -654,6 +656,11 @@ export interface Availability {
   timeFormat?: ClinicTimeFormat;
   /** @nullable */
   sessionId?: string | null;
+  /**
+     * Present when the session extends beyond ordinary location hours; the session remains bookable.
+     * @nullable
+     */
+  hoursWarning?: string | null;
   doctorId: string;
   clinicId: string;
   branchId: string;
@@ -781,6 +788,9 @@ export interface ClinicBranchSetup {
   name: string;
   address: string;
   city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
   timezone?: string;
   /** @nullable */
   email?: string | null;
@@ -825,6 +835,56 @@ export interface OwnerSchedule {
   /** @pattern ^[A-Za-z0-9]{1,8}$ */
   tokenPrefix: string;
   queueMode: OwnerScheduleQueueMode;
+}
+
+export type OwnerCustomScheduleQueueMode = typeof OwnerCustomScheduleQueueMode[keyof typeof OwnerCustomScheduleQueueMode];
+
+
+export const OwnerCustomScheduleQueueMode = {
+  mixed: 'mixed',
+  appointmentsOnly: 'appointmentsOnly',
+  walkInsOnly: 'walkInsOnly',
+} as const;
+
+export type OwnerCustomScheduleSessionsItem = {
+  /**
+     * @minimum 0
+     * @maximum 49
+     */
+  branchIndex: number;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  dayOfWeek: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  startTime: string;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  endTime: string;
+};
+
+/**
+ * Custom weekly consultation intervals entered once during onboarding/registration with the shared weekly editor. Saved in the same transaction after the owner's doctor profile is created. Mutually exclusive with ownerSchedule (linked).
+ */
+export interface OwnerCustomSchedule {
+  /**
+     * @minimum 1
+     * @maximum 1000
+     */
+  maxTokens: number;
+  /**
+     * @minimum 1
+     * @maximum 240
+     */
+  consultationMinutes: number;
+  /** @pattern ^[A-Za-z0-9]{1,8}$ */
+  tokenPrefix: string;
+  queueMode: OwnerCustomScheduleQueueMode;
+  /**
+     * @minItems 1
+     * @maxItems 500
+     */
+  sessions: OwnerCustomScheduleSessionsItem[];
 }
 
 export type ClinicSettingsPreviewImpactsItem = {
@@ -1003,6 +1063,7 @@ export interface ClinicRegistrationInput {
   policies?: ClinicPolicy;
   ownDoctor?: boolean;
   ownerSchedule?: OwnerSchedule;
+  ownerCustomSchedule?: OwnerCustomSchedule;
   specializationId?: string;
   qualificationIds?: string[];
 }
@@ -1375,6 +1436,19 @@ export interface OnboardingInput {
 }
 
 export interface UserInput {
+  /**
+     * ISO-2 or name; new entries default to IN
+     * @maxLength 100
+     */
+  country?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  city?: string;
+  /** @maxLength 12 */
+  pincode?: string;
+  /** @maxLength 500 */
+  address?: string;
   /** @minLength 1 */
   fullName: string;
   email: string;
@@ -1478,6 +1552,7 @@ export interface ClinicAdminOnboardingInput {
   policies?: ClinicPolicy;
   ownDoctor?: boolean;
   ownerSchedule?: OwnerSchedule;
+  ownerCustomSchedule?: OwnerCustomSchedule;
   specializationId?: string;
   qualificationIds?: string[];
   admin: ClinicAdminOnboardingInputAdmin;
@@ -1527,6 +1602,19 @@ export interface OtpResult {
 }
 
 export interface DoctorInput {
+  /**
+     * ISO-2 or name; new entries default to IN
+     * @maxLength 100
+     */
+  country?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  city?: string;
+  /** @maxLength 12 */
+  pincode?: string;
+  /** @maxLength 500 */
+  address?: string;
   /** Backward-compatible only. If supplied it must match the managing admin derived by the server. */
   ownerAdminId?: string;
   /** @minLength 1 */
@@ -1605,6 +1693,17 @@ export interface StaffAssignmentOptions {
 }
 
 export interface PatientInput {
+  /**
+     * ISO-2 or name; new entries default to IN
+     * @maxLength 100
+     */
+  country?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  city?: string;
+  /** @maxLength 12 */
+  pincode?: string;
   /** @minLength 1 */
   fullName: string;
   /** @nullable */
@@ -1740,12 +1839,28 @@ export type Schedule = ScheduleInput & {
   branchName?: string;
 };
 
+export type PincodeLookupItemsItem = {
+  locality: string;
+  district: string;
+  state: string;
+};
+
+export interface PincodeLookup {
+  pincode: string;
+  /** False when the offline dataset is unavailable; manual entry continues. */
+  available: boolean;
+  attribution: string;
+  items: PincodeLookupItemsItem[];
+}
+
 export interface AvailabilityExceptionInput {
   sessionId?: string;
   doctorId: string;
   branchId: string;
   date: string;
   isClosed: boolean;
+  /** Adds a bookable session on this date only (requires startTime, endTime, maxTokens; no sessionId). */
+  isExtra?: boolean;
   reason: string;
   /** @nullable */
   startTime?: string | null;
@@ -2378,12 +2493,56 @@ kind: SearchGeographyKind;
  * @maxLength 100
  */
 search?: string;
+/**
+ * ISO-2 code or English country name scoping states and cities
+ * @maxLength 100
+ */
+country?: string;
+/**
+ * State/UT name scoping cities
+ * @maxLength 100
+ */
+state?: string;
+/**
+ * When given with kind=city, the response includes a compatible flag
+ * @maxLength 100
+ */
+city?: string;
 };
 
 export type SearchGeographyKind = typeof SearchGeographyKind[keyof typeof SearchGeographyKind];
 
 
 export const SearchGeographyKind = {
+  country: 'country',
+  state: 'state',
+  city: 'city',
+} as const;
+
+export type SearchPublicGeographyParams = {
+kind: SearchPublicGeographyKind;
+/**
+ * @maxLength 100
+ */
+search?: string;
+/**
+ * @maxLength 100
+ */
+country?: string;
+/**
+ * @maxLength 100
+ */
+state?: string;
+/**
+ * @maxLength 100
+ */
+city?: string;
+};
+
+export type SearchPublicGeographyKind = typeof SearchPublicGeographyKind[keyof typeof SearchPublicGeographyKind];
+
+
+export const SearchPublicGeographyKind = {
   country: 'country',
   state: 'state',
   city: 'city',

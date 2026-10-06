@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { Plus } from "lucide-react";
-import { ClinicRegistrationWizard, type RegistrationValues } from "./ClinicRegistrationWizard";
+import { ClinicRegistrationWizard, ownerSchedulePayload, type RegistrationValues } from "./ClinicRegistrationWizard";
 import { ClinicRegistrationComplete } from "./ClinicRegistrationComplete";
 import { friendlyError } from "../lib/friendly-error";
 
@@ -27,9 +27,9 @@ function GuidedAdminSetup({ onDirtyChange, onBusyChange }: Omit<SetupProps, "gui
       const result = await setup.mutateAsync({ data: {
         admin: { fullName: values.fullName.trim(), email: values.email.trim(), ...(values.mobile.trim() ? { mobile: values.mobile.trim() } : {}) },
         clinic: { dateFormat: values.dateFormat, timeFormat: values.timeFormat, name: values.name.trim(), address: values.branches[0].address.trim(), slug: values.slug, email: values.clinicEmail.trim() || undefined, phone: values.phone.trim() || undefined, categoryId: values.categoryId || undefined, specialityIds: values.specialityIds, referralCode: values.referralCode.trim() || null },
-        branches: values.branches.map(b => ({ name: b.name.trim(), slug: b.slug, address: b.address.trim(), city: b.city.trim(), timezone: b.timezone, email: b.email.trim() || null, phone: b.phone.trim() || null, inheritEmail: b.inheritEmail, inheritPhone: b.inheritPhone, openingHours: b.hours.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ dayOfWeek: d.dayOfWeek, ...s }))) })),
+        branches: values.branches.map(b => ({ name: b.name.trim(), slug: b.slug, address: b.address.trim(), city: b.city.trim(), state: b.state?.trim() || undefined, pincode: b.pincode?.trim() || undefined, country: b.country?.trim() || undefined, timezone: b.timezone, email: b.email.trim() || null, phone: b.phone.trim() || null, inheritEmail: b.inheritEmail, inheritPhone: b.inheritPhone, openingHours: b.hours.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ dayOfWeek: d.dayOfWeek, ...s }))) })),
         ownDoctor: values.alsoConsult, ...(values.alsoConsult ? { specializationId: values.specializationId || undefined, qualificationIds: values.qualificationIds } : {}),
-        ...(values.alsoConsult && values.linkConsultationHours ? { ownerSchedule: { maxTokens: Number(values.sessionCapacity), consultationMinutes: Number(values.consultationMinutes), tokenPrefix: "A", queueMode: "mixed" as const } } : {}),
+        ...ownerSchedulePayload(values),
       } });
       setCompleted(result);
       onDirtyChange?.(false);

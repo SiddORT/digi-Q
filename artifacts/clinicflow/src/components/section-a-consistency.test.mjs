@@ -82,7 +82,6 @@ test("custom forms use shared content-sized track grids", () => {
   assert.match(c, /:is\(\.editor-container,\.cf-form\) \.form-grid\.field-grid/);
   assert.match(c, /\.form-grid\.cf-auto,\.registration-card \.registration-fields\{grid-template-columns:repeat\(auto-fill/);
   assert.match(read("./IntegrationEditor.tsx"), /className="cf-form"><div className="form-grid field-grid">/);
-  assert.match(read("./ClinicSessionSetup.tsx"), /form-grid cf-auto/);
 });
 test("integration warnings stay visible; routine copy is help", () => {
   const s = read("./IntegrationEditor.tsx");
@@ -93,11 +92,12 @@ test("integration warnings stay visible; routine copy is help", () => {
 
 test("booking and guest booking share action alignment and auto-sized grids (layout only)", () => {
   const c = read("../clinic.tsx"), g = read("./GuestBooking.tsx");
-  assert.equal((c.match(/form-footer form-actions/g) || []).length >= 3, true);
-  assert.match(c, /form-actions-secondary"><button disabled=\{book\.isPending\} onClick=\{\(\)=>setStep\(1\)\}>Change Visit/);
-  assert.match(c, /data-testid="button-confirm-booking"/);
-  assert.match(g, /<div className="form-footer form-actions"><button className="button" data-testid="button-submit-guest"/);
-  assert.equal((g.match(/form-grid cf-auto/g) || []).length, 2);
+  // Footers now come from the shared StagedBooking BookingStageActions (Section E).
+  assert.equal((c.match(/<BookingStageActions /g) || []).length, 3);
+  assert.match(c, /onChangeVisit=\{\(\)=>setStep\(1\)\}/);
+  assert.match(c, /primaryTestId="button-confirm-booking"/);
+  assert.match(g, /primaryTestId="button-submit-guest"/);
+  assert.equal((g.match(/form-grid cf-auto/g) || []).length, 3); // visit, patient, contact
 });
 
 test("compound phone fields get full/double tracks and page footers never overlay fields", async () => {

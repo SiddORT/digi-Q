@@ -1,16 +1,12 @@
-import { useLocation, useSearch, Link } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { ResourcePage, ErrorNotice } from "../resources";
-import { ClinicSessionSetup } from "./ClinicSessionSetup";
 import { DateTimePreferencesProvider } from "./DateTimePreferences";
-import { useState } from "react";
-import { AppDialog } from "./AppDialog";
 import { useWorkspaceBranch } from "./WorkspaceBranch";
 
 /** Both the clinic section and legacy schedule URLs render this one workflow. */
-export function SchedulingWorkspace({identity,page,onLinkOwner,clinicId:fixedClinicId}:{identity:api.Identity;page:"availability"|"exceptions";onLinkOwner?:()=>void;clinicId?:string}){
+export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{identity:api.Identity;page:"availability"|"exceptions";clinicId?:string}){
  const [,navigate]=useLocation();
- const [copyOpen,setCopyOpen]=useState(false);
  const search=useSearch();
  const params=new URLSearchParams(search);
  const pin=useWorkspaceBranch();
@@ -32,12 +28,9 @@ export function SchedulingWorkspace({identity,page,onLinkOwner,clinicId:fixedCli
   <div className="schedule-bar" data-testid="schedule-bar">
    <nav className="section-nav" aria-label="Schedule sections"><span className="section-nav-label">Schedule</span>{([["availability","Weekly sessions"],["exceptions","Date exceptions"]] as const).map(([value,label])=><button key={value} type="button" aria-current={selectedPage===value?"page":undefined} onClick={()=>{if(selectedPage!==value)go(value);}} data-testid={`button-schedule-${value}`}>{label}</button>)}</nav>
       <div className="schedule-bar-actions">
-    {admin&&selectedPage==="availability"&&settings.data&&<button type="button" className="button secondary small" aria-haspopup="dialog" onClick={()=>setCopyOpen(true)} data-testid="button-copy-opening-hours">Copy Opening Hours</button>}
-    {admin&&clinicId&&(onLinkOwner?<button type="button" className="button secondary small" onClick={onLinkOwner}>Edit Linked Owner Hours</button>:<Link className="button secondary small" href={`/admin/settings?clinicId=${encodeURIComponent(clinicId)}&section=locations`}>Edit Linked Owner Hours</Link>)}
    </div>
   </div>
    {admin&&selectedPage==="availability"&&<><ErrorNotice error={settings.error}/>{settings.error&&<button type="button" onClick={()=>void settings.refetch()}>Retry Clinic Configuration</button>}</>}
-   {copyOpen&&settings.data&&<AppDialog open variant="drawer" onClose={()=>setCopyOpen(false)} title="Copy opening hours into custom doctor sessions" description="For owner-linked consultations, change location hours using the protected preview. For custom doctors, copy selected opening intervals here, then manage them in the list."><ClinicSessionSetup key={clinicId} clinicId={clinicId} branches={settings.data.branches} ownDoctorId={doctorId||undefined}/></AppDialog>}
    <ResourcePage key={`${selectedPage}-${fixedClinicId||""}`} resource={selectedPage} identity={identity} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId} defaults={{clinicId,branchId:schedulePin?.branchId||params.get("branchId")||"",doctorId:params.get("doctorId")||doctorId||"",isOpen:true}}/>
  </section></DateTimePreferencesProvider>;
 }

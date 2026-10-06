@@ -17,6 +17,8 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
   }
   if (kind === "doctors") {
     const account = await one(users, row.userId, conn); row.fullName = account.fullName; row.email = account.email; row.mobile = account.mobile || "";
+    // Section C: address is shared with the account; fall back to it for doctors saved before mirroring.
+    for (const key of ["address", "country", "state", "city", "pincode"]) if ((row[key] === undefined || row[key] === null || row[key] === "") && account[key]) row[key] = account[key];
     row.createdAt ||= account.createdAt || null;
     row.managingAdminId = row.ownerAdminId;
     row.managingAdminName = (await one(users, row.ownerAdminId, conn)).fullName;

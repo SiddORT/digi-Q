@@ -23,6 +23,19 @@
 import type { RecordStatus } from './recordStatus';
 
 export interface DoctorInput {
+  /**
+     * ISO-2 or name; new entries default to IN
+     * @maxLength 100
+     */
+  country?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  city?: string;
+  /** @maxLength 12 */
+  pincode?: string;
+  /** @maxLength 500 */
+  address?: string;
   /** Backward-compatible only. If supplied it must match the managing admin derived by the server. */
   ownerAdminId?: string;
   /** @minLength 1 */

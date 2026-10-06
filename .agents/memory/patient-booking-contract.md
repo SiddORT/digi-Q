@@ -3,7 +3,7 @@ name: Patient-facing immediate booking
 description: Product distinction between simple patient booking and internal staff queue operations
 ---
 
-Patients see **Book Now**, then an immediately issued ticket with a personal QR,
+Patients follow Visit details → Patient details → Confirmation → Ticket. The explicit confirmation immediately issues a ticket with a personal QR,
 waiting number, clinic, location/address, doctor, date and session time range.
 Do not relabel this action “Join queue” or introduce reception approval.
 “Guest” means that email and phone are optional, not that confirmation is delayed.
@@ -16,6 +16,8 @@ the patient experience should resemble a straightforward booking ticket.
 **How to apply:** Use the same protected allocator for anonymous and signed-in
 bookings. Keep booking QR links distinct from personal ticket validation QRs.
 Preserve historical pending receipts without making new bookings depend on approval.
+
+**Why the staged flow:** The user subsequently approved Section E's shared confirmation-before-submission journey for staff, patients and guests. This supersedes skipping the review step, not immediate ticket issuance after confirmation.
 
 Booking confirmation and email delivery are separate outcomes. Keep a committed
 ticket valid even when mail is disabled, unavailable or has an uncertain outcome.

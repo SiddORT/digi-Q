@@ -25,15 +25,68 @@ import * as zod from 'zod';
 
 export const searchGeographyQuerySearchMax = 100;
 
+export const searchGeographyQueryCountryMax = 100;
+
+export const searchGeographyQueryStateMax = 100;
+
+export const searchGeographyQueryCityMax = 100;
+
 
 
 export const SearchGeographyQueryParams = zod.object({
   "kind": zod.enum(['country', 'state', 'city']),
-  "search": zod.coerce.string().max(searchGeographyQuerySearchMax).optional()
+  "search": zod.coerce.string().max(searchGeographyQuerySearchMax).optional(),
+  "country": zod.coerce.string().max(searchGeographyQueryCountryMax).optional().describe('ISO-2 code or English country name scoping states and cities'),
+  "state": zod.coerce.string().max(searchGeographyQueryStateMax).optional().describe('State/UT name scoping cities'),
+  "city": zod.coerce.string().max(searchGeographyQueryCityMax).optional().describe('When given with kind=city, the response includes a compatible flag')
 })
 
 export const SearchGeographyResponse = zod.object({
-  "items": zod.array(zod.string())
+  "items": zod.array(zod.string()),
+  "compatible": zod.boolean().optional().describe('Whether the given city belongs to the given state; true when the directory cannot judge')
+})
+
+
+export const searchPublicGeographyQuerySearchMax = 100;
+
+export const searchPublicGeographyQueryCountryMax = 100;
+
+export const searchPublicGeographyQueryStateMax = 100;
+
+export const searchPublicGeographyQueryCityMax = 100;
+
+
+
+export const SearchPublicGeographyQueryParams = zod.object({
+  "kind": zod.enum(['country', 'state', 'city']),
+  "search": zod.coerce.string().max(searchPublicGeographyQuerySearchMax).optional(),
+  "country": zod.coerce.string().max(searchPublicGeographyQueryCountryMax).optional(),
+  "state": zod.coerce.string().max(searchPublicGeographyQueryStateMax).optional(),
+  "city": zod.coerce.string().max(searchPublicGeographyQueryCityMax).optional()
+})
+
+export const SearchPublicGeographyResponse = zod.object({
+  "items": zod.array(zod.string()),
+  "compatible": zod.boolean().optional().describe('Whether the given city belongs to the given state; true when the directory cannot judge')
+})
+
+
+export const lookupPublicPincodePathPinRegExp = new RegExp('^[1-9][0-9]{5}$');
+
+
+export const LookupPublicPincodeParams = zod.object({
+  "pin": zod.coerce.string().regex(lookupPublicPincodePathPinRegExp)
+})
+
+export const LookupPublicPincodeResponse = zod.object({
+  "pincode": zod.string(),
+  "available": zod.boolean().describe('False when the offline dataset is unavailable; manual entry continues.'),
+  "attribution": zod.string(),
+  "items": zod.array(zod.object({
+  "locality": zod.string(),
+  "district": zod.string(),
+  "state": zod.string()
+}))
 })
 
 
@@ -501,6 +554,7 @@ export const GetSessionContextsResponseItem = zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
+  "hoursWarning": zod.string().nullish().describe('Present when the session extends beyond ordinary location hours; the session remains bookable.'),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -579,6 +633,21 @@ export const registerClinicBodyOwnerScheduleMaxTokensMax = 1000;
 export const registerClinicBodyOwnerScheduleConsultationMinutesMax = 240;
 
 export const registerClinicBodyOwnerScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const registerClinicBodyOwnerCustomScheduleMaxTokensMax = 1000;
+
+export const registerClinicBodyOwnerCustomScheduleConsultationMinutesMax = 240;
+
+export const registerClinicBodyOwnerCustomScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMin = 0;
+export const registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMax = 49;
+
+export const registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMin = 0;
+export const registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMax = 6;
+
+export const registerClinicBodyOwnerCustomScheduleSessionsItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const registerClinicBodyOwnerCustomScheduleSessionsItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const registerClinicBodyOwnerCustomScheduleSessionsMax = 500;
+
 
 
 export const RegisterClinicBody = zod.object({
@@ -602,6 +671,9 @@ export const RegisterClinicBody = zod.object({
   "name": zod.string().min(1),
   "address": zod.string(),
   "city": zod.string().optional(),
+  "state": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "country": zod.string().optional(),
   "timezone": zod.string().optional(),
   "email": zod.string().email().nullish(),
   "phone": zod.string().nullish(),
@@ -633,6 +705,18 @@ export const RegisterClinicBody = zod.object({
   "tokenPrefix": zod.string().regex(registerClinicBodyOwnerScheduleTokenPrefixRegExp),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly'])
 }).optional(),
+  "ownerCustomSchedule": zod.object({
+  "maxTokens": zod.number().int().min(1).max(registerClinicBodyOwnerCustomScheduleMaxTokensMax),
+  "consultationMinutes": zod.number().int().min(1).max(registerClinicBodyOwnerCustomScheduleConsultationMinutesMax),
+  "tokenPrefix": zod.string().regex(registerClinicBodyOwnerCustomScheduleTokenPrefixRegExp),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']),
+  "sessions": zod.array(zod.object({
+  "branchIndex": zod.number().int().min(registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemBranchIndexMax),
+  "dayOfWeek": zod.number().int().min(registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMin).max(registerClinicBodyOwnerCustomScheduleSessionsItemDayOfWeekMax),
+  "startTime": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemStartTimeRegExp),
+  "endTime": zod.string().regex(registerClinicBodyOwnerCustomScheduleSessionsItemEndTimeRegExp)
+})).min(1).max(registerClinicBodyOwnerCustomScheduleSessionsMax)
+}).optional().describe('Custom weekly consultation intervals entered once during onboarding/registration with the shared weekly editor. Saved in the same transaction after the owner\'s doctor profile is created. Mutually exclusive with ownerSchedule (linked).'),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional()
 })
@@ -896,6 +980,9 @@ export const UpdateClinicSettingsBody = zod.object({
   "name": zod.string().min(1),
   "address": zod.string(),
   "city": zod.string().optional(),
+  "state": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "country": zod.string().optional(),
   "timezone": zod.string().optional(),
   "email": zod.string().email().nullish(),
   "phone": zod.string().nullish(),
@@ -1075,6 +1162,9 @@ export const PreviewClinicSettingsBody = zod.object({
   "name": zod.string().min(1),
   "address": zod.string(),
   "city": zod.string().optional(),
+  "state": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "country": zod.string().optional(),
   "timezone": zod.string().optional(),
   "email": zod.string().email().nullish(),
   "phone": zod.string().nullish(),
@@ -1125,6 +1215,16 @@ export const AttachOwnDoctorProfileBody = zod.object({
   "about": zod.string().optional()
 })
 
+export const attachOwnDoctorProfileResponseOneCountryMax = 100;
+
+export const attachOwnDoctorProfileResponseOneStateMax = 100;
+
+export const attachOwnDoctorProfileResponseOneCityMax = 100;
+
+export const attachOwnDoctorProfileResponseOnePincodeMax = 12;
+
+export const attachOwnDoctorProfileResponseOneAddressMax = 500;
+
 
 export const attachOwnDoctorProfileResponseOneExperienceYearsMin = 0;
 
@@ -1134,6 +1234,11 @@ export const attachOwnDoctorProfileResponseOneConsultationFeeMin = 0;
 
 
 export const AttachOwnDoctorProfileResponse = zod.object({
+  "country": zod.string().max(attachOwnDoctorProfileResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(attachOwnDoctorProfileResponseOneStateMax).optional(),
+  "city": zod.string().max(attachOwnDoctorProfileResponseOneCityMax).optional(),
+  "pincode": zod.string().max(attachOwnDoctorProfileResponseOnePincodeMax).optional(),
+  "address": zod.string().max(attachOwnDoctorProfileResponseOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
@@ -1448,6 +1553,7 @@ export const GetPublicAvailabilitySessionsResponseItem = zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
+  "hoursWarning": zod.string().nullish().describe('Present when the session extends beyond ordinary location hours; the session remains bookable.'),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -1881,6 +1987,16 @@ export const GetAuthStatusResponse = zod.object({
 /**
  * Returns database identity; user is null before onboarding. Never accepts a role from the client.
  */
+export const getMeResponseUserOneOneCountryMax = 100;
+
+export const getMeResponseUserOneOneStateMax = 100;
+
+export const getMeResponseUserOneOneCityMax = 100;
+
+export const getMeResponseUserOneOnePincodeMax = 12;
+
+export const getMeResponseUserOneOneAddressMax = 500;
+
 
 
 
@@ -1888,6 +2004,11 @@ export const GetAuthStatusResponse = zod.object({
 export const GetMeResponse = zod.object({
   "userId": zod.string(),
   "user": zod.union([zod.object({
+  "country": zod.string().max(getMeResponseUserOneOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(getMeResponseUserOneOneStateMax).optional(),
+  "city": zod.string().max(getMeResponseUserOneOneCityMax).optional(),
+  "pincode": zod.string().max(getMeResponseUserOneOnePincodeMax).optional(),
+  "address": zod.string().max(getMeResponseUserOneOneAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -1920,11 +2041,26 @@ export const UpdateMeBody = zod.object({
   "photoUrl": zod.string().optional()
 })
 
+export const updateMeResponseOneCountryMax = 100;
+
+export const updateMeResponseOneStateMax = 100;
+
+export const updateMeResponseOneCityMax = 100;
+
+export const updateMeResponseOnePincodeMax = 12;
+
+export const updateMeResponseOneAddressMax = 500;
+
 
 
 
 
 export const UpdateMeResponse = zod.object({
+  "country": zod.string().max(updateMeResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(updateMeResponseOneStateMax).optional(),
+  "city": zod.string().max(updateMeResponseOneCityMax).optional(),
+  "pincode": zod.string().max(updateMeResponseOnePincodeMax).optional(),
+  "address": zod.string().max(updateMeResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -1957,6 +2093,16 @@ export const OnboardBody = zod.object({
   "termsAccepted": zod.boolean().optional()
 })
 
+export const onboardResponseUserOneOneCountryMax = 100;
+
+export const onboardResponseUserOneOneStateMax = 100;
+
+export const onboardResponseUserOneOneCityMax = 100;
+
+export const onboardResponseUserOneOnePincodeMax = 12;
+
+export const onboardResponseUserOneOneAddressMax = 500;
+
 
 
 
@@ -1964,6 +2110,11 @@ export const OnboardBody = zod.object({
 export const OnboardResponse = zod.object({
   "userId": zod.string(),
   "user": zod.union([zod.object({
+  "country": zod.string().max(onboardResponseUserOneOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(onboardResponseUserOneOneStateMax).optional(),
+  "city": zod.string().max(onboardResponseUserOneOneCityMax).optional(),
+  "pincode": zod.string().max(onboardResponseUserOneOnePincodeMax).optional(),
+  "address": zod.string().max(onboardResponseUserOneOneAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -2225,6 +2376,7 @@ export const GetPublicAvailabilityResponse = zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "sessionId": zod.string().nullish(),
+  "hoursWarning": zod.string().nullish().describe('Present when the session extends beyond ordinary location hours; the session remains bookable.'),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -2908,6 +3060,16 @@ export const ListDoctorsQueryParams = zod.object({
 
 export const listDoctorsResponseOneTotalMin = 0;
 
+export const listDoctorsResponseTwoItemsItemOneCountryMax = 100;
+
+export const listDoctorsResponseTwoItemsItemOneStateMax = 100;
+
+export const listDoctorsResponseTwoItemsItemOneCityMax = 100;
+
+export const listDoctorsResponseTwoItemsItemOnePincodeMax = 12;
+
+export const listDoctorsResponseTwoItemsItemOneAddressMax = 500;
+
 
 export const listDoctorsResponseTwoItemsItemOneExperienceYearsMin = 0;
 
@@ -2923,6 +3085,11 @@ export const ListDoctorsResponse = zod.object({
   "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "country": zod.string().max(listDoctorsResponseTwoItemsItemOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(listDoctorsResponseTwoItemsItemOneStateMax).optional(),
+  "city": zod.string().max(listDoctorsResponseTwoItemsItemOneCityMax).optional(),
+  "pincode": zod.string().max(listDoctorsResponseTwoItemsItemOnePincodeMax).optional(),
+  "address": zod.string().max(listDoctorsResponseTwoItemsItemOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
@@ -2957,6 +3124,16 @@ export const ListDoctorsResponse = zod.object({
 /**
  * Authorized administrator creates doctor and identity invitation; never silently promotes an unrelated existing patient.
  */
+export const createDoctorBodyCountryMax = 100;
+
+export const createDoctorBodyStateMax = 100;
+
+export const createDoctorBodyCityMax = 100;
+
+export const createDoctorBodyPincodeMax = 12;
+
+export const createDoctorBodyAddressMax = 500;
+
 
 export const createDoctorBodyExperienceYearsMin = 0;
 
@@ -2966,6 +3143,11 @@ export const createDoctorBodyConsultationFeeMin = 0;
 
 
 export const CreateDoctorBody = zod.object({
+  "country": zod.string().max(createDoctorBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(createDoctorBodyStateMax).optional(),
+  "city": zod.string().max(createDoctorBodyCityMax).optional(),
+  "pincode": zod.string().max(createDoctorBodyPincodeMax).optional(),
+  "address": zod.string().max(createDoctorBodyAddressMax).optional(),
   "ownerAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
@@ -2985,6 +3167,16 @@ export const CreateDoctorBody = zod.object({
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
+export const createDoctorResponseOneCountryMax = 100;
+
+export const createDoctorResponseOneStateMax = 100;
+
+export const createDoctorResponseOneCityMax = 100;
+
+export const createDoctorResponseOnePincodeMax = 12;
+
+export const createDoctorResponseOneAddressMax = 500;
+
 
 export const createDoctorResponseOneExperienceYearsMin = 0;
 
@@ -2994,6 +3186,11 @@ export const createDoctorResponseOneConsultationFeeMin = 0;
 
 
 export const CreateDoctorResponse = zod.object({
+  "country": zod.string().max(createDoctorResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(createDoctorResponseOneStateMax).optional(),
+  "city": zod.string().max(createDoctorResponseOneCityMax).optional(),
+  "pincode": zod.string().max(createDoctorResponseOnePincodeMax).optional(),
+  "address": zod.string().max(createDoctorResponseOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
@@ -3028,6 +3225,16 @@ export const GetDoctorParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getDoctorResponseOneCountryMax = 100;
+
+export const getDoctorResponseOneStateMax = 100;
+
+export const getDoctorResponseOneCityMax = 100;
+
+export const getDoctorResponseOnePincodeMax = 12;
+
+export const getDoctorResponseOneAddressMax = 500;
+
 
 export const getDoctorResponseOneExperienceYearsMin = 0;
 
@@ -3037,6 +3244,11 @@ export const getDoctorResponseOneConsultationFeeMin = 0;
 
 
 export const GetDoctorResponse = zod.object({
+  "country": zod.string().max(getDoctorResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(getDoctorResponseOneStateMax).optional(),
+  "city": zod.string().max(getDoctorResponseOneCityMax).optional(),
+  "pincode": zod.string().max(getDoctorResponseOnePincodeMax).optional(),
+  "address": zod.string().max(getDoctorResponseOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
@@ -3074,6 +3286,16 @@ export const UpdateDoctorParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updateDoctorBodyCountryMax = 100;
+
+export const updateDoctorBodyStateMax = 100;
+
+export const updateDoctorBodyCityMax = 100;
+
+export const updateDoctorBodyPincodeMax = 12;
+
+export const updateDoctorBodyAddressMax = 500;
+
 
 export const updateDoctorBodyExperienceYearsMin = 0;
 
@@ -3083,6 +3305,11 @@ export const updateDoctorBodyConsultationFeeMin = 0;
 
 
 export const UpdateDoctorBody = zod.object({
+  "country": zod.string().max(updateDoctorBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(updateDoctorBodyStateMax).optional(),
+  "city": zod.string().max(updateDoctorBodyCityMax).optional(),
+  "pincode": zod.string().max(updateDoctorBodyPincodeMax).optional(),
+  "address": zod.string().max(updateDoctorBodyAddressMax).optional(),
   "ownerAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
@@ -3102,6 +3329,16 @@ export const UpdateDoctorBody = zod.object({
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
+export const updateDoctorResponseOneCountryMax = 100;
+
+export const updateDoctorResponseOneStateMax = 100;
+
+export const updateDoctorResponseOneCityMax = 100;
+
+export const updateDoctorResponseOnePincodeMax = 12;
+
+export const updateDoctorResponseOneAddressMax = 500;
+
 
 export const updateDoctorResponseOneExperienceYearsMin = 0;
 
@@ -3111,6 +3348,11 @@ export const updateDoctorResponseOneConsultationFeeMin = 0;
 
 
 export const UpdateDoctorResponse = zod.object({
+  "country": zod.string().max(updateDoctorResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(updateDoctorResponseOneStateMax).optional(),
+  "city": zod.string().max(updateDoctorResponseOneCityMax).optional(),
+  "pincode": zod.string().max(updateDoctorResponseOnePincodeMax).optional(),
+  "address": zod.string().max(updateDoctorResponseOneAddressMax).optional(),
   "ownerAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.'),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
@@ -3170,6 +3412,16 @@ export const ListUsersQueryParams = zod.object({
 
 export const listUsersResponseOneTotalMin = 0;
 
+export const listUsersResponseTwoItemsItemOneCountryMax = 100;
+
+export const listUsersResponseTwoItemsItemOneStateMax = 100;
+
+export const listUsersResponseTwoItemsItemOneCityMax = 100;
+
+export const listUsersResponseTwoItemsItemOnePincodeMax = 12;
+
+export const listUsersResponseTwoItemsItemOneAddressMax = 500;
+
 
 
 
@@ -3181,6 +3433,11 @@ export const ListUsersResponse = zod.object({
   "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "country": zod.string().max(listUsersResponseTwoItemsItemOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(listUsersResponseTwoItemsItemOneStateMax).optional(),
+  "city": zod.string().max(listUsersResponseTwoItemsItemOneCityMax).optional(),
+  "pincode": zod.string().max(listUsersResponseTwoItemsItemOnePincodeMax).optional(),
+  "address": zod.string().max(listUsersResponseTwoItemsItemOneAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -3204,11 +3461,26 @@ export const ListUsersResponse = zod.object({
 /**
  * Admin-only identity invitation and database role assignment; clinic admins cannot grant platform administration.
  */
+export const createUserBodyCountryMax = 100;
+
+export const createUserBodyStateMax = 100;
+
+export const createUserBodyCityMax = 100;
+
+export const createUserBodyPincodeMax = 12;
+
+export const createUserBodyAddressMax = 500;
+
 
 
 
 
 export const CreateUserBody = zod.object({
+  "country": zod.string().max(createUserBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(createUserBodyStateMax).optional(),
+  "city": zod.string().max(createUserBodyCityMax).optional(),
+  "pincode": zod.string().max(createUserBodyPincodeMax).optional(),
+  "address": zod.string().max(createUserBodyAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -3219,11 +3491,26 @@ export const CreateUserBody = zod.object({
   "managingAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
 })
 
+export const createUserResponseOneCountryMax = 100;
+
+export const createUserResponseOneStateMax = 100;
+
+export const createUserResponseOneCityMax = 100;
+
+export const createUserResponseOnePincodeMax = 12;
+
+export const createUserResponseOneAddressMax = 500;
+
 
 
 
 
 export const CreateUserResponse = zod.object({
+  "country": zod.string().max(createUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(createUserResponseOneStateMax).optional(),
+  "city": zod.string().max(createUserResponseOneCityMax).optional(),
+  "pincode": zod.string().max(createUserResponseOnePincodeMax).optional(),
+  "address": zod.string().max(createUserResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -3272,6 +3559,21 @@ export const onboardClinicAdminBodyOwnerScheduleMaxTokensMax = 1000;
 export const onboardClinicAdminBodyOwnerScheduleConsultationMinutesMax = 240;
 
 export const onboardClinicAdminBodyOwnerScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const onboardClinicAdminBodyOwnerCustomScheduleMaxTokensMax = 1000;
+
+export const onboardClinicAdminBodyOwnerCustomScheduleConsultationMinutesMax = 240;
+
+export const onboardClinicAdminBodyOwnerCustomScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMin = 0;
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMax = 49;
+
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMin = 0;
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMax = 6;
+
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const onboardClinicAdminBodyOwnerCustomScheduleSessionsMax = 500;
+
 
 export const onboardClinicAdminBodyClinicSlugMin = 3;
 export const onboardClinicAdminBodyClinicSlugMax = 63;
@@ -3287,6 +3589,9 @@ export const OnboardClinicAdminBody = zod.object({
   "name": zod.string().min(1),
   "address": zod.string(),
   "city": zod.string().optional(),
+  "state": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "country": zod.string().optional(),
   "timezone": zod.string().optional(),
   "email": zod.string().email().nullish(),
   "phone": zod.string().nullish(),
@@ -3318,6 +3623,18 @@ export const OnboardClinicAdminBody = zod.object({
   "tokenPrefix": zod.string().regex(onboardClinicAdminBodyOwnerScheduleTokenPrefixRegExp),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly'])
 }).optional(),
+  "ownerCustomSchedule": zod.object({
+  "maxTokens": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleMaxTokensMax),
+  "consultationMinutes": zod.number().int().min(1).max(onboardClinicAdminBodyOwnerCustomScheduleConsultationMinutesMax),
+  "tokenPrefix": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleTokenPrefixRegExp),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']),
+  "sessions": zod.array(zod.object({
+  "branchIndex": zod.number().int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemBranchIndexMax),
+  "dayOfWeek": zod.number().int().min(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMin).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMax),
+  "startTime": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemStartTimeRegExp),
+  "endTime": zod.string().regex(onboardClinicAdminBodyOwnerCustomScheduleSessionsItemEndTimeRegExp)
+})).min(1).max(onboardClinicAdminBodyOwnerCustomScheduleSessionsMax)
+}).optional().describe('Custom weekly consultation intervals entered once during onboarding/registration with the shared weekly editor. Saved in the same transaction after the owner\'s doctor profile is created. Mutually exclusive with ownerSchedule (linked).'),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "admin": zod.object({
@@ -3359,6 +3676,16 @@ export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleMaxTokensMax
 export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
 
 export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const onboardClinicAdminResponseAdminOneCountryMax = 100;
+
+export const onboardClinicAdminResponseAdminOneStateMax = 100;
+
+export const onboardClinicAdminResponseAdminOneCityMax = 100;
+
+export const onboardClinicAdminResponseAdminOnePincodeMax = 12;
+
+export const onboardClinicAdminResponseAdminOneAddressMax = 500;
+
 
 
 export const onboardClinicAdminResponseClinicOneSlugMin = 3;
@@ -3409,6 +3736,11 @@ export const OnboardClinicAdminResponse = zod.object({
 }))).optional(),
   "doctorId": zod.string().nullish(),
   "admin": zod.object({
+  "country": zod.string().max(onboardClinicAdminResponseAdminOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(onboardClinicAdminResponseAdminOneStateMax).optional(),
+  "city": zod.string().max(onboardClinicAdminResponseAdminOneCityMax).optional(),
+  "pincode": zod.string().max(onboardClinicAdminResponseAdminOnePincodeMax).optional(),
+  "address": zod.string().max(onboardClinicAdminResponseAdminOneAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -3461,11 +3793,26 @@ export const GetUserParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getUserResponseOneCountryMax = 100;
+
+export const getUserResponseOneStateMax = 100;
+
+export const getUserResponseOneCityMax = 100;
+
+export const getUserResponseOnePincodeMax = 12;
+
+export const getUserResponseOneAddressMax = 500;
+
 
 
 
 
 export const GetUserResponse = zod.object({
+  "country": zod.string().max(getUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(getUserResponseOneStateMax).optional(),
+  "city": zod.string().max(getUserResponseOneCityMax).optional(),
+  "pincode": zod.string().max(getUserResponseOnePincodeMax).optional(),
+  "address": zod.string().max(getUserResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -3489,11 +3836,26 @@ export const UpdateUserParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updateUserBodyCountryMax = 100;
+
+export const updateUserBodyStateMax = 100;
+
+export const updateUserBodyCityMax = 100;
+
+export const updateUserBodyPincodeMax = 12;
+
+export const updateUserBodyAddressMax = 500;
+
 
 
 
 
 export const UpdateUserBody = zod.object({
+  "country": zod.string().max(updateUserBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(updateUserBodyStateMax).optional(),
+  "city": zod.string().max(updateUserBodyCityMax).optional(),
+  "pincode": zod.string().max(updateUserBodyPincodeMax).optional(),
+  "address": zod.string().max(updateUserBodyAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -3504,11 +3866,26 @@ export const UpdateUserBody = zod.object({
   "managingAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
 })
 
+export const updateUserResponseOneCountryMax = 100;
+
+export const updateUserResponseOneStateMax = 100;
+
+export const updateUserResponseOneCityMax = 100;
+
+export const updateUserResponseOnePincodeMax = 12;
+
+export const updateUserResponseOneAddressMax = 500;
+
 
 
 
 
 export const UpdateUserResponse = zod.object({
+  "country": zod.string().max(updateUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(updateUserResponseOneStateMax).optional(),
+  "city": zod.string().max(updateUserResponseOneCityMax).optional(),
+  "pincode": zod.string().max(updateUserResponseOnePincodeMax).optional(),
+  "address": zod.string().max(updateUserResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -3554,11 +3931,26 @@ export const ResendUserInvitationParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const resendUserInvitationResponseOneCountryMax = 100;
+
+export const resendUserInvitationResponseOneStateMax = 100;
+
+export const resendUserInvitationResponseOneCityMax = 100;
+
+export const resendUserInvitationResponseOnePincodeMax = 12;
+
+export const resendUserInvitationResponseOneAddressMax = 500;
+
 
 
 
 
 export const ResendUserInvitationResponse = zod.object({
+  "country": zod.string().max(resendUserInvitationResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(resendUserInvitationResponseOneStateMax).optional(),
+  "city": zod.string().max(resendUserInvitationResponseOneCityMax).optional(),
+  "pincode": zod.string().max(resendUserInvitationResponseOnePincodeMax).optional(),
+  "address": zod.string().max(resendUserInvitationResponseOneAddressMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional(),
@@ -3744,6 +4136,14 @@ export const ListPatientsQueryParams = zod.object({
 
 export const listPatientsResponseOneTotalMin = 0;
 
+export const listPatientsResponseTwoItemsItemOneCountryMax = 100;
+
+export const listPatientsResponseTwoItemsItemOneStateMax = 100;
+
+export const listPatientsResponseTwoItemsItemOneCityMax = 100;
+
+export const listPatientsResponseTwoItemsItemOnePincodeMax = 12;
+
 
 export const listPatientsResponseTwoItemsItemOneAgeMin = 0;
 export const listPatientsResponseTwoItemsItemOneAgeMax = 130;
@@ -3757,6 +4157,10 @@ export const ListPatientsResponse = zod.object({
   "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "country": zod.string().max(listPatientsResponseTwoItemsItemOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(listPatientsResponseTwoItemsItemOneStateMax).optional(),
+  "city": zod.string().max(listPatientsResponseTwoItemsItemOneCityMax).optional(),
+  "pincode": zod.string().max(listPatientsResponseTwoItemsItemOnePincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
@@ -3779,6 +4183,14 @@ export const ListPatientsResponse = zod.object({
 }))
 
 
+export const createPatientBodyCountryMax = 100;
+
+export const createPatientBodyStateMax = 100;
+
+export const createPatientBodyCityMax = 100;
+
+export const createPatientBodyPincodeMax = 12;
+
 
 export const createPatientBodyAgeMin = 0;
 export const createPatientBodyAgeMax = 130;
@@ -3786,6 +4198,10 @@ export const createPatientBodyAgeMax = 130;
 
 
 export const CreatePatientBody = zod.object({
+  "country": zod.string().max(createPatientBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(createPatientBodyStateMax).optional(),
+  "city": zod.string().max(createPatientBodyCityMax).optional(),
+  "pincode": zod.string().max(createPatientBodyPincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
@@ -3800,6 +4216,14 @@ export const CreatePatientBody = zod.object({
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
+export const createPatientResponseOneCountryMax = 100;
+
+export const createPatientResponseOneStateMax = 100;
+
+export const createPatientResponseOneCityMax = 100;
+
+export const createPatientResponseOnePincodeMax = 12;
+
 
 export const createPatientResponseOneAgeMin = 0;
 export const createPatientResponseOneAgeMax = 130;
@@ -3807,6 +4231,10 @@ export const createPatientResponseOneAgeMax = 130;
 
 
 export const CreatePatientResponse = zod.object({
+  "country": zod.string().max(createPatientResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(createPatientResponseOneStateMax).optional(),
+  "city": zod.string().max(createPatientResponseOneCityMax).optional(),
+  "pincode": zod.string().max(createPatientResponseOnePincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
@@ -3832,6 +4260,14 @@ export const GetPatientParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getPatientResponseOneCountryMax = 100;
+
+export const getPatientResponseOneStateMax = 100;
+
+export const getPatientResponseOneCityMax = 100;
+
+export const getPatientResponseOnePincodeMax = 12;
+
 
 export const getPatientResponseOneAgeMin = 0;
 export const getPatientResponseOneAgeMax = 130;
@@ -3839,6 +4275,10 @@ export const getPatientResponseOneAgeMax = 130;
 
 
 export const GetPatientResponse = zod.object({
+  "country": zod.string().max(getPatientResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(getPatientResponseOneStateMax).optional(),
+  "city": zod.string().max(getPatientResponseOneCityMax).optional(),
+  "pincode": zod.string().max(getPatientResponseOnePincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
@@ -3864,6 +4304,14 @@ export const UpdatePatientParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updatePatientBodyCountryMax = 100;
+
+export const updatePatientBodyStateMax = 100;
+
+export const updatePatientBodyCityMax = 100;
+
+export const updatePatientBodyPincodeMax = 12;
+
 
 export const updatePatientBodyAgeMin = 0;
 export const updatePatientBodyAgeMax = 130;
@@ -3871,6 +4319,10 @@ export const updatePatientBodyAgeMax = 130;
 
 
 export const UpdatePatientBody = zod.object({
+  "country": zod.string().max(updatePatientBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(updatePatientBodyStateMax).optional(),
+  "city": zod.string().max(updatePatientBodyCityMax).optional(),
+  "pincode": zod.string().max(updatePatientBodyPincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
@@ -3885,6 +4337,14 @@ export const UpdatePatientBody = zod.object({
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
+export const updatePatientResponseOneCountryMax = 100;
+
+export const updatePatientResponseOneStateMax = 100;
+
+export const updatePatientResponseOneCityMax = 100;
+
+export const updatePatientResponseOnePincodeMax = 12;
+
 
 export const updatePatientResponseOneAgeMin = 0;
 export const updatePatientResponseOneAgeMax = 130;
@@ -3892,6 +4352,10 @@ export const updatePatientResponseOneAgeMax = 130;
 
 
 export const UpdatePatientResponse = zod.object({
+  "country": zod.string().max(updatePatientResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(updatePatientResponseOneStateMax).optional(),
+  "city": zod.string().max(updatePatientResponseOneCityMax).optional(),
+  "pincode": zod.string().max(updatePatientResponseOnePincodeMax).optional(),
   "fullName": zod.string().min(1),
   "mobile": zod.string().nullish(),
   "email": zod.string().email().nullish(),
@@ -4340,6 +4804,7 @@ export const ListAvailabilityExceptionsResponse = zod.object({
   "branchId": zod.string(),
   "date": zod.coerce.date(),
   "isClosed": zod.boolean(),
+  "isExtra": zod.boolean().optional().describe('Adds a bookable session on this date only (requires startTime, endTime, maxTokens; no sessionId).'),
   "reason": zod.string(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
@@ -4362,6 +4827,7 @@ export const CreateAvailabilityExceptionBody = zod.object({
   "branchId": zod.string(),
   "date": zod.coerce.date(),
   "isClosed": zod.boolean(),
+  "isExtra": zod.boolean().optional().describe('Adds a bookable session on this date only (requires startTime, endTime, maxTokens; no sessionId).'),
   "reason": zod.string(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
@@ -4380,6 +4846,7 @@ export const CreateAvailabilityExceptionResponse = zod.object({
   "branchId": zod.string(),
   "date": zod.coerce.date(),
   "isClosed": zod.boolean(),
+  "isExtra": zod.boolean().optional().describe('Adds a bookable session on this date only (requires startTime, endTime, maxTokens; no sessionId).'),
   "reason": zod.string(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
@@ -4405,6 +4872,7 @@ export const UpdateAvailabilityExceptionBody = zod.object({
   "branchId": zod.string(),
   "date": zod.coerce.date(),
   "isClosed": zod.boolean(),
+  "isExtra": zod.boolean().optional().describe('Adds a bookable session on this date only (requires startTime, endTime, maxTokens; no sessionId).'),
   "reason": zod.string(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),
@@ -4423,6 +4891,7 @@ export const UpdateAvailabilityExceptionResponse = zod.object({
   "branchId": zod.string(),
   "date": zod.coerce.date(),
   "isClosed": zod.boolean(),
+  "isExtra": zod.boolean().optional().describe('Adds a bookable session on this date only (requires startTime, endTime, maxTokens; no sessionId).'),
   "reason": zod.string(),
   "startTime": zod.string().nullish(),
   "endTime": zod.string().nullish(),

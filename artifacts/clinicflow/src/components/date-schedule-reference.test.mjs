@@ -49,12 +49,12 @@ test("all From/To filters use the shared range picker and weekly editors use exp
   assert.equal((clinic.match(/<DateRangeInput /g) || []).length, 2, "appointments and reports");
   assert.match(resources, /<DateRangeInput fromLabel="From date" toLabel="To date"/);
   assert.doesNotMatch(clinic + resources, /<label>(From|To)( date| \*)?<DateFormatInput/);
-  for (const f of ["./ClinicRegistrationHours.tsx", "./schedule/WeeklyScheduleEditor.tsx"]) {
+  for (const f of ["./ClinicRegistrationHours.tsx", "./schedule/WeeklyDraftDays.tsx"]) {
     const src = read(f);
     assert.match(src, /wdr-row/); assert.match(src, /aria-expanded=\{isExpanded\}/); assert.match(src, /wdr-summary/);
     assert.match(src, /Copy to Selected Days/); assert.match(src, /Add Session/);
   }
-  assert.match(read("./schedule/WeeklyScheduleEditor.tsx"), /Follows clinic hours/);
+  assert.match(read("./schedule/WeeklyDraftDays.tsx"), /Follows clinic hours/);
   const input = read("./DateFormatInput.tsx");
   assert.match(input, /aria-label="Hour"/); assert.match(input, /aria-label="Minute"/); assert.match(input, /is12 && <div className="dtp-col"/);
   assert.match(input, /closest\('\[role="dialog"\],\[role="alertdialog"\]'\)/, "picker portals inside dialogs for the focus trap");

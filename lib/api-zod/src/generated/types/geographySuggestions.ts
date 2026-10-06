@@ -23,4 +23,6 @@
 
 export interface GeographySuggestions {
   items: string[];
+  /** Whether the given city belongs to the given state; true when the directory cannot judge */
+  compatible?: boolean;
 }

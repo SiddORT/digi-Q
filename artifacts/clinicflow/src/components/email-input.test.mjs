@@ -26,6 +26,6 @@ test("access rules use SearchableSelect with preserved test ids", async () => {
   assert.doesNotMatch(s, /<select/); assert.match(s, /testId="select-role"/); assert.match(s, /testId="select-module"/);
 });
 test("weekly day switch shares the switch track but keeps Working/Off labels", async () => {
-  const s = await read("./schedule/WeeklyScheduleEditor.tsx");
+  const s = await read("./schedule/WeeklyDraftDays.tsx");
   assert.match(s, /status-switch day-open-switch/); assert.match(s, /status-switch-track/); assert.match(s, /"Working"/); assert.doesNotMatch(s, /StatusSwitch/);
 });

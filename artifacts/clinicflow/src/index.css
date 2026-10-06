@@ -757,7 +757,7 @@
   .workspace .stat-card > strong, .workspace .session-queue .sq-banner strong { font-size: var(--type-page); }
   .workspace .session-queue .sq-banner small { font-size: var(--type-label); }
   .workspace .weekly-overview .day, .workspace .weekly-overview .day button.slot,
-  .workspace .booking-steps > div, .workspace .booking-steps span { font-size: var(--type-label); }
+  .workspace .booking-steps > div, .workspace .booking-steps > li, .workspace .booking-steps span { font-size: var(--type-label); }
   .workspace label, .workspace .form-field-label { font-size: var(--type-label); }
   .workspace .form-field-help, .workspace .form-field-error { font-size: var(--type-label); }
   .workspace .form-field-help, .workspace .form-field-error { margin-top:var(--space-1); }

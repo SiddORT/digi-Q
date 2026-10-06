@@ -6,8 +6,7 @@ const source = name => readFileSync(new URL(name, import.meta.url), "utf8");
 test("both onboarding callers include explicit linked settings in the atomic request", () => {
   for (const name of ["ClinicRegistration.tsx", "ClinicAdminOnboarding.tsx"]) {
     const text = source(name);
-    assert.match(text, /values\.alsoConsult && values\.linkConsultationHours/);
-    assert.match(text, /ownerSchedule: \{ maxTokens: Number\(values\.sessionCapacity\), consultationMinutes: Number\(values\.consultationMinutes\)/);
+    assert.match(text, /\.\.\.ownerSchedulePayload\(values\)/); // one shared mapping for both callers
     assert.doesNotMatch(text, /createSchedule\(/);
   }
 });
@@ -89,14 +88,30 @@ test("old branch list edit opens the authorised clinic hours editor instead of g
   assert.match(settings, /const closeBranch=\(\)=>\{setBranch\(null\)/);
   assert.match(settings, /This location is not available in the selected clinic/);
 });
-test("custom-hour setup is a drawer in the one scheduling workspace", () => {
+test("copy-once and follow controls live inside the one weekly editor, no separate copy tool", () => {
   const settings=source("ClinicSettings.tsx");
   const scheduling=source("SchedulingWorkspace.tsx");
-  assert.match(settings, /<SchedulingWorkspace[^>]*clinicId=\{clinicId\} onLinkOwner=/);
+  assert.match(settings, /<SchedulingWorkspace[^>]*clinicId=\{clinicId\}\/>/);
+  assert.doesNotMatch(scheduling, /onLinkOwner/);
   assert.doesNotMatch(settings, /<ClinicSessionSetup/);
-  assert.match(scheduling, /<AppDialog open variant="drawer"[\s\S]*?title="Copy opening hours into custom doctor sessions"/);
-  assert.match(scheduling, /<ClinicSessionSetup[^>]*clinicId=\{clinicId\}/);
+  assert.doesNotMatch(scheduling, /ClinicSessionSetup|AppDialog|button-copy-opening-hours/);
+  const editor=source("schedule/WeeklyScheduleEditor.tsx");
+  assert.match(editor, /onClick=\{copyLocationHours\} data-testid="button-copy-opening-hours"/);
+  assert.match(editor, /setWeek\(w => prefillFromHours\(w, opening\)\)/); // draft only, saved via the shared plan
+  assert.match(editor, /data-testid="link-follow-location-hours"/);
   assert.match(scheduling, /resource=\{selectedPage\}/);
   assert.match(scheduling, /url\.searchParams\.set\("schedule",target\)/);
-  assert.match(scheduling, /Edit Linked Owner Hours/);
+  assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /Follow Location Hours \(Linked\)/);
+});
+test("onboarding and registration share one owner schedule mapping: linked default or custom weekly sessions", () => {
+  const wizard = source("ClinicRegistrationWizard.tsx");
+  assert.match(wizard, /if \(values\.linkConsultationHours\) return \{ ownerSchedule: capacity \}/);
+  assert.match(wizard, /ownerCustomSchedule: \{ \.\.\.capacity, sessions \}/);
+  assert.match(wizard, /<OwnerWeeklySessions /);
+  const owner = source("schedule/OwnerWeeklySessions.tsx");
+  assert.match(owner, /<WeeklyDraftDays /);
+  assert.match(owner, /button-copy-opening-hours/);
+  assert.match(owner, /applyWeekTo\(/);
+  assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /<WeeklyDraftDays /);
+  assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /button-apply-locations/);
 });

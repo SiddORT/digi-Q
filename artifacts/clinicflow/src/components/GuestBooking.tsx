@@ -1,3 +1,6 @@
+import { HoursWarning } from "./HoursWarning";
+import { BookingSteps } from "./BookingSteps";
+import { StagedBooking, BookingStageActions, BookingSummary } from "./booking/StagedBooking";
 import { EmailInput } from "@/components/EmailInput";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +41,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   useEffect(()=>{if(!context.doctorId&&doctorOptions.data?.total===1&&doctorOptions.data.items[0]&&branchId&&!doctorId)setDoctor(doctorOptions.data.items[0].id);},[doctorOptions.data,doctorId,branchId,context.doctorId]);
   useEffect(()=>{searchRun.current++;setFinding(false);setDateMessage("");},[branchId,doctorId]);
  const lock=useRef(false);
+ const [step,setStep]=useState<1|2|3>(1);
  const form=useForm({defaultValues:{fullName:"",email:"",mobile:"",permission:false}});
  const selection=useDailySession({branchId,doctorId,date});
  const availability=selection.availability;
@@ -48,7 +52,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
    try{
     const candidate=await findNextBookableDate(today(context.branchTimezone||availability.data?.timezone||undefined),date=>api.getPublicAvailabilitySessions({doctorId,branchId,date}),()=>run===searchRun.current);
     if(run!==searchRun.current)return;
-    if(candidate){setDate(candidate);setDateMessage(`Next available date found: ${candidate}. Review the session and press Book Now to confirm.`);}
+    if(candidate){setDate(candidate);setDateMessage(`Next available date found: ${candidate}. Review the session and continue to confirm.`);}
     else setDateMessage("No bookable sessions were found in the next 14 days. Try another date or contact the clinic.");
    }catch(error){if(run===searchRun.current)setDateMessage(`Could not search for another date. ${error instanceof Error?error.message:"Please retry."}`);}
    finally{if(run===searchRun.current)setFinding(false);}
@@ -80,7 +84,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   try{await create.mutateAsync({data});}catch{/* Mutation renders its error; retained request makes retries idempotent. */}finally{lock.current=false;}
  }
  function submit(values:{fullName:string;email:string;mobile:string;permission:boolean}) {
-  if(lock.current)return;
+  if(lock.current||step!==3)return; // Section E: only the explicit Confirmation stage creates a booking
   const bytes=crypto.getRandomValues(new Uint8Array(32));
   const data:api.GuestRequestInput={qrReference:reference,branchId,doctorId,date,sessionId:selection.sessionId||undefined,fullName:values.fullName.trim(),email:values.email.trim()||undefined,mobile:values.mobile.trim()||undefined,requestId:crypto.randomUUID(),receiptSecret:Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("")};
   try{sessionStorage.setItem(storageKey,JSON.stringify(data));}catch{setStorageError("This browser cannot save your receipt. Keep this page open and ask reception for help before closing it.");}
@@ -99,7 +103,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   return toTicket(second);
  }
  const issued=r&&r.status!=="pending"&&r.status!=="rejected";
- if(attempt)return <section aria-label="Your visit ticket" data-testid="guest-receipt">
+ if(attempt)return <section aria-label="Your visit ticket" data-testid="guest-receipt"><BookingSteps step={issued?4:3}/>
   <h2>{issued?"You're Booked":r?.status==="rejected"?"Booking Not Available":r?"Booking Received":"Issuing Your Ticket"}</h2>
   {!r&&<p role="status">{attempt.fullName} · {attempt.date}. Keep this page open; do not book again.</p>}
   {issued&&r&&<>{confirmationEmailMessage(r.confirmationEmail)&&<p role="status">{confirmationEmailMessage(r.confirmationEmail)}</p>}<VisitTicket testId="guest-ticket" ticket={toTicket(r)} prepareExport={prepareExport} exportDisabled={!committed||status.isPending}/></>}
@@ -113,14 +117,23 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   <p className="muted">Download or print your ticket now. It is recoverable only in this browser tab; there is no public name search. If it is lost, ask reception.</p>
  </section>;
  const available=availability.data;
-  return <section className="guest-booking"><h2>Book a Visit</h2><p className="guest-intro">Choose a visit date and enter the patient's name. No account or contact details required; your ticket is issued straight away.</p>
+ const values=form.watch();
+ const canContinueVisit=!!branchId&&!!doctorId&&!(fresh.stale||availability.isFetching||!available?.available||available.remainingTokens<=0||available.queueMode==="walkInsOnly");
+ async function continuePatient(){if(await form.trigger(["fullName","email","mobile","permission"]))setStep(3);}
+  return <section className="guest-booking"><h2>Book a Visit</h2><p className="guest-intro">Choose a visit, add the patient's name, then review and confirm. No account or contact details are required.</p>
   <div className="guest-context" role="group" aria-label="Booking location and doctor"><strong>{context.clinicName}</strong>{(context.branchName||context.doctorName)&&<span>{[context.branchName,context.doctorName].filter(Boolean).join(" · ")}</span>}</div>
- <Form {...form}><form onSubmit={form.handleSubmit(submit)}>
- <div className="form-grid cf-auto">
+ <Form {...form}><form noValidate onSubmit={form.handleSubmit(submit)}>
+ <StagedBooking testId="guest-staged-booking" step={step} visit={<><div className="form-grid cf-auto">
   {!context.branchId&&<CareLookup publicAccess kind="branches" label="Location" value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}} selectedLabel={branchOptions.data?.items.find(b=>b.id===branchId)?.name}/>}
   {!context.doctorId&&<CareLookup publicAccess kind="doctors" label="Doctor" value={doctorId} disabled={!branchId} params={{clinicId:context.clinicId,branchId,status:"active"}} onChange={setDoctor} selectedLabel={doctorOptions.data?.items.find(d=>d.id===doctorId)?.fullName}/>}
   <label>Visit date<DateFormatInput data-testid="input-guest-date" required min={today(available?.timezone)} preferences={{...(context.dateFormat?{dateFormat:context.dateFormat}:{}),...(context.timeFormat?{timeFormat:context.timeFormat}:{})}} value={date} onChange={value=>{searchRun.current++;setFinding(false);setDateMessage("");setDate(value);}}/></label>
   {selection.sessions.length===1&&!availability.error?<div className="guest-session"><strong>Consulting session</strong><span>{formatSessionHours(selection.sessions[0])} · {selection.sessions[0].timezone}</span><small>Only session listed for this date. Availability is checked again when you book.</small></div>:<SessionSelector selection={selection}/>}
+ </div>
+  <div className="availability-box" data-testid="guest-availability-status">{availability.isFetching?"Checking session…":available?<><strong>{available.available&&available.remainingTokens>0&&available.queueMode!=="walkInsOnly"?"Available Session":"Session Unavailable"}</strong><p>{formatSessionHours(available)} · {available.timezone}</p><HoursWarning warning={available.hoursWarning}/>{available.queueMode==="walkInsOnly"?<p>This session accepts walk-ins only. Select another session or date for online booking.</p>:(!available.available||available.remainingTokens<=0)&&<p>{available.reason||"Session full. Choose another date."}</p>}</>:availability.error?<p>Could not check sessions. Retry below.</p>:!branchId||!doctorId?<p>Choose a location and doctor to see the sessions.</p>:selection.sessions.length>1?<p>Select one of the listed consulting sessions to check its availability.</p>:availability.isLoading?<p>Finding doctor sessions…</p>:<p>No doctor session is available for this date. Try another date or ask the clinic to configure its Weekly schedule.</p>}</div>
+ <ErrorNotice error={availability.error}/>{(availability.error||fresh.stale)&&branchId&&doctorId&&<button type="button" data-testid="button-retry-guest-availability" onClick={()=>availability.refetch()}>Refresh Availability</button>}
+  {branchId&&doctorId&&<div className="guest-next-date"><button type="button" className="button secondary" disabled={finding} onClick={()=>void findNextDate()} data-testid="button-next-guest-date">{finding?"Searching the next 14 days…":"Find Next Available Date"}</button>{dateMessage&&<p role="status">{dateMessage}</p>}</div>}
+ <p className="notice">Your ticket shows a session time range, not an exact consultation time.</p>
+ <BookingStageActions primaryLabel="Continue to Patient Details" primaryDisabled={!canContinueVisit} onPrimary={()=>setStep(2)} primaryTestId="button-guest-continue-visit"/></>} patient={<><div className="form-grid cf-auto">
  <label>Patient's name<input data-testid="input-guest-name" autoComplete="name" maxLength={150} {...form.register("fullName",{required:true,validate:v=>!!v.trim()})}/></label>
  </div>
  <details><summary data-testid="toggle-guest-contact" style={{padding:"12px 0",cursor:"pointer"}}>Add contact details (optional)</summary><div className="form-grid cf-auto">
@@ -130,14 +143,12 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  {form.formState.errors.fullName&&<p role="alert">Enter the patient's name.</p>}
  {form.formState.errors.mobile&&<p role="alert">Open contact details, choose a country and enter a valid local number, or leave mobile blank.</p>}
  {form.formState.errors.email&&<p role="alert" data-testid="error-guest-email">{String(form.formState.errors.email.message||"Enter a valid email address.")}</p>}
- <ErrorNotice error={create.error}/>
   <p className="muted guest-note">Without contact details we cannot send updates. A family member's contact requires their permission and does not link this visit to their account.</p>
  <label className="check-label"><input data-testid="input-guest-permission" type="checkbox" {...form.register("permission",{required:true})}/> I have permission to book this visit and share any contact details provided.</label>
  {form.formState.errors.permission&&<p role="alert">Please confirm permission to continue.</p>}
-  <div className="availability-box" data-testid="guest-availability-status">{availability.isFetching?"Checking session…":available?<><strong>{available.available&&available.remainingTokens>0&&available.queueMode!=="walkInsOnly"?"Available Session":"Session Unavailable"}</strong><p>{formatSessionHours(available)} · {available.timezone}</p>{available.queueMode==="walkInsOnly"?<p>This session accepts walk-ins only. Select another session or date for online booking.</p>:(!available.available||available.remainingTokens<=0)&&<p>{available.reason||"Session full. Choose another date."}</p>}</>:availability.error?<p>Could not check sessions. Retry below.</p>:!branchId||!doctorId?<p>Choose a location and doctor to see the sessions.</p>:selection.sessions.length>1?<p>Select one of the listed consulting sessions to check its availability.</p>:availability.isLoading?<p>Finding doctor sessions…</p>:<p>No doctor session is available for this date. Try another date or ask the clinic to configure its Weekly schedule.</p>}</div>
- <ErrorNotice error={availability.error}/>{(availability.error||fresh.stale)&&branchId&&doctorId&&<button type="button" data-testid="button-retry-guest-availability" onClick={()=>availability.refetch()}>Refresh Availability</button>}
-  {branchId&&doctorId&&<div className="guest-next-date"><button type="button" className="button secondary" disabled={finding} onClick={()=>void findNextDate()} data-testid="button-next-guest-date">{finding?"Searching the next 14 days…":"Find Next Available Date"}</button>{dateMessage&&<p role="status">{dateMessage}</p>}</div>}
- <p className="notice">Your ticket shows a session time range, not an exact consultation time.</p>
-  <div className="form-footer form-actions"><button className="button" data-testid="button-submit-guest" disabled={fresh.stale||availability.isFetching||!available?.available||available.remainingTokens<=0||available.queueMode==="walkInsOnly"||create.isPending} type="submit">{create.isPending?"Booking…":"Book Now"}</button></div>
+ <BookingStageActions onBack={()=>setStep(1)} primaryLabel="Review and Confirm" onPrimary={()=>void continuePatient()} primaryTestId="button-guest-continue-patient"/></>} confirmation={<><BookingSummary rows={[["Clinic",context.clinicName],["Location",context.branchName||branchOptions.data?.items.find(b=>b.id===branchId)?.name],["Doctor",context.doctorName||doctorOptions.data?.items.find(d=>d.id===doctorId)?.fullName],["Visit date",date],["Session",available?`${formatSessionHours(available)} · ${available.timezone}`:""],["Patient",values.fullName.trim()],["Email",values.email.trim()],["Mobile",values.mobile.trim()]]}/>
+ <p className="notice">Nothing is booked until you press Confirm Booking. Availability is checked again at that moment; your ticket shows a session range, not an exact time.</p>
+ <ErrorNotice error={create.error}/>
+ <BookingStageActions onChangeVisit={()=>setStep(1)} onBack={()=>setStep(2)} busy={create.isPending} primaryType="submit" primaryLabel={create.isPending?"Booking…":"Confirm Booking"} primaryDisabled={fresh.stale||availability.isFetching||!available?.available||available.remainingTokens<=0||available.queueMode==="walkInsOnly"} primaryTestId="button-submit-guest"/></>}/>
  </form></Form></section>;
 }

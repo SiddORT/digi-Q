@@ -24,6 +24,7 @@ import type { ClinicAdminOnboardingInputAdmin } from './clinicAdminOnboardingInp
 import type { ClinicAdminOnboardingInputClinic } from './clinicAdminOnboardingInputClinic';
 import type { ClinicBranchSetup } from './clinicBranchSetup';
 import type { ClinicPolicy } from './clinicPolicy';
+import type { OwnerCustomSchedule } from './ownerCustomSchedule';
 import type { OwnerSchedule } from './ownerSchedule';
 
 export interface ClinicAdminOnboardingInput {
@@ -32,6 +33,7 @@ export interface ClinicAdminOnboardingInput {
   policies?: ClinicPolicy;
   ownDoctor?: boolean;
   ownerSchedule?: OwnerSchedule;
+  ownerCustomSchedule?: OwnerCustomSchedule;
   specializationId?: string;
   qualificationIds?: string[];
   admin: ClinicAdminOnboardingInputAdmin;

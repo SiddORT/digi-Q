@@ -5,7 +5,7 @@ import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface SearchableSelectProps extends Pick<React.AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> {
-  options: { value: string; label: string; disabled?: boolean }[];
+  options: { value: string; label: string; disabled?: boolean; /** Compact text for the closed control (e.g. "+91 IN"); label stays searchable. */ selectedLabel?: string }[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -64,7 +64,7 @@ export function SearchableSelect({
     }
     const option = options.find((opt) => opt.value === value);
     if (option) {
-      setSelectedLabel(option.label);
+      setSelectedLabel(option.selectedLabel || option.label);
     }
   }, [value, options]);
 
@@ -139,7 +139,7 @@ export function SearchableSelect({
               className="absolute inset-0 z-0 h-full w-full rounded-lg bg-transparent outline-none cursor-pointer"
               aria-label={
                 value
-                  ? `${label || "Selected item"}: ${selectedLabel || value}`
+                  ? `${label || "Selected item"}: ${selectedLabel || (loading ? "Loading" : error ? "unavailable" : value)}`
                   : label || placeholder
               }
             />
@@ -152,7 +152,7 @@ export function SearchableSelect({
               !value ? "text-muted-foreground" : "text-foreground font-medium"
             )}
           >
-            {value ? selectedLabel || value : placeholder}
+            {value ? selectedLabel || (loading ? "Loading…" : error ? "Selected item unavailable" : value) : placeholder}
           </span>
 
           <div className="relative z-20 flex items-center gap-1 shrink-0 px-1">

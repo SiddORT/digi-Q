@@ -29,12 +29,43 @@ paths:
       parameters:
         - { in: query, name: kind, required: true, schema: { type: string, enum: [country, state, city] } }
         - { in: query, name: search, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: country, description: ISO-2 code or English country name scoping states and cities, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: state, description: State/UT name scoping cities, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: city, description: "When given with kind=city, the response includes a compatible flag", schema: { type: string, maxLength: 100 } }
       responses:
         '200':
           description: Offline geographic directory suggestions; manual entry remains supported.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GeographySuggestions' }
+  /public/geography:
+    get:
+      operationId: searchPublicGeography
+      security: []
+      parameters:
+        - { in: query, name: kind, required: true, schema: { type: string, enum: [country, state, city] } }
+        - { in: query, name: search, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: country, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: state, schema: { type: string, maxLength: 100 } }
+        - { in: query, name: city, schema: { type: string, maxLength: 100 } }
+      responses:
+        '200':
+          description: "Public read-only, rate-limited directory suggestions (max 20)."
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GeographySuggestions' }
+  /public/pincode/{pin}:
+    get:
+      operationId: lookupPublicPincode
+      security: []
+      parameters:
+        - { in: path, name: pin, required: true, schema: { type: string, pattern: '^[1-9][0-9]{5}$' } }
+      responses:
+        '200':
+          description: "Localities for an Indian PIN from the official India Post directory (GODL-India). The user must pick a locality; district is context only."
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PincodeLookup' }
   /settings/integrations/{provider}/check:
     post:
       operationId: checkIntegrationConnection
@@ -1188,6 +1219,7 @@ components:
       required: [items]
       properties:
         items: { type: array, items: { type: string } }
+        compatible: { type: boolean, description: "Whether the given city belongs to the given state; true when the directory cannot judge" }
     TicketEmailInput:
       type: object
       required: [requestId, recipient]
@@ -1685,6 +1717,9 @@ components:
         name: { type: string, minLength: 1 }
         address: { type: string }
         city: { type: string }
+        state: { type: string }
+        pincode: { type: string }
+        country: { type: string }
         timezone: { type: string }
         email: { type: [string, "null"], format: email }
         phone: { type: [string, "null"] }
@@ -1701,6 +1736,27 @@ components:
         consultationMinutes: { type: integer, minimum: 1, maximum: 240 }
         tokenPrefix: { type: string, pattern: "^[A-Za-z0-9]{1,8}$" }
         queueMode: { type: string, enum: [mixed, appointmentsOnly, walkInsOnly] }
+    OwnerCustomSchedule:
+      type: object
+      description: Custom weekly consultation intervals entered once during onboarding/registration with the shared weekly editor. Saved in the same transaction after the owner's doctor profile is created. Mutually exclusive with ownerSchedule (linked).
+      required: [maxTokens, consultationMinutes, tokenPrefix, queueMode, sessions]
+      properties:
+        maxTokens: { type: integer, minimum: 1, maximum: 1000 }
+        consultationMinutes: { type: integer, minimum: 1, maximum: 240 }
+        tokenPrefix: { type: string, pattern: "^[A-Za-z0-9]{1,8}$" }
+        queueMode: { type: string, enum: [mixed, appointmentsOnly, walkInsOnly] }
+        sessions:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            type: object
+            required: [branchIndex, dayOfWeek, startTime, endTime]
+            properties:
+              branchIndex: { type: integer, minimum: 0, maximum: 49 }
+              dayOfWeek: { type: integer, minimum: 0, maximum: 6 }
+              startTime: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
+              endTime: { type: string, pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" }
     LinkedSchedule:
       type: object
       required: [enabled]
@@ -1762,6 +1818,7 @@ components:
         policies: { $ref: "#/components/schemas/ClinicPolicy" }
         ownDoctor: { type: boolean, default: false }
         ownerSchedule: { $ref: "#/components/schemas/OwnerSchedule" }
+        ownerCustomSchedule: { $ref: "#/components/schemas/OwnerCustomSchedule" }
         specializationId: { type: string }
         qualificationIds: { type: array, items: { type: string } }
     DoctorPresenceInput:
@@ -1986,6 +2043,11 @@ components:
       type: object
       required: [fullName, email, role]
       properties:
+        country: { type: string, maxLength: 100, description: "ISO-2 or name; new entries default to IN" }
+        state: { type: string, maxLength: 100 }
+        city: { type: string, maxLength: 100 }
+        pincode: { type: string, maxLength: 12 }
+        address: { type: string, maxLength: 500 }
         fullName: { type: string, minLength: 1 }
         email: { type: string, format: email }
         mobile: { type: string }
@@ -2015,6 +2077,7 @@ components:
         policies: { $ref: "#/components/schemas/ClinicPolicy" }
         ownDoctor: { type: boolean }
         ownerSchedule: { $ref: "#/components/schemas/OwnerSchedule" }
+        ownerCustomSchedule: { $ref: "#/components/schemas/OwnerCustomSchedule" }
         specializationId: { type: string }
         qualificationIds: { type: array, items: { type: string } }
         admin:
@@ -2158,6 +2221,11 @@ components:
       type: object
       required: [fullName, email]
       properties:
+        country: { type: string, maxLength: 100, description: "ISO-2 or name; new entries default to IN" }
+        state: { type: string, maxLength: 100 }
+        city: { type: string, maxLength: 100 }
+        pincode: { type: string, maxLength: 12 }
+        address: { type: string, maxLength: 500 }
         ownerAdminId: { type: string, description: Backward-compatible only. If supplied it must match the managing admin derived by the server. }
         fullName: { type: string, minLength: 1 }
         email: { type: string, format: email }
@@ -2228,6 +2296,10 @@ components:
       type: object
       required: [fullName]
       properties:
+        country: { type: string, maxLength: 100, description: "ISO-2 or name; new entries default to IN" }
+        state: { type: string, maxLength: 100 }
+        city: { type: string, maxLength: 100 }
+        pincode: { type: string, maxLength: 12 }
         fullName: { type: string, minLength: 1 }
         mobile: { type: ["string", "null"] }
         email: { type: ["string", "null"], format: email }
@@ -2301,6 +2373,22 @@ components:
             doctorName: { type: string }
             clinicName: { type: string }
             branchName: { type: string }
+    PincodeLookup:
+      type: object
+      required: [pincode, available, items, attribution]
+      properties:
+        pincode: { type: string }
+        available: { type: boolean, description: "False when the offline dataset is unavailable; manual entry continues." }
+        attribution: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            required: [locality, district, state]
+            properties:
+              locality: { type: string }
+              district: { type: string }
+              state: { type: string }
     AvailabilityExceptionInput:
       type: object
       required: [doctorId, branchId, date, isClosed, reason]
@@ -2310,6 +2398,7 @@ components:
         branchId: { type: string }
         date: { type: string, format: date }
         isClosed: { type: boolean }
+        isExtra: { type: boolean, description: "Adds a bookable session on this date only (requires startTime, endTime, maxTokens; no sessionId)." }
         reason: { type: string }
         startTime: { type: [string, "null"] }
         endTime: { type: [string, "null"] }
@@ -2330,6 +2419,7 @@ components:
         dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
         timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
         sessionId: { type: [string, "null"] }
+        hoursWarning: { type: [string, "null"], description: "Present when the session extends beyond ordinary location hours; the session remains bookable." }
         doctorId: { type: string }
         clinicId: { type: string }
         branchId: { type: string }

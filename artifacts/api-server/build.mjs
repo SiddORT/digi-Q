@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { rm, mkdir, copyFile, stat } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -118,6 +118,12 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+  // Section C: ship the offline India Post PIN directory with the bundle; fail loudly if it is missing.
+  const pinAsset = path.resolve(artifactDir, "data/india-pincodes.json.gz");
+  const info = await stat(pinAsset).catch(() => null);
+  if (!info || info.size < 100_000) throw new Error(`PIN directory asset missing or truncated: ${pinAsset}. Run scripts/build-pincodes.py.`);
+  await mkdir(path.resolve(distDir, "data"), { recursive: true });
+  await copyFile(pinAsset, path.resolve(distDir, "data/india-pincodes.json.gz"));
 }
 
 buildAll().catch((err) => {

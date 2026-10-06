@@ -11,7 +11,13 @@ import { queryPage, assignmentCatalogPredicate } from "../lib/list-query";
 import { inviteStaff, requestStaffReset } from "./auth";
 import { consumeRateLimit, revokeUserSessions } from "../lib/native-auth";
 import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, attachOwnDoctor, clinicDisplayPreferences } from "../lib/clinic-expansion";
-import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus } from "../lib/availability";
+import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus, extraSession } from "../lib/availability";
+const ADDRESS_KEYS = ["address", "country", "state", "city", "pincode"] as const;
+/** Address parts live in the JSON `data` column; merge without touching other profile data. */
+async function mergeAddress(table: any, id: string, patch: Record<string, unknown>, tx: any) {
+  const [row] = await tx.select({ data: table.data }).from(table).where(eq(table.id, id));
+  if (row) await change(table, id, { data: { ...(row.data || {}), ...patch } }, tx);
+}
 const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs, authChallenges } = tables;
 export const resourcesRouter = Router();
 const definitions: [string, any, any, any][] = [
@@ -293,7 +299,8 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         const other = { ...session, timezone: session.timezone || otherBranch.timezone || "Asia/Kolkata" };
         assert(!weeklySessionsOverlap(candidate, other), 409, "This schedule overlaps with an existing schedule");
       }
-      const exceptions = (await all(availabilityExceptions, tx)).filter(e => e.doctorId === proposed.doctorId && e.status === "active");
+      const datedRows = (await all(availabilityExceptions, tx)).filter(e => e.doctorId === proposed.doctorId && e.status === "active");
+      const exceptions = datedRows.filter(e => !e.isExtra);
       const templates = [...collisions, { ...candidate, id: old?.id || "__new_session__" }];
       const dates = new Set<string>();
       for (const e of exceptions) for (const offset of [-1, 0, 1]) dates.add(datePlus(e.date, offset));
@@ -307,11 +314,40 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
           effective.push({ session, date });
         }
       }
+      // Section F: dated extra intervals are protected sessions too.
+      for (const e of datedRows.filter(e => e.isExtra)) { const location = await one(branches, e.branchId, tx); for (const offset of [-1, 0, 1]) { const date = datePlus(e.date, offset); for (const template of templates.filter(s => s.dayOfWeek === new Date(date + "T12:00:00Z").getUTCDay())) { const tl = await one(branches, template.branchId, tx); const ov = exceptions.find(x => x.branchId === template.branchId && x.date === date && x.sessionId === template.id) || exceptions.find(x => x.branchId === template.branchId && x.date === date && !x.sessionId); const session = { ...template, ...(ov ? Object.fromEntries(Object.entries(ov).filter(([k,v]) => ["startTime","endTime","isClosed"].includes(k) && v !== null && v !== undefined)) : {}), timezone: template.timezone || tl.timezone || "Asia/Kolkata" }; assert(!sessionsOverlap(session, date, extraSession(e, {}, location), e.date), 409, "Weekly change overlaps a dated extra interval"); } } }
       for (let i = 0; i < effective.length; i++) for (let j = i + 1; j < effective.length; j++) {
         assert(!sessionsOverlap(effective[i].session, effective[i].date, effective[j].session, effective[j].date), 409, "Weekly change overlaps a dated session exception");
       }
     }
-    if (kind === "availability-exceptions" && !proposed.isClosed) {
+    if (kind === "availability-exceptions" && proposed.isExtra) {
+      // Section F: extra interval on one date — no weekly template required; protect conflicts and explicit closures.
+      assert(!proposed.isClosed && !proposed.sessionId, 400, "An extra interval adds a session; it cannot close or replace one");
+      assert(proposed.startTime && proposed.endTime && Number(proposed.maxTokens) >= 1, 400, "Enter start time, end time and capacity for the extra interval");
+      const location = await one(branches, proposed.branchId, tx);
+      const template = (await all(schedules, tx)).find(s => s.doctorId === proposed.doctorId && s.branchId === proposed.branchId && s.status === "active");
+      const extra = extraSession({ ...proposed, id: old?.id || "__new_extra__" }, template, location);
+      validateTimes(extra);
+      withinBranchHours(location, { ...extra, date: proposed.date });
+      const dayClosed = (await all(availabilityExceptions, tx)).some(e => e.id !== old?.id && e.status === "active" && e.doctorId === proposed.doctorId && e.branchId === proposed.branchId && e.date === proposed.date && e.isClosed && !e.sessionId);
+      assert(!dayClosed, 409, "This date has a day-off exception for the doctor at this location. Remove it before adding an extra interval");
+      const rows = (await all(availabilityExceptions, tx)).filter(e => e.id !== old?.id && e.doctorId === proposed.doctorId && e.status === "active");
+      for (const session of (await all(schedules, tx)).filter(s => s.doctorId === proposed.doctorId && s.status === "active" && s.isOpen)) {
+        const otherBranch = await one(branches, session.branchId, tx);
+        for (const offset of [-1, 0, 1]) {
+          const otherDate = datePlus(proposed.date, offset);
+          if (new Date(otherDate + "T12:00:00Z").getUTCDay() !== session.dayOfWeek) continue;
+          const ov = rows.find(e => !e.isExtra && e.branchId === session.branchId && e.date === otherDate && e.sessionId === session.id) || rows.find(e => !e.isExtra && e.branchId === session.branchId && e.date === otherDate && !e.sessionId);
+          const other = { ...session, ...(ov ? Object.fromEntries(Object.entries(ov).filter(([k,v]) => ["startTime","endTime","isClosed"].includes(k) && v !== null && v !== undefined)) : {}), timezone: session.timezone || otherBranch.timezone || "Asia/Kolkata" };
+          assert(!sessionsOverlap(extra, proposed.date, other, otherDate), 409, "This extra interval overlaps an existing session");
+        }
+      }
+      for (const e of rows.filter(e => e.isExtra)) {
+        const b = await one(branches, e.branchId, tx);
+        assert(!sessionsOverlap(extra, proposed.date, extraSession(e, {}, b), e.date), 409, "This extra interval overlaps another extra interval");
+      }
+    }
+    if (kind === "availability-exceptions" && !proposed.isClosed && !proposed.isExtra) {
       const weekday = new Date(proposed.date + "T12:00:00Z").getUTCDay();
       const bases = (await all(schedules, tx)).filter(s => s.doctorId === proposed.doctorId && s.branchId === proposed.branchId && s.dayOfWeek === weekday && s.status === "active" && (!proposed.sessionId || s.id === proposed.sessionId));
       assert(bases.length <= 1, 409, "Choose a session for the date exception");
@@ -322,7 +358,9 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       validateTimes(effective);
       withinBranchHours(baseBranch, effective);
       const otherSchedules = (await all(schedules, tx)).filter(s => s.doctorId === proposed.doctorId && s.id !== base.id && s.status === "active" && s.isOpen);
-      const exceptions = (await all(availabilityExceptions, tx)).filter(e => e.id !== old?.id && e.doctorId === proposed.doctorId && e.status === "active");
+      const datedRows = (await all(availabilityExceptions, tx)).filter(e => e.id !== old?.id && e.doctorId === proposed.doctorId && e.status === "active");
+      const exceptions = datedRows.filter(e => !e.isExtra);
+      for (const e of datedRows.filter(e => e.isExtra)) { const b = await one(branches, e.branchId, tx); assert(!sessionsOverlap(effective, proposed.date, extraSession(e, {}, b), e.date), 409, "This change overlaps a dated extra interval"); }
       for (const session of otherSchedules) {
         const otherBranch = await one(branches, session.branchId, tx);
         for (const offset of [-1, 0, 1]) {
@@ -423,6 +461,9 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         const owner = await one(users, fields.ownerAdminId, tx);
         assert(owner.role === "clinicAdmin" && owner.status === "active", 400, "Please select an active Clinic Admin");
         if (old) await change(users, userId, uf, tx); else await put(users, { id: userId, ...uf }, tx);
+        // Section C: doctor profile and its account share one address.
+        const personAddress = Object.fromEntries(ADDRESS_KEYS.filter(key => body[key] !== undefined).map(key => [key, body[key]]));
+        if (Object.keys(personAddress).length) await mergeAddress(users, userId, personAddress, tx);
         fields.userId = userId; fields.data.code ||= `DOC-${id.slice(0,8)}`;
       } else {
         if (role === "receptionist") fields.managingAdminId = managingAdminId;
@@ -433,6 +474,8 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         if (linkedPatient && body.mobile !== undefined && body.mobile !== linkedPatient.mobile) await change(patients, linkedPatient.id, { mobile: body.mobile, mobileVerified: false }, tx);
         const linkedDoctor = (await all(doctors, tx)).find(d => d.userId === old.id);
         if (linkedDoctor && body.status) await change(doctors, linkedDoctor.id, { status: body.status }, tx);
+        const addressPatch = Object.fromEntries(ADDRESS_KEYS.filter(key => body[key] !== undefined).map(key => [key, body[key]]));
+        if (linkedDoctor && Object.keys(addressPatch).length) await mergeAddress(doctors, linkedDoctor.id, addressPatch, tx);
       }
       if (role === "clinicAdmin") {
         assert(user.role === "superAdmin", 403, "Only Super Admin can create Clinic Admins");
@@ -508,7 +551,9 @@ function discardedIncomingSave(kind: string, table: any, user: any, body: any, o
       const effective = { ...base, ...Object.fromEntries(Object.entries(proposed).filter(([k,v]) => v !== null || k.startsWith("break"))), timezone: proposed.timezone || base.timezone || baseBranch.timezone || "Asia/Kolkata" };
       validateTimes(effective);
       const otherSchedules = (await all(schedules, tx)).filter(s => s.doctorId === proposed.doctorId && s.branchId !== proposed.branchId && s.status === "active" && s.isOpen);
-      const exceptions = (await all(availabilityExceptions, tx)).filter(e => e.id !== old?.id && e.doctorId === proposed.doctorId && e.status === "active");
+      const datedRows = (await all(availabilityExceptions, tx)).filter(e => e.id !== old?.id && e.doctorId === proposed.doctorId && e.status === "active");
+      const exceptions = datedRows.filter(e => !e.isExtra);
+      for (const e of datedRows.filter(e => e.isExtra)) { const b = await one(branches, e.branchId, tx); assert(!sessionsOverlap(effective, proposed.date, extraSession(e, {}, b), e.date), 409, "This change overlaps a dated extra interval"); }
       for (const session of otherSchedules) {
         const otherBranch = await one(branches, session.branchId, tx);
         for (const offset of [-1, 0, 1]) {
@@ -558,12 +603,15 @@ function discardedIncomingSave(kind: string, table: any, user: any, body: any, o
     if (kind === "users" || kind === "doctors") {
       const userId = kind === "users" ? id : old?.userId || uid();
       const uf: any = { fullName: body.fullName, email: body.email, mobile: body.mobile, role: kind === "users" ? body.role : "doctor", status: fields.status };
+      // Section C: one address per person. Doctor profile and its user account share the same address fields.
+      const personAddress = Object.fromEntries(ADDRESS_KEYS.filter(key => body[key] !== undefined).map(key => [key, body[key]]));
       if (kind === "doctors") {
         fields.ownerAdminId = old?.ownerAdminId || (user.role === "clinicAdmin" ? user.id : body.ownerAdminId);
         assert(fields.ownerAdminId, 400, "Please select a Clinic Admin");
         const owner = await one(users, fields.ownerAdminId, tx);
         assert(owner.role === "clinicAdmin" && owner.status === "active", 400, "Please select an active Clinic Admin");
         if (old) await change(users, userId, uf, tx); else await put(users, { id: userId, ...uf }, tx);
+        if (Object.keys(personAddress).length) await mergeAddress(users, userId, personAddress, tx);
         fields.userId = userId; fields.data.code ||= `DOC-${id.slice(0,8)}`;
       } else Object.assign(fields, uf);
       if (kind === "users" && old) {

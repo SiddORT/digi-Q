@@ -31,7 +31,7 @@ test("registration hours: closed rows keep an enabled expand control and no sess
 });
 
 test("weekly schedule: closed rows expand to Copy without enabling sessions", () => {
-  const src = read("./schedule/WeeklyScheduleEditor.tsx");
+  const src = read("./schedule/WeeklyDraftDays.tsx");
   assert.match(src, /const isExpanded = expandedDays\.includes\(dayIndex\) \|\| errs\.length > 0;/);
   assert.match(src, /disabled=\{errs\.length > 0\} onClick/);
   assert.doesNotMatch(src, /disabled=\{!day\.isOpen \|\| errs\.length > 0\}/);

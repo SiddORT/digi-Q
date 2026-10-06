@@ -29,6 +29,11 @@ export interface Availability {
   timeFormat?: ClinicTimeFormat;
   /** @nullable */
   sessionId?: string | null;
+  /**
+     * Present when the session extends beyond ordinary location hours; the session remains bookable.
+     * @nullable
+     */
+  hoursWarning?: string | null;
   doctorId: string;
   clinicId: string;
   branchId: string;

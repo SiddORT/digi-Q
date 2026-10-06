@@ -29,6 +29,9 @@ export interface ClinicBranchSetup {
   name: string;
   address: string;
   city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
   timezone?: string;
   /** @nullable */
   email?: string | null;

@@ -24,6 +24,8 @@ for (const [kind, table, schema] of [
           and ${q.clinicId ? sql`exists(select 1 from branches pb where pb.clinic_id=${q.clinicId}
             ${q.branchId ? sql`and pb.id=${q.branchId}` : sql``}
             and ${clinicalMembership(sql`r.id`, sql`pb.id`)})` : sql`true`}`
+        // Public clinic lists only offer clinics a guest can actually reach: at least one active location.
+        : kind === "clinics" ? sql`exists(select 1 from branches pb where pb.clinic_id=r.id and pb.status='active')`
         : sql`true`;
     const result = await queryPage({ role: "superAdmin" }, kind, { ...q, ...(kind === "doctors" ? { branchId: undefined } : {}), status: "active" }, extra);
     if (kind === "doctors") {

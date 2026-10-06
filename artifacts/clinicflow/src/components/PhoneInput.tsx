@@ -1,10 +1,12 @@
 import { forwardRef, useEffect, useRef, useState, type InputHTMLAttributes } from "react";
 import type { CountryCode } from "libphonenumber-js/max";
 import { SearchableSelect } from "./SearchableSelect";
-import { formatNational, joinPhone, phoneCountries, splitPhone, suggestedCountry } from "../lib/phone";
+import { formatNational, joinPhone, phoneCountries, splitPhone } from "../lib/phone";
+import { DEFAULT_PHONE_COUNTRY } from "../lib/address";
 
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange"> & { value: string; onChange: (value: string) => void };
-const countryOptions = phoneCountries.map(item => ({ value: item.country, label: `${item.name} ${item.code}` }));
+// Dropdown rows search full names; the closed control shows only the compact calling code.
+const countryOptions = phoneCountries.map(item => ({ value: item.country, label: `${item.name} ${item.code}`, selectedLabel: `${item.code} ${item.country}` }));
 
 /**
  * Country dropdown + local number. onChange always emits the international
@@ -12,7 +14,7 @@ const countryOptions = phoneCountries.map(item => ({ value: item.country, label:
  * the local field selects its country automatically.
  */
 export const PhoneInput = forwardRef<HTMLInputElement, Props>(function PhoneInput({ value, onChange, className, ...props }, ref) {
-  const [parts, setParts] = useState(() => splitPhone(value, suggestedCountry()));
+  const [parts, setParts] = useState(() => splitPhone(value, DEFAULT_PHONE_COUNTRY));
   const emitted = useRef(value);
   useEffect(() => {
     if (value === emitted.current) return;

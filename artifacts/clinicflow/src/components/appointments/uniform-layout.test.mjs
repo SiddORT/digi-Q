@@ -39,10 +39,10 @@ test("screen ticket header owns actions without changing the exported document",
 });
 
 // ---- Compact action refinement contract ----
-test("row actions: icon Details with tooltip, clinical Check In/Out keep text, no ticket button in the row", () => {
+test("row actions: icon Details with tooltip, clinical Check In/Out are distinct icons (Section D), no ticket button in the row", () => {
   const s = r("./AppointmentRows.tsx");
   assert.match(s, /<IconAction className="row-details" label=\{`Details for \$\{a\.patientName\}`\}/);
-  assert.match(s, /\{primary==="complete"\?<LogOut size=\{14\}\/>:<LogIn size=\{14\}\/>\} \{label\(primary\)\}/);
+  assert.match(s, /icon=\{primary==="complete"\?<LogOut size=\{16\} aria-hidden\/>:<LogIn size=\{16\} aria-hidden\/>\}/);
   assert.doesNotMatch(s, /row-ticket|setTicket|<AppointmentTicket/);
   assert.match(s, /<span className="row-lead">\{cols\.toggle\(a\.id,a\.patientName\)\}/);
   assert.doesNotMatch(s.slice(s.indexOf('className="row-actions"')), /cols\.toggle\(/);
@@ -77,7 +77,7 @@ test("actions column is reduced", () => {
   assert.match(r("../uniformity.css"), /\.appt-table :is\(th,td\)\.col-actions\{width:200px;min-width:200px\}/);
 });
 test("remaining scope: weekly session Edit uses IconAction; report export keeps its label with icon and tooltip", () => {
-  assert.match(r("../schedule/WeeklyScheduleEditor.tsx"), /<IconAction label=\{`Edit details for \$\{label\}`\}/);
+  assert.match(r("../schedule/WeeklyDraftDays.tsx"), /<IconAction label=\{`Edit details for \$\{label\}`\}/);
   const c = r("../../clinic.tsx");
   assert.match(c, /<HelpTip text=\{exporting\?"Export in progress\."[^]*?data-testid="button-report-export"[^]*?\{exporting\?"Exporting…":"Export CSV"\}/);
   assert.match(r("../queue/SessionQueue.tsx"), /<AppointmentRows/);

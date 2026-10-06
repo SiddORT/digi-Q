@@ -87,6 +87,17 @@ export function weeklySessionsOverlap(a: any, b: any) {
   return false;
 }
 export { datePlus };
+/**
+ * Section F: a dated "extra interval" is an availability exception with isExtra=true. It adds a bookable
+ * session on one date without a weekly template; its id is the session id. Settings not on the exception
+ * (token prefix, duration, queue mode) come from the doctor's weekly session at that location when present.
+ */
+export function extraSession(e: any, template: any = {}, branch: any = {}) {
+  return { ...template, id: e.id, isExtra: true, isOpen: true, isClosed: false, dayOfWeek: new Date(e.date + "T12:00:00Z").getUTCDay(),
+    startTime: e.startTime, endTime: e.endTime, breakStart: e.breakStart ?? null, breakEnd: e.breakEnd ?? null, maxTokens: e.maxTokens ?? template.maxTokens ?? 0,
+    timezone: template.timezone || branch.timezone || "Asia/Kolkata", tokenPrefix: template.tokenPrefix || "X", consultationMinutes: template.consultationMinutes || 10,
+    queueMode: template.queueMode || "mixed", queueOpenTime: null, queueCloseTime: null, bufferMinutes: template.bufferMinutes || 0, status: "active" };
+}
 export async function operationalDoctorContext(doctorId: string, branchId: string, conn: any = db) {
   const doctor = await one(doctors, doctorId, conn), branch = await one(branches, branchId, conn), clinic = await one(clinics, branch.clinicId, conn);
   const account = await one(users, doctor.userId, conn);
@@ -104,12 +115,17 @@ export async function availability(doctorId: string, branchId: string, date: str
   const { doctor, branch, clinic } = await doctorContext(doctorId, branchId, conn);
   const weekday = new Date(date + "T12:00:00Z").getUTCDay();
   const sessions = (await all(schedules, conn)).filter(s => s.doctorId === doctorId && s.branchId === branchId && s.dayOfWeek === weekday && s.status === "active");
-  const matches = sessions.filter(s => selector.sessionId ? s.id === selector.sessionId : !selector.startTime || s.startTime === selector.startTime);
+  const dated = (await all(availabilityExceptions, conn)).filter(e => e.doctorId === doctorId && e.branchId === branchId && e.date === date && e.status === "active");
+  const exceptions = dated.filter(e => !e.isExtra);
+  let matches = sessions.filter(s => selector.sessionId ? s.id === selector.sessionId : !selector.startTime || s.startTime === selector.startTime);
+  if (!matches.length && (selector.sessionId || selector.startTime)) {
+    const extra = dated.find(e => e.isExtra && (selector.sessionId ? e.id === selector.sessionId : e.startTime === selector.startTime));
+    if (extra) matches = [extraSession(extra, sessions[0], branch)];
+  }
   assert(matches.length <= 1, 409, "Select a session for this doctor and date");
   const schedule = matches[0];
   if (selector.sessionId || selector.startTime) assert(schedule, 404, "Session not found for this doctor, branch and date");
-  const exceptions = (await all(availabilityExceptions, conn)).filter(e => e.doctorId === doctorId && e.branchId === branchId && e.date === date && e.status === "active");
-  const exception = exceptions.find(e => e.sessionId === schedule?.id) || exceptions.find(e => !e.sessionId);
+  const exception = schedule?.isExtra ? undefined : exceptions.find(e => e.sessionId === schedule?.id) || exceptions.find(e => !e.sessionId);
   const effective = { ...schedule };
   if (exception) for (const key of ["startTime", "endTime", "breakStart", "breakEnd", "maxTokens"]) if (exception[key] !== undefined && (exception[key] !== null || key.startsWith("break"))) effective[key] = exception[key];
   if (selector.sessionId && selector.startTime) assert(selector.startTime === effective.startTime, 409, "Session timing changed; refresh availability");
@@ -123,18 +139,47 @@ export async function availability(doctorId: string, branchId: string, date: str
   let reason: string | null = null;
   if (!schedule || !schedule.isOpen) reason = "No open weekly session";
   if (exception?.isClosed) reason = exception.reason || "Closed for this date";
-  if (!reason && Array.isArray(branch.openingHours) && (!branch.openingHours.some((h: any) => h.dayOfWeek === weekday && minutes(h.startTime) <= minutes(effective.startTime) && minutes(h.endTime) >= minutes(effective.endTime)) || !sameTimezone(timezone, branch.timezone || "Asia/Kolkata"))) reason = "Session is outside branch opening hours";
+  // Section F: hours beyond ordinary location hours remain bookable with a warning; only a timezone mismatch blocks.
+  if (!reason && Array.isArray(branch.openingHours) && !sameTimezone(timezone, branch.timezone || "Asia/Kolkata")) reason = "Session timezone differs from the location timezone";
+  if (!reason && schedule && effective.startTime && branchDayStatus(branch, { ...effective, date }) === "closed") reason = LOCATION_CLOSED_REASON;
+  const hoursWarning = schedule && !exception?.isClosed ? outsideBranchHours(branch, { ...effective, date }) : null;
   if (date < now.date || date === now.date && effective.endTime && now.minute >= minutes(effective.endTime)) reason = "Session is in the past";
    if (!reason && date === now.date && effective.queueCloseTime && now.minute >= minutes(effective.queueCloseTime)) reason = "Queue booking has closed";
   if ((Date.parse(date) - Date.parse(now.date)) / 86400000 > config.bookingHorizonDays) reason = "Outside booking horizon";
   const maxTokens = effective.maxTokens || 0, remainingTokens = Math.max(0, maxTokens - bookedTokens);
   if (!remainingTokens) reason ||= "Session capacity reached";
-  return { doctorId, branchId, clinicId: clinic.id, ...clinicDisplayPreferences(clinic), date, sessionId: schedule?.id || null, available: !reason, reason, startTime: effective.startTime || null, endTime: effective.endTime || null, breakStart: effective.breakStart || null, breakEnd: effective.breakEnd || null, timezone, maxTokens, bookedTokens, remainingTokens, consultationMinutes, tokenPrefix: effective.tokenPrefix || "A", queueMode: effective.queueMode || "mixed", queueOpenTime: effective.queueOpenTime, queueCloseTime: effective.queueCloseTime, bufferMinutes: effective.bufferMinutes || 0 };
+  return { doctorId, branchId, clinicId: clinic.id, ...clinicDisplayPreferences(clinic), date, sessionId: schedule?.id || null, available: !reason, reason, hoursWarning, startTime: effective.startTime || null, endTime: effective.endTime || null, breakStart: effective.breakStart || null, breakEnd: effective.breakEnd || null, timezone, maxTokens, bookedTokens, remainingTokens, consultationMinutes, tokenPrefix: effective.tokenPrefix || "A", queueMode: effective.queueMode || "mixed", queueOpenTime: effective.queueOpenTime, queueCloseTime: effective.queueCloseTime, bufferMinutes: effective.bufferMinutes || 0 };
 }
 export async function availabilitySessions(doctorId: string, branchId: string, date: string, conn: any = db) {
   assert(/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(Date.parse(date)) && new Date(date).toISOString().slice(0,10) === date, 400, "Invalid date");
   await doctorContext(doctorId, branchId, conn);
   const weekday = new Date(date + "T12:00:00Z").getUTCDay();
   const rows = (await all(schedules, conn)).filter(s => s.doctorId === doctorId && s.branchId === branchId && s.dayOfWeek === weekday && s.status === "active");
-  return Promise.all(rows.sort((a,b) => a.startTime.localeCompare(b.startTime)).map(s => availability(doctorId, branchId, date, conn, { sessionId: s.id })));
+  const extras = (await all(availabilityExceptions, conn)).filter(e => e.isExtra && e.doctorId === doctorId && e.branchId === branchId && e.date === date && e.status === "active");
+  const ids = [...rows, ...extras].sort((a,b) => String(a.startTime).localeCompare(String(b.startTime))).map(s => s.id);
+  return Promise.all(ids.map(sessionId => availability(doctorId, branchId, date, conn, { sessionId })));
+}
+/** Message shown when a doctor interval extends beyond ordinary location hours (accepted, never an error). */
+export const OUTSIDE_LOCATION_HOURS_WARNING = "Doctor hours extend beyond the location's ordinary opening hours";
+export const LOCATION_CLOSED_REASON = "Location is closed on all days (outside branch opening hours)";
+/**
+ * Section F location-hours relationship for one doctor interval:
+ *  unconfigured — openingHours null/absent (legacy access; readiness reports "no location hours", never "closed");
+ *  closed — the documented explicit all-closed plan (`[]`, written by "Close all days"). This is the only
+ *           location-level explicit closure flag in the product; dated closures live in availability exceptions;
+ *  outside — the doctor interval is not inside an ordinary open interval, including weekdays the plan simply
+ *            omits (there is no per-day closed flag), accepted with a warning;
+ *  inside — fully within an open location interval.
+ */
+export function branchDayStatus(branch: any, session: any): "unconfigured" | "closed" | "outside" | "inside" {
+  if (!Array.isArray(branch?.openingHours)) return "unconfigured";
+  if (!branch.openingHours.length) return "closed";
+  const day = session.date ? new Date(session.date + "T12:00:00Z").getUTCDay() : session.dayOfWeek;
+  const open = branch.openingHours.filter((h: any) => h.dayOfWeek === day && h.isOpen !== false);
+  return open.some((h: any) => minutes(h.startTime) <= minutes(session.startTime) && minutes(h.endTime) >= minutes(session.endTime)) ? "inside" : "outside";
+}
+/** Null when inside/unconfigured/closed (closure is handled separately); otherwise the warning text. */
+export function outsideBranchHours(branch: any, session: any): string | null {
+  if (!session?.startTime || !session?.endTime) return null;
+  return branchDayStatus(branch, session) === "outside" ? OUTSIDE_LOCATION_HOURS_WARNING : null;
 }

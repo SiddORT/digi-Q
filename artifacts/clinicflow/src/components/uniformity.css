@@ -462,3 +462,27 @@
   .workspace .table-scroll.appt-table td.col-actions .row-actions>*{flex:0 0 auto}
   .workspace .table-scroll.appt-table td:not(.col-actions){overflow:hidden;text-overflow:ellipsis}
 }
+/* Section D: compact, distinct Check In / Check Out icons inside Actions (shared IconAction tooltip + accessible name). */
+.workspace .table-scroll.appt-table td.col-actions .row-actions .icon-action.row-primary{min-width:32px;min-height:32px;border-radius:8px}
+.workspace .table-scroll.appt-table td.col-actions .row-actions .icon-action.row-primary-in{background:var(--teal);color:#fff;border-color:var(--teal)}
+.workspace .table-scroll.appt-table td.col-actions .row-actions .icon-action.row-primary-out{background:transparent;color:var(--teal);border:1.5px solid var(--teal)}
+@media (pointer:coarse){.workspace .table-scroll.appt-table td.col-actions .row-actions .icon-action{min-width:40px;min-height:40px}}
+
+/* Section C shared address layout: wide address line, content-sized country/state/city/PIN. */
+.address-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 14rem)); gap: var(--space-3, 12px) var(--space-4, 16px); align-items: start; }
+.address-fields > .wide { grid-column: 1 / -1; }
+.address-fields > .address-compact { display: grid; gap: 4px; min-width: 0; max-width: 18rem; }
+.address-fields .field-hint { display: inline-flex; align-items: center; gap: 4px; }
+.address-pin-state { grid-column: 1 / -1; }
+.pin-localities { display: grid; gap: .35rem; margin-top: .35rem; }
+.pin-locality-list { display: flex; flex-wrap: wrap; gap: .35rem; }
+.pin-locality { min-height: 32px; padding: .25rem .6rem; border-radius: 999px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); font-size: var(--type-caption); cursor: pointer; }
+.pin-locality span { color: hsl(var(--muted-foreground)); }
+.pin-locality:hover, .pin-locality:focus-visible { border-color: hsl(var(--primary)); }
+.pin-attribution { font-size: var(--type-caption); }
+@media (pointer: coarse) { .pin-locality { min-height: 40px; } }
+@media (max-width: 767px) { .address-fields { grid-template-columns: 1fr; } .address-fields > .address-compact { max-width: none; } }
+.readiness { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+/* Section E shared booking progression (ol/li). */
+ol.booking-steps { list-style: none; margin-left: 0; padding-left: 0; flex-wrap: wrap; }
+.booking-steps > li { display: flex; align-items: center; gap: 8px; font-size: var(--type-caption); color: #a6b09f; }

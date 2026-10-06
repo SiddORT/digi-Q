@@ -19,7 +19,13 @@ Default new country selections to India and use compact country codes rather tha
 
 **Why:** The user wants consistent address entry and no multiline country labels.
 
-**How to apply:** Preserve existing saved countries; distinguish address country code IN from telephone calling code +91. API-backed lookup is requested for assessment, not yet a chosen provider.
+**How to apply:** Preserve existing saved countries; distinguish address country code IN from telephone calling code +91. The subsequently approved Section C requests PIN assistance after provider assessment, with explicit locality choice, manual fallback and cached reference data. Never silently use a district or post-office name as a city.
+
+Use shared defaults, components and styling throughout these sections; do not duplicate features or UI for different entry points.
+
+**Why:** The user explicitly reinforced seamless uniformity when authorizing all remaining sections.
+
+**How to apply:** Reuse the shared address, booking, patient-entry and schedule controls rather than maintaining parallel implementations.
 
 Place equivalent controls in consistent positions across pages. Avoid repeated counts/context and size fields by their content rather than forcing half-width or full-width layouts. Table check-in/check-out actions should fit their column using compact icons with tooltips.
 

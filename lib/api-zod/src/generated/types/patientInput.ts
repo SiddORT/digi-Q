@@ -23,6 +23,17 @@
 import type { RecordStatus } from './recordStatus';
 
 export interface PatientInput {
+  /**
+     * ISO-2 or name; new entries default to IN
+     * @maxLength 100
+     */
+  country?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  city?: string;
+  /** @maxLength 12 */
+  pincode?: string;
   /** @minLength 1 */
   fullName: string;
   /** @nullable */

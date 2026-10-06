@@ -22,7 +22,7 @@ test("listing URL state and portal controls stay wired together", () => {
   assert.match(page, /query\.isPlaceholderData\?\[\]/);
   // Superseded by the shared body-portal RowMenu (uniform layout); same items and destructive separation.
   assert.match(page, /<RowMenu label=\{`Booking and display actions for \$\{row\.name\}`\}/);
-  for (const s of ["Open Booking", "Queue Display", "Manage QR Codes", "Configure clinic & opening hours", "Doctor Sessions", "link-sessions-", "key:\"deactivate\""]) assert.ok(page.includes(s), s);
+  for (const s of ["Open Public Booking…", "Queue Display", "Manage QR Codes", "Configure clinic & opening hours", "Doctor Sessions", "link-sessions-", "key:\"deactivate\""]) assert.ok(page.includes(s), s);
   assert.match(read("./RowMenu.tsx"), /createPortal\(/);
   assert.match(page, /resetPageOnSizeChange=\{false\}/);
 });

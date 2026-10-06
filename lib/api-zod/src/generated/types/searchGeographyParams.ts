@@ -28,4 +28,19 @@ kind: SearchGeographyKind;
  * @maxLength 100
  */
 search?: string;
+/**
+ * ISO-2 code or English country name scoping states and cities
+ * @maxLength 100
+ */
+country?: string;
+/**
+ * State/UT name scoping cities
+ * @maxLength 100
+ */
+state?: string;
+/**
+ * When given with kind=city, the response includes a compatible flag
+ * @maxLength 100
+ */
+city?: string;
 };

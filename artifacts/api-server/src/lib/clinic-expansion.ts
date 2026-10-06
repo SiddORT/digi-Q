@@ -3,7 +3,8 @@ import { sql } from "drizzle-orm";
 import { all, one, put, change, uid, audit, getSettings } from "./store";
 import { assert } from "./http";
 import { enrich } from "./entities";
-import { localNow, minutes, sameTimezone, weeklySessionsOverlap } from "./availability";
+import { validateTimes, localNow, minutes, sameTimezone, weeklySessionsOverlap, outsideBranchHours, branchDayStatus } from "./availability";
+export { outsideBranchHours, branchDayStatus, OUTSIDE_LOCATION_HOURS_WARNING, LOCATION_CLOSED_REASON } from "./availability";
 import { lockLinkedDoctors, planLinkedSchedules, applyLinkedPlan } from "./linked-schedules";
 
 const reserved = new Set(["api", "admin", "auth", "login", "logout", "register", "signup", "sign-in", "sign-up", "onboarding", "dashboard", "clinics", "branches", "doctors", "patients", "appointments", "queue", "settings", "reports", "users", "masters", "schedules", "availability", "booking", "book", "display", "qr", "public", "guest", "invite", "invitations", "forgot-password", "reset-password", "account", "me", "assets", "favicon", "__mockup", "clinicflow-project-deck"]);
@@ -36,11 +37,15 @@ export function validateOpeningHours(hours: any[]) {
     assert(a.dayOfWeek !== b.dayOfWeek || minutes(a.startTime) >= minutes(b.endTime) || minutes(b.startTime) >= minutes(a.endTime), 400, "Branch opening intervals overlap");
   }
 }
-export function withinBranchHours(branch: any, session: any) {
-  if (!session.isOpen || session.isClosed || !Array.isArray(branch.openingHours)) return;
-  const day = session.date ? new Date(session.date + "T12:00:00Z").getUTCDay() : session.dayOfWeek;
-  assert(branch.openingHours.some((h: any) => h.dayOfWeek === day && minutes(h.startTime) <= minutes(session.startTime) && minutes(h.endTime) >= minutes(session.endTime)), 409, "Doctor session must be within branch opening hours");
+/**
+ * Section F: doctors may consult outside ordinary location hours (e.g. location 9–5, doctor 8–12 and 3–6).
+ * That is a warning, not an error. The location timezone must still match. Returns the warning (or null).
+ */
+export function withinBranchHours(branch: any, session: any): string | null {
+  if (!session.isOpen || session.isClosed || !Array.isArray(branch.openingHours)) return null;
+  assert(branchDayStatus(branch, session) !== "closed", 409, "The location is set to closed on all days. Add opening hours before adding doctor sessions.");
   assert(!session.timezone || sameTimezone(session.timezone, branch.timezone || "Asia/Kolkata"), 400, "Sessions with configured branch hours must use the branch timezone");
+  return outsideBranchHours(branch, session);
 }
 export async function provisionBranchQr(branch: any, old: any, conn: any) {
   if (!branch.slug || old?.slug) return;
@@ -139,6 +144,8 @@ export async function attachOwnDoctor(actor: any, body: any, conn: any) {
 }
 export async function createOwnedClinic(actor: any, admin: any, input: any, conn: any) {
   assert(!input.ownerSchedule || input.ownDoctor, 400, "Linked owner sessions require the consulting owner profile.");
+  assert(!input.ownerCustomSchedule || input.ownDoctor, 400, "Custom owner sessions require the consulting owner profile.");
+  assert(!(input.ownerSchedule && input.ownerCustomSchedule), 400, "Choose either linked location hours or custom weekly sessions, not both.");
   assert(input.clinic?.name?.trim() && typeof input.clinic.address === "string", 400, "Clinic name and address are required");
   await validateClinicMetadata(input.clinic, conn);
   await validateSlugWrite("clinics", input.clinic, null, conn);
@@ -154,6 +161,7 @@ export async function createOwnedClinic(actor: any, admin: any, input: any, conn
   const linkedResult = input.ownerSchedule && doctor ? await saveClinicSetup({ ...admin, role: "clinicAdmin" }, id, {
     branches: result.branches.map(b => ({ id: b.id, linkedSchedule: { ...input.ownerSchedule, enabled: true, doctorId: doctor.id } })),
   }, conn) : result;
+  if (input.ownerCustomSchedule && doctor) await createOwnerCustomSessions(admin, doctor.id, result.branches, input.ownerCustomSchedule, conn);
   return { ...linkedResult, doctorId: doctor?.id || null };
 }
 
@@ -182,4 +190,27 @@ export async function previewClinicSetup(actor: any, clinicId: string, body: any
     }
   }
   return { allowed: !conflicts.length, impacts, conflicts };
+}
+/**
+ * Section F: custom weekly sessions entered once in the shared weekly editor during onboarding/registration.
+ * Runs inside the onboarding transaction after the doctor profile exists, so a failure rolls back everything.
+ * Same rules as saved schedules: valid times, no overlap per location/day, explicit all-closed locations refused,
+ * branch timezone; outside-hours remains allowed (a warning in the editor).
+ */
+export async function createOwnerCustomSessions(actor: any, doctorId: string, created: any[], custom: any, conn: any) {
+  const placed: any[] = [];
+  for (const input of custom.sessions || []) {
+    const branch = created[input.branchIndex];
+    assert(branch, 400, "Each custom session must belong to one of the new locations");
+    const session = { doctorId, clinicId: branch.clinicId, branchId: branch.id, dayOfWeek: input.dayOfWeek, isOpen: true, startTime: input.startTime, endTime: input.endTime,
+      timezone: branch.timezone || "Asia/Kolkata", tokenPrefix: custom.tokenPrefix, maxTokens: custom.maxTokens, consultationMinutes: custom.consultationMinutes, bufferMinutes: 0, queueMode: custom.queueMode };
+    validateTimes(session); withinBranchHours(branch, session);
+    assert(!placed.some(p => p.branchId === session.branchId && weeklySessionsOverlap(p, session)), 409, "Custom sessions on the same day and location cannot overlap");
+    placed.push(session);
+  }
+  for (const session of placed) {
+    const saved = await put(schedules, { id: uid(), clinicId: session.clinicId, branchId: session.branchId, doctorId, dayOfWeek: session.dayOfWeek, data: session }, conn);
+    await audit(actor, "create", "schedules", saved, conn);
+  }
+  return placed.length;
 }

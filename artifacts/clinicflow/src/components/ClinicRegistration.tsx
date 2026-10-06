@@ -8,7 +8,7 @@ import { AuthShell } from "../auth/AuthShell";
 import { AuthAccess } from "../auth/AuthAccess";
 import { ClinicAdminOnboarding } from "./ClinicAdminOnboarding";
 import { ClinicRegistrationComplete } from "./ClinicRegistrationComplete";
-import { ClinicRegistrationWizard, type RegistrationValues } from "./ClinicRegistrationWizard";
+import { ClinicRegistrationWizard, ownerSchedulePayload, type RegistrationValues } from "./ClinicRegistrationWizard";
 import { Logo } from "../App";
 import { BRAND_NAME } from "../branding";
 import "./ClinicRegistrationAccount.css";
@@ -141,9 +141,9 @@ function RegistrationForm() {
       const result = await registration.mutateAsync({ data: {
         fullName: values.fullName.trim(), ...(values.mobile.trim() ? { mobile: values.mobile.trim() } : {}), password,
         clinic: { dateFormat: values.dateFormat, timeFormat: values.timeFormat, name: values.name.trim(), slug: values.slug, address: values.branches[0].address.trim(), email: values.clinicEmail.trim() || null, phone: values.phone.trim() || null, categoryId: values.categoryId || null, specialityIds: values.specialityIds, referralCode: values.referralCode.trim() || null },
-        branches: values.branches.map(b => ({ name: b.name.trim(), slug: b.slug, address: b.address.trim(), city: b.city.trim(), timezone: b.timezone, email: b.email.trim() || null, phone: b.phone.trim() || null, inheritEmail: b.inheritEmail, inheritPhone: b.inheritPhone, openingHours: b.hours.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ dayOfWeek: d.dayOfWeek, ...s }))) })),
+        branches: values.branches.map(b => ({ name: b.name.trim(), slug: b.slug, address: b.address.trim(), city: b.city.trim(), state: b.state?.trim() || undefined, pincode: b.pincode?.trim() || undefined, country: b.country?.trim() || undefined, timezone: b.timezone, email: b.email.trim() || null, phone: b.phone.trim() || null, inheritEmail: b.inheritEmail, inheritPhone: b.inheritPhone, openingHours: b.hours.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ dayOfWeek: d.dayOfWeek, ...s }))) })),
         ownDoctor: values.alsoConsult, ...(values.alsoConsult ? { specializationId: values.specializationId || undefined, qualificationIds: values.qualificationIds } : {}),
-        ...(values.alsoConsult && values.linkConsultationHours ? { ownerSchedule: { maxTokens: Number(values.sessionCapacity), consultationMinutes: Number(values.consultationMinutes), tokenPrefix: "A", queueMode: "mixed" as const } } : {}),
+        ...ownerSchedulePayload(values),
       } });
       setPassword("");
       setCompleted(result);

@@ -35,8 +35,10 @@ export function dayErrors(day: DraftDay): string[] {
   return errors;
 }
 
-export function outsideHours(session: DraftSession, hours: { startTime: string; endTime: string }[]) {
-  return !!hours.length && TIME.test(session.startTime) && TIME.test(session.endTime) && !hours.some(h => h.startTime <= session.startTime && h.endTime >= session.endTime);
+/** Section F: true when a session extends beyond ordinary location hours (a warning, never an error).
+ *  `configured` = the location has an opening-hours plan; then a weekday with no interval is also "outside". */
+export function outsideHours(session: DraftSession, hours: { startTime: string; endTime: string }[], configured = false) {
+  return (!!hours.length || configured) && TIME.test(session.startTime) && TIME.test(session.endTime) && !hours.some(h => h.startTime <= session.startTime && h.endTime >= session.endTime);
 }
 
 /** Copies a day's editable sessions. Locked (clinic-linked) sessions in targets are kept untouched; source locked sessions are copied as plain times. */
@@ -142,3 +144,56 @@ export function weekSummary(week: DraftDay[], labels: string[], fmt: (t: string)
 /** Clinic-linked sessions are changed only through Clinic settings; the generic per-session editor must not open for them. */
 export const canOpenDetails = (row?: ScheduleRow | null) => !!row && !row.linkedBranchId;
 export function openDetails(row: ScheduleRow | undefined, onEdit: (row: ScheduleRow) => void) { if (canOpenDetails(row)) onEdit(row!); }
+
+/**
+ * Section F readiness: actual missing requirements for bookability. Location hours alone never imply
+ * availability; absent location hours are reported as "not configured", never as closed.
+ */
+export function scheduleReadiness(rows: { isOpen?: boolean; status?: string; maxTokens?: number }[], opening: unknown[] | null | undefined) {
+  const open = rows.filter(r => r.status !== "inactive" && r.isOpen !== false);
+  const missing: string[] = [];
+  if (!open.length) missing.push("No open weekly sessions for this doctor at this location; patients cannot book until a session is saved.");
+  else if (!open.some(r => Number(r.maxTokens) >= 1)) missing.push("Sessions have no capacity; set Max tokens with Details.");
+  if (Array.isArray(opening) && !opening.length) missing.push("Location is set to closed on all days; add opening hours in Clinic settings.");
+  const notes: string[] = [];
+  if (opening == null) notes.push("No location hours configured; doctor sessions alone decide availability.");
+  return { ready: !missing.length, missing, notes };
+}
+
+/**
+ * Section F "Copy location hours once" inside the shared editor: replaces the editable sessions of every
+ * day with that day's location intervals in the DRAFT only (saved through the normal plan). Linked
+ * (locked) sessions are kept and intervals overlapping them are skipped; existing session ids are reused
+ * in order so a copy edits records instead of deactivating and recreating them. Days without hours keep
+ * their sessions unless the location is explicitly closed every day (openingHours: []), which turns them off.
+ */
+export function prefillFromHours(week: DraftDay[], opening: { dayOfWeek: number; startTime: string; endTime: string }[]): DraftDay[] {
+  return week.map(day => {
+    const hours = opening.filter(h => h.dayOfWeek === day.dayOfWeek).sort((a, b) => a.startTime.localeCompare(b.startTime));
+    const locked = day.sessions.filter(s => s.locked);
+    if (!hours.length) return opening.length ? day : { ...day, isOpen: locked.length > 0, sessions: locked };
+    const reusable = day.sessions.filter(s => !s.locked && s.id).map(s => s.id as string);
+    const copied = hours.filter(h => !locked.some(l => l.startTime < h.endTime && h.startTime < l.endTime))
+      .map(h => ({ key: draftKey(), id: reusable.shift(), startTime: h.startTime, endTime: h.endTime }));
+    return { ...day, isOpen: true, sessions: [...locked, ...copied].sort((a, b) => a.startTime.localeCompare(b.startTime)) };
+  });
+}
+
+/** Multi-location copy: the source location's own (unlocked) intervals replace the target's unlocked ones; target linked sessions stay. */
+export function applyWeekTo(target: DraftDay[], source: DraftDay[]): DraftDay[] {
+  return target.map(day => {
+    const src = source.find(d => d.dayOfWeek === day.dayOfWeek);
+    const locked = day.sessions.filter(s => s.locked);
+    const reusable = day.sessions.filter(s => !s.locked && s.id).map(s => s.id as string);
+    const copied = (src?.isOpen ? src.sessions.filter(s => !s.locked) : [])
+      .filter(s => !locked.some(l => l.startTime < s.endTime && s.startTime < l.endTime))
+      .map(s => ({ key: draftKey(), id: reusable.shift(), startTime: s.startTime, endTime: s.endTime }));
+    const sessions = [...locked, ...copied].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    return { ...day, isOpen: sessions.length > 0, sessions };
+  });
+}
+
+/** Onboarding payload: one entry per open interval per new location (index matches the submitted branches array). */
+export function toOwnerSessions(weeks: DraftDay[][]): { branchIndex: number; dayOfWeek: number; startTime: string; endTime: string }[] {
+  return weeks.flatMap((week, branchIndex) => week.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ branchIndex, dayOfWeek: d.dayOfWeek, startTime: s.startTime, endTime: s.endTime }))));
+}

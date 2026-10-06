@@ -5,16 +5,18 @@ import { Link } from "wouter";
 import { MapPin } from "lucide-react";
 import { CareLookup } from "./CareLookup";
 import { Logo } from "../App";
+import { soleBookable } from "../lib/sole-option";
 
-type PublicOption = { id: string; name?: string; slug?: string };
+type PublicOption = { id: string; name?: string; slug?: string | null };
 
 export function GuestClinicFinder() {
   const [clinic, setClinic] = useState<PublicOption | null>(null);
   const [branch, setBranch] = useState<PublicOption | null>(null);
-  const clinics = useQuery({queryKey:["guest-finder-single-clinic"],queryFn:()=>api.listPublicClinics({page:1,pageSize:2}),staleTime:30000});
-  const branches = useQuery({queryKey:["guest-finder-single-branch",clinic?.id],enabled:!!clinic?.id,queryFn:()=>api.listPublicBranches({clinicId:clinic!.id,page:1,pageSize:2}),staleTime:30000});
-  useEffect(()=>{if(!clinic&&clinics.data?.total===1&&clinics.data.items[0])setClinic(clinics.data.items[0]);},[clinic,clinics.data]);
-  useEffect(()=>{if(clinic&&!branch&&branches.data?.total===1&&branches.data.items[0])setBranch(branches.data.items[0]);},[clinic,branch,branches.data]);
+  const clinics = useQuery({queryKey:["guest-finder-single-clinic"],queryFn:()=>api.listPublicClinics({page:1,pageSize:20}),staleTime:30000});
+  const branches = useQuery({queryKey:["guest-finder-single-branch",clinic?.id],enabled:!!clinic?.id,queryFn:()=>api.listPublicBranches({clinicId:clinic!.id,page:1,pageSize:20}),staleTime:30000});
+  useEffect(()=>{const only=soleBookable(clinics.data);if(!clinic&&only)setClinic(only);},[clinic,clinics.data]);
+  // Sole option = the only active location that has a public booking address (slug); unslugged rows cannot be booked here.
+  useEffect(()=>{const only=soleBookable(branches.data);if(clinic&&!branch&&only)setBranch(only);},[clinic,branch,branches.data]);
   const bookingPath = clinic?.slug && branch?.slug
     ? `/${encodeURIComponent(clinic.slug)}/${encodeURIComponent(branch.slug)}?book=1`
     : null;

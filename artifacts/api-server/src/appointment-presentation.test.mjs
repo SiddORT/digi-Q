@@ -19,8 +19,10 @@ await build({
   plugins: [{
     name: "isolated-title",
     setup(b) {
+      // Bundle the workspace API client from source (its extensionless TS imports cannot load as an external package).
+      b.onResolve({ filter: /^@workspace\/api-client-react$/ }, () => ({ path: resolve(import.meta.dirname, "../../../lib/api-client-react/src/index.ts") }));
       b.onResolve({ filter: /\/resources$/ }, () => ({ path: "title", namespace: "fixture" }));
-      b.onLoad({ filter: /.*/, namespace: "fixture" }, () => ({ contents: "export const title = value => value;" }));
+      b.onLoad({ filter: /.*/, namespace: "fixture" }, () => ({ contents: "export const title = value => value; export const ErrorNotice = () => null;" }));
     },
   }],
 });

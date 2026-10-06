@@ -24,6 +24,19 @@ import type { RecordStatus } from './recordStatus';
 import type { Role } from './role';
 
 export interface UserInput {
+  /**
+     * ISO-2 or name; new entries default to IN
+     * @maxLength 100
+     */
+  country?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  city?: string;
+  /** @maxLength 12 */
+  pincode?: string;
+  /** @maxLength 500 */
+  address?: string;
   /** @minLength 1 */
   fullName: string;
   email: string;

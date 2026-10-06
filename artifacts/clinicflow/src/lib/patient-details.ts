@@ -1,7 +1,7 @@
 import { validatePersonName, validatePhone } from "./validators.ts";
 
 /** Secondary patient fields shown under "More details". */
-export const PATIENT_SECONDARY = ["address", "emergencyContactName", "emergencyContactPhone"];
+export const PATIENT_SECONDARY = ["address", "country", "state", "city", "pincode", "emergencyContactName", "emergencyContactPhone"];
 
 /** Validates secondary fields from form values regardless of whether their controls are mounted or collapsed. */
 export function secondaryFieldErrors(values: Record<string, unknown>): Record<string, string> {

@@ -27,6 +27,8 @@ export interface AvailabilityExceptionInput {
   branchId: string;
   date: Date;
   isClosed: boolean;
+  /** Adds a bookable session on this date only (requires startTime, endTime, maxTokens; no sessionId). */
+  isExtra?: boolean;
   reason: string;
   /** @nullable */
   startTime?: string | null;

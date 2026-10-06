@@ -156,6 +156,7 @@ import type {
   PatientList,
   PermissionPolicy,
   PermissionPolicyInput,
+  PincodeLookup,
   ProfileInput,
   PublicClinicContext,
   PublicDisplay,
@@ -182,6 +183,7 @@ import type {
   ScheduleInput,
   ScheduleList,
   SearchGeographyParams,
+  SearchPublicGeographyParams,
   SearchRecordsParams,
   SessionContext,
   Settings,
@@ -299,6 +301,155 @@ export function useSearchGeography<TData = Awaited<ReturnType<typeof searchGeogr
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getSearchGeographyQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSearchPublicGeographyUrl = (params: SearchPublicGeographyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/geography?${stringifiedParams}` : `/api/public/geography`
+}
+
+export const searchPublicGeography = async (params: SearchPublicGeographyParams, options?: Parameters<typeof customFetch>[1]): Promise<GeographySuggestions> => {
+
+  return customFetch<GeographySuggestions>(getSearchPublicGeographyUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchPublicGeographyQueryKey = (params?: SearchPublicGeographyParams,) => {
+    return [
+    `/api/public/geography`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchPublicGeographyQueryOptions = <TData = Awaited<ReturnType<typeof searchPublicGeography>>, TError = ErrorType<unknown>>(params: SearchPublicGeographyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchPublicGeography>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchPublicGeographyQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchPublicGeography>>> = ({ signal }) => searchPublicGeography(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchPublicGeography>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchPublicGeographyQueryResult = NonNullable<Awaited<ReturnType<typeof searchPublicGeography>>>
+export type SearchPublicGeographyQueryError = ErrorType<unknown>
+
+
+
+export function useSearchPublicGeography<TData = Awaited<ReturnType<typeof searchPublicGeography>>, TError = ErrorType<unknown>>(
+ params: SearchPublicGeographyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchPublicGeography>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchPublicGeographyQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getLookupPublicPincodeUrl = (pin: string,) => {
+
+
+
+
+  return `/api/public/pincode/${pin}`
+}
+
+export const lookupPublicPincode = async (pin: string, options?: Parameters<typeof customFetch>[1]): Promise<PincodeLookup> => {
+
+  return customFetch<PincodeLookup>(getLookupPublicPincodeUrl(pin),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getLookupPublicPincodeQueryKey = (pin: string,) => {
+    return [
+    `/api/public/pincode/${pin}`
+    ] as const;
+    }
+
+
+export const getLookupPublicPincodeQueryOptions = <TData = Awaited<ReturnType<typeof lookupPublicPincode>>, TError = ErrorType<unknown>>(pin: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof lookupPublicPincode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLookupPublicPincodeQueryKey(pin);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof lookupPublicPincode>>> = ({ signal }) => lookupPublicPincode(pin, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: pin !== null && pin !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof lookupPublicPincode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type LookupPublicPincodeQueryResult = NonNullable<Awaited<ReturnType<typeof lookupPublicPincode>>>
+export type LookupPublicPincodeQueryError = ErrorType<unknown>
+
+
+
+export function useLookupPublicPincode<TData = Awaited<ReturnType<typeof lookupPublicPincode>>, TError = ErrorType<unknown>>(
+ pin: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof lookupPublicPincode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getLookupPublicPincodeQueryOptions(pin,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

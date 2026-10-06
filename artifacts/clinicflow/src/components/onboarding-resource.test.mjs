@@ -30,7 +30,7 @@ test("formats are submitted atomically and settings only patch display preferenc
   for(const file of ["./ClinicAdminOnboarding.tsx","./ClinicRegistration.tsx"]){
     const ui=source(file);
     assert.match(ui,/clinic: \{ dateFormat: values.dateFormat, timeFormat: values.timeFormat/);
-    assert.match(ui,/ownerSchedule:/);
+    assert.match(ui,/ownerSchedulePayload\(values\)/);
   }
   assert.match(source("./ClinicSettings.tsx"),/data:\{clinic:formats\}/);
   assert.match(source("./ClinicSettings.tsx"),/Stored dates, session times and bookings will not be rewritten/);

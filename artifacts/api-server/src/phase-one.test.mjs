@@ -762,8 +762,22 @@ test("opening hours validate intervals and constrain sessions without changing l
   const session = {isOpen:true,dayOfWeek:1,startTime:"08:00",endTime:"10:00",timezone:"UTC"};
   api.withinBranchHours({},session);
   api.withinBranchHours({openingHours:null},session);
-  assert.throws(()=>api.withinBranchHours({openingHours:[]},session),/within branch/);
-  assert.throws(()=>api.withinBranchHours({timezone:"UTC",openingHours:[{dayOfWeek:1,startTime:"09:00",endTime:"12:00"}]},session),/within branch/);
+  assert.throws(()=>api.withinBranchHours({openingHours:[]},session),/closed on all days/);
+  // Section F: location open 09:00-12:00, doctor 08:00-10:00 is accepted with a warning (not an error).
+  assert.match(api.withinBranchHours({timezone:"UTC",openingHours:[{dayOfWeek:1,startTime:"09:00",endTime:"12:00"}]},session),/beyond the location/);
+});
+
+test("section F: location 9-5 with doctor 8-12 and 3-6 accepted with warnings; inside, explicit all-closed and timezone still enforced", () => {
+  const branch={timezone:"UTC",openingHours:[{dayOfWeek:1,startTime:"09:00",endTime:"17:00"}]};
+  for (const [startTime,endTime] of [["08:00","12:00"],["15:00","18:00"]]) assert.equal(api.withinBranchHours(branch,{isOpen:true,dayOfWeek:1,startTime,endTime,timezone:"UTC"}),api.OUTSIDE_LOCATION_HOURS_WARNING);
+  assert.equal(api.withinBranchHours(branch,{isOpen:true,dayOfWeek:1,startTime:"09:00",endTime:"17:00",timezone:"UTC"}),null);
+  // A weekday omitted from a configured plan has no explicit closed flag: warning, not closure.
+  assert.equal(api.withinBranchHours(branch,{isOpen:true,dayOfWeek:2,startTime:"09:00",endTime:"12:00",timezone:"UTC"}),api.OUTSIDE_LOCATION_HOURS_WARNING);
+  // Only the documented explicit all-closed plan blocks; absent (null) hours stay unconfigured.
+  assert.throws(()=>api.withinBranchHours({timezone:"UTC",openingHours:[]},{isOpen:true,dayOfWeek:1,startTime:"09:00",endTime:"12:00",timezone:"UTC"}),/closed on all days/);
+  assert.equal(api.branchDayStatus({openingHours:null},{dayOfWeek:1,startTime:"09:00",endTime:"10:00"}),"unconfigured");
+  assert.throws(()=>api.withinBranchHours(branch,{isOpen:true,dayOfWeek:1,startTime:"08:00",endTime:"12:00",timezone:"Asia/Tokyo"}),/branch timezone/);
+  assert.equal(api.withinBranchHours(branch,{isOpen:false,dayOfWeek:2,startTime:"08:00",endTime:"12:00"}),null);
 });
 
 test("explicit all-closed settings reject booking while absent and null hours retain legacy access", async () => {
@@ -772,8 +786,22 @@ test("explicit all-closed settings reject booking while absent and null hours re
   await globalThis.phaseDb.transaction(tx=>api.saveClinicSetup({id:"admin",role:"clinicAdmin"},"c",{branches:[{id:"b",openingHours:[]}]},tx));
   assert.equal((await api.availability("d","b",tomorrow)).available,false);
   await assert.rejects(book("p1",tomorrow),/outside branch opening hours/);
+  assert.equal((await api.availability("d","b",tomorrow)).reason,api.LOCATION_CLOSED_REASON);
   await globalThis.phaseDb.transaction(tx=>api.saveClinicSetup({id:"admin",role:"clinicAdmin"},"c",{branches:[{id:"b",openingHours:null}]},tx));
   assert.equal((await api.availability("d","b",tomorrow)).available,true);
+});
+
+test("section F downstream: session beyond ordinary location hours stays bookable with hoursWarning", async () => {
+  await seed();
+  const weekday=new Date(tomorrow+"T12:00:00Z").getUTCDay();
+  // Seeded doctor sessions are 00:00-23:59 every day; location ordinarily open 09:00-17:00 every day.
+  assert.ok(weekday>=0);
+  await globalThis.phaseDb.transaction(tx=>api.saveClinicSetup({id:"admin",role:"clinicAdmin"},"c",{branches:[{id:"b",openingHours:[0,1,2,3,4,5,6].map(dayOfWeek=>({dayOfWeek,startTime:"09:00",endTime:"17:00"}))}]},tx));
+  const slot=await api.availability("d","b",tomorrow);
+  assert.equal(slot.available,true);
+  assert.equal(slot.hoursWarning,api.OUTSIDE_LOCATION_HOURS_WARNING);
+  const booked=await book("p1",tomorrow);
+  assert.ok(booked.id||booked.appointment?.id);
 });
 
 test("queue GET uses legacy duration without writing appointments, settings or audits", async () => {
@@ -1123,4 +1151,84 @@ test("linked onboarding requires explicit valid capacity and rolls back incomple
   await assert.rejects(linkedFixture({ ownerSchedule: { ...ownerLinkedOptions, maxTokens: 0 } }), /capacity/);
   assert.equal((await api.all(t.clinics)).some(c => c.slug === "linked-solo-clinic"), false);
   await assert.rejects(linkedFixture({ ownDoctor: false }), /consulting owner/);
+});
+test("section F: dated extra interval adds a bookable session without a weekly template and is not an override", async () => {
+  await seed();
+  const weekday = new Date(tomorrow).getUTCDay(), id = "d" + weekday;
+  const original = await api.one(t.schedules, id);
+  await api.change(t.schedules, id, { data: { ...original, startTime: "09:00", endTime: "10:00", maxTokens: 2 } });
+  await api.put(t.availabilityExceptions, { id: "extra1", doctorId: "d", branchId: "b", date: tomorrow,
+    data: { doctorId: "d", branchId: "b", date: tomorrow, isExtra: true, isClosed: false, reason: "Extra clinic", startTime: "18:00", endTime: "19:00", maxTokens: 3 } });
+  const sessions = await api.availabilitySessions("d", "b", tomorrow);
+  assert.equal(sessions.length, 2);
+  const weekly = sessions.find(s => s.sessionId === id), extra = sessions.find(s => s.sessionId === "extra1");
+  assert.equal(weekly.startTime, "09:00"); assert.equal(weekly.maxTokens, 2); // extra never overrides the weekly session
+  assert.equal(extra.startTime, "18:00"); assert.equal(extra.maxTokens, 3); assert.equal(extra.available, true);
+  const booked = await book("p1", tomorrow, { sessionId: "extra1" });
+  assert.equal(booked.startTime, "18:00");
+});
+
+test("section C: optional address fields persist and reload for patients, doctors and staff users", async () => {
+  await seed();
+  const owner = {...await api.one(t.users,"admin"),clinicIds:["c"],branchIds:["b","b2"]};
+  const addr = { address: "12 MG Road, Indiranagar", country: "IN", state: "Karnataka", city: "Bengaluru", pincode: "560038" };
+  const pick = row => ({ address: row.address, country: row.country, state: row.state, city: row.city, pincode: row.pincode });
+  const patient = await route(api.resourcesRouter,"post","/patients",owner,{fullName:"Address patient",clinicId:"c",branchId:"b",...addr});
+  assert.deepEqual(pick(await api.one(t.patients, patient.id)), addr);
+  const edited = { ...addr, city: "Mysuru", pincode: "570001" };
+  await route(api.resourcesRouter,"patch","/patients/:id",owner,{fullName:"Address patient",clinicId:"c",branchId:"b",...edited},{id:patient.id});
+  assert.deepEqual(pick(await api.one(t.patients, patient.id)), edited);
+  await route(api.resourcesRouter,"patch","/doctors/:id",owner,{fullName:"Doctor",email:"d@example.com",status:"active",...addr},{id:"d"});
+  assert.deepEqual(pick(await api.one(t.doctors, "d")), addr);
+  const staff = { id: "du" }; await route(api.resourcesRouter,"patch","/users/:id",owner,{fullName:"Doctor",email:"d@example.com",role:"doctor",...addr},{id:"du"});
+  assert.deepEqual(pick(await api.one(t.users, staff.id)), addr);
+  // HTTP GET returns the stored address consistently (patient, doctor, staff user).
+  assert.deepEqual(pick(await route(api.resourcesRouter,"get","/patients/:id",owner,{},{id:patient.id})), edited);
+  assert.deepEqual(pick(await route(api.resourcesRouter,"get","/doctors/:id",owner,{},{id:"d"})), addr);
+  assert.deepEqual(pick(await route(api.resourcesRouter,"get","/users/:id",owner,{},{id:"du"})), addr);
+  // Doctor profile and its account share one address: editing the account updates the doctor GET.
+  const moved = { ...addr, city: "Hubballi", pincode: "580020" };
+  await route(api.resourcesRouter,"patch","/users/:id",owner,{fullName:"Doctor",email:"d@example.com",role:"doctor",...moved},{id:"du"});
+  assert.deepEqual(pick(await route(api.resourcesRouter,"get","/doctors/:id",owner,{},{id:"d"})), moved);
+  // Editing the doctor mirrors to the account.
+  await route(api.resourcesRouter,"patch","/doctors/:id",owner,{fullName:"Doctor",email:"d@example.com",status:"active",...addr},{id:"d"});
+  assert.deepEqual(pick(await route(api.resourcesRouter,"get","/users/:id",owner,{},{id:"du"})), addr);
+});
+test("guest finder contract: public clinics only lists clinics with an active location", async () => {
+  const list = async () => (await route(api.publicRouter, "get", "/public/clinics", null, {}, {}, { page: "1", pageSize: "50" })).items.map(c => c.id);
+  const branchRows = (await api.all(t.branches)).filter(b => b.clinicId === "c" && b.status === "active");
+  assert.ok(branchRows.length);
+  assert.ok((await list()).includes("c"));
+  for (const b of branchRows) await api.change(t.branches, b.id, { status: "inactive" });
+  try { assert.ok(!(await list()).includes("c")); }
+  finally { for (const b of branchRows) await api.change(t.branches, b.id, { status: "active" }); }
+});
+test("section F: onboarding saves custom weekly sessions once, after the doctor, in one transaction", async () => {
+  const hours = [1, 2].map(dayOfWeek => ({ dayOfWeek, startTime: "09:00", endTime: "17:00" }));
+  let n = 0;
+  // Same path as /clinic-admin-onboarding and /clinic-registration: createOwnedClinic inside the caller's transaction.
+  const onboard = (sessions, extra = {}) => globalThis.phaseDb.transaction(async tx => {
+    const admin = await api.put(t.users, { id: `custom-owner-${++n}`, fullName: "Custom Owner", email: `custom${n}@example.com`, role: "clinicAdmin", status: "active" }, tx);
+    return api.createOwnedClinic(admin, admin, { ownDoctor: true,
+      clinic: { name: "Custom Hours Clinic", address: "1 Road", timezone: "Asia/Kolkata" },
+      branches: [{ name: "North", address: "1 Road", timezone: "Asia/Kolkata", openingHours: hours }, { name: "South", address: "2 Road", timezone: "Asia/Kolkata", openingHours: hours }],
+      ownerCustomSchedule: { maxTokens: 12, consultationMinutes: 15, tokenPrefix: "C", queueMode: "mixed", sessions }, ...extra }, tx);
+  });
+  const before = (await api.all(t.schedules)).length;
+  const r = await onboard([{ branchIndex: 0, dayOfWeek: 1, startTime: "09:00", endTime: "12:00" }, { branchIndex: 0, dayOfWeek: 1, startTime: "14:00", endTime: "18:00" },
+    { branchIndex: 1, dayOfWeek: 2, startTime: "10:00", endTime: "13:00" }]);
+  const saved = (await api.all(t.schedules)).filter(s => s.doctorId === r.doctorId);
+  assert.equal(saved.length, 3);
+  assert.ok(saved.every(s => s.maxTokens === 12 && s.consultationMinutes === 15 && s.isOpen && s.tokenPrefix === "C"));
+  assert.equal(new Set(saved.map(s => s.branchId)).size, 2);
+  const usersBefore = (await api.all(t.users)).length, clinicsBefore = (await api.all(t.clinics)).length;
+  const one = [{ branchIndex: 0, dayOfWeek: 1, startTime: "09:00", endTime: "12:00" }];
+  await assert.rejects(onboard([...one, { branchIndex: 0, dayOfWeek: 1, startTime: "11:00", endTime: "13:00" }]), /overlap/);
+  await assert.rejects(onboard([{ ...one[0], branchIndex: 5 }]), /new locations/);
+  await assert.rejects(onboard(one, { ownerSchedule: { maxTokens: 5, consultationMinutes: 10, tokenPrefix: "A", queueMode: "mixed" } }), /not both/);
+  await assert.rejects(onboard(one, { ownDoctor: false }), /owner profile/);
+  // Rollback: no admin, clinic, doctor or session survives a rejected custom schedule.
+  assert.equal((await api.all(t.users)).length, usersBefore);
+  assert.equal((await api.all(t.clinics)).length, clinicsBefore);
+  assert.equal((await api.all(t.schedules)).length, before + 3);
 });

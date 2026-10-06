@@ -83,3 +83,45 @@ test("linked session Details never calls the generic editor", () => {
   assert.deepEqual(calls, []); assert.equal(canOpenDetails(rows[1]), false);
   openDetails(rows[0], r => calls.push(r.id)); assert.deepEqual(calls, ["1"]);
 });
+test("section F: weekday omitted from a configured plan is outside-hours (warning), unconfigured is never outside", () => {
+  assert.equal(outsideHours({ key: "a", startTime: "08:00", endTime: "12:00" }, [], true), true);
+  assert.equal(outsideHours({ key: "a", startTime: "08:00", endTime: "12:00" }, [], false), false);
+  assert.equal(outsideHours({ key: "a", startTime: "09:00", endTime: "12:00" }, [{ startTime: "09:00", endTime: "17:00" }], true), false);
+  assert.equal(outsideHours({ key: "a", startTime: "15:00", endTime: "18:00" }, [{ startTime: "09:00", endTime: "17:00" }], true), true);
+});
+import { scheduleReadiness } from "./week-plan.ts";
+import { exceptionImpact } from "./exception-impact.ts";
+test("section F readiness: hours alone never imply availability; absent hours are not closure", () => {
+  assert.equal(scheduleReadiness([], [{ dayOfWeek: 1, startTime: "09:00", endTime: "17:00" }]).ready, false);
+  const none = scheduleReadiness([{ isOpen: true, maxTokens: 5 }], null);
+  assert.equal(none.ready, true); assert.match(none.notes[0], /No location hours configured/); assert.doesNotMatch(none.notes.join(), /closed/i);
+  assert.match(scheduleReadiness([{ isOpen: true, maxTokens: 5 }], []).missing[0], /closed on all days/);
+});
+test("section F exception impact preview counts day-off and out-of-window bookings", () => {
+  const rows = [{ status: "booked", startTime: "09:00" }, { status: "waiting", startTime: "16:00" }, { status: "cancelled", startTime: "10:00" }];
+  assert.equal(exceptionImpact(rows, { isClosed: true }).affected, 2);
+  assert.equal(exceptionImpact(rows, { startTime: "08:00", endTime: "12:00" }).affected, 1);
+  assert.match(exceptionImpact([], { isClosed: true }).message, /No active bookings/);
+});
+import { prefillFromHours } from "./week-plan.ts";
+test("F: copy location hours once fills the draft, keeps linked sessions, reuses ids, respects absent vs explicit closure", () => {
+  const week = buildWeek([{ id: "s1", dayOfWeek: 1, startTime: "10:00", endTime: "11:00" }, { id: "L", dayOfWeek: 2, startTime: "09:00", endTime: "12:00", linkedBranchId: "b" }, { id: "s3", dayOfWeek: 3, startTime: "08:00", endTime: "09:00" }]);
+  const opening = [{ dayOfWeek: 1, startTime: "09:00", endTime: "13:00" }, { dayOfWeek: 1, startTime: "16:00", endTime: "19:00" }, { dayOfWeek: 2, startTime: "09:00", endTime: "12:00" }, { dayOfWeek: 2, startTime: "15:00", endTime: "18:00" }];
+  const next = prefillFromHours(week, opening);
+  assert.deepEqual(next[1].sessions.map(s => [s.id, s.startTime, s.endTime]), [["s1", "09:00", "13:00"], [undefined, "16:00", "19:00"]]);
+  assert.ok(next[2].sessions.some(s => s.locked && s.startTime === "09:00"));
+  assert.equal(next[2].sessions.filter(s => s.startTime === "09:00").length, 1); // overlap with linked skipped
+  assert.deepEqual(next[3], week[3]); // weekday absent from hours is not treated as closed
+  const closed = prefillFromHours(week, []);
+  assert.equal(closed[3].isOpen, false); // explicit all-closed plan
+});
+
+test("applyWeekTo copies own intervals to another location, keeps its linked sessions, reuses ids", async () => {
+  const { applyWeekTo, toOwnerSessions, buildWeek } = await import("./week-plan.ts");
+  const source = buildWeek([{ id: "s1", dayOfWeek: 1, startTime: "09:00", endTime: "12:00" }, { id: "s2", dayOfWeek: 1, startTime: "14:00", endTime: "16:00" }]);
+  const target = buildWeek([{ id: "t1", dayOfWeek: 1, startTime: "08:00", endTime: "09:00" }, { id: "L", dayOfWeek: 1, startTime: "14:30", endTime: "15:00", linkedBranchId: "b" }, { id: "t2", dayOfWeek: 3, startTime: "10:00", endTime: "11:00" }]);
+  const out = applyWeekTo(target, source);
+  assert.deepEqual(out[1].sessions.map(s => [s.id, s.startTime, s.locked || false]), [["t1", "09:00", false], ["L", "14:30", true]]);
+  assert.equal(out[3].isOpen, false);
+  assert.deepEqual(toOwnerSessions([source, out]).map(s => [s.branchIndex, s.dayOfWeek, s.startTime]), [[0, 1, "09:00"], [0, 1, "14:00"], [1, 1, "09:00"], [1, 1, "14:30"]]);
+});
