@@ -20,5 +20,11 @@
     "@electric-sql/pglite": "^0.5.8",
     "prettier": "^3.9.6",
     "typescript": "~5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "argon2",
+      "core-js"
+    ]
   }
 }
