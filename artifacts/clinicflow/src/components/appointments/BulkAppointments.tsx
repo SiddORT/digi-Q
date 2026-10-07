@@ -46,6 +46,8 @@ export function BulkAppointments({ids,disabled,onClear,onRetain,labels={}}:{ids:
           } else if(kind==="csv") records.push(a);
           else {
             const qr=await api.getAppointmentQr(id);
+            if(!qr.checkInUrl?.trim())throw new Error("Personal QR unavailable. Refresh and try again.");
+            if(qr.appointmentId!==id)throw new Error("Personal QR does not match the selected appointment.");
             const url=qr.checkInUrl.startsWith("/")?`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/,"")}${qr.checkInUrl}`:qr.checkInUrl;
             const image=await QRCode.toDataURL(url,{width:250,margin:2});
             const section=documentOut.createElement("section");section.style.cssText="page-break-after:always;padding:24px;font-family:sans-serif;color:#10274e;background:#fff;border-top:4px solid #087cb7";
@@ -63,6 +65,7 @@ export function BulkAppointments({ids,disabled,onClear,onRetain,labels={}}:{ids:
         const cell=(v:unknown)=>`"${String(v??"").replace(/^[=+@\-\t\r]/,"'$&").replace(/"/g,'""')}"`;
         download([["Reference","Patient","Clinic","Branch","Doctor","Date","Session start","Session end","Token","Status"],...records.map(a=>[a.reference,a.patientName,a.clinicName,a.branchName,a.doctorName,formatDate(a.date,a),a.startTime?formatTime(a.startTime,a):"",a.endTime?formatTime(a.endTime,a):"",a.token,a.status])].map(row=>row.map(cell).join(",")).join("\r\n"),"text/csv;charset=utf-8","selected-appointments.csv");
       }
+      if((kind==="download"||kind==="print")&&completedIds.length!==ids.length)throw new Error("No tickets exported. All selected appointments must have an available personal QR. Review the results and retry.");
       if(kind==="download"&&documentOut.body.children.length)await downloadPdf("<!doctype html>"+documentOut.documentElement.outerHTML,"private-appointment-tickets.pdf");
       if(popup&&documentOut.body.children.length){popup.document.replaceChild(popup.document.importNode(documentOut.documentElement,true),popup.document.documentElement);await Promise.all(Array.from(popup.document.images).map(img=>img.decode()));popup.focus();popup.print();}
       else popup?.close();

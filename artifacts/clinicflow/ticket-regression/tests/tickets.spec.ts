@@ -119,7 +119,7 @@ async function download(page: Page, format: "ticket" | "a4" = "ticket") {
   expect(item.suggestedFilename()).toMatch(/^clinicflow-ticket-.*\.pdf$/);
   return readPdf(await item.path());
 }
-type Pdf = { bytes: Buffer; pages: number; images: string[]; width: number; height: number };
+type Pdf = { bytes: Buffer; pages: number; images: string[]; width: number; height: number; dimensions: { width: number; height: number }[] };
 /** Inspect the actual downloaded bytes, not source markup or the pre-export canvas. */
 async function readPdf(file: string): Promise<Pdf> {
   const bytes = await readFile(file);
@@ -129,16 +129,20 @@ async function readPdf(file: string): Promise<Pdf> {
   const pages = Number(/Pages:\s+(\d+)/.exec(info)?.[1] ?? 0);
   const size = /Page size:\s+([\d.]+) x ([\d.]+) pts/.exec(info);
   expect(size, info).not.toBeNull();
+  const pageInfo = execFileSync("pdfinfo", ["-f", "1", "-l", String(pages), file], { encoding: "utf8" });
+  const dimensions = Array.from(pageInfo.matchAll(/Page\s+\d+ size:\s+([\d.]+) x ([\d.]+) pts/g),
+    match => ({ width: Number(match[1]) * 25.4 / 72, height: Number(match[2]) * 25.4 / 72 }));
+  expect(dimensions).toHaveLength(pages);
   const imageInfo = execFileSync("pdfimages", ["-list", file], { encoding: "utf8" });
   // JPEG/JPEG2000 can look similar while damaging the QR edges; keep exports lossless.
   expect(imageInfo).not.toMatch(/\b(jpeg|jpx|jp2)\b/i);
   const dir = await mkdtemp(join(tmpdir(), "ticket-pdf-"));
   try {
     execFileSync("pdftoppm", ["-r", "300", "-png", file, join(dir, "p")]);
-    const names = (await readdir(dir)).filter(n => n.endsWith(".png")).sort();
+    const names = (await readdir(dir)).filter(n => n.endsWith(".png")).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     const images = await Promise.all(names.map(async n => `data:image/png;base64,${(await readFile(join(dir, n))).toString("base64")}`));
     expect(images).toHaveLength(pages);
-    return { bytes, pages, images, width: Number(size![1]) * 25.4 / 72, height: Number(size![2]) * 25.4 / 72 };
+    return { bytes, pages, images, dimensions, width: Number(size![1]) * 25.4 / 72, height: Number(size![2]) * 25.4 / 72 };
   } finally { await rm(dir, { recursive: true, force: true }); }
 }
 /** The rendered PDF page must carry a scannable private QR (decoded in the harness page via jsQR). */
@@ -514,30 +518,76 @@ for (const mode of ["guest", "appointment"] as const) {
   }
 }
 
+// Intentionally not ID-sorted: the PDF must retain selection order.
+const bulkAppointments = [3, 1, 2].map(n => ({
+  ...appointment, id: `appointment-${n}`, patientId: `patient-${n}`,
+  patientName: ["Fictional Alice Cedar", "Fictional Bruno Maple", "Fictional Cara Willow"][n - 1],
+  reference: `BULK-00${n}`, token: `B-${n}0`,
+  checkInUrl: `https://tickets.example.invalid/check-in/signed-bulk-${n}`,
+}));
+type QrFailure = "outage" | "unavailable" | "mismatch";
+async function mountBulk(page: Page, state: { failure?: QrFailure } = {}) {
+  const calls: string[] = [];
+  await page.route("**/api/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    calls.push(path);
+    const a = bulkAppointments.find(a => path === `/api/appointments/${a.id}` || path === `/api/appointments/${a.id}/qr`);
+    if (route.request().method() !== "GET" || !a) {
+      await route.fulfill({ status: 501, json: { message: `Unmocked ${path}` } });
+      throw new Error(`Unmocked bulk API request: ${path}`);
+    }
+    const isQr = path.endsWith("/qr");
+    // Fail the middle ticket only, after a good ticket has already been prepared.
+    if (isQr && a.id === bulkAppointments[1].id && state.failure === "outage") {
+      await route.fulfill({ status: 503, json: { message: "Fictional QR outage" } });
+      return;
+    }
+    await route.fulfill({ json: isQr ? {
+      appointmentId: a.id === bulkAppointments[1].id && state.failure === "mismatch" ? bulkAppointments[0].id : a.id,
+      payload: "fictional-signed",
+      checkInUrl: a.id === bulkAppointments[1].id && state.failure === "unavailable" ? "" : a.checkInUrl,
+    } : a });
+  });
+  await page.goto("/?mode=bulk");
+  await expect(page.getByTestId("text-bulk-count")).toHaveText("3 selected");
+  return calls;
+}
+const bulkCalls = bulkAppointments.flatMap(a => [`/api/appointments/${a.id}`, `/api/appointments/${a.id}/qr`]);
+async function clickBulkDownload(page: Page) {
+  await page.getByTestId("menu-bulk-more").click();
+  await page.getByRole("menuitem", { name: "Download Tickets PDF" }).click();
+}
+async function verifyBulkPdf(page: Page, pdf: Pdf) {
+  expect(pdf.pages).toBe(bulkAppointments.length);
+  expect(pdf.bytes.length).toBeGreaterThan(10_000 * bulkAppointments.length);
+  expect(pdf.bytes.length).toBeLessThan(750_000 * bulkAppointments.length);
+  for (const [i, a] of bulkAppointments.entries()) {
+    expect(pdf.dimensions[i].width).toBeCloseTo(105, 1);
+    expect(pdf.dimensions[i].height).toBeGreaterThan(80);
+    expect(pdf.dimensions[i].height).toBeLessThan(400);
+    expect(await decode(page, pdf.images[i])).toBe(a.checkInUrl);
+    // PDF text is rasterised. Per-patient visual references assert the patient,
+    // reference and token on the very same page whose QR was just decoded.
+    expect(Buffer.from(pdf.images[i].split(",")[1], "base64")).toMatchSnapshot(
+      `bulk-${a.id}.png`, { maxDiffPixels: 100, threshold: 0.1 },
+    );
+  }
+}
 for (const kind of ["download", "print"] as const) {
-  test(`bulk ${kind} embeds the complete logo and private QR`, async ({ page }) => {
-    const f = fixture();
-    await page.route("**/api/**", async route => {
-      const path = new URL(route.request().url()).pathname;
-      f.calls.push(path);
-      const reply = path === "/api/appointments/appointment-1"
-        ? f.mutateAppointment(++f.appointmentReads)
-        : path === "/api/appointments/appointment-1/qr"
-          ? f.mutateQr(++f.qrReads)
-          : { status: 501, body: { message: `Unmocked ${path}` } };
-      await route.fulfill({ status: reply.status ?? 200, json: reply.body });
-    });
-    await page.goto("/?mode=bulk");
+  test(`bulk ${kind} preserves selected patients, page order, logos and distinct private QRs`, async ({ page }) => {
+    const calls = await mountBulk(page);
     let html = "";
     if (kind === "download") {
-      const event = page.waitForEvent("download");
-      await page.getByTestId("menu-bulk-more").click();
-      await page.getByRole("menuitem", { name: "Download Tickets PDF" }).click();
-      const item = await event;
-      expect(item.suggestedFilename()).toBe("private-appointment-tickets.pdf");
-      const pdf = await readPdf(await item.path());
-      expect(f.calls).toEqual(["/api/appointments/appointment-1", "/api/appointments/appointment-1/qr"]);
-      await verifyPdf(page, pdf);
+      // A second export verifies order remains stable across repeated actions.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        calls.length = 0;
+        const event = page.waitForEvent("download");
+        await clickBulkDownload(page);
+        const item = await event;
+        expect(item.suggestedFilename()).toBe("private-appointment-tickets.pdf");
+        await verifyBulkPdf(page, await readPdf(await item.path()));
+        expect(calls).toEqual(bulkCalls);
+      }
       return;
     } else {
       await interceptPrint(page);
@@ -548,25 +598,59 @@ for (const kind of ["download", "print"] as const) {
       html = await popup.content();
       await popup.close();
     }
-    expect(f.calls).toEqual(["/api/appointments/appointment-1", "/api/appointments/appointment-1/qr"]);
+    expect(calls).toEqual(bulkCalls);
     expect(html).toContain("Private appointment ticket");
-    expect(html).toContain("Account Patient");
     expect(html).not.toMatch(/<script\b|<link\b|<iframe\b/i);
     const offline = await page.context().newPage();
     try {
       await offline.context().setOffline(true);
       await offline.setContent(html);
-      const logo = offline.getByAltText("DigiQ Doctors logo");
-      const qr = offline.getByAltText("Private appointment QR");
+      await expect(offline.locator("section")).toHaveCount(bulkAppointments.length);
+      for (const [i, a] of bulkAppointments.entries()) {
+      const section = offline.locator("section").nth(i);
+      await expect(section).toContainText(a.patientName);
+      await expect(section).toContainText(a.reference);
+      await expect(section).toContainText(a.token);
+      for (const other of bulkAppointments.filter(other => other.id !== a.id)) await expect(section).not.toContainText(other.patientName);
+      const logo = section.getByAltText("DigiQ Doctors logo");
+      const qr = section.getByAltText("Private appointment QR");
       expect(await logo.getAttribute("src")).toMatch(/^data:image\/png;base64,/);
       await expect.poll(() => logo.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1529, 778]);
       const src = await qr.getAttribute("src");
       expect(src).toMatch(/^data:image\/png;base64,/);
       expect(await qr.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
-      expect(await decode(page, src!)).toBe(qrUrl);
+      expect(await decode(page, src!)).toBe(a.checkInUrl);
+      }
     } finally {
       await offline.context().setOffline(false);
       await offline.close();
     }
+  });
+}
+
+for (const failure of ["outage", "unavailable", "mismatch"] as const) {
+  test(`bulk PDF blocks all downloads on one ${failure} QR and retries the whole selection`, async ({ page }) => {
+    const state: { failure?: QrFailure } = { failure };
+    const calls = await mountBulk(page, state);
+    const downloads: string[] = [];
+    page.on("download", d => downloads.push(d.suggestedFilename()));
+    await clickBulkDownload(page);
+    await expect(page.getByRole("alert")).toContainText("No tickets exported");
+    await expect(page.getByTestId("status-bulk-progress")).toHaveCount(0);
+    await page.getByText("Review Failures and Skipped Appointments").click();
+    await expect(page.getByRole("listitem")).toContainText("appointment-1: failed");
+    expect(calls).toEqual(bulkCalls);
+    expect(downloads).toEqual([]);
+
+    // No stale/partial pages from the failed attempt may leak into the retry.
+    state.failure = undefined;
+    calls.length = 0;
+    const event = page.waitForEvent("download");
+    await clickBulkDownload(page);
+    const item = await event;
+    await verifyBulkPdf(page, await readPdf(await item.path()));
+    expect(downloads).toEqual(["private-appointment-tickets.pdf"]);
+    expect(calls).toEqual(bulkCalls);
+    await expect(page.getByRole("alert")).toHaveCount(0);
   });
 }
