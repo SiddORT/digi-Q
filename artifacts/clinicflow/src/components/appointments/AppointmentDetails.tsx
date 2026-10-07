@@ -11,7 +11,7 @@ const statusText = (status: string) => status === "called" ? "Called next" : tit
 /** Private, authorized appointment data only; never render on a public ticket.
  *  Sections: Patient, Visit, Provider, Booking, Ticket & QR, Consultation, History. Nothing from the earlier
  *  flat layout is dropped; the full ticket (QR, download, print, status, guidance) now lives here instead of a row button. */
-export function AppointmentDetails({ appointment: a }: { appointment: Appointment }) {
+export function AppointmentDetails({ appointment: a, ticketFirst = false }: { appointment: Appointment; ticketFirst?: boolean }) {
   const timestamp = (value: string) => formatConfiguredTimestamp(value, a.timezone || undefined, {}, a);
   const [copied, setCopied] = useState<"" | "done" | "failed">("");
   const copyReference = () => {
@@ -19,7 +19,13 @@ export function AppointmentDetails({ appointment: a }: { appointment: Appointmen
     navigator.clipboard.writeText(a.reference).then(() => setCopied("done"), () => setCopied("failed"));
   };
   const session = `${a.startTime ? formatTime(a.startTime, a) : "—"}–${a.endTime ? formatTime(a.endTime, a) : "—"}`;
-  const [ticketOpen, setTicketOpen] = useState(false);
+  const [ticketOpen, setTicketOpen] = useState(ticketFirst);
+  const ticketBlock = (ticketOpen || !canShowAppointmentTicket(a)) && <div className="appt-detail-block appt-detail-ticket span-2" style={{ gridColumn: "1/-1" }} id={`appt-ticket-${a.id}`} data-testid="section-detail-ticket">
+      <h4>Ticket &amp; QR</h4>
+      {canShowAppointmentTicket(a)
+        ? <AppointmentTicket id={a.id} />
+        : <p className="appt-detail-empty" data-testid="text-detail-ticket-unavailable">Completed visits do not need a ticket. The booking reference above remains available for records.</p>}
+    </div>;
   return <section aria-label="Appointment details" className="appt-detail" data-testid="appointment-details">
     <header className="appt-detail-summary">
       <div>
@@ -30,6 +36,8 @@ export function AppointmentDetails({ appointment: a }: { appointment: Appointmen
       <div className="appt-detail-token" data-testid="text-detail-token"><small>Token</small><strong>{a.token || "Not assigned"}</strong></div>
     </header>
 
+    {/* ticketFirst renders the ticket in DOM order before every other block (not CSS order), so it is truly first. */}
+    {ticketFirst && ticketBlock}
     <div className="appt-detail-cols">
     <div className="appt-detail-block" data-testid="section-detail-patient">
       <h4>Patient</h4>
@@ -65,12 +73,7 @@ export function AppointmentDetails({ appointment: a }: { appointment: Appointmen
       </dl>
     </div>
 
-    {(ticketOpen || !canShowAppointmentTicket(a)) && <div className="appt-detail-block appt-detail-ticket span-2" style={{ gridColumn: "1/-1" }} id={`appt-ticket-${a.id}`} data-testid="section-detail-ticket">
-      <h4>Ticket &amp; QR</h4>
-      {canShowAppointmentTicket(a)
-        ? <AppointmentTicket id={a.id} />
-        : <p className="appt-detail-empty" data-testid="text-detail-ticket-unavailable">Completed visits do not need a ticket. The booking reference above remains available for records.</p>}
-    </div>}
+    {!ticketFirst && ticketBlock}
 
     <div className="appt-detail-block">
       <h4>Consultation</h4>

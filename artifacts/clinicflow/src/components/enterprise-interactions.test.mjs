@@ -20,13 +20,13 @@ test("sensitive entries share visibility controls without retrieving saved secre
 
 test("workspace search respects navigation scope and cancels stale requests", () => {
   const search = read("./WorkspaceSearch.tsx");
-  assert.match(search, /if \(!navigation.includes\(target\)\) return/);
+  assert.match(search, /if \(!navigation.length \|\| !categories.some\(cat => categorySources\(cat, role\).includes\(source\)\)\) return/);
   assert.match(search, /role !== "patient"/);
   assert.match(search, /new AbortController/);
   assert.match(search, /controller.abort\(\)/);
   assert.match(search, /if \(!controller.signal.aborted\)/);
   assert.match(search, /event.metaKey \|\| event.ctrlKey/);
-  assert.match(search, /setGroups\(\[\]\)/);
+  assert.match(search, /setGroups\(\{\}\)/);
 });
 
 test("navigation preferences are user-role scoped and contain page IDs, not patient search history", () => {

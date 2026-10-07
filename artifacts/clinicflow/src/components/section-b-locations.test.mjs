@@ -12,7 +12,7 @@ test("B11 no duplicate location count beside the clinic selector; one list headi
   assert.doesNotMatch(settings, /data\.branches\.length\} \{data\.branches\.length===1/);
   // One useful total, in the Locations list heading; pagination keeps range/page controls without repeating it.
   assert.match(resources, /const headingCount=resource==="branches";/);
-  assert.match(resources, /<FilterBar title=\{headingCount\?<h2[^]*?Locations[^]*?query\.data\.total/);
+  assert.match(resources, /<FilterBar filters=\{primaryFilters\} title=\{headingCount\?<h2[^]*?Locations[^]*?query\.data\.total/);
   assert.equal((resources.match(/text-locations-count/g) || []).length, 1);
   assert.match(resources, /hideTotal=\{headingCount\}/);
   const controls = read("./ListingControls.tsx");
@@ -29,7 +29,7 @@ test("B12 clinic-wide scope marker without an extra paragraph", () => {
 
 test("B13 Locations list uses the shared ResourcePage FilterBar toolbar", () => {
   assert.match(settings, /<ResourcePage key=\{`\$\{clinicId\}-branches`\} resource="branches"/);
-  assert.match(resources, /admin-listing-filter\$\{embedded\?" embedded":""\}`\}><FilterBar title=\{headingCount/);
+  assert.match(resources, /admin-listing-filter\$\{embedded\?" embedded":""\}`\}><FilterBar filters=\{primaryFilters\} title=\{headingCount/);
   assert.match(resources, /listName=resource==="branches"\?"locations"/);
 });
 

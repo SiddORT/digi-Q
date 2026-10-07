@@ -17,7 +17,8 @@ test("wide desktop inline, all widths below 1280 behind More, no second action r
   assert.match(css, /\.rag\[data-open="true"\] \.rag-secondary\{display:flex\}/);
 });
 test("FilterBar routes secondary through the group and keeps primary actions visible", () => {
-  assert.match(bar, /<ResponsiveActionGroup secondary=\{secondary\}>\{actions\}<\/ResponsiveActionGroup>/);
+  assert.match(bar, /<ResponsiveActionGroup>\{actions\}<\/ResponsiveActionGroup>/);
+  assert.match(bar, /<div className="lh-table-tools" data-testid="list-header-table-tools"><ResponsiveActionGroup secondary=\{secondary\} label="Table Tools" \/><\/div>/);
   const clinic = read("../clinic.tsx"), users = read("../Users.tsx"), res = read("../resources.tsx"), sys = read("./SystemUsers.tsx");
   assert.match(clinic, /secondary=\{<><FilteredAppointmentExport[^]*?\{appointmentViews\}<\/>\} actions=\{<><Link className="button" href=\{`\/\$\{role\}\/book`\}/);
   assert.match(clinic, /secondary=\{<><HelpTip text=[^]*?<button className="button secondary small report-export" aria-label="Export all report results as CSV"[^]*?\{reportCols\.settings\}\{reportViews\}<\/>\}/);

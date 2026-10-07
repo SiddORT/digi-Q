@@ -1,11 +1,11 @@
 import * as api from "@workspace/api-client-react";
 import QRCode from "qrcode";
 import { absoluteUrl, bookingStatusLabel, embeddedTicketLogo, ticketHtml } from "../tickets/VisitTicket";
-import { downloadTicketPdf } from "../tickets/ticket-pdf";
+import { downloadTicketPdf, type TicketPdfFormat } from "../tickets/ticket-pdf";
 import { canShowAppointmentTicket } from "./presentation";
 
 /** Real PDF download through the shared ticket PDF helper. */
-export const downloadPdf = (html: string, filename: string) => downloadTicketPdf(html, filename);
+export const downloadPdf = (html: string, filename: string, format: TicketPdfFormat = "ticket") => downloadTicketPdf(html, filename, format);
 
 /** Fresh appointment + QR revalidation (same rule as the on-screen ticket), returned as self-contained ticket HTML. */
 export async function freshTicketHtml(id: string, logo?: string) {

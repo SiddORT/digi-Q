@@ -46,7 +46,7 @@ test("range input renders two typeable fields and a calendar trigger", () => {
 
 test("all From/To filters use the shared range picker and weekly editors use expandable rows", () => {
   const clinic = read("../clinic.tsx"), resources = read("../resources.tsx");
-  assert.equal((clinic.match(/<DateRangeInput /g) || []).length, 2, "appointments and reports");
+  assert.equal((clinic.match(/<DateRangeInput /g) || []).length, 3, "appointments, reports drawer and reports quick filter");
   assert.match(resources, /<DateRangeInput fromLabel="From date" toLabel="To date"/);
   assert.doesNotMatch(clinic + resources, /<label>(From|To)( date| \*)?<DateFormatInput/);
   for (const f of ["./ClinicRegistrationHours.tsx", "./schedule/WeeklyDraftDays.tsx"]) {

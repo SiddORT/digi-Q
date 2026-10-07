@@ -240,11 +240,13 @@ export interface FilterBarProps {
   meta?: React.ReactNode;
   /** Explicit drawer active-filter count when chips do not use the "adv:" key prefix. */
   activeCount?: number;
+  /** Common filters exposed under the search row (e.g. date range and status as independent controls). */
+  filters?: React.ReactNode;
 }
 
 /** Shared list header. Row 1: title, wide search, actions. Row 2 (only when needed): status tabs, scope/meta, Filters/Clear.
  *  Row 1 is always rendered first and in the same position so the search input never remounts while typing. */
-export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount }: FilterBarProps) {
+export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters }: FilterBarProps) {
   const advancedActiveCount = activeCount ?? chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
@@ -310,35 +312,44 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
             )}
           </div>
   );
+  // Layout order: 1) header (title + primary action), 2) wide search + filter/table tools, 3) exposed common filters
+  // and status tabs, 4) active filter chips with one Clear All. The search row never remounts while typing.
   return (
     <section className="filter-bar list-header" aria-label={label} data-testid="list-header">
-      <div className={cn("filter-bar-row lh-row lh-top", (title || status) && "has-title")}>
+      {(pageTitle || title || actions) && <div className={cn("filter-bar-row lh-row lh-top lh-head", (title || status) && "has-title")}>
         {pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1></div>
           : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>}
+        {actions && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup>{actions}</ResponsiveActionGroup></div>}
+      </div>}
+      <div className="filter-bar-row lh-row lh-top lh-search-row" data-testid="list-header-search-row">
         {children && <div className="filter-bar-primary lh-search">{children}</div>}
         {toolsInline && !!(meta || advanced || showClear) && tools}
-        {(actions || secondary) && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup secondary={secondary}>{actions}</ResponsiveActionGroup></div>}
+        {secondary && <div className="lh-table-tools" data-testid="list-header-table-tools"><ResponsiveActionGroup secondary={secondary} label="Table Tools" /></div>}
       </div>
-      {hasSubRow && (
+      {(hasSubRow || filters) && (
         <div className="lh-row lh-sub" data-testid="list-header-subrow">
           {countInSub && <div className="filter-bar-title lh-count" data-testid="text-listing-title">{title}</div>}
+          {filters && <div className="lh-filters" role="group" aria-label="Common filters" data-testid="list-header-filters">{filters}</div>}
           {status && <div className="filter-bar-status lh-status">{status}</div>}
-          {tools}
+          {hasSubRow && tools}
         </div>
       )}
       {chips.length > 0 && (
-        <ul className="filter-chips" aria-label="Active filters">
-          {chips.map(chip => (
-            <li key={chip.key}>
-              <span>{chip.label}</span>
-              {chip.onRemove && (
-                <button type="button" onClick={chip.onRemove} aria-label={`Remove filter ${chip.label}`} data-testid={`chip-remove-${chip.key}`}>
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <div className="lh-chips-row">
+          <ul className="filter-chips" aria-label="Active filters">
+            {chips.map(chip => (
+              <li key={chip.key}>
+                <span>{chip.label}</span>
+                {chip.onRemove && (
+                  <button type="button" onClick={chip.onRemove} aria-label={`Remove filter ${chip.label}`} data-testid={`chip-remove-${chip.key}`}>
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+          {onReset && <button type="button" className="filter-clear lh-clear-all" onClick={onReset} data-testid="button-clear-all-filters">Clear All</button>}
+        </div>
       )}
     </section>
   );

@@ -27,8 +27,7 @@ test("D: Check In/Out are compact distinct icon actions with accessible name and
   const rows=read("./appointments/AppointmentRows.tsx");
   assert.match(rows,/<IconAction className=\{`row-primary row-primary-\$\{primary==="complete"\?"out":"in"\}`\} label=\{`\$\{label\(primary\)\}: \$\{a\.patientName\}`\}/);
   assert.doesNotMatch(rows,/<button className="row-primary"/);
-  assert.ok(rows.indexOf("row-primary row-primary")<rows.indexOf('className="row-details"'));
-  assert.ok(rows.indexOf('className="row-details"')<rows.indexOf("<RowMenu"));
+  assert.ok(rows.indexOf("row-primary row-primary")<rows.indexOf("<RowMenu"));
   assert.match(read("./uniformity.css"),/row-primary-out\{/);
 });
 test("E: selects never expose raw IDs while labels load",()=>{

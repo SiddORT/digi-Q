@@ -28,8 +28,9 @@ test("global search wires both record groups; Reports initializes from the URL",
   const s = read("./WorkspaceSearch.tsx");
   assert.match(s, /api\.searchRecords\(/);
   assert.match(s, /href: queueRecordHref\(role, r, navigation\.includes\("queue"\)\)/);
-  assert.match(s, /api\.getReports\(\{ \.\.\.range, groupBy, search, page: 1, pageSize: 5 \}/);
-  assert.match(s, /Reports · \$\{range\.from\} to \$\{range\.to\}/, "date range is shown");
+  assert.match(s, /appointmentHref\(role, a\)/);
+  assert.match(s, /api\.getReports\(\{ \.\.\.range, groupBy, search, page, pageSize \}/);
+  assert.match(s, /\$\{range\.from\} to \$\{range\.to\}/, "date range is shown");
   const block = s.slice(s.indexOf("api.searchRecords("), s.indexOf('add("patients"'));
   assert.doesNotMatch(block, /`\/\$\{role\}\/queue`/, "record results never use an unfiltered queue link");
   const c = read("../clinic.tsx");
@@ -52,4 +53,66 @@ test("legacy device views stay local and import only on explicit action", () => 
   assert.match(c, /data-testid=\{`button-import-view-\$\{v\.id\}`\}/);
   assert.match(c, /On This Device Only/);
   for (const f of ["../clinic.tsx", "../resources.tsx", "../Users.tsx", "./SystemUsers.tsx"]) assert.match(read(f), /onImport=\{\w+\.importLegacyView\}/, f);
+});
+
+import { permittedCategories, countLabel, canLoadMore, recordHref, appointmentHref } from "../lib/search-categories.ts";
+test("search categories: permissions, honest counts, exact-record links", () => {
+  assert.deepEqual(permittedCategories("patient", ["appointments", "book"]), ["appointments"]);
+  assert.deepEqual(permittedCategories("receptionist", ["patients", "appointments", "queue"]), ["patients", "appointments"], "queue never adds a duplicate appointments group");
+  assert.equal(countLabel(3, 47), "Showing 3 of 47");
+  assert.equal(countLabel(2, 2), "2 matches");
+  assert.equal(countLabel(0, 0), "No matches");
+  assert.equal(canLoadMore(10, 47), true); assert.equal(canLoadMore(47, 47), false); assert.equal(canLoadMore(100, 400), false);
+  assert.equal(new URL(recordHref("admin", "patients", "p1", "Asha Rao"), "http://x").searchParams.get("open"), "p1");
+  assert.equal(new URL(appointmentHref("doctor", { id: "a1", reference: "REF" }), "http://x").searchParams.get("appointment"), "a1");
+});
+
+test("search sources: distinct record types, exact summed totals, cap hands off to the full listing", async () => {
+  const m = await import("../lib/search-categories.ts");
+  assert.deepEqual(m.categorySources("staff", "admin"), ["receptionists", "clinicAdmins", "doctors"]);
+  assert.deepEqual(m.categorySources("staff", "clinic"), ["receptionists"]);
+  assert.equal(m.categoryTotal([3, 0, 12]), 15);
+  assert.equal(m.categoryTotal([3, null]), null, "no total claimed until every source reports");
+  assert.equal(m.reachedCap(100, 240), true);
+  assert.equal(m.reachedCap(40, 240), false);
+  assert.equal(m.canLoadMore(100, 240), false);
+  assert.ok(!m.recordHref("admin", "availability", "s9", "", { doctorId: "d1", branchId: "b1" }).includes("search="));
+  const ws = read("./WorkspaceSearch.tsx");
+  assert.match(ws, /search-full-\$\{source\}/);
+  assert.match(ws, /api\.searchRecords\(\{ q: search \}, options\)\.then\(d => \(\{ total: null/, "queue-only search kept, no invented total");
+  assert.doesNotMatch(ws, /catch\(\(\) => \(\{ items: \[\]/, "errors are never swallowed into empty results");
+  assert.match(ws, /timeZone: settings\.data\.timezone/);
+});
+
+test("exact links fetch the target by id, not only when on the current page", () => {
+  const res = read("../resources.tsx"), users = read("../Users.tsx"), rows = read("./appointments/AppointmentRows.tsx");
+  for (const s of ["api.getPatient(openId)", "api.getClinic(openId)", "api.getBranch(openId)", "api.getDoctor(openId)", "api.getUser(openId)", "scanScopedPages(openId"]) assert.ok(res.includes(s), s);
+  assert.match(res, /<RecordFacts facts=\{recordFacts\(row,/);
+  assert.match(users, /api\.getDoctor\(linkedId\) : api\.getUser\(linkedId\)/);
+  assert.match(rows, /useGetAppointment\(linkedId,\{query:\{queryKey:api\.getGetAppointmentQueryKey\(linkedId\),enabled:offPageLinked/);
+  assert.match(read("../clinic.tsx"), /from=\$\{today\(timezone\)\}&to=\$\{today\(timezone\)\}/);
+});
+
+test("ticket screen and export share one model and one token set", async () => {
+  const t = await import("./tickets/ticket-model.ts");
+  const vars = t.ticketCssVars();
+  assert.equal(vars["--vt-qr-size"], t.TICKET_THEME.qrSize);
+  assert.ok(t.ticketCssVarString().includes(`--vt-accent:${t.TICKET_THEME.accent}`));
+  const m = t.ticketModel({ patientName: "Mira Okafor", clinicName: "Harbor", branchName: "Pier 3", doctorName: "Dr Lune", waitingNumber: "A-07", reference: "QX12", dateText: "5 Oct", sessionText: "09:00–11:00" });
+  assert.equal(m.reference, "Ref QX12");
+  assert.equal(m.visitPrimary, "5 Oct · Pier 3");
+});
+
+test("records without an id endpoint use an abortable scoped scan to the end of the list", async () => {
+  const { scanScopedPages } = await import("./RecordDetails.tsx").catch(() => ({}));
+  const src = read("./RecordDetails.tsx");
+  assert.match(src, /for \(let page = 1; ; page\+\+\)/);
+  assert.match(src, /page \* pageSize >= result\.total\) throw new Error\(notFound\)/);
+  assert.match(src, /signal\.aborted/);
+  void scanScopedPages;
+  const res = read("../resources.tsx");
+  assert.match(res, /scanScopedPages\(openId,\(page,sig\)=>api\.listSchedules\(\{doctorId:filters\.doctorId\|\|undefined,branchId:filters\.branchId\|\|undefined,page/);
+  assert.match(res, /scanScopedPages\(openId,\(page,sig\)=>api\.listAuditLogs\(\{search:linkedSearch\|\|undefined,page/);
+  assert.match(read("./WorkspaceSearch.tsx"), /recordHref\(role, "audit", a\.id, search\)/);
+  assert.match(read("../clinic.tsx"), /setTo\(range\.to\);setPage\(1\);/);
 });

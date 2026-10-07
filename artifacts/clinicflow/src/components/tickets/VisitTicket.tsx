@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { Download, Printer } from "lucide-react";
+import { Download, FileText, Printer } from "lucide-react";
 import { IconAction } from "../IconAction";
 import { BRAND_LOGO_URL, BRAND_NAME } from "../../branding";
 import "./visit-ticket.css";
 import { downloadTicketPdf } from "./ticket-pdf";
+import { ticketCssVarString, ticketCssVars, ticketModel } from "./ticket-model";
+import type { CSSProperties } from "react";
 import { formatDate, formatTime, type DateTimePreferences } from "../../lib/date-time";
 
 export type TicketData = Partial<DateTimePreferences> & {
@@ -49,14 +51,37 @@ export function embeddedTicketLogo(): Promise<string> {
   return logoPromise;
 }
 
-/** Self-contained HTML (inline styles + QR data URI) usable for both download and print. */
+/** Model input for both renderers (screen card and export/print HTML). */
+const modelFor = (t: TicketData) => ticketModel({ patientName: t.patientName, clinicName: t.clinicName, branchName: t.branchName, address: t.address, doctorName: t.doctorName, waitingNumber: t.waitingNumber, reference: t.reference, statusLabel: t.statusLabel, dateText: formatDate(t.date, t), sessionText: sessionRange(t) });
+
+/** Self-contained HTML (inline styles + QR data URI) usable for both download and print.
+ *  Same content model and the same --vt-* tokens as the on-screen card, so the two cannot drift. */
 export function ticketHtml(t: TicketData, qr: string | null, logo = BRAND_LOGO_URL) {
-  const rows: [string, string][] = [["Clinic", t.clinicName], ...(t.address ? [["Address", t.address] as [string, string]] : []), ["Doctor", t.doctorName]];
+  const m = modelFor(t);
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${BRAND_NAME} ticket ${esc(t.reference || "")}</title>
- <style>body{font-family:system-ui,sans-serif;background:#f0f9fd;color:#10274e;margin:0;padding:16px}.t{max-width:560px;margin:auto;background:#fff;border:1px solid #c9e3ed;border-radius:16px;overflow:hidden}.h{background:#edfaff;color:#10274e;padding:4px 18px;border-bottom:1px solid #c9e3ed;display:flex;align-items:center;gap:8px;font-weight:700}.h img{display:block;width:108px;height:54px;object-fit:contain;flex:none}.b{padding:16px 18px}.n{font:700 56px/1 ui-monospace,monospace;color:#087cb7;margin:4px 0 8px}.l{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.7}.visit{border:1px solid #c9e3ed;background:#edfaff;padding:10px 12px;border-radius:9px;margin:8px 0 12px;overflow-wrap:anywhere}.visit strong{display:block;font-size:16px}.visit small{display:block;margin-top:4px}td{padding:2px 12px 2px 0;vertical-align:top}td:first-child{opacity:.65}.f{border-top:2px dashed #c9e3ed;padding:10px 18px;font-size:13px;background:#e9f8fc}.qr{display:block;margin:12px auto 0;width:180px}@media(max-width:420px){.h{flex-wrap:wrap;gap:0 8px}}@media print{body{background:none;padding:0}}</style></head><body><div class="t"><div class="h"><img src="${esc(logo)}" alt="DigiQ Doctors logo"><span>Visit ticket</span></div><div class="b">
-<p>Status: <strong>${esc(t.statusLabel || "Booked")}</strong></p><div class="l">Waiting number</div><div class="n">${esc(t.waitingNumber || "—")}</div>${t.reference ? `<div>Reference <strong>${esc(t.reference)}</strong></div>` : ""}
- <h2 style="margin:10px 0 8px;overflow-wrap:anywhere">${esc(t.patientName)}</h2><div class="visit"><span class="l">Date · Location</span><strong>${esc(formatDate(t.date,t))} · ${esc(t.branchName)}</strong><small>Session ${esc(sessionRange(t))}</small></div><table style="width:100%;table-layout:fixed;overflow-wrap:anywhere">${rows.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>
-${qr ? `<img class="qr" src="${qr}" alt="Personal visit QR">` : ""}</div><div class="f">Show this ticket at reception. The session time is a range, not an exact consultation time. Keep the QR private.</div></div></body></html>`;
+ <style>body{font-family:system-ui,sans-serif;background:var(--vt-soft);color:var(--vt-ink);margin:0;padding:16px;${ticketCssVarString()}}
+.t{max-width:var(--vt-card-width);margin:auto;background:var(--vt-paper);border:1px solid var(--vt-line);border-radius:var(--vt-radius);overflow:hidden}
+.h{background:var(--vt-head);padding:4px 16px;border-bottom:1px solid var(--vt-line);display:flex;align-items:center;gap:8px;font-weight:700}
+.h img{display:block;width:var(--vt-logo-width);height:var(--vt-logo-height);object-fit:contain;flex:none}
+.h .s{margin-left:auto;background:var(--vt-badge);color:var(--vt-ink);border-radius:99px;padding:4px 10px;font-size:var(--vt-small-size);letter-spacing:.12em;font-weight:500}
+.b{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;padding:16px;font-size:var(--vt-body-size)}
+.l{font-size:var(--vt-small-size);letter-spacing:var(--vt-label-tracking);opacity:.7;margin:0}
+.n{font:700 var(--vt-number-size)/1 ui-monospace,monospace;color:var(--vt-accent);margin:4px 0 8px}
+.r{font-family:ui-monospace,monospace;margin:0 0 8px}.p{font-size:var(--vt-name-size);font-weight:700;margin:0 0 8px;overflow-wrap:anywhere}
+.visit{border:1px solid var(--vt-line);background:var(--vt-head);padding:8px 12px;border-radius:var(--vt-radius-inner);margin:0 0 8px;overflow-wrap:anywhere}
+.visit strong{display:block;font-size:var(--vt-visit-size)}.visit small{display:block;margin-top:4px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0}dt{opacity:.65}dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.q{display:flex;flex-direction:column;align-items:center;gap:8px}.q img{width:var(--vt-qr-size);height:var(--vt-qr-size);border:1px solid var(--vt-line);border-radius:var(--vt-radius-inner)}
+.q small{font-size:var(--vt-small-size);opacity:.7;max-width:var(--vt-qr-size);text-align:center}
+.f{border-top:2px dashed var(--vt-line);padding:12px 16px;font-size:var(--vt-body-size);background:var(--vt-soft)}
+@media(max-width:420px){.b{grid-template-columns:1fr}}
+@page{size:A4;margin:16mm}@media print{body{background:#fff;padding:0}.t{max-width:120mm;margin:0 auto;break-inside:avoid}}</style></head><body>
+<div class="t"><div class="h"><img src="${esc(logo)}" alt="DigiQ Doctors logo"><span>${m.title}</span><span class="s">${esc(m.status)}</span></div>
+<div class="b"><div><p class="l">${m.numberLabel}</p><p class="n">${esc(m.number)}</p>${t.reference ? `<p class="r">${esc(m.reference)}</p>` : ""}<p class="p">${esc(m.patient)}</p>
+<div class="visit"><span class="l">${m.visitLabel}</span><strong>${esc(m.visitPrimary)}</strong><small>${esc(m.visitSecondary)}</small></div>
+<dl>${m.facts.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>
+${qr ? `<div class="q"><img src="${qr}" alt="${m.qrAlt}"><small>${m.qrCaption}</small></div>` : ""}</div>
+<div class="f">${m.footer}</div></div></body></html>`;
 }
 
 /** Patient-facing label for the real appointment status. */
@@ -78,7 +103,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
   const [qrError, setQrError] = useState("");
   const [qrTry, setQrTry] = useState(0);
   const [err, setErr] = useState("");
-  const [busy, setBusy] = useState<""|"print"|"download">("");
+  const [busy, setBusy] = useState<""|"print"|"download"|"a4">("");
   const lock = useRef(false);
   useEffect(() => {
     let live = true; setQr(null); setQrError("");
@@ -86,7 +111,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
     return () => { live = false; };
   }, [ticket.qrUrl, qrTry]);
   const file = `clinicflow-ticket-${(ticket.reference || ticket.waitingNumber || "visit").replace(/[^a-z0-9-]/gi, "")}.pdf`;
-  async function run(kind:"print"|"download") {
+  async function run(kind:"print"|"download"|"a4") {
     if (lock.current) return; lock.current = true; setErr(""); setBusy(kind);
     const w = kind === "print" ? window.open("", "_blank", "width=680,height=820") : null;
     try {
@@ -102,43 +127,42 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
         if (w.closed) throw new Error("Print window closed. Try again.");
         w.focus(); w.print();
       } else {
-        await downloadTicketPdf(html, file);
+        await downloadTicketPdf(html, file, kind === "a4" ? "a4" : "ticket");
       }
     } catch (e) { w?.close(); setErr(e instanceof Error ? e.message : "Ticket could not be prepared. Try again."); }
     finally { lock.current = false; setBusy(""); }
   }
   const disabled = !!busy || exportDisabled || !qr;
-  return <article className="vt" data-testid={testId} aria-label="Visit ticket">
-    <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>Visit Ticket</h2></div>
+  const m = modelFor(ticket);
+  const why = busy ? "Checking the latest ticket first." : !qr ? "Personal QR is still loading." : "Reconnect and refresh the ticket first.";
+  return <article className="vt" data-testid={testId} aria-label="Visit ticket" style={ticketCssVars() as CSSProperties}>
+    <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>{m.title}</h2></div>
       <div className="vt-head-tools">
-        <span className="vt-badge" data-testid="ticket-status" aria-label={`Booking Status: ${ticket.statusLabel || "Booked"}`}>{ticket.statusLabel || "Booked"}</span>
+        <span className="vt-badge" data-testid="ticket-status" aria-label={`Booking Status: ${m.status}`}>{m.status}</span>
         <div className="vt-actions" role="group" aria-label="Ticket Actions">
-          <IconAction className="vt-icon-action" testId="button-download-ticket" label={busy==="download"?"Preparing PDF…":"Download Ticket PDF"} icon={<Download size={16} aria-hidden/>} onClick={() => void run("download")} disabled={disabled} disabledReason={busy?"Checking the latest ticket first.":!qr?"Personal QR is still loading.":"Reconnect and refresh the ticket first."}/>
-          <IconAction className="vt-icon-action" testId="button-print-ticket" label={busy==="print"?"Checking Ticket…":"Print Ticket"} icon={<Printer size={16} aria-hidden/>} onClick={() => void run("print")} disabled={disabled} disabledReason={busy?"Checking the latest ticket first.":!qr?"Personal QR is still loading.":"Reconnect and refresh the ticket first."}/>
+          <IconAction className="vt-icon-action" testId="button-download-ticket" label={busy==="download"?"Preparing PDF…":"Download Ticket PDF"} hint="Download Ticket PDF — ticket-sized, for phones and sharing" icon={<Download size={16} aria-hidden/>} onClick={() => void run("download")} disabled={disabled} disabledReason={why}/>
+          <IconAction className="vt-icon-action" testId="button-download-ticket-a4" label={busy==="a4"?"Preparing A4 PDF…":"Download A4 PDF"} hint="Download A4 PDF — ticket centred on an A4 page for office printing" icon={<FileText size={16} aria-hidden/>} onClick={() => void run("a4")} disabled={disabled} disabledReason={why}/>
+          <IconAction className="vt-icon-action" testId="button-print-ticket" label={busy==="print"?"Checking Ticket…":"Print Ticket"} hint="Print Ticket — prints on A4 with the ticket centred" icon={<Printer size={16} aria-hidden/>} onClick={() => void run("print")} disabled={disabled} disabledReason={why}/>
         </div>
       </div>
     </header>
     <div className="vt-body">
       <div className="vt-info">
         <div className="vt-main">
-          <p className="vt-number-label">Waiting Number</p>
-          <p className="vt-number" data-testid="ticket-waiting-number">{ticket.waitingNumber || "—"}</p>
-          {ticket.reference && <p className="vt-ref" data-testid="ticket-reference">Ref {ticket.reference}</p>}
-          <p className="vt-name" data-testid="ticket-patient-name">{ticket.patientName}</p>
+          <p className="vt-number-label">{m.numberLabel}</p>
+          <p className="vt-number" data-testid="ticket-waiting-number">{m.number}</p>
+          {ticket.reference && <p className="vt-ref" data-testid="ticket-reference">{m.reference}</p>}
+          <p className="vt-name" data-testid="ticket-patient-name">{m.patient}</p>
         </div>
         <div className="vt-facts">
-          <div className="vt-visit"><small>Date · Location</small><strong>{formatDate(ticket.date,ticket)} · {ticket.branchName}</strong><span>Session {sessionRange(ticket)}</span></div>
-          <dl className="vt-dl">
-            <dt>Clinic</dt><dd>{ticket.clinicName}</dd>
-            {ticket.address && <><dt>Address</dt><dd>{ticket.address}</dd></>}
-            <dt>Doctor</dt><dd>{ticket.doctorName}</dd>
-          </dl>
+          <div className="vt-visit"><small>{m.visitLabel}</small><strong>{m.visitPrimary}</strong><span>{m.visitSecondary}</span></div>
+          <dl className="vt-dl">{m.facts.map(([k, v]) => <div key={k} style={{ display: "contents" }}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
         </div>
       </div>
-      <div className="vt-qr">{qr ? <img src={qr} alt="Personal visit QR"/> : qrError ? <div role="alert" style={{ width: 160 }}><p style={{margin:"0 0 8px"}}>{qrError}</p><button type="button" className="button secondary" data-testid="button-retry-ticket-qr" onClick={() => setQrTry(n => n + 1)}>Retry QR</button></div> : <div style={{ width: 160, height: 160 }} role="status" aria-label="Loading QR"/>}<small>Personal QR for reception. Keep it private.</small></div>
+      <div className="vt-qr">{qr ? <img src={qr} alt={m.qrAlt}/> : qrError ? <div role="alert" className="vt-qr-slot"><p style={{margin:"0 0 8px"}}>{qrError}</p><button type="button" className="button secondary" data-testid="button-retry-ticket-qr" onClick={() => setQrTry(n => n + 1)}>Retry QR</button></div> : <div className="vt-qr-slot vt-qr-loading" role="status" aria-label="Loading QR"/>}<small>{m.qrCaption}</small></div>
     </div>
     <footer className="vt-foot">
-      <p>{note || "Show this ticket at reception. The session is a time range, not an exact consultation time."}</p>
+      <p>{note || m.footer}</p>
       {err && <p role="alert" data-testid="ticket-export-error">{err}</p>}
     </footer>
   </article>;

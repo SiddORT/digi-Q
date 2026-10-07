@@ -19,10 +19,12 @@ test("range picker lives in the list header; calendar uses server counts with dr
   assert.match(c, /onDrill=\{d=>\{setFrom\(d\);setTo\(d\)/);
 });
 
-test("status column hidden by default with accessible status symbol; drawer ticket collapsed", () => {
+test("status is a fixed readable column; token carries the booking reference tooltip", () => {
   const rows = r("./AppointmentRows.tsx");
-  assert.match(rows, /defaultHidden:\["reference","status"\]/);
-  assert.match(rows, /aria-label=\{`Status: \$\{statusLabel/); assert.match(rows, /onFocus=\{\(\)=>setShow\(true\)\}/);
+  assert.match(rows, /defaultHidden:\["reference","createdAt"\]/);
+  assert.doesNotMatch(rows, /\{key:"status"/);
+  assert.match(rows, /<th key="status" className="col-status" scope="col">Status<\/th>/);
+  assert.match(rows, /<HelpTip text=\{`Booking reference \$\{a\.reference\}/);
   const d = r("./AppointmentDetails.tsx");
   assert.match(d, /ticketOpen \|\| !canShowAppointmentTicket/); assert.match(d, /appt-detail-cols/);
 });
@@ -36,4 +38,17 @@ test("bulk toolbar is compact, page-scoped, no bulk check-in, PDF and email via 
   assert.doesNotMatch(e, /setTimeout|setInterval/);
   assert.match(r("../RowMenu.tsx"), /dismissTooltips\(\)/);
   assert.match(r("../AdminListing.tsx"), /bulk-compact/);
+});
+
+test("1200px acceptance: status follows token, ticket is first in DOM, scope filters exposed, PDF compressed", () => {
+  const rows = readFileSync(new URL("./AppointmentRows.tsx", import.meta.url), "utf8");
+  assert.match(rows, /label:"Token \/ Queue No\."/);
+  assert.match(rows, /statusAfter=\["token","patient"\]/);
+  const det = readFileSync(new URL("./AppointmentDetails.tsx", import.meta.url), "utf8");
+  assert.ok(det.indexOf("{ticketFirst && ticketBlock}") < det.indexOf('<div className="appt-detail-cols">'));
+  assert.ok(rows.indexOf("ticketFirst/>}") < rows.indexOf('className="appt-expansion-hidden"'));
+  const clinic = readFileSync(new URL("../../clinic.tsx", import.meta.url), "utf8");
+  assert.match(clinic, /lh-filter-scope"><CareLookup kind="clinics"/);
+  const pdf = readFileSync(new URL("../tickets/ticket-pdf.ts", import.meta.url), "utf8");
+  assert.match(pdf, /compress: true/); assert.match(pdf, /"PNG",[^;]*"FAST"\)/);
 });

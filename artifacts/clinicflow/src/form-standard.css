@@ -107,3 +107,84 @@ footer:not([class]),.workspace .content-footer{color:hsl(var(--foreground)/.74)}
 
 /* ---- Field labels never fragment into one-word lines ---- */
 .form-field>.form-field-label{overflow-wrap:normal;word-break:normal}
+
+/* ---- Shared listing order: header, search + tools, exposed filters, chips ---- */
+.workspace .list-header .lh-head{justify-content:space-between}
+.workspace .list-header .lh-search-row .lh-search{flex:1 1 420px}
+.workspace .list-header .lh-table-tools{order:3;display:flex;align-items:center;gap:var(--space-2);margin-left:auto;flex:0 0 auto}
+.workspace .list-header .lh-filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-2) var(--space-3);min-width:0}
+.workspace .list-header .lh-filter-status{min-width:200px;max-width:260px}
+.workspace .list-header .lh-filter-status label{font-size:var(--type-caption)}
+.workspace .list-header .lh-chips-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
+.workspace .list-header .lh-chips-row .filter-chips{margin:0}
+.workspace .list-header .lh-clear-all{min-height:32px}
+@media(max-width:767px){.workspace .list-header .lh-table-tools{margin-left:0}.workspace .list-header .lh-filter-status{max-width:none;flex:1 1 100%}}
+
+/* ---- Appointment rows: whole row opens one visit inline ---- */
+.appt-table tr.appt-row{cursor:pointer}
+.appt-table tr.appt-row:hover>td{background:var(--surface-hover)}
+.appt-table tr.appt-row.is-expanded>td{background:hsl(var(--accent) / .35)}
+.appt-table tr.appt-row .row-expand-toggle svg{transition:transform .16s ease}
+.appt-table tr.appt-row.is-expanded .row-expand-toggle svg{transform:rotate(90deg)}
+.appt-table td.col-status,.appt-table th.col-status{display:table-cell;white-space:nowrap}
+.appt-table tr.appt-expansion>td{padding:16px;background:var(--surface-hover)}
+.appt-expansion-hidden{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-6);margin:0 0 12px}
+.appt-expansion-hidden dt{font-size:var(--type-caption);color:var(--soft)}
+.appt-expansion-hidden dd{margin:0}
+.appt-token{cursor:help;border-bottom:1px dotted currentColor}
+tr.is-linked>td{box-shadow:inset 0 0 0 9999px hsl(var(--primary) / .08)}
+tr.is-linked>td:first-child{box-shadow:inset 4px 0 0 hsl(var(--primary)),inset 0 0 0 9999px hsl(var(--primary) / .08)}
+
+/* ---- Workspace search: fixed input + category tabs ---- */
+.workspace-command .ws-sticky{position:sticky;top:0;z-index:2;display:grid;gap:8px;padding-bottom:12px;background:hsl(var(--background));border-bottom:1px solid hsl(var(--border))}
+.workspace-command .ws-input{display:flex;align-items:center;gap:8px;border:1px solid hsl(var(--border));border-radius:12px;padding:0 12px;background:hsl(var(--card))}
+.workspace-command .ws-input:focus-within{border-color:hsl(var(--primary))}
+.workspace-command .ws-input input{border:0;flex:1;min-height:48px;font-size:var(--type-body-lg);background:transparent;outline:none;box-shadow:none}
+.workspace-command .ws-tabs{display:flex;flex-wrap:wrap;gap:4px}
+.workspace-command .ws-tab{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:4px 12px;border-radius:8px;border:1px solid transparent;background:transparent;font-weight:600;color:var(--soft)}
+.workspace-command .ws-tab[aria-selected=true]{background:hsl(var(--primary) / .1);color:hsl(var(--primary));border-color:hsl(var(--primary) / .3)}
+.workspace-command .ws-tab-count{font-size:var(--type-caption);padding:0 4px;border-radius:6px;background:hsl(var(--muted))}
+.workspace-command .row-menu-trigger.text-trigger{background:transparent;border:0;padding:0}
+.workspace-command .ws-note{font-size:var(--type-caption)}
+.workspace-command .ws-body{display:grid;gap:12px}
+.workspace-command .ws-directory-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.workspace-command .ws-count{margin-left:auto;font-size:var(--type-caption);font-weight:500;color:var(--soft)}
+.workspace-command .ws-see-all{margin-left:8px;min-height:32px;padding:0 8px;border-radius:6px;font-size:var(--type-caption)}
+.workspace-command .ws-error{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.workspace-command .ws-load-more{justify-self:start;margin-top:8px}
+.workspace-command .ws-skeleton{display:grid;gap:8px}
+.workspace-command .ws-skeleton span{display:block;height:40px;border-radius:8px;background:hsl(var(--muted));animation:ws-pulse 1.2s ease-in-out infinite}
+@keyframes ws-pulse{50%{opacity:.5}}
+.workspace-command-results small{display:block;color:var(--soft)}
+@media(max-width:640px){.workspace-command .ws-directory-pair{grid-template-columns:1fr}.workspace-command .ws-tabs{flex-wrap:nowrap;overflow-x:auto}}
+
+/* Exposed quick filters (shared by every listing via FilterBar `filters`). */
+.lh-quick-filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-2);min-width:0}
+.lh-quick-filters>*{flex:0 1 220px;min-width:0}
+@media (max-width:767px){.lh-quick-filters>*{flex:1 1 100%}}
+/* Shared record facts: listing expansion and exact-record drawer. */
+.record-facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px 24px;margin:0}
+.record-facts>div{min-width:0}
+.record-facts dt{font-size:var(--type-caption);color:hsl(var(--muted-foreground));margin:0 0 4px}
+.record-facts dd{margin:0;overflow-wrap:anywhere}
+.exact-record{display:flex;flex-direction:column;gap:16px}
+.exact-record-title{margin:0}
+.exact-record-actions{display:flex;flex-wrap:wrap;gap:8px}
+.linked-visit{display:flex;flex-direction:column;gap:12px;margin:0 0 16px;border-left:4px solid hsl(var(--primary))}
+.linked-visit-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.linked-visit-head h3,.linked-visit-head p{margin:0}
+.workspace-command .ws-source+.ws-source{margin-top:12px}
+.workspace-command .ws-source h4{display:flex;align-items:baseline;gap:8px;margin:0 0 4px;font-size:var(--type-caption)}
+.workspace-command .ws-cap{margin:8px 0 0;font-size:var(--type-caption)}
+/* Row order beneath the search: common filters first (wrapping), then status, then drawer tools; never one crowded line. */
+.workspace .list-header .lh-sub{flex-wrap:wrap;row-gap:var(--space-2);align-items:flex-end}
+.workspace .list-header .lh-sub .lh-filters{order:0;flex:1 1 480px;min-width:0}
+.workspace .list-header .lh-sub .lh-filters+.lh-status{order:1}
+.workspace .list-header .lh-sub .lh-filters~.lh-tools{order:2}
+@media (max-width:1279px){.workspace .list-header .lh-sub .lh-filters{flex-basis:100%}}
+.workspace .list-header .lh-filter-scope{flex:0 1 200px;min-width:160px}
+@media(max-width:767px){.workspace .list-header .lh-filter-scope{flex:1 1 100%}}
+.lh-filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--space-2)}
+.appt-expansion>td{overflow:visible;max-width:none}
+.appt-expansion .appt-detail-ticket{min-width:0;order:0}
+.appt-table .col-status{position:static}

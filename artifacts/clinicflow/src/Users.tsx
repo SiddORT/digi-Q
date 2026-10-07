@@ -13,7 +13,8 @@ const STAFF_VIEW_KEYS = ["status", "clinicId", "branchId", "managingAdminId", "s
 import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { Plus, Pencil, Send, KeyRound, ArrowDown, ArrowUp, ArrowDownUp } from "lucide-react";
-import { Link, useSearch } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
+import { ExactRecordDrawer, RecordFacts, useExactRecord } from "./components/RecordDetails";
 import { planRoleSwitch, type SharedStaff } from "./lib/staff-role-switch";
 import * as api from "@workspace/api-client-react";
 import { assignmentTargetRole, type StaffTab } from "./staff-input";
@@ -54,6 +55,13 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     { id: "receptionists", label: "Receptionists" },
   ];
   const routeSearch = useSearch();
+  // Exact staff record from workspace search (?open=<id>): highlighted in the listing.
+  const linkedId = new URLSearchParams(routeSearch).get("open") || "";
+  const [, navigateTo] = useLocation();
+  // Exact staff link: fetch through the permission-checked id endpoint so the record opens even off the current page.
+  const linkedIsDoctor = new URLSearchParams(routeSearch).get("tab") === "doctors";
+  const exactStaff = useExactRecord<any>(["staff", linkedIsDoctor ? "doctor" : "user"], linkedId, linkedId ? () => (linkedIsDoctor ? api.getDoctor(linkedId) : api.getUser(linkedId)) as Promise<any> : null);
+  const closeExactStaff = () => { const q = new URLSearchParams(routeSearch); q.delete("open"); navigateTo(`${window.location.pathname}${q.size ? `?${q}` : ""}`, { replace: true }); };
   const [tab, setTab] = useState<StaffTab>(tabs.find(t => t.id === new URLSearchParams(window.location.search).get("tab"))?.id || tabs[0].id);
    const [contexts, setContexts] = useState<Partial<Record<StaffTab,StaffContext>>>({});
    const context:StaffContext = contexts[tab] || defaultContext();
@@ -184,7 +192,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
    return <>{confirmAction.dialog}
      {counts.some(item=>item.error)&&<div role="alert" className="error-box">Unable to load staff status counts. <button type="button" onClick={()=>counts.forEach(item=>{if(item.error)void item.refetch();})}>Retry Counts</button></div>}
      {tabs.length>1&&<div className="workspace-tabs staff-role-tabs" role="tablist" aria-label="Filter staff by role">{tabs.map(item=><button key={item.id} type="button" role="tab" aria-selected={tab===item.id} onClick={()=>{setTab(item.id);setDraftTab(item.id);setDraft({...defaultContext(),...contexts[item.id]});}} data-testid={`tab-staff-${item.id}`}>{item.label}</button>)}</div>}
-      <FilterBar secondary={<>{role !== "doctor" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setRecoveryOpen(true)} data-testid="button-open-account-recovery"><KeyRound size={15} aria-hidden /> Recovery</button>}{cols.settings}{staffViews}</>} actions={<>{creatable.length ? <button type="button" className="button small" aria-haspopup="dialog" onClick={beginAdd} data-testid="button-add-staff"><Plus size={17} aria-hidden /> Add Staff</button> : null}</>} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter Staff" chips={[
+      <FilterBar filters={<div className="lh-quick-filters" data-testid="quick-filters-staff"><SearchableSelect label="Account Status" testId="quick-staff-status" placeholder="All statuses" value={context.status || ""} onChange={value => change({ status: value as "" | "active" | "inactive" })} options={[{ value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]}/>{!clinicId && role !== "doctor" && <ResourceLookup resource="clinics" label="Clinic" value={context.clinicId || ""} onChange={value => change({ clinicId: value, branchId: "" })}/>}</div>} secondary={<>{role !== "doctor" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setRecoveryOpen(true)} data-testid="button-open-account-recovery"><KeyRound size={15} aria-hidden /> Recovery</button>}{cols.settings}{staffViews}</>} actions={<>{creatable.length ? <button type="button" className="button small" aria-haspopup="dialog" onClick={beginAdd} data-testid="button-add-staff"><Plus size={17} aria-hidden /> Add Staff</button> : null}</>} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter Staff" chips={[
       ...(context.search?[{key:"search",label:`Search: ${context.search}`,onRemove:()=>change({search:""})}]:[]),
       ...(context.status?[{key:"adv:status",label:title(context.status),onRemove:()=>change({status:""})}]:[]),
        ...(!clinicId&&context.clinicId?[{key:"clinicId",label:"Clinic Selected",onRemove:()=>change({clinicId:"",branchId:""})}]:[]),
@@ -215,7 +223,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     <section className="panel table-panel admin-listing-table">
       {query.isLoading ? <div className="skeleton" role="status">Loading {tabs.find(item=>item.id===tab)?.label.toLowerCase()}…</div> : query.error ? <><div className="error-box" role="alert">{friendlyError(query.error,"load")}</div><button onClick={() => query.refetch()}>Retry {tabs.find(item=>item.id===tab)?.label.toLowerCase()}</button></> : query.data?.items.length ? <div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>
          <thead><tr><th scope="col" className="col-select">{selection.header}</th>{cols.visible.map(k=>k==="member"?<th key={k} className={cols.cls(k)} aria-sort={context.sort==="fullName"?"ascending":context.sort==="-fullName"?"descending":undefined}>{sortable("fullName","Staff member")}</th>:<th key={k} className={cols.cls(k,k==="status"?"col-status":undefined)}>{cols.label(k)}</th>)}<th className="col-actions sticky">Actions</th></tr></thead>
-        <tbody>{query.data.items.map((row: any) => <Fragment key={row.id}><tr>
+        <tbody>{query.data.items.map((row: any) => <Fragment key={row.id}><tr data-testid={`row-staff-${row.id}`} className={linkedId===row.id?"is-linked":undefined}>
           <td data-label="Select" className="col-select"><span className="row-lead">{selection.checkbox(row)}{cols.toggle(row.id,row.fullName)}</span></td>
           {cols.visible.map(k=><td key={k} data-label={cols.label(k)} className={cols.cls(k,k==="member"?"admin-record":k==="status"?"col-status":undefined)}>{userCell(k,row)}</td>)}
 
@@ -229,6 +237,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
       </table></div> : active ? <div className="empty"><h3>No Matching Staff</h3><p>Try another search or clear your filters.</p><button onClick={reset}>Clear Filters</button></div> : <Empty label={tab} />}
       {!query.error && <Pagination page={context.page} pageSize={context.pageSize} total={query.data?.total || 0} onPageChange={page => change({ page })} onPageSizeChange={pageSize => change({ pageSize })} />}
     </section>
+    {linkedId && <ExactRecordDrawer title={linkedIsDoctor ? "Doctor Details" : "Staff Details"} query={exactStaff} onClose={closeExactStaff} actions={(record: any) => role === "doctor" ? null : <button type="button" className="button secondary" data-testid="button-exact-staff-edit" onClick={() => { closeExactStaff(); beginEdit(record); }}>Edit {record.fullName}</button>}>{(record: any) => <><h3 className="exact-record-title">{record.fullName}</h3><RecordFacts testId="exact-facts-staff" facts={([["Role", record.role ? title(record.role) : linkedIsDoctor ? "Doctor" : ""], ["Email", record.email], ["Mobile", record.phone || record.mobile], ["Specialization", record.specializationName], ["Clinic", record.clinicName || (Array.isArray(record.clinicNames) ? record.clinicNames.join(", ") : "")], ["Location", record.branchName || (Array.isArray(record.branchNames) ? record.branchNames.join(", ") : "")], ["Status", record.status ? title(record.status) : ""], ["Account", record.userId || record.linked ? "Linked sign-in" : ""]] as [string, string][]).filter(([, v]) => v)}/></>}</ExactRecordDrawer>}
     {recoveryOpen && role !== "doctor" && <AppDialog open variant="drawer" onClose={() => { setRecoveryOpen(false); setRecoveryId(""); recovery.reset(); }} busy={recovery.isPending} title="Account Recovery Assistance" description="Search linked staff accounts for secure account recovery steps. This action does not send an email.">
       <div className="inline-form" data-testid="details-account-recovery"><ResourceLookup resource="users" label="Staff Account" params={{ role: tab === "admins" ? "clinicAdmin" : tab === "doctors" ? "doctor" : "receptionist", linkedOnly: true,clinicId:clinicId||undefined }} value={recoveryId} onChange={id => { setRecoveryId(id); recovery.reset(); }} />
         <button disabled={!recoveryId || recovery.isPending} onClick={() => { if (!recovery.isPending) recovery.mutate({ id: recoveryId }); }} data-testid="button-password-help">{recovery.isPending ? "Loading…" : "Get recovery steps"}</button></div>

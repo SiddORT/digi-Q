@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 const r = p => readFileSync(new URL(p, import.meta.url), "utf8");
 test("appointment columns follow the approved default order and distinguish token, session and booking time", () => {
   const s = r("./AppointmentRows.tsx");
-  const order = ["serial", "date", "patient", "token", "location", "doctor", "createdAt", "status", "reference"].map(k => s.indexOf(`{key:"${k}"`));
+  const order = ["serial", "date", "patient", "token", "location", "doctor", "createdAt", "reference"].map(k => s.indexOf(`{key:"${k}"`));
   assert.ok(order.every((v, i) => v > 0 && (i === 0 || v > order[i - 1])), String(order));
-  assert.match(s, /defaultHidden:\["reference","status"\]/);
+  assert.match(s, /defaultHidden:\["reference","createdAt"\]/);
   assert.match(s, /a\.patientCode/);
   assert.match(s, /serialOffset\+i\+1/);
   assert.match(s, /formatConfiguredTimestamp\(a\.createdAt/);
@@ -39,13 +39,14 @@ test("screen ticket header owns actions without changing the exported document",
 });
 
 // ---- Compact action refinement contract ----
-test("row actions: icon Details with tooltip, clinical Check In/Out are distinct icons (Section D), no ticket button in the row", () => {
+test("row actions: no duplicate Details action (row expands inline), clinical Check In/Out are distinct icons, no ticket button in the row", () => {
   const s = r("./AppointmentRows.tsx");
-  assert.match(s, /<IconAction className="row-details" label=\{`Details for \$\{a\.patientName\}`\}/);
+  assert.doesNotMatch(s, /className="row-details"/);
+  assert.match(s, /onClick=\{event=>\{if\(!isInteractiveTarget\(event\.target\)\)toggleRow\(a\.id\);\}\}/);
+  assert.match(s, /<AppointmentDetails appointment=\{detail\.data\} ticketFirst\/>/);
   assert.match(s, /icon=\{primary==="complete"\?<LogOut size=\{16\} aria-hidden\/>:<LogIn size=\{16\} aria-hidden\/>\}/);
   assert.doesNotMatch(s, /row-ticket|setTicket|<AppointmentTicket/);
-  assert.match(s, /<span className="row-lead">\{cols\.toggle\(a\.id,a\.patientName\)\}/);
-  assert.doesNotMatch(s.slice(s.indexOf('className="row-actions"')), /cols\.toggle\(/);
+  assert.match(s, /<span className="row-lead"><button type="button" className="row-expand-toggle" aria-expanded=\{expandedId===a\.id\}/);
 });
 test("booking details own the complete ticket and QR section", () => {
   const d = r("./AppointmentDetails.tsx");

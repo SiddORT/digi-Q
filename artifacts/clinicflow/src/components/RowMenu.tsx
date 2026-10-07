@@ -15,7 +15,7 @@ export type RowMenuItem = { key: string; label: string; onSelect?: () => void; h
  *  - Tracks scroll/resize of every ancestor; closes if the trigger scrolls out of view.
  *  - Escape closes and restores focus to the trigger; arrow/Home/End move between items; Tab closes.
  *  - Renders nothing when there are no items (no empty menus). */
-export function RowMenu({ label, items, testId }: { label: string; items: RowMenuItem[]; testId?: string }) {
+export function RowMenu({ label, items, testId, trigger: triggerContent }: { label: string; items: RowMenuItem[]; testId?: string; trigger?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<MenuPosition | null>(null);
   const [host, setHost] = useState<HTMLElement | null>(null);
@@ -63,7 +63,7 @@ export function RowMenu({ label, items, testId }: { label: string; items: RowMen
     setOpen(true); dismissTooltips();
   };
   return <>
-    <HelpTip text="More Actions"><button ref={trigger} type="button" className="row-menu-trigger icon-action" aria-haspopup="menu" aria-expanded={open} aria-label={label} data-testid={testId} onClick={toggle}><MoreHorizontal aria-hidden size={16} /></button></HelpTip>
+    {triggerContent ? <button ref={trigger} type="button" className="row-menu-trigger text-trigger" aria-haspopup="menu" aria-expanded={open} aria-label={label} data-testid={testId} onClick={toggle}>{triggerContent}</button> : <HelpTip text="More Actions"><button ref={trigger} type="button" className="row-menu-trigger icon-action" aria-haspopup="menu" aria-expanded={open} aria-label={label} data-testid={testId} onClick={toggle}><MoreHorizontal aria-hidden size={16} /></button></HelpTip>}
     {open && host && createPortal(<div ref={list} className="row-menu-list row-menu-portal" role="menu" aria-label={label} data-placement={pos?.placement} onKeyDown={keys}
       style={{ position: "fixed", top: pos?.top ?? -9999, left: pos?.left ?? -9999, maxHeight: pos?.maxHeight, maxWidth: pos?.maxWidth, minWidth: pos ? Math.min(190, pos.maxWidth) : undefined, visibility: pos ? "visible" : "hidden" }}>
       {safe.map(render)}{safe.length > 0 && danger.length > 0 && <hr className="row-menu-sep" />}{danger.map(render)}
