@@ -1,4 +1,5 @@
 import { EmailInput } from "@/components/EmailInput";
+import { FormField } from "../components/FormField";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { QrCode, CalendarDays } from "lucide-react";
@@ -60,11 +61,11 @@ export function PatientLogin() {
       </div>
       <div className="patient-login-separator">Or sign in to your patient account</div>
       {step === "email" ? <form onSubmit={sendCode}>
-        <label>Email address<EmailInput trimOnBlur={false} data-testid="input-patient-email" required value={email} onChange={event => setEmail(event.target.value)} /></label>
+        <FormField id="patient-login-email" label="Email address" required><EmailInput trimOnBlur={false} data-testid="input-patient-email" required value={email} onChange={event => setEmail(event.target.value)} /></FormField>
         {error && <div className="error-box" role="alert" data-testid="status-patient-login-error">{error}</div>}
         <button className="button auth-submit" data-testid="button-send-patient-code" type="submit" disabled={busy}>{busy ? "Sending…" : "Send login code"}</button>
       </form> : <form onSubmit={verifyCode}>
-        <label>One-time code<input data-testid="input-patient-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)} /></label>
+        <FormField id="patient-login-code" label="One-time code" required><input data-testid="input-patient-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)} /></FormField>
         {error && <div className="error-box" role="alert" data-testid="status-patient-code-error">{error}</div>}
         <button className="button auth-submit" data-testid="button-verify-patient-code" type="submit" disabled={busy}>{busy ? "Verifying…" : "Verify and continue"}</button>
         <div className="auth-links"><button type="button" className="text-link" data-testid="button-change-patient-email" onClick={() => { setStep("email"); setCode(""); setChallengeId(""); setError(""); }}>Change Email</button><button type="button" className="text-link" data-testid="button-resend-patient-code" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}</button></div>

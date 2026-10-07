@@ -47,7 +47,7 @@ export function FormField({ label, id, required, optional, helper, error, info, 
     <div className={["form-field", className].filter(Boolean).join(" ")} data-invalid={error ? "" : undefined}>
       <span className="form-field-label">
         <label id={`${controlId}-label`} htmlFor={controlId}>
-          {label}
+          {typeof label === "string" && optional ? label.replace(/\s*\(optional\)\s*$/i, "") : label}
           {required ? <span className="form-field-required" aria-hidden="true"> *</span> : optional ? <span className="form-field-optional"> (optional)</span> : null}
         </label>
         {info && <HelpTip text={info} />}

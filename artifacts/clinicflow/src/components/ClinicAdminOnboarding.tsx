@@ -7,13 +7,13 @@ import { ClinicRegistrationWizard, ownerSchedulePayload, type RegistrationValues
 import { ClinicRegistrationComplete } from "./ClinicRegistrationComplete";
 import { friendlyError } from "../lib/friendly-error";
 
-type SetupProps = { guided?: boolean; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void };
+type SetupProps = { guided?: boolean; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void; carry?: Partial<Record<"fullName"|"email"|"mobile", string>>; onSnapshot?: (values: Record<string, unknown>, defaults: Record<string, unknown>) => void };
 export function ClinicAdminOnboarding({ guided = false, ...state }: SetupProps) {
   if (guided) return <GuidedAdminSetup {...state}/>;
   return <section className="panel padded" style={{ marginBottom: 24 }}><h3>Clinic Admin Setup</h3><p className="muted">Invite a clinic owner and create their clinic, locations and hours together. Existing ownership is never transferred.</p><Link className="button small" href="/register-clinic" data-testid="button-setup-clinic-admin"><Plus size={17}/>Set Up Clinic Admin</Link></section>;
 }
 
-function GuidedAdminSetup({ onDirtyChange, onBusyChange }: Omit<SetupProps, "guided">) {
+function GuidedAdminSetup({ onDirtyChange, onBusyChange, carry, onSnapshot }: Omit<SetupProps, "guided">) {
   const client = useQueryClient();
   const locked = useRef(false);
   const [completed, setCompleted] = useState<api.ClinicAdminOnboardingResult | null>(null);
@@ -39,5 +39,5 @@ function GuidedAdminSetup({ onDirtyChange, onBusyChange }: Omit<SetupProps, "gui
    if (completed) return <ClinicRegistrationComplete result={completed} invitationStatus={completed.admin.invitationStatus}/>;
   if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
   if (references.error && !references.data) return <div className="error-box" role="alert">{friendlyError(references.error,"load")}<button data-testid="admin-registration-retry-options" onClick={() => references.refetch()}>Try Again</button></div>;
-   return <ClinicRegistrationWizard adminMode onDirtyChange={onDirtyChange} onStepChange={setup.reset} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?friendlyError(setup.error,"save"):undefined}/>;
+   return <ClinicRegistrationWizard adminMode carry={carry} onSnapshot={onSnapshot} onDirtyChange={onDirtyChange} onStepChange={setup.reset} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?friendlyError(setup.error,"save"):undefined}/>;
 }

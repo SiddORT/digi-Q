@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as api from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CareLookup } from "../CareLookup";
@@ -8,8 +8,12 @@ import { SessionSelector, useDailySession, formatSessionHours } from "../queue/S
 import { formatTime } from "../../lib/date-time";
 import { DateFormatInput } from "../DateFormatInput";
 
-export function RescheduleAppointment({appointment:a,onDone}:{appointment:api.Appointment;onDone:()=>void}){
+export function RescheduleAppointment({appointment:a,onDone,onDirtyChange}:{appointment:api.Appointment;onDone:()=>void;onDirtyChange?:(dirty:boolean)=>void}){
  const [branchId,setBranch]=useState(a.branchId);const [doctorId,setDoctor]=useState(a.doctorId);const [date,setDate]=useState(a.date);const [reason,setReason]=useState("");const [confirmed,setConfirmed]=useState(false);
+ // Dirty only when the user changed a destination field or typed a reason (the dialog used to always prompt).
+ const dirty=branchId!==a.branchId||doctorId!==a.doctorId||date!==a.date||!!reason.trim();
+ const dirtyRef=useRef(onDirtyChange);dirtyRef.current=onDirtyChange;
+ useEffect(()=>{dirtyRef.current?.(dirty);},[dirty]);
  const selection=useDailySession({branchId,doctorId,date,initialSessionId:a.sessionId});const availability=selection.availability;
  const client=useQueryClient();const lock=useRef(false);
  const current=api.useGetAppointment(a.id,{query:{queryKey:api.getGetAppointmentQueryKey(a.id),refetchInterval:30000}});

@@ -1,4 +1,5 @@
 import { FormActions } from "./FormActions";
+import { FormDisclosure, FormSection } from "./FormSection";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HelpTip } from "./HelpTip";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
@@ -72,7 +73,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
    <section className="workspace-subsection" aria-labelledby="clinic-location-qr"><div className="panel-heading section-head"><div><h2 id="clinic-location-qr">Booking links &amp; QR</h2><p className="muted">Regenerating a QR invalidates printed copies <HelpTip text="Existing booking links stay unchanged when editing clinic hours."/></p></div><div className="row-actions"><Link className="button secondary small" href="/admin/availability" data-testid="link-location-schedule">Weekly schedule</Link><Link className="button secondary small" href="/admin/exceptions" data-testid="link-location-exceptions">Exceptions</Link>{data.clinic.slug&&<Link className="button secondary small" href={`/${data.clinic.slug}`}>Patient booking page</Link>}</div></div><ResourcePage key={`${clinicId}-qrs`} resource="qrs" identity={identity} embedded fixedClinicId={clinicId}/></section>
    {identity.user?.role==="clinicAdmin"&&<div className="workspace-subsection"><ConsultationManagement identity={identity} clinicId={clinicId}/></div>}</>}
   {view==="staff"&&<>{identity.user?.role==="superAdmin"&&<p><Link href="/admin/users?area=staff">Manage All Staff and Clinic Administrators</Link></p>}<Users key={`${clinicId}-staff`} identity={identity} clinicId={clinicId} embedded/></>}
- <AppDialog open={!!section} size="wide" onClose={()=>setSection(null)} title={section==="clinic"?"Clinic Details":"Booking Policies"} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{section&&<Editor onDirtyChange={setDirty} initial={section==="clinic"?data.clinic:data.policies} fields={section==="clinic"?resources.clinics.fields.filter(field=>["name","address","email","phone","slug","categoryId","specialityIds","referralCode"].includes(field.key)):[{key:"bookingHorizonDays",type:"number",required:true},{key:"cancellationCutoffMinutes",type:"number",required:true}]} busy={save.isPending} onSave={value=>save.mutate({id:clinicId,data:section==="clinic"?{clinic:value}:{policies:value}})}/>}</AppDialog>
+ <AppDialog open={!!section} size="medium" onClose={()=>setSection(null)} title={section==="clinic"?"Clinic Details":"Booking Policies"} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{section&&<Editor onDirtyChange={setDirty} initial={section==="clinic"?data.clinic:data.policies} fields={section==="clinic"?resources.clinics.fields.filter(field=>["name","address","email","phone","slug","categoryId","specialityIds","referralCode"].includes(field.key)):[{key:"bookingHorizonDays",type:"number",required:true,label:"Booking Horizon (days)",width:"md"},{key:"cancellationCutoffMinutes",type:"number",required:true,label:"Cancellation Cutoff (minutes)",width:"md"}]} busy={save.isPending} onSave={value=>save.mutate({id:clinicId,data:section==="clinic"?{clinic:value}:{policies:value}})}/>}</AppDialog>
   <AppDialog open={!!branch} size="wide" onClose={closeBranch} title={`Edit Location · ${branch?.name||""}`} dirty={dirty} busy={save.isPending}><ErrorNotice error={save.error}/>{branch&&<BranchSettings key={branch.id} clinicId={clinicId} branch={branch} busy={save.isPending} onDirtyChange={setDirty} onSave={value=>save.mutate({id:clinicId,data:{branches:[value]}})}/>}</AppDialog>
   </div></div>
   <AppDialog open={!!formats} onClose={()=>setFormats(null)} title="Date and Time Format" dirty={!!formats&&(formats.dateFormat!==data.clinic.dateFormat||formats.timeFormat!==data.clinic.timeFormat)} busy={save.isPending}>
@@ -134,9 +135,8 @@ function BranchSettings({branch,clinicId,busy,onDirtyChange,onSave}:{branch:api.
    let parent=(event.target as HTMLElement).parentElement;
    while(parent){if(parent instanceof HTMLDetailsElement)parent.open=true;parent=parent.parentElement;}
   }} style={{border:0,padding:0,minWidth:0}}>
-   <section className="notice" aria-label="Copy location opening hours">
-    <h3>Copy Opening Hours From Another Location</h3>
-    <p>Destination: <strong>{branch.name}</strong>. Copying replaces this location's draft hours only. Contacts, timezone and doctor assignments are not copied. Review Changes checks linked sessions before anything is saved.</p>
+   <FormDisclosure title="Copy Opening Hours From Another Location" summary="Optional. Replaces this location's draft hours only." testId="details-copy-location-hours">
+    <p className="muted">Destination: <strong>{branch.name}</strong>. Copying replaces this location's draft hours only. Contacts, timezone and doctor assignments are not copied. Review Changes checks linked sessions before anything is saved.</p>
     <ResourceLookup resource="clinics" label="Source Clinic Group" value={sourceClinicId} onChange={value=>{setSourceClinicId(value);setCopySource("");setCopyMessage("");}}/>
     <SearchableSelect label="Source Location" value={copySource} onChange={setCopySource} disabled={sources.isFetching||!!sources.error} placeholder="Choose a source location" options={(sources.data?.branches||[]).filter(item=>item.id!==branch.id&&item.status==="active"&&item.openingHours!=null).map(item=>({value:item.id,label:`${item.name}${item.timezone?` · ${item.timezone}`:""}`}))}/>
     {sourceClinicId&&!sources.isFetching&&!sources.error&&sources.data&&!sources.data.branches.some(item=>item.id!==branch.id&&item.status==="active"&&item.openingHours!=null)&&<p>No other active locations with configured hours in this group. Choose another authorized Clinic Group or enter hours below.</p>}
@@ -148,11 +148,11 @@ function BranchSettings({branch,clinicId,busy,onDirtyChange,onSave}:{branch:api.
      setCopyMessage(`Copied hours from ${source.name} to ${branch.name} in this draft. Times use the destination timezone. Review Changes, then Apply to save.`);
     }}>Copy Hours to Draft</button>
     {copyMessage&&<p role="status">{copyMessage}</p>}
-   </section>
+   </FormDisclosure>
    {validation&&<p role="alert" className="error-box">{validation}</p>}
    <Editor initial={branch} fields={resources.branches.fields.filter(field=>field.key!=="clinicId"&&field.key!=="status")} busy={busy} submitLabel="Review Changes" reviewOnly onDirtyChange={onDirtyChange} onSave={value=>{const invalid=newWeek().map(day=>({...day,isOpen:hours.some(hour=>hour.dayOfWeek===day.dayOfWeek),sessions:hours.filter(hour=>hour.dayOfWeek===day.dayOfWeek)})).map(dayError).find(Boolean);if(invalid){setValidation(invalid);return;}setPending({...value,id:branch.id,linkedSchedule:linked,...(hoursChanged||branch.openingHours!=null?{openingHours:hours}:{})});}}>
-    <div className="wide"><OpeningHoursEditor value={hours} onChange={value=>{setHours(value);setHoursChanged(true);changed();}}/></div>
-    <div className="wide"><LinkedScheduleControls value={linked} onChange={value=>{setLinked(value);changed();}}/></div>
+    <FormSection title="Opening hours" grid={false}><OpeningHoursEditor value={hours} onChange={value=>{setHours(value);setHoursChanged(true);changed();}}/></FormSection>
+    <FormSection title="Linked owner schedule" grid={false}><LinkedScheduleControls value={linked} onChange={value=>{setLinked(value);changed();}}/></FormSection>
    </Editor>
   </fieldset>
   {pending&&<ClinicChangeReview key={JSON.stringify(pending)} clinicId={clinicId} change={{branches:[pending]}} busy={busy} onSave={()=>onSave(pending)}/>}

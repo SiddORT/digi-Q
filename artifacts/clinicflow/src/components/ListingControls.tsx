@@ -272,21 +272,13 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
   const showClear = !!(onReset && active);
   // With a page title on row 1, the record count becomes secondary row-2 metadata (no duplicate heading).
   const countInSub = !!(pageTitle && title);
-  const hasSubRow = !!(status || meta || advanced || showClear || countInSub);
+  // Filters/Clear never sit alone on an otherwise empty second row: without status tabs or a
+  // secondary count they join the search row.
+  const toolsInline = !status && !countInSub;
+  const hasSubRow = !toolsInline && !!(status || meta || advanced || showClear || countInSub);
 
-  return (
-    <section className="filter-bar list-header" aria-label={label} data-testid="list-header">
-      <div className={cn("filter-bar-row lh-row lh-top", (title || status) && "has-title")}>
-        {pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1></div>
-          : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>}
-        {children && <div className="filter-bar-primary lh-search">{children}</div>}
-        {(actions || secondary) && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup secondary={secondary}>{actions}</ResponsiveActionGroup></div>}
-      </div>
-      {hasSubRow && (
-        <div className="lh-row lh-sub" data-testid="list-header-subrow">
-          {countInSub && <div className="filter-bar-title lh-count" data-testid="text-listing-title">{title}</div>}
-          {status && <div className="filter-bar-status lh-status">{status}</div>}
-          <div className="filter-bar-tools lh-tools">
+  const tools = (
+    <div className="filter-bar-tools lh-tools">
             {meta && <div className="lh-meta">{meta}</div>}
             {advanced && (
               <div className="filter-pop">
@@ -317,6 +309,21 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
               </button>
             )}
           </div>
+  );
+  return (
+    <section className="filter-bar list-header" aria-label={label} data-testid="list-header">
+      <div className={cn("filter-bar-row lh-row lh-top", (title || status) && "has-title")}>
+        {pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1></div>
+          : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>}
+        {children && <div className="filter-bar-primary lh-search">{children}</div>}
+        {toolsInline && !!(meta || advanced || showClear) && tools}
+        {(actions || secondary) && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup secondary={secondary}>{actions}</ResponsiveActionGroup></div>}
+      </div>
+      {hasSubRow && (
+        <div className="lh-row lh-sub" data-testid="list-header-subrow">
+          {countInSub && <div className="filter-bar-title lh-count" data-testid="text-listing-title">{title}</div>}
+          {status && <div className="filter-bar-status lh-status">{status}</div>}
+          {tools}
         </div>
       )}
       {chips.length > 0 && (

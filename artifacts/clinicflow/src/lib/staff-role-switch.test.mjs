@@ -24,7 +24,7 @@ test("opaque admin setup input (dirty) always requires confirmation; blank share
 });
 test("Add Staff wires confirmation, carry-over with dirty protection, and independent role payloads", () => {
   const users = readFileSync(new URL("../Users.tsx", import.meta.url), "utf8");
-  assert.match(users, /planRoleSwitch\(snapshot\.current\.values,snapshot\.current\.defaults,editTab==="admins"&&dirty\)/);
+  assert.match(users, /planRoleSwitch\(snapshot\.current\.values,snapshot\.current\.defaults\)/);
   assert.match(users, /await roleConfirm\.ask\(\{title:`Switch to \$\{singular\(next\)\}\?`/);
   assert.match(users, /setValue\(key as any,value,\{shouldDirty:true\}\)/);
   assert.match(users, /<UserEditor key=\{`\$\{editTab\}:\$\{editing\.id\|\|"new"\}`\} tab=\{editTab\}/);
@@ -34,4 +34,15 @@ test("Add Staff wires confirmation, carry-over with dirty protection, and indepe
   assert.match(users, /<label>Clinic Groups <span className="required">\*<\/span><\/label>/);
   assert.match(users, /<label>Locations \{tab === "receptionists"/);
   assert.match(users, /size="medium"/);
+  // Clinic Admin setup wizard participates in the same carry-over contract (both directions).
+  assert.match(users, /<ClinicAdminOnboarding guided carry=\{carry\} onSnapshot=/);
+  const wizard = readFileSync(new URL("../components/ClinicRegistrationWizard.tsx", import.meta.url), "utf8");
+  assert.match(wizard, /form\.setValue\(key as "fullName", value, \{ shouldDirty: true \}\)/);
+  assert.match(wizard, /snapshotRef\.current\?\.\(next as Record<string, unknown>, defaults\)/);
+});
+
+test("wizard snapshot: untouched defaults are not discardable; clinic input is", async () => {
+  const defaults = { fullName: "", email: "", mobile: "", name: "", branches: [{ name: "" }] };
+  assert.equal(planRoleSwitch({ ...defaults, fullName: "Asha Rao", email: "a@x.in" }, defaults).discards, false);
+  assert.equal(planRoleSwitch({ ...defaults, fullName: "Asha Rao", name: "Rao Clinic" }, defaults).discards, true);
 });

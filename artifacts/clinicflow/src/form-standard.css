@@ -1,0 +1,109 @@
+/* System-wide form standard (loaded last). Grouped section cards, one label baseline,
+   compact address row, readable footer. Tokens only: spacing 4/8/12/16/24, radii 8/12. */
+
+/* ---- Grouped editor sections (Patients, Profiles, Staff, Clinics, Locations, Schedules…) ---- */
+.editor-container .editor-group{grid-column:1/-1;min-width:0;margin:0;padding:12px 16px 16px;border:1px solid hsl(var(--border));border-radius:12px;background:hsl(var(--card))}
+.editor-container .editor-group[hidden]{display:none}
+.editor-container .editor-group-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0 0 12px;padding:0 0 8px;border-bottom:1px solid hsl(var(--border)/.7)}
+.editor-container .editor-group-head .editor-section{display:flex;align-items:center;gap:8px;margin:0;padding:0;border:0;font-size:var(--type-body);font-weight:var(--weight-heading,600);color:hsl(var(--foreground));text-transform:none;letter-spacing:0}
+.editor-container .editor-group-index{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:8px;background:hsl(var(--primary)/.12);color:hsl(var(--primary));font-size:var(--type-caption);font-weight:700;flex:none}
+.editor-container .editor-group-hint{margin:0;font-size:var(--type-caption);color:hsl(var(--muted-foreground))}
+.editor-container .editor-group-grid{margin:0;gap:12px 16px}
+.editor-container .editor-disclosure{grid-column:1/-1;display:flex;justify-content:flex-start}
+.editor-container .editor-disclosure .text-link{padding:4px 0;font-weight:600}
+.editor-container .form-intro{margin:0 0 4px;font-size:var(--type-label)}
+.editor-container>form.form-grid{gap:12px}
+
+/* ---- One label baseline for every field type (FormField, legacy label, address parts) ---- */
+.editor-container .field-grid,.editor-container .editor-group-grid,.profile-compact .field-grid{align-items:start}
+.form-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.form-field>.form-field-label,.address-fields .field-hint,.editor-container .field-grid label>.field-hint:first-child{display:flex;align-items:center;gap:4px;min-height:24px;margin:0;line-height:1.3;font-size:var(--type-label);font-weight:600;color:hsl(var(--foreground))}
+.form-field-optional{font-weight:500;color:hsl(var(--muted-foreground))}
+.form-field-help,.form-field-error{margin:0;font-size:var(--type-caption);line-height:1.4}
+.form-field-help{color:hsl(var(--muted-foreground))}
+.input-readonly{background:hsl(var(--muted)/.6);color:hsl(var(--foreground));cursor:default}
+
+/* ---- Address: full-width line, then Country / State / City / PIN on one compact row ---- */
+.editor-container .address-fields,.profile-compact .address-fields{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 16px}
+.editor-container .address-fields>.address-compact,.profile-compact .address-fields>.address-compact{max-width:none;gap:4px}
+.address-fields>label.wide{display:flex;flex-direction:column;gap:4px}
+@container (max-width:559px){.editor-container .address-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:767px){.editor-container .address-fields,.profile-compact .address-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.editor-container .address-fields,.profile-compact .address-fields{grid-template-columns:1fr}}
+
+/* ---- Schedule capacity row: labels may wrap, controls still line up ---- */
+.editor-container .editor-group-grid>[data-field-width]{display:flex;flex-direction:column}
+.editor-container .editor-group-grid>[data-field-width]>.form-field{flex:1 1 auto}
+.editor-container .editor-group-grid .form-field>.form-field-label{min-height:24px}
+@container (min-width:900px){.editor-container .editor-group-grid .form-field>.form-field-label{align-items:flex-end}}
+
+/* ---- Dialogs: header stays put, body scrolls, footer readable on laptop heights ---- */
+.app-dialog{max-height:min(92dvh,880px)}
+.app-dialog-header{position:sticky;top:0;z-index:3;background:hsl(var(--card))}
+.app-dialog-body .form-footer,.app-dialog-footer{background:hsl(var(--card));box-shadow:0 -8px 16px -12px hsl(var(--foreground)/.25)}
+@media (max-height:760px){.app-dialog{max-height:96dvh}}
+
+/* ---- System Users: icon action column never clips ---- */
+[data-testid="system-users"] .col-actions{width:56px;min-width:56px;text-align:center}
+[data-testid="system-users"] .table-wrap{overflow-x:auto}
+
+/* ---- Exception conflict ---- */
+[data-testid="text-exception-conflict"]{margin:0}
+
+/* ---- Readable public and workspace footer text ---- */
+footer:not([class]),.workspace .content-footer{color:hsl(var(--foreground)/.74)}
+
+/* ---- Shared FormSection / FormDisclosure (Staff, Onboarding, Clinic settings, Integrations) ---- */
+.form-section{grid-column:1/-1;min-width:0;margin:0;padding:12px 16px 16px;border:1px solid hsl(var(--border));border-radius:12px;background:hsl(var(--card))}
+.form-section+.form-section{margin-top:12px}
+.form-grid>.form-section+.form-section{margin-top:0}
+.form-section-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0 0 12px;padding:0 0 8px;border-bottom:1px solid hsl(var(--border)/.7)}
+.form-section-head h3{margin:0;font-size:var(--type-body);font-weight:var(--weight-heading,600);color:hsl(var(--foreground))}
+.form-section-hint{margin:0;font-size:var(--type-caption);color:hsl(var(--muted-foreground))}
+.form-section-actions{margin-left:auto;display:flex;gap:8px}
+.form-section-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,14rem),1fr));gap:12px 16px;align-items:start}
+.form-section-grid>:is(.wide,.full,.notice,:has(textarea),:has(.phone-input),:has(.address-fields)){grid-column:1/-1}
+.form-disclosure>summary{cursor:pointer;list-style:none;margin:0;border-bottom:0;padding:0}
+.form-disclosure>summary::-webkit-details-marker{display:none}
+.form-disclosure>summary h3::before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+.form-disclosure[open]>summary h3::before{transform:rotate(45deg)}
+.form-disclosure[open]>summary{margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid hsl(var(--border)/.7)}
+.form-disclosure>.form-section-body{display:grid;gap:12px}
+.form-field-narrow{max-width:24rem}
+.choice-row{display:flex;flex-wrap:wrap;gap:8px 24px}
+.registration-step-sections{display:grid;gap:12px}
+.registration-step-sections .registration-fields{margin:0}
+.int-editor-sections{display:grid;gap:12px;border:0;padding:0;margin:0;min-width:0}
+.int-editor-sections .form-section+.form-section{margin-top:0}
+.staff-editor{gap:12px}
+
+/* ---- Checkbox rows inside the field grid: same 40px band as inputs, label inline ---- */
+.editor-container .check-row{display:flex;align-items:center;gap:8px;min-height:40px;margin-top:24px;font-weight:500}
+@container (max-width:559px){.editor-container .check-row{margin-top:0}}
+.editor-container .check-row input{width:16px;height:16px;flex:none}
+
+/* ---- Derived (read-only) value: plain text, not an input ---- */
+.derived-field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.derived-field>output{display:flex;align-items:center;min-height:40px;padding:0 4px;font-weight:600;color:hsl(var(--foreground));font-variant-numeric:tabular-nums}
+
+/* ---- Patient optional-details disclosure with saved summary ---- */
+.editor-container .editor-disclosure{flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.editor-disclosure-summary{font-size:var(--type-caption);color:hsl(var(--muted-foreground));min-width:0;overflow-wrap:anywhere}
+
+/* ---- Templates, booking and auth forms share label rhythm ---- */
+.et-form{display:grid;gap:12px}
+.guest-booking .form-grid,.booking-panel .form-grid{gap:12px 16px;align-items:start}
+.auth-card form,.auth-shell form{display:grid;gap:12px}
+
+/* ---- Custom role editor: the Allowed Actions matrix needs a real working width ---- */
+.app-dialog.app-dialog-drawer:has(.cr-matrix){width:min(960px,calc(100vw - 32px));max-width:calc(100vw - 32px)}
+@media (max-width:639px){.app-dialog.app-dialog-drawer:has(.cr-matrix){width:100vw;max-width:100vw}}
+.cr-matrix{overflow-x:auto;max-width:100%}
+.cr-matrix table{width:100%;min-width:max-content;table-layout:auto}
+.cr-matrix th,.cr-matrix td{white-space:nowrap;word-break:normal;overflow-wrap:normal;padding:8px 12px}
+.cr-matrix th[scope=row],.cr-matrix thead th:first-child{min-width:12rem}
+.cr-matrix td:last-child,.cr-matrix thead th:last-child{text-align:right;width:1%}
+.cr-matrix td:last-child button{white-space:nowrap}
+
+/* ---- Field labels never fragment into one-word lines ---- */
+.form-field>.form-field-label{overflow-wrap:normal;word-break:normal}

@@ -1,4 +1,5 @@
 import { HoursWarning } from "./HoursWarning";
+import { FormField } from "./FormField";
 import { BookingSteps } from "./BookingSteps";
 import { StagedBooking, BookingStageActions, BookingSummary } from "./booking/StagedBooking";
 import { EmailInput } from "@/components/EmailInput";
@@ -126,7 +127,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  <StagedBooking testId="guest-staged-booking" step={step} visit={<><div className="form-grid cf-auto">
   {!context.branchId&&<CareLookup publicAccess kind="branches" label="Location" value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}} selectedLabel={branchOptions.data?.items.find(b=>b.id===branchId)?.name}/>}
   {!context.doctorId&&<CareLookup publicAccess kind="doctors" label="Doctor" value={doctorId} disabled={!branchId} params={{clinicId:context.clinicId,branchId,status:"active"}} onChange={setDoctor} selectedLabel={doctorOptions.data?.items.find(d=>d.id===doctorId)?.fullName}/>}
-  <label>Visit date<DateFormatInput data-testid="input-guest-date" required min={today(available?.timezone)} preferences={{...(context.dateFormat?{dateFormat:context.dateFormat}:{}),...(context.timeFormat?{timeFormat:context.timeFormat}:{})}} value={date} onChange={value=>{searchRun.current++;setFinding(false);setDateMessage("");setDate(value);}}/></label>
+  <FormField label="Visit date" required><DateFormatInput data-testid="input-guest-date" required min={today(available?.timezone)} preferences={{...(context.dateFormat?{dateFormat:context.dateFormat}:{}),...(context.timeFormat?{timeFormat:context.timeFormat}:{})}} value={date} onChange={value=>{searchRun.current++;setFinding(false);setDateMessage("");setDate(value);}}/></FormField>
   {selection.sessions.length===1&&!availability.error?<div className="guest-session"><strong>Consulting session</strong><span>{formatSessionHours(selection.sessions[0])} · {selection.sessions[0].timezone}</span><small>Only session listed for this date. Availability is checked again when you book.</small></div>:<SessionSelector selection={selection}/>}
  </div>
   <div className="availability-box" data-testid="guest-availability-status">{availability.isFetching?"Checking session…":available?<><strong>{available.available&&available.remainingTokens>0&&available.queueMode!=="walkInsOnly"?"Available Session":"Session Unavailable"}</strong><p>{formatSessionHours(available)} · {available.timezone}</p><HoursWarning warning={available.hoursWarning}/>{available.queueMode==="walkInsOnly"?<p>This session accepts walk-ins only. Select another session or date for online booking.</p>:(!available.available||available.remainingTokens<=0)&&<p>{available.reason||"Session full. Choose another date."}</p>}</>:availability.error?<p>Could not check sessions. Retry below.</p>:!branchId||!doctorId?<p>Choose a location and doctor to see the sessions.</p>:selection.sessions.length>1?<p>Select one of the listed consulting sessions to check its availability.</p>:availability.isLoading?<p>Finding doctor sessions…</p>:<p>No doctor session is available for this date. Try another date or ask the clinic to configure its Weekly schedule.</p>}</div>
@@ -134,11 +135,11 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   {branchId&&doctorId&&<div className="guest-next-date"><button type="button" className="button secondary" disabled={finding} onClick={()=>void findNextDate()} data-testid="button-next-guest-date">{finding?"Searching the next 14 days…":"Find Next Available Date"}</button>{dateMessage&&<p role="status">{dateMessage}</p>}</div>}
  <p className="notice">Your ticket shows a session time range, not an exact consultation time.</p>
  <BookingStageActions primaryLabel="Continue to Patient Details" primaryDisabled={!canContinueVisit} onPrimary={()=>setStep(2)} primaryTestId="button-guest-continue-visit"/></>} patient={<><div className="form-grid cf-auto">
- <label>Patient's name<input data-testid="input-guest-name" autoComplete="name" maxLength={150} {...form.register("fullName",{required:true,validate:v=>!!v.trim()})}/></label>
+ <FormField label="Patient's name" required><input data-testid="input-guest-name" autoComplete="name" maxLength={150} {...form.register("fullName",{required:true,validate:v=>!!v.trim()})}/></FormField>
  </div>
  <details><summary data-testid="toggle-guest-contact" style={{padding:"12px 0",cursor:"pointer"}}>Add contact details (optional)</summary><div className="form-grid cf-auto">
- <label>Email (optional)<EmailInput data-testid="input-guest-email" {...form.register("email", { validate: (v:unknown) => validateEmail(v)||true })}/></label>
- <Controller name="mobile" control={form.control} rules={{validate:v=>!v?.trim()||!validatePhone(v)}} render={({field})=><label>Mobile (optional)<PhoneInput {...field} value={field.value||""} data-testid="input-guest-mobile"/></label>}/>
+ <FormField label="Email" optional><EmailInput data-testid="input-guest-email" {...form.register("email", { validate: (v:unknown) => validateEmail(v)||true })}/></FormField>
+ <Controller name="mobile" control={form.control} rules={{validate:v=>!v?.trim()||!validatePhone(v)}} render={({field})=><FormField label="Mobile" optional><PhoneInput {...field} value={field.value||""} data-testid="input-guest-mobile"/></FormField>}/>
  </div></details>
  {form.formState.errors.fullName&&<p role="alert">Enter the patient's name.</p>}
  {form.formState.errors.mobile&&<p role="alert">Open contact details, choose a country and enter a valid local number, or leave mobile blank.</p>}

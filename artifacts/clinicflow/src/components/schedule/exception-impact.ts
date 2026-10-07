@@ -7,7 +7,7 @@ export function exceptionImpact(rows: unknown[], change: { isClosed?: boolean; s
   if (change.isClosed) affected = active.length;
   else if (change.startTime && change.endTime) affected = active.filter(r => !!r.startTime && (r.startTime < change.startTime! || r.startTime >= change.endTime!)).length;
   const message = !active.length ? "No active bookings on this date. Saving affects no patients."
-    : affected ? `${affected} active booking${affected > 1 ? "s" : ""} on this date ${change.isClosed ? "fall on the day off" : "start outside the changed hours"}. Existing bookings are kept; contact or reschedule these patients.`
-    : `${active.length} active booking${active.length > 1 ? "s" : ""} on this date stay within the new hours.`;
+    : affected ? `${affected} active booking${affected === 1 ? "" : "s"} on this date ${change.isClosed ? (affected === 1 ? "falls on the day off" : "fall on the day off") : (affected === 1 ? "starts outside the changed hours" : "start outside the changed hours")}. Existing bookings are kept; contact or reschedule ${affected === 1 ? "this patient" : "these patients"}.`
+    : `${active.length} active booking${active.length === 1 ? "" : "s"} on this date ${active.length === 1 ? "stays" : "stay"} within the new hours.`;
   return { active: active.length, affected, message };
 }

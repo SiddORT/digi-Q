@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Copy } from "lucide-react";
+import { IconAction } from "./IconAction";
 import { Link } from "wouter";
 import QRCode from "qrcode";
 import { csrfToken } from "../lib/csrf";
@@ -132,9 +134,9 @@ export function DemoClinicManagement() {
       <div className="demo-share-main">
       <dl className="settings-facts">
         {([["Clinic page", clinicUrl], ["Booking link", bookingUrl]] as const).map(([name, url]) => <div key={name}><dt>{name}</dt><dd className="demo-link-actions">
-          <button type="button" className="button secondary small" aria-label={`Copy ${name.toLowerCase()}: ${url}`} onClick={() => void navigator.clipboard.writeText(url).then(() => setNotice(`${name} copied.`)).catch(() => setError("Clipboard unavailable."))}>Copy</button>
+          <IconAction label={`Copy ${name.toLowerCase()}: ${url}`} hint={`Copy ${name.toLowerCase()}`} icon={<Copy size={15} aria-hidden/>} onClick={() => void navigator.clipboard.writeText(url).then(() => setNotice(`${name} copied.`)).catch(() => setError("Clipboard unavailable."))}/>
           <a className="button secondary small" href={url} target="_blank" rel="noreferrer" title={url} aria-label={`Open ${name.toLowerCase()}: ${url}`}>Open</a></dd></div>)}
-        <div><dt>Staff login</dt><dd className="demo-link-actions"><button type="button" className="button secondary small" aria-label={`Copy staff login: ${loginUrl}`} onClick={() => void navigator.clipboard.writeText(loginUrl).then(() => setNotice("Staff login copied.")).catch(() => setError("Clipboard unavailable."))}>Copy</button><Link className="button secondary small" href={status.loginPath || "/demo-login"} title={loginUrl} aria-label={`Open staff login: ${loginUrl}`}>Open</Link></dd></div>
+        <div><dt>Staff login</dt><dd className="demo-link-actions"><IconAction label={`Copy staff login: ${loginUrl}`} hint="Copy staff login" icon={<Copy size={15} aria-hidden/>} onClick={() => void navigator.clipboard.writeText(loginUrl).then(() => setNotice("Staff login copied.")).catch(() => setError("Clipboard unavailable."))}/><Link className="button secondary small" href={status.loginPath || "/demo-login"} title={loginUrl} aria-label={`Open staff login: ${loginUrl}`}>Open</Link></dd></div>
       </dl>
       <h3>Patient Sharing Message</h3>
       <textarea readOnly rows={4} value={forward} aria-label="Public demo sharing message"/>

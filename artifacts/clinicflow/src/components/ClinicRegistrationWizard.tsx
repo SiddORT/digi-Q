@@ -1,8 +1,9 @@
 import { AddressFields } from "./AddressFields";
+import { FormSection } from "./FormSection";
 import { validatePostalCode } from "../lib/address";
 import { FormActions } from "./FormActions";
 import { EmailInput } from "@/components/EmailInput";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useLocation } from "wouter";
 import { Building2, Check, ChevronRight, Plus } from "lucide-react";
@@ -43,10 +44,10 @@ export function ownerSchedulePayload(values: RegistrationValues) {
 }
 const newBranch = (): RegistrationBranch => ({ name: "", slug: "", address: "", city: "", state: "", pincode: "", country: "IN", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", email: "", phone: "", inheritEmail: true, inheritPhone: true, hours: newWeek() });
 type Option = { id: string; name: string };
-type Props = { adminMode?: boolean; initial?: Partial<RegistrationValues>; categories: Option[]; specialities: Option[]; qualifications: Option[]; onSubmit: (values: RegistrationValues) => Promise<void>; checkSlug: (slug: string) => Promise<boolean>; busy: boolean; error?: string; referenceError?: string; finishSecurity?: ReactNode; onStepChange?: () => void; onDirtyChange?: (dirty: boolean) => void };
+type Props = { adminMode?: boolean; initial?: Partial<RegistrationValues>; categories: Option[]; specialities: Option[]; qualifications: Option[]; onSubmit: (values: RegistrationValues) => Promise<void>; carry?: Partial<Record<"fullName"|"email"|"mobile", string>>; onSnapshot?: (values: Record<string, unknown>, defaults: Record<string, unknown>) => void; checkSlug: (slug: string) => Promise<boolean>; busy: boolean; error?: string; referenceError?: string; finishSecurity?: ReactNode; onStepChange?: () => void; onDirtyChange?: (dirty: boolean) => void };
 const steps = ["Clinic identity", "Locations", "Opening hours", "Your practice", "Care team", "Review"];
 
-export function ClinicRegistrationWizard({ adminMode, initial, categories, specialities, qualifications, onSubmit, checkSlug, busy, error, referenceError, finishSecurity, onStepChange, onDirtyChange }: Props) {
+export function ClinicRegistrationWizard({ adminMode, initial, carry, onSnapshot, categories, specialities, qualifications, onSubmit, checkSlug, busy, error, referenceError, finishSecurity, onStepChange, onDirtyChange }: Props) {
   const confirmation=useConfirm();
   const [,navigate]=useLocation();
   const [step, setStep] = useState(0);
@@ -56,6 +57,16 @@ export function ClinicRegistrationWizard({ adminMode, initial, categories, speci
   const [checking, setChecking] = useState(false);
   const form = useForm<RegistrationValues>({ defaultValues: { dateFormat: "DD MMM YYYY", timeFormat: "12h", fullName: "", email: "", mobile: "", name: "", slug: "", categoryId: "", specialityIds: [], referralCode: "", clinicEmail: "", phone: "", branches: [newBranch()], alsoConsult: false, specializationId: "", qualificationIds: [], linkConsultationHours: true, sessionCapacity: "", consultationMinutes: "", ...initial } });
   useEffect(() => { onDirtyChange?.(form.formState.isDirty); }, [form.formState.isDirty, onDirtyChange]);
+  // Add Staff role switch: carried name/email/mobile are applied as edits (dirty protection stays on) and
+  // the parent receives snapshots so it can tell whether switching away would discard setup input.
+  const snapshotRef = useRef(onSnapshot); snapshotRef.current = onSnapshot;
+  useEffect(() => {
+    for (const [key, value] of Object.entries(carry || {})) if (value) form.setValue(key as "fullName", value, { shouldDirty: true });
+    const defaults = form.formState.defaultValues as Record<string, unknown>;
+    snapshotRef.current?.(form.getValues() as unknown as Record<string, unknown>, defaults);
+    const sub = form.watch(next => snapshotRef.current?.(next as Record<string, unknown>, defaults));
+    return () => sub.unsubscribe();
+  }, [form]);
   const values = form.watch();
   const set = form.setValue;
   const updateBranch = (index: number, patch: Partial<RegistrationBranch>) => set("branches", values.branches.map((b, i) => i === index ? { ...b, ...patch } : b), { shouldDirty: true });
@@ -102,15 +113,17 @@ export function ClinicRegistrationWizard({ adminMode, initial, categories, speci
     {confirmation.dialog}<fieldset disabled={busy || checking} style={{ border: 0, padding: 0, minWidth: 0 }}>
     {step===1&&<p className="registration-note">A clinic is a physical care location in your Clinic Group. Each clinic has its own booking address, timetable and timezone. Inherited email and phone details are public clinic contacts; they do not change staff login emails or configure email/SMS delivery.</p>}
     {step === 1 && <DateTimeFormatFields value={values} onChange={patch => { if (patch.dateFormat) set("dateFormat", patch.dateFormat, { shouldDirty: true }); if (patch.timeFormat) set("timeFormat", patch.timeFormat, { shouldDirty: true }); }}/>}
-    {step === 0 && <div className="registration-fields">
-      {field("fullName","Administrator full name",true)}{field("email","Administrator email",true,"email")}{adminMode&&field("mobile","Administrator phone",false,"tel")}{field("name","Clinic Group name",true)}
+    {step === 0 && <div className="registration-step-sections">
+      <FormSection title="Administrator" hint="Signs in and owns this Clinic Group." grid={false}><div className="registration-fields">
+      {field("fullName","Administrator full name",true)}{field("email","Administrator email",true,"email")}{adminMode&&field("mobile","Administrator phone",false,"tel")}</div></FormSection>
+      <FormSection title="Clinic Group" hint="Public identity shown to patients." grid={false}><div className="registration-fields">{field("name","Clinic Group name",true)}
       <Controller name="categoryId" control={form.control} render={({field:input})=><SearchableSelect label="Category (optional)" value={input.value} onChange={input.onChange} options={categories.map(o=>({value:o.id,label:o.name}))}/>}/>
       {field("clinicEmail","Clinic Group email",false,"email")}{field("phone","Clinic Group phone",false,"tel")}
       <Controller name="specialityIds" control={form.control} render={({field:input})=><SearchableMultiSelect label="Specialities (optional)" value={input.value} onChange={input.onChange} options={specialities.map(o=>({value:o.id,label:o.name}))}/>}/>
       {field("referralCode","Reference / referral code (optional)")}
       <label className="wide">Public clinic address *<input value={values.slug} onChange={e=>{set("slug",e.target.value.toLowerCase(),{shouldDirty:true});setSlugStatus(null);}} required minLength={3} maxLength={63} data-testid="registration-slug"/><button type="button" className="text-link" data-testid="registration-suggest-slug" onClick={()=>{set("slug",normalizeClinicSlug(values.name),{shouldDirty:true});setSlugStatus(null);}}>Suggest From Clinic Name</button>{validation&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(values.slug)&&<small className="field-error">Use lowercase letters, numbers and hyphens between words.</small>}</label>
       <div className="registration-url wide"><strong>Published base address · read only</strong><br/>{publishedClinicBase}/<strong>{values.slug||"your-clinic"}</strong>{slugStatus?.slug===values.slug&&<p role="status">{slugStatus.available?"This address is currently available.":"This address is unavailable."}</p>}</div><p className="registration-note wide">Use lowercase letters, numbers and hyphens. Reserved application paths cannot be used. This address becomes permanent after registration; changing the clinic name will not change existing patient links.</p>
-    </div>}
+    </div></FormSection></div>}
     {step === 1 && <><div className="notice">Clinic Group: <strong>{values.name}</strong>. Now name each physical clinic location, not the group again. A single-location clinic may use the same name. Each location has its own address and timezone. Email and phone inheritance are independent.</div>{values.branches.map((branch,index)=><details className="registration-branch" key={index} open><summary>{branch.name||`Clinic location ${index+1}`}</summary><div className="registration-fields">
             {(["name","slug"] as const).map(key=><FormField key={key} label={{name:"Clinic location name",slug:"Clinic URL slug"}[key]} required error={validation&&!branch[key].trim()?"This field is required":undefined}><input value={branch[key]} required data-testid={`registration-branch-${index}-${key}`} onChange={e=>updateBranch(index,{[key]:key==="slug"?e.target.value.toLowerCase():e.target.value})}/></FormField>)}
       {index === 0 && <button type="button" className="text-link" onClick={()=>updateBranch(index,{name:values.name})}>Use Clinic Group Name for This Location</button>}

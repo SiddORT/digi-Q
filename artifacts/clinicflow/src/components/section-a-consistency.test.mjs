@@ -59,6 +59,9 @@ test("remaining Editor guidance is HelpTip; validation stays inline", () => {
   const r = read("../resources.tsx");
   for (const l of ["About session time", "About session scope", "About age", "About account protection", "About web address"]) assert.match(r, new RegExp(`label="${l}"`));
   assert.match(r, /info=\{helper\}/);
+  // Age is derived display text (an <output>), not an editable-looking input.
+  assert.match(r, /className="derived-field" data-testid="text-derived-age"/);
+  assert.doesNotMatch(r, /<input readOnly[^>]*ageFromDateOfBirth/);
   assert.match(r, /This session extends outside a clinic opening interval/);
   assert.match(r, /role="alert" className="field-error">Closing time must follow opening time/);
 });

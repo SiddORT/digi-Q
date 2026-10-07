@@ -8,7 +8,10 @@ test("shared list header: title + search on row 1 with actions right; status/met
   const bar = src.slice(src.indexOf("export function FilterBar"));
   const top = bar.indexOf("lh-top"), search = bar.indexOf("lh-search"), actions = bar.indexOf('className="lh-actions"'), sub = bar.indexOf("lh-sub");
   assert.ok(top > 0 && top < search && search < actions && actions < sub, "row order");
-  assert.match(bar, /const hasSubRow = !!\(status \|\| meta \|\| advanced \|\| showClear \|\| countInSub\)/);
+  assert.match(bar, /const toolsInline = !status && !countInSub;/);
+  assert.match(bar, /const hasSubRow = !toolsInline && !!\(status \|\| meta \|\| advanced \|\| showClear \|\| countInSub\)/);
+  // Filters never strand alone on row 2: without status/count they join the search row.
+  assert.match(bar, /\{toolsInline && !!\(meta \|\| advanced \|\| showClear\) && tools\}/);
   assert.match(bar, /\{hasSubRow && \(/);
   const css = read("./uniformity.css");
   assert.match(css, /\.list-header\{--lh-h:var\(--control-md\)/);

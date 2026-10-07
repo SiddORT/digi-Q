@@ -9,7 +9,8 @@
  *  full: long text, switches, checkboxes, explanatory blocks
  */
 export type FieldWidth = "xs" | "sm" | "md" | "lg" | "full";
-export function fieldWidth(field: { key: string; type?: string; resource?: string }): FieldWidth {
+export function fieldWidth(field: { key: string; type?: string; resource?: string; width?: FieldWidth }): FieldWidth {
+  if (field.width) return field.width; // explicit per-resource layout choice
   const { key, type, resource } = field;
   if (type === "checkbox" && key.startsWith("inherit")) return "md"; // B14: sits beside its email/phone field
   if (type === "textarea" || type === "checkbox") return "full";
@@ -23,4 +24,4 @@ export function fieldWidth(field: { key: string; type?: string; resource?: strin
   if (type === "session" || key === "timezone" || type === "array") return "md";
   return "md";
 }
-export const fieldWidthClass = (field: { key: string; type?: string; resource?: string }) => `field-cell fw-${fieldWidth(field)}`;
+export const fieldWidthClass = (field: { key: string; type?: string; resource?: string; width?: FieldWidth }) => `field-cell fw-${fieldWidth(field)}`;

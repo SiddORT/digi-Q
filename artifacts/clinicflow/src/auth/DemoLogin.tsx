@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FormField } from "../components/FormField";
 import { PasswordInput } from "../components/PasswordInput";
 import { Link, Redirect, useLocation } from "wouter";
 import { AuthCard, AuthShell } from "./AuthShell";
@@ -37,7 +38,7 @@ export function DemoLogin() {
   return <AuthShell eyebrow="Demo Staff Access"><AuthCard title="Demo Clinic Login" description="Explore the fictional clinic with the dedicated demo account. Never enter real patient information.">
     <div className="notice"><strong>Demo login:</strong> clinicflow-demo · no email inbox needed</div>
     <form onSubmit={signIn}>
-      <label htmlFor="demo-password">Demo Password</label><PasswordInput id="demo-password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required data-testid="input-demo-password"/>
+      <FormField id="demo-password" label="Demo Password" required><PasswordInput autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required data-testid="input-demo-password"/></FormField>
       {error && <div className="error-box" role="alert">{error}</div>}
       <button className="button" type="submit" disabled={busy || !password} data-testid="button-demo-login">{busy ? "Signing in…" : "Enter demo workspace"}</button>
     </form>

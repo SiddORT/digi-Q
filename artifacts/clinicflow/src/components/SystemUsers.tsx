@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { AssignmentSummary } from "./AssignmentSummary";
-import { ChevronRight } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
+import { IconAction } from "./IconAction";
 import { Link } from "wouter";
 import { useGetSystemUsers, getGetSystemUsersQueryKey, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetCustomRoles, getGetCustomRolesQueryKey } from "@workspace/api-client-react";
 import { FilterBar, Pagination, SearchInput, useDebouncedValue, listingSuggestions } from "./ListingControls";
@@ -50,7 +51,7 @@ function EffectivePanel({ user }: { user: SystemUser }) {
   const rows = onlyDenied ? result.rows.filter(r => r.denied) : result.rows;
   return <div className="su-effective" data-testid={`effective-${user.id}`}>
     <div className="su-effective-bar">
-      <ScopeSelect label="Scope" value={clinicId} onChange={setClinicId} options={[{ value: "", label: "Platform (All-Scope Assignments Only)" }, ...user.clinics.map(c => ({ value: c.id, label: c.name }))]} testId={`select-effective-scope-${user.id}`} />
+      <ScopeSelect label="Scope" value={clinicId || "platform"} onChange={value => setClinicId(value === "platform" ? "" : value)} options={[{ value: "platform", label: "Platform (All-Scope Assignments Only)" }, ...user.clinics.map(c => ({ value: c.id, label: c.name }))]} testId={`select-effective-scope-${user.id}`} />
       <label className="check-label"><input type="checkbox" checked={onlyDenied} onChange={e => setOnlyDenied(e.target.checked)} /> Denied only</label>
       <span className="muted">{result.rows.filter(r => r.denied).length} denied of {result.rows.length}</span>
     </div>
@@ -107,7 +108,7 @@ export function SystemUsers() {
         : q.error ? <div className="error-box" role="alert">Accounts could not be loaded. <button type="button" onClick={() => void q.refetch()}>Retry</button></div>
         : data?.data.length ? <><div className="table-wrap"><table><thead><tr>{cols.visible.map(k => <th key={k} className={cols.cls(k)}>{cols.label(k)}</th>)}<th className="col-actions sticky"><span className="sr-only">Permissions</span></th></tr></thead><tbody>
           {data.data.map(u => <Fragment key={u.id}><tr data-testid={`row-system-user-${u.id}`}>{cols.visible.map((k, ci) => <td key={k} data-label={cols.label(k)} className={cols.cls(k)}>{ci === 0 && cols.hidden.length ? <span className="row-lead">{cols.toggle(u.id, u.fullName)}{sysCell(k, u)}</span> : sysCell(k, u)}</td>)}
-            <td className="col-actions sticky"><div className="row-actions"><button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setExpanded(u.id)} data-testid={`button-effective-${u.id}`}>Permissions <ChevronRight size={14} aria-hidden /></button></div></td></tr>{cols.expansion(u.id, cols.visible.length + 1, k => sysCell(k, u))}</Fragment>)}
+            <td data-label="Permissions" className="col-actions sticky"><div className="row-actions"><IconAction label={`View effective permissions for ${u.fullName}`} hint="Effective permissions" icon={<ShieldCheck size={15} aria-hidden />} onClick={() => setExpanded(u.id)} testId={`button-effective-${u.id}`} /></div></td></tr>{cols.expansion(u.id, cols.visible.length + 1, k => sysCell(k, u))}</Fragment>)}
         </tbody></table></div><Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPageChange={setPage} /></>
         : <div className="empty" data-testid="status-empty"><h3>{active ? "No matching accounts" : "No accounts yet"}</h3>{active && <button type="button" onClick={reset}>Clear Filters</button>}</div>}
     </section>
