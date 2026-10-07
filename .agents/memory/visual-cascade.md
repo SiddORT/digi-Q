@@ -21,6 +21,12 @@ For narrow export documents, compare text and table internal scroll widths with 
 
 **How to apply:** Check child bounds inside the exported HTML as well as the on-screen component; exercise downloaded documents and print popups separately.
 
+For rasterised ticket PDFs, verify readability on the rendered PDF, not text extraction or the pre-export HTML, and keep the reference-rendering environment stable.
+
+**Why:** Low-resolution inspection can make an intact QR undecodable; source assertions cannot detect missing Unicode glyphs, clipping during capture, or oversized PDF image streams.
+
+**How to apply:** Use print-resolution rasterisation for QR checks, visually review new reference images before accepting them, and distinguish rendering-tool/font changes from document regressions.
+
 Isolated component browser harnesses must explicitly scan the application's source for Tailwind utilities, not just import its stylesheet and Vite plugin.
 
 **Why:** An isolated harness passed interaction checks while rendering stacked pagination, duplicate mobile navigation and misplaced search icons because it did not generate utilities from the real application files. These were initially confused with production cascade problems.

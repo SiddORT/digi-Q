@@ -5,6 +5,8 @@ export default defineConfig({
   timeout: 30000,
   expect: { timeout: 7000 },
   fullyParallel: true,
+  // Rasterising PDFs at print resolution is memory-intensive.
+  workers: 2,
   retries: 0,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {

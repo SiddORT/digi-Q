@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
-import { readFile, mkdtemp, readdir } from "node:fs/promises";
+import { readFile, mkdtemp, readdir, rm } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -112,38 +112,54 @@ async function verifyScreen(page: Page, expected: { name: string; status: string
   const logo = ticket.locator(".vt-head-brand img");
   await expect.poll(() => logo.evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1529, 778]);
 }
-async function download(page: Page) {
+async function download(page: Page, format: "ticket" | "a4" = "ticket") {
   const event = page.waitForEvent("download");
-  await page.getByTestId("button-download-ticket").click();
+  await page.getByTestId(format === "a4" ? "button-download-ticket-a4" : "button-download-ticket").click();
   const item = await event;
   expect(item.suggestedFilename()).toMatch(/^clinicflow-ticket-.*\.pdf$/);
   return readPdf(await item.path());
 }
-type Pdf = { bytes: Buffer; pages: number; images: string[] };
-/** Downloads are rasterised PDFs: check magic bytes, count pages and render each page with pdftoppm. */
+type Pdf = { bytes: Buffer; pages: number; images: string[]; width: number; height: number };
+/** Inspect the actual downloaded bytes, not source markup or the pre-export canvas. */
 async function readPdf(file: string): Promise<Pdf> {
   const bytes = await readFile(file);
   expect(bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   expect(bytes.subarray(-1024).toString("latin1")).toContain("%%EOF");
-  const pages = Number(/Pages:\s+(\d+)/.exec(execFileSync("pdfinfo", [file], { encoding: "utf8" }))?.[1] ?? 0);
+  const info = execFileSync("pdfinfo", [file], { encoding: "utf8" });
+  const pages = Number(/Pages:\s+(\d+)/.exec(info)?.[1] ?? 0);
+  const size = /Page size:\s+([\d.]+) x ([\d.]+) pts/.exec(info);
+  expect(size, info).not.toBeNull();
+  const imageInfo = execFileSync("pdfimages", ["-list", file], { encoding: "utf8" });
+  // JPEG/JPEG2000 can look similar while damaging the QR edges; keep exports lossless.
+  expect(imageInfo).not.toMatch(/\b(jpeg|jpx|jp2)\b/i);
   const dir = await mkdtemp(join(tmpdir(), "ticket-pdf-"));
-  execFileSync("pdftoppm", ["-r", "110", "-png", file, join(dir, "p")]);
-  const names = (await readdir(dir)).filter(n => n.endsWith(".png")).sort();
-  const images = await Promise.all(names.map(async n => `data:image/png;base64,${(await readFile(join(dir, n))).toString("base64")}`));
-  expect(images).toHaveLength(pages);
-  return { bytes, pages, images };
+  try {
+    execFileSync("pdftoppm", ["-r", "300", "-png", file, join(dir, "p")]);
+    const names = (await readdir(dir)).filter(n => n.endsWith(".png")).sort();
+    const images = await Promise.all(names.map(async n => `data:image/png;base64,${(await readFile(join(dir, n))).toString("base64")}`));
+    expect(images).toHaveLength(pages);
+    return { bytes, pages, images, width: Number(size![1]) * 25.4 / 72, height: Number(size![2]) * 25.4 / 72 };
+  } finally { await rm(dir, { recursive: true, force: true }); }
 }
 /** The rendered PDF page must carry a scannable private QR (decoded in the harness page via jsQR). */
-async function verifyPdf(page: Page, pdf: Pdf, pages = 1) {
+async function verifyPdf(page: Page, pdf: Pdf, pages = 1, format: "ticket" | "a4" = "ticket") {
   expect(pdf.pages).toBe(pages);
+  expect(pdf.width).toBeCloseTo(format === "a4" ? 210 : 105, 1);
+  if (format === "a4") expect(pdf.height).toBeCloseTo(297, 1);
+  else {
+    expect(pdf.height).toBeGreaterThan(80);
+    expect(pdf.height).toBeLessThan(400);
+  }
+  expect(pdf.bytes.length).toBeGreaterThan(10_000);
+  expect(pdf.bytes.length).toBeLessThan(750_000 * pages);
   for (const image of pdf.images) expect(await decode(page, image)).toBe(qrUrl);
 }
 async function verifyHtml(page: Page, html: string, expected: { name: string; status: string; token: string; date?: string; session?: string }) {
   const dom = new DOMParserShim(html);
   expect(html).toContain("DigiQ Doctors");
-  expect(html).toContain(`>${expected.name}</h2>`);
-  expect(html).toContain(`>${expected.status}</strong>`);
-  expect(html).toContain(`class="n">${expected.token}</div>`);
+  expect(html).toContain(`class="p">${expected.name}</p>`);
+  expect(html).toContain(`class="s">${expected.status}</span>`);
+  expect(html).toContain(`class="n">${expected.token}</p>`);
   expect(html).toContain(expected.date ?? "14 Jun 2030");
   expect(html).toContain(expected.session ?? "9:00 AM – 12:00 PM (UTC)");
   expect(html).not.toMatch(/<script\b|<link\b|<iframe\b/i);
@@ -167,7 +183,7 @@ async function verifyHtml(page: Page, html: string, expected: { name: string; st
 }
 class DOMParserShim {
   constructor(private html: string) {}
-  image() { return this.html.match(/<img class="qr" src="([^"]+)" alt="Personal visit QR">/)?.[1] ?? null; }
+  image() { return this.html.match(/<img src="([^"]+)" alt="Personal visit QR">/)?.[1] ?? null; }
   logo() { return this.html.match(/<img src="([^"]+)" alt="DigiQ Doctors logo"/)?.[1] ?? null; }
 }
 async function interceptPrint(page: Page, blocked = false) {
@@ -228,6 +244,38 @@ function assertFreshOrder(f: Fixtures, mode: Mode) {
 }
 
 for (const mode of ["guest", "appointment"] as const) {
+  for (const format of ["ticket", "a4"] as const) {
+    test(`${mode} ${format} PDF preserves long Unicode content and stays compact`, async ({ page }, testInfo) => {
+      const f = fixture();
+      // Fictional, deterministic and deliberately mixed with HTML-sensitive characters.
+      // Accented Latin and Greek use the fixture browser's bundled system fonts.
+      const name = "Zoë Élise García — Δοκιμή & <Fictional> " + "LongUnbrokenPatientName".repeat(3);
+      const fields = {
+        clinicName: "Clinique Lumière — Fictional Healthcare Centre",
+        branchName: "North Campus — Département Ω",
+        branchAddress: "123 Fictional Avenue, Building Étoile, Floor 12, " + "LongAddressSegment".repeat(3),
+        doctorName: "Dr Renée Müller — Ω",
+      };
+      f.mutateGuest = () => ({ body: { ...guest, ...fields, fullName: name } });
+      f.mutateAppointment = () => ({ body: { ...appointment, ...fields, patientName: name } });
+      await mount(page, mode, f, true);
+      f.calls.length = 0;
+      const pdf = await download(page, format);
+      assertFreshOrder(f, mode);
+      await verifyPdf(page, pdf, 1, format);
+      await testInfo.attach("export.pdf", { body: pdf.bytes, contentType: "application/pdf" });
+      await testInfo.attach("pdf-metrics.json", {
+        body: JSON.stringify({ bytes: pdf.bytes.length, pages: pdf.pages, widthMm: pdf.width, heightMm: pdf.height }),
+        contentType: "application/json",
+      });
+      // Rasterised exports contain no searchable text. Compare the rendered PDF,
+      // including the final address/doctor/footer, to a visually reviewed reference.
+      // Tight tolerance catches missing glyphs, clipping, blank pages and scaling changes.
+      expect(Buffer.from(pdf.images[0].split(",")[1], "base64")).toMatchSnapshot(
+        `${mode}-${format}-unicode.png`, { maxDiffPixels: 100, threshold: 0.1 },
+      );
+    });
+  }
   for (const kind of ["download", "print"] as const) {
     test(`${mode} recovery/current export: ${kind} embeds fresh details and signed QR`, async ({ page }) => {
       const f = fixture();
@@ -407,8 +455,10 @@ test("guest immediate creation commits recoverable receipt without account", asy
   await page.getByTestId("input-guest-date").fill("14/06/2030");
   await expect(page.getByTestId("input-guest-date")).toHaveValue("14/06/2030");
   await expect(page.getByTestId("input-guest-date")).not.toHaveAttribute("aria-invalid", "true");
+  await page.getByTestId("button-guest-continue-visit").click();
   await page.getByTestId("input-guest-name").fill("Walk-in Guest");
   await page.getByTestId("input-guest-permission").check();
+  await page.getByTestId("button-guest-continue-patient").click();
   await expect(page.getByTestId("button-submit-guest")).toBeEnabled();
   await page.getByTestId("button-submit-guest").click();
   await expect(page.getByTestId("guest-ticket")).toBeVisible();
@@ -423,8 +473,8 @@ test("guest immediate creation commits recoverable receipt without account", asy
 async function assertExportNotClipped(page: Page) {
   const dimensions = await page.evaluate(() => {
     const body = document.querySelector(".b")!;
-    const h2 = body.querySelector("h2")!;
-    const table = body.querySelector("table")!;
+    const h2 = body.querySelector(".p")!;
+    const table = body.querySelector("dl")!;
     return {
       viewport: innerWidth, document: document.documentElement.scrollWidth,
       name: { scroll: h2.scrollWidth, width: h2.clientWidth },
