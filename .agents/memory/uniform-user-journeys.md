@@ -32,3 +32,9 @@ Place equivalent controls in consistent positions across pages. Avoid repeated c
 **Why:** The user identified duplicated location counts, overflowing check-out actions, excessive address help text and wasted form space in screenshots.
 
 **How to apply:** Apply shared placement and compact responsive sizing across applicable roles/pages, preserving readable labels, keyboard access, touch targets and visible critical warnings.
+
+Users & staff must offer Add Staff with a role choice, rather than requiring administrators to find a staff-type filter before creating another role.
+
+**Why:** The user explicitly reiterated the agreed Add Staff journey after finding only Add Doctor. They rejected partial development and completion claims based on component existence.
+
+**How to apply:** Keep permitted roles scoped to the acting user's authority; verify discoverability and the complete create/save/reopen journey, not just the presence of a shared component.
