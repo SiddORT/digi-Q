@@ -38,3 +38,9 @@ Users & staff must offer Add Staff with a role choice, rather than requiring adm
 **Why:** The user explicitly reiterated the agreed Add Staff journey after finding only Add Doctor. They rejected partial development and completion claims based on component existence.
 
 **How to apply:** Keep permitted roles scoped to the acting user's authority; verify discoverability and the complete create/save/reopen journey, not just the presence of a shared component.
+
+Keep sidebar labels short: use Profile, not Profile & consultation. Consolidate related management functions into tabs with create/edit and enable/disable actions instead of separate pages for small functions.
+
+**Why:** The user explicitly requested a simpler, consistent navigation structure across all users.
+
+**How to apply:** Group related workflows without broadening role permissions; retain distinct workspaces for genuinely different daily tasks. Analyze the system-wide grouping before implementing it.
