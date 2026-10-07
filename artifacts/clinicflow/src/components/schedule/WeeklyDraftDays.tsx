@@ -6,7 +6,7 @@ import { TimeRangeSlider } from "../ClinicRegistrationHours";
 import { TimeFormatInput } from "../DateFormatInput";
 import { HelpTip } from "../HelpTip";
 import { formatTime, type DateTimePreferences } from "../../lib/date-time";
-import { canOpenDetails, openDetails, copyDay, dayErrors, dayWarnings, draftKey, outsideHours, type DraftDay, type DraftSession, type ScheduleRow } from "./week-plan";
+import { canOpenDetails, setDayOpen, removeDaySession, openDetails, copyDay, dayErrors, dayWarnings, draftKey, outsideHours, type DraftDay, type DraftSession, type ScheduleRow } from "./week-plan";
 
 export const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 export const SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -28,7 +28,7 @@ export function WeeklyDraftDays({ week, setWeek, opening, clinicName = "the clin
   const hoursFor = (day: number) => (opening || []).filter(h => h.dayOfWeek === day);
   const errors = week.map(dayErrors);
   const setDay = (day: DraftDay) => { onChange?.(); setWeek(w => w.map(d => d.dayOfWeek === day.dayOfWeek ? day : d)); };
-  const newSession = (day: number): DraftSession => { const h = hoursFor(day)[0]; const prev = week[day].sessions[week[day].sessions.length - 1]; return { key: draftKey(), startTime: prev ? prev.endTime : h?.startTime || "09:00", endTime: prev ? "" : h?.endTime || "13:00" }; };
+  const newSession = (_day: number): DraftSession => ({ key: draftKey(), startTime: "", endTime: "" }); // never a silent default; location hours show as bands only
   const firstOpen = ORDER.find(d => week[d].isOpen);
   const expandedDays = expanded ?? (firstOpen === undefined ? [] : [firstOpen]);
   return <>
@@ -44,7 +44,7 @@ export function WeeklyDraftDays({ week, setWeek, opening, clinicName = "the clin
       return <section key={dayIndex} className={`registration-day wdr-row${isExpanded ? " is-expanded" : ""}${day.isOpen ? "" : " is-off"}`} data-testid={`row-day-${dayIndex}`}>
         <div className="registration-day-heading wdr-head">
           <HelpTip text={clinicClosed ? `${clinicName} is set to closed on all days. Add opening hours in Clinic settings first.` : day.isOpen ? `Turn off to stop sessions on ${DAYS[dayIndex]}` : `Turn on to add sessions on ${DAYS[dayIndex]}`}>
-            <label className="registration-check status-switch day-open-switch"><input type="checkbox" role="switch" aria-checked={day.isOpen} checked={day.isOpen} disabled={busy || clinicClosed || day.sessions.some(s => s.locked)} aria-label={`${DAYS[dayIndex]} working`} onChange={e => { setDay({ ...day, isOpen: e.target.checked, sessions: e.target.checked && !day.sessions.length ? [newSession(dayIndex)] : day.sessions }); if (e.target.checked && !expandedDays.includes(dayIndex)) setExpanded([...expandedDays, dayIndex]); }} data-testid={`switch-day-${dayIndex}`}/><span className="status-switch-track" aria-hidden="true"/><span className="sr-only">{day.isOpen ? "Working" : clinicClosed ? "Clinic closed" : "Off"}</span></label>
+            <label className="registration-check status-switch day-open-switch"><input type="checkbox" role="switch" aria-checked={day.isOpen} checked={day.isOpen} disabled={busy || clinicClosed || day.sessions.some(s => s.locked)} aria-label={`${DAYS[dayIndex]} working`} onChange={e => { setDay(setDayOpen(day, e.target.checked, () => newSession(dayIndex))); if (e.target.checked && !expandedDays.includes(dayIndex)) setExpanded([...expandedDays, dayIndex]); }} data-testid={`switch-day-${dayIndex}`}/><span className="status-switch-track" aria-hidden="true"/><span className="sr-only">{day.isOpen ? "Working" : clinicClosed ? "Clinic closed" : "Off"}</span></label>
           </HelpTip>
           <strong className="wdr-day">{DAYS[dayIndex]}</strong>
           {!isExpanded && <span className="wdr-summary" data-testid={`text-day-summary-${dayIndex}`}>{summary}</span>}
@@ -69,7 +69,7 @@ export function WeeklyDraftDays({ week, setWeek, opening, clinicName = "the clin
             <div className="row-actions">
               {row && !canOpenDetails(row) && <small className="muted" data-testid={`text-session-linked-${dayIndex}-${index}`}>Details are managed in Clinic settings for linked sessions.</small>}
               {canOpenDetails(row) && <IconAction label={`Edit details for ${label}`} hint="Edit session details" icon={<Pencil size={15} aria-hidden/>} disabled={busy} disabledReason="Wait for the current save to finish." onClick={() => openDetails(row, onEdit || (() => undefined))} testId={`button-session-details-${dayIndex}-${index}`}/>}
-              {!s.locked && <button type="button" className="text-link" aria-label={`Remove ${label}`} disabled={busy} onClick={() => setDay(day.sessions.length === 1 ? { ...day, isOpen: false, sessions: [] } : { ...day, sessions: day.sessions.filter(x => x.key !== s.key) })} data-testid={`button-remove-session-${dayIndex}-${index}`}><Trash2 size={14}/> Remove</button>}
+              {!s.locked && <button type="button" className="text-link" aria-label={`Remove ${label}`} disabled={busy} onClick={() => setDay(removeDaySession(day, index, () => newSession(dayIndex)))} data-testid={`button-remove-session-${dayIndex}-${index}`}><Trash2 size={14}/> Remove</button>}
             </div>
             {out && <p className="notice" role="note">Allowed with warning: this time extends beyond {clinicName}'s hours ({hours.map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ") || `usually closed on ${DAYS[dayIndex]}`}).</p>}
           </div>;

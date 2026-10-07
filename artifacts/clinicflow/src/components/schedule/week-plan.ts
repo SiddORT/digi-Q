@@ -197,3 +197,12 @@ export function applyWeekTo(target: DraftDay[], source: DraftDay[]): DraftDay[] 
 export function toOwnerSessions(weeks: DraftDay[][]): { branchIndex: number; dayOfWeek: number; startTime: string; endTime: string }[] {
   return weeks.flatMap((week, branchIndex) => week.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ branchIndex, dayOfWeek: d.dayOfWeek, startTime: s.startTime, endTime: s.endTime }))));
 }
+
+/** Shared day editor rules. Enabling a day with no drafts adds ONE blank interval (never a guessed time);
+ * turning a day off keeps its drafts so turning it back on restores them; removing the last interval leaves a blank row. */
+export function setDayOpen<S, D extends { isOpen: boolean; sessions: S[] }>(day: D, open: boolean, blank: () => S): D {
+  return { ...day, isOpen: open, sessions: open && !day.sessions.length ? [blank()] : day.sessions };
+}
+export function removeDaySession<S, D extends { sessions: S[] }>(day: D, index: number, blank: () => S): D {
+  return { ...day, sessions: day.sessions.length === 1 ? [blank()] : day.sessions.filter((_, i) => i !== index) };
+}

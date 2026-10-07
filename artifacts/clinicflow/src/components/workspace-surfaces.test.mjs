@@ -67,6 +67,6 @@ test("report chart only reads loaded rows", () => {
 test("patient details is read-only for any listing role; edit stays gated", () => {
   const s = readFileSync(new URL("../resources.tsx", import.meta.url), "utf8");
   assert.match(s, /const hasActions=!!config\.update\|\|resource==="patients"/);
-  assert.match(s, /\{config\.update&&\(resource==="clinics"&&portal==="admin"\?<IconAction label=\{`Configure/);
+  assert.match(s, /\{config\.update&&!\(OWNER_ONLY_FIELDS\[resource\]&&[^\n]*?\)&&\(resource==="clinics"&&portal==="admin"\?<IconAction label=\{`Configure/);
   assert.match(s, /colSpan=\{displayColumns\.length\+\(hasActions\?2:1\)\}/);
 });

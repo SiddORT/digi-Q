@@ -37,6 +37,10 @@ import { notifySuccess, notifyWarning, notifyError, notifyBulk } from "./lib/not
 import type { BulkOutcome } from "./lib/bulk-summary";
 import { PhoneInput } from "./components/PhoneInput";
 import { StatusSwitch } from "./components/StatusSwitch";
+import { FormTabs } from "./components/FormTabs";
+import { InheritedClinicSummary } from "./components/InheritedClinicSummary";
+import { STAFF_TABS, firstInvalidTab, invalidTabs } from "./lib/form-tabs";
+import { inheritedConfirmationError } from "./lib/inherited-defaults";
 
 type StaffContext = {search:string;status:""|"active"|"inactive";clinicId:string;branchId:string;managingAdminId:string;specializationId:string;page:number;pageSize:number;sort:string};
 const defaultContext = ():StaffContext=>({search:"",status:"",clinicId:"",branchId:"",managingAdminId:"",specializationId:"",page:1,pageSize:20,sort:"-createdAt"});
@@ -284,21 +288,36 @@ function UserEditor({ tab, initial, carry, onClose, isSuperAdmin, onDirtyChange,
     const sub = form.watch(values => snapshotRef.current?.(values as Record<string, unknown>, defaults));
     return () => sub.unsubscribe();
   }, [form]);
+  const staffTabs = STAFF_TABS[tab];
+  const [activeTab, setActiveTab] = useState(0);
+  const errorKeys = Object.keys(form.formState.errors);
+  const tabInvalid = staffTabs ? invalidTabs(staffTabs, errorKeys) : [];
+  const panel = (i: number) => staffTabs && activeTab !== i ? "staff-tab-panel is-hidden" : "staff-tab-panel";
+  // One Save: on a failed submit, open the first tab (in tab order) holding an error. Values stay mounted.
+  const onInvalid = (errors: Record<string, unknown>) => { if (!staffTabs) return; const i = firstInvalidTab(staffTabs, Object.keys(errors)); if (i >= 0) setActiveTab(i); };
   const onSubmit = (data: any) => {
     if (locked.current || save.isPending) return;
+    const { confirmInherited: _confirmed, ...rest } = data; data = rest;
     // Do not infer invalid assignments from a partial lookup page. The API validates ownership and branch coverage.
     locked.current = true;
     save.mutate({...data,fullName:data.fullName.trim(),email:data.email.trim(),mobile:normalizePhone(data.mobile)});
   };
-  return <Form {...form}>{confirmAction.dialog}<form className="form-grid staff-editor" noValidate onSubmit={form.handleSubmit(onSubmit)}>
+  return <Form {...form}>{confirmAction.dialog}<form className="form-grid staff-editor" noValidate onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
+    {staffTabs && <FormTabs tabs={staffTabs.map(t => t.label)} active={activeTab} onChange={setActiveTab} invalid={tabInvalid}/>}
+    <div className={panel(0)} role={staffTabs ? "tabpanel" : undefined}>
     <FormSection title="Staff details" hint={tab==="doctors"?"Sign-in identity and professional registration.":"Sign-in identity. Email receives the invitation."}>
     <FormField label="Full Name" required error={form.formState.errors.fullName?.message as string}><input {...form.register("fullName", { validate: (v:unknown) => required()(v)||validatePersonName(v)||true })}/></FormField>
     <FormField label="Email" required error={form.formState.errors.email?.message as string}><EmailInput data-testid="input-user-email" {...form.register("email", { validate: (v:unknown) => required()(v)||validateEmail(v)||true })}/></FormField>
     <Controller name="mobile" control={form.control} rules={{validate:(v:unknown)=>validatePhone(v)||true}} render={({field})=><FormField label="Mobile" optional error={form.formState.errors.mobile?.message as string}><PhoneInput {...field} value={field.value||""}/></FormField>}/>
-    {tab === "doctors" && <><FormField label="Registration Number" optional><input data-testid="input-staff-registration" {...form.register("registrationNumber")} /></FormField><FormField label="Experience Years" optional><input type="number" min="0" data-testid="input-staff-experience" {...form.register("experienceYears", { valueAsNumber: true })} /></FormField></>}
+
     </FormSection>
+    <Controller name="status" control={form.control} render={({field})=><div className="wide"><StatusSwitch label="Staff Account Active" active={field.value==="active"} disabled={!!initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)} onChange={async active=>{if(!active&&!await confirmAction.ask({title:"Deactivate Staff Member?",description:"They will lose access. Ownership restrictions may prevent this change.",confirmLabel:"Deactivate",tone:"danger"}))return;field.onChange(active?"active":"inactive");}}/>{initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)&&<small className="muted">Your own account cannot be deactivated here.</small>}</div>}/>
+    </div>
+    {tab === "doctors" && <div className={panel(1)} role="tabpanel"><FormSection title="Professional" hint="Registration and experience.">
+    <FormField label="Registration Number" optional><input data-testid="input-staff-registration" {...form.register("registrationNumber")} /></FormField><FormField label="Experience Years" optional><input type="number" min="0" data-testid="input-staff-experience" {...form.register("experienceYears", { valueAsNumber: true })} /></FormField>
+    </FormSection></div>}
     {tab === "admins" && !initial.id && <p className="wide notice">Admin accounts have no clinic access until clinic ownership is assigned. Use Clinic Admin setup to create an admin and their first clinic together.</p>}
-    {tab !== "admins" && <FormSection title="Assignment" hint="Which Clinic Groups and locations this person works at.">
+    {tab !== "admins" && <div className={panel(tab === "doctors" ? 2 : 1)} role="tabpanel"><FormSection title="Assignment" hint="Which Clinic Groups and locations this person works at.">
        <div className="wide"><label>Clinic Groups <span className="required">*</span></label><Controller name="clinicIds" control={form.control} rules={{ validate: v => !!v?.length || "Select at least one Clinic Group." }} render={({ field }) => <ResourceMultiLookup resource="assignment:clinics" params={{ ...optionsParams, managingAdminId: isSuperAdmin ? firstOwner : undefined }} value={field.value || []} onRecords={remember} isOptionDisabled={row=>!!firstOwner&&row?.adminId!==firstOwner||!!clinicId&&row?.id!==clinicId&&!selectedClinics.includes(row?.id)} onChange={ids => {
          if(clinicId){field.onChange([...new Set([...(initial.clinicIds||[]).filter((id:string)=>id!==clinicId),clinicId])]);return;}
         const removed = selectedClinics.filter(id => !ids.includes(id));
@@ -311,8 +330,13 @@ function UserEditor({ tab, initial, carry, onClose, isSuperAdmin, onDirtyChange,
         {form.formState.errors.branchIds&&<p className="field-error" role="alert">{String(form.formState.errors.branchIds.message)}</p>}
         {tab === "receptionists" && <small className="muted">Select at least one location for every assigned Clinic Group.</small>}
       </div>
-    </FormSection>}
-     <Controller name="status" control={form.control} render={({field})=><div className="wide"><StatusSwitch label="Staff Account Active" active={field.value==="active"} disabled={!!initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)} onChange={async active=>{if(!active&&!await confirmAction.ask({title:"Deactivate Staff Member?",description:"They will lose access. Ownership restrictions may prevent this change.",confirmLabel:"Deactivate",tone:"danger"}))return;field.onChange(active?"active":"inactive");}}/>{initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)&&<small className="muted">Your own account cannot be deactivated here.</small>}</div>}/>
+      {!initial.id && <>
+        <h4 className="wide">Inherited clinic details</h4>
+        <InheritedClinicSummary clinicIds={selectedClinics} branchIds={selectedBranches} user={identity.user} doctor={tab === "doctors"}/>
+        {selectedClinics.length > 0 && <Controller name="confirmInherited" control={form.control} rules={{ validate: v => inheritedConfirmationError(true, form.getValues("clinicIds"), v) || true }} render={({ field }) => <label className="wide checkbox-row"><input type="checkbox" checked={field.value === true} onChange={e => field.onChange(e.target.checked)} data-testid="checkbox-confirm-inherited"/> Use these clinic details for this {tab === "doctors" ? "doctor" : "receptionist"}</label>}/>}
+        {form.formState.errors.confirmInherited && <p className="field-error wide" role="alert">{String(form.formState.errors.confirmInherited.message)}</p>}
+      </>}
+    </FormSection></div>}
     <FormActions busy={save.isPending} cancelClosesDialog submitLabel={initial.id ? "Save Changes" : `Add ${tab==="doctors"?"Doctor":tab==="admins"?"Clinic Admin":"Receptionist"}`} busyLabel={initial.id ? "Saving…" : "Adding…"} submitTestId="button-save-staff" cancelTestId="button-cancel-staff" secondary={save.error ? <ErrorNotice error={save.error} /> : undefined} />
   </form></Form>;
 }

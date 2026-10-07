@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Redirect, useSearch } from "wouter";
-import { AppDialog } from "./components/AppDialog";
+import { staffQrPayload } from "./lib/staff-qr";
+import { closeQrInline, useQrInline } from "./lib/qr-inline";
 import { useNativeAuth } from "./auth/native-auth";
 import { Logo } from "./App";
 import { Check, Camera, Image as ImageIcon, QrCode } from "lucide-react";
@@ -55,21 +56,33 @@ export function CheckInScanner() {
   );
 }
 
-/** Section G: quick in-app validation. Closing returns to the exact origin (queue filters and scroll are untouched). */
-export function QrValidationDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  if (!open) return null;
-  return <AppDialog open onClose={onClose} title="Validate Appointment QR" description="Scanning only verifies the ticket. Confirm check-in explicitly when the patient enters consultation.">
-    <ScannerCore initialPayload={null} />
-    <div className="form-actions"><button type="button" className="button secondary" onClick={onClose} data-testid="button-qr-validation-close">Close</button></div>
-  </AppDialog>;
+/** Workspace-wide host: quick actions open this inline at the top of the current page. */
+export function QrInlineHost() {
+  const open = useQrInline();
+  return <QrValidationDialog open={open} onClose={closeQrInline} />;
 }
 
-function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
+/** Section G: quick in-app validation. Closing returns to the exact origin (queue filters and scroll are untouched). */
+/** Inline in the current page (no window or popup). Close returns focus to the control that opened it. */
+export function QrValidationDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const origin = useRef<HTMLElement | null>(null);
+  const panel = useRef<HTMLElement>(null);
+  useEffect(() => { if (open) { origin.current = document.activeElement as HTMLElement | null; panel.current?.focus(); } }, [open]);
+  if (!open) return null;
+  const close = () => { onClose(); requestAnimationFrame(() => origin.current?.focus()); };
+  return <section ref={panel} tabIndex={-1} className="panel padded qr-inline wide" aria-label="Validate Appointment QR" data-testid="panel-qr-validation">
+    <header className="qr-inline-head"><div><h3>Validate Appointment QR</h3><p className="muted">Scanning only verifies the ticket. Confirm check-in explicitly when the patient enters consultation.</p></div><button type="button" className="button secondary small" onClick={close} data-testid="button-qr-validation-close">Close</button></header>
+    <ScannerCore initialPayload={null} onClose={close} />
+  </section>;
+}
+
+function ScannerCore({ initialPayload, onClose }: { initialPayload: string | null; onClose?: () => void }) {
+  const [pasted, setPasted] = useState("");
   const [payload, setPayload] = useState<string | null>(initialPayload);
   const [scanError, setScanError] = useState<string | null>(null);
   const resolve = api.useResolveAppointmentQr();
   const checkIn = api.useCheckInAppointmentQr();
-  const [mode, setMode] = useState<"camera" | "file">("camera");
+  const [mode, setMode] = useState<"camera" | "file" | "paste">("camera");
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const submitting = useRef(false);
@@ -186,16 +199,10 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
   }, [mode, payload]);
 
   const handleScanResult = (result: string) => {
-    try {
-      const url = new URL(result);
-      if (url.searchParams.has("payload")) {
-        setPayload(url.searchParams.get("payload"));
-      } else {
-        setPayload(result);
-      }
-    } catch {
-      setPayload(result);
-    }
+    const parsed = staffQrPayload(result, window.location.origin, import.meta.env.BASE_URL);
+    if ("error" in parsed) { setScanError(parsed.error); return; }
+    setScanError(null);
+    setPayload(parsed.payload);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -255,7 +262,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
     if (resolveError) return (
        <div className="error-box" role="alert">
         <ErrorNotice error={resolveError}/>
-        <button onClick={reset}>Scan Again</button>
+        <button type="button" className="button small" onClick={reset} data-testid="button-qr-scan-another">Scan Another</button>{onClose && <button type="button" className="button secondary small" onClick={onClose}>Close</button>}
       </div>
     );
     if (resolved) {
@@ -271,7 +278,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
                <strong>{checkIn.data.appointment.token || "—"}</strong>
                <span>{formatDate(checkIn.data.appointment.date,checkIn.data.appointment)} · {formatSessionHours(checkIn.data.appointment)} · {checkIn.data.appointment.status.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase())}</span>
              </div>
-              <button className="button" onClick={reset}>Scan Next</button>
+              <button className="button" onClick={reset} data-testid="button-qr-scan-another">Scan Another</button>{onClose && <button type="button" className="button secondary" onClick={onClose}>Close</button>}
            </div>
          );
       }
@@ -304,7 +311,7 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
               {checkIn.isPending ? "Checking in…" : "Check In — Enter Consultation"}
             </button>
           )}
-          <button className="button secondary" disabled={checkIn.isPending} onClick={reset}>Cancel / Scan another</button>
+          <button className="button secondary" disabled={checkIn.isPending} onClick={reset} data-testid="button-qr-scan-another">Scan Another</button>{onClose && <button type="button" className="button secondary" disabled={checkIn.isPending} onClick={onClose}>Close</button>}
         </div>
       );
     }
@@ -316,9 +323,15 @@ function ScannerCore({ initialPayload }: { initialPayload: string | null }) {
       <div className="toolbar" style={{ justifyContent: "center" }}>
         <button type="button" aria-pressed={mode === "camera"} className={`button small ${mode === "camera" ? "" : "light"}`} onClick={() => setMode("camera")} data-testid="button-scan-camera"><Camera size={16}/> Camera</button>
         <button type="button" aria-pressed={mode === "file"} className={`button small ${mode === "file" ? "" : "light"}`} onClick={() => setMode("file")} data-testid="button-scan-file"><ImageIcon size={16}/> Image File</button>
+        <button type="button" aria-pressed={mode === "paste"} className={`button small ${mode === "paste" ? "" : "light"}`} onClick={() => setMode("paste")} data-testid="button-scan-paste">Paste Code</button>
       </div>
       
-      {mode === "camera" ? (
+      {mode === "paste" ? (
+        <form onSubmit={e => { e.preventDefault(); const value = pasted.trim(); if (!value) { setScanError("Paste the appointment QR text or link first."); return; } setPasted(""); handleScanResult(value); }} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label>QR text or check-in link<textarea value={pasted} onChange={e => setPasted(e.target.value)} rows={3} data-testid="input-qr-paste"/></label>
+          <button type="submit" className="button small" data-testid="button-qr-paste-validate">Validate</button>
+        </form>
+      ) : mode === "camera" ? (
         <div style={{ position: "relative", width: "100%", aspectRatio: "1", background: "#000", borderRadius: "12px", overflow: "hidden" }}>
           <video ref={videoRef} playsInline aria-label="Camera preview for scanning the appointment QR code" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "60%", height: "60%", border: "2px solid rgba(255,255,255,0.5)", borderRadius: "16px" }} />

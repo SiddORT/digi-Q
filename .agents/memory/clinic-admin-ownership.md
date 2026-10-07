@@ -26,3 +26,9 @@ The same-account Clinic Admin + doctor capability is a required release feature,
 **Why:** The user's demo clinic has one doctor and no separate administrator. Requiring another person, login or role switch does not satisfy that clinic's daily workflow.
 
 **How to apply:** Verify single-branch onboarding, bookings and consultations using one identity while retaining full owner administration. Do not call a reduced release without this capability complete.
+
+Clinic-owned details entered during onboarding must be saved and subsequently changed only by the owning Clinic Admin or Super Admin.
+
+**Why:** The user explicitly required administrator-only changes to onboarding configuration. Earlier doctor permission to rename an existing location is superseded.
+
+**How to apply:** Enforce the ownership boundary in both editor access and server writes. Keep personal staff details and clinical schedule actions distinct from clinic-owned configuration; do not broaden this restriction to unrelated clinical work.

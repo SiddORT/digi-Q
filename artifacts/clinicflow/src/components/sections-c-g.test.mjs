@@ -42,7 +42,7 @@ test("F: outside-hours is a save warning (not 'on hold') and a shared downstream
 });
 test("G: in-app QR validation dialog with Close; public booking only via explicit labelled new tab; no auto navigation",()=>{
   const queue=read("./queue/SessionQueue.tsx"), checkIn=read("../CheckIn.tsx");
-  assert.match(queue,/<QrValidationDialog open=\{qrOpen\}/);
+  assert.match(queue,/onClick=\{openQrInline\}/);
   assert.doesNotMatch(queue,/href="\/check-in"/);
   assert.match(checkIn,/button-qr-validation-close/);
   assert.match(checkIn,/link-check-in-return/);

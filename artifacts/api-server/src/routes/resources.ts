@@ -74,6 +74,11 @@ async function withPasswordState(row: any) {
   return { ...row, passwordEnabled: Boolean(identity?.passwordHash) };
 }
 
+/** Location keys that only the owning Clinic Admin (or Super Admin) may set, including at creation. */
+export const CLINIC_OWNED_BRANCH_KEYS = ["openingHours", "timezone", "email", "phone", "inheritEmail", "inheritPhone", "linkedSchedule"];
+/** Identity and address of an EXISTING location are clinic-owned onboarding details (owner or Super Admin only). Creation keeps its existing policy. */
+export const CLINIC_OWNED_ADDRESS_KEYS = ["name", "slug", "address", "city", "state", "pincode", "country", "area"];
+export const CLINIC_OWNED_CLINIC_KEYS = ["name", "address", "city", "state", "pincode", "country", "area", "email", "phone", "slug", "timezone", "dateFormat", "timeFormat", "categoryId", "specialityIds", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"];
 export async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
   if (kind === "doctors") {
     assert(body.userId === undefined, 409, "Doctor identity cannot be reassigned");
@@ -93,8 +98,11 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
   // endpoint. Doctors still retain their existing clinical/profile and
   // clinic/branch creation workflows, but cannot edit a clinic's configuration.
   if (user.role !== "superAdmin" &&
-      (kind === "clinics" && old && ["name", "address", "email", "phone", "slug", "timezone", "dateFormat", "timeFormat", "categoryId", "specialityIds", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"].some(key => Object.hasOwn(body, key)) ||
-       kind === "branches" && ["openingHours", "timezone", "email", "phone", "inheritEmail", "inheritPhone"].some(key => Object.hasOwn(body, key)))) {
+      // Clinic-owned onboarding defaults inherited by new staff (identity, address, contact, timezone, date/time
+      // format, policies, opening hours): every edit of an existing clinic or location is owner-only.
+      (kind === "clinics" && old && CLINIC_OWNED_CLINIC_KEYS.some(key => Object.hasOwn(body, key)) ||
+       kind === "branches" && CLINIC_OWNED_BRANCH_KEYS.some(key => Object.hasOwn(body, key)) ||
+       kind === "branches" && old && CLINIC_OWNED_ADDRESS_KEYS.some(key => Object.hasOwn(body, key)))) {
     assert(user.role === "clinicAdmin", 403, "Only the owning Clinic Admin can change clinic settings");
     const clinic = await one(clinics, kind === "clinics" ? old.id : context.clinicId);
     assert(clinic.adminId === user.id, 403, "Only the owning Clinic Admin can change clinic settings");

@@ -1,3 +1,4 @@
+import { openQrInline } from "@/lib/qr-inline";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
@@ -77,7 +78,7 @@ export function ProfileMenu({ name, roleLabel, role, navigation, page, userId, o
     {open && <div className="profile-menu-panel" role="menu" aria-label="Account" ref={panel} onKeyDown={e => { if (e.key === "Tab") setOpen(false); else menuKeyDown(e); }}>
       <div className="pm-head"><strong>{name}</strong><br /><small className="muted">{roleLabel}</small></div>
       <WorkspaceScope role={role} roleLabel={roleLabel} open={open} />
-      {quickActions(role, navigation).map(a => { const Icon = actionIcon[a.id] || Plus; return <Link key={a.id} role="menuitem" href={a.href} onClick={() => setOpen(false)} data-testid={`menu-${a.id}`}><Icon size={15} aria-hidden />{a.label}</Link>; })}
+      {quickActions(role, navigation).map(a => { const Icon = actionIcon[a.id] || Plus; return a.inline ? <button key={a.id} type="button" role="menuitem" onClick={() => { setOpen(false); openQrInline(); }} data-testid={`menu-${a.id}`}><Icon size={15} aria-hidden />{a.label}</button> : <Link key={a.id} role="menuitem" href={a.href} onClick={() => setOpen(false)} data-testid={`menu-${a.id}`}><Icon size={15} aria-hidden />{a.label}</Link>; })}
       {navigation.includes(page) && <button type="button" role="menuitem" aria-pressed={fav} onClick={() => toggleFavorite(page)} data-testid="menu-toggle-favorite"><Star size={15} fill={fav ? "currentColor" : "none"} aria-hidden />{fav ? "Remove page from favorites" : "Add page to favorites"}</button>}
       <button type="button" role="menuitem" onClick={() => { setOpen(false); onSignOut(); }} data-testid="menu-signout"><LogOut size={15} aria-hidden />Sign Out</button>
     </div>}

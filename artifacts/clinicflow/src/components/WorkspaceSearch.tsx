@@ -9,13 +9,14 @@ import { useNavigationPreferences, recordRecentPage } from "@/lib/workspace-pref
 import { queueRecordHref, reportSearchHref, reportSearchRange } from "@/lib/search-links";
 import { CATEGORY_LABEL, MORE_CATEGORIES, PAGE_SIZE, PREVIEW_SIZE, PRIMARY_CATEGORIES, SOURCE_LABEL, appointmentHref, canLoadMore, categorySources, categoryTotal, countLabel, permittedCategories, reachedCap, recordHref, type SearchCategory, type SearchSource, type SearchTab } from "@/lib/search-categories";
 import "./workspace-search.css";
+import { openQrInline } from "@/lib/qr-inline";
 
 /** Real, permitted quick actions only: each target is an existing route for this role. */
 export function quickActions(role: string, navigation: string[]) {
-  const out: { id: string; label: string; href: string }[] = [];
+  const out: { id: string; label: string; href: string; inline?: boolean }[] = [];
   if (role === "patient" ? navigation.includes("book") : navigation.includes("appointments")) out.push({ id: "book", label: role === "patient" ? "Book Now" : "Book Appointment", href: `/${role}/book` });
   if (role !== "patient" && navigation.includes("queue")) out.push({ id: "queue", label: "Open Live Queue", href: `/${role}/queue` });
-  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "check-in", label: "Validate Appointment QR", href: "/check-in" });
+  if (role !== "patient" && navigation.includes("queue")) out.push({ id: "check-in", label: "Validate Appointment QR", href: "/check-in", inline: true });
   if (navigation.includes("profile")) out.push({ id: "profile", label: "My Profile", href: `/${role}/profile` });
   return out;
 }
@@ -167,7 +168,7 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
   </button>;
 
   const directory = <>
-    {(() => { const actions = quickActions(role, navigation).filter(a => !search || a.label.toLowerCase().includes(search.toLowerCase())); return actions.length ? <section><h3>Quick Actions</h3><div className="workspace-shortcuts">{actions.map(a => <Link key={a.id} href={a.href} onClick={close} data-testid={`quick-action-${a.id}`}>{a.label}</Link>)}</div></section> : null; })()}
+    {(() => { const actions = quickActions(role, navigation).filter(a => !search || a.label.toLowerCase().includes(search.toLowerCase())); return actions.length ? <section><h3>Quick Actions</h3><div className="workspace-shortcuts">{actions.map(a => a.inline ? <button key={a.id} type="button" onClick={() => { close(); openQrInline(); }} data-testid={`quick-action-${a.id}`}>{a.label}</button> : <Link key={a.id} href={a.href} onClick={close} data-testid={`quick-action-${a.id}`}>{a.label}</Link>)}</div></section> : null; })()}
     {!search && <div className="ws-directory-pair">
       <section><h3><Star size={14} aria-hidden/> Favorites</h3><div className="workspace-shortcuts">{shortcutList(preferences.favorites).length ? shortcutList(preferences.favorites).map(pageLink) : <p className="muted">Star a page below to pin it here.</p>}</div></section>
       <section><h3><Clock3 size={14} aria-hidden/> Recent Pages</h3><div className="workspace-shortcuts">{shortcutList(preferences.recent).filter(p => p !== page).length ? shortcutList(preferences.recent).filter(p => p !== page).map(pageLink) : <p className="muted">Pages you visit appear here.</p>}</div></section>

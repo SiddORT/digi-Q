@@ -1036,18 +1036,28 @@ test("generic clinic and branch updates cannot bypass owner-only settings permis
   const doctor = { id: "du", role: "doctor", doctorId: "d", managingAdminId: "admin", clinicIds: ["c"], branchIds: ["b"] };
   const foreign = { id: "foreign", role: "clinicAdmin", clinicIds: ["c"], branchIds: ["b"] };
   const owner = { id: "admin", role: "clinicAdmin", clinicIds: ["c"], branchIds: ["b"] };
-  for (const body of [{ openingHours: [] }, { openingHours: null }, { timezone: "Asia/Kolkata" }, { inheritEmail: false }, { phone: "123" }]) {
+  // Inherited onboarding defaults: hours, timezone, contact and address of an existing location are owner-only.
+  for (const body of [{ openingHours: [] }, { openingHours: null }, { timezone: "Asia/Kolkata" }, { inheritEmail: false }, { phone: "123" }, { address: "New road" }, { city: "Pune" }, { pincode: "411001" }, { linkedSchedule: { enabled: false } }]) {
     await assert.rejects(api.authorizeWrite(doctor, "branches", body, branch), /Only the owning Clinic Admin/);
     await assert.rejects(api.authorizeWrite(foreign, "branches", body, branch), /Only the owning Clinic Admin/);
     await api.authorizeWrite(owner, "branches", body, branch);
   }
-  for (const body of [{ name: "Other name" }, { slug: "other-slug" }, { policies: { bookingHorizonDays: 7 } }]) {
+  for (const body of [{ name: "Other name" }, { slug: "other-slug" }, { policies: { bookingHorizonDays: 7 } }, { city: "Pune" }, { dateFormat: "YYYY-MM-DD" }, { timeFormat: "24h" }]) {
     await assert.rejects(api.authorizeWrite(doctor, "clinics", body, clinic), /Only the owning Clinic Admin/);
     await assert.rejects(api.authorizeWrite(foreign, "clinics", body, clinic), /Only the owning Clinic Admin/);
   }
   await api.authorizeWrite(owner, "clinics", { name: "Permitted" }, clinic);
-  // The ordinary doctor's existing scoped, non-settings edit path remains intact.
-  await api.authorizeWrite(doctor, "branches", { name: "Clinical location" }, branch);
+  const superAdmin = { id: "root", role: "superAdmin" };
+  await api.authorizeWrite(superAdmin, "clinics", { city: "Pune", timeFormat: "24h" }, clinic);
+  await api.authorizeWrite(superAdmin, "branches", { address: "New road", openingHours: [] }, branch);
+  await api.authorizeWrite(owner, "branches", { address: "New road", city: "Pune" }, branch);
+  // Renaming an existing location is an onboarding-detail change: owner or Super Admin only.
+  for (const body of [{ name: "Clinical location" }, { slug: "renamed-location" }]) {
+    await assert.rejects(api.authorizeWrite(doctor, "branches", body, branch), /Only the owning Clinic Admin/);
+    await assert.rejects(api.authorizeWrite(foreign, "branches", body, branch), /Only the owning Clinic Admin/);
+    await api.authorizeWrite(owner, "branches", body, branch);
+    await api.authorizeWrite(superAdmin, "branches", body, branch);
+  }
 });
 
 const ownerLinkedOptions = { maxTokens: 2, consultationMinutes: 20, tokenPrefix: "L", queueMode: "mixed" };
@@ -1231,4 +1241,37 @@ test("section F: onboarding saves custom weekly sessions once, after the doctor,
   assert.equal((await api.all(t.users)).length, usersBefore);
   assert.equal((await api.all(t.clinics)).length, clinicsBefore);
   assert.equal((await api.all(t.schedules)).length, before + 3);
+});
+test("public and admin onboarding retain every clinic, location, contact, format and hours field; any failure rolls back all", async () => {
+  await seed();
+  let n = 0;
+  const input = (extra = {}) => ({
+    clinic: { name: "Retention Clinic", slug: `retention-clinic-${n}`, address: "12 Lake Road", email: "front@retention.example", phone: "+919800000001", dateFormat: "YYYY-MM-DD", timeFormat: "24h", referralCode: "REF-17" },
+    branches: [{ name: "Lakeside", slug: `lakeside-${n}`, address: "12 Lake Road", city: "Pune", state: "Maharashtra", pincode: "411001", country: "IN", timezone: "Asia/Kolkata",
+      email: "lake@retention.example", phone: "+919800000002", inheritEmail: false, inheritPhone: true,
+      openingHours: [{ dayOfWeek: 1, startTime: "08:30", endTime: "12:15" }, { dayOfWeek: 1, startTime: "16:00", endTime: "19:45" }, { dayOfWeek: 3, startTime: "10:00", endTime: "13:00" }] }],
+    ownDoctor: true, ownerSchedule: { maxTokens: 9, consultationMinutes: 20, tokenPrefix: "A", queueMode: "mixed" }, ...extra });
+  // Both /clinic-registration (public) and /clinic-admin-onboarding (admin) delegate to createOwnedClinic in one transaction.
+  const run = (actorKind, extra) => globalThis.phaseDb.transaction(async tx => {
+    n += 1;
+    const admin = await api.put(t.users, { id: `ret-owner-${n}`, fullName: "Retention Owner", email: `ret${n}@example.com`, role: "clinicAdmin", status: "active" }, tx);
+    const actor = actorKind === "super" ? { id: "root", role: "superAdmin" } : admin;
+    return api.createOwnedClinic(actor, admin, input(extra), tx);
+  });
+  for (const kind of ["public", "super"]) {
+    const r = await run(kind);
+    const clinic = await api.one(t.clinics, r.clinic.id), branch = await api.one(t.branches, r.branches[0].id);
+    assert.equal(clinic.adminId, `ret-owner-${n}`);
+    for (const [k, v] of Object.entries({ address: "12 Lake Road", email: "front@retention.example", phone: "+919800000001", dateFormat: "YYYY-MM-DD", timeFormat: "24h", referralCode: "REF-17" })) assert.equal(clinic[k], v, `clinic.${k}`);
+    for (const [k, v] of Object.entries({ city: "Pune", state: "Maharashtra", pincode: "411001", timezone: "Asia/Kolkata", email: "lake@retention.example", inheritEmail: false, inheritPhone: true })) assert.equal(branch[k], v, `branch.${k}`);
+    assert.deepEqual(branch.openingHours.map(h => `${h.dayOfWeek} ${h.startTime}-${h.endTime}`).sort(), ["1 08:30-12:15", "1 16:00-19:45", "3 10:00-13:00"]);
+    const sessions = (await api.all(t.schedules)).filter(s => s.doctorId === r.doctorId && s.status === "active");
+    assert.equal(sessions.length, 3);
+    assert.ok(sessions.every(s => s.maxTokens === 9 && s.consultationMinutes === 20 && s.linkedBranchId === branch.id));
+  }
+  const counts = async () => [(await api.all(t.users)).length, (await api.all(t.clinics)).length, (await api.all(t.branches)).length, (await api.all(t.doctors)).length, (await api.all(t.schedules)).length];
+  const before = await counts();
+  await assert.rejects(run("public", { branches: [{ ...input().branches[0], openingHours: [{ dayOfWeek: 1, startTime: "09:00", endTime: "12:00" }, { dayOfWeek: 1, startTime: "11:00", endTime: "13:00" }] }] }));
+  await assert.rejects(run("super", { ownerSchedule: { maxTokens: 0, consultationMinutes: 20, tokenPrefix: "A", queueMode: "mixed" } }));
+  assert.deepEqual(await counts(), before);
 });

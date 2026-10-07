@@ -3,16 +3,17 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import ts from "typescript";
 import * as dateTime from "../lib/date-time.ts";
+import * as weekPlan from "./schedule/week-plan.ts";
 import { validateDateOfBirth, ageFromDateOfBirth, validatePersonName, validatePhone } from "../lib/validators.ts";
 
 const source=name=>readFileSync(new URL(name,import.meta.url),"utf8");
 const hours={};
-new Function("exports","require",ts.transpileModule(source("./ClinicRegistrationHours.tsx"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(hours,name=>name.includes("date-time")?dateTime:{});
+new Function("exports","require",ts.transpileModule(source("./ClinicRegistrationHours.tsx"),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(hours,name=>name.includes("date-time")?dateTime:name.includes("week-plan")?weekPlan:{});
 
 test("weekly sessions preserve exact minutes, allow adjacent sessions, reject overlap and invalid clocks",()=>{
   const day={dayOfWeek:1,isOpen:true,sessions:[{startTime:"09:00",endTime:"13:00"},{startTime:"13:00",endTime:"20:32"}]};
   assert.equal(hours.dayError(day),"");
-  assert.match(hours.dayError({...day,sessions:[...day.sessions,{startTime:"12:59",endTime:"14:00"}]}),/non-overlapping/);
+  assert.match(hours.dayError({...day,sessions:[...day.sessions,{startTime:"12:59",endTime:"14:00"}]}),/overlap/);
   for(const [startTime,endTime] of [["20:32","20:32"],["23:00","01:00"],["09:00","25:00"],["","14:00"]])assert.ok(hours.dayError({...day,sessions:[{startTime,endTime}]}));
   assert.equal(hours.dayError({...day,isOpen:false,sessions:[]}),"");
   assert.match(hours.validateWeek(hours.newWeek()),/at least one open day/);
