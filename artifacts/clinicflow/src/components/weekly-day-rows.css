@@ -16,3 +16,13 @@
 .wdr-body{padding:0 12px 12px;border-top:1px solid var(--cw-line-soft,#e8eef6)}
 .wdr-row>.field-error,.wdr-row>.notice{margin:0 12px 12px}
 @media (max-width:600px){.wdr-summary{flex-basis:100%;order:3;white-space:normal}.wdr-day{min-width:0}}
+
+.follow-hours{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);flex-basis:100%}
+.seg-toggle{display:inline-flex;border:1px solid hsl(var(--border));border-radius:var(--radius-control);padding:var(--space-1);background:var(--dq-bg)}
+.seg-toggle>button{min-height:calc(var(--control-md) - 8px);padding:0 var(--space-3);border:0;background:transparent;border-radius:var(--radius-control);font-weight:600;color:var(--soft)}
+.seg-toggle>button[aria-checked="true"]{background:var(--dq-surface);color:var(--navy);box-shadow:0 1px 2px rgba(13,35,80,.12),inset 0 -2px 0 var(--dq-blue)}
+.follow-hours-note{margin:0;flex-basis:100%}
+.follow-hours-form{display:flex;flex-direction:column;gap:var(--space-3);flex-basis:100%;padding:var(--space-3);border:1px solid hsl(var(--border));border-radius:var(--radius-control)}
+.follow-hours-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--space-3)}
+.follow-hours-actions{display:flex;justify-content:flex-end;gap:var(--space-2)}
+@media (max-width:767px){.seg-toggle>button{min-height:var(--control-lg)}}

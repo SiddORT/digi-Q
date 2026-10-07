@@ -78,7 +78,7 @@ test("section E: one booking progression and one patient editor that returns the
 });
 test("section F: follow vs copy-once labels, exceptions beside weekly schedule, doctor profile links", () => {
   const w = src("./schedule/WeeklyScheduleEditor.tsx"), e = src("./schedule/WeeklyScheduleEditor.tsx"), r = src("../resources.tsx");
-  assert.match(w, /Copy Location Hours Once/); assert.match(w, /Follow Location Hours \(Linked\)/);
+  assert.match(w, /Copy Location Hours Once/); assert.match(w, /<FollowLocationHours /); assert.match(read("./schedule/FollowLocationHours.tsx"), /Follow location hours/);
   assert.match(e, /link-week-exceptions/); assert.match(e, /schedule-readiness/);
   assert.match(r, /link-doctor-weekly-/); assert.match(r, /ExceptionImpactPreview/);
   assert.match(r, /Extra Interval/);

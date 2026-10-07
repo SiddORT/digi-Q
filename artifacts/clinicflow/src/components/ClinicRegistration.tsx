@@ -115,7 +115,7 @@ function RegistrationAccount() {
 function RegistrationIdentity() {
   const me = api.useGetMe({ query: { queryKey: api.getGetMeQueryKey(), staleTime: 0 } });
   if (me.isLoading) return <div className="page-loading">Checking your account…</div>;
-  if (me.error) return <div className="error-box" role="alert">{friendlyError(me.error,"load")}<button onClick={() => me.refetch()} data-testid="registration-retry-account">Try Again</button></div>;
+  if (me.error) return <div className="error-box" role="alert">{friendlyError(me.error,"load")}<button type="button" onClick={() => me.refetch()} data-testid="registration-retry-account">Try Again</button></div>;
   if (me.data?.user?.role === "superAdmin") return <AuthAccess><ClinicAdminOnboarding guided/></AuthAccess>;
    if (me.data?.user?.role === "clinicAdmin" && !me.data.user.clinicIds?.length) return <RegistrationForm/>;
   if (me.data?.user) {
@@ -154,8 +154,8 @@ function RegistrationForm() {
   }
     if (completed) return <ClinicRegistrationComplete result={completed}/>;
    if (me.isLoading) return <div className="page-loading">Loading your account…</div>;
-   if (me.error || !me.data?.user) return <div className="error-box" role="alert">Unable to load your account. <button onClick={() => me.refetch()}>Retry</button></div>;
+   if (me.error || !me.data?.user) return <div className="error-box" role="alert">Unable to load your account. <button type="button" onClick={() => me.refetch()}>Retry</button></div>;
   if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
-  if (references.error && !references.data) return <div className="error-box" role="alert">{friendlyError(references.error,"load")}<button data-testid="registration-retry-options" onClick={() => references.refetch()}>Try Again</button></div>;
+  if (references.error && !references.data) return <div className="error-box" role="alert">{friendlyError(references.error,"load")}<button type="button" data-testid="registration-retry-options" onClick={() => references.refetch()}>Try Again</button></div>;
     return <ClinicRegistrationWizard onStepChange={registration.reset} initial={{ fullName: me.data.user.fullName || "", email: me.data.user.email || "" }} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={registration.isPending} error={registration.error?friendlyError(registration.error,"save"):undefined} finishSecurity={<FormField label="Confirm Your Account Password" required helper="Verified securely before staff access is created. Never stored in your registration draft."><PasswordInput autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} data-testid="registration-confirm-password"/></FormField>}/>;
 }

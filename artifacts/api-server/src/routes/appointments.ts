@@ -3,6 +3,8 @@ import { db, appointments, patients, doctors, clinics, branches, appointmentHist
 import * as z from "@workspace/api-zod";
 import { requireUser, scoped, canRead, scope } from "../lib/auth";
 import { assert, parse, query } from "../lib/http";
+/** Staff roles that may book an in-clinic (unlinked) patient record without a verified mobile. Linked patient accounts and self-booking keep the mobile/verification prerequisite; doctors stay limited to patients in their assigned scope (canRead below). */
+export const STAFF_CONTACT_OPTIONAL_ROLES = ["superAdmin", "clinicAdmin", "receptionist", "doctor"];
 import { all, one, put, uid, audit, getSettings, filtered, paginate, change } from "../lib/store";
 import { availability, localNow, minutes } from "../lib/availability";
 import { enrich } from "../lib/entities";
@@ -66,9 +68,9 @@ export async function bookAppointment(user: any, body: any, tx: any, guestPolicy
     assert(patient.status === "active", 409, "Patient is inactive");
     const guestPatient = guestPolicy && !patient.userId && patient.clinicId === body.clinicId && patient.branchId === body.branchId;
     assert(!guestPolicy || guestPatient, 403, "Guest patient outside booking scope");
-    const contactOptional = !patient.userId && ["superAdmin", "clinicAdmin", "receptionist"].includes(user.role) || guestPatient;
+    const contactOptional = !patient.userId && STAFF_CONTACT_OPTIONAL_ROLES.includes(user.role) || guestPatient;
     if (!contactOptional) assert(/^\+[1-9][0-9]{7,14}$/.test(patient.mobile), 400, "Complete the patient's international mobile number before booking");
-    assert(guestPatient || user.role === "patient" || await canRead(user, "patients", patient), 403, "Patient outside assigned scope");
+    assert(guestPatient || user.role === "patient" || await canRead(user, "patients", patient, tx), 403, "Patient outside assigned scope");
     assert(available.clinicId === body.clinicId, 400, "Clinic/branch mismatch");
     assert(available.available, 409, available.reason || "Session unavailable");
     assert(available.queueMode !== "appointmentsOnly" || body.source !== "walkIn", 409, "Session accepts appointments only");

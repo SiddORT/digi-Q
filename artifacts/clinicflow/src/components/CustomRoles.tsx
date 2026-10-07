@@ -108,11 +108,11 @@ function DeleteRoleDialog({ role, count, onCancel, onConfirm }: { role: CustomRo
 
 function RoleList({ config, names, onEdit, onDelete }: { config: CustomRoleConfig; names: Map<string, SystemUser>; onEdit: (r: CustomRole) => void; onDelete: (r: CustomRole) => void }) {
   if (!config.roles.length) return <div className="empty" data-testid="state-custom-roles-empty"><h3>No Custom Roles Yet</h3><p>Create one to narrow what specific staff can do.</p></div>;
-  return <div className="table-wrap"><table><thead><tr><th>Role</th><th>Base Role</th><th>Restrictions</th><th>Assigned</th><th className="col-actions"><span className="sr-only">Actions</span></th></tr></thead><tbody>
+  return <div className="table-wrap admin-listing-table"><table><thead><tr><th>Role</th><th>Base Role</th><th>Restrictions</th><th>Assigned</th><th className="col-actions"><span className="sr-only">Actions</span></th></tr></thead><tbody>
     {config.roles.map(r => { const b = bindingsFor(config, r.id); return <tr key={r.id} data-testid={`row-custom-role-${r.id}`}>
-      <td><strong>{r.name}</strong></td><td>{label(r.baseRole)}</td><td>{r.denied.length ? `${r.denied.length} removed` : "Same as base"}</td>
-      <td>{b.length ? b.slice(0, 2).map(x => names.get(x.userId)?.fullName || "Staff member").join(", ") + (b.length > 2 ? ` +${b.length - 2}` : "") : "—"}</td>
-      <td><div className="row-actions row-actions-end"><IconAction label={`Edit ${r.name}`} hint="Edit role" icon={<Pencil size={15} aria-hidden />} onClick={() => onEdit(r)} testId={`button-edit-role-${r.id}`} /><RowMenu label={`More actions for ${r.name}`} testId={`menu-role-${r.id}`} items={[{ key: "delete", label: "Delete Role", danger: true, testId: `button-delete-role-${r.id}`, onSelect: () => onDelete(r) }]} /></div></td>
+      <td data-label="Role"><strong>{r.name}</strong></td><td data-label="Base Role">{label(r.baseRole)}</td><td data-label="Restrictions">{r.denied.length ? `${r.denied.length} removed` : "Same as base"}</td>
+      <td data-label="Assigned">{b.length ? b.slice(0, 2).map(x => names.get(x.userId)?.fullName || "Staff member").join(", ") + (b.length > 2 ? ` +${b.length - 2}` : "") : "—"}</td>
+      <td data-label="Actions" className="col-actions"><div className="row-actions row-actions-end"><IconAction label={`Edit ${r.name}`} hint="Edit role" icon={<Pencil size={15} aria-hidden />} onClick={() => onEdit(r)} testId={`button-edit-role-${r.id}`} /><RowMenu label={`More actions for ${r.name}`} testId={`menu-role-${r.id}`} items={[{ key: "delete", label: "Delete Role", danger: true, testId: `button-delete-role-${r.id}`, onSelect: () => onDelete(r) }]} /></div></td>
     </tr>; })}
   </tbody></table></div>;
 }

@@ -38,6 +38,6 @@ function GuidedAdminSetup({ onDirtyChange, onBusyChange, carry, onSnapshot }: Om
   }
    if (completed) return <ClinicRegistrationComplete result={completed} invitationStatus={completed.admin.invitationStatus}/>;
   if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
-  if (references.error && !references.data) return <div className="error-box" role="alert">{friendlyError(references.error,"load")}<button data-testid="admin-registration-retry-options" onClick={() => references.refetch()}>Try Again</button></div>;
+  if (references.error && !references.data) return <div className="error-box" role="alert">{friendlyError(references.error,"load")}<button type="button" data-testid="admin-registration-retry-options" onClick={() => references.refetch()}>Try Again</button></div>;
    return <ClinicRegistrationWizard adminMode carry={carry} onSnapshot={onSnapshot} onDirtyChange={onDirtyChange} onStepChange={setup.reset} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?friendlyError(setup.error,"save"):undefined}/>;
 }

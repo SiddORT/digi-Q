@@ -112,14 +112,14 @@ export function DemoClinicManagement() {
     <div className="panel-heading demo-head section-head"><div><span className="eyebrow">Super Admin Only · Fictional Demo</span><h2>Published Demo Clinic <HelpTip text="Setup applies only to the environment shown in your address bar. Preview and published accounts and clinics are separate. Never enter real patient details into the demo."/></h2></div>
       {status?.configured && <div className="row-actions">
         <span className={`badge ${status.enabled ? "" : "muted"}`} data-testid="status-demo-access">{status.enabled ? "Demo access enabled" : "Demo access disabled"}</span>
-        <button className="button secondary small" disabled={busy} onClick={() => void change(status.enabled ? "disable" : "enable")} data-testid="button-toggle-demo">{status.enabled ? "Disable demo access" : "Enable demo access"}</button>
-        <button className="button secondary small" disabled={busy} onClick={() => void change("rotate-password")} data-testid="button-rotate-demo-password">Rotate Demo Password</button>
+        <button type="button" className="button secondary small" disabled={busy} onClick={() => void change(status.enabled ? "disable" : "enable")} data-testid="button-toggle-demo">{status.enabled ? "Disable demo access" : "Enable demo access"}</button>
+        <button type="button" className="button secondary small" disabled={busy} onClick={() => void change("rotate-password")} data-testid="button-rotate-demo-password">Rotate Demo Password</button>
       </div>}
     </div>
-    {error && <div className="error-box" role="alert">{error}<button onClick={() => setRevision(value => value + 1)}>Retry</button></div>}
+    {error && <div className="error-box" role="alert">{error}<button type="button" onClick={() => setRevision(value => value + 1)}>Retry</button></div>}
     {notice && <div className="notice" role="status">{notice}</div>}
     {!status && !error && <p role="status">Checking demo setup…</p>}
-    {status && !status.configured && <button className="button" disabled={busy} onClick={() => void change("create")} data-testid="button-create-demo">Create Demo Clinic</button>}
+    {status && !status.configured && <button type="button" className="button" disabled={busy} onClick={() => void change("create")} data-testid="button-create-demo">Create Demo Clinic</button>}
     {status?.configured && <>
       <p><strong>{status.clinicName}</strong> · {status.doctorName}</p>
       {credentials && <section className="notice" aria-label="One-time demo credentials">

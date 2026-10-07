@@ -8,6 +8,7 @@ import { titleCase } from "./lib/title-case";
 import { OverflowText } from "./components/OverflowText";
 import { Fragment, useEffect, useState, useMemo, useRef, type ReactNode } from "react";
 import { beginEditorSubmission } from "./components/editor-submission";
+import { submitWithNativeChecks, revealAndFocus } from "./components/native-validity";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { validatePostalCode } from "./lib/address";
@@ -234,7 +235,7 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
  const tabFilled=(tabs||[]).map((_,i)=>activeFields.some(field=>field.type!=="addressPart"&&editorTabIndex(resourceName,editorGroup(field.key,editorKind))===i)||(i===(tabs||[]).length-1&&!!children));
  const tabInvalid=(tabs||[]).map((_,i)=>Object.keys(form.formState.errors).some(key=>editorTabIndex(resourceName,editorGroup(key,editorKind))===i));
 
-   return <Form {...form}><div className="editor-container"><form className="form-grid field-grid" data-location-editor={locationEditor||undefined} data-testid={locationEditor?"location-editor":undefined} onSubmit={form.handleSubmit(values=>{if(resourceName==="patients"){const secondary=secondaryFieldErrors(values);const keys=Object.keys(secondary);if(keys.length){keys.forEach(key=>form.setError(key,{type:"validate",message:secondary[key]}));setMoreDetails(true);setTimeout(()=>document.getElementById(`input-${keys[0]}`)?.focus()||document.querySelector<HTMLElement>(`[name="${CSS.escape(keys[0])}"]`)?.focus(),0);return;}}if(!beginEditorSubmission(submitting,busy,reviewOnly))return;const body:any={}; activeFields.forEach(field=>{
+   return <Form {...form}><div className="editor-container"><form className="form-grid field-grid" noValidate data-location-editor={locationEditor||undefined} data-testid={locationEditor?"location-editor":undefined} onSubmit={submitWithNativeChecks(form,values=>{if(resourceName==="patients"){const secondary=secondaryFieldErrors(values);const keys=Object.keys(secondary);if(keys.length){keys.forEach(key=>form.setError(key,{type:"validate",message:secondary[key]}));setMoreDetails(true);setTimeout(()=>document.getElementById(`input-${keys[0]}`)?.focus()||document.querySelector<HTMLElement>(`[name="${CSS.escape(keys[0])}"]`)?.focus(),0);return;}}if(!beginEditorSubmission(submitting,busy,reviewOnly))return;const body:any={}; activeFields.forEach(field=>{
     if(field.disabled)return;
     let value=values[field.key];
     if(typeof value==="string")value=value.trim();
@@ -258,7 +259,7 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
     if(Array.isArray(value))value=value.filter(Boolean);
 
     body[field.key]=value;
-  });onSave(body);},errors=>{if(Object.keys(errors).some(key=>PATIENT_SECONDARY.includes(key)))setMoreDetails(true);{const first=Object.keys(errors)[0];if(first&&tabbed)setActiveTab(editorTabIndex(resourceName,editorGroup(first,editorKind)));}requestAnimationFrame(()=>{const key=Object.keys(errors)[0];const element=document.getElementById(`input-${key}`)||document.querySelector<HTMLElement>(`[name="${CSS.escape(key)}"]`)||document.querySelector<HTMLElement>('[aria-invalid="true"]');element?.focus();});})}>
+  });onSave(body);},errors=>{if(Object.keys(errors).some(key=>PATIENT_SECONDARY.includes(key)))setMoreDetails(true);{const first=Object.keys(errors)[0];if(first&&tabbed)setActiveTab(editorTabIndex(resourceName,editorGroup(first,editorKind)));}requestAnimationFrame(()=>{const key=Object.keys(errors)[0];const element=document.getElementById(`input-${key}`)||document.querySelector<HTMLElement>(`[name="${CSS.escape(key)}"]`)||document.querySelector<HTMLElement>('[aria-invalid="true"]');revealAndFocus(element);});})}>
    {resourceName==="patients"&&<p className="muted wide form-intro" data-testid="text-patient-contact-rules">{PATIENT_CONTACT_RULE}</p>}{confirmation.dialog}
         {resourceName==="branches"&&<p className="muted wide form-context">About clinics <HelpTip label="About clinics" text="A clinic is a physical care location within a Clinic Group, with its own address, timezone, opening hours and booking link. Clinics do not have a separate login. Named staff use their own accounts, assignments and invitations. Contact inheritance controls its public contact details; it does not change staff sign-in addresses or configure notification delivery."/></p>}
     {legacyBoth&&<p className="notice wide" role="status" data-testid="text-exception-legacy-both">This record was saved as both Day Off and Extra Interval. It works as an Extra Interval, so Day Off is shown cleared; saving keeps that behaviour.</p>}

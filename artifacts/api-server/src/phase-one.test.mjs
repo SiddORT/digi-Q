@@ -1275,3 +1275,23 @@ test("public and admin onboarding retain every clinic, location, contact, format
   await assert.rejects(run("super", { ownerSchedule: { maxTokens: 0, consultationMinutes: 20, tokenPrefix: "A", queueMode: "mixed" } }));
   assert.deepEqual(await counts(), before);
 });
+
+test("booking contact policy is the same for every staff role: unlinked in-clinic patients book without mobile; linked accounts keep verification", async () => {
+  await seed();
+  await database.exec(`update settings set data = data || '{"requireMobileVerification":true}'::jsonb where id = 'platform'`);
+  for (const id of ["walkin", "walkin2", "stranger"]) await api.put(t.patients, { id, userId: null, clinicId: "c", branchId: "b", data: { fullName: "Desk " + id }, mobile: null });
+  // The doctor already treated walkin/walkin2/p2 (doctor patient scope = own prior visits); "stranger" has none.
+  const past = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
+  for (const [id, patientId, tokenNumber] of [["prior1", "walkin", 90], ["prior2", "walkin2", 91], ["prior3", "p2", 92]]) await api.put(t.appointments, { id, patientId, doctorId: "d", clinicId: "c", branchId: "b", date: past, tokenNumber, status: "completed", actorId: "r", data: {} });
+  const doctor = { id: "du", role: "doctor", doctorId: "d", clinicIds: ["c"], branchIds: ["b"] };
+  const admin = { id: "admin", role: "clinicAdmin", clinicIds: ["c"], branchIds: ["b", "b2"] };
+  const post = (actor, patientId, date = today) => route(api.appointmentsRouter, "post", "/appointments", actor, { patientId, doctorId: "d", branchId: "b", clinicId: "c", date, source: "phone" });
+  assert.ok((await post(doctor, "walkin"))?.id, "doctor books an unlinked patient without a mobile (same as desk staff)");
+  assert.ok((await post(staff, "walkin2"))?.id, "receptionist: same rule");
+  assert.ok((await post(admin, "stranger", tomorrow))?.id, "clinic admin: same rule");
+  // Doctor scope is unchanged: no prior visit with this doctor means no booking for that patient.
+  await database.exec(`delete from appointments where patient_id = 'stranger'`);
+  await assert.rejects(post(doctor, "stranger"), e => e.status === 403 && /outside assigned scope/i.test(e.message), "doctor patient scope unchanged");
+  // Linked patient account with an unverified mobile: every staff role, doctor included, is still blocked.
+  for (const actor of [doctor, staff, admin]) await assert.rejects(post(actor, "p2"), e => e.status === 403 && /verification/i.test(e.message), actor.role);
+});

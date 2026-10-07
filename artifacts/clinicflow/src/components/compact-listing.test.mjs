@@ -29,7 +29,7 @@ test("toolbar puts title left and status/search/filter/add on one wrapping row",
   for (const page of ["../Users.tsx", "../resources.tsx"]) {
     const src = read(page);
     // Section A rule is "no duplicated counts": a heading total is allowed only when pagination hides its total.
-    if (/<FilterBar title=\{/.test(src)) { assert.match(src, /<FilterBar title=\{headingCount\?/, `${page} heading count is opt-in`); assert.match(src, /hideTotal=\{headingCount\}/, `${page} suppresses the pagination total when the heading shows it`); }
+    if (/<FilterBar title=\{(?!<div className="staff-title-row">)/.test(src)) { assert.match(src, /<FilterBar title=\{headingCount\?/, `${page} heading count is opt-in`); assert.match(src, /hideTotal=\{headingCount\}/, `${page} suppresses the pagination total when the heading shows it`); }
     assert.doesNotMatch(src, / status=\{</, `${page} keeps record status filters out of the toolbar`);
     assert.match(src, /<SearchableSelect label="(Account )?Status"/, `${page} drafts status in the filter drawer`);
   }

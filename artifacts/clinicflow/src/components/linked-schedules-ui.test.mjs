@@ -106,10 +106,14 @@ test("copy-once and follow controls live inside the one weekly editor, no separa
   const editor=source("schedule/WeeklyScheduleEditor.tsx");
   assert.match(editor, /onClick=\{copyLocationHours\} data-testid="button-copy-opening-hours"/);
   assert.match(editor, /setWeek\(w => prefillFromHours\(w, opening\)\)/); // draft only, saved via the shared plan
-  assert.match(editor, /data-testid="link-follow-location-hours"/);
+  assert.match(editor, /<FollowLocationHours branch=\{branch.data\}/);
+  const follow=source("schedule/FollowLocationHours.tsx");
+  assert.match(follow, /data-testid="radio-follow-location-hours"/);
+  assert.match(follow, /api\.previewClinicSettings\(/);
+  assert.match(follow, /api\.updateClinicSettings\(/);
   assert.match(scheduling, /resource=\{selectedPage\}/);
   assert.match(scheduling, /url\.searchParams\.set\("schedule",target\)/);
-  assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /Follow Location Hours \(Linked\)/);
+  assert.doesNotMatch(editor, /link-follow-location-hours/); // no longer a settings link
 });
 test("onboarding and registration share one owner schedule mapping: linked default or custom weekly sessions", () => {
   const wizard = source("ClinicRegistrationWizard.tsx");

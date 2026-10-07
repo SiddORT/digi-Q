@@ -8,7 +8,7 @@ type CalendarParams = Omit<api.GetAppointmentCalendarParams, "from" | "to">;
 const STATUS_ORDER = ["booked", "waiting", "called", "inConsultation", "completed", "noShow", "cancelled"];
 
 /** Server-scoped month view. Totals come only from GET /appointments/calendar, never from a paginated list. */
-export function AppointmentCalendar({ month, today, params, onMonthChange, onDrill }: { month: string; today: string; params: CalendarParams; onMonthChange: (month: string) => void; onDrill: (date: string) => void }) {
+export function AppointmentCalendar({ month, today, selected, params, onMonthChange, onDrill }: { month: string; today: string; selected?: string; params: CalendarParams; onMonthChange: (month: string) => void; onDrill: (date: string) => void }) {
   const scoped = { ...params, from: monthStart(month), to: monthEnd(month) };
   const q = api.useGetAppointmentCalendar(scoped, { query: { queryKey: api.getGetAppointmentCalendarQueryKey(scoped), refetchInterval: 30000, placeholderData: p => p } });
   const byDate = new Map((q.data?.days ?? []).map(d => [d.date, d]));
@@ -31,8 +31,8 @@ export function AppointmentCalendar({ month, today, params, onMonthChange, onDri
         {monthGrid(month).map((d, i) => {
           if (!d) return <span key={`p${i}`} className="appt-cal-pad" />;
           const day = byDate.get(d); const total = day?.total ?? 0;
-          return <button type="button" key={d} className={`appt-cal-day${d === today ? " is-today" : ""}${total ? "" : " is-empty"}`} disabled={q.isLoading}
-            aria-label={`${formatDate(d)}: ${q.isLoading ? "loading" : `${total} visits`}. Open list for this day.`} onClick={() => onDrill(d)} data-testid={`button-calendar-day-${d}`}>
+          return <button type="button" key={d} aria-pressed={selected === d} className={`appt-cal-day${d === today ? " is-today" : ""}${selected === d ? " is-selected" : ""}${total ? "" : " is-empty"}`} disabled={q.isLoading}
+            aria-label={`${formatDate(d)}: ${q.isLoading ? "loading" : `${total} visits`}. Show visits for this day.`} onClick={() => onDrill(d)} data-testid={`button-calendar-day-${d}`}>
             <span className="appt-cal-num">{Number(d.slice(8))}</span>
             {q.isLoading ? <span className="appt-cal-skel" /> : total > 0 && <><strong className="appt-cal-count">{total}</strong>
               <span className="appt-cal-dots" aria-hidden>{STATUS_ORDER.filter(s => day!.byStatus[s]).slice(0, 4).map(s => <span key={s}><i className={`appt-status-dot ${s}`} />{day!.byStatus[s]}</span>)}</span></>}

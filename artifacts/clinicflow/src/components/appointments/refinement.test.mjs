@@ -16,7 +16,7 @@ test("range picker lives in the list header; calendar uses server counts with dr
   assert.match(c, /meta=\{<><div className="appt-mode"[\s\S]*?<VisitRangePicker/);
   const cal = r("./AppointmentCalendar.tsx");
   assert.match(cal, /useGetAppointmentCalendar/); assert.doesNotMatch(cal, /useListAppointments/);
-  assert.match(c, /onDrill=\{d=>\{setFrom\(d\);setTo\(d\)/);
+  assert.match(c, /onDrill=\{setCalDay\}/); // day drill opens the side panel; Open in list is explicit (system-standard.test.mjs)
 });
 
 test("status is a fixed readable column; token carries the booking reference tooltip", () => {

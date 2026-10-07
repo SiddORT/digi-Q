@@ -70,7 +70,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
   }, [data?.clinic.name, data?.branch?.name]);
   if (onlyBranch) return <div className="page-loading" role="status">Opening your clinic’s only location…</div>;
   if (query.isLoading) return <div className="page-loading" role="status">Loading clinic information…</div>;
-  if (query.error || !data) return <div className="public-clinic"><Logo/><main className="registration-card"><h1>Clinic Page Unavailable</h1><p>This address may be unavailable, inactive or temporarily unreachable.</p><div className="error-box" role="alert">Unable to load clinic information. Please try again.</div><button className="button" data-testid="public-clinic-retry" onClick={() => query.refetch()}>Try Again</button> <Link href="/">Return Home</Link></main></div>;
+  if (query.error || !data) return <div className="public-clinic"><Logo/><main className="registration-card"><h1>Clinic Page Unavailable</h1><p>This address may be unavailable, inactive or temporarily unreachable.</p><div className="error-box" role="alert">Unable to load clinic information. Please try again.</div><button type="button" className="button" data-testid="public-clinic-retry" onClick={() => query.refetch()}>Try Again</button> <Link href="/">Return Home</Link></main></div>;
   const { clinic, branch, branches, doctors, qrReference } = data;
   const path = `/${clinicSlug}${branch?.slug ? `/${branch.slug}` : ""}`;
   const bookingUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}${path}?book=1`;

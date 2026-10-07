@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import "../weekly-day-rows.css";
 import { WeeklyDraftDays, SHORT } from "./WeeklyDraftDays";
+import { FollowLocationHours } from "./FollowLocationHours";
 import { SearchableSelect } from "../SearchableSelect";
 import { AppDialog } from "../AppDialog";
 import { HelpTip } from "../HelpTip";
@@ -54,8 +55,6 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
 
   const template = rows[0] ? (rows[0] as Record<string, unknown>) : branch.data && defaults.tokenPrefix.trim() && Number(defaults.maxTokens) >= 1 && Number(defaults.consultationMinutes) >= 1 ? { doctorId, branchId, clinicId: branch.data.clinicId, timezone: branch.data.timezone, tokenPrefix: defaults.tokenPrefix.trim(), maxTokens: Number(defaults.maxTokens), consultationMinutes: Number(defaults.consultationMinutes), queueMode: "mixed" } : undefined;
   const [path] = useLocation(); const search = useSearch();
-  const me = api.useGetMe({ query: { queryKey: api.getGetMeQueryKey(), staleTime: 60000 } });
-  const canManageLocation = ["clinicAdmin", "superAdmin"].includes(String(me.data?.user?.role || ""));
   const copyLocationHours = () => { if (!opening) return; setResult(""); setWeek(w => prefillFromHours(w, opening)); };
   const readiness = scheduleReadiness(rows, branch.data ? opening : undefined);
   const errors = week.map(dayErrors);
@@ -136,13 +135,12 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
     <div className="schedule-source" role="group" aria-label="Location hours" data-testid="schedule-source">
       <button type="button" className="button secondary small" disabled={busy || !opening || !opening.length} onClick={copyLocationHours} data-testid="button-copy-opening-hours">Copy Location Hours Once</button>
       <HelpTip label="About copying location hours" text="Copy once fills this draft with today's location hours as custom sessions. Review capacity, then Save Weekly Schedule. Later location-hour changes do not update copied sessions. Linked sessions are kept."/>
-      {canManageLocation && branch.data && <Link className="button secondary small" href={`/admin/settings?clinicId=${encodeURIComponent(branch.data.clinicId)}&section=locations`} data-testid="link-follow-location-hours">Follow Location Hours (Linked)</Link>}
+      {branch.data && <FollowLocationHours branch={branch.data} doctorId={doctorId} dirty={dirty} disabled={busy} defaults={{ maxTokens: (rows[0] as any)?.maxTokens, consultationMinutes: (rows[0] as any)?.consultationMinutes, tokenPrefix: (rows[0] as any)?.tokenPrefix, queueMode: (rows[0] as any)?.queueMode }} />}
       {siblingIds.length > 0 && <details className="schedule-copy-locations" data-testid="details-copy-locations"><summary>Copy to Other Locations</summary><div className="registration-inline">
         {(siblings.data || []).map(b => <label className="registration-check" key={b.id}><input type="checkbox" checked={copyTargets.includes(b.id)} disabled={busy} onChange={e => setCopyTargets(c => e.target.checked ? [...c, b.id] : c.filter(x => x !== b.id))} data-testid={`check-copy-location-${b.id}`}/>{b.name}</label>)}
         <button type="button" className="button secondary small" disabled={busy || dirty || !copyTargets.length || !rows.length} title={dirty ? "Save this week first" : undefined} onClick={() => void applyToLocations()} data-testid="button-apply-locations">Apply to Selected Locations</button>
         {dirty && <small className="muted">Save this week first, then apply it.</small>}
       </div></details>}
-      {canManageLocation && <HelpTip label="About following location hours" text="Linked sessions keep following future location-hour changes and show a lock here. Link the clinic owner's consultations from the location settings. Custom sessions are preserved."/>}
     </div>
     <p className="notice" data-testid="text-week-summary">{weekSummary(week, SHORT, fmt)}</p>
     {dirty&&<p className="notice">When hours change, queue closing times beyond the new end are shortened to match. Queue windows that no longer fit are reset to session boundaries; valid early opening times are retained. Review individual settings with Details.</p>}

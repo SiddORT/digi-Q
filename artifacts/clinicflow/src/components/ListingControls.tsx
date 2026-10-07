@@ -246,6 +246,12 @@ export interface FilterBarProps {
 
 /** Shared list header. Row 1: title, wide search, actions. Row 2 (only when needed): status tabs, scope/meta, Filters/Clear.
  *  Row 1 is always rendered first and in the same position so the search input never remounts while typing. */
+function useCompactFilters() {
+  const query = "(max-width: 767px)";
+  const [match, setMatch] = useState(() => typeof window !== "undefined" && !!window.matchMedia?.(query).matches);
+  useEffect(() => { const m = window.matchMedia?.(query); if (!m) return; const on = () => setMatch(m.matches); on(); m.addEventListener("change", on); return () => m.removeEventListener("change", on); }, []);
+  return match;
+}
 export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters }: FilterBarProps) {
   const advancedActiveCount = activeCount ?? chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
@@ -271,7 +277,11 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
     closeFilters();
   };
   const pageTitle = usePageTitleOwnership();
-  const showClear = !!(onReset && active);
+  // Phones: common filters collapse behind a one-line summary instead of stacking full-width controls forever.
+  const compactFilters = useCompactFilters();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersId = React.useId();
+  const showClear = !!(onReset && active && chips.length === 0);
   // With a page title on row 1, the record count becomes secondary row-2 metadata (no duplicate heading).
   const countInSub = !!(pageTitle && title);
   // Filters/Clear never sit alone on an otherwise empty second row: without status tabs or a
@@ -329,7 +339,8 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
       {(hasSubRow || filters) && (
         <div className="lh-row lh-sub" data-testid="list-header-subrow">
           {countInSub && <div className="filter-bar-title lh-count" data-testid="text-listing-title">{title}</div>}
-          {filters && <div className="lh-filters" role="group" aria-label="Common filters" data-testid="list-header-filters">{filters}</div>}
+          {filters && compactFilters && <button type="button" className="lh-filters-summary" aria-expanded={filtersOpen} aria-controls={filtersId} onClick={() => setFiltersOpen(v => !v)} data-testid="button-toggle-quick-filters"><Filter aria-hidden className="h-4 w-4" /><span>Quick filters</span>{advancedActiveCount > 0 && <span className="filter-count" aria-label={`${advancedActiveCount} active`}>{advancedActiveCount}</span>}<span className="lh-filters-summary-hint">{filtersOpen ? "Hide" : "Show"}</span></button>}
+          {filters && <div id={filtersId} className="lh-filters" role="group" aria-label="Common filters" data-testid="list-header-filters" hidden={compactFilters && !filtersOpen}>{filters}</div>}
           {status && <div className="filter-bar-status lh-status">{status}</div>}
           {hasSubRow && tools}
         </div>

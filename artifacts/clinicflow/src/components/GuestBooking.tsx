@@ -113,8 +113,8 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   {receiptFresh.stale&&updated>0&&<p className="muted">Ticket shown as last loaded.</p>}
   <ErrorNotice error={create.error}/><ErrorNotice error={storageError}/>
   {committed&&(status.error||!receiptFresh.online)&&<p role="alert">We could not refresh your ticket. Reconnect and retry. If it cannot be recovered, ask reception; do not book again.</p>}
-  {committed&&<button className="button secondary" data-testid="button-refresh-guest" disabled={!pollAllowed||status.isPending} onClick={()=>pollRef.current()}>Refresh Ticket</button>}
-  {!committed&&!create.isPending&&<><p>We did not receive confirmation that your booking was saved. Retry safely below; it will not create a second booking.</p><button className="button" data-testid="button-retry-guest" onClick={()=>void send(attempt)}>Retry Booking</button></>}
+  {committed&&<button type="button" className="button secondary" data-testid="button-refresh-guest" disabled={!pollAllowed||status.isPending} onClick={()=>pollRef.current()}>Refresh Ticket</button>}
+  {!committed&&!create.isPending&&<><p>We did not receive confirmation that your booking was saved. Retry safely below; it will not create a second booking.</p><button type="button" className="button" data-testid="button-retry-guest" onClick={()=>void send(attempt)}>Retry Booking</button></>}
   <p className="muted">Download or print your ticket now. It is recoverable only in this browser tab; there is no public name search. If it is lost, ask reception.</p>
  </section>;
  const available=availability.data;

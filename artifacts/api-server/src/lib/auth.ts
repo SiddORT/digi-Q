@@ -76,7 +76,8 @@ export function scope(user: any, clinicId?: string | null, branchId?: string | n
   if (!clinicId || !user.clinicIds.includes(clinicId)) return false;
   return !branchId || !["doctor", "receptionist"].includes(user.role) || user.branchIds.includes(branchId);
 }
-export async function canRead(user: any, kind: string, row: any): Promise<boolean> {
+/** `conn` lets callers inside a transaction evaluate the same rules on their own connection; the policy is identical. */
+export async function canRead(user: any, kind: string, row: any, conn: any = db): Promise<boolean> {
   if (user.role === "superAdmin" || kind === "masters") return true;
   if (kind === "users") {
     if (user.id === row.id) return true;
@@ -87,7 +88,7 @@ export async function canRead(user: any, kind: string, row: any): Promise<boolea
   if (kind === "patients") {
     if (user.role === "patient") return row.id === user.patientId;
     if (user.role !== "doctor" && scope(user, row.clinicId, row.branchId)) return true;
-    return (await all(appointments)).some(a => a.patientId === row.id && (user.role === "doctor" ? a.doctorId === user.doctorId && scope(user, a.clinicId, a.branchId) : scope(user, a.clinicId, a.branchId)));
+    return (await all(appointments, conn)).some(a => a.patientId === row.id && (user.role === "doctor" ? a.doctorId === user.doctorId && scope(user, a.clinicId, a.branchId) : scope(user, a.clinicId, a.branchId)));
   }
   if (kind === "clinics") return scope(user, row.id);
   if (user.role === "patient") return kind === "appointments" && row.patientId === user.patientId;
