@@ -69,7 +69,6 @@ function Guard({role, page}: {role:string;page:string}) {
   const actual = ["superAdmin","clinicAdmin"].includes(me.data.user.role) ? "admin" : me.data.user.role;
   if(actual !== role) return <Redirect to={`/${actual}/dashboard`}/>;
   if(me.data.user.role==="clinicAdmin"&&["masters","audit","demo","integrations","permissions","system-users"].includes(page)) return <Redirect to="/admin/dashboard"/>;
-  if(role==="admin"&&page==="profile"&&(me.data.user.role!=="clinicAdmin"||!me.data.doctorId)) return <Redirect to="/admin/dashboard"/>;
   return <Portal identity={me.data} role={role} page={page}/>;
 }
 function PublicBookingRoute({reference}: {reference:string}) {
@@ -79,9 +78,9 @@ function PublicBookingRoute({reference}: {reference:string}) {
   return <PublicBooking reference={reference}/>;
 }
 const routes: Record<string,string[]> = {
-   admin:["dashboard","clinics","branches","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions","profile","demo","templates","permissions","integrations","system-users"],
+   admin:["dashboard","clinic","clinics","branches","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions","profile","demo","templates","permissions","integrations","system-users"],
   doctor:["dashboard","profile","clinics","branches","availability","exceptions","appointments","queue","patients","qrs","book","users"],
-   receptionist:["dashboard","appointments","queue","patients","book","qrs","availability","exceptions"],
+   receptionist:["dashboard","appointments","queue","patients","book","qrs","availability","exceptions","profile"],
   patient:["dashboard","book","appointments","queue","profile"],
 };
 function Providers(){

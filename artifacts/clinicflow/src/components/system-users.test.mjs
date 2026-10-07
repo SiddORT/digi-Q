@@ -32,3 +32,13 @@ test("panel copy: not restricted never overrides built-in rules; choose clinic p
   assert.match(src, /variant="drawer"/);
   assert.doesNotMatch(src, /effective-panel-/);
 });
+
+test("system users contract: API always returns data[] and per-user clinics[]; UI does not mask failures", async () => {
+  const { readFileSync: read } = await import("node:fs");
+  const spec = read(new URL("../../../../lib/api-spec/openapi.yaml", import.meta.url), "utf8");
+  assert.match(spec, /required: \[id, fullName, email, role, status, clinics\]/);
+  assert.match(spec, /required: \[data, total, page, pageSize\]/);
+  const route = read(new URL("../../../api-server/src/routes/system-users.ts", import.meta.url), "utf8");
+  assert.match(route, /res\.json\(\{ data: rows\.map\(row => \(\{ \.\.\.row, clinics: \[\.\.\.new Map\(/);
+  assert.doesNotMatch(src, /clinics\s*\?\?\s*\[\]|clinics\s*\|\|\s*\[\]/);
+});

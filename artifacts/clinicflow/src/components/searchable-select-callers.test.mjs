@@ -37,7 +37,6 @@ function change(label, value, context) {
 
 test("navigation and sort selectors retain non-empty enum choices when cleared", () => {
   for (const [label, callback, value] of [
-    ["Clinic Section", "selectView", "history"],
   ]) {
     const calls = [];
     const context = { [callback]: next => calls.push(next) };

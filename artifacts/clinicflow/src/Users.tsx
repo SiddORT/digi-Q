@@ -14,6 +14,7 @@ import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/rea
 import { useForm, Controller } from "react-hook-form";
 import { Plus, Pencil, Send, KeyRound, ArrowDown, ArrowUp, ArrowDownUp } from "lucide-react";
 import { Link, useSearch } from "wouter";
+import { planRoleSwitch, type SharedStaff } from "./lib/staff-role-switch";
 import * as api from "@workspace/api-client-react";
 import { assignmentTargetRole, type StaffTab } from "./staff-input";
 import { clinicScopedStaffInput, resendStaffInvitations, staffInvitationRestriction } from "./staff-controls";
@@ -42,6 +43,7 @@ const sortName = (sort:string) => sort === "fullName" ? "Name A–Z" : sort === 
 
 export function Users({ identity, clinicId, embedded=false }: { identity: api.Identity; clinicId?:string; embedded?:boolean }) {
   const confirmAction = useConfirm();
+  const roleConfirm = useConfirm(); // rendered inside the Add Staff dialog so it stacks above it
   const settings=api.useGetSettings({query:{queryKey:api.getGetSettingsQueryKey(),staleTime:60000}});
   const role = identity.user!.role;
   const isSuperAdmin = role === "superAdmin";
@@ -60,6 +62,11 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
    const draftChange = (patch:Partial<StaffContext>) => setDraft(previous=>({...previous,...patch}));
   const term = useDebouncedValue(context.search);
   const [editing, setEditing] = useState<any>(null);
+  // Role chosen in the Add Staff dialog; independent of the list's role filter.
+  const [editTab, setEditTab] = useState<StaffTab>(tab);
+  const snapshot = useRef<{values:Record<string,unknown>;defaults:Record<string,unknown>}>({values:{},defaults:{}});
+  const [carry, setCarry] = useState<SharedStaff>({});
+  const singular = (id:StaffTab) => tabs.find(t => t.id === id)?.label.replace(/s$/, "") || "Staff Member";
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState("");
@@ -107,9 +114,9 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   const client = useQueryClient();
    const [recoveryId, setRecoveryId] = useState("");
    const [recoveryOpen, setRecoveryOpen] = useState(false);
-   const [setupOpen, setSetupOpen] = useState(false);
-   const [setupDirty, setSetupDirty] = useState(false);
-   const [setupBusy, setSetupBusy] = useState(false);
+   
+   
+   
    const [statusTarget,setStatusTarget]=useState<{id:string;userId?:string;name:string;status:"active"|"inactive"}|null>(null);
    const [statusError,setStatusError]=useState("");
    const statusUpdate=useMutation({
@@ -151,7 +158,17 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   const invitationBusy=resendInvitation.isPending||bulkInvitations.isPending;
    const active = !!(context.sort !== "-createdAt" || context.search || context.status || (!clinicId&&context.clinicId) || context.branchId || context.managingAdminId || context.specializationId);
    const reset = () => {change({ search: "", status: "", clinicId: "", branchId: "", managingAdminId: "", specializationId:"", sort: "-createdAt" });setDraft(defaultContext());};
-   const beginEdit = (row: any) => { setDirty(false); setBusy(false); setEditing(row.id?row:{...row,...(clinicId&&tab!=="admins"?{clinicIds:[clinicId]}:{})}); };
+   const beginEdit = (row: any, role:StaffTab = tab) => { setDirty(false); setBusy(false); snapshot.current={values:{},defaults:{}}; setCarry({}); setEditTab(role); setEditing(row.id?row:{...row,...(clinicId&&role!=="admins"?{clinicIds:[clinicId]}:{})}); };
+    const creatable = tabs.filter(t => t.id !== "admins" || (isSuperAdmin && !embedded));
+    const beginAdd = () => beginEdit({}, creatable.some(t => t.id === tab) ? tab : creatable[0].id);
+    const chooseRole = async (next:StaffTab) => {
+       if (next === editTab || busy) return;
+       // Shared name/email/mobile carry over; anything role-specific (or admin setup input) needs explicit confirmation.
+       const plan = planRoleSwitch(snapshot.current.values,snapshot.current.defaults,editTab==="admins"&&dirty);
+       if (plan.discards && !await roleConfirm.ask({title:`Switch to ${singular(next)}?`,description:`Details entered for the ${singular(editTab)} role will be discarded. Name, email and mobile are kept.`,confirmLabel:"Switch Role",tone:"danger"})) return;
+       snapshot.current={values:{},defaults:{}}; setCarry(plan.shared); setDirty(Object.keys(plan.shared).length>0); setEditTab(next);
+       setEditing({ status: "active", ...(clinicId&&next!=="admins"?{clinicIds:[clinicId]}:{}) });
+     };
    const toggleSort=(key:"fullName"|"createdAt")=>change({sort:context.sort===key?`-${key}`:key});
    const sortable=(key:"fullName"|"createdAt",label:string)=><button type="button" className="sort-button" onClick={()=>toggleSort(key)} aria-label={`Sort ${label} ${context.sort===key?"descending":"ascending"}`}>{label}{context.sort===key?<ArrowUp aria-hidden size={14}/>:context.sort===`-${key}`?<ArrowDown aria-hidden size={14}/>:<ArrowDownUp aria-hidden size={14}/>}</button>;
    const openFilters=()=>{setDraftTab(tab);setDraft({...context});};
@@ -165,7 +182,8 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   const userCell = (k: string, row: any) => k === "member" ? <><OverflowText as="strong" value={row.fullName} testId={`text-staff-name-${row.id}`}/>{tab==="doctors"&&row.specializationName&&<small><OverflowText value={row.specializationName}/></small>}</> : k === "admin" ? <OverflowText value={row.managingAdminName || row.ownerAdminName}/> : k === "assignments" ? <><AssignmentSummary owner={row.fullName} groups={row.clinicNames} clinics={tab!=="admins"?row.branchNames:undefined} testId={`button-assignments-${row.id}`}/></> : k === "status" ? <><StatusSwitch label={`Account active for ${row.fullName}`} active={row.status==="active"} busy={statusUpdate.isPending&&statusTarget?.id===row.id} title={row.id===identity.user?.id||row.userId===identity.user?.id?"You cannot deactivate your own account.":tab==="admins"&&row.status==="active"&&row.clinicIds?.length?"Transfer clinic ownership before deactivation.":undefined} disabled={statusUpdate.isPending||row.id===identity.user?.id||row.userId===identity.user?.id||(tab==="admins"&&row.status==="active"&&!!row.clinicIds?.length)} onChange={async checked=>{const next=checked?"active":"inactive";if(next==="inactive"&&!await confirmAction.ask({title:`Deactivate ${row.fullName}?`,description:"They will lose access. Clinic ownership restrictions may prevent this change. Historical records are preserved.",confirmLabel:"Deactivate",tone:"danger"}))return;setStatusError("");setStatusTarget({id:row.id,userId:row.userId,name:row.fullName,status:next});statusUpdate.mutate({row,status:next,staffTab:tab});}}/><small className="status-sub">{row.passwordEnabled === true ? "Password Set" : row.invitationStatus === "sent" ? "Pending Setup" : row.invitationStatus === "failed" ? "Invitation Not Sent" : "Needs Password Setup"}</small></> : null;
    return <>{confirmAction.dialog}
      {counts.some(item=>item.error)&&<div role="alert" className="error-box">Unable to load staff status counts. <button type="button" onClick={()=>counts.forEach(item=>{if(item.error)void item.refetch();})}>Retry Counts</button></div>}
-     <FilterBar secondary={<>{role !== "doctor" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setRecoveryOpen(true)} data-testid="button-open-account-recovery"><KeyRound size={15} aria-hidden /> Recovery</button>}{cols.settings}{staffViews}</>} actions={<>{tab==="admins" ? embedded?<Link className="button small" href="/admin/users?tab=admins">Set Up a Clinic Admin</Link>:isSuperAdmin?<button type="button" className="button small" aria-haspopup="dialog" onClick={() => setSetupOpen(true)} data-testid="button-setup-clinic-admin"><Plus size={17} /> Set Up Clinic Admin</button>:null : <button className="button small" onClick={() => beginEdit({})} data-testid={`button-add-${tab}`}><Plus size={17} /> Add {tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}</button>}</>} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter Staff" chips={[
+     {tabs.length>1&&<div className="workspace-tabs staff-role-tabs" role="tablist" aria-label="Filter staff by role">{tabs.map(item=><button key={item.id} type="button" role="tab" aria-selected={tab===item.id} onClick={()=>{setTab(item.id);setDraftTab(item.id);setDraft({...defaultContext(),...contexts[item.id]});}} data-testid={`tab-staff-${item.id}`}>{item.label}</button>)}</div>}
+      <FilterBar secondary={<>{role !== "doctor" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setRecoveryOpen(true)} data-testid="button-open-account-recovery"><KeyRound size={15} aria-hidden /> Recovery</button>}{cols.settings}{staffViews}</>} actions={<>{creatable.length ? <button type="button" className="button small" aria-haspopup="dialog" onClick={beginAdd} data-testid="button-add-staff"><Plus size={17} aria-hidden /> Add Staff</button> : null}</>} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter Staff" chips={[
       ...(context.search?[{key:"search",label:`Search: ${context.search}`,onRemove:()=>change({search:""})}]:[]),
       ...(context.status?[{key:"adv:status",label:title(context.status),onRemove:()=>change({status:""})}]:[]),
        ...(!clinicId&&context.clinicId?[{key:"clinicId",label:"Clinic Selected",onRemove:()=>change({clinicId:"",branchId:""})}]:[]),
@@ -215,14 +233,17 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
         <button disabled={!recoveryId || recovery.isPending} onClick={() => { if (!recovery.isPending) recovery.mutate({ id: recoveryId }); }} data-testid="button-password-help">{recovery.isPending ? "Loading…" : "Get recovery steps"}</button></div>
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open Secure Password Recovery</Link></div>}
     </AppDialog>}
-    {setupOpen && isSuperAdmin && <AppDialog open size="wide" onClose={() => { setSetupOpen(false); setSetupDirty(false); }} dirty={setupDirty} busy={setupBusy} title="Set up a new Clinic Admin and their first clinic"><ClinicAdminOnboarding guided onDirtyChange={setSetupDirty} onBusyChange={setSetupBusy}/></AppDialog>}
-    {editing && <AppDialog open size="wide" onClose={() => setEditing(null)} title={`${editing.id ? "Edit" : "Add"} ${tabs.find(t => t.id === tab)?.label.replace(/s$/, "")}`} dirty={dirty} busy={busy}>
-       <UserEditor tab={tab} initial={editing} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onClose={(result:any) => { const wasEdit=!!editing.id;setEditing(null);if(!wasEdit&&result.invitationStatus==="failed")notifyWarning(`${tab==="doctors"?"Doctor":"Staff member"} added, but the invitation could not be sent.`);else notifySuccess(wasEdit?"Updated successfully":"Staff member added successfully."); }} />
+    
+    {editing && <AppDialog open size="medium" onClose={() => setEditing(null)} title={editing.id ? `Edit ${singular(editTab)}` : "Add Staff"} description={editing.id ? undefined : "Choose a role, then enter the shared details and assignments."} dirty={dirty} busy={busy}>{roleConfirm.dialog}
+       {!editing.id && creatable.length > 1 && <div className="staff-role-picker"><SearchableSelect label="Role" required testId="select-add-staff-role" value={editTab} disabled={busy} onChange={value => { const next = creatable.find(item => item.id === value)?.id; if (next) void chooseRole(next); }} options={creatable.map(item => ({ value: item.id, label: singular(item.id) }))}/></div>}
+       {!editing.id && creatable.length === 1 && <p className="muted staff-role-picker" data-testid="text-add-staff-role">Role: <strong>{singular(editTab)}</strong></p>}
+       {editTab === "admins" && !editing.id ? <ClinicAdminOnboarding guided onDirtyChange={setDirty} onBusyChange={setBusy}/> :
+       <UserEditor key={`${editTab}:${editing.id||"new"}`} tab={editTab} initial={editing} carry={editing.id?undefined:carry} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onSnapshot={(values:Record<string,unknown>,defaults:Record<string,unknown>)=>{snapshot.current={values,defaults};}} onClose={(result:any) => { const wasEdit=!!editing.id;const savedTab=editTab;setEditing(null);if(!wasEdit&&savedTab!==tab){setTab(savedTab);setDraftTab(savedTab);}if(!wasEdit&&result.invitationStatus==="failed")notifyWarning(`${singular(savedTab)} added, but the invitation could not be sent.`);else notifySuccess(wasEdit?"Updated successfully":`${singular(savedTab)} added successfully.`); }} />}
     </AppDialog>}
   </>;
 }
 
-function UserEditor({ tab, initial, onClose, isSuperAdmin, onDirtyChange, onBusyChange, clinicId, identity }: any) {
+function UserEditor({ tab, initial, carry, onClose, isSuperAdmin, onDirtyChange, onBusyChange, onSnapshot, clinicId, identity }: any) {
   const confirmAction = useConfirm();
   const form = useForm({ defaultValues: { status: "active", ...initial, ...(clinicId&&!initial.id&&tab!=="admins"?{clinicIds:[clinicId]}:{}) } });
   const client = useQueryClient();
@@ -244,6 +265,15 @@ function UserEditor({ tab, initial, onClose, isSuperAdmin, onDirtyChange, onBusy
   });
   useEffect(() => { onDirtyChange(form.formState.isDirty); }, [form.formState.isDirty]);
   useEffect(() => { onBusyChange(save.isPending); }, [save.isPending]);
+  const snapshotRef = useRef(onSnapshot); snapshotRef.current = onSnapshot;
+  useEffect(() => {
+    // Carried shared fields are applied as edits so dirty protection still guards them.
+    for (const [key, value] of Object.entries(carry || {})) form.setValue(key as any,value,{shouldDirty:true});
+    const defaults = form.formState.defaultValues as Record<string, unknown>;
+    snapshotRef.current?.(form.getValues(), defaults);
+    const sub = form.watch(values => snapshotRef.current?.(values as Record<string, unknown>, defaults));
+    return () => sub.unsubscribe();
+  }, [form]);
   const onSubmit = (data: any) => {
     if (locked.current || save.isPending) return;
     // Do not infer invalid assignments from a partial lookup page. The API validates ownership and branch coverage.
@@ -254,23 +284,23 @@ function UserEditor({ tab, initial, onClose, isSuperAdmin, onDirtyChange, onBusy
     <FormField label="Full Name" required error={form.formState.errors.fullName?.message as string}><input {...form.register("fullName", { validate: (v:unknown) => required()(v)||validatePersonName(v)||true })}/></FormField>
     <FormField label="Email" required error={form.formState.errors.email?.message as string}><EmailInput data-testid="input-user-email" {...form.register("email", { validate: (v:unknown) => required()(v)||validateEmail(v)||true })}/></FormField>
     <Controller name="mobile" control={form.control} rules={{validate:(v:unknown)=>validatePhone(v)||true}} render={({field})=><FormField label="Mobile" optional error={form.formState.errors.mobile?.message as string}><PhoneInput {...field} value={field.value||""}/></FormField>}/>
-    {tab === "doctors" && <><label>Registration number<input {...form.register("registrationNumber")} /></label><label>Experience years<input type="number" min="0" {...form.register("experienceYears", { valueAsNumber: true })} /></label></>}
+    {tab === "doctors" && <><FormField label="Registration Number" optional><input data-testid="input-staff-registration" {...form.register("registrationNumber")} /></FormField><FormField label="Experience Years" optional><input type="number" min="0" data-testid="input-staff-experience" {...form.register("experienceYears", { valueAsNumber: true })} /></FormField></>}
     {tab === "admins" && !initial.id && <p className="wide notice">Admin accounts have no clinic access until clinic ownership is assigned. Use Clinic Admin setup to create an admin and their first clinic together.</p>}
     {tab !== "admins" && <>
-       <div className="wide"><label>Clinics <span className="required">*</span></label><Controller name="clinicIds" control={form.control} rules={{ validate: v => !!v?.length || "Select at least one clinic." }} render={({ field }) => <ResourceMultiLookup resource="assignment:clinics" params={{ ...optionsParams, managingAdminId: isSuperAdmin ? firstOwner : undefined }} value={field.value || []} onRecords={remember} isOptionDisabled={row=>!!firstOwner&&row?.adminId!==firstOwner||!!clinicId&&row?.id!==clinicId&&!selectedClinics.includes(row?.id)} onChange={ids => {
+       <div className="wide"><label>Clinic Groups <span className="required">*</span></label><Controller name="clinicIds" control={form.control} rules={{ validate: v => !!v?.length || "Select at least one Clinic Group." }} render={({ field }) => <ResourceMultiLookup resource="assignment:clinics" params={{ ...optionsParams, managingAdminId: isSuperAdmin ? firstOwner : undefined }} value={field.value || []} onRecords={remember} isOptionDisabled={row=>!!firstOwner&&row?.adminId!==firstOwner||!!clinicId&&row?.id!==clinicId&&!selectedClinics.includes(row?.id)} onChange={ids => {
          if(clinicId){field.onChange([...new Set([...(initial.clinicIds||[]).filter((id:string)=>id!==clinicId),clinicId])]);return;}
         const removed = selectedClinics.filter(id => !ids.includes(id));
         field.onChange(ids);
         if (removed.length) form.setValue("branchIds", selectedBranches.filter(id => !removed.includes(records.current.get(id)?.clinicId)), { shouldDirty: true });
-       }} />} /><small className="muted">{clinicId?"This clinic remains assigned here. Assignments at other clinics are retained; use Staff management to change them.":"Clinic assignments must belong to the same managing admin. Existing assignments are retained while searching."}</small></div>
+       }} />} /><small className="muted">{clinicId?"This Clinic Group remains assigned here. Assignments at other clinics are retained; use Staff management to change them.":"Clinic Groups must belong to the same managing admin. Existing assignments are retained while searching."}</small></div>
       {form.formState.errors.clinicIds&&<p className="field-error wide" role="alert">{String(form.formState.errors.clinicIds.message)}</p>}
-      <div className="wide"><label>Clinics {tab === "receptionists" && <span className="required">*</span>}</label>
-         <Controller name="branchIds" control={form.control} rules={{ validate: v => tab !== "receptionists" || !!v?.length || "Select at least one clinic for each selected Clinic Group." }} render={({ field }) => <ResourceMultiLookup resource="assignment:branches" params={{ ...optionsParams, clinicId:clinicId|| (selectedClinics.length===1?selectedClinics[0]:undefined) }} disabled={!selectedClinics.length} value={field.value || []} onRecords={remember} onChange={ids=>field.onChange(clinicId?[...new Set([...(initial.branchIds||[]).filter((id:string)=>records.current.get(id)?.clinicId!==clinicId),...ids.filter((id:string)=>records.current.get(id)?.clinicId===clinicId||!records.current.get(id))])]:ids)} />} />
+      <div className="wide"><label>Locations {tab === "receptionists" && <span className="required">*</span>}</label>
+         <Controller name="branchIds" control={form.control} rules={{ validate: v => tab !== "receptionists" || !!v?.length || "Select at least one location for each selected Clinic Group." }} render={({ field }) => <ResourceMultiLookup resource="assignment:branches" params={{ ...optionsParams, clinicId:clinicId|| (selectedClinics.length===1?selectedClinics[0]:undefined) }} disabled={!selectedClinics.length} value={field.value || []} onRecords={remember} onChange={ids=>field.onChange(clinicId?[...new Set([...(initial.branchIds||[]).filter((id:string)=>records.current.get(id)?.clinicId!==clinicId),...ids.filter((id:string)=>records.current.get(id)?.clinicId===clinicId||!records.current.get(id))])]:ids)} />} />
         {form.formState.errors.branchIds&&<p className="field-error" role="alert">{String(form.formState.errors.branchIds.message)}</p>}
-        {tab === "receptionists" && <small className="muted">Select at least one clinic for every assigned Clinic Group.</small>}
+        {tab === "receptionists" && <small className="muted">Select at least one location for every assigned Clinic Group.</small>}
       </div>
     </>}
      <Controller name="status" control={form.control} render={({field})=><div className="wide"><StatusSwitch label="Staff Account Active" active={field.value==="active"} disabled={!!initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)} onChange={async active=>{if(!active&&!await confirmAction.ask({title:"Deactivate Staff Member?",description:"They will lose access. Ownership restrictions may prevent this change.",confirmLabel:"Deactivate",tone:"danger"}))return;field.onChange(active?"active":"inactive");}}/>{initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)&&<small className="muted">Your own account cannot be deactivated here.</small>}</div>}/>
-    <FormActions busy={save.isPending} secondary={save.error ? <ErrorNotice error={save.error} /> : undefined} />
+    <FormActions busy={save.isPending} cancelClosesDialog submitLabel={initial.id ? "Save Changes" : `Add ${tab==="doctors"?"Doctor":tab==="admins"?"Clinic Admin":"Receptionist"}`} busyLabel={initial.id ? "Saving…" : "Adding…"} submitTestId="button-save-staff" cancelTestId="button-cancel-staff" secondary={save.error ? <ErrorNotice error={save.error} /> : undefined} />
   </form></Form>;
 }

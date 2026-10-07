@@ -87,7 +87,7 @@ export function AddressFields({ value, onChange, directory = "private", required
       <input id={`${idPrefix}address`} value={value.address || ""} required={required} maxLength={500} aria-invalid={!!errors.address || undefined} onChange={e => onChange({ address: e.target.value })} data-testid={testId}/>
       {errors.address && <small className="field-error">{errors.address}</small>}</label>
     <div className="address-compact">{label("Country", "Search by country name. The selected country shows as its short code; saved values are kept as entered.")}
-      <SearchableSelect id={`${idPrefix}country`} testId={`${testId}-country`} label="Country" value={country || DEFAULT_ADDRESS_COUNTRY} options={countryOptions(country)} placeholder="Country"
+      <SearchableSelect id={`${idPrefix}country`} testId={`${testId}-country`} value={country || DEFAULT_ADDRESS_COUNTRY} options={countryOptions(country)} placeholder="Country"
         onChange={next => { if (next === (country || DEFAULT_ADDRESS_COUNTRY)) return; parentChange.current = "country"; onChange({ country: next }); }}/>
       {errors.country && <small className="field-error">{errors.country}</small>}</div>
     <div className="address-compact">{label("State/UT", "Suggestions follow the selected country. You can type a State/UT that is not listed.")}

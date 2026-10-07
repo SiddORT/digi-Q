@@ -60,6 +60,6 @@ test("workspace wiring: selector beside notifications, gate, provider, explicit 
 
 test("doctors can discover the allowed Users page", () => {
   const clinic = read("../clinic.tsx");
-  assert.match(clinic, / doctor:\["dashboard","appointments","queue","patients","users","availability","profile"\]/);
+  assert.match(clinic, / doctor:\["dashboard","appointments","queue","patients","clinics","availability","profile"\]/);
   assert.match(read("../App.tsx"), /doctor:\[[^\]]*"users"/);
 });

@@ -26,7 +26,7 @@ export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{iden
  };
  return <DateTimePreferencesProvider value={settings.data?.clinic||clinic.data}><section aria-label="Scheduling workspace">
   <div className="schedule-bar" data-testid="schedule-bar">
-   <nav className="section-nav" aria-label="Schedule sections"><span className="section-nav-label">Schedule</span>{([["availability","Weekly sessions"],["exceptions","Date exceptions"]] as const).map(([value,label])=><button key={value} type="button" aria-current={selectedPage===value?"page":undefined} onClick={()=>{if(selectedPage!==value)go(value);}} data-testid={`button-schedule-${value}`}>{label}</button>)}</nav>
+   <nav className="workspace-tabs" role="tablist" aria-label="Schedule sections">{([["availability","Weekly"],["exceptions","Exceptions"]] as const).map(([value,label])=><button key={value} type="button" role="tab" aria-selected={selectedPage===value} onClick={()=>{if(selectedPage!==value)go(value);}} data-testid={`button-schedule-${value}`}>{label}</button>)}</nav>
       <div className="schedule-bar-actions">
    </div>
   </div>

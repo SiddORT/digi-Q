@@ -1,0 +1,21 @@
+/* Consolidated workspaces: shared tab strip, profile/form alignment fixes. */
+.workspace-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:4px;margin:0 0 16px;border:1px solid hsl(var(--border));border-radius:var(--radius-card);background:hsl(var(--muted)/.5);width:fit-content;max-width:100%}
+.workspace .workspace-tabs button{appearance:none;border:0;background:transparent;color:hsl(var(--muted-foreground));font:inherit;font-size:var(--type-label);font-weight:600;padding:4px 12px;border-radius:var(--radius-control);cursor:pointer;min-height:var(--control-sm);box-shadow:none}
+.workspace .workspace-tabs button:hover{color:hsl(var(--foreground))}
+.workspace .workspace-tabs button[aria-selected=true]{background:hsl(var(--card));color:hsl(var(--foreground));box-shadow:0 1px 2px hsl(var(--foreground)/.08)}
+.workspace .workspace-tabs button:focus-visible{outline:2px solid hsl(var(--primary));outline-offset:1px}
+@media (max-width:767px){.workspace-tabs{width:100%;min-width:0;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:thin}.workspace-tabs>button{flex:0 0 auto}.workspace .workspace-tabs button{white-space:nowrap}}
+.workspace-subsection{margin-top:24px}
+.staff-role-picker{grid-column:1/-1;max-width:22rem}
+/* Profile: cards share one edge; address spans the form; labels do not push inputs out of line. */
+.profile-stack{display:grid;gap:16px;max-width:980px}
+.profile-stack>.panel,.profile-stack .profile-compact{max-width:none;margin:0}
+.profile-compact .field-grid{align-items:start}
+.profile-compact .field-grid>label>.field-hint,.profile-compact .field-grid>label:not(:has(.field-hint)){line-height:20px}
+.profile-compact .field-grid>label>.field-hint{display:flex;align-items:center;gap:4px;min-height:20px;margin-bottom:4px}
+.profile-compact .field-grid>label>:is(small,.field-error,.muted){display:block;margin-top:4px}
+.field-grid>.field-cell:has(.address-fields),.form-grid>:has(>.address-fields){grid-column:1/-1!important}
+.phone-input{align-items:stretch}
+.schedule-bar .workspace-tabs{margin:0}
+.app-dialog-wide.app-dialog-medium{max-width:min(820px,calc(100vw - 1.5rem))}
+@media(max-width:639px){.app-dialog-wide.app-dialog-medium{max-width:100vw}}

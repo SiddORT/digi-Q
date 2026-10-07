@@ -38,7 +38,7 @@ export const PhoneInput = forwardRef<HTMLInputElement, Props>(function PhoneInpu
     emit(parts.country, national);
   };
   return <span className={`phone-input${className ? ` ${className}` : ""}`}>
-    <SearchableSelect label="Country" disabled={props.disabled || props.readOnly} value={parts.country} placeholder="Country code"
+    <SearchableSelect disabled={props.disabled || props.readOnly} value={parts.country} placeholder="Country code"
       onChange={country => { const next = country as CountryCode | ""; setParts({ ...parts, country: next }); if (parts.national) emit(next, parts.national); }}
       options={countryOptions} />
     <input {...props} ref={ref} type="tel" inputMode="tel" autoComplete="tel-national" value={formatNational(parts.country, parts.national)}

@@ -35,7 +35,9 @@ test("copy location hours uses authorized source groups and only edits the desti
 });
 test("all clinic configuration sections have retained-clinic navigation", () => {
   const text = source("ClinicSettings.tsx");
-  for (const label of ["General", "Locations & Hours", "Doctors & Sessions", "Booking Rules", "Staff", "Booking Links & QR", "Activity history"]) assert.ok(text.includes(label));
+  for (const label of ["Details", "Locations", "Staff", "Policies"]) assert.ok(text.includes(`"${label}"`));
+  // Legacy section links open the tab that now contains their content.
+  assert.match(text, /value==="qrs"\|\|value==="sessions" \? "locations" : value==="history" \? "general"/);
   assert.match(text, /searchParams\.set\("clinicId",clinicId\)/);
   assert.match(text, /window.history.replaceState/);
 });
@@ -44,7 +46,7 @@ test("clinic workspace embeds real scoped management instead of link-only sectio
   for (const name of ["branches","qrs","audit"]) assert.match(text, new RegExp(`resource="${name}"[^\\n]*fixedClinicId=\\{clinicId\\}`));
   assert.match(text, /<Users[^>]*clinicId=\{clinicId\}[^>]*embedded/);
   assert.match(text, /onEdit=\{row=>\{const item=data\.branches\.find/);
-  assert.match(text, /clinic-section-menu/);
+  assert.match(text, /className="workspace-tabs" role="tablist" aria-label="Clinic sections"/);
   assert.doesNotMatch(text, /clinic-settings-tabs/);
   assert.doesNotMatch(text, /Open staff management|Open booking QR codes/);
 });
@@ -52,14 +54,19 @@ test("legacy routes remain, while navigation consolidates clinic, staff and sche
   const text = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");
   const navigation = readFileSync(new URL("./WorkspaceNav.tsx", import.meta.url), "utf8");
   assert.match(text, /page==="users"\?<Users/);
-  assert.match(text, /page==="clinics"&&role==="doctor"\?<DoctorClinics/);
+  assert.match(text, /page==="clinics"&&role==="doctor"\?<DoctorClinicWorkspace/);
+  assert.match(text, /area==="staff"\?<Users identity=\{identity\}\/>/);
+  assert.match(text, /if\(page==="users"&&userRole==="doctor"\)return withArea\("\/doctor\/clinics","staff"\)/);
   assert.match(text, /page==="settings"\?<WorkspaceSettings/);
   assert.match(text, /page==="availability"\|\|page==="exceptions"/);
-  assert.match(text, /<ConsultationManagement identity=\{identity\}/);
-  assert.match(text, /<DoctorClinics identity=\{identity\} embedded/);
-  assert.match(navigation, /My profile & consultation/);
-  // Approved explicit management modules are visible in admin navigation.
-  assert.match(text, /admin:\["dashboard","appointments","queue","patients","clinics","branches","users","system-users","availability","reports","masters","settings","templates","permissions","integrations","audit","demo"\]/);
+  assert.match(source("ClinicSettings.tsx"), /<ConsultationManagement identity=\{identity\} clinicId=\{clinicId\}\/>/);
+  assert.doesNotMatch(text, /<DoctorClinics identity=\{identity\} embedded/);
+  assert.match(text, /export function legacyDestination/);
+  assert.match(navigation, /profile: "Profile"/);
+  assert.doesNotMatch(navigation, /profile & consultation/i);
+  // Consolidated admin navigation: one destination per workspace; legacy pages redirect into tabs.
+  assert.match(text, /admin:\["dashboard","appointments","queue","patients","clinic","users","availability","reports","settings","profile"\]/);
+  assert.match(text, /receptionist:\["dashboard","appointments","queue","patients","availability","profile"\]/);
 });
 test("appointment and report filters apply drafts, with status-only tabs and column sorting", () => {
   const text = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");
@@ -91,7 +98,8 @@ test("old branch list edit opens the authorised clinic hours editor instead of g
 test("copy-once and follow controls live inside the one weekly editor, no separate copy tool", () => {
   const settings=source("ClinicSettings.tsx");
   const scheduling=source("SchedulingWorkspace.tsx");
-  assert.match(settings, /<SchedulingWorkspace[^>]*clinicId=\{clinicId\}\/>/);
+  // Doctor sessions live in the Schedule workspace; the clinic Locations tab links there.
+  assert.match(settings, /href="\/admin\/availability" data-testid="link-location-schedule"/);
   assert.doesNotMatch(scheduling, /onLinkOwner/);
   assert.doesNotMatch(settings, /<ClinicSessionSetup/);
   assert.doesNotMatch(scheduling, /ClinicSessionSetup|AppDialog|button-copy-opening-hours/);
@@ -114,4 +122,23 @@ test("onboarding and registration share one owner schedule mapping: linked defau
   assert.match(owner, /applyWeekTo\(/);
   assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /<WeeklyDraftDays /);
   assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /button-apply-locations/);
+});
+test("legacy clinic links keep branch selection through the redirect", () => {
+  const text = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");
+  const start = text.indexOf("export function legacyDestination");
+  const body = text.slice(start, text.indexOf("\ntype WorkspaceTab", start));
+  const js = body.replace("export function legacyDestination(page:string,userRole:string,search:string):string|null", "function legacyDestination(page,userRole,search)").replace(/\(base:string,area:string\)/, "(base,area)");
+  const fn = new Function(`${js}; return legacyDestination;`)();
+  const out = new URL(fn("settings", "clinicAdmin", "?clinicId=c1&section=qrs&branchId=b9"), "http://x");
+  assert.equal(out.pathname, "/admin/clinic");
+  assert.equal(out.searchParams.get("branchId"), "b9");
+  assert.equal(out.searchParams.get("clinicId"), "c1");
+  const branches = new URL(fn("branches", "superAdmin", "?branchId=b2&clinicId=c2"), "http://x");
+  assert.equal(branches.searchParams.get("section"), "locations");
+  assert.equal(branches.searchParams.get("branchId"), "b2");
+  assert.equal(new URL(fn("users", "clinicAdmin", "?tab=doctors"), "http://x").searchParams.get("section"), "staff");
+  assert.equal(fn("users", "superAdmin", ""), null);
+  const settings = readFileSync(new URL("./ClinicSettings.tsx", import.meta.url), "utf8");
+  assert.match(settings, /value==="qrs"\|\|value==="sessions" \? "locations"/);
+  assert.match(settings, /if\(!data\|\|view!=="locations"\)return/);
 });

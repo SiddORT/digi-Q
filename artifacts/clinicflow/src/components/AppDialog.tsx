@@ -23,7 +23,7 @@ export interface AppDialogProps {
   dirty?: boolean;
   busy?: boolean;
   /** "wide" for long forms: wider on desktop so fields group into two columns; full-screen on phones. */
-  size?: "default" | "wide";
+  size?: "default" | "wide" | "medium";
   /** "drawer" docks the panel to the right edge (full-screen sheet on phones). Same close/dirty lifecycle. */
   variant?: "modal" | "drawer";
 }
@@ -102,7 +102,7 @@ export function AppDialog({
       }}
     >
       <DialogContent
-        className={`app-dialog ${variant==="drawer"?"app-dialog-drawer":size==="wide"?"app-dialog-wide sm:max-w-5xl":"sm:max-w-2xl"} bg-white border border-border shadow-xl`}
+        className={`app-dialog ${variant==="drawer"?"app-dialog-drawer":size==="medium"?"app-dialog-wide app-dialog-medium sm:max-w-[820px]":size==="wide"?"app-dialog-wide sm:max-w-5xl":"sm:max-w-2xl"} bg-white border border-border shadow-xl`}
         {...(!description ? { "aria-describedby": undefined } : {})}
         aria-busy={busy || undefined}
         onOpenAutoFocus={() => {
