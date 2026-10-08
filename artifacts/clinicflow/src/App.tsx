@@ -26,6 +26,8 @@ import { PublicHeader } from "./components/PublicHeader";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 15000 } } });
+// Identity has one periodic owner in AuthAccess, not one poller per consumer.
+queryClient.setQueryDefaults(["/api/me"], { staleTime: 60000, refetchOnWindowFocus: false });
 export { BrandLogo as Logo };
 const Logo = BrandLogo;
 function Home() {
@@ -61,7 +63,7 @@ function RegisterDoctor(){
 }
 function Guard({role, page}: {role:string;page:string}) {
   const { isLoaded, isSignedIn } = useNativeAuth();
-  const me = api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn,refetchOnWindowFocus:true,refetchInterval:60000}});
+  const me = api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),enabled:!!isSignedIn}});
   if (!isLoaded || (isSignedIn && me.isLoading)) return <div className="page-loading">Preparing your workspace…</div>;
   if (!isSignedIn) return <Redirect to="/login"/>;
   if (me.error) return <div className="error-box" role="alert">Unable to load your account. {friendlyError(me.error,"load")}<button onClick={()=>me.refetch()}>Try Again</button></div>;

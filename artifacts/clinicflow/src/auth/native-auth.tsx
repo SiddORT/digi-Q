@@ -58,6 +58,9 @@ export function createSessionLifecycle(options: {
       if (requestEpoch !== epoch) return;
       const authenticated = status.authenticated === true || status.isSignedIn === true || !!status.role;
       if (!authenticated) { invalidate(); return; }
+      // AuthAccess observes this response instead of independently checking the
+      // same session. Epoch checks above prevent old-account cache hydration.
+      options.queryClient.setQueryData(["/api/auth/status"], status);
       signed = true;
       options.state({ isLoaded: true, isSignedIn: true, error: "" });
       if (!background) options.publish("session-changed");
@@ -90,7 +93,10 @@ export function createSessionLifecycle(options: {
         void refresh(true).catch(() => undefined);
       }
     },
-    check() { if (signed) void refresh(true).catch(() => undefined); },
+    check(periodic = false) {
+      const checkedAt = options.queryClient.getQueryState(["/api/auth/status"])?.dataUpdatedAt || 0;
+      if (signed && (periodic || Date.now() - checkedAt >= 60_000)) void refresh(true).catch(() => undefined);
+    },
     stop() { epoch++; pending = undefined; },
   };
 }
@@ -130,7 +136,7 @@ export function NativeAuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener("focus", visible);
     document.addEventListener("visibilitychange", visible);
     // Status checks do not renew the fixed 12-hour session.
-    const timer = window.setInterval(() => lifecycle.check(), 60_000);
+    const timer = window.setInterval(() => lifecycle.check(true), 60_000);
     void lifecycle.refresh().catch(() => undefined);
     return () => {
       lifecycle.stop(); publish.current = () => undefined;

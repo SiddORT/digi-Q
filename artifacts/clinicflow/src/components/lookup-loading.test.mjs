@@ -10,7 +10,9 @@ test("disabled dependent lookups do not claim an in-flight request",()=>{
   assert.match(source,/selectedPending: enabled && missing.length > 0/);
 });
 test("option and selected-record reads remain bounded and retain manual retry",()=>{
-  assert.match(source,/AbortSignal.timeout\(20000\)/);
+  const cache=readFileSync(new URL("../lib/directory-cache.ts",import.meta.url),"utf8");
+  assert.match(cache,/AbortSignal.timeout\(20000\)/);
+  assert.match(cache,/AbortSignal.any\(\[signal,/);
   assert.match(source,/retry: false/);
   assert.match(source,/Retry Options/);
   assert.match(source,/Your selection has been retained/);

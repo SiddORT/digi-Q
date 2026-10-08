@@ -43,7 +43,7 @@ test("lookup is search-stable and does not poll option or selected lists", () =>
   assert.ok(lookup.includes("retainSelectedRecords(retained.current,selected,merged)"));
   assert.ok(lookup.includes("selectedRecords: [...rows, ...selectedRows]"));
   assert.ok(lookup.includes("selected.filter(id => !rows.some"));
-  assert.ok(lookup.includes("staleTime: 120000"));
+  assert.ok(lookup.includes("staleTime: DIRECTORY_FRESH_MS"));
   assert.ok(lookup.includes("[scopeKey, recordsKey, missingKey"));
   assert.ok(lookup.includes("[scopeKey, selectedKey, missingKey"));
   assert.ok(auth.includes("queryClient.clear()"));

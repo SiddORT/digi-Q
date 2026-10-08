@@ -11,7 +11,10 @@ test("new patient editor receives verified workspace IDs; existing registration 
 });
 test("operational sole cardinality is independent of search and fixed information is readable/nonclearable",()=>{
   const ui=source("./ResourceLookup.tsx");
-  assert.match(ui,/search: undefined, page: 1, pageSize: 2/);
+  const shared=source("../lib/use-directory.ts");
+  assert.match(ui,/useDirectoryCardinality\(resource, params,/);
+  assert.match(shared,/scope = directoryScope\(params\)/);
+  assert.match(shared,/\.\.\.scope, page: 1, pageSize: 20/);
   assert.match(ui,/if \(!value && sole && !scope\.isFetching\) onChange/);
   assert.match(ui,/<input id=\{props\.id\} aria-label=\{props\.label\} readOnly/);
   assert.match(ui,/Your selection has been retained/);
@@ -25,10 +28,16 @@ test("optional QR scope remains optional; schedule creation does not depend on a
 });
 test("persisted context has a 60-second active refresh path without resetting mounted forms",()=>{
   const ui=source("../auth/AuthAccess.tsx");
-  assert.match(ui,/setInterval\(update,60000\)/);
+  assert.match(ui,/setInterval\(\(\)=>void refreshSignedInContext\(client,true\),DIRECTORY_FRESH_MS\)/);
+  assert.match(source("../lib/directory-cache.ts"),/DIRECTORY_FRESH_MS = 60_000/);
   assert.match(ui,/addEventListener\("focus",update\)/);
   assert.match(ui,/\[isSignedIn,location,client\]/);
   assert.doesNotMatch(ui,/form\.reset/);
+});
+test("reused directory labels do not treat ordinary missing saved records as proof of inaccessibility",()=>{
+  const ui=source("./ResourceLookup.tsx");
+  assert.match(ui,/if \(params\.doctorId && \["clinics", "branches"\]\.includes\(resource\)\) return found/);
+  assert.match(ui,/unfound\.map\(id => directoryDetail/);
 });
 test("live profile refresh keeps unsaved fields; a successful response makes submitted fields clean",()=>{
   const editor=source("../resources.tsx"),profile=source("../clinic.tsx");

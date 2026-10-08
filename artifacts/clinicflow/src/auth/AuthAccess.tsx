@@ -4,6 +4,8 @@ import * as api from "@workspace/api-client-react";
 import { useNativeAuth } from "./native-auth";
 import { AuthCard, AuthShell } from "./AuthShell";
 import { useQueryClient } from "@tanstack/react-query";
+import { refreshSignedInContext } from "../lib/context-refresh";
+import { DIRECTORY_FRESH_MS } from "../lib/directory-cache";
 
 function StaffPasswordConfirmation() {
   const { logout } = useNativeAuth();
@@ -24,29 +26,28 @@ export function AuthAccess({ children }: { children: ReactNode }) {
   // persisted shared context, never reset mounted form state or unsaved drafts.
   useEffect(()=>{
     if(!isSignedIn)return;
-    const update=()=>void client.invalidateQueries({predicate:q=>{
-      const key=String(q.queryKey[0]);
-      return /(?:\/me$|\/doctors|\/clinics|\/clinic-settings|\/branches)/.test(key)||["remote-options","remote-selected","selected-care","operational-cardinality","workspaces","workspace-branches","weekly-overview","editor-session-overlap","exception-base-sessions"].includes(key);
-    }});
-    update();
-    const timer=window.setInterval(update,60000);
+    const update=()=>void refreshSignedInContext(client);
+    const timer=window.setInterval(()=>void refreshSignedInContext(client,true),DIRECTORY_FRESH_MS);
     window.addEventListener("focus",update);
     return()=>{window.clearInterval(timer);window.removeEventListener("focus",update);};
-  },[isSignedIn,location,client]);
+  },[isSignedIn,client]);
+  useEffect(()=>{if(isSignedIn)void refreshSignedInContext(client);},[isSignedIn,location,client]);
   const status = api.useGetAuthStatus({ query: {
     queryKey: api.getGetAuthStatusQueryKey(),
-    enabled: !!isSignedIn,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
+    // NativeAuth owns session checks and publishes the exact status response to
+    // this cache. This observer must not create a second status request.
+    enabled: false,
+    staleTime: DIRECTORY_FRESH_MS,
+    refetchOnWindowFocus: false,
   } });
   useEffect(() => {
     if (isSignedIn && status.data && !status.data.role) void refresh().catch(() => undefined);
   }, [isSignedIn, status.data, refresh]);
 
-  if (!isLoaded || (isSignedIn && status.isLoading)) return <div className="page-loading">Checking secure access…</div>;
+  if (!isLoaded || (isSignedIn && !status.data && !error)) return <div className="page-loading">Checking secure access…</div>;
   if (error) return <div className="error-box auth-status-error" role="alert">{error}<button onClick={() => void refresh().catch(() => undefined)}>Retry</button></div>;
   if (!isSignedIn) return <Redirect to="/sign-in" />;
-  if (status.error) return <div className="error-box auth-status-error">Unable to verify access: {status.error.message}<button onClick={() => status.refetch()} data-testid="button-retry-auth-status">Try Again</button></div>;
+  if (status.error) return <div className="error-box auth-status-error">Unable to verify access: {status.error.message}<button onClick={() => void refresh().catch(() => undefined)} data-testid="button-retry-auth-status">Try Again</button></div>;
   if (status.data && !status.data.role) return <div className="page-loading">Your session has ended…</div>;
   if (status.data?.requiresStaffPassword && !status.data.staffPasswordVerified) return <StaffPasswordConfirmation />;
   return children;

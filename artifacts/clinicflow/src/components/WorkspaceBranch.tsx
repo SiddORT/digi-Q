@@ -8,6 +8,8 @@ import { friendlyError } from "../lib/friendly-error";
 import { BRANCH_SCOPED_PAGES, branchSelectorMode, resolveSavedBranch, scopedQueryStrip, workspaceBranchKey, type WorkspaceBranchOption } from "../lib/workspace-branch";
 import "./workspace-branch.css";
 import { notifyWarning } from "../lib/notify";
+import { completeDirectory, directoryActor, DIRECTORY_FRESH_MS } from "../lib/directory-cache";
+import type { QueryClient } from "@tanstack/react-query";
 
 export type BranchPin = { branchId: string; clinicId: string; name: string; clinicName: string };
 type Ctx = {
@@ -24,17 +26,14 @@ type Ctx = {
 };
 const BranchContext = createContext<Ctx | null>(null);
 
-async function loadAccessibleBranches(identity: api.Identity): Promise<WorkspaceBranchOption[]> {
-  const items: WorkspaceBranchOption[] = [];
+async function loadAccessibleBranches(client: QueryClient, identity: api.Identity): Promise<WorkspaceBranchOption[]> {
   // Server-scoped list: only branches this account may access. A doctor is narrowed to their own assignments.
   const doctorId = identity.user?.role === "doctor" && identity.doctorId ? identity.doctorId : undefined;
-  for (let page = 1; page < 20; page++) {
-    const res = await api.listBranches({ status: "active", page, pageSize: 100, ...(doctorId ? { doctorId } : {}) } as api.ListBranchesParams);
-    items.push(...res.items.map((b: any) => ({ id: b.id, clinicId: b.clinicId, name: b.name, clinicName: b.clinicName || "" })));
-    if (items.length >= res.total) return items.sort((a,b)=>a.clinicName.localeCompare(b.clinicName)||a.name.localeCompare(b.name));
-    if (!res.items.length) throw new Error("Your assigned locations were only partially loaded. Retry Locations.");
-  }
-  throw new Error("Your assigned locations could not be fully loaded. Retry Locations.");
+  const res = await completeDirectory(client, directoryActor(identity), "branches",
+    { status: "active", ...(doctorId ? { doctorId } : {}) },
+    (p, signal) => api.listBranches(p as api.ListBranchesParams, {signal}));
+  return res.items.map((b: any) => ({ id: b.id, clinicId: b.clinicId, name: b.name, clinicName: b.clinicName || "" }))
+    .sort((a,b)=>a.clinicName.localeCompare(b.clinicName)||a.name.localeCompare(b.name));
 }
 
 export function WorkspaceBranchProvider({ identity, children }: { identity: api.Identity; children: ReactNode }) {
@@ -43,7 +42,7 @@ export function WorkspaceBranchProvider({ identity, children }: { identity: api.
   const client = useQueryClient();
   const [, navigate] = useLocation();
   const confirmation = useConfirm();
-  const q = useQuery({ queryKey: ["workspace-branches", userId, identity.user?.role, identity.doctorId || ""], queryFn: () => loadAccessibleBranches(identity), enabled, staleTime: 60000, retry: 1 });
+  const q = useQuery({ queryKey: ["workspace-branches", userId, identity.user?.role, identity.doctorId || ""], queryFn: () => loadAccessibleBranches(client, identity), enabled, staleTime: DIRECTORY_FRESH_MS, retry: false, refetchOnWindowFocus: false });
   const branches = q.data || [];
   const [selected, setSelected] = useState<string>("");
   // Validate the remembered choice against the current authorized, active list on every load.
@@ -72,7 +71,8 @@ export function WorkspaceBranchProvider({ identity, children }: { identity: api.
     const next = scopedQueryStrip(url.search);
     if (next !== url.search.replace(/^\?/, "")) navigate(`${url.pathname.replace(import.meta.env.BASE_URL.replace(/\/$/, ""), "") || "/"}${next ? `?${next}` : ""}`, { replace: true });
     setSelected(branchId);
-    void client.invalidateQueries({ predicate: query => query.queryKey[0] !== "workspace-branches" });
+    // Choosing a location changes operation filters, not the authorized directory.
+    void client.invalidateQueries({ predicate: query => !["workspace-branches", "directory-page", "directory-complete"].includes(String(query.queryKey[0])) }, {cancelRefetch: false});
   };
   const status: Ctx["status"] = !enabled ? "off" : q.isLoading ? "loading" : q.error ? "error" : !branches.length ? "none" : pin ? "ready" : branches.length > 1 ? "choice" : "loading";
   const value: Ctx = { enabled, status, branches, pin: enabled ? pin : null, error: q.error, retry: () => void q.refetch(), select, registerUnsaved, registerBusy };

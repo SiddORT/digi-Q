@@ -559,7 +559,10 @@ test("actual staff assignment lookup sends selectedIds with edited identity for 
   const lookup=await readFile(resolve(root,"../../clinicflow/src/components/ResourceLookup.tsx"),"utf8");
   const users=await readFile(resolve(root,"../../clinicflow/src/Users.tsx"),"utf8");
   assert.match(lookup,/selectedIdBatches\(missing\)\.map\(ids/);
-  assert.match(lookup,/getStaffAssignmentOptions\(\{\s*\.\.\.scope,[^}]*selectedIds:\s*ids\.join\(","\),\s*pageSize:\s*100/);
+  assert.match(lookup,/assignmentDirectory\(client, actor, \{\s*\.\.\.scope,[^}]*selectedIds:\s*ids\.join\(","\),\s*pageSize:\s*100/);
+  const shared=await readFile(resolve(root,"../../clinicflow/src/lib/use-directory.ts"),"utf8");
+  assert.match(shared,/api\.getStaffAssignmentOptions\(params as any/);
+  assert.match(shared,/\["assignment-directory", actor, params\]/);
   assert.match(lookup,/missing\.length > 0/);
   assert.match(lookup,/scopes = clinicIds\.length \? clinicIds\.map\(clinicId => \(\{ \.\.\.params, clinicId \}\)\) : \[params\]/);
   const { selectedIdBatches }=await import("../../clinicflow/src/components/relation-validity.ts");

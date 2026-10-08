@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, type AriaAttributes } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { SearchableSelect } from "./SearchableSelect";
 import { SearchableMultiSelect } from "./SearchableMultiSelect";
 import { useDebouncedValue } from "./ListingControls";
 import { selectedIdBatches, retainSelectedRecords } from "./relation-validity";
 import { soleAssigned } from "../lib/sole-option";
+import { cachedComplete, directoryDetail, directoryPage, DIRECTORY_FRESH_MS } from "../lib/directory-cache";
+import { assignmentDirectory, directoryLists as lists, useDirectoryActor, useDirectoryCardinality } from "../lib/use-directory";
 
-const lists: Record<string, any> = { clinics: api.listClinics, branches: api.listBranches, doctors: api.listDoctors, patients: api.listPatients, users: api.listUsers, masters: api.listMasters };
 const getters: Record<string, any> = { clinics: api.getClinic, branches: api.getBranch, doctors: api.getDoctor, patients: api.getPatient, users: api.getUser, masters: api.getMaster };
 type Props = Pick<AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> & { resource: string; value: string; onChange: (value: string) => void; label?: string; id?: string; error?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean; fixed?: boolean; autoSole?: boolean; onSelectedRecords?: (records: any[], verifiedMissing: string[]) => void };
 type MultiProps = Omit<Props, "value" | "onChange"> & { value: string[]; onChange: (value: string[]) => void; onRecords?: (records: any[]) => void; isOptionDisabled?: (record:any)=>boolean };
@@ -18,13 +19,14 @@ function lookupName(resource: string) {
 }
 
 function useOptions(resource: string, selected: string[], params: Record<string, unknown>, enabled=true) {
+  const client = useQueryClient(), actor = useDirectoryActor();
   const retained = useRef(new Map<string, any>());
   const [search, setSearch] = useState("");
   const debounced = useDebouncedValue(search);
   const assignment = resource.startsWith("assignment:");
   const kind = resource.split(":")[1];
   const query = useInfiniteQuery({
-    queryKey: ["remote-options", resource, params, debounced],
+    queryKey: ["remote-options", actor, resource, params, debounced],
     retry: false,
     initialPageParam: 1,
     enabled,
@@ -32,11 +34,11 @@ function useOptions(resource: string, selected: string[], params: Record<string,
       const request = { ...params, search: debounced || undefined, page: pageParam, pageSize: 20 };
       const load=async (scope:Record<string,unknown>)=>{
         if (assignment) {
-          const result: any = await api.getStaffAssignmentOptions(scope as any,{signal:AbortSignal.timeout(20000)});
+          const result: any = await assignmentDirectory(client, actor, scope);
           const metadata = result.pagination?.[kind];
           return { items: result[kind] || [], total: metadata?.total ?? result[kind]?.length ?? 0, page: pageParam };
         }
-        return lists[resource](scope,{signal:AbortSignal.timeout(20000)});
+        return directoryPage(client, actor, resource, scope, (p, signal) => lists[resource](p,{signal}));
       };
       // Branch catalogs accept one clinic per request. Each clinic request stays bounded and searchable.
       const clinicIds=String(params.clinicId||"").split(",").filter(Boolean);
@@ -47,24 +49,37 @@ function useOptions(resource: string, selected: string[], params: Record<string,
       return load(request);
     },
     getNextPageParam: (last: any, pages) => pages.reduce((n, p: any) => n + p.items.length, 0) < last.total ? pages.length + 1 : undefined,
-     staleTime: 120000,
+     staleTime: DIRECTORY_FRESH_MS, refetchOnWindowFocus: false,
   });
   const loading = enabled && ((query.isPending && !query.isError) || query.isFetching);
    const rows: any[] = query.data?.pages.flatMap((p: any) => p.items) || [];
    // A selected row on the current page needs no duplicate detail request.
    const missing = selected.filter(id => !rows.some(row => row.id === id));
   const selectedQuery = useQuery({
-     queryKey: ["remote-selected", resource, missing.join(","), params],
+     queryKey: ["remote-selected", actor, resource, missing.join(","), params],
      retry: false,
      enabled: enabled && missing.length > 0 && (!query.isPending || query.isError),
     queryFn: async () => {
+      if (!assignment) {
+        const complete = await cachedComplete(client, actor, resource, params);
+        if (complete) {
+          const found = complete.items.filter(row => missing.includes(row.id));
+          if (params.doctorId && ["clinics", "branches"].includes(resource)) return found;
+          // A missing row in an ordinary scoped picker does not prove the saved
+          // label is inaccessible. Preserve detail hydration without making it
+          // selectable in the new scope.
+          const unfound = missing.filter(id => !found.some(row => row.id === id));
+          return [...found, ...await Promise.all(unfound.map(id => directoryDetail(client, actor, resource, id,
+            signal => getters[resource](id,{signal}))))];
+        }
+      }
       if (assignment) {
          // Selected hydration uses the same clinic scope as the option request,
          // including the per-clinic requests for multi-clinic branch mappings.
          const clinicIds = kind === "branches" ? String(params.clinicId || "").split(",").filter(Boolean) : [];
          const scopes = clinicIds.length ? clinicIds.map(clinicId => ({ ...params, clinicId })) : [params];
          const results: any[] = await Promise.all(scopes.flatMap(scope => selectedIdBatches(missing).map(ids =>
-           api.getStaffAssignmentOptions({ ...scope, search: undefined, selectedIds: ids.join(","), pageSize: 100 } as any,{signal:AbortSignal.timeout(20000)}))));
+           assignmentDirectory(client, actor, { ...scope, search: undefined, selectedIds: ids.join(","), pageSize: 100 }))));
          if (results.some(result => result.pagination?.[kind]?.total > (result[kind] || []).length))
            throw new Error("Selected options were only partially loaded. Please retry.");
          return [...new Map(results.flatMap(result => result[kind] || []).map(row => [row.id, row])).values()];
@@ -73,19 +88,22 @@ function useOptions(resource: string, selected: string[], params: Record<string,
        // the new operational context. Exact-ID list reads apply actor and
        // doctor permissions before returning the row.
        if(params.doctorId && ["clinics","branches"].includes(resource)){
-         const result=await lists[resource]({...params,search:undefined,selectedIds:missing.join(","),page:1,pageSize:100},{signal:AbortSignal.timeout(20000)});
-         if(result.total>result.items.length)throw new Error("Selected assignments were only partially loaded. Please retry.");
-         return result.items;
+         const results = await Promise.all(selectedIdBatches(missing).map(ids =>
+           directoryPage(client, actor, resource, {...params,search:undefined,selectedIds:ids.join(","),page:1,pageSize:100},
+             (p, signal) => lists[resource](p,{signal}))));
+         if(results.some(result=>result.total>result.items.length))throw new Error("Selected assignments were only partially loaded. Please retry.");
+         return results.flatMap(result => result.items);
        }
-       return Promise.all(missing.map(id => getters[resource](id,{signal:AbortSignal.timeout(20000)})));
+       return Promise.all(missing.map(id => directoryDetail(client, actor, resource, id,
+         signal => getters[resource](id,{signal}))));
     },
-     staleTime: 120000,
+     staleTime: DIRECTORY_FRESH_MS, refetchOnWindowFocus: false,
   });
    const selectedRows: any[] = selectedQuery.data || [];
    const merged = [...new Map([...rows, ...selectedRows].map(row => [row.id, row])).values()];
    // Cache only selected labels, never option pages or authority about membership.
    retained.current=retainSelectedRecords(retained.current,selected,merged);
-   const verifiedMissing = (assignment && kind === "branches" || params.doctorId && ["clinics","branches"].includes(resource)) && selectedQuery.isSuccess ? missing.filter(id => !selectedRows.some(row => row.id === id)) : [];
+   const verifiedMissing = (assignment && kind === "branches" || params.doctorId && ["clinics","branches"].includes(resource)) && selectedQuery.isSuccess && !selectedQuery.error ? missing.filter(id => !selectedRows.some(row => row.id === id)) : [];
    // Hydration supplies labels at rest, but must not turn an empty search into a
    // false result (or make an out-of-scope selected row selectable).
    const visible = [...new Map([...(debounced ? rows : merged), ...selected.flatMap(id => retained.current.has(id) ? [retained.current.get(id)] : [])].map(row => [row.id, row])).values()];
@@ -96,12 +114,7 @@ export function ResourceLookup({ resource, value, onChange, params = {}, onSelec
   const lookup = useOptions(resource, value ? [value] : [], params, fixed || !props.disabled);
   // This request never uses picker search or hydrated selections. A partial page
   // and an error cannot turn the first displayed result into a default.
-  const scope = useQuery<any>({
-    queryKey: ["operational-cardinality", resource, params],
-    enabled: autoSole && !fixed && !props.disabled && !!lists[resource],
-    retry: false, staleTime: 0, refetchOnWindowFocus: true, refetchInterval: 30000,
-    queryFn: () => lists[resource]({...params, search: undefined, page: 1, pageSize: 2}, {signal: AbortSignal.timeout(20000)}),
-  });
+  const scope = useDirectoryCardinality(resource, params, autoSole && !fixed && !props.disabled);
   const sole = scope.isSuccess ? soleAssigned<any>(scope.data, !!scope.error) : null;
   useEffect(() => { if (!value && sole && !scope.isFetching) onChange(sole.id); }, [value, sole?.id, scope.isFetching, onChange]);
    const scopeKey = JSON.stringify(params);

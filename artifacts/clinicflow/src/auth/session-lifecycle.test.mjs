@@ -147,6 +147,19 @@ test("status checks are single-flight, do not renew or clear healthy caches, and
   assert.equal(h.latest().isSignedIn, false);
   assert.equal(h.client.getQueryCache().getAll().length, 0);
 });
+test("native status response feeds the access gate and focus/visibility reuse a fresh check", async () => {
+  const h = harness(); let requests = 0;
+  const status = {role:"doctor",requiresStaffPassword:true,staffPasswordVerified:true};
+  globalThis.fetch = async () => {requests++; return json(status);};
+  await h.lifecycle.refresh();
+  assert.deepEqual(h.client.getQueryData(["/api/auth/status"]), status);
+  h.lifecycle.check(); h.lifecycle.check();
+  await new Promise(resolve => setTimeout(resolve,0));
+  assert.equal(requests,1,"fresh focus and visibility events do not repeat status reads");
+  h.lifecycle.check(true);
+  await new Promise(resolve => setTimeout(resolve,0));
+  assert.equal(requests,2,"periodic checks still detect session changes within 60 seconds");
+});
 test("stale requests from a previous account cannot invalidate a newly refreshed session", async () => {
   const h = await signedHarness(), oldRequestStart = performance.now();
   await h.lifecycle.refresh();
