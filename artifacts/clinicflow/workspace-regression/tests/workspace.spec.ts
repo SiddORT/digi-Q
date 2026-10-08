@@ -402,6 +402,65 @@ test("create form preserves clinic and branch across unrelated edits, search and
   await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
 });
 
+for (const closeAction of ["Cancel", "Close", "Escape"] as const) {
+  test(`patient editor ${closeAction} uses one discard guard and preserves or discards the draft`, async ({ page }) => {
+    const state = await fixture(page);
+    await page.goto(pageUrl("patients"));
+    const dialog = page.getByRole("dialog", { name: "Edit Patient", exact: true });
+    const confirmation = page.getByRole("alertdialog", { name: "Discard unsaved changes?", exact: true });
+    const patientWrites = () => state.calls.filter(call =>
+      call.pathname === "/api/patients/patient-1" && call.method === "PATCH");
+    const requestClose = async () => {
+      if (closeAction === "Cancel") await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+      else if (closeAction === "Close") await dialog.getByRole("button", { name: "Close", exact: true }).click();
+      else await page.keyboard.press("Escape");
+    };
+    const expectSingleConfirmation = async () => {
+      await expect(confirmation).toBeVisible();
+      await expect(page.getByRole("alertdialog")).toHaveCount(1);
+      // A second ResourcePage dialog must not sit over the inline confirmation.
+      await expect(page.getByRole("dialog")).toHaveCount(1);
+      await expect(page.getByTestId("discard-confirm")).toHaveCount(1);
+    };
+
+    await page.getByRole("button", { name: "Edit Fixture Patient", exact: true }).click();
+    await dialog.getByTestId("input-fullName").fill("Unsaved patient draft");
+    await requestClose();
+    await expectSingleConfirmation();
+    await confirmation.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await expect(confirmation).toHaveCount(0);
+    await expect(dialog.getByTestId("input-fullName")).toHaveValue("Unsaved patient draft");
+    expect(patientWrites()).toHaveLength(0);
+
+    await requestClose();
+    await expectSingleConfirmation();
+    await confirmation.getByRole("button", { name: "Discard changes", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(confirmation).toHaveCount(0);
+    expect(patientWrites()).toHaveLength(0);
+    expect(state.patients[0].fullName).toBe("Fixture Patient");
+
+    await page.getByRole("button", { name: "Edit Fixture Patient", exact: true }).click();
+    await expect(dialog.getByTestId("input-fullName")).toHaveValue("Fixture Patient");
+    // The same draft can still be saved after declining the discard prompt.
+    await dialog.getByTestId("input-fullName").fill("Saved patient edit");
+    await requestClose();
+    await expectSingleConfirmation();
+    await confirmation.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await dialog.getByRole("button", { name: "Save Changes", exact: true }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(patientWrites()).toHaveLength(1);
+    expect(patientWrites()[0].body).toMatchObject({ fullName: "Saved patient edit" });
+    await page.getByRole("button", { name: "Edit Saved patient edit", exact: true }).click();
+    await expect(dialog.getByTestId("input-fullName")).toHaveValue("Saved patient edit");
+    // A clean editor closes immediately, without introducing a discard prompt.
+    await requestClose();
+    await expect(dialog).toHaveCount(0);
+    await expect(confirmation).toHaveCount(0);
+    expect(patientWrites()).toHaveLength(1);
+  });
+}
+
 test("edit form retains valid branch for unchanged clinic and removes it for another clinic", async ({ page }) => {
   const state = await fixture(page, true, true);
   await page.goto(pageUrl("patients"));
@@ -410,8 +469,11 @@ test("edit form retains valid branch for unchanged clinic and removes it for ano
   await expect(dialog.getByRole("button", { name: "Clinic Group: Fixture Clinic", exact: true })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
   await dialog.getByTestId("input-fullName").fill("Cancelled edit");
-  await dialog.getByTestId("button-dialog-close").click();
-  await page.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  const confirmation = page.getByRole("alertdialog", { name: "Discard unsaved changes?", exact: true });
+  await expect(confirmation).toHaveCount(1);
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await confirmation.getByRole("button", { name: "Discard changes", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   expect(state.calls.filter(call => call.pathname === "/api/patients/patient-1" && call.method === "PATCH")).toHaveLength(0);
   await page.getByRole("button", { name: "Edit Fixture Patient", exact: true }).click();
