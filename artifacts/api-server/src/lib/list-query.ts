@@ -139,8 +139,8 @@ export async function queryPage(user: any, kind: string, q: any = {}, extra?: SQ
   const secondary = key === "waitingAt" ? sql`(doc->>'tokenNumber')::int ${direction},` : raw("");
   // Branches have no doctorId column: resolve the real assignment relationship.
   let effectiveQuery = q;
-  if (kind === "branches" && q.doctorId) {
-    extra = sql`(${extra || raw("true")}) and ${clinicalMembership(sql`${q.doctorId}`, raw("r.id"))}`;
+  if (["branches", "clinics"].includes(kind) && q.doctorId) {
+    extra = sql`(${extra || raw("true")}) and ${clinicalMembership(sql`${q.doctorId}`, kind === "branches" ? raw("r.id") : undefined, kind === "clinics" ? raw("r.id") : undefined)}`;
     effectiveQuery = { ...q, doctorId: undefined };
   }
   if (kind === "patients" && (q.clinicId || q.branchId)) {

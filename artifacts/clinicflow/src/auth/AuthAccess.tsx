@@ -1,8 +1,9 @@
 import { useEffect, type ReactNode } from "react";
-import { Redirect } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import * as api from "@workspace/api-client-react";
 import { useNativeAuth } from "./native-auth";
 import { AuthCard, AuthShell } from "./AuthShell";
+import { useQueryClient } from "@tanstack/react-query";
 
 function StaffPasswordConfirmation() {
   const { logout } = useNativeAuth();
@@ -16,7 +17,22 @@ function StaffPasswordConfirmation() {
 }
 
 export function AuthAccess({ children }: { children: ReactNode }) {
+  const client=useQueryClient();
+  const [location]=useLocation();
   const { isLoaded, isSignedIn, error, refresh } = useNativeAuth();
+  // Existing HTTP/query transport; no extra real-time channel. Invalidate only
+  // persisted shared context, never reset mounted form state or unsaved drafts.
+  useEffect(()=>{
+    if(!isSignedIn)return;
+    const update=()=>void client.invalidateQueries({predicate:q=>{
+      const key=String(q.queryKey[0]);
+      return /(?:\/me$|\/doctors|\/clinics|\/clinic-settings|\/branches)/.test(key)||["remote-options","remote-selected","selected-care","operational-cardinality","workspaces","workspace-branches","weekly-overview","editor-session-overlap","exception-base-sessions"].includes(key);
+    }});
+    update();
+    const timer=window.setInterval(update,60000);
+    window.addEventListener("focus",update);
+    return()=>{window.clearInterval(timer);window.removeEventListener("focus",update);};
+  },[isSignedIn,location,client]);
   const status = api.useGetAuthStatus({ query: {
     queryKey: api.getGetAuthStatusQueryKey(),
     enabled: !!isSignedIn,

@@ -2457,6 +2457,8 @@ export const ResolveQrResponse = zod.object({
 })
 
 
+export const listClinicsQuerySelectedIdsMax = 10000;
+
 export const listClinicsQueryPageDefault = 1;
 
 export const listClinicsQueryPageSizeDefault = 20;
@@ -2465,6 +2467,8 @@ export const listClinicsQueryPageSizeMax = 100;
 
 
 export const ListClinicsQueryParams = zod.object({
+  "selectedIds": zod.coerce.string().max(listClinicsQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
+  "doctorId": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
   "status": zod.enum(['active', 'inactive']).optional(),
   "adminId": zod.coerce.string().optional(),
@@ -2710,6 +2714,8 @@ export const DeleteClinicParams = zod.object({
 export const DeleteClinicResponse = zod.void()
 
 
+export const listBranchesQuerySelectedIdsMax = 10000;
+
 export const listBranchesQueryPageDefault = 1;
 
 export const listBranchesQueryPageSizeDefault = 20;
@@ -2718,6 +2724,7 @@ export const listBranchesQueryPageSizeMax = 100;
 
 
 export const ListBranchesQueryParams = zod.object({
+  "selectedIds": zod.coerce.string().max(listBranchesQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
   "doctorId": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
@@ -3039,6 +3046,8 @@ export const DeleteBranchParams = zod.object({
 export const DeleteBranchResponse = zod.void()
 
 
+export const listDoctorsQuerySelectedIdsMax = 10000;
+
 export const listDoctorsQueryPageDefault = 1;
 
 export const listDoctorsQueryPageSizeDefault = 20;
@@ -3047,6 +3056,7 @@ export const listDoctorsQueryPageSizeMax = 100;
 
 
 export const ListDoctorsQueryParams = zod.object({
+  "selectedIds": zod.coerce.string().max(listDoctorsQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
   "search": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
   "branchId": zod.coerce.string().optional(),

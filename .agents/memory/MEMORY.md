@@ -18,3 +18,4 @@
 - [Bulk ticket completeness](bulk-ticket-completeness.md) — ticket exports must not silently deliver only the successful subset of selected appointments.
 - [Account status boundary](account-status-boundary.md) — account toggles must preserve exact assignment scope, not rebuild mappings from displayed clinic and branch lists.
 - [Concurrent validation readiness](concurrent-validation.md) — isolated successes can still time out under simultaneous cold compilation, PDF and PostgreSQL checks.
+- [Operational assignment context](operational-assignment-context.md) — reuse verified saved scope; do not infer permission from filters or rebuild unchanged projected mappings.

@@ -12,10 +12,10 @@ export function branchSelectorMode(role?: string | null): "off" | "on" {
 
 export const workspaceBranchKey = (userId: string) => `dq.workspace.branch.${userId}`;
 
-/** A remembered choice is used only if it is still in the authorized active list; otherwise the first location. */
+/** A remembered valid choice or a sole verified location; never guess among many. */
 export function resolveSavedBranch(saved: string, branches: WorkspaceBranchOption[]): string {
   if (saved && branches.some(b => b.id === saved)) return saved;
-  return branches[0]?.id || "";
+  return branches.length === 1 ? branches[0].id : "";
 }
 
 /** Query keys that depend on a location; removed on switch so no page restores the previous location, doctor or session. */

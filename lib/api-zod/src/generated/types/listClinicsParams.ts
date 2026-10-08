@@ -20,13 +20,21 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { DoctorIdParameter } from './doctorIdParameter';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
 import type { SearchParameter } from './searchParameter';
+import type { SelectedIdsParameter } from './selectedIdsParameter';
 import type { SortParameter } from './sortParameter';
 import type { StatusParameter } from './statusParameter';
 
 export type ListClinicsParams = {
+/**
+ * Comma-separated exact IDs within existing scope (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: SelectedIdsParameter;
+doctorId?: DoctorIdParameter;
 search?: SearchParameter;
 status?: StatusParameter;
 adminId?: string;

@@ -5,10 +5,11 @@ import { SearchableSelect } from "./SearchableSelect";
 import { SearchableMultiSelect } from "./SearchableMultiSelect";
 import { useDebouncedValue } from "./ListingControls";
 import { selectedIdBatches, retainSelectedRecords } from "./relation-validity";
+import { soleAssigned } from "../lib/sole-option";
 
 const lists: Record<string, any> = { clinics: api.listClinics, branches: api.listBranches, doctors: api.listDoctors, patients: api.listPatients, users: api.listUsers, masters: api.listMasters };
 const getters: Record<string, any> = { clinics: api.getClinic, branches: api.getBranch, doctors: api.getDoctor, patients: api.getPatient, users: api.getUser, masters: api.getMaster };
-type Props = Pick<AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> & { resource: string; value: string; onChange: (value: string) => void; label?: string; id?: string; error?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean; onSelectedRecords?: (records: any[], verifiedMissing: string[]) => void };
+type Props = Pick<AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> & { resource: string; value: string; onChange: (value: string) => void; label?: string; id?: string; error?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean; fixed?: boolean; autoSole?: boolean; onSelectedRecords?: (records: any[], verifiedMissing: string[]) => void };
 type MultiProps = Omit<Props, "value" | "onChange"> & { value: string[]; onChange: (value: string[]) => void; onRecords?: (records: any[]) => void; isOptionDisabled?: (record:any)=>boolean };
 
 function lookupName(resource: string) {
@@ -68,6 +69,14 @@ function useOptions(resource: string, selected: string[], params: Record<string,
            throw new Error("Selected options were only partially loaded. Please retry.");
          return [...new Map(results.flatMap(result => result[kind] || []).map(row => [row.id, row])).values()];
       }
+       // A detail getter hydrates a saved label; it cannot prove membership in
+       // the new operational context. Exact-ID list reads apply actor and
+       // doctor permissions before returning the row.
+       if(params.doctorId && ["clinics","branches"].includes(resource)){
+         const result=await lists[resource]({...params,search:undefined,selectedIds:missing.join(","),page:1,pageSize:100},{signal:AbortSignal.timeout(20000)});
+         if(result.total>result.items.length)throw new Error("Selected assignments were only partially loaded. Please retry.");
+         return result.items;
+       }
        return Promise.all(missing.map(id => getters[resource](id,{signal:AbortSignal.timeout(20000)})));
     },
      staleTime: 120000,
@@ -76,21 +85,45 @@ function useOptions(resource: string, selected: string[], params: Record<string,
    const merged = [...new Map([...rows, ...selectedRows].map(row => [row.id, row])).values()];
    // Cache only selected labels, never option pages or authority about membership.
    retained.current=retainSelectedRecords(retained.current,selected,merged);
-   const verifiedMissing = assignment && kind === "branches" && selectedQuery.isSuccess ? missing.filter(id => !selectedRows.some(row => row.id === id)) : [];
+   const verifiedMissing = (assignment && kind === "branches" || params.doctorId && ["clinics","branches"].includes(resource)) && selectedQuery.isSuccess ? missing.filter(id => !selectedRows.some(row => row.id === id)) : [];
    // Hydration supplies labels at rest, but must not turn an empty search into a
    // false result (or make an out-of-scope selected row selectable).
    const visible = [...new Map([...(debounced ? rows : merged), ...selected.flatMap(id => retained.current.has(id) ? [retained.current.get(id)] : [])].map(row => [row.id, row])).values()];
    return { query, loading, selectedQuery, selectedPending: enabled && missing.length > 0 && selectedQuery.isPending, rows: merged, selectedRecords: [...rows, ...selectedRows].filter(row => selected.includes(row.id)), verifiedMissing, search: setSearch, options: visible.map(row => ({ value: row.id, label: `${row.name || row.fullName || row.id}${row.status==="inactive"?" · Inactive":""}`, disabled: !rows.some(option => option.id === row.id)||(params.status==="active"&&row.status==="inactive") })) };
 }
 
-export function ResourceLookup({ resource, value, onChange, params = {}, onSelectedRecords, ...props }: Props) {
-  const lookup = useOptions(resource, value ? [value] : [], params, !props.disabled);
+export function ResourceLookup({ resource, value, onChange, params = {}, onSelectedRecords, fixed = false, autoSole = false, ...props }: Props) {
+  const lookup = useOptions(resource, value ? [value] : [], params, fixed || !props.disabled);
+  // This request never uses picker search or hydrated selections. A partial page
+  // and an error cannot turn the first displayed result into a default.
+  const scope = useQuery<any>({
+    queryKey: ["operational-cardinality", resource, params],
+    enabled: autoSole && !fixed && !props.disabled && !!lists[resource],
+    retry: false, staleTime: 0, refetchOnWindowFocus: true, refetchInterval: 30000,
+    queryFn: () => lists[resource]({...params, search: undefined, page: 1, pageSize: 2}, {signal: AbortSignal.timeout(20000)}),
+  });
+  const sole = scope.isSuccess ? soleAssigned<any>(scope.data, !!scope.error) : null;
+  useEffect(() => { if (!value && sole && !scope.isFetching) onChange(sole.id); }, [value, sole?.id, scope.isFetching, onChange]);
    const scopeKey = JSON.stringify(params);
    const recordsKey = JSON.stringify(lookup.selectedRecords);
    const missingKey = lookup.verifiedMissing.join(",");
    useEffect(() => { if (!lookup.query.isPending && !lookup.query.error && !lookup.selectedPending && !lookup.selectedQuery.error) onSelectedRecords?.(lookup.selectedRecords, lookup.verifiedMissing); }, [scopeKey, recordsKey, missingKey, lookup.query.isPending, lookup.query.error, lookup.selectedPending, lookup.selectedQuery.error, onSelectedRecords]);
   const placeholder=props.placeholder||`Search ${lookupName(resource)}…`;
+  const awaitingScope=autoSole&&!props.disabled&&(scope.isPending||!!scope.error||scope.isSuccess&&scope.data?.total===0);
+  if (fixed || awaitingScope || (sole && (!value || value === sole.id))) {
+    const record = lookup.selectedRecords.find(row => row.id === value) || sole;
+    return <div className="fixed-scope" data-testid={`fixed-scope-${resource}`}>
+      {props.label && <label htmlFor={props.id}>{props.label}{props.required ? " *" : ""}</label>}
+      <input id={props.id} aria-label={props.label} readOnly value={record?.name || record?.fullName || (value ? lookup.loading ? "Loading saved assignment…" : "Saved assignment unavailable" : scope.isPending&&!fixed ? "Loading assigned options…" : "Not assigned")} aria-describedby={props["aria-describedby"]}/>
+      {props.error && <p role="alert" className="field-error">{props.error}</p>}
+      <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => {void lookup.query.refetch();void lookup.selectedQuery.refetch();}}/>
+      {autoSole&&scope.isSuccess&&scope.data?.total===0&&<p role="status">No active assigned {lookupName(resource)} are available in this scope. Ask your clinic administrator to review assignments.</p>}
+      <LookupError error={scope.error} retry={() => {void scope.refetch();}}/>
+    </div>;
+  }
    return <><SearchableSelect {...props} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options} onSearchChange={lookup.search} loading={lookup.loading} error={props.error||(lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{void lookup.query.refetch();if(value)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
+    {autoSole && scope.isSuccess && scope.data?.total === 0 && <p role="status">No active assigned {lookupName(resource)} are available in this scope. Ask your clinic administrator to review assignments.</p>}
+    <LookupError error={scope.error} retry={() => {void scope.refetch();}}/>
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
 }
 export function ResourceMultiLookup({ resource, value, onChange, params = {}, onRecords, onSelectedRecords, isOptionDisabled, ...props }: MultiProps) {

@@ -27,6 +27,7 @@ export async function createFeatureHarness({administration=false}={}) {
       import { patientRecordsRouter } from "./routes/patient-records";
       import { reportingRouter } from "./routes/reporting";
       ${administration ? `import { resourcesRouter } from "./routes/resources";
+      import { identityRouter } from "./routes/identity";
       import { systemUsersRouter } from "./routes/system-users";
       import { permissionPolicyRouter } from "./routes/permission-policy";
       import { nativeSession } from "./lib/native-auth";` : ""}
@@ -37,7 +38,7 @@ export async function createFeatureHarness({administration=false}={}) {
         app.use((req, _res, next) => { const id = req.get("x-test-user"); if (id) { req.authUserId = id; req.authSessionHash = "test-session-" + id; } next(); });
         app.use(express.json());
         app.use("/api", workspaceFeaturesRouter, patientRecordsRouter, reportingRouter);
-        ${administration ? `app.use("/api", resourcesRouter, systemUsersRouter, permissionPolicyRouter);` : ""}
+        ${administration ? `app.use("/api", resourcesRouter, identityRouter, systemUsersRouter, permissionPolicyRouter);` : ""}
         app.use(errors);
         return app;
       }` },

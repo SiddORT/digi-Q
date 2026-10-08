@@ -28,10 +28,10 @@ export function useSelectedCare(kind: "clinics" | "branches" | "doctors" | "pati
 }
 type CareLookupProps = {
   kind: Kind; label: string; value: string; onChange: (value: string, record?: RecordValue) => void;
-  params?: Record<string, unknown>; publicAccess?: boolean; disabled?: boolean; selectedLabel?: string;
+   params?: Record<string, unknown>; publicAccess?: boolean; disabled?: boolean; selectedLabel?: string; fixed?: boolean;
 };
 export function CareLookup(props: CareLookupProps) {
-  if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookup resource={props.kind} label={props.label} value={props.value} onChange={props.onChange} params={{ ...props.params, status: "active" }} disabled={props.disabled}/>;
+   if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookup resource={props.kind} label={props.label} value={props.value} onChange={props.onChange} params={{ ...props.params, status: "active" }} disabled={props.disabled} fixed={props.fixed} autoSole={["clinics","branches","doctors"].includes(props.kind)}/>;
   return <PublicCareLookup {...props}/>;
 }
 function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAccess = false, disabled = false, selectedLabel }: CareLookupProps) {

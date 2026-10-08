@@ -34,7 +34,8 @@ identityRouter.post("/onboarding", async (req, res) => {
 identityRouter.patch("/me", async (req, res) => {
   const user = await requireUser(req), body = parse(z.UpdateMeBody, req.body);
   await db.transaction(async tx => {
-    await change(users, user.id, { ...(body.fullName ? { fullName: body.fullName } : {}), ...(body.mobile !== undefined ? { mobile: body.mobile } : {}), data: { photoUrl: body.photoUrl ?? user.photoUrl } }, tx);
+    const [account] = await tx.select().from(users).where(eq(users.id,user.id));
+    await change(users, user.id, { ...(body.fullName ? { fullName: body.fullName } : {}), ...(body.mobile !== undefined ? { mobile: body.mobile } : {}), data: { ...account.data, photoUrl: body.photoUrl ?? user.photoUrl } }, tx);
     if (user.patientId) {
       const [p] = await tx.select().from(patients).where(eq(patients.id, user.patientId));
       await change(patients, p.id, { data: { ...p.data, ...(body.fullName ? { fullName: body.fullName } : {}) }, ...(body.mobile !== undefined ? { mobile: body.mobile, mobileVerified: body.mobile === p.mobile && p.mobileVerified } : {}) }, tx);

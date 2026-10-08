@@ -12,9 +12,17 @@ new Function("exports",ts.transpileModule(staffInputSource,moduleOptions).output
 const scoped={};
 new Function("exports","staffInput",ts.transpileModule(source.replace(/^import .*staff-input.*;\n/m,""),moduleOptions).outputText)(scoped,inputs.staffInput);
 const { clinicScopedStaffInput }=scoped;
+test("unchanged projected mappings are omitted from ordinary saves, preserving exact assignment rows",()=>{
+  const original={id:"saved",clinicIds:["one"],branchIds:["branch-only"]};
+  const body=clinicScopedStaffInput("doctors",{fullName:"Edited",email:"edited@example.invalid",clinicIds:["one"],branchIds:["branch-only"]},original);
+  assert.equal(body.clinicIds,undefined);
+  assert.equal(body.branchIds,undefined);
+  const changed=clinicScopedStaffInput("doctors",{fullName:"Edited",email:"edited@example.invalid",clinicIds:["one"],branchIds:[]},original);
+  assert.deepEqual(changed.branchIds,[],"an explicit removal remains writable");
+});
 test("embedded staff queries always include the fixed clinic",()=>{
   assert.match(ui,/clinicId:\s*clinicId \|\| context\.clinicId \|\| undefined/);
-  assert.match(ui,/!clinicId&&draftTab !== "admins"/);
+  assert.match(ui,/!clinicId&&<ResourceLookup resource=\{draftTab==="admins"\?"clinics":"assignment:clinics"\}/);
   assert.match(ui,/onOpen=\{openFilters\} onApply=\{applyFilters\}/);
 });
 test("account status is a drafted drawer filter with read-only counts; no status/sort tabs",()=>{

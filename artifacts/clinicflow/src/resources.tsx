@@ -102,7 +102,7 @@ export const resources:Record<string,Resource>={
 /** Section E: one wording for contact vs notification vs sign-in, used wherever a patient is registered. */
 export const PATIENT_CONTACT_RULE="Name is required. Mobile and email are optional booking contacts. Notifications are sent only when the clinic enables them and a matching contact exists; adding a contact never creates a sign-in account.";
 export function PatientEditor({initial={},onSave,busy=false,submitLabel="Save Patient",withContext=false}:{initial?:any;onSave:(data:any)=>void;busy?:boolean;submitLabel?:string;withContext?:boolean}){
- return <Editor resourceName="patients" fields={resources.patients.fields.filter(field=>withContext||!["clinicId","branchId"].includes(field.key))} initial={initial} onSave={onSave} busy={busy} submitLabel={submitLabel}/>;
+ return <Editor resourceName="patients" fields={resources.patients.fields.filter(field=>withContext||!!initial.clinicId||!["clinicId","branchId"].includes(field.key))} initial={!withContext&&initial.clinicId?{...initial,verifiedBookingContext:true}:initial} onSave={onSave} busy={busy} submitLabel={submitLabel}/>;
 }
 /** Free-text field with optional suggestions from the clinic's curated masters (e.g. Area). Address parts use AddressFields. */
 function MasterTextInput({field,control}:any){
@@ -122,14 +122,21 @@ function ExceptionSessionInput({form,label}:{form:ReturnType<typeof useForm>;lab
  const needsSession=!closed&&(sessions.data?.total||rows.length)>1;
  return <Controller name="sessionId" control={form.control} rules={{validate:value=>!needsSession||!!value||"Choose a session for this date exception."}} render={({field,fieldState})=><div><SearchableSelect label={needsSession?"Session":label.replace(/\s*\(optional.*$/,"")} required={needsSession} value={field.value||""} onChange={field.onChange} placeholder={needsSession?"Select a session…":closed?"All sessions":"Only weekly session"} error={fieldState.error?.message} loading={sessions.isFetching} onRetry={()=>void sessions.refetch()} options={rows.map(session=>({value:session.id,label:`${formatTime(session.startTime,preferences)}–${formatTime(session.endTime,preferences)}`}))}/><small className="muted field-hint">Session scope <HelpTip label="About session scope" text={closed?"A closure can apply to all sessions.":"Timing overrides require a specific session when this date has more than one weekly session."}/></small><ErrorNotice error={sessions.error}/></div>}/>;
 }
-function RelationInput({field,form,fields,resourceName,label}:any){
+function RelationInput({field,form,fields,resourceName,label,initial}:any){
+  const pin=useWorkspaceBranch();
  const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),staleTime:60000}});
  const values=form.watch();
  const many=field.key.endsWith("Ids");
  const clinicIds=values.clinicIds || (values.clinicId?[values.clinicId]:[]);
  const hasClinic=fields.some((f:Field)=>["clinicId","clinicIds"].includes(f.key));
  const assignment=((resourceName==="doctors"||resourceName==="users")&&["clinics","branches"].includes(field.resource))||(resourceName==="branches"&&field.resource==="clinics"&&me.data?.user?.role==="doctor");
+  const operational=["patients","availability","exceptions","qrs"].includes(resourceName);
+  const immutablePatient=resourceName==="patients"&&!!initial?.id&&me.data?.user?.role!=="superAdmin"&&["clinicId","branchId"].includes(field.key);
+  const contextual=operational&&!initial?.id&&["clinicId","branchId"].includes(field.key)&&(initial?.verifiedBookingContext || initial?.verifiedClinicContext&&field.key==="clinicId" || pin&&initial?.branchId===pin.branchId&&initial?.clinicId===pin.clinicId);
+  const selfDoctor=operational&&field.key==="doctorId"&&me.data?.user?.role==="doctor"&&values.doctorId===me.data?.doctorId;
  const params:Record<string,unknown>=field.category?{category:field.category}:{};
+  if(operational && !immutablePatient && ["clinics","branches","doctors"].includes(field.resource))params.status="active";
+  if(operational && field.resource==="clinics" && values.doctorId)params.doctorId=values.doctorId;
  if(field.resource==="users")params.role="clinicAdmin";
  if(field.resource==="branches"){
    if(clinicIds.length)params.clinicId=clinicIds.join(",");
@@ -152,16 +159,22 @@ function RelationInput({field,form,fields,resourceName,label}:any){
       for(const dependent of ["branchId","branchIds","doctorId"])if(fields.some((f:Field)=>f.key===dependent))form.setValue(dependent,dependent.endsWith("Ids")?[]:"",{shouldDirty:true});
     }
  };
-  const validateSelected=(records:any[],verifiedMissing:string[])=>{
-    if(!hasClinic||!["branches","doctors"].includes(field.resource))return;
+   const contextKey=JSON.stringify([clinicIds,field.resource==="branches"||field.resource==="clinics"?values.doctorId:values.branchId]);
+   const originalContext=useRef(contextKey);
+   const validateSelected=(records:any[],verifiedMissing:string[])=>{
+     if(immutablePatient || contextKey===originalContext.current)return;
+     if(!["branches","doctors","clinics"].includes(field.resource)||(!hasClinic&&field.resource!=="clinics"))return;
     const current=form.getValues();
     const selected:string[]=many?current[field.key]||[]:current[field.key]?[current[field.key]]:[];
     if(!selected.length)return;
     const clinics:string[]=current.clinicIds|| (current.clinicId?[current.clinicId]:[]);
     const valid=validDependentIds(field.resource,selected,records,clinics,current.branchId).filter(id=>!verifiedMissing.includes(id));
-    if(valid.length!==selected.length)form.setValue(field.key,many?valid:valid[0]||"",{shouldValidate:true,shouldDirty:true});
+     if(valid.length!==selected.length){
+       form.setValue(field.key,many?valid:valid[0]||"",{shouldValidate:true,shouldDirty:true});
+       if(field.key==="clinicId"&&fields.some((f:Field)=>f.key==="branchId"))form.setValue("branchId","",{shouldValidate:true,shouldDirty:true});
+     }
   };
-   const props={id:`input-${field.key}`,error:form.formState.errors[field.key]?.message,resource:assignment?`assignment:${field.resource}`:field.resource,params,label,placeholder:`Search ${label.toLowerCase()}…`,disabled:["branches","doctors"].includes(field.resource)&&hasClinic&&!clinicIds.length,required:field.required,onChange:change,onSelectedRecords:validateSelected};
+   const props={id:`input-${field.key}`,error:form.formState.errors[field.key]?.message,resource:assignment?`assignment:${field.resource}`:field.resource,params,label,placeholder:`Search ${label.toLowerCase()}…`,disabled:!immutablePatient&&!contextual&&["branches","doctors"].includes(field.resource)&&hasClinic&&!clinicIds.length,required:field.required,onChange:change,onSelectedRecords:validateSelected,fixed:immutablePatient||!!contextual||selfDoctor,autoSole:operational&&!immutablePatient&&(field.required||resourceName==="patients")};
  return many?<ResourceMultiLookup {...props} value={values[field.key]||[]}/>:<ResourceLookup {...props} value={values[field.key]||""}/>;
 }
  /** Groups long editors into consistent titled sections. Order is stable inside a group; no field is removed. */
@@ -188,7 +201,8 @@ const groupsFor=(kind:EditorKind)=>kind==="location"?LOCATION_EDITOR_GROUPS:kind
 export const isLocationEditor=(fields:{key:string}[])=>fields.some(field=>field.key==="inheritEmail");
 export function editorGroup(key:string,location:boolean|EditorKind=false){const kind:EditorKind=location===true?"location":location||undefined;const groups=groupsFor(kind);return (groups.find(([,keys])=>keys.includes(key))||groups[0])[0];}
 function sortEditorFields<T extends {key:string}>(fields:T[],grouped:boolean,kind:EditorKind=undefined){if(!grouped)return fields;const groups=groupsFor(kind);const rank=(k:string)=>{const g=groups.findIndex(([g])=>g===editorGroup(k,kind));const keys=groups[g]?.[1]||[];return g*100+(kind&&keys.includes(k)?keys.indexOf(k):50);};return fields.map((f,i)=>({f,i})).sort((a,b)=>rank(a.f.key)-rank(b.f.key)||a.i-b.i).map(x=>x.f);}
-export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel="Save Changes",resourceName,onDirtyChange,reviewOnly=false,children}:{fields:Field[];initial?:any;onSave:(data:any)=>void;onCancel?:()=>void;busy?:boolean;submitLabel?:string;resourceName?:string;onDirtyChange?:(dirty:boolean)=>void;reviewOnly?:boolean;children?:ReactNode}){
+export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel="Save Changes",resourceName,onDirtyChange,reviewOnly=false,children,refreshInitial=false,savedRevision=0}:{fields:Field[];initial?:any;onSave:(data:any)=>void;onCancel?:()=>void;busy?:boolean;submitLabel?:string;resourceName?:string;onDirtyChange?:(dirty:boolean)=>void;reviewOnly?:boolean;children?:ReactNode;refreshInitial?:boolean;savedRevision?:number}){
+  const identity=api.useGetMe({query:{queryKey:api.getGetMeQueryKey()}});
  const confirmation=useConfirm();
  const [activeTab,setActiveTab]=useState(0);
  const [moreDetails,setMoreDetails]=useState(()=>resourceName==="patients"&&PATIENT_SECONDARY.some(key=>!!initial[key]));
@@ -197,6 +211,18 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
   const legacyBoth=resourceName==="exceptions"&&!!initialValues.isClosed&&!!initialValues.isExtra;
   if(legacyBoth)initialValues.isClosed=false;
   const form=useForm<Record<string,any>>({defaultValues:{...fields.some(field=>field.key==="timezone")?{timezone:Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC"}:{},...initialValues}});
+   // Live profile reads refresh untouched fields, never the user's dirty draft.
+   // A successful save publishes its response before advancing savedRevision,
+   // so submitted fields become clean and can receive subsequent updates.
+   const incomingKey=JSON.stringify(initialValues);
+   const synchronized=useRef({key:incomingKey,revision:savedRevision});
+   const dirtyFields=form.formState.dirtyFields;
+   useEffect(()=>{
+     if(!refreshInitial||synchronized.current.key===incomingKey&&synchronized.current.revision===savedRevision)return;
+     const keepDraft=synchronized.current.revision===savedRevision;
+     synchronized.current={key:incomingKey,revision:savedRevision};
+     form.reset(initialValues,{keepDirtyValues:keepDraft,keepErrors:keepDraft,keepTouched:keepDraft});
+   },[refreshInitial,incomingKey,savedRevision,form.reset,dirtyFields]);
  const submitting=useRef(false);
  useEffect(()=>{if(!busy)submitting.current=false;},[busy]);
  useEffect(()=>{onDirtyChange?.(form.formState.isDirty);},[form.formState.isDirty,onDirtyChange]);
@@ -238,11 +264,15 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
 
    return <Form {...form}><div className="editor-container"><form className="form-grid field-grid" noValidate data-location-editor={locationEditor||undefined} data-testid={locationEditor?"location-editor":undefined} onSubmit={submitWithNativeChecks(form,values=>{if(resourceName==="patients"){const secondary=secondaryFieldErrors(values);const keys=Object.keys(secondary);if(keys.length){keys.forEach(key=>form.setError(key,{type:"validate",message:secondary[key]}));setMoreDetails(true);setTimeout(()=>document.getElementById(`input-${keys[0]}`)?.focus()||document.querySelector<HTMLElement>(`[name="${CSS.escape(keys[0])}"]`)?.focus(),0);return;}}if(!beginEditorSubmission(submitting,busy,reviewOnly))return;const body:any={}; activeFields.forEach(field=>{
     if(field.disabled)return;
+    // Demographic edits never submit a registration move, including an empty
+    // optional location. The server retains the persisted assignment exactly.
+    if(resourceName==="patients"&&initial.id&&identity.data?.user?.role!=="superAdmin"&&["clinicId","branchId"].includes(field.key))return;
     let value=values[field.key];
     if(typeof value==="string")value=value.trim();
     if(field.type==="tel"&&value)value=normalizePhone(value);
     if(field.key==="age")value=ageFromDateOfBirth(values.dateOfBirth)??initial.age;
     const isClinicOrBranchMapping = field.key === "clinicIds" || field.key === "branchIds";
+     if(isClinicOrBranchMapping&&initial.id&&JSON.stringify([...(value||[])].sort())===JSON.stringify([...(initial[field.key]||[])].sort()))return;
     if (field.key === "adminId" || field.key === "ownerAdminId") {
       if (field.hidden || value === initial[field.key]) return;
     } else if (field.hidden) {
@@ -284,7 +314,7 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
     if(field.type==="tel")return <Controller key={field.key} name={field.key} control={form.control} rules={rules} render={({field:input})=><FormField label={label} required={field.required} optional={!field.required} error={error}><PhoneInput {...input} value={input.value||""}/></FormField>}/>;
     if(field.type==="date"||field.type==="time")return <Controller key={field.key} name={field.key} control={form.control} rules={{...rules,validate:value=>rules.validate(value)!==true?rules.validate(value):field.key==="endTime"&&startTime&&value&&startTime>=value?"Closing time must follow opening time.":true}} render={({field:input})=><FormField id={`input-${field.key}`} label={label} required={field.required} optional={!field.required} error={error} helper={field.key==="dateOfBirth"&&!fields.some(item=>item.key==="age")?<output aria-label="Age (read only)">Age (read only): {ageFromDateOfBirth(input.value)??"—"}</output>:undefined}>{a11y=>field.type==="date"?<DateFormatInput {...a11y} name={field.key} preferences={preferences} value={input.value instanceof Date?input.value.toISOString().slice(0,10):input.value||""} onChange={input.onChange}/>:<TimeFormatInput {...a11y} name={field.key} preferences={preferences} value={input.value||""} onChange={input.onChange}/>}</FormField>}/>;
     if(field.type==="session")return <ExceptionSessionInput key={field.key} form={form} label={label}/>;
-    if(field.resource)return <div className={field.type==="textarea"||field.wide?"wide":""} key={field.key}><RelationInput field={field} form={form} fields={fields} resourceName={resourceName} label={label}/>{error&&<small className="field-error">{error}</small>}</div>;
+    if(field.resource)return <div className={field.type==="textarea"||field.wide?"wide":""} key={field.key}><RelationInput field={field} form={form} fields={fields} resourceName={resourceName} label={label} initial={initial}/>{error&&<small className="field-error">{error}</small>}</div>;
     if(field.type==="addressPart")return null;
     if(field.type==="address")return <EditorAddress key={field.key} form={form} required={field.required}/>;
     if(field.type==="masterText")return <label key={field.key} className="address-compact">{label}{field.required&&<span className="required"> *</span>}<MasterTextInput field={field} control={form.control} setValue={form.setValue}/>{error&&<small className="field-error">{error}</small>}</label>;
@@ -454,7 +484,10 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  // Workspace location: patients, weekly sessions and exceptions follow the top-bar location. Clinic settings (fixedClinicId) stay unrestricted.
  const workspacePin=useWorkspaceBranch();
  const branchPin=workspacePin&&!fixedClinicId&&["patients","availability","exceptions"].includes(resource)?workspacePin:null;
- const pinDefaults:Record<string,string>=branchPin?{branchId:branchPin.branchId,...resource==="patients"?{}:{clinicId:branchPin.clinicId}}:{};
+ const pinDefaults:Record<string,string>=branchPin?{branchId:branchPin.branchId,clinicId:branchPin.clinicId}:{};
+ // Apply verified workspace context to NEW editor input, not just list filters.
+ // Existing row values still take precedence when opening an edit.
+ defaults={...defaults,...pinDefaults,...fixedClinicId?{clinicId:fixedClinicId,verifiedClinicContext:true}:{}};
  const [success,setSuccess]=useState("");
  const term=useDebouncedValue(search);
  const supportsSearch=true;

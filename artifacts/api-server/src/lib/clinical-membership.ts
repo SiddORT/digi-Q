@@ -5,7 +5,7 @@ import { all } from "./store";
 // Single source of truth for clinical (not administrative) branch membership.
 // An administrator's clinic-only assignment is necessary but never sufficient:
 // the branch must also be explicitly selected on their self-owned doctor profile.
-export function clinicalMembership(doctorId: SQL, branchId?: SQL): SQL {
+export function clinicalMembership(doctorId: SQL, branchId?: SQL, clinicId?: SQL): SQL {
   return sql`exists (
     select 1 from doctors cm_d
     join users cm_u on cm_u.id=cm_d.user_id and cm_u.status='active'
@@ -13,6 +13,7 @@ export function clinicalMembership(doctorId: SQL, branchId?: SQL): SQL {
     join clinics cm_c on cm_c.id=cm_b.clinic_id and cm_c.status='active'
     where cm_d.id=${doctorId} and cm_d.status='active'
       ${branchId ? sql`and cm_b.id=${branchId}` : sql``}
+      ${clinicId ? sql`and cm_c.id=${clinicId}` : sql``}
       and (
         (cm_u.role='doctor' and exists (
           select 1 from assignments cm_a where cm_a.user_id=cm_d.user_id

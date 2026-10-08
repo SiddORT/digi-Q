@@ -12,7 +12,7 @@ export type BranchPin = { branchId: string; clinicId: string; name: string; clin
 type Ctx = {
   /** Roles that use the selector (doctor, receptionist, clinicAdmin). Patients, guests and super admins are never scoped. */
   enabled: boolean;
-  status: "off" | "loading" | "error" | "none" | "ready";
+  status: "off" | "loading" | "error" | "none" | "choice" | "ready";
   branches: WorkspaceBranchOption[];
   pin: BranchPin | null;
   error: unknown;
@@ -29,9 +29,10 @@ async function loadAccessibleBranches(identity: api.Identity): Promise<Workspace
   for (let page = 1; page < 20; page++) {
     const res = await api.listBranches({ status: "active", page, pageSize: 100, ...(doctorId ? { doctorId } : {}) } as api.ListBranchesParams);
     items.push(...res.items.map((b: any) => ({ id: b.id, clinicId: b.clinicId, name: b.name, clinicName: b.clinicName || "" })));
-    if (items.length >= res.total || !res.items.length) break;
+    if (items.length >= res.total) return items.sort((a,b)=>a.clinicName.localeCompare(b.clinicName)||a.name.localeCompare(b.name));
+    if (!res.items.length) throw new Error("Your assigned locations were only partially loaded. Retry Locations.");
   }
-  return items.sort((a, b) => a.clinicName.localeCompare(b.clinicName) || a.name.localeCompare(b.name));
+  throw new Error("Your assigned locations could not be fully loaded. Retry Locations.");
 }
 
 export function WorkspaceBranchProvider({ identity, children }: { identity: api.Identity; children: ReactNode }) {
@@ -68,7 +69,7 @@ export function WorkspaceBranchProvider({ identity, children }: { identity: api.
     setSelected(branchId);
     void client.invalidateQueries({ predicate: query => query.queryKey[0] !== "workspace-branches" });
   };
-  const status: Ctx["status"] = !enabled ? "off" : q.isLoading ? "loading" : q.error ? "error" : !branches.length ? "none" : pin ? "ready" : "loading";
+  const status: Ctx["status"] = !enabled ? "off" : q.isLoading ? "loading" : q.error ? "error" : !branches.length ? "none" : pin ? "ready" : branches.length > 1 ? "choice" : "loading";
   const value: Ctx = { enabled, status, branches, pin: enabled ? pin : null, error: q.error, retry: () => void q.refetch(), select, registerUnsaved };
   return <BranchContext.Provider value={value}>{confirmation.dialog}{children}</BranchContext.Provider>;
 }
@@ -103,6 +104,7 @@ export function BranchScopeGate({ page, children }: { page: string; children: Re
   if (ctx.status === "loading") return <div className="skeleton" role="status" data-testid="status-branch-loading">Loading your locations…</div>;
   if (ctx.status === "error") return <div className="error-box" role="alert" data-testid="status-branch-error">Your locations could not be loaded, so location-specific data is hidden. {friendlyError(ctx.error, "load")} <button type="button" onClick={ctx.retry} data-testid="button-branch-retry">Retry Locations</button></div>;
   if (ctx.status === "none") return <div className="empty" role="status" data-testid="status-branch-none"><span className="empty-icon"><MapPin size={24} aria-hidden /></span><h3>No active location assigned</h3><p>Ask your clinic administrator to assign you to an active location.</p></div>;
+  if (ctx.status === "choice") return <section className="panel" aria-label="Choose operational location"><h2>Choose your clinic</h2><p>You have several assigned clinics. Choose one to continue.</p>{ctx.branches.map(b=><button key={b.id} type="button" className="button secondary" onClick={()=>void ctx.select(b.id)}>{b.name} · {b.clinicName}</button>)}</section>;
   return <div key={ctx.pin!.branchId} className="branch-scope" data-branch-id={ctx.pin!.branchId}>{children}</div>;
 }
 
@@ -124,6 +126,7 @@ export function LocationSelector() {
   if (!ctx.enabled) return null;
   if (ctx.status === "loading") return <span className="loc-select is-fixed" role="status" data-testid="status-location-loading"><MapPin size={15} aria-hidden /><span className="loc-name">Loading location…</span></span>;
   if (ctx.status === "error") return <button type="button" className="loc-select is-error" onClick={ctx.retry} data-testid="button-location-retry"><MapPin size={15} aria-hidden /><span className="loc-name">Locations unavailable · Retry</span></button>;
+  if (ctx.status === "choice") return <span className="loc-select is-fixed" role="status">Choose a clinic below</span>;
   if (ctx.status === "none" || !ctx.pin) return <span className="loc-select is-fixed" data-testid="text-location-none"><MapPin size={15} aria-hidden /><span className="loc-name">No location</span></span>;
   if (ctx.branches.length < 2) return <span className="loc-select is-fixed" title={`${ctx.pin.name} · ${ctx.pin.clinicName}`} data-testid="text-location-fixed"><MapPin size={15} aria-hidden /><span className="loc-name">{ctx.pin.name}</span></span>;
   const t = term.trim().toLowerCase();

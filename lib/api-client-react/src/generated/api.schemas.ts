@@ -2786,6 +2786,12 @@ date: string;
 };
 
 export type ListClinicsParams = {
+/**
+ * Comma-separated exact IDs within existing scope (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: SelectedIdsParameter;
+doctorId?: DoctorIdParameter;
 search?: SearchParameter;
 status?: StatusParameter;
 adminId?: string;
@@ -2806,6 +2812,11 @@ sort?: SortParameter;
 };
 
 export type ListBranchesParams = {
+/**
+ * Comma-separated exact IDs within existing scope (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: SelectedIdsParameter;
 doctorId?: DoctorIdParameter;
 clinicId?: ClinicIdParameter;
 search?: SearchParameter;
@@ -2826,6 +2837,11 @@ sort?: SortParameter;
 };
 
 export type ListDoctorsParams = {
+/**
+ * Comma-separated exact IDs within existing scope (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: SelectedIdsParameter;
 search?: SearchParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;

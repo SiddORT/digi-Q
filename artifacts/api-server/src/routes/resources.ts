@@ -130,7 +130,7 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
     if (user.role === "patient") assert(body.clinicId === undefined && body.branchId === undefined && body.status === undefined, 403, "Patients cannot change registration scope or status");
     else assert(body.clinicId || old?.clinicId || user.role === "superAdmin", 400, "Clinic registration is required");
     if (old && user.role !== "patient" && user.role !== "superAdmin") assert(scope(user, old.clinicId, old.branchId), 403, "Only the registering clinic may edit this patient's demographics");
-    if (old && user.role !== "superAdmin") assert((!body.clinicId || body.clinicId === old.clinicId) && (!body.branchId || body.branchId === old.branchId), 403, "Registration assignments cannot be moved");
+    if (old && user.role !== "superAdmin") assert((body.clinicId === undefined || body.clinicId === old.clinicId) && (body.branchId === undefined || body.branchId === old.branchId), 403, "Registration assignments cannot be moved");
   } else if (kind === "branches") {
     roles(user, ["superAdmin", "clinicAdmin", "doctor"]);
   } else roles(user, ["superAdmin", "clinicAdmin", "doctor", ...(["qrs", "schedules", "availability-exceptions"].includes(kind) ? ["receptionist"] : [])]);
@@ -436,6 +436,8 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       const requestedClinics = body.clinicIds === undefined ? old?.clinicIds || [] : body.clinicIds;
       const requestedBranches = body.branchIds === undefined ? old?.branchIds || [] : body.branchIds;
       const assignmentChangeRequested = body.clinicIds !== undefined || body.branchIds !== undefined;
+      const sameIds=(left:string[],right:string[])=>JSON.stringify([...new Set(left)].sort())===JSON.stringify([...new Set(right)].sort());
+      const unchangedMappings=old&&sameIds(requestedClinics,old.clinicIds||[])&&sameIds(requestedBranches,old.branchIds||[]);
       const explicitDoctorTransfer = old && kind === "doctors" && user.role === "superAdmin" && ownershipChangeRequested(body.ownerAdminId, old.ownerAdminId);
       const expectedManager = old && !explicitDoctorTransfer ? (kind === "doctors" ? old.ownerAdminId : old.managingAdminId) : undefined;
       let managingAdminId: string | undefined;
@@ -447,7 +449,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       if (kind === "doctors" && old) {
         const account = await one(users, userId, tx);
         if (account.role === "clinicAdmin") {
-          assert(old.ownerAdminId === userId && user.id === userId && account.status === "active", 403, "Only the active owning Clinic Admin can edit their clinical profile");
+          assert(old.ownerAdminId === userId && (user.role === "superAdmin" || user.id === userId) && account.status === "active", 403, "Only Super Admin or the active owning Clinic Admin can edit their clinical profile");
           managingAdminId = userId;
           // Updating or deactivating the clinical capability must never downgrade
           // or deactivate the owning administrative account.
@@ -472,7 +474,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         assert(owner.role === "clinicAdmin" && owner.status === "active", 400, "Please select an active Clinic Admin");
         if (old) await change(users, userId, uf, tx); else await put(users, { id: userId, ...uf }, tx);
         // Section C: doctor profile and its account share one address.
-        const personAddress = Object.fromEntries(ADDRESS_KEYS.filter(key => body[key] !== undefined).map(key => [key, body[key]]));
+        const personAddress = Object.fromEntries([...ADDRESS_KEYS,"photoUrl"].filter(key => body[key] !== undefined).map(key => [key, body[key]]));
         if (Object.keys(personAddress).length) await mergeAddress(users, userId, personAddress, tx);
         fields.userId = userId; fields.data.code ||= `DOC-${id.slice(0,8)}`;
       } else {
@@ -483,6 +485,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         const linkedPatient = (await all(patients, tx)).find(p => p.userId === old.id);
         if (linkedPatient && body.mobile !== undefined && body.mobile !== linkedPatient.mobile) await change(patients, linkedPatient.id, { mobile: body.mobile, mobileVerified: false }, tx);
         const linkedDoctor = (await all(doctors, tx)).find(d => d.userId === old.id);
+        if (linkedDoctor) await change(doctors, linkedDoctor.id, { data: { ...linkedDoctor, fullName: body.fullName, email: body.email, ...(body.mobile !== undefined ? { mobile: body.mobile } : {}) } }, tx);
         if (linkedDoctor && body.status) await change(doctors, linkedDoctor.id, { status: body.status }, tx);
         const addressPatch = Object.fromEntries(ADDRESS_KEYS.filter(key => body[key] !== undefined).map(key => [key, body[key]]));
         if (linkedDoctor && Object.keys(addressPatch).length) await mergeAddress(doctors, linkedDoctor.id, addressPatch, tx);
@@ -493,7 +496,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         assert(body.clinicIds === undefined && body.branchIds === undefined, 409, "Clinic Admin assignments are managed only through clinic ownership");
       }
       const row = old ? await change(table, id, fields, tx) : await put(table, { id, ...fields }, tx);
-      if (uf.role !== "clinicAdmin" && ["doctor", "receptionist"].includes(role) && (!old || assignmentChangeRequested)) {
+      if (uf.role !== "clinicAdmin" && ["doctor", "receptionist"].includes(role) && (!old || assignmentChangeRequested && !unchangedMappings)) {
         await setAssignments(userId, requestedClinics, requestedBranches, user, managingAdminId!, tx);
       }
       if (kind === "users" && !old && body.role === "patient") await put(patients, { id: uid(), userId, mobile: body.mobile || "", data: { fullName: body.fullName, email: body.email, code: `PAT-${id.slice(0,8)}` } }, tx);

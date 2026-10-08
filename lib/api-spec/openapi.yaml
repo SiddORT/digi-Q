@@ -632,7 +632,7 @@ paths:
   /clinics:
     get:
       operationId: listClinics
-      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { name: adminId, in: query, schema: { type: string } }, { name: city, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ $ref: "#/components/parameters/SelectedIds" }, { $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { name: adminId, in: query, schema: { type: string } }, { name: city, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Scoped clinics, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicList" } } } }
     post:
@@ -658,7 +658,7 @@ paths:
   /branches:
     get:
       operationId: listBranches
-      parameters: [{ $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ $ref: "#/components/parameters/SelectedIds" }, { $ref: "#/components/parameters/DoctorId" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/Status" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Branches, content: { application/json: { schema: { $ref: "#/components/schemas/BranchList" } } } }
     post:
@@ -684,7 +684,7 @@ paths:
   /doctors:
     get:
       operationId: listDoctors
-      parameters: [{ $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: managingAdminId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Status" }, { name: specializationId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
+      parameters: [{ $ref: "#/components/parameters/SelectedIds" }, { $ref: "#/components/parameters/Search" }, { $ref: "#/components/parameters/ClinicId" }, { $ref: "#/components/parameters/BranchId" }, { name: managingAdminId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Status" }, { name: specializationId, in: query, schema: { type: string } }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Sort" }]
       responses:
         "200": { description: Doctors only, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorList" } } } }
     post:

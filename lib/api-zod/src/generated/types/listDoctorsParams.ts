@@ -25,10 +25,16 @@ import type { ClinicIdParameter } from './clinicIdParameter';
 import type { PageParameter } from './pageParameter';
 import type { PageSizeParameter } from './pageSizeParameter';
 import type { SearchParameter } from './searchParameter';
+import type { SelectedIdsParameter } from './selectedIdsParameter';
 import type { SortParameter } from './sortParameter';
 import type { StatusParameter } from './statusParameter';
 
 export type ListDoctorsParams = {
+/**
+ * Comma-separated exact IDs within existing scope (maximum 100).
+ * @maxLength 10000
+ */
+selectedIds?: SelectedIdsParameter;
 search?: SearchParameter;
 clinicId?: ClinicIdParameter;
 branchId?: BranchIdParameter;

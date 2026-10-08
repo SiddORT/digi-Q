@@ -24,7 +24,8 @@ test("selector only for staff and doctors, never patients, guests or super admin
 
 test("saved choice is validated against the current authorized active list", () => {
   assert.equal(W.resolveSavedBranch("b2", list), "b2");
-  assert.equal(W.resolveSavedBranch("revoked", list), "b1", "revoked or inactive saved branch falls back to an authorized one");
+  assert.equal(W.resolveSavedBranch("revoked", list), "", "multiple assigned locations require an explicit choice");
+  assert.equal(W.resolveSavedBranch("", [list[0]]), "b1", "a sole authorized location is reused");
   assert.equal(W.resolveSavedBranch("b2", []), "", "no fallback to all branches when nothing is authorized");
   assert.equal(W.workspaceBranchKey("u1"), "dq.workspace.branch.u1");
 });

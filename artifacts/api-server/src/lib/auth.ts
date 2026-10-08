@@ -1,6 +1,6 @@
 import type { Request } from "express";
 import { db, users, doctors, patients, assignments, branches, clinics, appointments, settings } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { assert, HttpError } from "./http";
 import { all, flatten, one, uid } from "./store";
 import { isClinicalMember } from "./clinical-membership";
@@ -126,19 +126,22 @@ export async function projectAssignmentScope(user: any, kind: string, row: any) 
   };
 }
 export async function setAssignments(userId: string, clinicIds: string[], branchIds: string[], actor: any, managingAdminId: string, conn: any = db) {
+  await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"assignments:" + userId}))`);
   clinicIds = [...new Set(clinicIds)];
   branchIds = [...new Set(branchIds)];
   const target = await one(users, userId, conn);
   assert(target.role !== "clinicAdmin", 409, "Clinic administrator access is changed only by transferring clinic ownership");
   const existing = (await all(assignments, conn)).filter(a => a.userId === userId);
   const finalClinicIds = new Set(clinicIds);
-  for (const link of existing) await conn.delete(assignments).where(eq(assignments.id, link.id));
-  for (const clinicId of clinicIds) await conn.insert(assignments).values({ id: uid(), userId, clinicId }).onConflictDoNothing();
+  const desired: {clinicId:string;branchId:string|null}[] = clinicIds.map(clinicId=>({clinicId,branchId:null}));
   for (const branchId of branchIds) {
     const branch = await one(branches, branchId, conn);
     assert(finalClinicIds.has(branch.clinicId), 400, "Branch must belong to assigned clinic");
-    await conn.insert(assignments).values({ id: uid(), userId, clinicId: branch.clinicId, branchId }).onConflictDoNothing();
+    desired.push({clinicId:branch.clinicId,branchId});
   }
+  const matches=(a:any,b:any)=>a.clinicId===b.clinicId&&(a.branchId||null)===(b.branchId||null);
+  for(const link of existing)if(!desired.some(wanted=>matches(link,wanted)))await conn.delete(assignments).where(eq(assignments.id,link.id));
+  for(const wanted of desired)if(!existing.some(link=>matches(link,wanted)))await conn.insert(assignments).values({id:uid(),userId,...wanted}).onConflictDoNothing();
 }
 export async function validateAssignments(actor: any, clinicIds: string[], branchIds: string[], targetRole: string, expectedManagingAdminId?: string, conn: any = db) {
   clinicIds = [...new Set(clinicIds)]; branchIds = [...new Set(branchIds)];

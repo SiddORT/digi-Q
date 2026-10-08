@@ -36,11 +36,19 @@ export function clinicScopedStaffInput(
   branchClinic?:ReadonlyMap<string,{clinicId?:string}>,
 ) {
   const body=staffInput(tab,values);
-  if(!clinicId || tab==="admins") return body;
+  if(clinicId && tab!=="admins") {
   body.clinicIds=[...new Set([...(original.clinicIds||[]).filter(id=>id!==clinicId),clinicId])];
   const selected=Array.isArray(values.branchIds) ? values.branchIds.filter((id):id is string=>typeof id==="string") : [];
   // Unknown original branches are retained until their actual location can be verified.
   const retained=(original.branchIds||[]).filter(id=>!selected.includes(id)&&branchClinic?.get(id)?.clinicId!==clinicId);
   body.branchIds=[...new Set([...selected,...retained])];
+  }
+  // Displayed group IDs may be projections of branch-only links. Rebuilding
+  // identical arrays would silently add broader clinic-level assignment rows.
+  if((original as any).id)for(const key of ["clinicIds","branchIds"] as const){
+    const before=[...new Set(original[key]||[])].sort();
+    const after=[...new Set(body[key]||[])].sort();
+    if(JSON.stringify(before)===JSON.stringify(after))delete body[key];
+  }
   return body;
 }
