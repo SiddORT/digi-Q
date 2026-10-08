@@ -2,7 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useR
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import * as api from "@workspace/api-client-react";
-import { Check, ChevronDown, MapPin, Search } from "lucide-react";
+import { ChevronDown, MapPin } from "lucide-react";
+import { LocationMenu } from "./LocationMenu";
 import { useConfirm } from "./ConfirmDialog";
 import { friendlyError } from "../lib/friendly-error";
 import { BRANCH_SCOPED_PAGES, branchSelectorMode, resolveSavedBranch, scopedQueryStrip, workspaceBranchKey, type WorkspaceBranchOption } from "../lib/workspace-branch";
@@ -118,15 +119,11 @@ export function BranchScopeGate({ page, children }: { page: string; children: Re
 export function LocationSelector() {
   const ctx = useWorkspaceBranchContext();
   const [open, setOpen] = useState(false);
-  const [term, setTerm] = useState("");
-  const [active, setActive] = useState(0);
-  const wrap = useRef<HTMLDivElement>(null), input = useRef<HTMLInputElement>(null);
-  const listId = useId();
+  const wrap = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
     const outside = (e: PointerEvent) => { if (!wrap.current?.contains(e.target as Node)) setOpen(false); };
     document.addEventListener("pointerdown", outside);
-    requestAnimationFrame(() => input.current?.focus());
     return () => document.removeEventListener("pointerdown", outside);
   }, [open]);
   if (!ctx.enabled) return null;
@@ -135,25 +132,11 @@ export function LocationSelector() {
   if (ctx.status === "choice") return <span className="loc-select is-fixed" role="status">Choose a clinic below</span>;
   if (ctx.status === "none" || !ctx.pin) return <span className="loc-select is-fixed" data-testid="text-location-none"><MapPin size={15} aria-hidden /><span className="loc-name">No location</span></span>;
   if (ctx.branches.length < 2) return <span className="loc-select is-fixed" title={`${ctx.pin.name} · ${ctx.pin.clinicName}`} data-testid="text-location-fixed"><MapPin size={15} aria-hidden /><span className="loc-name">{ctx.pin.name}</span></span>;
-  const t = term.trim().toLowerCase();
-  const options = ctx.branches.filter(b => !t || `${b.name} ${b.clinicName}`.toLowerCase().includes(t));
-  const choose = (id: string) => { setOpen(false); setTerm(""); void ctx.select(id); };
+  const choose = (id: string) => { setOpen(false); void ctx.select(id); };
   return <div className="loc-wrap" ref={wrap} onKeyDown={e => { if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); setOpen(false); } }}>
-    <button type="button" className="loc-select" aria-haspopup="listbox" aria-expanded={open} aria-label={`Location: ${ctx.pin.name}, ${ctx.pin.clinicName}. Change location`} onClick={() => { setOpen(v => !v); setActive(0); }} data-testid="button-location-selector">
+    <button type="button" className="loc-select" aria-haspopup="listbox" aria-expanded={open} aria-label={`Location: ${ctx.pin.name}, ${ctx.pin.clinicName}. Change location`} onClick={() => setOpen(v => !v)} data-testid="button-location-selector">
       <MapPin size={15} aria-hidden /><span className="loc-name">{ctx.pin.name}</span><ChevronDown size={14} aria-hidden />
     </button>
-    {open && <div className="loc-panel" role="dialog" aria-label="Choose location">
-      <label className="loc-search"><Search size={14} aria-hidden /><span className="sr-only">Search locations</span>
-        <input ref={input} value={term} placeholder="Search locations or clinics…" role="combobox" aria-expanded aria-controls={listId} aria-activedescendant={options[active] ? `${listId}-${options[active].id}` : undefined}
-          onChange={e => { setTerm(e.target.value); setActive(0); }}
-          onKeyDown={e => { if (e.key === "ArrowDown") { e.preventDefault(); setActive(i => Math.min(options.length - 1, i + 1)); } else if (e.key === "ArrowUp") { e.preventDefault(); setActive(i => Math.max(0, i - 1)); } else if (e.key === "Enter" && options[active]) { e.preventDefault(); choose(options[active].id); } }}
-          data-testid="input-location-search" /></label>
-      <ul className="loc-list" role="listbox" id={listId} aria-label="Locations">
-        {options.map((b, i) => <li key={b.id} id={`${listId}-${b.id}`} role="option" aria-selected={b.id === ctx.pin!.branchId} className={`loc-option${i === active ? " is-active" : ""}`} onMouseEnter={() => setActive(i)} onClick={() => choose(b.id)} data-testid={`option-location-${b.id}`}>
-          <span><strong>{b.name}</strong><small>{b.clinicName}</small></span>{b.id === ctx.pin!.branchId && <Check size={15} aria-hidden />}
-        </li>)}
-        {!options.length && <li className="loc-empty" role="presentation">No matching locations.</li>}
-      </ul>
-    </div>}
+    {open && <LocationMenu branches={ctx.branches} selectedId={ctx.pin.branchId} onChoose={choose} />}
   </div>;
 }

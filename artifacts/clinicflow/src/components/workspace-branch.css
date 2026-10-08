@@ -9,6 +9,9 @@
 .loc-search{display:flex;align-items:center;gap:8px;padding:0 8px;border:1px solid var(--cw-line-soft,#e8eef6);border-radius:8px}
 .loc-search input{border:0;background:transparent;flex:1;min-width:0;padding:8px 0;box-shadow:none}
 .loc-list{list-style:none;margin:8px 0 0;padding:0;max-height:280px;overflow-y:auto}
+.loc-list-virtual{position:relative;overflow-anchor:none}
+.loc-list-virtual .loc-option{position:absolute;left:0;right:0;box-sizing:border-box}
+.loc-spacer{padding:0;margin:0;pointer-events:none}
 .loc-option{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-radius:6px;cursor:pointer}
 .loc-option span{display:grid;min-width:0}
 .loc-option strong,.loc-option small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

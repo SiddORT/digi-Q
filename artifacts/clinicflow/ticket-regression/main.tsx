@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import jsQR from "jsqr";
@@ -10,7 +10,8 @@ import { BulkAppointments } from "../src/components/appointments/BulkAppointment
 const query = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false }, mutations: { retry: false } } });
 const params = new URLSearchParams(location.search);
 const mode = params.get("mode");
-if (mode !== "guest" && mode !== "appointment" && mode !== "bulk") throw new Error(`Unknown ticket fixture: ${mode}`);
+if (mode !== "guest" && mode !== "appointment" && mode !== "bulk" && mode !== "locations") throw new Error(`Unknown ticket fixture: ${mode}`);
+const LocationFixture = lazy(() => import("./LocationFixture").then(m => ({ default: m.LocationFixture })));
 
 declare global {
   interface Window {
@@ -33,7 +34,7 @@ window.decodeTicketQr = async (uri) => {
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={query}>
-    {mode === "guest"
+    {mode === "locations" ? <Suspense fallback="Loading fixture…"><LocationFixture /></Suspense> : mode === "guest"
       ? <GuestBooking reference="fixture-qr" context={{ clinicId: "clinic-1", branchId: "branch-1", doctorId: "doctor-1", branchTimezone: "UTC", dateFormat: "DD/MM/YYYY", timeFormat: "24h" } as React.ComponentProps<typeof GuestBooking>["context"]} />
       : mode === "bulk" ? <BulkAppointments ids={["appointment-3", "appointment-1", "appointment-2"]} disabled={false} onClear={() => {}} />
       : <AppointmentTicket id="appointment-1" />}

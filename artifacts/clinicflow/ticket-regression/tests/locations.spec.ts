@@ -1,0 +1,92 @@
+import { test, expect } from "@playwright/test";
+
+test("5,000 authorized locations stay bounded and preserve accessible navigation and guarded selection", async ({ page }) => {
+  // This fixture seeds only fictional authorized data; no real API is used.
+  await page.route("**/api/**", route => route.abort());
+  await page.goto("/?mode=locations");
+  const trigger = page.getByTestId("button-location-selector");
+  const selected = page.getByTestId("selected-location");
+  const search = page.getByTestId("input-location-search");
+  const list = page.getByRole("listbox", { name: "Locations" });
+  const active = async () => {
+    const id = await search.getAttribute("aria-activedescendant");
+    expect(id).toBeTruthy();
+    const option = page.locator(`[id="${id}"]`);
+    await expect(option).toHaveCount(1);
+    return option;
+  };
+  await expect(selected).toHaveText("location-4500");
+  const start = Date.now();
+  await trigger.click();
+  await expect(search).toBeFocused();
+  await expect(page.getByTestId("option-location-location-4500")).toBeVisible();
+  expect(Date.now() - start).toBeLessThan(2000);
+  expect(await list.getByRole("option").count()).toBeLessThanOrEqual(13);
+  await expect(await active()).toHaveAttribute("aria-selected", "true");
+  await expect(await active()).toContainText("Clinic 45");
+  await search.press("End");
+  await expect(await active()).toContainText("Location 4999");
+  await expect(await active()).toBeVisible();
+  await expect(await active()).toHaveAttribute("aria-posinset", "5000");
+  await expect(await active()).toHaveAttribute("aria-setsize", "5000");
+  await search.press("PageUp");
+  await expect(await active()).toContainText("Location 4994");
+  await search.press("ArrowDown");
+  await expect(await active()).toContainText("Location 4995");
+  await search.press("Home");
+  await search.press("ArrowUp");
+  await expect(await active()).toContainText("Location 0000");
+  await list.evaluate(el => { el.scrollTop = 4990 * 56; el.dispatchEvent(new Event("scroll")); });
+  await expect(page.getByTestId("option-location-location-4990")).toBeVisible();
+  // Even after independent wheel/touch scroll the active ID must still exist.
+  await expect(await active()).toContainText("Location 0000");
+  expect(await list.getByRole("option").count()).toBeLessThanOrEqual(13);
+  await page.getByTestId("option-location-location-4990").click();
+  await expect(selected).toHaveText("location-4990");
+
+  await trigger.click();
+  await search.fill("cLiNiC 49");
+  await expect(await active()).toContainText("Location 4900");
+  await expect(await active()).toHaveAttribute("aria-setsize", "100");
+  await search.fill("location 1234");
+  await expect(list.getByRole("option")).toHaveCount(1);
+  await expect(list.getByRole("option")).toContainText("Clinic 12");
+  await search.fill("does not exist");
+  await expect(list).toContainText("No matching locations");
+  await expect(search).not.toHaveAttribute("aria-activedescendant");
+  await search.press("ArrowDown");
+  await search.press("Enter");
+  await expect(selected).toHaveText("location-4990");
+  await search.fill("");
+  await search.press("End");
+  await expect(await active()).toContainText("Location 4999");
+  await search.press("Escape");
+  await expect(list).toHaveCount(0);
+  await trigger.click();
+  await expect(search).toHaveValue("");
+  await expect(await active()).toHaveAttribute("aria-selected", "true");
+  await page.mouse.click(20, 20);
+  await expect(list).toHaveCount(0);
+
+  await page.getByRole("checkbox", { name: "Unsaved draft" }).check();
+  const choose = async () => {
+    await trigger.click();
+    await search.fill("location 1234");
+    await search.press("Enter");
+  };
+  await choose();
+  await expect(page.getByRole("dialog", { name: "Switch Location?" })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(selected).toHaveText("location-4990");
+  await choose();
+  await page.getByRole("button", { name: "Discard and Switch", exact: true }).click();
+  await expect(selected).toHaveText("location-1234");
+  await page.getByRole("button", { name: "Attempt unauthorized selection" }).click();
+  await expect(selected).toHaveText("location-1234");
+  await expect(page.getByRole("dialog", { name: "Switch Location?" })).toHaveCount(0);
+  await page.getByRole("checkbox", { name: "Saving draft" }).check();
+  await trigger.click();
+  await search.fill("location 4500");
+  await search.press("Enter");
+  await expect(selected).toHaveText("location-1234");
+});
