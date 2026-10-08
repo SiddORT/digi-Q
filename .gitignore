@@ -58,3 +58,6 @@ Thumbs.db
 *.env
 !*.env.example
 !.env.example
+
+# Disposable acceptance server bundles
+.acceptance-*.mjs
