@@ -18,6 +18,7 @@ import * as api from "@workspace/api-client-react";
 import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2, Stethoscope, Settings, LogOut, ChevronRight, ArrowUpRight, Clock3, Check, Menu, PanelLeftClose, PanelLeftOpen, X, QrCode, List, SlidersHorizontal, FileText, UserRound, Plus, ArrowUpDown, ArrowUp, ArrowDown, Download } from "lucide-react";
 import { Logo } from "./App";
 import { WorkspaceNav, navLabel } from "./components/WorkspaceNav";
+import { clinicLandingDestination } from "./lib/clinic-navigation";
 import { DemoClinicManagement } from "./components/DemoClinicManagement";
 import { IntegrationSettings } from "./components/IntegrationSettings";
 import { EmailTemplates } from "./components/EmailTemplates";
@@ -180,7 +181,7 @@ function PortalWorkspace({identity,role,page}:{identity:api.Identity;role:string
  const name=identity.user!.fullName;
  const defaultDoctorId=doctorWorkspaceScope(identity).doctorId;
  // Clinic Admins manage staff from Clinic > Staff; only Super Admin keeps the separate Users workspace.
- const navigation=navConfig[role].filter(p=>p!=="users"||identity.user!.role==="superAdmin");
+  const navigation=navConfig[role].filter(p=>p!=="users"||identity.user!.role==="superAdmin").map(p=>p==="clinic"&&identity.user!.role==="superAdmin"?"clinics":p);
  // Listing pages render their page title inside the shared list header (title + search + actions on one row).
  const legacy=legacyDestination(page,identity.user!.role,window.location.search);
  const listingPage=["appointments","patients","branches","masters","reports"].includes(page)||(page==="users"&&identity.user!.role!=="superAdmin")||(page==="clinics"&&role!=="doctor")||(["system-users","audit"].includes(page)&&identity.user!.role==="superAdmin");
@@ -192,6 +193,8 @@ function PortalWorkspace({identity,role,page}:{identity:api.Identity;role:string
 }
 /** Legacy single-function URLs now open their consolidated workspace tab. Query context is preserved. */
 export function legacyDestination(page:string,userRole:string,search:string):string|null{
+  const landing=clinicLandingDestination(page,userRole,search);
+  if(landing)return landing;
  const query=new URLSearchParams(search);
  const withArea=(base:string,area:string)=>{const next=new URLSearchParams(query);next.set("area",area);return `${base}?${next}`;};
  if(page==="settings"&&(query.has("clinicId")||query.has("section")))return `/admin/clinic?${query}`;

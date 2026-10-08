@@ -13,7 +13,7 @@ export function navLabel(p: string, role: string) {
   if (p === "system-users") return "System users";
   if (p === "book") return role === "patient" ? "Book Now" : "Book Appointment";
   if (p === "queue" && role === "patient") return "My Queue";
-  const map: Record<string, string> = { dashboard: "Overview", clinic: "Clinic", branches: "Locations", clinics: role === "doctor" ? "Clinic" : "Clinic groups", availability: "Schedule", exceptions: "Schedule", qrs: "Booking QR codes", audit: "Audit log", queue: "Queue", masters: "Reference data", demo: "Demo clinic", settings: "Settings", profile: "Profile" };
+   const map: Record<string, string> = { dashboard: "Overview", clinic: "Clinic", branches: "Locations", clinics: ["doctor","admin"].includes(role) ? "Clinic" : "Clinic groups", availability: "Schedule", exceptions: "Schedule", qrs: "Booking QR codes", audit: "Audit log", queue: "Queue", masters: "Reference data", demo: "Demo clinic", settings: "Settings", profile: "Profile" };
   return map[p] || title(p);
 }
 
@@ -31,7 +31,8 @@ export function WorkspaceNav({ navigation, role, page, onNavigate, collapsed = f
   useEffect(() => { if (activeGroup) setOpen(o => (o[activeGroup.id] ? o : { ...o, [activeGroup.id]: true })); }, [activeGroup?.id]);
   const leaf = (p: string, child = false) => {
     const Icon = icons[p] || FileText;
-    return <Link key={p} href={`/${role}/${p}`} className={`wnav-link${child ? " child" : ""}${p === page ? " active" : ""}`} title={collapsed ? navLabel(p, role) : undefined} aria-current={p === page ? "page" : undefined} onClick={onNavigate} data-testid={`nav-${p}`}><Icon size={18} aria-hidden /><span className="wnav-label">{navLabel(p, role)}</span></Link>;
+    const active=p===page||(p==="clinics"&&role==="admin"&&page==="clinic"&&!navigation.includes("clinic"));
+    return <Link key={p} href={`/${role}/${p}`} className={`wnav-link${child ? " child" : ""}${active ? " active" : ""}`} title={collapsed ? navLabel(p, role) : undefined} aria-current={active ? "page" : undefined} onClick={onNavigate} data-testid={`nav-${p}`}><Icon size={18} aria-hidden /><span className="wnav-label">{navLabel(p, role)}</span></Link>;
   };
   return <nav className="wnav" aria-label="Workspace">{layout.map(e => {
     if (e.kind === "link") return navigation.includes(e.page) ? leaf(e.page) : null;

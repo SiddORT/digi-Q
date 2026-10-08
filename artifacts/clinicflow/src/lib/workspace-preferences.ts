@@ -47,10 +47,12 @@ const sanitizeNavigation = (value: unknown): NavigationPreferences => {
 const EMPTY_NAV: NavigationPreferences = { favorites: [], recent: [] };
 export const navigationKey = (userId: string, role: string) => `digiq-navigation:${userId}:${role}`;
 
-export function useNavigationPreferences(userId: string, role: string) {
+export function useNavigationPreferences(userId: string, role: string, clinicListing = false) {
   const key = navigationKey(userId, role);
-  const [prefs, set] = usePreference(key, EMPTY_NAV, sanitizeNavigation);
-  const toggleFavorite = (page: string) => set({ ...prefs, favorites: prefs.favorites.includes(page) ? prefs.favorites.filter(p => p !== page) : [...prefs.favorites, page] });
+  const [stored, set] = usePreference(key, EMPTY_NAV, sanitizeNavigation);
+  const canonical = (page:string) => clinicListing && page==="clinic" ? "clinics" : page;
+  const prefs = clinicListing ? {favorites:[...new Set(stored.favorites.map(canonical))],recent:[...new Set(stored.recent.map(canonical))]} : stored;
+  const toggleFavorite = (value: string) => {const page=canonical(value);return set({ ...prefs, favorites: prefs.favorites.includes(page) ? prefs.favorites.filter(p => p !== page) : [...prefs.favorites, page] });};
   return { prefs, set, toggleFavorite };
 }
 

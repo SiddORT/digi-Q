@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 
-const clinic = { id: "clinic-1", name: "Fixture Clinic", slug: "fixture-clinic", address: "1 Fixture Road", city: "Pune", status: "active", adminId: "fixture-admin" };
+const clinic = { id: "clinic-1", name: "Fixture Clinic", code:"CF-001", adminName:"Fixture Owning Administrator", phone:"+919876543210", email:"care@example.invalid", area:"Central", slug: "fixture-clinic", address: "1 Fixture Road", city: "Pune", status: "active", adminId: "fixture-admin" };
 const otherClinic = { ...clinic, id: "clinic-2", name: "Other Fixture Clinic", slug: "other-fixture-clinic" };
 const branch = {
   id: "branch-1", clinicId: clinic.id, name: "Fixture Location", address: "1 Fixture Road", city: "Pune",
@@ -22,6 +22,8 @@ type Fixture = {
 const listing = (items: unknown[]) => ({ items, total: items.length, page: 1, pageSize: 20, totalPages: 1 });
 
 async function fixture(page: Page, multiClinic = false): Promise<Fixture> {
+  // External fonts are not part of the behavior under test and can hold load open offline.
+  await page.route(/https:\/\/fonts\.(googleapis|gstatic)\.com\//,route=>route.abort());
   const state: Fixture = { calls: [], previewCount: 0, staff: { ...staff }, failStatus: false, failBranches: false };
   // Intercept all application API requests, including unexpected endpoints. Never proxy to a running API.
   await page.route("**/api/**", async (route: Route) => {
@@ -73,6 +75,103 @@ async function fixture(page: Page, multiClinic = false): Promise<Fixture> {
 }
 
 const listCalls = (state: Fixture, path: string) => state.calls.filter(call => call.pathname === path && call.method === "GET");
+
+test("Superadmin Clinic listing, View, tabs and both return paths retain URL state (intercepted fixtures)", async ({page})=>{
+ await fixture(page);
+ await page.route("**/api/clinics?*",route=>route.fulfill({json:{...listing([clinic]),total:101}}));
+ const list="/admin/clinics?search=Fixture&adminId=fixture-admin&status=active&sort=name&page=2&pageSize=50";
+ await page.goto(list,{waitUntil:"domcontentloaded"});
+ await expect(page.getByTestId("nav-clinics")).toHaveAttribute("href","/admin/clinics");
+ await expect(page.getByTestId("nav-clinics")).toHaveAttribute("aria-current","page");
+ const row=page.getByTestId("row-clinics-clinic-1");
+ for(const value of ["CF-001","Fixture Owning Administrator","Central","Pune","+919876543210","care@example.invalid","Active"])await expect(row).toContainText(value);
+ const view=page.getByRole("link",{name:"View Fixture Clinic",exact:true});
+ const href=await view.getAttribute("href");
+ expect(href).toMatch(/^\/admin\/clinic\?clinicId=clinic-1&returnTo=/);
+ await view.click();
+ await expect(page.getByRole("heading",{name:"Fixture Clinic",exact:true})).toBeVisible();
+ await expect(page.getByTestId("nav-clinics")).toHaveAttribute("aria-current","page");
+ for(const tab of ["general","locations","staff","policies"])await expect(page.getByTestId(`tab-clinic-${tab}`)).toBeVisible();
+ await page.getByTestId("tab-clinic-policies").click();
+ await expect(page.getByText("Booking horizon: 30 days", {exact:false})).toBeVisible();
+ await page.goBack();
+ await expect(page.getByTestId("tab-clinic-general")).toHaveAttribute("aria-selected","true");
+ await page.getByTestId("link-all-clinic-groups").click();
+ expect(new URL(page.url()).pathname+new URL(page.url()).search).toBe(list);
+ await expect(row).toBeVisible();
+ await page.getByRole("link",{name:"View Fixture Clinic",exact:true}).click();
+ await expect(page.getByTestId("tab-clinic-general")).toBeVisible();
+ await page.goBack();
+ expect(new URL(page.url()).pathname+new URL(page.url()).search).toBe(list);
+});
+
+test("old landing redirects but direct clinic and legacy section links keep their context",async({page})=>{
+ await fixture(page);
+ await page.goto("/admin/clinic",{waitUntil:"domcontentloaded"});
+ await expect(page).toHaveURL(/\/admin\/clinics$/);
+ await expect(page.getByTestId("row-clinics-clinic-1")).toBeVisible();
+ await page.goto("/admin/clinic?clinicId=clinic-1&section=qrs",{waitUntil:"domcontentloaded"});
+ await expect(page.getByTestId("tab-clinic-locations")).toHaveAttribute("aria-selected","true");
+ await expect(page.getByTestId("row-branches-branch-1")).toBeVisible();
+ await page.goto("/admin/clinic?section=staff",{waitUntil:"domcontentloaded"});
+ await expect(page).toHaveURL(/\/admin\/clinic\?section=staff$/);
+ await expect(page.getByText("Select a clinic to manage its settings.",{exact:false})).toBeVisible();
+});
+
+test("Clinic Admin settings and Doctor navigation remain role-specific (not real authentication)",async({page})=>{
+ await fixture(page);
+ await page.goto("/?mode=settings&fixtureRole=clinicAdmin",{waitUntil:"domcontentloaded"});
+ await expect(page.getByTestId("nav-clinic")).toHaveAttribute("href","/admin/clinic");
+ await expect(page.getByTestId("tab-clinic-general")).toHaveAttribute("aria-selected","true");
+ await expect(page.getByRole("heading",{name:"Fixture Clinic",exact:true})).toBeVisible();
+ await expect(page.getByTestId("link-all-clinic-groups")).toHaveCount(0);
+ await page.getByTestId("tab-clinic-policies").click();
+ await expect(page.getByRole("button",{name:"Edit Policies",exact:true})).toBeVisible();
+ await page.goto("/?mode=resource&resource=clinics&fixtureRole=doctor",{waitUntil:"domcontentloaded"});
+ await expect(page.getByTestId("nav-clinics")).toHaveAttribute("href","/doctor/clinics");
+ await expect(page.getByTestId("row-clinics-clinic-1")).toBeVisible();
+ await expect(page.getByTestId("button-view-clinic-clinic-1")).toHaveCount(0);
+ await expect(page.getByTestId("button-edit-clinic-1")).toHaveCount(0);
+});
+
+test("long and absent clinic information keeps actions usable on desktop, tablet and phone",async({page})=>{
+ test.setTimeout(60000);
+ await fixture(page);
+ const long={...clinic,name:"VeryLongClinicName".repeat(8),adminName:"LongOwnerName".repeat(8),email:"longemail".repeat(12)+"@example.invalid",city:"LongCityName".repeat(10)};
+ const missing={...clinic,id:"missing",name:"Missing Optional Clinic",code:"",adminName:null,city:"",area:"",phone:"",email:""};
+ await page.route("**/api/clinics?*",route=>route.fulfill({json:listing([long,missing])}));
+ await page.goto("/admin/clinics",{waitUntil:"domcontentloaded"});
+ for(const width of [1440,820,390]){
+  await page.setViewportSize({width,height:1000});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  const row=page.getByTestId("row-clinics-clinic-1");
+  await expect(row).toBeVisible();
+  await expect(page.getByTestId("row-clinics-missing")).toContainText("Code not set");
+  await expect(page.getByTestId("row-clinics-missing")).toContainText("Phone not set");
+  await expect(page.getByTestId("row-clinics-missing")).toContainText("Email not set");
+  const action=page.getByTestId("button-view-clinic-clinic-1");
+  await action.scrollIntoViewIfNeeded();
+  const box=await action.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x+box!.width).toBeLessThanOrEqual(width+1);
+  if(width>=640){
+   const owner=page.getByRole("columnheader",{name:"Owning administrator",exact:true});
+   expect((await owner.boundingBox())!.width).toBeGreaterThanOrEqual(180);
+   for(const header of await page.locator(".superadmin-clinics-table th").all())
+    expect(await header.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  }
+  if(width===1440){
+   const scroller=page.locator(".superadmin-clinics-table .table-scroll");
+   expect(await scroller.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+   const status=await page.getByRole("columnheader",{name:/Sort by Status/}).boundingBox();
+   const actions=await page.getByRole("columnheader",{name:"Actions",exact:true}).boundingBox();
+   expect(status!.x+status!.width).toBeLessThanOrEqual(actions!.x+1);
+  }
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  await screenshot(page,`superadmin-clinics-${width}.png`);
+ }
+});
 const pageUrl = (resource: string, query = "") => `/?mode=resource&resource=${resource}${query ? `&${query}` : ""}`;
 async function screenshot(page: Page, filename: string) {
   const dir = "screenshots/workspace-regression";

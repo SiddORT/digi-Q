@@ -2,6 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
+  // Independent of ticket-regression: Playwright clears outputDir at the start of a run.
+  outputDir: "./test-results",
   timeout: 40000,
   expect: { timeout: 8500 },
   fullyParallel: false,

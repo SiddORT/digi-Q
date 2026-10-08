@@ -62,6 +62,7 @@ export const canLoadMore = (shown: number, total: number | null) => total !== nu
 
 /** Exact record links: the destination page opens this record id, the search term only narrows the list. */
 export function recordHref(role: string, page: string, id: string, search: string, extra: Record<string, string> = {}) {
+  if(role==="admin"&&page==="clinics")return `/admin/clinic?${new URLSearchParams({clinicId:id,...extra})}`;
   const q = new URLSearchParams({ ...(search ? { search } : {}), open: id, ...extra });
   return `/${role}/${page}?${q}`;
 }

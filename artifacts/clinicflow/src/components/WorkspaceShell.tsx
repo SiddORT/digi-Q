@@ -12,7 +12,7 @@ import { useNavigationPreferences } from "@/lib/workspace-preferences";
 
 /** Sidebar favorites only (Recent was removed from the sidebar for all roles; recent pages remain in WorkspaceSearch). Only permitted pages render. */
 export function SidebarShortcuts({ navigation, role, page, userId, onNavigate }: { navigation: string[]; role: string; page: string; userId: string; onNavigate: () => void }) {
-  const { prefs, toggleFavorite } = useNavigationPreferences(userId, role);
+  const { prefs, toggleFavorite } = useNavigationPreferences(userId, role,role==="admin"&&navigation.includes("clinics")&&!navigation.includes("clinic"));
   const favorites = prefs.favorites.filter(p => navigation.includes(p));
   if (!favorites.length) return null;
   const item = (p: string, fav: boolean) => <div key={p} className="wnav-shortcut-row" style={{ display: "flex", alignItems: "center" }}>
@@ -58,7 +58,7 @@ export function ProfileMenu({ name, roleLabel, role, navigation, page, userId, o
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
-  const { prefs, toggleFavorite } = useNavigationPreferences(userId, role);
+  const { prefs, toggleFavorite } = useNavigationPreferences(userId, role,role==="admin"&&navigation.includes("clinics")&&!navigation.includes("clinic"));
   useEffect(() => {
     if (!open) return;
     const outside = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
@@ -70,7 +70,8 @@ export function ProfileMenu({ name, roleLabel, role, navigation, page, userId, o
   }, [open]);
   useEffect(() => setOpen(false), [page]);
   const initials = name.split(" ").map(n => n[0]).slice(0, 2).join("");
-  const fav = prefs.favorites.includes(page);
+  const favoritePage=page==="clinic"&&role==="admin"&&navigation.includes("clinics")&&!navigation.includes("clinic")?"clinics":page;
+  const fav = prefs.favorites.includes(favoritePage);
   return <div className="profile-menu" ref={root}>
     <button type="button" ref={trigger} className="profile-menu-trigger" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(v => !v)} onKeyDown={e => { if (e.key === "ArrowDown" && !open) { e.preventDefault(); setOpen(true); } }} data-testid="button-profile-menu">
       <span className="avatar" aria-hidden>{initials}</span><span className="pm-name"><strong>{name}</strong><small>{roleLabel}</small></span><ChevronDown size={14} aria-hidden />

@@ -53,3 +53,9 @@ Assert visible page content and the absence of an error boundary, not just the a
 **Why:** React caught malformed-fixture errors without emitting `pageerror`; the error page also fit a mobile viewport. Those assertions alone could falsely pass a broken template screen.
 
 **How to apply:** Confirm the intended form/table is visible before checking layout. Reconcile fixture response shapes and accessible control names with real contracts before attributing a failure to the application.
+
+Keep independently runnable browser regression suites in distinct output directories.
+
+**Why:** A workspace browser run overlapped an existing ticket-test workflow; Playwright's startup cleanup removed the other run's active traces and produced missing-file failures unrelated to the application.
+
+**How to apply:** Scope each suite's output directory independently before running alongside managed test workflows. Do not attribute trace/report cleanup failures to product behavior or re-run unrelated flows to compensate.

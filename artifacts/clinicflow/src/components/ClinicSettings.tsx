@@ -3,7 +3,8 @@ import { FormDisclosure, FormSection } from "./FormSection";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HelpTip } from "./HelpTip";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
+import { clinicsReturnHref } from "../lib/clinic-navigation";
 import * as api from "@workspace/api-client-react";
 import { Editor, ErrorNotice, ResourcePage, resources } from "../resources";
 import { Users } from "../Users";
@@ -25,11 +26,13 @@ const sections = [["general","Details"],["locations","Locations"],["staff","Staf
 const legacySection = (value:string|null) => value==="details"||!value ? "general" : value==="qrs"||value==="sessions" ? "locations" : value==="history" ? "general" : ["general","locations","policies","staff"].includes(value) ? value : "general";
 
 export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;scopeSwitch?:ReactNode}){
- const [,navigate]=useLocation();
- const [clinicId,setClinic]=useState(()=>new URLSearchParams(window.location.search).get("clinicId")||"");
- const [view,setView]=useState(()=>legacySection(new URLSearchParams(window.location.search).get("section")));
- const selectView=(next:string)=>{if(next===view)return;setView(next);const url=new URL(window.location.href);url.searchParams.set("section",next);for(const key of ["search","page","pageSize","sort","status","branchId","doctorId","date","from","to"])url.searchParams.delete(key);navigate(`${url.pathname}${url.search}`);};
- useEffect(()=>{if(clinicId){const url=new URL(window.location.href);url.searchParams.set("clinicId",clinicId);url.searchParams.set("section",view);window.history.replaceState(window.history.state,"",url);}},[clinicId,view]);
+ const [location,navigate]=useLocation();
+ const search=useSearch();
+ const params=new URLSearchParams(search);
+ const clinicId=params.get("clinicId")||"";
+ const view=legacySection(params.get("section"));
+ const setClinic=(id:string)=>{const next=new URLSearchParams(search);next.set("clinicId",id);if(id!==clinicId)next.delete("branchId");navigate(`${location}?${next}`,{replace:true});};
+ const selectView=(next:string)=>{if(next===view)return;const query=new URLSearchParams(search);query.set("section",next);for(const key of ["search","page","pageSize","sort","status","branchId","doctorId","date","from","to"])query.delete(key);navigate(`${location}?${query}`);};
  const client=useQueryClient();
  const clinicParams={pageSize:2};
  const clinics=api.useListClinics(clinicParams,{query:{queryKey:api.getListClinicsQueryKey(clinicParams),enabled:!clinicId&&identity.user?.role==="clinicAdmin",refetchInterval:30000}});
@@ -54,7 +57,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
   else{setMissingBranch(true);url.searchParams.delete("branchId");window.history.replaceState(window.history.state,"",url);}
  },[data,view]);
  return <DateTimePreferencesProvider value={data?.clinic}><section className="clinic-settings">
-  <div className="settings-scope" data-testid="settings-scope">{scopeSwitch}<div className="settings-scope-lookup"><ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Clinic Group":"Your Clinic Group"} value={clinicId} onChange={id=>{setClinic(id);setSection(null);closeBranch();save.reset();}}/></div>{identity.user?.role==="superAdmin"&&<Link className="button secondary small" href="/admin/clinics" data-testid="link-all-clinic-groups">All Clinic Groups</Link>}<span className="settings-scope-badge" data-testid="settings-scope-badge">Clinic-wide management <HelpTip label="About management scope" text="These settings apply across every location in this Clinic Group. Day-to-day queues and appointments use the location chosen in the workspace header."/></span></div>
+   <div className="settings-scope" data-testid="settings-scope">{scopeSwitch}<div className="settings-scope-lookup"><ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Clinic Group":"Your Clinic Group"} value={clinicId} onChange={id=>{setSection(null);closeBranch();save.reset();setClinic(id);}}/></div>{identity.user?.role==="superAdmin"&&<Link className="button secondary small" href={clinicsReturnHref(search)} data-testid="link-all-clinic-groups">Back to Clinics</Link>}<span className="settings-scope-badge" data-testid="settings-scope-badge">Clinic-wide management <HelpTip label="About management scope" text="These settings apply across every location in this Clinic Group. Day-to-day queues and appointments use the location chosen in the workspace header."/></span></div>
  <ErrorNotice error={query.error||clinics.error}/>{query.error&&<button type="button" onClick={()=>query.refetch()}>Retry Clinic Settings</button>}
  {!clinicId?<p className="empty">Select a clinic to manage its settings. Platform settings are separate.</p>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&!query.error&&<>
   <div className="clinic-workspace-tabs-layout"><div className="workspace-tabs" role="tablist" aria-label="Clinic sections">{sections.map(([key,label])=><button key={key} type="button" role="tab" aria-selected={view===key} onClick={()=>selectView(key)} data-testid={`tab-clinic-${key}`}>{label}</button>)}</div><div className="clinic-workspace-content">

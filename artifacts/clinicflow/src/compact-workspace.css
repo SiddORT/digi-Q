@@ -276,3 +276,31 @@
 .suggestion-input-control>input[role="combobox"],
 .app-dialog .app-dialog-body .suggestion-input-control>input[role="combobox"],
 .workspace .form-grid .suggestion-input-control>input[role="combobox"]{padding-left:40px;padding-right:calc(2 * 32px)}
+
+/* Superadmin clinic listing only: readable contact/locality and reserved actions. */
+.workspace .superadmin-clinics-table .table-scroll table{table-layout:fixed;min-width:1110px}
+.workspace .superadmin-clinics-table .table-scroll th{min-width:180px;white-space:normal}
+.workspace .superadmin-clinics-table .table-scroll th.col-select{width:44px;min-width:44px}
+.workspace .superadmin-clinics-table .table-scroll th.col-status{width:96px;min-width:96px}
+.workspace .superadmin-clinics-table col.col-record{width:230px}
+.workspace .superadmin-clinics-table col.col-adminName,.workspace .superadmin-clinics-table col.col-locality{width:180px}
+.workspace .superadmin-clinics-table col.col-contact{width:220px}
+.workspace .superadmin-clinics-table col.col-status{width:96px}
+.workspace .superadmin-clinics-table col.col-actions{width:160px}
+.workspace .superadmin-clinics-table :is(th,td).col-record{width:230px}
+.workspace .superadmin-clinics-table .clinic-list-value{white-space:normal;overflow-wrap:anywhere}
+.workspace .superadmin-clinics-table .clinic-list-value small{display:block}
+.workspace .superadmin-clinics-table .col-actions .row-actions{flex-wrap:nowrap;justify-content:flex-end}
+.workspace .superadmin-clinics-table .icon-action{flex:0 0 32px}
+@media(max-width:767px),(pointer:coarse){
+ .workspace .superadmin-clinics-table .icon-action{width:44px;min-width:44px;height:44px;min-height:44px;padding:4px}
+}
+@media(max-width:639px){
+ .workspace .superadmin-clinics-table .table-scroll table{min-width:0}
+ .workspace .superadmin-clinics-table :is(th,td).col-record{width:100%}
+ .workspace .superadmin-clinics-table td.col-actions{position:static;width:100%;min-width:0}
+ .workspace .superadmin-clinics-table .col-actions .row-actions{justify-content:flex-start;flex-wrap:wrap}
+}
+@media(min-width:640px){
+ .workspace .superadmin-clinics-table .table-scroll :is(th,td).col-actions{position:sticky;right:0;width:160px;min-width:160px;background:var(--dq-surface);z-index:2}
+}

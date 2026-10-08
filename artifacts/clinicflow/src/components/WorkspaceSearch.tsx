@@ -97,7 +97,7 @@ function fetchSource(source: SearchSource, role: string, navigation: string[], s
 export function WorkspaceSearch({ navigation, role, page, userId }: {
   navigation: string[]; role: string; page: string; userId: string;
 }) {
-  const { prefs: preferences, toggleFavorite } = useNavigationPreferences(userId, role);
+  const { prefs: preferences, toggleFavorite } = useNavigationPreferences(userId, role,role==="admin"&&navigation.includes("clinics")&&!navigation.includes("clinic"));
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState<SearchTab>("all");
