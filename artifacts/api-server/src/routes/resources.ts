@@ -235,6 +235,8 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
   }
   const saved = await db.transaction(async tx => {
     const proposed = { ...old, ...body };
+    if (kind === "users" && old?.id === user.id && body.status === "inactive")
+      assert(false, 409, "You cannot deactivate your own account");
     if (kind === "branches" && old && (body.openingHours !== undefined || body.timezone !== undefined)) {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"branch-hours:" + old.id}))`);
       assert(!(await one(branches, old.id, tx)).linkedSchedule?.enabled, 409, "This location has linked doctor sessions. Change opening hours through Clinic settings to preview and synchronize safely.");
@@ -491,7 +493,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
         assert(body.clinicIds === undefined && body.branchIds === undefined, 409, "Clinic Admin assignments are managed only through clinic ownership");
       }
       const row = old ? await change(table, id, fields, tx) : await put(table, { id, ...fields }, tx);
-      if (uf.role !== "clinicAdmin" && ["doctor", "receptionist"].includes(role) && (kind !== "doctors" || !old || assignmentChangeRequested)) {
+      if (uf.role !== "clinicAdmin" && ["doctor", "receptionist"].includes(role) && (!old || assignmentChangeRequested)) {
         await setAssignments(userId, requestedClinics, requestedBranches, user, managingAdminId!, tx);
       }
       if (kind === "users" && !old && body.role === "patient") await put(patients, { id: uid(), userId, mobile: body.mobile || "", data: { fullName: body.fullName, email: body.email, code: `PAT-${id.slice(0,8)}` } }, tx);
@@ -718,6 +720,8 @@ for (const [kind, table, schema, listSchema] of definitions) {
     const user = await requireUser(req), old = await enrich(kind, await one(table, req.params.id as string));
     assert(user.role !== "patient", 403, "Patients cannot deactivate profiles");
     await authorizeWrite(user, kind, {}, old);
+    if (kind === "users" && old.id === user.id)
+      assert(false, 409, "You cannot deactivate your own account");
     await db.transaction(async tx => {
       if (kind === "schedules") {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + old.doctorId}))`);

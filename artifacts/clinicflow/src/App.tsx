@@ -68,6 +68,7 @@ function Guard({role, page}: {role:string;page:string}) {
   if (!me.data?.user || me.data.needsOnboarding) return <Redirect to="/onboarding"/>;
   const actual = ["superAdmin","clinicAdmin"].includes(me.data.user.role) ? "admin" : me.data.user.role;
   if(actual !== role) return <Redirect to={`/${actual}/dashboard`}/>;
+  if(page==="staff"&&me.data.user.role!=="superAdmin") return <Redirect to={`/${actual}/dashboard`}/>;
   if(me.data.user.role==="clinicAdmin"&&["masters","audit","demo","integrations","permissions","system-users"].includes(page)) return <Redirect to="/admin/dashboard"/>;
   return <Portal identity={me.data} role={role} page={page}/>;
 }
@@ -78,7 +79,7 @@ function PublicBookingRoute({reference}: {reference:string}) {
   return <PublicBooking reference={reference}/>;
 }
 const routes: Record<string,string[]> = {
-   admin:["dashboard","clinic","clinics","branches","users","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions","profile","demo","templates","permissions","integrations","system-users"],
+   admin:["dashboard","clinic","clinics","branches","users","staff","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions","profile","demo","templates","permissions","integrations","system-users"],
   doctor:["dashboard","profile","clinics","branches","availability","exceptions","appointments","queue","patients","qrs","book","users"],
    receptionist:["dashboard","appointments","queue","patients","book","qrs","availability","exceptions","profile"],
   patient:["dashboard","book","appointments","queue","profile"],
@@ -101,7 +102,7 @@ function Providers(){
     <Route path="/register-doctor" component={RegisterDoctor}/>
     <Route path="/onboarding"><AuthAccess><Onboarding/></AuthAccess></Route>
     <Route path="/check-in" component={CheckInScanner}/>
-    <Route path="/admin/doctors"><Redirect to="/admin/users?tab=doctors"/></Route>
+    <Route path="/admin/doctors"><Redirect to="/admin/staff?tab=doctors"/></Route>
     <Route path="/display/:reference">{p=><ClinicDisplay reference={p.reference}/>}</Route>
     <Route path="/book/:reference">{p=><PublicBookingRoute reference={p.reference}/>}</Route>
     {Object.entries(routes).flatMap(([role,pages])=>[<Route key={role} path={`/${role}`}><AuthAccess><Redirect to={`/${role}/dashboard`}/></AuthAccess></Route>,...pages.map(page=><Route key={`${role}/${page}`} path={`/${role}/${page}`}><AuthAccess><Guard role={role} page={page}/></AuthAccess></Route>)])}

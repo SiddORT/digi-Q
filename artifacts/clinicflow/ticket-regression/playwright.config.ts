@@ -2,7 +2,10 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  timeout: 30000,
+  // Cold Vite compilation and PDF work share resources with the PostgreSQL
+  // contention check during completion validation. Keep assertions unchanged
+  // while allowing those concurrent setup/render costs to finish.
+  timeout: 90000,
   expect: { timeout: 7000 },
   fullyParallel: true,
   // Rasterising PDFs at print resolution is memory-intensive.

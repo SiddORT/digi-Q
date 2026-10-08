@@ -15,7 +15,7 @@ export function ClinicRegistrationComplete({ result, invitationStatus }: { resul
     <div className="public-clinic-actions">
       <Link className="button" href={`/admin/settings?clinicId=${encodeURIComponent(result.clinic.id)}`} onClick={() => void client.invalidateQueries()} data-testid="registration-configure-sessions">{linked.length ? "Review clinic configuration" : "Complete booking setup"}</Link>
       <Link className="button secondary" href="/admin/dashboard" onClick={() => void client.invalidateQueries()} data-testid="registration-open-workspace">Open Workspace</Link>
-      <Link href={`/admin/users?clinicId=${encodeURIComponent(result.clinic.id)}`} onClick={() => void client.invalidateQueries()}>Staff Management</Link>
+      <Link href={`/admin/clinic?clinicId=${encodeURIComponent(result.clinic.id)}&section=staff`} onClick={() => void client.invalidateQueries()}>Staff Management</Link>
       {result.clinic.slug && <Link href={`/${result.clinic.slug}`}>Check Public Booking Page</Link>}
     </div>
   </main></div>;

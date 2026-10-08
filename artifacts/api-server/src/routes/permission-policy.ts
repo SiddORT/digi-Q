@@ -13,7 +13,7 @@ const input = z.object({ revision: z.number().int().min(0), denied: z.array(z.st
 permissionPolicyRouter.get("/management/permissions", async (req, res) => {
   const user = await requireUser(req); roles(user, ["superAdmin"]);
   res.setHeader("Cache-Control", "no-store");
-  res.json({ ...await permissionPolicy(), modules: permissionModules, actions: permissionActions, roles: configurableRoles });
+  res.json({ ...await permissionPolicy(), modules: permissionModules, actions: permissionActions, roles: ["superAdmin", ...configurableRoles] });
 });
 permissionPolicyRouter.put("/management/permissions", async (req, res) => {
   const user = await requireUser(req); roles(user, ["superAdmin"]);
@@ -28,5 +28,5 @@ permissionPolicyRouter.put("/management/permissions", async (req, res) => {
     await audit(user, "configure", "permissions", { id: "permission-policy" }, tx);
     return data;
   });
-  res.json({ ...result, modules: permissionModules, actions: permissionActions, roles: configurableRoles });
+  res.json({ ...result, modules: permissionModules, actions: permissionActions, roles: ["superAdmin", ...configurableRoles] });
 });

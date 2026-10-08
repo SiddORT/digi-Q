@@ -4,7 +4,8 @@ import { IconAction } from "./IconAction";
 import { HelpTip } from "./HelpTip";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, X } from "lucide-react";
+import { Pencil, Plus, X, ShieldCheck } from "lucide-react";
+import { systemSelection, customSelection } from "./role-selection";
 import { useGetCustomRoles, getGetCustomRolesQueryKey, useSaveCustomRoles, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetSystemUsers, getGetSystemUsersQueryKey } from "@workspace/api-client-react";
 import { AppDialog, useAppDialogClose } from "./AppDialog";
 import { SearchableSelect } from "./SearchableSelect";
@@ -16,7 +17,7 @@ const status = (e: any) => e?.status ?? e?.response?.status;
 type UsersParams = Parameters<typeof useGetSystemUsers>[0];
 
 /** Super Admin only (rendered below AccessRules). Custom roles inherit a base role and only remove baseline actions. */
-export function CustomRoles() {
+export function CustomRoles({onPermissions,onDirtyChange}:{onPermissions?:(role:string)=>void;onDirtyChange?:(dirty:boolean)=>void}={}) {
   const queryClient = useQueryClient();
   const queryKey = getGetCustomRolesQueryKey();
   const query = useGetCustomRoles({ query: { queryKey } });
@@ -34,6 +35,7 @@ export function CustomRoles() {
   const names = useRef(new Map<string, SystemUser>());
 
   const dirty = !!draft && !!base.current && !configsEqual(draft, base.current);
+  useEffect(()=>{onDirtyChange?.(dirty||roleDirty);},[dirty,roleDirty,onDirtyChange]);
   useEffect(() => {
     if (!server) return;
     if (base.current && base.current.revision !== server.revision && dirty) { setConflict(true); return; }
@@ -77,7 +79,14 @@ export function CustomRoles() {
     </div>
     {query.isLoading || policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-custom-roles-loading"><span /><span /><span /></div>
       : query.isError || policy.isError || !draft ? <div role="alert" className="error-box">Custom roles could not be loaded. <button type="button" onClick={() => { void query.refetch(); void policy.refetch(); }}>Retry</button></div>
-      : <RoleList config={draft} names={names.current} onEdit={setEditing} onDelete={setDeleting} />}
+       : <>
+         <h3>System roles</h3>
+         <div className="table-wrap admin-listing-table"><table><thead><tr><th>Role</th><th>Type</th><th>Actions</th></tr></thead><tbody>
+           {(policy.data?.roles??[]).map(role=><tr key={role} data-testid={`row-system-role-${role}`}><td data-label="Role"><strong>{label(role)}</strong></td><td data-label="Type">System · built-in</td><td data-label="Actions"><IconAction label={`Permissions for ${label(role)}`} icon={<ShieldCheck size={15}/>} onClick={()=>onPermissions?.(systemSelection(role))} testId={`button-permissions-system-${role}`}/></td></tr>)}
+         </tbody></table></div>
+         <h3>Custom roles</h3>
+         <RoleList config={draft} names={names.current} onEdit={setEditing} onDelete={setDeleting} onPermissions={onPermissions}/>
+       </>}
     {draft && saveBar}
     {editing && draft && <AppDialog open variant="drawer" dirty={roleDirty} onClose={() => { setRoleDirty(false); setEditing(null); }} title={draft.roles.some(r => r.id === editing.id) ? `Edit ${editing.name || "Custom Role"}` : "New custom role"} description="Changes apply to the draft. Use Save custom roles to publish them.">
       <RoleEditor key={editing.id} role={editing} config={draft} modules={modules} actions={actions} names={names.current}
@@ -106,13 +115,13 @@ function DeleteRoleDialog({ role, count, onCancel, onConfirm }: { role: CustomRo
   </AppDialog>;
 }
 
-function RoleList({ config, names, onEdit, onDelete }: { config: CustomRoleConfig; names: Map<string, SystemUser>; onEdit: (r: CustomRole) => void; onDelete: (r: CustomRole) => void }) {
+function RoleList({ config, names, onEdit, onDelete,onPermissions }: { config: CustomRoleConfig; names: Map<string, SystemUser>; onEdit: (r: CustomRole) => void; onDelete: (r: CustomRole) => void;onPermissions?:(role:string)=>void }) {
   if (!config.roles.length) return <div className="empty" data-testid="state-custom-roles-empty"><h3>No Custom Roles Yet</h3><p>Create one to narrow what specific staff can do.</p></div>;
   return <div className="table-wrap admin-listing-table"><table><thead><tr><th>Role</th><th>Base Role</th><th>Restrictions</th><th>Assigned</th><th className="col-actions"><span className="sr-only">Actions</span></th></tr></thead><tbody>
     {config.roles.map(r => { const b = bindingsFor(config, r.id); return <tr key={r.id} data-testid={`row-custom-role-${r.id}`}>
       <td data-label="Role"><strong>{r.name}</strong></td><td data-label="Base Role">{label(r.baseRole)}</td><td data-label="Restrictions">{r.denied.length ? `${r.denied.length} removed` : "Same as base"}</td>
       <td data-label="Assigned">{b.length ? b.slice(0, 2).map(x => names.get(x.userId)?.fullName || "Staff member").join(", ") + (b.length > 2 ? ` +${b.length - 2}` : "") : "—"}</td>
-      <td data-label="Actions" className="col-actions"><div className="row-actions row-actions-end"><IconAction label={`Edit ${r.name}`} hint="Edit role" icon={<Pencil size={15} aria-hidden />} onClick={() => onEdit(r)} testId={`button-edit-role-${r.id}`} /><RowMenu label={`More actions for ${r.name}`} testId={`menu-role-${r.id}`} items={[{ key: "delete", label: "Delete Role", danger: true, testId: `button-delete-role-${r.id}`, onSelect: () => onDelete(r) }]} /></div></td>
+       <td data-label="Actions" className="col-actions"><div className="row-actions row-actions-end"><IconAction label={`Permissions for ${r.name}`} hint="Custom role permissions" icon={<ShieldCheck size={15}/>} onClick={()=>onPermissions?.(customSelection(r.id))} testId={`button-permissions-custom-${r.id}`}/><IconAction label={`Edit ${r.name}`} hint="Edit role" icon={<Pencil size={15} aria-hidden />} onClick={() => onEdit(r)} testId={`button-edit-role-${r.id}`} /><RowMenu label={`More actions for ${r.name}`} testId={`menu-role-${r.id}`} items={[{ key: "delete", label: "Delete Role", danger: true, testId: `button-delete-role-${r.id}`, onSelect: () => onDelete(r) }]} /></div></td>
     </tr>; })}
   </tbody></table></div>;
 }

@@ -2,6 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 const read = f => readFileSync(new URL(f, import.meta.url), "utf8");
+test("global staff management remains separate, reachable and Super Admin only",()=>{
+  const app=read("../App.tsx"),portal=read("../clinic.tsx"),settings=read("./ClinicSettings.tsx");
+  assert.match(app,/page==="staff"&&me\.data\.user\.role!=="superAdmin"/);
+  assert.match(app,/Redirect to="\/admin\/staff\?tab=doctors"/);
+  assert.match(portal,/page==="staff"&&identity\.user!\.role==="superAdmin"\?<Users identity=\{identity\}\/>/);
+  assert.match(settings,/href="\/admin\/staff" data-testid="link-global-staff"/);
+  assert.match(read("./ClinicRegistrationComplete.tsx"),/\/admin\/clinic\?clinicId=.*&section=staff/);
+});
 
 test("patients can open their own records from Profile, not only through staff listings", () => {
   const s = read("../clinic.tsx");

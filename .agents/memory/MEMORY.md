@@ -16,3 +16,5 @@
 - [Date/time reference scope](date-time-schedule-reference-scope.md) — four-issue scope only; reference layouts across pages/roles, preserving existing colours and styling.
 - [Uniform user journeys](uniform-user-journeys.md) — same function, same flow across roles; doctor hours may exceed location hours with warning; compact India-first controls.
 - [Bulk ticket completeness](bulk-ticket-completeness.md) — ticket exports must not silently deliver only the successful subset of selected appointments.
+- [Account status boundary](account-status-boundary.md) — account toggles must preserve exact assignment scope, not rebuild mappings from displayed clinic and branch lists.
+- [Concurrent validation readiness](concurrent-validation.md) — isolated successes can still time out under simultaneous cold compilation, PDF and PostgreSQL checks.

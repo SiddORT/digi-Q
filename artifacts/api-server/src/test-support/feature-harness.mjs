@@ -9,7 +9,7 @@ import { build } from "esbuild";
 const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 
-export async function createFeatureHarness() {
+export async function createFeatureHarness({administration=false}={}) {
   const pg = new PGlite();
   const journal = JSON.parse(await readFile(join(migrations, "meta/_journal.json"), "utf8"));
   for (const entry of journal.entries) {
@@ -26,12 +26,18 @@ export async function createFeatureHarness() {
       import { workspaceFeaturesRouter } from "./routes/workspace-features";
       import { patientRecordsRouter } from "./routes/patient-records";
       import { reportingRouter } from "./routes/reporting";
+      ${administration ? `import { resourcesRouter } from "./routes/resources";
+      import { systemUsersRouter } from "./routes/system-users";
+      import { permissionPolicyRouter } from "./routes/permission-policy";
+      import { nativeSession } from "./lib/native-auth";` : ""}
       import { errors } from "./lib/http";
       export function createApp() {
         const app = express();
+        ${administration ? `app.use(nativeSession);` : ""}
         app.use((req, _res, next) => { const id = req.get("x-test-user"); if (id) { req.authUserId = id; req.authSessionHash = "test-session-" + id; } next(); });
         app.use(express.json());
         app.use("/api", workspaceFeaturesRouter, patientRecordsRouter, reportingRouter);
+        ${administration ? `app.use("/api", resourcesRouter, systemUsersRouter, permissionPolicyRouter);` : ""}
         app.use(errors);
         return app;
       }` },
@@ -44,7 +50,14 @@ export async function createFeatureHarness() {
         import * as schema from "./src/schema";
         export * from "./src/schema";
         export const pool = null;
-        export const db = drizzle(globalThis.__featurePglite, { schema });` }));
+        export const db = drizzle(globalThis.__featurePglite, { schema });
+        ${administration ? `const transaction = db.transaction.bind(db);
+        db.transaction = async (...args) => {
+          const hook = globalThis.__featureBeforeTransaction;
+          globalThis.__featureBeforeTransaction = null;
+          if (hook) await hook();
+          return transaction(...args);
+        };` : ""}` }));
       b.onResolve({ filter: /\/document-storage$/ }, () => ({ path: "storage", namespace: "memory-storage" }));
       b.onLoad({ filter: /.*/, namespace: "memory-storage" }, () => ({ contents: `
         let n = 0;
@@ -66,5 +79,5 @@ export async function createFeatureHarness() {
     const data = type.includes("json") ? await res.json() : Buffer.from(await res.arrayBuffer());
     return { status: res.status, data, headers: res.headers };
   }
-  return { pg, call, blobs, async close() { server.close(); await pg.close(); await rm(bundle, { force: true }); } };
+  return { pg, call, blobs, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
 }

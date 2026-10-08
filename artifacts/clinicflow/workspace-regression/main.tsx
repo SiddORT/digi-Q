@@ -7,6 +7,7 @@ import { WorkspaceNav } from "../src/components/WorkspaceNav";
 import { Redirect, useLocation, useSearch } from "wouter";
 import { clinicLandingDestination } from "../src/lib/clinic-navigation";
 import { Users } from "../src/Users";
+import { UsersWorkspace } from "../src/clinic";
 import "./workspace.css";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
@@ -20,8 +21,8 @@ const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
 const browsing=location.startsWith("/admin/");
-const mode = browsing?(location==="/admin/clinic"?"settings":"resource"):params.get("mode");
-if (mode !== "resource" && mode !== "settings" && mode !== "staff") throw new Error(`Unknown isolated fixture mode: ${mode}`);
+const mode = browsing?(location==="/admin/clinic"?"settings":location==="/admin/users"?"users":location==="/admin/staff"?"staff":"resource"):params.get("mode");
+if (mode !== "resource" && mode !== "settings" && mode !== "staff" && mode !== "users") throw new Error(`Unknown isolated fixture mode: ${mode}`);
 const resource = params.get("resource") || "clinics";
 const fixedClinicId = params.get("fixedClinicId") || undefined;
 const fixtureRole=params.get("fixtureRole")==="clinicAdmin"?"clinicAdmin":params.get("fixtureRole")==="doctor"?"doctor":"superAdmin";
@@ -39,13 +40,14 @@ return (
         <header className="topbar"><div className="breadcrumb">Workspace · {mode === "settings" ? "Settings" : mode === "staff" ? "Staff" : resource}</div></header>
         <main className="content">
           <div className="page-heading"><h1>{mode === "settings" ? "Clinic settings" : mode === "staff" ? "Staff" : resource}</h1></div>
-          {redirect?<Redirect to={redirect}/>:mode === "settings" ? <ClinicSettings identity={fixtureIdentity}/> : mode === "staff" ? <Users identity={fixtureIdentity} clinicId={fixedClinicId} embedded={!!fixedClinicId}/> : <ResourcePage resource={resource} identity={fixtureIdentity} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId}/>}
+          {redirect?<Redirect to={redirect}/>:mode === "users" ? <UsersWorkspace identity={fixtureIdentity}/> : mode === "settings" ? <ClinicSettings identity={fixtureIdentity}/> : mode === "staff" ? <Users identity={fixtureIdentity} clinicId={fixedClinicId} embedded={!!fixedClinicId}/> : <ResourcePage resource={resource} identity={fixtureIdentity} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId}/>}
         </main>
       </div>
     </div>
 );
 }
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, refetchInterval: false }, mutations: { retry: false } } });
+
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
     <FixtureWorkspace/>

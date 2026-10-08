@@ -287,6 +287,19 @@ test("branch option errors are not reported as empty or endless loading, and kee
   await expect(page.getByText("Searching...", { exact: true })).toHaveCount(0);
 });
 
+test("clinic staff link preserves global editing for unassigned staff outside Users administration",async({page})=>{
+  const state=await fixture(page);
+  state.staff.clinicIds=[];state.staff.branchIds=[];
+  await page.goto("/?mode=settings&clinicId=clinic-1&section=staff");
+  const link=page.getByTestId("link-global-staff");
+  await expect(link).toHaveAttribute("href","/admin/staff");
+  await link.click();await expect(page).toHaveURL(/\/admin\/staff(?:\?.*)?$/);
+  const listing=page.waitForRequest(r=>new URL(r.url()).pathname==="/api/users"&&new URL(r.url()).searchParams.get("role")==="receptionist"&&!new URL(r.url()).searchParams.has("clinicId"));
+  await page.getByTestId("tab-staff-receptionists").click();await listing;
+  await page.getByRole("button",{name:"Edit Fixture Receptionist"}).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByLabel("Full Name")).toBeEnabled();
+});
 test("the real Staff page confirms status changes, invalidates lists, and reports rejection", async ({ page }) => {
   const state = await fixture(page);
   page.on("dialog", dialog => dialog.dismiss());
