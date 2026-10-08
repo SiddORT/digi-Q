@@ -20,3 +20,9 @@ Run the full backend suite serially when it includes disposable native PostgreSQ
 **Why:** Parallel cluster initialization on this container exceeded the harness's initdb timeout, producing environment failures unrelated to the feature under test.
 
 **How to apply:** Use Node's `--test-concurrency=1` for the combined backend suite; keep focused pure-unit runs separate.
+
+Register shared Node test cleanup hooks at file or suite scope, not inside a setup hook.
+
+**Why:** A cleanup hook registered inside a before hook can belong to that hook's context and close the disposable server before the first test request.
+
+**How to apply:** Register teardown alongside setup, guard partially initialized resources, and keep setup-failure cleanup in the harness.
