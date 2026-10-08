@@ -65,3 +65,9 @@ Keep independently runnable browser regression suites in distinct output directo
 **Why:** A workspace browser run overlapped an existing ticket-test workflow; Playwright's startup cleanup removed the other run's active traces and produced missing-file failures unrelated to the application.
 
 **How to apply:** Scope each suite's output directory independently before running alongside managed test workflows. Do not attribute trace/report cleanup failures to product behavior or re-run unrelated flows to compensate.
+
+Treat eligible-option cardinality as part of a browser fixture's behavioral contract.
+
+**Why:** Picker regressions initially looked like stale accessible names, but the fixtures offered only one eligible location, intentionally selecting the read-only journey instead of the searchable journey. Changing selectors alone could not repair that mismatch.
+
+**How to apply:** Give searchable-choice tests multiple eligible options within the actual parent scope. Keep sole-option tests separate; never disable automatic selection or weaken selected-value, save/reopen, or scope assertions to make a picker test pass.

@@ -11,6 +11,7 @@ const branch = {
 };
 const staff = { id: "staff-1", fullName: "Fixture Receptionist", email: "fixture@example.invalid", status: "active", role: "receptionist", clinicIds: [clinic.id], branchIds: [branch.id] };
 const otherBranch = { ...branch, id: "branch-2", clinicId: otherClinic.id, name: "Other Fixture Location", slug: "other-fixture-location" };
+const patient = { id: "patient-1", fullName: "Fixture Patient", status: "active", clinicId: clinic.id, branchId: branch.id };
 type Calls = { method: string; pathname: string; params: URLSearchParams; body?: unknown };
 type Fixture = {
   calls: Calls[];
@@ -18,13 +19,21 @@ type Fixture = {
   staff: typeof staff;
   failStatus: boolean;
   failBranches: boolean;
+  patients: (typeof patient)[];
 };
 const listing = (items: unknown[]) => ({ items, total: items.length, page: 1, pageSize: 20, totalPages: 1 });
 
-async function fixture(page: Page, multiClinic = false): Promise<Fixture> {
+async function fixture(page: Page, multiClinic = false, patientPickers = false): Promise<Fixture> {
   // External fonts are not part of the behavior under test and can hold load open offline.
   await page.route(/https:\/\/fonts\.(googleapis|gstatic)\.com\//,route=>route.abort());
-  const state: Fixture = { calls: [], previewCount: 0, staff: { ...staff }, failStatus: false, failBranches: false };
+  const state: Fixture = { calls: [], previewCount: 0, staff: { ...staff }, failStatus: false, failBranches: false, patients: [{ ...patient }] };
+  // Picker journeys need more than one in-scope option: a sole location is
+  // intentionally auto-selected and rendered read-only by the shared lookup.
+  const branches = [
+    branch,
+    ...(patientPickers ? [{ ...branch, id: "branch-alternate", name: "Alternate Fixture Location" }] : []),
+    ...(multiClinic ? [otherBranch, ...(patientPickers ? [{ ...otherBranch, id: "branch-other-alternate", name: "Alternate Other Location" }] : [])] : []),
+  ];
   // Intercept all application API requests, including unexpected endpoints. Never proxy to a running API.
   await page.route("**/api/**", async (route: Route) => {
     const request = route.request();
@@ -36,13 +45,14 @@ async function fixture(page: Page, multiClinic = false): Promise<Fixture> {
     state.calls.push({ method, pathname: path, params: url.searchParams, body });
     let reply: unknown;
     let status = 200;
-    if (path === "/api/settings") reply = { timezone: "Asia/Kolkata" };
+    if (path === "/api/auth/csrf") reply = { csrfToken: "workspace-fixture" };
+    else if (path === "/api/settings") reply = { timezone: "Asia/Kolkata" };
     else if (path === "/api/me") reply = { clerkId: "fixture-only", user: { id: "fixture-admin", role: "superAdmin", fullName: "Fixture Administrator" }, doctorId: "doctor-1" };
     else if (path === "/api/clinics" && method === "GET") reply = listing((multiClinic ? [clinic, otherClinic] : [clinic]).filter(item =>
      (!url.searchParams.get("search") || item.name.toLowerCase().includes(url.searchParams.get("search")!.toLowerCase())) &&
      (!url.searchParams.get("status") || item.status === url.searchParams.get("status"))));
     else if (path === "/api/branches" && method === "GET" && state.failBranches) { status = 503; reply = { message: "Fixture branch lookup unavailable" }; }
-    else if (path === "/api/branches" && method === "GET") reply = listing((multiClinic ? [branch, otherBranch] : [branch]).filter(item =>
+    else if (path === "/api/branches" && method === "GET") reply = listing(branches.filter(item =>
       (!url.searchParams.get("clinicId") || url.searchParams.get("clinicId") === item.clinicId) &&
       (!url.searchParams.get("search") || item.name.toLowerCase().includes(url.searchParams.get("search")!.toLowerCase()))));
     else if (path === "/api/users" && method === "GET") reply = listing(
@@ -50,7 +60,16 @@ async function fixture(page: Page, multiClinic = false): Promise<Fixture> {
       (!url.searchParams.get("status") || url.searchParams.get("status") === state.staff.status) ? [state.staff] : [],
     );
     else if (path === "/api/users/staff-1" && method === "GET") reply = state.staff;
-    else if (path === "/api/patients" && method === "GET") reply = listing([{ id: "patient-1", fullName: "Fixture Patient", status: "active", clinicId: clinic.id, branchId: branch.id }]);
+    else if (path === "/api/patients" && method === "GET") reply = listing(state.patients);
+    else if (path === "/api/patients" && method === "POST") {
+      const created = { ...patient, ...(body as object), id: "patient-2" };
+      state.patients.push(created); reply = created;
+    }
+    else if (path.startsWith("/api/patients/") && ["GET", "PATCH"].includes(method)) {
+      const record = state.patients.find(item => item.id === path.split("/").at(-1));
+      if (!record) { status = 404; reply = { message: "Fixture patient not found" }; }
+      else { if (method === "PATCH") Object.assign(record, body); reply = record; }
+    }
     else if (path === "/api/doctors" && method === "GET") reply = listing([{ id: "doctor-1", fullName: "Fixture Doctor", userId: "fixture-admin", status: "active", branchIds: [branch.id] }]);
     else if (path === "/api/masters" && method === "GET") reply = listing([]);
     else if (path === "/api/staff-assignment-options") reply = {clinics:[clinic],branches:[branch],doctors:[{id:"doctor-1",fullName:"Fixture Doctor"}],pagination:{clinics:{total:1},branches:{total:1},doctors:{total:1}}};
@@ -182,7 +201,8 @@ test("long and absent clinic information keeps actions usable on desktop, tablet
 });
 const pageUrl = (resource: string, query = "") => `/?mode=resource&resource=${resource}${query ? `&${query}` : ""}`;
 async function screenshot(page: Page, filename: string) {
-  const dir = "screenshots/workspace-regression";
+  // Generated captures belong to this case's artifacts, not tracked historical images.
+  const dir = test.info().outputPath("screenshots");
   await mkdir(dir, { recursive: true });
   await page.screenshot({ path: `${dir}/${filename}`, fullPage: true });
 }
@@ -351,57 +371,89 @@ test("embedded locations never request another clinic even with a foreign URL fi
 });
 
 test("create form preserves clinic and branch across unrelated edits, search and option refresh", async ({ page }) => {
-  const state = await fixture(page, true);
+  const state = await fixture(page, true, true);
   await page.goto(pageUrl("patients"));
   await page.getByTestId("button-add-patients").click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByRole("combobox", { name: /^Clinic/ }).click();
+  await dialog.getByRole("button", { name: "Clinic Group", exact: true }).click();
   await page.getByRole("option", { name: "Fixture Clinic", exact: true }).click();
-  await dialog.getByRole("combobox", { name: /^Branch/ }).click();
+  await dialog.getByRole("button", { name: "Clinic", exact: true }).click();
   await page.getByRole("option", { name: "Fixture Location", exact: true }).click();
-  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
   const clinicRequests = listCalls(state, "/api/clinics").length;
   const branchRequests = listCalls(state, "/api/branches").length;
   await dialog.getByTestId("input-fullName").fill("Unsaved Name");
-  await dialog.getByRole("combobox", { name: /^Clinic/ }).click();
-  await page.getByPlaceholder("Search clinic...").fill("Other");
+  await dialog.getByRole("button", { name: "Clinic Group: Fixture Clinic", exact: true }).click();
+  await page.getByPlaceholder("Search clinic group…", { exact: true }).fill("Other");
   await expect.poll(() => listCalls(state, "/api/clinics").filter(call => call.params.get("search") === "Other").length).toBe(1);
-  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
-  await expect(dialog.getByRole("combobox", { name: /Clinic: Fixture Clinic/ })).toBeVisible();
-  await dialog.getByRole("combobox", { name: /^Clinic/ }).click();
+  await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Clinic Group: Fixture Clinic", exact: true })).toBeVisible();
+  await dialog.getByRole("button", { name: "Clinic Group: Fixture Clinic", exact: true }).click();
   await expect(dialog.getByTestId("input-fullName")).toHaveValue("Unsaved Name");
   expect(listCalls(state, "/api/branches")).toHaveLength(branchRequests);
   expect(listCalls(state, "/api/clinics")).toHaveLength(clinicRequests + 1);
+  await dialog.getByTestId("button-save").click();
+  await expect(dialog).toHaveCount(0);
+  expect(state.calls.find(call => call.pathname === "/api/patients" && call.method === "POST")?.body).toMatchObject({
+    fullName: "Unsaved Name", clinicId: "clinic-1", branchId: "branch-1",
+  });
+  await page.getByRole("button", { name: "Edit Unsaved Name", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: "Clinic Group: Fixture Clinic", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
 });
 
 test("edit form retains valid branch for unchanged clinic and removes it for another clinic", async ({ page }) => {
-  const state = await fixture(page, true);
+  const state = await fixture(page, true, true);
   await page.goto(pageUrl("patients"));
   await page.getByRole("button", { name: /Edit Fixture Patient/ }).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("combobox", { name: /Clinic: Fixture Clinic/ })).toBeVisible();
-  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Clinic Group: Fixture Clinic", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
+  await dialog.getByTestId("input-fullName").fill("Cancelled edit");
+  await dialog.getByTestId("button-dialog-close").click();
+  await page.getByRole("button", { name: "Discard changes", exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(state.calls.filter(call => call.pathname === "/api/patients/patient-1" && call.method === "PATCH")).toHaveLength(0);
+  await page.getByRole("button", { name: "Edit Fixture Patient", exact: true }).click();
+  await expect(dialog.getByTestId("input-fullName")).toHaveValue("Fixture Patient");
+  await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
   await dialog.getByTestId("input-fullName").fill("Unsaved edit");
-  await dialog.getByRole("combobox", { name: /^Clinic/ }).click();
+  await dialog.getByRole("button", { name: "Clinic Group: Fixture Clinic", exact: true }).click();
   await page.getByRole("option", { name: "Other Fixture Clinic", exact: true }).click();
   await expect.poll(() => listCalls(state, "/api/branches").some(call => call.params.get("clinicId") === "clinic-2")).toBe(true);
-  await expect(dialog.getByRole("combobox", { name: /^Branch/ })).not.toHaveAttribute("aria-label", /Branch: Fixture Location/);
+  await expect(dialog.getByRole("button", { name: "Clinic", exact: true })).toHaveAttribute("aria-label", "Clinic");
   await expect(dialog.getByTestId("input-fullName")).toHaveValue("Unsaved edit");
+  await dialog.getByRole("button", { name: "Clinic", exact: true }).click();
+  await page.getByRole("option", { name: "Other Fixture Location", exact: true }).click();
+  await dialog.getByTestId("button-save").click();
+  await expect(dialog).toHaveCount(0);
+  expect(state.calls.find(call => call.pathname === "/api/patients/patient-1" && call.method === "PATCH")?.body).toMatchObject({
+    fullName: "Unsaved edit", clinicId: "clinic-2", branchId: "branch-2",
+  });
+  await page.getByRole("button", { name: "Edit Unsaved edit", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: "Clinic Group: Other Fixture Clinic", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Clinic: Other Fixture Location", exact: true })).toBeVisible();
 });
 
 test("branch option errors are not reported as empty or endless loading, and keep the edit selection", async ({ page }) => {
-  const state = await fixture(page);
+  const state = await fixture(page, false, true);
   await page.goto(pageUrl("patients"));
   await page.getByRole("button", { name: /Edit Fixture Patient/ }).click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
   state.failBranches = true;
-  await dialog.getByRole("combobox", { name: /^Branch/ }).click();
-  await page.getByPlaceholder("Search branch...").fill("missing");
+  await dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true }).click();
+  await page.getByPlaceholder("Search clinic…", { exact: true }).fill("missing");
   await expect.poll(() => listCalls(state, "/api/branches").filter(call => call.params.get("search") === "missing").length).toBe(1);
-  await expect(dialog.getByRole("alert")).toContainText("Fixture branch lookup unavailable");
-  await expect(dialog.getByRole("combobox", { name: /Branch: Fixture Location/ })).toBeVisible();
-  await expect(page.getByText("Searching...", { exact: true })).toHaveCount(0);
+  const lookupError = dialog.getByRole("alert").filter({ hasText: "Your selection has been retained." });
+  await expect(lookupError).toContainText("Unable to load options.");
+  await expect(lookupError.getByRole("button", { name: "Retry Options", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
+  await expect(page.getByText(/^Searching(?:…|\.\.\.)$/)).toHaveCount(0);
+  state.failBranches = false;
+  await lookupError.getByRole("button", { name: "Retry Options", exact: true }).click();
+  await expect(lookupError).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Clinic: Fixture Location", exact: true })).toBeVisible();
 });
 
 test("clinic staff link preserves global editing for unassigned staff outside Users administration",async({page})=>{
@@ -422,7 +474,6 @@ test("clinic staff link preserves global editing for unassigned staff outside Us
 });
 test("the real Staff page confirms status changes, invalidates lists, and reports rejection", async ({ page }) => {
   const state = await fixture(page);
-  page.on("dialog", dialog => dialog.dismiss());
   await page.goto("/?mode=staff&tab=receptionists");
   const row = page.getByRole("row").filter({ hasText: "Fixture Receptionist" });
   await expect(row).toBeVisible();
@@ -430,13 +481,18 @@ test("the real Staff page confirms status changes, invalidates lists, and report
   const switchLabel = row.locator("label.staff-status-switch");
   await expect(statusSwitch).toHaveAttribute("aria-checked", "true");
   await switchLabel.click();
+  const confirmation = page.getByRole("dialog", { name: "Deactivate Fixture Receptionist?" });
+  await expect(confirmation).toBeVisible();
+  await confirmation.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(confirmation).toHaveCount(0);
+  await expect(statusSwitch).toHaveAttribute("aria-checked", "true");
   expect(state.calls.filter(call => call.pathname === "/api/users/staff-1" && call.method === "PATCH")).toHaveLength(0);
-  page.removeAllListeners("dialog");
-  page.on("dialog", dialog => dialog.accept());
+  const beforeSave = listCalls(state, "/api/users").filter(call => call.params.get("role") === "receptionist").length;
   await switchLabel.click();
+  await confirmation.getByRole("button", { name: "Deactivate", exact: true }).click();
   await expect.poll(() => state.calls.filter(call => call.pathname === "/api/users/staff-1" && call.method === "PATCH").length).toBe(1);
   await expect.poll(() => state.staff.status).toBe("inactive");
-  await expect.poll(() => listCalls(state, "/api/users").filter(call => call.params.get("role") === "receptionist").length).toBeGreaterThan(4);
+  await expect.poll(() => listCalls(state, "/api/users").filter(call => call.params.get("role") === "receptionist").length).toBeGreaterThan(beforeSave);
   await expect(row.getByRole("switch")).toHaveAttribute("aria-checked", "false");
   state.failStatus = true;
   await switchLabel.click();
@@ -445,51 +501,77 @@ test("the real Staff page confirms status changes, invalidates lists, and report
   await screenshot(page, "staff-status-rejected-desktop.png");
 });
 
-test("clinic sections are navigation, not tabs, and a conflict never enables Apply", async ({ page }) => {
+test("clinic section tabs retain selection and a conflict never enables Apply", async ({ page }) => {
   const state = await fixture(page);
   await page.goto("/?mode=settings&clinicId=clinic-1&section=locations");
-  await expect(page.getByRole("navigation", { name: "Clinic configuration sections" })).toBeVisible();
-  await expect(page.getByRole("tablist", { name: "Clinic configuration sections" })).toHaveCount(0);
+  const sections = page.getByRole("tablist", { name: "Clinic sections" });
+  await expect(sections).toBeVisible();
+  await expect(sections.getByRole("tab", { name: "Locations", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(sections.getByRole("tab", { name: "Sessions", exact: true })).toHaveCount(0);
   await page.getByTestId("row-branches-branch-1").getByRole("button", { name: "Edit" }).click();
   await page.getByRole("button", { name: "Review changes" }).click();
-  await page.getByRole("button", { name: "Preview changes" }).click();
   await expect(page.getByText("Existing booked session cannot change.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Apply reviewed changes" })).toBeDisabled();
-  await page.locator("details").filter({ has: page.locator("summary").filter({ hasText: /^Monday/ }) }).locator("summary").click();
-  await page.getByLabel("Shift 1 starts").fill("09:30");
+  expect(state.calls.filter(call => call.pathname === "/api/clinics/clinic-1/settings" && call.method !== "GET")).toHaveLength(0);
+  await page.getByTestId("hours-startTime-1-0").fill("9:30 AM");
+  await page.getByTestId("hours-startTime-1-0").press("Tab");
   await page.getByRole("button", { name: "Review changes" }).click();
-  await page.getByRole("button", { name: "Preview changes" }).click();
   await expect.poll(() => state.previewCount).toBe(2);
+  const preview = state.calls.filter(call => call.pathname === "/api/clinics/clinic-1/settings/preview").at(-1)?.body;
+  expect(preview).toMatchObject({ branches: [{ id: "branch-1", openingHours: [{ dayOfWeek: 1, startTime: "09:30", endTime: "17:00" }] }] });
   await expect(page.getByRole("button", { name: "Apply reviewed changes" })).toBeEnabled();
   await screenshot(page, "clinic-location-review-desktop.png");
-  await expect(page.getByLabel("Clinic section")).toBeHidden();
+  // AppDialog makes the background inert; assert its retained state by test id.
+  await expect(page.getByTestId("tab-clinic-locations")).toHaveAttribute("aria-selected", "true");
 });
 
 test("embedded scheduling changes section without leaving the selected clinic", async ({ page }) => {
   const state = await fixture(page);
-  await page.goto("/?mode=settings&clinicId=clinic-1&section=sessions");
+  await page.goto("/?mode=schedule&fixedClinicId=clinic-1");
   const scheduling = page.getByRole("region", { name: "Scheduling workspace" });
   await expect(scheduling).toBeVisible();
   await expect(scheduling.getByLabel("Clinic", { exact: true })).toHaveCount(0);
-  await scheduling.getByLabel("Schedule section").selectOption("exceptions");
-  await expect(page).toHaveURL(/section=sessions.*schedule=exceptions/);
-  await expect(scheduling.getByLabel("Schedule section")).toHaveValue("exceptions");
+  await scheduling.getByRole("tab", { name: "Exceptions", exact: true }).click();
+  await expect(page).toHaveURL(/fixedClinicId=clinic-1.*schedule=exceptions/);
+  await expect(scheduling.getByRole("tab", { name: "Exceptions", exact: true })).toHaveAttribute("aria-selected", "true");
   await expect.poll(() => state.calls.filter(call => call.pathname.includes("exceptions")).at(-1)?.params.get("clinicId")).toBe("clinic-1");
   await page.reload();
-  await expect(scheduling.getByLabel("Schedule section")).toHaveValue("exceptions");
-  await scheduling.getByLabel("Schedule section").selectOption("availability");
-  await expect(scheduling.getByLabel("Schedule section")).toHaveValue("availability");
+  await expect(scheduling.getByRole("tab", { name: "Exceptions", exact: true })).toHaveAttribute("aria-selected", "true");
+  await scheduling.getByRole("tab", { name: "Weekly", exact: true }).click();
+  await expect(scheduling.getByRole("tab", { name: "Weekly", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect.poll(() => listCalls(state, "/api/schedules").at(-1)?.params.get("clinicId")).toBe("clinic-1");
+  expect(state.calls.filter(call => ["/api/schedules", "/api/availability-exceptions"].includes(call.pathname)).every(call => call.params.get("clinicId") === "clinic-1")).toBe(true);
+});
+
+test("supported schedule routes retain clinic scope through tabs and reload", async ({ page }) => {
+  const state = await fixture(page);
+  await page.goto("/admin/availability?clinicId=clinic-1");
+  const scheduling = page.getByRole("region", { name: "Scheduling workspace" });
+  await expect(scheduling.getByRole("tab", { name: "Weekly", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect.poll(() => listCalls(state, "/api/schedules").at(-1)?.params.get("clinicId")).toBe("clinic-1");
+  await scheduling.getByRole("tab", { name: "Exceptions", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/exceptions\?clinicId=clinic-1$/);
+  await expect.poll(() => listCalls(state, "/api/availability-exceptions").at(-1)?.params.get("clinicId")).toBe("clinic-1");
+  await page.reload();
+  await expect(scheduling.getByRole("tab", { name: "Exceptions", exact: true })).toHaveAttribute("aria-selected", "true");
+  await scheduling.getByRole("tab", { name: "Weekly", exact: true }).click();
+  await expect(page).toHaveURL(/\/admin\/availability\?clinicId=clinic-1$/);
+  await expect(scheduling.getByRole("tab", { name: "Weekly", exact: true })).toHaveAttribute("aria-selected", "true");
 });
 
 test("mobile clinic workspace and list remain readable without overflow or undersized actions", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await fixture(page);
   await page.goto("/?mode=settings&clinicId=clinic-1&section=locations");
-  await expect(page.getByLabel("Clinic section")).toBeVisible();
+  await expect(page.getByRole("tablist", { name: "Clinic sections" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Locations", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByTestId("row-branches-branch-1")).toBeVisible();
   expect(await utilityDisplays(page)).toEqual({ flex: "flex", hidden: "none" });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await screenshot(page, "clinic-settings-mobile.png");
-  await expect(page.getByRole("navigation", { name: "Clinic configuration sections" })).toBeHidden();
+  await page.getByRole("tab", { name: "Policies", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Edit Policies", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/clinicId=clinic-1.*section=policies/);
   await page.goto(pageUrl("clinics"));
   await expect(page.getByTestId("row-clinics-clinic-1")).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -624,7 +706,7 @@ for (const listingPage of compactPages) {
 }
 
 test("compact drawers commit combined filters, staff type and appointment time view",async({page})=>{
-  const state=await fixture(page);
+  const state=await fixture(page, true);
   const open=async()=>{await page.getByTestId("button-toggle-advanced-filters").click();};
   const choose=async(label:RegExp,option:string)=>{
     await page.getByTestId("form-filter-drawer").getByRole("button",{name:label}).click();
