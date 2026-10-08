@@ -8,6 +8,7 @@ import { DateTimePreferencesProvider } from "../DateTimePreferences";
 import { WeeklyScheduleEditor } from "./WeeklyScheduleEditor";
 import { useConfirm } from "../ConfirmDialog";
 import { formatDate, resolveDateTimePreferences } from "../../lib/date-time";
+import { useDirectoryActor } from "../../lib/use-directory";
 
 /** Saved context only: profile drafts never become schedule write targets. */
 export function DoctorScheduleContext({doctor, autoFocus, assignmentDirty, profileBusy, onDirtyChange, onBusyChange}: {
@@ -15,6 +16,7 @@ export function DoctorScheduleContext({doctor, autoFocus, assignmentDirty, profi
   onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void;
 }) {
   const client = useQueryClient();
+  const actor = useDirectoryActor();
   const confirm = useConfirm();
   const section = useRef<HTMLElement>(null);
   const [location, setLocation] = useState("");
@@ -25,7 +27,7 @@ export function DoctorScheduleContext({doctor, autoFocus, assignmentDirty, profi
   const [exceptionsOpen, setExceptionsOpen] = useState(false);
   const ids: string[] = doctor.branchIds || [];
   const locations = useQuery({
-    queryKey: ["doctor-editor-locations", doctor.id, ids.join(",")],
+    queryKey: ["doctor-editor-locations", actor, doctor.id, ids.join(",")],
     enabled: !!doctor.id && !!ids.length, retry: false,
     queryFn: () => Promise.all(ids.map(id => api.getBranch(id))),
   });
@@ -77,7 +79,7 @@ export function DoctorScheduleContext({doctor, autoFocus, assignmentDirty, profi
     <div className="form-grid">
       <div><label>Doctor · fixed record</label><div className="doctor-context-value">{doctor.fullName||"Save the new doctor first"}</div></div>
       {valid.length===1?<div><label>Assigned location · fixed</label><div className="doctor-context-value">{valid[0].name}</div></div>:
-        valid.length>1?<SearchableSelect label="Saved assigned location" value={location} disabled={busy||profileBusy} onChange={value=>void changeLocation(value)} options={valid.map(b=>({value:b.id,label:b.name}))}/>:null}
+        valid.length>1?<SearchableSelect labelScope={JSON.stringify([actor,doctor.id])} retainSelectionLabel={false} label="Saved assigned location" value={location} disabled={busy||profileBusy} onChange={value=>void changeLocation(value)} options={valid.map(b=>({value:b.id,label:b.name}))}/>:null}
     </div>
     {!doctor.id?<p className="notice">Add the doctor first. This editor will stay open for schedule setup.</p>:
       !ids.length?<p className="notice">No saved location assignments. <button type="button" onClick={()=>{const el=document.getElementById("doctor-assignments");el?.scrollIntoView({block:"start"});el?.querySelector<HTMLElement>("button,input")?.focus();}}>Set up assignments</button> Select a location above and Save Doctor Details.</p>:

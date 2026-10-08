@@ -11,6 +11,7 @@ import { UsersWorkspace, Appointments } from "../src/clinic";
 import { SchedulingWorkspace } from "../src/components/SchedulingWorkspace";
 import { ListPageTitleContext } from "../src/components/ListingControls";
 import "./workspace.css";
+import { SelectorFixture } from "./SelectorFixture";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -23,6 +24,7 @@ const titleOwner=useRef<string|null>(null);
 const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
+if (["selectors", "queue"].includes(params.get("mode") || "")) return <SelectorFixture queue={params.get("mode")==="queue"} pinned={params.get("pinned")==="1"} role={params.get("fixtureRole")||"doctor"}/>;
 const browsing=location.startsWith("/admin/");
 const [initialMode]=useState(()=>params.get("mode"));
 const scheduleRoute = /^\/(admin|doctor|receptionist)\/(availability|exceptions)$/.exec(location);

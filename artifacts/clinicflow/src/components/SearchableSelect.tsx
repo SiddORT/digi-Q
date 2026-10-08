@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { readableLabel } from "@/lib/selection-label";
 
 export interface SearchableSelectProps extends Pick<React.AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> {
   options: { value: string; label: string; disabled?: boolean; /** Compact text for the closed control (e.g. "+91 IN"); label stays searchable. */ selectedLabel?: string }[];
@@ -22,6 +23,9 @@ export interface SearchableSelectProps extends Pick<React.AriaAttributes, "aria-
   id?: string;
   /** Test id applied to the trigger button. */
   testId?: string;
+  /** Actor/resource scope for retained display labels. */
+  labelScope?: string;
+  retainSelectionLabel?: boolean;
 }
 
 export function SearchableSelect({
@@ -40,6 +44,8 @@ export function SearchableSelect({
   onRetry,
   id,
   testId,
+  labelScope = "",
+  retainSelectionLabel = true,
   "aria-describedby": describedBy,
   "aria-invalid": invalid,
   "aria-required": ariaRequired,
@@ -55,18 +61,14 @@ export function SearchableSelect({
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // Preserve selected label even if it's not in the current options list (e.g. after search)
-  const [selectedLabel, setSelectedLabel] = useState<string>("");
-
+  const retained = useRef({ value: "", scope: "", label: "" });
+  const option = options.find(opt => opt.value === value);
+  const currentLabel = readableLabel(option?.selectedLabel || option?.label, value);
+  const selectedLabel = currentLabel || (retainSelectionLabel && !error && retained.current.value === value && retained.current.scope === labelScope ? retained.current.label : "");
   useEffect(() => {
-    if (!value) {
-      setSelectedLabel("");
-      return;
-    }
-    const option = options.find((opt) => opt.value === value);
-    if (option) {
-      setSelectedLabel(option.selectedLabel || option.label);
-    }
-  }, [value, options]);
+    retained.current = { value, scope: labelScope, label: selectedLabel };
+  }, [value, labelScope, selectedLabel]);
+  const displayLabel = selectedLabel || (loading ? "Loading selected name…" : error ? "Selected name could not be loaded" : "Selected item unavailable");
 
   const handleSearch = (term: string) => {
     setSearch(term);
@@ -105,7 +107,7 @@ export function SearchableSelect({
   const displayOptions = onSearchChange
     ? options
     : options.filter((opt) =>
-        opt.label.toLowerCase().includes(search.toLowerCase())
+        readableLabel(opt.label, opt.value).toLowerCase().includes(search.toLowerCase())
       );
 
   return (
@@ -139,7 +141,7 @@ export function SearchableSelect({
               className="absolute inset-0 z-0 h-full w-full rounded-lg bg-transparent outline-none cursor-pointer"
               aria-label={
                 value
-                  ? `${label || "Selected item"}: ${selectedLabel || (loading ? "Loading" : error ? "unavailable" : value)}`
+                  ? `${label || "Selected item"}: ${displayLabel}`
                   : label || placeholder
               }
             />
@@ -152,7 +154,7 @@ export function SearchableSelect({
               !value ? "text-muted-foreground" : "text-foreground font-medium"
             )}
           >
-            {value ? selectedLabel || (loading ? "Loading…" : error ? "Selected item unavailable" : value) : placeholder}
+            {value ? displayLabel : placeholder}
           </span>
 
           <div className="relative z-20 flex items-center gap-1 shrink-0 px-1">
@@ -202,7 +204,7 @@ export function SearchableSelect({
                 {displayOptions.map((option) => (
                   <CommandItem
                     key={option.value}
-                    value={onSearchChange ? option.value : option.label}
+                    value={onSearchChange ? option.value : readableLabel(option.label, option.value) || "Name unavailable"}
                     disabled={option.disabled}
                     onSelect={() => {
                       onChange(option.value);
@@ -218,7 +220,7 @@ export function SearchableSelect({
                         value === option.value ? "opacity-100 text-primary" : "opacity-0"
                       )}
                     />
-                    <span className="min-w-0 break-words">{option.label}{value === option.value && <span className="sr-only"> (selected)</span>}</span>
+                     <span className="min-w-0 break-words">{readableLabel(option.label, option.value) || "Name unavailable"}{value === option.value && <span className="sr-only"> (selected)</span>}</span>
                   </CommandItem>
                 ))}
                 {hasMore && (
@@ -235,7 +237,7 @@ export function SearchableSelect({
           </Command>
         </PopoverContent>
       </Popover>
-      {error && <p id={errorId} role="alert" className="text-xs font-medium text-destructive mt-1">{error}</p>}
+      {error && <p id={errorId} role="alert" className="text-xs font-medium text-destructive mt-1">{error} {onRetry && <button type="button" onClick={onRetry}>Retry names</button>}</p>}
     </div>
   );
 }

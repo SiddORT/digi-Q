@@ -11,7 +11,7 @@ import { PhoneInput } from "./PhoneInput";
 import { validateEmail, validatePhone } from "../lib/validators";
 import * as api from "@workspace/api-client-react";
 import { Form } from "./ui/form";
-import { CareLookup } from "./CareLookup";
+import { CareLookup, useSelectedCare } from "./CareLookup";
 import { ErrorNotice, today } from "../resources";
 import { useFreshWorkspace } from "./queue/useFreshWorkspace";
 import { canPollGuestReceipt } from "../guest-receipt";
@@ -32,6 +32,10 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  const [updated,setUpdated]=useState(0);
  const [branchId,setBranch]=useState(context.branchId||"");
  const [doctorId,setDoctor]=useState(context.doctorId||"");
+   // Private recovered tickets already have receipt names; public display hydration
+   // is only needed while choosing/reviewing a new visit.
+   const selectedBranch = useSelectedCare("branches",!committed&&!receipt?branchId:"",true,{clinicId:context.clinicId,doctorId:context.doctorId||undefined});
+   const selectedDoctor = useSelectedCare("doctors",!committed&&!receipt?doctorId:"",true,{clinicId:context.clinicId,branchId});
  const [date,setDate]=useState(today(context.branchTimezone||undefined));
   const [finding,setFinding]=useState(false);
   const [dateMessage,setDateMessage]=useState("");
@@ -143,11 +147,12 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  </div></details>
  {form.formState.errors.fullName&&<p role="alert">Enter the patient's name.</p>}
  {form.formState.errors.mobile&&<p role="alert">Open contact details, choose a country and enter a valid local number, or leave mobile blank.</p>}
- {form.formState.errors.email&&<p role="alert" data-testid="error-guest-email">{String(form.formState.errors.email.message||"Enter a valid email address.")}</p>}
+  {form.formState.errors.email&&<p role="alert" data-testid="error-guest-email">{String(form.formState.errors.email.message||"Enter a valid email address.")}</p>}
+  {(selectedBranch.error||selectedDoctor.error)&&<p role="alert">Visit names could not be loaded. Your choices have been retained. <button type="button" onClick={()=>{void selectedBranch.refetch();void selectedDoctor.refetch();}}>Retry visit names</button></p>}
   <p className="muted guest-note">Without contact details we cannot send updates. A family member's contact requires their permission and does not link this visit to their account.</p>
  <label className="check-label"><input data-testid="input-guest-permission" type="checkbox" {...form.register("permission",{required:true})}/> I have permission to book this visit and share any contact details provided.</label>
- {form.formState.errors.permission&&<p role="alert">Please confirm permission to continue.</p>}
- <BookingStageActions onBack={()=>setStep(1)} primaryLabel="Review and Confirm" onPrimary={()=>void continuePatient()} primaryTestId="button-guest-continue-patient"/></>} confirmation={<><BookingSummary rows={[["Clinic",context.clinicName],["Location",context.branchName||branchOptions.data?.items.find(b=>b.id===branchId)?.name],["Doctor",context.doctorName||doctorOptions.data?.items.find(d=>d.id===doctorId)?.fullName],["Visit date",date],["Session",available?`${formatSessionHours(available)} · ${available.timezone}`:""],["Patient",values.fullName.trim()],["Email",values.email.trim()],["Mobile",values.mobile.trim()]]}/>
+  {form.formState.errors.permission&&<p role="alert">Please confirm permission to continue.</p>}
+  <BookingStageActions onBack={()=>setStep(1)} primaryLabel="Review and Confirm" onPrimary={()=>void continuePatient()} primaryTestId="button-guest-continue-patient"/></>} confirmation={<><BookingSummary rows={[["Clinic",context.clinicName],["Location",context.branchName||selectedBranch.data?.name||(selectedBranch.isFetching?"Loading selected name…":"Location name unavailable")],["Doctor",context.doctorName||selectedDoctor.data?.fullName||(selectedDoctor.isFetching?"Loading selected name…":"Doctor name unavailable")],["Visit date",date],["Session",available?`${formatSessionHours(available)} · ${available.timezone}`:""],["Patient",values.fullName.trim()],["Email",values.email.trim()],["Mobile",values.mobile.trim()]]}/>
  <p className="notice">Nothing is booked until you press Confirm Booking. Availability is checked again at that moment; your ticket shows a session range, not an exact time.</p>
  <ErrorNotice error={create.error}/>
  <BookingStageActions onChangeVisit={()=>setStep(1)} onBack={()=>setStep(2)} busy={create.isPending} primaryType="submit" primaryLabel={create.isPending?"Booking…":"Confirm Booking"} primaryDisabled={fresh.stale||availability.isFetching||!available?.available||available.remainingTokens<=0||available.queueMode==="walkInsOnly"} primaryTestId="button-submit-guest"/></>}/>

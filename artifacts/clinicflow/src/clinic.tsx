@@ -35,6 +35,7 @@ import { friendlyError } from "./lib/friendly-error";
 import { AppDialog } from "./components/AppDialog";
 import { ResourceLookup } from "./components/ResourceLookup";
 import { CareLookup, useSelectedCare } from "./components/CareLookup";
+import { useFilterNames } from "./components/FilterNames";
 import { configuredGreeting, formatConfiguredTimestamp, formatDate, formatTime, resolveDateTimePreferences, type DateTimePreferences } from "./lib/date-time";
 import { DateTimePreferencesProvider } from "./components/DateTimePreferences";
 import { AppointmentRows, appointmentColumns, type AppointmentDateSort } from "./components/appointments/AppointmentRows";
@@ -342,10 +343,11 @@ export function Appointments({role}:{role:string}){
  const selectedClinic=useSelectedCare("clinics",clinicId,isPatient);
  const selectedBranch=useSelectedCare("branches",branchId,isPatient,{clinicId});
  const selectedDoctor=useSelectedCare("doctors",ownDoctorId||doctorId,isPatient,{clinicId,branchId:branchId||undefined});
+ const filterNames=useFilterNames({clinicId,branchId,doctorId},isPatient);
  const appointmentChips=[
-  ...(clinicId&&!appointmentPin?[{key:"adv:clinic",label:`Clinic: ${selectedClinic.data?.name||"Selected"}`,onRemove:()=>{setClinic("");setBranch("");setDoctor("");}}]:[]),
-  ...(branchId&&!appointmentPin?[{key:"adv:branch",label:`Location: ${selectedBranch.data?.name||"Selected"}`,onRemove:()=>{setBranch("");setDoctor("");}}]:[]),
-  ...(doctorId?[{key:"adv:doctor",label:`Doctor: ${selectedDoctor.data?.fullName||"Selected"}`,onRemove:()=>setDoctor("")}]:[]),
+  ...(clinicId&&!appointmentPin?[{key:"adv:clinic",label:`Clinic: ${filterNames.name("clinicId")}`,onRemove:()=>{setClinic("");setBranch("");setDoctor("");}}]:[]),
+  ...(branchId&&!appointmentPin?[{key:"adv:branch",label:`Location: ${filterNames.name("branchId")}`,onRemove:()=>{setBranch("");setDoctor("");}}]:[]),
+  ...(doctorId?[{key:"adv:doctor",label:`Doctor: ${filterNames.name("doctorId")}`,onRemove:()=>setDoctor("")}]:[]),
   ...(view!=="upcoming"?[{key:"view",label:view==="all"?"All Visits":"Past Visits",onRemove:()=>setView("upcoming")}]:[]),
  ];
  const freshness=useFreshWorkspace(q.dataUpdatedAt,!!q.error);
@@ -366,6 +368,7 @@ export function Appointments({role}:{role:string}){
 <DateRangeInput testId="appointment-range" fromTestId="input-appointment-from" toTestId="input-appointment-to" from={draft.from} to={draft.to} preferences={draftClinic.data as Partial<DateTimePreferences>|undefined} onFromValidityChange={setFromValid} onToValidityChange={setToValid} onChange={range=>updateDraft(range)}/>{draftRangeInvalid&&<p role="alert" className="field-error">Select an end date on or after the start date.</p>}
   {appointmentPin?<p className="loc-fixed-note" data-testid="text-appointment-location-fixed">Location: {appointmentPin.name} · change it from the top bar</p>:<><CareLookup kind="clinics" publicAccess={isPatient} label="Clinic" value={draft.clinicId} onChange={value=>updateDraft({clinicId:value,branchId:"",doctorId:""})}/>
   <CareLookup kind="branches" publicAccess={isPatient} label="Location" value={draft.branchId} onChange={value=>updateDraft({branchId:value,doctorId:""})} disabled={!draft.clinicId} params={{clinicId:draft.clinicId}}/></>}
+  {filterNames.errors}
   <CareLookup kind="doctors" publicAccess={isPatient} label="Doctor" value={ownDoctorId||draft.doctorId} onChange={value=>updateDraft({doctorId:value})} disabled={!draft.clinicId||identity.data?.user?.role==="doctor"} params={{clinicId:draft.clinicId,branchId:draft.branchId||undefined}}/>
   {draft.from&&draft.from===draft.to&&draft.branchId&&(ownDoctorId||draft.doctorId)&&<SessionSelector selection={{...draftSessionSelection,sessionId:draftSessionId||draftSessionSelection.sessionId,setSessionId:setDraftSessionId}}/>}
   </>}><SearchInput value={search} onChange={setSearch} placeholder="Search appointments…" label="Search Appointments" suggestions={q.error?[]:listingSuggestions(q.data?.items,a=>({id:a.id,label:a.patientName,description:[a.doctorName,formatDate(a.date,a)].filter(Boolean).join(" · "),value:a.reference}))} loading={q.isFetching} error={q.error?friendlyError(q.error,"load"):null} onRetry={()=>void q.refetch()} total={q.data?.total} settledQuery={debounced} scopeKey={JSON.stringify({...params,search:undefined,page:undefined})}/></FilterBar>
@@ -628,18 +631,20 @@ function Reports(){
    const url=URL.createObjectURL(new Blob(["\uFEFF"+chunks.join("\r\n")],{type:"text/csv;charset=utf-8"}));const anchor=document.createElement("a");anchor.href=url;anchor.download=`DigiQ-report-${from}-${to}.csv`;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setExportDone(true);
   }catch(error){setExportError(error instanceof Error?error:new Error("Unable to export report."));}finally{setExporting(false);exportLock.current=false;}
  }
+  const filterNames = useFilterNames({clinicId,branchId,doctorId});
   const reportChips=[
     ...(from&&to?[{key:"range",label:from===to?formatDate(from,preferences):`${formatDate(from,preferences)} – ${formatDate(to,preferences)}`}]:[]),
     ...(search?[{key:"search",label:search,onRemove:()=>setSearch("")}]:[]),
-    ...(clinicId&&!reportPin?[{key:"adv:clinic",label:"Clinic Selected",onRemove:()=>{setClinic("");setBranch("");setDoctor("");}}]:[]),
-    ...(branchId&&!reportPin?[{key:"adv:branch",label:"Location Selected",onRemove:()=>{setBranch("");setDoctor("");}}]:[]),
-    ...(doctorId?[{key:"adv:doctor",label:"Doctor Selected",onRemove:()=>setDoctor("")}]:[]),
+    ...(clinicId&&!reportPin?[{key:"adv:clinic",label:`Clinic: ${filterNames.name("clinicId")}`,onRemove:()=>{setClinic("");setBranch("");setDoctor("");}}]:[]),
+    ...(branchId&&!reportPin?[{key:"adv:branch",label:`Location: ${filterNames.name("branchId")}`,onRemove:()=>{setBranch("");setDoctor("");}}]:[]),
+    ...(doctorId?[{key:"adv:doctor",label:`Doctor: ${filterNames.name("doctorId")}`,onRemove:()=>setDoctor("")}]:[]),
     ...(groupBy!=="date"?[{key:"adv:group",label:`Grouped by ${title(groupBy)}`,onRemove:()=>setGroup("date")}]:[]),
   ];
    return <div className="reports-compact"><FilterBar label="Report Filters" filters={<div className="lh-quick-filters" data-testid="quick-filters-reports"><DateRangeInput fromLabel="From date" toLabel="To date" testId="reports-quick-range" from={from} to={to} onChange={range=>{if(range.from&&range.to&&range.from<=range.to){setFrom(range.from);setTo(range.to);setPage(1);}}}/><SearchableSelect label="Group By" value={groupBy} onChange={value=>{setGroup((value||"date") as typeof groupBy);setPage(1);}} options={["date","clinic","doctor"].map(value=>({value,label:title(value)}))}/></div>} chips={reportChips} activeCount={[from!==today()||to!==today(),groupBy!=="date",!reportPin&&clinicId,!reportPin&&branchId,doctorId].filter(Boolean).length} onOpen={openFilters} onApply={applyFilters} advanced={<>
      <SearchableSelect label="Group By" value={draft.groupBy} onChange={value=>draftChange({groupBy:(value||"date") as typeof draft.groupBy})} options={["date","clinic","doctor"].map(value=>({value,label:title(value)}))}/>
       {reportPin?<p className="loc-fixed-note" data-testid="text-report-location-fixed">Location: {reportPin.name} · change it from the top bar</p>:<><ResourceLookup resource="clinics" label="Clinic" value={draft.clinicId} onChange={value=>{if(value!==draft.clinicId)draftChange({clinicId:value,branchId:"",doctorId:""});}}/>
       <ResourceLookup resource="branches" label="Location" value={draft.branchId} disabled={!draft.clinicId} params={{clinicId:draft.clinicId}} onChange={value=>{if(value!==draft.branchId)draftChange({branchId:value,doctorId:""});}}/></>}
+     {filterNames.errors}
      <ResourceLookup resource="doctors" label="Doctor" value={draft.doctorId} disabled={!draft.clinicId} params={{clinicId:draft.clinicId,branchId:draft.branchId||undefined}} onChange={value=>draftChange({doctorId:value})}/>
    <DateRangeInput required testId="report-range" fromTestId="input-report-from" toTestId="input-report-to" onFromValidityChange={setReportFromValid} onToValidityChange={setReportToValid} from={draft.from} to={draft.to} preferences={preferences} onChange={range=>draftChange(range)}/>{draftRangeError&&<p role="alert" className="field-error" data-testid="text-report-range-error">{draftRangeError}</p>}</>} meta={<><span className="report-method-tip" data-testid="text-report-methodology"><HelpTip text="Visits include every appointment status. Completed, cancelled, no-show and Other together equal the visit total; Other includes bookings still in progress and is not a completed outcome. Queue wait measures time from booking or session start (whichever is later) to consultation, not physical arrival. TAT is the actual average completed consultation duration."/></span></>} secondary={<><HelpTip text={exporting?"Export in progress.":q.isFetching||q.isPlaceholderData?"Export CSV. Waiting for the report to finish loading.":q.error?"Export CSV. Retry the report first.":!total?"Export CSV. No report rows to export.":!from||!to||from>to?"Export CSV. Select a valid date range first.":"Export all report results (every page) as CSV"}><button className="button secondary small report-export" aria-label="Export all report results as CSV" data-testid="button-report-export" onClick={()=>void download()} disabled={exporting||q.isFetching||q.isPlaceholderData||!!q.error||!total||!from||!to||from>to}><Download size={15} aria-hidden/>{exporting?"Exporting…":"Export CSV"}</button></HelpTip>{reportCols.settings}{reportViews}</>} active={reportActive} onReset={resetReport}>
     <SearchInput value={search} onChange={setSearch} placeholder="Search reports…" label="Search Reports" suggestions={q.error?[]:listingSuggestions((q.data?.rows||[]) as any[],(r:any)=>r.label?({id:String(r.key),label:String(r.label),value:String(r.label)}):null)} loading={q.isFetching} error={q.error?friendlyError(q.error,"load"):null} onRetry={()=>void q.refetch()} total={total} settledQuery={debounced} scopeKey={JSON.stringify({...params,search:undefined,page:undefined})}/>

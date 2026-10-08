@@ -12,6 +12,7 @@ import { FilterBar, Pagination, SearchInput, useDebouncedValue, listingSuggestio
 import { AppDialog } from "./AppDialog";
 import { SearchableSelect } from "./SearchableSelect";
 import { ResourceLookup } from "./ResourceLookup";
+import { useFilterNames } from "./FilterNames";
 import { label } from "./permission-matrix";
 import { useTableColumns, readTableColumns, writeTableColumns } from "./TableColumns";
 import { SavedViews } from "./ListingViewControls";
@@ -122,9 +123,11 @@ export function SystemUsers() {
   const sysCols = () => readTableColumns("system-users", viewer?.id, viewer?.role);
   const systemViews = <SavedViews canShare={sysLayout.canShare} legacyViews={sysLayout.legacyViews} onImport={sysLayout.importLegacyView} views={sysLayout.layout.views} canSave={Object.values(sysFilters).some(Boolean) || !!sysCols()} onSave={view=>sysLayout.saveView(view, sysFilters, sysCols())} onDelete={sysLayout.deleteView}
     onApply={v => { writeTableColumns("system-users", viewer?.id, viewer?.role, v.columns); setRole(v.filters.role || ""); setStatus(["active", "inactive"].includes(v.filters.status) ? v.filters.status : ""); setClinicId(v.filters.clinicId || ""); }} />;
+  const filterNames = useFilterNames({clinicId});
   const sysCell = (k: string, u: SystemUser) => k === "name" ? <OverflowText as="strong" value={u.fullName} testId={`text-system-user-${u.id}`}/> : k === "email" ? <OverflowText value={u.email}/> : k === "role" ? label(u.role) : k === "status" ? <span className={`badge ${u.status === "active" ? "" : "muted"}`}>{label(u.status)}</span> : k === "clinics" ? (u.clinics.length ? <AssignmentSummary owner={u.fullName} clinics={u.clinics.map(c => c.name)} testId={`button-system-assignments-${u.id}`}/> : <span className="muted">{u.role === "superAdmin" ? "Platform-wide" : "None"}</span>) : null;
   return <>
     {confirmAction.dialog}
+    {filterNames.errors}
     {statusError&&<p role="alert" className="error-box">{statusError} <button onClick={()=>setStatusError("")}>Dismiss</button></p>}
     {statusUpdate.isPending&&<p role="status">Updating account status for {statusUpdate.variables.user.fullName}…</p>}
     {counts.some(c=>c.error)&&<p role="alert">Account status counts could not be loaded. <button onClick={()=>counts.forEach(c=>void c.refetch())}>Retry Counts</button></p>}
@@ -134,7 +137,7 @@ export function SystemUsers() {
       onOpen={() => setDraft({ role, status, clinicId })}
       onApply={() => { setRole(draft.role); setStatus(draft.status); setClinicId(draft.clinicId); }}
       advanced={<><SearchableSelect label="Account Status" testId="select-system-user-status" value={draft.status || "all"} onChange={v => setDraft(d => ({ ...d, status: v === "active" || v === "inactive" ? v : "" }))} options={[{ value: "all", label: "All" }, { value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }]} /><SearchableSelect label="Role" value={draft.role} onChange={v => setDraft(d => ({ ...d, role: v }))} placeholder="All roles" options={[{ value: "", label: "All Roles" }, ...ROLES.map(r => ({ value: r, label: label(r) }))]} testId="select-system-user-role" /><ResourceLookup resource="clinics" label="Clinic" value={draft.clinicId} onChange={v => setDraft(d => ({ ...d, clinicId: v }))} /></>}
-      chips={[...(status ? [{ key: "adv:status", label: label(status), onRemove: () => setStatus("") }] : []), ...(role ? [{ key: "adv:role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "adv:clinic", label: "Clinic Selected", onRemove: () => setClinicId("") }] : [])]}
+       chips={[...(status ? [{ key: "adv:status", label: label(status), onRemove: () => setStatus("") }] : []), ...(role ? [{ key: "adv:role", label: label(role), onRemove: () => setRole("") }] : []), ...(clinicId ? [{ key: "adv:clinic", label: `Clinic: ${filterNames.name("clinicId")}`, onRemove: () => setClinicId("") }] : [])]}
 
        secondary={cols.settings}>
       <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" suggestions={q.error||q.isPlaceholderData?[]:listingSuggestions(data?.data,u=>({id:u.id,label:u.fullName,description:u.email,value:u.fullName}))} loading={q.isFetching} error={q.error?"Accounts could not be loaded.":null} onRetry={()=>void q.refetch()} total={data?.total} settledQuery={debounced} scopeKey={JSON.stringify({role,status,clinicId})} />

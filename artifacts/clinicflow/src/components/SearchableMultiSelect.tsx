@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { readableLabel } from "@/lib/selection-label";
 
 export interface SearchableMultiSelectProps extends Pick<React.AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> {
   options: { value: string; label: string; hidden?: boolean; disabled?: boolean }[];
@@ -21,6 +22,8 @@ export interface SearchableMultiSelectProps extends Pick<React.AriaAttributes, "
   /** Shown as a Retry action in the error state; the selected value is kept. */
   onRetry?: () => void;
   id?: string;
+  labelScope?: string;
+  retainSelectionLabel?: boolean;
 }
 
 export function SearchableMultiSelect({
@@ -39,6 +42,8 @@ export function SearchableMultiSelect({
   required = false,
   onRetry,
   id,
+  labelScope = "",
+  retainSelectionLabel = true,
   "aria-describedby": describedBy,
   "aria-invalid": invalid,
   "aria-required": ariaRequired,
@@ -57,26 +62,13 @@ export function SearchableMultiSelect({
 
   // Maintain a persistent dictionary of selected options to prevent labels disappearing
   // when options are filtered out via remote search
-  const [selectedLabels, setSelectedLabels] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    if (value.length === 0) return;
-    
-    setSelectedLabels((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      
-      // Update dictionary from current options
-      options.forEach(opt => {
-        if (value.includes(opt.value) && prev[opt.value] !== opt.label) {
-          next[opt.value] = opt.label;
-          changed = true;
-        }
-      });
-      
-      return changed ? next : prev;
-    });
-  }, [value, options]);
+  const retained = useRef<{ scope: string; labels: Record<string, string> }>({ scope: "", labels: {} });
+  const selectedLabels = Object.fromEntries(value.map(id => [id,
+    readableLabel(options.find(opt => opt.value === id)?.label, id) ||
+    (retainSelectionLabel && !error && retained.current.scope === labelScope ? retained.current.labels[id] : "") || ""
+  ]));
+  useEffect(() => { retained.current = { scope: labelScope, labels: selectedLabels }; });
+  const displayLabel = (id: string) => selectedLabels[id] || (isActuallyLoading ? "Loading selected name…" : error ? "Selected name could not be loaded" : "Selected item unavailable");
 
   const handleSearch = (term: string) => {
     setSearch(term);
@@ -114,7 +106,7 @@ export function SearchableMultiSelect({
   const displayOptions = onSearchChange
     ? options
     : options.filter((opt) =>
-        opt.label.toLowerCase().includes(search.toLowerCase())
+        readableLabel(opt.label, opt.value).toLowerCase().includes(search.toLowerCase())
       );
 
   const toggleValue = (optValue: string) => {
@@ -167,12 +159,12 @@ export function SearchableMultiSelect({
               className="absolute inset-0 z-0 h-full w-full rounded-lg bg-transparent outline-none cursor-pointer"
               aria-label={
                 value.length > 0
-                  ? `${label || "Selected items"}: ${value.map((v) => selectedLabels[v] || v).join(", ")}`
+                  ? `${label || "Selected items"}: ${value.map(displayLabel).join(", ")}`
                   : label || placeholder
               }
             />
           </PopoverTrigger>
-          <span id={`${controlId}-value`} className="sr-only">{value.length} selected: {value.map(v => selectedLabels[v] || v).join(", ")}</span>
+          <span id={`${controlId}-value`} className="sr-only">{value.length} selected: {value.map(displayLabel).join(", ")}</span>
 
           <div className="relative z-10 flex min-w-0 flex-wrap gap-1.5 flex-1 items-center mr-2 pointer-events-none">
             {value.length === 0 ? (
@@ -186,14 +178,14 @@ export function SearchableMultiSelect({
                   className="inline-flex min-w-0 max-w-full items-center gap-1 rounded-md bg-teal-50 border border-teal-100 px-2 py-1 text-xs font-medium text-teal-800 pointer-events-auto"
                 >
                   <span className="min-w-0 break-words pointer-events-none">
-                    {selectedLabels[v] || v}
+                    {displayLabel(v)}
                   </span>
                   {!disabled && (
                     <button
                       type="button"
                       className="searchable-select-remove ml-0.5 shrink-0 rounded-sm hover:bg-teal-200/50 p-0.5 focus:outline-none focus:ring-2 focus:ring-teal-500/30 transition-colors border-none min-h-0 h-auto"
                       onClick={(e) => removeValue(e, v)}
-                      aria-label={`Remove ${selectedLabels[v] || v}`}
+                      aria-label={`Remove ${displayLabel(v)}`}
                     >
                       <X className="h-3 w-3 pointer-events-none text-teal-600 hover:text-teal-900" />
                     </button>
@@ -251,7 +243,7 @@ export function SearchableMultiSelect({
                   return (
                     <CommandItem
                       key={option.value}
-                      value={onSearchChange ? option.value : option.label}
+                      value={onSearchChange ? option.value : readableLabel(option.label, option.value) || "Name unavailable"}
                       disabled={option.disabled}
                       onSelect={() => {
                         toggleValue(option.value);
@@ -268,7 +260,7 @@ export function SearchableMultiSelect({
                       >
                         <Check className={cn("h-3 w-3")} />
                       </div>
-                      <span className="min-w-0 break-words">{option.label}{isSelected && <span className="sr-only"> (selected)</span>}</span>
+                      <span className="min-w-0 break-words">{readableLabel(option.label, option.value) || "Name unavailable"}{isSelected && <span className="sr-only"> (selected)</span>}</span>
                     </CommandItem>
                   );
                 })}
@@ -286,7 +278,7 @@ export function SearchableMultiSelect({
           </Command>
         </PopoverContent>
       </Popover>
-      {error && <p id={errorId} role="alert" className="text-xs font-medium text-destructive mt-1">{error}</p>}
+      {error && <p id={errorId} role="alert" className="text-xs font-medium text-destructive mt-1">{error} {onRetry && <button type="button" onClick={onRetry}>Retry names</button>}</p>}
     </div>
   );
 }

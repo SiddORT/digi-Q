@@ -260,3 +260,31 @@ mtime_ms = 1791201243452
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/812a8fd1-a3f9-4835-a7bd-9a3dc872c058/823c36c8-0412-4fd8-8f94-92ad9df6b7d7"
 storage_version_token = "1791201257049703"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "zUHBByLwtis-lMxi9zlij"
+uri = "file://artifacts/clinicflow/docs/selector-name-audit.md"
+type = "text"
+title = "Dropdown name audit"
+description = "Complete selector surface and role matrix, confirmed fixes, verification results and limitations."
+logical_id = "649c5fdd-7101-4da5-a423-415fe18cda44"
+content_hash = "sha256:1654430072cd6b421c063ccb6b9345108d122b1e82b010443d6d6657ae3a5685"
+size = 14456
+mtime_ms = 1791469053583
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/649c5fdd-7101-4da5-a423-415fe18cda44/ef033f8b-b8d9-43ad-8d3e-096d75cabe23"
+storage_version_token = "1791469153790236"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "6JTg_1tIKrgeLkz8EXERP"
+uri = "file://artifacts/clinicflow/workspace-regression/evidence/selector-names/queue-doctor.png"
+type = "image"
+title = "Doctor Queue name verification"
+description = "Isolated restored Queue fixture showing clinic, location and disabled Doctor names."
+logical_id = "8ae55a02-d7f6-4c1f-833b-a2366379c4b4"
+content_hash = "sha256:88d0f42f0bdab9ba0562a5c40b62287fe11338fc64dea1404cd81cbafa6ef889"
+size = 56556
+mtime_ms = 1791468824883
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/8ae55a02-d7f6-4c1f-833b-a2366379c4b4/a06e7fe5-bd97-4a4a-9baa-5706260e159b"
+storage_version_token = "1791469155070504"
+content_type = "image/png"

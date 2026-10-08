@@ -58,7 +58,7 @@ export function PatientDocuments({ patientId, timezone }: { patientId: string; t
   }
   return <>
     {uploadClinics.length > 0 && <div className="pd-doc-actions">
-      {uploadClinics.length > 1 && <SearchableSelect label="Clinic" testId="select-document-clinic" value={clinicId || uploadClinics[0]} onChange={v => { if (v) setClinicId(v); }} options={uploadClinics.map(c => ({ value: c, label: q.data?.items.find(i => i.clinicId === c)?.clinicName || `Clinic ${c.slice(0, 6)}` }))} />}
+      {uploadClinics.length > 1 && <SearchableSelect label="Clinic" testId="select-document-clinic" value={clinicId || uploadClinics[0]} onChange={v => { if (v) setClinicId(v); }} options={uploadClinics.map(c => ({ value: c, label: q.data?.items.find(i => i.clinicId === c)?.clinicName || "Clinic name unavailable" }))} />}
       <input ref={file} id={fileId} type="file" accept={ACCEPT} hidden onChange={e => { const f = e.target.files?.[0]; if (f) void upload(f); }} data-testid="input-document-file" />
       <button type="button" className="button small" disabled={busy === "upload"} onClick={() => file.current?.click()} data-testid="button-upload-document"><Upload size={15} aria-hidden />{busy === "upload" ? "Uploading…" : "Upload Document"}</button>
       <small className="muted">PDF, PNG, JPEG, WebP or text · up to 10 MB · stored privately.</small>

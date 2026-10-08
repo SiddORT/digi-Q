@@ -23,6 +23,8 @@ import { ColumnSettings, SavedViews } from "./components/ListingViewControls";
 import { arrangeColumns, useListingLayout } from "./lib/listing-views";
 import { ClinicAdminOnboarding } from "./components/ClinicAdminOnboarding";
 import { ResourceLookup, ResourceMultiLookup } from "./components/ResourceLookup";
+import { useFilterNames } from "./components/FilterNames";
+import { useDirectoryActor } from "./lib/use-directory";
 import { validDependentIds } from "./components/relation-validity";
 import { Pagination, SearchInput, FilterBar, useDebouncedValue, PAGE_SIZE_OPTIONS, DEFAULT_PAGE_SIZE, listingSuggestions, type FilterChip } from "./components/ListingControls";
 import { AppDialog } from "./components/AppDialog";
@@ -114,13 +116,18 @@ function MasterTextInput({field,control}:any){
 }
 function ExceptionSessionInput({form,label}:{form:ReturnType<typeof useForm>;label:string}){
  const preferences=useDateTimePreferences();
+ const actor=useDirectoryActor();
  const doctorId=form.watch("doctorId")||"",branchId=form.watch("branchId")||"",date=form.watch("date")||"";
  const closed=form.watch("isClosed");
  const validDate=/^\d{4}-\d{2}-\d{2}$/.test(date);
- const sessions=useQuery({queryKey:["exception-base-sessions",doctorId,branchId,date],enabled:!!doctorId&&!!branchId&&validDate,queryFn:()=>api.listSchedules({doctorId,branchId,dayOfWeek:new Date(`${date}T12:00:00Z`).getUTCDay(),pageSize:100})});
+ const sessions=useQuery({queryKey:["exception-base-sessions",actor,doctorId,branchId,date],enabled:!!doctorId&&!!branchId&&validDate,queryFn:()=>api.listSchedules({doctorId,branchId,dayOfWeek:new Date(`${date}T12:00:00Z`).getUTCDay(),pageSize:100})});
  const rows=(sessions.data?.items||[]).filter(row=>(row as any).status!=="inactive");
+ const savedId=form.watch("sessionId")||"";
+ const saved=useQuery({queryKey:["exception-selected-session",actor,savedId],enabled:!!savedId&&!rows.some(row=>row.id===savedId),retry:false,queryFn:({signal})=>api.customFetch<api.Schedule>(`/api/schedules/${encodeURIComponent(savedId)}`,{signal})});
+ const options=rows.map(session=>({value:session.id,label:`${formatTime(session.startTime,preferences)}–${formatTime(session.endTime,preferences)}`,disabled:false}));
+ if(saved.data&&!saved.error&&!options.some(option=>option.value===savedId))options.push({value:savedId,label:`${formatTime(saved.data.startTime,preferences)}–${formatTime(saved.data.endTime,preferences)}`,disabled:true});
  const needsSession=!closed&&(sessions.data?.total||rows.length)>1;
- return <Controller name="sessionId" control={form.control} rules={{validate:value=>!needsSession||!!value||"Choose a session for this date exception."}} render={({field,fieldState})=><div><SearchableSelect label={needsSession?"Session":label.replace(/\s*\(optional.*$/,"")} required={needsSession} value={field.value||""} onChange={field.onChange} placeholder={needsSession?"Select a session…":closed?"All sessions":"Only weekly session"} error={fieldState.error?.message} loading={sessions.isFetching} onRetry={()=>void sessions.refetch()} options={rows.map(session=>({value:session.id,label:`${formatTime(session.startTime,preferences)}–${formatTime(session.endTime,preferences)}`}))}/><small className="muted field-hint">Session scope <HelpTip label="About session scope" text={closed?"A closure can apply to all sessions.":"Timing overrides require a specific session when this date has more than one weekly session."}/></small><ErrorNotice error={sessions.error}/></div>}/>;
+ return <Controller name="sessionId" control={form.control} rules={{validate:value=>!needsSession||!!value||"Choose a session for this date exception."}} render={({field,fieldState})=><div><SearchableSelect labelScope={JSON.stringify([actor,doctorId,branchId,date])} retainSelectionLabel={false} label={needsSession?"Session":label.replace(/\s*\(optional.*$/,"")} required={needsSession} value={field.value||""} onChange={field.onChange} placeholder={needsSession?"Select a session…":closed?"All sessions":"Only weekly session"} error={fieldState.error?.message||(saved.error?"Unable to load selected session.":sessions.error?"Unable to load sessions.":undefined)} loading={sessions.isFetching||saved.isFetching} onRetry={()=>{void sessions.refetch();if(savedId)void saved.refetch();}} options={options}/><small className="muted field-hint">Session scope <HelpTip label="About session scope" text={closed?"A closure can apply to all sessions.":"Timing overrides require a specific session when this date has more than one weekly session."}/></small><ErrorNotice error={sessions.error}/></div>}/>;
 }
 function RelationInput({field,form,fields,resourceName,label,initial}:any){
   const pin=useWorkspaceBranch();
@@ -613,9 +620,10 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   const sortableColumns=new Set(["name","fullName","date","status","code","email"]);
   const hasAdvanced=true;
   const hasStatusTabs=config.fields.some(field=>field.key==="status");
+  const filterNames = useFilterNames(filters);
   const chips:FilterChip[]=[
     ...(search?[{key:"search",label:`Search: ${search}`,onRemove:()=>setSearch("")}]:[]),
-    ...Object.entries(filters).filter(([k,v])=>v&&v!==roleDefaults[k]).map(([k,v])=>({key:`adv:${k}`,label:resource==="patients"&&k==="clinicId"?"Registration clinic selected":chipLabel(k,v),onRemove:()=>filter(k,roleDefaults[k]||"")})),
+    ...Object.entries(filters).filter(([k,v])=>v&&v!==roleDefaults[k]).map(([k,v])=>({key:`adv:${k}`,label:k.endsWith("Id")?`${FILTER_LABELS[k]||title(k)}: ${filterNames.name(k)}`:chipLabel(k,v),onRemove:()=>filter(k,roleDefaults[k]||"")})),
     ...(sort!=="-createdAt"?[{key:"adv:sort",label:`Sort: ${sortOptions.find(o=>o.value===sort)?.label||sort}`,onRemove:()=>setSort("-createdAt")}]:[]),
   ];
  // Common filters are exposed beside the search and apply immediately (date range and status are independent);
@@ -647,6 +655,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  </>:undefined}>
    <SearchInput placeholder={searchPlaceholder} value={search} onChange={setSearch} suggestions={query.error||query.isPlaceholderData?[]:listingSuggestions(query.data?.items,(row:any)=>{const value=row.fullName||row.name||row.reference||row.summary;return value?{id:String(row.id),label:String(value),description:[row.clinicName||row.specializationName||row.city,row.category].filter(Boolean).join(" · ")||undefined,value:String(value)}:null;})} loading={query.isFetching} error={query.error?friendlyError(query.error,"load"):null} onRetry={()=>void query.refetch()} total={query.data?.total} settledQuery={term} scopeKey={JSON.stringify([resource,{...listParams,search:undefined,page:undefined}])}/>
   </FilterBar></div>
+  {filterNames.errors}
  {confirmation.dialog}{success&&<p className="notice" role="status">{success}</p>}
   {resource==="availability"&&<p className="listing-hint" data-testid="notice-schedule-vs-opening-hours">Doctor sessions set bookable times and capacity for each doctor and location. Location opening hours are separate; {identity?.user?.role==="superAdmin"||identity?.user?.role==="clinicAdmin"?<Link href={`/admin/settings${filters.clinicId?`?clinicId=${encodeURIComponent(filters.clinicId)}`:""}`} data-testid="link-location-opening-hours">edit opening days and hours in Clinic settings</Link>:"ask the clinic owner to update them"}.</p>}
   {resource==="qrs"&&<p className="listing-hint" data-testid="notice-qr-readiness">A booking QR can identify a clinic before it is ready to accept patients. Check that the location is open and the doctor has active bookable sessions with capacity in <Link href={`/${portal}/availability${filters.clinicId?`?clinicId=${encodeURIComponent(filters.clinicId)}`:""}`} data-testid="link-qr-sessions">Weekly Schedule</Link> before sharing it.</p>}
