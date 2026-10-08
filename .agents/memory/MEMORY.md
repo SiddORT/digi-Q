@@ -25,3 +25,4 @@
 - [Staff invitation boundary](staff-invitation-boundary.md) — preflight configuration before creation; post-commit email failure returns the saved profile for explicit resend.
 - [Public directory sharing](public-directory-reuse.md) — shared observed queries preserve guest cancellation; automatic defaults use only current unsearched first-page authority.
 - [Query observer tests](query-observer-tests.md) — raw observers need result recomputation to model React's optimistic in-flight render state.
+- [Patient profile visibility](patient-profile-visibility.md) — registration grants scoped doctor profile visibility, not clinical records, documents, or create/edit permissions.

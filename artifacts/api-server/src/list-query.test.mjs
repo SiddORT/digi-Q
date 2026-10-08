@@ -17,7 +17,7 @@ await build({
     b.onResolve({ filter: /^@workspace\/db$/ }, () => ({ path: "db", namespace: "isolated" }));
     b.onResolve({ filter: /integration-vault$/ }, () => ({ path: "vault", namespace: "vault-fixture" }));
     b.onLoad({ filter: /.*/, namespace: "vault-fixture" }, () => ({ contents: "export const resolvedIntegration=async()=>({env:{},source:'environment'});" }));
-    b.onLoad({ filter: /.*/, namespace: "isolated" }, () => ({ contents: "export const db = {execute: (...args) => globalThis.fixtureExecute(...args)};" + ["users","doctors","assignments","branches","clinics","settings","auditLogs"].map(t=>`export const ${t}="${t}";`).join("") }));
+    b.onLoad({ filter: /.*/, namespace: "isolated" }, () => ({ contents: "export const db = {execute: (...args) => globalThis.fixtureExecute(...args)};" + ["users","doctors","assignments","branches","clinics","patients","appointments","settings","auditLogs"].map(t=>`export const ${t}="${t}";`).join("") }));
   } }],
 });
 const { queryPage, queryMetrics, assignmentCatalogPredicate, sourceSql, queryAppointmentCalendar } = await import(join(dir, "query.mjs"));
@@ -110,14 +110,14 @@ test("booking patient lookup matches authorized visit location as well as regist
     const ids=async(actor,params=q)=>(await queryPage(actor,"patients",params,undefined,conn)).items.map(row=>row.id).sort();
     assert.deepEqual(await ids(admin),["diag-other-doctor","diag-registration","diag-visit"]);
     assert.deepEqual(await ids(receptionist),["diag-other-doctor","diag-registration","diag-visit"]);
-    assert.deepEqual(await ids(doctor),["diag-visit"]);
+    assert.deepEqual(await ids(doctor),["diag-registration","diag-visit"]);
     assert.deepEqual(await ids({...receptionist,clinicIds:[],branchIds:[]}),[]);
     assert.deepEqual(await ids({...doctor,clinicIds:[],branchIds:[]}),[]);
     // Patient self-service retains its existing profile filter contract, not staff lookup behavior.
     assert.deepEqual(await ids({id:"patient",role:"patient",patientId:"diag-visit",clinicIds:[],branchIds:[]}),[]);
     assert.deepEqual(await ids({id:"patient",role:"patient",patientId:"diag-visit",clinicIds:[],branchIds:[]},{...q,clinicId:undefined,branchId:undefined}),["diag-visit"]);
     assert.deepEqual(await ids({id:"patient",role:"patient",patientId:"diag-unrelated",clinicIds:[],branchIds:[]}),[]);
-    assert.deepEqual(await ids(doctor,{...q,status:undefined}),["diag-inactive","diag-visit"]);
+    assert.deepEqual(await ids(doctor,{...q,status:undefined}),["diag-inactive","diag-registration","diag-visit"]);
     assert.deepEqual(await ids(admin,{...q,branchId:undefined}),["diag-no-branch","diag-other-branch","diag-other-doctor","diag-registration","diag-visit"]);
     const paged=await queryPage(admin,"patients",{...q,pageSize:1,page:2},undefined,conn);
     assert.equal(paged.total,3);assert.equal(paged.items.length,1);
@@ -150,6 +150,28 @@ test("address suggestions use exact active local-master category and search; emp
     assert.equal((await queryPage(admin,"masters",{category:"city",status:"active",search:"Hidden"},undefined,conn)).total,0);
   } finally {
     await database.exec("delete from masters where id like 'diag-%';");
+  }
+});
+
+test("doctor registration visibility requires live paired assignments, including clinic-level registrations", async () => {
+  await database.exec(`insert into patients(id,clinic_id,branch_id,data) values
+    ('scope-clinic','c1',null,'{"fullName":"Scope Registration Clinic"}'),
+    ('scope-branch','c1','b1','{"fullName":"Scope Registration Branch"}'),
+    ('scope-mismatch','c1','b2','{"fullName":"Scope Registration Mismatch"}'),
+    ('scope-global',null,null,'{"fullName":"Scope Registration Global"}');`);
+  try {
+    const params = { search: "Scope Registration", sort: "fullName", pageSize: 100 };
+    const ids = async actor => (await queryPage(actor, "patients", params, undefined, conn)).items.map(r => r.id).sort();
+    assert.deepEqual(await ids(doctor), ["scope-branch", "scope-clinic"]);
+    assert.deepEqual(await ids({ ...doctor, branchIds: ["b1", "b2"] }), ["scope-branch", "scope-clinic"], "independent ID arrays cannot authorize a mismatched pair");
+    assert.deepEqual(await ids({ ...doctor, id: "missing" }), [], "stale projected IDs cannot replace saved assignments");
+    assert.deepEqual(await ids({ ...doctor, doctorId: null }), []);
+    await database.exec("update branches set status='inactive' where id='b1'");
+    assert.deepEqual(await ids(doctor), [], "inactive branch-only mapping grants no registration access");
+    await database.exec("insert into assignments values ('clinic-only-scope','u1','c1',null)");
+    assert.deepEqual(await ids(doctor), ["scope-clinic"], "a clinic-only assignment grants a clinic-level profile, not branch access");
+  } finally {
+    await database.exec("update branches set status='active' where id='b1'; delete from assignments where id='clinic-only-scope'; delete from patients where id like 'scope-%'");
   }
 });
 

@@ -3,6 +3,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { assert } from "./http";
 import { statusGroups } from "./queue-order";
 import { clinicalMembership, managedDoctorLinks } from "./clinical-membership";
+import { doctorRegistrationSql } from "./patient-registration-scope";
 
 const names: Record<string, string> = { users: "users", doctors: "doctors", clinics: "clinics", branches: "branches", patients: "patients", masters: "masters", schedules: "schedules", "availability-exceptions": "availability_exceptions", qrs: "qrs", appointments: "appointments", "audit-logs": "audit_logs" };
 const raw = sql.raw;
@@ -25,7 +26,8 @@ export function readScope(user: any, kind: string): SQL {
   }
   if (kind === "patients") {
     if (user.role === "patient") return sql`r.id=${user.patientId || ""}`;
-    const ownClinic = user.role === "doctor" ? raw("false") : operationalScope(user, raw("r.clinic_id"), raw("r.branch_id"));
+    const registered = operationalScope(user, raw("r.clinic_id"), raw("r.branch_id"));
+    const ownClinic = user.role === "doctor" ? sql`(${registered} and ${doctorRegistrationSql(user, raw("r.clinic_id"), raw("r.branch_id"))})` : registered;
     return sql`(${ownClinic} or exists(select 1 from appointments ap where ap.patient_id=r.id and ${operationalScope(user, raw("ap.clinic_id"), raw("ap.branch_id"))} ${user.role === "doctor" ? sql`and ap.doctor_id=${user.doctorId || ""}` : raw("")}))`;
   }
   if (kind === "clinics") return operationalScope(user, raw("r.id"), raw("null"));

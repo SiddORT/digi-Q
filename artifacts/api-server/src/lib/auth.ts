@@ -4,6 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { assert, HttpError } from "./http";
 import { all, flatten, one, uid } from "./store";
 import { isClinicalMember } from "./clinical-membership";
+import { doctorRegisteredPatient } from "./patient-registration-scope";
 import { narrowToWorkspace } from "./feature-policy";
 import { DEMO_FIXTURE, demoWriteAllowed } from "./demo-policy";
 export const STAFF_ROLES = ["superAdmin", "clinicAdmin", "doctor", "receptionist"] as const;
@@ -87,7 +88,8 @@ export async function canRead(user: any, kind: string, row: any, conn: any = db)
   if (kind === "doctors") return user.doctorId === row.id || ["clinicAdmin", "doctor", "receptionist"].includes(user.role) && row.clinicIds?.some((id: string) => scope(user, id)) && (!["doctor", "receptionist"].includes(user.role) || row.branchIds?.some((id: string) => user.branchIds.includes(id)));
   if (kind === "patients") {
     if (user.role === "patient") return row.id === user.patientId;
-    if (user.role !== "doctor" && scope(user, row.clinicId, row.branchId)) return true;
+    if (scope(user, row.clinicId, row.branchId) &&
+        (user.role !== "doctor" || await doctorRegisteredPatient(user, row, conn))) return true;
     return (await all(appointments, conn)).some(a => a.patientId === row.id && (user.role === "doctor" ? a.doctorId === user.doctorId && scope(user, a.clinicId, a.branchId) : scope(user, a.clinicId, a.branchId)));
   }
   if (kind === "clinics") return scope(user, row.id);

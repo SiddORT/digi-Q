@@ -481,6 +481,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const [qrPreview,setQrPreview]=useState<any>(null);
  const [auditDetail,setAuditDetail]=useState<any>(null);
  const [patientDetail,setPatientDetail]=useState<any>(null);
+ const [registeredPatient,setRegisteredPatient]=useState<any>(null);
  // Exact-record deep link (?open=<id>) from workspace search: highlight that row and open its read-only details where they exist.
  const openId=urlParams.get("open")||"";
  const openedRef=useRef("");
@@ -500,6 +501,9 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const supportsSearch=true;
   const roleDefaults=useMemo<Record<string,string>>(()=>({...identity?.doctorId&&["doctor","clinicAdmin"].includes(identity.user?.role||"")&&["availability","exceptions"].includes(resource)?{doctorId:identity.doctorId as string}:{},...fixedClinicId?{clinicId:fixedClinicId}:{},...pinDefaults}),[identity,branchPin,resource,fixedClinicId]);
   const filters:Record<string,string>={...roleDefaults,...Object.fromEntries(LIST_FILTER_KEYS.flatMap(key=>urlParams.get(key)?[[key,urlParams.get(key)!]]:[])),...fixedClinicId?{clinicId:fixedClinicId}:{},...pinDefaults};
+  // Registration opened from a location-filtered list starts in that exact
+  // context. Lookups still validate it; never infer a location from page order.
+  if(resource==="patients")defaults={...defaults,...Object.fromEntries(["clinicId","branchId"].filter(key=>filters[key]).map(key=>[key,filters[key]]))};
   // The URL is the source of truth so opening an editor and browser Back both retain list context.
   // Keep unrelated query parameters (e.g. links from clinic settings) intact.
   const changeUrl=(changes:Record<string,string|number>,replace=false)=>{
@@ -574,7 +578,10 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const portal=identity?.user?.role==="doctor"?"doctor":identity?.user?.role==="receptionist"?"receptionist":"admin";
  const clinicRecordHref=(id:string)=>superadminClinics?clinicDetailsHref(id,urlSearch):`/admin/settings?clinicId=${encodeURIComponent(id)}&section=general`;
   useEffect(()=>{if(query.data&&!query.isPlaceholderData&&page>1&&page>Math.max(1,Math.ceil(query.data.total/pageSize)))setPage(Math.max(1,Math.ceil(query.data.total/pageSize)));},[query.data,query.isPlaceholderData,page,pageSize]);
- const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,data):config.create(data),onSuccess:()=>{setEditing(null);notifySuccess("Updated successfully");client.invalidateQueries();}});
+ const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,data):config.create(data),onSuccess:(saved:any)=>{
+  if(resource==="patients"&&!editing?.id){setRegisteredPatient(saved);setPage(1);}
+  setEditing(null);notifySuccess("Updated successfully");client.invalidateQueries();
+ }});
  const remove=useMutation({mutationFn:(id:string)=>config.remove(id),onSuccess:()=>{notifySuccess("Record deactivated. Historical records are preserved.");client.invalidateQueries();}});
  const statusUpdate=useMutation({mutationFn:({row,status}:{row:api.User;status:"active"|"inactive"})=>api.updateUser(row.id,{fullName:row.fullName,email:row.email,role:row.role,status,...row.clinicIds?{clinicIds:row.clinicIds}:{},...row.branchIds?{branchIds:row.branchIds}:{}}),onSuccess:()=>{setSuccess("User status updated.");client.invalidateQueries();}});
  const changeUserStatus=async(row:any)=>{
@@ -659,6 +666,10 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  {confirmation.dialog}{success&&<p className="notice" role="status">{success}</p>}
   {resource==="availability"&&<p className="listing-hint" data-testid="notice-schedule-vs-opening-hours">Doctor sessions set bookable times and capacity for each doctor and location. Location opening hours are separate; {identity?.user?.role==="superAdmin"||identity?.user?.role==="clinicAdmin"?<Link href={`/admin/settings${filters.clinicId?`?clinicId=${encodeURIComponent(filters.clinicId)}`:""}`} data-testid="link-location-opening-hours">edit opening days and hours in Clinic settings</Link>:"ask the clinic owner to update them"}.</p>}
   {resource==="qrs"&&<p className="listing-hint" data-testid="notice-qr-readiness">A booking QR can identify a clinic before it is ready to accept patients. Check that the location is open and the doctor has active bookable sessions with capacity in <Link href={`/${portal}/availability${filters.clinicId?`?clinicId=${encodeURIComponent(filters.clinicId)}`:""}`} data-testid="link-qr-sessions">Weekly Schedule</Link> before sharing it.</p>}
+ {resource==="patients"&&registeredPatient&&<p className="notice" role="status" data-testid="notice-patient-registered">
+  {registeredPatient.fullName} is registered. No appointment is required. Your list filters are unchanged.{" "}
+  <button type="button" className="text-link" onClick={()=>changeUrl({open:registeredPatient.id})} data-testid="button-open-registered-patient">Open Saved Patient</button>
+ </p>}
  {!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={remove.error||statusUpdate.error}/>
  <ListingBulk selection={selection} resource={resource} columns={config.columns} identity={identity} context={selectionContext}/>
  {resource==="availability"&&filters.doctorId&&filters.branchId&&<WeeklyScheduleEditor key={`${filters.doctorId}-${filters.branchId}`} doctorId={filters.doctorId} branchId={filters.branchId} onEdit={row=>{save.reset();setDirty(false);setEditing(row);}}/>}
