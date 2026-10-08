@@ -12,6 +12,20 @@ new Function("exports",ts.transpileModule(staffInputSource,moduleOptions).output
 const scoped={};
 new Function("exports","staffInput",ts.transpileModule(source.replace(/^import .*staff-input.*;\n/m,""),moduleOptions).outputText)(scoped,inputs.staffInput);
 const { clinicScopedStaffInput }=scoped;
+test("a failed invitation is retained as a saved account and resend never uses creation",async()=>{
+  const failed={id:"saved-user",userId:"saved-user",status:"active",invitationStatus:"failed"};
+  assert.equal(scoped.staffInvitationRestriction(failed,"doctors"),undefined);
+  assert.ok(scoped.staffInvitationRestriction({...failed,status:"inactive"},"doctors"));
+  assert.ok(scoped.staffInvitationRestriction({...failed,passwordEnabled:true},"doctors"));
+  const called=[];
+  const outcomes=await scoped.resendStaffInvitations([failed],"doctors",async id=>{called.push(id);return {id,invitationStatus:"failed"};},error=>error.message);
+  assert.deepEqual(called,["saved-user"]);
+  assert.equal(outcomes[0].ok,false);
+  assert.match(ui,/tab!=="doctors"&&result\.invitationStatus!=="failed"/);
+  assert.match(ui,/setSaved\(result\); form\.reset\(doctorValues\(result\)\)/);
+  assert.match(ui,/mutationFn:\(\)=>api\.resendUserInvitation\(tab==="doctors"\?initial\.userId:initial\.id\)/);
+  assert.match(ui,/button-resend-saved-invitation/);
+});
 test("unchanged projected mappings are omitted from ordinary saves, preserving exact assignment rows",()=>{
   const original={id:"saved",clinicIds:["one"],branchIds:["branch-only"]};
   const body=clinicScopedStaffInput("doctors",{fullName:"Edited",email:"edited@example.invalid",clinicIds:["one"],branchIds:["branch-only"]},original);

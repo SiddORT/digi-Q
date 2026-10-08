@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { Plus } from "lucide-react";
 import { ClinicRegistrationWizard, ownerSchedulePayload, type RegistrationValues } from "./ClinicRegistrationWizard";
@@ -18,7 +18,12 @@ function GuidedAdminSetup({ onDirtyChange, onBusyChange, carry, onSnapshot }: Om
   const locked = useRef(false);
   const [completed, setCompleted] = useState<api.ClinicAdminOnboardingResult | null>(null);
   const setup = api.useOnboardClinicAdmin();
-  useEffect(() => { onBusyChange?.(setup.isPending); }, [setup.isPending, onBusyChange]);
+  const resend = useMutation({
+    mutationFn: () => api.resendUserInvitation(completed!.admin.id),
+    onSuccess: (admin) => { setCompleted(previous => previous ? {...previous, admin: {...previous.admin, ...admin}} : previous); },
+    onSettled: () => { void client.invalidateQueries(); },
+  });
+  useEffect(() => { onBusyChange?.(setup.isPending||resend.isPending); }, [setup.isPending, resend.isPending, onBusyChange]);
   const references = api.useGetRegistrationOptions();
   async function finish(values: RegistrationValues) {
     if (locked.current) return;
@@ -36,7 +41,12 @@ function GuidedAdminSetup({ onDirtyChange, onBusyChange, carry, onSnapshot }: Om
       await client.invalidateQueries();
     } finally { locked.current = false; }
   }
-   if (completed) return <ClinicRegistrationComplete result={completed} invitationStatus={completed.admin.invitationStatus}/>;
+   if (completed) return <><ClinicRegistrationComplete result={completed} invitationStatus={completed.admin.invitationStatus}/>
+     {completed.admin.invitationStatus==="failed"&&<div className="notice" role="status">
+       <p>The clinic and administrator are saved. Do not repeat setup. Retry the invitation after email service setup is restored.</p>
+       <button type="button" data-testid="button-resend-admin-invitation" disabled={resend.isPending} onClick={()=>resend.mutate()}>{resend.isPending?"Sending…":"Resend Invitation"}</button>
+       {resend.error&&<p role="alert">{friendlyError(resend.error,"save")}</p>}
+     </div>}</>;
   if (references.isLoading) return <div className="page-loading">Loading clinic setup options…</div>;
   if (references.error && !references.data) return <div className="error-box" role="alert">{friendlyError(references.error,"load")}<button type="button" data-testid="admin-registration-retry-options" onClick={() => references.refetch()}>Try Again</button></div>;
    return <ClinicRegistrationWizard adminMode carry={carry} onSnapshot={onSnapshot} onDirtyChange={onDirtyChange} onStepChange={setup.reset} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?friendlyError(setup.error,"save"):undefined}/>;

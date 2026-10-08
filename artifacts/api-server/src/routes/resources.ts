@@ -8,7 +8,7 @@ import { all, one, put, change, uid, audit, filtered, paginate } from "../lib/st
 import { HttpError, assert, parse, query } from "../lib/http";
 import { enrich } from "../lib/entities";
 import { queryPage, assignmentCatalogPredicate } from "../lib/list-query";
-import { inviteStaff, requestStaffReset } from "./auth";
+import { inviteStaff, requestStaffReset, ensureStaffInvitationConfigured } from "./auth";
 import { consumeRateLimit, revokeUserSessions } from "../lib/native-auth";
 import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, attachOwnDoctor, clinicDisplayPreferences } from "../lib/clinic-expansion";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus, extraSession } from "../lib/availability";
@@ -182,10 +182,13 @@ export async function deliverInvitation(userId: string, redirectUrl?: string) {
   try {
     await inviteStaff(null, account);
   } catch (error) {
-    // A failed resend must not leave an old "sent" indicator after its link
-    // was superseded. Preserve the delivery error; never claim mail was sent.
+    // Only mail/configuration failures are an invitation outcome. Database and
+    // programming failures still propagate rather than claiming a successful save.
+    if (!(error instanceof HttpError) || !["EMAIL_DELIVERY_FAILED", "EMAIL_UNCONFIGURED", "PUBLIC_ORIGIN_UNCONFIGURED"].includes(error.code)) throw error;
+    await db.update(authChallenges).set({ consumedAt: new Date() }).where(and(
+      eq(authChallenges.userId, userId), eq(authChallenges.purpose, "invitation"),
+    ));
     await change(users, userId, { invitationStatus: "failed" });
-    throw error;
   }
 }
 export async function createClinicAdminOnboarding(actor: any, body: any, redirectUrl?: string) {
@@ -193,6 +196,7 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
   const email = body.admin.email.toLowerCase();
   if (body.clinic.timezone) localNow(body.clinic.timezone);
   assert(!(await all(users)).some(u => u.email === email), 409, "Email already belongs to an existing profile; roles cannot be silently changed");
+  await ensureStaffInvitationConfigured();
   const result = await db.transaction(async tx => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"user-email:" + email}))`);
     assert(!(await all(users, tx)).some(u => u.email === email), 409, "Email already belongs to an existing profile; roles cannot be silently changed");
@@ -232,6 +236,8 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
   if (!old && (kind === "users" || kind === "doctors")) {
     const existing = (await all(users)).find(u => u.email === body.email);
     assert(!existing, 409, "Email already belongs to an existing profile; roles cannot be silently changed");
+    if (kind === "doctors" || ["clinicAdmin", "doctor", "receptionist"].includes(body.role))
+      await ensureStaffInvitationConfigured();
   }
   const saved = await db.transaction(async tx => {
     const proposed = { ...old, ...body };

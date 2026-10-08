@@ -45,12 +45,17 @@ async function mailCode(address: string, purpose: string, userId?: string, data?
   return challengeId;
 }
 async function mailLink(req: any, address: string, userId: string, purpose: string, route: string) {
-  smtpConfig((await resolvedIntegration("smtp")).env);
+  await ensureStaffInvitationConfigured();
+  const url = new URL(route, publicOrigin(req));
   const secret = randomBytes(32).toString("base64url");
   const id = await createChallenge({ userId, email: address, purpose, secret, ttlMs: LINK_AGE });
-  const url = new URL(route, publicOrigin(req));
   url.searchParams.set("token", `${id}.${secret}`);
   await sendAuthEmail(address, "DigiQ Doctors account access", `Use this link within 30 minutes: ${url}`);
+}
+/** Configuration errors must be detected before committing a new staff profile. */
+export async function ensureStaffInvitationConfigured() {
+  smtpConfig((await resolvedIntegration("smtp")).env);
+  publicOrigin(null);
 }
 function splitToken(token: unknown) {
   const parts = typeof token === "string" ? /^([A-Za-z0-9_-]{24})\.([A-Za-z0-9_-]{43})$/.exec(token) : null;

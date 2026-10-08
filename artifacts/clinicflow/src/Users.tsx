@@ -163,7 +163,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     onMutate:()=>setInvitationFeedback(null),
     onSuccess:(result,variables)=>{
       const sent=result.invitationStatus==="sent";
-      const message=sent?"Set-password invitation accepted by the email service. Inbox delivery is not confirmed; check spam as well.":"Invitation was not sent. Reload the account and retry if setup is still required.";
+      const message=sent?"Set-password invitation accepted by the email service. Inbox delivery is not confirmed; check spam as well.":"The staff record is saved, but the invitation was not sent. Use Resend Invitation after email service setup is restored; do not add this account again.";
       setInvitationFeedback({rowId:variables.row.id,message});
       if(sent)notifySuccess(message);else notifyWarning(message);
     },
@@ -278,6 +278,14 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
   const form = useForm({ defaultValues: { status: "active", ...(tab==="doctors"?doctorValues(initial):initial), ...(clinicId&&!initial.id&&tab!=="admins"?{clinicIds:[clinicId]}:{}) } });
   const client = useQueryClient();
   const locked = useRef(false);
+  const resendSavedInvitation=useMutation({
+    mutationFn:()=>api.resendUserInvitation(tab==="doctors"?initial.userId:initial.id),
+    onSuccess:(result)=>{
+      setSaved((record:any)=>({...record,invitationStatus:result.invitationStatus,passwordEnabled:result.passwordEnabled}));
+      setSavedMessage(result.invitationStatus==="sent"?"Invitation accepted by the email service. Inbox delivery is not confirmed.":"The staff record is saved, but the invitation was not sent. Retry after email service setup is restored; do not add this account again.");
+    },
+    onSettled:()=>{void client.invalidateQueries();},
+  });
   const fixedClinic=api.useGetClinic(clinicId||"",{query:{queryKey:api.getGetClinicQueryKey(clinicId||""),enabled:tab==="doctors"&&!!clinicId}});
   const [hydrated,setHydrated]=useState(tab!=="doctors"||!opened.id);
   const savedBranchIds:string[]=initial.branchIds||[];
@@ -300,16 +308,16 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
     },
     onSuccess: (result) => {
       void client.invalidateQueries();
-      if(tab!=="doctors"){onClose(result);return;}
+      if(tab!=="doctors"&&result.invitationStatus!=="failed"){onClose(result);return;}
       setSaved(result); form.reset(doctorValues(result));
-      setSavedMessage("Doctor details and assignments saved. Schedule changes are saved separately.");
-      if(!initial.id){onCreated();if(result.invitationStatus==="failed")notifyWarning("Doctor added, but the invitation could not be sent.");}
+      setSavedMessage(result.invitationStatus==="failed"?"The staff record and assignments are saved, but the invitation was not sent. Use Resend Invitation after email service setup is restored; do not add this account again.": "Doctor details and assignments saved. Schedule changes are saved separately.");
+      if(!initial.id&&tab==="doctors"){onCreated();if(result.invitationStatus==="failed")notifyWarning("Doctor added, but the invitation could not be sent.");}
     },
     onSettled: () => { locked.current = false; },
   });
   useEffect(() => { onDirtyChange(form.formState.isDirty || scheduleDirty); }, [form.formState.isDirty, scheduleDirty]);
-  useEffect(() => { onBusyChange(save.isPending || scheduleBusy); }, [save.isPending, scheduleBusy]);
-  useRegisterUnsaved(form.formState.isDirty||scheduleDirty,save.isPending||scheduleBusy);
+  useEffect(() => { onBusyChange(save.isPending || scheduleBusy || resendSavedInvitation.isPending); }, [save.isPending, scheduleBusy, resendSavedInvitation.isPending]);
+  useRegisterUnsaved(form.formState.isDirty||scheduleDirty,save.isPending||scheduleBusy||resendSavedInvitation.isPending);
   const snapshotRef = useRef(onSnapshot); snapshotRef.current = onSnapshot;
   useEffect(() => {
     // Carried shared fields are applied as edits so dirty protection still guards them.
@@ -377,6 +385,11 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
     </FormSection></div>}
     <FormActions busy={save.isPending||scheduleBusy} cancelClosesDialog submitLabel={initial.id ? tab==="doctors"?"Save Doctor Details":"Save Changes" : `Add ${tab==="doctors"?"Doctor":tab==="admins"?"Clinic Admin":"Receptionist"}`} busyLabel={initial.id ? "Saving…" : "Adding…"} submitTestId="button-save-staff" cancelTestId="button-cancel-staff" secondary={save.error ? <ErrorNotice error={save.error} /> : undefined} />
     {savedMessage&&<p className="notice wide" role="status">{savedMessage}</p>}
+    {initial.id&&initial.invitationStatus==="failed"&&<div className="wide">
+      <p role="status">This staff record is saved. Its invitation has not been sent.</p>
+      <button type="button" data-testid="button-resend-saved-invitation" disabled={save.isPending||scheduleBusy||resendSavedInvitation.isPending||!!staffInvitationRestriction(initial,tab)} title={staffInvitationRestriction(initial,tab)||undefined} onClick={()=>resendSavedInvitation.mutate()}>{resendSavedInvitation.isPending?"Sending…":"Resend Invitation"}</button>
+      {resendSavedInvitation.error&&<ErrorNotice error={resendSavedInvitation.error}/>}
+    </div>}
   </form></Form>
   {tab==="doctors"&&<DoctorScheduleContext doctor={initial} autoFocus={scheduleEntry} profileBusy={save.isPending} assignmentDirty={JSON.stringify([selectedClinics,selectedBranches])!==JSON.stringify([initial.clinicIds||[],initial.branchIds||[]])} onDirtyChange={setScheduleDirty} onBusyChange={setScheduleBusy}/>}
   </div>;
