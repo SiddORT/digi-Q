@@ -5,6 +5,8 @@ import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { SearchableSelect } from "./SearchableSelect";
 import { AppDialog } from "./AppDialog";
 import { ResponsiveActionGroup } from "./ResponsiveActionGroup";
+import { HelpTip } from "./HelpTip";
+import "./clinic-listing-toolbar.css";
 
 // Export useDebouncedValue directly from here for convenience as requested
 export { useDebouncedValue };
@@ -214,6 +216,8 @@ export interface FilterChip {
 }
 
 export interface FilterBarProps {
+  /** Opt-in Clinic presentation: one desktop row, with persistent icon tools. */
+  compactToolbar?: boolean;
   /** Primary controls (search first). Rendered on the header's first row beside the title. Never hidden. */
   children?: React.ReactNode;
   /** Secondary controls, shown in a right-side drawer opened from the Filters button. */
@@ -252,7 +256,7 @@ function useCompactFilters() {
   useEffect(() => { const m = window.matchMedia?.(query); if (!m) return; const on = () => setMatch(m.matches); on(); m.addEventListener("change", on); return () => m.removeEventListener("change", on); }, []);
   return match;
 }
-export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters }: FilterBarProps) {
+export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters, compactToolbar = false }: FilterBarProps) {
   const advancedActiveCount = activeCount ?? chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
@@ -286,22 +290,26 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
   const countInSub = !!(pageTitle && title);
   // Filters/Clear never sit alone on an otherwise empty second row: without status tabs or a
   // secondary count they join the search row.
-  const toolsInline = !status && !countInSub;
+   const toolsInline = compactToolbar || (!status && !countInSub);
   const hasSubRow = !toolsInline && !!(status || meta || advanced || showClear || countInSub);
 
-  const tools = (
+   const filterTrigger = <button type="button" ref={toggleRef} className={cn("filter-toggle", compactToolbar && "listing-icon-trigger", advancedActiveCount > 0 && "has-active")}
+     aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
+     aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
+     onClick={() => { if (!open) { onOpen?.(); setInvalidMessage(""); } setOpen(v => !v); }} data-testid="button-toggle-advanced-filters">
+     <Filter aria-hidden className="h-4 w-4" />
+     {!compactToolbar && <span className="filter-toggle-text">Filters</span>}
+     {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
+   </button>;
+   const heading = pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1></div>
+     : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>;
+   const primaryActions = actions && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup>{actions}</ResponsiveActionGroup></div>;
+   const tools = (
     <div className="filter-bar-tools lh-tools">
             {meta && <div className="lh-meta">{meta}</div>}
             {advanced && (
               <div className="filter-pop">
-                <button type="button" ref={toggleRef} className={cn("filter-toggle", advancedActiveCount > 0 && "has-active")}
-                  aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
-                  aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
-                  onClick={() => { if (!open) { onOpen?.(); setInvalidMessage(""); } setOpen(v => !v); }} data-testid="button-toggle-advanced-filters">
-                  <Filter aria-hidden className="h-4 w-4" />
-                  <span className="filter-toggle-text">Filters</span>
-                  {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
-                </button>
+                 {compactToolbar ? <HelpTip text={`Filter clinics by status, administrator or sort order${advancedActiveCount ? `; ${advancedActiveCount} active` : ""}.`}>{filterTrigger}</HelpTip> : filterTrigger}
                 <AppDialog open={open} onClose={closeFilters} title={label} variant="drawer">
                   <form id={panelId} ref={formRef} className="filter-drawer-content" noValidate data-testid="form-filter-drawer"
                     onSubmit={e => e.preventDefault()}>
@@ -325,16 +333,17 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
   // Layout order: 1) header (title + primary action), 2) wide search + filter/table tools, 3) exposed common filters
   // and status tabs, 4) active filter chips with one Clear All. The search row never remounts while typing.
   return (
-    <section className="filter-bar list-header" aria-label={label} data-testid="list-header">
-      {(pageTitle || title || actions) && <div className={cn("filter-bar-row lh-row lh-top lh-head", (title || status) && "has-title")}>
-        {pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1></div>
-          : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>}
-        {actions && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup>{actions}</ResponsiveActionGroup></div>}
+     <section className={cn("filter-bar list-header", compactToolbar && "list-header--compact")} aria-label={label} data-testid="list-header">
+       {!compactToolbar && (pageTitle || title || actions) && <div className={cn("filter-bar-row lh-row lh-top lh-head", (title || status) && "has-title")}>
+         {heading}
+         {primaryActions}
       </div>}
       <div className="filter-bar-row lh-row lh-top lh-search-row" data-testid="list-header-search-row">
+         {compactToolbar && heading}
         {children && <div className="filter-bar-primary lh-search">{children}</div>}
         {toolsInline && !!(meta || advanced || showClear) && tools}
-        {secondary && <div className="lh-table-tools" data-testid="list-header-table-tools"><ResponsiveActionGroup secondary={secondary} label="Table Tools" /></div>}
+         {secondary && <div className="lh-table-tools" data-testid="list-header-table-tools">{compactToolbar ? secondary : <ResponsiveActionGroup secondary={secondary} label="Table Tools" />}</div>}
+         {compactToolbar && primaryActions}
       </div>
       {(hasSubRow || filters) && (
         <div className="lh-row lh-sub" data-testid="list-header-subrow">

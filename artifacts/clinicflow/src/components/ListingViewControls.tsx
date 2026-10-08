@@ -3,9 +3,10 @@ import { Columns3, ArrowUp, ArrowDown, Pin, PinOff, Bookmark, Trash2 } from "luc
 import { AppDialog } from "./AppDialog";
 import { arrangeColumns, type ListingLayout, type SavedView } from "@/lib/listing-views";
 import "./listing-view-controls.css";
+import { HelpTip } from "./HelpTip";
 
-export function ColumnSettings({ columns, layout, label, onChange, onReset, reorderable = true, pinnable = true }: {
-  columns: string[]; layout: ListingLayout; label: (c: string) => string; reorderable?: boolean; pinnable?: boolean;
+export function ColumnSettings({ columns, layout, label, onChange, onReset, reorderable = true, pinnable = true, iconOnly = false }: {
+  columns: string[]; layout: ListingLayout; label: (c: string) => string; reorderable?: boolean; pinnable?: boolean; iconOnly?: boolean;
   onChange: (next: Partial<ListingLayout>) => void; onReset: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -16,10 +17,11 @@ export function ColumnSettings({ columns, layout, label, onChange, onReset, reor
     [next[i], next[j]] = [next[j], next[i]]; onChange({ order: next });
   };
   const toggle = (c: string) => onChange({ hidden: hidden.includes(c) ? layout.hidden.filter(h => h !== c) : [...layout.hidden, c] });
-  return <>
-    <button type="button" className="lvc-trigger" onClick={() => setOpen(true)} aria-haspopup="dialog" data-testid="button-column-settings">
-      <Columns3 size={15} aria-hidden /><span>Columns{hidden.length ? ` · ${hidden.length} hidden` : ""}</span>
-    </button>
+   const trigger = <button type="button" className={`lvc-trigger${iconOnly ? " listing-icon-trigger" : ""}${hidden.length ? " has-active" : ""}`} onClick={() => setOpen(true)} aria-label={`Columns${hidden.length ? `, ${hidden.length} hidden` : ""}`} aria-expanded={open} aria-haspopup="dialog" data-testid="button-column-settings">
+     <Columns3 size={15} aria-hidden />{iconOnly ? hidden.length > 0 && <span className="filter-count" aria-hidden>{hidden.length}</span> : <span>Columns{hidden.length ? ` · ${hidden.length} hidden` : ""}</span>}
+   </button>;
+   return <>
+     {iconOnly ? <HelpTip text={`Show, order and pin columns${hidden.length ? `; ${hidden.length} hidden` : ""}. Preferences are saved on this device.`}>{trigger}</HelpTip> : trigger}
     <AppDialog open={open} onClose={() => setOpen(false)} title="Columns" variant="drawer">
       <p className="muted">{reorderable ? "Show, order and pin columns. One column can be pinned to the left at a time; pinning another replaces it." : "Show or hide columns. Column order is fixed for this operational view; record order is never changed."} Layout is saved on this device for your account and role. Hidden values stay available in each row's details.</p>
       <ul className="lvc-columns">{ordered.map((c, i) => <li key={c} data-testid={`column-setting-${c}`}>

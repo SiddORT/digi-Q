@@ -39,7 +39,8 @@ async function fixture(page: Page, multiClinic = false): Promise<Fixture> {
     if (path === "/api/settings") reply = { timezone: "Asia/Kolkata" };
     else if (path === "/api/me") reply = { clerkId: "fixture-only", user: { id: "fixture-admin", role: "superAdmin", fullName: "Fixture Administrator" }, doctorId: "doctor-1" };
     else if (path === "/api/clinics" && method === "GET") reply = listing((multiClinic ? [clinic, otherClinic] : [clinic]).filter(item =>
-      !url.searchParams.get("search") || item.name.toLowerCase().includes(url.searchParams.get("search")!.toLowerCase())));
+     (!url.searchParams.get("search") || item.name.toLowerCase().includes(url.searchParams.get("search")!.toLowerCase())) &&
+     (!url.searchParams.get("status") || item.status === url.searchParams.get("status"))));
     else if (path === "/api/branches" && method === "GET" && state.failBranches) { status = 503; reply = { message: "Fixture branch lookup unavailable" }; }
     else if (path === "/api/branches" && method === "GET") reply = listing((multiClinic ? [branch, otherBranch] : [branch]).filter(item =>
       (!url.searchParams.get("clinicId") || url.searchParams.get("clinicId") === item.clinicId) &&
@@ -191,16 +192,26 @@ async function utilityDisplays(page: Page) {
   });
 }
 
-test("compact lists show status tabs and server-backed sortable headings", async ({ page }) => {
+test("Clinic drawer status filters and server-backed sortable headings", async ({ page }) => {
   const state = await fixture(page);
   await page.goto(pageUrl("clinics"));
   await expect(page.getByTestId("row-clinics-clinic-1")).toBeVisible();
   expect(await utilityDisplays(page)).toEqual({ flex: "flex", hidden: "none" });
   await expect(page.getByRole("button", { name: /comfortable/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /compact/i })).toHaveCount(0);
-  await expect(page.getByTestId("tab-clinics-active")).toBeVisible();
-  await page.getByTestId("tab-clinics-inactive").click();
+   await page.getByTestId("button-toggle-advanced-filters").click();
+   await page.getByRole("button", {name:/^Status/}).click();
+   await page.getByRole("option", {name:"Active",exact:true}).click();
+   await page.getByTestId("button-close-filters").click();
+   await expect.poll(() => listCalls(state, "/api/clinics").at(-1)?.params.get("status")).toBe("active");
+   await page.getByTestId("button-toggle-advanced-filters").click();
+   await page.getByRole("button", {name:/^Status/}).click();
+   await page.getByRole("option", {name:"Inactive",exact:true}).click();
+   await page.getByTestId("button-close-filters").click();
   await expect.poll(() => listCalls(state, "/api/clinics").at(-1)?.params.get("status")).toBe("inactive");
+   await page.getByTestId("button-toggle-advanced-filters").click();
+   await page.getByTestId("button-clear-filters-panel").click();
+   await expect(page.getByTestId("row-clinics-clinic-1")).toBeVisible();
   const heading = page.getByTestId("sort-clinics-name");
   await heading.click();
   await expect.poll(() => listCalls(state, "/api/clinics").at(-1)?.params.get("sort")).toBe("name");
@@ -209,13 +220,112 @@ test("compact lists show status tabs and server-backed sortable headings", async
   await screenshot(page, "compact-clinics-desktop.png");
 });
 
+test("Clinic compact toolbar keeps bounds, descriptions, stable search and working preferences", async ({page})=>{
+  test.setTimeout(60000);
+  const state=await fixture(page);
+  await page.goto("/admin/clinics",{waitUntil:"domcontentloaded"});
+  await expect(page.getByTestId("row-clinics-clinic-1")).toBeVisible();
+  const header=page.getByTestId("list-header");
+  const search=header.getByRole("combobox");
+  const filters=header.getByTestId("button-toggle-advanced-filters");
+  const columns=header.getByTestId("button-column-settings");
+  const add=header.getByTestId("button-add-clinics");
+  await expect(header.getByTestId("button-saved-views")).toHaveCount(0);
+  await expect(header.getByTestId("quick-filters-clinics")).toHaveCount(0);
+  await expect(header.getByTestId("list-header-subrow")).toHaveCount(0);
+  await expect(header.getByTestId("button-more-actions")).toHaveCount(0);
+  await expect(filters).toHaveText("");
+  await expect(columns).toHaveText("");
+  for(const width of [1024,1280,1600,820,390,320]){
+    await page.setViewportSize({width,height:900});
+    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+    const controls=[header.getByRole("heading",{name:"Clinic",exact:true}),search,filters,columns,add];
+    const boxes=await Promise.all(controls.map(control=>control.boundingBox()));
+    const bounds=(await header.boundingBox())!;
+    for(let i=0;i<boxes.length;i++){
+      const box=boxes[i]!;
+      expect(box.x).toBeGreaterThanOrEqual(bounds.x-1);
+      expect(box.x+box.width).toBeLessThanOrEqual(bounds.x+bounds.width+1);
+      expect(await controls[i].evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+    }
+    expect(boxes[1]!.width).toBeGreaterThanOrEqual(120);
+    if(width>=820){
+      const centers=boxes.map(box=>box!.y+box!.height/2);
+      expect(Math.max(...centers)-Math.min(...centers)).toBeLessThan(3);
+      expect(bounds.height).toBeLessThanOrEqual(48);
+      for(let i=1;i<boxes.length;i++)expect(boxes[i-1]!.x+boxes[i-1]!.width).toBeLessThanOrEqual(boxes[i]!.x);
+    }else{
+      expect(bounds.height).toBeLessThanOrEqual(104);
+      for(const button of [filters,columns,add])expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+    await screenshot(page,`clinic-toolbar-${width}.png`);
+  }
+  await page.setViewportSize({width:1280,height:900});
+  await filters.focus();
+  await expect(page.locator('[role="tooltip"]')).toContainText("Filter clinics");
+  expect(await filters.evaluate(el=>getComputedStyle(el).outlineStyle)).not.toBe("none");
+  await filters.press("Enter");
+  const status=page.getByRole("button",{name:/^Status/});
+  await status.click();
+  await page.getByRole("option",{name:"Inactive",exact:true}).click();
+  expect(listCalls(state,"/api/clinics").at(-1)?.params.has("status")).toBe(false);
+  await page.getByTestId("button-close-filters").click();
+  await expect(filters).toBeFocused();
+  await expect(filters).toHaveAccessibleName(/1 active/);
+  await expect.poll(()=>listCalls(state,"/api/clinics").at(-1)?.params.get("status")).toBe("inactive");
+  await filters.click();
+  await page.getByTestId("button-clear-filters-panel").click();
+  await expect.poll(()=>listCalls(state,"/api/clinics").at(-1)?.params.has("status")).toBe(false);
+  await expect(page.getByRole("columnheader",{name:/Status/})).toBeVisible();
+  await expect(filters).not.toHaveAccessibleName(/active/);
+  await search.evaluate(el=>(el as HTMLElement).dataset.stableSearch="yes");
+  await search.fill("Fixture");
+  await expect.poll(()=>listCalls(state,"/api/clinics").at(-1)?.params.get("search")).toBe("Fixture");
+  await expect(search).toHaveAttribute("data-stable-search","yes");
+  await columns.focus();
+  await expect(page.locator('[role="tooltip"]')).toContainText("Show, order and pin columns");
+  await columns.press("Enter");
+  await page.getByTestId("column-setting-adminName").getByRole("checkbox").uncheck();
+  await page.getByRole("button",{name:"Done",exact:true}).click();
+  await expect(columns).toBeFocused();
+  await expect(columns).toHaveAccessibleName("Columns, 1 hidden");
+  await expect(page.getByRole("columnheader",{name:"Owning administrator",exact:true})).toHaveCount(0);
+  await page.reload();
+  await expect(columns).toHaveAccessibleName("Columns, 1 hidden");
+  await columns.click();
+  await page.getByTestId("button-reset-columns").click();
+  await page.getByRole("button",{name:"Done",exact:true}).click();
+  await expect(page.getByRole("columnheader",{name:"Owning administrator",exact:true})).toBeVisible();
+  await add.click();
+  await expect(page.getByRole("dialog")).toContainText("Add Clinic");
+  await expect(page.getByRole("dialog").getByTestId("input-name")).toBeVisible();
+});
+
+test("non-Clinic shared headers retain labelled tools, views and quick status",async({page})=>{
+  await fixture(page);
+  await page.setViewportSize({width:1440,height:900});
+  for(const resource of ["patients","branches"]){
+    await page.goto(pageUrl(resource));
+    const header=page.getByTestId("list-header");
+    await expect(header).not.toHaveClass(/list-header--compact/);
+    await expect(header.getByTestId("button-column-settings")).toContainText("Columns");
+    await expect(header.getByTestId("button-saved-views")).toBeVisible();
+    await expect(header.getByTestId(`quick-filters-${resource}`)).toBeVisible();
+    if(resource==="branches")await expect(header.getByRole("button",{name:/^Status/})).toBeVisible();
+  }
+  await page.goto(pageUrl("clinics","fixtureRole=doctor"));
+  await expect(page.getByTestId("list-header")).toHaveClass(/list-header--compact/);
+  await expect(page.getByTestId("button-view-clinic-clinic-1")).toHaveCount(0);
+});
+
 test("advanced filter values do not fetch until Apply and Reset clears the server scope", async ({ page }) => {
   const state = await fixture(page);
   await page.goto(pageUrl("patients"));
   await expect(page.getByTestId("row-patients-patient-1")).toBeVisible();
   await page.getByTestId("button-toggle-advanced-filters").click();
   const before = listCalls(state, "/api/patients").length;
-  await page.getByLabel("From date").fill("2030-02-01");
+  await page.getByTestId("input-patients-from").fill("01 Feb 2030");
   expect(listCalls(state, "/api/patients")).toHaveLength(before);
   await page.getByRole("button", { name: /^apply/i }).click();
   await expect.poll(() => listCalls(state, "/api/patients").at(-1)?.params.get("from")).toBe("2030-02-01");

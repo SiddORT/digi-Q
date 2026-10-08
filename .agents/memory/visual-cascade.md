@@ -33,6 +33,12 @@ Isolated component browser harnesses must explicitly scan the application's sour
 
 **How to apply:** Match the real CSS compiler and explicitly include external component sources in scanning. Assert computed flex/hidden styles before trusting visual evidence; then distinguish genuine selector mismatches and specificity problems from harness omissions.
 
+Listing regression harnesses should exercise the shell's title-ownership context, not supply a separate heading outside the listing.
+
+**Why:** A standalone fixture heading bypasses the shared header's title and secondary-count behavior, so it cannot establish the production toolbar's density or row layout.
+
+**How to apply:** Reproduce the shell context in isolated listing tests and measure the complete rendered toolbar at the reference width before trusting screenshots.
+
 Keep the clinic administration interface compact-only and reserve tabs for status filtering. Consolidate overlapping management surfaces around one editor per record type.
 
 **Why:** The user explicitly rejected density choices, tab-like section navigation, and pages that repeat most of the same controls with only a few differences. The goal is fewer competing places to manage information, not merely smaller spacing.

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ResourcePage } from "../src/resources";
@@ -8,6 +8,7 @@ import { Redirect, useLocation, useSearch } from "wouter";
 import { clinicLandingDestination } from "../src/lib/clinic-navigation";
 import { Users } from "../src/Users";
 import { UsersWorkspace } from "../src/clinic";
+import { ListPageTitleContext } from "../src/components/ListingControls";
 import "./workspace.css";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
@@ -17,6 +18,7 @@ const identity = {
   doctorId: "doctor-1",
 } as React.ComponentProps<typeof ClinicSettings>["identity"];
 function FixtureWorkspace(){
+const titleOwner=useRef<string|null>(null);
 const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
@@ -39,8 +41,10 @@ return (
       <div className="workspace-main">
         <header className="topbar"><div className="breadcrumb">Workspace · {mode === "settings" ? "Settings" : mode === "staff" ? "Staff" : resource}</div></header>
         <main className="content">
-          <div className="page-heading"><h1>{mode === "settings" ? "Clinic settings" : mode === "staff" ? "Staff" : resource}</h1></div>
-          {redirect?<Redirect to={redirect}/>:mode === "users" ? <UsersWorkspace identity={fixtureIdentity}/> : mode === "settings" ? <ClinicSettings identity={fixtureIdentity}/> : mode === "staff" ? <Users identity={fixtureIdentity} clinicId={fixedClinicId} embedded={!!fixedClinicId}/> : <ResourcePage resource={resource} identity={fixtureIdentity} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId}/>}
+          {mode!=="resource"&&<div className="page-heading"><h1>{mode === "settings" ? "Clinic settings" : mode === "users" ? "Users" : "Staff"}</h1></div>}
+          <ListPageTitleContext.Provider value={mode==="resource"?{title:resource==="clinics"?"Clinic":resource,owner:titleOwner}:null}>
+            {redirect?<Redirect to={redirect}/>:mode === "users" ? <UsersWorkspace identity={fixtureIdentity}/> : mode === "settings" ? <ClinicSettings identity={fixtureIdentity}/> : mode === "staff" ? <Users identity={fixtureIdentity} clinicId={fixedClinicId} embedded={!!fixedClinicId}/> : <ResourcePage resource={resource} identity={fixtureIdentity} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId}/>}
+          </ListPageTitleContext.Provider>
         </main>
       </div>
     </div>
