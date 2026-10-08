@@ -35,6 +35,7 @@ node_modules
 /test-results/
 artifacts/clinicflow/playwright-report/
 artifacts/clinicflow/test-results/
+artifacts/clinicflow/workspace-regression/test-results/
 /libpeerconnection.log
 npm-debug.log
 yarn-error.log
