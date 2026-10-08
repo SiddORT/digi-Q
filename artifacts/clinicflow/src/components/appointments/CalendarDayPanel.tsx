@@ -5,6 +5,7 @@ import { CalendarPlus, ChevronLeft, ChevronRight, List, X } from "lucide-react";
 import { formatDate, formatTime } from "../../lib/date-time";
 import { title } from "../../resources";
 import { AppointmentDetails } from "./AppointmentDetails";
+import { isPrivateAppointmentUnavailable } from "./presentation";
 
 type DayFilters = { search?: string; status?: string; clinicId?: string; branchId?: string; doctorId?: string };
 
@@ -41,6 +42,21 @@ export function dayBookingHref(root: string, date: string, f: DayFilters) {
   return `/${root}/book?${q}`;
 }
 
+function CalendarVisit({ appointment: a }: { appointment: api.Appointment }) {
+  const [open, setOpen] = useState(false);
+  // Observe the same exact-ID result as the detail surface so a denied record
+  // cannot continue exposing patient identifiers in its cached list summary.
+  const exact = api.useGetAppointment(a.id, { query: {
+    queryKey: api.getGetAppointmentQueryKey(a.id), enabled: open, refetchInterval: 30000, retry: false,
+  } });
+  const denied = isPrivateAppointmentUnavailable(exact.error);
+  const current = exact.data || a;
+  return <details className="appt-day-visit" data-testid={`calendar-day-visit-${a.id}`} onToggle={event => setOpen(event.currentTarget.open)}>
+    <summary>{denied ? <span>Appointment unavailable</span> : <><strong className="appt-day-token">{current.token}</strong><span className="appt-day-name">{current.patientName}{current.patientCode && <small>{current.patientCode}</small>}</span><span className={`badge ${current.status}`}>{title(current.status === "called" ? "calledNext" : current.status)}</span></>}</summary>
+    {open && <div className="appt-day-ticket"><AppointmentDetails appointment={a} /></div>}
+  </details>;
+}
+
 export function CalendarDayPanel({ date, today, root, filters, canBook, onClose, onOpenList }: { date: string; today: string; root: string; filters: DayFilters; canBook: boolean; onClose: () => void; onOpenList: () => void }) {
   const [page, setPage] = useState(1);
   const scopeKey = JSON.stringify([date, filters.search, filters.status, filters.clinicId, filters.branchId, filters.doctorId]);
@@ -68,10 +84,7 @@ export function CalendarDayPanel({ date, today, root, filters, canBook, onClose,
         : !groups.length ? <div className="empty appt-day-empty"><p>No visits on this day{Object.values(filters).some(Boolean) ? " for the current filters" : ""}.</p></div>
         : groups.map(g => <section key={g.key} className="appt-day-session" data-testid="calendar-day-session">
             <h3><span>{g.doctorName}</span><small>{g.startTime ? `${formatTime(g.startTime)}${g.endTime ? `–${formatTime(g.endTime)}` : ""}` : "Session"} · {g.branchName} · {g.items.length}</small></h3>
-            <ul>{g.items.map(a => <li key={a.id}><details className="appt-day-visit" data-testid={`calendar-day-visit-${a.id}`}>
-              <summary><strong className="appt-day-token">{a.token}</strong><span className="appt-day-name">{a.patientName}{a.patientCode && <small>{a.patientCode}</small>}</span><span className={`badge ${a.status}`}>{title(a.status === "called" ? "calledNext" : a.status)}</span></summary>
-              <div className="appt-day-ticket"><AppointmentDetails appointment={a} ticketFirst /></div>
-            </details></li>)}</ul>
+            <ul>{g.items.map(a => <li key={a.id}><CalendarVisit appointment={a} /></li>)}</ul>
           </section>)}
       {pages > 1 && <nav className="appt-day-pager" aria-label="Day visits pages">
         <button type="button" className="button secondary small" disabled={page <= 1 || q.isFetching} onClick={() => setPage(p => Math.max(1, p - 1))} data-testid="button-calendar-day-prev"><ChevronLeft size={14} aria-hidden /> Previous</button>

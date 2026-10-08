@@ -6,7 +6,7 @@ const source = readFileSync(new URL("./AppointmentRows.tsx", import.meta.url), "
 const table = source.slice(source.indexOf("const cols=useTableColumns"), source.indexOf("</tbody>"));
 test("default appointment rows omit technical references and duplicate waiting explanations", () => {
   assert.doesNotMatch(table, /<small>\{a\.reference\}<\/small>|Awaiting consultation|Patient \/ reference/);
-  assert.match(table, /label:"Patient"/);
+  assert.match(source, /label:"Patient"/);
   assert.match(table, /data-label=\{cols\.label\(k\)\}/);
 });
 test("operational tokens remain prominent in session queues, not repeated session prose", () => {

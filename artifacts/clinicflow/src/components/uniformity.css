@@ -530,3 +530,25 @@ ol.booking-steps { list-style: none; margin-left: 0; padding-left: 0; flex-wrap:
 .editor-tab.is-active{color:var(--navy);border-bottom-color:var(--dq-blue)}
 .editor-tab.is-invalid,.editor-tab.is-active.is-invalid{color:hsl(var(--destructive))}
 @media (max-width:767px){.editor-tab{min-height:var(--control-lg)}}
+
+/* ---------- Tabbed appointment details ---------- */
+.appt-detail .appt-tabs{min-width:0}
+.appt-detail .appt-tabs-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;width:100%;height:auto;padding:4px;border-radius:var(--radius-control);background:#eef3fb;border-bottom:0}
+.appt-detail .appt-tab{min-height:36px;height:auto;padding:6px 8px;white-space:normal;text-align:center;font-family:var(--font-body);font-size:var(--type-label);font-weight:600;color:var(--soft);border-radius:var(--radius-control);line-height:1.2}
+.appt-detail .appt-tab[data-state=active]{background:var(--dq-surface);color:var(--dq-blue);box-shadow:0 1px 2px rgba(30,60,110,.15)}
+.appt-detail .appt-tab:focus-visible,.appt-detail .appt-tab-panel:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px;box-shadow:none}
+.appt-detail .appt-tab-panel{margin-top:var(--space-3);min-width:0;display:grid;gap:var(--space-4);overflow-wrap:anywhere}
+.appt-detail .appt-tab-panel[hidden]{display:none}
+.appt-detail .appt-detail-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}
+.appt-detail .appt-detail-extra{grid-column:1/-1}
+.appt-detail .appt-detail-ticket,.appt-detail .appt-ticket{min-width:0;max-width:100%;overflow:visible}
+.appt-detail .appt-detail-hstatus{color:var(--soft)}
+@media (max-width:640px){.appt-detail .appt-tab{min-height:44px;padding:6px 8px}.appt-detail .appt-detail-cols{grid-template-columns:1fr}}
+@media (max-width:480px){.appt-detail .appt-tabs-list{grid-template-columns:repeat(2,minmax(0,1fr))}.appt-detail .appt-tab{white-space:nowrap}}
+/* Use the actual scroll viewport, not guessed sidebar dimensions, for wide tables. */
+.workspace .appt-table{container-type:inline-size}
+.workspace tr.row-expansion .appt-detail dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3) var(--space-4)}
+.workspace tr.row-expansion .appt-detail dt{font-size:var(--type-caption);font-weight:650;color:var(--soft)}
+.workspace tr.row-expansion .appt-detail dd{margin:0;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;min-width:0}
+@media (max-width:520px){.workspace tr.row-expansion .appt-detail dl{grid-template-columns:1fr}}
+@media (min-width:641px){.workspace tr.row-expansion .appt-detail{position:sticky;left:0;box-sizing:border-box;width:min(100%,calc(100cqw - 24px))}}

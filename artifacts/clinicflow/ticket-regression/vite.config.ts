@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 
 const root = path.dirname(new URL(import.meta.url).pathname);
@@ -7,7 +8,7 @@ export default defineConfig({
   root,
   // Exercise the same checked-in public logo served by the production Vite app.
   publicDir: path.resolve(root, "../public"),
-  plugins: [react()],
+  plugins: [react(), tailwindcss({ optimize: false })],
   resolve: {
     alias: { "@": path.resolve(root, "../src") },
     dedupe: ["react", "react-dom"],

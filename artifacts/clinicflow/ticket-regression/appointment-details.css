@@ -1,0 +1,3 @@
+@import "../src/index.css";
+/* Include the real component tree despite this fixture's separate Vite root. */
+@source "../src";

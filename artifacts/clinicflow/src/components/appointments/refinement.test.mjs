@@ -26,7 +26,7 @@ test("status is a fixed readable column; token carries the booking reference too
   assert.match(rows, /<th key="status" className="col-status" scope="col">Status<\/th>/);
   assert.match(rows, /<HelpTip text=\{`Booking reference \$\{a\.reference\}/);
   const d = r("./AppointmentDetails.tsx");
-  assert.match(d, /ticketOpen \|\| !canShowAppointmentTicket/); assert.match(d, /appt-detail-cols/);
+  assert.match(d, /Tabs defaultValue="booking"/); assert.match(d, /appt-detail-cols/);
 });
 
 test("bulk toolbar is compact, page-scoped, no bulk check-in, PDF and email via shared helpers", () => {
@@ -40,15 +40,17 @@ test("bulk toolbar is compact, page-scoped, no bulk check-in, PDF and email via 
   assert.match(r("../AdminListing.tsx"), /bulk-compact/);
 });
 
-test("1200px acceptance: status follows token, ticket is first in DOM, scope filters exposed, PDF compressed", () => {
+test("1200px acceptance: status follows token, Booking is default, hidden values stay in Details, scope filters exposed, PDF compressed", () => {
   const rows = readFileSync(new URL("./AppointmentRows.tsx", import.meta.url), "utf8");
   assert.match(rows, /label:"Token \/ Queue No\."/);
   assert.match(rows, /statusAfter=\["token","patient"\]/);
   const det = readFileSync(new URL("./AppointmentDetails.tsx", import.meta.url), "utf8");
-  assert.ok(det.indexOf("{ticketFirst && ticketBlock}") < det.indexOf('<div className="appt-detail-cols">'));
-  assert.ok(rows.indexOf("ticketFirst/>}") < rows.indexOf('className="appt-expansion-hidden"'));
+  assert.match(det, /Tabs defaultValue="booking"/);
+  assert.match(det, /<TabsContent value="details"[\s\S]*supplementaryDetails/);
+  assert.match(rows, /supplementaryDetails=\{hiddenCols/);
+  assert.doesNotMatch(det + rows, /ticketFirst/);
   const clinic = readFileSync(new URL("../../clinic.tsx", import.meta.url), "utf8");
-  assert.match(clinic, /lh-filter-scope"><CareLookup kind="clinics"/);
+  assert.match(clinic, /CareLookup kind="clinics" publicAccess=\{isPatient\}/);
   const pdf = readFileSync(new URL("../tickets/ticket-pdf.ts", import.meta.url), "utf8");
   assert.match(pdf, /compress: true/); assert.match(pdf, /"PNG",[^;]*"FAST"\)/);
 });

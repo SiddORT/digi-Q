@@ -50,7 +50,7 @@ test("calendar drill opens the day panel, keeps month/filters, and never rewrite
   assert.match(src, /<CalendarDayPanel date=\{calDay\}/);
   assert.match(src, /onOpenList=\{\(\)=>\{setFrom\(calDay\);setTo\(calDay\);setPage\(1\);setMode\("list"\);setCalDay\(""\);\}\}/, "Open in list is the explicit, secondary path");
   const panel = read("./appointments/CalendarDayPanel.tsx");
-  assert.match(panel, /<AppointmentDetails appointment=\{a\} ticketFirst \/>/);
+  assert.match(panel, /<AppointmentDetails appointment=\{a\} \/>/);
   assert.match(panel, /data-testid="button-calendar-day-open-list"/);
 });
 

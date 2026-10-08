@@ -39,9 +39,9 @@ Listing regression harnesses should exercise the shell's title-ownership context
 
 **How to apply:** Reproduce the shell context in isolated listing tests and measure the complete rendered toolbar at the reference width before trusting screenshots.
 
-Keep the clinic administration interface compact-only and reserve tabs for status filtering. Consolidate overlapping management surfaces around one editor per record type.
+Keep the clinic administration interface compact-only. Appointment details are an explicit exception to earlier status-only tab guidance: use Booking, Details, Consultation and History. Consolidate overlapping management surfaces around one editor per record type.
 
-**Why:** The user explicitly rejected density choices, tab-like section navigation, and pages that repeat most of the same controls with only a few differences. The goal is fewer competing places to manage information, not merely smaller spacing.
+**Why:** The user rejected density choices and duplicate management pages, then explicitly requested four appointment-detail tabs superseding the older ticket-first stacked layout.
 
 **How to apply:** Use section navigation for configuration, labelled toggles for binary staff activation and column arrows for sorting. Reuse canonical editors from contextual entry points while preserving role scopes, unique actions, historical links and distinct appointment/queue workflows.
 
@@ -81,9 +81,9 @@ Ticket compactness and the current representation review must preserve all exist
 
 **How to apply:** Improve grouping, alignment and spacing without dropping content, shrinking text to fit or clipping overflow. Target a ticket that fits typical desktop viewports, while retaining scrolling when small screens or long content require it.
 
-Use wide search beside listing titles, with Export beside the primary Add/Book action. Header actions should have matching outer heights and a clearly emphasized primary action. Appointment details belong in a structured right-side drawer; tickets remain centred documents.
+Use wide search beside listing titles, with Export beside the primary Add/Book action. Header actions should have matching outer heights and a clearly emphasized primary action. Appointment details retain inline expansion with a compact summary and four tabs; tickets remain centred documents.
 
-**Why:** The user approved this representation across all pages after the previous compactness pass still left stacked toolbars and unstructured popup contents.
+**Why:** The user approved compact representation across pages, and later explicitly preserved inline appointment expansions rather than replacing them with drawers.
 
 **How to apply:** Apply the common header to relevant listings, while retaining page-specific scope controls, responsive wrapping, full content and existing behavior. Improve grouping inside overlays rather than just changing where the old vertical list opens.
 
@@ -98,3 +98,9 @@ Measure visible text and control rectangles separately from scroll extents when 
 **Why:** Absolute-positioned count badges and enlarged pseudo-element help hit targets can increase a button's `scrollWidth` even when its visible content is correctly contained. Treating that as clipped text creates false failures.
 
 **How to apply:** Check text ranges against their control bounds and badge bounds against the containing toolbar. Limit single-row assertions to the toolbar itself, excluding summary-chip remove buttons beneath it.
+
+Visual bounds checks should measure readable content rather than invisible spacing.
+
+**Why:** Preserved trailing spaces can extend past a line edge without clipping any visible text, causing false failures.
+
+**How to apply:** Separate actual readability failures from whitespace-only geometry while keeping text and control containment checks strict.

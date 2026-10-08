@@ -5,16 +5,18 @@ import { ErrorNotice, title } from "../../resources";
 import { VisitTicket, bookingStatusLabel, type TicketData } from "../tickets/VisitTicket";
 import { useFreshWorkspace } from "../queue/useFreshWorkspace";
 import { confirmationEmailMessage } from "./confirmation-email";
+import { isPrivateAppointmentUnavailable } from "./presentation";
 
 const statusLabel=(status:string)=>status==="called"?"Called next":["booked","checkedIn","waiting"].includes(status)?"Waiting":title(status);
 
-export function AppointmentTicket({id}:{id:string}) {
-  const appointment=api.useGetAppointment(id,{query:{queryKey:api.getGetAppointmentQueryKey(id),refetchInterval:30000}});
+export function AppointmentTicket({id,showHistory=true}:{id:string;showHistory?:boolean}) {
+  const appointment=api.useGetAppointment(id,{query:{queryKey:api.getGetAppointmentQueryKey(id),refetchInterval:30000,retry:false}});
   const me=api.useGetMe();
-  const a=appointment.data;
+  const unavailable=isPrivateAppointmentUnavailable(appointment.error);
+  const a=unavailable?undefined:appointment.data;
   const params={doctorId:a?.doctorId||"",branchId:a?.branchId||"",date:a?.date||"",sessionId:a?.sessionId||undefined,startTime:a?.startTime,appointmentId:id};
   const queue=api.useGetQueue(params,{query:{queryKey:api.getGetQueueQueryKey(params),enabled:!!a,refetchInterval:30000}});
-  const qr=api.useGetAppointmentQr(id,{query:{queryKey:api.getGetAppointmentQrQueryKey(id)}});
+  const qr=api.useGetAppointmentQr(id,{query:{queryKey:api.getGetAppointmentQrQueryKey(id),enabled:!unavailable}});
   const freshness=useFreshWorkspace(appointment.dataUpdatedAt,!!appointment.error);
   const [online,setOnline]=useState(navigator.onLine);
   useEffect(()=>{const update=()=>setOnline(navigator.onLine);window.addEventListener("online",update);window.addEventListener("offline",update);return()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update);};},[]);
@@ -27,13 +29,14 @@ export function AppointmentTicket({id}:{id:string}) {
     const code=await api.getAppointmentQr(id);
     const confirmed=await api.getAppointment(id);
     if(!navigator.onLine)throw new Error("Connection lost. Reconnect and try again.");
+     if(confirmed.status==="completed")throw new Error("Completed visits do not need a ticket. Refresh to view the booking record.");
     if(fresh.revision!==confirmed.revision||fresh.status!==confirmed.status)throw new Error("Appointment changed while preparing the ticket. Refresh and try again.");
     if(!code.checkInUrl)throw new Error("Personal QR unavailable. Refresh and try again.");
     void appointment.refetch();
     return {dateFormat:confirmed.dateFormat,timeFormat:confirmed.timeFormat,patientName:confirmed.patientName,clinicName:confirmed.clinicName,branchName:confirmed.branchName,address:confirmed.branchAddress,doctorName:confirmed.doctorName,date:confirmed.date,startTime:confirmed.startTime,endTime:confirmed.endTime,timezone:confirmed.timezone,waitingNumber:confirmed.token,reference:confirmed.reference,statusLabel:bookingStatusLabel(confirmed.status),qrUrl:code.checkInUrl};
   }
   const estimate=queue.error||!online?<p role="alert" className="span-2">Booking status updates unavailable or offline. No estimate is shown. <button onClick={()=>queue.refetch()}>Retry</button></p>:queue.isLoading?<p role="status">Loading booking status…</p>:queue.data?.ownEntry?<p className="notice" data-testid="text-ticket-estimate">{queue.data.ownEntry.patientsAhead} patients ahead · Approx. wait {queue.data.ownEntry.estimatedWaitMinutes==null?"unavailable — duration not configured":`${queue.data.ownEntry.estimatedWaitMinutes} minutes`}<br/><small>An estimate only, not a countdown or appointment time. Breaks and delays may extend the wait.</small></p>:null;
-  return <div className="appt-ticket"><ErrorNotice error={appointment.error}/>{appointment.error&&<button onClick={()=>appointment.refetch()}>Refresh Ticket</button>}{!a?<p role="status">Loading ticket…</p>:<>
+  return <div className="appt-ticket"><ErrorNotice error={appointment.error}/>{appointment.error&&<button onClick={()=>appointment.refetch()}>Refresh Ticket</button>}{unavailable?<p role="alert">This appointment is unavailable. Private ticket details are hidden.</p>:!a?<p role="status">Loading ticket…</p>:<>
     {(()=>{const message=confirmationEmailMessage(a.confirmationEmail);const delivery=message?.replace(/^Booking confirmed\.\s*/, "");
       // Describe the current booking, not a new creation event or a stale email outcome.
       const heading=["booked","waiting","checkedIn","called","inConsultation"].includes(a.status)?"Booking Confirmed":a.status==="completed"?"Visit Completed":`Booking ${bookingStatusLabel(a.status)}`;
@@ -47,7 +50,7 @@ export function AppointmentTicket({id}:{id:string}) {
       <p className="span-2 appt-ticket-live" data-testid="text-ticket-booking-status"><span>Booking status (sign in with the account that owns this booking):</span> <a className="text-link" data-testid="link-ticket-patient-live" href={patientLiveUrl} title={patientLiveUrl}>Patient Booking Status Page</a></p>
       {!queue.error&&online&&queue.data?.presence&&<p className="notice" data-testid="text-ticket-doctor-status">Doctor status: {queue.data.presence.status==="onBreak"?"On break":queue.data.presence.status==="away"?"Away":"Available"}{queue.data.presence.status!=="available"&&" · Calling is paused; your booking is kept."}</p>}
       {estimate}
-      {(root||!!a.history?.length)&&<div className="appt-ticket-links span-2">
+       {showHistory&&(root||!!a.history?.length)&&<div className="appt-ticket-links span-2">
         {!!a.history?.length&&<details><summary>Appointment History</summary><ul>{a.history.map((event,index)=><li key={index}>{new Date(event.occurredAt).toLocaleString()} · {statusLabel(event.status)}{event.reason&&` · ${event.reason}`}</li>)}</ul></details>}
       </div>}
       {freshness.stale&&<p role="alert" className="span-2">Ticket is offline or stale. Reconnect and refresh before printing. <button disabled={!online} onClick={()=>appointment.refetch()}>Refresh Ticket</button></p>}
