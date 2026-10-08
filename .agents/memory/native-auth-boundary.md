@@ -56,3 +56,9 @@ Initial JWT compatibility work preserves the existing fixed 12-hour session poli
 **Why:** Keeping lifetime and database revocation unchanged limits authentication regressions while workspace and manually modified UAT implementations remain divergent.
 
 **How to apply:** Treat short access-token/rotating refresh design as unfinished, not silently completed. Activation is explicit and requires a dedicated signing key; do not weaken validation or fall back on a missing JWT key.
+
+The user requested keeping the preview recovery password in workspace Secrets and having superadmin seeding always run on first deployment.
+
+**Why:** The user explicitly changed the recovery cleanup requirement and requested automatic first-deployment provisioning.
+
+**How to apply:** Do not remove the retained preview recovery secret as routine cleanup. Keep deployment bootstrap credentials separate from preview recovery, and ensure automatic seeding never rotates an existing administrator's password or promotes another user's account.

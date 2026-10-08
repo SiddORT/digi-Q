@@ -21,6 +21,13 @@ Required: your existing `DATABASE_URL`, the correct session secret, public HTTPS
 server port and authentication mode. Preserve existing session/signing keys and mode;
 changing them can invalidate sessions or break recovery tokens.
 
+For a fresh database, configure `SUPERADMIN_EMAIL`, `SUPERADMIN_NAME` and
+`SUPERADMIN_PASSWORD` privately in the same file before the first start. Use a
+bootstrap password of at least 12 characters, including letters and numbers.
+There is no default account or password. Do not use the preview recovery secret
+as a deployment setting. Once provisioned, the seed preserves existing
+administrators and never rotates their passwords on restart.
+
 For website integration editing, generate an independent random 32-byte key as 64 hex
 characters using your server's cryptographic tooling (for example `openssl rand -hex 32`
 in a private terminal), and store it as `INTEGRATIONS_ENCRYPTION_KEY`. Keep a separate,
@@ -44,9 +51,12 @@ this external-server procedure to it. Development schema changes do not establis
 external production parity.
 
 Run `pnpm start:selfhost` from the repository root under your process/service manager.
+It always runs the idempotent superadmin seed before starting the API; a seed
+failure prevents the API from starting. Schema migrations must already have
+succeeded using the approved deployment process. This startup runs no migrations.
 Alternatively keep the private file outside the repository:
 
-    node --env-file=/etc/digiq/server.env --enable-source-maps artifacts/api-server/dist/index.mjs
+    node --env-file=/etc/digiq/server.env lib/db/seed.mjs && exec node --env-file=/etc/digiq/server.env --enable-source-maps artifacts/api-server/dist/index.mjs
 
 Serve `artifacts/clinicflow/dist/public` as the **only** static document root.
 Use SPA fallback to `index.html` for frontend paths and reverse-proxy `/api/` to the API

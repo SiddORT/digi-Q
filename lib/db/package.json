@@ -11,7 +11,7 @@
     "migrate": "drizzle-kit migrate --config ./drizzle.config.ts",
     "seed": "node ./seed.mjs",
     "deploy:prepare": "pnpm run migrate && pnpm run seed",
-    "test:seed": "node --test ./seed.test.mjs",
+    "test:seed": "node --test ./seed.test.mjs ./deployment-startup.test.mjs",
     "push": "drizzle-kit push --config ./drizzle.config.ts",
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts"
   },
