@@ -13,3 +13,9 @@ Private guest receipt recovery uses the names already carried by the receipt, no
 **Why:** Receipt access is a separate private boundary. Public-directory availability or eligibility can change after booking and must not introduce a dependency into recovery of an existing private ticket.
 
 **How to apply:** Run public name hydration while choosing or reviewing a new visit, not when recovering a committed ticket.
+
+Selected public labels may reuse a chosen search or sole-option row, but retain its original freshness rather than granting it a new freshness window at selection time.
+
+**Why:** Choosing a cached row is not a new server read. Treating it as newly fetched can conceal changes while optimizing slow-connection booking lookups.
+
+**How to apply:** Reuse only the chosen record in the exact public parent and actor scope. An invalidated label must refresh rather than being replaced with an older option row.

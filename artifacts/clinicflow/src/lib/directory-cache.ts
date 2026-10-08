@@ -19,6 +19,37 @@ export function directoryCompleteKey(actor: DirectoryActor, resource: string, pa
 export function directoryRequestSignal(signal: AbortSignal) {
   return AbortSignal.any([signal, AbortSignal.timeout(20000)]);
 }
+/** Public labels never borrow staff details or wider parent scopes. */
+function publicSelectedCareScope(params: Record<string, unknown>) {
+  // Public directory endpoints always read active rows, even without status.
+  // Keep explicit filters and all parent restrictions; only default the absent status.
+  return { status: "active", ...directoryScope(params) };
+}
+export function publicSelectedCareKey(actor: DirectoryActor, resource: string, id: string, params: Record<string, unknown>) {
+  return ["public-care-selected", actor, resource, publicSelectedCareScope(params), id] as const;
+}
+export function publicSelectedCareOptions(actor: DirectoryActor, resource: string, id: string, params: Record<string, unknown>, load: DirectoryLoader) {
+  return {
+    queryKey: publicSelectedCareKey(actor, resource, id, params),
+    enabled: !!id, retry: false, staleTime: DIRECTORY_FRESH_MS,
+    queryFn: async ({ signal }: { signal: AbortSignal }) => {
+      const result = checked(await load({ ...publicSelectedCareScope(params), selectedIds: id, page: 1, pageSize: 20 }, directoryRequestSignal(signal)));
+      signal.throwIfAborted();
+      const record = result.items.find(item => item.id === id);
+      if (!record) throw new Error("Selected record is no longer available in this scope.");
+      return record;
+    },
+  };
+}
+/** Only an actually selected row may seed a label, with its original freshness.
+ * This is display data, never proof of menu membership or booking eligibility.
+ */
+export function retainPublicSelectedCare(client: QueryClient, actor: DirectoryActor, resource: string, params: Record<string, unknown>, record: { id: string }, updatedAt: number) {
+  const key = publicSelectedCareKey(actor, resource, record.id, params);
+  const state = client.getQueryState(key);
+  if (!updatedAt || Date.now() - updatedAt >= DIRECTORY_FRESH_MS || state?.isInvalidated || state?.fetchStatus === "fetching") return;
+  if (!state || state.dataUpdatedAt < updatedAt) client.setQueryData(key, record, { updatedAt });
+}
 export function directoryDetail(client: QueryClient, actor: DirectoryActor, resource: string, id: string, load: (signal: AbortSignal) => Promise<any>) {
   return client.fetchQuery({
     queryKey: ["directory-detail", actor, resource, id],

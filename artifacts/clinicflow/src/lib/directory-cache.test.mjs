@@ -3,7 +3,7 @@
 import { before, after, test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { rm } from "node:fs/promises";
+import { rm, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { QueryClient, QueryObserver, InfiniteQueryObserver } from "@tanstack/react-query";
 const { build } = createRequire(import.meta.resolve("vite"))("esbuild");
@@ -126,6 +126,127 @@ test("saved detail labels are deduplicated per ID and isolated by actor", async 
   assert.equal(calls,1);
   await api.directoryDetail(c,["other","clinicAdmin",""],"doctors","saved",load);
   assert.equal(calls,2);
+});
+test("cold public picker and confirmation share one selected request on a slow connection; restored consumers reuse it", async () => {
+  for (const resource of ["clinics", "branches", "doctors"]) {
+    const c = client(), guest = api.directoryActor();
+    const scope = {clinicId:"clinic-1",branchId:"branch-1",doctorId:"doctor-1",status:"active"};
+    let requests = 0, release;
+    const wait = new Promise(resolve => {release=resolve;});
+    const load = async (params, signal) => {
+      requests++;
+      assert.deepEqual(params, {...scope, selectedIds:"saved",page:1,pageSize:20});
+      assert.equal(signal.aborted,false);
+      await wait;
+      return {items:[{id:"saved",name:"Public saved name"}],total:1};
+    };
+    const options = () => api.publicSelectedCareOptions(guest,resource,"saved",scope,load);
+    const picker = new QueryObserver(c,options()), confirmation = new QueryObserver(c,
+      api.publicSelectedCareOptions(guest,resource,"saved",{...scope,status:undefined},load));
+    const unsub = [picker.subscribe(()=>{}),confirmation.subscribe(()=>{})];
+    assert.equal(requests,1);
+    release();
+    await c.fetchQuery(options());
+    assert.equal(picker.getCurrentResult().data.name,"Public saved name");
+    assert.equal(confirmation.getCurrentResult().data.name,"Public saved name");
+    unsub.forEach(fn=>fn());
+    const restored = new QueryObserver(c,options()), stop = restored.subscribe(()=>{});
+    await c.fetchQuery(options());
+    assert.equal(requests,1,"restored selected IDs reuse a fresh exact-scope label");
+    await api.refreshSignedInContext(c,true);
+    assert.equal(requests,2,"invalidation refreshes the shared public observer once");
+    stop();
+    assert.equal(c.getQueryCache().getAll().length,1,"no catalog or alternate selected keys");
+  }
+});
+test("searched and sole public choices retain only the chosen row and need no selected request", async () => {
+  const c=client(), guest=api.directoryActor(), f=fixture(10000), scope={clinicId:"clinic-1",status:"active"};
+  const searched = await f.load({...scope,search:"Location 999",page:1,pageSize:20});
+  const selected=searched.items[0], updatedAt=Date.now()-1000;
+  api.retainPublicSelectedCare(c,guest,"branches",scope,selected,updatedAt);
+  const options=api.publicSelectedCareOptions(guest,"branches",selected.id,{...scope,search:"",pageSize:2},f.load);
+  const picker=new QueryObserver(c,options), summary=new QueryObserver(c,options);
+  const unsub=[picker.subscribe(()=>{}),summary.subscribe(()=>{})];
+  await c.fetchQuery(options);
+  assert.equal(f.metrics.requests,1,"the search is the only request, not a selectedIds request");
+  assert.equal(c.getQueryState(options.queryKey).dataUpdatedAt,updatedAt,"seeding does not extend source freshness");
+  assert.equal(c.getQueryCache().getAll().length,1,"unchosen searched rows are not retained as selected labels");
+  unsub.forEach(fn=>fn());
+  const sole={id:"only",name:"Only public clinic"};
+  api.retainPublicSelectedCare(c,guest,"clinics",{status:"active"},sole,Date.now());
+  await c.fetchQuery(api.publicSelectedCareOptions(guest,"clinics","only",{status:"active"},async()=>{throw Error("redundant selected read");}));
+});
+test("public selected labels keep exact actor, parent, resource, status and private/public boundaries", async () => {
+  const c=client(), guest=api.directoryActor(), scope={clinicId:"c",branchId:"b",doctorId:"d",status:"active"};
+  let requests=0;
+  const load=async()=>{requests++;return {items:[{id:"saved",name:"Public"}],total:1};};
+  await api.directoryDetail(c,guest,"doctors","saved",async()=>({id:"saved",name:"Private"}));
+  for (const [a,kind,p] of [
+    [guest,"doctors",scope],
+    [["signed-in","patient",""],"doctors",scope],
+    [guest,"doctors",{...scope,clinicId:"other"}],
+    [guest,"doctors",{...scope,branchId:"other"}],
+    [guest,"doctors",{...scope,doctorId:"other"}],
+    [guest,"doctors",{...scope,status:"inactive"}],
+    [guest,"doctors",{...scope,doctorId:undefined}],
+    [guest,"branches",scope],
+  ]) assert.equal((await c.fetchQuery(api.publicSelectedCareOptions(a,kind,"saved",p,load))).name,"Public");
+  assert.equal(requests,8);
+});
+test("public label expiry, invalidation, missing records and retry never borrow old display data", async () => {
+  const c=client(), guest=api.directoryActor(), scope={clinicId:"c"};
+  let requests=0, available=true;
+  const options=api.publicSelectedCareOptions(guest,"branches","saved",scope,async()=>{
+    requests++;return {items:available?[{id:"saved",name:"Current"}]:[],total:available?1:0};
+  });
+  await c.fetchQuery(options);
+  c.setQueryData(options.queryKey,c.getQueryData(options.queryKey),{updatedAt:Date.now()-60000});
+  api.retainPublicSelectedCare(c,guest,"branches",scope,{id:"saved",name:"Old"},Date.now()-60000);
+  await c.fetchQuery(options);
+  assert.equal(requests,2);
+  await c.invalidateQueries({queryKey:options.queryKey,refetchType:"none"});
+  api.retainPublicSelectedCare(c,guest,"branches",scope,{id:"saved",name:"Do not conceal invalidation"},Date.now());
+  assert.equal(c.getQueryState(options.queryKey).isInvalidated,true);
+  available=false;
+  await assert.rejects(c.fetchQuery(options),/no longer available/);
+  assert.equal(requests,3);
+  available=true;
+  await c.fetchQuery(options);
+  assert.equal(requests,4);
+});
+test("disabled public controls still hydrate; canceled public reads cannot repopulate a cleared actor cache", async () => {
+  const c=client(), guest=api.directoryActor();
+  let release, signal;
+  const wait=new Promise(resolve=>{release=resolve;});
+  const options=api.publicSelectedCareOptions(guest,"doctors","saved",{branchId:"b"},async(_p,s)=>{
+    signal=s;await wait;return {items:[{id:"saved"}],total:1};
+  });
+  assert.equal(options.enabled,true,"hydration depends on selected ID, not editability");
+  assert.equal(api.publicSelectedCareOptions(guest,"doctors","",{},async()=>{throw Error("empty");}).enabled,false);
+  const first=new QueryObserver(c,options), second=new QueryObserver(c,options);
+  const stopFirst=first.subscribe(()=>{}), stopSecond=second.subscribe(()=>{});
+  stopFirst();
+  assert.equal(signal.aborted,false,"one departing consumer cannot cancel another's shared read");
+  stopSecond();
+  assert.equal(signal.aborted,true,"last departing consumer cancels the transport");
+  await c.cancelQueries(); c.clear(); release();
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.equal(c.getQueryCache().getAll().length,0);
+});
+test("public picker, booking summary and sole defaults remain wired to shared selected labels", async () => {
+  const care=await readFile(new URL("../components/CareLookup.tsx",import.meta.url),"utf8");
+  const booking=await readFile(new URL("../components/GuestBooking.tsx",import.meta.url),"utf8");
+  const finder=await readFile(new URL("../components/GuestClinicFinder.tsx",import.meta.url),"utf8");
+  assert.equal((care.match(/publicSelectedCareOptions\(actor, kind,/g)||[]).length,2,"both public consumers use the same observer options");
+  assert.match(care,/retainPublicSelectedCare\(client, actor, kind, params, record, query.dataUpdatedAt\)/);
+  assert.match(care,/options.unshift\(\{ value, label: display\(record\), disabled: true \}\)/,"hydrated labels are not selectable menu membership");
+  assert.match(booking,/useSelectedCare\("branches",!committed&&!receipt\?branchId:"",true,\{clinicId:context.clinicId,doctorId:context.doctorId\|\|undefined,status:"active"\}\)/);
+  assert.match(booking,/useSelectedCare\("doctors",!committed&&!receipt\?doctorId:"",true,\{clinicId:context.clinicId,branchId,status:"active"\}\)/);
+  for (const source of [booking,finder]) {
+    assert.match(source,/retainPublicSelectedCare\(client,actor,"branches"/);
+  }
+  assert.match(finder,/retainPublicSelectedCare\(client,actor,"clinics"/);
+  assert.match(booking,/retainPublicSelectedCare\(client,actor,"doctors"/);
 });
 test("sign-out cancellation cannot repopulate complete directories with late responses", async () => {
   const c = client(); let release, started;

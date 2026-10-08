@@ -4,7 +4,7 @@ import { BookingSteps } from "./BookingSteps";
 import { StagedBooking, BookingStageActions, BookingSummary } from "./booking/StagedBooking";
 import { EmailInput } from "@/components/EmailInput";
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import { DateFormatInput } from "./DateFormatInput";
 import { PhoneInput } from "./PhoneInput";
@@ -20,10 +20,13 @@ import { VisitTicket, bookingStatusLabel, type TicketData } from "./tickets/Visi
 import { findNextBookableDate } from "./guest-booking-date";
 import "./guest-booking.css";
 import { confirmationEmailMessage } from "./appointments/confirmation-email";
+import { useDirectoryActor } from "../lib/use-directory";
+import { retainPublicSelectedCare } from "../lib/directory-cache";
 
 const toTicket=(r:api.GuestReceipt):TicketData=>({dateFormat:r.dateFormat,timeFormat:r.timeFormat,patientName:r.fullName,clinicName:r.clinicName,branchName:r.branchName,address:r.branchAddress,doctorName:r.doctorName,date:r.date,startTime:r.startTime,endTime:r.endTime,timezone:r.timezone,waitingNumber:r.token,reference:r.reference,statusLabel:bookingStatusLabel(r.appointmentStatus),qrUrl:r.checkInUrl});
 
 export function GuestBooking({reference,context}:{reference:string;context:api.QrContext}) {
+ const client=useQueryClient(), actor=useDirectoryActor();
  const storageKey=`clinicflow-guest:${reference}`;
  const [storageError,setStorageError]=useState("");
  const [attempt,setAttempt]=useState<api.GuestRequestInput|null>(()=>{try{return JSON.parse(sessionStorage.getItem(storageKey)||"null");}catch{return null;}});
@@ -34,16 +37,22 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
  const [doctorId,setDoctor]=useState(context.doctorId||"");
    // Private recovered tickets already have receipt names; public display hydration
    // is only needed while choosing/reviewing a new visit.
-   const selectedBranch = useSelectedCare("branches",!committed&&!receipt?branchId:"",true,{clinicId:context.clinicId,doctorId:context.doctorId||undefined});
-   const selectedDoctor = useSelectedCare("doctors",!committed&&!receipt?doctorId:"",true,{clinicId:context.clinicId,branchId});
+   const selectedBranch = useSelectedCare("branches",!committed&&!receipt?branchId:"",true,{clinicId:context.clinicId,doctorId:context.doctorId||undefined,status:"active"});
+   const selectedDoctor = useSelectedCare("doctors",!committed&&!receipt?doctorId:"",true,{clinicId:context.clinicId,branchId,status:"active"});
  const [date,setDate]=useState(today(context.branchTimezone||undefined));
   const [finding,setFinding]=useState(false);
   const [dateMessage,setDateMessage]=useState("");
   const searchRun=useRef(0);
   const branchOptions=useQuery({queryKey:["guest-single-branch",context.clinicId,context.doctorId],enabled:!context.branchId,queryFn:()=>api.listPublicBranches({clinicId:context.clinicId,doctorId:context.doctorId||undefined,page:1,pageSize:2}),staleTime:30000});
   const doctorOptions=useQuery({queryKey:["guest-single-doctor",context.clinicId,branchId],enabled:!!branchId&&!context.doctorId,queryFn:()=>api.listPublicDoctors({clinicId:context.clinicId,branchId,page:1,pageSize:2}),staleTime:30000});
-  useEffect(()=>{if(!context.branchId&&branchOptions.data?.total===1&&branchOptions.data.items[0]&&!branchId)setBranch(branchOptions.data.items[0].id);},[branchOptions.data,branchId,context.branchId]);
-  useEffect(()=>{if(!context.doctorId&&doctorOptions.data?.total===1&&doctorOptions.data.items[0]&&branchId&&!doctorId)setDoctor(doctorOptions.data.items[0].id);},[doctorOptions.data,doctorId,branchId,context.doctorId]);
+  useEffect(()=>{if(!context.branchId&&branchOptions.data?.total===1&&branchOptions.data.items[0]&&!branchId){
+    retainPublicSelectedCare(client,actor,"branches",{clinicId:context.clinicId,doctorId:context.doctorId||undefined,status:"active"},branchOptions.data.items[0],branchOptions.dataUpdatedAt);
+    setBranch(branchOptions.data.items[0].id);
+  }},[branchOptions.data,branchOptions.dataUpdatedAt,branchId,context.branchId,context.clinicId,context.doctorId,client,actor]);
+  useEffect(()=>{if(!context.doctorId&&doctorOptions.data?.total===1&&doctorOptions.data.items[0]&&branchId&&!doctorId){
+    retainPublicSelectedCare(client,actor,"doctors",{clinicId:context.clinicId,branchId,status:"active"},doctorOptions.data.items[0],doctorOptions.dataUpdatedAt);
+    setDoctor(doctorOptions.data.items[0].id);
+  }},[doctorOptions.data,doctorOptions.dataUpdatedAt,doctorId,branchId,context.doctorId,context.clinicId,client,actor]);
   useEffect(()=>{searchRun.current++;setFinding(false);setDateMessage("");},[branchId,doctorId]);
  const lock=useRef(false);
  const [step,setStep]=useState<1|2|3>(1);
@@ -129,7 +138,7 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   <div className="guest-context" role="group" aria-label="Booking location and doctor"><strong>{context.clinicName}</strong>{(context.branchName||context.doctorName)&&<span>{[context.branchName,context.doctorName].filter(Boolean).join(" · ")}</span>}</div>
  <Form {...form}><form noValidate onSubmit={form.handleSubmit(submit)}>
  <StagedBooking testId="guest-staged-booking" step={step} visit={<><div className="form-grid cf-auto">
-  {!context.branchId&&<CareLookup publicAccess kind="branches" label="Location" value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}} selectedLabel={branchOptions.data?.items.find(b=>b.id===branchId)?.name}/>}
+  {!context.branchId&&<CareLookup publicAccess kind="branches" label="Location" value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId||undefined,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}} selectedLabel={branchOptions.data?.items.find(b=>b.id===branchId)?.name}/>}
   {!context.doctorId&&<CareLookup publicAccess kind="doctors" label="Doctor" value={doctorId} disabled={!branchId} params={{clinicId:context.clinicId,branchId,status:"active"}} onChange={setDoctor} selectedLabel={doctorOptions.data?.items.find(d=>d.id===doctorId)?.fullName}/>}
   <FormField label="Visit date" required><DateFormatInput data-testid="input-guest-date" required min={today(available?.timezone)} preferences={{...(context.dateFormat?{dateFormat:context.dateFormat}:{}),...(context.timeFormat?{timeFormat:context.timeFormat}:{})}} value={date} onChange={value=>{searchRun.current++;setFinding(false);setDateMessage("");setDate(value);}}/></FormField>
   {selection.sessions.length===1&&!availability.error?<div className="guest-session"><strong>Consulting session</strong><span>{formatSessionHours(selection.sessions[0])} · {selection.sessions[0].timezone}</span><small>Only session listed for this date. Availability is checked again when you book.</small></div>:<SessionSelector selection={selection}/>}
