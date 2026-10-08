@@ -19,6 +19,32 @@ export function directoryCompleteKey(actor: DirectoryActor, resource: string, pa
 export function directoryRequestSignal(signal: AbortSignal) {
   return AbortSignal.any([signal, AbortSignal.timeout(20000)]);
 }
+/** Public menus and defaults observe the same bounded pages. Defaults must
+ * select only the first, unsearched page; searched pages never prove sole scope.
+ * Using one observed query (not nested fetchQuery calls) shares cancellation,
+ * freshness and invalidation as well as the response.
+ */
+export function publicCareOptions<T extends DirectoryPage>(
+  actor: DirectoryActor, resource: string, params: Record<string, unknown>,
+  load: (params: Record<string, unknown>, signal: AbortSignal) => Promise<T>, search = "",
+) {
+  const scope = {
+    ...publicSelectedCareScope(params),
+    ...(params.selectedIds ? { selectedIds: params.selectedIds } : {}),
+  };
+  return {
+    queryKey: ["public-care-options", actor, resource, scope, search] as const,
+    retry: false as const, staleTime: DIRECTORY_FRESH_MS,
+    initialPageParam: 1,
+    queryFn: async ({ pageParam, signal }: { pageParam: number; signal: AbortSignal }) => {
+      const result = checked(await load({ ...scope, search, page: pageParam, pageSize: 20 }, directoryRequestSignal(signal)));
+      signal.throwIfAborted();
+      return result;
+    },
+    getNextPageParam: (last: T, pages: T[]) =>
+      pages.reduce((count, page) => count + page.items.length, 0) < last.total ? pages.length + 1 : undefined,
+  };
+}
 /** Public labels never borrow staff details or wider parent scopes. */
 function publicSelectedCareScope(params: Record<string, unknown>) {
   // Public directory endpoints always read active rows, even without status.
@@ -60,7 +86,7 @@ function fresh(client: QueryClient, key: readonly unknown[]) {
   const state = client.getQueryState(key);
   return state?.status === "success" && !state.isInvalidated && Date.now() - state.dataUpdatedAt < DIRECTORY_FRESH_MS;
 }
-function checked(page: DirectoryPage) {
+function checked<T extends DirectoryPage>(page: T): T {
   if (!Array.isArray(page.items) || !Number.isInteger(page.total) || page.total < page.items.length)
     throw new Error("Directory pagination could not be verified. Please retry.");
   return page;

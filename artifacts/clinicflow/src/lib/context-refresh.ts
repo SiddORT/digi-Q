@@ -3,7 +3,7 @@ import { DIRECTORY_FRESH_MS } from "./directory-cache";
 
 const contextKeys = new Set([
   "remote-options", "remote-selected", "selected-care", "operational-cardinality",
-  "public-care-selected",
+  "public-care-selected", "public-care-options",
   "directory-page", "directory-complete", "directory-detail", "assignment-directory", "workspaces", "workspace-branches",
   "weekly-overview", "editor-session-overlap", "exception-base-sessions",
 ]);

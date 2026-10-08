@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { MapPin } from "lucide-react";
@@ -7,7 +7,7 @@ import { CareLookup } from "./CareLookup";
 import { Logo } from "../App";
 import { soleBookable } from "../lib/sole-option";
 import { useDirectoryActor } from "../lib/use-directory";
-import { retainPublicSelectedCare } from "../lib/directory-cache";
+import { publicCareOptions, retainPublicSelectedCare } from "../lib/directory-cache";
 
 type PublicOption = { id: string; name?: string; slug?: string | null };
 
@@ -15,17 +15,23 @@ export function GuestClinicFinder() {
   const client = useQueryClient(), actor = useDirectoryActor();
   const [clinic, setClinic] = useState<PublicOption | null>(null);
   const [branch, setBranch] = useState<PublicOption | null>(null);
-  const clinics = useQuery({queryKey:["guest-finder-single-clinic"],queryFn:()=>api.listPublicClinics({page:1,pageSize:20}),staleTime:30000});
-  const branches = useQuery({queryKey:["guest-finder-single-branch",clinic?.id],enabled:!!clinic?.id,queryFn:()=>api.listPublicBranches({clinicId:clinic!.id,page:1,pageSize:20}),staleTime:30000});
-  useEffect(()=>{const only=soleBookable(clinics.data);if(!clinic&&only){
+  const clinics = useInfiniteQuery({
+    ...publicCareOptions(actor,"clinics",{status:"active"},(p,signal)=>api.listPublicClinics(p,{signal})),
+    select: data => data.pages[0],
+  });
+  const branches = useInfiniteQuery({
+    ...publicCareOptions(actor,"branches",{clinicId:clinic?.id,status:"active"},(p,signal)=>api.listPublicBranches(p,{signal})),
+    enabled:!!clinic?.id, select: data => data.pages[0],
+  });
+  useEffect(()=>{const only=clinics.isError?null:soleBookable(clinics.data);if(!clinic&&only&&!clinics.isFetching){
     retainPublicSelectedCare(client,actor,"clinics",{status:"active"},only,clinics.dataUpdatedAt);
     setClinic(only);
-  }},[clinic,clinics.data,clinics.dataUpdatedAt,client,actor]);
+  }},[clinic,clinics.data,clinics.isError,clinics.isFetching,clinics.dataUpdatedAt,client,actor]);
   // Sole option = the only active location that has a public booking address (slug); unslugged rows cannot be booked here.
-  useEffect(()=>{const only=soleBookable(branches.data);if(clinic&&!branch&&only){
+  useEffect(()=>{const only=branches.isError?null:soleBookable(branches.data);if(clinic&&!branch&&only&&!branches.isFetching){
     retainPublicSelectedCare(client,actor,"branches",{clinicId:clinic.id,status:"active"},only,branches.dataUpdatedAt);
     setBranch(only);
-  }},[clinic,branch,branches.data,branches.dataUpdatedAt,client,actor]);
+  }},[clinic,branch,branches.data,branches.isError,branches.isFetching,branches.dataUpdatedAt,client,actor]);
   const bookingPath = clinic?.slug && branch?.slug
     ? `/${encodeURIComponent(clinic.slug)}/${encodeURIComponent(branch.slug)}?book=1`
     : null;

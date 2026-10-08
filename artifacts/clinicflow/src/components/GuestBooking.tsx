@@ -4,7 +4,7 @@ import { BookingSteps } from "./BookingSteps";
 import { StagedBooking, BookingStageActions, BookingSummary } from "./booking/StagedBooking";
 import { EmailInput } from "@/components/EmailInput";
 import { useEffect, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, useForm } from "react-hook-form";
 import { DateFormatInput } from "./DateFormatInput";
 import { PhoneInput } from "./PhoneInput";
@@ -21,7 +21,8 @@ import { findNextBookableDate } from "./guest-booking-date";
 import "./guest-booking.css";
 import { confirmationEmailMessage } from "./appointments/confirmation-email";
 import { useDirectoryActor } from "../lib/use-directory";
-import { retainPublicSelectedCare } from "../lib/directory-cache";
+import { publicCareOptions, retainPublicSelectedCare } from "../lib/directory-cache";
+import { soleAssigned } from "../lib/sole-option";
 
 const toTicket=(r:api.GuestReceipt):TicketData=>({dateFormat:r.dateFormat,timeFormat:r.timeFormat,patientName:r.fullName,clinicName:r.clinicName,branchName:r.branchName,address:r.branchAddress,doctorName:r.doctorName,date:r.date,startTime:r.startTime,endTime:r.endTime,timezone:r.timezone,waitingNumber:r.token,reference:r.reference,statusLabel:bookingStatusLabel(r.appointmentStatus),qrUrl:r.checkInUrl});
 
@@ -43,16 +44,22 @@ export function GuestBooking({reference,context}:{reference:string;context:api.Q
   const [finding,setFinding]=useState(false);
   const [dateMessage,setDateMessage]=useState("");
   const searchRun=useRef(0);
-  const branchOptions=useQuery({queryKey:["guest-single-branch",context.clinicId,context.doctorId],enabled:!context.branchId,queryFn:()=>api.listPublicBranches({clinicId:context.clinicId,doctorId:context.doctorId||undefined,page:1,pageSize:2}),staleTime:30000});
-  const doctorOptions=useQuery({queryKey:["guest-single-doctor",context.clinicId,branchId],enabled:!!branchId&&!context.doctorId,queryFn:()=>api.listPublicDoctors({clinicId:context.clinicId,branchId,page:1,pageSize:2}),staleTime:30000});
-  useEffect(()=>{if(!context.branchId&&branchOptions.data?.total===1&&branchOptions.data.items[0]&&!branchId){
-    retainPublicSelectedCare(client,actor,"branches",{clinicId:context.clinicId,doctorId:context.doctorId||undefined,status:"active"},branchOptions.data.items[0],branchOptions.dataUpdatedAt);
-    setBranch(branchOptions.data.items[0].id);
-  }},[branchOptions.data,branchOptions.dataUpdatedAt,branchId,context.branchId,context.clinicId,context.doctorId,client,actor]);
-  useEffect(()=>{if(!context.doctorId&&doctorOptions.data?.total===1&&doctorOptions.data.items[0]&&branchId&&!doctorId){
-    retainPublicSelectedCare(client,actor,"doctors",{clinicId:context.clinicId,branchId,status:"active"},doctorOptions.data.items[0],doctorOptions.dataUpdatedAt);
-    setDoctor(doctorOptions.data.items[0].id);
-  }},[doctorOptions.data,doctorOptions.dataUpdatedAt,doctorId,branchId,context.doctorId,context.clinicId,client,actor]);
+  const branchOptions=useInfiniteQuery({
+    ...publicCareOptions(actor,"branches",{clinicId:context.clinicId,doctorId:context.doctorId||undefined,status:"active"},(p,signal)=>api.listPublicBranches(p,{signal})),
+    enabled:!context.branchId&&!committed&&!receipt, select:data=>data.pages[0],
+  });
+  const doctorOptions=useInfiniteQuery({
+    ...publicCareOptions(actor,"doctors",{clinicId:context.clinicId,branchId,status:"active"},(p,signal)=>api.listPublicDoctors(p,{signal})),
+    enabled:!!branchId&&!context.doctorId&&!committed&&!receipt, select:data=>data.pages[0],
+  });
+  useEffect(()=>{const only=soleAssigned(branchOptions.data,branchOptions.isError);if(!context.branchId&&only&&!branchId&&!branchOptions.isFetching&&!committed&&!receipt){
+    retainPublicSelectedCare(client,actor,"branches",{clinicId:context.clinicId,doctorId:context.doctorId||undefined,status:"active"},only,branchOptions.dataUpdatedAt);
+    setBranch(only.id);
+  }},[branchOptions.data,branchOptions.isError,branchOptions.isFetching,branchOptions.dataUpdatedAt,branchId,context.branchId,context.clinicId,context.doctorId,client,actor,committed,receipt]);
+  useEffect(()=>{const only=soleAssigned(doctorOptions.data,doctorOptions.isError);if(!context.doctorId&&only&&branchId&&!doctorId&&!doctorOptions.isFetching&&!committed&&!receipt){
+    retainPublicSelectedCare(client,actor,"doctors",{clinicId:context.clinicId,branchId,status:"active"},only,doctorOptions.dataUpdatedAt);
+    setDoctor(only.id);
+  }},[doctorOptions.data,doctorOptions.isError,doctorOptions.isFetching,doctorOptions.dataUpdatedAt,doctorId,branchId,context.doctorId,context.clinicId,client,actor,committed,receipt]);
   useEffect(()=>{searchRun.current++;setFinding(false);setDateMessage("");},[branchId,doctorId]);
  const lock=useRef(false);
  const [step,setStep]=useState<1|2|3>(1);

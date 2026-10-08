@@ -7,7 +7,7 @@ import { ResourceLookup } from "./ResourceLookup";
 import { useDirectoryActor } from "../lib/use-directory";
 import { recordLabel } from "../lib/selection-label";
 import { retainSelectedRecords } from "./relation-validity";
-import { directoryDetail, directoryRequestSignal, publicSelectedCareOptions, retainPublicSelectedCare, DIRECTORY_FRESH_MS } from "../lib/directory-cache";
+import { directoryDetail, directoryRequestSignal, publicCareOptions, publicSelectedCareOptions, retainPublicSelectedCare, DIRECTORY_FRESH_MS } from "../lib/directory-cache";
 
 type RecordValue = { id: string; name?: string; fullName?: string; reference?: string; doctorName?: string; token?: number | string; branchName?: string; [key: string]: unknown };
 type Kind = "clinics" | "branches" | "doctors" | "patients" | "appointments";
@@ -47,13 +47,18 @@ function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAcc
   const retained = useRef(new Map<string, RecordValue>());
   const retainedScope = useRef(labelScope);
   if (retainedScope.current !== labelScope) { retained.current.clear(); retainedScope.current = labelScope; }
+  const publicOptions = publicAccess && kind in publicLoaders
+    ? publicCareOptions(actor, kind, params,
+      (p, signal) => (publicLoaders[kind as keyof typeof publicLoaders] as Function)(p, { signal }) as Promise<{ items: RecordValue[]; total: number }>, debounced)
+    : undefined;
   const query = useInfiniteQuery({
-    queryKey: ["care-options", actor, kind, publicAccess, params, debounced],
+    queryKey: publicOptions?.queryKey || ["care-options", actor, kind, publicAccess, params, debounced],
     retry: false,
     staleTime: DIRECTORY_FRESH_MS,
     enabled: !disabled,
     initialPageParam: 1,
     queryFn: ({pageParam, signal}) => {
+      if (publicOptions) return publicOptions.queryFn({ pageParam, signal });
       const load = publicAccess && kind in publicLoaders ? publicLoaders[kind as keyof typeof publicLoaders] : loaders[kind];
       return (load as Function)({ ...params, ...(kind !== "appointments" ? { status: "active" } : {}), search: debounced, page: pageParam, pageSize: 20 }, { signal: directoryRequestSignal(signal) }) as Promise<{ items: RecordValue[]; total: number }>;
     },
