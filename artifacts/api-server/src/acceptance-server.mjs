@@ -23,7 +23,10 @@ await harness.control.query("update users set password_hash=$1,email_verified_at
 process.env.NODE_ENV="development";
 process.env.SESSION_SECRET="disposable-acceptance-signing-key-not-a-real-secret";
 process.env.AUTH_SESSION_MODE="native";
-process.env.CLINICFLOW_PUBLIC_ORIGIN="http://127.0.0.1:8099";
+process.env.CLINICFLOW_PUBLIC_ORIGIN="https://acceptance.test.invalid";
+// Satisfy invitation setup using public dummy values. The bundled nodemailer
+// replacement below simulates delivery without making any external request.
+Object.assign(process.env,{SMTP_HOST:"mail.test.invalid",SMTP_PORT:"587",SMTP_USER:"disposable-fixture",SMTP_PASSWORD:"disposable-fixture",SMTP_FROM:"noreply@test.invalid",SMTP_SECURE:"false",SMTP_REQUIRE_TLS:"true"});
 const {Pool}=createRequire(resolve(root,"../../../lib/db/package.json"))("pg");
 const pool=new Pool({host:harness.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8});
 // HTTP requests need independent transaction connections, like the real app.
@@ -35,12 +38,12 @@ await build({entryPoints:[join(root,"app.ts")],outfile:bundle,bundle:true,platfo
   b.onLoad({filter:/.*/,namespace:"acceptance"},()=>({contents:`export * from "${resolve(root,"../../../lib/db/src/schema/core.ts")}"; export const db=globalThis.acceptanceDb;`,resolveDir:root}));
   b.onResolve({filter:/^@workspace\/api-zod$/},()=>({path:resolve(root,"../../../lib/api-zod/src/index.ts")}));
   b.onResolve({filter:/^nodemailer$/},()=>({path:"mail",namespace:"no-mail"}));
-  b.onLoad({filter:/.*/,namespace:"no-mail"},()=>({contents:`export default {createTransport(){return {async sendMail(){throw new Error("External email blocked in disposable acceptance");}}}};`}));
+  b.onLoad({filter:/.*/,namespace:"no-mail"},()=>({contents:`export default {createTransport(){return {async sendMail(options){if(process.env.ACCEPTANCE_MAIL_FAIL==="1")throw new Error("Simulated email failure");return {accepted:[options.to],rejected:[]};}}}};`}));
 }}]});
 const {default:app}=await import(bundle);
 const frontend=resolve(root,"../../clinicflow/dist/public");
 app.use(express.static(frontend));
 app.get("/{*path}",(_req,res)=>res.sendFile(join(frontend,"index.html")));
 const server=app.listen(8099,"127.0.0.1",()=>console.log("Disposable acceptance ready http://127.0.0.1:8099"));
-async function stop(){await new Promise(done=>server.close(done));await pool.end();await harness.close();await rm(bundle,{force:true});process.exit(0);}
+async function stop(){await rm(bundle,{force:true});server.closeAllConnections();await new Promise(done=>server.close(done));await pool.end();await harness.close();process.exit(0);}
 process.once("SIGTERM",stop);process.once("SIGINT",stop);

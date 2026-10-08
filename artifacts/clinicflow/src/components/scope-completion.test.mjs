@@ -32,23 +32,23 @@ test("overlapping intervals error; outside location hours is only a warning", ()
   assert.equal(plan.dayErrors({ ...day, sessions: [day.sessions[0]] }).length, 0);
   assert.ok(plan.outsideHours({ key: "x", startTime: "07:00", endTime: "08:00" }, [{ startTime: "09:00", endTime: "17:00" }], true));
 });
-test("dedicated staff tabs: doctor Personal/Professional/Assignment & Schedule, receptionist Personal/Assignment; first invalid in tab order", () => {
-  assert.deepEqual(tabs.STAFF_TABS.doctors.map(t => t.label), ["Personal", "Professional", "Assignment & Schedule"]);
+test("doctors use visible sections; receptionist tab validation stays unchanged", () => {
+  assert.equal(tabs.STAFF_TABS.doctors, undefined);
   assert.deepEqual(tabs.STAFF_TABS.receptionists.map(t => t.label), ["Personal", "Assignment"]);
   assert.equal(tabs.STAFF_TABS.admins, undefined);
-  const d = tabs.STAFF_TABS.doctors;
-  assert.equal(tabs.firstInvalidTab(d, ["branchIds", "registrationNumber"]), 1);
-  assert.equal(tabs.firstInvalidTab(d, ["confirmInherited"]), 2);
+  const d = tabs.STAFF_TABS.receptionists;
+  assert.equal(tabs.firstInvalidTab(d, ["branchIds"]), 1);
   assert.equal(tabs.firstInvalidTab(d, ["email", "clinicIds"]), 0);
   assert.equal(tabs.firstInvalidTab(d, []), -1);
   assert.deepEqual(tabs.invalidTabs(tabs.STAFF_TABS.receptionists, ["clinicIds"]), [false, true]);
   for (const list of Object.values(tabs.STAFF_TABS)) assert.equal(new Set(list.flatMap(t => t.fields)).size, list.flatMap(t => t.fields).length, "each field on one tab");
 });
-test("generic Editor tabs: patient and doctor groups map to their tab", () => {
+test("generic Editor preserves patient/user tabs and removes doctor tabs", () => {
   assert.deepEqual(tabs.EDITOR_TABS.patients.map(([l]) => l), ["Personal & Contact", "Additional Details"]);
   assert.equal(tabs.editorTabIndex("patients", "Emergency contact"), 1);
-  assert.equal(tabs.editorTabIndex("doctors", "Professional"), 1);
-  assert.equal(tabs.editorTabIndex("doctors", "Assignment and scope"), 2);
+  assert.equal(tabs.EDITOR_TABS.doctors, undefined);
+  assert.equal(tabs.editorTabIndex("doctors", "Professional"), 0);
+  assert.equal(tabs.editorTabIndex("doctors", "Assignment and scope"), 0);
   assert.equal(tabs.editorTabIndex("users", "Assignment and scope"), 1);
   assert.equal(tabs.editorTabIndex(undefined, "Professional"), 0);
 });

@@ -1,0 +1,39 @@
+/* Doctor editor only. Scoped to .doctor-editor; inherits existing neutral surfaces, blue primary and Inter. */
+.doctor-editor{min-width:0;max-width:100%;container-type:inline-size}
+.doctor-editor .staff-editor{display:grid;gap:12px;min-width:0}
+.doctor-editor .form-section{padding:12px 16px 16px;border-radius:12px;min-width:0}
+.doctor-editor .form-section-head{margin-bottom:12px;padding-bottom:8px}
+.doctor-editor .form-section-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:12px 16px}
+.doctor-editor .form-section-grid>:is(.wide,.full,.notice,:has(textarea),:has(.address-fields)){grid-column:1/-1}
+.doctor-editor .form-field{min-width:0}
+.doctor-editor .form-field>.form-field-label{min-height:20px}
+.doctor-editor :is(input,select,textarea):not([type=checkbox],[type=radio]){min-height:40px;max-width:100%;box-sizing:border-box}
+.doctor-editor .form-field-narrow{max-width:none}
+
+/* Phone fits its container */
+.doctor-editor .phone-input,.doctor-editor .phone-input>*{min-width:0;max-width:100%}
+.doctor-editor .phone-input{display:flex;gap:8px;width:100%}
+.doctor-editor .phone-input input{flex:1 1 0;min-width:0;width:100%}
+.doctor-editor .phone-input>.searchable-select-field{flex:0 0 160px}
+.doctor-editor .phone-input .searchable-select-control>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doctor-editor .form-section-grid>:has(.phone-input){grid-column:auto}
+
+/* Personal and professional controls side by side when room allows */
+@container (min-width:720px){
+  .doctor-editor .form-section-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@container (max-width:479px){
+  .doctor-editor .form-section-grid{grid-template-columns:1fr}
+  .doctor-editor .form-section{padding:12px}
+}
+
+/* Schedule context: readable fixed value, in-flow */
+.doctor-editor .doctor-schedule-context{display:grid;gap:12px;min-width:0}
+.doctor-editor .doctor-schedule-context>.form-grid{margin:0}
+.doctor-editor .staff-editor{margin-top:12px}
+.doctor-editor .doctor-context-value{display:flex;align-items:center;min-height:40px;padding:0 12px;border:1px solid hsl(var(--border));border-radius:8px;background:hsl(var(--muted)/.6);color:hsl(var(--foreground));font-weight:600;line-height:1.4;overflow-wrap:anywhere;cursor:default}
+
+/* No sticky or nested footers inside the editor */
+.doctor-editor .form-section .form-footer,
+.doctor-editor .doctor-schedule-context .form-footer,
+.doctor-editor .form-footer.form-actions{position:static!important;inset:auto!important;z-index:auto!important;box-shadow:none;background:transparent;margin:0;padding:12px 0 0;border-top:1px solid hsl(var(--border)/.7);display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}

@@ -27,6 +27,12 @@ Use independent database connections for concurrent requests to a disposable ful
 
 **How to apply:** Keep migration setup separate from the request pool. Diagnose fixture-connection sharing before attributing concurrent failures to production behavior.
 
+Use normal browser sign-in and browser-origin requests for the HTTP-loopback acceptance target, rather than assuming a separate request client's cookie handling matches Chromium.
+
+**Why:** Chromium accepted the application's secure cookies on loopback, while a separate request client failed native login despite supplying the CSRF header and Origin. Those request failures were not authentication regressions.
+
+**How to apply:** Sign in through the UI and issue protected verification requests from that authenticated page. Never weaken production cookie or CSRF policies to accommodate a test client.
+
 Do not infer the workspace database target from `REPLIT_ENVIRONMENT` alone.
 
 **Why:** This workspace reported a production environment label while its database

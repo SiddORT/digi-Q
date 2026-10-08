@@ -18,9 +18,9 @@ export type OpeningHour = { dayOfWeek: number; startTime: string; endTime: strin
  * clinic-hour bands, outside-hours warning, copy day to selected/all days). Pure draft: it never saves.
  * Used by the saved-schedule editor (rows/onEdit given) and by onboarding/registration before any record exists.
  */
-export function WeeklyDraftDays({ week, setWeek, opening, clinicName = "the clinic", preferences, busy = false, rows, onEdit, showClinicHours = true, onChange }: {
+export function WeeklyDraftDays({ week, setWeek, opening, clinicName = "the clinic", preferences, busy = false, rows, onEdit, showClinicHours = true, onChange, detailsDisabled=false }: {
   week: DraftDay[]; setWeek: (update: (week: DraftDay[]) => DraftDay[]) => void; opening: OpeningHour[] | null; clinicName?: string;
-  preferences: DateTimePreferences | any; busy?: boolean; rows?: ScheduleRow[]; onEdit?: (row: any) => void; showClinicHours?: boolean; onChange?: () => void;
+  preferences: DateTimePreferences | any; busy?: boolean; rows?: ScheduleRow[]; onEdit?: (row: any) => void; showClinicHours?: boolean; onChange?: () => void; detailsDisabled?:boolean;
 }) {
   const [targets, setTargets] = useState<Record<number, number[]>>({});
   const [expanded, setExpanded] = useState<number[] | null>(null);
@@ -52,7 +52,7 @@ export function WeeklyDraftDays({ week, setWeek, opening, clinicName = "the clin
         </div>
         {isExpanded && <div className="wdr-body" id={bodyId}>
         {showClinicHours && <small className="muted">Clinic: {opening === null ? "No hour limits set" : hours.length ? hours.map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ") : "Closed"}</small>}
-        {closedRows.length > 0 && <small className="muted">Stored as closed: {closedRows.map(r => canOpenDetails(r) ? <button type="button" className="text-link" key={r.id} onClick={() => openDetails(r, onEdit || (() => undefined))}>{fmt(r.startTime)} – {fmt(r.endTime)}</button> : <span key={r.id}>{fmt(r.startTime)} – {fmt(r.endTime)} (linked; managed in Clinic settings) </span>)}</small>}
+        {closedRows.length > 0 && <small className="muted">Stored as closed: {closedRows.map(r => canOpenDetails(r) ? <button type="button" className="text-link" key={r.id} disabled={busy||detailsDisabled} title={detailsDisabled?"Save or discard the weekly draft first.":busy?"Wait for the current save to finish.":undefined} onClick={() => openDetails(r, onEdit || (() => undefined))}>{fmt(r.startTime)} – {fmt(r.endTime)}</button> : <span key={r.id}>{fmt(r.startTime)} – {fmt(r.endTime)} (linked; managed in Clinic settings) </span>)}</small>}
         {day.isOpen && <div className="registration-sessions">{day.sessions.map((s, index) => {
           const change = (patch: Partial<DraftSession>) => setDay({ ...day, sessions: day.sessions.map(x => x.key === s.key ? { ...x, ...patch } : x) });
           const row = s.id && rows ? rows.find(r => r.id === s.id) : undefined;
@@ -68,7 +68,7 @@ export function WeeklyDraftDays({ week, setWeek, opening, clinicName = "the clin
             </>}
             <div className="row-actions">
               {row && !canOpenDetails(row) && <small className="muted" data-testid={`text-session-linked-${dayIndex}-${index}`}>Details are managed in Clinic settings for linked sessions.</small>}
-              {canOpenDetails(row) && <IconAction label={`Edit details for ${label}`} hint="Edit session details" icon={<Pencil size={15} aria-hidden/>} disabled={busy} disabledReason="Wait for the current save to finish." onClick={() => openDetails(row, onEdit || (() => undefined))} testId={`button-session-details-${dayIndex}-${index}`}/>}
+              {canOpenDetails(row) && <IconAction label={`Edit details for ${label}`} hint="Edit session details" icon={<Pencil size={15} aria-hidden/>} disabled={busy||detailsDisabled} disabledReason={detailsDisabled?"Save or discard the weekly draft first.":"Wait for the current save to finish."} onClick={() => openDetails(row, onEdit || (() => undefined))} testId={`button-session-details-${dayIndex}-${index}`}/>}
               {!s.locked && <button type="button" className="text-link" aria-label={`Remove ${label}`} disabled={busy} onClick={() => setDay(removeDaySession(day, index, () => newSession(dayIndex)))} data-testid={`button-remove-session-${dayIndex}-${index}`}><Trash2 size={14}/> Remove</button>}
             </div>
             {out && <p className="notice" role="note">Allowed with warning: this time extends beyond {clinicName}'s hours ({hours.map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ") || `usually closed on ${DAYS[dayIndex]}`}).</p>}
@@ -83,7 +83,7 @@ export function WeeklyDraftDays({ week, setWeek, opening, clinicName = "the clin
           <small className="muted">Copy replaces editable sessions on the chosen days in this draft only. Clinic-linked sessions are kept; days the clinic is closed are skipped by Copy to all days. Nothing is saved until you select Save weekly schedule.</small>
         </details>
         </div>}
-        {!isExpanded && closedRows.length > 0 && <small className="muted wdr-body">Stored as closed: {closedRows.map(r => canOpenDetails(r) ? <button type="button" className="text-link" key={r.id} onClick={() => openDetails(r, onEdit || (() => undefined))}>{fmt(r.startTime)} – {fmt(r.endTime)}</button> : <span key={r.id}>{fmt(r.startTime)} – {fmt(r.endTime)} (linked; managed in Clinic settings) </span>)}</small>}
+        {!isExpanded && closedRows.length > 0 && <small className="muted wdr-body">Stored as closed: {closedRows.map(r => canOpenDetails(r) ? <button type="button" className="text-link" key={r.id} disabled={busy||detailsDisabled} title={detailsDisabled?"Save or discard the weekly draft first.":busy?"Wait for the current save to finish.":undefined} onClick={() => openDetails(r, onEdit || (() => undefined))}>{fmt(r.startTime)} – {fmt(r.endTime)}</button> : <span key={r.id}>{fmt(r.startTime)} – {fmt(r.endTime)} (linked; managed in Clinic settings) </span>)}</small>}
         {errs.length > 0 && <p id={`week-error-${dayIndex}`} className="field-error" role="alert">{errs.join(" ")}</p>}
       </section>;
     })}</div>

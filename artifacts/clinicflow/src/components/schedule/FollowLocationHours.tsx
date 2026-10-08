@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { SearchableSelect } from "../SearchableSelect";
@@ -21,7 +21,7 @@ export function linkBody(branch: api.Branch, link: Link): api.ClinicSettingsInpu
 }
 
 /** In-editor control: Custom sessions vs Follow location hours. Uses the existing owner-only Clinic settings preview/save endpoints. */
-export function FollowLocationHours({ branch, doctorId, defaults, disabled, dirty }: { branch: api.Branch; doctorId: string; defaults: Defaults; disabled?: boolean; dirty?: boolean }) {
+export function FollowLocationHours({ branch, doctorId, defaults, disabled, dirty, onBusyChange, onDirtyChange }: { branch: api.Branch; doctorId: string; defaults: Defaults; disabled?: boolean; dirty?: boolean; onBusyChange?:(busy:boolean)=>void; onDirtyChange?:(dirty:boolean)=>void }) {
   const client = useQueryClient();
   const confirmation = useConfirm();
   const me = api.useGetMe({ query: { queryKey: api.getGetMeQueryKey(), staleTime: 60000 } });
@@ -33,6 +33,8 @@ export function FollowLocationHours({ branch, doctorId, defaults, disabled, dirt
   const [choosing, setChoosing] = useState(false);
   const [preview, setPreview] = useState<api.ClinicSettingsPreview | null>(null);
   const [busy, setBusy] = useState(false);
+  useEffect(()=>{onBusyChange?.(busy);},[busy,onBusyChange]);
+  useEffect(()=>{onDirtyChange?.(choosing);},[choosing,onDirtyChange]);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const eligibility = followEligibility({ role: me.data?.user?.role, userId: me.data?.user?.id, clinicAdminId: (clinic.data as { adminId?: string } | undefined)?.adminId, doctorUserId: (doctor.data as { userId?: string } | undefined)?.userId });
@@ -67,7 +69,7 @@ export function FollowLocationHours({ branch, doctorId, defaults, disabled, dirt
   return <div className="follow-hours" data-testid="follow-location-hours">
     {confirmation.dialog}
     <div className="seg-toggle" role="radiogroup" aria-label="Weekly sessions source">
-      <button type="button" role="radio" aria-checked={!following && !choosing} disabled={busy || disabled} onClick={() => { if (following) void unlink(); else { setChoosing(false); setPreview(null); } }} data-testid="radio-custom-sessions">Custom sessions</button>
+      <button type="button" role="radio" aria-checked={!following && !choosing} disabled={busy || disabled || (following&&dirty)} title={following&&dirty?"Save or discard the weekly draft first":undefined} onClick={() => { if (following) void unlink(); else { setChoosing(false); setPreview(null); } }} data-testid="radio-custom-sessions">Custom sessions</button>
       <button type="button" role="radio" aria-checked={following || choosing} disabled={busy || disabled || (!following && !hasHours)} title={!hasHours ? "Set location opening hours first" : undefined} onClick={() => { if (!following) setChoosing(true); }} data-testid="radio-follow-location-hours">Follow location hours</button>
     </div>
     <HelpTip label="About following location hours" text="Follow keeps this doctor's sessions in step with the location's opening hours; when the owner changes hours, sessions update automatically. Copy once fills custom sessions a single time. Only the clinic owner's own consultations can follow."/>

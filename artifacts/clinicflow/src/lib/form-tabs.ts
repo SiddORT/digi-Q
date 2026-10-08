@@ -7,7 +7,6 @@ export type FormTab = { id: string; label: string; fields: string[] };
 /** Generic Editor tabs are defined over editor groups (see resources.tsx EDITOR_GROUPS / PATIENT_EDITOR_GROUPS). */
 export const EDITOR_TABS: Record<string, [string, string[]][]> = {
   patients: [["Personal & Contact", ["Patient information", "Clinic and status"]], ["Additional Details", ["Address", "Emergency contact"]]],
-  doctors: [["Personal", ["Details", "Status", "Address"]], ["Professional", ["Professional"]], ["Assignment & Schedule", ["Assignment and scope", "Day", "Timing", "Capacity", "Queue window"]]],
   users: [["Personal", ["Details", "Status", "Address"]], ["Assignment", ["Assignment and scope"]]],
 };
 export function editorTabIndex(resourceName: string | undefined, group: string) {
@@ -18,9 +17,8 @@ export function editorTabIndex(resourceName: string | undefined, group: string) 
 }
 
 const PERSONAL: FormTab = { id: "personal", label: "Personal", fields: ["fullName", "email", "mobile", "status"] };
-/** Dedicated Users staff forms (Add/Edit Doctor, Add/Edit Receptionist). Clinic Admin forms stay single-section. */
+/** Doctor forms use visible sections; receptionist tabs and Clinic Admin forms stay unchanged. */
 export const STAFF_TABS: Record<string, FormTab[]> = {
-  doctors: [PERSONAL, { id: "professional", label: "Professional", fields: ["registrationNumber", "experienceYears"] }, { id: "assignment", label: "Assignment & Schedule", fields: ["clinicIds", "branchIds", "confirmInherited"] }],
   receptionists: [PERSONAL, { id: "assignment", label: "Assignment", fields: ["clinicIds", "branchIds", "confirmInherited"] }],
 };
 export function tabOf(tabs: FormTab[], key: string) {

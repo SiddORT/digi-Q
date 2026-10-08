@@ -7,6 +7,7 @@ import { useConfirm } from "./ConfirmDialog";
 import { friendlyError } from "../lib/friendly-error";
 import { BRANCH_SCOPED_PAGES, branchSelectorMode, resolveSavedBranch, scopedQueryStrip, workspaceBranchKey, type WorkspaceBranchOption } from "../lib/workspace-branch";
 import "./workspace-branch.css";
+import { notifyWarning } from "../lib/notify";
 
 export type BranchPin = { branchId: string; clinicId: string; name: string; clinicName: string };
 type Ctx = {
@@ -19,6 +20,7 @@ type Ctx = {
   retry: () => void;
   select: (branchId: string) => Promise<void>;
   registerUnsaved: (id: string, dirty: boolean) => void;
+  registerBusy: (id: string, busy: boolean) => void;
 };
 const BranchContext = createContext<Ctx | null>(null);
 
@@ -54,11 +56,14 @@ export function WorkspaceBranchProvider({ identity, children }: { identity: api.
     try { if (id) localStorage.setItem(workspaceBranchKey(userId), id); else localStorage.removeItem(workspaceBranchKey(userId)); } catch { /* session only */ }
   }, [q.data, userId]);
   const unsaved = useRef(new Set<string>());
+  const saving = useRef(new Set<string>());
+  const registerBusy = useCallback((id:string,busy:boolean)=>{if(busy)saving.current.add(id);else saving.current.delete(id);},[]);
   const registerUnsaved = useCallback((id: string, dirty: boolean) => { if (dirty) unsaved.current.add(id); else unsaved.current.delete(id); }, []);
   const current = branches.find(b => b.id === selected);
   const pin = useMemo<BranchPin | null>(() => current ? { branchId: current.id, clinicId: current.clinicId, name: current.name, clinicName: current.clinicName } : null, [current]);
   const select = async (branchId: string) => {
     if (branchId === selected || !branches.some(b => b.id === branchId)) return;
+    if(saving.current.size){notifyWarning("Finish saving before changing location.");return;}
     if (unsaved.current.size && !await confirmation.ask({ title: "Switch Location?", description: "You have unsaved changes on this page. Switching location discards them and clears the selected doctor and session.", confirmLabel: "Discard and Switch", tone: "danger" })) return;
     unsaved.current.clear();
     try { localStorage.setItem(workspaceBranchKey(userId), branchId); sessionStorage.removeItem("clinicflow-staff-session"); } catch { /* optional */ }
@@ -70,20 +75,21 @@ export function WorkspaceBranchProvider({ identity, children }: { identity: api.
     void client.invalidateQueries({ predicate: query => query.queryKey[0] !== "workspace-branches" });
   };
   const status: Ctx["status"] = !enabled ? "off" : q.isLoading ? "loading" : q.error ? "error" : !branches.length ? "none" : pin ? "ready" : branches.length > 1 ? "choice" : "loading";
-  const value: Ctx = { enabled, status, branches, pin: enabled ? pin : null, error: q.error, retry: () => void q.refetch(), select, registerUnsaved };
+  const value: Ctx = { enabled, status, branches, pin: enabled ? pin : null, error: q.error, retry: () => void q.refetch(), select, registerUnsaved, registerBusy };
   return <BranchContext.Provider value={value}>{confirmation.dialog}{children}</BranchContext.Provider>;
 }
 
-const OFF: Ctx = { enabled: false, status: "off", branches: [], pin: null, error: null, retry: () => {}, select: async () => {}, registerUnsaved: () => {} };
+const OFF: Ctx = { enabled: false, status: "off", branches: [], pin: null, error: null, retry: () => {}, select: async () => {}, registerUnsaved: () => {}, registerBusy:()=>{} };
 export function useWorkspaceBranchContext() { return useContext(BranchContext) || OFF; }
 /** The enforced workspace location, or null when no location restriction applies (patients, guests, super admins, public booking). */
 export function useWorkspaceBranch() { return useWorkspaceBranchContext().pin; }
 
 /** Registers a page's unsaved state so a location switch asks for confirmation first. */
-export function useRegisterUnsaved(dirty: boolean) {
-  const { registerUnsaved } = useWorkspaceBranchContext();
+export function useRegisterUnsaved(dirty: boolean, busy=false) {
+  const { registerUnsaved, registerBusy } = useWorkspaceBranchContext();
   const id = useId();
   useEffect(() => { registerUnsaved(id, dirty); return () => registerUnsaved(id, false); }, [id, dirty, registerUnsaved]);
+  useEffect(() => { registerBusy(id,busy);return()=>registerBusy(id,false); },[id,busy,registerBusy]);
 }
 
 /** Keeps a page's clinic/location state on the workspace location, even after saved views, resets or deep links. */
