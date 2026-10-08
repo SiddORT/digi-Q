@@ -22,3 +22,21 @@ test("resource listing accepts every approved page size including 25", async () 
   const src = readFileSync(new URL("./resources.tsx", import.meta.url), "utf8");
   assert.match(src, /PAGE_SIZE_OPTIONS as readonly number\[\]\)\.includes\(sizeValue\)/);
 });
+test("compact toolbar is opt-in and never mounts common filters or quick expanders",()=>{
+  assert.match(r("./components/ListingControls.tsx"),/!compactToolbar && \(hasSubRow \|\| filters\)/);
+  assert.match(r("./resources.tsx"),/compactClinicToolbar=\["clinics","patients","availability","exceptions"\]\.includes\(resource\)/);
+  assert.match(r("./Users.tsx"),/<FilterBar compactToolbar/);
+  assert.match(r("./components/SystemUsers.tsx"),/<FilterBar compactToolbar/);
+  const appointments=r("./clinic.tsx").split("export function Appointments")[1].split("function Booking")[0];
+  assert.match(appointments,/<FilterBar compactToolbar/);
+  assert.doesNotMatch(appointments.split("<FilterBar")[1].split("</FilterBar>")[0],/filters=\{|button-show-all-visits|select-appointment-status-quick|VisitRangePicker/);
+  assert.match(appointments,/appointment-display-navigation/);
+  assert.match(appointments,/slot-appointment-columns/);
+  assert.match(appointments,/compactColumns/);
+  assert.doesNotMatch(r("./Users.tsx"),/tab-staff-|quick-staff-status/);
+});
+test("icon-only bespoke column presentation is opt-in so operational tables stay unchanged",()=>{
+  assert.match(r("./components/TableColumns.tsx"),/iconOnly = false/);
+  assert.match(r("./components/appointments/AppointmentRows.tsx"),/compactColumns=false/);
+  assert.match(r("./components/ListingControls.tsx"),/Open the drawer to choose and apply filters/);
+});

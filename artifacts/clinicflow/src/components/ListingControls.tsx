@@ -309,7 +309,7 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
             {meta && <div className="lh-meta">{meta}</div>}
             {advanced && (
               <div className="filter-pop">
-                 {compactToolbar ? <HelpTip text={`Filter clinics by status, administrator or sort order${advancedActiveCount ? `; ${advancedActiveCount} active` : ""}.`}>{filterTrigger}</HelpTip> : filterTrigger}
+                  {compactToolbar ? <HelpTip text={`${label}. Open the drawer to choose and apply filters${advancedActiveCount ? `; ${advancedActiveCount} active` : ""}.`}>{filterTrigger}</HelpTip> : filterTrigger}
                 <AppDialog open={open} onClose={closeFilters} title={label} variant="drawer">
                   <form id={panelId} ref={formRef} className="filter-drawer-content" noValidate data-testid="form-filter-drawer"
                     onSubmit={e => e.preventDefault()}>
@@ -345,7 +345,7 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
          {secondary && <div className="lh-table-tools" data-testid="list-header-table-tools">{compactToolbar ? secondary : <ResponsiveActionGroup secondary={secondary} label="Table Tools" />}</div>}
          {compactToolbar && primaryActions}
       </div>
-      {(hasSubRow || filters) && (
+       {!compactToolbar && (hasSubRow || filters) && (
         <div className="lh-row lh-sub" data-testid="list-header-subrow">
           {countInSub && <div className="filter-bar-title lh-count" data-testid="text-listing-title">{title}</div>}
           {filters && compactFilters && <button type="button" className="lh-filters-summary" aria-expanded={filtersOpen} aria-controls={filtersId} onClick={() => setFiltersOpen(v => !v)} data-testid="button-toggle-quick-filters"><Filter aria-hidden className="h-4 w-4" /><span>Quick filters</span>{advancedActiveCount > 0 && <span className="filter-count" aria-label={`${advancedActiveCount} active`}>{advancedActiveCount}</span>}<span className="lh-filters-summary-hint">{filtersOpen ? "Hide" : "Show"}</span></button>}

@@ -92,3 +92,9 @@ For responsive verification, wait for viewport-resize layout to settle and asser
 **Why:** Repeated layout passes left date headers clipped and mobile ticket contents off-screen while page-overflow and hierarchy assertions passed. An immediate post-resize capture also retained old dialog geometry.
 
 **How to apply:** Check actual header/control rectangles and text containment at desktop, tablet and phone sizes; constrain dialogs to the viewport and keep table scrolling internal. Preserve screenshots of corrected states, not only passing source tests.
+
+Measure visible text and control rectangles separately from scroll extents when checking clipping.
+
+**Why:** Absolute-positioned count badges and enlarged pseudo-element help hit targets can increase a button's `scrollWidth` even when its visible content is correctly contained. Treating that as clipped text creates false failures.
+
+**How to apply:** Check text ranges against their control bounds and badge bounds against the containing toolbar. Limit single-row assertions to the toolbar itself, excluding summary-chip remove buttons beneath it.

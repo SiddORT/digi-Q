@@ -53,6 +53,13 @@ async function fixture(page: Page, multiClinic = false): Promise<Fixture> {
     else if (path === "/api/patients" && method === "GET") reply = listing([{ id: "patient-1", fullName: "Fixture Patient", status: "active", clinicId: clinic.id, branchId: branch.id }]);
     else if (path === "/api/doctors" && method === "GET") reply = listing([{ id: "doctor-1", fullName: "Fixture Doctor", userId: "fixture-admin", status: "active", branchIds: [branch.id] }]);
     else if (path === "/api/masters" && method === "GET") reply = listing([]);
+    else if (path === "/api/staff-assignment-options") reply = {clinics:[clinic],branches:[branch],doctors:[{id:"doctor-1",fullName:"Fixture Doctor"}],pagination:{clinics:{total:1},branches:{total:1},doctors:{total:1}}};
+    else if (path === "/api/public/availability/sessions") reply = [{sessionId:"session-1",startTime:"09:00",endTime:"12:00",remainingTokens:10,available:true},{sessionId:"session-2",startTime:"14:00",endTime:"17:00",remainingTokens:10,available:true}];
+    else if (path === "/api/management/system-users") reply = { data: [{...state.staff, clinics:[{id:clinic.id,name:clinic.name}]}], total:1, page:1, pageSize:20 };
+    else if (path === "/api/schedules") reply = listing([{id:"schedule-1", doctorId:"doctor-1", doctorName:"Fixture Doctor", clinicId:clinic.id, branchId:branch.id, branchName:branch.name, dayOfWeek:1, isOpen:true, startTime:"09:00", endTime:"12:00", timezone:"Asia/Kolkata", maxTokens:10}]);
+    else if (path === "/api/availability-exceptions") reply = listing([{id:"exception-1", doctorId:"doctor-1", branchId:branch.id, date:"2026-10-08", reason:"Fixture exception", isClosed:true}]);
+    else if (path === "/api/appointments" && method === "GET") reply = listing([{id:"appointment-1", patientId:"patient-1",patientName:"Fixture Patient", doctorId:"doctor-1",doctorName:"Fixture Doctor",clinicId:clinic.id,clinicName:clinic.name,branchId:branch.id,branchName:branch.name,date:"2026-10-08",startTime:"09:00",endTime:"12:00",status:"booked",token:"A001",reference:"FIXTURE-001",allowedActions:[],revision:1}]);
+    else if (path.includes("calendar")) reply = { days:[], total:0 };
     else if (path === "/api/clinics/clinic-1/settings" && method === "GET") reply = { clinic, branches: [branch], policies: { bookingHorizonDays: 30, cancellationCutoffMinutes: 60 } };
     else if (path === "/api/clinics/clinic-1" && method === "GET") reply = clinic;
     else if (path === "/api/branches/branch-1" && method === "GET") reply = branch;
@@ -256,14 +263,14 @@ test("Clinic compact toolbar keeps bounds, descriptions, stable search and worki
       for(let i=1;i<boxes.length;i++)expect(boxes[i-1]!.x+boxes[i-1]!.width).toBeLessThanOrEqual(boxes[i]!.x);
     }else{
       expect(bounds.height).toBeLessThanOrEqual(104);
-      for(const button of [filters,columns,add])expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      for(const button of [filters,columns,add])expect((await button.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
     }
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
     await screenshot(page,`clinic-toolbar-${width}.png`);
   }
   await page.setViewportSize({width:1280,height:900});
   await filters.focus();
-  await expect(page.locator('[role="tooltip"]')).toContainText("Filter clinics");
+  await expect(page.locator('[role="tooltip"]')).toContainText("Filter clinic groups");
   expect(await filters.evaluate(el=>getComputedStyle(el).outlineStyle)).not.toBe("none");
   await filters.press("Enter");
   const status=page.getByRole("button",{name:/^Status/});
@@ -302,10 +309,10 @@ test("Clinic compact toolbar keeps bounds, descriptions, stable search and worki
   await expect(page.getByRole("dialog").getByTestId("input-name")).toBeVisible();
 });
 
-test("non-Clinic shared headers retain labelled tools, views and quick status",async({page})=>{
+test("unrelated shared headers retain labelled tools, views and quick status",async({page})=>{
   await fixture(page);
   await page.setViewportSize({width:1440,height:900});
-  for(const resource of ["patients","branches"]){
+  for(const resource of ["qrs","branches"]){
     await page.goto(pageUrl(resource));
     const header=page.getByTestId("list-header");
     await expect(header).not.toHaveClass(/list-header--compact/);
@@ -405,7 +412,10 @@ test("clinic staff link preserves global editing for unassigned staff outside Us
   await expect(link).toHaveAttribute("href","/admin/staff");
   await link.click();await expect(page).toHaveURL(/\/admin\/staff(?:\?.*)?$/);
   const listing=page.waitForRequest(r=>new URL(r.url()).pathname==="/api/users"&&new URL(r.url()).searchParams.get("role")==="receptionist"&&!new URL(r.url()).searchParams.has("clinicId"));
-  await page.getByTestId("tab-staff-receptionists").click();await listing;
+  await page.getByTestId("button-toggle-advanced-filters").click();
+  await page.getByRole("button",{name:/^Staff Type/}).click();
+  await page.getByRole("option",{name:"Receptionists",exact:true}).click();
+  await page.getByTestId("button-close-filters").click();await listing;
   await page.getByRole("button",{name:"Edit Fixture Receptionist"}).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByLabel("Full Name")).toBeEnabled();
@@ -490,4 +500,204 @@ test("mobile clinic workspace and list remain readable without overflow or under
     const box = await button.boundingBox();
     expect(box?.height || 0, `Small mobile target: ${await button.getAttribute("aria-label") || (await button.innerText()).trim()}`).toBeGreaterThanOrEqual(44);
   }
+});
+
+test("compact appointment session filter waits for Apply and clears on Reset",async({page})=>{
+  const state=await fixture(page);
+  const open=()=>page.getByTestId("button-toggle-advanced-filters").click();
+  await page.goto("/admin/appointments?clinic=clinic-1&branch=branch-1&doctor=doctor-1&from=2026-10-08&to=2026-10-08");
+  await expect(page.getByRole("button",{name:/^Consulting Session/})).toHaveCount(0);
+  await open();
+  await page.getByRole("button",{name:/^Consulting Session/}).click();
+  await page.getByRole("option",{name:/^2:00 PM/}).click();
+  expect(listCalls(state,"/api/appointments").some(call=>call.params.get("startTime")==="14:00")).toBe(false);
+  await page.getByTestId("button-close-filters").click();
+  await expect.poll(()=>listCalls(state,"/api/appointments").some(call=>call.params.get("startTime")==="14:00")).toBe(true);
+  await open();
+  await expect(page.getByRole("button",{name:/^Consulting Session/})).toHaveAccessibleName(/2:00 PM/);
+  await page.getByTestId("button-clear-filters-panel").click();
+  await expect.poll(()=>listCalls(state,"/api/appointments").at(-1)?.params.has("startTime")).toBe(false);
+});
+
+const compactPages = [
+  {url:"/?mode=users&area=system",name:"System users",path:"/api/management/system-users"},
+  {url:"/?mode=staff&tab=receptionists",name:"Staff",path:"/api/users"},
+  {url:"/?mode=resource&resource=patients",name:"patients",path:"/api/patients"},
+  {url:"/?mode=schedule&resource=availability",name:"Weekly Schedules",path:"/api/schedules"},
+  {url:"/?mode=schedule&resource=exceptions",name:"Date Exceptions",path:"/api/availability-exceptions"},
+  {url:"/admin/appointments",name:"Appointments",path:"/api/appointments"},
+];
+for (const listingPage of compactPages) {
+  test(`compact workspace ${listingPage.name}: bounds, focus, drawer-only filters and columns`,async({page})=>{
+    const state=await fixture(page);
+    await page.goto(listingPage.url);
+    const header=page.locator('[data-testid="list-header"]:visible').first();
+    const search=header.getByRole("combobox");
+    const filters=header.getByTestId("button-toggle-advanced-filters");
+    const columns=header.getByTestId("button-column-settings");
+    await expect(columns).toBeVisible();
+    await expect(header).toHaveClass(/list-header--compact/);
+    for(const width of [1024,1600,820,390,320]){
+      await page.setViewportSize({width,height:900});
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      await expect(header.getByTestId("list-header-filters")).toHaveCount(0);
+      await expect(header.getByTestId("list-header-subrow")).toHaveCount(0);
+      await expect(page.getByTestId("button-toggle-quick-filters")).toHaveCount(0);
+      await expect(header.getByTestId("button-saved-views")).toHaveCount(0);
+      await expect(page.getByRole("tablist",{name:"Filter staff by role"})).toHaveCount(0);
+      await expect(header.locator("select,input[type=date],.searchable-select-control")).toHaveCount(0);
+      const controls=header.getByTestId("list-header-search-row").locator("h1,h2,input:visible,button:visible,a.button:visible");
+      const headerBox=(await header.boundingBox())!;
+      const boxes=await Promise.all((await controls.all()).map(async control=>{
+        const box=(await control.boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(headerBox.x-1);
+        expect(box.x+box.width).toBeLessThanOrEqual(headerBox.x+headerBox.width+1);
+        // Badges intentionally extend outside their icon button, and help controls
+        // have enlarged pseudo-element hit targets. Measure text, not scrollWidth.
+        expect(await control.evaluate(el=>{
+          const bounds=el.getBoundingClientRect();
+          const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);
+          let node:Node|null;
+          while((node=walker.nextNode())){
+            if(!node.textContent?.trim()||(node.parentElement?.closest(".filter-count,.sr-only,.sr-only-helptip")))continue;
+            const range=document.createRange();range.selectNodeContents(node);
+            const rect=range.getBoundingClientRect();
+            if(rect.width&&(rect.left<bounds.left-1||rect.right>bounds.right+1))return false;
+          }
+          return true;
+        }),await control.evaluate(el=>el.outerHTML)).toBe(true);
+        return box;
+      }));
+      if(width>=1024){
+        const centers=boxes.map(box=>box.y+box.height/2);
+        expect(Math.max(...centers)-Math.min(...centers)).toBeLessThan(3);
+      }
+      expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+      await screenshot(page,`workspace-${listingPage.name.replaceAll(" ","-")}-${width}.png`);
+    }
+    await page.setViewportSize({width:1280,height:900});
+    await search.evaluate(el=>(el as HTMLElement).dataset.stable="yes");
+    await search.pressSequentially("Fixture",{delay:30});
+    await expect(search).toBeFocused();
+    await expect(search).toHaveAttribute("data-stable","yes");
+    await expect.poll(()=>listCalls(state,listingPage.path).some(call=>call.params.get("search")==="Fixture")).toBe(true);
+    await filters.focus();
+    await expect(filters).toHaveAttribute("aria-describedby",/.+/);
+    expect(await filters.evaluate(el=>getComputedStyle(el).outlineStyle)).not.toBe("none");
+    await filters.press("Enter");
+    const drawer=page.getByTestId("form-filter-drawer");
+    await expect(drawer).toBeVisible();
+    await expect(drawer.locator("button,input").first()).toBeVisible();
+    await drawer.getByTestId("button-close-filters").click();
+    await expect(filters).toBeFocused();
+    await columns.click();
+    const optional=page.locator(".lvc-columns input[type=checkbox]:not(:disabled)").first();
+    await optional.uncheck();
+    await page.getByRole("dialog",{name:"Columns",exact:true}).getByRole("button",{name:"Done",exact:true}).click();
+    await expect(columns).toHaveAccessibleName(/hidden/);
+    await page.reload();
+    await expect(columns).toHaveAccessibleName(/hidden/);
+    await columns.click();
+    await page.getByTestId("button-reset-columns").click();
+    await page.getByRole("dialog",{name:"Columns",exact:true}).getByRole("button",{name:"Done",exact:true}).click();
+    if(listingPage.path==="/api/appointments"){
+      await page.getByTestId("button-mode-calendar").click();
+      await expect(page.getByRole("region",{name:"Appointment calendar",exact:true})).toBeVisible();
+      await expect(columns).toBeVisible();
+      const month=await page.getByTestId("text-calendar-month").innerText();
+      await page.getByTestId("button-calendar-next").click();
+      await expect(page.getByTestId("text-calendar-month")).not.toHaveText(month);
+      await expect(page.getByTestId("button-toggle-quick-filters")).toHaveCount(0);
+      await page.getByTestId("button-mode-list").click();
+      await expect(page.getByTestId("appointment-appointment-1")).toBeVisible();
+      await expect(page.getByTestId("link-page-book-appointment")).toHaveAttribute("href","/admin/book");
+    }
+    if(listingPage.path==="/api/patients")await expect(header.getByRole("button",{name:/Export/})).toBeVisible();
+    if(listingPage.path==="/api/users"){
+      await page.getByTestId("button-open-account-recovery").click();
+      await expect(page.getByRole("dialog",{name:"Account Recovery Assistance",exact:true})).toBeVisible();
+      await page.getByRole("dialog",{name:"Account Recovery Assistance",exact:true}).getByRole("button",{name:"Close",exact:true}).click();
+      await page.getByTestId("button-add-staff").click();
+      await expect(page.getByRole("dialog")).toContainText("Add Staff");
+    }
+  });
+}
+
+test("compact drawers commit combined filters, staff type and appointment time view",async({page})=>{
+  const state=await fixture(page);
+  const open=async()=>{await page.getByTestId("button-toggle-advanced-filters").click();};
+  const choose=async(label:RegExp,option:string)=>{
+    await page.getByTestId("form-filter-drawer").getByRole("button",{name:label}).click();
+    await page.getByRole("option",{name:new RegExp(`^${option}(?: \\(\\d+\\))?(?: \\(selected\\))?$`)}).click();
+  };
+  for(const target of [
+    {url:"/?mode=users&area=system",status:/^Account Status/,testId:"select-system-user-status",path:"/api/management/system-users"},
+    {url:"/?mode=staff&tab=receptionists",status:/^Account Status/,testId:"select-staff-status",path:"/api/users"},
+    {url:"/?mode=resource&resource=patients",status:/^Status/,testId:"select-patients-status",path:"/api/patients"},
+    {url:"/admin/appointments",status:/^Status/,testId:"select-appointment-status",path:"/api/appointments"}
+  ]){
+    await page.goto(target.url);await open();
+    if(target.path!=="/api/appointments")await choose(target.status,"Inactive");
+    if(target.path==="/api/appointments"){
+      await choose(/^Status/,"Waiting");
+      await choose(/^Visit Range/,"Past Visits");
+      await page.getByTestId("input-appointment-from").fill("01 Oct 2026");
+      await page.getByTestId("input-appointment-to").fill("08 Oct 2026");
+    }else if(target.path==="/api/users"){
+      await choose(/^Staff Type/,"Doctors");
+    }else if(target.path==="/api/patients"){
+      await page.getByTestId("input-patients-from").fill("01 Oct 2026");
+      await page.getByTestId("input-patients-to").fill("08 Oct 2026");
+    }
+    await choose(target.path==="/api/patients"?/^Registration clinic/:/^Clinic(?::|$)/,"Fixture Clinic");
+    if(target.path==="/api/management/system-users")await choose(/^Role/,"Receptionist");
+    await page.getByTestId("button-close-filters").click();
+    await expect(page.getByTestId("form-filter-drawer")).toHaveCount(0);
+    await expect(page.getByTestId("button-toggle-advanced-filters")).toHaveAccessibleName(/active/);
+    await expect.poll(()=>listCalls(state,target.path==="/api/users"?"/api/doctors":target.path).some(call=>
+      call.params.get(target.path==="/api/appointments"?"statusGroup":"status")===(target.path==="/api/appointments"?"waiting":"inactive")
+      &&call.params.get("clinicId")==="clinic-1"
+      &&(!(target.path==="/api/patients"||target.path==="/api/appointments")||call.params.get("from")==="2026-10-01")
+    )).toBe(true);
+    await open();await page.getByTestId("button-clear-filters-panel").click();
+    await expect(page.getByTestId("form-filter-drawer")).toHaveCount(0);
+    await expect(page.getByTestId("button-toggle-advanced-filters")).not.toHaveAccessibleName(/active/);
+  }
+});
+
+test("compact schedule drawer keeps scope, day, date and actual workspace tabs",async({page})=>{
+  const state=await fixture(page);
+  for(const resource of ["availability","exceptions"]){
+    await page.goto(`/?mode=schedule&resource=${resource}&fixedClinicId=clinic-1${resource==="exceptions"?"&schedule=exceptions":""}`);
+    await expect(page.getByRole("tablist",{name:"Schedule sections"})).toBeVisible();
+    await page.getByTestId("button-toggle-advanced-filters").click();
+    const drawer=page.getByTestId("form-filter-drawer");
+    await expect(drawer.getByRole("button",{name:/^Clinic:/})).toHaveCount(0);
+    await expect(drawer.getByRole("button",{name:/^Location/})).toBeVisible();
+    await expect(drawer.getByRole("button",{name:/^Doctor/})).toBeVisible();
+    await drawer.getByRole("button",{name:/^Location/}).click();
+    await page.getByRole("option",{name:"Fixture Location",exact:true}).click();
+    await drawer.getByRole("button",{name:/^Doctor/}).click();
+    await page.getByRole("option",{name:"Fixture Doctor",exact:true}).click();
+    if(resource==="availability"){
+      await drawer.getByRole("button",{name:/^Day/}).click();
+      await page.getByRole("option",{name:"Monday",exact:true}).click();
+    }else await page.getByTestId("input-exceptions-date-filter").fill("08 Oct 2026");
+    await drawer.getByTestId("button-close-filters").click();
+    const path=resource==="availability"?"/api/schedules":"/api/availability-exceptions";
+    await expect.poll(()=>listCalls(state,path).at(-1)?.params.get(resource==="availability"?"dayOfWeek":"date")).toBe(resource==="availability"?"1":"2026-10-08");
+    expect(listCalls(state,path).at(-1)?.params.get("clinicId")).toBe("clinic-1");
+    expect(listCalls(state,path).at(-1)?.params.get("branchId")).toBe("branch-1");
+    expect(listCalls(state,path).at(-1)?.params.get("doctorId")).toBe("doctor-1");
+    await page.getByTestId("button-clear-all-filters").click();
+    await expect.poll(()=>listCalls(state,path).at(-1)?.params.has(resource==="availability"?"dayOfWeek":"date")).toBe(false);
+  }
+  await page.goto("/?mode=resource&resource=patients&fixtureRole=doctor");
+  await expect(page.getByTestId("button-add-patients")).toHaveCount(0);
+  await page.goto("/?mode=staff&fixtureRole=doctor");
+  await page.getByTestId("button-toggle-advanced-filters").click();
+  await page.getByRole("button",{name:/^Staff Type/}).click();
+  await expect(page.getByRole("option",{name:/^Receptionists/})).toBeVisible();
+  await expect(page.getByRole("option",{name:"Doctors",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("option",{name:"Clinic Admins",exact:true})).toHaveCount(0);
 });

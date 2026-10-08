@@ -1,4 +1,4 @@
-/* Opt-in Clinic header; specificity intentionally overrides legacy header breakpoints. */
+/* Opt-in listing headers; specificity intentionally overrides legacy breakpoints. */
 .workspace .list-header.list-header--compact .lh-search-row{flex-wrap:nowrap;align-items:center;gap:var(--space-2)}
 .workspace .list-header.list-header--compact .lh-search-row>.lh-title,
 .workspace .list-header.list-header--compact .lh-search-row>.lh-page-title{order:0;flex:0 0 auto;min-width:0;margin:0}
@@ -11,6 +11,12 @@
 .workspace .list-header.list-header--compact .listing-icon-trigger .filter-count{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;margin:0;padding:0 3px;font-size:10px;line-height:16px;border-radius:8px;background:var(--dq-blue);color:#fff}
 .workspace .list-header.list-header--compact .listing-icon-trigger.has-active{border-color:var(--dq-blue)}
 .workspace .list-header.list-header--compact .listing-icon-trigger:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px}
+.workspace .list-header.list-header--compact .lh-table-tools{display:flex;align-items:center;gap:var(--space-2);max-width:100%;flex-wrap:wrap}
+.workspace .list-header.list-header--compact .lh-table-tools>.button{width:auto;flex:0 0 auto;white-space:nowrap}
+.workspace .appointment-display-navigation{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);flex-wrap:wrap}
+@media(min-width:768px) and (max-width:900px){
+  .workspace .list-header.list-header--compact .lh-search-row{flex-wrap:wrap}
+}
 @media(max-width:767px){
   .workspace .list-header.list-header--compact{--lh-h:44px}
   .workspace .list-header.list-header--compact .lh-actions .button{min-height:44px}

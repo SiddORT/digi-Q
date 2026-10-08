@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ResourcePage } from "../src/resources";
@@ -7,7 +7,8 @@ import { WorkspaceNav } from "../src/components/WorkspaceNav";
 import { Redirect, useLocation, useSearch } from "wouter";
 import { clinicLandingDestination } from "../src/lib/clinic-navigation";
 import { Users } from "../src/Users";
-import { UsersWorkspace } from "../src/clinic";
+import { UsersWorkspace, Appointments } from "../src/clinic";
+import { SchedulingWorkspace } from "../src/components/SchedulingWorkspace";
 import { ListPageTitleContext } from "../src/components/ListingControls";
 import "./workspace.css";
 
@@ -23,8 +24,9 @@ const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
 const browsing=location.startsWith("/admin/");
-const mode = browsing?(location==="/admin/clinic"?"settings":location==="/admin/users"?"users":location==="/admin/staff"?"staff":"resource"):params.get("mode");
-if (mode !== "resource" && mode !== "settings" && mode !== "staff" && mode !== "users") throw new Error(`Unknown isolated fixture mode: ${mode}`);
+const [initialMode]=useState(()=>params.get("mode"));
+const mode = browsing?(location==="/admin/clinic"?"settings":location==="/admin/users"?"users":location==="/admin/staff"?"staff":location==="/admin/appointments"?"appointments":"resource"):params.get("mode")||initialMode;
+if (!["resource","settings","staff","users","appointments","schedule"].includes(mode||"")) throw new Error(`Unknown isolated fixture mode: ${mode}`);
 const resource = params.get("resource") || "clinics";
 const fixedClinicId = params.get("fixedClinicId") || undefined;
 const fixtureRole=params.get("fixtureRole")==="clinicAdmin"?"clinicAdmin":params.get("fixtureRole")==="doctor"?"doctor":"superAdmin";
@@ -41,9 +43,9 @@ return (
       <div className="workspace-main">
         <header className="topbar"><div className="breadcrumb">Workspace · {mode === "settings" ? "Settings" : mode === "staff" ? "Staff" : resource}</div></header>
         <main className="content">
-          {mode!=="resource"&&<div className="page-heading"><h1>{mode === "settings" ? "Clinic settings" : mode === "users" ? "Users" : "Staff"}</h1></div>}
-          <ListPageTitleContext.Provider value={mode==="resource"?{title:resource==="clinics"?"Clinic":resource,owner:titleOwner}:null}>
-            {redirect?<Redirect to={redirect}/>:mode === "users" ? <UsersWorkspace identity={fixtureIdentity}/> : mode === "settings" ? <ClinicSettings identity={fixtureIdentity}/> : mode === "staff" ? <Users identity={fixtureIdentity} clinicId={fixedClinicId} embedded={!!fixedClinicId}/> : <ResourcePage resource={resource} identity={fixtureIdentity} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId}/>}
+          {["settings","users","schedule"].includes(mode||"")&&<div className="page-heading"><h1>{mode === "settings" ? "Clinic settings" : mode === "users" ? "Users" : "Schedule"}</h1></div>}
+          <ListPageTitleContext.Provider value={["resource","staff","appointments"].includes(mode||"")?{title:mode==="staff"?"Staff":mode==="appointments"?"Appointments":resource==="clinics"?"Clinic":resource,owner:titleOwner}:null}>
+            {redirect?<Redirect to={redirect}/>:mode === "appointments" ? <Appointments role={navigationRole}/> : mode === "schedule" ? <SchedulingWorkspace identity={fixtureIdentity} page={resource==="exceptions"?"exceptions":"availability"} clinicId={fixedClinicId}/> : mode === "users" ? <UsersWorkspace identity={fixtureIdentity}/> : mode === "settings" ? <ClinicSettings identity={fixtureIdentity}/> : mode === "staff" ? <Users identity={fixtureIdentity} clinicId={fixedClinicId} embedded={!!fixedClinicId}/> : <ResourcePage resource={resource} identity={fixtureIdentity} allowCreate={!(fixtureRole==="doctor"&&resource==="patients")} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId}/>}
           </ListPageTitleContext.Provider>
         </main>
       </div>

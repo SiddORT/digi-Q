@@ -18,15 +18,15 @@ const sanitize = (value: unknown): Stored => {
  *  `reorderable:false` keeps the operational column order fixed (e.g. live queue) while allowing visibility.
  *  A single pinned column is supported deliberately: it is always rendered first with left:0, so sticky
  *  offsets can never overlap. Actions are never part of the configurable set and stay sticky on the right. */
-export function useTableColumns(tableId: string, userId: string | undefined, role: string | undefined, columns: ColumnDef[], options: { reorderable?: boolean; pinnable?: boolean; defaultHidden?: string[] } = {}) {
-  const { reorderable = true, pinnable = true, defaultHidden = [] } = options;
+export function useTableColumns(tableId: string, userId: string | undefined, role: string | undefined, columns: ColumnDef[], options: { reorderable?: boolean; pinnable?: boolean; defaultHidden?: string[]; iconOnly?: boolean } = {}) {
+  const { reorderable = true, pinnable = true, defaultHidden = [], iconOnly = false } = options;
   const [layout, set] = usePreference(columnsKey(tableId, userId, role), EMPTY, sanitize);
   const effective: ListingLayout = { ...layout, hidden: layout.touched ? layout.hidden : defaultHidden, order: reorderable ? layout.order : [], pinned: pinnable ? layout.pinned : null };
   const keys = columns.map(c => c.key);
   const arranged = arrangeColumns(keys, effective);
   const label = (k: string) => columns.find(c => c.key === k)?.label || k;
   const [expanded, setExpanded] = useState<string | null>(null);
-  const settings = <ColumnSettings columns={keys} layout={effective} label={label} reorderable={reorderable} pinnable={pinnable}
+   const settings = <ColumnSettings iconOnly={iconOnly} columns={keys} layout={effective} label={label} reorderable={reorderable} pinnable={pinnable}
     onChange={next => set({ ...effective, ...next, touched: true })} onReset={() => set(EMPTY)} />;
   const cls = (key: string, base?: string) => [`col-${key}`, base, key === arranged.pinned ? "col-pinned" : ""].filter(Boolean).join(" ") || undefined;
   const toggle = (rowId: string, name: string) => arranged.hidden.length ? <button type="button" className="row-expand-toggle" aria-expanded={expanded === rowId} aria-controls={`expand-${tableId}-${rowId}`}

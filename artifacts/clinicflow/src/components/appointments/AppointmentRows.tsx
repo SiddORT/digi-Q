@@ -31,7 +31,8 @@ const PRIMARY:api.AppointmentActionType[]=["checkIn","start","complete","call"];
 const actionLabel=(n:api.AppointmentActionType)=>n==="start"||n==="checkIn"?"Check In":n==="complete"?"Check Out":n==="noShow"?"Skip Absent":n==="requeue"?"Return / Re-Enter":title(n);
 export type AppointmentDateSort="date"|"-date"|"-createdAt"|"createdAt";
 export function nextAppointmentDateSort(current:AppointmentDateSort):AppointmentDateSort { return current==="date"?"-date":"date"; }
-export function AppointmentRows({appointments,columnsTarget,selectionKey="",disabled=false,selectable=false,sessionScoped=false,sort,onSortChange,serialOffset=0}:{serialOffset?:number;appointments:api.Appointment[];columnsTarget?:HTMLElement|null;selectionKey?:string;disabled?:boolean;selectable?:boolean;sessionScoped?:boolean;sort?:AppointmentDateSort;onSortChange?:(sort:AppointmentDateSort)=>void}){
+export const appointmentColumns = (sessionScoped = false) => [{key:"serial",label:"#"},...(sessionScoped?[]:[{key:"date",label:"Visit Date & Session"}]),{key:"patient",label:"Patient"},{key:"token",label:"Token / Queue No."},...(sessionScoped?[]:[{key:"location",label:"Clinic / Location"},{key:"doctor",label:"Doctor"}]),{key:"createdAt",label:"Booked At"},{key:"reference",label:"Booking Reference"}];
+export function AppointmentRows({appointments,columnsTarget,compactColumns=false,selectionKey="",disabled=false,selectable=false,sessionScoped=false,sort,onSortChange,serialOffset=0}:{serialOffset?:number;appointments:api.Appointment[];columnsTarget?:HTMLElement|null;compactColumns?:boolean;selectionKey?:string;disabled?:boolean;selectable?:boolean;sessionScoped?:boolean;sort?:AppointmentDateSort;onSortChange?:(sort:AppointmentDateSort)=>void}){
   const [selected,setSelected]=useState<string[]>([]);
   const {online}=useFreshWorkspace(Date.now());
   const blocked=disabled||!online;
@@ -40,7 +41,7 @@ export function AppointmentRows({appointments,columnsTarget,selectionKey="",disa
  const me=api.useGetMe({query:{queryKey:api.getGetMeQueryKey(),staleTime:60000}});
  // Approved default order: serial, visit date/session, patient + ID, waiting number, clinic/location, doctor, booked at, status, actions.
   // Keys are stable so saved views keep working; new keys are visible unless a saved view explicitly hides them.
-  const cols=useTableColumns(sessionScoped?"appointments-session":"appointments",me.data?.user?.id,me.data?.user?.role,[{key:"serial",label:"#"},...(sessionScoped?[]:[{key:"date",label:"Visit Date & Session"}]),{key:"patient",label:"Patient"},{key:"token",label:"Token / Queue No."},...(sessionScoped?[]:[{key:"location",label:"Clinic / Location"},{key:"doctor",label:"Doctor"}]),{key:"createdAt",label:"Booked At"},{key:"reference",label:"Booking Reference"}],{defaultHidden:["reference","createdAt"],reorderable:!sessionScoped,pinnable:!sessionScoped});
+  const cols=useTableColumns(sessionScoped?"appointments-session":"appointments",me.data?.user?.id,me.data?.user?.role,appointmentColumns(sessionScoped),{defaultHidden:["reference","createdAt"],reorderable:!sessionScoped,pinnable:!sessionScoped,iconOnly:compactColumns});
   const shownCols=cols.visible,hiddenCols=cols.hidden;
   // Status always renders immediately after Patient / Token (or the last core column), so it never drifts off-screen.
   const statusAfter=["token","patient"].find(k=>shownCols.includes(k))||shownCols[shownCols.length-1];
