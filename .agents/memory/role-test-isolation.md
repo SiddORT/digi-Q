@@ -71,3 +71,9 @@ Treat eligible-option cardinality as part of a browser fixture's behavioral cont
 **Why:** Picker regressions initially looked like stale accessible names, but the fixtures offered only one eligible location, intentionally selecting the read-only journey instead of the searchable journey. Changing selectors alone could not repair that mismatch.
 
 **How to apply:** Give searchable-choice tests multiple eligible options within the actual parent scope. Keep sole-option tests separate; never disable automatic selection or weaken selected-value, save/reopen, or scope assertions to make a picker test pass.
+
+Complete the operational-location choice gate before looking for rows in multi-location staff fixtures.
+
+**Why:** A verified Doctor session showed only the clinic-choice gate, even with clinic and branch filters in the URL. Missing edit-button assertions were navigation-fixture failures, not missing schedule rows.
+
+**How to apply:** Choose the assigned clinic through the actual application gate, confirm the intended table is visible, then find the test-owned row. URL filters do not activate the operational location.

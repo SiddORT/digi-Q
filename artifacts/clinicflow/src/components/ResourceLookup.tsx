@@ -11,7 +11,7 @@ import { assignmentDirectory, directoryLists as lists, useDirectoryActor, useDir
 import { recordLabel } from "../lib/selection-label";
 
 const getters: Record<string, any> = { clinics: api.getClinic, branches: api.getBranch, doctors: api.getDoctor, patients: api.getPatient, users: api.getUser, masters: api.getMaster };
-type Props = Pick<AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> & { resource: string; value: string; onChange: (value: string) => void; label?: string; id?: string; error?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean; fixed?: boolean; autoSole?: boolean; onSelectedRecords?: (records: any[], verifiedMissing: string[]) => void };
+type Props = Pick<AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> & { resource: string; value: string; onChange: (value: string) => void; label?: string; id?: string; error?: string; placeholder?: string; params?: Record<string, unknown>; disabled?: boolean; required?: boolean; fixed?: boolean; autoSole?: boolean; wrapFixedLabel?: boolean; onSelectedRecords?: (records: any[], verifiedMissing: string[]) => void };
 type MultiProps = Omit<Props, "value" | "onChange"> & { value: string[]; onChange: (value: string[]) => void; onRecords?: (records: any[]) => void; isOptionDisabled?: (record:any)=>boolean };
 
 function lookupName(resource: string) {
@@ -115,7 +115,7 @@ function useOptions(resource: string, selected: string[], params: Record<string,
     return { query, labelScope, loading: loading || (missing.length > 0 && selectedQuery.isFetching), selectedQuery, selectedPending: missing.length > 0 && selectedQuery.isPending, rows: merged, selectedRecords: [...rows, ...selectedRows].filter(row => selected.includes(row.id)), verifiedMissing, search: setSearch, options: visible.map(row => ({ value: row.id, label: `${recordLabel(row)}${row.status==="inactive"?" · Inactive":""}`, disabled: !rows.some(option => option.id === row.id)||(params.status==="active"&&row.status==="inactive") })) };
 }
 
-export function ResourceLookup({ resource, value, onChange, params = {}, onSelectedRecords, fixed = false, autoSole = false, ...props }: Props) {
+export function ResourceLookup({ resource, value, onChange, params = {}, onSelectedRecords, fixed = false, autoSole = false, wrapFixedLabel = false, ...props }: Props) {
   const lookup = useOptions(resource, value ? [value] : [], params, fixed || !props.disabled);
   // This request never uses picker search or hydrated selections. A partial page
   // and an error cannot turn the first displayed result into a default.
@@ -132,7 +132,7 @@ export function ResourceLookup({ resource, value, onChange, params = {}, onSelec
     const record = value ? lookup.selectedRecords.find(row => row.id === value) : sole;
     return <div className="fixed-scope" data-testid={`fixed-scope-${resource}`}>
       {props.label && <label htmlFor={props.id}>{props.label}{props.required ? " *" : ""}</label>}
-      <input id={props.id} aria-label={props.label} readOnly value={record ? recordLabel(record) : (value ? lookup.loading ? "Loading saved assignment…" : "Saved assignment unavailable" : scope.isPending&&!fixed ? "Loading assigned options…" : "Not assigned")} aria-describedby={props["aria-describedby"]}/>
+      {wrapFixedLabel?<div id={props.id} role="textbox" aria-readonly="true" aria-label={props.label} aria-describedby={props["aria-describedby"]} tabIndex={0} className="fixed-scope-value">{record ? recordLabel(record) : (value ? lookup.loading ? "Loading saved assignment…" : "Saved assignment unavailable" : scope.isPending&&!fixed ? "Loading assigned options…" : "Not assigned")}</div>:<input id={props.id} aria-label={props.label} readOnly value={record ? recordLabel(record) : (value ? lookup.loading ? "Loading saved assignment…" : "Saved assignment unavailable" : scope.isPending&&!fixed ? "Loading assigned options…" : "Not assigned")} aria-describedby={props["aria-describedby"]}/>}
       {props.error && <p role="alert" className="field-error">{props.error}</p>}
       <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => {void lookup.query.refetch();void lookup.selectedQuery.refetch();}}/>
       {autoSole&&scope.isSuccess&&scope.data?.total===0&&<p role="status">No active assigned {lookupName(resource)} are available in this scope. Ask your clinic administrator to review assignments.</p>}

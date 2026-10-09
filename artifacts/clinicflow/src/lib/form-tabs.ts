@@ -6,6 +6,7 @@ export type FormTab = { id: string; label: string; fields: string[] };
 
 /** Generic Editor tabs are defined over editor groups (see resources.tsx EDITOR_GROUPS / PATIENT_EDITOR_GROUPS). */
 export const EDITOR_TABS: Record<string, [string, string[]][]> = {
+  availability: [["Schedule", ["Schedule"]], ["Timing & Break", ["Timing & Break"]], ["Capacity", ["Capacity"]], ["Queue Settings", ["Queue Settings"]]],
   patients: [["Personal & Contact", ["Patient information", "Clinic and status"]], ["Additional Details", ["Address", "Emergency contact"]]],
   users: [["Personal", ["Details", "Status", "Address"]], ["Assignment", ["Assignment and scope"]]],
 };
