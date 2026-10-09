@@ -1,0 +1,295 @@
+# DIGIQ DOCTORS — QUEUE PAGE REDESIGN AND IMPLEMENTATION
+
+## Objective
+
+Redesign the existing DigiQ Doctors **Queue page to closely match the attached approved UI reference image**.
+
+This is an implementation task, not a request for another design proposal. Reproduce the reference layout, component placement, spacing, sizing, typography, colors, visual hierarchy, and overall information density as closely as possible within the existing application architecture.
+
+The redesigned page should be clean, compact, professional, and optimized for daily clinic operations.
+
+**Priority:** Match the approved reference first. Preserve existing functionality and business logic throughout implementation.
+
+---
+
+## 1. Inspect the Existing Implementation First
+
+Before modifying code:
+
+1. Identify the current Queue page route, page component, child components, stylesheets, shared layout, and design tokens.
+2. Understand how the current application retrieves queue data, clinic context, doctor information, session details, patient records, and doctor availability.
+3. Identify existing API endpoints, data models, state management, permissions, queue actions, refresh behavior, and validation rules.
+4. Determine which existing components can be reused.
+5. Compare the existing page against the attached redesigned reference and identify the exact layout and styling changes required.
+
+Do not replace existing functionality with mock data or create a parallel queue implementation.
+
+## 2. Match the Approved Visual Design
+
+Use the attached reference as the source of truth for the intended visual appearance.
+
+Follow these principles:
+
+- White and very light blue backgrounds.
+- Existing DigiQ Doctors branding and application shell.
+- Dark navy text with blue primary actions.
+- Subtle blue-gray borders and restrained shadows.
+- Compact, consistent rounded controls and cards.
+- Clear typography hierarchy without unnecessarily large headings.
+- Consistent iconography and status badges.
+- Tight, deliberate spacing with minimal unused vertical space.
+- Clear separation between operational sections without excessive card nesting.
+
+Reuse the application's actual design tokens, fonts, components, and brand colors wherever available. Do not invent a competing design system.
+
+## 3. Header and Primary Actions
+
+Keep the existing global application header and sidebar.
+
+In the Queue page header:
+
+- Display the title **Queue** on the left.
+- Show a concise subtitle identifying the selected clinic context and refresh interval, such as `Live queue for Rushabh Test Mulund · Updated every 30 seconds`.
+- Place the following actions on the right side of the same header row:
+  - Booking QR
+  - Quick Switch
+  - Validate QR
+  - Register Walk-In
+
+Use consistent button heights, compact horizontal spacing, and clear primary-versus-secondary button styling.
+
+Register Walk-In should remain the visually prominent primary action. Preserve the existing full labels or accessible names where needed; shortening a visible label must not remove its meaning.
+
+**Important:** Quick Switch, Validate QR, and Register Walk-In must not occupy a separate full-width row beneath the session information. Their placement beside Booking QR is a key requirement of the approved design.
+
+## 4. Simplify Clinic and Session Selection
+
+The selected location is already displayed in the global header. Do not repeat the clinic and location selectors inside the Queue page unless the existing application explicitly requires them for a particular role or workflow.
+
+Replace the redundant multi-selector layout with a compact selection panel containing:
+
+### Doctor
+- A dropdown for the doctor relevant to the selected clinic/location.
+- Default to the currently selected doctor when valid.
+- Populate from the existing data source and permissions.
+
+### Date
+- A date picker with a calendar icon.
+- Default to the current operational date according to existing application rules and the clinic's configured timezone.
+- Refresh the displayed queue when the selected date changes.
+
+### Queue Session
+- Display available sessions as horizontally arranged selectable session chips or compact segmented cards.
+- Each session should show its time range.
+- Clearly identify the selected session.
+- Show a concise `Current` indicator when the selected session is currently running, based on actual session state and configured timezone.
+- Support switching between available sessions without requiring a separate full-width dropdown.
+- If there are more sessions than can fit, provide horizontal scrolling or a compact navigation control without breaking the layout.
+
+Keep the doctor and date selectors on the left and the session selector to their right, matching the reference.
+
+The location shown in the global header must remain the source of truth for the active context. When the user changes location through the existing global location control or Quick Switch, update the doctor options, available sessions, queue data, and relevant context consistently.
+
+Do not assume every user has permission to switch locations.
+
+## 5. Remove Redundant Location Banner
+
+Remove the separate full-width banner that repeats `Rushabh Test Mulund` and the selected date immediately above the queue tabs.
+
+The location is already visible in the global header and in the Queue subtitle. The selected session is represented in the session selector.
+
+Do not reintroduce duplicate location or session information elsewhere unless it communicates genuinely different information.
+
+## 6. Queue Summary Cards
+
+Place five compact summary cards in one horizontal row when sufficient width is available:
+
+1. Current Token
+2. Next Waiting Token
+3. Waiting
+4. Completed
+5. Session Total
+
+Follow the reference for relative card sizes, icon placement, typography, and restrained semantic coloring.
+
+Each card should contain:
+- A concise label.
+- The actual value from the existing queue data.
+- Supporting text where applicable.
+
+Examples of supporting information include `In Consultation`, `2 patients ahead`, and `Patients`.
+
+Requirements:
+- Keep card heights consistent.
+- Use large-enough values for quick scanning without excessive typography.
+- Avoid unnecessary blank space inside cards.
+- Preserve the existing calculation rules and definitions.
+- Ensure all counts respond correctly to the selected date, doctor, session, and applicable filters.
+
+Do not hardcode the sample values shown in the reference.
+
+## 7. Doctor Availability
+
+Below the summary cards, create a compact doctor-status bar.
+
+It should display:
+- A status indicator.
+- `Doctor status: Available` or the actual current status.
+- A short explanatory note indicating that live presence does not modify weekly hours or future bookings.
+- Available, On Break, and Away controls aligned to the right.
+
+Clearly distinguish the selected status from the other options.
+
+Preserve existing permissions, API behavior, status transitions, and confirmation rules. Do not imply a status update succeeded before the backend confirms it.
+
+## 8. Patient Search, Status Tabs, and Sorting
+
+Position the queue controls immediately above the patient table in one compact horizontal region.
+
+Include:
+
+- Patient/queue search input on the left.
+- Status tabs with counts:
+  - All
+  - Active
+  - Waiting
+  - In Consultation
+  - Completed
+  - Absent
+  - Cancelled
+- Sorting controls on the right, including the existing queue-position sorting behavior.
+
+Use the statuses and categories supported by the actual application. If the current implementation defines Active differently, preserve its existing meaning.
+
+The selected tab should have a clear blue/navy active state. Keep inactive tabs subtle and compact.
+
+The search should continue to support the existing searchable fields. Filtering and sorting must operate on actual queue data and must not corrupt the underlying queue order or status.
+
+At narrower widths, allow the controls to wrap or scroll cleanly rather than overlap or shrink into unreadable elements.
+
+## 9. Patient Queue Table
+
+Reproduce the table structure and compact visual treatment shown in the reference.
+
+Preserve the existing patient fields and supported actions. The visual reference illustrates this general structure:
+
+- Row selection checkbox.
+- Queue position.
+- Row expansion control.
+- Patient name.
+- Patient ID.
+- Token number.
+- Current queue status.
+- Row-level actions.
+
+### Table requirements
+
+- Use consistent row heights and vertical alignment.
+- Keep patient names visually prominent and patient IDs secondary.
+- Make token numbers easy to identify and scan.
+- Use compact status badges with appropriate semantic colors.
+- Align row actions in a consistent right-hand column.
+- Keep icon-only buttons accessible with tooltips or accessible labels.
+- Prevent action buttons from overlapping or shifting unpredictably.
+- Retain column visibility controls and any existing row expansion functionality.
+- Preserve pagination, rows-per-page selection, and total record counts.
+- Ensure loading, empty, error, and no-search-results states are properly designed.
+- Support existing sticky-header and scrolling behavior without introducing unnecessary nested scroll areas.
+
+Do not remove existing table fields or actions simply because they are not prominent in the reference. Adapt their presentation while preserving their functionality.
+
+## 10. Preserve Queue Operations
+
+The following existing functionality must continue to work:
+
+- Booking QR.
+- Quick Switch.
+- Validate Appointment QR.
+- Register Walk-In.
+- Doctor and date selection.
+- Queue-session switching.
+- Patient search and status filtering.
+- Sorting and pagination.
+- Patient row expansion.
+- Column visibility.
+- Existing check-in, consultation, completion, absence, cancellation, and other supported actions.
+- Doctor availability changes.
+- Automatic refresh at the existing configured interval.
+- Role-based access control and applicable validation.
+
+Do not change workflow semantics, queue position rules, appointment handling, patient identity handling, or API contracts as part of this visual redesign.
+
+When refreshing data, avoid unnecessarily resetting the selected session, search query, active tab, pagination, or other user context unless existing business rules require it.
+
+Prevent duplicate submissions for actions that trigger backend mutations.
+
+## 11. Footer and Operational Information
+
+Keep the table pagination directly beneath the table.
+
+At the bottom of the page, retain a compact footer showing:
+- Last successful data-response timestamp.
+- Existing refresh interval.
+- The clinic timezone note.
+
+Use actual values from the application. Do not show a new timestamp as the last successful response until a successful response has occurred.
+
+## 12. Responsive Behavior and Space Optimization
+
+The attached reference represents the intended desktop layout.
+
+At desktop widths:
+- Keep the primary actions in the Queue header.
+- Keep Doctor, Date, and Queue Session in one compact selection panel.
+- Keep the five summary cards in one row whenever practical.
+- Keep queue search, status tabs, and sorting compact.
+- Give the patient table the maximum practical available width.
+
+At smaller widths:
+- Allow header actions and selectors to wrap logically.
+- Preserve the order and prominence of important actions.
+- Keep patient names, tokens, statuses, and essential actions accessible.
+- Use horizontal scrolling for the table only where necessary.
+- Prevent clipping, overlap, and inaccessible controls.
+
+Do not simply scale the desktop page down. Reflow components intentionally.
+
+## 13. Implementation Constraints
+
+- Use the existing frontend framework, routing, state management, and styling approach.
+- Reuse shared components and utilities.
+- Preserve current backend APIs and database structures.
+- Do not introduce duplicate business logic or an alternate queue state model.
+- Do not hardcode sample clinic names, doctor names, dates, session times, patient details, token values, or metric counts.
+- Do not make unrelated changes to other pages.
+- Avoid unnecessary dependencies and broad refactoring.
+- Keep the implementation maintainable and consistent with the rest of DigiQ Doctors.
+
+## 14. Testing and Acceptance Criteria
+
+Before declaring completion, verify the redesigned page against the reference.
+
+Confirm that:
+
+1. The Queue title and all four primary actions share the same header row.
+2. The redundant location banner has been removed.
+3. Clinic and location are not unnecessarily repeated as internal selectors.
+4. Doctor and Date are selectable in the compact filter panel.
+5. Queue sessions are presented as horizontally selectable time-range controls.
+6. The selected session and currently running session are correctly distinguished.
+7. All five summary cards appear in a consistent row at the target desktop viewport.
+8. Doctor availability controls are compact and functional.
+9. Search, status filters, sorting, and table actions work with real data.
+10. Pagination and column visibility continue to function.
+11. Auto-refresh and timezone behavior remain correct.
+12. Existing permissions and API contracts are preserved.
+13. No UI elements overlap, clip, or become unusable at supported screen widths.
+14. No unrelated modules or workflows have been changed.
+
+Compare the completed implementation side by side with the attached reference image and correct meaningful visual differences before finishing.
+
+## Final Execution Instruction
+
+Implement the redesign directly in the existing application. Do not stop after producing a plan, mockup, or explanation.
+
+First inspect the current code, then make the smallest complete set of changes necessary to reproduce the approved design. Test the affected workflows and provide a concise implementation report identifying the files changed, functionality verified, and any genuine limitations remaining.
