@@ -28,3 +28,9 @@ No API contract, database, polling interval, global shell, shared appointment ro
 - Authenticated live role acceptance, location/doctor reassignment during live polling, stale/conflicting mutation responses and delivery of real booking emails were not verified. No live UAT writes, deployment or real queue mutations were performed.
 - The fixture validates rendering and selected interactions, not server authorization. Backend clinical state/order, row/bulk permissions, individual-only check-in, snapshots and patient privacy continue to use the existing implementation.
 - Screenshot matching preserves the existing shell and operational features absent from the sample; it does not reproduce multiple simultaneous consultations or fabricated patients-ahead counts.
+
+## Authenticated acceptance disposition
+- The user requested closure of the authenticated Queue verification task and will test live scenarios separately.
+- Approved controlled staff accounts and isolated clinic/session access were not provided; the user chose to pause test setup before requesting closure.
+- No authenticated role acceptance or real stale/conflicting mutation checks were performed for this task. These checks are unverified, not passed.
+- No accounts were created, queue records changed, or emails sent. The fixture evidence above remains separate from authenticated acceptance.
