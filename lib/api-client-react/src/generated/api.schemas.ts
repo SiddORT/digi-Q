@@ -90,6 +90,33 @@ export interface NotificationList {
 }
 
 export type BookingMailOutcomeStatus = typeof BookingMailOutcomeStatus[keyof typeof BookingMailOutcomeStatus];
+
+
+export const BookingMailOutcomeStatus = {
+  pending: 'pending',
+  sending: 'sending',
+  provider_accepted: 'provider_accepted',
+  delivery_unknown: 'delivery_unknown',
+  configuration_failed: 'configuration_failed',
+  preparation_failed: 'preparation_failed',
+  disabled: 'disabled',
+  obsolete: 'obsolete',
+  no_recipient: 'no_recipient',
+  unknown: 'unknown',
+} as const;
+
+export interface BookingMailOutcome {
+  reference: string | null;
+  status: BookingMailOutcomeStatus;
+  /** Recorded event time in milliseconds since epoch */
+  createdAt: number | null;
+}
+
+export interface BookingMailOutcomeList {
+  items: BookingMailOutcome[];
+  hasMore: boolean;
+}
+
 export interface NotificationUnread {
   unread: number;
 }
@@ -3348,6 +3375,7 @@ page?: number;
  */
 pageSize?: number;
 };
+
 export type UploadPatientDocumentParams = {
 /**
  * @minLength 1
@@ -3392,28 +3420,3 @@ export type ListSavedViewsParams = {
 tableKey: string;
 };
 
-
-export const BookingMailOutcomeStatus = {
-  pending: 'pending',
-  sending: 'sending',
-  provider_accepted: 'provider_accepted',
-  delivery_unknown: 'delivery_unknown',
-  configuration_failed: 'configuration_failed',
-  preparation_failed: 'preparation_failed',
-  disabled: 'disabled',
-  obsolete: 'obsolete',
-  no_recipient: 'no_recipient',
-  unknown: 'unknown',
-} as const;
-
-export interface BookingMailOutcomeList {
-  items: BookingMailOutcome[];
-  hasMore: boolean;
-}
-
-export interface BookingMailOutcome {
-  reference: string | null;
-  status: BookingMailOutcomeStatus;
-  /** Recorded event time in milliseconds since epoch */
-  createdAt: number | null;
-}
