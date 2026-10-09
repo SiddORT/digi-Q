@@ -289,6 +289,18 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicRegistrationInput" } } } }
       responses:
         "201": { description: Atomic clinic registration, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicSettingsResult" } } } }
+  /clinic-registration/completion:
+    get:
+      operationId: getClinicRegistrationCompletion
+      parameters: [{ name: requestId, in: query, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        "200": { description: Authorized saved result or no completion, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicRegistrationCompletion" } } } }
+  /clinic-admin-onboarding/completion:
+    get:
+      operationId: getClinicAdminSetupCompletion
+      parameters: [{ name: requestId, in: query, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        "200": { description: Authorized saved admin setup result, content: { application/json: { schema: { $ref: "#/components/schemas/ClinicAdminSetupCompletion" } } } }
   /clinics/{id}/settings:
     parameters:
       - { $ref: "#/components/parameters/Id" }
@@ -524,6 +536,14 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ApiError" }
+  /auth/registration/resume:
+    post:
+      operationId: resumeClinicRegistration
+      security: []
+      description: Resumes a matching unexpired verification challenge from an HttpOnly cookie; the temporary account draft has no challenge reference.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RegistrationResumeIdentity" } } } }
+      responses:
+        "200": { description: Matching challenge or null, content: { application/json: { schema: { $ref: "#/components/schemas/RegistrationResumeResult" } } } }
   /auth/register/verify:
     post:
       operationId: verifyClinicRegistration
@@ -1648,6 +1668,17 @@ components:
         email: { type: string, format: email }
         fullName: { type: string, minLength: 1, maxLength: 200 }
         password: { type: string, minLength: 8, maxLength: 1024, pattern: '^(?=[\s\S]*[A-Za-z])(?=[\s\S]*[0-9])[\s\S]*$', description: "Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server." }
+    RegistrationResumeIdentity:
+      type: object
+      required: [email, fullName]
+      properties:
+        email: { type: string, format: email }
+        fullName: { type: string }
+    RegistrationResumeResult:
+      type: object
+      required: [challengeId]
+      properties:
+        challengeId: { type: [string, "null"] }
     ChangeNativePasswordInput:
       type: object
       required: [currentPassword, password]
@@ -1835,10 +1866,23 @@ components:
         specializationId: { type: string }
         qualificationIds: { type: array, items: { type: string } }
         about: { type: string }
+    ClinicRegistrationCompletion:
+      type: object
+      required: [result]
+      properties:
+        result:
+          anyOf: [{ $ref: "#/components/schemas/ClinicSettingsResult" }, { type: "null" }]
+    ClinicAdminSetupCompletion:
+      type: object
+      required: [result]
+      properties:
+        result:
+          anyOf: [{ $ref: "#/components/schemas/ClinicAdminOnboardingResult" }, { type: "null" }]
     ClinicRegistrationInput:
       type: object
       required: [fullName, password, clinic, branches]
       properties:
+        requestId: { type: string, format: uuid, description: Stable non-secret retry identity; changed payloads cannot replay a committed request. }
         fullName: { type: string, minLength: 1, maxLength: 150 }
         mobile: { type: string }
         password: { type: string, minLength: 1, maxLength: 1024, writeOnly: true }
@@ -2116,6 +2160,7 @@ components:
       type: object
       required: [admin, clinic]
       properties:
+        requestId: { type: string, format: uuid }
         branches: { type: array, maxItems: 30, items: { $ref: "#/components/schemas/ClinicBranchSetup" } }
         policies: { $ref: "#/components/schemas/ClinicPolicy" }
         ownDoctor: { type: boolean }

@@ -1,6 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
 import { Loader2 } from "lucide-react";
 import "./shared-feedback.css";
+import { ActionLabel } from "./ActionLabel";
 
 export interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
@@ -17,7 +18,7 @@ export const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(f
       disabled={disabled || loading} aria-busy={loading || undefined}
       onClick={(e) => { if (loading) { e.preventDefault(); return; } onClick?.(e); }}>
       {loading && <Loader2 className="loading-button-spin h-4 w-4" aria-hidden="true" />}
-      <span>{loading && loadingText ? loadingText : children}</span>
+      {loading ? <span>{loadingText || children}</span> : <ActionLabel>{children}</ActionLabel>}
     </button>
   );
 });

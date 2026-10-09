@@ -181,6 +181,16 @@ async function pendingRegistration({ aged = true, purpose = "register" } = {}) {
   if (aged) await h.control.query("update auth_challenges set created_at=now()-interval '61 seconds' where id=$1", [id]);
   return id;
 }
+test("registration resume requires its HttpOnly cookie and the exact pending identity without returning credentials", async () => {
+  const id = await pendingRegistration();
+  const identity = { email: "pending@example.test", fullName: "Pending Admin" };
+  const withCookie = { headers: { cookie: `digiq_registration=${id}` } };
+  assert.deepEqual((await route("/auth/registration/resume", identity, withCookie)).body, { challengeId: id });
+  assert.deepEqual((await route("/auth/registration/resume", { ...identity, fullName: "Someone Else" }, withCookie)).body, { challengeId: null });
+  assert.deepEqual((await route("/auth/registration/resume", identity)).body, { challengeId: null });
+  await h.control.query("update auth_challenges set expires_at=now()-interval '1 second' where id=$1", [id]);
+  assert.deepEqual((await route("/auth/registration/resume", identity, withCookie)).body, { challengeId: null });
+});
 test("registration resend preserves pending data/expiry, rotates code and creates exactly one verified account", async () => {
   const id = await pendingRegistration();
   await h.control.query("update auth_challenges set attempts=2 where id=$1", [id]);

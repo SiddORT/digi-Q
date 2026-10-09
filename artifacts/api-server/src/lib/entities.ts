@@ -4,6 +4,7 @@ import { all, flatten, one } from "./store";
 import { managedDoctorAssignments } from "./clinical-membership";
 export async function enrich(kind: string, row: any, conn: any = db): Promise<any> {
   row = { ...row };
+  if (kind === "clinics") delete row.registrationReceipt;
   if (kind === "doctors" || kind === "users") {
     if (kind === "users") row.mobile ||= "";
     const activeClinics = new Set((await all(clinics, conn)).filter(c => c.status === "active").map(c => c.id));

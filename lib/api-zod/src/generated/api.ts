@@ -651,6 +651,7 @@ export const registerClinicBodyOwnerCustomScheduleSessionsMax = 500;
 
 
 export const RegisterClinicBody = zod.object({
+  "requestId": zod.string().uuid().optional().describe('Stable non-secret retry identity; changed payloads cannot replay a committed request.'),
   "fullName": zod.string().min(1).max(registerClinicBodyFullNameMax),
   "mobile": zod.string().optional(),
   "password": zod.string().min(1).max(registerClinicBodyPasswordMax),
@@ -820,6 +821,248 @@ export const RegisterClinicResponse = zod.object({
   "cancellationCutoffMinutes": zod.number().int().min(registerClinicResponsePoliciesCancellationCutoffMinutesMin).max(registerClinicResponsePoliciesCancellationCutoffMinutesMax).optional()
 }),
   "doctorId": zod.string().nullish()
+})
+
+
+export const GetClinicRegistrationCompletionQueryParams = zod.object({
+  "requestId": zod.coerce.string().uuid()
+})
+
+export const getClinicRegistrationCompletionResponseResultOneClinicOneSlugMin = 3;
+export const getClinicRegistrationCompletionResponseResultOneClinicOneSlugMax = 63;
+
+export const getClinicRegistrationCompletionResponseResultOneClinicOneReferralCodeMax = 100;
+
+
+export const getClinicRegistrationCompletionResponseResultOneBranchesItemOneSlugMin = 3;
+export const getClinicRegistrationCompletionResponseResultOneBranchesItemOneSlugMax = 63;
+
+export const getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMin = 0;
+export const getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMax = 6;
+
+export const getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursMax = 28;
+
+
+export const getClinicRegistrationCompletionResponseResultOneBranchesItemOneTimezoneDefault = `Asia/Kolkata`;
+export const getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const getClinicRegistrationCompletionResponseResultOnePoliciesBookingHorizonDaysMax = 365;
+
+export const getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMin = 0;
+export const getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMax = 10080;
+
+
+
+export const GetClinicRegistrationCompletionResponse = zod.object({
+  "result": zod.union([zod.object({
+  "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
+  "slug": zod.string().min(getClinicRegistrationCompletionResponseResultOneClinicOneSlugMin).max(getClinicRegistrationCompletionResponseResultOneClinicOneSlugMax).optional(),
+  "specialityIds": zod.array(zod.string()).optional(),
+  "referralCode": zod.string().max(getClinicRegistrationCompletionResponseResultOneClinicOneReferralCodeMax).nullish(),
+  "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
+  "name": zod.string().min(1),
+  "address": zod.string(),
+  "country": zod.string().optional(),
+  "state": zod.string().optional(),
+  "city": zod.string().optional(),
+  "area": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
+  "description": zod.string().optional(),
+  "clinicTypeId": zod.string().optional(),
+  "categoryId": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive'])
+}).and(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "adminName": zod.string(),
+  "createdAt": zod.coerce.date().nullable(),
+  "doctorCount": zod.number().int().optional(),
+  "branchCount": zod.number().int().optional()
+})),
+  "branches": zod.array(zod.object({
+  "slug": zod.string().min(getClinicRegistrationCompletionResponseResultOneBranchesItemOneSlugMin).max(getClinicRegistrationCompletionResponseResultOneBranchesItemOneSlugMax).optional(),
+  "email": zod.string().email().nullish(),
+  "inheritEmail": zod.boolean().optional(),
+  "inheritPhone": zod.boolean().optional(),
+  "openingHours": zod.array(zod.object({
+  "dayOfWeek": zod.number().int().min(getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMax),
+  "startTime": zod.string(),
+  "endTime": zod.string()
+})).max(getClinicRegistrationCompletionResponseResultOneBranchesItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
+  "clinicId": zod.string(),
+  "name": zod.string().min(1),
+  "address": zod.string(),
+  "city": zod.string().optional(),
+  "state": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "phone": zod.string().nullish(),
+  "timezone": zod.string().default(getClinicRegistrationCompletionResponseResultOneBranchesItemOneTimezoneDefault),
+  "status": zod.enum(['active', 'inactive'])
+}).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(getClinicRegistrationCompletionResponseResultOneBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
+  "effectiveEmail": zod.string().nullish(),
+  "effectivePhone": zod.string().nullish(),
+  "id": zod.string(),
+  "code": zod.string(),
+  "clinicName": zod.string().optional(),
+  "createdAt": zod.coerce.date().nullable()
+}))),
+  "policies": zod.object({
+  "bookingHorizonDays": zod.number().int().min(1).max(getClinicRegistrationCompletionResponseResultOnePoliciesBookingHorizonDaysMax).optional(),
+  "cancellationCutoffMinutes": zod.number().int().min(getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMin).max(getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMax).optional()
+}),
+  "doctorId": zod.string().nullish()
+}),zod.null()])
+})
+
+
+export const GetClinicAdminSetupCompletionQueryParams = zod.object({
+  "requestId": zod.coerce.string().uuid()
+})
+
+export const getClinicAdminSetupCompletionResponseResultOneBranchesItemOneSlugMin = 3;
+export const getClinicAdminSetupCompletionResponseResultOneBranchesItemOneSlugMax = 63;
+
+export const getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMin = 0;
+export const getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMax = 6;
+
+export const getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursMax = 28;
+
+
+export const getClinicAdminSetupCompletionResponseResultOneBranchesItemOneTimezoneDefault = `Asia/Kolkata`;
+export const getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleMaxTokensMax = 1000;
+
+export const getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
+
+export const getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const getClinicAdminSetupCompletionResponseResultOneAdminOneCountryMax = 100;
+
+export const getClinicAdminSetupCompletionResponseResultOneAdminOneStateMax = 100;
+
+export const getClinicAdminSetupCompletionResponseResultOneAdminOneCityMax = 100;
+
+export const getClinicAdminSetupCompletionResponseResultOneAdminOnePincodeMax = 12;
+
+export const getClinicAdminSetupCompletionResponseResultOneAdminOneAddressMax = 500;
+
+
+
+export const getClinicAdminSetupCompletionResponseResultOneClinicOneSlugMin = 3;
+export const getClinicAdminSetupCompletionResponseResultOneClinicOneSlugMax = 63;
+
+export const getClinicAdminSetupCompletionResponseResultOneClinicOneReferralCodeMax = 100;
+
+
+
+
+export const GetClinicAdminSetupCompletionResponse = zod.object({
+  "result": zod.union([zod.object({
+  "branches": zod.array(zod.object({
+  "slug": zod.string().min(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneSlugMin).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneSlugMax).optional(),
+  "email": zod.string().email().nullish(),
+  "inheritEmail": zod.boolean().optional(),
+  "inheritPhone": zod.boolean().optional(),
+  "openingHours": zod.array(zod.object({
+  "dayOfWeek": zod.number().int().min(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMin).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursItemDayOfWeekMax),
+  "startTime": zod.string(),
+  "endTime": zod.string()
+})).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneOpeningHoursMax).nullish().describe('Null or absent is legacy unrestricted; empty array means closed all days.'),
+  "clinicId": zod.string(),
+  "name": zod.string().min(1),
+  "address": zod.string(),
+  "city": zod.string().optional(),
+  "state": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "phone": zod.string().nullish(),
+  "timezone": zod.string().default(getClinicAdminSetupCompletionResponseResultOneBranchesItemOneTimezoneDefault),
+  "status": zod.enum(['active', 'inactive'])
+}).and(zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
+  "linkedSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "doctorId": zod.string().optional(),
+  "maxTokens": zod.number().int().min(1).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleMaxTokensMax).optional(),
+  "consultationMinutes": zod.number().int().min(1).max(getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax).optional(),
+  "tokenPrefix": zod.string().regex(getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleTokenPrefixRegExp).optional(),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).optional()
+}).optional(),
+  "effectiveEmail": zod.string().nullish(),
+  "effectivePhone": zod.string().nullish(),
+  "id": zod.string(),
+  "code": zod.string(),
+  "clinicName": zod.string().optional(),
+  "createdAt": zod.coerce.date().nullable()
+}))).optional(),
+  "doctorId": zod.string().nullish(),
+  "admin": zod.object({
+  "country": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
+  "state": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneStateMax).optional(),
+  "city": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneCityMax).optional(),
+  "pincode": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOnePincodeMax).optional(),
+  "address": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneAddressMax).optional(),
+  "fullName": zod.string().min(1),
+  "email": zod.string().email(),
+  "mobile": zod.string().optional(),
+  "role": zod.enum(['superAdmin', 'clinicAdmin', 'doctor', 'receptionist', 'patient']),
+  "status": zod.enum(['active', 'inactive']),
+  "clinicIds": zod.array(zod.string()).min(1).describe('Required by the server for clinic-scoped roles.'),
+  "branchIds": zod.array(zod.string()),
+  "managingAdminId": zod.string().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
+}).and(zod.object({
+  "id": zod.string(),
+  "managingAdminId": zod.string().nullable(),
+  "managingAdminName": zod.string().nullable(),
+  "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
+  "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "createdAt": zod.coerce.date().nullable(),
+  "lastLoginAt": zod.coerce.date().nullish()
+})),
+  "clinic": zod.object({
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
+  "slug": zod.string().min(getClinicAdminSetupCompletionResponseResultOneClinicOneSlugMin).max(getClinicAdminSetupCompletionResponseResultOneClinicOneSlugMax).optional(),
+  "specialityIds": zod.array(zod.string()).optional(),
+  "referralCode": zod.string().max(getClinicAdminSetupCompletionResponseResultOneClinicOneReferralCodeMax).nullish(),
+  "adminId": zod.string().describe('Super admins may select the owning clinic administrator; other roles are assigned by the server.'),
+  "name": zod.string().min(1),
+  "address": zod.string(),
+  "country": zod.string().optional(),
+  "state": zod.string().optional(),
+  "city": zod.string().optional(),
+  "area": zod.string().optional(),
+  "pincode": zod.string().optional(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
+  "description": zod.string().optional(),
+  "clinicTypeId": zod.string().optional(),
+  "categoryId": zod.string().nullish(),
+  "status": zod.enum(['active', 'inactive'])
+}).and(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "adminName": zod.string(),
+  "createdAt": zod.coerce.date().nullable(),
+  "doctorCount": zod.number().int().optional(),
+  "branchCount": zod.number().int().optional()
+}))
+}),zod.null()])
 })
 
 
@@ -1915,6 +2158,19 @@ export const ResendClinicRegistrationBody = zod.object({
 
 export const ResendClinicRegistrationResponse = zod.object({
   "challengeId": zod.string()
+})
+
+
+/**
+ * Resumes a matching unexpired verification challenge from an HttpOnly cookie; the temporary account draft has no challenge reference.
+ */
+export const ResumeClinicRegistrationBody = zod.object({
+  "email": zod.string().email(),
+  "fullName": zod.string()
+})
+
+export const ResumeClinicRegistrationResponse = zod.object({
+  "challengeId": zod.string().nullable()
 })
 
 
@@ -3622,6 +3878,7 @@ export const onboardClinicAdminBodyClinicReferralCodeMax = 100;
 export const onboardClinicAdminBodyClinicTimezoneDefault = `Asia/Kolkata`;
 
 export const OnboardClinicAdminBody = zod.object({
+  "requestId": zod.string().uuid().optional(),
   "branches": zod.array(zod.object({
   "id": zod.string().optional(),
   "name": zod.string().min(1),

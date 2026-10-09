@@ -12,8 +12,22 @@ import { validSlug, clinicSettingsResult, saveClinicSetup, attachOwnDoctor, crea
 import { queryMetrics } from "../lib/list-query";
 import { configuredDuration } from "../lib/session-duration";
 import { clinicalMembership, clinicalBranchIds } from "../lib/clinical-membership";
+import { registrationCompletion, saveRegistrationReceipt } from "../lib/registration-completion";
+import { validateRegistrationContacts } from "../lib/registration-contacts";
 
 export const clinicExpansionRouter = Router();
+clinicExpansionRouter.get("/clinic-registration/completion", async (req, res) => {
+  const user = await requireUser(req);
+  roles(user, ["clinicAdmin"]);
+  const params = query(z.GetClinicRegistrationCompletionQueryParams, req);
+  res.set("Cache-Control", "no-store").json({ result: await registrationCompletion(user.id, params.requestId, "self", db) });
+});
+clinicExpansionRouter.get("/clinic-admin-onboarding/completion", async (req, res) => {
+  const user = await requireUser(req);
+  roles(user, ["superAdmin"]);
+  const params = query(z.GetClinicAdminSetupCompletionQueryParams, req);
+  res.set("Cache-Control", "no-store").json({ result: await registrationCompletion(user.id, params.requestId, "admin", db) });
+});
 const anonymousLimit = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: true, legacyHeaders: false });
 const registrationLimit = rateLimit({ windowMs: 15 * 60_000, limit: 10, standardHeaders: true, legacyHeaders: false });
 clinicExpansionRouter.get("/public/registration-options", anonymousLimit, async (_req, res) => {
@@ -47,11 +61,17 @@ clinicExpansionRouter.post("/clinic-registration", registrationLimit, async (req
   assert(await verifyPassword(identity.passwordHash, body.password), 401, "Invalid password");
   const result = await db.transaction(async tx => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
+    if (body.requestId) {
+      const completed = await registrationCompletion(userId, body.requestId, "self", tx, body);
+      if (completed) return completed;
+    }
     const existing = await tx.select({ id: clinics.id }).from(clinics).where(eq(clinics.adminId, userId)).limit(1);
     assert(!existing.length, 409, "This administrator already owns a clinic");
     assert(body.clinic.slug && body.branches.every((b: any) => b.slug), 400, "Choose public URLs for the clinic and each branch");
+    validateRegistrationContacts(body);
     const admin = await change(users, userId, { fullName: body.fullName, mobile: body.mobile }, tx);
     const result = await createOwnedClinic(admin, admin, body, tx);
+    await saveRegistrationReceipt(userId, "self", body, result.clinic.id, tx);
     await audit(admin, "registerClinic", "users", admin, tx);
     return result;
   });

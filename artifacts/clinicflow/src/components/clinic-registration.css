@@ -55,6 +55,11 @@
 .registration-card .registration-fields .flex { min-width: 0; }
 .registration-inline { flex-wrap: wrap; justify-content: flex-start; }
 .registration-inline .registration-check { flex: 0 1 auto; }
+.clinic-registration .form-field > .form-field-label > label { display:inline; flex-direction:initial; }
+.clinic-registration .day-open-switch { display:flex; flex-direction:row; min-height:44px; gap:8px; }
+.clinic-registration .day-open-switch input { position:static; opacity:1; width:20px; height:20px; clip:auto; }
+.clinic-registration .day-open-switch .status-switch-track { display:none; }
+.clinic-registration .day-open-switch:focus-within { outline:2px solid var(--dq-blue); outline-offset:3px; }
 .clinic-registration input[type=checkbox] { flex-shrink: 0; }
 .registration-day-heading { flex-wrap: wrap; }
 .registration-footer { flex-wrap: wrap; }

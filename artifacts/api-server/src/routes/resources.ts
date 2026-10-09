@@ -214,11 +214,22 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
   roles(actor, ["superAdmin"]);
   const email = body.admin.email.toLowerCase();
   if (body.clinic.timezone) localNow(body.clinic.timezone);
-  assert(!(await all(users)).some(u => u.email === email), 409, "Email already belongs to an existing profile; roles cannot be silently changed");
+  const { registrationCompletion, saveRegistrationReceipt } = await import("../lib/registration-completion");
+  const { validateRegistrationContacts } = await import("../lib/registration-contacts");
+  if (body.requestId) {
+    const completed = await registrationCompletion(actor.id, body.requestId, "admin", db, body);
+    if (completed) return completed;
+  }
   await ensureStaffInvitationConfigured();
   const result = await db.transaction(async tx => {
+    if (body.requestId) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"registration:" + actor.id + ":" + body.requestId}))`);
+      const completed = await registrationCompletion(actor.id, body.requestId, "admin", tx, body);
+      if (completed) return { ...completed, replayed: true };
+    }
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"user-email:" + email}))`);
     assert(!(await all(users, tx)).some(u => u.email === email), 409, "Email already belongs to an existing profile; roles cannot be silently changed");
+    validateRegistrationContacts(body);
     const adminId = uid();
     const admin = await put(users, {
       id: adminId,
@@ -230,6 +241,7 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
       invitationStatus: "failed",
     }, tx);
     const setup = await createOwnedClinic(actor, admin, body, tx);
+    await saveRegistrationReceipt(actor.id, "admin", body, setup.clinic.id, tx);
     const clinic = setup.clinic;
     await audit(actor, "create", "users", admin, tx);
     await audit(actor, "create", "clinics", clinic, tx);
@@ -238,11 +250,13 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
       doctorId: setup.doctorId,
       admin: await enrich("users", admin, tx),
       clinic: await enrich("clinics", clinic, tx),
+      replayed: false,
     };
   });
-  await deliverInvitation(result.admin.id, redirectUrl);
+  if (!result.replayed) await deliverInvitation(result.admin.id, redirectUrl);
+  const { replayed: _replayed, ...publicResult } = result;
   return {
-    ...result,
+    ...publicResult,
     admin: await enrich("users", await one(users, result.admin.id)),
   };
 }

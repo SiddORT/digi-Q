@@ -19,6 +19,7 @@ import App from "../src/App";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
+import { OnboardingFixture } from "./OnboardingFixture";
 const identity = {
   user: { id: "fixture-admin", role: "superAdmin", fullName: "Fixture Administrator" },
   doctorId: "d1",
@@ -29,6 +30,7 @@ const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
 if (params.get("mode") === "registration") return <RegistrationFixture/>;
+if (params.get("mode") === "onboarding") return <OnboardingFixture/>;
 if (params.get("mode") === "reschedule") return <RescheduleFixture/>;
 if(params.get("mode")==="booking"){
  const role=params.get("fixtureRole")||"superAdmin";

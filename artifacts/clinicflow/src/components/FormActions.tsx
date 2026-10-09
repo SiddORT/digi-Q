@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useAppDialogClose } from "./AppDialog";
+import { ActionLabel } from "./ActionLabel";
 
 /**
  * Shared Save/Cancel footer used by every form surface, for every role. Fixed order:
@@ -33,8 +34,8 @@ export function FormActions({ onCancel, onSubmit, busy = false, disabled = false
   const cancel = onCancel ?? (cancelClosesDialog ? dialogClose ?? undefined : undefined);
   return <div className={`${wide ? "wide " : ""}form-footer form-actions`} data-testid="form-actions">
     {secondary && <div className="form-actions-secondary">{secondary}</div>}
-    {cancel && <button type="button" onClick={cancel} disabled={busy || cancelDisabled} data-testid={cancelTestId}>{cancelLabel}</button>}
+    {cancel && <button type="button" onClick={cancel} disabled={busy || cancelDisabled} data-testid={cancelTestId}><ActionLabel>{cancelLabel}</ActionLabel></button>}
     {extra}
-    <button type={onSubmit ? "button" : "submit"} onClick={onSubmit} className={`button${submitClassName ? ` ${submitClassName}` : ""}`} disabled={busy || disabled} aria-busy={busy || undefined} data-testid={submitTestId}>{busy ? busyLabel : submitLabel}</button>
+    <button type={onSubmit ? "button" : "submit"} onClick={onSubmit} className={`button${submitClassName ? ` ${submitClassName}` : ""}`} disabled={busy || disabled} aria-busy={busy || undefined} data-testid={submitTestId}><ActionLabel>{busy ? busyLabel : submitLabel}</ActionLabel></button>
   </div>;
 }

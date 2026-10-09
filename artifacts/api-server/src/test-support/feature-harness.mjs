@@ -12,7 +12,7 @@ import { drizzle as postgresDrizzle } from "drizzle-orm/node-postgres";
 const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 
-export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false}={}) {
+export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false}={}) {
   const cluster=postgres?await createQueueHarness({empty:true}):null;
   const {Pool}=postgres?createRequire(resolve(root,"lib/db/package.json"))("pg"):{};
   const pool=postgres?new Pool({host:cluster.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8,statement_timeout:10000}):null;
@@ -50,6 +50,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import { resourcesRouter as lookupResourcesRouter } from "./routes/resources";` : ""}
       ${administration || bookingLookups ? `import { nativeSession } from "./lib/native-auth";` : ""}
       ${administration ? `import { resourcesRouter } from "./routes/resources";
+      ${registration ? `import { clinicExpansionRouter } from "./routes/clinic-expansion";` : ""}
       import { identityRouter } from "./routes/identity";
       import { systemUsersRouter } from "./routes/system-users";
       import { permissionPolicyRouter } from "./routes/permission-policy";
@@ -63,14 +64,16 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         app.use(express.json());
         app.use("/api", workspaceFeaturesRouter, patientRecordsRouter, reportingRouter);
         ${administration ? `app.use("/api", resourcesRouter, identityRouter, systemUsersRouter, permissionPolicyRouter);` : ""}
+        ${registration ? `app.use("/api", clinicExpansionRouter);` : ""}
         ${bookingLookups ? `app.use("/api", publicRouter, appointmentsRouter, guestRequestsRouter, appointmentQrRouter, lookupResourcesRouter);` : ""}
         ${simulatedMail ? `app.use("/api", authRouter);` : ""}
         app.use(errors);
         return app;
       }` },
     outfile: bundle, bundle: true, platform: "node", format: "esm", logLevel: "error",
-    external: ["argon2", "pg", "pg-native", "@electric-sql/pglite", "@google-cloud/storage", "express", "pino", "pino-http",
-      ...(bookingLookups ? ["qrcode", "jspdf", "nodemailer", "sharp", "express-rate-limit"] : [])],
+    external: ["argon2", "pg", "pg-native", "@electric-sql/pglite", "@google-cloud/storage", "express", "pino", "pino-http", "libphonenumber-js/max",
+      ...((bookingLookups || registration) ? ["qrcode", "jspdf", "sharp", "express-rate-limit"] : []),
+      ...(bookingLookups && !simulatedMail ? ["nodemailer"] : [])],
     plugins: [{ name: "feature-fixtures", setup(b) {
       if (fakeBookingMail) {
         b.onResolve({ filter: /\/auth-email$/ }, () => ({ path: "mail", namespace: "booking-mail" }));
@@ -129,5 +132,5 @@ export async function createFeatureHarness({administration=false, simulatedMail=
     const data = type.includes("json") ? await res.json() : Buffer.from(await res.arrayBuffer());
     return { status: res.status, data, headers: res.headers };
   }
-  return { pg, call, blobs, mail, dispatchOutbox, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
+  return { pg, call, blobs, mail, base, pool, dispatchOutbox, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
 }

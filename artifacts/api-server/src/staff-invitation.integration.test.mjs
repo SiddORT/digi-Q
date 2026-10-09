@@ -102,8 +102,8 @@ test("receptionist creation and resend configuration failure return the same sav
 test("Clinic Admin onboarding keeps the atomically saved clinic and owner after mail failure and supports resend", async () => {
   const body = {
     admin: { fullName: "Invited Owner", email: "invited-owner@test.invalid" },
-    clinic: { name: "Invitation Fixture Clinic", address: "Fictional Road", slug: "invitation-fixture-clinic", timezone: "UTC" },
-    branches: [{ name: "Fixture Location", address: "Fictional Road", timezone: "UTC", openingHours: [] }],
+    clinic: { name: "Invitation Fixture Clinic", address: "Fictional Road", slug: "invitation-fixture-clinic", timezone: "UTC", email: "front@test.invalid", phone: "+919876543210" },
+    branches: [{ name: "Fixture Location", slug: "fixture-location", address: "Fictional Road", timezone: "UTC", openingHours: [{dayOfWeek:1,startTime:"09:00",endTime:"12:00"}] }],
   };
   h.mail.fail = true;
   const result = ok(await h.call("sa", "POST", "/clinic-admin-onboarding", body), 201);

@@ -72,7 +72,8 @@ export async function validateClinicMetadata(body: any, conn: any) {
 export async function clinicSettingsResult(clinicId: string, conn: any = db) {
   const clinic = await one(clinics, clinicId, conn), platform = await getSettings(conn);
   const formats = clinicDisplayPreferences(clinic);
-  return { clinic: { ...await enrich("clinics", clinic, conn), ...formats },
+  const { registrationReceipt: _privateReceipt, ...publicClinic } = await enrich("clinics", clinic, conn);
+  return { clinic: { ...publicClinic, ...formats },
     branches: await Promise.all((await all(branches, conn)).filter(b => b.clinicId === clinicId).map(async b => ({ ...await enrich("branches", b, conn), ...formats }))),
     policies: { bookingHorizonDays: clinic.policies?.bookingHorizonDays ?? platform.bookingHorizonDays, cancellationCutoffMinutes: clinic.policies?.cancellationCutoffMinutes ?? platform.cancellationCutoffMinutes } };
 }

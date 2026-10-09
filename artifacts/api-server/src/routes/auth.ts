@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { randomBytes } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
-import { db, users } from "@workspace/db";
+import { db, users, authChallenges } from "@workspace/db";
 import { HttpError, assert } from "../lib/http";
 import { uid, put, audit } from "../lib/store";
 import { isStaffRole, requireUser } from "../lib/auth";
@@ -9,7 +9,7 @@ import { sendAuthEmail, smtpConfig } from "../lib/auth-email";
 import { resolvedIntegration } from "../lib/integration-vault";
 import { createSession, revokeSession, hashPassword, verifyPassword, issueCsrf,
   lockCredentials, invalidateStaffCredentials, insertSession, sessionCookie, challengeUserId,
-  resendRegistrationChallenge,
+  resendRegistrationChallenge, getCookie,
   createChallenge, validateChallenge, consumeChallenge, consumeRateLimit, passwordInput } from "../lib/native-auth";
 
 export const authRouter = Router();
@@ -202,7 +202,15 @@ authRouter.post("/auth/register/start", async (req, res) => {
   if (await localUser(address)) throw new HttpError(409, "Account already registered", "ACCOUNT_EXISTS");
   const hash = await hashPassword(req.body.password);
   const challengeId = await mailCode(address, "register", undefined, { fullName: name, passwordHash: hash });
+  res.cookie("digiq_registration", challengeId, { httpOnly: true, secure: true, sameSite: "strict", path: "/api/auth", maxAge: CODE_AGE });
   res.set("Cache-Control", "no-store").json({ challengeId });
+});
+// Credential remains in an HttpOnly cookie, never in a temporary form draft.
+authRouter.post("/auth/registration/resume", async (req, res) => {
+  const id = getCookie(req, "digiq_registration");
+  const [challenge] = typeof id === "string" ? await db.select().from(authChallenges).where(eq(authChallenges.id, id)) : [];
+  const valid = challenge && challenge.purpose === "register" && !challenge.consumedAt && challenge.attempts < 5 && challenge.expiresAt > new Date() && challenge.email === email(req.body?.email) && challenge.data?.fullName === req.body?.fullName;
+  res.set("Cache-Control", "no-store").json({ challengeId: valid ? id : null });
 });
 authRouter.post("/auth/registration/resend", async (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -213,7 +221,7 @@ authRouter.post("/auth/registration/resend", async (req, res) => {
   smtpConfig((await resolvedIntegration("smtp")).env);
   try {
     const challengeId = await resendRegistrationChallenge(id, (address, secret) =>
-      sendAuthEmail(address, "Verify your DigiQ clinic registration", `Your clinic administrator registration code is ${secret}. Use it before your original registration code expires. Verify your email to continue setting up your clinic. This is not a doctor invitation. If you did not start this registration, ignore this email.`));
+      sendAuthEmail(address, "Verify your DigiQ clinic registration", `Your clinic administrator registration code is ${secret}. Use the code in this latest verification email. Earlier codes no longer work. Verify promptly to continue setting up your clinic. This is not a doctor invitation. If you did not start this registration, ignore this email.`));
     res.json({ challengeId });
   } catch (error) {
     if (error instanceof HttpError && error.code === "REGISTRATION_RESEND_COOLDOWN")
@@ -237,6 +245,7 @@ authRouter.post("/auth/register/verify", async (req, res) => {
     return record;
   });
   await createSession(res, user.id);
+  res.clearCookie("digiq_registration", { httpOnly: true, secure: true, sameSite: "strict", path: "/api/auth" });
   res.set("Cache-Control", "no-store").json({ authenticated: true });
 });
 // Old provider-only endpoints fail closed rather than silently granting access.

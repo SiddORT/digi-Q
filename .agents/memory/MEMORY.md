@@ -29,3 +29,4 @@
 - [Query observer tests](query-observer-tests.md) — raw observers need result recomputation to model React's optimistic in-flight render state.
 - [Patient profile visibility](patient-profile-visibility.md) — registration grants scoped doctor profile visibility, not clinical records, documents, or create/edit permissions.
 - [Public booking intent](public-booking-intent.md) — QR booking stays patient-facing even for authorized staff; preserve workspace permissions and staff booking rules.
+- [Registration completion recovery](registration-completion-recovery.md) — uncertain clinic creation must reconcile an actor-scoped receipt before a retry; edits must preserve its metadata.

@@ -566,6 +566,16 @@ export interface StartClinicRegistrationInput {
   password: string;
 }
 
+export interface RegistrationResumeIdentity {
+  email: string;
+  fullName: string;
+}
+
+export interface RegistrationResumeResult {
+  /** @nullable */
+  challengeId: string | null;
+}
+
 export interface ChangeNativePasswordInput {
   currentPassword: string;
   /**
@@ -1042,7 +1052,103 @@ export interface OwnDoctorProfileInput {
   about?: string;
 }
 
+export interface ClinicRegistrationCompletion {
+  result: ClinicSettingsResult | null;
+}
+
+export type Role = typeof Role[keyof typeof Role];
+
+
+export const Role = {
+  superAdmin: 'superAdmin',
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+  patient: 'patient',
+} as const;
+
+export interface UserInput {
+  /**
+     * ISO-2 or name; new entries default to IN
+     * @maxLength 100
+     */
+  country?: string;
+  /** @maxLength 100 */
+  state?: string;
+  /** @maxLength 100 */
+  city?: string;
+  /** @maxLength 12 */
+  pincode?: string;
+  /** @maxLength 500 */
+  address?: string;
+  /** @minLength 1 */
+  fullName: string;
+  email: string;
+  mobile?: string;
+  role: Role;
+  status?: RecordStatus;
+  /**
+     * Required by the server for clinic-scoped roles.
+     * @minItems 1
+     */
+  clinicIds?: string[];
+  branchIds?: string[];
+  /** Backward-compatible only. If supplied it must match the managing admin derived by the server. */
+  managingAdminId?: string;
+}
+
+export type UserInvitationStatus = typeof UserInvitationStatus[keyof typeof UserInvitationStatus];
+
+
+export const UserInvitationStatus = {
+  sent: 'sent',
+  failed: 'failed',
+  notRequired: 'notRequired',
+} as const;
+
+export type User = UserInput & ({
+  id: string;
+  /** @nullable */
+  managingAdminId: string | null;
+  /** @nullable */
+  managingAdminName: string | null;
+  invitationStatus: UserInvitationStatus;
+  /** Whether this staff record has a local password configured. */
+  passwordEnabled?: boolean;
+  /** @nullable */
+  createdAt: string | null;
+  /** @nullable */
+  lastLoginAt?: string | null;
+}) & Required<Pick<UserInput & ({
+  id: string;
+  /** @nullable */
+  managingAdminId: string | null;
+  /** @nullable */
+  managingAdminName: string | null;
+  invitationStatus: UserInvitationStatus;
+  /** Whether this staff record has a local password configured. */
+  passwordEnabled?: boolean;
+  /** @nullable */
+  createdAt: string | null;
+  /** @nullable */
+  lastLoginAt?: string | null;
+}), 'status' | 'clinicIds' | 'branchIds'>>;
+
+export interface ClinicAdminOnboardingResult {
+  branches?: Branch[];
+  /** @nullable */
+  doctorId?: string | null;
+  admin: User;
+  clinic: Clinic;
+}
+
+export interface ClinicAdminSetupCompletion {
+  result: ClinicAdminOnboardingResult | null;
+}
+
 export interface ClinicRegistrationInput {
+  /** Stable non-secret retry identity; changed payloads cannot replay a committed request. */
+  requestId?: string;
   /**
      * @minLength 1
      * @maxLength 150
@@ -1392,17 +1498,6 @@ export interface Message {
   message: string;
 }
 
-export type Role = typeof Role[keyof typeof Role];
-
-
-export const Role = {
-  superAdmin: 'superAdmin',
-  clinicAdmin: 'clinicAdmin',
-  doctor: 'doctor',
-  receptionist: 'receptionist',
-  patient: 'patient',
-} as const;
-
 export type AppointmentStatus = typeof AppointmentStatus[keyof typeof AppointmentStatus];
 
 
@@ -1449,73 +1544,6 @@ export interface OnboardingInput {
   termsAccepted?: boolean;
 }
 
-export interface UserInput {
-  /**
-     * ISO-2 or name; new entries default to IN
-     * @maxLength 100
-     */
-  country?: string;
-  /** @maxLength 100 */
-  state?: string;
-  /** @maxLength 100 */
-  city?: string;
-  /** @maxLength 12 */
-  pincode?: string;
-  /** @maxLength 500 */
-  address?: string;
-  /** @minLength 1 */
-  fullName: string;
-  email: string;
-  mobile?: string;
-  role: Role;
-  status?: RecordStatus;
-  /**
-     * Required by the server for clinic-scoped roles.
-     * @minItems 1
-     */
-  clinicIds?: string[];
-  branchIds?: string[];
-  /** Backward-compatible only. If supplied it must match the managing admin derived by the server. */
-  managingAdminId?: string;
-}
-
-export type UserInvitationStatus = typeof UserInvitationStatus[keyof typeof UserInvitationStatus];
-
-
-export const UserInvitationStatus = {
-  sent: 'sent',
-  failed: 'failed',
-  notRequired: 'notRequired',
-} as const;
-
-export type User = UserInput & ({
-  id: string;
-  /** @nullable */
-  managingAdminId: string | null;
-  /** @nullable */
-  managingAdminName: string | null;
-  invitationStatus: UserInvitationStatus;
-  /** Whether this staff record has a local password configured. */
-  passwordEnabled?: boolean;
-  /** @nullable */
-  createdAt: string | null;
-  /** @nullable */
-  lastLoginAt?: string | null;
-}) & Required<Pick<UserInput & ({
-  id: string;
-  /** @nullable */
-  managingAdminId: string | null;
-  /** @nullable */
-  managingAdminName: string | null;
-  invitationStatus: UserInvitationStatus;
-  /** Whether this staff record has a local password configured. */
-  passwordEnabled?: boolean;
-  /** @nullable */
-  createdAt: string | null;
-  /** @nullable */
-  lastLoginAt?: string | null;
-}), 'status' | 'clinicIds' | 'branchIds'>>;
-
 export interface Identity {
   userId: string;
   user: User | null;
@@ -1561,6 +1589,7 @@ export type ClinicAdminOnboardingInputClinic = {
 };
 
 export interface ClinicAdminOnboardingInput {
+  requestId?: string;
   /** @maxItems 30 */
   branches?: ClinicBranchSetup[];
   policies?: ClinicPolicy;
@@ -1571,14 +1600,6 @@ export interface ClinicAdminOnboardingInput {
   qualificationIds?: string[];
   admin: ClinicAdminOnboardingInputAdmin;
   clinic: ClinicAdminOnboardingInputClinic;
-}
-
-export interface ClinicAdminOnboardingResult {
-  branches?: Branch[];
-  /** @nullable */
-  doctorId?: string | null;
-  admin: User;
-  clinic: Clinic;
 }
 
 export interface OtpRequest {
@@ -2611,6 +2632,14 @@ export type GetSessionContextsParams = {
 doctorId: string;
 branchId: string;
 date: string;
+};
+
+export type GetClinicRegistrationCompletionParams = {
+requestId: string;
+};
+
+export type GetClinicAdminSetupCompletionParams = {
+requestId: string;
 };
 
 export type CheckSlugAvailabilityParams = {

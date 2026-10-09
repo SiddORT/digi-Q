@@ -6,6 +6,8 @@ import { useDateTimePreferences } from "./DateTimePreferences";
 import { ChevronDown } from "lucide-react";
 import "./weekly-day-rows.css";
 import { dayErrors, setDayOpen } from "./schedule/week-plan";
+import { useConfirm } from "./ConfirmDialog";
+import { ActionLabel } from "./ActionLabel";
 
 export type RegistrationDay = { dayOfWeek: number; isOpen: boolean; sessions: { startTime: string; endTime: string }[] };
 export const newWeek = (): RegistrationDay[] => Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, isOpen: false, sessions: [] }));
@@ -24,6 +26,7 @@ export function dayError(day: RegistrationDay) {
 
 export function ClinicRegistrationHours({ value, onChange, timezone, preferences }: { value: RegistrationDay[]; onChange: (value: RegistrationDay[]) => void; timezone?: string; preferences?: Partial<DateTimePreferences> }) {
   const inherited=useDateTimePreferences();
+  const confirmation = useConfirm();
   preferences=preferences||inherited;
   const [targets, setTargets] = useState<Record<number, number[]>>({});
   const [copyNotice, setCopyNotice] = useState("");
@@ -32,15 +35,20 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
   const toggleExpanded = (d: number) => setExpanded(c => c.includes(d) ? c.filter(x => x !== d) : [...c, d]);
   const summary = (day: RegistrationDay) => day.isOpen ? day.sessions.filter(s => isCanonicalTime(s.startTime) && isCanonicalTime(s.endTime)).map(s => `${formatTime(s.startTime, preferences)} – ${formatTime(s.endTime, preferences)}`).join(" · ") || "No sessions yet" : "Closed";
   const update = (day: RegistrationDay) => onChange(value.map(item => item.dayOfWeek === day.dayOfWeek ? day : item));
-  const copy = (day: RegistrationDay, selected: number[]) => {
+  const copy = async (day: RegistrationDay, selected: number[]) => {
+    if (dayError(day)) return;
     const destinations = selected.filter(target => target !== day.dayOfWeek);
+    const populated = value.filter(item => destinations.includes(item.dayOfWeek) && item.sessions.length);
+    if (populated.length && !await confirmation.ask({ title: "Replace existing hours?", description: `This replaces all intervals on ${populated.map(item => days[item.dayOfWeek]).join(", ")} with ${days[day.dayOfWeek]}'s ${day.isOpen ? "hours" : "closed status"}. Nothing is saved yet.`, confirmLabel: "Replace draft hours" })) return;
     onChange(value.map(item => destinations.includes(item.dayOfWeek) ? { ...item, isOpen: day.isOpen, sessions: day.sessions.map(s => ({ ...s })) } : item));
     setTargets(current => ({ ...current, [day.dayOfWeek]: destinations }));
     setCopyNotice(`Copied ${days[day.dayOfWeek]} ${day.isOpen ? "opening hours" : "closed status"} to ${destinations.map(target => days[target]).join(", ")}. These changes are in your registration draft; finish registration to save.`);
   };
   return <div className="registration-hours wdr-list">
+    {confirmation.dialog}
     {copyNotice && <p className="notice" role="status" data-testid="registration-copy-result">{copyNotice}</p>}
     {timezone && <p>Clinic timezone: {timezone}</p>}
+    {!value.some(day => day.isOpen) && <p className="notice">Unconfigured draft: choose Open for at least one day, then enter exact hours. No working hours are assumed.</p>}
     <p className="registration-note">Use the start and end sliders in 15-minute steps, or type exact minutes. Overnight sessions are not supported. Copy replaces the selected days' hours.</p>
     {[...value].sort((a,b) => (a.dayOfWeek + 6) % 7 - (b.dayOfWeek + 6) % 7).map(day => {
       const error = dayError(day);
@@ -48,7 +56,7 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
       const bodyId = `hours-day-body-${day.dayOfWeek}`;
       return <section key={day.dayOfWeek} className={`registration-day wdr-row${isExpanded ? " is-expanded" : ""}${day.isOpen ? "" : " is-off"}`} data-testid={`row-hours-day-${day.dayOfWeek}`}>
         <div className="registration-day-heading wdr-head">
-          <label className="registration-check status-switch day-open-switch"><input type="checkbox" role="switch" aria-checked={day.isOpen} aria-label={`${days[day.dayOfWeek]} open`} checked={day.isOpen} data-testid={`hours-open-${day.dayOfWeek}`} onChange={e => { update(setDayOpen(day, e.target.checked, () => ({ startTime: "", endTime: "" }))); if (e.target.checked && !expanded.includes(day.dayOfWeek)) toggleExpanded(day.dayOfWeek); }}/><span className="status-switch-track" aria-hidden="true"/><span className="sr-only">{day.isOpen ? "Open" : "Closed"}</span></label>
+          <label className="registration-check day-open-switch"><input type="checkbox" role="switch" aria-checked={day.isOpen} aria-label={`${days[day.dayOfWeek]} open`} checked={day.isOpen} data-testid={`hours-open-${day.dayOfWeek}`} onChange={e => { update(setDayOpen(day, e.target.checked, () => ({ startTime: "", endTime: "" }))); if (e.target.checked && !expanded.includes(day.dayOfWeek)) toggleExpanded(day.dayOfWeek); }}/><span>{day.isOpen ? "Open" : "Closed"}</span></label>
           <strong className="wdr-day">{days[day.dayOfWeek]}</strong>
           {!isExpanded && <span className="wdr-summary" data-testid={`text-hours-summary-${day.dayOfWeek}`}>{summary(day)}</span>}
           <button type="button" className="wdr-toggle" aria-expanded={isExpanded} aria-controls={bodyId} aria-label={`${isExpanded ? "Collapse" : "Expand"} ${days[day.dayOfWeek]} hours`} disabled={!!error} onClick={() => toggleExpanded(day.dayOfWeek)} data-testid={`button-hours-expand-${day.dayOfWeek}`}><ChevronDown size={16} aria-hidden/></button>
@@ -60,10 +68,10 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
             {(["startTime", "endTime"] as const).map(key => <label key={key}>{key === "startTime" ? "Opens" : "Closes"} · {formatTime(session[key], preferences)}
               <TimeFormatInput required value={session[key]} preferences={preferences} aria-invalid={!!error} aria-describedby={error ? `hours-error-${day.dayOfWeek}` : undefined} data-testid={`hours-${key}-${day.dayOfWeek}-${index}`} onChange={value => change({ [key]: value })}/>
             </label>)}
-            <button type="button" className="text-link" aria-label={`Remove ${days[day.dayOfWeek]} session ${index + 1}`} disabled={day.sessions.length === 1} onClick={() => update({ ...day, sessions: day.sessions.filter((_, i) => i !== index) })}>Remove</button>
+            <button type="button" className="text-link" aria-label={`Remove ${days[day.dayOfWeek]} session ${index + 1}`} disabled={day.sessions.length === 1} onClick={() => update({ ...day, sessions: day.sessions.filter((_, i) => i !== index) })}><ActionLabel>Remove</ActionLabel></button>
           </div>;
-        })}<button type="button" className="text-link" onClick={() => update({ ...day, sessions: [...day.sessions, { startTime: "", endTime: "" }] })}>Add Session</button></div>}
-        <details><summary>Copy {days[day.dayOfWeek]} hours</summary><div className="registration-inline">{days.map((name, target) => target !== day.dayOfWeek && <label className="registration-check" key={name}><input type="checkbox" checked={(targets[day.dayOfWeek] || []).includes(target)} onChange={e => setTargets(current => ({ ...current, [day.dayOfWeek]: e.target.checked ? [...(current[day.dayOfWeek] || []), target] : (current[day.dayOfWeek] || []).filter(id => id !== target) }))}/>{name}</label>)}</div><button type="button" disabled={!!error || !targets[day.dayOfWeek]?.length} onClick={() => copy(day, targets[day.dayOfWeek] || [])}>Copy to Selected Days</button><button type="button" disabled={!!error} onClick={() => copy(day, days.map((_, i) => i))}>Copy to All Days</button></details></div>}
+        })}<button type="button" className="text-link" onClick={() => update({ ...day, sessions: [...day.sessions, { startTime: "", endTime: "" }] })}><ActionLabel>Add Session</ActionLabel></button></div>}
+        <details><summary>Copy {days[day.dayOfWeek]} hours</summary><div className="registration-inline">{days.map((name, target) => target !== day.dayOfWeek && <label className="registration-check" key={name}><input type="checkbox" checked={(targets[day.dayOfWeek] || []).includes(target)} onChange={e => setTargets(current => ({ ...current, [day.dayOfWeek]: e.target.checked ? [...(current[day.dayOfWeek] || []), target] : (current[day.dayOfWeek] || []).filter(id => id !== target) }))}/>{name}</label>)}</div><button type="button" disabled={!!error || !targets[day.dayOfWeek]?.length} onClick={() => copy(day, targets[day.dayOfWeek] || [])}><ActionLabel>Copy to Selected Days</ActionLabel></button><button type="button" disabled={!!error} onClick={() => copy(day, days.map((_, i) => i))}><ActionLabel>Copy to All Days</ActionLabel></button></details></div>}
         {error && <p id={`hours-error-${day.dayOfWeek}`} className="field-error" role="alert">{error}</p>}
       </section>;
     })}

@@ -27,7 +27,7 @@ test("registration details advance to review without sending a registration requ
   assert.match(details, /validatePassword/);
   assert.match(details, /setStep\("review"\);\s*return;/);
   assert.doesNotMatch(details, /authRequest/);
-  assert.match(source, /if \(step === "review"\) \{\s*const result = await authRequest/);
+  assert.match(source, /if \(step === "review"\) \{[\s\S]*?const result = await authRequest/);
 });
 
 test("review shows normalized identity but never displays or persists the password", () => {
@@ -36,7 +36,9 @@ test("review shows normalized identity but never displays or persists the passwo
   assert.match(review, /email\.trim\(\)\.toLowerCase\(\)/);
   assert.match(review, /Edit Account Details/);
   assert.doesNotMatch(review, /\{password\}/);
-  assert.doesNotMatch(source, /(?:localStorage|sessionStorage)\.setItem/);
+  const draft = readFileSync(new URL("../lib/registration-draft.ts", import.meta.url), "utf8");
+  assert.match(draft, /accountDraftSchema = z.object\(\{ fullName: text, email: text, step:/);
+  assert.doesNotMatch(draft, /(?:password|code|challengeId|token):\s*z\./);
   assert.match(source, /setPassword\(""\);\s*setStep\("verify"\)/);
 });
 

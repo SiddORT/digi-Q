@@ -68,8 +68,10 @@ import type {
   Clinic,
   ClinicAdminOnboardingInput,
   ClinicAdminOnboardingResult,
+  ClinicAdminSetupCompletion,
   ClinicInput,
   ClinicList,
+  ClinicRegistrationCompletion,
   ClinicRegistrationInput,
   ClinicSettingsInput,
   ClinicSettingsPreview,
@@ -93,6 +95,8 @@ import type {
   GetAppointmentCalendarParams,
   GetAuthCsrf200,
   GetBookingScheduleAccessParams,
+  GetClinicAdminSetupCompletionParams,
+  GetClinicRegistrationCompletionParams,
   GetDashboardParams,
   GetDoctorPresenceParams,
   GetNotificationTemplatesParams,
@@ -174,6 +178,8 @@ import type {
   RecordSearchResult,
   RegistrationChallengeReference,
   RegistrationOptions,
+  RegistrationResumeIdentity,
+  RegistrationResumeResult,
   Report,
   ReportTrend,
   RequestLogoUpload200,
@@ -2173,6 +2179,162 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getRegisterClinicMutationOptions(options));
     }
 
+export const getGetClinicRegistrationCompletionUrl = (params: GetClinicRegistrationCompletionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/clinic-registration/completion?${stringifiedParams}` : `/api/clinic-registration/completion`
+}
+
+export const getClinicRegistrationCompletion = async (params: GetClinicRegistrationCompletionParams, options?: Parameters<typeof customFetch>[1]): Promise<ClinicRegistrationCompletion> => {
+
+  return customFetch<ClinicRegistrationCompletion>(getGetClinicRegistrationCompletionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClinicRegistrationCompletionQueryKey = (params?: GetClinicRegistrationCompletionParams,) => {
+    return [
+    `/api/clinic-registration/completion`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetClinicRegistrationCompletionQueryOptions = <TData = Awaited<ReturnType<typeof getClinicRegistrationCompletion>>, TError = ErrorType<unknown>>(params: GetClinicRegistrationCompletionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClinicRegistrationCompletion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClinicRegistrationCompletionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClinicRegistrationCompletion>>> = ({ signal }) => getClinicRegistrationCompletion(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClinicRegistrationCompletion>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClinicRegistrationCompletionQueryResult = NonNullable<Awaited<ReturnType<typeof getClinicRegistrationCompletion>>>
+export type GetClinicRegistrationCompletionQueryError = ErrorType<unknown>
+
+
+
+export function useGetClinicRegistrationCompletion<TData = Awaited<ReturnType<typeof getClinicRegistrationCompletion>>, TError = ErrorType<unknown>>(
+ params: GetClinicRegistrationCompletionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClinicRegistrationCompletion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClinicRegistrationCompletionQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetClinicAdminSetupCompletionUrl = (params: GetClinicAdminSetupCompletionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/clinic-admin-onboarding/completion?${stringifiedParams}` : `/api/clinic-admin-onboarding/completion`
+}
+
+export const getClinicAdminSetupCompletion = async (params: GetClinicAdminSetupCompletionParams, options?: Parameters<typeof customFetch>[1]): Promise<ClinicAdminSetupCompletion> => {
+
+  return customFetch<ClinicAdminSetupCompletion>(getGetClinicAdminSetupCompletionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClinicAdminSetupCompletionQueryKey = (params?: GetClinicAdminSetupCompletionParams,) => {
+    return [
+    `/api/clinic-admin-onboarding/completion`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetClinicAdminSetupCompletionQueryOptions = <TData = Awaited<ReturnType<typeof getClinicAdminSetupCompletion>>, TError = ErrorType<unknown>>(params: GetClinicAdminSetupCompletionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClinicAdminSetupCompletion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClinicAdminSetupCompletionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClinicAdminSetupCompletion>>> = ({ signal }) => getClinicAdminSetupCompletion(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClinicAdminSetupCompletion>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClinicAdminSetupCompletionQueryResult = NonNullable<Awaited<ReturnType<typeof getClinicAdminSetupCompletion>>>
+export type GetClinicAdminSetupCompletionQueryError = ErrorType<unknown>
+
+
+
+export function useGetClinicAdminSetupCompletion<TData = Awaited<ReturnType<typeof getClinicAdminSetupCompletion>>, TError = ErrorType<unknown>>(
+ params: GetClinicAdminSetupCompletionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClinicAdminSetupCompletion>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClinicAdminSetupCompletionQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getGetClinicSettingsUrl = (id: string,) => {
 
 
@@ -4111,6 +4273,91 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getResendClinicRegistrationMutationOptions(options));
+    }
+
+export const getResumeClinicRegistrationUrl = () => {
+
+
+
+
+  return `/api/auth/registration/resume`
+}
+
+/**
+ * Resumes a matching unexpired verification challenge from an HttpOnly cookie; the temporary account draft has no challenge reference.
+ */
+export const resumeClinicRegistration = async (registrationResumeIdentity: RegistrationResumeIdentity, options?: Parameters<typeof customFetch>[1]): Promise<RegistrationResumeResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RegistrationResumeResult>(getResumeClinicRegistrationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(registrationResumeIdentity)
+  }
+);}
+
+
+
+
+
+export const getResumeClinicRegistrationMutationKey = () => ['resumeClinicRegistration'] as const;
+
+export const getResumeClinicRegistrationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeClinicRegistration>>, TError,ResumeClinicRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resumeClinicRegistration>>, TError,ResumeClinicRegistrationMutationVariables, TContext> => {
+
+const mutationKey = getResumeClinicRegistrationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resumeClinicRegistration>>, ResumeClinicRegistrationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  resumeClinicRegistration(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResumeClinicRegistrationMutationResult = NonNullable<Awaited<ReturnType<typeof resumeClinicRegistration>>>
+    export type ResumeClinicRegistrationMutationBody = BodyType<RegistrationResumeIdentity>
+    export type ResumeClinicRegistrationMutationError = ErrorType<unknown>
+    export type ResumeClinicRegistrationMutationVariables = {data: BodyType<RegistrationResumeIdentity>}
+
+    export const useResumeClinicRegistration = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resumeClinicRegistration>>, TError,ResumeClinicRegistrationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resumeClinicRegistration>>,
+        TError,
+        ResumeClinicRegistrationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResumeClinicRegistrationMutationOptions(options));
     }
 
 export const getVerifyClinicRegistrationUrl = () => {

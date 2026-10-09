@@ -28,6 +28,7 @@ import type { OwnerCustomSchedule } from './ownerCustomSchedule';
 import type { OwnerSchedule } from './ownerSchedule';
 
 export interface ClinicAdminOnboardingInput {
+  requestId?: string;
   /** @maxItems 30 */
   branches?: ClinicBranchSetup[];
   policies?: ClinicPolicy;

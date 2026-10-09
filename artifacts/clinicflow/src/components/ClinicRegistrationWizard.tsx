@@ -7,7 +7,7 @@ import { EmailInput } from "@/components/EmailInput";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Link, useLocation } from "wouter";
-import { Building2, Check, ChevronRight, Plus } from "lucide-react";
+import { Building2, Check, Plus } from "lucide-react";
 import { Logo } from "../App";
 import { ClinicRegistrationHours, newWeek, validateWeek, type RegistrationDay } from "./ClinicRegistrationHours";
 import "./clinic-registration.css";
@@ -22,10 +22,13 @@ import { SearchableMultiSelect } from "./SearchableMultiSelect";
 import { PhoneInput } from "./PhoneInput";
 import { OwnerWeeklySessions } from "./schedule/OwnerWeeklySessions";
 import { buildWeek, dayErrors, toOwnerSessions, type DraftDay } from "./schedule/week-plan";
+import { clearRegistrationDraft, readRegistrationDraft, writeRegistrationDraft, setupDraftSchema } from "../lib/registration-draft";
+import type { LocalitySelection } from "../lib/locality-selection";
+import { ActionLabel } from "./ActionLabel";
 
 export const publishedClinicBase = "https://clinic-flow-new-platform.replit.app";
 export const normalizeClinicSlug = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 63);
-export type RegistrationBranch = { name: string; slug: string; address: string; city: string; state?: string; pincode?: string; country?: string; timezone: string; email: string; phone: string; inheritEmail: boolean; inheritPhone: boolean; hours: RegistrationDay[] };
+export type RegistrationBranch = { name: string; slug: string; address: string; city: string; state?: string; pincode?: string; country?: string; timezone: string; email: string; phone: string; inheritEmail: boolean; inheritPhone: boolean; hours: RegistrationDay[]; localities?: LocalitySelection[] };
 export type RegistrationValues = {
   dateFormat: DateTimePreferences["dateFormat"]; timeFormat: DateTimePreferences["timeFormat"];
   fullName: string; email: string; mobile: string;
@@ -45,18 +48,46 @@ export function ownerSchedulePayload(values: RegistrationValues) {
 }
 const newBranch = (): RegistrationBranch => ({ name: "", slug: "", address: "", city: "", state: "", pincode: "", country: "IN", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", email: "", phone: "", inheritEmail: true, inheritPhone: true, hours: newWeek() });
 type Option = { id: string; name: string };
-type Props = { adminMode?: boolean; initial?: Partial<RegistrationValues>; categories: Option[]; specialities: Option[]; qualifications: Option[]; onSubmit: (values: RegistrationValues) => Promise<void>; carry?: Partial<Record<"fullName"|"email"|"mobile", string>>; onSnapshot?: (values: Record<string, unknown>, defaults: Record<string, unknown>) => void; checkSlug: (slug: string) => Promise<boolean>; busy: boolean; error?: string; referenceError?: string; finishSecurity?: ReactNode; onStepChange?: () => void; onDirtyChange?: (dirty: boolean) => void };
+type Props = { adminMode?: boolean; draftKey?: string; initial?: Partial<RegistrationValues>; categories: Option[]; specialities: Option[]; qualifications: Option[]; onSubmit: (values: RegistrationValues, requestId: string) => Promise<void>; carry?: Partial<Record<"fullName"|"email"|"mobile", string>>; onSnapshot?: (values: Record<string, unknown>, defaults: Record<string, unknown>) => void; checkSlug: (slug: string) => Promise<boolean>; busy: boolean; error?: string; referenceError?: string; finishSecurity?: ReactNode; onStepChange?: () => void; onDirtyChange?: (dirty: boolean) => void };
 const steps = ["Clinic identity", "Locations", "Opening hours", "Your practice", "Care team", "Review"];
 
-export function ClinicRegistrationWizard({ adminMode, initial, carry, onSnapshot, categories, specialities, qualifications, onSubmit, checkSlug, busy, error, referenceError, finishSecurity, onStepChange, onDirtyChange }: Props) {
+export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, onSnapshot, categories, specialities, qualifications, onSubmit, checkSlug, busy: serverBusy, error, referenceError, finishSecurity, onStepChange, onDirtyChange }: Props) {
+  const advancing = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+  const busy = serverBusy || submitting;
   const confirmation=useConfirm();
   const [,navigate]=useLocation();
-  const [step, setStep] = useState(0);
+  const [restored] = useState(() => draftKey ? readRegistrationDraft(draftKey, setupDraftSchema) : { stored: false, data: undefined });
+  const [requestId, setRequestId] = useState(() => restored.data?.requestId || crypto.randomUUID());
+  const [stored, setStored] = useState(restored.stored);
+  const [draftPresent, setDraftPresent] = useState(!!restored.data);
+  const discarded = useRef(false);
+  const [step, setStep] = useState(restored.data?.step || 0);
   useEffect(()=>{onStepChange?.();},[step,onStepChange]);
   const [validation, setValidation] = useState("");
   const [slugStatus, setSlugStatus] = useState<{ slug: string; available: boolean } | null>(null);
   const [checking, setChecking] = useState(false);
-  const form = useForm<RegistrationValues>({ defaultValues: { dateFormat: "DD MMM YYYY", timeFormat: "12h", fullName: "", email: "", mobile: "", name: "", slug: "", categoryId: "", specialityIds: [], referralCode: "", clinicEmail: "", phone: "", branches: [newBranch()], alsoConsult: false, specializationId: "", qualificationIds: [], linkConsultationHours: true, sessionCapacity: "", consultationMinutes: "", ...initial } });
+  const defaults: RegistrationValues = { dateFormat: "DD MMM YYYY", timeFormat: "12h", fullName: "", email: "", mobile: "", name: "", slug: "", categoryId: "", specialityIds: [], referralCode: "", clinicEmail: "", phone: "", branches: [newBranch()], alsoConsult: false, specializationId: "", qualificationIds: [], linkConsultationHours: true, sessionCapacity: "", consultationMinutes: "", ...initial };
+  const form = useForm<RegistrationValues>({ defaultValues: { ...defaults, ...restored.data?.values, ...(!adminMode ? initial : {}) } });
+  useEffect(() => {
+    if (!draftKey) return;
+    const save = () => {
+      if (discarded.current && !form.formState.isDirty) return;
+      if (discarded.current && form.formState.isDirty) discarded.current = false;
+      if (!draftPresent && !form.formState.isDirty && step === 0) return;
+      setStored(writeRegistrationDraft(draftKey, setupDraftSchema, { step, requestId, values: form.getValues() }));
+      setDraftPresent(true);
+    };
+    save();
+    const subscription = form.watch(save);
+    return () => subscription.unsubscribe();
+  }, [draftKey, form, step, requestId, draftPresent]);
+  async function discard() {
+    if (!await confirmation.ask({ title: "Discard temporary setup?", description: "This removes this tab's draft, not any saved clinic.", confirmLabel: "Discard draft", tone: "danger" })) return;
+    discarded.current = true; setDraftPresent(false);
+    if (draftKey) clearRegistrationDraft(draftKey);
+    form.reset(defaults); setRequestId(crypto.randomUUID()); setStep(0); setValidation("");
+  }
   useEffect(() => { onDirtyChange?.(form.formState.isDirty); }, [form.formState.isDirty, onDirtyChange]);
   // Add Staff role switch: carried name/email/mobile are applied as edits (dirty protection stays on) and
   // the parent receives snapshots so it can tell whether switching away would discard setup input.
@@ -76,10 +107,19 @@ export function ClinicRegistrationWizard({ adminMode, initial, carry, onSnapshot
     if (target === 1 && values.branches.some(b => !b.name.trim() || !b.address.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(b.slug) || b.slug.length < 3 || !b.timezone.trim())) return "Each location needs a name, address, timezone and valid URL slug (at least 3 characters).";
     if (target === 1 && values.branches.some(b => validatePostalCode(b.pincode, b.country) !== true)) return "Check the PIN code for each location (India: 6 digits).";
     if (target === 1 && new Set(values.branches.map(b => b.slug)).size !== values.branches.length) return "Each location needs a different URL slug.";
-    if(target===1&&values.branches.some(b=>(!b.inheritEmail&&validateEmail(b.email))||(!b.inheritPhone&&validatePhone(b.phone))))return "Correct the clinic contact fields below.";
+    if (target === 0) {
+      const problem = validatePersonName(values.fullName) || validateEmail(values.email) || validatePhone(values.mobile) || validateEmail(values.clinicEmail) || validatePhone(values.phone);
+      if (problem) return problem;
+    }
+    if (target === 1) for (const branch of values.branches) {
+      const email = branch.inheritEmail ? values.clinicEmail : branch.email;
+      const phone = branch.inheritPhone ? values.phone : branch.phone;
+      if (!email.trim() || validateEmail(email)) return `${branch.name || "Location"}: enter a valid ${branch.inheritEmail ? "Clinic Group email or disable email inheritance and enter a location email" : "location email"}.`;
+      if (!phone.trim() || validatePhone(phone)) return `${branch.name || "Location"}: ${branch.inheritPhone ? "the inherited Clinic Group phone is missing or invalid. Enter it on Clinic identity, or disable phone inheritance and enter a location phone" : "enter a valid location phone"}.`;
+    }
     if (target === 2) for (const branch of values.branches) { const message = validateWeek(branch.hours); if (message) return `${branch.name}: ${message}`; }
     if (target === 3 && values.alsoConsult) {
-      if (![values.sessionCapacity, values.consultationMinutes].every(value => Number.isSafeInteger(Number(value)) && Number(value) > 0)) return "Enter a positive whole-number patient capacity and consultation duration.";
+      if (![values.sessionCapacity, values.consultationMinutes].every(value => Number.isSafeInteger(Number(value)) && Number(value) > 0) || Number(values.sessionCapacity) > 1000 || Number(values.consultationMinutes) > 1440) return "Enter a whole-number capacity from 1–1000 and consultation duration from 1–1440 minutes.";
       if (values.linkConsultationHours && values.branches.some(branch => !branch.hours.some(day => day.isOpen && day.sessions.length))) return "Each linked location needs at least one open interval. Return to Opening hours or choose custom consultation hours.";
       if (!values.linkConsultationHours) {
         const weeks = values.branches.map((_, i) => values.ownerWeeks?.[i] || buildWeek([]));
@@ -91,6 +131,9 @@ export function ClinicRegistrationWizard({ adminMode, initial, carry, onSnapshot
     return "";
   }
   async function next() {
+    if (advancing.current) return;
+    advancing.current = true;
+    try {
     setValidation("");
     if(step===0&&!await form.trigger(["fullName","email","mobile","name","clinicEmail","phone"],{shouldFocus:true}))return;
     const problem = validate(step);
@@ -103,16 +146,21 @@ export function ClinicRegistrationWizard({ adminMode, initial, carry, onSnapshot
       finally { setChecking(false); }
     }
     setStep(s => s + 1);
+    } finally { advancing.current = false; }
   }
   async function finish() {
+    if (advancing.current) return;
     for (let i = 0; i < steps.length - 1; i++) { const problem = validate(i); if (problem) { setValidation(problem); setStep(i); return; } }
     setValidation("");
-     try { await onSubmit({...values,mobile:normalizePhone(values.mobile),phone:normalizePhone(values.phone),branches:values.branches.map(branch=>({...branch,phone:normalizePhone(branch.phone)}))}); } catch (e) { setValidation(friendlyError(e,"save")); }
+    advancing.current = true; setSubmitting(true);
+     try { await onSubmit({...values,mobile:normalizePhone(values.mobile),phone:normalizePhone(values.phone),branches:values.branches.map(branch=>({...branch,phone:normalizePhone(branch.phone)}))}, requestId); if (draftKey) clearRegistrationDraft(draftKey); } catch (e) { setValidation(friendlyError(e,"save")); }
+     finally { advancing.current = false; setSubmitting(false); }
   }
    const field = (key: "fullName" | "email" | "mobile" | "name" | "referralCode" | "clinicEmail" | "phone", label: string, required = false, type = "text") => type==="tel"?<Controller name={key} control={form.control} rules={{validate:value=>(required?requireValue()(value):undefined)||validatePhone(value)||true}} render={({field:input})=><FormField label={label} required={required} optional={!required} error={form.formState.errors[key]?.message}><PhoneInput {...input} value={input.value||""}/></FormField>}/>:<FormField label={label} required={required} optional={!required&&!label.includes("(optional)")} error={form.formState.errors[key]?.message}><input {...form.register(key,{validate:value=>(required?requireValue()(value):undefined)||(key==="fullName"?validatePersonName(value):undefined)||(type==="email"?validateEmail(value):undefined)||true})} type={type} data-testid={`registration-${key}`} readOnly={!adminMode && key === "email"}/></FormField>;
-  return <div className="clinic-registration"><header className="registration-header"><Logo/><Link href={adminMode ? "/admin/users" : "/sign-in"} data-testid="registration-exit" onClick={async event=>{event.preventDefault();if(busy||checking)return;if(!form.formState.isDirty||await confirmation.ask({title:"Discard Clinic Setup?",description:"Nothing has been saved. Leaving will discard your entered setup.",confirmLabel:"Discard Setup",tone:"danger"}))navigate(adminMode?"/admin/users":"/sign-in");}}>Back to {adminMode ? "workspace" : "staff login"}</Link></header><div className="registration-layout"><aside className="registration-progress"><span className="eyebrow">Register a Clinic</span><h2>Built around your care.</h2><ol>{steps.map((label, i) => <li key={label} aria-current={step === i ? "step" : undefined}>{i < step ? <Check size={14}/> : `${i + 1}.`} {label}{step===5&&i<5&&<button type="button" onClick={()=>{setValidation("");setStep(i);}}>Edit</button>}</li>)}</ol><small>Your setup stays in memory while this page is open. Nothing is saved until you finish. Passwords are handled only by secure account authentication.</small></aside><main className="registration-card"><span className="eyebrow">STEP {step + 1} OF {steps.length}</span><h1>{steps[step]}</h1><p>{["Give your clinic a home and a memorable public address.", "One clinic, one owner. Add each place where your team provides care.", "Set opening hours for every clinic. Doctor availability is managed separately.", "Choose whether the owner also consults at this clinic.", "Bring your team in when you are ready.", "Check the details before creating your clinic."][step]}</p>{referenceError && <div className="error-box" role="alert">{friendlyError(referenceError,"load")}</div>}<form noValidate onSubmit={event => { event.preventDefault(); if (busy || checking) return; const native = nativeInvalidFields(event.currentTarget.elements as unknown as ArrayLike<ConstraintElement>)[0]; if (native) { setValidation(native.message); revealAndFocus(native.element as unknown as HTMLElement); return; } void (step === steps.length - 1 ? finish() : next()); }}>
+  return <div className="clinic-registration"><header className="registration-header"><Logo/><Link href={adminMode ? "/admin/users" : "/sign-in"} data-testid="registration-exit" onClick={async event=>{event.preventDefault();if(busy||checking)return;if(!form.formState.isDirty||draftKey&&stored||await confirmation.ask({title:"Discard Clinic Setup?",description:"Temporary storage is unavailable. Leaving will discard this memory-only setup.",confirmLabel:"Discard Setup",tone:"danger"})){if(draftKey&&!stored)clearRegistrationDraft(draftKey);navigate(adminMode?"/admin/users":"/sign-in");}}}><ActionLabel>Back to {adminMode ? "workspace" : "staff login"}</ActionLabel></Link></header><div className="registration-layout"><aside className="registration-progress"><span className="eyebrow">Register a Clinic</span><h2>Built around your care.</h2><ol>{steps.map((label, i) => <li key={label} aria-current={step === i ? "step" : undefined}>{i < step ? <Check size={14}/> : `${i + 1}.`} {label}{step===5&&i<5&&<button type="button" onClick={()=>{setValidation("");setStep(i);}}>Edit</button>}</li>)}</ol><small>Finish creates the saved clinic. Temporary drafts belong only to this browser tab. Passwords are handled only by secure account authentication.</small></aside><main className="registration-card"><span className="eyebrow">STEP {step + 1} OF {steps.length}</span><h1>{steps[step]}</h1><p>{["Give your clinic a home and a memorable public address.", "One clinic, one owner. Add each place where your team provides care.", "Set opening hours for every clinic. Doctor availability is managed separately.", "Choose whether the owner also consults at this clinic.", "Bring your team in when you are ready.", "Check the details before creating your clinic."][step]}</p>{referenceError && <div className="error-box" role="alert">{friendlyError(referenceError,"load")}</div>}<form noValidate onSubmit={event => { event.preventDefault(); if (busy || checking) return; const native = nativeInvalidFields(event.currentTarget.elements as unknown as ArrayLike<ConstraintElement>)[0]; if (native) { setValidation(native.message); revealAndFocus(native.element as unknown as HTMLElement); return; } void (step === steps.length - 1 ? finish() : next()); }}>
     {confirmation.dialog}<fieldset disabled={busy || checking} style={{ border: 0, padding: 0, minWidth: 0 }}>
-    {step===1&&<p className="registration-note">A clinic is a physical care location in your Clinic Group. Each clinic has its own booking address, timetable and timezone. Inherited email and phone details are public clinic contacts; they do not change staff login emails or configure email/SMS delivery.</p>}
+    <p role="status" className="registration-note">{draftKey && stored ? draftPresent ? "Temporary setup saved in this browser tab for up to 24 hours. It is not a saved clinic. Passwords are never stored." : "New edits will be saved temporarily in this browser tab for up to 24 hours. This is not a saved clinic." : "Setup stays in memory only while this page is open; temporary browser storage is unavailable for this form."}</p>
+    <button type="button" className="text-link" onClick={() => void discard()} data-testid="registration-discard"><ActionLabel>Discard and reset setup</ActionLabel></button>
     {step === 1 && <DateTimeFormatFields value={values} onChange={patch => { if (patch.dateFormat) set("dateFormat", patch.dateFormat, { shouldDirty: true }); if (patch.timeFormat) set("timeFormat", patch.timeFormat, { shouldDirty: true }); }}/>}
     {step === 0 && <div className="registration-step-sections">
       <FormSection title="Administrator" hint="Signs in and owns this Clinic Group." grid={false}><div className="registration-fields">
@@ -122,19 +170,18 @@ export function ClinicRegistrationWizard({ adminMode, initial, carry, onSnapshot
       {field("clinicEmail","Clinic Group email",false,"email")}{field("phone","Clinic Group phone",false,"tel")}
       <Controller name="specialityIds" control={form.control} render={({field:input})=><SearchableMultiSelect label="Specialities (optional)" value={input.value} onChange={input.onChange} options={specialities.map(o=>({value:o.id,label:o.name}))}/>}/>
       {field("referralCode","Reference / referral code (optional)")}
-      <label className="wide">Public clinic address *<input value={values.slug} onChange={e=>{set("slug",e.target.value.toLowerCase(),{shouldDirty:true});setSlugStatus(null);}} required minLength={3} maxLength={63} data-testid="registration-slug"/><button type="button" className="text-link" data-testid="registration-suggest-slug" onClick={()=>{set("slug",normalizeClinicSlug(values.name),{shouldDirty:true});setSlugStatus(null);}}>Suggest From Clinic Name</button>{validation&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(values.slug)&&<small className="field-error">Use lowercase letters, numbers and hyphens between words.</small>}</label>
+       <FormField className="wide" label="Public clinic address" required helper={<button type="button" className="text-link" data-testid="registration-suggest-slug" onClick={()=>{set("slug",normalizeClinicSlug(values.name),{shouldDirty:true});setSlugStatus(null);}}>Suggest From Clinic Name</button>} error={validation&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(values.slug)?"Use lowercase letters, numbers and hyphens between words.":undefined}><input value={values.slug} onChange={e=>{set("slug",e.target.value.toLowerCase(),{shouldDirty:true});setSlugStatus(null);}} required minLength={3} maxLength={63} data-testid="registration-slug"/></FormField>
       <div className="registration-url wide"><strong>Published base address · read only</strong><br/>{publishedClinicBase}/<strong>{values.slug||"your-clinic"}</strong>{slugStatus?.slug===values.slug&&<p role="status">{slugStatus.available?"This address is currently available.":"This address is unavailable."}</p>}</div><p className="registration-note wide">Use lowercase letters, numbers and hyphens. Reserved application paths cannot be used. This address becomes permanent after registration; changing the clinic name will not change existing patient links.</p>
     </div></FormSection></div>}
     {step === 1 && <><div className="notice">Clinic Group: <strong>{values.name}</strong>. Now name each physical clinic location, not the group again. A single-location clinic may use the same name. Each location has its own address and timezone. Email and phone inheritance are independent.</div>{values.branches.map((branch,index)=><details className="registration-branch" key={index} open><summary>{branch.name||`Clinic location ${index+1}`}</summary><div className="registration-fields">
-            {(["name","slug"] as const).map(key=><FormField key={key} label={{name:"Clinic location name",slug:"Clinic URL slug"}[key]} required error={validation&&!branch[key].trim()?"This field is required":undefined}><input value={branch[key]} required data-testid={`registration-branch-${index}-${key}`} onChange={e=>updateBranch(index,{[key]:key==="slug"?e.target.value.toLowerCase():e.target.value})}/></FormField>)}
+             {(["name","slug"] as const).map(key=><FormField key={key} label={{name:"Clinic location name",slug:"Clinic URL slug"}[key]} required helper={key === "slug" ? <button type="button" className="text-link" onClick={()=>updateBranch(index,{slug:normalizeClinicSlug(branch.name)})}>Suggest URL From Clinic Name</button> : undefined} error={validation&&!branch[key].trim()?"This field is required":undefined}><input value={branch[key]} required data-testid={`registration-branch-${index}-${key}`} onChange={e=>updateBranch(index,{[key]:key==="slug"?e.target.value.toLowerCase():e.target.value})}/></FormField>)}
       {index === 0 && <button type="button" className="text-link" onClick={()=>updateBranch(index,{name:values.name})}>Use Clinic Group Name for This Location</button>}
       <AddressFields directory="public" idPrefix={`registration-branch-${index}-`} required testId={`registration-branch-${index}-address`} value={branch} onChange={patch=>updateBranch(index,patch)} errors={validation&&!branch.address.trim()?{address:"This field is required"}:{}}/>
       <TimezoneSelect value={branch.timezone} onChange={timezone=>updateBranch(index,{timezone})}/>
-      <button type="button" className="text-link" onClick={()=>updateBranch(index,{slug:normalizeClinicSlug(branch.name)})}>Suggest URL From Clinic Name</button>
       <label className="registration-check"><input type="checkbox" checked={branch.inheritEmail} onChange={e=>updateBranch(index,{inheritEmail:e.target.checked})}/>Use Clinic Group email</label>
-      {!branch.inheritEmail&&<FormField label="Clinic Email" optional error={validateEmail(branch.email)}><EmailInput data-testid={`input-branch-email-${index}`} value={branch.email} onChange={e=>updateBranch(index,{email:e.target.value})}/></FormField>}
+       {!branch.inheritEmail&&<FormField label="Clinic Email" required error={requireValue()(branch.email)||validateEmail(branch.email)}><EmailInput required data-testid={`input-branch-email-${index}`} value={branch.email} onChange={e=>updateBranch(index,{email:e.target.value})}/></FormField>}
       <label className="registration-check"><input type="checkbox" checked={branch.inheritPhone} onChange={e=>updateBranch(index,{inheritPhone:e.target.checked})}/>Use Clinic Group phone</label>
-      {!branch.inheritPhone&&<FormField label="Clinic Phone" optional error={validatePhone(branch.phone)}><PhoneInput value={branch.phone} onChange={phone=>updateBranch(index,{phone})}/></FormField>}
+       {!branch.inheritPhone&&<FormField label="Clinic Phone" required error={requireValue()(branch.phone)||validatePhone(branch.phone)}><PhoneInput required value={branch.phone} onChange={phone=>updateBranch(index,{phone})}/></FormField>}
     </div>{values.branches.length>1&&<button type="button" className="text-link" onClick={()=>set("branches",values.branches.filter((_,i)=>i!==index),{shouldDirty:true})}>Remove Clinic</button>}</details>)}<button type="button" className="button secondary" onClick={()=>set("branches",[...values.branches,newBranch()],{shouldDirty:true})}><Plus size={16}/>Add Another Clinic</button></>}
     {step === 2 && values.branches.map((branch, index) => <details className="registration-branch" key={index} open={values.branches.length === 1 || undefined}><summary>{branch.name}</summary><ClinicRegistrationHours value={branch.hours} timezone={branch.timezone} preferences={values} onChange={hours => updateBranch(index, { hours })}/></details>)}
     {step === 3 && <><label className="registration-check"><input type="checkbox" {...form.register("alsoConsult")} data-testid="registration-also-consult"/>{adminMode ? "The clinic owner also consults as a doctor (solo practice)" : "I also consult as a doctor (solo practice)"}</label><p className="registration-note">The owner remains the sole Clinic Admin. A doctor profile adds clinical capabilities to this same account; it does not create another login or switch roles.</p>{values.alsoConsult && <div className="registration-fields"><Controller name="specializationId" control={form.control} render={({field:input})=><SearchableSelect label="Specialization (optional)" value={input.value} onChange={input.onChange} options={specialities.map(o=>({value:o.id,label:o.name}))}/>}/><Controller name="qualificationIds" control={form.control} render={({field:input})=><SearchableMultiSelect label="Qualifications (optional)" value={input.value} onChange={input.onChange} options={qualifications.map(o=>({value:o.id,label:o.name}))}/>}/><p className="registration-note wide">Use one linked timetable below, or choose custom consultation hours to configure separately after registration.</p></div>}</>}
@@ -143,7 +190,7 @@ export function ClinicRegistrationWizard({ adminMode, initial, carry, onSnapshot
     {step === 5 && <div className="notice" role="status"><strong>{values.alsoConsult && values.linkConsultationHours ? "Linked consultation sessions included." : values.alsoConsult ? `Custom consultation sessions included: ${toOwnerSessions(values.branches.map((_, i) => values.ownerWeeks?.[i] || buildWeek([]))).length}.` : "Doctor sessions still need configuration."}</strong><p>{values.alsoConsult && !values.linkConsultationHours ? `Finish saves your clinic, doctor profile and these weekly sessions together: ${values.sessionCapacity} patients per session, ${values.consultationMinutes} minutes per consultation.` : values.alsoConsult && values.linkConsultationHours ? `Finish saves your clinic and doctor sessions together: ${values.sessionCapacity} patients per session, ${values.consultationMinutes} minutes per consultation. Doctor sessions use each location's opening hours. Availability remains subject to date, capacity and booking policies.` : "Finish creates the clinic and opening hours. Set custom doctor sessions in Clinic settings before sharing the booking QR."}</p>Review every chosen open day and time below.</div>}
     {step === 5 && <div className="registration-review"><section><h3>{values.name}</h3><p>{values.clinicEmail || "No clinic email"} · {values.phone || "No clinic phone"}</p><p className="registration-url">{publishedClinicBase}/{values.slug}</p><p>Administrator: {values.fullName} · {values.email}</p></section>{values.branches.map((b, i) => <section key={i}><h3>{b.name}</h3><p>{b.address}{b.city ? `, ${b.city}` : ""}</p><p>{b.inheritEmail ? values.clinicEmail || "No clinic email" : b.email || "No location email"} · {b.inheritPhone ? values.phone || "No clinic phone" : b.phone || "No location phone"}</p><p>{b.hours.filter(d => d.isOpen).length} open days per week · {b.timezone}</p><small>/{values.slug}/{b.slug}</small></section>)}<section><h3>One owner, one account</h3><p>{values.alsoConsult ? "Clinic Admin and doctor in the same account, with a doctor profile at your clinic's locations." : "Clinic Admin account. No doctor profile requested."} Staff can be invited after setup; no extra user is required.</p></section><p className="registration-note">Finish saves the clinic setup together. The server rechecks ownership, URL availability and all details. Your public clinic and location addresses cannot be changed later.</p></div>}
     {step === 5 && <section aria-label="Weekly timetable review">{values.branches.map((branch,i)=><details key={i} open><summary>{branch.name} · weekly timetable</summary><ul>{branch.hours.map(day=><li key={day.dayOfWeek}>{["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][day.dayOfWeek]}: {day.isOpen?day.sessions.map(session=>`${formatTime(session.startTime,values)}–${formatTime(session.endTime,values)}`).join(", "):"Closed"}</li>)}</ul></details>)}</section>}
-    {step === 5 && finishSecurity}</fieldset>{(validation || step===5&&error) && <div className="error-box" role="alert" data-testid="registration-error">{validation || friendlyError(error,"save")}</div>}<FormActions wide={false} onCancel={() => { setValidation("");form.clearErrors(); setStep(s => s - 1); }} cancelLabel="Back" cancelDisabled={step === 0 || checking} cancelTestId="registration-back" busy={busy} busyLabel="Creating clinic…" disabled={checking} submitTestId="registration-next" submitLabel={checking ? "Checking address…" : <>{step === steps.length - 1 ? "Finish registration" : "Continue"}<ChevronRight size={17}/></>} /></form></main></div></div>;
+    {step === 5 && finishSecurity}</fieldset>{(validation || step===5&&error) && <div className="error-box" role="alert" data-testid="registration-error">{validation || friendlyError(error,"save")}</div>}<FormActions wide={false} onCancel={() => { setValidation("");form.clearErrors(); setStep(s => s - 1); }} cancelLabel="Back" cancelDisabled={step === 0 || checking} cancelTestId="registration-back" busy={busy} busyLabel="Creating clinic…" disabled={checking} submitTestId="registration-next" submitLabel={checking ? "Checking address…" : step === steps.length - 1 ? "Finish registration" : "Continue"} /></form></main></div></div>;
 }
 
 export function DateTimeFormatFields({ value, onChange }: { value: Partial<DateTimePreferences>; onChange: (value: Partial<DateTimePreferences>) => void }) {
