@@ -22,7 +22,7 @@ test("toolbar puts title left and status/search/filter/add on one wrapping row",
   // Section A5: the report total appears once, in pagination, not again in the toolbar.
   assert.match(clinic, /<FilterBar label="Report Filters"/);
   assert.doesNotMatch(clinic, /<h2>Report<\/h2>/);
-  assert.match(read("./queue/SessionQueue.tsx"), /<FilterBar status=\{<StatusTabs/);
+  assert.match(read("./queue/SessionQueue.tsx"), /className="sq-list-controls"[^]*?<StatusTabs/);
   assert.doesNotMatch(read("./queue/SessionQueue.tsx"), /<h2>Queue<\/h2>/);
   for (const page of ["../Users.tsx", "../resources.tsx"]) assert.doesNotMatch(read(page), /FilterBar title=\{<><h2>/, `${page} has no duplicate list heading`);
   assert.match(read("../resources.tsx"), /listName=resource==="branches"\?"locations"/);

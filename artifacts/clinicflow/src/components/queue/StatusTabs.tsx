@@ -2,7 +2,7 @@ import "./queue-workspace.css";
 
 export function StatusTabs({value,onChange,counts}:{value:string;onChange:(value:string)=>void;counts?:Record<string,number>}) {
   return <div className="sq-status-tabs" role="group" aria-label="Appointment status">
-    {[["active","Active"],["waiting","Waiting"],["absent","Absent"],["completed","Completed"],["cancelled","Cancelled"],["","All"]].map(([key,label])=><button type="button" key={key} aria-pressed={value===key} onClick={()=>onChange(key)}>{label}{counts?.[key||"all"]!=null&&<span>{counts[key||"all"]}</span>}</button>)}
+    {[["","All"],["active","Active"],["waiting","Waiting"],["inConsultation","In Consultation"],["completed","Completed"],["absent","Absent"],["cancelled","Cancelled"]].map(([key,label])=><button type="button" key={key} aria-pressed={value===key} onClick={()=>onChange(key)}>{label}{counts?.[key||"all"]!=null&&<span>{counts[key||"all"]}</span>}</button>)}
   </div>;
 }
 export const APPOINTMENT_STATUS_OPTIONS=[["active","Active"],["waiting","Waiting"],["absent","Absent"],["completed","Completed"],["cancelled","Cancelled"],["","All"]] as const;

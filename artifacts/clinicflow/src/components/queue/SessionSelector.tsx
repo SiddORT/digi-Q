@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as api from "@workspace/api-client-react";
 import { SearchableSelect } from "../SearchableSelect";
 import { ErrorNotice } from "../../resources";
@@ -55,5 +55,12 @@ export function useOperationalSession({doctorId,branchId,date,initialSessionId,i
 }
 
 export function OperationalSessionSelector({selection}:{selection:ReturnType<typeof useOperationalSession>}){
-  return <div className="session-selector"><SearchableSelect labelScope={selection.scope} retainSelectionLabel={false} loading={selection.availability.isFetching} error={selection.availability.error?"Unable to load queue sessions.":undefined} onRetry={()=>void selection.availability.refetch()} label="Queue Session" value={selection.selectedKey} onChange={selection.setSelectionKey} placeholder="Select session…" options={selection.sessions.map(item=>({value:sessionContextKey(item),label:`${formatSessionHours(item)} · ${sessionTimeLabel(item)}`}))}/><ErrorNotice error={selection.availability.error}/>{selection.availability.error&&<button type="button" onClick={()=>selection.availability.refetch()}>Retry Queue Sessions</button>}{selection.snapshotOnly&&<small className="muted">Saved session retained for existing appointments. It cannot receive new bookings.</small>}</div>;
+  const preferences=useDateTimePreferences();
+  const [now,setNow]=useState(()=>new Date());
+  useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),30000);return()=>window.clearInterval(timer);},[]);
+  return <div className="sq-session-selector"><span className="sq-field-label" id="sq-sessions-label">Queue Session</span><div className="sq-session-scroll" role="group" aria-labelledby="sq-sessions-label">
+   {selection.sessions.map(item=>{const key=sessionContextKey(item),state=sessionTimeLabel(item,now);return <button type="button" key={key} className="sq-session-chip" data-current={state==="Currently running"||undefined} aria-pressed={selection.selectedKey===key} aria-label={`${formatSessionHours({...item,...preferences})}, ${state}${selection.selectedKey===key?", selected":""}`} onClick={()=>selection.setSelectionKey(key)}><span className="sq-session-chip-time">{formatSessionHours({...item,...preferences})}</span><small>{state==="Currently running"?"Current":state==="Saved appointment session"?"Historical":state}</small></button>;})}
+   {selection.availability.isLoading&&<span role="status">Loading sessions…</span>}
+   {!selection.availability.isLoading&&!selection.availability.error&&selection.sessions.length===0&&<span role="status">No sessions for this date.</span>}
+  </div><ErrorNotice error={selection.availability.error}/>{selection.availability.error&&<button type="button" onClick={()=>selection.availability.refetch()}>Retry Queue Sessions</button>}{selection.snapshotOnly&&<small className="muted">Saved session retained for existing appointments. It cannot receive new bookings.</small>}</div>;
 }

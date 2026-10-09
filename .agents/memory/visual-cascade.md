@@ -104,3 +104,9 @@ Visual bounds checks should measure readable content rather than invisible spaci
 **Why:** Preserved trailing spaces can extend past a line edge without clipping any visible text, causing false failures.
 
 **How to apply:** Separate actual readability failures from whitespace-only geometry while keeping text and control containment checks strict.
+
+Check pointer and keyboard activation as well as rectangle containment when narrowing custom controls.
+
+**Why:** A visually contained select trigger can still be covered by a higher-layer decorative wrapper, so a bounds-only check does not prove its menu is usable.
+
+**How to apply:** Open narrowed selects and menus through their accessible controls. Keep decorative layers non-interactive and preserve any meaningful buttons.

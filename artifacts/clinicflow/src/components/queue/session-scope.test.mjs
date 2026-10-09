@@ -38,3 +38,9 @@ test("unique clinic-local running session is the default, but explicit choices a
  assert.equal(sessionTimeLabel(am,new Date("2030-01-07T04:30:00Z")),"Past session");
  assert.equal(sessionTimeLabel({...am,snapshotOnly:true},now),"Saved appointment session");
 });
+test("running state uses the session timezone even when the browser day differs",()=>{
+ const s={date:"2030-01-07",timezone:"Asia/Kolkata",startTime:"09:00",endTime:"11:00"};
+ assert.equal(sessionTimeLabel(s,new Date("2030-01-07T04:00:00Z")),"Currently running");
+ assert.equal(sessionTimeLabel(s,new Date("2030-01-07T06:00:00Z")),"Past session");
+ assert.equal(sessionTimeLabel(s,new Date("2030-01-06T23:00:00Z")),"Upcoming session");
+});

@@ -1,0 +1,777 @@
+{
+  "operationalDate": "2026-10-09",
+  "results": [
+    {
+      "role": "clinicAdmin",
+      "width": 1024,
+      "metrics": {
+        "heading": {
+          "x": 224,
+          "y": 120,
+          "width": 784,
+          "height": 59
+        },
+        "actions": {
+          "x": 463,
+          "y": 133,
+          "width": 545,
+          "height": 32
+        },
+        "scope": {
+          "x": 224,
+          "y": 189,
+          "width": 784,
+          "height": 103
+        },
+        "sessions": {
+          "x": 682,
+          "y": 229,
+          "width": 309,
+          "height": 46
+        },
+        "metrics": {
+          "x": 224,
+          "y": 300,
+          "width": 784,
+          "height": 95
+        },
+        "presence": {
+          "x": 224,
+          "y": 403,
+          "width": 784,
+          "height": 50
+        },
+        "filters": {
+          "x": 224,
+          "y": 507,
+          "width": 784,
+          "height": 52
+        },
+        "table": {
+          "x": 224,
+          "y": 559,
+          "width": 784,
+          "height": 301
+        },
+        "token": {
+          "x": 495,
+          "y": 600,
+          "width": 105,
+          "height": 44
+        },
+        "status": {
+          "x": 600,
+          "y": 600,
+          "width": 131,
+          "height": 44
+        },
+        "tableScroll": {
+          "client": 782,
+          "scroll": 782,
+          "table": 782,
+          "min": "700px",
+          "layout": "fixed",
+          "columns": [
+            [
+              "col-select",
+              47
+            ],
+            [
+              "col-serial",
+              75
+            ],
+            [
+              "col-patient",
+              149
+            ],
+            [
+              "col-token",
+              105
+            ],
+            [
+              "col-status",
+              131
+            ],
+            [
+              "col-actions sticky",
+              276
+            ]
+          ]
+        },
+        "overflow": 0,
+        "body": "Queue\n\nLive queue for Fictional North Branch · Updated every 30 seconds\n\nBooking QR\nQuick Switch\nValidate QR\nRegister Walk-In\nDoctor\nDate\nQueue Session\n12:00 AM–11:59 PM\nCurrent\n12:00 PM–1:00 PM\nHistorical\nCurrent Token\nFX-01\nIn Consultation\nNext Waiting Token\nFX-02\nCheckout calls the next patient. Only explicit staff check-in begins consultation.\nWaiting\n1\nWhole session\nCompleted\n1\nWhole session\nSession Total\n3\nWhole session\n Doctor status: Available\nLive presence only — weekly hours and future bookings are unchanged.\nAvailable\nOn Break\nAway\nCall Next Patient\nToken is not position. Approx. wait = patients ahead × 20 minutes, updated by queue events, not a countdown. Breaks, pauses and delays can extend the actual wait. Expected duration is separate from actual average consultation time.\nE"
+      },
+      "errors": [],
+      "writes": [],
+      "file": "screenshots/queue-reference/clinicAdmin-1024.png"
+    },
+    {
+      "role": "clinicAdmin",
+      "width": 1440,
+      "metrics": {
+        "heading": {
+          "x": 224,
+          "y": 120,
+          "width": 1200,
+          "height": 59
+        },
+        "actions": {
+          "x": 879,
+          "y": 133,
+          "width": 545,
+          "height": 32
+        },
+        "scope": {
+          "x": 224,
+          "y": 189,
+          "width": 1200,
+          "height": 103
+        },
+        "sessions": {
+          "x": 682,
+          "y": 229,
+          "width": 725,
+          "height": 46
+        },
+        "metrics": {
+          "x": 224,
+          "y": 300,
+          "width": 1200,
+          "height": 95
+        },
+        "presence": {
+          "x": 224,
+          "y": 403,
+          "width": 1200,
+          "height": 46
+        },
+        "filters": {
+          "x": 224,
+          "y": 503,
+          "width": 1200,
+          "height": 52
+        },
+        "table": {
+          "x": 224,
+          "y": 555,
+          "width": 1200,
+          "height": 301
+        },
+        "token": {
+          "x": 654,
+          "y": 596,
+          "width": 174,
+          "height": 44
+        },
+        "status": {
+          "x": 828,
+          "y": 596,
+          "width": 217,
+          "height": 44
+        },
+        "tableScroll": {
+          "client": 1198,
+          "scroll": 1198,
+          "table": 1198,
+          "min": "1140px",
+          "layout": "fixed",
+          "columns": [
+            [
+              "col-select",
+              77
+            ],
+            [
+              "col-serial",
+              124
+            ],
+            [
+              "col-patient",
+              228
+            ],
+            [
+              "col-token",
+              174
+            ],
+            [
+              "col-status",
+              217
+            ],
+            [
+              "col-actions sticky",
+              379
+            ]
+          ]
+        },
+        "overflow": 0,
+        "body": "Queue\n\nLive queue for Fictional North Branch · Updated every 30 seconds\n\nBooking QR\nQuick Switch\nValidate QR\nRegister Walk-In\nDoctor\nDate\nQueue Session\n12:00 AM–11:59 PM\nCurrent\n12:00 PM–1:00 PM\nHistorical\nCurrent Token\nFX-01\nIn Consultation\nNext Waiting Token\nFX-02\nCheckout calls the next patient. Only explicit staff check-in begins consultation.\nWaiting\n1\nWhole session\nCompleted\n1\nWhole session\nSession Total\n3\nWhole session\n Doctor status: Available\nLive presence only — weekly hours and future bookings are unchanged.\nAvailable\nOn Break\nAway\nCall Next Patient\nToken is not position. Approx. wait = patients ahead × 20 minutes, updated by queue events, not a countdown. Breaks, pauses and delays can extend the actual wait. Expected duration is separate from actual average consultation time.\nE"
+      },
+      "errors": [],
+      "writes": [],
+      "file": "screenshots/queue-reference/clinicAdmin-1440.png"
+    },
+    {
+      "role": "clinicAdmin",
+      "width": 768,
+      "metrics": {
+        "heading": {
+          "x": 16,
+          "y": 133,
+          "width": 736,
+          "height": 101
+        },
+        "actions": {
+          "x": 16,
+          "y": 202,
+          "width": 545,
+          "height": 32
+        },
+        "scope": {
+          "x": 16,
+          "y": 244,
+          "width": 736,
+          "height": 103
+        },
+        "sessions": {
+          "x": 463,
+          "y": 284,
+          "width": 272,
+          "height": 46
+        },
+        "metrics": {
+          "x": 16,
+          "y": 355,
+          "width": 736,
+          "height": 95
+        },
+        "presence": {
+          "x": 16,
+          "y": 458,
+          "width": 736,
+          "height": 50
+        },
+        "filters": {
+          "x": 16,
+          "y": 562,
+          "width": 736,
+          "height": 90
+        },
+        "table": {
+          "x": 16,
+          "y": 652,
+          "width": 736,
+          "height": 297
+        },
+        "token": {
+          "x": 271,
+          "y": 693,
+          "width": 99,
+          "height": 44
+        },
+        "status": {
+          "x": 369,
+          "y": 693,
+          "width": 123,
+          "height": 44
+        },
+        "tableScroll": {
+          "client": 734,
+          "scroll": 734,
+          "table": 734,
+          "min": "700px",
+          "layout": "fixed",
+          "columns": [
+            [
+              "col-select",
+              44
+            ],
+            [
+              "col-serial",
+              70
+            ],
+            [
+              "col-patient",
+              139
+            ],
+            [
+              "col-token",
+              99
+            ],
+            [
+              "col-status",
+              123
+            ],
+            [
+              "col-actions sticky",
+              259
+            ]
+          ]
+        },
+        "overflow": 0,
+        "body": "Queue\n\nLive queue for Fictional North Branch · Updated every 30 seconds\n\nBooking QR\nQuick Switch\nValidate QR\nRegister Walk-In\nDoctor\nDate\nQueue Session\n12:00 AM–11:59 PM\nCurrent\n12:00 PM–1:00 PM\nHistorical\nCurrent Token\nFX-01\nIn Consultation\nNext Waiting Token\nFX-02\nCheckout calls the next patient. Only explicit staff check-in begins consultation.\nWaiting\n1\nWhole session\nCompleted\n1\nWhole session\nSession Total\n3\nWhole session\n Doctor status: Available\nLive presence only — weekly hours and future bookings are unchanged.\nAvailable\nOn Break\nAway\nCall Next Patient\nToken is not position. Approx. wait = patients ahead × 20 minutes, updated by queue events, not a countdown. Breaks, pauses and delays can extend the actual wait. Expected duration is separate from actual average consultation time.\nE"
+      },
+      "errors": [],
+      "writes": [],
+      "file": "screenshots/queue-reference/clinicAdmin-768.png"
+    },
+    {
+      "role": "clinicAdmin",
+      "width": 390,
+      "metrics": {
+        "heading": {
+          "x": 16,
+          "y": 200,
+          "width": 358,
+          "height": 139
+        },
+        "actions": {
+          "x": 16,
+          "y": 269,
+          "width": 358,
+          "height": 70
+        },
+        "scope": {
+          "x": 16,
+          "y": 349,
+          "width": 358,
+          "height": 266
+        },
+        "sessions": {
+          "x": 33,
+          "y": 547,
+          "width": 324,
+          "height": 51
+        },
+        "metrics": {
+          "x": 16,
+          "y": 623,
+          "width": 358,
+          "height": 275
+        },
+        "presence": {
+          "x": 16,
+          "y": 906,
+          "width": 358,
+          "height": 119
+        },
+        "filters": {
+          "x": 16,
+          "y": 1085,
+          "width": 358,
+          "height": 102
+        },
+        "table": {
+          "x": 16,
+          "y": 1187,
+          "width": 358,
+          "height": 1006
+        },
+        "token": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "status": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "tableScroll": {
+          "client": 356,
+          "scroll": 356,
+          "table": 332,
+          "min": "0px",
+          "layout": "auto",
+          "columns": [
+            [
+              "col-select",
+              0
+            ],
+            [
+              "col-serial",
+              0
+            ],
+            [
+              "col-patient",
+              0
+            ],
+            [
+              "col-token",
+              0
+            ],
+            [
+              "col-status",
+              0
+            ],
+            [
+              "col-actions sticky",
+              0
+            ]
+          ]
+        },
+        "overflow": 0,
+        "body": "Queue\n\nLive queue for Fictional North Branch · Updated every 30 seconds\n\nBooking QR\nQuick Switch\nValidate QR\nRegister Walk-In\nDoctor\nDate\nQueue Session\n12:00 AM–11:59 PM\nCurrent\n12:00 PM–1:00 PM\nHistorical\nCurrent Token\nFX-01\nIn Consultation\nNext Waiting Token\nFX-02\nCheckout calls the next patient. Only explicit staff check-in begins consultation.\nWaiting\n1\nWhole session\nCompleted\n1\nWhole session\nSession Total\n3\nWhole session\n Doctor status: Available\nLive presence only — weekly hours and future bookings are unchanged.\nAvailable\nOn Break\nAway\nCall Next Patient\nToken is not position. Approx. wait = patients ahead × 20 minutes, updated by queue events, not a countdown. Breaks, pauses and delays can extend the actual wait. Expected duration is separate from actual average consultation time.\nE"
+      },
+      "errors": [],
+      "writes": [],
+      "file": "screenshots/queue-reference/clinicAdmin-390.png"
+    },
+    {
+      "role": "clinicAdmin",
+      "scenario": "historical appointment with delayed branch timezone",
+      "date": "2025-01-17",
+      "lateBranchLoaded": true
+    },
+    {
+      "role": "superAdmin",
+      "width": 1024,
+      "metrics": {
+        "heading": {
+          "x": 224,
+          "y": 120,
+          "width": 784,
+          "height": 59
+        },
+        "actions": {
+          "x": 463,
+          "y": 133,
+          "width": 545,
+          "height": 32
+        },
+        "scope": {
+          "x": 224,
+          "y": 189,
+          "width": 784,
+          "height": 103
+        },
+        "sessions": {
+          "x": 828,
+          "y": 229,
+          "width": 163,
+          "height": 46
+        },
+        "metrics": {
+          "x": 224,
+          "y": 346,
+          "width": 784,
+          "height": 95
+        },
+        "presence": {
+          "x": 224,
+          "y": 449,
+          "width": 784,
+          "height": 50
+        },
+        "filters": {
+          "x": 224,
+          "y": 553,
+          "width": 784,
+          "height": 52
+        },
+        "table": {
+          "x": 224,
+          "y": 605,
+          "width": 784,
+          "height": 301
+        },
+        "token": {
+          "x": 495,
+          "y": 646,
+          "width": 105,
+          "height": 44
+        },
+        "status": {
+          "x": 600,
+          "y": 646,
+          "width": 131,
+          "height": 44
+        },
+        "tableScroll": {
+          "client": 782,
+          "scroll": 782,
+          "table": 782,
+          "min": "700px",
+          "layout": "fixed",
+          "columns": [
+            [
+              "col-select",
+              47
+            ],
+            [
+              "col-serial",
+              75
+            ],
+            [
+              "col-patient",
+              149
+            ],
+            [
+              "col-token",
+              105
+            ],
+            [
+              "col-status",
+              131
+            ],
+            [
+              "col-actions sticky",
+              276
+            ]
+          ]
+        },
+        "overflow": 0,
+        "body": "Queue\n\nLive queue for Fictional North Branch · Updated every 30 seconds\n\nBooking QR\nQuick Switch\nValidate QR\nRegister Walk-In\nClinic\nLocation\nDoctor\nDate\nQueue Session\n12:00 AM–11:59 PM\nCurrent\n12:00 PM–1:00 PM\nHistorical\nFictional North Branch\n· 09 Oct 2026\nCurrent Token\nFX-01\nIn Consultation\nNext Waiting Token\nFX-02\nCheckout calls the next patient. Only explicit staff check-in begins consultation.\nWaiting\n1\nWhole session\nCompleted\n1\nWhole session\nSession Total\n3\nWhole session\n Doctor status: Available\nLive presence only — weekly hours and future bookings are unchanged.\nAvailable\nOn Break\nAway\nCall Next Patient\nToken is not position. Approx. wait = patients ahead × 20 minutes, updated by queue events, not a countdown. Breaks, pauses and delays can extend the actual wait. Expected duration"
+      },
+      "errors": [],
+      "writes": [],
+      "file": "screenshots/queue-reference/superAdmin-1024.png"
+    },
+    {
+      "role": "receptionist",
+      "width": 1024,
+      "metrics": {
+        "heading": {
+          "x": 224,
+          "y": 120,
+          "width": 784,
+          "height": 59
+        },
+        "actions": {
+          "x": 463,
+          "y": 133,
+          "width": 545,
+          "height": 32
+        },
+        "scope": {
+          "x": 224,
+          "y": 189,
+          "width": 784,
+          "height": 103
+        },
+        "sessions": {
+          "x": 682,
+          "y": 229,
+          "width": 309,
+          "height": 46
+        },
+        "metrics": {
+          "x": 224,
+          "y": 300,
+          "width": 784,
+          "height": 95
+        },
+        "presence": {
+          "x": 224,
+          "y": 403,
+          "width": 784,
+          "height": 35
+        },
+        "filters": {
+          "x": 224,
+          "y": 492,
+          "width": 784,
+          "height": 52
+        },
+        "table": {
+          "x": 224,
+          "y": 544,
+          "width": 784,
+          "height": 301
+        },
+        "token": {
+          "x": 495,
+          "y": 585,
+          "width": 105,
+          "height": 44
+        },
+        "status": {
+          "x": 600,
+          "y": 585,
+          "width": 131,
+          "height": 44
+        },
+        "tableScroll": {
+          "client": 782,
+          "scroll": 782,
+          "table": 782,
+          "min": "700px",
+          "layout": "fixed",
+          "columns": [
+            [
+              "col-select",
+              47
+            ],
+            [
+              "col-serial",
+              75
+            ],
+            [
+              "col-patient",
+              149
+            ],
+            [
+              "col-token",
+              105
+            ],
+            [
+              "col-status",
+              131
+            ],
+            [
+              "col-actions sticky",
+              276
+            ]
+          ]
+        },
+        "overflow": 0,
+        "body": "Queue\n\nLive queue for Fictional North Branch · Updated every 30 seconds\n\nBooking QR\nQuick Switch\nValidate QR\nRegister Walk-In\nDoctor\nDate\nQueue Session\n12:00 AM–11:59 PM\nCurrent\n12:00 PM–1:00 PM\nHistorical\nCurrent Token\nFX-01\nIn Consultation\nNext Waiting Token\nFX-02\nCheckout calls the next patient. Only explicit staff check-in begins consultation.\nWaiting\n1\nWhole session\nCompleted\n1\nWhole session\nSession Total\n3\nWhole session\n Doctor status: Available\nLive presence only — weekly hours and future bookings are unchanged.\nCall Next Patient\nToken is not position. Approx. wait = patients ahead × 20 minutes, updated by queue events, not a countdown. Breaks, pauses and delays can extend the actual wait. Expected duration is separate from actual average consultation time.\nExpected Duration\nSearch "
+      },
+      "errors": [],
+      "writes": [],
+      "file": "screenshots/queue-reference/receptionist-1024.png"
+    },
+    {
+      "role": "doctor",
+      "width": 1024,
+      "metrics": {
+        "heading": {
+          "x": 224,
+          "y": 120,
+          "width": 784,
+          "height": 59
+        },
+        "actions": {
+          "x": 600,
+          "y": 133,
+          "width": 408,
+          "height": 32
+        },
+        "scope": {
+          "x": 224,
+          "y": 189,
+          "width": 784,
+          "height": 113
+        },
+        "sessions": {
+          "x": 631,
+          "y": 239,
+          "width": 360,
+          "height": 46
+        },
+        "metrics": {
+          "x": 224,
+          "y": 310,
+          "width": 784,
+          "height": 95
+        },
+        "presence": {
+          "x": 224,
+          "y": 412,
+          "width": 784,
+          "height": 50
+        },
+        "filters": {
+          "x": 224,
+          "y": 516,
+          "width": 784,
+          "height": 52
+        },
+        "table": {
+          "x": 224,
+          "y": 568,
+          "width": 784,
+          "height": 301
+        },
+        "token": {
+          "x": 495,
+          "y": 609,
+          "width": 105,
+          "height": 44
+        },
+        "status": {
+          "x": 600,
+          "y": 609,
+          "width": 131,
+          "height": 44
+        },
+        "tableScroll": {
+          "client": 782,
+          "scroll": 782,
+          "table": 782,
+          "min": "700px",
+          "layout": "fixed",
+          "columns": [
+            [
+              "col-select",
+              47
+            ],
+            [
+              "col-serial",
+              75
+            ],
+            [
+              "col-patient",
+              149
+            ],
+            [
+              "col-token",
+              105
+            ],
+            [
+              "col-status",
+              131
+            ],
+            [
+              "col-actions sticky",
+              276
+            ]
+          ]
+        },
+        "overflow": 0,
+        "body": "Queue\n\nLive queue for Fictional North Branch · Updated every 30 seconds\n\nBooking QR\nValidate QR\nRegister Walk-In\nDoctor\nSelected item unavailable\nDate\nQueue Session\n12:00 AM–11:59 PM\nCurrent\n12:00 PM–1:00 PM\nHistorical\nCurrent Token\nFX-01\nIn Consultation\nNext Waiting Token\nFX-02\nCheckout calls the next patient. Only explicit staff check-in begins consultation.\nWaiting\n1\nWhole session\nCompleted\n1\nWhole session\nSession Total\n3\nWhole session\n Doctor status: Available\nLive presence only — weekly hours and future bookings are unchanged.\nAvailable\nOn Break\nAway\nCall Next Patient\nToken is not position. Approx. wait = patients ahead × 20 minutes, updated by queue events, not a countdown. Breaks, pauses and delays can extend the actual wait. Expected duration is separate from actual average consult"
+      },
+      "errors": [],
+      "writes": [],
+      "file": "screenshots/queue-reference/doctor-1024.png"
+    },
+    {
+      "role": "patient",
+      "width": 1024,
+      "metrics": {
+        "heading": {
+          "x": 224,
+          "y": 120,
+          "width": 784,
+          "height": 59
+        },
+        "actions": null,
+        "scope": {
+          "x": 224,
+          "y": 189,
+          "width": 784,
+          "height": 113
+        },
+        "sessions": null,
+        "metrics": null,
+        "presence": null,
+        "filters": null,
+        "table": null,
+        "token": null,
+        "status": null,
+        "tableScroll": null,
+        "overflow": 0,
+        "body": "Queue\n\nLive queue for selected location · Updated every 30 seconds\n\nYour Appointment\nSearch your appointments…\n\nSelect your appointment to view a session."
+      },
+      "errors": [],
+      "writes": [],
+      "file": "screenshots/queue-reference/patient-1024.png"
+    },
+    {
+      "role": "patient",
+      "scenario": "historical appointment with delayed branch timezone",
+      "date": "2025-01-17",
+      "lateBranchLoaded": true
+    }
+  ]
+}

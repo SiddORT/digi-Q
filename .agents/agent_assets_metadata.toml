@@ -288,3 +288,17 @@ mtime_ms = 1791468824883
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/8ae55a02-d7f6-4c1f-833b-a2366379c4b4/a06e7fe5-bd97-4a4a-9baa-5706260e159b"
 storage_version_token = "1791469155070504"
 content_type = "image/png"
+
+[[outputs]]
+id = "g1fXBbCbgjPlZaDSX7yAh"
+uri = "file://screenshots/queue-reference/clinicAdmin-1024.png"
+type = "image"
+title = "Queue — reference-width fixture"
+description = "Updated Queue at 1024×683 using fictional intercepted records; not a live clinical session."
+logical_id = "ad00809e-0918-4427-8860-8d6c30200391"
+content_hash = "sha256:98140b6d9eda93c235996319276cbbec25c6d39845a8ec3423512c6d82dd0a08"
+size = 161077
+mtime_ms = 1791557844067
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/ad00809e-0918-4427-8860-8d6c30200391/4a6458da-8051-4149-ab8f-ae064708ca78"
+storage_version_token = "1791558067602544"
+content_type = "image/png"

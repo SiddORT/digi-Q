@@ -43,14 +43,14 @@ test("picker popover portals into the dialog and AppDialog yields Escape/outside
 
 test("status filters are drawer fields across listings; queue keeps operational tabs", () => {
   for (const f of ["../Users.tsx", "./SystemUsers.tsx", "../resources.tsx"]) assert.doesNotMatch(read(f), / status=\{</, f);
-  assert.match(read("./queue/SessionQueue.tsx"), /<FilterBar status=\{<StatusTabs/);
+  assert.match(read("./queue/SessionQueue.tsx"), /className="sq-list-controls"[^]*?<StatusTabs/);
 });
 test("assigned/network sorts draft until Apply; queue pauses on invalid date text", () => {
   const clinic = read("../clinic.tsx"), queue = read("./queue/SessionQueue.tsx"), input = read("./DateFormatInput.tsx");
   assert.match(clinic, /onOpen=\{\(\)=>setAssignedDraft\(assignedSort\)\} onApply=\{\(\)=>\{setAssignedSort\(assignedDraft\);\}\}/);
   assert.match(clinic, /onOpen=\{\(\)=>setNetworkDraft\(networkSort\)\} onApply=\{\(\)=>\{setNetworkSort\(networkDraft\);\}\}/);
   assert.match(clinic, /setAssignedSort\("name"\);setAssignedDraft\("name"\)/);
-  assert.match(queue, /const enabled=dateValid&&/);
+  assert.match(queue, /const enabled=scopeReady&&dateValid&&/);
   assert.match(queue, /enabled:!isPatient&&dateValid/);
   assert.match(queue, /onValidityChange=\{setDateValid\}/);
   assert.match(queue, /data-testid="text-queue-date-invalid"/);
