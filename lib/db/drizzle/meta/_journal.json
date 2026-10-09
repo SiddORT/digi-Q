@@ -113,6 +113,13 @@
       "when": 1790980000001,
       "tag": "0016_functional_completion",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790980000002,
+      "tag": "0017_booking_mail_history",
+      "breakpoints": true
     }
   ]
 }

@@ -110,7 +110,14 @@ export const auditLogs = pgTable("audit_logs", {
   branchId: text("branch_id").references(() => branches.id),
   action: text("action").notNull(), entityType: text("entity_type").notNull(), entityId: text("entity_id").notNull(), summary: text("summary").notNull(), createdAt: created(),
 }, t => [index("audit_scope_idx").on(t.clinicId, t.branchId, t.createdAt)]);
-export const settings = pgTable("settings", { id: id(), data: data() });
+export const settings = pgTable("settings", { id: id(), data: data() }, t => [
+  // Must match the owner-history predicate and numeric timestamp/null ordering exactly.
+  index("settings_owner_booking_history_idx").on(
+    sql`(${t.data}->>'clinicId')`,
+    sql`((${t.data}->>'createdAt')::bigint) desc nulls last`,
+    t.id.desc(),
+  ).where(sql`${t.id} like 'mail-outbox:booking:%' and ${t.data}->>'event' = 'booking' and ${t.data}->>'recipientGroup' = 'clinicAdmin'`),
+]);
 // Deliberately separate from the generic settings/resources APIs.
 export const integrationCredentials = pgTable("integration_credentials", {
   provider: text("provider").primaryKey(),

@@ -31,3 +31,4 @@
 - [Public booking intent](public-booking-intent.md) — QR booking stays patient-facing even for authorized staff; preserve workspace permissions and staff booking rules.
 - [Registration completion recovery](registration-completion-recovery.md) — uncertain clinic creation must reconcile an actor-scoped receipt before a retry; edits must preserve its metadata.
 - [Node render tests](node-test-bundling.md) — React server-render bundles need a CommonJS-compatible boundary; ESM data URLs can fail before rendering.
+- [Booking history paging](booking-history-paging.md) — preserve numeric-page compatibility; index clinic growth separately from deep-offset costs.

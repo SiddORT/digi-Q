@@ -32,6 +32,7 @@ export const searchGeographyQueryStateMax = 100;
 export const searchGeographyQueryCityMax = 100;
 
 
+
 export const SearchGeographyQueryParams = zod.object({
   "kind": zod.enum(['country', 'state', 'city']),
   "search": zod.coerce.string().max(searchGeographyQuerySearchMax).optional(),
@@ -53,6 +54,7 @@ export const searchPublicGeographyQueryCountryMax = 100;
 export const searchPublicGeographyQueryStateMax = 100;
 
 export const searchPublicGeographyQueryCityMax = 100;
+
 
 
 export const SearchPublicGeographyQueryParams = zod.object({
@@ -268,6 +270,7 @@ export const getNotificationTemplatesResponseItemsItemDraftFooterMax = 500;
 export const getNotificationTemplatesResponseItemsItemDraftLogoUrlMax = 1000;
 
 
+
 export const GetNotificationTemplatesResponse = zod.object({
   "scopeName": zod.string(),
   "variables": zod.array(zod.string()),
@@ -313,6 +316,7 @@ export const saveNotificationTemplateBodyContentFooterMax = 500;
 export const saveNotificationTemplateBodyContentLogoUrlMax = 1000;
 
 
+
 export const SaveNotificationTemplateBody = zod.object({
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
   "clinicId": zod.string().optional(),
@@ -350,6 +354,7 @@ export const saveNotificationTemplateResponseItemsItemDraftFooterMax = 500;
 export const saveNotificationTemplateResponseItemsItemDraftLogoUrlMax = 1000;
 
 
+
 export const SaveNotificationTemplateResponse = zod.object({
   "scopeName": zod.string(),
   "variables": zod.array(zod.string()),
@@ -385,6 +390,7 @@ export const SaveNotificationTemplateResponse = zod.object({
 export const updateIntegrationSettingsBodyCurrentPasswordMax = 1024;
 
 export const updateIntegrationSettingsBodyValuesMaxOne = 2048;
+
 
 
 export const UpdateIntegrationSettingsBody = zod.object({
@@ -450,6 +456,7 @@ export const GetIntegrationSettingsResponse = zod.object({
 export const sendSmtpTestEmailBodyRecipientMax = 254;
 
 
+
 export const SendSmtpTestEmailBody = zod.object({
   "recipient": zod.string().email().max(sendSmtpTestEmailBodyRecipientMax)
 })
@@ -464,6 +471,7 @@ export const SendSmtpTestEmailResponse = zod.object({
  * Dedicated demo identity only. Local Argon2id password verification issues a scoped HttpOnly session cookie.
  */
 export const demoLoginBodyPasswordMax = 200;
+
 
 
 export const DemoLoginBody = zod.object({
@@ -641,6 +649,7 @@ export const registerClinicBodyOwnerCustomScheduleSessionsItemEndTimeRegExp = ne
 export const registerClinicBodyOwnerCustomScheduleSessionsMax = 500;
 
 
+
 export const RegisterClinicBody = zod.object({
   "requestId": zod.string().uuid().optional().describe('Stable non-secret retry identity; changed payloads cannot replay a committed request.'),
   "fullName": zod.string().min(1).max(registerClinicBodyFullNameMax),
@@ -738,6 +747,7 @@ export const registerClinicResponsePoliciesBookingHorizonDaysMax = 365;
 
 export const registerClinicResponsePoliciesCancellationCutoffMinutesMin = 0;
 export const registerClinicResponsePoliciesCancellationCutoffMinutesMax = 10080;
+
 
 
 export const RegisterClinicResponse = zod.object({
@@ -843,6 +853,7 @@ export const getClinicRegistrationCompletionResponseResultOnePoliciesBookingHori
 
 export const getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMin = 0;
 export const getClinicRegistrationCompletionResponseResultOnePoliciesCancellationCutoffMinutesMax = 10080;
+
 
 
 export const GetClinicRegistrationCompletionResponse = zod.object({
@@ -951,10 +962,13 @@ export const getClinicAdminSetupCompletionResponseResultOneAdminOnePincodeMax = 
 export const getClinicAdminSetupCompletionResponseResultOneAdminOneAddressMax = 500;
 
 
+
 export const getClinicAdminSetupCompletionResponseResultOneClinicOneSlugMin = 3;
 export const getClinicAdminSetupCompletionResponseResultOneClinicOneSlugMax = 63;
 
 export const getClinicAdminSetupCompletionResponseResultOneClinicOneReferralCodeMax = 100;
+
+
 
 
 export const GetClinicAdminSetupCompletionResponse = zod.object({
@@ -1083,6 +1097,7 @@ export const getClinicSettingsResponsePoliciesCancellationCutoffMinutesMin = 0;
 export const getClinicSettingsResponsePoliciesCancellationCutoffMinutesMax = 10080;
 
 
+
 export const GetClinicSettingsResponse = zod.object({
   "clinic": zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
@@ -1189,6 +1204,7 @@ export const updateClinicSettingsBodyPoliciesCancellationCutoffMinutesMin = 0;
 export const updateClinicSettingsBodyPoliciesCancellationCutoffMinutesMax = 10080;
 
 
+
 export const UpdateClinicSettingsBody = zod.object({
   "clinic": zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
@@ -1261,6 +1277,7 @@ export const updateClinicSettingsResponsePoliciesBookingHorizonDaysMax = 365;
 
 export const updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMin = 0;
 export const updateClinicSettingsResponsePoliciesCancellationCutoffMinutesMax = 10080;
+
 
 
 export const UpdateClinicSettingsResponse = zod.object({
@@ -1369,6 +1386,7 @@ export const previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMin = 0;
 export const previewClinicSettingsBodyPoliciesCancellationCutoffMinutesMax = 10080;
 
 
+
 export const PreviewClinicSettingsBody = zod.object({
   "clinic": zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
@@ -1432,6 +1450,7 @@ export const PreviewClinicSettingsResponse = zod.object({
 export const attachOwnDoctorProfileBodyBranchIdsMax = 30;
 
 
+
 export const AttachOwnDoctorProfileBody = zod.object({
   "branchIds": zod.array(zod.string()).max(attachOwnDoctorProfileBodyBranchIdsMax),
   "specializationId": zod.string().optional(),
@@ -1453,6 +1472,8 @@ export const attachOwnDoctorProfileResponseOneAddressMax = 500;
 export const attachOwnDoctorProfileResponseOneExperienceYearsMin = 0;
 
 export const attachOwnDoctorProfileResponseOneConsultationFeeMin = 0;
+
+
 
 
 export const AttachOwnDoctorProfileResponse = zod.object({
@@ -1495,6 +1516,7 @@ export const checkSlugAvailabilityQuerySlugMin = 3;
 export const checkSlugAvailabilityQuerySlugMax = 63;
 
 
+
 export const CheckSlugAvailabilityQueryParams = zod.object({
   "slug": zod.coerce.string().min(checkSlugAvailabilityQuerySlugMin).max(checkSlugAvailabilityQuerySlugMax),
   "clinicId": zod.coerce.string().optional()
@@ -1513,6 +1535,7 @@ export const ResolveClinicSlugParams = zod.object({
 export const resolveClinicSlugQueryPageMax = 1000000;
 
 export const resolveClinicSlugQuerySearchMax = 200;
+
 
 
 export const ResolveClinicSlugQueryParams = zod.object({
@@ -1534,6 +1557,7 @@ export const resolveClinicSlugResponseBranchesItemOpeningHoursItemDayOfWeekMax =
 
 export const resolveClinicSlugResponseBranchOneOpeningHoursItemDayOfWeekMin = 0;
 export const resolveClinicSlugResponseBranchOneOpeningHoursItemDayOfWeekMax = 6;
+
 
 
 export const ResolveClinicSlugResponse = zod.object({
@@ -1619,6 +1643,7 @@ export const resolveBranchSlugQueryPageMax = 1000000;
 export const resolveBranchSlugQuerySearchMax = 200;
 
 
+
 export const ResolveBranchSlugQueryParams = zod.object({
   "directory": zod.coerce.boolean().optional().describe('Opt in to scoped server pagination; omitted preserves the legacy context arrays.'),
   "page": zod.coerce.number().int().min(1).max(resolveBranchSlugQueryPageMax).optional(),
@@ -1638,6 +1663,7 @@ export const resolveBranchSlugResponseBranchesItemOpeningHoursItemDayOfWeekMax =
 
 export const resolveBranchSlugResponseBranchOneOpeningHoursItemDayOfWeekMin = 0;
 export const resolveBranchSlugResponseBranchOneOpeningHoursItemDayOfWeekMax = 6;
+
 
 
 export const ResolveBranchSlugResponse = zod.object({
@@ -1776,6 +1802,7 @@ export const GetPublicBookingContextQueryParams = zod.object({
 })
 
 export const getPublicBookingContextResponseCancellationCutoffMinutesMin = 0;
+
 
 
 export const GetPublicBookingContextResponse = zod.object({
@@ -1920,6 +1947,7 @@ export const listGuestRequestsQueryPageMax = 100000;
 export const listGuestRequestsQueryPageSizeMax = 100;
 
 
+
 export const ListGuestRequestsQueryParams = zod.object({
   "search": zod.coerce.string().max(listGuestRequestsQuerySearchMax).optional(),
   "sort": zod.enum(['createdAt', '-createdAt', 'fullName', '-fullName', 'date', '-date']).default(listGuestRequestsQuerySortDefault),
@@ -1980,6 +2008,7 @@ export const DecideGuestRequestParams = zod.object({
 export const decideGuestRequestBodyReasonMax = 500;
 
 
+
 export const DecideGuestRequestBody = zod.object({
   "action": zod.enum(['confirm', 'reject']),
   "reason": zod.string().min(1).max(decideGuestRequestBodyReasonMax)
@@ -2035,6 +2064,7 @@ export const GetAuthCsrfResponse = zod.object({
 export const nativeStaffLoginBodyPasswordMax = 1024;
 
 
+
 export const NativeStaffLoginBody = zod.object({
   "email": zod.string().email(),
   "password": zod.string().min(1).max(nativeStaffLoginBodyPasswordMax)
@@ -2060,6 +2090,7 @@ export const verifyStaffDeviceBodyCodeMin = 6;
 export const verifyStaffDeviceBodyCodeMax = 6;
 
 
+
 export const VerifyStaffDeviceBody = zod.object({
   "challengeId": zod.string(),
   "code": zod.string().min(verifyStaffDeviceBodyCodeMin).max(verifyStaffDeviceBodyCodeMax)
@@ -2069,6 +2100,7 @@ export const VerifyStaffDeviceResponse = zod.void()
 
 
 export const startPatientEmailBodyEmailMax = 254;
+
 
 
 export const StartPatientEmailBody = zod.object({
@@ -2083,6 +2115,7 @@ export const StartPatientEmailResponse = zod.object({
 
 export const verifyPatientEmailBodyCodeMin = 6;
 export const verifyPatientEmailBodyCodeMax = 6;
+
 
 
 export const VerifyPatientEmailBody = zod.object({
@@ -2145,6 +2178,7 @@ export const verifyClinicRegistrationBodyCodeMin = 6;
 export const verifyClinicRegistrationBodyCodeMax = 6;
 
 
+
 export const VerifyClinicRegistrationBody = zod.object({
   "challengeId": zod.string(),
   "code": zod.string().min(verifyClinicRegistrationBodyCodeMin).max(verifyClinicRegistrationBodyCodeMax)
@@ -2156,6 +2190,7 @@ export const VerifyClinicRegistrationResponse = zod.object({
 
 
 export const requestPasswordRecoveryBodyEmailMax = 254;
+
 
 
 export const RequestPasswordRecoveryBody = zod.object({
@@ -2247,6 +2282,9 @@ export const getMeResponseUserOneOnePincodeMax = 12;
 export const getMeResponseUserOneOneAddressMax = 500;
 
 
+
+
+
 export const GetMeResponse = zod.object({
   "userId": zod.string(),
   "user": zod.union([zod.object({
@@ -2278,6 +2316,9 @@ export const GetMeResponse = zod.object({
 })
 
 
+
+
+
 export const UpdateMeBody = zod.object({
   "fullName": zod.string().min(1).optional(),
   "mobile": zod.string().optional(),
@@ -2293,6 +2334,9 @@ export const updateMeResponseOneCityMax = 100;
 export const updateMeResponseOnePincodeMax = 12;
 
 export const updateMeResponseOneAddressMax = 500;
+
+
+
 
 
 export const UpdateMeResponse = zod.object({
@@ -2342,6 +2386,9 @@ export const onboardResponseUserOneOneCityMax = 100;
 export const onboardResponseUserOneOnePincodeMax = 12;
 
 export const onboardResponseUserOneOneAddressMax = 500;
+
+
+
 
 
 export const OnboardResponse = zod.object({
@@ -2417,6 +2464,7 @@ export const listPublicClinicsQueryPageSizeDefault = 20;
 export const listPublicClinicsQueryPageSizeMax = 100;
 
 
+
 export const ListPublicClinicsQueryParams = zod.object({
   "selectedIds": zod.coerce.string().max(listPublicClinicsQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
   "search": zod.coerce.string().optional(),
@@ -2430,6 +2478,8 @@ export const listPublicClinicsResponseTwoItemsItemOneSlugMin = 3;
 export const listPublicClinicsResponseTwoItemsItemOneSlugMax = 63;
 
 export const listPublicClinicsResponseTwoItemsItemOneReferralCodeMax = 100;
+
+
 
 
 export const ListPublicClinicsResponse = zod.object({
@@ -2475,6 +2525,7 @@ export const listPublicBranchesQueryPageDefault = 1;
 
 export const listPublicBranchesQueryPageSizeDefault = 20;
 export const listPublicBranchesQueryPageSizeMax = 100;
+
 
 
 export const ListPublicBranchesQueryParams = zod.object({
@@ -2559,6 +2610,7 @@ export const listPublicDoctorsQueryPageSizeDefault = 20;
 export const listPublicDoctorsQueryPageSizeMax = 100;
 
 
+
 export const ListPublicDoctorsQueryParams = zod.object({
   "selectedIds": zod.coerce.string().max(listPublicDoctorsQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
   "search": zod.coerce.string().optional(),
@@ -2570,6 +2622,7 @@ export const ListPublicDoctorsQueryParams = zod.object({
 })
 
 export const listPublicDoctorsResponseOneTotalMin = 0;
+
 
 
 export const ListPublicDoctorsResponse = zod.object({
@@ -2696,6 +2749,7 @@ export const listClinicsQueryPageSizeDefault = 20;
 export const listClinicsQueryPageSizeMax = 100;
 
 
+
 export const ListClinicsQueryParams = zod.object({
   "selectedIds": zod.coerce.string().max(listClinicsQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
   "doctorId": zod.coerce.string().optional(),
@@ -2714,6 +2768,8 @@ export const listClinicsResponseTwoItemsItemOneSlugMin = 3;
 export const listClinicsResponseTwoItemsItemOneSlugMax = 63;
 
 export const listClinicsResponseTwoItemsItemOneReferralCodeMax = 100;
+
+
 
 
 export const ListClinicsResponse = zod.object({
@@ -2759,6 +2815,8 @@ export const createClinicBodySlugMax = 63;
 export const createClinicBodyReferralCodeMax = 100;
 
 
+
+
 export const CreateClinicBody = zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -2785,6 +2843,8 @@ export const createClinicResponseOneSlugMin = 3;
 export const createClinicResponseOneSlugMax = 63;
 
 export const createClinicResponseOneReferralCodeMax = 100;
+
+
 
 
 export const CreateClinicResponse = zod.object({
@@ -2827,6 +2887,8 @@ export const getClinicResponseOneSlugMax = 63;
 export const getClinicResponseOneReferralCodeMax = 100;
 
 
+
+
 export const GetClinicResponse = zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -2867,6 +2929,8 @@ export const updateClinicBodySlugMax = 63;
 export const updateClinicBodyReferralCodeMax = 100;
 
 
+
+
 export const UpdateClinicBody = zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -2893,6 +2957,8 @@ export const updateClinicResponseOneSlugMin = 3;
 export const updateClinicResponseOneSlugMax = 63;
 
 export const updateClinicResponseOneReferralCodeMax = 100;
+
+
 
 
 export const UpdateClinicResponse = zod.object({
@@ -2938,6 +3004,7 @@ export const listBranchesQueryPageDefault = 1;
 
 export const listBranchesQueryPageSizeDefault = 20;
 export const listBranchesQueryPageSizeMax = 100;
+
 
 
 export const ListBranchesQueryParams = zod.object({
@@ -3271,6 +3338,7 @@ export const listDoctorsQueryPageSizeDefault = 20;
 export const listDoctorsQueryPageSizeMax = 100;
 
 
+
 export const ListDoctorsQueryParams = zod.object({
   "selectedIds": zod.coerce.string().max(listDoctorsQuerySelectedIdsMax).optional().describe('Comma-separated exact IDs within existing scope (maximum 100).'),
   "search": zod.coerce.string().optional(),
@@ -3300,6 +3368,8 @@ export const listDoctorsResponseTwoItemsItemOneAddressMax = 500;
 export const listDoctorsResponseTwoItemsItemOneExperienceYearsMin = 0;
 
 export const listDoctorsResponseTwoItemsItemOneConsultationFeeMin = 0;
+
+
 
 
 export const ListDoctorsResponse = zod.object({
@@ -3364,6 +3434,8 @@ export const createDoctorBodyExperienceYearsMin = 0;
 export const createDoctorBodyConsultationFeeMin = 0;
 
 
+
+
 export const CreateDoctorBody = zod.object({
   "country": zod.string().max(createDoctorBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(createDoctorBodyStateMax).optional(),
@@ -3403,6 +3475,8 @@ export const createDoctorResponseOneAddressMax = 500;
 export const createDoctorResponseOneExperienceYearsMin = 0;
 
 export const createDoctorResponseOneConsultationFeeMin = 0;
+
+
 
 
 export const CreateDoctorResponse = zod.object({
@@ -3459,6 +3533,8 @@ export const getDoctorResponseOneAddressMax = 500;
 export const getDoctorResponseOneExperienceYearsMin = 0;
 
 export const getDoctorResponseOneConsultationFeeMin = 0;
+
+
 
 
 export const GetDoctorResponse = zod.object({
@@ -3520,6 +3596,8 @@ export const updateDoctorBodyExperienceYearsMin = 0;
 export const updateDoctorBodyConsultationFeeMin = 0;
 
 
+
+
 export const UpdateDoctorBody = zod.object({
   "country": zod.string().max(updateDoctorBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(updateDoctorBodyStateMax).optional(),
@@ -3559,6 +3637,8 @@ export const updateDoctorResponseOneAddressMax = 500;
 export const updateDoctorResponseOneExperienceYearsMin = 0;
 
 export const updateDoctorResponseOneConsultationFeeMin = 0;
+
+
 
 
 export const UpdateDoctorResponse = zod.object({
@@ -3610,6 +3690,7 @@ export const listUsersQueryPageSizeDefault = 20;
 export const listUsersQueryPageSizeMax = 100;
 
 
+
 export const ListUsersQueryParams = zod.object({
   "linkedOnly": zod.coerce.boolean().optional(),
   "search": zod.coerce.string().optional(),
@@ -3634,6 +3715,9 @@ export const listUsersResponseTwoItemsItemOneCityMax = 100;
 export const listUsersResponseTwoItemsItemOnePincodeMax = 12;
 
 export const listUsersResponseTwoItemsItemOneAddressMax = 500;
+
+
+
 
 
 export const ListUsersResponse = zod.object({
@@ -3682,6 +3766,9 @@ export const createUserBodyPincodeMax = 12;
 export const createUserBodyAddressMax = 500;
 
 
+
+
+
 export const CreateUserBody = zod.object({
   "country": zod.string().max(createUserBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(createUserBodyStateMax).optional(),
@@ -3707,6 +3794,9 @@ export const createUserResponseOneCityMax = 100;
 export const createUserResponseOnePincodeMax = 12;
 
 export const createUserResponseOneAddressMax = 500;
+
+
+
 
 
 export const CreateUserResponse = zod.object({
@@ -3892,10 +3982,13 @@ export const onboardClinicAdminResponseAdminOnePincodeMax = 12;
 export const onboardClinicAdminResponseAdminOneAddressMax = 500;
 
 
+
 export const onboardClinicAdminResponseClinicOneSlugMin = 3;
 export const onboardClinicAdminResponseClinicOneSlugMax = 63;
 
 export const onboardClinicAdminResponseClinicOneReferralCodeMax = 100;
+
+
 
 
 export const OnboardClinicAdminResponse = zod.object({
@@ -4006,6 +4099,9 @@ export const getUserResponseOnePincodeMax = 12;
 export const getUserResponseOneAddressMax = 500;
 
 
+
+
+
 export const GetUserResponse = zod.object({
   "country": zod.string().max(getUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(getUserResponseOneStateMax).optional(),
@@ -4046,6 +4142,9 @@ export const updateUserBodyPincodeMax = 12;
 export const updateUserBodyAddressMax = 500;
 
 
+
+
+
 export const UpdateUserBody = zod.object({
   "country": zod.string().max(updateUserBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(updateUserBodyStateMax).optional(),
@@ -4071,6 +4170,9 @@ export const updateUserResponseOneCityMax = 100;
 export const updateUserResponseOnePincodeMax = 12;
 
 export const updateUserResponseOneAddressMax = 500;
+
+
+
 
 
 export const UpdateUserResponse = zod.object({
@@ -4135,6 +4237,9 @@ export const resendUserInvitationResponseOnePincodeMax = 12;
 export const resendUserInvitationResponseOneAddressMax = 500;
 
 
+
+
+
 export const ResendUserInvitationResponse = zod.object({
   "country": zod.string().max(resendUserInvitationResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(resendUserInvitationResponseOneStateMax).optional(),
@@ -4170,6 +4275,7 @@ export const getStaffAssignmentOptionsQueryPageSizeDefault = 20;
 export const getStaffAssignmentOptionsQueryPageSizeMax = 100;
 
 export const getStaffAssignmentOptionsQuerySelectedIdsMax = 10000;
+
 
 
 export const GetStaffAssignmentOptionsQueryParams = zod.object({
@@ -4210,6 +4316,7 @@ export const getStaffAssignmentOptionsResponseBranchesItemTwoLinkedScheduleToken
 export const getStaffAssignmentOptionsResponsePaginationClinicsTotalMin = 0;
 
 export const getStaffAssignmentOptionsResponsePaginationBranchesTotalMin = 0;
+
 
 
 export const GetStaffAssignmentOptionsResponse = zod.object({
@@ -4308,6 +4415,7 @@ export const listPatientsQueryPageSizeDefault = 20;
 export const listPatientsQueryPageSizeMax = 100;
 
 
+
 export const ListPatientsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "clinicId": zod.coerce.string().optional(),
@@ -4334,6 +4442,7 @@ export const listPatientsResponseTwoItemsItemOnePincodeMax = 12;
 
 export const listPatientsResponseTwoItemsItemOneAgeMin = 0;
 export const listPatientsResponseTwoItemsItemOneAgeMax = 130;
+
 
 
 export const ListPatientsResponse = zod.object({
@@ -4382,6 +4491,7 @@ export const createPatientBodyAgeMin = 0;
 export const createPatientBodyAgeMax = 130;
 
 
+
 export const CreatePatientBody = zod.object({
   "country": zod.string().max(createPatientBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(createPatientBodyStateMax).optional(),
@@ -4412,6 +4522,7 @@ export const createPatientResponseOnePincodeMax = 12;
 
 export const createPatientResponseOneAgeMin = 0;
 export const createPatientResponseOneAgeMax = 130;
+
 
 
 export const CreatePatientResponse = zod.object({
@@ -4457,6 +4568,7 @@ export const getPatientResponseOneAgeMin = 0;
 export const getPatientResponseOneAgeMax = 130;
 
 
+
 export const GetPatientResponse = zod.object({
   "country": zod.string().max(getPatientResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(getPatientResponseOneStateMax).optional(),
@@ -4500,6 +4612,7 @@ export const updatePatientBodyAgeMin = 0;
 export const updatePatientBodyAgeMax = 130;
 
 
+
 export const UpdatePatientBody = zod.object({
   "country": zod.string().max(updatePatientBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(updatePatientBodyStateMax).optional(),
@@ -4530,6 +4643,7 @@ export const updatePatientResponseOnePincodeMax = 12;
 
 export const updatePatientResponseOneAgeMin = 0;
 export const updatePatientResponseOneAgeMax = 130;
+
 
 
 export const UpdatePatientResponse = zod.object({
@@ -4574,6 +4688,7 @@ export const listMastersQueryPageSizeDefault = 20;
 export const listMastersQueryPageSizeMax = 100;
 
 
+
 export const ListMastersQueryParams = zod.object({
   "category": zod.coerce.string().optional(),
   "parentId": zod.coerce.string().optional(),
@@ -4585,6 +4700,9 @@ export const ListMastersQueryParams = zod.object({
 })
 
 export const listMastersResponseOneTotalMin = 0;
+
+
+
 
 
 export const ListMastersResponse = zod.object({
@@ -4606,6 +4724,10 @@ export const ListMastersResponse = zod.object({
 }))
 
 
+
+
+
+
 export const CreateMasterBody = zod.object({
   "category": zod.enum(['country', 'state', 'city', 'area', 'pincode', 'clinicType', 'clinicCategory', 'clinicStatus', 'specialization', 'qualification', 'department', 'consultationType', 'appointmentStatus', 'appointmentType', 'bookingSource', 'cancellationReason', 'queueStatus', 'tokenPrefix', 'queueType', 'queuePriority', 'userRole', 'userStatus']),
   "name": zod.string().min(1),
@@ -4614,6 +4736,9 @@ export const CreateMasterBody = zod.object({
   "sortOrder": zod.number().int().optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
+
+
+
 
 
 export const CreateMasterResponse = zod.object({
@@ -4633,6 +4758,9 @@ export const GetMasterParams = zod.object({
 })
 
 
+
+
+
 export const GetMasterResponse = zod.object({
   "category": zod.enum(['country', 'state', 'city', 'area', 'pincode', 'clinicType', 'clinicCategory', 'clinicStatus', 'specialization', 'qualification', 'department', 'consultationType', 'appointmentStatus', 'appointmentType', 'bookingSource', 'cancellationReason', 'queueStatus', 'tokenPrefix', 'queueType', 'queuePriority', 'userRole', 'userStatus']),
   "name": zod.string().min(1),
@@ -4650,6 +4778,9 @@ export const UpdateMasterParams = zod.object({
 })
 
 
+
+
+
 export const UpdateMasterBody = zod.object({
   "category": zod.enum(['country', 'state', 'city', 'area', 'pincode', 'clinicType', 'clinicCategory', 'clinicStatus', 'specialization', 'qualification', 'department', 'consultationType', 'appointmentStatus', 'appointmentType', 'bookingSource', 'cancellationReason', 'queueStatus', 'tokenPrefix', 'queueType', 'queuePriority', 'userRole', 'userStatus']),
   "name": zod.string().min(1),
@@ -4658,6 +4789,9 @@ export const UpdateMasterBody = zod.object({
   "sortOrder": zod.number().int().optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
+
+
+
 
 
 export const UpdateMasterResponse = zod.object({
@@ -4689,6 +4823,7 @@ export const listSchedulesQueryPageDefault = 1;
 
 export const listSchedulesQueryPageSizeDefault = 20;
 export const listSchedulesQueryPageSizeMax = 100;
+
 
 
 export const ListSchedulesQueryParams = zod.object({
@@ -4942,6 +5077,7 @@ export const DeleteScheduleParams = zod.object({
 export const deleteScheduleQueryExpectedSnapshotMax = 20000;
 
 
+
 export const DeleteScheduleQueryParams = zod.object({
   "expectedSnapshot": zod.coerce.string().max(deleteScheduleQueryExpectedSnapshotMax).optional().describe('Optional loaded schedule authoring snapshot. Compared after acquiring doctor locks; stale changes return 409. Deactivation retains history.')
 })
@@ -4953,6 +5089,7 @@ export const listAvailabilityExceptionsQueryPageDefault = 1;
 
 export const listAvailabilityExceptionsQueryPageSizeDefault = 20;
 export const listAvailabilityExceptionsQueryPageSizeMax = 100;
+
 
 
 export const ListAvailabilityExceptionsQueryParams = zod.object({
@@ -4970,6 +5107,7 @@ export const ListAvailabilityExceptionsQueryParams = zod.object({
 export const listAvailabilityExceptionsResponseOneTotalMin = 0;
 
 export const listAvailabilityExceptionsResponseTwoItemsItemOneMaxTokensMax = 1000;
+
 
 
 export const ListAvailabilityExceptionsResponse = zod.object({
@@ -5000,6 +5138,7 @@ export const ListAvailabilityExceptionsResponse = zod.object({
 export const createAvailabilityExceptionBodyMaxTokensMax = 1000;
 
 
+
 export const CreateAvailabilityExceptionBody = zod.object({
   "sessionId": zod.string().optional(),
   "doctorId": zod.string(),
@@ -5016,6 +5155,7 @@ export const CreateAvailabilityExceptionBody = zod.object({
 })
 
 export const createAvailabilityExceptionResponseOneMaxTokensMax = 1000;
+
 
 
 export const CreateAvailabilityExceptionResponse = zod.object({
@@ -5043,6 +5183,7 @@ export const UpdateAvailabilityExceptionParams = zod.object({
 export const updateAvailabilityExceptionBodyMaxTokensMax = 1000;
 
 
+
 export const UpdateAvailabilityExceptionBody = zod.object({
   "sessionId": zod.string().optional(),
   "doctorId": zod.string(),
@@ -5059,6 +5200,7 @@ export const UpdateAvailabilityExceptionBody = zod.object({
 })
 
 export const updateAvailabilityExceptionResponseOneMaxTokensMax = 1000;
+
 
 
 export const UpdateAvailabilityExceptionResponse = zod.object({
@@ -5092,6 +5234,7 @@ export const listAppointmentsQueryPageSizeDefault = 20;
 export const listAppointmentsQueryPageSizeMax = 100;
 
 
+
 export const ListAppointmentsQueryParams = zod.object({
   "sessionId": zod.coerce.string().optional(),
   "startTime": zod.coerce.string().optional(),
@@ -5114,6 +5257,7 @@ export const ListAppointmentsQueryParams = zod.object({
 export const listAppointmentsResponseOneTotalMin = 0;
 
 export const listAppointmentsResponseTwoItemsItemOneNotesMax = 1000;
+
 
 
 export const ListAppointmentsResponse = zod.object({
@@ -5203,6 +5347,7 @@ export const ListAppointmentsResponse = zod.object({
 export const createAppointmentBodyNotesMax = 1000;
 
 
+
 export const CreateAppointmentBody = zod.object({
   "sessionId": zod.string().optional(),
   "startTime": zod.string().optional(),
@@ -5221,6 +5366,7 @@ export const CreateAppointmentBody = zod.object({
 })
 
 export const createAppointmentResponseOneNotesMax = 1000;
+
 
 
 export const CreateAppointmentResponse = zod.object({
@@ -5341,6 +5487,7 @@ export const GetAppointmentParams = zod.object({
 export const getAppointmentResponseOneNotesMax = 1000;
 
 
+
 export const GetAppointmentResponse = zod.object({
   "sessionId": zod.string().optional(),
   "startTime": zod.string().optional(),
@@ -5426,11 +5573,13 @@ export const GetAppointmentQrResponse = zod.object({
  */
 
 
+
 export const ResolveAppointmentQrBody = zod.object({
   "payload": zod.string().min(1)
 })
 
 export const resolveAppointmentQrResponseAppointmentOneNotesMax = 1000;
+
 
 
 export const ResolveAppointmentQrResponse = zod.object({
@@ -5509,11 +5658,13 @@ export const ResolveAppointmentQrResponse = zod.object({
  */
 
 
+
 export const CheckInAppointmentQrBody = zod.object({
   "payload": zod.string().min(1)
 })
 
 export const checkInAppointmentQrResponseAppointmentOneNotesMax = 1000;
+
 
 
 export const CheckInAppointmentQrResponse = zod.object({
@@ -5629,6 +5780,7 @@ export const RescheduleAppointmentParams = zod.object({
 export const rescheduleAppointmentBodyExpectedRevisionMin = 0;
 
 
+
 export const RescheduleAppointmentBody = zod.object({
   "sessionId": zod.string().optional(),
   "startTime": zod.string().optional(),
@@ -5640,6 +5792,7 @@ export const RescheduleAppointmentBody = zod.object({
 })
 
 export const rescheduleAppointmentResponseOneNotesMax = 1000;
+
 
 
 export const RescheduleAppointmentResponse = zod.object({
@@ -5728,6 +5881,8 @@ export const TransitionAppointmentParams = zod.object({
 export const transitionAppointmentBodyExpectedRevisionMin = 0;
 
 
+
+
 export const TransitionAppointmentBody = zod.object({
   "action": zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel']),
   "reason": zod.string().optional(),
@@ -5739,6 +5894,7 @@ export const TransitionAppointmentBody = zod.object({
 })
 
 export const transitionAppointmentResponseOneNotesMax = 1000;
+
 
 
 export const TransitionAppointmentResponse = zod.object({
@@ -5816,6 +5972,7 @@ export const getQueueQueryPageSizeMax = 100;
 export const getQueueQuerySearchMax = 200;
 
 
+
 export const GetQueueQueryParams = zod.object({
   "sessionId": zod.coerce.string().optional(),
   "startTime": zod.coerce.string().optional(),
@@ -5832,6 +5989,7 @@ export const GetQueueQueryParams = zod.object({
 })
 
 export const getQueueResponseEntriesItemOneNotesMax = 1000;
+
 
 
 export const GetQueueResponse = zod.object({
@@ -5969,6 +6127,7 @@ export const CallNextBody = zod.object({
 export const callNextResponseAppointmentOneOneNotesMax = 1000;
 
 
+
 export const CallNextResponse = zod.object({
   "appointment": zod.union([zod.object({
   "sessionId": zod.string().optional(),
@@ -6043,6 +6202,7 @@ export const listQrsQueryPageSizeDefault = 20;
 export const listQrsQueryPageSizeMax = 100;
 
 
+
 export const ListQrsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "sort": zod.coerce.string().optional().describe('Allowlisted field with optional minus prefix for descending order'),
@@ -6055,6 +6215,7 @@ export const ListQrsQueryParams = zod.object({
 })
 
 export const listQrsResponseOneTotalMin = 0;
+
 
 
 export const ListQrsResponse = zod.object({
@@ -6180,6 +6341,7 @@ export const GetDashboardQueryParams = zod.object({
 })
 
 export const getDashboardResponseRecentAppointmentsItemOneNotesMax = 1000;
+
 
 
 export const GetDashboardResponse = zod.object({
@@ -6333,6 +6495,7 @@ export const listAuditLogsQueryPageSizeDefault = 20;
 export const listAuditLogsQueryPageSizeMax = 100;
 
 
+
 export const ListAuditLogsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "sort": zod.coerce.string().optional().describe('Allowlisted field with optional minus prefix for descending order'),
@@ -6347,6 +6510,7 @@ export const ListAuditLogsQueryParams = zod.object({
 })
 
 export const listAuditLogsResponseOneTotalMin = 0;
+
 
 
 export const ListAuditLogsResponse = zod.object({
@@ -6382,6 +6546,7 @@ export const getSettingsResponseOneOtpExpirySecondsMax = 900;
 export const getSettingsResponseOneOtpMaxAttemptsMax = 10;
 
 export const getSettingsResponseOneSessionTimeoutMinutesMin = 5;
+
 
 
 export const GetSettingsResponse = zod.object({
@@ -6420,6 +6585,7 @@ export const updateSettingsBodyOtpMaxAttemptsMax = 10;
 export const updateSettingsBodySessionTimeoutMinutesMin = 5;
 
 
+
 export const UpdateSettingsBody = zod.object({
   "platformName": zod.string().optional(),
   "supportEmail": zod.string().email().optional(),
@@ -6447,6 +6613,7 @@ export const updateSettingsResponseOneOtpExpirySecondsMax = 900;
 export const updateSettingsResponseOneOtpMaxAttemptsMax = 10;
 
 export const updateSettingsResponseOneSessionTimeoutMinutesMin = 5;
+
 
 
 export const UpdateSettingsResponse = zod.object({
@@ -6494,14 +6661,39 @@ export const ListNotificationsResponse = zod.object({
   "unread": zod.number().int()
 })
 
+
 /**
  * Read-only durable booking email outcomes for the selected clinic's current owning Clinic Admin. No recipient details or message content. Reading never dispatches or retries mail.
  */
 
 export const listBookingMailOutcomesQueryPageDefault = 1;
+export const listBookingMailOutcomesQueryPageMax = 10000;
+
+export const listBookingMailOutcomesQueryPageSizeDefault = 20;
+export const listBookingMailOutcomesQueryPageSizeMax = 50;
+
+
+
+export const ListBookingMailOutcomesQueryParams = zod.object({
+  "clinicId": zod.coerce.string().min(1),
+  "page": zod.coerce.number().int().min(1).max(listBookingMailOutcomesQueryPageMax).default(listBookingMailOutcomesQueryPageDefault),
+  "pageSize": zod.coerce.number().int().min(1).max(listBookingMailOutcomesQueryPageSizeMax).default(listBookingMailOutcomesQueryPageSizeDefault)
+})
+
+export const ListBookingMailOutcomesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "reference": zod.string().nullable(),
+  "status": zod.enum(['pending', 'sending', 'provider_accepted', 'delivery_unknown', 'configuration_failed', 'preparation_failed', 'disabled', 'obsolete', 'no_recipient', 'unknown']),
+  "createdAt": zod.number().int().nullable().describe('Recorded event time in milliseconds since epoch')
+})),
+  "hasMore": zod.boolean()
+})
+
+
 export const markNotificationsReadBodyIdsItemMax = 120;
 
 export const markNotificationsReadBodyIdsMax = 100;
+
 
 
 export const MarkNotificationsReadBody = zod.object({
@@ -6571,6 +6763,7 @@ export const UploadPatientDocumentParams = zod.object({
 export const uploadPatientDocumentQueryNameMax = 160;
 
 
+
 export const UploadPatientDocumentQueryParams = zod.object({
   "name": zod.coerce.string().min(1).max(uploadPatientDocumentQueryNameMax),
   "clinicId": zod.coerce.string().optional()
@@ -6614,6 +6807,7 @@ export const listPatientActivityQueryPageDefault = 1;
 
 export const listPatientActivityQueryPageSizeDefault = 20;
 export const listPatientActivityQueryPageSizeMax = 100;
+
 
 
 export const ListPatientActivityQueryParams = zod.object({
@@ -6668,6 +6862,7 @@ export const searchRecordsQueryQMin = 2;
 export const searchRecordsQueryQMax = 100;
 
 
+
 export const SearchRecordsQueryParams = zod.object({
   "q": zod.coerce.string().min(searchRecordsQueryQMin).max(searchRecordsQueryQMax)
 })
@@ -6695,6 +6890,7 @@ export const SearchRecordsResponse = zod.object({
 export const listSavedViewsQueryTableKeyMax = 60;
 
 
+
 export const ListSavedViewsQueryParams = zod.object({
   "tableKey": zod.coerce.string().max(listSavedViewsQueryTableKeyMax)
 })
@@ -6708,6 +6904,7 @@ export const listSavedViewsResponseItemsItemColumnsHiddenItemMax = 60;
 export const listSavedViewsResponseItemsItemColumnsHiddenMax = 40;
 
 export const listSavedViewsResponseItemsItemColumnsPinnedMax = 60;
+
 
 
 export const ListSavedViewsResponse = zod.object({
@@ -6745,6 +6942,7 @@ export const createSavedViewBodyColumnsHiddenMax = 40;
 export const createSavedViewBodyColumnsPinnedMax = 60;
 
 
+
 export const CreateSavedViewBody = zod.object({
   "tableKey": zod.string().max(createSavedViewBodyTableKeyMax),
   "name": zod.string().min(1).max(createSavedViewBodyNameMax),
@@ -6768,6 +6966,7 @@ export const createSavedViewResponseColumnsHiddenMax = 40;
 export const createSavedViewResponseColumnsPinnedMax = 60;
 
 
+
 export const CreateSavedViewResponse = zod.object({
   "id": zod.string(),
   "tableKey": zod.string(),
@@ -6788,25 +6987,3 @@ export const DeleteSavedViewParams = zod.object({
 })
 
 export const DeleteSavedViewResponse = zod.void()
-
-
-export const ListBookingMailOutcomesResponse = zod.object({
-  "items": zod.array(zod.object({
-  "reference": zod.string().nullable(),
-  "status": zod.enum(['pending', 'sending', 'provider_accepted', 'delivery_unknown', 'configuration_failed', 'preparation_failed', 'disabled', 'obsolete', 'no_recipient', 'unknown']),
-  "createdAt": zod.number().int().nullable().describe('Recorded event time in milliseconds since epoch')
-})),
-  "hasMore": zod.boolean()
-})
-
-export const ListBookingMailOutcomesQueryParams = zod.object({
-  "clinicId": zod.coerce.string().min(1),
-  "page": zod.coerce.number().int().min(1).max(listBookingMailOutcomesQueryPageMax).default(listBookingMailOutcomesQueryPageDefault),
-  "pageSize": zod.coerce.number().int().min(1).max(listBookingMailOutcomesQueryPageSizeMax).default(listBookingMailOutcomesQueryPageSizeDefault)
-})
-
-export const listBookingMailOutcomesQueryPageSizeDefault = 20;
-
-export const listBookingMailOutcomesQueryPageMax = 10000;
-
-export const listBookingMailOutcomesQueryPageSizeMax = 50;
