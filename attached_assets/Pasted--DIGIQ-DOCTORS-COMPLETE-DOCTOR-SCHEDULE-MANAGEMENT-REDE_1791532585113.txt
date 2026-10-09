@@ -1,0 +1,764 @@
+# DIGIQ DOCTORS — COMPLETE DOCTOR SCHEDULE MANAGEMENT REDESIGN & IMPLEMENTATION PROMPT
+
+## 1. OBJECTIVE
+
+Improve the existing Doctor Schedule Management experience in DigiQ Doctors, including the Edit Doctor Schedule popup, its role-based behavior, scheduling rules, validation, backend integration, and UI/UX.
+
+The feature must support three user roles:
+
+1. Doctor — manages their own schedule where permitted.
+2. Clinic Admin — manages schedules within their authorized clinic scope.
+3. Super Admin — manages schedules within their authorized administrative scope.
+
+The final experience must be compact, intuitive, reliable, and easy for non-technical users to operate.
+
+**This is an improvement to the existing application, not a new standalone implementation.**
+
+Inspect the existing Replit project before changing code. Preserve existing business logic, database relationships, APIs, permissions, and design-system conventions wherever possible.
+
+Do not modify unrelated modules.
+
+---
+
+## 2. STRICT DIGIQ DESIGN SYSTEM ENFORCEMENT
+
+The existing DigiQ Doctors design system is the single source of truth.
+
+Use the actual design tokens, typography, colors, spacing, radii, shadows, icons, component library, and interaction patterns already implemented in the repository.
+
+The existing design system has previously documented values such as:
+
+- Primary blue: `#1552B0`
+- Secondary cyan: `#0E8FB3`
+- Workspace background: `#F3F7FC`
+- Navy text: `#0D2350`
+- Typography: Manrope and DM Sans
+- Expanded sidebar: 216px
+- Collapsed sidebar: 64px
+- Standard controls: approximately 40px
+- Existing card, control, and dialog radius conventions
+
+Verify these values against the actual code before using them. Do not overwrite current tokens with a new palette or typography system.
+
+### Mandatory rules
+
+- Use the exact existing design language, not merely a similar style.
+- Reuse existing shared components wherever possible.
+- Do not introduce one-off component styling.
+- Do not introduce alternative button, input, dropdown, badge, tooltip, modal, drawer, or table styles.
+- Do not invent additional spacing, typography, radius, or shadow scales.
+- Do not introduce gradients, decorative effects, or unnecessary animations.
+- Do not increase whitespace without a functional reason.
+- Do not make the popup oversized or unnecessarily tall.
+- Do not allow clipped text, overlapping controls, misaligned elements, or broken dropdown positioning.
+- Keep all labels, fields, controls, and buttons consistently aligned.
+
+### Future component enforcement
+
+Every new component, field, validation message, dropdown, tooltip, confirmation dialog, scheduling widget, and future scheduling feature must inherit the exact same established design system.
+
+If a new component is required, derive it from an existing approved component family. Reuse existing tokens and shared components rather than creating a visually similar alternative.
+
+Consistency is mandatory across all user roles and future development.
+
+---
+
+## 3. INSPECT THE EXISTING IMPLEMENTATION FIRST
+
+Before implementing anything, inspect:
+
+- Current doctor schedule pages and popup components.
+- Existing frontend framework and component library.
+- Backend endpoints and scheduling services.
+- Database models, schema, relationships, and constraints.
+- Doctor, clinic group, clinic, and location relationships.
+- Authentication and role-based authorization.
+- Existing clinic onboarding and configuration screens.
+- Existing timezone and time-format settings.
+- Date/time utilities and timezone conversion logic.
+- Existing appointment booking and conflict detection.
+- Existing form validation, notifications, confirmation dialogs, and audit logging.
+- Existing test suites and UI testing tools.
+- Current dependency manifests and lockfiles.
+
+Determine which components, utilities, APIs, models, and business rules can be reused.
+
+Do not assume something is missing simply because it is not visible in the popup.
+
+If requirements conflict with existing architecture or business rules, identify the exact conflict before making a potentially breaking change.
+
+---
+
+## 4. POPUP STRUCTURE
+
+Create a compact, consistent `Edit Doctor Schedule` popup using the existing dialog conventions.
+
+### Header layout
+
+**Left side:**
+- Title: `Edit Doctor Schedule`
+- Doctor name.
+- Doctor identifier, where available.
+- Close button.
+
+**Right side:**
+- Clinic Group selector, when applicable.
+- Clinic selector, when applicable.
+- Location selector, when applicable.
+- Compact timezone indicator.
+- Compact time-format indicator.
+
+Do not create an oversized doctor profile card or a separate, unnecessarily tall clinic selection section.
+
+Use the available width efficiently.
+
+The header must remain aligned at supported desktop widths. If all controls cannot fit, apply a deliberate responsive layout rather than allowing overlap.
+
+### Doctor information
+
+Display only the essential identification information:
+
+- Doctor name.
+- Doctor ID, if available.
+- Specialty, if useful and already available.
+
+Do not duplicate information already shown clearly in the header.
+
+---
+
+## 5. ROLE-BASED BEHAVIOR
+
+Use the application's existing authorization model. The following describes intended access boundaries, not permission to grant new privileges.
+
+### Doctor
+
+- View their own schedule.
+- Edit their own schedule only when permitted.
+- Do not display administrative clinic selectors unless the existing permissions explicitly allow them.
+- If multiple permitted locations exist, show only authorized locations.
+- Do not permit editing another doctor's schedule without explicit authorization.
+
+### Clinic Admin
+
+- Manage schedules for doctors within authorized clinic scopes.
+- Display the Clinic Group selector only when applicable.
+- Display the Clinic selector when multiple authorized clinics are available.
+- Display the Location selector when multiple locations are available.
+- Automatically select the only authorized value when there is exactly one choice.
+- Do not allow access to unauthorized clinics, doctors, or locations.
+
+### Super Admin
+
+- Manage schedules within their authorized administrative scope.
+- Select Clinic Group, Clinic, and Location as required.
+- Maintain valid relationships between all selections.
+- Do not allow incompatible or unauthorized combinations.
+
+### Shared rules
+
+- Use one shared scheduling implementation across roles.
+- Configure role-specific visibility and permitted actions through existing authorization mechanisms.
+- Enforce all permissions on the backend, not just in the frontend.
+- Revalidate permissions when saving changes.
+- Do not duplicate the scheduling code for each role.
+
+---
+
+## 6. CLINIC AND LOCATION SELECTION
+
+For Clinic Admin and Super Admin, show the relevant clinic selection controls in the popup header.
+
+Use the actual existing data relationships.
+
+Expected dependency:
+
+`Clinic Group → Clinic → Location`
+
+If the existing data model uses a different relationship, follow the actual model.
+
+Requirements:
+
+- Changing a parent selection must refresh dependent options.
+- Clear invalid dependent selections.
+- Load the schedule for the correct doctor, clinic, and location.
+- Do not retain unsaved changes against the wrong context.
+- Confirm before discarding unsaved changes when the context changes.
+- Do not save a schedule against stale or incompatible selections.
+- Handle loading and API failure states consistently.
+
+For Doctor users, do not expose administrative selectors unless explicitly authorized.
+
+---
+
+## 7. CENTRALIZED TIMEZONE CONFIGURATION
+
+Timezone must be configured through the existing clinic onboarding or authorized clinic configuration workflow.
+
+It must not be editable within the Edit Doctor Schedule popup.
+
+### Configuration ownership
+
+- Super Admin manages timezone configuration within their authorized scope.
+- Clinic Admin manages timezone configuration within their authorized scope, subject to existing permissions.
+- Doctor cannot change the clinic timezone through the schedule editor.
+
+### Popup display
+
+Display a compact read-only indicator, for example:
+
+`Timezone: Asia/Kolkata (IST) 🔒`
+
+Requirements:
+
+- Read the saved timezone from the existing clinic/location configuration.
+- Use the selected location's timezone where locations have different settings.
+- Update the displayed value when the selected clinic or location changes.
+- Do not introduce a duplicate timezone field or competing source of truth.
+- Use the existing timezone conversion utilities.
+- Provide a tooltip explaining that schedule times use the configured clinic/location timezone.
+
+If the timezone is missing or invalid, show a clear warning and prevent saving when a valid timezone is required by the existing scheduling rules.
+
+Do not silently assume a timezone or change stored timezone data.
+
+### Timezone changes
+
+When an authorized administrator changes the timezone:
+
+- Follow the existing application rules for schedules and appointments.
+- Preserve historical records.
+- Do not silently shift existing appointment times or reinterpret stored values.
+- Identify the migration and compatibility implications before implementing any change that could alter appointment timing.
+- Keep frontend and backend timezone interpretations consistent.
+
+---
+
+## 8. CENTRALIZED 12-HOUR / 24-HOUR FORMAT
+
+The time format must be managed through the existing clinic onboarding or configuration workflow.
+
+It must not be editable in the Edit Doctor Schedule popup.
+
+### Popup display
+
+Display the configured format as a compact read-only indicator:
+
+`Time format: 12-hour (AM/PM) 🔒`
+
+or:
+
+`Time format: 24-hour 🔒`
+
+### Display rules
+
+| Format | Example |
+|---|---|
+| 12-hour | 09:00 AM – 02:00 PM |
+| 24-hour | 09:00 – 14:00 |
+
+Requirements:
+
+- Reuse the existing configuration and formatting utilities.
+- Respect the existing configuration hierarchy and defaults.
+- If a format is not explicitly configured, use the application's established default rather than inventing a new preference.
+- Apply the format consistently across weekday schedules, time pickers, schedule summaries, and relevant displays governed by the same configuration.
+- Changing the display format must not change the underlying appointment time.
+- Do not duplicate time-format settings in individual schedules.
+
+Both timezone and time format must be visible, compact, and read-only in the popup.
+
+---
+
+## 9. SEVEN-DAY SCHEDULE NAVIGATION
+
+Display all seven weekdays in a compact horizontal tab row:
+
+`Mon | Tue | Wed | Thu | Fri | Sat | Sun`
+
+Requirements:
+
+- Keep all seven tabs visible at supported desktop widths.
+- Use the same tab component and active-state styling as the existing application.
+- Clearly distinguish the selected day.
+- Display only the selected day's editing panel.
+- Preserve unsaved changes when switching days.
+- Do not create seven simultaneously expanded sections.
+- Do not lose changes when switching tabs.
+- If changing clinic/location or closing the popup would discard unsaved changes, use the existing confirmation pattern.
+
+Each weekday must maintain its own working-day state and time slots.
+
+---
+
+## 10. WORKING-DAY TOGGLE AND ACTIONS
+
+Immediately below the weekday tabs, display a compact control row.
+
+**Required arrangement:**
+
+`Wednesday  [Working day ON]       [Copy from ▼]  [+ Add Time Slot]`
+
+The selected day name and working-day toggle belong on the left.
+
+The `Copy from` dropdown must be immediately to the right of the day/toggle area.
+
+The `+ Add Time Slot` button must be directly beside `Copy from`, within the same inner section.
+
+These positions are mandatory.
+
+Do not move `Copy from` into the popup header or a separate toolbar.
+
+### Toggle OFF
+
+- Disable scheduling for the selected day.
+- Hide or disable the editable slot area.
+- Preserve existing slot data in the unsaved form state.
+- Do not automatically delete previously saved slots.
+- Clearly indicate that the day is not working.
+
+### Toggle ON
+
+- Display the selected day's time-slot editor.
+- Allow adding, editing, and removing slots.
+- Require valid time slots when required by existing business rules.
+- Preserve all existing supported schedule settings.
+
+---
+
+## 11. TIME-SLOT EDITOR
+
+Use a compact, aligned layout with consistent columns.
+
+Example:
+
+| Slot | Start Time | End Time | Duration | Action |
+|---|---|---|---|---|
+| 1 | 09:00 AM | 02:00 PM | 15 min | Remove |
+| 2 | 03:00 PM | 07:00 PM | 15 min | Remove |
+
+The values above illustrate the layout only. Load actual schedule data from the backend.
+
+### Requirements
+
+- Use the existing time-picker component.
+- Follow the configured 12-hour or 24-hour display format.
+- Respect the configured timezone.
+- Preserve existing consultation-duration or slot-duration settings.
+- Do not introduce new duration rules without inspecting existing business logic.
+- Keep start and end fields aligned across all rows.
+- Use consistent remove icons with accessible tooltips.
+- Add new slots using the same component structure.
+- Avoid unnecessary cards or borders around each slot.
+- Keep the interface compact and scannable.
+- Support keyboard navigation and visible focus states.
+- Prevent clipping and horizontal overflow.
+
+### Validation
+
+Validate:
+
+- Start time precedes end time.
+- Times are valid.
+- Slots do not overlap where overlapping is prohibited.
+- Duplicate slots are rejected.
+- Existing break/session rules are preserved.
+- Duration and increment rules remain consistent with the current implementation.
+- All times are interpreted in the correct timezone.
+
+Display clear inline messages beside the affected slot.
+
+Example:
+
+`This time slot overlaps with Slot 1.`
+
+Do not use a generic error message when the specific conflict can be identified.
+
+---
+
+## 12. COPY FROM FUNCTIONALITY
+
+The `Copy from` dropdown must list the other weekdays, excluding the currently selected day.
+
+Example, when Wednesday is selected:
+
+`Copy from: [Monday ▼]`
+
+Use the existing design-system dropdown component.
+
+After a source day is selected, allow the user to choose between two supported copy operations.
+
+### A. Copy Entire Schedule
+
+Copy the source day's:
+
+- Working-day state.
+- Time slots.
+- Supported day-level schedule settings already defined by the current data model.
+
+Do not copy doctor identity, clinic assignment, location assignment, appointment records, or unrelated data.
+
+### B. Copy Selected Time Slot
+
+- Display the available slots from the source day.
+- Allow selection of an individual source slot.
+- Copy its start time, end time, and compatible slot-level settings.
+- Validate the copied slot against existing destination slots.
+
+### Safeguards
+
+- Copy into the unsaved form state first.
+- Do not save automatically.
+- Confirm before replacing existing destination slots.
+- Explain whether the operation replaces the entire schedule or adds a slot.
+- Allow cancellation without altering the destination.
+- Validate conflicts after copying.
+- Never modify the source day.
+- Do not allow copying to bypass permissions or backend validation.
+
+If equivalent copy functionality already exists, reuse it.
+
+---
+
+## 13. SCHEDULE SAVING AND FOOTER
+
+Use a compact, sticky footer consistent with the existing design system.
+
+**Left side:**
+- `Delete Schedule`, only if supported and authorized.
+
+**Right side:**
+- `Cancel`
+- `Save Schedule`
+
+### Save workflow
+
+When Save Schedule is selected:
+
+1. Validate all changed days and slots.
+2. Validate doctor, clinic, location, timezone, and authorization context.
+3. Check schedule conflicts.
+4. Check duplicate records and overlapping intervals.
+5. Submit through the existing API/service.
+6. Enforce backend permissions and validation.
+7. Handle concurrent modifications.
+8. Prevent duplicate submissions.
+9. Display success only after confirmed persistence.
+10. Refresh the relevant schedule data.
+11. Close the popup only after a successful save, following the existing workflow.
+
+Do not introduce new APIs if existing endpoints can support the feature safely.
+
+### Cancel workflow
+
+- Close immediately when no unsaved changes exist.
+- Ask for confirmation when unsaved changes would be discarded.
+
+### Delete workflow
+
+- Display only when deletion is supported and authorized.
+- Use the existing confirmation dialog.
+- Identify the affected doctor and schedule context.
+- Preserve historical appointments and records according to existing retention rules.
+- Do not delete unrelated doctor, clinic, or appointment data.
+
+---
+
+## 14. DUPLICATE SCHEDULES AND CONFLICT PREVENTION
+
+This is a critical business requirement.
+
+A doctor must not have conflicting active schedule entries or incompatible simultaneous appointments.
+
+Inspect the current scheduling model and determine the actual uniqueness and conflict rules before implementing validation.
+
+### Required checks
+
+- Duplicate schedule entries.
+- Duplicate time slots.
+- Overlapping slots for the same doctor and applicable schedule context.
+- Conflicting clinic/location assignments.
+- Existing schedules outside the currently open popup.
+- Existing appointment conflicts.
+- Concurrent schedule updates.
+- Timezone and day-boundary implications.
+- Existing overnight schedule behavior, if supported.
+
+### Important distinction
+
+A doctor may be permitted to work across multiple clinics. Do not assume that identical clock-time intervals across different clinics are automatically invalid in every circumstance.
+
+Follow the existing business rules for simultaneous assignments and incompatible bookings.
+
+### Backend enforcement
+
+- Perform conflict validation on the server.
+- Use database constraints or transactions where appropriate.
+- Do not rely exclusively on frontend checks.
+- Prevent simultaneous requests from creating duplicate schedules.
+- Return actionable conflict messages.
+- Never silently merge, move, delete, or overwrite conflicting schedules.
+
+---
+
+## 15. UI STATES AND ERROR HANDLING
+
+Support consistent states for:
+
+- Initial loading.
+- Schedule loading.
+- Empty schedule.
+- Disabled working day.
+- No available copy source.
+- Adding a slot.
+- Invalid time.
+- Overlapping slot.
+- Duplicate schedule.
+- Unauthorized action.
+- Missing timezone configuration.
+- API failure.
+- Concurrent modification.
+- Saving.
+- Successful save.
+- Failed save.
+- Unsaved changes.
+- Delete confirmation.
+
+Reuse existing DigiQ Doctors components for tooltips, alerts, inline errors, toasts, skeletons, and confirmation dialogs.
+
+Do not create alternative notification styles.
+
+Errors must explain what happened and, where possible, how the user can correct the issue.
+
+---
+
+## 16. COMPACTNESS AND RESPONSIVE BEHAVIOR
+
+The interface must prioritize high-density operational usability.
+
+### Mandatory compactness rules
+
+- Avoid unnecessary whitespace and oversized padding.
+- Keep the header short.
+- Avoid large doctor profile cards.
+- Keep timezone and format indicators compact.
+- Display all seven weekday tabs together on supported desktop widths.
+- Place the working-day toggle, `Copy from`, and `Add Time Slot` on the same control row.
+- Use consistent, compact time-slot rows.
+- Avoid redundant labels and repeated information.
+- Avoid nested scrolling containers unless necessary.
+- Keep Save and Cancel accessible in a predictable footer.
+
+### Responsive rules
+
+- Desktop: use the compact horizontal layout.
+- Tablet: preserve alignment and use controlled wrapping where required.
+- Mobile: adapt controls deliberately rather than shrinking desktop elements until they overlap.
+- Never allow dropdowns to clip outside the viewport.
+- Never hide critical save, cancel, or validation information.
+- Ensure all controls remain keyboard- and touch-accessible.
+
+Use existing DigiQ responsive breakpoints and layout conventions.
+
+---
+
+## 17. CODE REUSE AND DEPENDENCY OPTIMIZATION
+
+Before implementation, inspect all relevant dependencies and existing implementations.
+
+### Reuse existing components and services
+
+Reuse:
+
+- Modal/dialog components.
+- Tabs and dropdowns.
+- Time pickers.
+- Toggles and icon buttons.
+- Form controls and validation.
+- Notifications and confirmations.
+- Date/time formatting utilities.
+- Timezone conversion utilities.
+- Schedule APIs and services.
+- Appointment conflict validation.
+- Authentication and permission services.
+- Existing database models and relationships.
+- Existing audit logging.
+
+### Prevent duplicate coding
+
+Do not create:
+
+- Duplicate scheduling components.
+- Separate copies of the same scheduling logic for each role.
+- Duplicate APIs for existing operations.
+- Multiple utilities for the same timezone or formatting behavior.
+- Duplicate clinic configuration fields.
+- Redundant database fields storing identical information.
+- Repeated validation logic across unrelated components.
+- Unnecessary state variables representing the same data.
+- Duplicate event handlers or save requests.
+
+Enhance shared components centrally when safe and appropriate.
+
+### Dependency rules
+
+- Inspect package manifests and lockfiles before adding dependencies.
+- Prefer existing libraries and framework capabilities.
+- Do not introduce overlapping date/time, form, dropdown, or UI libraries.
+- Do not upgrade unrelated packages.
+- Do not remove dependencies without checking their usage.
+- Add a new dependency only when genuinely necessary.
+- Document why a new dependency is required.
+
+### Performance rules
+
+- Maintain one clear source of truth for each data entity.
+- Avoid redundant API calls and unnecessary refetching.
+- Reuse existing caching and query mechanisms.
+- Avoid unnecessary re-renders and repeated calculations.
+- Load only the data needed for the selected schedule context.
+- Handle stale data and concurrent updates correctly.
+- Optimize without sacrificing correctness or maintainability.
+
+---
+
+## 18. SAFE REFACTORING
+
+If existing code contains duplication or technical debt affecting this feature:
+
+1. Identify the existing implementations and their callers.
+2. Determine whether consolidation is safe.
+3. Refactor only what is necessary for this feature and its integrations.
+4. Preserve API contracts and database compatibility wherever possible.
+5. Test all affected workflows.
+6. Remove obsolete code only after confirming it is unused.
+7. Avoid unrelated architectural rewrites.
+
+Do not reduce code length at the expense of readability, data integrity, authorization, or maintainability.
+
+---
+
+## 19. TESTING REQUIREMENTS
+
+Use the project's existing test framework and tooling.
+
+### Functional tests
+
+Test:
+
+- All seven weekday tabs.
+- Enabling and disabling working days.
+- Adding, editing, and removing slots.
+- Copying entire schedules.
+- Copying individual slots.
+- Canceling copy operations.
+- Saving valid schedules.
+- Rejecting invalid times.
+- Rejecting duplicate and overlapping slots.
+- Clinic and location switching.
+- Unsaved-change confirmations.
+- Failed API requests.
+- Concurrent modifications.
+- Delete permissions.
+- Preservation of existing schedule and appointment records.
+
+### Role-based tests
+
+Test Doctor, Clinic Admin, and Super Admin separately.
+
+Verify:
+
+- Authorized schedule access.
+- Unauthorized access rejection.
+- Correct clinic and location selectors.
+- Backend authorization enforcement.
+- Permission changes and stale authorization.
+- No access to another doctor's schedule without authorization.
+
+### Configuration tests
+
+Verify:
+
+- Timezone is read from the correct saved clinic/location configuration.
+- Time format is read from the correct configuration.
+- Both settings are read-only in the schedule popup.
+- 12-hour and 24-hour displays work correctly.
+- Timezone changes do not silently corrupt existing appointments.
+- Display-format changes do not alter underlying time values.
+
+### UI tests
+
+Verify:
+
+- Correct popup dimensions.
+- Header alignment.
+- Selector alignment.
+- Seven-day tab consistency.
+- Exact placement of `Copy from` beside the working-day toggle.
+- Exact placement of `Add Time Slot` beside `Copy from`.
+- Consistent time-slot columns.
+- Sticky footer behavior.
+- Responsive layouts.
+- Keyboard navigation and focus states.
+- Long doctor, clinic, and location names.
+- No clipped text, overlapping controls, or accidental overflow.
+
+Run the relevant tests and report actual results. Do not claim success for tests that were not executed.
+
+---
+
+## 20. ACCEPTANCE CRITERIA
+
+The implementation is complete only when:
+
+1. The popup is compact and easy for non-technical users.
+2. All seven days are accessible through consistent tabs.
+3. Each day has an independent working-day toggle and schedule.
+4. `Copy from` is immediately beside the working-day toggle area.
+5. `Add Time Slot` is immediately beside `Copy from`.
+6. Clinic, group, and location selectors appear in the header for authorized administrative roles as applicable.
+7. Doctor, Clinic Admin, and Super Admin use the same shared scheduling logic.
+8. Role restrictions are enforced on the backend.
+9. Timezone and time format are configured through existing clinic onboarding/settings workflows.
+10. Timezone and format are visible but read-only in the schedule popup.
+11. Both 12-hour and 24-hour display formats work correctly.
+12. Copy operations are explicit and validated.
+13. Duplicate or incompatible overlapping schedules cannot be saved.
+14. Changes are persisted through existing backend services.
+15. Existing appointments and schedule data are preserved.
+16. No unnecessary dependencies or duplicate implementations are introduced.
+17. Existing DigiQ Doctors design tokens and shared components are used exactly.
+18. Relevant tests pass.
+19. No regressions occur in affected screens or workflows.
+20. No unrelated modules are changed.
+
+---
+
+## 21. REQUIRED IMPLEMENTATION REPORT
+
+After implementation, provide a concise but complete report containing:
+
+- Files created and modified.
+- Existing components and services reused.
+- APIs and database models reused.
+- Role-based permissions verified.
+- Schedule conflict and duplicate prevention implemented.
+- Timezone and time-format configuration source confirmed.
+- Dependencies added, removed, or upgraded, with justification.
+- Duplicate logic consolidated or remaining duplication identified.
+- Performance optimizations performed.
+- Tests executed and actual results.
+- Any unresolved requirements, architectural conflicts, or risks.
+
+Do not claim duplicate code, dependencies, or data have been eliminated without inspecting and verifying the relevant implementation.
+
+---
+
+## FINAL EXECUTION INSTRUCTION
+
+**Inspect first. Reuse existing code. Implement the smallest complete and safe change. Test before declaring completion.**
+
+Keep this task limited to doctor schedule management and its necessary integrations.
+
+Do not build a parallel scheduling system. Do not redesign unrelated screens. Do not replace the existing design system. Do not introduce a new visual language.
+
+Every new or modified component must follow the exact same DigiQ Doctors UI/UX standards, and all future scheduling-related features must continue using the same shared components, tokens, validation rules, permissions, and architecture.
