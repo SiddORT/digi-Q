@@ -18,7 +18,7 @@ import { RegistrationFixture } from "./RegistrationFixture";
 // Browser tests intercept *all* /api/ requests before opening this page.
 const identity = {
   user: { id: "fixture-admin", role: "superAdmin", fullName: "Fixture Administrator" },
-  doctorId: "doctor-1",
+  doctorId: "d1",
 } as React.ComponentProps<typeof ClinicSettings>["identity"];
 function FixtureWorkspace(){
 const titleOwner=useRef<string|null>(null);

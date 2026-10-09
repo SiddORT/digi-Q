@@ -74,6 +74,7 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
         export * from "./lib/store";
         export * from "./lib/clinic-expansion";
         export * from "./lib/availability";
+        export * from "./lib/schedule-snapshot";
         export * from "./lib/clinical-membership";
         export * from "./lib/list-query";
         export * from "./routes/appointments";
@@ -83,6 +84,16 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
         export { authorizeWrite, createClinicAdminOnboarding, resourcesRouter } from "./routes/resources";
         export { clinicExpansionRouter } from "./routes/clinic-expansion";
         export * as tables from "@workspace/db";
+        import express from "express";
+        import { nativeSession } from "./lib/native-auth";
+        import { resourcesRouter } from "./routes/resources";
+        export function authenticatedScheduleApp(){
+          const app=express();app.use(express.json());
+          app.use((req,res,next)=>globalThis.queueContentionContext.context.run({authenticate:true},()=>nativeSession(req,res,next)));
+          app.use("/api",resourcesRouter);
+          app.use((error,req,res,next)=>res.status(error.status||500).json({error:error.message}));
+          return app;
+        }
       `, resolveDir: root },
       outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
       plugins: [{ name: "disposable-postgres", setup(b) {
@@ -99,8 +110,8 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
         `, resolveDir: root }));
         b.onLoad({ filter: /lib\/auth\.ts$/ }, async a => ({
           contents: (await readFile(a.path, "utf8")).replace(
-            /export async function requireUser\(req: Request\) \{[\s\S]*?\n\}/,
-            "export async function requireUser(req: Request) { return globalThis.queueContentionContext.context.getStore().actor; }",
+            /export async function requireUser\(req: Request\) \{/,
+            "export async function requireUser(req: Request) { if(!globalThis.queueContentionContext.context.getStore()?.authenticate) return globalThis.queueContentionContext.context.getStore().actor;",
           ), loader: "ts",
         }));
       } }],
@@ -120,15 +131,15 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
     const patient = { id: "u1", role: "patient", patientId: "p1", clinicIds: [], branchIds: [] };
     const today = new Date().toISOString().slice(0, 10);
     const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-    async function route(router, method, path, actor, body = {}, params = {}, query = {}, tx) {
+    async function route(router, method, path, actor, body = {}, params = {}, query = {}, tx, authenticate = false) {
       const layer = router.stack.find(l => l.route?.path === path && l.route.methods[method]);
       assert.ok(layer, path);
       let result;
-      const response = { status: () => response, json: value => { result = value; } };
+      const response = { status: () => response, json: value => { result = value; }, sendStatus: value => { result = value; } };
       // Routes open transactions themselves; within a raced transaction these
       // are savepoints on that connection, never transactions on the control DB.
-      return context.run({ actor, db: tx || context.getStore()?.db || db }, async () => {
-        await layer.route.stack[0].handle({ body, params, query }, response);
+      return context.run({ actor, authenticate, db: tx || context.getStore()?.db || db }, async () => {
+        await layer.route.stack[0].handle({ body, params, query, method:method.toUpperCase(),path,authUserId:authenticate?actor.id:undefined,authSessionHash:authenticate?"isolated-session-proof":undefined }, response);
         return result;
       });
     }

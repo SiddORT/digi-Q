@@ -9,6 +9,7 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:selection-label": "node --test src/lib/selection-label.test.mjs",
+    "test:weekly-drafts": "node --test src/components/schedule/week-plan.test.mjs src/components/schedule/compact-drafts.test.mjs src/components/schedule/copy-plan.test.mjs",
     "test:directory-cache": "node --test src/lib/directory-cache.test.mjs src/lib/public-care-options.test.mjs src/lib/sole-option.test.mjs src/auth/session-lifecycle.test.mjs"
   },
   "devDependencies": {

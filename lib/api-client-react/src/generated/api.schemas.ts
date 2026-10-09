@@ -1790,6 +1790,11 @@ export const ScheduleInputQueueMode = {
 } as const;
 
 export interface ScheduleInput {
+  /**
+     * Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.
+     * @maxLength 20000
+     */
+  expectedSnapshot?: string;
   doctorId: string;
   clinicId: string;
   branchId: string;
@@ -1826,8 +1831,16 @@ export interface ScheduleInput {
      */
   bufferMinutes?: number;
   queueMode?: ScheduleInputQueueMode;
-  queueOpenTime?: string;
-  queueCloseTime?: string;
+  /**
+     * Null clears an optional queue opening override.
+     * @nullable
+     */
+  queueOpenTime?: string | null;
+  /**
+     * Null clears an optional queue closing override.
+     * @nullable
+     */
+  queueCloseTime?: string | null;
 }
 
 export type Schedule = ScheduleInput & {
@@ -3013,6 +3026,14 @@ page?: PageParameter;
  * @maximum 100
  */
 pageSize?: PageSizeParameter;
+};
+
+export type DeleteScheduleParams = {
+/**
+ * Optional loaded schedule authoring snapshot. Compared after acquiring doctor locks; stale changes return 409. Deactivation retains history.
+ * @maxLength 20000
+ */
+expectedSnapshot?: string;
 };
 
 export type ListAvailabilityExceptionsParams = {

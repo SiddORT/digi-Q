@@ -124,7 +124,7 @@ test("onboarding and registration share one owner schedule mapping: linked defau
   assert.match(owner, /<WeeklyDraftDays /);
   assert.match(owner, /button-copy-opening-hours/);
   assert.match(owner, /applyWeekTo\(/);
-  assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /<WeeklyDraftDays /);
+  assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /<CompactDayEditor /);
   assert.match(source("schedule/WeeklyScheduleEditor.tsx"), /button-apply-locations/);
 });
 test("legacy clinic links keep branch selection through the redirect", () => {

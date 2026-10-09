@@ -13,6 +13,7 @@
     "test:staff-invitations": "node --test ./src/staff-invitation.integration.test.mjs",
     "test:booking-lookup-privacy": "node --test ./src/booking-lookup-privacy.integration.test.mjs",
     "test:queue-contention": "node --test ./src/queue-contention.test.mjs",
+    "test:schedules": "node --test ./src/schedule-contention.test.mjs",
     "test:features": "node --test ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs"
   },
   "dependencies": {

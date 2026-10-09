@@ -85,6 +85,7 @@ export * from './customRoleBinding';
 export * from './customRoleConfiguration';
 export * from './dashboard';
 export * from './dateParameter';
+export * from './deleteScheduleParams';
 export * from './demoLoginInput';
 export * from './demoSetupAction';
 export * from './demoSetupActionAction';

@@ -76,6 +76,7 @@ import type {
   CompleteLogoUpload200,
   CustomRoleConfiguration,
   Dashboard,
+  DeleteScheduleParams,
   DemoLoginInput,
   DemoSetupAction,
   DemoSetupStatus,
@@ -8224,17 +8225,26 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getUpdateScheduleMutationOptions(options));
     }
 
-export const getDeleteScheduleUrl = (id: string,) => {
+export const getDeleteScheduleUrl = (id: string,
+    params?: DeleteScheduleParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/schedules/${id}`
+  return stringifiedParams.length > 0 ? `/api/schedules/${id}?${stringifiedParams}` : `/api/schedules/${id}`
 }
 
-export const deleteSchedule = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+export const deleteSchedule = async (id: string,
+    params?: DeleteScheduleParams, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
 
-  return customFetch<void>(getDeleteScheduleUrl(id),
+  return customFetch<void>(getDeleteScheduleUrl(id,params),
   {
     ...options,
     method: 'DELETE'
@@ -8264,9 +8274,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSchedule>>, DeleteScheduleMutationVariables> = (props) => {
-          const {id} = props ?? {};
+          const {id,params} = props ?? {};
 
-          return  deleteSchedule(id,requestOptions)
+          return  deleteSchedule(id,params,requestOptions)
         }
 
 
@@ -8279,7 +8289,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type DeleteScheduleMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSchedule>>>
 
     export type DeleteScheduleMutationError = ErrorType<unknown>
-    export type DeleteScheduleMutationVariables = {id: string}
+    export type DeleteScheduleMutationVariables = {id: string;params?: DeleteScheduleParams}
 
     export const useDeleteSchedule = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSchedule>>, TError,DeleteScheduleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

@@ -11,8 +11,11 @@ import { decideCloseRequest } from "./app-dialog-close";
 import "./app-dialog.css";
 
 const AppDialogCloseContext = createContext<(() => void) | null>(null);
+const AppDialogDiscardContext = createContext<((action:()=>void)=>void) | null>(null);
 /** Inside an AppDialog: returns its guarded close (honours dirty/busy, asks before discarding). Outside: null. */
 export function useAppDialogClose() { return useContext(AppDialogCloseContext); }
+/** Context switches share the dialog's single busy/dirty confirmation, not a stacked prompt. */
+export function useAppDialogDiscard() { return useContext(AppDialogDiscardContext); }
 
 export interface AppDialogProps {
   open: boolean;
@@ -45,29 +48,33 @@ export function AppDialog({
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
+  const discardActionRef = useRef<(()=>void)|null>(null);
   onCloseRef.current = onClose;
 
   // Reset when the dialog is closed from outside.
   useEffect(() => {
-    if (!open) setConfirming(false);
+    if (!open) { setConfirming(false); discardActionRef.current=null; }
   }, [open]);
 
   useEffect(() => {
     if (confirming) keepRef.current?.focus();
   }, [confirming]);
 
-  const requestClose = useCallback(() => {
+  const requestTransition = useCallback((action:()=>void) => {
     const decision = decideCloseRequest({ busy, dirty, confirming });
     if (decision === "confirm") {
       returnFocusRef.current = document.activeElement as HTMLElement | null;
+      discardActionRef.current=action;
       setConfirming(true);
     } else if (decision === "close") {
-      onCloseRef.current();
+      action();
     }
   }, [busy, dirty, confirming]);
+  const requestClose=useCallback(()=>requestTransition(()=>onCloseRef.current()),[requestTransition]);
 
   const keepEditing = useCallback(() => {
     setConfirming(false);
+    discardActionRef.current=null;
     const el = returnFocusRef.current;
     requestAnimationFrame(() => {
       if (el && el.isConnected) el.focus();
@@ -76,7 +83,9 @@ export function AppDialog({
 
   const discard = useCallback(() => {
     setConfirming(false);
-    onCloseRef.current();
+    const action=discardActionRef.current;
+    discardActionRef.current=null;
+    action?.();
   }, []);
 
   const trapConfirmFocus = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -157,7 +166,7 @@ export function AppDialog({
         {/* Single internal scroll area for the content. Kept mounted during
             discard confirmation so form values are preserved. */}
         <div className="app-dialog-body bg-white" aria-hidden={confirming || undefined} inert={confirming ? true : undefined}>
-          <AppDialogCloseContext.Provider value={requestClose}>{children}</AppDialogCloseContext.Provider>
+          <AppDialogDiscardContext.Provider value={requestTransition}><AppDialogCloseContext.Provider value={requestClose}>{children}</AppDialogCloseContext.Provider></AppDialogDiscardContext.Provider>
         </div>
 
         {confirming && (

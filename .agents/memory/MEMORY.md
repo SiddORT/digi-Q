@@ -20,6 +20,7 @@
 - [Concurrent validation readiness](concurrent-validation.md) — isolated successes can still time out under simultaneous cold compilation, PDF and PostgreSQL checks.
 - [Operational assignment context](operational-assignment-context.md) — reuse verified saved scope; do not infer permission from filters or rebuild unchanged projected mappings.
 - [Saved schedule context](saved-schedule-context.md) — cached profiles do not confirm current assignments; opening contextual scheduling needs fresh scope without overwriting drafts.
+- [Schedule write baselines](schedule-write-baselines.md) — additive stale checks preserve per-session services; partial retries use own write responses, not newer background snapshots.
 - [Signed-in directory reuse](signed-in-directory-reuse.md) — share bounded reads; complete catalogs need proven scope, synchronized freshness, and ordinary saved-label fallback.
 - [Selected label boundary](selected-label-boundary.md) — disabled controls still hydrate names; retained text belongs to its exact ID and actor/scope, never selection eligibility.
 - [Staff invitation boundary](staff-invitation-boundary.md) — preflight configuration before creation; post-commit email failure returns the saved profile for explicit resend.

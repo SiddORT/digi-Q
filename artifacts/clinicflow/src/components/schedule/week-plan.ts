@@ -1,10 +1,16 @@
-export type DraftSession = { key: string; id?: string; startTime: string; endTime: string; locked?: boolean };
+export type SessionSettings = Partial<Record<"tokenPrefix"|"maxTokens"|"consultationMinutes"|"bufferMinutes"|"queueMode"|"breakStart"|"breakEnd"|"queueOpenTime"|"queueCloseTime", string|number|null>>;
+export type DraftSession = { key: string; id?: string; startTime: string; endTime: string; locked?: boolean; settings?: SessionSettings };
 export type DraftDay = { dayOfWeek: number; isOpen: boolean; sessions: DraftSession[] };
 export type ScheduleRow = { id: string; dayOfWeek: number; startTime: string; endTime: string; isOpen?: boolean; status?: string; linkedBranchId?: string | null; [k: string]: unknown };
 
 /** Fields a new session copies from a template session of the same doctor and clinic. Link metadata is never copied. */
 const TEMPLATE_KEYS = ["doctorId", "clinicId", "branchId", "breakStart", "breakEnd", "timezone", "tokenPrefix", "maxTokens", "consultationMinutes", "bufferMinutes", "queueMode", "queueOpenTime", "queueCloseTime"];
 const INPUT_KEYS = ["doctorId", "clinicId", "branchId", "dayOfWeek", "isOpen", "startTime", "endTime", "breakStart", "breakEnd", "timezone", "tokenPrefix", "maxTokens", "consultationMinutes", "bufferMinutes", "queueMode", "queueOpenTime", "queueCloseTime"];
+const SETTINGS_KEYS = ["tokenPrefix", "maxTokens", "consultationMinutes", "bufferMinutes", "queueMode", "breakStart", "breakEnd", "queueOpenTime", "queueCloseTime"] as const;
+const settingsFrom = (row: Record<string, unknown>): SessionSettings => Object.fromEntries(SETTINGS_KEYS.filter(k=>row[k]!==undefined).map(k=>[k,row[k]]));
+/** The API compares these authoring fields under its doctor lock, not presentation names. */
+export const scheduleSnapshot = (row: Record<string, unknown>) => JSON.stringify(Object.fromEntries([...INPUT_KEYS,"status","linkedBranchId","linkedIntervalKey"].sort().map(k=>[k,row[k]??null])));
+export const draftSignature = (week: DraftDay[]) => JSON.stringify(week.map(d=>[d.isOpen,d.sessions.map(s=>[s.id,s.startTime,s.endTime,s.settings||{}])]));
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 /** Proposed soft guidance only; not an approved limit. More sessions are allowed and saved. */
 export const SUGGESTED_SESSIONS_PER_DAY = 4;
@@ -18,7 +24,7 @@ export function buildWeek(rows: ScheduleRow[]): DraftDay[] {
   return Array.from({ length: 7 }, (_, dayOfWeek) => {
     const day = active.filter(r => r.dayOfWeek === dayOfWeek).sort((a, b) => a.startTime.localeCompare(b.startTime));
     const open = day.filter(r => r.isOpen !== false);
-    return { dayOfWeek, isOpen: open.length > 0, sessions: open.map(r => ({ key: r.id, id: r.id, startTime: r.startTime, endTime: r.endTime, locked: !!r.linkedBranchId })) };
+    return { dayOfWeek, isOpen: open.length > 0, sessions: open.map(r => ({ key: r.id, id: r.id, startTime: r.startTime, endTime: r.endTime, locked: !!r.linkedBranchId, settings: settingsFrom(r) })) };
   });
 }
 
@@ -29,9 +35,19 @@ export function dayErrors(day: DraftDay): string[] {
   day.sessions.forEach((s, i) => {
     if (!TIME.test(s.startTime) || !TIME.test(s.endTime)) errors.push(`Session ${i + 1}: enter both start and end times.`);
     else if (s.startTime >= s.endTime) errors.push(`Session ${i + 1}: end time must be after start time. Overnight sessions are not supported.`);
+    const v=s.settings;
+    if(v){
+      if(v.consultationMinutes!==undefined&&(!Number.isInteger(Number(v.consultationMinutes))||Number(v.consultationMinutes)<1))errors.push(`Session ${i+1}: select a valid consultation duration.`);
+      if(v.maxTokens!==undefined&&(!Number.isInteger(Number(v.maxTokens))||Number(v.maxTokens)<1||Number(v.maxTokens)>1000))errors.push(`Session ${i+1}: capacity must be a whole number from 1 to 1000.`);
+      if(v.tokenPrefix!==undefined&&!/^[A-Za-z0-9]{1,8}$/.test(String(v.tokenPrefix)))errors.push(`Session ${i+1}: token prefix requires 1–8 letters or numbers.`);
+      if(v.bufferMinutes!==undefined&&(!Number.isInteger(Number(v.bufferMinutes))||Number(v.bufferMinutes)<0||Number(v.bufferMinutes)>1440))errors.push(`Session ${i+1}: buffer must be a whole number from 0 to 1440.`);
+      if(v.breakStart||v.breakEnd){if(!TIME.test(String(v.breakStart))||!TIME.test(String(v.breakEnd))||String(v.breakStart)<s.startTime||String(v.breakEnd)>s.endTime||String(v.breakStart)>=String(v.breakEnd))errors.push(`Session ${i+1}: break must have valid start and end times inside the session.`);}
+      if(v.queueOpenTime&&!TIME.test(String(v.queueOpenTime)))errors.push(`Session ${i+1}: enter a valid queue opening time.`);
+      if(v.queueCloseTime&&(!TIME.test(String(v.queueCloseTime))||String(v.queueCloseTime)>s.endTime||String(v.queueCloseTime)<=String(v.queueOpenTime||s.startTime)))errors.push(`Session ${i+1}: queue closing time must follow opening and not exceed session end.`);
+    }
   });
   const sorted = day.sessions.map((s, i) => ({ ...s, n: i + 1 })).filter(s => TIME.test(s.startTime) && TIME.test(s.endTime)).sort((a, b) => a.startTime.localeCompare(b.startTime));
-  for (let i = 1; i < sorted.length; i++) if (sorted[i - 1].endTime > sorted[i].startTime) errors.push(`Session ${sorted[i - 1].n} and session ${sorted[i].n} overlap.`);
+  for (let i = 0; i < sorted.length; i++) for(let j=i+1;j<sorted.length;j++) if(sorted[i].endTime>sorted[j].startTime)errors.push(sorted[i].startTime===sorted[j].startTime&&sorted[i].endTime===sorted[j].endTime?`Session ${sorted[j].n} duplicates session ${sorted[i].n}.`:`Session ${sorted[j].n} overlaps with session ${sorted[i].n}.`);
   return errors;
 }
 
@@ -49,15 +65,23 @@ export function copyDay(week: DraftDay[], source: number, targets: number[]): Dr
     const locked = day.sessions.filter(s => s.locked);
     if (!from.isOpen) return locked.length ? { ...day, isOpen: true, sessions: locked } : { ...day, isOpen: false, sessions: [] };
     const reusable = day.sessions.filter(s => !s.locked && s.id);
-    const copied = from.sessions.map((s, i) => ({ key: draftKey(), id: reusable[i]?.id, startTime: s.startTime, endTime: s.endTime }));
+    const copied = from.sessions.map((s, i) => ({ key: draftKey(), id: reusable[i]?.id, startTime: s.startTime, endTime: s.endTime, settings: {...s.settings} }));
     return { ...day, isOpen: true, sessions: [...locked, ...copied] };
   });
+}
+
+/** Add one source interval without copying identity, links or appointments. */
+export function addCopiedSlot(week: DraftDay[], source: number, destination: number, key: string): DraftDay[] {
+  if(source===destination)return week;
+  const slot=week[source]?.sessions.find(s=>s.key===key);
+  if(!slot)return week;
+  return week.map(day=>day.dayOfWeek===destination?{...day,isOpen:true,sessions:[...day.sessions,{key:draftKey(),startTime:slot.startTime,endTime:slot.endTime,settings:{...slot.settings}}]}:day);
 }
 
 export type WeekPlan = {
   creates: { key: string; body: Record<string, unknown>; label: string }[];
   updates: { id: string; key: string; body: Record<string, unknown>; label: string }[];
-  deactivations: { id: string; label: string }[];
+  deactivations: { id: string; label: string; expectedSnapshot?: string }[];
   /** Draft sessions identical to a removed record on the same day: keep that record, no write needed. */
   adopt: { key: string; id: string }[];
 };
@@ -94,15 +118,15 @@ export function planWeek(rows: ScheduleRow[], week: DraftDay[], template: Record
       if (row && s.locked) continue;
       if (!row) { row = spare.get(day.dayOfWeek)?.shift(); if (row) kept.add(row.id); }
       if (row) {
-        if (row.startTime !== s.startTime || row.endTime !== s.endTime || row.dayOfWeek !== day.dayOfWeek || row.isOpen === false)
-          plan.updates.push({ id: row.id, key: s.key, label, body: fitQueueWindow({ ...rowInput(row), dayOfWeek: day.dayOfWeek, isOpen: true, startTime: s.startTime, endTime: s.endTime }) });
+        if (row.startTime !== s.startTime || row.endTime !== s.endTime || row.dayOfWeek !== day.dayOfWeek || row.isOpen === false || SETTINGS_KEYS.some(k=>s.settings?.[k]!==undefined&&s.settings[k]!==row[k]))
+          plan.updates.push({ id: row.id, key: s.key, label, body: { ...fitQueueWindow({ ...rowInput(row), ...s.settings, dayOfWeek: day.dayOfWeek, isOpen: true, startTime: s.startTime, endTime: s.endTime }), expectedSnapshot:scheduleSnapshot(row) } });
         else if (!s.id) plan.adopt.push({ key: s.key, id: row.id });
       } else if (template) {
-        plan.creates.push({ key: s.key, label, body: fitQueueWindow({ ...Object.fromEntries(TEMPLATE_KEYS.filter(k => template[k] !== undefined && template[k] !== null && template[k] !== "").map(k => [k, template[k]])), breakStart: null, breakEnd: null, dayOfWeek: day.dayOfWeek, isOpen: true, startTime: s.startTime, endTime: s.endTime }) });
+        plan.creates.push({ key: s.key, label, body: fitQueueWindow({ ...Object.fromEntries(TEMPLATE_KEYS.filter(k => template[k] !== undefined && template[k] !== null && template[k] !== "").map(k => [k, template[k]])), breakStart: null, breakEnd: null, ...s.settings, dayOfWeek: day.dayOfWeek, isOpen: true, startTime: s.startTime, endTime: s.endTime }) });
       }
     }
   }
-  for (const r of active) if (!kept.has(r.id) && !r.linkedBranchId && r.isOpen !== false) plan.deactivations.push({ id: r.id, label: `${labels[r.dayOfWeek]} ${r.startTime}–${r.endTime}` });
+  for (const r of active) if (!kept.has(r.id) && !r.linkedBranchId && r.isOpen !== false) plan.deactivations.push({ id: r.id, label: `${labels[r.dayOfWeek]} ${r.startTime}–${r.endTime}`, expectedSnapshot:scheduleSnapshot(r) });
   return plan;
 }
 
@@ -113,16 +137,17 @@ export type Outcome = { label: string; ok: boolean; message?: string; skipped?: 
  * update and create succeeded, so no existing session is switched off while its replacement is unsaved.
  * Returns the ids now attached to draft keys so the caller can keep failed edits in the draft for retry.
  */
-export async function executePlan(plan: WeekPlan, io: { update: (id: string, body: any) => Promise<unknown>; create: (body: any) => Promise<{ id: string }>; deactivate: (id: string) => Promise<unknown>; message: (e: unknown) => string }) {
+export async function executePlan(plan: WeekPlan, io: { update: (id: string, body: any) => Promise<unknown>; create: (body: any) => Promise<{ id: string }>; deactivate: (id: string, expectedSnapshot?: string) => Promise<unknown>; message: (e: unknown) => string }) {
   const outcomes: Outcome[] = []; const savedIds: Record<string, string> = Object.fromEntries(plan.adopt.map(a => [a.key, a.id])); const failedKeys = new Set<string>(); const failedDeactivations = new Set<string>();
-  for (const u of plan.updates) { try { await io.update(u.id, u.body); savedIds[u.key] = u.id; outcomes.push({ label: `Update ${u.label}`, ok: true }); } catch (e) { failedKeys.add(u.key); outcomes.push({ label: `Update ${u.label}`, ok: false, message: io.message(e) }); } }
-  for (const c of plan.creates) { try { const made = await io.create(c.body); savedIds[c.key] = made.id; outcomes.push({ label: `Add ${c.label}`, ok: true }); } catch (e) { failedKeys.add(c.key); outcomes.push({ label: `Add ${c.label}`, ok: false, message: io.message(e) }); } }
+  const savedRows: ScheduleRow[]=[];
+  for (const u of plan.updates) { try { const result=await io.update(u.id, u.body); savedIds[u.key] = u.id; savedRows.push({ ...u.body, ...(result&&typeof result==="object"?result:{}), id:u.id } as ScheduleRow); outcomes.push({ label: `Update ${u.label}`, ok: true }); } catch (e) { failedKeys.add(u.key); outcomes.push({ label: `Update ${u.label}`, ok: false, message: io.message(e) }); } }
+  for (const c of plan.creates) { try { const made = await io.create(c.body); savedIds[c.key] = made.id; savedRows.push({...c.body,...made} as ScheduleRow); outcomes.push({ label: `Add ${c.label}`, ok: true }); } catch (e) { failedKeys.add(c.key); outcomes.push({ label: `Add ${c.label}`, ok: false, message: io.message(e) }); } }
   const blocked = failedKeys.size > 0;
   for (const d of plan.deactivations) {
     if (blocked) { failedDeactivations.add(d.id); outcomes.push({ label: `Deactivate ${d.label}`, ok: false, skipped: true, message: "not run because another change failed; the session stays active" }); continue; }
-    try { await io.deactivate(d.id); outcomes.push({ label: `Deactivate ${d.label}`, ok: true }); } catch (e) { failedDeactivations.add(d.id); outcomes.push({ label: `Deactivate ${d.label}`, ok: false, message: io.message(e) }); }
+    try { await io.deactivate(d.id,d.expectedSnapshot); outcomes.push({ label: `Deactivate ${d.label}`, ok: true }); } catch (e) { failedDeactivations.add(d.id); outcomes.push({ label: `Deactivate ${d.label}`, ok: false, message: io.message(e) }); }
   }
-  return { outcomes, savedIds, failedKeys, failedDeactivations };
+  return { outcomes, savedIds, savedRows, failedKeys, failedDeactivations };
 }
 
 /** After a partial save, keep the user's draft (including failed edits) and attach ids of records that were saved. */
@@ -187,7 +212,7 @@ export function applyWeekTo(target: DraftDay[], source: DraftDay[]): DraftDay[] 
     const reusable = day.sessions.filter(s => !s.locked && s.id).map(s => s.id as string);
     const copied = (src?.isOpen ? src.sessions.filter(s => !s.locked) : [])
       .filter(s => !locked.some(l => l.startTime < s.endTime && s.startTime < l.endTime))
-      .map(s => ({ key: draftKey(), id: reusable.shift(), startTime: s.startTime, endTime: s.endTime }));
+       .map(s => ({ key: draftKey(), id: reusable.shift(), startTime: s.startTime, endTime: s.endTime, settings:{...s.settings} }));
     const sessions = [...locked, ...copied].sort((a, b) => a.startTime.localeCompare(b.startTime));
     return { ...day, isOpen: sessions.length > 0, sessions };
   });

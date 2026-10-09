@@ -4555,6 +4555,8 @@ export const ListSchedulesQueryParams = zod.object({
 
 export const listSchedulesResponseOneTotalMin = 0;
 
+export const listSchedulesResponseTwoItemsItemOneExpectedSnapshotMax = 20000;
+
 export const listSchedulesResponseTwoItemsItemOneDayOfWeekMin = 0;
 export const listSchedulesResponseTwoItemsItemOneDayOfWeekMax = 6;
 
@@ -4578,6 +4580,7 @@ export const ListSchedulesResponse = zod.object({
   "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "expectedSnapshot": zod.string().max(listSchedulesResponseTwoItemsItemOneExpectedSnapshotMax).optional().describe('Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.'),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -4593,8 +4596,8 @@ export const ListSchedulesResponse = zod.object({
   "consultationMinutes": zod.number().int().min(1),
   "bufferMinutes": zod.number().int().min(listSchedulesResponseTwoItemsItemOneBufferMinutesMin).max(listSchedulesResponseTwoItemsItemOneBufferMinutesMax).default(listSchedulesResponseTwoItemsItemOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(listSchedulesResponseTwoItemsItemOneQueueModeDefault),
-  "queueOpenTime": zod.string().optional(),
-  "queueCloseTime": zod.string().optional()
+  "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
+  "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
 }).and(zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -4605,6 +4608,8 @@ export const ListSchedulesResponse = zod.object({
 })))
 }))
 
+
+export const createScheduleBodyExpectedSnapshotMax = 20000;
 
 export const createScheduleBodyDayOfWeekMin = 0;
 export const createScheduleBodyDayOfWeekMax = 6;
@@ -4623,6 +4628,7 @@ export const createScheduleBodyBufferMinutesMax = 1440;
 export const createScheduleBodyQueueModeDefault = `mixed`;
 
 export const CreateScheduleBody = zod.object({
+  "expectedSnapshot": zod.string().max(createScheduleBodyExpectedSnapshotMax).optional().describe('Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.'),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -4638,9 +4644,11 @@ export const CreateScheduleBody = zod.object({
   "consultationMinutes": zod.number().int().min(1),
   "bufferMinutes": zod.number().int().min(createScheduleBodyBufferMinutesMin).max(createScheduleBodyBufferMinutesMax).default(createScheduleBodyBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(createScheduleBodyQueueModeDefault),
-  "queueOpenTime": zod.string().optional(),
-  "queueCloseTime": zod.string().optional()
+  "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
+  "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
 })
+
+export const createScheduleResponseOneExpectedSnapshotMax = 20000;
 
 export const createScheduleResponseOneDayOfWeekMin = 0;
 export const createScheduleResponseOneDayOfWeekMax = 6;
@@ -4659,6 +4667,7 @@ export const createScheduleResponseOneBufferMinutesMax = 1440;
 export const createScheduleResponseOneQueueModeDefault = `mixed`;
 
 export const CreateScheduleResponse = zod.object({
+  "expectedSnapshot": zod.string().max(createScheduleResponseOneExpectedSnapshotMax).optional().describe('Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.'),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -4674,8 +4683,8 @@ export const CreateScheduleResponse = zod.object({
   "consultationMinutes": zod.number().int().min(1),
   "bufferMinutes": zod.number().int().min(createScheduleResponseOneBufferMinutesMin).max(createScheduleResponseOneBufferMinutesMax).default(createScheduleResponseOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(createScheduleResponseOneQueueModeDefault),
-  "queueOpenTime": zod.string().optional(),
-  "queueCloseTime": zod.string().optional()
+  "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
+  "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
 }).and(zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -4689,6 +4698,8 @@ export const CreateScheduleResponse = zod.object({
 export const UpdateScheduleParams = zod.object({
   "id": zod.coerce.string()
 })
+
+export const updateScheduleBodyExpectedSnapshotMax = 20000;
 
 export const updateScheduleBodyDayOfWeekMin = 0;
 export const updateScheduleBodyDayOfWeekMax = 6;
@@ -4707,6 +4718,7 @@ export const updateScheduleBodyBufferMinutesMax = 1440;
 export const updateScheduleBodyQueueModeDefault = `mixed`;
 
 export const UpdateScheduleBody = zod.object({
+  "expectedSnapshot": zod.string().max(updateScheduleBodyExpectedSnapshotMax).optional().describe('Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.'),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -4722,9 +4734,11 @@ export const UpdateScheduleBody = zod.object({
   "consultationMinutes": zod.number().int().min(1),
   "bufferMinutes": zod.number().int().min(updateScheduleBodyBufferMinutesMin).max(updateScheduleBodyBufferMinutesMax).default(updateScheduleBodyBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(updateScheduleBodyQueueModeDefault),
-  "queueOpenTime": zod.string().optional(),
-  "queueCloseTime": zod.string().optional()
+  "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
+  "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
 })
+
+export const updateScheduleResponseOneExpectedSnapshotMax = 20000;
 
 export const updateScheduleResponseOneDayOfWeekMin = 0;
 export const updateScheduleResponseOneDayOfWeekMax = 6;
@@ -4743,6 +4757,7 @@ export const updateScheduleResponseOneBufferMinutesMax = 1440;
 export const updateScheduleResponseOneQueueModeDefault = `mixed`;
 
 export const UpdateScheduleResponse = zod.object({
+  "expectedSnapshot": zod.string().max(updateScheduleResponseOneExpectedSnapshotMax).optional().describe('Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.'),
   "doctorId": zod.string(),
   "clinicId": zod.string(),
   "branchId": zod.string(),
@@ -4758,8 +4773,8 @@ export const UpdateScheduleResponse = zod.object({
   "consultationMinutes": zod.number().int().min(1),
   "bufferMinutes": zod.number().int().min(updateScheduleResponseOneBufferMinutesMin).max(updateScheduleResponseOneBufferMinutesMax).default(updateScheduleResponseOneBufferMinutesDefault),
   "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(updateScheduleResponseOneQueueModeDefault),
-  "queueOpenTime": zod.string().optional(),
-  "queueCloseTime": zod.string().optional()
+  "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
+  "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
 }).and(zod.object({
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -4772,6 +4787,14 @@ export const UpdateScheduleResponse = zod.object({
 
 export const DeleteScheduleParams = zod.object({
   "id": zod.coerce.string()
+})
+
+export const deleteScheduleQueryExpectedSnapshotMax = 20000;
+
+
+
+export const DeleteScheduleQueryParams = zod.object({
+  "expectedSnapshot": zod.coerce.string().max(deleteScheduleQueryExpectedSnapshotMax).optional().describe('Optional loaded schedule authoring snapshot. Compared after acquiring doctor locks; stale changes return 409. Deactivation retains history.')
 })
 
 export const DeleteScheduleResponse = zod.void()

@@ -87,8 +87,10 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   const singular = (id:StaffTab) => tabs.find(t => t.id === id)?.label.replace(/s$/, "") || "Staff Member";
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [scheduleEntry, setScheduleEntry] = useState(false);
-  const [createdDoctor, setCreatedDoctor] = useState(false);
+  const [scheduleDoctor, setScheduleDoctor] = useState<any>(null);
+  const [scheduleDirty, setScheduleDirty] = useState(false);
+  const [scheduleBusy, setScheduleBusy] = useState(false);
+  const createdDoctor = false;
   const [success, setSuccess] = useState("");
   useEffect(()=>{setContexts({});setEditing(null);},[clinicId]);
   useEffect(() => {
@@ -178,7 +180,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   const invitationBusy=resendInvitation.isPending||bulkInvitations.isPending;
     const active = !!(tab!==tabs[0].id || context.sort !== "-createdAt" || context.search || context.status || (!clinicId&&context.clinicId) || context.branchId || context.managingAdminId || context.specializationId);
     const reset = () => {change({ search: "", status: "", clinicId: "", branchId: "", managingAdminId: "", specializationId:"", sort: "-createdAt" });setContexts(previous=>({...previous,[tabs[0].id]:{...defaultContext(),pageSize:previous[tabs[0].id]?.pageSize||20}}));setTab(tabs[0].id);setDraftTab(tabs[0].id);setDraft(defaultContext());};
-    const beginEdit = (row: any, role:StaffTab = tab, schedule=false) => { setScheduleEntry(schedule); setCreatedDoctor(false); setDirty(false); setBusy(false); snapshot.current={values:{},defaults:{}}; setCarry({}); setEditTab(role); setEditing(row.id?row:{...row,...(clinicId&&role!=="admins"?{clinicIds:[clinicId]}:{})}); };
+    const beginEdit = (row: any, role:StaffTab = tab) => { setDirty(false); setBusy(false); snapshot.current={values:{},defaults:{}}; setCarry({}); setEditTab(role); setEditing(row.id?row:{...row,...(clinicId&&role!=="admins"?{clinicIds:[clinicId]}:{})}); };
     const creatable = tabs.filter(t => t.id !== "admins" || (isSuperAdmin && !embedded));
     const beginAdd = () => beginEdit({}, creatable.some(t => t.id === tab) ? tab : creatable[0].id);
     const chooseRole = async (next:StaffTab) => {
@@ -244,7 +246,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
 
           <td data-label="Actions" className="col-actions sticky"><div className="row-actions">
             <IconAction label={`Edit ${row.fullName}`} hint="Edit staff details and assignments" icon={<Pencil size={15} aria-hidden />} onClick={() => beginEdit(row)} testId={`button-edit-staff-${row.id}`} />
-            {tab==="doctors"&&<button type="button" className="text-link" data-testid={`button-manage-schedule-${row.id}`} onClick={()=>beginEdit(row,"doctors",true)}>Manage schedule</button>}
+            {tab==="doctors"&&<button type="button" className="text-link" data-testid={`button-manage-schedule-${row.id}`} onClick={()=>{setScheduleDirty(false);setScheduleBusy(false);setScheduleDoctor(row);}}>Manage schedule</button>}
             {row.invitationStatus !== "notRequired" && <RowMenu label={`More actions for ${row.fullName}`} testId={`menu-staff-${row.id}`} items={[{key:"resend",label:"Resend Invitation",hint:staffInvitationRestriction(row,tab)||"Replace the pending invitation and send a new set-password link. This does not deactivate the account or revoke sessions.",disabled:invitationBusy||!!staffInvitationRestriction(row,tab),testId:`action-resend-invitation-${row.id}`,onSelect:()=>{void (async()=>{ if (!invitationBusy && await confirmAction.ask({title:"Resend Invitation?",description:"The pending invitation will be replaced and a new set-password email requested. This does not deactivate the account or revoke sessions.",confirmLabel:"Resend Invitation"})) resendInvitation.mutate({row,staffTab:tab}); })();}}]}/>}
           </div>{invitationFeedback&&invitationFeedback.rowId===row.id&&<small role="status">{invitationFeedback.message}</small>}</td>
         </tr>{cols.expansion(row.id,cols.visible.length+2,k=>userCell(k,row))}</Fragment>)}</tbody>
@@ -258,19 +260,21 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open Secure Password Recovery</Link></div>}
     </AppDialog>}
     
+    {scheduleDoctor && <AppDialog open size="wide" title="Edit Doctor Schedule" dirty={scheduleDirty} busy={scheduleBusy} onClose={() => setScheduleDoctor(null)}>
+      <DoctorScheduleContext doctor={scheduleDoctor} fixedClinicId={clinicId} canDelete onSaved={() => setScheduleDoctor(null)} onDirtyChange={setScheduleDirty} onBusyChange={setScheduleBusy}/>
+    </AppDialog>}
     {editing && <AppDialog open size="medium" onClose={() => setEditing(null)} title={editing.id||createdDoctor ? `Edit ${singular(editTab)}` : "Add Staff"} description={editing.id||createdDoctor ? undefined : "Choose a role, then enter the shared details and assignments."} dirty={dirty} busy={busy}>{roleConfirm.dialog}
        {!editing.id && !createdDoctor && creatable.length > 1 && <div className="staff-role-picker"><SearchableSelect label="Role" required testId="select-add-staff-role" value={editTab} disabled={busy} onChange={value => { const next = creatable.find(item => item.id === value)?.id; if (next) void chooseRole(next); }} options={creatable.map(item => ({ value: item.id, label: singular(item.id) }))}/></div>}
        {!editing.id && !createdDoctor && creatable.length === 1 && <p className="muted staff-role-picker" data-testid="text-add-staff-role">Role: <strong>{singular(editTab)}</strong></p>}
        {editTab === "admins" && !editing.id ? <ClinicAdminOnboarding guided carry={carry} onSnapshot={(values,defaults)=>{snapshot.current={values,defaults};}} onDirtyChange={setDirty} onBusyChange={setBusy}/> :
-       <UserEditor key={`${editTab}:${editing.id||"new"}`} tab={editTab} initial={editing} scheduleEntry={scheduleEntry} onCreated={()=>setCreatedDoctor(true)} carry={editing.id?undefined:carry} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onSnapshot={(values:Record<string,unknown>,defaults:Record<string,unknown>)=>{snapshot.current={values,defaults};}} onClose={(result:any) => { const wasEdit=!!editing.id;const savedTab=editTab;setEditing(null);if(!wasEdit&&savedTab!==tab){setTab(savedTab);setDraftTab(savedTab);}if(!wasEdit&&result.invitationStatus==="failed")notifyWarning(`${singular(savedTab)} added, but the invitation could not be sent.`);else notifySuccess(wasEdit?"Updated successfully":`${singular(savedTab)} added successfully.`); }} />}
+       <UserEditor key={`${editTab}:${editing.id||"new"}`} tab={editTab} initial={editing} onCreated={(saved:any)=>{setScheduleDirty(false);setScheduleBusy(false);setScheduleDoctor(saved);}} carry={editing.id?undefined:carry} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onSnapshot={(values:Record<string,unknown>,defaults:Record<string,unknown>)=>{snapshot.current={values,defaults};}} onClose={(result:any) => { const wasEdit=!!editing.id;const savedTab=editTab;setEditing(null);if(!wasEdit&&savedTab!==tab){setTab(savedTab);setDraftTab(savedTab);}if(!wasEdit&&result.invitationStatus==="failed")notifyWarning(`${singular(savedTab)} added, but the invitation could not be sent.`);else notifySuccess(wasEdit?"Updated successfully":`${singular(savedTab)} added successfully.`); }} />}
     </AppDialog>}
   </>;
 }
 
-function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirtyChange, onBusyChange, onSnapshot, clinicId, identity, scheduleEntry, onCreated }: any) {
+function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirtyChange, onBusyChange, onSnapshot, clinicId, identity, onCreated }: any) {
   const [initial, setSaved] = useState(opened);
-  const [scheduleDirty, setScheduleDirty] = useState(false);
-  const [scheduleBusy, setScheduleBusy] = useState(false);
+  const scheduleDirty = false, scheduleBusy = false;
   const [savedMessage, setSavedMessage] = useState("");
   const confirmAction = useConfirm();
   // Include every mounted doctor field in the reset baseline, including the
@@ -312,8 +316,8 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
       void client.invalidateQueries();
       if(tab!=="doctors"&&result.invitationStatus!=="failed"){onClose(result);return;}
       setSaved(result); form.reset(doctorValues(result));
-      setSavedMessage(result.invitationStatus==="failed"?"The staff record and assignments are saved, but the invitation was not sent. Use Resend Invitation after email service setup is restored; do not add this account again.": "Doctor details and assignments saved. Schedule changes are saved separately.");
-      if(!initial.id&&tab==="doctors"){onCreated();if(result.invitationStatus==="failed")notifyWarning("Doctor added, but the invitation could not be sent.");}
+      setSavedMessage(result.invitationStatus==="failed"?"The staff record and assignments are saved, but the invitation was not sent. Use Resend Invitation after email service setup is restored; do not add this account again.": "Doctor details and assignments saved. Use Manage schedule to edit weekly sessions.");
+      if(!initial.id&&tab==="doctors"){if(result.invitationStatus==="failed")notifyWarning("Doctor added, but the invitation could not be sent.");else{onCreated(result);onClose(result);}}
     },
     onSettled: () => { locked.current = false; },
   });
@@ -388,11 +392,11 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
     <FormActions busy={save.isPending||scheduleBusy} cancelClosesDialog submitLabel={initial.id ? tab==="doctors"?"Save Doctor Details":"Save Changes" : `Add ${tab==="doctors"?"Doctor":tab==="admins"?"Clinic Admin":"Receptionist"}`} busyLabel={initial.id ? "Saving…" : "Adding…"} submitTestId="button-save-staff" cancelTestId="button-cancel-staff" secondary={save.error ? <ErrorNotice error={save.error} /> : undefined} />
     {savedMessage&&<p className="notice wide" role="status">{savedMessage}</p>}
     {initial.id&&initial.invitationStatus==="failed"&&<div className="wide">
+      {tab==="doctors"&&<button type="button" data-testid="button-continue-scheduling" disabled={save.isPending} onClick={()=>{onCreated(initial);onClose(initial);}}>Continue to Scheduling</button>}
       <p role="status">This staff record is saved. Its invitation has not been sent.</p>
       <button type="button" data-testid="button-resend-saved-invitation" disabled={save.isPending||scheduleBusy||resendSavedInvitation.isPending||!!staffInvitationRestriction(initial,tab)} title={staffInvitationRestriction(initial,tab)||undefined} onClick={()=>resendSavedInvitation.mutate()}>{resendSavedInvitation.isPending?"Sending…":"Resend Invitation"}</button>
       {resendSavedInvitation.error&&<ErrorNotice error={resendSavedInvitation.error}/>}
     </div>}
   </form></Form>
-  {tab==="doctors"&&<DoctorScheduleContext doctor={initial} autoFocus={scheduleEntry} profileBusy={save.isPending} assignmentDirty={JSON.stringify([selectedClinics,selectedBranches])!==JSON.stringify([initial.clinicIds||[],initial.branchIds||[]])} onDirtyChange={setScheduleDirty} onBusyChange={setScheduleBusy}/>}
   </div>;
 }

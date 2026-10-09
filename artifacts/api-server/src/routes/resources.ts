@@ -12,6 +12,7 @@ import { inviteStaff, requestStaffReset, ensureStaffInvitationConfigured } from 
 import { consumeRateLimit, revokeUserSessions } from "../lib/native-auth";
 import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, attachOwnDoctor, clinicDisplayPreferences } from "../lib/clinic-expansion";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus, extraSession } from "../lib/availability";
+import { assertScheduleSnapshot } from "../lib/schedule-snapshot";
 const ADDRESS_KEYS = ["address", "country", "state", "city", "pincode"] as const;
 /** Address parts live in the JSON `data` column; merge without touching other profile data. */
 async function mergeAddress(table: any, id: string, patch: Record<string, unknown>, tx: any) {
@@ -79,11 +80,11 @@ export const CLINIC_OWNED_BRANCH_KEYS = ["openingHours", "timezone", "email", "p
 /** Identity and address of an EXISTING location are clinic-owned onboarding details (owner or Super Admin only). Creation keeps its existing policy. */
 export const CLINIC_OWNED_ADDRESS_KEYS = ["name", "slug", "address", "city", "state", "pincode", "country", "area"];
 export const CLINIC_OWNED_CLINIC_KEYS = ["name", "address", "city", "state", "pincode", "country", "area", "email", "phone", "slug", "timezone", "dateFormat", "timeFormat", "categoryId", "specialityIds", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"];
-export async function authorizeWrite(user: any, kind: string, body: any, old?: any) {
+export async function authorizeWrite(user: any, kind: string, body: any, old?: any, conn: any = db) {
   if (kind === "doctors") {
     assert(body.userId === undefined, 409, "Doctor identity cannot be reassigned");
     if (old?.userId) {
-      const account = await one(users, old.userId);
+      const account = await one(users, old.userId, conn);
       if (account.role === "clinicAdmin") {
         assert(old.ownerAdminId === old.userId && (user.role === "superAdmin" || user.id === old.userId && user.role === "clinicAdmin"), 403, "Only Super Admin or the owning Clinic Admin can edit this clinical profile");
         assert(body.ownerAdminId === undefined || body.ownerAdminId === old.userId, 409, "Self-owned doctor profile cannot be transferred");
@@ -93,7 +94,7 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
   }
   const context = { ...old, ...body };
   if (body.timezone) localNow(body.timezone);
-  if (old) assert(await canRead(user, kind, old), 403, "Record outside your scope");
+  if (old) assert(await canRead(user, kind, old, conn), 403, "Record outside your scope");
   // Generic resource writes must not bypass the owner-only Clinic Settings
   // endpoint. Doctors still retain their existing clinical/profile and
   // clinic/branch creation workflows, but cannot edit a clinic's configuration.
@@ -104,7 +105,7 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
        kind === "branches" && CLINIC_OWNED_BRANCH_KEYS.some(key => Object.hasOwn(body, key)) ||
        kind === "branches" && old && CLINIC_OWNED_ADDRESS_KEYS.some(key => Object.hasOwn(body, key)))) {
     assert(user.role === "clinicAdmin", 403, "Only the owning Clinic Admin can change clinic settings");
-    const clinic = await one(clinics, kind === "clinics" ? old.id : context.clinicId);
+    const clinic = await one(clinics, kind === "clinics" ? old.id : context.clinicId, conn);
     assert(clinic.adminId === user.id, 403, "Only the owning Clinic Admin can change clinic settings");
   }
   if (old && kind === "doctors" && user.role === "clinicAdmin") assert(old.clinicIds.some((id: string) => user.clinicIds.includes(id)), 403, "This doctor is outside your administration scope");
@@ -136,39 +137,40 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
   } else roles(user, ["superAdmin", "clinicAdmin", "doctor", ...(["qrs", "schedules", "availability-exceptions"].includes(kind) ? ["receptionist"] : [])]);
   if (context.clinicId) {
     if (kind === "branches" && user.role === "doctor") {
-      const clinic = await one(clinics, context.clinicId);
+      const clinic = await one(clinics, context.clinicId, conn);
       assert(clinic.adminId === user.managingAdminId, 403, "Clinic outside your managing administrator's catalog");
     } else assert(scope(user, context.clinicId, context.branchId), 403, "Clinic outside assigned scope");
   }
   if (context.branchId) {
-    const branch = await one(branches, context.branchId);
+    const branch = await one(branches, context.branchId, conn);
     assert(!context.clinicId || branch.clinicId === context.clinicId, 400, "Branch does not belong to clinic");
     assert(scope(user, branch.clinicId, branch.id), 403, "Branch outside assigned scope");
   }
   if (context.doctorId) {
-    if (context.branchId) await doctorContext(context.doctorId, context.branchId);
+    if (["schedules","availability-exceptions"].includes(kind) && user.role==="doctor") assert(context.doctorId===user.doctorId,403,"Doctors may manage only their own schedule.");
+    if (context.branchId) await doctorContext(context.doctorId, context.branchId, conn);
     if (context.branchId) {
-      const doctor = await enrich("doctors", await one(doctors, context.doctorId));
-      assert(doctor.branchIds.includes(context.branchId) && scope(user, (await one(branches, context.branchId)).clinicId, context.branchId), 403, "You cannot manage this doctor's availability at this location");
+      const doctor = await enrich("doctors", await one(doctors, context.doctorId, conn), conn);
+      assert(doctor.branchIds.includes(context.branchId) && scope(user, (await one(branches, context.branchId, conn)).clinicId, context.branchId), 403, "You cannot manage this doctor's availability at this location");
     }
   }
   if (kind === "qrs") {
     const context = { ...old, ...body };
     if (user.role === "doctor") assert(context.doctorId === user.doctorId, 403, "Doctor booking links must use your own doctor profile");
     if (context.doctorId) {
-      const doctor = await enrich("doctors", await one(doctors, context.doctorId));
+      const doctor = await enrich("doctors", await one(doctors, context.doctorId, conn), conn);
       assert(doctor.status === "active" && doctor.clinicIds.includes(context.clinicId), 409, "Doctor is not active and assigned to this clinic");
     }
   }
   if ((body.clinicIds || body.branchIds) && user.role === "doctor") assert(kind === "users" && (body.role || old?.role) === "receptionist", 403, "Doctors may assign receptionists only");
   for (const [field, category] of Object.entries({ specializationId: "specialization", clinicTypeId: "clinicType", categoryId: "clinicCategory" })) {
-    if (body[field]) { const m = await one(masters, body[field]); assert(m.category === category && m.status === "active", 400, `Invalid ${field}`); }
+    if (body[field]) { const m = await one(masters, body[field], conn); assert(m.category === category && m.status === "active", 400, `Invalid ${field}`); }
   }
-  for (const id of body.qualificationIds || []) { const m = await one(masters, id); assert(m.category === "qualification" && m.status === "active", 400, "Invalid qualification"); }
+  for (const id of body.qualificationIds || []) { const m = await one(masters, id, conn); assert(m.category === "qualification" && m.status === "active", 400, "Invalid qualification"); }
   if (kind === "masters") {
     if (governed[body.category]) assert(governed[body.category].includes(body.code), 400, "This category uses governed workflow codes");
     if (old && governed[old.category]) assert(body.code === old.code && body.category === old.category, 400, "Governed codes cannot be changed");
-    if (body.parentId) { assert(body.parentId !== old?.id, 400, "Master cannot parent itself"); await one(masters, body.parentId); }
+    if (body.parentId) { assert(body.parentId !== old?.id, 400, "Master cannot parent itself"); await one(masters, body.parentId, conn); }
   }
 }
 export async function deliverInvitation(userId: string, redirectUrl?: string) {
@@ -227,7 +229,7 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
     admin: await enrich("users", await one(users, result.admin.id)),
   };
 }
-async function save(kind: string, table: any, user: any, body: any, old?: any, redirectUrl?: string) {
+async function save(kind: string, table: any, user: any, body: any, old?: any, redirectUrl?: string, refreshActor?:()=>Promise<any>) {
   await authorizeWrite(user, kind, body, old);
   if (old && ["users", "doctors"].includes(kind) && body.email !== undefined &&
       body.email.toLowerCase() !== old.email.toLowerCase())
@@ -263,6 +265,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
     }
     if (kind === "schedules") {
       const current = old ? await one(schedules, old.id, tx) : null;
+      if(current)assertScheduleSnapshot(current,body.expectedSnapshot);
       assert(!current?.linkedBranchId, 409, "This session follows clinic hours. Unlink it in Clinic settings before making custom edits.");
       const { freezeDoctorSessions } = await import("../lib/session-duration");
       await freezeDoctorSessions(proposed.doctorId, tx);
@@ -283,6 +286,18 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + proposed.doctorId}))`);
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"doctor-schedules:" + proposed.doctorId}))`);
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"branch-hours:" + proposed.branchId}))`);
+      if(kind==="schedules"){
+        if(refreshActor)user=await refreshActor();
+        const current=old?await one(schedules,old.id,tx):undefined;
+        if(current)assertScheduleSnapshot(current,body.expectedSnapshot);
+        await authorizeWrite(user,kind,body,current,tx);
+        const location=await one(branches,proposed.branchId,tx);
+        assert(typeof location.timezone==="string"&&!!location.timezone,409,"Location timezone is not configured. Configure it in Clinic settings before saving sessions.");
+        const doctor=await enrich("doctors",await one(doctors,proposed.doctorId,tx),tx);
+        assert(location.status==="active"&&doctor.status==="active"&&doctor.branchIds.includes(location.id)&&doctor.clinicIds.includes(location.clinicId),409,"Doctor assignments or location status changed. Reload the schedule context before saving.");
+        assert(proposed.clinicId===location.clinicId,409,"Location no longer belongs to this Clinic Group. Reload the schedule context.");
+        assert(!body.timezone||body.timezone===location.timezone,409,"Location timezone changed. Reload and review the schedule before saving.");
+      }
       if (kind === "availability-exceptions" && proposed.sessionId) {
         const session = await one(schedules, proposed.sessionId, tx);
         assert(session.doctorId === proposed.doctorId && session.branchId === proposed.branchId && session.dayOfWeek === new Date(proposed.date + "T12:00:00Z").getUTCDay(), 400, "Exception session does not match doctor, branch and date");
@@ -390,6 +405,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
     }
     const id = old?.id || uid(), merged = { ...old, ...body }, fields: any = { data: merged };
     delete fields.data.data;
+    delete fields.data.expectedSnapshot;
     if ("status" in table) fields.status = body.status || old?.status || "active";
     for (const key of ["clinicId", "branchId", "doctorId", "dayOfWeek", "date", "category", "parentId", "specializationId"]) if (key in table && merged[key] !== undefined) fields[key] = merged[key];
     if (kind === "clinics") {
@@ -718,12 +734,12 @@ for (const [kind, table, schema, listSchema] of definitions) {
     res.json(await withPasswordState(await projectAssignmentScope(user, kind, row)));
   });
   resourcesRouter.post(`/${kind}`, async (req, res) => {
-    const user = await requireUser(req), row = await save(kind, table, user, parse(schema, req.body), undefined, invitationRedirectUrl(req));
+    const user = await requireUser(req), row = await save(kind, table, user, parse(schema, req.body), undefined, invitationRedirectUrl(req),()=>requireUser(req));
     res.status(201).json(await projectAssignmentScope(user, kind, row));
   });
   resourcesRouter.patch(`/${kind}/:id`, async (req, res) => {
     const user = await requireUser(req), old = await enrich(kind, await one(table, req.params.id as string));
-    res.json(await projectAssignmentScope(user, kind, await save(kind, table, user, parse(schema, req.body), old)));
+    res.json(await projectAssignmentScope(user, kind, await save(kind, table, user, parse(schema, req.body), old,undefined,()=>requireUser(req))));
   });
   resourcesRouter.delete(`/${kind}/:id`, async (req, res) => {
     const user = await requireUser(req), old = await enrich(kind, await one(table, req.params.id as string));
@@ -734,7 +750,14 @@ for (const [kind, table, schema, listSchema] of definitions) {
     await db.transaction(async tx => {
       if (kind === "schedules") {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + old.doctorId}))`);
-        assert(!(await one(schedules, old.id, tx)).linkedBranchId, 409, "This session follows clinic hours. Unlink it in Clinic settings before deactivating it.");
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"doctor-schedules:" + old.doctorId}))`);
+        const current=await one(schedules,old.id,tx);
+        assertScheduleSnapshot(current,req.query.expectedSnapshot);
+        const freshActor=await requireUser(req);
+        await authorizeWrite(freshActor,kind,{},current,tx);
+        const doctor=await enrich("doctors",await one(doctors,current.doctorId,tx),tx);
+        assert(doctor.status==="active"&&doctor.branchIds.includes(current.branchId),409,"Doctor assignments changed. Reload the schedule context before deactivating sessions.");
+        assert(!current.linkedBranchId, 409, "This session follows clinic hours. Unlink it in Clinic settings before deactivating it.");
         const { freezeDoctorSessions } = await import("../lib/session-duration");
         await freezeDoctorSessions(old.doctorId, tx);
       }

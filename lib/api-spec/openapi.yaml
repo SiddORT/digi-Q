@@ -852,6 +852,11 @@ paths:
         "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Schedule" } } } }
     delete:
       operationId: deleteSchedule
+      parameters:
+        - name: expectedSnapshot
+          in: query
+          description: Optional loaded schedule authoring snapshot. Compared after acquiring doctor locks; stale changes return 409. Deactivation retains history.
+          schema: { type: string, maxLength: 20000 }
       responses:
         "204": { description: Removed without altering historical visits }
   /availability-exceptions:
@@ -2344,6 +2349,7 @@ components:
       type: object
       required: [doctorId, clinicId, branchId, dayOfWeek, isOpen, startTime, endTime, tokenPrefix, maxTokens, consultationMinutes]
       properties:
+        expectedSnapshot: { type: string, maxLength: 20000, description: "Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it." }
         doctorId: { type: string }
         clinicId: { type: string }
         branchId: { type: string }
@@ -2359,8 +2365,8 @@ components:
         consultationMinutes: { type: integer, minimum: 1 }
         bufferMinutes: { type: integer, minimum: 0, maximum: 1440, default: 0 }
         queueMode: { type: string, enum: [mixed, appointmentsOnly, walkInsOnly], default: mixed }
-        queueOpenTime: { type: string }
-        queueCloseTime: { type: string }
+        queueOpenTime: { type: [string, "null"], description: Null clears an optional queue opening override. }
+        queueCloseTime: { type: [string, "null"], description: Null clears an optional queue closing override. }
     Schedule:
       allOf:
         - { $ref: "#/components/schemas/ScheduleInput" }

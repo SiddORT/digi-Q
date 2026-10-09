@@ -39,7 +39,8 @@ import { PATIENT_SECONDARY, secondaryFieldErrors } from "./lib/patient-details";
 import type { FieldWidth } from "./lib/field-width";
 import { PatientDetailsDrawer } from "./components/PatientDetailsDrawer";
 import { ExactRecordDrawer, RecordFacts, scanScopedPages, useExactRecord, type RecordFact } from "./components/RecordDetails";
-import { WeeklyScheduleEditor } from "./components/schedule/WeeklyScheduleEditor";
+import { AvailabilityScheduleEntry } from "./components/schedule/AvailabilityScheduleEntry";
+import { scheduleSnapshot } from "./components/schedule/week-plan";
 import { ExceptionImpactPreview } from "./components/schedule/ExceptionImpactPreview";
 import { friendlyError } from "./lib/friendly-error";
 import { required, validatePersonName, validatePhone, validateEmail, validateDateOfBirth, ageFromDateOfBirth, normalizePhone, validateNumberRange } from "./lib/validators";
@@ -465,6 +466,7 @@ function renderComputed(c:string,row:any){
  return undefined;
 }
 export function ResourcePage({resource,identity,defaults={},allowCreate=true,onEdit,embedded=false,fixedClinicId}:{resource:string;identity?:api.Identity;defaults?:any;allowCreate?:boolean;onEdit?:(row:any)=>void;embedded?:boolean;fixedClinicId?:string}){
+  const scheduleContext=useRef({dirty:false,busy:false,confirming:false});
  const superadminClinics=resource==="clinics"&&identity?.user?.role==="superAdmin";
  const recordSecondary=(resource:string,row:any,columns:string[])=>superadminClinics?(row.code?`Code: ${row.code}`:"Code not set"):genericRecordSecondary(resource,row,columns);
  const confirmation=useConfirm();
@@ -507,6 +509,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   // The URL is the source of truth so opening an editor and browser Back both retain list context.
   // Keep unrelated query parameters (e.g. links from clinic settings) intact.
   const changeUrl=(changes:Record<string,string|number>,replace=false)=>{
+     const commit=()=>{
     const next=new URLSearchParams(window.location.search);
     for(const [key,value] of Object.entries(changes)){
       if(key==="clinicId"&&fixedClinicId)continue;
@@ -514,6 +517,18 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
       else next.set(key,String(value));
     }
     navigate(`${window.location.pathname}${next.size?`?${next}`:""}`,{replace});
+     };
+     if(resource==="availability"&&"doctorId" in changes&&String(changes.doctorId||roleDefaults.doctorId||"")!==(filters.doctorId||"")){
+       if(scheduleContext.current.busy||scheduleContext.current.confirming)return;
+       if(scheduleContext.current.dirty){
+         scheduleContext.current.confirming=true;
+         void confirmation.ask({title:"Discard schedule draft?",description:"Changing doctors discards the unsaved schedule. Saved sessions and history are kept.",confirmLabel:"Discard and Change Doctor",tone:"danger"}).then(ok=>{
+           if(ok){scheduleContext.current.dirty=false;commit();}
+         }).finally(()=>{scheduleContext.current.confirming=false;});
+         return;
+       }
+     }
+     commit();
   };
   const setPage=(value:number)=>changeUrl({page:value});
   const setPageSize=(value:number)=>changeUrl({pageSize:value,page:1});
@@ -578,11 +593,16 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const portal=identity?.user?.role==="doctor"?"doctor":identity?.user?.role==="receptionist"?"receptionist":"admin";
  const clinicRecordHref=(id:string)=>superadminClinics?clinicDetailsHref(id,urlSearch):`/admin/settings?clinicId=${encodeURIComponent(id)}&section=general`;
   useEffect(()=>{if(query.data&&!query.isPlaceholderData&&page>1&&page>Math.max(1,Math.ceil(query.data.total/pageSize)))setPage(Math.max(1,Math.ceil(query.data.total/pageSize)));},[query.data,query.isPlaceholderData,page,pageSize]);
- const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,data):config.create(data),onSuccess:(saved:any)=>{
+ const save=useMutation({mutationFn:(data:any)=>editing?.id?config.update(editing.id,resource==="availability"?{...data,expectedSnapshot:scheduleSnapshot(editing)}:data):config.create(data),onSuccess:(saved:any)=>{
   if(resource==="patients"&&!editing?.id){setRegisteredPatient(saved);setPage(1);}
   setEditing(null);notifySuccess("Updated successfully");client.invalidateQueries();
  }});
- const remove=useMutation({mutationFn:(id:string)=>config.remove(id),onSuccess:()=>{notifySuccess("Record deactivated. Historical records are preserved.");client.invalidateQueries();}});
+ const remove=useMutation({mutationFn:(id:string)=>{
+   if(resource!=="availability")return config.remove(id);
+   const row=query.data?.items.find((row:any)=>row.id===id);
+   if(!row)throw new Error("Reload the schedule list before deactivating this session.");
+   return api.deleteSchedule(id,{expectedSnapshot:scheduleSnapshot(row)});
+ },onSuccess:()=>{notifySuccess("Record deactivated. Historical records are preserved.");client.invalidateQueries();}});
  const statusUpdate=useMutation({mutationFn:({row,status}:{row:api.User;status:"active"|"inactive"})=>api.updateUser(row.id,{fullName:row.fullName,email:row.email,role:row.role,status,...row.clinicIds?{clinicIds:row.clinicIds}:{},...row.branchIds?{branchIds:row.branchIds}:{}}),onSuccess:()=>{setSuccess("User status updated.");client.invalidateQueries();}});
  const changeUserStatus=async(row:any)=>{
    if(statusUpdate.isPending)return;
@@ -672,7 +692,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  </p>}
  {!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={remove.error||statusUpdate.error}/>
  <ListingBulk selection={selection} resource={resource} columns={config.columns} identity={identity} context={selectionContext}/>
- {resource==="availability"&&filters.doctorId&&filters.branchId&&<WeeklyScheduleEditor key={`${filters.doctorId}-${filters.branchId}`} doctorId={filters.doctorId} branchId={filters.branchId} onEdit={row=>{save.reset();setDirty(false);setEditing(row);}}/>}
+ {resource==="availability"&&filters.doctorId&&<AvailabilityScheduleEntry key={filters.doctorId} doctorId={filters.doctorId} fixedClinicId={fixedClinicId} canDelete onDirtyChange={dirty=>{scheduleContext.current.dirty=dirty;}} onBusyChange={busy=>{scheduleContext.current.busy=busy;}}/>}
  <section className={`panel table-panel admin-listing-table density-${density}${superadminClinics?" superadmin-clinics-table":""}`}>
    {query.isLoading?<div className="skeleton" role="status">Loading {listName}…</div>:query.error?<><div className="error-box" role="alert">{friendlyError(query.error,"load")}</div><button onClick={()=>query.refetch()}>Retry {listName}</button></>:query.data?.items?.length?<div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>
   <colgroup><col className="col-select"/>{displayColumns.map(c=><col key={c} className={compact&&c===config.columns[0]?"col-record":superadminClinics?`col-${c}`:undefined}/>)}{hasActions&&<col className="col-actions"/>}</colgroup>

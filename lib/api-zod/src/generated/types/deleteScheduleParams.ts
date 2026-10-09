@@ -20,58 +20,11 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { ScheduleInputQueueMode } from './scheduleInputQueueMode';
 
-export interface ScheduleInput {
-  /**
-     * Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.
-     * @maxLength 20000
-     */
-  expectedSnapshot?: string;
-  doctorId: string;
-  clinicId: string;
-  branchId: string;
-  /**
-     * Sunday is 0
-     * @minimum 0
-     * @maximum 6
-     */
-  dayOfWeek: number;
-  isOpen: boolean;
-  /** @pattern ^[0-2][0-9]:[0-5][0-9]$ */
-  startTime: string;
-  endTime: string;
-  /** @nullable */
-  breakStart?: string | null;
-  /** @nullable */
-  breakEnd?: string | null;
-  timezone?: string;
-  /**
-     * @minLength 1
-     * @maxLength 8
-     */
-  tokenPrefix: string;
-  /**
-     * @minimum 1
-     * @maximum 1000
-     */
-  maxTokens: number;
-  /** @minimum 1 */
-  consultationMinutes: number;
-  /**
-     * @minimum 0
-     * @maximum 1440
-     */
-  bufferMinutes?: number;
-  queueMode?: ScheduleInputQueueMode;
-  /**
-     * Null clears an optional queue opening override.
-     * @nullable
-     */
-  queueOpenTime?: string | null;
-  /**
-     * Null clears an optional queue closing override.
-     * @nullable
-     */
-  queueCloseTime?: string | null;
-}
+export type DeleteScheduleParams = {
+/**
+ * Optional loaded schedule authoring snapshot. Compared after acquiring doctor locks; stale changes return 409. Deactivation retains history.
+ * @maxLength 20000
+ */
+expectedSnapshot?: string;
+};
