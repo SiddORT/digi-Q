@@ -15,6 +15,7 @@ import "./workspace.css";
 import { SelectorFixture } from "./SelectorFixture";
 import { RegistrationFixture } from "./RegistrationFixture";
 import { RescheduleFixture } from "./RescheduleFixture";
+import App from "../src/App";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -31,7 +32,7 @@ if (params.get("mode") === "registration") return <RegistrationFixture/>;
 if (params.get("mode") === "reschedule") return <RescheduleFixture/>;
 if(params.get("mode")==="booking"){
  const role=params.get("fixtureRole")||"superAdmin";
- return <main className="content">{role==="guest"?<GuestBooking reference="fixture-booking" context={{reference:"fixture-booking",clinicId:"c1",branchId:"b1",doctorId:"d1",clinicName:"Fictional Booking Clinic",branchName:"Fictional Booking Location",doctorName:"Fictional Booking Doctor",branchTimezone:"UTC",dateFormat:"YYYY-MM-DD",timeFormat:"24h"}}/>:<Booking identity={{userId:role,user:{id:role,role,fullName:"Fictional Booker",clinicIds:["c1"],branchIds:["b1"]},...(role==="doctor"?{doctorId:"d1"}:{}),...(role==="patient"?{patientId:"p1"}:{}),needsOnboarding:false} as any}/>}</main>;
+ return <main className="content">{role==="guest"?<GuestBooking reference="fixture-booking" context={{reference:"fixture-booking",clinicId:"c1",branchId:"b1",doctorId:"d1",clinicName:"Fictional Booking Clinic",branchName:"Fictional Booking Location",doctorName:"Fictional Booking Doctor",branchTimezone:"UTC",dateFormat:"YYYY-MM-DD",timeFormat:"24h"}}/>:<Booking entryPoint="staff-workspace" identity={{userId:role,user:{id:role,role,fullName:"Fictional Booker",clinicIds:["c1"],branchIds:["b1"]},...(role==="doctor"?{doctorId:"d1"}:{}),...(role==="patient"?{patientId:"p1"}:{}),needsOnboarding:false} as any}/>}</main>;
 }
 if (["selectors", "queue"].includes(params.get("mode") || "")) return <SelectorFixture queue={params.get("mode")==="queue"} pinned={params.get("pinned")==="1"} role={params.get("fixtureRole")||"doctor"}/>;
 const browsing=location.startsWith("/admin/");
@@ -68,8 +69,15 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false,
 // Verify saved authoring scope even when the surrounding app has a fresh location cache.
 queryClient.setQueryDefaults(["doctor-editor-locations"],{staleTime:60000});
 
+/** Exercise the actual public and guarded workspace routes, including auth providers. */
+function FixtureRouter(){
+  const [location]=useLocation();
+  return location.startsWith("/book/")||/^\/(admin|doctor|receptionist|patient)\/book$/.test(location)
+    ? <App/> : <FixtureWorkspace/>;
+}
+
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
-    <FixtureWorkspace/>
+    <FixtureRouter/>
   </QueryClientProvider>,
 );

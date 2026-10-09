@@ -12,7 +12,7 @@ export function RegistrationFixture() {
   if (me.error) return <ErrorNotice error={me.error}/>;
   if (!me.data?.user) return <p>Loading fixture identity…</p>;
   const page = params.get("registrationPage") === "booking" ? "book" : "patients";
-  const content = page === "book" ? <Booking identity={me.data}/> :
+  const content = page === "book" ? <Booking entryPoint="staff-workspace" identity={me.data}/> :
     <ResourcePage resource="patients" identity={me.data} allowCreate={me.data.user.role !== "doctor"}/>;
   return <div className="workspace-main"><main className="content">
     {params.get("pinned") === "1" ? <WorkspaceBranchProvider identity={me.data}><LocationSelector/><BranchScopeGate page={page}>{content}</BranchScopeGate></WorkspaceBranchProvider> : content}
