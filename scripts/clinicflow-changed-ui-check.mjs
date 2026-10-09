@@ -7,12 +7,14 @@ import { execFileSync } from "node:child_process";
 
 const origin = `https://${process.env.REPLIT_DEV_DOMAIN}`;
 if (!process.env.REPLIT_DEV_DOMAIN) throw new Error("REPLIT_DEV_DOMAIN is required");
-const out = "screenshots/clinicflow-focused";
+const out = process.env.CLINICFLOW_CHECK_OUTPUT || "screenshots/clinicflow-focused";
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: "/repl/tools/bin/chromium", args: ["--no-sandbox"] });
 const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, timezoneId: "UTC", acceptDownloads: true });
 const page = await context.newPage();
 page.setDefaultTimeout(5000);
+// Keep the real calendar/month navigation aligned with the fictional visits.
+await page.clock.install({ time: new Date("2026-10-03T12:00:00Z") });
 const clinic = { id: "fx-clinic", name: "Fictional Clinic", timezone: "UTC" };
 const appts = Array.from({ length: 4 }, (_, i) => ({
   id: `fx-appt-${i + 1}`, reference: `FX-REF-${i + 1}`, token: `F-${i + 1}`,
@@ -44,7 +46,7 @@ await context.route("**/api/**", async route => {
   if (p === `/clinics/${clinic.id}`) return json(clinic);
   if (p === "/appointments") return json(list(appts));
   if (p === "/appointments/calendar") return json({ total: 4, days: [{ date: "2026-10-03", total: 4, byStatus: { booked: 3, completed: 1 } }] });
-  if (/^\/appointments\/fx-appt-\d+\/qr$/.test(p)) return json({ checkInUrl: `https://example.invalid/check-in/${p.split("/")[2]}`, payload: "fictional-qr" });
+  if (/^\/appointments\/fx-appt-\d+\/qr$/.test(p)) return json({ appointmentId: p.split("/")[2], checkInUrl: `https://example.invalid/check-in/${p.split("/")[2]}`, payload: "fictional-qr" });
   if (p === "/appointments/fx-appt-1/email-ticket") return json({ eligible: true, recipient: "person1@example.invalid" });
   if (p === "/appointments/fx-appt-2/email-ticket") return json({ eligible: true, recipient: "person2@example.invalid" });
   if (p === "/appointments/fx-appt-3/email-ticket") return json({ eligible: false, reason: "Completed appointments are not eligible." });
@@ -67,29 +69,63 @@ const savePdf = async (download, name, expectedPages) => {
   return path;
 };
 try {
-  await page.goto(`${origin}/admin/appointments`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${origin}/admin/appointments`, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.getByTestId("appointment-fx-appt-1").waitFor();
+  const header = page.getByTestId("list-header");
+  await expect(header.getByRole("heading", { name: "Appointments" })).toBeVisible();
+  await expect(header.getByRole("combobox", { name: "Search Appointments" })).toBeVisible();
+  const exportButton = header.getByTestId("button-export-filtered-appointments");
+  const bookButton = header.getByTestId("link-page-book-appointment");
+  await expect(exportButton).toBeVisible();
+  await expect(bookButton).toHaveAttribute("href", "/admin/book");
+  const exportBox = await exportButton.boundingBox(), bookBox = await bookButton.boundingBox();
+  expect(exportBox.x + exportBox.width).toBeLessThanOrEqual(bookBox.x);
+  expect(Math.abs(exportBox.height - bookBox.height)).toBeLessThanOrEqual(1);
+  await expect(header.getByTestId("list-header-subrow")).toHaveCount(0);
+  const updated = page.getByRole("button", { name: "Last Updated", exact: true });
+  await expect(updated).toBeVisible();
+  await updated.focus();
+  // The visual bubble is aria-hidden because the trigger's always-present
+  // description supplies the same text to assistive technology.
+  await expect(updated).toHaveAccessibleDescription(/^Updated /);
+  await expect(page.locator('.helptip-bubble[role="tooltip"]')).toBeVisible();
+  await expect(page.locator('.helptip-bubble[role="tooltip"]')).toContainText("Updated ");
   await shot("appointments-1280");
-  await page.getByTestId("button-visit-range").click();
-  await expect(page.getByTestId("button-range-today")).toBeVisible();
-  await page.getByTestId("button-range-today").click();
-  await expect(page.getByTestId("text-range-current")).toHaveText("Today");
-  await page.getByTestId("button-visit-range").click();
-  await page.getByTestId("button-range-custom").click();
-  await page.getByRole("button", { name: "03 Oct 2026" }).click();
-  await page.getByRole("button", { name: "04 Oct 2026" }).click();
+  // Dates are draft drawer filters now, not a VisitRangePicker in header meta.
+  const committedUrl = page.url();
+  await page.getByTestId("button-toggle-advanced-filters").click();
+  await page.getByTestId("button-appointment-range-calendar").click();
+  await page.getByTestId("button-range-day-2026-10-03").click();
+  await page.getByTestId("button-range-day-2026-10-04").click();
   await page.getByTestId("button-range-cancel").click();
-  await expect(page.getByTestId("text-range-current")).toHaveText("Today");
-  await page.getByTestId("button-visit-range").click();
-  await page.getByTestId("button-range-custom").click();
-  await page.getByRole("button", { name: "03 Oct 2026" }).click();
-  await page.getByRole("button", { name: "04 Oct 2026" }).click();
+  await expect(page.getByTestId("input-appointment-from")).toHaveValue("");
+  await expect(page.getByTestId("input-appointment-to")).toHaveValue("");
+  expect(page.url()).toBe(committedUrl);
+  await page.getByTestId("button-appointment-range-calendar").click();
+  await page.getByTestId("button-range-day-2026-10-03").click();
+  await page.getByTestId("button-range-day-2026-10-04").click();
   await page.getByTestId("button-range-apply").click();
+  expect(page.url()).toBe(committedUrl, "picker Apply only changes the drawer draft");
+  await page.getByTestId("button-dialog-close").click();
+  expect(page.url()).toBe(committedUrl, "closing the drawer discards unapplied dates");
+  await page.getByTestId("button-toggle-advanced-filters").click();
+  await expect(page.getByTestId("input-appointment-from")).toHaveValue("");
+  await page.getByTestId("button-appointment-range-calendar").click();
+  await page.getByTestId("button-range-day-2026-10-03").click();
+  await page.getByTestId("button-range-day-2026-10-04").click();
+  await page.getByTestId("button-range-apply").click();
+  await page.getByTestId("button-close-filters").click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("from")).toBe("2026-10-03");
+  await expect.poll(() => new URL(page.url()).searchParams.get("to")).toBe("2026-10-04");
   await page.getByTestId("button-mode-calendar").click();
   await expect(page.getByTestId("calendar-status-totals")).toContainText("4 visits");
   expect(requests.some(r => r.path === "/appointments/calendar" && r.search.includes("from=2026-10-01") && r.search.includes("to=2026-10-31"))).toBeTruthy();
   await shot("calendar-1280");
   await page.getByTestId("button-calendar-day-2026-10-03").click();
+  await expect(page.getByTestId("panel-calendar-day")).toBeVisible();
+  await expect(page.getByTestId("button-mode-calendar")).toHaveAttribute("aria-pressed", "true");
+  expect(new URL(page.url()).searchParams.get("to")).toBe("2026-10-04", "drilldown must not rewrite list filters");
+  await page.getByTestId("button-calendar-day-open-list").click();
   await expect(page.getByTestId("button-mode-list")).toHaveAttribute("aria-pressed", "true");
   expect(requests.some(r => r.path === "/appointments" && r.search.includes("from=2026-10-03") && r.search.includes("to=2026-10-03"))).toBeTruthy();
   await page.getByRole("checkbox", { name: "Select all appointments on this page" }).check();
@@ -113,12 +149,17 @@ try {
   const attempts = writes.filter(w => w.path.endsWith("/fx-appt-1/email-ticket")).map(w => JSON.parse(w.body));
   expect(attempts).toHaveLength(2); expect(attempts[1].requestId).toBe(firstBody.requestId);
   await page.getByTestId("button-dialog-close").click();
+  // Bulk export is all-or-nothing: omit the completed visit explicitly rather
+  // than expecting an export to silently skip one of the selected records.
+  await page.getByTestId("appointment-fx-appt-3").getByRole("checkbox").uncheck();
+  await expect(page.getByTestId("text-bulk-count")).toHaveText("3 selected");
   await page.getByTestId("menu-bulk-more").click();
   const bulkDownload = page.waitForEvent("download");
   await page.getByRole("menuitem", { name: "Download Tickets PDF" }).click();
   await savePdf(await bulkDownload, "bulk-tickets.pdf", 3);
-  await page.getByTestId("details-fx-appt-1").click();
-  await page.getByTestId("button-detail-jump-ticket").click();
+  // appointment-details.spec.ts owns tab/entry-point coverage. This expansion
+  // is only setup for the existing single-ticket export contract below.
+  await page.getByTestId("button-expand-appointment-fx-appt-1").click();
   await expect(page.getByTestId("button-download-ticket")).toBeEnabled();
   await expect(page.getByTestId("button-print-ticket")).toBeVisible();
   await expect(page.getByTestId("ticket-status")).toHaveAttribute("aria-label", "Booking Status: Booked");
@@ -126,14 +167,15 @@ try {
   const singleDownload = page.waitForEvent("download");
   await page.getByTestId("button-download-ticket").click();
   await savePdf(await singleDownload, "single-ticket.pdf", 1);
-  await page.getByTestId("button-dialog-close").click();
+  await page.getByTestId("button-expand-appointment-fx-appt-1").click();
   await page.getByRole("button", { name: /Sort by visit date/ }).click();
   await expect(page.getByRole("button", { name: /latest first/ })).toBeVisible();
-  await page.getByTestId("status-dot-fx-appt-1").hover();
-  await expect(page.getByRole("tooltip")).toHaveText("Booked");
+  await expect(page.getByTestId("text-status-fx-appt-1")).toHaveText("Booked");
   const desktopScroll = await page.locator(".table-scroll").evaluate(el => ({ client: el.clientWidth, scroll: el.scrollWidth }));
-  expect(desktopScroll.scroll).toBeLessThanOrEqual(desktopScroll.client);
-  result.checks.push({ name: "desktop table fits without overflow, sort arrow and status tooltip", status: "pass", desktopScroll, menuBox });
+  // Run the remaining independent legacy checks before reporting geometry.
+  // Keep the original no-overflow acceptance: a real layout failure must not
+  // be hidden just because obsolete toolbar/dialog assertions were repaired.
+  result.checks.push({ name: "desktop table fits without overflow, sort arrow and readable status", status: desktopScroll.scroll <= desktopScroll.client ? "pass" : "fail", desktopScroll, menuBox });
   for (const [width, height] of [[1024, 768], [390, 844]]) {
     await page.setViewportSize({ width, height });
     const metrics = await page.evaluate(() => ({ viewport: innerWidth, document: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
@@ -148,7 +190,15 @@ try {
       await page.keyboard.press("Escape");
     }
   }
-  result.checks.push({ name: "date presets/custom, cancel/apply, calendar aggregate/drilldown, selection, email unknown/idempotent resend, single/bulk PDF", status: "pass" });
+  await page.goto(`${origin}/admin/staff`, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await expect(page.getByTestId("list-header").getByRole("heading", { name: "Staff" })).toBeVisible();
+  await page.getByTestId("button-toggle-advanced-filters").click();
+  await page.getByRole("button", { name: "About account status", exact: true }).click();
+  await expect(page.locator('.helptip-bubble[role="tooltip"]')).toBeVisible();
+  await expect(page.locator('.helptip-bubble[role="tooltip"]')).toContainText("Account status and invitation status are separate.");
+  result.checks.push({ name: "compact header actions/freshness, staff contextual help, date draft cancel/apply, calendar aggregate/drilldown, selection, email unknown/idempotent resend, single/bulk PDF", status: "pass" });
+  expect(desktopScroll.scroll).toBeLessThanOrEqual(desktopScroll.client);
+  expect(result.checks.filter(check => check.name === "pageerror")).toEqual([]);
 } catch (e) {
   result.checks.push({ name: "focused UI check", status: "fail", error: String(e.stack || e).slice(0, 3000) });
   throw e;

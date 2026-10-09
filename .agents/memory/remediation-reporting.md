@@ -20,3 +20,9 @@ Cross-check every original section requirement before claiming completion, and d
 **Why:** The user explicitly requested this after repeated contradictions about Section A being complete.
 
 **How to apply:** Keep an evidence checklist; do not substitute shared-component adoption or source-string tests for a complete requirement review.
+
+Modernizing legacy screen checks must distinguish obsolete UI assumptions from genuine failures of the remaining acceptance criteria.
+
+**Why:** Once removed toolbar and popup selectors were repaired, the same smoke check exposed real table overflow. Calling the whole script green or relaxing its geometry threshold would have concealed a separate UI defect.
+
+**How to apply:** Verify the current user-visible behavior, retain independent acceptance assertions, and report surviving real failures separately. A tests-only assignment does not authorize changing the UI to make its checks pass.

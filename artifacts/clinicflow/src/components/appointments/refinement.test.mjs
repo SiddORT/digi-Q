@@ -11,9 +11,14 @@ test("visit range presets, stepping and calendar grid are string-date based (tim
   assert.match(p, /button-range-apply/); assert.match(p, /button-range-cancel/); assert.match(p, /Previous period/); assert.match(p, /aria-label="Year"/);
 });
 
-test("range picker lives in the list header; calendar uses server counts with drilldown", () => {
+test("appointment date range is a draft drawer filter; calendar uses server counts with drilldown", () => {
   const c = r("../../clinic.tsx");
-  assert.match(c, /meta=\{<><div className="appt-mode"[\s\S]*?<VisitRangePicker/);
+  const appts = c.slice(c.indexOf("function Appointments("), c.indexOf("export function Booking("));
+  // Date selection remains available, but commits with the other drawer filters.
+  // Rendered apply/cancel and calendar behavior: clinicflow-changed-ui-check.mjs.
+  assert.match(appts, /onOpen=\{openFilters\} onApply=\{applyFilters\}/);
+  assert.match(appts, /advanced=\{<>[\s\S]*?<DateRangeInput testId="appointment-range"/);
+  assert.match(appts, /from=\{draft\.from\} to=\{draft\.to\}[\s\S]*?onChange=\{range=>updateDraft\(range\)\}/);
   const cal = r("./AppointmentCalendar.tsx");
   assert.match(cal, /useGetAppointmentCalendar/); assert.doesNotMatch(cal, /useListAppointments/);
   assert.match(c, /onDrill=\{setCalDay\}/); // day drill opens the side panel; Open in list is explicit (system-standard.test.mjs)

@@ -65,7 +65,7 @@ test("follow location hours: only owner/Super Admin, only for the owner's own do
   assert.deepEqual(body, { branches: [{ id: "b1", name: "Main", address: "1 Road", linkedSchedule: { enabled: true, maxTokens: 20, consultationMinutes: 10, tokenPrefix: "A", queueMode: "mixed" } }] });
 });
 
-test("shared header: compact mobile filters, stable search slot, users title row with contextual help", () => {
+test("shared header: compact mobile filters, stable search slot, compact staff title with contextual help", () => {
   const bar = read("./ListingControls.tsx");
   assert.match(bar, /data-testid="button-toggle-quick-filters"/);
   assert.match(bar, /hidden=\{compactFilters && !filtersOpen\}/);
@@ -74,6 +74,7 @@ test("shared header: compact mobile filters, stable search slot, users title row
   assert.match(css, /env\(safe-area-inset-bottom\)/);
   assert.match(css, /min-height:var\(--control-lg\);min-width:var\(--control-lg\)/);
   const users = read("../Users.tsx");
-  assert.match(users, /<FilterBar title=\{<div className="staff-title-row">/);
+  assert.match(users, /<FilterBar compactToolbar title=\{<h2>Staff<\/h2>\}/);
+  assert.match(users, /<HelpTip label="About account status" text="Account status and invitation status are separate\./);
   assert.doesNotMatch(users, /<p className="listing-hint">Account status and invitation status/);
 });

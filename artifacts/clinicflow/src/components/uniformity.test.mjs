@@ -1,19 +1,41 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createElement as h } from "react";
+import { renderFilterBar } from "./listing-controls-render.mjs";
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 
-test("shared list header: title + primary action, then wide search + tools, then exposed filters/status, then chips", () => {
-  const src = read("./ListingControls.tsx");
-  const bar = src.slice(src.indexOf("export function FilterBar"));
-  const r = bar.slice(bar.indexOf("  return ("));
-  const top = r.indexOf("lh-top"), actions = r.indexOf('className="lh-actions"'), search = r.indexOf("lh-search-row"), tools = r.indexOf("lh-table-tools"), sub = r.indexOf("lh-sub"), filters = r.indexOf("lh-filters"), chips = r.indexOf("lh-chips-row");
-  assert.ok(top > 0 && top < actions && actions < search && search < tools && tools < sub && sub < filters && filters < chips, "row order");
-  assert.match(bar, /const toolsInline = !status && !countInSub;/);
-  assert.match(bar, /const hasSubRow = !toolsInline && !!\(status \|\| meta \|\| advanced \|\| showClear \|\| countInSub\)/);
-  // Filters never strand alone on row 2: without status/count they join the search row.
-  assert.match(bar, /\{toolsInline && !!\(meta \|\| advanced \|\| showClear\) && tools\}/);
-  assert.match(bar, /\{\(hasSubRow \|\| filters\) && \(/);
+test("shared list header renders compact controls together and preserves non-compact rows, filters and chips", () => {
+  const props = {
+    title: h("span", null, "4 appointments"),
+    children: h("input", { "aria-label": "Search Appointments" }),
+    actions: h("button", null, "Book Appointment"),
+    secondary: h("button", null, "Export"),
+    meta: h("span", null, "Listing context"),
+    advanced: h("input", { "aria-label": "Doctor" }),
+    chips: [{ key: "adv:doctor", label: "Dr Sample", onRemove() {} }],
+    onReset() {}, active: true,
+  };
+  const compact = renderFilterBar({ ...props, compactToolbar: true }, true);
+  const searchRow = compact.slice(compact.indexOf('data-testid="list-header-search-row"'));
+  for (const selector of ['data-testid="text-page-title"', 'aria-label="Search Appointments"', 'data-testid="button-toggle-advanced-filters"', 'data-testid="list-header-table-tools"', 'data-testid="list-header-actions"', 'aria-label="Active filters"']) assert.ok(searchRow.includes(selector), selector);
+  assert.ok(searchRow.indexOf('data-testid="text-page-title"') < searchRow.indexOf('aria-label="Search Appointments"'));
+  assert.ok(searchRow.indexOf('aria-label="Search Appointments"') < searchRow.indexOf('data-testid="button-toggle-advanced-filters"'));
+  assert.ok(searchRow.indexOf('data-testid="list-header-table-tools"') < searchRow.indexOf('data-testid="list-header-actions"'));
+  assert.ok(searchRow.indexOf('data-testid="list-header-actions"') < searchRow.indexOf('aria-label="Active filters"'));
+  for (const text of ["Appointments", "Book Appointment", "Export", "Dr Sample", "Remove filter Dr Sample", "Clear All"]) assert.ok(compact.includes(text), text);
+  assert.doesNotMatch(compact, /data-testid="list-header-subrow"/, "compact tools never create a redundant row");
+  const inline = renderFilterBar(props);
+  assert.doesNotMatch(inline, /data-testid="list-header-subrow"/, "tools without status or count never strand on another row");
+  const expanded = renderFilterBar({ ...props, status: h("span", null, "Booked"), filters: h("input", { "aria-label": "Visit date" }) }, true);
+  assert.ok(expanded.indexOf('data-testid="text-page-title"') < expanded.indexOf('data-testid="list-header-actions"'));
+  assert.ok(expanded.indexOf('data-testid="list-header-actions"') < expanded.indexOf('data-testid="list-header-search-row"'));
+  assert.ok(expanded.indexOf('data-testid="list-header-table-tools"') > expanded.indexOf('data-testid="list-header-search-row"'));
+  const subrow = expanded.indexOf('data-testid="list-header-subrow"');
+  assert.ok(subrow > expanded.indexOf('data-testid="list-header-search-row"'));
+  for (const selector of ['data-testid="text-listing-title"', 'data-testid="list-header-filters"', 'aria-label="Visit date"', 'filter-bar-status']) assert.ok(expanded.indexOf(selector) > subrow, selector);
+  assert.ok(expanded.indexOf("Listing context") > subrow, "status/count keeps metadata beside the secondary row");
+  assert.ok(expanded.indexOf('aria-label="Active filters"') > subrow);
   const css = read("./uniformity.css");
   assert.match(css, /\.list-header\{--lh-h:var\(--control-md\)/);
   assert.match(css, /\.lh-actions :is\(\.button,a\.button,button\.button\)\{min-height:var\(--lh-h\)/);
@@ -21,11 +43,11 @@ test("shared list header: title + primary action, then wide search + tools, then
   assert.match(css, /\.export-status\{white-space:normal;max-width:260px;overflow:visible/);
 });
 
-test("appointments header carries Export beside a full-size Book appointment; updated tip in meta", () => {
+test("appointments header carries Export beside a full-size Book appointment; freshness remains accessible", () => {
   const clinic = read("../clinic.tsx");
-  const appts = clinic.slice(clinic.indexOf("function Appointments("), clinic.indexOf("function Booking("));
+  const appts = clinic.slice(clinic.indexOf("function Appointments("), clinic.indexOf("export function Booking("));
   assert.match(appts, /secondary=\{<><FilteredAppointmentExport[^]*?actions=\{<><Link className="button" href=\{`\/\$\{role\}\/book`\} data-testid="link-page-book-appointment">/);
-  assert.match(appts, /meta=\{<>[\s\S]*?\{q\.dataUpdatedAt>0\?<span className="listing-updated-tip"/);
+  assert.match(appts, /q\.dataUpdatedAt>0&&<HelpTip label="Last Updated"[\s\S]*?text=\{`Updated \$\{formatConfiguredTimestamp\(new Date\(q\.dataUpdatedAt\)/);
   assert.doesNotMatch(appts, /meta=\{<><SearchableSelect label="Visit Range"/, "visit range is a drawer filter");
   assert.doesNotMatch(clinic, /className="button small" href=\{`\/\$\{role\}\/book`\}/);
 });
