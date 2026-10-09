@@ -12,8 +12,8 @@ import { useDirectoryActor } from "../../lib/use-directory";
 import { scheduleSnapshot } from "./week-plan";
 
 /** Saved context only: profile drafts never become schedule write targets. */
-export function DoctorScheduleContext({doctor: listed, fixedClinicId, canDelete=false, onSaved, onDirtyChange, onBusyChange}: {
-  doctor: any; fixedClinicId?: string; canDelete?: boolean; onSaved?: () => void;
+export function DoctorScheduleContext({doctor: listed, fixedClinicId, fixedBranchId, canDelete=false, onSaved, onDirtyChange, onBusyChange}: {
+  doctor: any; fixedClinicId?: string; fixedBranchId?:string; canDelete?: boolean; onSaved?: () => void;
   onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void;
 }) {
   const assignmentDirty=false, profileBusy=false, autoFocus=false;
@@ -40,13 +40,13 @@ export function DoctorScheduleContext({doctor: listed, fixedClinicId, canDelete=
   const ids: string[] = savedDoctor ? savedDoctor.branchIds || [] : [];
   const locations = useQuery({
     queryKey: ["doctor-editor-locations", actor, doctor.id, ids.join(",")],
-    enabled: !!doctor.id && !!ids.length && !!savedDoctor, retry: false,
+    enabled: !!doctor.id && !!ids.length && !!savedDoctor, retry: false, staleTime:0, gcTime:0,
     queryFn: () => Promise.all(ids.map(id => api.getBranch(id))),
   });
   useEffect(()=>{
     if(savedLocations===null&&locations.isFetchedAfterMount&&!locations.isFetching&&locations.data&&!locations.error)setSavedLocations(locations.data);
   },[savedLocations,locations.data,locations.isFetchedAfterMount,locations.isFetching,locations.error]);
-  const valid = (savedLocations || []).filter(b => b.status==="active" && (doctor.clinicIds||[]).includes(b.clinicId) && (!fixedClinicId || b.clinicId===fixedClinicId));
+   const valid = (savedLocations || []).filter(b => b.status==="active" && (doctor.clinicIds||[]).includes(b.clinicId) && (!fixedClinicId || b.clinicId===fixedClinicId) && (!fixedBranchId || b.id===fixedBranchId));
   const groupIds = [...new Set(valid.map(b => b.clinicId))];
   const activeGroup = fixedClinicId || (groupIds.length === 1 ? groupIds[0] : group);
   const groups = useQuery({ queryKey: ["doctor-schedule-groups", actor, doctor.id, groupIds.join(",")], enabled: groupIds.length > 0, retry: false, queryFn: () => Promise.all(groupIds.map(id => api.getClinic(id))) });
@@ -111,7 +111,7 @@ export function DoctorScheduleContext({doctor: listed, fixedClinicId, canDelete=
         <span className="dsc-chip" title="Time format is set in clinic settings." data-testid="indicator-time-format">Time format: {prefs.timeFormat==="24h"?"24-hour":"12-hour (AM/PM)"} (locked)</span></>}
       </div>
     </div>
-    {fresh.isLoading||(!savedDoctor&&!fresh.error)||locations.isLoading?<div className="skeleton" role="status">Loading saved locations…</div>:
+    {fresh.isLoading||(!savedDoctor&&!fresh.error)||locations.isLoading||(!!ids.length&&savedLocations===null&&!locations.error)?<div className="skeleton" role="status">Loading saved locations…</div>:
       fresh.error?<><ErrorNotice error={fresh.error}/><button type="button" onClick={()=>void fresh.refetch()}>Retry</button></>:
       locations.error?<><ErrorNotice error={locations.error}/><button type="button" onClick={()=>void locations.refetch()}>Retry Assigned Locations</button></>:
       !ids.length?<p className="notice">This doctor has no saved location assignments. Edit the doctor and save assignments first.</p>:

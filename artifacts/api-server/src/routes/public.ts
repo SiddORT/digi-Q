@@ -5,7 +5,8 @@ import * as z from "@workspace/api-zod";
 import { all, one, filtered, paginate } from "../lib/store";
 import { query, assert } from "../lib/http";
 import { enrich, publicDoctor } from "../lib/entities";
-import { availability, availabilitySessions, localNow } from "../lib/availability";
+import { availability, availabilitySessions, localNow, doctorContext, datePlus } from "../lib/availability";
+import { getSettings } from "../lib/store";
 import { getPresence } from "../lib/presence";
 import { orderedReservations, pendingStatuses, sessionRows } from "../lib/queue-order";
 import { queryPage } from "../lib/list-query";
@@ -48,6 +49,14 @@ publicRouter.get("/public/availability", async (req, res) => {
 });
 publicRouter.get("/public/availability/sessions", async (req, res) => {
   const q = query(z.GetPublicAvailabilitySessionsQueryParams, req); res.json(await availabilitySessions(q.doctorId, q.branchId, q.date));
+});
+publicRouter.get("/public/availability/context", async (req, res) => {
+  const q = query(z.GetPublicBookingContextQueryParams, req);
+  const { branch, clinic } = await doctorContext(q.doctorId, q.branchId);
+  assert(branch.timezone, 409, "Location timezone is not configured. Contact the clinic.");
+  const today = localNow(branch.timezone).date;
+  const config = await getSettings(db, clinic.id);
+  res.json({ timezone: branch.timezone, today, lastBookableDate: datePlus(today, config.bookingHorizonDays) });
 });
 export async function resolveQr(reference: string, conn: any = db, lock = false) {
   let qr;

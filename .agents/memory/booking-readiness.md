@@ -14,3 +14,9 @@ Solo consulting owners should default to using location hours for their own doct
 **Why:** The user rejected entering the same timetable twice for a one-person clinic and approved linked clinic/doctor hours as the normal solo-owner experience. Demo provisioning had created both records, while normal registration previously created hours alone.
 
 **How to apply:** Treat linked hours as an ongoing relationship, not merely a one-time copy. Preview subsequent changes; reject changes affecting booked history or protected exceptions rather than silently rescheduling patients. Explicit unlinking preserves existing sessions and bookings. Administrative ownership remains separate from clinical doctor capability.
+
+Daily absence is not evidence that the weekly schedule is missing. A bounded search can establish absence only in the dates it actually inspected; a suggested next date must be reviewed rather than replacing a deliberate date automatically.
+
+**Why:** The schedule editor and booking show different scopes. A session visible on another weekday is not evidence of a booking defect, and the reported doctor/date/location may not be known. Claiming a cause without that context misleads users.
+
+**How to apply:** Explain the exact selected date and location, separate failed or stale lookups from empty results, and establish today and the booking window from the verified location timezone independently of whether any session was selected. Report controlled reproduction evidence separately from an unresolved real incident.

@@ -5,12 +5,19 @@ import { readFile, rm } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { build } from "esbuild";
+import { createQueueHarness } from "./postgres-queue.mjs";
+import { createRequire } from "node:module";
+import { drizzle as postgresDrizzle } from "drizzle-orm/node-postgres";
 
 const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 
-export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false}={}) {
-  const pg = new PGlite();
+export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false}={}) {
+  const cluster=postgres?await createQueueHarness({empty:true}):null;
+  const {Pool}=postgres?createRequire(resolve(root,"lib/db/package.json"))("pg"):{};
+  const pool=postgres?new Pool({host:cluster.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8,statement_timeout:10000}):null;
+  const pg = postgres?{exec:text=>cluster.control.query(text),query:(text,args)=>cluster.control.query(text,args),close:async()=>{await pool.end();await cluster.close();delete globalThis.__featurePostgresDb;}}:new PGlite();
+  if(postgres)globalThis.__featurePostgresDb=postgresDrizzle(pool);
   const journal = JSON.parse(await readFile(join(migrations, "meta/_journal.json"), "utf8"));
   for (const entry of journal.entries) {
     const text = await readFile(join(migrations, `${entry.tag}.sql`), "utf8");
@@ -35,6 +42,8 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import { reportingRouter } from "./routes/reporting";
       ${bookingLookups ? `import { publicRouter } from "./routes/public";
       import { appointmentsRouter } from "./routes/appointments";
+      import { guestRequestsRouter } from "./routes/guest-requests";
+      import { appointmentQrRouter } from "./routes/appointment-qr";
       import { resourcesRouter as lookupResourcesRouter } from "./routes/resources";` : ""}
       ${administration || bookingLookups ? `import { nativeSession } from "./lib/native-auth";` : ""}
       ${administration ? `import { resourcesRouter } from "./routes/resources";
@@ -51,15 +60,19 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         app.use(express.json());
         app.use("/api", workspaceFeaturesRouter, patientRecordsRouter, reportingRouter);
         ${administration ? `app.use("/api", resourcesRouter, identityRouter, systemUsersRouter, permissionPolicyRouter);` : ""}
-        ${bookingLookups ? `app.use("/api", publicRouter, appointmentsRouter, lookupResourcesRouter);` : ""}
+        ${bookingLookups ? `app.use("/api", publicRouter, appointmentsRouter, guestRequestsRouter, appointmentQrRouter, lookupResourcesRouter);` : ""}
         ${simulatedMail ? `app.use("/api", authRouter);` : ""}
         app.use(errors);
         return app;
       }` },
     outfile: bundle, bundle: true, platform: "node", format: "esm", logLevel: "error",
     external: ["argon2", "pg", "pg-native", "@electric-sql/pglite", "@google-cloud/storage", "express", "pino", "pino-http",
-      ...(bookingLookups ? ["qrcode", "jspdf", "nodemailer", "sharp"] : [])],
+      ...(bookingLookups ? ["qrcode", "jspdf", "nodemailer", "sharp", "express-rate-limit"] : [])],
     plugins: [{ name: "feature-fixtures", setup(b) {
+      if (bookingLookups && !simulatedMail) {
+        b.onResolve({ filter: /^nodemailer$/ }, () => ({ path: "disabled-mail", namespace: "disabled-mail" }));
+        b.onLoad({ filter: /.*/, namespace: "disabled-mail" }, () => ({ contents: `export default {createTransport(){return {async sendMail(){throw new Error("Mail disabled in disposable booking tests");}}}};` }));
+      }
       if (simulatedMail) {
         b.onResolve({ filter: /^nodemailer$/ }, () => ({ path: "mail", namespace: "simulated-mail" }));
         b.onLoad({ filter: /.*/, namespace: "simulated-mail" }, () => ({ contents: `
@@ -75,7 +88,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         import * as schema from "./src/schema";
         export * from "./src/schema";
         export const pool = null;
-        export const db = drizzle(globalThis.__featurePglite, { schema });
+        export const db = ${postgres?"globalThis.__featurePostgresDb":"drizzle(globalThis.__featurePglite, { schema })"};
         ${administration ? `const transaction = db.transaction.bind(db);
         db.transaction = async (...args) => {
           const hook = globalThis.__featureBeforeTransaction;
@@ -99,7 +112,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
     const init = { method, headers: { ...(user ? { "x-test-user": user } : {}), ...headers } };
     if (body instanceof Buffer) { init.body = body; init.headers["content-type"] ||= "application/octet-stream"; }
     else if (body !== undefined) { init.body = JSON.stringify(body); init.headers["content-type"] = "application/json"; }
-    const res = await fetch(base + path, init);
+    const res = await fetch(base + path, {...init,signal:AbortSignal.timeout(20000)});
     const type = res.headers.get("content-type") || "";
     const data = type.includes("json") ? await res.json() : Buffer.from(await res.arrayBuffer());
     return { status: res.status, data, headers: res.headers };

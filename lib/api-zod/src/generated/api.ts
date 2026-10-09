@@ -1543,6 +1543,28 @@ export const UpdateDoctorPresenceResponse = zod.object({
 }))
 
 
+export const GetBookingScheduleAccessQueryParams = zod.object({
+  "doctorId": zod.coerce.string(),
+  "branchId": zod.coerce.string()
+})
+
+export const GetBookingScheduleAccessResponse = zod.object({
+  "allowed": zod.boolean()
+})
+
+
+export const GetPublicBookingContextQueryParams = zod.object({
+  "doctorId": zod.coerce.string(),
+  "branchId": zod.coerce.string()
+})
+
+export const GetPublicBookingContextResponse = zod.object({
+  "timezone": zod.string(),
+  "today": zod.coerce.date(),
+  "lastBookableDate": zod.coerce.date()
+})
+
+
 export const GetPublicAvailabilitySessionsQueryParams = zod.object({
   "doctorId": zod.coerce.string(),
   "branchId": zod.coerce.string(),

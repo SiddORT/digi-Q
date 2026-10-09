@@ -21,6 +21,23 @@ async function mergeAddress(table: any, id: string, patch: Record<string, unknow
 }
 const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs, authChallenges } = tables;
 export const resourcesRouter = Router();
+resourcesRouter.get("/booking/schedule-access", async (req, res) => {
+  const user = await requireUser(req), q = query(z.GetBookingScheduleAccessQueryParams, req);
+  try {
+    const branch = await one(branches, q.branchId);
+    await authorizeWrite(user, "schedules", {doctorId:q.doctorId,branchId:q.branchId,clinicId:branch.clinicId});
+    const { enforcePermissionPolicy } = await import("../lib/permission-policy");
+    // The focused editor reads its saved scope and supports both new and existing sessions.
+    for (const path of ["/schedules", "/doctors", "/branches", "/clinics"])
+      await enforcePermissionPolicy(user, {method:"GET",path});
+    await enforcePermissionPolicy(user, {method:"POST",path:"/schedules"});
+    await enforcePermissionPolicy(user, {method:"PATCH",path:"/schedules/context"});
+    res.json({allowed:true});
+  } catch(error) {
+    if(error instanceof HttpError && [403,404,409].includes(error.status)) { res.json({allowed:false}); return; }
+    throw error;
+  }
+});
 const definitions: [string, any, any, any][] = [
   ["clinics", clinics, z.CreateClinicBody, z.ListClinicsQueryParams],
   ["branches", branches, z.CreateBranchBody, z.ListBranchesQueryParams],

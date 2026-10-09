@@ -368,6 +368,30 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorPresenceInput" } } } }
       responses:
         "200": { description: Saved; future bookings unchanged, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorPresence" } } } }
+  /booking/schedule-access:
+    get:
+      operationId: getBookingScheduleAccess
+      parameters:
+        - { name: doctorId, in: query, required: true, schema: { type: string } }
+        - { name: branchId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Verified contextual schedule management capability
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BookingScheduleAccess" }
+  /public/availability/context:
+    get:
+      operationId: getPublicBookingContext
+      parameters:
+        - { name: doctorId, in: query, required: true, schema: { type: string } }
+        - { name: branchId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Public booking date boundaries, independent of daily sessions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicBookingContext" }
   /public/availability/sessions:
     get:
       operationId: getPublicAvailabilitySessions
@@ -1857,6 +1881,18 @@ components:
         address: { type: [string, "null"] }
         email: { type: [string, "null"] }
         phone: { type: [string, "null"] }
+    BookingScheduleAccess:
+      type: object
+      required: [allowed]
+      properties:
+        allowed: { type: boolean }
+    PublicBookingContext:
+      type: object
+      required: [timezone, today, lastBookableDate]
+      properties:
+        timezone: { type: string }
+        today: { type: string, format: date }
+        lastBookableDate: { type: string, format: date }
     PublicBranchSummary:
       type: object
       required: [id, name]

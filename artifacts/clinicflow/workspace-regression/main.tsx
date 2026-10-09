@@ -7,7 +7,8 @@ import { WorkspaceNav } from "../src/components/WorkspaceNav";
 import { Redirect, useLocation, useSearch } from "wouter";
 import { clinicLandingDestination } from "../src/lib/clinic-navigation";
 import { Users } from "../src/Users";
-import { UsersWorkspace, Appointments } from "../src/clinic";
+import { UsersWorkspace, Appointments, Booking } from "../src/clinic";
+import { GuestBooking } from "../src/components/GuestBooking";
 import { SchedulingWorkspace } from "../src/components/SchedulingWorkspace";
 import { ListPageTitleContext } from "../src/components/ListingControls";
 import "./workspace.css";
@@ -26,6 +27,10 @@ const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
 if (params.get("mode") === "registration") return <RegistrationFixture/>;
+if(params.get("mode")==="booking"){
+ const role=params.get("fixtureRole")||"superAdmin";
+ return <main className="content">{role==="guest"?<GuestBooking reference="fixture-booking" context={{reference:"fixture-booking",clinicId:"c1",branchId:"b1",doctorId:"d1",clinicName:"Fictional Booking Clinic",branchName:"Fictional Booking Location",doctorName:"Fictional Booking Doctor",branchTimezone:"UTC",dateFormat:"YYYY-MM-DD",timeFormat:"24h"}}/>:<Booking identity={{userId:role,user:{id:role,role,fullName:"Fictional Booker",clinicIds:["c1"],branchIds:["b1"]},...(role==="doctor"?{doctorId:"d1"}:{}),...(role==="patient"?{patientId:"p1"}:{}),needsOnboarding:false} as any}/>}</main>;
+}
 if (["selectors", "queue"].includes(params.get("mode") || "")) return <SelectorFixture queue={params.get("mode")==="queue"} pinned={params.get("pinned")==="1"} role={params.get("fixtureRole")||"doctor"}/>;
 const browsing=location.startsWith("/admin/");
 const [initialMode]=useState(()=>params.get("mode"));
@@ -58,6 +63,8 @@ return (
 );
 }
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, refetchInterval: false }, mutations: { retry: false } } });
+// Verify saved authoring scope even when the surrounding app has a fresh location cache.
+queryClient.setQueryDefaults(["doctor-editor-locations"],{staleTime:60000});
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>

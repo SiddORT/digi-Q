@@ -57,6 +57,7 @@ import type {
   AvailabilityException,
   AvailabilityExceptionInput,
   AvailabilityExceptionList,
+  BookingScheduleAccess,
   Branch,
   BranchInput,
   BranchList,
@@ -91,11 +92,13 @@ import type {
   GeographySuggestions,
   GetAppointmentCalendarParams,
   GetAuthCsrf200,
+  GetBookingScheduleAccessParams,
   GetDashboardParams,
   GetDoctorPresenceParams,
   GetNotificationTemplatesParams,
   GetPublicAvailabilityParams,
   GetPublicAvailabilitySessionsParams,
+  GetPublicBookingContextParams,
   GetQueueParams,
   GetReportTrendsParams,
   GetReportsParams,
@@ -159,6 +162,7 @@ import type {
   PermissionPolicyInput,
   PincodeLookup,
   ProfileInput,
+  PublicBookingContext,
   PublicClinicContext,
   PublicDisplay,
   PublicDoctorList,
@@ -2902,6 +2906,162 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUpdateDoctorPresenceMutationOptions(options));
     }
+
+export const getGetBookingScheduleAccessUrl = (params: GetBookingScheduleAccessParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/booking/schedule-access?${stringifiedParams}` : `/api/booking/schedule-access`
+}
+
+export const getBookingScheduleAccess = async (params: GetBookingScheduleAccessParams, options?: Parameters<typeof customFetch>[1]): Promise<BookingScheduleAccess> => {
+
+  return customFetch<BookingScheduleAccess>(getGetBookingScheduleAccessUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBookingScheduleAccessQueryKey = (params?: GetBookingScheduleAccessParams,) => {
+    return [
+    `/api/booking/schedule-access`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBookingScheduleAccessQueryOptions = <TData = Awaited<ReturnType<typeof getBookingScheduleAccess>>, TError = ErrorType<unknown>>(params: GetBookingScheduleAccessParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBookingScheduleAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBookingScheduleAccessQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBookingScheduleAccess>>> = ({ signal }) => getBookingScheduleAccess(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBookingScheduleAccess>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBookingScheduleAccessQueryResult = NonNullable<Awaited<ReturnType<typeof getBookingScheduleAccess>>>
+export type GetBookingScheduleAccessQueryError = ErrorType<unknown>
+
+
+
+export function useGetBookingScheduleAccess<TData = Awaited<ReturnType<typeof getBookingScheduleAccess>>, TError = ErrorType<unknown>>(
+ params: GetBookingScheduleAccessParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBookingScheduleAccess>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBookingScheduleAccessQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetPublicBookingContextUrl = (params: GetPublicBookingContextParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/public/availability/context?${stringifiedParams}` : `/api/public/availability/context`
+}
+
+export const getPublicBookingContext = async (params: GetPublicBookingContextParams, options?: Parameters<typeof customFetch>[1]): Promise<PublicBookingContext> => {
+
+  return customFetch<PublicBookingContext>(getGetPublicBookingContextUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicBookingContextQueryKey = (params?: GetPublicBookingContextParams,) => {
+    return [
+    `/api/public/availability/context`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPublicBookingContextQueryOptions = <TData = Awaited<ReturnType<typeof getPublicBookingContext>>, TError = ErrorType<unknown>>(params: GetPublicBookingContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicBookingContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicBookingContextQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicBookingContext>>> = ({ signal }) => getPublicBookingContext(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicBookingContext>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicBookingContextQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicBookingContext>>>
+export type GetPublicBookingContextQueryError = ErrorType<unknown>
+
+
+
+export function useGetPublicBookingContext<TData = Awaited<ReturnType<typeof getPublicBookingContext>>, TError = ErrorType<unknown>>(
+ params: GetPublicBookingContextParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicBookingContext>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicBookingContextQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetPublicAvailabilitySessionsUrl = (params: GetPublicAvailabilitySessionsParams,) => {
   const normalizedParams = new URLSearchParams();

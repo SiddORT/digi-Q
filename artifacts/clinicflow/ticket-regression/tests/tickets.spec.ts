@@ -67,6 +67,8 @@ async function mount(page: Page, mode: Mode, f: Fixtures, recovered = false) {
       reply = { body: guest };
     } else if (path === "/api/public/availability/sessions") {
       reply = { body: availability };
+    } else if (path === "/api/public/availability/context") {
+      reply = { body: { timezone: availability[0].timezone, today: date, lastBookableDate: date } };
     } else if (path === `/api/appointments/${appointment.id}` && req.method() === "GET") {
       reply = f.mutateAppointment(++f.appointmentReads);
     } else if (path === `/api/appointments/${appointment.id}/qr` && req.method() === "GET") {
@@ -397,6 +399,10 @@ test("guest recovery API error warns and refresh can restore ticket", async ({ p
       await route.fulfill({ json: availability });
       return;
     }
+    if (path === "/api/public/availability/context") {
+      await route.fulfill({ json: { timezone: availability[0].timezone, today: date, lastBookableDate: date } });
+      return;
+    }
     if (path !== "/api/public/guest-receipt") throw new Error(`Unexpected call ${path}`);
     const reply = f.mutateGuest(++f.guestReads);
     await route.fulfill({ status: reply.status ?? 200, json: reply.body });
@@ -450,6 +456,7 @@ test("guest immediate creation commits recoverable receipt without account", asy
     await route.fulfill({ json: { ...guest, fullName: "Walk-in Guest" } });
   });
   await page.route("**/api/public/availability/sessions?**", route => route.fulfill({ json: availability }));
+  await page.route("**/api/public/availability/context?**", route => route.fulfill({ json: { timezone: availability[0].timezone, today: date, lastBookableDate: date } }));
   await page.route("**/api/public/guest-receipt", route => {
     f.calls.push("POST /api/public/guest-receipt");
     return route.fulfill({ json: { ...guest, fullName: "Walk-in Guest" } });

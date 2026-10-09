@@ -1108,6 +1108,16 @@ export interface PublicClinicSummary {
   phone?: string | null;
 }
 
+export interface BookingScheduleAccess {
+  allowed: boolean;
+}
+
+export interface PublicBookingContext {
+  timezone: string;
+  today: string;
+  lastBookableDate: string;
+}
+
 export interface PublicBranchSummary {
   dateFormat?: ClinicDateFormat;
   timeFormat?: ClinicTimeFormat;
@@ -2657,6 +2667,16 @@ branchId: string;
 date: string;
 sessionId?: string;
 startTime?: string;
+};
+
+export type GetBookingScheduleAccessParams = {
+doctorId: string;
+branchId: string;
+};
+
+export type GetPublicBookingContextParams = {
+doctorId: string;
+branchId: string;
 };
 
 export type GetPublicAvailabilitySessionsParams = {

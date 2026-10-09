@@ -147,7 +147,8 @@ export async function availability(doctorId: string, branchId: string, date: str
    if (!reason && date === now.date && effective.queueCloseTime && now.minute >= minutes(effective.queueCloseTime)) reason = "Queue booking has closed";
   if ((Date.parse(date) - Date.parse(now.date)) / 86400000 > config.bookingHorizonDays) reason = "Outside booking horizon";
   const maxTokens = effective.maxTokens || 0, remainingTokens = Math.max(0, maxTokens - bookedTokens);
-  if (!remainingTokens) reason ||= "Session capacity reached";
+  if (!maxTokens) reason ||= "Session setup is incomplete. Contact the clinic.";
+  else if (!remainingTokens) reason ||= "Session capacity reached";
   return { doctorId, branchId, clinicId: clinic.id, ...clinicDisplayPreferences(clinic), date, sessionId: schedule?.id || null, available: !reason, reason, hoursWarning, startTime: effective.startTime || null, endTime: effective.endTime || null, breakStart: effective.breakStart || null, breakEnd: effective.breakEnd || null, timezone, maxTokens, bookedTokens, remainingTokens, consultationMinutes, tokenPrefix: effective.tokenPrefix || "A", queueMode: effective.queueMode || "mixed", queueOpenTime: effective.queueOpenTime, queueCloseTime: effective.queueCloseTime, bufferMinutes: effective.bufferMinutes || 0 };
 }
 export async function availabilitySessions(doctorId: string, branchId: string, date: string, conn: any = db) {

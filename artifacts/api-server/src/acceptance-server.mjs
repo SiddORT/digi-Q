@@ -8,6 +8,7 @@ import {createRequire} from "node:module";
 import {drizzle} from "drizzle-orm/node-postgres";
 import express from "express";
 import argon2 from "argon2";
+import { createHash } from "node:crypto";
 const root=import.meta.dirname;
 const harness=await createQueueHarness({empty:true});
 const migrations=resolve(root,"../../../lib/db/drizzle");
@@ -17,6 +18,17 @@ for(const entry of journal.entries){
   for(const statement of text.split("--> statement-breakpoint")) if(statement.trim())await harness.control.query(statement);
 }
 await seedFeatureFixtures({exec:sql=>harness.control.query(sql)});
+// Opt-in schedule-to-booking fixtures only; this server always uses its own disposable cluster.
+if(process.env.ACCEPTANCE_BOOKING_FIXTURES==="1"){
+  await harness.control.query("update branches set data=data||$1::jsonb where id='b1'",[JSON.stringify({timezone:"UTC",openingHours:Array.from({length:7},(_,dayOfWeek)=>({dayOfWeek,startTime:"08:00",endTime:"20:00"}))})]);
+  await harness.control.query("update patients set mobile='+919000000001' where id='p1'");
+  for(let day=0;day<7;day++)await harness.control.query("insert into schedules(id,doctor_id,clinic_id,branch_id,day_of_week,data) values($1,'d1','c1','b1',$2,$3)",[`booking-day-${day}`,day,{isOpen:true,startTime:"09:00",endTime:"12:00",timezone:"UTC",maxTokens:30,tokenPrefix:"B",consultationMinutes:20,queueMode:"mixed"}]);
+  for(const role of ["sa","adm","docu","rec"])await harness.control.query("insert into patients(id,clinic_id,branch_id,data) values($1,'c1','b1',$2)",[`booking-patient-${role}`,{fullName:`Fictional Booking Patient ${role}`,code:`BP-${role}`}]);
+  await harness.control.query("insert into qrs(id,clinic_id,branch_id,doctor_id,public_reference,data) values('booking-qr','c1','b1','d1','booking-discovery-fixture','{}')");
+  // Public test-only native patient session, not a production credential or login bypass in the app.
+  const token=createHash("sha256").update("disposable-booking-browser-patient").digest("base64url");
+  await harness.control.query("insert into auth_sessions(token_hash,user_id,expires_at) values($1,'patu',now()+interval '1 hour')",[createHash("sha256").update(token).digest("hex")]);
+}
 // Public, disposable fixture credential: never used by a persisted account.
 const password="Disposable browser verification 2026!";
 await harness.control.query("update users set password_hash=$1,email_verified_at=now() where role <> 'patient'",[await argon2.hash(password)]);
