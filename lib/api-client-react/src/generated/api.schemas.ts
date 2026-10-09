@@ -1116,6 +1116,10 @@ export interface PublicBookingContext {
   timezone: string;
   today: string;
   lastBookableDate: string;
+  /** Applies to account-linked patient booking */
+  requireMobileVerification?: boolean;
+  /** @minimum 0 */
+  cancellationCutoffMinutes?: number;
 }
 
 export interface PublicBranchSummary {

@@ -11,10 +11,10 @@ import { notificationKind, sanitizeSavedView, SHARE_ROLES, shareAudience, receiv
 export const workspaceFeaturesRouter = Router();
 const statusText: Record<string, string> = { booked: "Booked", checkedIn: "Checked In", waiting: "Waiting", called: "Called Next", inConsultation: "In Consultation", completed: "Completed", noShow: "Marked Absent", cancelled: "Cancelled" };
 
-/** Derived from real appointment_history (scoped) and, for administrators, audit_logs. Own actions excluded. */
+/** Booking history includes the creator; other own operational actions remain excluded. */
 export async function listNotificationsFor(user: any) {
   const history = await db.execute(sql`with a as (select doc from (${sourceSql(user, "appointments")}) s)
-    select h.id, h.to_status as "toStatus", h.created_at as "createdAt", ap.id as "appointmentId", ap.date, ap.token_number as token,
+    select h.id, h.to_status as "toStatus", (h.from_status is null) as booking, h.created_at as "createdAt", ap.id as "appointmentId", ap.date, ap.token_number as token,
       ap.data->>'reference' as reference, coalesce(p.data->>'fullName', pu.full_name) as patient, du.full_name as doctor,
       (nr.notification_id is not null) as read
     from appointment_history h join a on a.doc->>'id' = h.appointment_id
@@ -22,11 +22,11 @@ export async function listNotificationsFor(user: any) {
     left join patients p on p.id = ap.patient_id left join users pu on pu.id = p.user_id
     left join doctors d on d.id = ap.doctor_id left join users du on du.id = d.user_id
     left join notification_reads nr on nr.user_id = ${user.id} and nr.notification_id = 'h:' || h.id
-    where h.created_at > now() - interval '30 days' and (${user.role === "patient"} or h.actor_id <> ${user.id})
+    where h.created_at > now() - interval '30 days' and (${user.role === "patient"} or h.from_status is null or h.actor_id is distinct from ${user.id})
     order by h.created_at desc limit 60`);
   const items: any[] = (history.rows as any[]).map(r => ({
-    id: `h:${r.id}`, kind: notificationKind(r.toStatus), createdAt: new Date(r.createdAt).toISOString(), read: !!r.read,
-    title: `${statusText[r.toStatus] || r.toStatus} · Token ${r.token}`,
+    id: `h:${r.id}`, kind: notificationKind(r.toStatus, r.booking), createdAt: new Date(r.createdAt).toISOString(), read: !!r.read,
+    title: `${r.booking ? "Booked" : statusText[r.toStatus] || r.toStatus} · Token ${r.token}`,
     body: user.role === "patient" ? `Your visit with ${r.doctor || "your doctor"} (Ref ${r.reference || "-"})` : `${r.patient || "Patient"} with ${r.doctor || "doctor"} · Ref ${r.reference || "-"}`,
     appointmentId: r.appointmentId, date: r.date,
   }));

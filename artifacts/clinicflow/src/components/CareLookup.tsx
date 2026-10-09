@@ -32,13 +32,13 @@ export function useSelectedCare(kind: "clinics" | "branches" | "doctors" | "pati
 }
 type CareLookupProps = {
   kind: Kind; label: string; value: string; onChange: (value: string, record?: RecordValue) => void;
-   params?: Record<string, unknown>; publicAccess?: boolean; disabled?: boolean; selectedLabel?: string; fixed?: boolean;
+   params?: Record<string, unknown>; publicAccess?: boolean; disabled?: boolean; selectedLabel?: string; fixed?: boolean; required?: boolean;
 };
 export function CareLookup(props: CareLookupProps) {
-   if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookup resource={props.kind} label={props.label} value={props.value} onChange={props.onChange} params={{ ...props.params, status: "active" }} disabled={props.disabled} fixed={props.fixed} autoSole={["clinics","branches","doctors"].includes(props.kind)}/>;
+   if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookup resource={props.kind} label={props.label} required={props.required} value={props.value} onChange={props.onChange} params={{ ...props.params, status: "active" }} disabled={props.disabled} fixed={props.fixed} autoSole={["clinics","branches","doctors"].includes(props.kind)}/>;
   return <PublicCareLookup {...props}/>;
 }
-function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAccess = false, disabled = false, selectedLabel }: CareLookupProps) {
+function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAccess = false, disabled = false, selectedLabel, required }: CareLookupProps) {
   const actor = useDirectoryActor();
   const client = useQueryClient();
   const labelScope = JSON.stringify([actor, kind, publicAccess, params]);
@@ -91,7 +91,7 @@ function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAcc
      if (record) options.unshift({ value, label: display(record), disabled: true });
    }
   const plural=label==="Your appointment"?"your appointments":`${label.toLowerCase()}s`;
-   return <><SearchableSelect retainSelectionLabel={false} labelScope={labelScope} label={label} value={value} options={options} onChange={id => {
+   return <><SearchableSelect retainSelectionLabel={false} required={required} labelScope={labelScope} label={label} value={value} options={options} onChange={id => {
      const record = records.find(item=>item.id===id);
      if (record && publicAccess && kind in publicLoaders && !query.isError) {
        retainPublicSelectedCare(client, actor, kind, params, record, query.dataUpdatedAt);

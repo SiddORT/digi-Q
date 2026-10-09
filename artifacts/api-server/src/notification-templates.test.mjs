@@ -134,6 +134,8 @@ test("custom roles enforce clinic restrictions, revisions, base-role and assignm
 });
 test("recipient templates are isolated, secondary channels opt in and onboarding stays admin-only", async () => {
   assert.equal(api.defaultTemplate("booking", "doctor").enabled, false);
+  assert.equal(api.defaultTemplate("booking", "clinicAdmin").enabled, true, "approved owning-admin booking policy");
+  assert.equal(api.defaultTemplate("cancelled", "clinicAdmin").enabled, false, "unrelated secondary events remain opt-in");
   const before = await api.resolvedTemplate("booking", "c");
   const doctor = { ...api.defaultTemplate("booking", "doctor"), enabled: true, subject: "Doctor visit notice" };
   await api.saveTemplate(ca, { clinicId: "c", recipient: "doctor", event: "booking", revision: 0, mode: "publish", content: doctor });

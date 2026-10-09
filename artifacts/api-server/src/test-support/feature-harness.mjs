@@ -12,7 +12,7 @@ import { drizzle as postgresDrizzle } from "drizzle-orm/node-postgres";
 const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 
-export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false}={}) {
+export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false}={}) {
   const cluster=postgres?await createQueueHarness({empty:true}):null;
   const {Pool}=postgres?createRequire(resolve(root,"lib/db/package.json"))("pg"):{};
   const pool=postgres?new Pool({host:cluster.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8,statement_timeout:10000}):null;
@@ -27,7 +27,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
   const blobs = new Map();
   globalThis.__featureBlobs = blobs;
   const mail = { fail: false, messages: [] };
-  if (simulatedMail) globalThis.__featureMail = mail;
+  if (simulatedMail || fakeBookingMail) globalThis.__featureMail = mail;
   const bundle = resolve(import.meta.dirname, `../../.feature-harness-${process.pid}.mjs`);
   async function failedSetup(error) {
     await pg.close();
@@ -41,6 +41,9 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import { patientRecordsRouter } from "./routes/patient-records";
       import { reportingRouter } from "./routes/reporting";
       ${bookingLookups ? `import { publicRouter } from "./routes/public";
+      import { db } from "@workspace/db";
+      import { processNotifications } from "./lib/notification-outbox";
+      export const dispatchOutbox = () => processNotifications(db);
       import { appointmentsRouter } from "./routes/appointments";
       import { guestRequestsRouter } from "./routes/guest-requests";
       import { appointmentQrRouter } from "./routes/appointment-qr";
@@ -69,6 +72,15 @@ export async function createFeatureHarness({administration=false, simulatedMail=
     external: ["argon2", "pg", "pg-native", "@electric-sql/pglite", "@google-cloud/storage", "express", "pino", "pino-http",
       ...(bookingLookups ? ["qrcode", "jspdf", "nodemailer", "sharp", "express-rate-limit"] : [])],
     plugins: [{ name: "feature-fixtures", setup(b) {
+      if (fakeBookingMail) {
+        b.onResolve({ filter: /\/auth-email$/ }, () => ({ path: "mail", namespace: "booking-mail" }));
+        b.onLoad({ filter: /.*/, namespace: "booking-mail" }, () => ({ contents: `
+          export const smtpConfig = () => ({});
+          export async function sendAuthEmail(to, subject, text) {
+            if (globalThis.__featureMail.fail) throw new Error("Simulated uncertain dispatch");
+            globalThis.__featureMail.messages.push({to,subject,text});
+          }` }));
+      }
       if (bookingLookups && !simulatedMail) {
         b.onResolve({ filter: /^nodemailer$/ }, () => ({ path: "disabled-mail", namespace: "disabled-mail" }));
         b.onLoad({ filter: /.*/, namespace: "disabled-mail" }, () => ({ contents: `export default {createTransport(){return {async sendMail(){throw new Error("Mail disabled in disposable booking tests");}}}};` }));
@@ -104,7 +116,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         export async function removeDocument(_p, key) { globalThis.__featureBlobs.delete(key); }` }));
     } }],
   }).catch(failedSetup);
-  const { createApp } = await import(bundle).catch(failedSetup);
+  const { createApp, dispatchOutbox } = await import(bundle).catch(failedSetup);
   const server = createApp().listen(0);
   await new Promise(r => server.once("listening", r));
   const base = `http://127.0.0.1:${server.address().port}/api`;
@@ -117,5 +129,5 @@ export async function createFeatureHarness({administration=false, simulatedMail=
     const data = type.includes("json") ? await res.json() : Buffer.from(await res.arrayBuffer());
     return { status: res.status, data, headers: res.headers };
   }
-  return { pg, call, blobs, mail, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;if(simulatedMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
+  return { pg, call, blobs, mail, dispatchOutbox, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
 }

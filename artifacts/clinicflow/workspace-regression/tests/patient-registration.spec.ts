@@ -19,6 +19,10 @@ async function connect(page: Page, actor: string) {
     }
     if (req.method() === "POST") posts.push({ path: url.pathname, body });
     if (url.pathname === "/api/auth/csrf") return route.fulfill({ json: { csrfToken: "isolated-registration" } });
+    if (url.pathname === "/api/public/availability/context") return route.fulfill({ json: {
+      timezone: "UTC", today: bookingDate, lastBookableDate, requireMobileVerification: false,
+      cancellationCutoffMinutes: 30,
+    } });
     // Availability is a fixture prerequisite, not an appointment. Patient
     // creation/list/detail/documents/activity all execute the actual routers.
     if (url.pathname === "/api/public/availability/sessions") return route.fulfill({ json: [{
@@ -38,6 +42,14 @@ async function connect(page: Page, actor: string) {
 }
 
 const listUrl = (query = "") => `/?mode=registration&registrationPage=patients${query}`;
+// The real-router registration fixture uses the actual booking context and
+// booking horizon. Keep this deliberately selected date inside that window.
+const bookingDate = new Date().toISOString().slice(0, 10);
+const lastBookableDate = (() => {
+  const date = new Date(`${bookingDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + 30);
+  return date.toISOString().slice(0, 10);
+})();
 async function noVisits(id: string) {
   expect((await h.pg.query("select count(*)::int n from appointments where patient_id=$1", [id])).rows[0].n).toBe(0);
 }
@@ -122,7 +134,7 @@ test("registration from a later page returns to page one without losing matching
 for (const actor of ["sa", "adm", "rec"]) {
   test(`${actor}: inline booking registration commits without booking and survives navigation`, async ({ page }) => {
     const posts = await connect(page, actor);
-    await page.goto(`/?mode=registration&registrationPage=booking&clinic=c1&branch=b1&doctor=d1&date=2030-01-01&source=phone`);
+    await page.goto(`/?mode=registration&registrationPage=booking&clinic=c1&branch=b1&doctor=d1&date=${bookingDate}&source=phone`);
     await page.getByTestId("button-booking-continue-visit").click();
     await page.getByRole("button", { name: "Register a New Patient", exact: true }).click();
     const dialog = page.getByRole("dialog");
@@ -161,7 +173,7 @@ test("multiple-location list context and workspace-pinned registration retain th
   const pinned = await h.call("adm", "GET", "/patients?search=Pinned%20Clinic%20Registration");
   expect(pinned.data.items[0]).toMatchObject({ clinicId: "c2", branchId: "b2" });
   await noVisits(pinned.data.items[0].id);
-  await page.goto("/?mode=registration&registrationPage=booking&pinned=1&clinic=c1&branch=b1&doctor=d1&date=2030-01-01");
+  await page.goto(`/?mode=registration&registrationPage=booking&pinned=1&clinic=c1&branch=b1&doctor=d1&date=${bookingDate}`);
   await page.getByTestId("button-booking-continue-visit").click();
   await page.getByRole("button", { name: "Register a New Patient", exact: true }).click();
   await page.getByTestId("input-fullName").fill("Pinned Inline Registration");

@@ -1,7 +1,8 @@
 /** Pure policy helpers for notifications, workspaces, saved views and documents. No I/O. */
 
 export const QUEUE_STATUSES = new Set(["checkedIn", "waiting", "called", "inConsultation"]);
-export function notificationKind(toStatus: string): "queue" | "appointments" {
+export function notificationKind(toStatus: string, booking = false): "queue" | "appointments" {
+  if (booking) return "appointments";
   return QUEUE_STATUSES.has(toStatus) ? "queue" : "appointments";
 }
 

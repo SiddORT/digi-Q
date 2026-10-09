@@ -37,7 +37,7 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
     const preview = renderNotification(local.draft || content, values);
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
-      delivery: event === "booking" ? "Used for eligible booking confirmations; notification and delivery settings apply." : event === "reminder" ? "Production worker sends one hour before the session start when clinic notifications are enabled. Not an exact consultation-time promise." : "Queued automatically for this event when clinic notifications are enabled. Production worker delivers; development never sends automatically." });
+      delivery: event === "booking" ? (recipient === "clinicAdmin" ? "Owning Clinic Admin booking email is enabled by default when clinic notifications are enabled. Explicit published opt-outs remain in effect. Delivery is asynchronous; development never sends automatically." : "Used for eligible patient booking confirmations; notification and delivery settings apply. Provider acceptance does not guarantee inbox delivery.") : event === "reminder" ? "Production worker sends one hour before the session start when clinic notifications are enabled. Not an exact consultation-time promise." : "Queued automatically for this event when clinic notifications are enabled. Production worker delivers; development never sends automatically." });
   }
   return { scopeName: clinic?.name || "Platform defaults", variables: [...templateVariables], items };
 }

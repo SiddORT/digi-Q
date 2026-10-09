@@ -21,8 +21,8 @@ queue-based care does not promise exact consultation times.
 **How to apply:** Preserve the development safety boundary and recheck visit eligibility
 at dispatch rather than trusting an earlier reminder snapshot.
 
-Additional staff recipient groups start disabled; enabling them is an explicit publication decision. Shared addresses across staff roles receive one message for an event.
+Additional staff recipient groups start disabled except the explicitly approved owning Clinic Admin **booking** recipient, which is enabled by default when notifications are enabled. Existing explicitly disabled published templates and clinic opt-outs still require owner activation. Shared addresses across patient and staff roles receive one message for an event.
 
-**Why:** Adding recipient-aware configuration must not silently expand delivery to existing staff or duplicate messages for multi-role identities.
+**Why:** The user approved one owning-admin booking notification/email for every creation entry point, including self-created bookings, without changing live settings or unrelated recipient groups. Other expansions still need explicit publication.
 
 **How to apply:** Preserve primary-recipient compatibility and address-based deduplication when adding recipient groups or changing role assignments.

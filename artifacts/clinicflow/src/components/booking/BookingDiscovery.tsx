@@ -5,10 +5,12 @@ import { useFreshWorkspace } from "../queue/useFreshWorkspace";
 import { SessionSelector, formatSessionHours, type useDailySession } from "../queue/SessionSelector";
 import { HoursWarning } from "../HoursWarning";
 import { ErrorNotice } from "../../resources";
+import { formatDate, type DateTimePreferences } from "../../lib/date-time";
+import { useDateTimePreferences } from "../DateTimePreferences";
 
 /** Date boundaries come from the location, never from a possibly absent selected session. */
-export function useBookingDiscovery({doctorId,branchId,date,setDate,walkIn=false,deliberateDate=false}:{
-  doctorId:string;branchId:string;date:string;setDate:(date:string)=>void;walkIn?:boolean;deliberateDate?:boolean;
+export function useBookingDiscovery({doctorId,branchId,date,setDate,walkIn=false,deliberateDate=false,preferences={}}:{
+  doctorId:string;branchId:string;date:string;setDate:(date:string)=>void;walkIn?:boolean;deliberateDate?:boolean;preferences?:Partial<DateTimePreferences>;
 }){
   const params={doctorId,branchId};
   const context=api.useGetPublicBookingContext(params,{query:{queryKey:api.getGetPublicBookingContextQueryKey(params),enabled:!!doctorId&&!!branchId,refetchInterval:30000}});
@@ -36,8 +38,8 @@ export function useBookingDiscovery({doctorId,branchId,date,setDate,walkIn=false
     try{
       const result=await findNextBookableDate(from,d=>api.getPublicAvailabilitySessions({doctorId,branchId,date:d},{signal:run.signal}),()=>!run.signal.aborted,14,context.data.lastBookableDate);
       if(run.signal.aborted)return;
-      if(result){setCandidate(result);setMessage(`Found ${result}. Select this date to review the session; nothing is booked yet.`);}
-      else setMessage(`No eligible advance session found from ${nextVisitDate(from,1)} through ${end}. This does not rule out later sessions. Choose another date within the booking window or contact the clinic.`);
+      if(result){setCandidate(result);setMessage(`Found ${formatDate(result,preferences)}. Select this date to review the session; nothing is booked yet.`);}
+      else setMessage(`No eligible advance session found from ${formatDate(nextVisitDate(from,1),preferences)} through ${formatDate(end,preferences)}. This does not rule out later sessions. Choose another date within the booking window or contact the clinic.`);
     }catch(error){if(!run.signal.aborted)setMessage("Could not search availability. Retry or contact the clinic; no date was changed.");}
     finally{if(!run.signal.aborted){controller.current=null;setFinding(false);}}
   }
@@ -50,11 +52,13 @@ export function BookingDiscovery({selection,discovery,date,walkIn=false,manage}:
   const q=selection.availability,session=q.data;
   const fresh=useFreshWorkspace(q.dataUpdatedAt,!!q.error);
   const ctx=discovery.context.data;
+  const preferences=useDateTimePreferences();
+  const displayDate=(value:string)=>formatDate(value,preferences);
   const time=ctx?new Intl.DateTimeFormat("en-GB",{timeZone:ctx.timezone,hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).format(new Date()):"";
   const issue=session?bookingSessionIssue(session,walkIn,date,ctx?.today,time):null;
   const weekday=/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date))?new Intl.DateTimeFormat("en",{weekday:"long",timeZone:"UTC"}).format(new Date(`${date}T12:00:00Z`)):"";
   return <div data-testid="booking-discovery">
-    <p role="status">{date} {weekday}{ctx&&` · ${ctx.timezone}`}</p>
+    <p role="status">{displayDate(date)} {weekday}{ctx&&` · ${ctx.timezone}`}</p>
     <SessionSelector selection={selection}/>
     <div className="availability-box" data-testid="booking-availability-status">
       {!selection.hasContext?<p>Choose a location, doctor and date to see sessions.</p>:
@@ -62,16 +66,16 @@ export function BookingDiscovery({selection,discovery,date,walkIn=false,manage}:
       q.error||discovery.context.error?<p role="alert">Could not check current availability. Your choices are retained; retry before booking.</p>:
       q.isFetching||discovery.context.isFetching?<p role="status">Checking current sessions…</p>:
       fresh.stale||!discovery.ready?<p role="alert">Availability is not current. Refresh before continuing.</p>:
-      date>(ctx?.lastBookableDate||date)?<p>This date is outside the booking window. Choose a date through {ctx?.lastBookableDate}.</p>:
-      !selection.sessions.length?<p>No doctor session is listed for this location on {weekday}, {date}. Other weekdays or dates may have sessions. Try another date or contact the clinic. Location opening hours alone do not create doctor sessions.</p>:
+      date>(ctx?.lastBookableDate||date)?<p>This date is outside the booking window. Choose a date through {ctx&&displayDate(ctx.lastBookableDate)}.</p>:
+      !selection.sessions.length?<p>No doctor session is listed for this location on {weekday}, {displayDate(date)}. Other weekdays or dates may have sessions. Try another date or contact the clinic. Location opening hours alone do not create doctor sessions.</p>:
       !session?<p>Select a consulting session to continue.</p>:
-      <><strong>{session.available&&session.remainingTokens>0&&!issue?`${session.remainingTokens} places remaining`:"Session unavailable"}</strong><p>{formatSessionHours(session)} · {session.timezone}</p><HoursWarning warning={session.hoursWarning}/>{(issue||session.reason)&&<p>{session.reason||issue}</p>}</>}
+      <><strong>{session.available&&session.remainingTokens>0&&!issue?`${session.remainingTokens} places remaining`:"Session unavailable"}</strong><p>{formatSessionHours({...session,...preferences})} · {session.timezone}</p><HoursWarning warning={session.hoursWarning}/>{(issue||session.reason)&&<p>{session.reason||issue}</p>}</>}
     </div>
     <ErrorNotice error={discovery.context.error}/>
     {selection.hasContext&&<button type="button" className="text-link" data-testid="button-refresh-booking-availability" disabled={q.isFetching||discovery.context.isFetching} onClick={()=>{void q.refetch();void discovery.context.refetch();}}>Refresh Availability</button>}
     {walkIn?<p className="notice">Walk-ins are today-only in the location timezone. Queue opening, break and session-mode restrictions apply; future dates are not suggested.</p>:
-    selection.hasContext&&<div className="guest-next-date"><button type="button" className="button secondary" data-testid="button-next-booking-date" disabled={!discovery.ready||discovery.finding||discovery.end<=discovery.from} onClick={()=>void discovery.find()}>{discovery.finding?"Searching…":"Find Next Available Date"}</button>{ctx&&<p className="muted">{discovery.end>discovery.from?`Search ${nextVisitDate(discovery.from,1)} through ${discovery.end}: up to 14 days after your selected date, limited by the clinic booking window (${ctx.lastBookableDate}).`:`No later dates remain in the booking window (${ctx.lastBookableDate}).`}</p>}{discovery.message&&<p role="status">{discovery.message}</p>}</div>}
-    {discovery.candidate&&<button type="button" className="button secondary" data-testid="button-use-next-date" onClick={()=>discovery.changeDate(discovery.candidate)}>Review sessions on {discovery.candidate}</button>}
+    selection.hasContext&&<div className="guest-next-date"><button type="button" className="button secondary" data-testid="button-next-booking-date" disabled={!discovery.ready||discovery.finding||discovery.end<=discovery.from} onClick={()=>void discovery.find()}>{discovery.finding?"Searching…":"Find Next Available Date"}</button>{ctx&&<p className="muted">{discovery.end>discovery.from?`Search ${displayDate(nextVisitDate(discovery.from,1))} through ${displayDate(discovery.end)}: up to 14 days after your selected date, limited by the clinic booking window (${displayDate(ctx.lastBookableDate)}).`:`No later dates remain in the booking window (${displayDate(ctx.lastBookableDate)}).`}</p>}{discovery.message&&<p role="status">{discovery.message}</p>}</div>}
+    {discovery.candidate&&<button type="button" className="button secondary" data-testid="button-use-next-date" onClick={()=>discovery.changeDate(discovery.candidate)}>Review sessions on {displayDate(discovery.candidate)}</button>}
     {manage}
     <p className="notice">Your ticket shows a session range, not an exact consultation time. Availability is checked again when you confirm.</p>
   </div>;

@@ -5,6 +5,7 @@ import { Copy, Check } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { formatConfiguredTimestamp, formatDate, formatTime } from "../../lib/date-time";
 import { ErrorNotice, title } from "../../resources";
+import { bookingFields } from "../booking/booking-fields";
 import { AppointmentTicket } from "./AppointmentTicket";
 import { canShowAppointmentTicket, isPrivateAppointmentUnavailable } from "./presentation";
 
@@ -58,7 +59,7 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails }: { app
           <dl className="appt-detail-grid">
             <div><dt>Reference</dt><dd className="appt-detail-ref"><code data-testid="text-detail-reference">{a.reference}</code><button type="button" onClick={copyReference} aria-label={`Copy reference ${a.reference}`} data-testid="button-copy-reference">{copied === "done" ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}{copied === "done" ? "Copied" : "Copy"}</button>{copied === "failed" && <small role="alert">Copy unavailable. Select the reference to copy it.</small>}</dd></div>
             <div><dt>Booked at</dt><dd data-testid="text-detail-booked">{timestamp(a.createdAt)}<small>When the booking was created, not the visit time.</small></dd></div>
-            <div className="span-2"><dt>Notes</dt><dd><p className={`appt-detail-notes${a.notes?.trim() ? "" : " appt-detail-empty"}`} data-testid="text-detail-notes">{a.notes?.trim() || "No notes recorded."}</p></dd></div>
+            <div className="span-2"><dt>{bookingFields.notes.label}</dt><dd><p className={`appt-detail-notes${a.notes?.trim() ? "" : " appt-detail-empty"}`} data-testid="text-detail-notes">{a.notes?.trim() || "No notes recorded."}</p></dd></div>
           </dl>
         </div>
         <div className="appt-detail-block appt-detail-ticket" id={`appt-ticket-${a.id}`} data-testid="section-detail-ticket">
@@ -80,16 +81,16 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails }: { app
           <div className="appt-detail-block" data-testid="section-detail-visit">
             <h4>Visit</h4>
             <dl className="appt-detail-grid">
-              <div><dt>Visit date</dt><dd data-testid="text-detail-date">{formatDate(a.date, a)}</dd></div>
-              <div><dt>Session</dt><dd data-testid="text-detail-session">{session}{a.timezone ? ` · ${a.timezone}` : ""}<small>Session window, not a promised consultation time.</small></dd></div>
-              <div><dt>Clinic group</dt><dd data-testid="text-detail-clinic">{a.clinicName}</dd></div>
-              <div><dt>Location</dt><dd data-testid="text-detail-location">{a.branchName}{a.branchAddress && <small>{a.branchAddress}</small>}</dd></div>
+              <div><dt>{bookingFields.date.label}</dt><dd data-testid="text-detail-date">{formatDate(a.date, a)}</dd></div>
+              <div><dt>{bookingFields.session.label}</dt><dd data-testid="text-detail-session">{session}{a.timezone ? ` · ${a.timezone}` : ""}<small>Session window, not a promised consultation time.</small></dd></div>
+              <div><dt>{bookingFields.clinic.label}</dt><dd data-testid="text-detail-clinic">{a.clinicName}</dd></div>
+              <div><dt>{bookingFields.location.label}</dt><dd data-testid="text-detail-location">{a.branchName}{a.branchAddress && <small>{a.branchAddress}</small>}</dd></div>
             </dl>
           </div>
           <div className="appt-detail-block" data-testid="section-detail-provider">
             <h4>Provider</h4>
             <dl className="appt-detail-grid">
-              <div className="span-2"><dt>Doctor</dt><dd data-testid="text-detail-doctor">{a.doctorName}</dd></div>
+              <div className="span-2"><dt>{bookingFields.doctor.label}</dt><dd data-testid="text-detail-doctor">{a.doctorName}</dd></div>
             </dl>
           </div>
           {supplementaryDetails && <div className="appt-detail-block appt-detail-extra" data-testid="section-detail-supplementary">{supplementaryDetails}</div>}

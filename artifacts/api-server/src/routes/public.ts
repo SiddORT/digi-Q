@@ -56,7 +56,7 @@ publicRouter.get("/public/availability/context", async (req, res) => {
   assert(branch.timezone, 409, "Location timezone is not configured. Contact the clinic.");
   const today = localNow(branch.timezone).date;
   const config = await getSettings(db, clinic.id);
-  res.json({ timezone: branch.timezone, today, lastBookableDate: datePlus(today, config.bookingHorizonDays) });
+  res.json({ timezone: branch.timezone, today, lastBookableDate: datePlus(today, config.bookingHorizonDays), requireMobileVerification: config.requireMobileVerification, cancellationCutoffMinutes: config.cancellationCutoffMinutes });
 });
 export async function resolveQr(reference: string, conn: any = db, lock = false) {
   let qr;

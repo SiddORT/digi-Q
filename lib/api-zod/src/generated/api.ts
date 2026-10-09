@@ -1558,10 +1558,16 @@ export const GetPublicBookingContextQueryParams = zod.object({
   "branchId": zod.coerce.string()
 })
 
+export const getPublicBookingContextResponseCancellationCutoffMinutesMin = 0;
+
+
+
 export const GetPublicBookingContextResponse = zod.object({
   "timezone": zod.string(),
   "today": zod.coerce.date(),
-  "lastBookableDate": zod.coerce.date()
+  "lastBookableDate": zod.coerce.date(),
+  "requireMobileVerification": zod.boolean().optional().describe('Applies to account-linked patient booking'),
+  "cancellationCutoffMinutes": zod.number().int().min(getPublicBookingContextResponseCancellationCutoffMinutesMin).optional()
 })
 
 

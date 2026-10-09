@@ -42,7 +42,7 @@ test("public date context is location-owned even on an empty date, with no weekl
   assert.equal(r.status,200);assert.equal(r.data.timezone,"Pacific/Kiritimati");
   const parts=Object.fromEntries(new Intl.DateTimeFormat("en",{timeZone:r.data.timezone,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()).map(p=>[p.type,p.value]));
   assert.equal(r.data.today,`${parts.year}-${parts.month}-${parts.day}`);
-  assert.deepEqual(Object.keys(r.data).sort(),["lastBookableDate","timezone","today"]);
+  assert.deepEqual(Object.keys(r.data).sort(),["cancellationCutoffMinutes","lastBookableDate","requireMobileVerification","timezone","today"]);
   assert.equal((await call(null,"GET","/public/availability/context?doctorId=d1&branchId=b3")).status,409);
   assert.equal((await daily("not-a-date")).status,400);
 });

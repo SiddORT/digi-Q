@@ -1893,6 +1893,8 @@ components:
         timezone: { type: string }
         today: { type: string, format: date }
         lastBookableDate: { type: string, format: date }
+        requireMobileVerification: { type: boolean, description: Applies to account-linked patient booking, not optional guest contacts }
+        cancellationCutoffMinutes: { type: integer, minimum: 0 }
     PublicBranchSummary:
       type: object
       required: [id, name]

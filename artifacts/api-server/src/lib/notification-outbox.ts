@@ -17,7 +17,7 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
   if (row.patientId && (await resolvedTemplate(event, row.clinicId, conn, "patient")).content.enabled) {
     const patient = await one(patients, row.patientId, conn);
     const account = patient.userId ? await one(users, patient.userId, conn) : null;
-    usedEmails.add(String(account?.email || patient.email || "").toLowerCase());
+    usedEmails.add(String(account?.email || patient.email || "").trim().toLowerCase());
   }
   for (const group of templateRecipients) {
   if (event === "onboarding" && group !== "clinicAdmin") continue;
@@ -40,7 +40,7 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
   }
   for (const target of targets) {
   if (target) {
-    const email = String(target.email || "").toLowerCase();
+    const email = String(target.email || "").trim().toLowerCase();
     if (target.status !== "active" || !validEmailAddress(email) || usedEmails.has(email)) continue;
     usedEmails.add(email);
   }

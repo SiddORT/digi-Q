@@ -650,15 +650,15 @@ test("compact appointment session filter waits for Apply and clears on Reset",as
   const state=await fixture(page);
   const open=()=>page.getByTestId("button-toggle-advanced-filters").click();
   await page.goto("/admin/appointments?clinic=clinic-1&branch=branch-1&doctor=doctor-1&from=2026-10-08&to=2026-10-08");
-  await expect(page.getByRole("button",{name:/^Consulting Session/})).toHaveCount(0);
+  await expect(page.getByRole("button",{name:/^Session/})).toHaveCount(0);
   await open();
-  await page.getByRole("button",{name:/^Consulting Session/}).click();
+  await page.getByRole("button",{name:/^Session/}).click();
   await page.getByRole("option",{name:/^2:00 PM/}).click();
   expect(listCalls(state,"/api/appointments").some(call=>call.params.get("startTime")==="14:00")).toBe(false);
   await page.getByTestId("button-close-filters").click();
   await expect.poll(()=>listCalls(state,"/api/appointments").some(call=>call.params.get("startTime")==="14:00")).toBe(true);
   await open();
-  await expect(page.getByRole("button",{name:/^Consulting Session/})).toHaveAccessibleName(/2:00 PM/);
+  await expect(page.getByRole("button",{name:/^Session/})).toHaveAccessibleName(/2:00 PM/);
   await page.getByTestId("button-clear-filters-panel").click();
   await expect.poll(()=>listCalls(state,"/api/appointments").at(-1)?.params.has("startTime")).toBe(false);
 });

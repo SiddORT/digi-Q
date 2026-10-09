@@ -1,5 +1,7 @@
 # Schedule-to-booking verification
 
+For the later shared Booking/Appointment field, review, reschedule, notification and recipient-policy audit, see [Booking and appointment contract](booking-appointment-contract.md). It distinguishes controlled role evidence, intentional guest/account differences, and owner-activation limits.
+
 ## Incident-specific uncertainty
 
 No affected real doctor, location or booking date was supplied or safely identified. The original incident was **not reproduced** and its cause is **not established**. No live schedule or patient records were inspected, repaired or booked.
