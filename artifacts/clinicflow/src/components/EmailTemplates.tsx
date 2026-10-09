@@ -11,6 +11,7 @@ import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
 import { ResourceLookup } from "./ResourceLookup";
 import "./email-templates.css";
+import { BookingMailOutcomes } from "./BookingMailOutcomes";
 
 type Content = api.NotificationTemplateContent;
 type Mode = "draft" | "publish" | "reset";
@@ -189,6 +190,8 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
           options={eventsFor(recipient).map(e => ({ value: e, label: titleCase(catalog.data?.items.find(i => i.event === e)?.title ?? e) }))} />}
       </FormField>
     </div>
+
+    {identity.user?.role === "clinicAdmin" && clinicId && <BookingMailOutcomes key={`${identity.user.id}:${clinicId}`} actorId={identity.user.id} clinicId={clinicId} />}
 
     {!enabled ? <div className="et-empty" data-testid="state-select-clinic">Select a clinic group to view its templates.</div>
       : catalog.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>

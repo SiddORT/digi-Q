@@ -7,6 +7,7 @@ import { parse, query, assert } from "../lib/http";
 import { audit, uid, getSettings } from "../lib/store";
 import { sourceSql } from "../lib/list-query";
 import { notificationKind, sanitizeSavedView, SHARE_ROLES, shareAudience, receivesSharedView } from "../lib/feature-policy";
+import { listOwnerBookingMailOutcomes } from "../lib/notification-outbox";
 
 export const workspaceFeaturesRouter = Router();
 const statusText: Record<string, string> = { booked: "Booked", checkedIn: "Checked In", waiting: "Waiting", called: "Called Next", inConsultation: "In Consultation", completed: "Completed", noShow: "Marked Absent", cancelled: "Cancelled" };
@@ -44,6 +45,11 @@ export async function listNotificationsFor(user: any) {
   items.sort((x, y) => y.createdAt.localeCompare(x.createdAt));
   return items;
 }
+workspaceFeaturesRouter.get("/management/booking-mail-outcomes", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const user = await requireUser(req), q = query(z.ListBookingMailOutcomesQueryParams, req);
+  res.json(z.ListBookingMailOutcomesResponse.parse(await listOwnerBookingMailOutcomes(user, q.clinicId, q.page, q.pageSize)));
+});
 workspaceFeaturesRouter.get("/notifications", async (req, res) => {
   const user = await requireUser(req), q = query(z.ListNotificationsQueryParams, req);
   const items = await listNotificationsFor(user);

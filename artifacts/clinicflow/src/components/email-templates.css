@@ -1,4 +1,10 @@
 .email-templates{display:grid;gap:12px}
+.booking-mail-outcomes{display:grid;gap:8px;padding:12px;border:1px solid hsl(var(--border,210 15% 85%));border-radius:8px}
+.booking-mail-outcomes h3,.booking-mail-outcomes p{margin:0}
+.booking-mail-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.booking-mail-list li{padding:8px 0;border-bottom:1px solid hsl(var(--border,210 15% 85%));overflow-wrap:anywhere}
+.booking-mail-list li>div{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.booking-mail-list li p{margin-top:4px;font-size:var(--type-caption)}
 .et-head h2{margin:0}.et-head p{margin:4px 0 0;opacity:.75}
 .et-limit{margin:0;padding:8px 12px;border-left:3px solid hsl(var(--primary,200 60% 40%));background:hsl(var(--muted,210 20% 96%));border-radius:6px;font-size:var(--type-body)}
 .et-scope{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}

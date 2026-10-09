@@ -7,7 +7,36 @@ import { sendAuthEmail } from "./auth-email";
 import { confirmationText } from "./appointment-confirmation";
 import { validEmailAddress } from "./integration-config";
 import { createHash } from "node:crypto";
+import { assert } from "./http";
 const emailKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+
+/** Explicit safe projection only: never return an outbox payload or recipient identifiers. */
+export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, page = 1, pageSize = 20, conn: any = db) {
+  assert(user.role === "clinicAdmin", 403, "Only the owning Clinic Admin can view booking email outcomes");
+  const [clinic] = await conn.select({ id: clinics.id }).from(clinics)
+    .where(sql`${clinics.id} = ${clinicId} and ${clinics.adminId} = ${user.id}`);
+  assert(clinic && user.clinicIds.includes(clinicId) && (!user.activeClinicId || user.activeClinicId === clinicId),
+    403, "You are not the current owner of this clinic workspace");
+  // Ownership is also checked in the read, so a concurrent transfer cannot disclose stale scope.
+  const result = await conn.execute(sql`
+    select s.data->'snapshot'->>'reference' as reference, s.data->>'state' as status,
+      s.data->>'createdAt' as "createdAt"
+    from settings s join clinics c on c.id = s.data->>'clinicId' and c.admin_id = ${user.id}
+    where c.id = ${clinicId} and s.id like 'mail-outbox:booking:%'
+      and s.data->>'event' = 'booking' and s.data->>'recipientGroup' = 'clinicAdmin'
+    order by (s.data->>'createdAt')::bigint desc nulls last, s.id desc
+    limit ${pageSize + 1} offset ${(page - 1) * pageSize}`);
+  const statuses = new Set(["pending", "sending", "provider_accepted", "delivery_unknown",
+    "configuration_failed", "preparation_failed", "disabled", "obsolete", "no_recipient"]);
+  return {
+    items: result.rows.slice(0, pageSize).map((row: any) => ({
+      reference: row.reference || null,
+      status: statuses.has(row.status) ? row.status : "unknown",
+      createdAt: row.createdAt && Number.isSafeInteger(Number(row.createdAt)) ? Number(row.createdAt) : null,
+    })),
+    hasMore: result.rows.length > pageSize,
+  };
+}
 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {

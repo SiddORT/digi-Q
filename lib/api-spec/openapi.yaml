@@ -1144,6 +1144,17 @@ paths:
         - { name: kind, in: query, schema: { type: string, enum: [all, appointments, queue, system], default: all } }
       responses:
         "200": { description: Notifications, content: { application/json: { schema: { $ref: "#/components/schemas/NotificationList" } } } }
+  /management/booking-mail-outcomes:
+    get:
+      operationId: listBookingMailOutcomes
+      description: Read-only durable booking email outcomes for the selected clinic's current owning Clinic Admin. No recipient details or message content. Reading never dispatches or retries mail.
+      parameters:
+        - { name: clinicId, in: query, required: true, schema: { type: string, minLength: 1 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, maximum: 10000, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+      responses:
+        "200": { description: Owner booking mail outcomes, content: { application/json: { schema: { $ref: "#/components/schemas/BookingMailOutcomeList" } } } }
+        "403": { description: Not the current clinic owner }
   /notifications/read:
     post:
       operationId: markNotificationsRead
@@ -1319,6 +1330,21 @@ components:
       properties:
         items: { type: array, items: { $ref: "#/components/schemas/WorkspaceNotification" } }
         unread: { type: integer }
+    BookingMailOutcome:
+      type: object
+      additionalProperties: false
+      required: [reference, status, createdAt]
+      properties:
+        reference: { type: string, nullable: true }
+        status: { type: string, enum: [pending, sending, provider_accepted, delivery_unknown, configuration_failed, preparation_failed, disabled, obsolete, no_recipient, unknown] }
+        createdAt: { type: integer, nullable: true, description: Recorded event time in milliseconds since epoch }
+    BookingMailOutcomeList:
+      type: object
+      additionalProperties: false
+      required: [items, hasMore]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/BookingMailOutcome" } }
+        hasMore: { type: boolean }
     NotificationUnread:
       type: object
       required: [unread]
