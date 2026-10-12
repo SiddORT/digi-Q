@@ -1765,6 +1765,9 @@ components:
         source: { type: string, enum: [environment, database] }
         revision: { type: [string, "null"] }
         ready: { type: boolean }
+        notificationsEnabled: { type: boolean }
+        apiUrl: { type: string }
+        statusApiUrl: { type: string }
         keys:
           type: array
           items: { $ref: "#/components/schemas/IntegrationKeyStatus" }

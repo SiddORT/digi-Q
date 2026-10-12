@@ -7,7 +7,7 @@ import { isClinicalMember } from "./clinical-membership";
 import { templateRecipients, substitute, type TemplateEvent, type TemplateRecipient, type SmsTemplateContent } from "./notification-templates";
 import { resolvedTemplate } from "./notification-template-store";
 import { resolvedIntegration } from "./integration-vault";
-import { notificationSmsReadiness, sendNotificationSms } from "./notification-sms-transport";
+import { notificationSmsReadiness, notificationSmsEnabled, sendNotificationSms } from "./notification-sms-transport";
 import { confirmationText } from "./appointment-confirmation";
 import { reminderDispatchEligible } from "./notification-outbox";
 
@@ -42,7 +42,7 @@ async function targetAccounts(conn:any,group:TemplateRecipient,row:any,clinic:an
 }
 export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string="") {
   const env=(await resolvedIntegration("notificationSms",conn)).env;
-  if(!notificationSmsReadiness(env).ready)return; // Configuring later must never drain a historical backlog.
+  if(!notificationSmsEnabled(env)||!notificationSmsReadiness(env).ready)return; // Enabling later must never drain a historical backlog.
   const clinic=await one(clinics,row.clinicId,conn);
   const used=new Set<string>();
   for(const group of templateRecipients) {
@@ -88,6 +88,7 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
         const template=await resolvedTemplate(data.event,data.clinicId,tx,data.recipientGroup,"sms");
         if(!template.content.enabled||template.activatedAt>data.createdAt){await update("disabled");return null;}
         const env=(await resolvedIntegration("notificationSms",tx)).env;
+        if(!notificationSmsEnabled(env)){await update("disabled");return null;}
         if(!notificationSmsReadiness(env).ready){await update("pre_dispatch_failed");return null;}
         const targets=await targetAccounts(tx,data.recipientGroup,current||snapshot,clinic);
         const target=targets.find(a=>data.recipientPatientId?a.targetPatientId===data.recipientPatientId:a.id===data.recipientUserId);

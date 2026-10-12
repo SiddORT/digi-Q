@@ -2,13 +2,31 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 const rd = f => readFileSync(new URL(f, import.meta.url), "utf8");
-const sms = rd("./NotificationSmsSettings.tsx"), map = rd("./sms-mapping.ts"), ev = rd("./EventControls.tsx"), tt = rd("./EventTemplateTest.tsx"), et = rd("./EmailTemplates.tsx"), sh = rd("./WorkspaceShell.tsx"), cl = rd("../clinic.tsx");
-test("sms editor uses bounded write-only values with explicit mapping preservation", () => {
-  assert.ok(sms.includes('smsConfigurationValues(url,apiKey,full,mapTouched,saved("NOTIFICATION_SMS_MAPPING"))'));
-  assert.ok(sms.includes("PasswordInput") && sms.includes('provider: "notificationSms"'));
-  assert.ok(!/localStorage|sessionStorage/.test(sms));
+const sms = rd("./NotificationSmsSettings.tsx"), pn = rd("./SmsProviderPanel.tsx"), map = rd("./sms-mapping.ts"), ev = rd("./EventControls.tsx"), tt = rd("./EventTemplateTest.tsx"), et = rd("./EmailTemplates.tsx"), sh = rd("./WorkspaceShell.tsx"), cl = rd("../clinic.tsx");
+test("save updates the provider baseline without forcibly clearing the parent dirty guard", () => {
+  assert.match(pn, /qc\.setQueryData\(getGetIntegrationSettingsQueryKey\(\), next\)/);
+  const inline = sms.slice(sms.indexOf("if (inline) return"), sms.indexOf("return <section", sms.indexOf("if (inline) return") + 20));
+  assert.doesNotMatch(inline, /onSaved=\{.*setDirty\(false\)/);
+  assert.match(inline, /onDirtyChange=\{setDirty\}/);
 });
-import {DEFAULT_MAPPING,smsConfigurationValues} from "./sms-mapping.ts";
+test("panel binds write-only secrets, public urls and enabled flag; test stays usable when editing is locked", () => {
+  for (const k of ["NOTIFICATION_SMS_URL","NOTIFICATION_SMS_STATUS_URL","NOTIFICATION_SMS_KEY","NOTIFICATION_SMS_CLIENT_ID","NOTIFICATION_SMS_SENDER_ID","NOTIFICATION_SMS_ENTITY_ID","NOTIFICATION_SMS_ENABLED"]) assert.ok(pn.includes(k), k);
+  assert.ok(pn.includes('provider: "notificationSms"') && pn.includes("SecretField") && pn.includes("PasswordInput"));
+  assert.ok(!/as never|: any|localStorage|sessionStorage/.test(pn));
+  assert.ok(pn.includes('url !== initUrl') && pn.includes("statusUrl !== initStatus"));
+  const testBox = pn.slice(pn.indexOf('data-testid="panel-sms-test"'), pn.indexOf("</fieldset>", pn.indexOf('data-testid="panel-sms-test"')));
+  assert.ok(!pn.slice(0, pn.indexOf("</fieldset>")).includes("panel-sms-test"), "test box outside the editable fieldset");
+  assert.ok(testBox.length > 0 && pn.includes("canSendSmsTest({ ready: r.ready"));
+  assert.ok(pn.includes("busy={save.isPending}") && pn.includes("button-save-sms-settings"));
+  assert.ok(sms.includes("SmsProviderPanel") && sms.includes("IntegrationReadiness") === false);
+});
+import {DEFAULT_MAPPING,smsConfigurationValues,validateMapping} from "./sms-mapping.ts";
+test("default mapping carries client_id and validator checks it",()=>{
+  assert.equal(DEFAULT_MAPPING.fields.clientId,"client_id");
+  assert.ok(validateMapping({...DEFAULT_MAPPING,fields:{...DEFAULT_MAPPING.fields,clientId:"to"}}).length>0);
+  assert.ok(validateMapping({...DEFAULT_MAPPING,fields:{...DEFAULT_MAPPING.fields,clientId:"1bad"}}).length>0);
+  assert.equal(validateMapping(DEFAULT_MAPPING).length,0);
+});
 test("first-time URL/key-only setup submits the displayed default mapping; untouched saved mappings survive key replacement",()=>{
   const initial=smsConfigurationValues("https://provider.example.invalid/send","synthetic-key",DEFAULT_MAPPING,false,false);
   assert.equal(initial.NOTIFICATION_SMS_URL,"https://provider.example.invalid/send");
@@ -50,7 +68,7 @@ test("template test: superadmin-only, semantic reset, immutable retry, shared co
   assert.ok(et.includes("StatusSwitch") && ev.includes("StatusSwitch"));
 });
 test("sms drawer busy blocks close; mapping collapsed; anchors guarded", () => {
-  assert.ok(sms.includes("busy={busy}") && sms.includes("onBusyChange") && sms.includes("<details") && sms.includes("Advanced API mapping"));
+  assert.ok(pn.includes("busy={save.isPending}") && pn.includes("<details") && pn.includes("Advanced"));
   assert.ok(rd("../lib/use-workspace-leave-guard.ts").includes("internalHref") && cl.includes("useWorkspaceLeaveGuard") && rd("../lib/use-workspace-leave-guard.ts").includes("Leave this page?"));
   assert.ok(ev.includes("getGetNotificationTemplatesQueryKey") && et.includes("getGetEventControlsQueryKey"));
 });

@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useWorkspaceLeaveGuard } from "../lib/use-workspace-leave-guard";
-import { useGetIntegrationSettings, getGetIntegrationSettingsQueryKey } from "@workspace/api-client-react";
 import { IntegrationSettings } from "./IntegrationSettings";
 import { NotificationSmsSettings } from "./NotificationSmsSettings";
-import { SmsTestMessage } from "./SmsTestMessage";
 import { WorkspaceTabs } from "../clinic";
 import { communicationTab } from "../lib/communication-routes";
 import { useConfirm } from "./ConfirmDialog";
@@ -22,7 +20,6 @@ export function CommunicationSettings() {
   const markBusy = (id: string) => (b: boolean) => setBusy(m => m[id] === b ? m : { ...m, [id]: b });
   const confirm = useConfirm();
   const askRef = useRef(confirm.ask); askRef.current = confirm.ask;
-  const readiness = useGetIntegrationSettings({ query: { queryKey: getGetIntegrationSettingsQueryKey(), staleTime: 30000 } });
   const discardAll = () => { setResetN(n => n + 1); setDirty({}); setBusy({}); };
   useWorkspaceLeaveGuard("/admin/communication", any || anyBusy, (o: any) => askRef.current(o));
   useEffect(() => {
@@ -41,11 +38,10 @@ export function CommunicationSettings() {
   };
   const tabs = [{ id: "sms", label: "SMS Settings" }, { id: "email", label: "Email Settings" }];
   return <>{confirm.dialog}
-    <p className="listing-hint">Provider connections only. Email notifications being off never disables SMTP used for sign-in codes, invitations and recovery. Message wording and activation are in Notification Templates.</p>
+    {tab !== "sms" && <p className="listing-hint">Provider connections only. Email notifications being off never disables SMTP used for sign-in codes, invitations and recovery. Message wording and activation are in Notification Templates.</p>}
     <WorkspaceTabs tabs={tabs} area={tab} onSelect={id => void select(id)} label="Communication settings" />
     <div hidden={tab !== "sms"} data-testid="panel-communication-sms">
       <NotificationSmsSettings key={`sms-${resetN}`} inline onDirtyChange={mark("sms")} onBusyChange={markBusy("sms")} />
-      <section className="panel padded"><SmsTestMessage key={`smstest-${resetN}`} onBusyChange={markBusy("smstest")} ready={!!readiness.data?.notificationSms?.ready} /></section>
     </div>
     <div hidden={tab !== "email"} data-testid="panel-communication-email"><IntegrationSettings key={`smtp-${resetN}`} fixedService="smtp" onDirtyChange={mark("smtp")} onBusyChange={markBusy("smtp")} /></div>
   </>;

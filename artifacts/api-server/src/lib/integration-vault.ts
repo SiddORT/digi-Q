@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { db, integrationCredentials, auditLogs } from "@workspace/db";
+import { db, integrationCredentials, auditLogs, settings } from "@workspace/db";
 import { HttpError } from "./http";
 import { integrationReadiness } from "./integration-config";
 import { notificationSmsReadiness } from "./notification-sms-transport";
@@ -9,7 +9,7 @@ export type Provider = "smtp" | "sms" | "notificationSms";
 export const integrationFields = {
   smtp: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM", "SMTP_SECURE", "SMTP_REQUIRE_TLS"],
   sms: ["OTP_PROVIDER", "TWILIO_ACCOUNT_SID", "TWILIO_MESSAGING_SERVICE_SID", "TWILIO_AUTH_TOKEN"],
-  notificationSms: ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING"],
+  notificationSms: ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED"],
 } as const;
 
 function masterKey() {
@@ -81,6 +81,13 @@ export async function saveIntegration(provider: Provider, values: Record<string,
         throw new HttpError(400, "Complete all required fields with valid values before saving.", "INTEGRATION_INVALID");
       await tx.insert(integrationCredentials).values({ provider, encrypted: encryptIntegration(provider, merged), revision: randomUUID() })
         .onConflictDoUpdate({ target: integrationCredentials.provider, set: { encrypted: encryptIntegration(provider, merged), revision: randomUUID() } });
+      if (provider === "notificationSms" && merged.NOTIFICATION_SMS_ENABLED === "false") {
+        // Cancel pending optional SMS now: a quick re-enable must not replay them.
+        // Already-dispatched requests cannot be recalled; email/OTP are untouched.
+        await tx.update(settings).set({
+          data: sql`${settings.data} || ${JSON.stringify({ state: "disabled", finishedAt: Date.now() })}::jsonb`,
+        }).where(sql`${settings.id} like 'sms-outbox:%' and ${settings.data}->>'state' = 'pending'`);
+      }
     }
     await tx.insert(auditLogs).values({
       id: randomUUID(), actorId: actor, action: "configure", entityType: "integration", entityId: provider,

@@ -57,6 +57,40 @@ before(async()=>{
   api=await import(bundle);
 });
 after(async()=>{await h?.close();await rm(bundle,{force:true});delete globalThis.notificationSettingsDb;});
+test("screenshot provider fields persist privately and the disabled channel neither captures nor replays SMS jobs",async()=>{
+  const original=await api.resolvedIntegration("notificationSms");
+  const values={
+    NOTIFICATION_SMS_ENABLED:"false",NOTIFICATION_SMS_CLIENT_ID:"private-client-fixture",
+    NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_ENTITY_ID:"entity-fixture",
+    NOTIFICATION_SMS_STATUS_URL:"https://receipts.example.invalid/status",
+  };
+  await h.control.query("insert into settings(id,data) values('sms-outbox:channel-disable-fixture',$1)",[JSON.stringify({state:"pending",dueAt:0})]);
+  await api.saveIntegration("notificationSms",values,original.revision,"database",sa.id);
+  try{
+    const saved=await api.resolvedIntegration("notificationSms");
+    for(const [key,value] of Object.entries(values))assert.equal(saved.env[key],value);
+    const readiness=await api.integrationSettings();
+    assert.equal(readiness.notificationSms.notificationsEnabled,false);
+    assert.equal(readiness.notificationSms.statusApiUrl,values.NOTIFICATION_SMS_STATUS_URL);
+    assert.equal((await h.control.query("select data from settings where id='sms-outbox:channel-disable-fixture'")).rows[0].data.state,"disabled");
+    assert.equal(JSON.stringify(readiness).includes(values.NOTIFICATION_SMS_CLIENT_ID),false);
+    assert.equal(JSON.stringify(readiness).includes(values.NOTIFICATION_SMS_ENTITY_ID),false);
+    const before=(await h.control.query("select count(*)::int count from settings where id like 'sms-outbox:%'")).rows[0].count;
+    await api.enqueueSmsEvent(h.db,"booking",{id:"disabled-fixture",clinicId:"c"});
+    assert.equal((await h.control.query("select count(*)::int count from settings where id like 'sms-outbox:%'")).rows[0].count,before);
+    await api.saveIntegration("notificationSms",{},saved.revision,"database",sa.id);
+    const preserved=await api.resolvedIntegration("notificationSms");
+    assert.equal(preserved.env.NOTIFICATION_SMS_CLIENT_ID,values.NOTIFICATION_SMS_CLIENT_ID);
+    assert.equal(preserved.env.NOTIFICATION_SMS_ENABLED,"false");
+    await api.saveIntegration("notificationSms",{NOTIFICATION_SMS_ENABLED:"true"},preserved.revision,"database",sa.id);
+    let sent=0;await api.processSmsNotifications(h.db,async()=>{sent++;return "provider_accepted";});
+    assert.equal(sent,0);
+  }finally{
+    const latest=await api.resolvedIntegration("notificationSms");
+    await api.saveIntegration("notificationSms",{},latest.revision,"environment",sa.id);
+    await h.control.query("delete from settings where id='sms-outbox:channel-disable-fixture'");
+  }
+});
 function smsContent(event="booking"){return {...api.defaultTemplate(event),enabled:false,prefix:"",footer:"",logoUrl:"",body:"Hello {{patient_name}} at {{clinic_name}}",senderId:"DIGIQ",dltEntityId:"12345",dltTemplateId:"67890"};}
 test("vault binds ciphertext to channel, redacts readiness and protects optimistic revisions",async()=>{
   const cipher=api.encryptIntegration("notificationSms",env);
@@ -67,7 +101,7 @@ test("vault binds ciphertext to channel, redacts readiness and protects optimist
   const readiness=await api.integrationSettings();
   assert(readiness.notificationSms.ready);
   assert(!JSON.stringify(readiness).includes(env.NOTIFICATION_SMS_KEY));
-  assert(!JSON.stringify(readiness).includes(env.NOTIFICATION_SMS_URL));
+  assert.equal(readiness.notificationSms.apiUrl,env.NOTIFICATION_SMS_URL);
   await assert.rejects(api.saveIntegration("notificationSms",env,null,"database","sa"),{status:409});
   const resolved=await api.resolvedIntegration("notificationSms");
   assert.equal(resolved.env.NOTIFICATION_SMS_KEY,env.NOTIFICATION_SMS_KEY);

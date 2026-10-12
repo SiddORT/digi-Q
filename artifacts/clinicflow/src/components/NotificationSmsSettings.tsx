@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useGetIntegrationSettings, getGetIntegrationSettingsQueryKey, useUpdateIntegrationSettings } from "@workspace/api-client-react";
 import { HelpTip } from "./HelpTip";
 import { AppDialog, useAppDialogClose } from "./AppDialog";
+import { SmsProviderPanel } from "./SmsProviderPanel";
 import { FormActions } from "./FormActions";
 import { FormSection } from "./FormSection";
 import { PasswordInput } from "./PasswordInput";
@@ -94,6 +95,12 @@ export function NotificationSmsSettings({ onDirtyChange, onBusyChange, inline = 
   const parentBusy = useRef(onBusyChange); parentBusy.current = onBusyChange;
   useEffect(() => { parentBusy.current?.(busy); }, [busy]);
   const d = query.data; const r = d?.notificationSms;
+  if (inline) return <section className="panel padded int-settings cm-provider" aria-labelledby="sms-config-title" data-testid="panel-sms-config">
+    {query.isLoading && <p role="status" data-testid="status-sms-loading">Loading settings…</p>}
+    {query.isError && <p role="alert" className="error-box">SMS settings are unavailable. <button type="button" className="button secondary" onClick={() => query.refetch()}>Retry</button></p>}
+    {d && !r && <p role="note" className="notice" data-testid="status-sms-unavailable">SMS readiness was not reported by the server.</p>}
+    {d && r && <SmsProviderPanel key={r.revision ?? "rev"} r={r} editable={!!d.editable} onDirtyChange={setDirty} onBusyChange={setBusy} onSaved={() => { void query.refetch(); }} />}
+  </section>;
   return <section className="panel padded int-settings cm-provider" aria-labelledby="sms-config-title" data-testid="panel-sms-config">
     <div className="int-head section-head"><h2 id="sms-config-title">SMS Provider <HelpTip text="Configurable HTTPS POST API. The key is encrypted and never displayed. Account security messages use Twilio separately and are unaffected." /></h2></div>
     {saved && <p role="status" className="notice">Configuration saved. No test message was sent; readiness is not proof of delivery.</p>}

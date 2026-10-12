@@ -22,16 +22,17 @@ export async function eventControls(user:any,clinicId?:string) {
   const clinic=await authorizedTemplateScope(user,clinicId);
   const readiness=await integrationSettings();
   const gate=clinicId?(await getSettings(db,clinicId)).notificationsEnabled:undefined;
-  let dltRequired=false;
-  try {dltRequired=notificationSmsConfig((await resolvedIntegration("notificationSms")).env).mapping.dltRequired;}catch{/* missing configuration shown below */}
+  let dltRequired=false, providerSender=false, providerEntity=false;
+  try {const config=notificationSmsConfig((await resolvedIntegration("notificationSms")).env);dltRequired=config.mapping.dltRequired;providerSender=!!config.senderId;providerEntity=!!config.dltEntityId;}catch{/* missing configuration shown below */}
   const items=[];
   for(const channel of ["email","sms"] as const) for(const recipient of templateRecipients) for(const event of templateEvents) {
     if(event==="onboarding"&&recipient!=="clinicAdmin")continue;
     const template=await resolvedTemplate(event,clinicId,db,recipient,channel);
     const reasons:string[]=[];
     if(!(channel==="sms"?readiness.notificationSms:readiness.smtp).ready)reasons.push(`Configure ${channel==="sms"?"SMS API":"SMTP"} on the ${channel==="sms"?"SMS":"Email"} page`);
+    if(channel==="sms"&&readiness.notificationSms.notificationsEnabled===false)reasons.push("SMS notifications are disabled in Communication Settings");
     const sms=template.content as SmsTemplateContent;
-    if(channel==="sms"&&dltRequired&&!(sms.senderId&&sms.dltEntityId&&sms.dltTemplateId))reasons.push("Publish Sender ID, DLT Entity ID and DLT Template ID on the SMS page");
+    if(channel==="sms"&&dltRequired&&!((sms.senderId||providerSender)&&(sms.dltEntityId||providerEntity)&&sms.dltTemplateId))reasons.push("Configure Sender and Entity IDs, and publish a DLT Template ID for this event");
     if(gate===false)reasons.push("Enable the clinic-wide notification gate in Clinic settings (not changed here)");
     if(!template.content.enabled)reasons.push("Published activation is off");
     items.push({channel,event,recipient,revision:template.local.revision,enabled:template.content.enabled,source:template.source,ready:reasons.length===0,blockedReasons:reasons,
@@ -87,7 +88,7 @@ export async function testTemplate(user:any,prepared:Awaited<ReturnType<typeof p
       const env=(await resolvedIntegration("notificationSms",tx)).env;
       assert(notificationSmsReadiness(env).ready,400,"Configure notification SMS before testing");
       const cfg=notificationSmsConfig(env),meta=content as SmsTemplateContent;
-      assert(!cfg.mapping.dltRequired||!!(meta.senderId&&meta.dltEntityId&&meta.dltTemplateId),400,"Sender and DLT metadata are required for this transport");
+      assert(!cfg.mapping.dltRequired||!!((meta.senderId||cfg.senderId)&&(meta.dltEntityId||cfg.dltEntityId)&&meta.dltTemplateId),400,"Sender and DLT metadata are required for this transport");
     }else smtpConfig((await resolvedIntegration("smtp",tx)).env);
     const inserted=await tx.insert(settings).values({id,data:{digest,status:"delivery_unknown",createdAt:Date.now()}}).onConflictDoNothing().returning({id:settings.id});
     if(!inserted.length) {

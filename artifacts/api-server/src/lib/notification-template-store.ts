@@ -77,7 +77,7 @@ export async function saveTemplate(user: any, input: unknown) {
         let cfg: ReturnType<typeof notificationSmsConfig> | undefined;
         try { cfg = notificationSmsConfig((await resolvedIntegration("notificationSms",tx)).env); } catch { assert(false,400,"Configure notification SMS before activation"); }
         const sms = body.content as SmsTemplateContent;
-        assert(!cfg!.mapping.dltRequired || !!(sms.senderId&&sms.dltEntityId&&sms.dltTemplateId),400,"Sender ID, DLT Entity ID and DLT Template ID are required for activation");
+        assert(!cfg!.mapping.dltRequired || !!((sms.senderId||cfg!.senderId)&&(sms.dltEntityId||cfg!.dltEntityId)&&sms.dltTemplateId),400,"Sender ID, DLT Entity ID and DLT Template ID are required for activation");
       }
       next.published = body.content;
       next.activatedAt = body.content?.enabled && !previous.content.enabled ? Date.now() : previous.activatedAt;
@@ -103,7 +103,7 @@ export async function changeActivation(user:any, input:{channel:Channel;event:Te
       let cfg:ReturnType<typeof notificationSmsConfig>|undefined;
       try {cfg=notificationSmsConfig((await resolvedIntegration("notificationSms",tx)).env);} catch {assert(false,400,"Configure notification SMS before activation");}
       const content=effective.content as SmsTemplateContent;
-      assert(!cfg!.mapping.dltRequired||!!(content.senderId&&content.dltEntityId&&content.dltTemplateId),400,"Publish required Sender and DLT metadata before activation");
+      assert(!cfg!.mapping.dltRequired||!!((content.senderId||cfg!.senderId)&&(content.dltEntityId||cfg!.dltEntityId)&&content.dltTemplateId),400,"Publish required Sender and DLT metadata before activation");
     }
     const data={...effective.local,revision:effective.local.revision+1,published:{...effective.content,enabled:input.enabled},
       activatedAt:input.enabled&&!effective.content.enabled?Date.now():effective.local.activatedAt};

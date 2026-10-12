@@ -23,17 +23,18 @@ test("auth flows are never routed to optional templates", () => {
   assert.equal(communicationRedirect("clinicAdmin", "sms"), null);
 });
 test("nothing sends or writes on page load, draft save goes through confirm, SMS test is button-only", () => {
-  const page = src("NotificationTemplatesPage.tsx"), t = src("EmailTemplates.tsx"), sms = src("SmsTestMessage.tsx"), cs = src("CommunicationSettings.tsx");
+  const page = src("NotificationTemplatesPage.tsx"), t = src("EmailTemplates.tsx"), sms = src("SmsProviderPanel.tsx"), cs = src("CommunicationSettings.tsx");
   assert.ok(!/useEffect/.test(page), "no effects that could mutate on load");
   assert.match(t, /setConfirm\("draft"\)/);
   assert.match(t, /onSubmit=\{\(\) => run\(confirm\)\}/);
-  assert.match(sms, /onSubmit=\{e => \{\s*e\.preventDefault\(\); if \(!can\) return;/);
+  assert.match(sms, /const runTest = async \(\) => \{\s*if \(!can\) return;\s*if \(!await confirm\.ask/);
+  assert.match(sms, /onClick=\{\(\) => void runTest\(\)\}/);
   assert.match(page, /confirmed/);
 });
 test("provider screens are inline, not drawers", () => {
   assert.match(src("CommunicationSettings.tsx"), /NotificationSmsSettings key=\{`sms-\$\{resetN\}`\} inline/);
   assert.match(src("IntegrationSettings.tsx"), /inline && data\.editable && <IntegrationEditor/);
-  assert.match(src("NotificationSmsSettings.tsx"), /inline && d\.editable && <Editor/);
+  assert.match(src("NotificationSmsSettings.tsx"), /inline\) return[\s\S]*<SmsProviderPanel/);
 });
 
 test("every unsaved or in-flight surface uses the shared history/sidebar leave guard", () => {

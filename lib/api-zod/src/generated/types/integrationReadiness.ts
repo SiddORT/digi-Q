@@ -28,5 +28,8 @@ export interface IntegrationReadiness {
   /** @nullable */
   revision?: string | null;
   ready: boolean;
+  notificationsEnabled?: boolean;
+  apiUrl?: string;
+  statusApiUrl?: string;
   keys: IntegrationKeyStatus[];
 }

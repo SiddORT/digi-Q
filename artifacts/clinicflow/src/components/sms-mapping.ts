@@ -1,12 +1,12 @@
 /** Declarative SMS HTTP mapping: a constrained, non-executable description of a provider request. */
 export type SmsMapping = {
   encoding: "json" | "form"; authMode: "header" | "bearer" | "body"; authField: string;
-  fields: { recipient: string; message: string; senderId: string; dltEntityId: string; dltTemplateId: string };
+  fields: { recipient: string; message: string; senderId: string; dltEntityId: string; dltTemplateId: string; clientId?: string };
   staticFields: Record<string, string>; acceptedStatuses: number[]; responseField?: string; responseValue?: string; dltRequired: boolean;
 };
 export const DEFAULT_MAPPING: SmsMapping = {
   encoding: "json", authMode: "header", authField: "X-API-Key",
-  fields: { recipient: "to", message: "message", senderId: "sender", dltEntityId: "entity_id", dltTemplateId: "template_id" },
+  fields: { recipient: "to", message: "message", senderId: "sender", dltEntityId: "entity_id", dltTemplateId: "template_id", clientId: "client_id" },
   staticFields: {}, acceptedStatuses: [200, 202], dltRequired: false,
 };
 const IDENT = /^[A-Za-z][A-Za-z0-9_]{0,49}$/;
@@ -26,8 +26,8 @@ export function validateMapping(m: SmsMapping): string[] {
   const e: string[] = [];
   const ok = IDENT;
   if (!(m.authMode === "header" ? HEADER : ok).test(m.authField) && m.authMode !== "bearer") e.push("Authentication field name is not valid.");
-  for (const [k, v] of Object.entries(m.fields)) if (!ok.test(v)) e.push(`Field name for ${k} is not valid.`);
-  const names = Object.values(m.fields); if (new Set(names).size !== names.length) e.push("Payload field names must be different.");
+  for (const [k, v] of Object.entries(m.fields)) if (v !== undefined && !ok.test(v)) e.push(`Field name for ${k} is not valid.`);
+  const names = Object.values(m.fields).filter((x): x is string => x !== undefined); if (new Set(names).size !== names.length) e.push("Payload field names must be different.");
   for (const [k, v] of Object.entries(m.staticFields)) { if (!ok.test(k)) e.push(`Static field "${k}" is not a valid name.`); if (v.length > 200) e.push(`Static field "${k}" is too long.`); }
   if (!m.acceptedStatuses.length || m.acceptedStatuses.some(n => !Number.isInteger(n) || n < 200 || n > 299)) e.push("Accepted statuses must be 2xx codes.");
   if (m.responseField && !/^[A-Za-z][A-Za-z0-9_]{0,49}(\.[A-Za-z][A-Za-z0-9_]{0,49}){0,4}$/.test(m.responseField)) e.push("Response field must be a dot path.");

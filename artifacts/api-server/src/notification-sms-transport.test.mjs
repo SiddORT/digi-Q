@@ -32,6 +32,32 @@ const api=await import(path);
 const map={encoding:"json",authMode:"header",authField:"X-API-Key",fields:{recipient:"to",message:"message",senderId:"sender",dltEntityId:"entity",dltTemplateId:"template"},staticFields:{},acceptedStatuses:[200],responseField:"ok",responseValue:"yes",dltRequired:false};
 const env={NOTIFICATION_SMS_URL:"https://rebinding.example.invalid/send",NOTIFICATION_SMS_KEY:"synthetic-key",NOTIFICATION_SMS_MAPPING:JSON.stringify(map)};
 after(async()=>{await rm(path,{force:true});delete globalThis.fakeSmsNetwork;});
+test("optional notification switch is backwards compatible and independent of provider readiness",()=>{
+ assert.equal(api.notificationSmsEnabled(env),true);
+ assert.equal(api.notificationSmsEnabled({...env,NOTIFICATION_SMS_ENABLED:"false"}),false);
+ assert.equal(api.notificationSmsEnabled({...env,NOTIFICATION_SMS_ENABLED:"invalid"}),false);
+ assert.equal(api.notificationSmsReadiness({...env,NOTIFICATION_SMS_ENABLED:"false"}).ready,true);
+ assert.throws(()=>api.notificationSmsConfig({...env,NOTIFICATION_SMS_ENABLED:"invalid"}));
+});
+test("provider Client ID and DLT defaults enter the request, with explicit template metadata taking precedence",()=>{
+ const config=api.notificationSmsConfig({...env,NOTIFICATION_SMS_CLIENT_ID:"private-client",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_ENTITY_ID:"entity-default"});
+ const defaults=JSON.parse(api.smsPayload(config,"+15555550123","Fixture message",{dltTemplateId:"template"}).body);
+ assert.equal(defaults.client_id,"private-client");assert.equal(defaults.sender,"DIGIQ");assert.equal(defaults.entity,"entity-default");
+ const override=JSON.parse(api.smsPayload(config,"+15555550123","Fixture message",{senderId:"OVERRIDE",dltEntityId:"override-entity"}).body);
+ assert.equal(override.sender,"OVERRIDE");assert.equal(override.entity,"override-entity");
+ const custom=api.notificationSmsConfig({...env,NOTIFICATION_SMS_CLIENT_ID:"private-client",NOTIFICATION_SMS_MAPPING:JSON.stringify({...map,fields:{...map.fields,clientId:"client"}})});
+ assert.equal(JSON.parse(api.smsPayload(custom,"+15555550123","Fixture message",{}).body).client,"private-client");
+ assert.throws(()=>api.notificationSmsConfig({...env,NOTIFICATION_SMS_CLIENT_ID:"private-client",NOTIFICATION_SMS_MAPPING:JSON.stringify({...map,staticFields:{client_id:"collision"}})}));
+});
+test("status URL is validated and only safe URLs and presence statuses are returned",()=>{
+ const config={...env,NOTIFICATION_SMS_STATUS_URL:"https://receipts.example.invalid/check",NOTIFICATION_SMS_CLIENT_ID:"private-client",NOTIFICATION_SMS_ENTITY_ID:"private-entity"};
+ const readiness=api.notificationSmsReadiness(config);
+ assert.equal(readiness.statusApiUrl,config.NOTIFICATION_SMS_STATUS_URL);
+ assert.equal(readiness.apiUrl,env.NOTIFICATION_SMS_URL);
+ for(const value of ["private-client","private-entity",env.NOTIFICATION_SMS_KEY])assert.equal(JSON.stringify(readiness).includes(value),false);
+ const unsafe=api.notificationSmsReadiness({...env,NOTIFICATION_SMS_URL:"https://user:password@provider.example.invalid/",NOTIFICATION_SMS_STATUS_URL:"http://127.0.0.1/status"});
+ assert.equal(unsafe.apiUrl,"");assert.equal(unsafe.statusApiUrl,"");assert.equal(unsafe.ready,false);
+});
 test("DNS validation rejects every private or reserved answer before making a request",async()=>{
  for(const address of ["127.0.0.1","169.254.169.254","::1","::ffff:8.8.8.8","2001:db8::1"]){
   globalThis.fakeSmsNetwork.addresses=[{address:"8.8.8.8",family:4},{address,family:address.includes(":")?6:4}];

@@ -618,6 +618,9 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "source": zod.enum(['environment', 'database']).optional(),
   "revision": zod.string().nullish(),
   "ready": zod.boolean(),
+  "notificationsEnabled": zod.boolean().optional(),
+  "apiUrl": zod.string().optional(),
+  "statusApiUrl": zod.string().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -627,6 +630,9 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "source": zod.enum(['environment', 'database']).optional(),
   "revision": zod.string().nullish(),
   "ready": zod.boolean(),
+  "notificationsEnabled": zod.boolean().optional(),
+  "apiUrl": zod.string().optional(),
+  "statusApiUrl": zod.string().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -636,6 +642,9 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "source": zod.enum(['environment', 'database']).optional(),
   "revision": zod.string().nullish(),
   "ready": zod.boolean(),
+  "notificationsEnabled": zod.boolean().optional(),
+  "apiUrl": zod.string().optional(),
+  "statusApiUrl": zod.string().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -653,6 +662,9 @@ export const GetIntegrationSettingsResponse = zod.object({
   "source": zod.enum(['environment', 'database']).optional(),
   "revision": zod.string().nullish(),
   "ready": zod.boolean(),
+  "notificationsEnabled": zod.boolean().optional(),
+  "apiUrl": zod.string().optional(),
+  "statusApiUrl": zod.string().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -662,6 +674,9 @@ export const GetIntegrationSettingsResponse = zod.object({
   "source": zod.enum(['environment', 'database']).optional(),
   "revision": zod.string().nullish(),
   "ready": zod.boolean(),
+  "notificationsEnabled": zod.boolean().optional(),
+  "apiUrl": zod.string().optional(),
+  "statusApiUrl": zod.string().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -671,6 +686,9 @@ export const GetIntegrationSettingsResponse = zod.object({
   "source": zod.enum(['environment', 'database']).optional(),
   "revision": zod.string().nullish(),
   "ready": zod.boolean(),
+  "notificationsEnabled": zod.boolean().optional(),
+  "apiUrl": zod.string().optional(),
+  "statusApiUrl": zod.string().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])

@@ -8,14 +8,14 @@ export const smsMappingSchema = z.object({
   encoding: z.enum(["json", "form"]),
   authMode: z.enum(["header", "bearer", "body"]),
   authField: z.string().regex(/^[A-Za-z][A-Za-z0-9_-]{0,49}$/),
-  fields: z.object({ recipient: field, message: field, senderId: field, dltEntityId: field, dltTemplateId: field }).strict(),
+  fields: z.object({ recipient: field, message: field, senderId: field, dltEntityId: field, dltTemplateId: field, clientId: field.optional() }).strict(),
   staticFields: z.record(field, z.string().max(200)).default({}),
   acceptedStatuses: z.array(z.number().int().min(200).max(299)).min(1).max(10),
   responseField: z.string().regex(/^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*){0,3}$/).max(100).optional(),
   responseValue: z.string().max(100).optional(),
   dltRequired: z.boolean(),
 }).strict().superRefine((v, ctx) => {
-  const names = [...Object.values(v.fields), ...Object.keys(v.staticFields), ...(v.authMode === "body" ? [v.authField] : [])];
+  const names = [...Object.values(v.fields).filter((name): name is string => typeof name === "string"), ...Object.keys(v.staticFields), ...(v.authMode === "body" ? [v.authField] : [])];
   if (new Set(names).size !== names.length || names.some(n => ["__proto__", "constructor", "prototype"].includes(n)))
     ctx.addIssue({ code: "custom", message: "Payload fields must be distinct safe identifiers" });
   if (Object.keys(v.staticFields).length > 10 || JSON.stringify(v.staticFields).length > 2000)
@@ -56,20 +56,44 @@ export function notificationSmsConfig(env: NodeJS.ProcessEnv) {
   // Static fields are not a second credential container.
   if (Object.values(mapping.staticFields).some(v => v.includes(key)) ||
       Object.keys(mapping.staticFields).some(k=>/password|secret|token|api_?key|authorization/i.test(k))) throw new Error("Secret in static fields");
-  return { url, key, mapping };
+  const statusUrl = env.NOTIFICATION_SMS_STATUS_URL ? smsUrl(env.NOTIFICATION_SMS_STATUS_URL) : undefined;
+  const enabled = env.NOTIFICATION_SMS_ENABLED?.trim();
+  if (enabled && enabled !== "true" && enabled !== "false") throw new Error("Invalid SMS notification switch");
+  const clientId = env.NOTIFICATION_SMS_CLIENT_ID || "";
+  const senderId = env.NOTIFICATION_SMS_SENDER_ID || "";
+  const dltEntityId = env.NOTIFICATION_SMS_ENTITY_ID || "";
+  if (clientId.length > 200 || /[\r\n]/.test(clientId) ||
+      [senderId, dltEntityId].some(v => v.length > 50 || /[\r\n]/.test(v)))
+    throw new Error("Invalid SMS provider identifiers");
+  const clientField = mapping.fields.clientId ?? "client_id";
+  if (clientId && [...Object.values(mapping.fields).filter(v => v !== mapping.fields.clientId), ...Object.keys(mapping.staticFields), ...(mapping.authMode === "body" ? [mapping.authField] : [])].includes(clientField))
+    throw new Error("Client ID field conflicts with another provider field");
+  return { url, key, mapping, statusUrl, clientId, senderId, dltEntityId, notificationsEnabled: enabled !== "false" };
+}
+/** Optional notification channel only; never controls verification/OTP. */
+export function notificationSmsEnabled(env: NodeJS.ProcessEnv) {
+  const value = env.NOTIFICATION_SMS_ENABLED?.trim();
+  return !value || value === "true";
 }
 export function notificationSmsReadiness(env: NodeJS.ProcessEnv) {
-  const names = ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING"];
+  const names = ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED"];
   const keys = names.map(key => ({key, status: env[key]?.trim() ? "configured" as const : "missing" as const}));
   let ready = false;
   try { notificationSmsConfig(env); ready = true; } catch { /* sanitized presence/syntax only */ }
-  return { ready, keys: keys.map(item => !ready && item.status === "configured" ? { ...item, status: "invalid" as const } : item) };
+  const publicUrl = (value: string | undefined) => { try { return value ? smsUrl(value).href : ""; } catch { return ""; } };
+  return {
+    ready, notificationsEnabled: notificationSmsEnabled(env),
+    apiUrl: publicUrl(env.NOTIFICATION_SMS_URL), statusApiUrl: publicUrl(env.NOTIFICATION_SMS_STATUS_URL),
+    keys: keys.map(item => !ready && item.status === "configured" ? { ...item, status: "invalid" as const } : item),
+  };
 }
 export function smsPayload(cfg: ReturnType<typeof notificationSmsConfig>, to: string, message: string, meta: {senderId?:string;dltEntityId?:string;dltTemplateId?:string}) {
+  meta = { ...meta, senderId: meta.senderId || cfg.senderId, dltEntityId: meta.dltEntityId || cfg.dltEntityId };
   if (!/^\+[1-9]\d{6,14}$/.test(to) || !message || message.length > 1600 || Object.values(meta).some(v => v && (v.length > 50 || /[\r\n]/.test(v)))) throw new Error("Invalid SMS payload");
   if (cfg.mapping.dltRequired && (!meta.senderId || !meta.dltEntityId || !meta.dltTemplateId)) throw new Error("DLT metadata required");
   const fields = cfg.mapping.fields;
   const values: Record<string,string> = { ...cfg.mapping.staticFields, [fields.recipient]:to, [fields.message]:message };
+  if (cfg.clientId) values[fields.clientId ?? "client_id"] = cfg.clientId;
   for (const key of ["senderId","dltEntityId","dltTemplateId"] as const) if(meta[key]) values[fields[key]] = meta[key]!;
   const headers: Record<string,string> = { "Content-Type": cfg.mapping.encoding === "json" ? "application/json" : "application/x-www-form-urlencoded" };
   if (cfg.mapping.authMode === "body") values[cfg.mapping.authField] = cfg.key;

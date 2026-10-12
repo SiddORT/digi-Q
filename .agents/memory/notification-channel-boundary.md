@@ -33,3 +33,14 @@ are not authorization to introduce those events into DigiQ's optional notificati
 
 **How to apply:** Retain DigiQ branding and supported events. Treat additional events and
 security-template customization as separate changes; never copy reference credentials or branding.
+
+For the SMS reference form, match its layout and field labels without copying the
+reference's HTTP/IP endpoints, OTP text, business branding or sample credentials.
+
+**Why:** The user requested the SMS page “as it is” in the screenshot. That authorizes
+the provider form presentation, not weakened transport security or a switch controlling
+security verification. The status URL is configuration, not evidence of delivered messages.
+
+**How to apply:** Keep HTTPS/SSRF protections and explicit test confirmation. Provider
+Sender/Entity defaults must be honored consistently by publish validation, readiness and
+dispatch, while event-specific metadata takes precedence.
