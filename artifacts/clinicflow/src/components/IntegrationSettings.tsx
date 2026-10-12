@@ -50,7 +50,7 @@ function StoragePanel() {
   </div>;
 }
 
-export function IntegrationSettings({ fixedService, onDirtyChange }: { fixedService?: "smtp"; onDirtyChange?: (dirty: boolean) => void } = {}) {
+export function IntegrationSettings({ fixedService, onDirtyChange, onBusyChange }: { fixedService?: "smtp"; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void } = {}) {
   const query = useGetIntegrationSettings({ query: { queryKey: getGetIntegrationSettingsQueryKey(), staleTime: 0, refetchInterval: 60000 } });
   const send = useSendSmtpTestEmail();
   const form = useForm<{ recipient: string }>({ defaultValues: { recipient: "" } });
@@ -61,16 +61,22 @@ export function IntegrationSettings({ fixedService, onDirtyChange }: { fixedServ
   const [editorDirty, setEditorDirty] = useState(false);
   const [editorBusy, setEditorBusy] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const inline = fixedService === "smtp";
   const dirtyRef = useRef(onDirtyChange); dirtyRef.current = onDirtyChange;
   useEffect(() => { dirtyRef.current?.(editorDirty); }, [editorDirty]);
   useEffect(() => () => dirtyRef.current?.(false), []);
+  const busyRef = useRef(onBusyChange); busyRef.current = onBusyChange;
+  const busyNow = editorBusy || send.isPending;
+  useEffect(() => { busyRef.current?.(busyNow); }, [busyNow]);
+  useEffect(() => () => busyRef.current?.(false), []);
   const current = SERVICES.find(s => s.value === service)!;
   const data = query.data;
   const label = service === "smtp" ? "SMTP" : "Twilio";
   const closeTest = () => { setTestOpen(false); setConfirmSend(false); form.reset(); send.reset(); };
-  return <section className="panel padded int-settings" aria-labelledby="integration-title">
+  return <section className="panel padded int-settings cm-provider" aria-labelledby="integration-title">
     <div className="int-head section-head">
-      <div className="int-head-title"><h2 id="integration-title">Third-Party Integrations <HelpTip text="Saved website settings replace the whole server environment configuration for that service; values are never mixed. Secrets stay encrypted and are never displayed."/></h2></div>
+      <div className="int-head-title"><h2 id="integration-title">{inline ? "Email Provider" : "Third-Party Integrations"} <HelpTip text="Saved website settings replace the whole server environment configuration for that service; values are never mixed. Secrets stay encrypted and are never displayed."/></h2></div>
       {!fixedService && <div className="int-chooser">
         <div className="int-field"><SearchableSelect id="int-service" label="Service" testId="select-service" value={service}
             onChange={v => { if (!v) return; setService(v as Service); setSaved(false); setEditing(false); }}
@@ -90,19 +96,36 @@ export function IntegrationSettings({ fixedService, onDirtyChange }: { fixedServ
           <p data-testid={`status-integration-${service}`}><span className={`badge ${data[service].ready ? "" : "muted"}`}>{data[service].ready ? "Configuration ready" : "Configuration required"}</span> <span className="muted">Source: {data[service].source === "database" ? "encrypted website settings" : "server environment"}</span></p>
           <div className="row-actions">
             <button type="button" className="button secondary" data-testid="button-refresh-integrations" disabled={query.isFetching} onClick={() => query.refetch()}>Refresh</button>
-            <button type="button" className="button small" aria-haspopup="dialog" disabled={!data.editable} onClick={() => { setSaved(false); setEditorDirty(false); setEditing(true); }} data-testid={`button-configure-${service}`}>Configure {label}</button>
-            {service === "smtp" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setTestOpen(true)} data-testid="button-open-smtp-test">Send Test Email</button>}
+            {!inline && <button type="button" className="button small" aria-haspopup="dialog" disabled={!data.editable} onClick={() => { setSaved(false); setEditorDirty(false); setEditing(true); }} data-testid={`button-configure-${service}`}>Configure {label}</button>}
+            {service === "smtp" && !inline && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setTestOpen(true)} data-testid="button-open-smtp-test">Send Test Email</button>}
           </div>
         </div>
-        <ul className="int-keys">{data[service].keys.map(item => <li key={item.key} data-testid={`status-key-${item.key}`}><code>{item.key}</code>: {item.status}</li>)}</ul>
+        {inline ? <details className="cm-advanced"><summary>Technical details</summary><ul className="int-keys">{data[service].keys.map(item => <li key={item.key} data-testid={`status-key-${item.key}`}><code>{item.key}</code>: {item.status}</li>)}</ul></details>
+          : <ul className="int-keys">{data[service].keys.map(item => <li key={item.key} data-testid={`status-key-${item.key}`}><code>{item.key}</code>: {item.status}</li>)}</ul>}
         <ConnectionCheck key={service} provider={service} />
-        {editing && <AppDialog open variant="drawer" onClose={() => setEditing(false)} dirty={editorDirty} busy={editorBusy} title={service === "smtp" ? "SMTP email credentials" : "Twilio SMS credentials"} description="Saving does not send a message.">
+        {inline && data.editable && <IntegrationEditor key={formKey} provider="smtp" settings={data.smtp} onDirtyChange={setEditorDirty} onBusyChange={setEditorBusy}
+          onCancel={() => { setEditorDirty(false); setFormKey(k => k + 1); }} onDone={() => { setEditorDirty(false); setSaved(true); send.reset(); setFormKey(k => k + 1); void query.refetch(); }} />}
+        {inline && <section className="int-inline-test" aria-label="Send an SMTP test" data-testid="section-smtp-test"><h3>Send an SMTP test</h3><p className="muted">Sends one fixed DigiQ Doctors message to the address you enter. Provider acceptance does not confirm inbox delivery. Limited to 3 attempts per user and 10 per IP every 15 minutes.</p>
+        <Form {...form}>
+          <form className="int-test-form" onSubmit={form.handleSubmit(d => { if (confirmSend) send.mutate({ data: d }, { onSettled: () => setConfirmSend(false) }); })}>
+            <FormField control={form.control} name="recipient" rules={{ required: "Enter a recipient", maxLength: { value: 254, message: "Address is too long" } }} render={({ field }) => <FormItem>
+              <FormLabel>Test recipient</FormLabel>
+              <FormControl><EmailInput {...field} autoComplete="off" required data-testid="input-smtp-test-recipient" onChange={event => { field.onChange(event); send.reset(); setConfirmSend(false); }} /></FormControl>
+              <FormMessage />
+            </FormItem>} />
+            <label className="check-label"><input type="checkbox" checked={confirmSend} onChange={e => setConfirmSend(e.target.checked)} data-testid="checkbox-confirm-smtp-test" /> Yes, send a real email to this address</label>
+            {send.isSuccess && <p role="status" className="notice" data-testid="status-smtp-test-success">{send.data.message}</p>}
+            {send.isError && <p role="alert" className="error-box" data-testid="status-smtp-test-error">Test email failed. Check the recipient and configuration, or wait 15 minutes if the attempt limit was reached.</p>}
+            <FormActions wide={false} onCancel={closeTest} cancelLabel="Clear" busy={send.isPending} busyLabel="Sending…" disabled={!confirmSend || !data?.smtp.ready || query.isError} submitLabel="Send test email" submitTestId="button-send-smtp-test" />
+          </form>
+        </Form></section>}
+        {!inline && editing && <AppDialog open variant="drawer" onClose={() => setEditing(false)} dirty={editorDirty} busy={editorBusy} title={service === "smtp" ? "SMTP email credentials" : "Twilio SMS credentials"} description="Saving does not send a message.">
           <IntegrationEditor provider={service} settings={data[service]} onDirtyChange={setEditorDirty} onBusyChange={setEditorBusy}
             onCancel={() => setEditing(false)} onDone={() => { setEditorDirty(false); setEditing(false); setSaved(true); send.reset(); void query.refetch(); }} />
         </AppDialog>}
       </div>}
       {service === "sms" && <p className="listing-hint">SMS connects directly to Twilio <HelpTip text="Uses your Twilio account credentials. Development OTP is not a production SMS provider."/></p>}
-      {service === "smtp" && testOpen && <AppDialog open onClose={closeTest} busy={send.isPending} dirty={!!form.watch("recipient") && !send.isSuccess} title="Send an SMTP Test" description="Sends one fixed DigiQ Doctors message to the address you enter. Provider acceptance does not confirm inbox delivery. Limited to 3 attempts per user and 10 per IP every 15 minutes.">
+      {service === "smtp" && !inline && testOpen && <AppDialog open onClose={closeTest} busy={send.isPending} dirty={!!form.watch("recipient") && !send.isSuccess} title="Send an SMTP Test" description="Sends one fixed DigiQ Doctors message to the address you enter. Provider acceptance does not confirm inbox delivery. Limited to 3 attempts per user and 10 per IP every 15 minutes.">
         <Form {...form}>
           <form className="int-test-form" onSubmit={form.handleSubmit(d => { if (confirmSend) send.mutate({ data: d }, { onSettled: () => setConfirmSend(false) }); })}>
             <FormField control={form.control} name="recipient" rules={{ required: "Enter a recipient", maxLength: { value: 254, message: "Address is too long" } }} render={({ field }) => <FormItem>

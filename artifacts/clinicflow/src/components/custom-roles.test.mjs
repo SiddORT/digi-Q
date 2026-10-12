@@ -35,7 +35,7 @@ test("UI wiring: SA-only routes, rendered below AccessRules, no passwords, 409 r
   const clinic = read("../clinic.tsx");
   assert.match(clinic, /<AccessRules\/><CustomRoles\/>/);
   assert.match(clinic, /page==="system-users"&&identity\.user!\.role==="superAdmin"\?<SystemUsers\/>/);
-  assert.match(read("../App.tsx"), /"permissions","system-users"\]\.includes\(page\)/);
+  assert.match(read("../App.tsx"), /"permissions","system-users","communication"\]\.includes\(page\)/);
   const ui = read("./CustomRoles.tsx") + read("./SystemUsers.tsx");
   assert.doesNotMatch(ui, /passwordEnabled|passwordHash|passwordSalt/);
   assert.match(ui, /=== 409\) setConflict\(true\)/);

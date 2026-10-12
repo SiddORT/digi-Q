@@ -697,6 +697,37 @@ export const SendSmtpTestEmailResponse = zod.object({
 
 
 /**
+ * Super Admin only. Explicitly sends one test using saved notification SMS configuration, without activating clinic notifications.
+ */
+export const sendNotificationSmsTestMessageBodyRecipientMax = 16;
+
+
+export const sendNotificationSmsTestMessageBodyRecipientRegExp = new RegExp('^\\+[1-9][0-9]{6,14}$');
+export const sendNotificationSmsTestMessageBodyMessageMax = 1600;
+
+export const sendNotificationSmsTestMessageBodySenderIdMax = 50;
+
+export const sendNotificationSmsTestMessageBodyDltEntityIdMax = 50;
+
+export const sendNotificationSmsTestMessageBodyDltTemplateIdMax = 50;
+
+
+
+export const SendNotificationSmsTestMessageBody = zod.object({
+  "recipient": zod.string().max(sendNotificationSmsTestMessageBodyRecipientMax).regex(sendNotificationSmsTestMessageBodyRecipientRegExp),
+  "message": zod.string().min(1).max(sendNotificationSmsTestMessageBodyMessageMax),
+  "senderId": zod.string().max(sendNotificationSmsTestMessageBodySenderIdMax).optional(),
+  "dltEntityId": zod.string().max(sendNotificationSmsTestMessageBodyDltEntityIdMax).optional(),
+  "dltTemplateId": zod.string().max(sendNotificationSmsTestMessageBodyDltTemplateIdMax).optional()
+})
+
+export const SendNotificationSmsTestMessageResponse = zod.object({
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'delivery_unknown', 'not_dispatched']),
+  "message": zod.string()
+})
+
+
+/**
  * Dedicated demo identity only. Local Argon2id password verification issues a scoped HttpOnly session cookie.
  */
 export const demoLoginBodyPasswordMax = 200;

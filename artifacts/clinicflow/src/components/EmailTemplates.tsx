@@ -11,6 +11,7 @@ import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
 import { ResourceLookup } from "./ResourceLookup";
 import "./email-templates.css";
+import { previewText } from "../lib/template-preview";
 import { BookingMailOutcomes } from "./BookingMailOutcomes";
 import { EventTemplateTest } from "./EventTemplateTest";
 import { StatusSwitch } from "./StatusSwitch";
@@ -52,9 +53,7 @@ const MODE_COPY: Record<Mode, { title: string; text: string; action: string }> =
 };
 
 /** Renders a readable preview: clinic_name uses the scope name, every other variable becomes an explicit placeholder. */
-export function previewText(text: string, scopeName: string) {
-  return text.replace(/\{\{\s*([a-z0-9_]+)\s*\}\}/gi, (_m, name: string) => name === "clinic_name" ? scopeName : `[${name.replace(/_/g, " ")}]`);
-}
+export { previewText };
 /** Same-origin logo stored by ClinicFlow: /api/branding/logos/<uuid>. Embedded as an attachment when sent. */
 export const INTERNAL_LOGO = /^\/api\/branding\/logos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function isInternalLogo(value: string) { return INTERNAL_LOGO.test(value); }
@@ -75,12 +74,12 @@ const status = (e: any) => e?.status ?? e?.response?.status;
 
 /** SMS keeps one body plus sender/DLT metadata; subject is supplied from the event title on save. */
 export const SMS_BODY_MAX = 1600;
-export function EmailTemplates({ identity, channel = "email", onDirtyChange }: { identity: api.Identity; channel?: "email" | "sms"; onDirtyChange?: (dirty: boolean) => void }) {
+export function EmailTemplates({ identity, channel = "email", onDirtyChange, onBusyChange, fixed }: { onBusyChange?: (busy: boolean) => void; identity: api.Identity; channel?: "email" | "sms"; onDirtyChange?: (dirty: boolean) => void; fixed?: { clinicId: string; event: string; recipient: Recipient } }) {
   const sms = channel === "sms";
   const superAdmin = identity.user?.role === "superAdmin";
-  const [clinicId, setClinicId] = useState("");
-  const [event, setEvent] = useState<string>("booking");
-  const [recipient, setRecipient] = useState<Recipient>("patient");
+  const [clinicId, setClinicId] = useState(fixed?.clinicId ?? "");
+  const [event, setEvent] = useState<string>(fixed?.event ?? "booking");
+  const [recipient, setRecipient] = useState<Recipient>(fixed?.recipient ?? "patient");
   const [form, setForm] = useState<Content | null>(null);
   const [serverOpen, setServerOpen] = useState(false);
   const [confirm, setConfirm] = useState<Mode | null>(null);
@@ -163,6 +162,10 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange }: {
     });
   }
 
+  const busyNow = save.isPending || upload.state === "requesting" || upload.state === "uploading" || upload.state === "verifying";
+  const busyRef = useRef(onBusyChange); busyRef.current = onBusyChange;
+  useEffect(() => { busyRef.current?.(busyNow); }, [busyNow]);
+  useEffect(() => () => busyRef.current?.(false), []);
   const uploading = upload.state === "requesting" || upload.state === "uploading" || upload.state === "verifying";
   async function onLogoFile(file: File | undefined) {
     if (!file) return;
@@ -197,7 +200,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange }: {
 
   return <section className="email-templates" data-testid="email-templates">
     <p className="et-intro muted">Edit the wording each recipient receives per event. Saving here never sends {sms ? "an SMS" : "an email"}.{sms && <> Enabled templates stay off for every recipient until you switch them on; a draft may be incomplete, but publishing an enabled template requires DLT IDs when your provider mapping requires them.</>} <span role="note" className="et-limit-tip" data-testid="text-delivery-limit"><HelpTip text="Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically." /></span></p>
-    <div className="et-scope">
+    {!fixed && <div className="et-scope">
       {superAdmin ? <FormField label="Scope" optional helper="Leave empty to edit platform defaults.">
         {(a) => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => guard(() => { setClinicId(v); resetLocal(); })} placeholder="Platform defaults" />}
       </FormField> : <FormField label="Clinic Group" required helper="Choose a clinic group you manage.">
@@ -211,7 +214,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange }: {
         {(a) => <SearchableSelect {...a} value={event} onChange={v => guard(() => { setEvent(v); setRecipient(r => recipientForEvent(v, r)); resetLocal(); })}
           options={eventsFor(recipient).map(e => ({ value: e, label: titleCase(catalog.data?.items.find(i => i.event === e)?.title ?? e) }))} />}
       </FormField>
-    </div>
+    </div>}
 
     {!sms && identity.user?.role === "clinicAdmin" && clinicId && <BookingMailOutcomes key={`${identity.user.id}:${clinicId}`} actorId={identity.user.id} clinicId={clinicId} />}
 
@@ -260,7 +263,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange }: {
           {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
           <div className="et-actions">
             <FormActions wide={false} secondary={<button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to Default</button>}
-              onCancel={() => { setForm({ ...base! }); setNotice(""); }} cancelLabel="Cancel Changes" cancelDisabled={save.isPending || !dirty} cancelTestId="button-cancel"
+              onCancel={() => guard(() => { setForm({ ...base! }); setNotice(""); })} cancelLabel="Cancel Changes" cancelDisabled={save.isPending || !dirty} cancelTestId="button-cancel"
               extra={<button type="button" className="button secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save Draft</button>}
               busy={save.isPending && confirm === "publish"} busyLabel="Publishing…" disabled={save.isPending || invalid || conflict} submitLabel="Publish" submitTestId="button-publish" />
           </div>

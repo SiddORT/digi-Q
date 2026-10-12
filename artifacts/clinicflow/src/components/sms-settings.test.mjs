@@ -35,7 +35,7 @@ test("templates support sms channel and dirty reporting", () => {
 });
 test("settings link only for actual superAdmin; legacy templates alias kept", () => {
   assert.ok(sh.includes('actualRole === "superAdmin"'));
-  assert.ok(cl.includes('raw==="templates"&&superAdmin?"email"') && cl.includes("EventControls"));
+  assert.ok(cl.includes('communicationRedirect(userRole,query.get("area"))') && cl.includes('page==="templates"&&["superAdmin","clinicAdmin"]'));
 });
 import { isRealSuperAdmin, internalHref } from "../lib/settings-access.ts";
 test("only real superadmin; demo excluded", () => {
@@ -51,6 +51,6 @@ test("template test: superadmin-only, semantic reset, immutable retry, shared co
 });
 test("sms drawer busy blocks close; mapping collapsed; anchors guarded", () => {
   assert.ok(sms.includes("busy={busy}") && sms.includes("onBusyChange") && sms.includes("<details") && sms.includes("Advanced API mapping"));
-  assert.ok(cl.includes("internalHref") && cl.includes("Leave settings?"));
+  assert.ok(rd("../lib/use-workspace-leave-guard.ts").includes("internalHref") && cl.includes("useWorkspaceLeaveGuard") && rd("../lib/use-workspace-leave-guard.ts").includes("Leave this page?"));
   assert.ok(ev.includes("getGetNotificationTemplatesQueryKey") && et.includes("getGetEventControlsQueryKey"));
 });

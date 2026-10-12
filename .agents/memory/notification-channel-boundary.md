@@ -23,3 +23,13 @@ activation. A retry after a configuration change is not a newly created booking.
 **How to apply:** Capture booking jobs at actual creation, independently of the separately
 claimed patient email. Preserve the clinic gate and existing explicit opt-outs. Do not
 activate real clinics or send real recipients as part of development verification.
+
+The communication-settings reference screenshots define the simple provider-form,
+event-list and side-editor experience, not an expansion of the notification event catalogue.
+
+**Why:** The user approved separating communication from general settings while preserving
+existing delivery rules. The reference application's OTP, invoice and payment examples
+are not authorization to introduce those events into DigiQ's optional notifications.
+
+**How to apply:** Retain DigiQ branding and supported events. Treat additional events and
+security-template customization as separate changes; never copy reference credentials or branding.

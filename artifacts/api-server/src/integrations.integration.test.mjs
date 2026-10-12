@@ -15,6 +15,8 @@ const env = { SMTP_HOST: "smtp.example.invalid", SMTP_PORT: "587", SMTP_USER: "f
 let harness, server, origin, api;
 globalThis.integrationMail = [];
 globalThis.integrationFailure = false;
+globalThis.integrationSms = [];
+globalThis.integrationSmsOutcome = "provider_accepted";
 Object.assign(process.env, env, { NODE_ENV: "test", SMTP_SECURE: "", SMTP_REQUIRE_TLS: "" });
 process.env.INTEGRATIONS_ENCRYPTION_KEY = "ab".repeat(32); // Synthetic fixture key only.
 
@@ -51,6 +53,14 @@ before(async () => {
         export const db=globalThis.integrationDb;
       `, resolveDir: root }));
       b.onResolve({ filter: /^@workspace\/api-zod$/ }, () => ({ path: resolve(root, "../../../lib/api-zod/src/index.ts") }));
+      b.onResolve({ filter: /\/notification-sms-transport$/ }, () => ({ path: "sms", namespace: "fake-sms" }));
+      b.onLoad({ filter: /.*/, namespace: "fake-sms" }, () => ({ contents: `
+        export * from ${JSON.stringify(resolve(root, "lib/notification-sms-transport.ts"))};
+        export async function sendNotificationSms(env,to,message,meta) {
+          globalThis.integrationSms.push({to,message,meta});
+          return globalThis.integrationSmsOutcome;
+        }
+      `, resolveDir: root }));
       b.onResolve({ filter: /^nodemailer$/ }, () => ({ path: "mail", namespace: "fake-mail" }));
       b.onLoad({ filter: /.*/, namespace: "fake-mail" }, () => ({ contents: `
         export default {createTransport(options){globalThis.integrationTransport=options;return {async verify(){if(globalThis.integrationFailure)throw new Error("private fixture-password smtp diagnostics");return true;},close(){},async sendMail(message){
@@ -203,6 +213,55 @@ test("encrypted save, preserved blank fields, conflict, delivery resolution and 
   const audits = (await harness.control.query("select summary from audit_logs where entity_type='integration'")).rows;
   assert.equal(audits.length, 3);
   assert.ok(!JSON.stringify(audits).includes("new-fixture-secret"));
+});
+test("notification SMS tests are authorized, validated, explicit and report sanitized outcomes without activating clinics", async () => {
+  const post = async (user, body) => {
+    const response = await fetch(`${origin}/settings/integrations/notification-sms/test-message`, {
+      method: "POST", headers: { ...(user ? { "x-test-user": user } : {}), "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return { status: response.status, body: await response.json() };
+  };
+  const input = { recipient: "+15555550123", message: "Fictional SMS test", senderId: "FIXTURE" };
+  assert.equal((await post(null, input)).status, 401);
+  for (const role of ["clinicAdmin", "doctor", "receptionist", "patient"])
+    assert.equal((await post(role, input)).status, 403);
+  for (const invalid of [{ ...input, recipient: "123" }, { ...input, message: " " }, { ...input, senderId: "bad\nid" }, { ...input, extra: true }])
+    assert.equal((await post("admin9", invalid)).status, 400);
+  assert.equal(globalThis.integrationSms.length, 0);
+  const original = {
+    NOTIFICATION_SMS_URL: process.env.NOTIFICATION_SMS_URL,
+    NOTIFICATION_SMS_KEY: process.env.NOTIFICATION_SMS_KEY,
+    NOTIFICATION_SMS_MAPPING: process.env.NOTIFICATION_SMS_MAPPING,
+  };
+  try {
+    delete process.env.NOTIFICATION_SMS_URL;
+    delete process.env.NOTIFICATION_SMS_KEY;
+    delete process.env.NOTIFICATION_SMS_MAPPING;
+    assert.equal((await post("admin10", input)).status, 503);
+    Object.assign(process.env, {
+      NOTIFICATION_SMS_URL: "https://provider.example.invalid/send",
+      NOTIFICATION_SMS_KEY: "fixture-sms-key",
+      NOTIFICATION_SMS_MAPPING: JSON.stringify({
+        encoding: "json", authMode: "header", authField: "x-api-key",
+        fields: { recipient: "to", message: "text", senderId: "sender", dltEntityId: "entity", dltTemplateId: "template" },
+        staticFields: {}, acceptedStatuses: [200], dltRequired: false,
+      }),
+    });
+    for (const [actor, outcome, expected] of [["admin9", "provider_accepted", "provider_accepted"], ["admin10", "delivery_unknown", "delivery_unknown"], ["admin11", "pre_dispatch_failed", "not_dispatched"]]) {
+      globalThis.integrationSmsOutcome = outcome;
+      const result = await post(actor, input);
+      assert.equal(result.status, 200);
+      assert.equal(result.body.status, expected);
+      assert.equal(JSON.stringify(result.body).includes("fixture-sms-key"), false);
+    }
+    assert.equal(globalThis.integrationSms.length, 3);
+  } finally {
+    for (const [key, value] of Object.entries(original)) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+    globalThis.integrationSmsOutcome = "provider_accepted";
+  }
 });
 test("direct Twilio uses encrypted credentials with no connector and never sends during save", async () => {
   await prepareEditor("admin8");

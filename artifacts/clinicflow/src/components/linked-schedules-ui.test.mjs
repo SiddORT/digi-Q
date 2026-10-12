@@ -65,7 +65,7 @@ test("legacy routes remain, while navigation consolidates clinic, staff and sche
   assert.match(navigation, /profile: "Profile"/);
   assert.doesNotMatch(navigation, /profile & consultation/i);
   // Consolidated admin navigation: one destination per workspace; legacy pages redirect into tabs.
-  assert.match(text, /admin:\["dashboard","appointments","queue","patients","clinic","users","availability","reports","settings","profile"\]/);
+  assert.match(text, /admin:\["dashboard","appointments","queue","patients","clinic","users","availability","reports","communication","templates","settings","profile"\]/);
   assert.match(text, /receptionist:\["dashboard","appointments","queue","patients","availability","profile"\]/);
 });
 test("appointment and report filters apply drafts, with status-only tabs and column sorting", () => {

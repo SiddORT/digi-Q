@@ -12,8 +12,9 @@ test("sensitive entries share visibility controls without retrieving saved secre
   assert.match(secret, /if \(value === ""\) setVisible\(false\)/);
   const integration = read("./IntegrationEditor.tsx");
   assert.match(integration, /Stored values are never displayed/);
-  assert.match(integration, /type === "password" \? <PasswordInput/);
-  assert.match(integration, /visibilityLabel=\{label\}/);
+  assert.match(integration, /type === "password" \? <SecretField/);
+  assert.match(read("./SecretField.tsx"), /<PasswordInput/);
+  assert.match(read("./SecretField.tsx"), /visibilityLabel=\{label\}/);
   assert.doesNotMatch(integration, /type="password"/);
   assert.match(read("../auth/DemoLogin.tsx"), /<PasswordInput/);
 });

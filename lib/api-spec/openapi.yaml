@@ -272,6 +272,26 @@ paths:
         "403": { description: Super Admin required }
         "429": { description: Test email limit reached }
         "503": { description: Email unavailable }
+  /settings/integrations/notification-sms/test-message:
+    post:
+      operationId: sendNotificationSmsTestMessage
+      description: Super Admin only. Explicitly sends one test using saved notification SMS configuration, without activating clinic notifications.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationSmsTestInput" }
+      responses:
+        "200":
+          description: Sanitized dispatch outcome; provider acceptance does not confirm delivery
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationSmsTestResult" }
+        "400": { description: Invalid recipient or message }
+        "401": { description: Sign in required }
+        "403": { description: Super Admin required }
+        "429": { description: Test limit reached }
+        "503": { description: SMS configuration unavailable }
   /demo/login:
     post:
       operationId: demoLogin
@@ -1768,6 +1788,22 @@ components:
         values:
           type: object
           additionalProperties: { type: string, maxLength: 8192 }
+    NotificationSmsTestInput:
+      type: object
+      additionalProperties: false
+      required: [recipient, message]
+      properties:
+        recipient: { type: string, pattern: "^\\+[1-9][0-9]{6,14}$", maxLength: 16 }
+        message: { type: string, minLength: 1, maxLength: 1600 }
+        senderId: { type: string, maxLength: 50 }
+        dltEntityId: { type: string, maxLength: 50 }
+        dltTemplateId: { type: string, maxLength: 50 }
+    NotificationSmsTestResult:
+      type: object
+      required: [status, message]
+      properties:
+        status: { type: string, enum: [provider_accepted, provider_rejected, delivery_unknown, not_dispatched] }
+        message: { type: string }
     SmtpTestInput:
       type: object
       additionalProperties: false

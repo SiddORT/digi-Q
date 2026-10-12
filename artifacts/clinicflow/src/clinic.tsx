@@ -29,11 +29,11 @@ import { WorkspaceNav, navLabel } from "./components/WorkspaceNav";
 import { clinicLandingDestination } from "./lib/clinic-navigation";
 import { DemoClinicManagement } from "./components/DemoClinicManagement";
 import { IntegrationSettings } from "./components/IntegrationSettings";
-import { EmailTemplates } from "./components/EmailTemplates";
-import { NotificationSmsSettings } from "./components/NotificationSmsSettings";
-import {setSettingsExitGuard,settingsHistoryPosition} from "./lib/settings-navigation";
-import { isRealSuperAdmin, internalHref } from "./lib/settings-access";
-import { EventControls } from "./components/EventControls";
+import { isRealSuperAdmin } from "./lib/settings-access";
+import { useWorkspaceLeaveGuard } from "./lib/use-workspace-leave-guard";
+import { communicationRedirect } from "./lib/communication-routes";
+import { CommunicationSettings } from "./components/CommunicationSettings";
+import { NotificationTemplatesPage } from "./components/NotificationTemplatesPage";
 import { AccessRules } from "./components/AccessRules";
 import { CustomRoles } from "./components/CustomRoles";
 import { SystemUsers } from "./components/SystemUsers";
@@ -170,7 +170,7 @@ export function PublicBooking({reference}:{reference:string}){
   return <div className="public-book"><Logo/><div className="panel"><span className="eyebrow">Your Direct Link to Care</span><h1 data-testid="text-booking-clinic">{qr.data?.clinicName==="ClinicFlow DEMO Clinic"?"DigiQ DEMO Clinic":qr.data?.clinicName||"Book a Visit"}</h1>{["ClinicFlow DEMO Clinic","DigiQ DEMO Clinic"].includes(qr.data?.clinicName||"")&&<div className="notice" role="status"><strong>Fictional demo clinic.</strong> Do not enter real patient information. Book Now issues your visit ticket immediately.</div>}{qr.error&&<p role="alert">This clinic booking QR may be invalid, inactive, or temporarily unavailable. Check the code with reception or choose a clinic for guest booking.</p>}<ErrorNotice error={qr.error||me.error}/>{(qr.error||me.error)&&<button onClick={()=>{qr.refetch();if(auth.isSignedIn)me.refetch();}}>Retry Booking Context</button>}{qr.data&&!qr.error&&<><p data-testid="text-booking-location">{[qr.data.branchName,qr.data.branchCity,qr.data.doctorName].filter(Boolean).join(" · ")||"Choose a clinic and doctor below"}</p>{!auth.isLoaded?<p role="status">Connecting securely…</p>:!auth.isSignedIn?<><GuestBooking key={reference} reference={reference} context={qr.data}/><hr/><p>Already have an account?</p><Link className="button secondary" href="/patient-login" data-testid="link-account-booking">Sign In to Your Account <ArrowUpRight size={18}/></Link></>:me.error?null:me.data?.needsOnboarding?<Redirect to="/onboarding"/>:me.data?.user?<Booking key={reference} entryPoint="public-patient" identity={me.data} context={qr.data}/>:<p role="status">Loading your profile…</p>}</>}</div></div>;
 }
 const navConfig:Record<string,string[]>={
-  admin:["dashboard","appointments","queue","patients","clinic","users","availability","reports","settings","profile"],
+  admin:["dashboard","appointments","queue","patients","clinic","users","availability","reports","communication","templates","settings","profile"],
  doctor:["dashboard","appointments","queue","patients","clinics","availability","profile"],
   receptionist:["dashboard","appointments","queue","patients","availability","profile"],
  patient:["dashboard","book","appointments","queue","profile"],
@@ -195,18 +195,29 @@ function PortalWorkspace({identity,role,page}:{identity:api.Identity;role:string
  const name=identity.user!.fullName;
  const defaultDoctorId=doctorWorkspaceScope(identity).doctorId;
  // Clinic Admins manage staff from Clinic > Staff; only Super Admin keeps the separate Users workspace.
-  const navigation=navConfig[role].filter(p=>p!=="users"||identity.user!.role==="superAdmin").map(p=>p==="clinic"&&identity.user!.role==="superAdmin"?"clinics":p);
+  const navigation=navConfig[role].filter(p=>(p!=="users"&&p!=="communication")||identity.user!.role==="superAdmin").map(p=>p==="clinic"&&identity.user!.role==="superAdmin"?"clinics":p);
  // Listing pages render their page title inside the shared list header (title + search + actions on one row).
  const legacy=legacyDestination(page,identity.user!.role,window.location.search);
  const listingPage=["appointments","patients","staff","branches","masters","reports"].includes(page)||(page==="users"&&identity.user!.role!=="superAdmin")||(page==="clinics"&&role!=="doctor")||(["system-users","audit"].includes(page)&&identity.user!.role==="superAdmin");
  const titleOwner=useMemo(()=>({current:null as string|null}),[page]);
  const headingEyebrow=["dashboard","reports"].includes(page)?formatConfiguredTimestamp(new Date(),timezone,{weekday:"long",month:"long",day:"numeric"}):undefined;
    return <div className={`workspace${collapsed?" sidebar-collapsed":""}`}>{open&&<div className="sidebar-scrim" aria-hidden="true" data-testid="sidebar-scrim" onClick={()=>setOpen(false)}/>}<aside className={`sidebar ${open?"open":""}`} id="workspace-sidebar" onKeyDown={e=>{if(e.key==="Escape")setOpen(false);}}>{open&&<button type="button" className="sidebar-close" aria-label="Close navigation" title="Close Navigation" onClick={()=>setOpen(false)} data-testid="button-close-navigation"><X size={20} aria-hidden/></button>}<Logo/><div className="workspace-label">{role==="patient"?"Your Care":"Workspace"}<span>{title(role)}</span></div><button type="button" className="sidebar-collapse-toggle" onClick={toggleCollapsed} aria-pressed={collapsed} aria-label={collapsed?"Expand navigation":"Collapse navigation"} title={collapsed?"Expand navigation":"Collapse navigation"} data-testid="button-toggle-sidebar-collapse">{collapsed?<PanelLeftOpen size={17} aria-hidden/>:<PanelLeftClose size={17} aria-hidden/>}<span className="wnav-label">Collapse</span></button><WorkspaceNav navigation={navigation} role={role} page={page} collapsed={collapsed} onNavigate={()=>setOpen(false)}/><SidebarShortcuts navigation={navigation} role={role} page={page} userId={identity.user!.id} onNavigate={()=>setOpen(false)}/><div className="sidebar-bottom"><div className="help-card"><span className="live-dot"/>Care, in sync.<p>{role==="patient"?"Your bookings stay up to date automatically.":"Your workspace stays connected with live queue updates."}</p></div><button className="logout" onClick={()=>signOut({redirectUrl:import.meta.env.BASE_URL})} title={collapsed?"Sign Out":undefined} data-testid="button-signout"><LogOut size={18} aria-hidden/> <span className="wnav-label">Sign Out</span></button></div></aside><div className="workspace-main"><header className="topbar"><button className="mobile-menu" onClick={()=>setOpen(!open)} aria-label="Toggle navigation" aria-expanded={open} aria-controls="workspace-sidebar"><Menu/></button><div className="breadcrumb">DigiQ <ChevronRight size={13}/> <strong>{navLabel(page,role)}</strong></div><div className="topbar-right"><WorkspaceSearch key={`${identity.user!.id}:${role}`} navigation={navigation} role={role} page={page} userId={identity.user!.id}/><span className="secure-label"><span className="live-dot"/> Secure workspace</span><LocationSelector/><NotificationsPanel timezone={timezone}/><ProfileMenu actualRole={isRealSuperAdmin(identity.user)?"superAdmin":"other"} name={name} roleLabel={title(identity.user!.role)} role={role} clinicIds={identity.user!.clinicIds??[]} navigation={navigation} page={page} userId={identity.user!.id} onSignOut={()=>signOut({redirectUrl:import.meta.env.BASE_URL})}/></div></header><main className="content"><QrInlineHost/>{identity.user?.email==="doctor@clinicflow.example.com"&&<div className="notice" role="status"><strong>Fictional demo workspace.</strong> Do not enter real patient information.</div>}{!listingPage&&page!=="queue"&&<div className="page-heading"><div>{headingEyebrow&&<span className="eyebrow">{headingEyebrow}</span>}<h1>{page==="dashboard"?`${configuredGreeting(timezone)}, ${name.split(" ")[0]}.`:navLabel(page,role)}</h1>{page==="dashboard"&&<p>Here's what's happening with your care workspace today.</p>}</div>{page==="dashboard"&&<Link className="button" href={`/${role}/book`} data-testid="link-page-book-appointment"><Plus size={17}/> {role==="patient"?"Book Now":"Book Appointment"}</Link>}</div>}<ListPageTitleContext.Provider value={listingPage?{title:navLabel(page,role),eyebrow:headingEyebrow,owner:titleOwner}:null}><BranchScopeGate page={page}>
- {legacy?<Redirect to={legacy}/>:page==="clinic"?<ClinicSettings identity={identity}/>:page==="users"&&identity.user!.role==="superAdmin"?<UsersWorkspace identity={identity}/>:page==="staff"&&identity.user!.role==="superAdmin"?<Users identity={identity}/>:page==="templates"?<EmailTemplates identity={identity}/>:page==="permissions"&&identity.user!.role==="superAdmin"?<><AccessRules/><CustomRoles/></>:page==="system-users"&&identity.user!.role==="superAdmin"?<SystemUsers/>:page==="integrations"&&identity.user!.role==="superAdmin"?<IntegrationSettings/>:page==="dashboard"?<Dashboard role={role}/>:page==="demo"&&identity.user!.role==="superAdmin"?<DemoClinicManagement/>:page==="users"?<Users identity={identity}/>:page==="clinics"&&role==="doctor"?<DoctorClinicWorkspace identity={identity}/>:page==="book"?<Booking entryPoint="staff-workspace" identity={identity}/>:page==="appointments"?<Appointments role={role}/>:page==="queue"?<Queue identity={identity}/>:page==="profile"?<Profile identity={identity}/>:page==="settings"?<WorkspaceSettings identity={identity}/>:page==="reports"?<Reports/>:(page==="availability"||page==="exceptions")?<SchedulingWorkspace key={page} identity={identity} page={page}/>:resources[page]?<ResourcePage key={page} resource={page} identity={identity} allowCreate={!(identity.user!.role==="doctor"&&page==="patients")} defaults={defaultDoctorId?{doctorId:defaultDoctorId,isOpen:true}:{}} onEdit={page==="branches"&&role==="admin"?row=>navigate(`/admin/settings?clinicId=${encodeURIComponent(row.clinicId)}&section=locations&branchId=${encodeURIComponent(row.id)}`):undefined}/>:<Empty label="Available Modules"/>}</BranchScopeGate></ListPageTitleContext.Provider>
+ {legacy?<Redirect to={legacy}/>:page==="clinic"?<ClinicSettings identity={identity}/>:page==="users"&&identity.user!.role==="superAdmin"?<UsersWorkspace identity={identity}/>:page==="staff"&&identity.user!.role==="superAdmin"?<Users identity={identity}/>:page==="templates"?<NotificationTemplatesPage identity={identity}/>:page==="communication"&&identity.user!.role==="superAdmin"?<CommunicationSettings/>:page==="permissions"&&identity.user!.role==="superAdmin"?<><AccessRules/><CustomRoles/></>:page==="system-users"&&identity.user!.role==="superAdmin"?<SystemUsers/>:page==="integrations"&&identity.user!.role==="superAdmin"?<IntegrationSettings/>:page==="dashboard"?<Dashboard role={role}/>:page==="demo"&&identity.user!.role==="superAdmin"?<DemoClinicManagement/>:page==="users"?<Users identity={identity}/>:page==="clinics"&&role==="doctor"?<DoctorClinicWorkspace identity={identity}/>:page==="book"?<Booking entryPoint="staff-workspace" identity={identity}/>:page==="appointments"?<Appointments role={role}/>:page==="queue"?<Queue identity={identity}/>:page==="profile"?<Profile identity={identity}/>:page==="settings"?<WorkspaceSettings identity={identity}/>:page==="reports"?<Reports/>:(page==="availability"||page==="exceptions")?<SchedulingWorkspace key={page} identity={identity} page={page}/>:resources[page]?<ResourcePage key={page} resource={page} identity={identity} allowCreate={!(identity.user!.role==="doctor"&&page==="patients")} defaults={defaultDoctorId?{doctorId:defaultDoctorId,isOpen:true}:{}} onEdit={page==="branches"&&role==="admin"?row=>navigate(`/admin/settings?clinicId=${encodeURIComponent(row.clinicId)}&section=locations&branchId=${encodeURIComponent(row.id)}`):undefined}/>:<Empty label="Available Modules"/>}</BranchScopeGate></ListPageTitleContext.Provider>
   <div className="content-footer"><span>DigiQ Doctors · Care, connected.</span><span>All times follow your clinic's configured timezone.</span></div></main></div></div>;
 }
 /** Legacy single-function URLs now open their consolidated workspace tab. Query context is preserved. */
 export function legacyDestination(page:string,userRole:string,search:string):string|null{
+  if(page==="templates"&&["superAdmin","clinicAdmin"].includes(userRole))return null;
+  if(page==="settings"){
+   const query=new URLSearchParams(search);
+   const destination=communicationRedirect(userRole,query.get("area"));
+   if(destination){
+    const target=new URL(destination,"https://local.invalid");
+    query.delete("area");
+    query.forEach((value,key)=>target.searchParams.set(key,value));
+    return `${target.pathname}${target.search}`;
+   }
+  }
   const landing=clinicLandingDestination(page,userRole,search);
   if(landing)return landing;
  const query=new URLSearchParams(search);
@@ -220,7 +231,6 @@ export function legacyDestination(page:string,userRole:string,search:string):str
   if(page==="system-users")return withArea("/admin/users","system");
   if(["masters","audit","demo","integrations"].includes(page))return withArea("/admin/settings",page);
  }
- if(page==="templates"&&["superAdmin","clinicAdmin"].includes(userRole))return withArea("/admin/settings","templates");
  return null;
 }
 type WorkspaceTab={id:string;label:string};
@@ -268,75 +278,18 @@ export function UsersWorkspace({identity}:{identity:api.Identity}){
 /** Settings groups only the areas the signed-in role may already open; nothing here widens access. */
 function WorkspaceSettings({identity}:{identity:api.Identity}){
  const superAdmin=identity.user?.role==="superAdmin";
- const tabs:WorkspaceTab[]=superAdmin?[{id:"sms",label:"SMS"},{id:"email",label:"Email"},{id:"events",label:"Event controls"},{id:"platform",label:"Platform"},{id:"integrations",label:"Integrations"},{id:"masters",label:"Reference data"},{id:"audit",label:"Audit log"},{id:"demo",label:"Demo clinic"}]:[{id:"templates",label:"Email templates"}];
+ const tabs:WorkspaceTab[]=superAdmin?[{id:"platform",label:"Platform"},{id:"integrations",label:"Integrations"},{id:"masters",label:"Reference data"},{id:"audit",label:"Audit log"},{id:"demo",label:"Demo clinic"}]:[{id:"platform",label:"Settings"}];
  // Legacy ?area=templates stays valid and is an alias of the Email page.
  const resolvable=[...tabs,...(superAdmin?[{id:"templates",label:"Email"}]:[])];
  const {area:raw,select:rawSelect}=useAreaTab(resolvable,tabs[0].id);
- const area=raw==="templates"&&superAdmin?"email":raw;
+ const area=raw;
  const [visited,setVisited]=useState<string[]>([area]);
  const [dirtyAreas,setDirtyAreas]=useState<Record<string,boolean>>({});
  const anyDirty=Object.values(dirtyAreas).some(Boolean);
  useEffect(()=>{setVisited(v=>v.includes(area)?v:[...v,area]);},[area]);
  useEffect(()=>{if(!anyDirty)return;const warn=(e:BeforeUnloadEvent)=>{e.preventDefault();e.returnValue="";};window.addEventListener("beforeunload",warn);return()=>window.removeEventListener("beforeunload",warn);},[anyDirty]);
- const [,navigateAway]=useLocation();
  const askRef=useRef<(o:any)=>Promise<boolean>>(async()=>true);
- const leavingRef=useRef(false);
- // Sidebar, profile menu and any other in-app anchor leaving Settings with unsaved drafts needs confirmation. Intra-settings panel changes keep history.
- useEffect(()=>{
-  if(!anyDirty)return;
-  const onClick=(e:MouseEvent)=>{
-   if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
-   const a=(e.target as Element|null)?.closest?.("a[href]") as HTMLAnchorElement|null;if(!a)return;
-   const dest=internalHref(a,window.location,import.meta.env.BASE_URL);if(!dest)return;
-   if(dest.pathname==="/admin/settings"||dest.pathname.endsWith("/admin/settings"))return;
-   e.preventDefault();e.stopPropagation();
-   if(leavingRef.current)return;leavingRef.current=true;
-   void askRef.current({title:"Leave settings?",description:"You have unsaved changes. Leaving this page discards them.",confirmLabel:"Discard and Leave",tone:"danger"}).then(ok=>{if(ok){setSettingsExitGuard(null);navigateAway(dest.path);}}).finally(()=>{leavingRef.current=false;});
-  };
-  document.addEventListener("click",onClick,true);return()=>document.removeEventListener("click",onClick,true);
- },[anyDirty,navigateAway]);
- // Browser back/forward can otherwise unmount the workspace before an anchor guard runs.
- // Keep intra-settings history free to move; only an exit with unsaved edits is intercepted.
- const [settingsLocation]=useLocation();
- const settingsSearch=useSearch();
- const currentSettingsUrl=useRef(window.location.href);
- const currentSettingsPosition=useRef(settingsHistoryPosition());
- useEffect(()=>{
-  if(window.location.pathname.endsWith("/admin/settings")){
-   currentSettingsUrl.current=window.location.href;currentSettingsPosition.current=settingsHistoryPosition();
-  }
- },[settingsLocation,settingsSearch]);
- useEffect(()=>{
-  if(!anyDirty)return;
-  const requestExit=(destination:string)=>{
-   const target=new URL(destination,window.location.origin),base=import.meta.env.BASE_URL.replace(/\/$/,"");
-   const relative=base&&target.pathname.startsWith(base)?target.pathname.slice(base.length):target.pathname;
-   if(relative==="/admin/settings")return;
-   const targetPosition=settingsHistoryPosition(),currentPosition=currentSettingsPosition.current;
-   const delta=targetPosition!==null&&currentPosition!==null?currentPosition-targetPosition:1;
-   // Undo traversal, not the target entry's URL. Replacing that entry on Cancel
-   // erases the dashboard entry and makes a repeated Back leave the document.
-   if(delta)window.history.go(delta);
-   else window.history.replaceState(window.history.state,"",currentSettingsUrl.current);
-   if(leavingRef.current)return;leavingRef.current=true;
-   void askRef.current({title:"Leave settings?",description:"Browser navigation will discard your unsaved settings edits.",confirmLabel:"Discard and Leave",tone:"danger"}).then(ok=>{
-    if(ok){
-     setSettingsExitGuard(null);
-     if(delta)window.history.go(-delta);
-     else navigateAway(`${relative}${target.search}${target.hash}`,{replace:true});
-    }
-   }).finally(()=>{leavingRef.current=false;});
-  };
-  const pop=(event:PopStateEvent)=>{
-   if(window.location.pathname.endsWith("/admin/settings")){
-    currentSettingsUrl.current=window.location.href;currentSettingsPosition.current=settingsHistoryPosition();return;
-   }
-   event.stopImmediatePropagation();requestExit(window.location.href);
-  };
-  setSettingsExitGuard({pathname:new URL(currentSettingsUrl.current).pathname,onExit:requestExit});
-  window.addEventListener("popstate",pop,true);
-  return()=>{setSettingsExitGuard(null);window.removeEventListener("popstate",pop,true);};
- },[anyDirty,navigateAway]);
+ useWorkspaceLeaveGuard("/admin/settings",anyDirty,(o:any)=>askRef.current(o));
  const mark=(id:string)=>(d:boolean)=>setDirtyAreas(m=>m[id]===d?m:{...m,[id]:d});
  const confirmNavigation=useConfirm();
  askRef.current=confirmNavigation.ask as any;
@@ -349,11 +302,8 @@ function WorkspaceSettings({identity}:{identity:api.Identity}){
  return <>{confirmNavigation.dialog}{tabs.length>1&&<WorkspaceTabs tabs={tabs} area={area} onSelect={id=>void select(id)} label="Settings areas"/>}
   {!superAdmin&&<p className="listing-hint">Clinic details, locations, staff and booking policies are managed in <Link href="/admin/clinic" className="text-link" data-testid="link-settings-clinic">Clinic</Link>.</p>}
   {superAdmin?<>
-   {panel("sms",<><NotificationSmsSettings onDirtyChange={mark("sms")} onBusyChange={mark("sms-busy")}/><EmailTemplates key="sms" channel="sms" identity={identity} onDirtyChange={mark("sms-templates")}/></>)}
-   {panel("email",<><IntegrationSettings fixedService="smtp" onDirtyChange={mark("smtp")}/><EmailTemplates key="email" identity={identity} onDirtyChange={mark("email-templates")}/></>)}
-   {panel("events",<EventControls identity={identity}/>)}
    {area==="platform"?<PlatformSettings/>:area==="integrations"?<IntegrationSettings/>:area==="demo"?<DemoClinicManagement/>:["masters","audit"].includes(area)?<ResourcePage key={area} resource={area} identity={identity} allowCreate={area!=="audit"}/>:null}
-  </>:<EmailTemplates identity={identity} onDirtyChange={mark("templates")}/>}</>;
+  </>:<p className="listing-hint">Notification wording is managed in <Link href="/admin/templates" className="text-link" data-testid="link-settings-templates">Notification Templates</Link>.</p>}</>;
 }
 const ACTIVITY_VERBS:Record<string,string>={book:"Booked",update:"Updated",create:"Created",delete:"Deactivated",call:"Called",checkin:"Checked in",check_in:"Checked in",start:"Started",complete:"Checked out",cancel:"Cancelled",noshow:"Marked absent",no_show:"Marked absent",requeue:"Returned to queue",reschedule:"Rescheduled",template_publish:"Published",template_draft:"Saved draft of",template_reset:"Reset"};
 /** Turns technical audit summaries such as "template_publish notification_templates record" into readable labels without inventing events. */

@@ -2,8 +2,9 @@ import { HelpTip } from "./HelpTip";
 import { FormSection } from "./FormSection";
 import { FormActions } from "./FormActions";
 import { useEffect, useRef, useState } from "react";
-import { useAppDialogClose } from "./AppDialog";
 import { PasswordInput } from "./PasswordInput";
+import { useAppDialogClose } from "./AppDialog";
+import { SecretField } from "./SecretField";
 import { useUpdateIntegrationSettings, type IntegrationReadiness } from "@workspace/api-client-react";
 
 const fields = {
@@ -53,9 +54,7 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel, onDirt
       <FormSection title={mode === "database" ? "Credentials" : "Server configuration"} grid={false}>
       {mode === "database" ? <div className="cf-form"><div className="form-grid field-grid">{fields[provider].map(([key, label, type]) => <div key={key} className="form-field field-cell fw-md">
         <label htmlFor={`integration-${key}`}>{label}</label>
-        {type === "password" ? <PasswordInput id={`integration-${key}`} name={key} visibilityLabel={label} autoComplete="off" spellCheck={false} maxLength={2048}
-          value={values[key] ?? ""} placeholder={settings.keys.find(item => item.key === key)?.status === "configured" ? "Configured — leave blank to keep" : "Enter a value"}
-          onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} /> : <input id={`integration-${key}`} name={key} type={type} autoComplete="off" spellCheck={false} maxLength={2048}
+        {type === "password" ? <SecretField id={`integration-${key}`} label={label} testId={`secret-${key}`} configured={settings.keys.find(item => item.key === key)?.status === "configured"} value={values[key] ?? ""} onChange={v => setValues(current => ({ ...current, [key]: v }))} /> : <input id={`integration-${key}`} name={key} type={type} autoComplete="off" spellCheck={false} maxLength={2048}
           value={values[key] ?? ""} placeholder={settings.keys.find(item => item.key === key)?.status === "configured" ? "Configured — leave blank to keep" : "Enter a value"}
           onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} />}
       </div>)}</div></div> : <>

@@ -35,7 +35,7 @@ export function EventControls({ identity }: { identity: api.Identity }) {
   const [confirmed, setConfirmed] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [notice, setNotice] = useState("");
-  const area = (c: string) => `/${superAdmin ? "admin" : "admin"}/settings?area=${c}`;
+  const area = (c: string) => superAdmin ? `/admin/communication?tab=${c}` : "/admin/templates";
   const sending = useRef(false);
   const apply = () => {
     if (!pending || !confirmed || sending.current) return;

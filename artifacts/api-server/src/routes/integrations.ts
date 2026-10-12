@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ipKeyGenerator } from "express-rate-limit";
-import { SendSmtpTestEmailBody, GetIntegrationSettingsResponse, UpdateIntegrationSettingsBody } from "@workspace/api-zod";
+import { SendSmtpTestEmailBody, SendNotificationSmsTestMessageBody, GetIntegrationSettingsResponse, UpdateIntegrationSettingsBody } from "@workspace/api-zod";
 import { db, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireUser, roles } from "../lib/auth";
@@ -12,6 +12,7 @@ import { checkIntegration } from "../lib/integration-checks";
 import { mediaConfig } from "../lib/local-media";
 import { sendAuthEmail } from "../lib/auth-email";
 import { DEMO_FIXTURE } from "../lib/demo-policy";
+import { notificationSmsConfig, sendNotificationSms } from "../lib/notification-sms-transport";
 
 export const integrationsRouter = Router();
 const path = "/settings/integrations";
@@ -53,6 +54,29 @@ integrationsRouter.put(path, async (req, res) => {
     throw new HttpError(403, "Password confirmation failed", "PASSWORD_CONFIRMATION_FAILED");
   await saveIntegration(body.provider, body.values, body.revision, body.mode, res.locals.integrationActor);
   res.json(GetIntegrationSettingsResponse.parse(await integrationSettings()));
+});
+integrationsRouter.post(`${path}/notification-sms/test-message`, async (req, res) => {
+  const parsed = SendNotificationSmsTestMessageBody.strict().safeParse(req.body);
+  if (!parsed.success || !/^\+[1-9]\d{6,14}$/.test(parsed.data.recipient) ||
+      !parsed.data.message.trim() ||
+      [parsed.data.senderId, parsed.data.dltEntityId, parsed.data.dltTemplateId].some(v => v && /[\r\n]/.test(v)))
+    throw new HttpError(400, "Enter a valid international phone number, message and sender identifiers", "INVALID_SMS_TEST");
+  await consumeRateLimit(`sms-test:ip:${ipKeyGenerator(req.ip || "unknown")}`, 10, 900_000);
+  await consumeRateLimit(`sms-test:actor:${res.locals.integrationActor}`, 3, 900_000);
+  const { env } = await resolvedIntegration("notificationSms");
+  try { notificationSmsConfig(env); } catch {
+    throw new HttpError(503, "Save a valid notification SMS configuration before testing", "SMS_UNCONFIGURED");
+  }
+  const { recipient, message, senderId, dltEntityId, dltTemplateId } = parsed.data;
+  const outcome = await sendNotificationSms(env, recipient, message, { senderId, dltEntityId, dltTemplateId });
+  const status = outcome === "pre_dispatch_failed" ? "not_dispatched" : outcome;
+  const messages = {
+    provider_accepted: "The provider accepted the test message. Handset delivery is not confirmed.",
+    provider_rejected: "The provider rejected the test message. Check saved configuration and registered template identifiers.",
+    delivery_unknown: "Delivery is unknown. Check the provider before sending again to avoid duplicates.",
+    not_dispatched: "The test was not dispatched. Check the provider endpoint and network configuration.",
+  };
+  res.json({ status, message: messages[status] });
 });
 integrationsRouter.post(`${path}/smtp/test-email`, async (req, res) => {
   try {

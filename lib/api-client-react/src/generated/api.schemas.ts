@@ -687,6 +687,40 @@ export interface IntegrationUpdate {
   values: IntegrationUpdateValues;
 }
 
+export interface NotificationSmsTestInput {
+  /**
+     * @maxLength 16
+     * @pattern ^\+[1-9][0-9]{6,14}$
+     */
+  recipient: string;
+  /**
+     * @minLength 1
+     * @maxLength 1600
+     */
+  message: string;
+  /** @maxLength 50 */
+  senderId?: string;
+  /** @maxLength 50 */
+  dltEntityId?: string;
+  /** @maxLength 50 */
+  dltTemplateId?: string;
+}
+
+export type NotificationSmsTestResultStatus = typeof NotificationSmsTestResultStatus[keyof typeof NotificationSmsTestResultStatus];
+
+
+export const NotificationSmsTestResultStatus = {
+  provider_accepted: 'provider_accepted',
+  provider_rejected: 'provider_rejected',
+  delivery_unknown: 'delivery_unknown',
+  not_dispatched: 'not_dispatched',
+} as const;
+
+export interface NotificationSmsTestResult {
+  status: NotificationSmsTestResultStatus;
+  message: string;
+}
+
 export interface SmtpTestInput {
   /** @maxLength 254 */
   recipient: string;

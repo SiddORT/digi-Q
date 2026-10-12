@@ -6,6 +6,7 @@ import { AppDialog, useAppDialogClose } from "./AppDialog";
 import { FormActions } from "./FormActions";
 import { FormSection } from "./FormSection";
 import { PasswordInput } from "./PasswordInput";
+import { SecretField } from "./SecretField";
 import "./integration-settings.css";
 import { DEFAULT_MAPPING, parseStatuses, smsConfigurationValues, validateMapping, validateUrl, type SmsMapping } from "./sms-mapping";
 
@@ -48,11 +49,11 @@ function Editor({ revision, keys, onDone, onCancel, onDirtyChange, onBusyChange 
       </div></FormSection>
       {mode === "database" ? <>
         <FormSection title="Provider endpoint" grid={false}><div className="cf-form">
-          <div className="form-field"><label htmlFor="sms-url">API URL (NOTIFICATION_SMS_URL)</label>
+          <div className="form-field"><label htmlFor="sms-url">API URL</label>
             <input id="sms-url" type="text" inputMode="url" spellCheck={false} maxLength={2048} value={url} placeholder={saved("NOTIFICATION_SMS_URL") ? "Configured — leave blank to keep" : "https://api.provider.example/send"} onChange={e => setUrl(e.target.value)} data-testid="input-sms-url" />
             <small>HTTPS, port 443, public destination, no query string or credentials.</small>{urlError && <p role="alert" className="field-error" data-testid="error-sms-url">{urlError}</p>}</div>
-          <div className="form-field"><label htmlFor="sms-key">API key (NOTIFICATION_SMS_KEY, write-only)</label>
-            <PasswordInput id="sms-key" visibilityLabel="API key" autoComplete="off" spellCheck={false} maxLength={2048} value={apiKey} placeholder={saved("NOTIFICATION_SMS_KEY") ? "Configured — leave blank to keep" : "Enter a value"} onChange={e => setApiKey(e.target.value)} /></div>
+          <div className="form-field"><label htmlFor="sms-key">API key</label>
+            <SecretField id="sms-key" label="API key" testId="sms-key" configured={saved("NOTIFICATION_SMS_KEY")} value={apiKey} onChange={setApiKey} /></div>
         </div></FormSection>
         <FormSection title="Request mapping" grid={false}><details className="int-advanced" data-testid="details-sms-mapping"><summary>Advanced API mapping{mapTouched ? " (edited)" : ""}</summary><div className="cf-form">
           <p className="muted">A URL and key alone cannot suit every provider, so this describes a plain HTTPS POST. It is data only: no scripts, no other protocols, no multi-step or OAuth flows. Compatibility is confirmed only by a successful test.</p>
@@ -79,10 +80,11 @@ function Editor({ revision, keys, onDone, onCancel, onDirtyChange, onBusyChange 
   </form>;
 }
 
-export function NotificationSmsSettings({ onDirtyChange, onBusyChange }: { onDirtyChange?: (d: boolean) => void; onBusyChange?: (b: boolean) => void }) {
+export function NotificationSmsSettings({ onDirtyChange, onBusyChange, inline = false }: { inline?: boolean; onDirtyChange?: (d: boolean) => void; onBusyChange?: (b: boolean) => void }) {
   const query = useGetIntegrationSettings({ query: { queryKey: getGetIntegrationSettingsQueryKey(), staleTime: 30000 } });
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
+  const [formKey, setFormKey] = useState(0);
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -92,18 +94,19 @@ export function NotificationSmsSettings({ onDirtyChange, onBusyChange }: { onDir
   const parentBusy = useRef(onBusyChange); parentBusy.current = onBusyChange;
   useEffect(() => { parentBusy.current?.(busy); }, [busy]);
   const d = query.data; const r = d?.notificationSms;
-  return <section className="panel padded int-settings" aria-labelledby="sms-config-title" data-testid="panel-sms-config">
+  return <section className="panel padded int-settings cm-provider" aria-labelledby="sms-config-title" data-testid="panel-sms-config">
     <div className="int-head section-head"><h2 id="sms-config-title">SMS Provider <HelpTip text="Configurable HTTPS POST API. The key is encrypted and never displayed. Account security messages use Twilio separately and are unaffected." /></h2></div>
     {saved && <p role="status" className="notice">Configuration saved. No test message was sent; readiness is not proof of delivery.</p>}
     {query.isLoading && <p role="status" data-testid="status-sms-loading">Loading readiness…</p>}
     {query.isError && <p role="alert" className="error-box">SMS readiness is unavailable. <button type="button" className="button secondary" onClick={() => query.refetch()}>Retry</button></p>}
     {d && !r && <p role="note" className="notice" data-testid="status-sms-unavailable">SMS readiness was not reported by the server.</p>}
     {d && r && <div className="int-status"><div className="int-status-row">
-      <p data-testid="status-integration-notificationSms"><span className={`badge ${r.ready ? "" : "muted"}`}>{r.ready ? "Configuration ready" : "Configuration required"}</span> <span className="muted">Source: {r.source === "database" ? "encrypted website settings" : "server environment"}. Ready does not mean tested.</span></p>
-      <div className="row-actions"><button type="button" className="button small" disabled={!d.editable} onClick={() => { setSaved(false); setDirty(false); setEditing(true); }} data-testid="button-configure-notificationSms">Configure SMS</button></div></div>
-      <ul className="int-keys">{r.keys.map(k => <li key={k.key} data-testid={`status-key-${k.key}`}><code>{k.key}</code>: {k.status}</li>)}</ul>
+      <p data-testid="status-integration-notificationSms"><span className={`badge ${r.ready ? "" : "muted"}`}>{r.ready ? "Configuration ready" : "Configuration required"}</span> <span className="muted">{r.ready ? "Saved and ready to send." : "Add the API URL and key to enable SMS."} Ready does not mean tested.</span></p>
+      {!inline && <div className="row-actions"><button type="button" className="button small" disabled={!d.editable} onClick={() => { setSaved(false); setDirty(false); setEditing(true); }} data-testid="button-configure-notificationSms">Configure SMS</button></div>}</div>
+      <details className="cm-advanced" data-testid="details-sms-technical"><summary>Technical details</summary><ul className="int-keys">{r.keys.map(k => <li key={k.key} data-testid={`status-key-${k.key}`}><code>{k.key}</code>: {k.status}</li>)}</ul></details>
       {!d.editable && <p role="note" className="notice">Website editing is locked until the server encryption key is configured.</p>}
-      {editing && <AppDialog open variant="drawer" onClose={() => setEditing(false)} dirty={dirty} busy={busy} title="SMS provider configuration" description="Saving does not send a message.">
+      {inline && d.editable && <Editor key={`${formKey}:${r.revision ?? ""}`} revision={r.revision ?? null} keys={r.keys} onDirtyChange={setDirty} onBusyChange={setBusy} onCancel={() => { setDirty(false); setFormKey(k => k + 1); }} onDone={() => { setDirty(false); setSaved(true); setBusy(false); setFormKey(k => k + 1); void query.refetch(); void qc.invalidateQueries({ queryKey: getGetIntegrationSettingsQueryKey() }); }} />}
+      {!inline && editing && <AppDialog open variant="drawer" onClose={() => setEditing(false)} dirty={dirty} busy={busy} title="SMS provider configuration" description="Saving does not send a message.">
         <Editor revision={r.revision ?? null} keys={r.keys} onDirtyChange={setDirty} onBusyChange={setBusy} onCancel={() => setEditing(false)} onDone={() => { setDirty(false); setEditing(false); setSaved(true); setBusy(false); void query.refetch(); void qc.invalidateQueries({ queryKey: getGetIntegrationSettingsQueryKey() }); }} /></AppDialog>}
     </div>}
   </section>;

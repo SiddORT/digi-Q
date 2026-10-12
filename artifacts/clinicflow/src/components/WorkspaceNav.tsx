@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2, MapPin, Settings, ChevronDown, Clock3, QrCode, SlidersHorizontal, FileText, UserRound, Plus, ShieldCheck } from "lucide-react";
+import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2, MapPin, Settings, ChevronDown, Clock3, QrCode, SlidersHorizontal, FileText, UserRound, Plus, ShieldCheck, MessageSquare } from "lucide-react";
 import { title } from "../resources";
 
-const icons: Record<string, any> = { dashboard: LayoutDashboard, appointments: CalendarDays, queue: Activity, clinic: Building2, clinics: Building2, branches: MapPin, patients: UsersIcon, users: UsersIcon, settings: Settings, reports: FileText, audit: ShieldCheck, availability: Clock3, exceptions: CalendarDays, qrs: QrCode, masters: SlidersHorizontal, profile: UserRound, book: Plus, demo: QrCode, "system-users": UserRound };
+const icons: Record<string, any> = { dashboard: LayoutDashboard, appointments: CalendarDays, queue: Activity, clinic: Building2, clinics: Building2, branches: MapPin, patients: UsersIcon, users: UsersIcon, settings: Settings, reports: FileText, audit: ShieldCheck, availability: Clock3, exceptions: CalendarDays, qrs: QrCode, masters: SlidersHorizontal, profile: UserRound, book: Plus, demo: QrCode, "system-users": UserRound, communication: MessageSquare, templates: FileText };
 
 export function navLabel(p: string, role: string) {
-  if (p === "templates") return "Email templates";
+  if (p === "templates") return "Notification Templates";
+  if (p === "communication") return "Communication Settings";
   if (p === "permissions") return "Roles & Permissions";
   if (p === "integrations") return "Integrations";
   if (p === "users") return role === "admin" ? "Users" : "Staff";
@@ -22,7 +23,7 @@ const layout: Entry[] = [
   { kind: "link", page: "dashboard" }, { kind: "link", page: "book" }, { kind: "link", page: "appointments" }, { kind: "link", page: "queue" }, { kind: "link", page: "patients" },
   { kind: "link", page: "clinic" }, { kind: "link", page: "clinics" }, { kind: "link", page: "users" },
   { kind: "link", page: "availability" }, { kind: "link", page: "qrs" },
-  { kind: "link", page: "reports" }, { kind: "link", page: "settings" }, { kind: "link", page: "profile" },
+  { kind: "link", page: "reports" }, { kind: "link", page: "communication" }, { kind: "link", page: "templates" }, { kind: "link", page: "settings" }, { kind: "link", page: "profile" },
 ];
 
 export function WorkspaceNav({ navigation, role, page, onNavigate, collapsed = false }: { navigation: string[]; role: string; page: string; onNavigate: () => void; collapsed?: boolean }) {

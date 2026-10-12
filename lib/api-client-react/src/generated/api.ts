@@ -154,6 +154,8 @@ import type {
   NativeStaffLoginInput,
   NotificationList,
   NotificationReadInput,
+  NotificationSmsTestInput,
+  NotificationSmsTestResult,
   NotificationTemplateCatalog,
   NotificationTemplateSave,
   NotificationUnread,
@@ -1962,6 +1964,91 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getSendSmtpTestEmailMutationOptions(options));
+    }
+
+export const getSendNotificationSmsTestMessageUrl = () => {
+
+
+
+
+  return `/api/settings/integrations/notification-sms/test-message`
+}
+
+/**
+ * Super Admin only. Explicitly sends one test using saved notification SMS configuration, without activating clinic notifications.
+ */
+export const sendNotificationSmsTestMessage = async (notificationSmsTestInput: NotificationSmsTestInput, options?: Parameters<typeof customFetch>[1]): Promise<NotificationSmsTestResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<NotificationSmsTestResult>(getSendNotificationSmsTestMessageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(notificationSmsTestInput)
+  }
+);}
+
+
+
+
+
+export const getSendNotificationSmsTestMessageMutationKey = () => ['sendNotificationSmsTestMessage'] as const;
+
+export const getSendNotificationSmsTestMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendNotificationSmsTestMessage>>, TError,SendNotificationSmsTestMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendNotificationSmsTestMessage>>, TError,SendNotificationSmsTestMessageMutationVariables, TContext> => {
+
+const mutationKey = getSendNotificationSmsTestMessageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendNotificationSmsTestMessage>>, SendNotificationSmsTestMessageMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendNotificationSmsTestMessage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendNotificationSmsTestMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendNotificationSmsTestMessage>>>
+    export type SendNotificationSmsTestMessageMutationBody = BodyType<NotificationSmsTestInput>
+    export type SendNotificationSmsTestMessageMutationError = ErrorType<void>
+    export type SendNotificationSmsTestMessageMutationVariables = {data: BodyType<NotificationSmsTestInput>}
+
+    export const useSendNotificationSmsTestMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendNotificationSmsTestMessage>>, TError,SendNotificationSmsTestMessageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendNotificationSmsTestMessage>>,
+        TError,
+        SendNotificationSmsTestMessageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSendNotificationSmsTestMessageMutationOptions(options));
     }
 
 export const getDemoLoginUrl = () => {

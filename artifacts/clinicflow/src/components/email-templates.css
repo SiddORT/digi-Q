@@ -42,3 +42,9 @@
 .event-controls .ec-table th,.event-controls .ec-table td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--border,#e5e7eb)}
 .event-controls .ec-blocked{margin:6px 0 0;padding-left:18px}
 @media (max-width:767px){.event-controls .ec-table thead{display:none}.event-controls .ec-table tr{display:block;padding:8px 0}.event-controls .ec-table td{display:block;border:0;padding:3px 0}}
+
+/* Persistent template editor footer: 40px controls desktop, 44px mobile, 8/16/24 spacing. */
+.et-form>.et-actions{position:sticky;bottom:0;z-index:2;margin:24px -16px 0;padding:16px;background:var(--color-card,#fff);border-top:1px solid var(--color-border,rgba(0,0,0,.12));display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.et-form>.et-actions .button,.et-form>.et-actions button{min-height:40px}
+.int-inline-test{margin-top:24px;padding-top:16px;border-top:1px solid var(--color-border,rgba(0,0,0,.12));display:grid;gap:16px}
+@media (max-width:639px){.et-form>.et-actions .button,.et-form>.et-actions button{min-height:44px}}
