@@ -112,7 +112,7 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
             <button type="button" className="button secondary small" onClick={() => setEditing({ channel: r.channel, event, recipient: r.recipient })} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>
            </div></li>)}</ul></AccordionContent>
        </AccordionItem>)}</NotificationEventAccordion>}
-    {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title={`${titleCase(editing.event)} - ${editing.channel === "sms" ? "SMS" : "Email"} to ${label(editing.recipient)}`} description="Saving never sends a message.">
+    {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title="Edit Template" description={`${titleCase(editing.event)} / ${editing.channel === "sms" ? "SMS" : "EMAIL"} (${label(editing.recipient)})`}>
       <EmailTemplates key={`${editing.channel}|${editing.event}|${editing.recipient}|${clinicId}`} identity={identity} channel={editing.channel} fixed={{ clinicId, event: editing.event, recipient: editing.recipient as any }} onDirtyChange={setDirty} onBusyChange={setBusy} />
     </AppDialog>}
     <AppDialog open={discard} onClose={() => setDiscard(false)} title="Discard unsaved changes?">

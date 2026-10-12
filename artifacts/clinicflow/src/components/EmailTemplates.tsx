@@ -5,7 +5,8 @@ import { titleCase } from "../lib/title-case";
 import * as api from "@workspace/api-client-react";
 import { useGetNotificationTemplates, getGetNotificationTemplatesQueryKey, useSaveNotificationTemplate, useRequestLogoUpload, useCompleteLogoUpload } from "@workspace/api-client-react";
 import { logoFileError, putToSignedUrl, LOGO_TYPES } from "./logo-upload";
-import { AppDialog } from "./AppDialog";
+import { AppDialog, useAppDialogClose } from "./AppDialog";
+import { TemplateDrawerFields } from "./TemplateDrawerFields";
 import { FormField } from "./FormField";
 import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
@@ -76,6 +77,7 @@ const status = (e: any) => e?.status ?? e?.response?.status;
 export const SMS_BODY_MAX = 1600;
 export function EmailTemplates({ identity, channel = "email", onDirtyChange, onBusyChange, fixed }: { onBusyChange?: (busy: boolean) => void; identity: api.Identity; channel?: "email" | "sms"; onDirtyChange?: (dirty: boolean) => void; fixed?: { clinicId: string; event: string; recipient: Recipient } }) {
   const sms = channel === "sms";
+  const dialogClose = useAppDialogClose();
   const superAdmin = identity.user?.role === "superAdmin";
   const [clinicId, setClinicId] = useState(fixed?.clinicId ?? "");
   const [event, setEvent] = useState<string>(fixed?.event ?? "booking");
@@ -198,8 +200,26 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
   const isOn = form ? (form.enabled ?? recipient === "patient") : false;
   const preview = form ? { subject: previewText(`${form.prefix ? form.prefix + " " : ""}${form.subject}`, scopeName), body: previewText(form.body, scopeName), footer: previewText(form.footer, scopeName) } : null;
 
+  const renderField = ([k, label, max, help]: [TextKey, string, number, string]) => form &&  <FormField key={k} label={label} required={k === "subject" || k === "body"} optional={k !== "subject" && k !== "body"} helper={help} error={(errors as any)[k]}>
+            {(a) => k === "body" || k === "footer"
+              ? <textarea {...a} rows={k === "body" ? (sms ? 5 : 10) : 3} maxLength={max} value={form[k] ?? ""} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />
+              : k === "logoUrl" ? <div className="et-logo-field">
+                <input {...a} type="text" inputMode="url" maxLength={max} value={form[k]} onChange={e => { set(k, e.target.value); setShowLogo(false); }} placeholder="https://… or upload below" data-testid="input-logoUrl" spellCheck={false} disabled={uploading} />
+                <div className="et-actions">
+                  <label className="button secondary" data-testid="label-logo-file">{uploading ? "Uploading…" : "Choose Image File"}
+                    <input type="file" hidden accept={LOGO_TYPES.join(",")} disabled={uploading} onChange={e => { void onLogoFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-logo-file" /></label>
+                  {uploading && <button type="button" className="button secondary" onClick={() => { uploadAbort.current?.abort(); setUpload({ state: "idle", pct: 0, msg: "Upload cancelled." }); }} data-testid="button-cancel-upload">Cancel Upload</button>}
+                  {form.logoUrl && !uploading && <button type="button" className="button secondary" onClick={() => { set(k, ""); setUpload({ state: "idle", pct: 0, msg: "" }); }} data-testid="button-remove-logo">Remove Logo</button>}
+                </div>
+                <small>PNG, JPEG or WebP · max 2 MB · max 2048×2048 px (checked by the server)</small>
+                {upload.state === "uploading" && <progress max={100} value={upload.pct} aria-label="Upload progress" data-testid="progress-logo" />}
+                {upload.msg && <p role={upload.state === "error" ? "alert" : "status"} className={upload.state === "error" ? "error-box" : "et-notice"} data-testid="status-logo-upload">{upload.msg}</p>}
+              </div>
+              : <input {...a} type="text" maxLength={max} value={form[k] ?? ""} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />}
+          </FormField>;
+  const drawerFooter = (cancelDisabled: boolean) => <div className="et-drawer-footer"><button type="button" className="button secondary" onClick={() => dialogClose ? dialogClose() : undefined} disabled={cancelDisabled} data-testid="button-cancel">Cancel</button><button type="submit" className="button" disabled={busyNow || invalid || conflict} data-testid="button-publish">{save.isPending && confirm === "publish" ? "Saving…" : "Save Template"}</button></div>;
   return <section className="email-templates" data-testid="email-templates">
-    <p className="et-intro muted">Edit the wording each recipient receives per event. Saving here never sends {sms ? "an SMS" : "an email"}.{sms && <> Enabled templates stay off for every recipient until you switch them on; a draft may be incomplete, but publishing an enabled template requires DLT IDs when your provider mapping requires them.</>} <span role="note" className="et-limit-tip" data-testid="text-delivery-limit"><HelpTip text="Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically." /></span></p>
+    {!fixed && <p className="et-intro muted">Edit the wording each recipient receives per event. Saving here never sends {sms ? "an SMS" : "an email"}.{sms && <> Enabled templates stay off for every recipient until you switch them on; a draft may be incomplete, but publishing an enabled template requires DLT IDs when your provider mapping requires them.</>} <span role="note" className="et-limit-tip" data-testid="text-delivery-limit"><HelpTip text="Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically." /></span></p>}
     {!fixed && <div className="et-scope">
       {superAdmin ? <FormField label="Scope" optional helper="Leave empty to edit platform defaults.">
         {(a) => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => guard(() => { setClinicId(v); resetLocal(); })} placeholder="Platform defaults" />}
@@ -216,12 +236,31 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
       </FormField>
     </div>}
 
-    {!sms && identity.user?.role === "clinicAdmin" && clinicId && <BookingMailOutcomes key={`${identity.user.id}:${clinicId}`} actorId={identity.user.id} clinicId={clinicId} />}
+    {!fixed && !sms && identity.user?.role === "clinicAdmin" && clinicId && <BookingMailOutcomes key={`${identity.user.id}:${clinicId}`} actorId={identity.user.id} clinicId={clinicId} />}
 
     {!enabled ? <div className="et-empty" data-testid="state-select-clinic">Select a clinic group to view its templates.</div>
       : catalog.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : catalog.isError ? <div role="alert" className="error-box" data-testid="state-error">Templates could not be loaded. <button type="button" onClick={() => catalog.refetch()} data-testid="button-retry">Retry</button></div>
       : !item || !form ? <div className="et-empty" data-testid="state-empty">This event has no template for the selected scope.</div>
+      : fixed ? <form className="et-drawer" onSubmit={e => { e.preventDefault(); setConfirm("publish"); }}>
+        <TemplateDrawerFields form={form} templateKey={item.event} savedDltTemplateId={item.content.dltTemplateId} sms={sms} errors={errors} variables={variables} scopeName={scopeName} set={set}
+          active={<div className="td-active" data-testid="row-enabled"><span>Active</span><StatusSwitch active={isOn} onChange={setEnabled} disabled={save.isPending} label={`Active: send ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s`} testId="input-enabled"><span className="sr-only">{isOn ? "On" : "Off"}</span></StatusSwitch></div>} />
+        {unknown.length > 0 && <p role="alert" className="error-box">Unknown variables: {unknown.join(", ")}. Use only the variables listed above.</p>}
+        {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Someone else changed this template. Your edits are kept here.
+          <button type="button" onClick={() => { resetLocal(); void catalog.refetch(); }} data-testid="button-reload">Discard My Edits and Reload</button></div>}
+        {save.isError && !conflict && <p role="alert" className="error-box">The template was not saved. Check the fields and try again.</p>}
+        {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
+        <details className="td-adv" data-testid="details-advanced"><summary>Advanced</summary>
+          {!sms && identity.user?.role === "clinicAdmin" && clinicId && <BookingMailOutcomes key={`${identity.user.id}:${clinicId}`} actorId={identity.user.id} clinicId={clinicId} />}
+          {(sms ? SMS_FIELDS.filter(f => f[0] === "senderId") : FIELDS.filter(f => f[0] !== "subject" && f[0] !== "body")).map(renderField)}
+          <div className="et-actions">
+            <button type="button" className="button secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save Draft</button>
+            <button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to Default</button>
+          </div>
+          {isRealSuperAdmin(identity.user) && <EventTemplateTest key={`${channel}|${clinicId}|${event}|${recipient}`} channel={channel} event={event} recipient={recipient} clinicId={clinicId} revision={editBase.current?.revision ?? item.revision} content={sms ? { ...form, subject: form.subject.trim() || item.title, prefix: "", footer: "", logoUrl: "" } : form} />}
+        </details>
+        {drawerFooter(save.isPending)}
+      </form>
       : <div className="et-grid">
         <form className="panel padded et-form" onSubmit={e => { e.preventDefault(); setConfirm("publish"); }}>
           <div className="et-meta" data-testid="text-template-meta">
@@ -235,23 +274,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
             <StatusSwitch active={isOn} onChange={setEnabled} disabled={save.isPending} label={`Send ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s for this event`} testId="input-enabled">Send this {sms ? "SMS" : "email"} to {recipientInfo.label.toLowerCase()}s for this event ({isOn ? "On" : "Off"})</StatusSwitch>
             <HelpTip text={recipient === "patient" ? "Turning this off stops the patient email for this event." : `Off by default. Publishing with this on adds real emails to ${recipientInfo.who}. An address that is already a target for this event receives one email, not duplicates.`}/>
           </div>
-          {(sms ? SMS_FIELDS : FIELDS).map(([k, label, max, help]) => <FormField key={k} label={label} required={k === "subject" || k === "body"} optional={k !== "subject" && k !== "body"} helper={help} error={(errors as any)[k]}>
-            {(a) => k === "body" || k === "footer"
-              ? <textarea {...a} rows={k === "body" ? (sms ? 5 : 10) : 3} maxLength={max} value={form[k] ?? ""} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />
-              : k === "logoUrl" ? <div className="et-logo-field">
-                <input {...a} type="text" inputMode="url" maxLength={max} value={form[k]} onChange={e => { set(k, e.target.value); setShowLogo(false); }} placeholder="https://… or upload below" data-testid="input-logoUrl" spellCheck={false} disabled={uploading} />
-                <div className="et-actions">
-                  <label className="button secondary" data-testid="label-logo-file">{uploading ? "Uploading…" : "Choose Image File"}
-                    <input type="file" hidden accept={LOGO_TYPES.join(",")} disabled={uploading} onChange={e => { void onLogoFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-logo-file" /></label>
-                  {uploading && <button type="button" className="button secondary" onClick={() => { uploadAbort.current?.abort(); setUpload({ state: "idle", pct: 0, msg: "Upload cancelled." }); }} data-testid="button-cancel-upload">Cancel Upload</button>}
-                  {form.logoUrl && !uploading && <button type="button" className="button secondary" onClick={() => { set(k, ""); setUpload({ state: "idle", pct: 0, msg: "" }); }} data-testid="button-remove-logo">Remove Logo</button>}
-                </div>
-                <small>PNG, JPEG or WebP · max 2 MB · max 2048×2048 px (checked by the server)</small>
-                {upload.state === "uploading" && <progress max={100} value={upload.pct} aria-label="Upload progress" data-testid="progress-logo" />}
-                {upload.msg && <p role={upload.state === "error" ? "alert" : "status"} className={upload.state === "error" ? "error-box" : "et-notice"} data-testid="status-logo-upload">{upload.msg}</p>}
-              </div>
-              : <input {...a} type="text" maxLength={max} value={form[k] ?? ""} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />}
-          </FormField>)}
+          {(sms ? SMS_FIELDS : FIELDS).map(renderField)}
           <div className="et-vars" data-testid="list-variables">
             <span>Available Variables</span>
             {variables.map(v => <button type="button" key={v} className="et-var" onClick={() => set("body", `${form.body}{{${v}}}`)} data-testid={`button-variable-${v}`}>{`{{${v}}}`}</button>)}

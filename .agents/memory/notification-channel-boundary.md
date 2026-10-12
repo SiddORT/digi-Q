@@ -32,3 +32,14 @@ or sign-in, invitations and recovery.
 
 **How to apply:** Apply each channel's opt-out inside its own preparation/dispatch path,
 after the shared clinic gate. Verify that another enabled channel still queues when one is off.
+
+SMS/email template drawers should remain simple like the user's supplied references:
+template key/variables, Active, email Subject/Body or SMS DLT registration/Body, and
+Cancel/Save Template at the bottom.
+
+**Why:** The user explicitly requested simpler drawers, not a change to template delivery
+or an HTML-authoring feature.
+
+**How to apply:** Keep optional branding, sender overrides and secondary actions under
+collapsed Advanced controls. Preserve DigiQ branding, supported double-brace variables,
+plain-text email escaping, scope/revision checks and save/discard confirmation.
