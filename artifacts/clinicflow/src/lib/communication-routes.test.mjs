@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
 import { communicationRedirect, communicationTab, filterRows } from "./communication-routes.ts";
 test("legacy settings areas redirect", () => {
   assert.equal(communicationRedirect("superAdmin", "sms"), "/admin/communication?tab=sms");
@@ -8,6 +9,13 @@ test("legacy settings areas redirect", () => {
   assert.equal(communicationRedirect("clinicAdmin", "templates"), "/admin/templates");
   assert.equal(communicationRedirect("clinicAdmin", "sms"), null);
   assert.equal(communicationRedirect("superAdmin", "platform"), null);
+  assert.equal(communicationRedirect("superAdmin", null), null);
+});
+test("profile Settings opens general settings, not communication settings", () => {
+  const shell = readFileSync(new URL("../components/WorkspaceShell.tsx", import.meta.url), "utf8");
+  const settingsLink = shell.match(/^.*<Link\b[^\n]*data-testid="menu-settings"[^\n]*$/m)?.[0];
+  assert.ok(settingsLink);
+  assert.match(settingsLink, /href="\/admin\/settings"/);
 });
 test("tab and filters", () => {
   assert.equal(communicationTab("x"), "sms");

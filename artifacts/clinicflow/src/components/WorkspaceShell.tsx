@@ -81,7 +81,7 @@ export function ProfileMenu({ name, roleLabel, role, actualRole, navigation, pag
       <WorkspaceScope role={role} roleLabel={roleLabel} open={open} />
       {quickActions(role, navigation).map(a => { const Icon = actionIcon[a.id] || Plus; return a.inline ? <button key={a.id} type="button" role="menuitem" onClick={() => { setOpen(false); openQrInline(); }} data-testid={`menu-${a.id}`}><Icon size={15} aria-hidden />{a.label}</button> : <Link key={a.id} role="menuitem" href={a.href} onClick={() => setOpen(false)} data-testid={`menu-${a.id}`}><Icon size={15} aria-hidden />{a.label}</Link>; })}
       {navigation.includes(page) && <button type="button" role="menuitem" aria-pressed={fav} onClick={() => toggleFavorite(page)} data-testid="menu-toggle-favorite"><Star size={15} fill={fav ? "currentColor" : "none"} aria-hidden />{fav ? "Remove page from favorites" : "Add page to favorites"}</button>}
-      {actualRole === "superAdmin" && <Link role="menuitem" href="/admin/communication?tab=sms" onClick={() => setOpen(false)} data-testid="menu-settings"><Settings size={15} aria-hidden />Settings</Link>}
+      {actualRole === "superAdmin" && <Link role="menuitem" href="/admin/settings" onClick={() => setOpen(false)} data-testid="menu-settings"><Settings size={15} aria-hidden />Settings</Link>}
       <button type="button" role="menuitem" onClick={() => { setOpen(false); onSignOut(); }} data-testid="menu-signout"><LogOut size={15} aria-hidden />Sign Out</button>
     </div>}
   </div>;
