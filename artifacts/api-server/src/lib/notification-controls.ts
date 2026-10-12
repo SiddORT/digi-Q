@@ -31,6 +31,7 @@ export async function eventControls(user:any,clinicId?:string) {
     const reasons:string[]=[];
     if(!(channel==="sms"?readiness.notificationSms:readiness.smtp).ready)reasons.push(`Configure ${channel==="sms"?"SMS API":"SMTP"} on the ${channel==="sms"?"SMS":"Email"} page`);
     if(channel==="sms"&&readiness.notificationSms.notificationsEnabled===false)reasons.push("SMS notifications are disabled in Communication Settings");
+    if(channel==="email"&&readiness.smtp.notificationsEnabled===false)reasons.push("Email notifications are disabled in Communication Settings");
     const sms=template.content as SmsTemplateContent;
     if(channel==="sms"&&dltRequired&&!((sms.senderId||providerSender)&&(sms.dltEntityId||providerEntity)&&sms.dltTemplateId))reasons.push("Configure Sender and Entity IDs, and publish a DLT Template ID for this event");
     if(gate===false)reasons.push("Enable the clinic-wide notification gate in Clinic settings (not changed here)");

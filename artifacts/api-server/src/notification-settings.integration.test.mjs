@@ -34,7 +34,7 @@ before(async()=>{
     const conn=context.getStore()||h.db,value=conn[key];
     return typeof value==="function"?value.bind(conn):value;
   }});
-  await build({stdin:{contents:`export * from "./lib/notification-sms-transport"; export * from "./lib/integration-vault";
+  await build({stdin:{contents:`export * from "./lib/notification-sms-transport"; export * from "./lib/integration-vault"; export * from "./lib/integration-config";
     export * from "./lib/notification-templates"; export * from "./lib/notification-template-store";
     export * from "./lib/notification-controls"; export * from "./lib/notification-sms-outbox";
     export * from "./lib/notification-outbox"; export * from "./lib/store"; export * from "@workspace/db";
@@ -57,6 +57,31 @@ before(async()=>{
   api=await import(bundle);
 });
 after(async()=>{await h?.close();await rm(bundle,{force:true});delete globalThis.notificationSettingsDb;});
+test("email form saves its name and optional switch without changing security SMTP or replaying pending mail",async()=>{
+  const original=await api.resolvedIntegration("smtp");
+  await h.control.query("insert into settings(id,data) values('mail-outbox:channel-disable-fixture',$1)",[JSON.stringify({state:"pending",dueAt:0})]);
+  await api.saveIntegration("smtp",{SMTP_NOTIFICATIONS_ENABLED:"false",SMTP_FROM_NAME:"DigiQ Clinic"},original.revision,"database",sa.id);
+  try{
+    const current=await api.resolvedIntegration("smtp");
+    assert.equal(api.smtpConfig(current.env).from,'"DigiQ Clinic" <sender@example.invalid>');
+    assert.equal(api.emailNotificationsEnabled(current.env),false);
+    const readiness=(await api.integrationSettings()).smtp;
+    assert.equal(readiness.notificationsEnabled,false);assert.equal(readiness.fromName,"DigiQ Clinic");assert.equal(readiness.ready,true);
+    for(const secret of ["fixture-user","fixture-pass"])assert.equal(JSON.stringify(readiness).includes(secret),false);
+    assert.equal((await h.control.query("select data from settings where id='mail-outbox:channel-disable-fixture'")).rows[0].data.state,"disabled");
+    const before=(await h.control.query("select count(*)::int count from settings where id like 'mail-outbox:%'")).rows[0].count;
+    await api.enqueueEvent(h.db,"booking",{id:"disabled-email-fixture",clinicId:"c"});
+    assert.equal((await h.control.query("select count(*)::int count from settings where id like 'mail-outbox:%'")).rows[0].count,before);
+    await api.saveIntegration("smtp",{SMTP_NOTIFICATIONS_ENABLED:"true",SMTP_FROM_NAME:""},current.revision,"database",sa.id);
+    assert.equal(api.smtpConfig((await api.resolvedIntegration("smtp")).env).from,"sender@example.invalid");
+    let sent=0;await api.processNotifications(h.db,async()=>{sent++;});
+    assert.equal(sent,0);
+  }finally{
+    const latest=await api.resolvedIntegration("smtp");
+    await api.saveIntegration("smtp",{},latest.revision,"environment",sa.id);
+    await h.control.query("delete from settings where id='mail-outbox:channel-disable-fixture'");
+  }
+});
 test("screenshot provider fields persist privately and the disabled channel neither captures nor replays SMS jobs",async()=>{
   const original=await api.resolvedIntegration("notificationSms");
   const values={

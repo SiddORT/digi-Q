@@ -648,6 +648,12 @@ export interface IntegrationReadiness {
   notificationsEnabled?: boolean;
   apiUrl?: string;
   statusApiUrl?: string;
+  smtpHost?: string;
+  smtpPort?: number;
+  fromEmail?: string;
+  fromName?: string;
+  useTls?: boolean;
+  useSsl?: boolean;
   keys: IntegrationKeyStatus[];
 }
 

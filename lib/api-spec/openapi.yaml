@@ -1768,6 +1768,12 @@ components:
         notificationsEnabled: { type: boolean }
         apiUrl: { type: string }
         statusApiUrl: { type: string }
+        smtpHost: { type: string }
+        smtpPort: { type: integer }
+        fromEmail: { type: string }
+        fromName: { type: string }
+        useTls: { type: boolean }
+        useSsl: { type: boolean }
         keys:
           type: array
           items: { $ref: "#/components/schemas/IntegrationKeyStatus" }

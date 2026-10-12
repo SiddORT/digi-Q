@@ -75,3 +75,20 @@ test("actual legacyDestination redirects old settings areas to the new pages and
   assert.equal(d("templates", "superAdmin", ""), null);
   assert.equal(d("templates", "clinicAdmin", ""), null);
 });
+test("email panel: binding, no casts, guards, write-only credentials, confirmed test", () => {
+  const e = src("EmailProviderPanel.tsx"), cs = src("CommunicationSettings.tsx");
+  assert.ok(!/as never|as unknown as/.test(e));
+  assert.match(cs, /<EmailProviderPanel[^>]*onDirtyChange=\{mark\("smtp"\)\}[^>]*onBusyChange=\{markBusy\("smtp"\)\}/);
+  for (const k of ["SMTP_HOST", "SMTP_PORT", "SMTP_FROM\\b", "SMTP_FROM_NAME", "SMTP_USER", "SMTP_PASSWORD", "SMTP_SECURE", "SMTP_REQUIRE_TLS", "SMTP_NOTIFICATIONS_ENABLED"]) assert.match(e, new RegExp(k));
+  assert.match(e, /if \(user\) v\.SMTP_USER = user/); assert.match(e, /if \(pass\) v\.SMTP_PASSWORD = pass/);
+  assert.match(e, /f\.name !== base\.fromName \|\| f\.from !== base\.fromEmail\) v\.SMTP_FROM_NAME/);
+  assert.match(e, /!saved\("SMTP_PORT"\)\) v\.SMTP_PORT/);
+  assert.match(e, /set\(e\.target\.checked \? \{ tls: true, ssl: false \}/); assert.match(e, /set\(e\.target\.checked \? \{ ssl: true, tls: false \}/);
+  assert.match(e, /Plain SMTP is not allowed/);
+  assert.match(e, /setQueryData\([^)]*\), next\);[\s\S]*invalidateQueries/);
+  assert.ok(!/onDirty\(false\)|dr\.current\?\.\(false\);?\s*\}\s*\)/.test(e.split("doSave")[1] ?? ""));
+  assert.match(e, /if \(mode !== "database"\) return v;/);
+  assert.match(e, /const runTest = async \(\) => \{\s*if \(!canTest\) return;\s*if \(!await confirm\.ask/);
+  assert.match(e, /canTest = ready &&/); assert.ok(!/canTest[^;]*editable/.test(e));
+  assert.match(e, /Username is configured|\$\{noun\} is configured/); assert.match(e, /Replace \$\{label\}/);
+});

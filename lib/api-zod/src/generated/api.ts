@@ -621,6 +621,12 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "notificationsEnabled": zod.boolean().optional(),
   "apiUrl": zod.string().optional(),
   "statusApiUrl": zod.string().optional(),
+  "smtpHost": zod.string().optional(),
+  "smtpPort": zod.number().int().optional(),
+  "fromEmail": zod.string().optional(),
+  "fromName": zod.string().optional(),
+  "useTls": zod.boolean().optional(),
+  "useSsl": zod.boolean().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -633,6 +639,12 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "notificationsEnabled": zod.boolean().optional(),
   "apiUrl": zod.string().optional(),
   "statusApiUrl": zod.string().optional(),
+  "smtpHost": zod.string().optional(),
+  "smtpPort": zod.number().int().optional(),
+  "fromEmail": zod.string().optional(),
+  "fromName": zod.string().optional(),
+  "useTls": zod.boolean().optional(),
+  "useSsl": zod.boolean().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -645,6 +657,12 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "notificationsEnabled": zod.boolean().optional(),
   "apiUrl": zod.string().optional(),
   "statusApiUrl": zod.string().optional(),
+  "smtpHost": zod.string().optional(),
+  "smtpPort": zod.number().int().optional(),
+  "fromEmail": zod.string().optional(),
+  "fromName": zod.string().optional(),
+  "useTls": zod.boolean().optional(),
+  "useSsl": zod.boolean().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -665,6 +683,12 @@ export const GetIntegrationSettingsResponse = zod.object({
   "notificationsEnabled": zod.boolean().optional(),
   "apiUrl": zod.string().optional(),
   "statusApiUrl": zod.string().optional(),
+  "smtpHost": zod.string().optional(),
+  "smtpPort": zod.number().int().optional(),
+  "fromEmail": zod.string().optional(),
+  "fromName": zod.string().optional(),
+  "useTls": zod.boolean().optional(),
+  "useSsl": zod.boolean().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -677,6 +701,12 @@ export const GetIntegrationSettingsResponse = zod.object({
   "notificationsEnabled": zod.boolean().optional(),
   "apiUrl": zod.string().optional(),
   "statusApiUrl": zod.string().optional(),
+  "smtpHost": zod.string().optional(),
+  "smtpPort": zod.number().int().optional(),
+  "fromEmail": zod.string().optional(),
+  "fromName": zod.string().optional(),
+  "useTls": zod.boolean().optional(),
+  "useSsl": zod.boolean().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
@@ -689,6 +719,12 @@ export const GetIntegrationSettingsResponse = zod.object({
   "notificationsEnabled": zod.boolean().optional(),
   "apiUrl": zod.string().optional(),
   "statusApiUrl": zod.string().optional(),
+  "smtpHost": zod.string().optional(),
+  "smtpPort": zod.number().int().optional(),
+  "fromEmail": zod.string().optional(),
+  "fromName": zod.string().optional(),
+  "useTls": zod.boolean().optional(),
+  "useSsl": zod.boolean().optional(),
   "keys": zod.array(zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])

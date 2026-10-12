@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useSearch } from "wouter";
 import { useWorkspaceLeaveGuard } from "../lib/use-workspace-leave-guard";
-import { IntegrationSettings } from "./IntegrationSettings";
+import { EmailProviderPanel } from "./EmailProviderPanel";
 import { NotificationSmsSettings } from "./NotificationSmsSettings";
 import { WorkspaceTabs } from "../clinic";
 import { communicationTab } from "../lib/communication-routes";
@@ -38,12 +38,11 @@ export function CommunicationSettings() {
   };
   const tabs = [{ id: "sms", label: "SMS Settings" }, { id: "email", label: "Email Settings" }];
   return <>{confirm.dialog}
-    {tab !== "sms" && <p className="listing-hint">Provider connections only. Email notifications being off never disables SMTP used for sign-in codes, invitations and recovery. Message wording and activation are in Notification Templates.</p>}
     <WorkspaceTabs tabs={tabs} area={tab} onSelect={id => void select(id)} label="Communication settings" />
     <div hidden={tab !== "sms"} data-testid="panel-communication-sms">
       <NotificationSmsSettings key={`sms-${resetN}`} inline onDirtyChange={mark("sms")} onBusyChange={markBusy("sms")} />
     </div>
-    <div hidden={tab !== "email"} data-testid="panel-communication-email"><IntegrationSettings key={`smtp-${resetN}`} fixedService="smtp" onDirtyChange={mark("smtp")} onBusyChange={markBusy("smtp")} /></div>
+    <div hidden={tab !== "email"} data-testid="panel-communication-email"><EmailProviderPanel key={`smtp-${resetN}`} onDirtyChange={mark("smtp")} onBusyChange={markBusy("smtp")} /></div>
   </>;
 }
 export default CommunicationSettings;

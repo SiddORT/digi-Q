@@ -44,3 +44,14 @@ security verification. The status URL is configuration, not evidence of delivere
 **How to apply:** Keep HTTPS/SSRF protections and explicit test confirmation. Provider
 Sender/Entity defaults must be honored consistently by publish validation, readiness and
 dispatch, while event-specific metadata takes precedence.
+
+The user also requested Email Settings “as it is” in the provided SMTP screenshot:
+compact Host/Port and From Email/From Name rows, TLS/SSL choices, configured
+credentials with Replace, and a shared Save/Test footer.
+
+**Why:** This is a reference-matched provider form, not permission to copy another
+business's sender identity, enable plaintext SMTP, or disable account-security emails.
+
+**How to apply:** Keep DigiQ branding and actual saved non-secret values. Require
+STARTTLS or implicit SSL. Optional-email activation stays separate from SMTP availability
+for sign-in, invitations and recovery; tests require explicit confirmation.

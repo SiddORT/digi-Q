@@ -116,11 +116,15 @@ test("connection checks and storage configuration remain admin-only and checks n
   assert.ok(!JSON.stringify(failed).includes("fixture-password"));
   globalThis.integrationFailure = false;
 });
-test("readiness contains key names/statuses only; invalid and missing configuration", async () => {
+test("SMTP public form values are authorized; credentials stay write-only and invalid configurations fail", async () => {
   const result = await request("superAdmin");
   assert.equal(result.status, 200);
   assert.equal(result.body.smtp.ready, true);
-  for (const value of Object.values(env)) assert.ok(!JSON.stringify(result.body).includes(value));
+  for (const value of [env.SMTP_USER,env.SMTP_PASSWORD]) assert.ok(!JSON.stringify(result.body).includes(value));
+  assert.equal(result.body.smtp.smtpHost,env.SMTP_HOST);
+  assert.equal(result.body.smtp.smtpPort,587);
+  assert.equal(result.body.smtp.fromEmail,"sender@example.invalid");
+  assert.equal(result.body.smtp.fromName,"DigiQ Doctors");
   assert.equal(api.integrationReadiness({}).smtp.ready, false);
   for (const patch of [{ SMTP_PORT: "0" }, { SMTP_PORT: "1.5" }, { SMTP_FROM: "a@example.invalid\r\nBcc: x@y.invalid" }, { SMTP_REQUIRE_TLS: "false" }, { SMTP_SECURE: "yes" }])
     assert.throws(() => api.smtpConfig({ ...env, ...patch }), { code: "EMAIL_UNCONFIGURED" });

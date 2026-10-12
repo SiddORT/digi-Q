@@ -9,6 +9,17 @@ Use a fresh isolated browser context per role, explicitly select the intended fi
 
 **How to apply:** Compare loaded/signed-in state, the intended versus actual non-secret user identifier, and the mapped application role. Do not record cookies, JWTs, passwords, or other credentials. Keep API-authenticated and browser-authenticated verification results distinct.
 
+Browser-local identity fixtures must cover the complete startup request set, not just
+the identity/status probe.
+
+**Why:** A provider-form pass kept returning to sign-in even though its manual status
+probe returned a fictional Super Admin. Unhandled settings/dashboard requests returned
+401 during SPA bootstrap and invalidated that fictional session.
+
+**How to apply:** Ground response shapes in the app contract and install context-level
+routes before creating/loading pages. Check actual startup responses. Report this as
+fixture-backed UI verification, never proof of native sign-in or server authorization.
+
 Confirm the observation tool is capturing the same page being driven, and recheck identity after helper reattachment.
 
 **Why:** A multi-page acceptance run drove the patient page while screenshots still captured the original admin page. Reattaching the helper later produced an unmapped identity instead of the intended existing fixture. A helper/raw-probe context mismatch also produced misleading 401 evidence while the observable app subsequently authenticated successfully.

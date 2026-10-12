@@ -6,7 +6,8 @@ import { isClinicalMember } from "./clinical-membership";
 import { resolvedTemplate } from "./notification-template-store";
 import { sendAuthEmail } from "./auth-email";
 import { confirmationText } from "./appointment-confirmation";
-import { validEmailAddress } from "./integration-config";
+import { validEmailAddress, emailNotificationsEnabled } from "./integration-config";
+import { resolvedIntegration } from "./integration-vault";
 import { createHash } from "node:crypto";
 import { assert } from "./http";
 const emailKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
@@ -42,6 +43,7 @@ export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {
   if(process.env.NODE_ENV==="development")return;
+  if (!emailNotificationsEnabled((await resolvedIntegration("smtp", conn)).env)) return;
   if (!(await getSettings(conn, row.clinicId)).notificationsEnabled) return;
   if (typeof previousDetails === "object") previousDetails = confirmationText(previousDetails, await one(clinics, row.clinicId, conn)).replace("Your appointment is confirmed.", "Previous visit details:");
   // Each channel has its own savepoint. Both successful preparations survive
@@ -140,7 +142,8 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       const data = fresh.data;
       if (data.state !== "pending" || data.dueAt > now) return null;
       const update = async (patch: any) => tx.update(settings).set({ data: { ...data, ...patch } }).where(eq(settings.id, record.id));
-      if (!(await getSettings(tx, data.clinicId)).notificationsEnabled) { await update({ state: "disabled" }); return null; }
+      if (!(await getSettings(tx, data.clinicId)).notificationsEnabled ||
+          !emailNotificationsEnabled((await resolvedIntegration("smtp", tx)).env)) { await update({ state: "disabled" }); return null; }
       const clinic = await one(clinics, data.clinicId, tx);
       const current = data.appointmentId ? await one(appointments, data.appointmentId, tx) : null;
       if (data.appointmentId && !current) { await update({ state: "obsolete" }); return null; }
