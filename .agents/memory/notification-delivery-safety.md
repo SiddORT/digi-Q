@@ -26,3 +26,13 @@ Additional staff recipient groups start disabled except the explicitly approved 
 **Why:** The user approved one owning-admin booking notification/email for every creation entry point, including self-created bookings, without changing live settings or unrelated recipient groups. Other expansions still need explicit publication.
 
 **How to apply:** Preserve primary-recipient compatibility and address-based deduplication when adding recipient groups or changing role assignments.
+
+Queued reminders have a five-minute dispatch allowance beyond the narrow scheduling
+window; this must not widen event capture or replay a historical backlog.
+
+**Why:** Independent channel polling can run before a scheduler transaction commits,
+so the next poll may miss the original capture window even for a correctly queued job.
+
+**How to apply:** Retain a bounded dispatch allowance while rechecking current status,
+check-in state, appointment revision, session timezone, channel policy and recipient
+eligibility. Expire older reminders and never automatically resend uncertain dispatch.

@@ -26,6 +26,11 @@ Both modes use database-revocable cookies with a **fixed 12-hour lifetime**, `Ht
 
 ## Super Admin checks
 
+The SMS, consolidated Email and Event controls settings are documented in
+[`notification-settings.md`](notification-settings.md). Notification SMS uses a separate
+encrypted `notificationSms` provider and declarative HTTP mapping; the original Twilio
+configuration remains exclusively for account/mobile verification.
+
 Platform settings contains a masked configuration editor, readiness panel and an explicit SMTP test form:
 
 - `GET /api/settings/integrations`: authenticated active Super Admin only; returns known key names and configured/missing/invalid/default statuses, never values or addresses. Readiness checks syntax/presence, not connectivity.

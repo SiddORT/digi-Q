@@ -2,6 +2,7 @@ import { db, settings, appointments, clinics, patients, users, doctors, assignme
 import { eq, sql } from "drizzle-orm";
 import { one, getSettings } from "./store";
 import { templateRecipients, defaultRecipient, renderNotification, type TemplateEvent } from "./notification-templates";
+import { isClinicalMember } from "./clinical-membership";
 import { resolvedTemplate } from "./notification-template-store";
 import { sendAuthEmail } from "./auth-email";
 import { confirmationText } from "./appointment-confirmation";
@@ -26,7 +27,7 @@ export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, 
       and s.data->>'event' = 'booking' and s.data->>'recipientGroup' = 'clinicAdmin'
     order by (s.data->>'createdAt')::bigint desc nulls last, s.id desc
     limit ${pageSize + 1} offset ${(page - 1) * pageSize}`);
-  const statuses = new Set(["pending", "sending", "provider_accepted", "delivery_unknown",
+  const statuses = new Set(["pending", "sending", "provider_accepted", "provider_rejected", "pre_dispatch_failed", "delivery_unknown",
     "configuration_failed", "preparation_failed", "disabled", "obsolete", "no_recipient"]);
   return {
     items: result.rows.slice(0, pageSize).map((row: any) => ({
@@ -40,8 +41,20 @@ export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, 
 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {
+  if(process.env.NODE_ENV==="development")return;
   if (!(await getSettings(conn, row.clinicId)).notificationsEnabled) return;
   if (typeof previousDetails === "object") previousDetails = confirmationText(previousDetails, await one(clinics, row.clinicId, conn)).replace("Your appointment is confirmed.", "Previous visit details:");
+  // Each channel has its own savepoint. Both successful preparations survive
+  // failures in the other channel and still commit atomically with the visit.
+  try {
+    const {enqueueSmsEvent}=await import("./notification-sms-outbox");
+    await conn.transaction((tx:any)=>enqueueSmsEvent(tx,event,row,previousDetails));
+  } catch { console.error("SMS event preparation unavailable; visit and email retained"); }
+  try {
+    await conn.transaction((tx:any)=>enqueueEmailEvent(tx,event,row,previousDetails));
+  } catch { console.error("Email event preparation unavailable; visit and SMS retained"); }
+}
+async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string) {
   const usedEmails = new Set<string>();
   if (row.patientId && (await resolvedTemplate(event, row.clinicId, conn, "patient")).content.enabled) {
     const patient = await one(patients, row.patientId, conn);
@@ -94,6 +107,14 @@ export function reminderDue(row: any, now = Date.now()) {
   for (let minute = 59; minute <= 60; minute++) if (local(now + minute * 60000) === target) return true;
   return false;
 }
+/** Scheduling is narrow; an already-queued reminder may tolerate a short
+ * worker/commit delay. The current row still supplies status, check-in state,
+ * session date/time and timezone. No new jobs are captured in this allowance.
+ */
+export function reminderDispatchEligible(row:any,now=Date.now()){
+  for(let delay=0;delay<=5;delay++)if(reminderDue(row,now-delay*60000))return true;
+  return false;
+}
 export async function processNotifications(conn: any = db, send: typeof sendAuthEmail = sendAuthEmail, now = Date.now()) {
   // One PostgreSQL scheduler per deployment, including when several web replicas run.
   const acquired = await conn.transaction(async (tx: any) => {
@@ -123,7 +144,11 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       const clinic = await one(clinics, data.clinicId, tx);
       const current = data.appointmentId ? await one(appointments, data.appointmentId, tx) : null;
       if (data.appointmentId && !current) { await update({ state: "obsolete" }); return null; }
-      if (data.event === "reminder" && (!current || !reminderDue(current, now) || current.revision !== data.snapshot.revision)) {
+      if(current && ((current.revision||0)!==(data.snapshot.revision||0) ||
+        (data.event==="cancelled" ? current.status!=="cancelled" : data.event==="completed" ? current.status!=="completed" : !["waiting","booked"].includes(current.status)))) {
+        await update({state:"obsolete"});return null;
+      }
+      if (data.event === "reminder" && (!current || !reminderDispatchEligible(current, now) || current.revision !== data.snapshot.revision)) {
         await update({ state: "obsolete" }); return null;
       }
       let recipient: string, patient: any = null;
@@ -135,7 +160,11 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       if (data.recipientUserId) {
         const account = await one(users, data.recipientUserId, tx);
         let member = data.recipientGroup === "clinicAdmin" && clinic.adminId === account.id;
-        if (data.recipientGroup === "doctor" && current?.doctorId) member = (await one(doctors, current.doctorId, tx)).userId === account.id;
+        if (data.recipientGroup === "doctor" && current?.doctorId) {
+          const doctor=await one(doctors,current.doctorId,tx);
+          member=doctor.userId===account.id&&doctor.ownerAdminId===clinic.adminId&&!!current.branchId&&
+            await isClinicalMember(doctor.id,current.branchId,tx);
+        }
         if (data.recipientGroup === "receptionist") {
           const links = await tx.select().from(assignments).where(eq(assignments.userId, account.id));
           member = account.role === "receptionist" && links.some((l: any) => l.clinicId === data.clinicId && (!l.branchId || l.branchId === current?.branchId));
@@ -146,7 +175,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       }
       if (!validEmailAddress(recipient)) { await update({ state: "no_recipient" }); return null; }
       const template = await resolvedTemplate(data.event, data.clinicId, tx, data.recipientGroup || defaultRecipient(data.event));
-      if (!template.content.enabled) { await update({ state: "disabled" }); return null; }
+      if (!template.content.enabled || template.activatedAt > data.createdAt) { await update({ state: "disabled" }); return null; }
       const row = data.snapshot;
       const rendered = renderNotification(template.content, { clinic_name: clinic.name, patient_name: patient?.fullName || "", doctor_name: row.doctorName || "",
         appointment_details: current ? confirmationText(row, clinic).replace("Your appointment is confirmed.", "Visit details:") : "",
@@ -159,7 +188,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
     let state = "provider_accepted";
     try { await send(claimed.recipient, claimed.rendered.subject, claimed.rendered.text, undefined, claimed.rendered); }
     catch (error: any) {
-      state = error?.code === "EMAIL_UNCONFIGURED"
+      state = error?.code === "EMAIL_REJECTED" ? "provider_rejected" : error?.code === "EMAIL_PRE_DISPATCH_FAILED" ? "pre_dispatch_failed" : error?.code === "EMAIL_UNCONFIGURED"
         ? claimed.data.attempts < 4 ? "pending" : "configuration_failed"
         : "delivery_unknown";
     }
@@ -181,7 +210,16 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
 export function startNotificationWorker() {
   // Development never sends automatically. Production follows each clinic's explicit notifications setting.
   if (process.env.NODE_ENV !== "production") return;
-  let busy = false;
-  const tick = async () => { if (busy) return; busy = true; try { await processNotifications(); } catch { console.error("Notification worker failed; pending work retained"); } finally { busy = false; } };
+  let busy = false, smsBusy = false;
+  const tick = () => {
+    // Separate busy gates: a slow/failed provider must not delay the other channel's
+    // next poll. Per-record durable claims still protect multiple server instances.
+    if(!busy){busy=true;void processNotifications().catch(()=>console.error("Email worker failed; pending work retained")).finally(()=>{busy=false;});}
+    if(!smsBusy){
+      smsBusy=true;
+      void import("./notification-sms-outbox").then(m=>m.processSmsNotifications())
+        .catch(()=>console.error("SMS worker failed; pending work retained")).finally(()=>{smsBusy=false;});
+    }
+  };
   const timer = setInterval(() => void tick(), 30000); timer.unref();
 }

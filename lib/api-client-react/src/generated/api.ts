@@ -92,6 +92,10 @@ import type {
   DoctorPresence,
   DoctorPresenceInput,
   ErrorResponse,
+  EventControlCatalog,
+  EventControlInput,
+  EventTemplateTestInput,
+  EventTemplateTestResult,
   GeographySuggestions,
   GetAppointmentCalendarParams,
   GetAuthCsrf200,
@@ -100,6 +104,7 @@ import type {
   GetClinicRegistrationCompletionParams,
   GetDashboardParams,
   GetDoctorPresenceParams,
+  GetEventControlsParams,
   GetNotificationTemplatesParams,
   GetPublicAvailabilityParams,
   GetPublicAvailabilitySessionsParams,
@@ -1392,6 +1397,330 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getSaveNotificationTemplateMutationOptions(options));
+    }
+
+export const getPreviewEventTemplateUrl = () => {
+
+
+
+
+  return `/api/management/templates/preview`
+}
+
+export const previewEventTemplate = async (eventTemplateTestInput: EventTemplateTestInput, options?: Parameters<typeof customFetch>[1]): Promise<EventTemplateTestResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EventTemplateTestResult>(getPreviewEventTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(eventTemplateTestInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewEventTemplateMutationKey = () => ['previewEventTemplate'] as const;
+
+export const getPreviewEventTemplateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewEventTemplate>>, TError,PreviewEventTemplateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewEventTemplate>>, TError,PreviewEventTemplateMutationVariables, TContext> => {
+
+const mutationKey = getPreviewEventTemplateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewEventTemplate>>, PreviewEventTemplateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewEventTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewEventTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof previewEventTemplate>>>
+    export type PreviewEventTemplateMutationBody = BodyType<EventTemplateTestInput>
+    export type PreviewEventTemplateMutationError = ErrorType<unknown>
+    export type PreviewEventTemplateMutationVariables = {data: BodyType<EventTemplateTestInput>}
+
+    export const usePreviewEventTemplate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewEventTemplate>>, TError,PreviewEventTemplateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewEventTemplate>>,
+        TError,
+        PreviewEventTemplateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPreviewEventTemplateMutationOptions(options));
+    }
+
+export const getTestEventTemplateUrl = () => {
+
+
+
+
+  return `/api/management/templates/test`
+}
+
+export const testEventTemplate = async (eventTemplateTestInput: EventTemplateTestInput, options?: Parameters<typeof customFetch>[1]): Promise<EventTemplateTestResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EventTemplateTestResult>(getTestEventTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(eventTemplateTestInput)
+  }
+);}
+
+
+
+
+
+export const getTestEventTemplateMutationKey = () => ['testEventTemplate'] as const;
+
+export const getTestEventTemplateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testEventTemplate>>, TError,TestEventTemplateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof testEventTemplate>>, TError,TestEventTemplateMutationVariables, TContext> => {
+
+const mutationKey = getTestEventTemplateMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testEventTemplate>>, TestEventTemplateMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  testEventTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestEventTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof testEventTemplate>>>
+    export type TestEventTemplateMutationBody = BodyType<EventTemplateTestInput>
+    export type TestEventTemplateMutationError = ErrorType<unknown>
+    export type TestEventTemplateMutationVariables = {data: BodyType<EventTemplateTestInput>}
+
+    export const useTestEventTemplate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testEventTemplate>>, TError,TestEventTemplateMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof testEventTemplate>>,
+        TError,
+        TestEventTemplateMutationVariables,
+        TContext
+      > => {
+      return useMutation(getTestEventTemplateMutationOptions(options));
+    }
+
+export const getGetEventControlsUrl = (params?: GetEventControlsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/management/event-controls?${stringifiedParams}` : `/api/management/event-controls`
+}
+
+export const getEventControls = async (params?: GetEventControlsParams, options?: Parameters<typeof customFetch>[1]): Promise<EventControlCatalog> => {
+
+  return customFetch<EventControlCatalog>(getGetEventControlsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetEventControlsQueryKey = (params?: GetEventControlsParams,) => {
+    return [
+    `/api/management/event-controls`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetEventControlsQueryOptions = <TData = Awaited<ReturnType<typeof getEventControls>>, TError = ErrorType<unknown>>(params?: GetEventControlsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEventControls>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetEventControlsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getEventControls>>> = ({ signal }) => getEventControls(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getEventControls>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetEventControlsQueryResult = NonNullable<Awaited<ReturnType<typeof getEventControls>>>
+export type GetEventControlsQueryError = ErrorType<unknown>
+
+
+
+export function useGetEventControls<TData = Awaited<ReturnType<typeof getEventControls>>, TError = ErrorType<unknown>>(
+ params?: GetEventControlsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getEventControls>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetEventControlsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateEventControlUrl = () => {
+
+
+
+
+  return `/api/management/event-controls`
+}
+
+export const updateEventControl = async (eventControlInput: EventControlInput, options?: Parameters<typeof customFetch>[1]): Promise<EventControlCatalog> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<EventControlCatalog>(getUpdateEventControlUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(eventControlInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateEventControlMutationKey = () => ['updateEventControl'] as const;
+
+export const getUpdateEventControlMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEventControl>>, TError,UpdateEventControlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEventControl>>, TError,UpdateEventControlMutationVariables, TContext> => {
+
+const mutationKey = getUpdateEventControlMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEventControl>>, UpdateEventControlMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateEventControl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateEventControlMutationResult = NonNullable<Awaited<ReturnType<typeof updateEventControl>>>
+    export type UpdateEventControlMutationBody = BodyType<EventControlInput>
+    export type UpdateEventControlMutationError = ErrorType<unknown>
+    export type UpdateEventControlMutationVariables = {data: BodyType<EventControlInput>}
+
+    export const useUpdateEventControl = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEventControl>>, TError,UpdateEventControlMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateEventControl>>,
+        TError,
+        UpdateEventControlMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateEventControlMutationOptions(options));
     }
 
 export const getUpdateIntegrationSettingsUrl = () => {

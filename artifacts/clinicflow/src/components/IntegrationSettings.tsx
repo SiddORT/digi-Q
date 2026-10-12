@@ -4,7 +4,7 @@ import { HelpTip } from "./HelpTip";
 import { SearchableSelect } from "./SearchableSelect";
 import { EmailInput } from "@/components/EmailInput";
 import { useForm } from "react-hook-form";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IntegrationEditor } from "./IntegrationEditor";
 import { AppDialog } from "./AppDialog";
 import {
@@ -50,17 +50,20 @@ function StoragePanel() {
   </div>;
 }
 
-export function IntegrationSettings() {
+export function IntegrationSettings({ fixedService, onDirtyChange }: { fixedService?: "smtp"; onDirtyChange?: (dirty: boolean) => void } = {}) {
   const query = useGetIntegrationSettings({ query: { queryKey: getGetIntegrationSettingsQueryKey(), staleTime: 0, refetchInterval: 60000 } });
   const send = useSendSmtpTestEmail();
   const form = useForm<{ recipient: string }>({ defaultValues: { recipient: "" } });
-  const [service, setService] = useState<Service>("smtp");
+  const [service, setService] = useState<Service>(fixedService ?? "smtp");
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [confirmSend, setConfirmSend] = useState(false);
   const [editorDirty, setEditorDirty] = useState(false);
   const [editorBusy, setEditorBusy] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
+  const dirtyRef = useRef(onDirtyChange); dirtyRef.current = onDirtyChange;
+  useEffect(() => { dirtyRef.current?.(editorDirty); }, [editorDirty]);
+  useEffect(() => () => dirtyRef.current?.(false), []);
   const current = SERVICES.find(s => s.value === service)!;
   const data = query.data;
   const label = service === "smtp" ? "SMTP" : "Twilio";
@@ -68,13 +71,13 @@ export function IntegrationSettings() {
   return <section className="panel padded int-settings" aria-labelledby="integration-title">
     <div className="int-head section-head">
       <div className="int-head-title"><h2 id="integration-title">Third-Party Integrations <HelpTip text="Saved website settings replace the whole server environment configuration for that service; values are never mixed. Secrets stay encrypted and are never displayed."/></h2></div>
-      <div className="int-chooser">
+      {!fixedService && <div className="int-chooser">
         <div className="int-field"><SearchableSelect id="int-service" label="Service" testId="select-service" value={service}
             onChange={v => { if (!v) return; setService(v as Service); setSaved(false); setEditing(false); }}
             options={SERVICES.map(s => ({ value: s.value, label: s.label }))} /></div>
         <div className="int-field"><SearchableSelect id="int-provider" label="Provider" testId="select-provider" value={current.providers[0].value} disabled onChange={() => {}}
             aria-describedby="int-provider-help" options={current.providers.map(p => ({ value: p.value, label: p.label }))} /><small id="int-provider-help" className="sr-only">Only supported providers are listed.</small></div>
-      </div>
+      </div>}
     </div>
     {data && !data.editable && <p role="note" className="notice">Website editing is locked. Your server operator must configure INTEGRATIONS_ENCRYPTION_KEY (64 hexadecimal characters from 32 random bytes). Existing server-configured integrations remain available.</p>}
 

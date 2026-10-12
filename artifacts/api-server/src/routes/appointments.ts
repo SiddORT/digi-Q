@@ -104,6 +104,12 @@ export async function bookAppointment(user: any, body: any, tx: any, guestPolicy
     await change(appointments, id, { data: result }, tx);
     await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, toStatus: "waiting" }, tx);
     await audit(user, "book", "appointments", result, tx);
+    // Capture eligible channel/recipient jobs at creation only, not on confirmation retries.
+    // This is shared by guest, patient and staff creation and does not dispatch within the write.
+    try {
+      const {enqueueEvent}=await import("../lib/notification-outbox");
+      await tx.transaction((nested:any)=>enqueueEvent(nested,"booking",result));
+    } catch {console.error("Booking notification preparation unavailable; booking retained");}
     return result;
 }
 appointmentsRouter.post("/appointments/:id/actions", async (req, res) => {

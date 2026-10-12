@@ -96,6 +96,8 @@ export const BookingMailOutcomeStatus = {
   pending: 'pending',
   sending: 'sending',
   provider_accepted: 'provider_accepted',
+  provider_rejected: 'provider_rejected',
+  pre_dispatch_failed: 'pre_dispatch_failed',
   delivery_unknown: 'delivery_unknown',
   configuration_failed: 'configuration_failed',
   preparation_failed: 'preparation_failed',
@@ -364,8 +366,17 @@ export interface LogoUploadInput {
   clinicId?: string;
 }
 
+/**
+ * SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.
+ */
 export interface NotificationTemplateContent {
   enabled?: boolean;
+  /** @maxLength 50 */
+  senderId?: string;
+  /** @maxLength 50 */
+  dltEntityId?: string;
+  /** @maxLength 50 */
+  dltTemplateId?: string;
   /**
      * @minLength 1
      * @maxLength 180
@@ -383,6 +394,157 @@ export interface NotificationTemplateContent {
   /** @maxLength 1000 */
   logoUrl: string;
 }
+
+export type EventTemplateTestInputChannel = typeof EventTemplateTestInputChannel[keyof typeof EventTemplateTestInputChannel];
+
+
+export const EventTemplateTestInputChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export type EventTemplateTestInputEvent = typeof EventTemplateTestInputEvent[keyof typeof EventTemplateTestInputEvent];
+
+
+export const EventTemplateTestInputEvent = {
+  booking: 'booking',
+  onboarding: 'onboarding',
+  rescheduled: 'rescheduled',
+  cancelled: 'cancelled',
+  completed: 'completed',
+  reminder: 'reminder',
+} as const;
+
+export type EventTemplateTestInputRecipientGroup = typeof EventTemplateTestInputRecipientGroup[keyof typeof EventTemplateTestInputRecipientGroup];
+
+
+export const EventTemplateTestInputRecipientGroup = {
+  patient: 'patient',
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+} as const;
+
+export type EventTemplateTestInputValues = {[key: string]: string};
+
+export interface EventTemplateTestInput {
+  channel: EventTemplateTestInputChannel;
+  event: EventTemplateTestInputEvent;
+  recipientGroup: EventTemplateTestInputRecipientGroup;
+  clinicId?: string;
+  /** @minimum 0 */
+  revision: number;
+  content: NotificationTemplateContent;
+  values: EventTemplateTestInputValues;
+  /** @maxLength 254 */
+  recipient?: string;
+  confirmed?: boolean;
+  requestId?: string;
+}
+
+export type EventTemplateTestResultStatus = typeof EventTemplateTestResultStatus[keyof typeof EventTemplateTestResultStatus];
+
+
+export const EventTemplateTestResultStatus = {
+  preview: 'preview',
+  provider_accepted: 'provider_accepted',
+  provider_rejected: 'provider_rejected',
+  pre_dispatch_failed: 'pre_dispatch_failed',
+  delivery_unknown: 'delivery_unknown',
+} as const;
+
+export interface EventTemplateTestResult {
+  status: EventTemplateTestResultStatus;
+  message: string;
+  subject: string;
+  body: string;
+}
+
+export type EventControlInputChannel = typeof EventControlInputChannel[keyof typeof EventControlInputChannel];
+
+
+export const EventControlInputChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export type EventControlInputEvent = typeof EventControlInputEvent[keyof typeof EventControlInputEvent];
+
+
+export const EventControlInputEvent = {
+  booking: 'booking',
+  onboarding: 'onboarding',
+  rescheduled: 'rescheduled',
+  cancelled: 'cancelled',
+  completed: 'completed',
+  reminder: 'reminder',
+} as const;
+
+export type EventControlInputRecipient = typeof EventControlInputRecipient[keyof typeof EventControlInputRecipient];
+
+
+export const EventControlInputRecipient = {
+  patient: 'patient',
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+} as const;
+
+export interface EventControlInput {
+  channel: EventControlInputChannel;
+  event: EventControlInputEvent;
+  recipient: EventControlInputRecipient;
+  clinicId?: string;
+  /** @minimum 0 */
+  revision: number;
+  enabled: boolean;
+  confirmed: boolean;
+}
+
+export type EventControlRowChannel = typeof EventControlRowChannel[keyof typeof EventControlRowChannel];
+
+
+export const EventControlRowChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export type EventControlRowRecipient = typeof EventControlRowRecipient[keyof typeof EventControlRowRecipient];
+
+
+export const EventControlRowRecipient = {
+  patient: 'patient',
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+} as const;
+
+export interface EventControlRow {
+  channel: EventControlRowChannel;
+  event: string;
+  recipient: EventControlRowRecipient;
+  revision: number;
+  enabled: boolean;
+  source: string;
+  ready: boolean;
+  blockedReasons: string[];
+  timing: string;
+}
+
+export interface EventControlCatalog {
+  scopeName: string;
+  notificationsEnabled?: boolean;
+  gateDescription: string;
+  items: EventControlRow[];
+}
+
+export type NotificationTemplateSaveChannel = typeof NotificationTemplateSaveChannel[keyof typeof NotificationTemplateSaveChannel];
+
+
+export const NotificationTemplateSaveChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
 
 export type NotificationTemplateSaveRecipient = typeof NotificationTemplateSaveRecipient[keyof typeof NotificationTemplateSaveRecipient];
 
@@ -416,6 +578,7 @@ export const NotificationTemplateSaveMode = {
 } as const;
 
 export interface NotificationTemplateSave {
+  channel?: NotificationTemplateSaveChannel;
   recipient?: NotificationTemplateSaveRecipient;
   clinicId?: string;
   event: NotificationTemplateSaveEvent;
@@ -489,6 +652,7 @@ export interface IntegrationSettings {
   editable?: boolean;
   smtp: IntegrationReadiness;
   sms: IntegrationReadiness;
+  notificationSms?: IntegrationReadiness;
 }
 
 export type IntegrationUpdateProvider = typeof IntegrationUpdateProvider[keyof typeof IntegrationUpdateProvider];
@@ -497,6 +661,7 @@ export type IntegrationUpdateProvider = typeof IntegrationUpdateProvider[keyof t
 export const IntegrationUpdateProvider = {
   smtp: 'smtp',
   sms: 'sms',
+  notificationSms: 'notificationSms',
 } as const;
 
 export type IntegrationUpdateMode = typeof IntegrationUpdateMode[keyof typeof IntegrationUpdateMode];
@@ -2644,6 +2809,7 @@ export type CompleteLogoUpload200 = {
 export type GetNotificationTemplatesParams = {
 clinicId?: string;
 recipient?: GetNotificationTemplatesRecipient;
+channel?: GetNotificationTemplatesChannel;
 };
 
 export type GetNotificationTemplatesRecipient = typeof GetNotificationTemplatesRecipient[keyof typeof GetNotificationTemplatesRecipient];
@@ -2655,6 +2821,18 @@ export const GetNotificationTemplatesRecipient = {
   doctor: 'doctor',
   receptionist: 'receptionist',
 } as const;
+
+export type GetNotificationTemplatesChannel = typeof GetNotificationTemplatesChannel[keyof typeof GetNotificationTemplatesChannel];
+
+
+export const GetNotificationTemplatesChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export type GetEventControlsParams = {
+clinicId?: string;
+};
 
 export type GetSessionContextsParams = {
 doctorId: string;

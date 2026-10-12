@@ -28,11 +28,26 @@ export const templateContent = z.object({
   }
 });
 export type TemplateContent = z.infer<typeof templateContent>;
+export const smsTemplateContent = z.object({
+  enabled: z.boolean().default(false), subject: z.string().min(1).max(180),
+  body: z.string().trim().min(1).max(1600), prefix: z.literal(""), footer: z.literal(""), logoUrl: z.literal(""),
+  senderId: z.string().regex(/^[A-Za-z0-9_-]{0,50}$/).default(""),
+  dltEntityId: z.string().regex(/^[A-Za-z0-9_-]{0,50}$/).default(""),
+  dltTemplateId: z.string().regex(/^[A-Za-z0-9_-]{0,50}$/).default(""),
+}).strict().superRefine((value,ctx)=>{
+  const remaining = value.body.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (_,variable)=>{
+    if (!(templateVariables as readonly string[]).includes(variable)) ctx.addIssue({code:"custom",path:["body"],message:`Unsupported variable: ${variable}`});
+    return "";
+  });
+  if (/[{}]/.test(remaining)) ctx.addIssue({code:"custom",path:["body"],message:"Use supported variables in double braces"});
+});
+export type SmsTemplateContent = z.infer<typeof smsTemplateContent>;
 export const templateSave = z.object({
+  channel: z.enum(["email","sms"]).default("email"),
   recipient: z.enum(templateRecipients).optional(),
   clinicId: z.string().min(1).max(100).optional(), event: z.enum(templateEvents),
   revision: z.number().int().min(0), mode: z.enum(["draft", "publish", "reset"]),
-  content: templateContent.optional(),
+  content: z.union([templateContent,smsTemplateContent]).optional(),
 }).strict().refine(v => v.mode === "reset" || !!v.content, { message: "Template content is required" });
 export const eventTitles: Record<TemplateEvent, string> = {
   booking: "Booking confirmation", onboarding: "Clinic onboarding", rescheduled: "Appointment rescheduled",

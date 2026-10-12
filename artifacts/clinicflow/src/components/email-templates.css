@@ -33,3 +33,12 @@
 .et-dialog p{margin-top:0}
 .et-toggle{display:grid;gap:4px;padding:8px 12px;border:1px solid hsl(var(--border,210 20% 88%));border-radius:6px;font-size:var(--type-body)}.et-toggle small{opacity:.75}
 .et-intro{margin:0;font-size:var(--type-body);display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+
+.et-test{grid-column:1/-1;display:grid;gap:12px}
+.et-test-values{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.et-test pre{white-space:pre-wrap;margin:8px 0 0}
+.event-controls .ec-event{margin-top:18px}
+.event-controls .ec-table{width:100%;border-collapse:collapse}
+.event-controls .ec-table th,.event-controls .ec-table td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--border,#e5e7eb)}
+.event-controls .ec-blocked{margin:6px 0 0;padding-left:18px}
+@media (max-width:767px){.event-controls .ec-table thead{display:none}.event-controls .ec-table tr{display:block;padding:8px 0}.event-controls .ec-table td{display:block;border:0;padding:3px 0}}

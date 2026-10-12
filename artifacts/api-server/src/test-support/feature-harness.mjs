@@ -77,6 +77,13 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       ...(bookingLookups && !simulatedMail ? ["nodemailer"] : [])],
     plugins: [{ name: "feature-fixtures", setup(b) {
       if (fakeBookingMail) {
+        b.onResolve({filter:/\/appointment-confirmation$/},()=>({path:"confirmation",namespace:"booking-confirmation"}));
+        b.onLoad({filter:/.*/,namespace:"booking-confirmation"},()=>({resolveDir:resolve(root,"artifacts/api-server/src"),contents:`
+          export * from "${resolve(root,"artifacts/api-server/src/lib/appointment-confirmation.ts")}";
+          import {confirmAppointmentEmail as real} from "${resolve(root,"artifacts/api-server/src/lib/appointment-confirmation.ts")}";
+          import {sendAuthEmail} from "./lib/auth-email";
+          export const confirmAppointmentEmail=(id,conn)=>real(id,conn,(...args)=>sendAuthEmail(...args));
+        `}));
         b.onResolve({ filter: /\/auth-email$/ }, () => ({ path: "mail", namespace: "booking-mail" }));
         b.onLoad({ filter: /.*/, namespace: "booking-mail" }, () => ({ contents: `
           export const smtpConfig = () => ({});

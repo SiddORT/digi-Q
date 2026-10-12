@@ -6,6 +6,8 @@ const STATUS_COPY: Record<BookingMailOutcome["status"], { label: string; detail:
   pending: { label: "Pending", detail: "Queued or awaiting a safe pre-dispatch retry. No provider acceptance is recorded." },
   sending: { label: "Dispatch claimed — outcome unconfirmed", detail: "Dispatch may have begun. An interrupted claim is not automatically resent." },
   provider_accepted: { label: "Provider accepted", detail: "Accepted by the email provider; inbox delivery is not confirmed." },
+  provider_rejected: { label: "Provider rejected", detail: "The email provider explicitly rejected the message." },
+  pre_dispatch_failed: { label: "Not dispatched", detail: "The message could not be prepared or connected before dispatch." },
   delivery_unknown: { label: "Delivery unknown", detail: "Dispatch may have succeeded. This email will not be automatically resent." },
   configuration_failed: { label: "Email unavailable", detail: "Email configuration prevented dispatch. Safe configuration retries ended." },
   preparation_failed: { label: "Preparation failed", detail: "Email preparation failed before dispatch. Safe preparation retries ended." },

@@ -28,6 +28,8 @@ export const BookingMailOutcomeStatus = {
   pending: 'pending',
   sending: 'sending',
   provider_accepted: 'provider_accepted',
+  provider_rejected: 'provider_rejected',
+  pre_dispatch_failed: 'pre_dispatch_failed',
   delivery_unknown: 'delivery_unknown',
   configuration_failed: 'configuration_failed',
   preparation_failed: 'preparation_failed',

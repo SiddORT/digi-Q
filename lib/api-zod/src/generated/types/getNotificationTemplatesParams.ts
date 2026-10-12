@@ -20,9 +20,11 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { GetNotificationTemplatesChannel } from './getNotificationTemplatesChannel';
 import type { GetNotificationTemplatesRecipient } from './getNotificationTemplatesRecipient';
 
 export type GetNotificationTemplatesParams = {
 clinicId?: string;
 recipient?: GetNotificationTemplatesRecipient;
+channel?: GetNotificationTemplatesChannel;
 };

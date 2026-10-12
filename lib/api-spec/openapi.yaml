@@ -148,6 +148,7 @@ paths:
       parameters:
         - { in: query, name: clinicId, schema: { type: string } }
         - { in: query, name: recipient, schema: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] } }
+        - { in: query, name: channel, schema: { type: string, enum: [email, sms] } }
       responses:
         "200":
           description: Authorized template drafts and effective published content. Reading never sends a message.
@@ -169,6 +170,58 @@ paths:
               schema: { $ref: "#/components/schemas/NotificationTemplateCatalog" }
         "403": { $ref: "#/components/responses/Error" }
         "409": { $ref: "#/components/responses/Error" }
+  /management/templates/preview:
+    post:
+      operationId: previewEventTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventTemplateTestInput" }
+      responses:
+        "200":
+          description: Rendered explicit sample values, no send
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventTemplateTestResult" }
+  /management/templates/test:
+    post:
+      operationId: testEventTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventTemplateTestInput" }
+      responses:
+        "200":
+          description: Sanitized outcome; never a delivery guarantee
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventTemplateTestResult" }
+  /management/event-controls:
+    get:
+      operationId: getEventControls
+      parameters:
+        - { in: query, name: clinicId, schema: { type: string } }
+      responses:
+        "200":
+          description: Effective published policies and readiness
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventControlCatalog" }
+    put:
+      operationId: updateEventControl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventControlInput" }
+      responses:
+        "200":
+          description: Updated effective policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventControlCatalog" }
   /settings/integrations:
     put:
       operationId: updateIntegrationSettings
@@ -1336,7 +1389,7 @@ components:
       required: [reference, status, createdAt]
       properties:
         reference: { type: string, nullable: true }
-        status: { type: string, enum: [pending, sending, provider_accepted, delivery_unknown, configuration_failed, preparation_failed, disabled, obsolete, no_recipient, unknown] }
+        status: { type: string, enum: [pending, sending, provider_accepted, provider_rejected, pre_dispatch_failed, delivery_unknown, configuration_failed, preparation_failed, disabled, obsolete, no_recipient, unknown] }
         createdAt: { type: integer, nullable: true, description: Recorded event time in milliseconds since epoch }
     BookingMailOutcomeList:
       type: object
@@ -1579,19 +1632,78 @@ components:
         contentType: { type: string }
         clinicId: { type: string }
     NotificationTemplateContent:
+      description: SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.
       type: object
       required: [subject, body, prefix, footer, logoUrl]
       properties:
         enabled: { type: boolean }
+        senderId: { type: string, maxLength: 50 }
+        dltEntityId: { type: string, maxLength: 50 }
+        dltTemplateId: { type: string, maxLength: 50 }
         subject: { type: string, minLength: 1, maxLength: 180 }
         body: { type: string, minLength: 1, maxLength: 8000 }
         prefix: { type: string, maxLength: 60 }
         footer: { type: string, maxLength: 500 }
         logoUrl: { type: string, maxLength: 1000 }
+    EventTemplateTestInput:
+      type: object
+      required: [channel, event, recipientGroup, revision, content, values]
+      properties:
+        channel: { type: string, enum: [email, sms] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder] }
+        recipientGroup: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] }
+        clinicId: { type: string }
+        revision: { type: integer, minimum: 0 }
+        content: { $ref: "#/components/schemas/NotificationTemplateContent" }
+        values: { type: object, additionalProperties: { type: string, maxLength: 1500 } }
+        recipient: { type: string, maxLength: 254 }
+        confirmed: { type: boolean }
+        requestId: { type: string, format: uuid }
+    EventTemplateTestResult:
+      type: object
+      required: [status, message, subject, body]
+      properties:
+        status: { type: string, enum: [preview, provider_accepted, provider_rejected, pre_dispatch_failed, delivery_unknown] }
+        message: { type: string }
+        subject: { type: string }
+        body: { type: string }
+    EventControlInput:
+      type: object
+      required: [channel, event, recipient, revision, enabled, confirmed]
+      properties:
+        channel: { type: string, enum: [email, sms] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder] }
+        recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] }
+        clinicId: { type: string }
+        revision: { type: integer, minimum: 0 }
+        enabled: { type: boolean }
+        confirmed: { type: boolean }
+    EventControlRow:
+      type: object
+      required: [channel, event, recipient, revision, enabled, source, ready, blockedReasons, timing]
+      properties:
+        channel: { type: string, enum: [email, sms] }
+        event: { type: string }
+        recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] }
+        revision: { type: integer }
+        enabled: { type: boolean }
+        source: { type: string }
+        ready: { type: boolean }
+        blockedReasons: { type: array, items: { type: string } }
+        timing: { type: string }
+    EventControlCatalog:
+      type: object
+      required: [scopeName, gateDescription, items]
+      properties:
+        scopeName: { type: string }
+        notificationsEnabled: { type: boolean }
+        gateDescription: { type: string }
+        items: { type: array, items: { $ref: "#/components/schemas/EventControlRow" } }
     NotificationTemplateSave:
       type: object
       required: [event, revision, mode]
       properties:
+        channel: { type: string, enum: [email, sms] }
         recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] }
         clinicId: { type: string }
         event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder] }
@@ -1643,18 +1755,19 @@ components:
         editable: { type: boolean }
         smtp: { $ref: "#/components/schemas/IntegrationReadiness" }
         sms: { $ref: "#/components/schemas/IntegrationReadiness" }
+        notificationSms: { $ref: "#/components/schemas/IntegrationReadiness" }
     IntegrationUpdate:
       type: object
       additionalProperties: false
       required: [provider, mode, revision, currentPassword, values]
       properties:
-        provider: { type: string, enum: [smtp, sms] }
+        provider: { type: string, enum: [smtp, sms, notificationSms] }
         mode: { type: string, enum: [database, environment] }
         revision: { type: [string, "null"] }
         currentPassword: { type: string, minLength: 1, maxLength: 1024 }
         values:
           type: object
-          additionalProperties: { type: string, maxLength: 2048 }
+          additionalProperties: { type: string, maxLength: 8192 }
     SmtpTestInput:
       type: object
       additionalProperties: false

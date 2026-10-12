@@ -12,6 +12,9 @@ import { SearchableSelect } from "./SearchableSelect";
 import { ResourceLookup } from "./ResourceLookup";
 import "./email-templates.css";
 import { BookingMailOutcomes } from "./BookingMailOutcomes";
+import { EventTemplateTest } from "./EventTemplateTest";
+import { StatusSwitch } from "./StatusSwitch";
+import { isRealSuperAdmin } from "../lib/settings-access";
 
 type Content = api.NotificationTemplateContent;
 type Mode = "draft" | "publish" | "reset";
@@ -27,6 +30,7 @@ export const RECIPIENTS: { value: Recipient; label: string; who: string }[] = [
 export function eventsFor(recipient: Recipient) { return EVENTS.filter(e => e !== "onboarding" || recipient === "clinicAdmin"); }
 /** Event switches may force a recipient: onboarding always targets the clinic admin. */
 export function recipientForEvent(event: string, current: Recipient): Recipient { return event === "onboarding" ? "clinicAdmin" : current; }
+const SMS_BODY_MAX_C = 1600;
 type TextKey = Exclude<keyof Content, "enabled">;
 const FIELDS: [TextKey, string, number, string][] = [
   ["subject", "Subject", 180, "Required. Variables such as {{clinic_name}} are kept as written."],
@@ -34,6 +38,12 @@ const FIELDS: [TextKey, string, number, string][] = [
   ["body", "Body", 8000, "Required. Plain text; variables are filled in at send time."],
   ["footer", "Footer", 500, "Optional closing text shown below the body."],
   ["logoUrl", "Logo", 1000, "Upload a PNG, JPEG or WebP (max 2 MB, max 2048×2048 px) or paste an https:// image address. Nothing is published until you save."],
+];
+const SMS_FIELDS: [TextKey, string, number, string][] = [
+  ["body", "Message", SMS_BODY_MAX_C, "Required. Plain text up to 1600 characters; variables are filled in at send time."],
+  ["senderId", "Sender ID", 50, "Optional. Sent only when your provider mapping includes a Sender ID field."],
+  ["dltEntityId", "DLT Entity ID", 50, "Registered entity identifier, if your route requires one. Saving an ID does not confirm approval."],
+  ["dltTemplateId", "DLT Template ID", 50, "Registered template identifier for this message. Saving an ID does not confirm approval."],
 ];
 const MODE_COPY: Record<Mode, { title: string; text: string; action: string }> = {
   draft: { title: "Save Draft?", text: "The draft is stored for later review. Live emails keep using the published version.", action: "Save Draft" },
@@ -60,10 +70,13 @@ export function unknownVariables(content: Content, allowed: string[]) {
   for (const v of Object.values(content)) for (const m of String(v).matchAll(/\{\{\s*([a-z0-9_]+)\s*\}\}/gi)) if (!allowed.includes(m[1])) found.add(m[1]);
   return [...found];
 }
-const same = (a?: Content, b?: Content) => !!a && !!b && FIELDS.every(([k]) => a[k] === b[k]) && (a.enabled ?? null) === (b.enabled ?? null);
+const same = (a?: Content, b?: Content) => !!a && !!b && FIELDS.every(([k]) => a[k] === b[k]) && (["senderId", "dltEntityId", "dltTemplateId"] as const).every(k => (a[k] ?? "") === (b[k] ?? "")) && (a.enabled ?? null) === (b.enabled ?? null);
 const status = (e: any) => e?.status ?? e?.response?.status;
 
-export function EmailTemplates({ identity }: { identity: api.Identity }) {
+/** SMS keeps one body plus sender/DLT metadata; subject is supplied from the event title on save. */
+export const SMS_BODY_MAX = 1600;
+export function EmailTemplates({ identity, channel = "email", onDirtyChange }: { identity: api.Identity; channel?: "email" | "sms"; onDirtyChange?: (dirty: boolean) => void }) {
+  const sms = channel === "sms";
   const superAdmin = identity.user?.role === "superAdmin";
   const [clinicId, setClinicId] = useState("");
   const [event, setEvent] = useState<string>("booking");
@@ -86,10 +99,10 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
   const loadedFor = useRef("");
   const editBase = useRef<{ scope: string; revision: number; content: Content } | null>(null);
   const queryClient = useQueryClient();
-  const params = clinicId ? { clinicId, recipient } : { recipient };
+  const params = clinicId ? { clinicId, recipient, channel } : { recipient, channel };
   const enabled = superAdmin || !!clinicId;
   const queryKey = getGetNotificationTemplatesQueryKey(params);
-  const catalog = useGetNotificationTemplates(params, { query: { enabled, queryKey } });
+  const catalog = useGetNotificationTemplates(params, { query: { enabled, queryKey, staleTime: 15000 } });
   const save = useSaveNotificationTemplate();
   const item = catalog.data?.items.find(i => i.event === event && (i.recipient ?? "patient") === recipient);
   const base = item ? (item.draft ?? item.content) : undefined;
@@ -109,13 +122,21 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
   }, [item, key, conflict, clinicId, event, recipient, form]);
 
   const dirty = !!form && !!base && !same(form, base);
+  const dirtyRef = useRef(onDirtyChange); dirtyRef.current = onDirtyChange;
+  useEffect(() => { dirtyRef.current?.(dirty); }, [dirty]);
+  useEffect(() => () => dirtyRef.current?.(false), []);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const variables = catalog.data?.variables ?? [];
   const scopeName = catalog.data?.scopeName ?? "";
-  const unknown = useMemo(() => form ? unknownVariables(form, variables) : [], [form, variables]);
+  const unknown = useMemo(() => form ? unknownVariables(sms ? { ...form, subject: "", prefix: "", footer: "", logoUrl: "" } : form, variables) : [], [form, variables, sms]);
   const errors = form ? {
-    subject: !form.subject.trim() ? "Subject is required." : undefined,
-    body: !form.body.trim() ? "Body is required." : undefined,
-    logoUrl: !isValidLogo(form.logoUrl) ? "Upload an image or use an https:// address." : undefined,
+    subject: !sms && !form.subject.trim() ? "Subject is required." : undefined,
+    body: !form.body.trim() ? "Body is required." : sms && form.body.length > SMS_BODY_MAX ? `Message is limited to ${SMS_BODY_MAX} characters.` : undefined,
+    logoUrl: !sms && !isValidLogo(form.logoUrl) ? "Upload an image or use an https:// address." : undefined,
   } : {};
   const invalid = Object.values(errors).some(Boolean) || unknown.length > 0;
 
@@ -124,9 +145,10 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
 
   function run(mode: Mode) {
     if (!item || !form) return;
-    save.mutate({ data: { clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, recipient, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : form } }, {
+    save.mutate({ data: { channel, clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, recipient, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : sms ? { ...form, subject: form.subject.trim() || item.title, prefix: "", footer: "", logoUrl: "" } : form } }, {
       onSuccess: next => {
         queryClient.setQueryData(queryKey, next);
+        void queryClient.invalidateQueries({ queryKey: [api.getGetEventControlsQueryKey()[0]] });
         const fresh = next.items.find(i => i.event === event && (i.recipient ?? "patient") === recipient);
         loadedFor.current = "";
         if (fresh) {
@@ -174,7 +196,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
   const preview = form ? { subject: previewText(`${form.prefix ? form.prefix + " " : ""}${form.subject}`, scopeName), body: previewText(form.body, scopeName), footer: previewText(form.footer, scopeName) } : null;
 
   return <section className="email-templates" data-testid="email-templates">
-    <p className="et-intro muted">Edit the wording each recipient receives per event. Saving here never sends an email. <span role="note" className="et-limit-tip" data-testid="text-delivery-limit"><HelpTip text="Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically." /></span></p>
+    <p className="et-intro muted">Edit the wording each recipient receives per event. Saving here never sends {sms ? "an SMS" : "an email"}.{sms && <> Enabled templates stay off for every recipient until you switch them on; a draft may be incomplete, but publishing an enabled template requires DLT IDs when your provider mapping requires them.</>} <span role="note" className="et-limit-tip" data-testid="text-delivery-limit"><HelpTip text="Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically." /></span></p>
     <div className="et-scope">
       {superAdmin ? <FormField label="Scope" optional helper="Leave empty to edit platform defaults.">
         {(a) => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => guard(() => { setClinicId(v); resetLocal(); })} placeholder="Platform defaults" />}
@@ -191,7 +213,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
       </FormField>
     </div>
 
-    {identity.user?.role === "clinicAdmin" && clinicId && <BookingMailOutcomes key={`${identity.user.id}:${clinicId}`} actorId={identity.user.id} clinicId={clinicId} />}
+    {!sms && identity.user?.role === "clinicAdmin" && clinicId && <BookingMailOutcomes key={`${identity.user.id}:${clinicId}`} actorId={identity.user.id} clinicId={clinicId} />}
 
     {!enabled ? <div className="et-empty" data-testid="state-select-clinic">Select a clinic group to view its templates.</div>
       : catalog.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
@@ -207,12 +229,12 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
             <span className="et-rev">Revision {item.revision}</span>
           </div>
           <div className="et-toggle" data-testid="row-enabled">
-            <label><input type="checkbox" checked={isOn} onChange={e => setEnabled(e.target.checked)} data-testid="input-enabled" /> Send this email to {recipientInfo.label.toLowerCase()}s for this event</label>
+            <StatusSwitch active={isOn} onChange={setEnabled} disabled={save.isPending} label={`Send ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s for this event`} testId="input-enabled">Send this {sms ? "SMS" : "email"} to {recipientInfo.label.toLowerCase()}s for this event ({isOn ? "On" : "Off"})</StatusSwitch>
             <HelpTip text={recipient === "patient" ? "Turning this off stops the patient email for this event." : `Off by default. Publishing with this on adds real emails to ${recipientInfo.who}. An address that is already a target for this event receives one email, not duplicates.`}/>
           </div>
-          {FIELDS.map(([k, label, max, help]) => <FormField key={k} label={label} required={k === "subject" || k === "body"} optional={k !== "subject" && k !== "body"} helper={help} error={(errors as any)[k]}>
+          {(sms ? SMS_FIELDS : FIELDS).map(([k, label, max, help]) => <FormField key={k} label={label} required={k === "subject" || k === "body"} optional={k !== "subject" && k !== "body"} helper={help} error={(errors as any)[k]}>
             {(a) => k === "body" || k === "footer"
-              ? <textarea {...a} rows={k === "body" ? 10 : 3} maxLength={max} value={form[k]} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />
+              ? <textarea {...a} rows={k === "body" ? (sms ? 5 : 10) : 3} maxLength={max} value={form[k] ?? ""} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />
               : k === "logoUrl" ? <div className="et-logo-field">
                 <input {...a} type="text" inputMode="url" maxLength={max} value={form[k]} onChange={e => { set(k, e.target.value); setShowLogo(false); }} placeholder="https://… or upload below" data-testid="input-logoUrl" spellCheck={false} disabled={uploading} />
                 <div className="et-actions">
@@ -225,7 +247,7 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
                 {upload.state === "uploading" && <progress max={100} value={upload.pct} aria-label="Upload progress" data-testid="progress-logo" />}
                 {upload.msg && <p role={upload.state === "error" ? "alert" : "status"} className={upload.state === "error" ? "error-box" : "et-notice"} data-testid="status-logo-upload">{upload.msg}</p>}
               </div>
-              : <input {...a} type="text" maxLength={max} value={form[k]} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />}
+              : <input {...a} type="text" maxLength={max} value={form[k] ?? ""} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />}
           </FormField>)}
           <div className="et-vars" data-testid="list-variables">
             <span>Available Variables</span>
@@ -246,17 +268,18 @@ export function EmailTemplates({ identity }: { identity: api.Identity }) {
 
         <aside className="panel padded et-preview" aria-label="Live preview" data-testid="panel-preview">
           <h3>Preview <HelpTip text="Sample placeholders only. No patient data is used."/></h3>
-          {form.logoUrl && isValidLogo(form.logoUrl) && ((showLogo || isInternalLogo(form.logoUrl))
+          {!sms && form.logoUrl && isValidLogo(form.logoUrl) && ((showLogo || isInternalLogo(form.logoUrl))
             ? <img src={logoPreviewSrc(form.logoUrl)} alt="Logo preview" className="et-logo" referrerPolicy="no-referrer" data-testid="img-logo" />
             : <button type="button" className="button secondary" onClick={() => setShowLogo(true)} data-testid="button-load-logo">Load Logo Preview (Contacts the Image Host)</button>)}
           <div className="et-mail">
-            <div className="et-subject" data-testid="text-preview-subject">{preview!.subject}</div>
+            {!sms && <div className="et-subject" data-testid="text-preview-subject">{preview!.subject}</div>}
             <div className="et-body" data-testid="text-preview-body">{preview!.body}</div>
             {preview!.footer && <div className="et-footer">{preview!.footer}</div>}
           </div>
           {!dirty && <button type="button" className="button secondary small et-server-open" aria-haspopup="dialog" onClick={() => setServerOpen(true)} data-testid="button-server-rendering">Server Rendering</button>}
           {serverOpen && <AppDialog open variant="drawer" onClose={() => setServerOpen(false)} title="Server Rendering"><div className="et-server"><div>{item.previewSubject}</div><pre>{item.previewBody}</pre></div></AppDialog>}
         </aside>
+        {isRealSuperAdmin(identity.user) && <EventTemplateTest key={`${channel}|${clinicId}|${event}|${recipient}`} channel={channel} event={event} recipient={recipient} clinicId={clinicId} revision={editBase.current?.revision ?? item.revision} content={sms ? { ...form, subject: form.subject.trim() || item.title, prefix: "", footer: "", logoUrl: "" } : form} />}
       </div>}
 
     <AppDialog open={!!confirm} onClose={() => !save.isPending && setConfirm(null)} title={confirm ? MODE_COPY[confirm].title : ""} busy={save.isPending}>

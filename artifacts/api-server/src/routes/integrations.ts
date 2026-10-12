@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { ipKeyGenerator } from "express-rate-limit";
-import nodemailer from "nodemailer";
 import { SendSmtpTestEmailBody, GetIntegrationSettingsResponse, UpdateIntegrationSettingsBody } from "@workspace/api-zod";
 import { db, users } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -11,6 +10,8 @@ import { consumeRateLimit, verifyPassword } from "../lib/native-auth";
 import { integrationSettings, resolvedIntegration, saveIntegration, integrationFields } from "../lib/integration-vault";
 import { checkIntegration } from "../lib/integration-checks";
 import { mediaConfig } from "../lib/local-media";
+import { sendAuthEmail } from "../lib/auth-email";
+import { DEMO_FIXTURE } from "../lib/demo-policy";
 
 export const integrationsRouter = Router();
 const path = "/settings/integrations";
@@ -19,6 +20,7 @@ integrationsRouter.use(path, async (req, res, next) => {
   res.setHeader("Cache-Control", "no-store");
   const user = await requireUser(req);
   roles(user, ["superAdmin"]);
+  if (user.demo || user.demoFixture === DEMO_FIXTURE) throw new HttpError(403, "Demo accounts cannot access integration credentials");
   res.locals.integrationActor = user.id;
   next();
 });
@@ -43,6 +45,7 @@ integrationsRouter.put(path, async (req, res) => {
   const body = parsed.data;
   const allowed: readonly string[] = integrationFields[body.provider];
   if (Object.keys(body.values).some(key => !allowed.includes(key)) ||
+      Object.entries(body.values).some(([key,value])=>value.length>(key==="NOTIFICATION_SMS_MAPPING"?8192:2048)) ||
       (body.mode === "environment" && Object.keys(body.values).length))
     throw new HttpError(400, "Unsupported configuration fields", "INTEGRATION_INVALID");
   const [actor] = await db.select().from(users).where(eq(users.id, res.locals.integrationActor));
@@ -63,21 +66,10 @@ integrationsRouter.post(`${path}/smtp/test-email`, async (req, res) => {
   const parsed = SendSmtpTestEmailBody.strict().safeParse(req.body);
   if (!parsed.success || !validEmailAddress(parsed.data.recipient))
     throw new HttpError(400, "Enter one valid recipient email address", "INVALID_RECIPIENT");
-  const cfg = smtpConfig((await resolvedIntegration("smtp")).env);
+  smtpConfig((await resolvedIntegration("smtp")).env);
   try {
-    const transport = nodemailer.createTransport({
-      host: cfg.host, port: cfg.port, secure: cfg.secure, requireTLS: !cfg.secure && cfg.requireTLS,
-      auth: { user: cfg.user, pass: cfg.password },
-      connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000,
-    });
-    const result = await transport.sendMail({
-      from: cfg.from, to: parsed.data.recipient,
-      subject: "DigiQ Doctors — SMTP configuration test",
-      text: "This is a test email requested by a DigiQ Doctors Super Admin to check SMTP configuration. No patient or account information is included.",
-      disableFileAccess: true, disableUrlAccess: true,
-    });
-    if (!result.accepted?.length || result.rejected?.length)
-      throw new Error("Not accepted");
+    await sendAuthEmail(parsed.data.recipient,"DigiQ Doctors — SMTP configuration test",
+      "This is a test email requested by a DigiQ Doctors Super Admin to check SMTP configuration. No patient or account information is included.");
   } catch {
     throw new HttpError(503, "Email delivery unavailable", "EMAIL_DELIVERY_FAILED");
   }

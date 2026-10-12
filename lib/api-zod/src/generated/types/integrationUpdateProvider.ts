@@ -27,4 +27,5 @@ export type IntegrationUpdateProvider = typeof IntegrationUpdateProvider[keyof t
 export const IntegrationUpdateProvider = {
   smtp: 'smtp',
   sms: 'sms',
+  notificationSms: 'notificationSms',
 } as const;

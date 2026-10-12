@@ -26,4 +26,5 @@ export interface IntegrationSettings {
   editable?: boolean;
   smtp: IntegrationReadiness;
   sms: IntegrationReadiness;
+  notificationSms?: IntegrationReadiness;
 }

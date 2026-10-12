@@ -83,3 +83,10 @@ test("retry of a legacy terminal booking never sends a fresh confirmation",async
  seed();state.rows.appointments[0].status="cancelled";
  assert.equal(await confirmAppointmentEmail("a",conn,async()=>assert.fail("must not dispatch")),"not_attempted");
 });
+test("default automatic patient email never dispatches in development",async()=>{
+ seed();
+ const previous=process.env.NODE_ENV;process.env.NODE_ENV="development";
+ try{assert.equal(await confirmAppointmentEmail("a",conn),"not_attempted");}
+ finally{if(previous===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=previous;}
+ assert.equal(state.rows.appointments[0].confirmationEmail,"not_attempted");
+});

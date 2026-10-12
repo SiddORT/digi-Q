@@ -21,11 +21,13 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { NotificationTemplateContent } from './notificationTemplateContent';
+import type { NotificationTemplateSaveChannel } from './notificationTemplateSaveChannel';
 import type { NotificationTemplateSaveEvent } from './notificationTemplateSaveEvent';
 import type { NotificationTemplateSaveMode } from './notificationTemplateSaveMode';
 import type { NotificationTemplateSaveRecipient } from './notificationTemplateSaveRecipient';
 
 export interface NotificationTemplateSave {
+  channel?: NotificationTemplateSaveChannel;
   recipient?: NotificationTemplateSaveRecipient;
   clinicId?: string;
   event: NotificationTemplateSaveEvent;

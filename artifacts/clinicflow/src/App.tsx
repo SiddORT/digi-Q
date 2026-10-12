@@ -22,6 +22,7 @@ import { DemoLogin } from "./auth/DemoLogin";
 import { AuthShell, AuthCard } from "./auth/AuthShell";
 import { ToastHost } from "./components/ToastHost";
 import { friendlyError } from "./lib/friendly-error";
+import { useSettingsBrowserLocation } from "./lib/settings-navigation";
 import { PublicHeader } from "./components/PublicHeader";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -113,4 +114,4 @@ function Providers(){
     <Route><div className="empty"><h1>Page Not Found</h1><Link href="/">Return Home</Link></div></Route>
    </Switch><ToastHost/></NativeAuthProvider></QueryClientProvider>;
 }
-export default function App(){ return <Router base={basePath}><Providers/></Router>; }
+export default function App(){ return <Router base={basePath} hook={useSettingsBrowserLocation}><Providers/></Router>; }

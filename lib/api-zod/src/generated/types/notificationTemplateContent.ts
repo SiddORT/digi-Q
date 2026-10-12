@@ -21,8 +21,17 @@
  * OpenAPI spec version: 1.0.0
  */
 
+/**
+ * SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.
+ */
 export interface NotificationTemplateContent {
   enabled?: boolean;
+  /** @maxLength 50 */
+  senderId?: string;
+  /** @maxLength 50 */
+  dltEntityId?: string;
+  /** @maxLength 50 */
+  dltTemplateId?: string;
   /**
      * @minLength 1
      * @maxLength 180

@@ -167,8 +167,8 @@ test("recipient delivery deduplicates multi-role staff and retries and respects 
   await h.control.query(`insert into users(id,role,email,status) values('staff-doctor','doctor','owner@example.invalid','active'),('reception','receptionist','reception@example.invalid','active');
     insert into patients(id,clinic_id,data) values('recipient-patient','c','{"email":"patient-notices@example.invalid","fullName":"Example patient"}');
     insert into doctors(id,user_id,owner_admin_id) values('recipient-doctor','staff-doctor','ca');
-    insert into assignments(id,user_id,clinic_id) values('recipient-link','reception','c');
-    insert into appointments(id,patient_id,doctor_id,clinic_id,date,token_number,data) values('recipient-visit','recipient-patient','recipient-doctor','c','2026-11-01',1,'{"startTime":"10:00","endTime":"11:00","timezone":"UTC"}')`);
+    insert into assignments(id,user_id,clinic_id) values('recipient-link','reception','c'),('recipient-doctor-link','staff-doctor','c');
+    insert into appointments(id,patient_id,doctor_id,clinic_id,date,token_number,status,data) values('recipient-visit','recipient-patient','recipient-doctor','c','2026-11-01',1,'completed','{"startTime":"10:00","endTime":"11:00","timezone":"UTC"}')`);
   const row = { id: "recipient-visit", patientId: "recipient-patient", doctorId: "recipient-doctor", clinicId: "c", date: "2026-11-01", startTime: "10:00", endTime: "11:00", timezone: "UTC", revision: 0 };
   for (const recipient of ["clinicAdmin", "doctor", "receptionist"]) {
     await api.saveTemplate(ca, { clinicId: "c", event: "completed", recipient, revision: 0, mode: "publish", content: { ...api.defaultTemplate("completed", recipient), enabled: true } });

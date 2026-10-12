@@ -2,38 +2,46 @@ import { db, settings, clinics } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { audit, one } from "./store";
 import { assert } from "./http";
-import { defaultTemplate, eventTitles, renderNotification, templateContent, templateEvents, templateSave, templateVariables, type TemplateContent, type TemplateEvent } from "./notification-templates";
+import { defaultTemplate, eventTitles, renderNotification, templateContent, smsTemplateContent, templateEvents, templateSave, templateVariables, type TemplateContent, type SmsTemplateContent, type TemplateEvent } from "./notification-templates";
 import { defaultRecipient, type TemplateRecipient } from "./notification-templates";
+import { resolvedIntegration } from "./integration-vault";
+import { notificationSmsConfig } from "./notification-sms-transport";
+import { DEMO_FIXTURE } from "./demo-policy";
 
-const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event)) => `notification-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
-type RecordData = { revision: number; published?: TemplateContent; draft?: TemplateContent };
-async function stored(event: TemplateEvent, clinicId?: string, conn: any = db, recipient = defaultRecipient(event)): Promise<RecordData> {
-  const [row] = await conn.select().from(settings).where(eq(settings.id, key(event, clinicId, recipient)));
+export type Channel = "email" | "sms";
+const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event), channel:Channel="email") => `${channel==="sms"?"sms":"notification"}-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
+type RecordData = { revision: number; published?: TemplateContent | SmsTemplateContent; draft?: TemplateContent | SmsTemplateContent; activatedAt?: number };
+async function stored(event: TemplateEvent, clinicId?: string, conn: any = db, recipient = defaultRecipient(event),channel:Channel="email"): Promise<RecordData> {
+  const [row] = await conn.select().from(settings).where(eq(settings.id, key(event, clinicId, recipient,channel)));
   return row?.data || { revision: 0 };
 }
 export async function authorizedTemplateScope(user: any, clinicId?: string, conn: any = db) {
   assert(["superAdmin", "clinicAdmin"].includes(user.role), 403, "Administrator access required");
-  assert(!user.demo, 403, "Demo accounts cannot change notification configuration");
+  assert(!user.demo && user.demoFixture!==DEMO_FIXTURE, 403, "Demo accounts cannot change notification configuration");
   if (!clinicId) { assert(user.role === "superAdmin", 403, "Select a clinic you own"); return null; }
   const clinic = await one(clinics, clinicId, conn);
   assert(user.role === "superAdmin" || clinic.adminId === user.id, 403, "Clinic outside your administration scope");
   return clinic;
 }
-export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, conn: any = db, recipient = defaultRecipient(event)) {
-  const platform = await stored(event, undefined, conn, recipient);
-  const local = clinicId ? await stored(event, clinicId, conn, recipient) : platform;
-  const content = local.published || platform.published || defaultTemplate(event, recipient);
+export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, conn: any = db, recipient = defaultRecipient(event),channel:Channel="email") {
+  const platform = await stored(event, undefined, conn, recipient,channel);
+  const local = clinicId ? await stored(event, clinicId, conn, recipient,channel) : platform;
+  const fallback = defaultTemplate(event, recipient);
+  const content = local.published || platform.published || (channel === "sms" ? {...fallback, enabled:false,body:`${eventTitles[event]}: {{clinic_name}}\n${fallback.body}`,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""} : fallback);
   // Corrupt configuration fails explicitly, rather than silently sending a different template.
-  return { content: templateContent.parse(content), local, source: local.published ? (clinicId ? "clinic" : "platform") : platform.published ? "platform" : "default" };
+  return { content: channel === "sms" ? smsTemplateContent.parse(content) : templateContent.parse(content), local,
+    activatedAt: Math.max((local.published ? local : platform).activatedAt ?? 0,local.activatedAt ?? 0),
+    source: local.published ? (clinicId ? "clinic" : "platform") : platform.published ? "platform" : "default" };
 }
-export async function templateCatalog(user: any, clinicId?: string, recipient?: TemplateRecipient) {
+export async function templateCatalog(user: any, clinicId?: string, recipient?: TemplateRecipient,channel:Channel="email") {
+  if(channel==="sms") assert(user.role==="superAdmin",403,"Superadmin access required");
   const clinic = await authorizedTemplateScope(user, clinicId);
   const values = { clinic_name: clinic?.name || "Example clinic", clinic_contact: [clinic?.email, clinic?.phone].filter(Boolean).join(" · "),
     patient_name: "[Patient name]", doctor_name: "[Doctor name]", appointment_details: "[Clinic-formatted visit details]", previous_details: "[Previous visit details]", reference: "[Booking reference]", timezone: "[Clinic location timezone]" };
   const items = [];
   for (const event of templateEvents) {
     if (event === "onboarding" && recipient && recipient !== "clinicAdmin") continue;
-    const { content, local, source } = await resolvedTemplate(event, clinicId, db, recipient || defaultRecipient(event));
+    const { content, local, source } = await resolvedTemplate(event, clinicId, db, recipient || defaultRecipient(event),channel);
     const preview = renderNotification(local.draft || content, values);
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
@@ -45,18 +53,61 @@ export async function saveTemplate(user: any, input: unknown) {
   const parsed = templateSave.safeParse(input);
   assert(parsed.success, 400, parsed.success ? "" : parsed.error.issues[0]?.message || "Invalid template");
   const body = parsed.data!;
+  if(body.channel==="sms") assert(user.role==="superAdmin",403,"Superadmin access required");
+  if(body.content) body.content = (body.channel==="sms"?smsTemplateContent:templateContent).parse(body.content);
   assert(body.event !== "onboarding" || !body.recipient || body.recipient === "clinicAdmin", 400, "Clinic onboarding is sent to the Clinic Admin");
   await db.transaction(async tx => {
     await authorizedTemplateScope(user, body.clinicId, tx);
-    const id = key(body.event, body.clinicId, body.recipient);
+    const id = key(body.event, body.clinicId, body.recipient,body.channel);
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${id}, 0))`);
-    const current = await stored(body.event, body.clinicId, tx, body.recipient);
+    const current = await stored(body.event, body.clinicId, tx, body.recipient,body.channel);
     assert(current.revision === body.revision, 409, "This template changed. Reload it before saving.");
     const next: RecordData = { revision: current.revision + 1 };
+    if(body.mode==="reset") {
+      const before=await resolvedTemplate(body.event,body.clinicId,tx,body.recipient||defaultRecipient(body.event),body.channel);
+      const inherited=body.clinicId
+        ?await resolvedTemplate(body.event,undefined,tx,body.recipient||defaultRecipient(body.event),body.channel)
+        :{content:{enabled:body.channel==="email"&&defaultTemplate(body.event,body.recipient||defaultRecipient(body.event)).enabled}};
+      next.activatedAt=inherited.content.enabled&&!before.content.enabled?Date.now():before.activatedAt;
+    }
     if (body.mode === "draft") Object.assign(next, { published: current.published, draft: body.content });
-    if (body.mode === "publish") next.published = body.content;
+    if (body.mode === "publish") {
+      const previous=await resolvedTemplate(body.event,body.clinicId,tx,body.recipient||defaultRecipient(body.event),body.channel);
+      if(body.channel==="sms" && body.content?.enabled) {
+        let cfg: ReturnType<typeof notificationSmsConfig> | undefined;
+        try { cfg = notificationSmsConfig((await resolvedIntegration("notificationSms",tx)).env); } catch { assert(false,400,"Configure notification SMS before activation"); }
+        const sms = body.content as SmsTemplateContent;
+        assert(!cfg!.mapping.dltRequired || !!(sms.senderId&&sms.dltEntityId&&sms.dltTemplateId),400,"Sender ID, DLT Entity ID and DLT Template ID are required for activation");
+      }
+      next.published = body.content;
+      next.activatedAt = body.content?.enabled && !previous.content.enabled ? Date.now() : previous.activatedAt;
+    }
+    if(body.mode==="draft") next.activatedAt=current.activatedAt;
     await tx.insert(settings).values({ id, data: next }).onConflictDoUpdate({ target: settings.id, set: { data: next } });
     await audit(user, `template_${body.mode}`, "notification_templates", { id, clinicId: body.clinicId }, tx);
   });
-  return templateCatalog(user, body.clinicId, body.recipient);
+  return templateCatalog(user, body.clinicId, body.recipient,body.channel);
+}
+
+/** Activation edits only published content; unpublished wording stays a draft. */
+export async function changeActivation(user:any, input:{channel:Channel;event:TemplateEvent;recipient:TemplateRecipient;clinicId?:string;revision:number;enabled:boolean}) {
+  assert(user.role==="superAdmin" && !user.demo,403,"Real Superadmin access required");
+  await db.transaction(async tx=>{
+    await authorizedTemplateScope(user,input.clinicId,tx);
+    assert(input.event!=="onboarding"||input.recipient==="clinicAdmin",400,"Onboarding targets the Clinic Admin only");
+    const id=key(input.event,input.clinicId,input.recipient,input.channel);
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${id},0))`);
+    const effective=await resolvedTemplate(input.event,input.clinicId,tx,input.recipient,input.channel);
+    assert(effective.local.revision===input.revision,409,"Template changed. Refresh before changing activation.");
+    if(input.channel==="sms"&&input.enabled) {
+      let cfg:ReturnType<typeof notificationSmsConfig>|undefined;
+      try {cfg=notificationSmsConfig((await resolvedIntegration("notificationSms",tx)).env);} catch {assert(false,400,"Configure notification SMS before activation");}
+      const content=effective.content as SmsTemplateContent;
+      assert(!cfg!.mapping.dltRequired||!!(content.senderId&&content.dltEntityId&&content.dltTemplateId),400,"Publish required Sender and DLT metadata before activation");
+    }
+    const data={...effective.local,revision:effective.local.revision+1,published:{...effective.content,enabled:input.enabled},
+      activatedAt:input.enabled&&!effective.content.enabled?Date.now():effective.local.activatedAt};
+    await tx.insert(settings).values({id,data}).onConflictDoUpdate({target:settings.id,set:{data}});
+    await audit(user,"template_activation","notification_templates",{id,clinicId:input.clinicId},tx);
+  });
 }

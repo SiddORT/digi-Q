@@ -40,9 +40,9 @@ export function confirmationText(row: any, clinic: any) {
   return `Your appointment is confirmed.\n\n${row.clinicName} · ${row.branchName}\nDoctor: ${row.doctorName}\nDate: ${date}\nSession: ${time(row.startTime)}–${time(row.endTime)} (${row.timezone || "timezone unavailable"})\nReference: ${row.reference}\nToken: ${row.token}\n\nKeep your appointment ticket. A session is a time range, not an exact consultation time. Check in with reception when you arrive.`;
 }
 
-async function saveOutcome(conn: any, id: string, outcome: ConfirmationEmail) {
+async function saveOutcome(conn: any, id: string, outcome: ConfirmationEmail, dispatchOutcome?: "provider_accepted" | "provider_rejected" | "pre_dispatch_failed" | "delivery_unknown") {
   // Atomic JSON merge must not overwrite simultaneous clinical state/history.
-  await conn.update(appointments).set({ data: sql`${appointments.data} || ${JSON.stringify({confirmationEmail:outcome})}::jsonb` }).where(eq(appointments.id,id));
+  await conn.update(appointments).set({ data: sql`${appointments.data} || ${JSON.stringify({confirmationEmail:outcome,...(dispatchOutcome?{confirmationDispatchOutcome:dispatchOutcome}:{})})}::jsonb` }).where(eq(appointments.id,id));
 }
 async function lockConfirmation(conn: any, id: string) {
   await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"appointment-confirmation:"+id}))`);
@@ -57,7 +57,8 @@ async function lockConfirmation(conn: any, id: string) {
 }
 
 /** Called only after booking commit. At-most-once dispatch, never SMTP inside the booking transaction. */
-export async function confirmAppointmentEmail(id: string, conn: any = db, send: Sender = sendAuthEmail): Promise<ConfirmationEmail> {
+export async function confirmAppointmentEmail(id: string, conn: any = db, send?: Sender): Promise<ConfirmationEmail> {
+  const sender=send||sendAuthEmail;
   let claimed: { outcome: ConfirmationEmail; recipient?: string; text?: string; rendered?: ReturnType<typeof renderNotification> };
   try {
     claimed = await conn.transaction(async (tx: any) => {
@@ -69,8 +70,6 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send: 
       if (!config.notificationsEnabled) {
         await saveOutcome(tx,id,"disabled"); return {outcome:"disabled"};
       }
-      const { enqueueEvent } = await import("./notification-outbox");
-      await enqueueEvent(tx, "booking", { ...row, revision: 0 });
       if (row.confirmationEmail) return { outcome: row.confirmationEmail };
       const patient = await one(patients,row.patientId,tx);
       const recipient = await confirmationRecipient(patient,tx);
@@ -82,6 +81,11 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send: 
       if (!template.content.enabled) {
         await saveOutcome(tx,id,"disabled"); return {outcome:"disabled"};
       }
+      // Ordinary automatic sends are production-only. Isolated tests inject a fake
+      // sender; explicitly confirmed administrator tests use their separate endpoint.
+      if(!send&&process.env.NODE_ENV!=="production"){
+        await saveOutcome(tx,id,"not_attempted","pre_dispatch_failed");return {outcome:"not_attempted"};
+      }
       const rendered = template.source === "default" ? undefined : renderNotification(template.content, {
         clinic_name: clinic.name, patient_name: patient.fullName || "Patient",
         doctor_name: row.doctorName || "Your doctor", appointment_details: confirmationText(row, clinic),
@@ -89,7 +93,7 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send: 
         clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · "),
       });
       // A crash after this durable claim remains unknown, never automatically resent.
-      await saveOutcome(tx,id,"not_attempted");
+      await saveOutcome(tx,id,"not_attempted","delivery_unknown");
       return {outcome:"not_attempted",recipient,text:confirmationText(row,clinic),rendered};
     });
   } catch {
@@ -98,13 +102,18 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send: 
   }
   if (!claimed.recipient || !claimed.text) return claimed.outcome;
   let outcome: ConfirmationEmail = "provider_accepted";
+  let dispatchOutcome: "provider_accepted" | "provider_rejected" | "pre_dispatch_failed" | "delivery_unknown" = "provider_accepted";
   try {
-    if (claimed.rendered && send === sendAuthEmail)
+    if (claimed.rendered && sender === sendAuthEmail)
       await sendAuthEmail(claimed.recipient, claimed.rendered.subject, claimed.rendered.text, undefined, claimed.rendered);
-    else await send(claimed.recipient,claimed.rendered?.subject || "DigiQ Doctors — Appointment confirmation",claimed.rendered?.text || claimed.text);
+    else await sender(claimed.recipient,claimed.rendered?.subject || "DigiQ Doctors — Appointment confirmation",claimed.rendered?.text || claimed.text);
   }
-  catch { outcome = "unavailable"; }
-  try { await conn.transaction(async (tx: any) => { await lockConfirmation(tx,id); await saveOutcome(tx,id,outcome); }); }
+  catch(error:any) {
+    outcome = "unavailable";
+    dispatchOutcome=error?.code==="EMAIL_UNCONFIGURED"||error?.code==="EMAIL_PRE_DISPATCH_FAILED"?"pre_dispatch_failed":
+      error?.code==="EMAIL_REJECTED"?"provider_rejected":"delivery_unknown";
+  }
+  try { await conn.transaction(async (tx: any) => { await lockConfirmation(tx,id); await saveOutcome(tx,id,outcome,dispatchOutcome); }); }
   catch { return "not_attempted"; }
   return outcome;
 }

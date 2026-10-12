@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 const src = readFileSync(new URL("./EmailTemplates.tsx", import.meta.url), "utf8");
 
 test("uses generated hooks and patches the same query on success", () => {
-  assert.match(src, /useGetNotificationTemplates\(params, \{ query: \{ enabled, queryKey \} \}\)/);
+  assert.match(src, /useGetNotificationTemplates\(params, \{ query: \{ enabled, queryKey, staleTime: 15000 \} \}\)/);
   assert.match(src, /queryClient\.setQueryData\(queryKey, next\)/);
   assert.ok(!/[^e]fetch\(/.test(src));
 });

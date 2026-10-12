@@ -246,8 +246,15 @@ export const CompleteLogoUploadResponse = zod.object({
 
 export const GetNotificationTemplatesQueryParams = zod.object({
   "clinicId": zod.coerce.string().optional(),
-  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional()
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
+  "channel": zod.enum(['email', 'sms']).optional()
 })
+
+export const getNotificationTemplatesResponseItemsItemContentSenderIdMax = 50;
+
+export const getNotificationTemplatesResponseItemsItemContentDltEntityIdMax = 50;
+
+export const getNotificationTemplatesResponseItemsItemContentDltTemplateIdMax = 50;
 
 export const getNotificationTemplatesResponseItemsItemContentSubjectMax = 180;
 
@@ -258,6 +265,12 @@ export const getNotificationTemplatesResponseItemsItemContentPrefixMax = 60;
 export const getNotificationTemplatesResponseItemsItemContentFooterMax = 500;
 
 export const getNotificationTemplatesResponseItemsItemContentLogoUrlMax = 1000;
+
+export const getNotificationTemplatesResponseItemsItemDraftSenderIdMax = 50;
+
+export const getNotificationTemplatesResponseItemsItemDraftDltEntityIdMax = 50;
+
+export const getNotificationTemplatesResponseItemsItemDraftDltTemplateIdMax = 50;
 
 export const getNotificationTemplatesResponseItemsItemDraftSubjectMax = 180;
 
@@ -282,20 +295,26 @@ export const GetNotificationTemplatesResponse = zod.object({
   "source": zod.string(),
   "content": zod.object({
   "enabled": zod.boolean().optional(),
+  "senderId": zod.string().max(getNotificationTemplatesResponseItemsItemContentSenderIdMax).optional(),
+  "dltEntityId": zod.string().max(getNotificationTemplatesResponseItemsItemContentDltEntityIdMax).optional(),
+  "dltTemplateId": zod.string().max(getNotificationTemplatesResponseItemsItemContentDltTemplateIdMax).optional(),
   "subject": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemContentSubjectMax),
   "body": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemContentBodyMax),
   "prefix": zod.string().max(getNotificationTemplatesResponseItemsItemContentPrefixMax),
   "footer": zod.string().max(getNotificationTemplatesResponseItemsItemContentFooterMax),
   "logoUrl": zod.string().max(getNotificationTemplatesResponseItemsItemContentLogoUrlMax)
-}),
+}).describe('SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.'),
   "draft": zod.object({
   "enabled": zod.boolean().optional(),
+  "senderId": zod.string().max(getNotificationTemplatesResponseItemsItemDraftSenderIdMax).optional(),
+  "dltEntityId": zod.string().max(getNotificationTemplatesResponseItemsItemDraftDltEntityIdMax).optional(),
+  "dltTemplateId": zod.string().max(getNotificationTemplatesResponseItemsItemDraftDltTemplateIdMax).optional(),
   "subject": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemDraftSubjectMax),
   "body": zod.string().min(1).max(getNotificationTemplatesResponseItemsItemDraftBodyMax),
   "prefix": zod.string().max(getNotificationTemplatesResponseItemsItemDraftPrefixMax),
   "footer": zod.string().max(getNotificationTemplatesResponseItemsItemDraftFooterMax),
   "logoUrl": zod.string().max(getNotificationTemplatesResponseItemsItemDraftLogoUrlMax)
-}).optional(),
+}).optional().describe('SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.'),
   "previewSubject": zod.string(),
   "previewBody": zod.string(),
   "delivery": zod.string()
@@ -304,6 +323,12 @@ export const GetNotificationTemplatesResponse = zod.object({
 
 
 export const saveNotificationTemplateBodyRevisionMin = 0;
+
+export const saveNotificationTemplateBodyContentSenderIdMax = 50;
+
+export const saveNotificationTemplateBodyContentDltEntityIdMax = 50;
+
+export const saveNotificationTemplateBodyContentDltTemplateIdMax = 50;
 
 export const saveNotificationTemplateBodyContentSubjectMax = 180;
 
@@ -318,6 +343,7 @@ export const saveNotificationTemplateBodyContentLogoUrlMax = 1000;
 
 
 export const SaveNotificationTemplateBody = zod.object({
+  "channel": zod.enum(['email', 'sms']).optional(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
   "clinicId": zod.string().optional(),
   "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
@@ -325,13 +351,22 @@ export const SaveNotificationTemplateBody = zod.object({
   "mode": zod.enum(['draft', 'publish', 'reset']),
   "content": zod.object({
   "enabled": zod.boolean().optional(),
+  "senderId": zod.string().max(saveNotificationTemplateBodyContentSenderIdMax).optional(),
+  "dltEntityId": zod.string().max(saveNotificationTemplateBodyContentDltEntityIdMax).optional(),
+  "dltTemplateId": zod.string().max(saveNotificationTemplateBodyContentDltTemplateIdMax).optional(),
   "subject": zod.string().min(1).max(saveNotificationTemplateBodyContentSubjectMax),
   "body": zod.string().min(1).max(saveNotificationTemplateBodyContentBodyMax),
   "prefix": zod.string().max(saveNotificationTemplateBodyContentPrefixMax),
   "footer": zod.string().max(saveNotificationTemplateBodyContentFooterMax),
   "logoUrl": zod.string().max(saveNotificationTemplateBodyContentLogoUrlMax)
-}).optional()
+}).optional().describe('SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.')
 })
+
+export const saveNotificationTemplateResponseItemsItemContentSenderIdMax = 50;
+
+export const saveNotificationTemplateResponseItemsItemContentDltEntityIdMax = 50;
+
+export const saveNotificationTemplateResponseItemsItemContentDltTemplateIdMax = 50;
 
 export const saveNotificationTemplateResponseItemsItemContentSubjectMax = 180;
 
@@ -342,6 +377,12 @@ export const saveNotificationTemplateResponseItemsItemContentPrefixMax = 60;
 export const saveNotificationTemplateResponseItemsItemContentFooterMax = 500;
 
 export const saveNotificationTemplateResponseItemsItemContentLogoUrlMax = 1000;
+
+export const saveNotificationTemplateResponseItemsItemDraftSenderIdMax = 50;
+
+export const saveNotificationTemplateResponseItemsItemDraftDltEntityIdMax = 50;
+
+export const saveNotificationTemplateResponseItemsItemDraftDltTemplateIdMax = 50;
 
 export const saveNotificationTemplateResponseItemsItemDraftSubjectMax = 180;
 
@@ -366,20 +407,26 @@ export const SaveNotificationTemplateResponse = zod.object({
   "source": zod.string(),
   "content": zod.object({
   "enabled": zod.boolean().optional(),
+  "senderId": zod.string().max(saveNotificationTemplateResponseItemsItemContentSenderIdMax).optional(),
+  "dltEntityId": zod.string().max(saveNotificationTemplateResponseItemsItemContentDltEntityIdMax).optional(),
+  "dltTemplateId": zod.string().max(saveNotificationTemplateResponseItemsItemContentDltTemplateIdMax).optional(),
   "subject": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemContentSubjectMax),
   "body": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemContentBodyMax),
   "prefix": zod.string().max(saveNotificationTemplateResponseItemsItemContentPrefixMax),
   "footer": zod.string().max(saveNotificationTemplateResponseItemsItemContentFooterMax),
   "logoUrl": zod.string().max(saveNotificationTemplateResponseItemsItemContentLogoUrlMax)
-}),
+}).describe('SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.'),
   "draft": zod.object({
   "enabled": zod.boolean().optional(),
+  "senderId": zod.string().max(saveNotificationTemplateResponseItemsItemDraftSenderIdMax).optional(),
+  "dltEntityId": zod.string().max(saveNotificationTemplateResponseItemsItemDraftDltEntityIdMax).optional(),
+  "dltTemplateId": zod.string().max(saveNotificationTemplateResponseItemsItemDraftDltTemplateIdMax).optional(),
   "subject": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemDraftSubjectMax),
   "body": zod.string().min(1).max(saveNotificationTemplateResponseItemsItemDraftBodyMax),
   "prefix": zod.string().max(saveNotificationTemplateResponseItemsItemDraftPrefixMax),
   "footer": zod.string().max(saveNotificationTemplateResponseItemsItemDraftFooterMax),
   "logoUrl": zod.string().max(saveNotificationTemplateResponseItemsItemDraftLogoUrlMax)
-}).optional(),
+}).optional().describe('SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.'),
   "previewSubject": zod.string(),
   "previewBody": zod.string(),
   "delivery": zod.string()
@@ -387,14 +434,178 @@ export const SaveNotificationTemplateResponse = zod.object({
 })
 
 
+export const previewEventTemplateBodyRevisionMin = 0;
+
+export const previewEventTemplateBodyContentSenderIdMax = 50;
+
+export const previewEventTemplateBodyContentDltEntityIdMax = 50;
+
+export const previewEventTemplateBodyContentDltTemplateIdMax = 50;
+
+export const previewEventTemplateBodyContentSubjectMax = 180;
+
+export const previewEventTemplateBodyContentBodyMax = 8000;
+
+export const previewEventTemplateBodyContentPrefixMax = 60;
+
+export const previewEventTemplateBodyContentFooterMax = 500;
+
+export const previewEventTemplateBodyContentLogoUrlMax = 1000;
+
+export const previewEventTemplateBodyValuesMaxOne = 1500;
+
+export const previewEventTemplateBodyRecipientMax = 254;
+
+
+
+export const PreviewEventTemplateBody = zod.object({
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
+  "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "clinicId": zod.string().optional(),
+  "revision": zod.number().int().min(previewEventTemplateBodyRevisionMin),
+  "content": zod.object({
+  "enabled": zod.boolean().optional(),
+  "senderId": zod.string().max(previewEventTemplateBodyContentSenderIdMax).optional(),
+  "dltEntityId": zod.string().max(previewEventTemplateBodyContentDltEntityIdMax).optional(),
+  "dltTemplateId": zod.string().max(previewEventTemplateBodyContentDltTemplateIdMax).optional(),
+  "subject": zod.string().min(1).max(previewEventTemplateBodyContentSubjectMax),
+  "body": zod.string().min(1).max(previewEventTemplateBodyContentBodyMax),
+  "prefix": zod.string().max(previewEventTemplateBodyContentPrefixMax),
+  "footer": zod.string().max(previewEventTemplateBodyContentFooterMax),
+  "logoUrl": zod.string().max(previewEventTemplateBodyContentLogoUrlMax)
+}).describe('SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.'),
+  "values": zod.record(zod.string(), zod.string().max(previewEventTemplateBodyValuesMaxOne)),
+  "recipient": zod.string().max(previewEventTemplateBodyRecipientMax).optional(),
+  "confirmed": zod.boolean().optional(),
+  "requestId": zod.string().uuid().optional()
+})
+
+export const PreviewEventTemplateResponse = zod.object({
+  "status": zod.enum(['preview', 'provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown']),
+  "message": zod.string(),
+  "subject": zod.string(),
+  "body": zod.string()
+})
+
+
+export const testEventTemplateBodyRevisionMin = 0;
+
+export const testEventTemplateBodyContentSenderIdMax = 50;
+
+export const testEventTemplateBodyContentDltEntityIdMax = 50;
+
+export const testEventTemplateBodyContentDltTemplateIdMax = 50;
+
+export const testEventTemplateBodyContentSubjectMax = 180;
+
+export const testEventTemplateBodyContentBodyMax = 8000;
+
+export const testEventTemplateBodyContentPrefixMax = 60;
+
+export const testEventTemplateBodyContentFooterMax = 500;
+
+export const testEventTemplateBodyContentLogoUrlMax = 1000;
+
+export const testEventTemplateBodyValuesMaxOne = 1500;
+
+export const testEventTemplateBodyRecipientMax = 254;
+
+
+
+export const TestEventTemplateBody = zod.object({
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
+  "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "clinicId": zod.string().optional(),
+  "revision": zod.number().int().min(testEventTemplateBodyRevisionMin),
+  "content": zod.object({
+  "enabled": zod.boolean().optional(),
+  "senderId": zod.string().max(testEventTemplateBodyContentSenderIdMax).optional(),
+  "dltEntityId": zod.string().max(testEventTemplateBodyContentDltEntityIdMax).optional(),
+  "dltTemplateId": zod.string().max(testEventTemplateBodyContentDltTemplateIdMax).optional(),
+  "subject": zod.string().min(1).max(testEventTemplateBodyContentSubjectMax),
+  "body": zod.string().min(1).max(testEventTemplateBodyContentBodyMax),
+  "prefix": zod.string().max(testEventTemplateBodyContentPrefixMax),
+  "footer": zod.string().max(testEventTemplateBodyContentFooterMax),
+  "logoUrl": zod.string().max(testEventTemplateBodyContentLogoUrlMax)
+}).describe('SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.'),
+  "values": zod.record(zod.string(), zod.string().max(testEventTemplateBodyValuesMaxOne)),
+  "recipient": zod.string().max(testEventTemplateBodyRecipientMax).optional(),
+  "confirmed": zod.boolean().optional(),
+  "requestId": zod.string().uuid().optional()
+})
+
+export const TestEventTemplateResponse = zod.object({
+  "status": zod.enum(['preview', 'provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown']),
+  "message": zod.string(),
+  "subject": zod.string(),
+  "body": zod.string()
+})
+
+
+export const GetEventControlsQueryParams = zod.object({
+  "clinicId": zod.coerce.string().optional()
+})
+
+export const GetEventControlsResponse = zod.object({
+  "scopeName": zod.string(),
+  "notificationsEnabled": zod.boolean().optional(),
+  "gateDescription": zod.string(),
+  "items": zod.array(zod.object({
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.string(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "revision": zod.number().int(),
+  "enabled": zod.boolean(),
+  "source": zod.string(),
+  "ready": zod.boolean(),
+  "blockedReasons": zod.array(zod.string()),
+  "timing": zod.string()
+}))
+})
+
+
+export const updateEventControlBodyRevisionMin = 0;
+
+
+
+export const UpdateEventControlBody = zod.object({
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "clinicId": zod.string().optional(),
+  "revision": zod.number().int().min(updateEventControlBodyRevisionMin),
+  "enabled": zod.boolean(),
+  "confirmed": zod.boolean()
+})
+
+export const UpdateEventControlResponse = zod.object({
+  "scopeName": zod.string(),
+  "notificationsEnabled": zod.boolean().optional(),
+  "gateDescription": zod.string(),
+  "items": zod.array(zod.object({
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.string(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "revision": zod.number().int(),
+  "enabled": zod.boolean(),
+  "source": zod.string(),
+  "ready": zod.boolean(),
+  "blockedReasons": zod.array(zod.string()),
+  "timing": zod.string()
+}))
+})
+
+
 export const updateIntegrationSettingsBodyCurrentPasswordMax = 1024;
 
-export const updateIntegrationSettingsBodyValuesMaxOne = 2048;
+export const updateIntegrationSettingsBodyValuesMaxOne = 8192;
 
 
 
 export const UpdateIntegrationSettingsBody = zod.object({
-  "provider": zod.enum(['smtp', 'sms']),
+  "provider": zod.enum(['smtp', 'sms', 'notificationSms']),
   "mode": zod.enum(['database', 'environment']),
   "revision": zod.string().nullable(),
   "currentPassword": zod.string().min(1).max(updateIntegrationSettingsBodyCurrentPasswordMax),
@@ -420,7 +631,16 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
 }))
-})
+}),
+  "notificationSms": zod.object({
+  "source": zod.enum(['environment', 'database']).optional(),
+  "revision": zod.string().nullish(),
+  "ready": zod.boolean(),
+  "keys": zod.array(zod.object({
+  "key": zod.string(),
+  "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
+}))
+}).optional()
 })
 
 
@@ -446,7 +666,16 @@ export const GetIntegrationSettingsResponse = zod.object({
   "key": zod.string(),
   "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
 }))
-})
+}),
+  "notificationSms": zod.object({
+  "source": zod.enum(['environment', 'database']).optional(),
+  "revision": zod.string().nullish(),
+  "ready": zod.boolean(),
+  "keys": zod.array(zod.object({
+  "key": zod.string(),
+  "status": zod.enum(['configured', 'missing', 'invalid', 'default'])
+}))
+}).optional()
 })
 
 
@@ -6683,7 +6912,7 @@ export const ListBookingMailOutcomesQueryParams = zod.object({
 export const ListBookingMailOutcomesResponse = zod.object({
   "items": zod.array(zod.object({
   "reference": zod.string().nullable(),
-  "status": zod.enum(['pending', 'sending', 'provider_accepted', 'delivery_unknown', 'configuration_failed', 'preparation_failed', 'disabled', 'obsolete', 'no_recipient', 'unknown']),
+  "status": zod.enum(['pending', 'sending', 'provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'configuration_failed', 'preparation_failed', 'disabled', 'obsolete', 'no_recipient', 'unknown']),
   "createdAt": zod.number().int().nullable().describe('Recorded event time in milliseconds since epoch')
 })),
   "hasMore": zod.boolean()

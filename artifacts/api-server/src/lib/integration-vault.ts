@@ -3,11 +3,13 @@ import { eq } from "drizzle-orm";
 import { db, integrationCredentials, auditLogs } from "@workspace/db";
 import { HttpError } from "./http";
 import { integrationReadiness } from "./integration-config";
+import { notificationSmsReadiness } from "./notification-sms-transport";
 
-export type Provider = "smtp" | "sms";
+export type Provider = "smtp" | "sms" | "notificationSms";
 export const integrationFields = {
   smtp: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM", "SMTP_SECURE", "SMTP_REQUIRE_TLS"],
   sms: ["OTP_PROVIDER", "TWILIO_ACCOUNT_SID", "TWILIO_MESSAGING_SERVICE_SID", "TWILIO_AUTH_TOKEN"],
+  notificationSms: ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING"],
 } as const;
 
 function masterKey() {
@@ -48,11 +50,12 @@ export async function resolvedIntegration(provider: Provider, conn: Pick<typeof 
   };
 }
 export async function integrationSettings() {
-  const [smtp, sms] = await Promise.all([resolvedIntegration("smtp"), resolvedIntegration("sms")]);
+  const [smtp, sms, notificationSms] = await Promise.all([resolvedIntegration("smtp"), resolvedIntegration("sms"), resolvedIntegration("notificationSms")]);
   return {
     editable: vaultConfigured(),
     smtp: { ...integrationReadiness(smtp.env).smtp, source: smtp.source, revision: smtp.revision },
     sms: { ...integrationReadiness(sms.env).sms, source: sms.source, revision: sms.revision },
+    notificationSms: { ...notificationSmsReadiness(notificationSms.env), source: notificationSms.source, revision: notificationSms.revision },
   };
 }
 export async function saveIntegration(provider: Provider, values: Record<string, string>, revision: string | null, mode: "database" | "environment", actor: string) {
@@ -74,7 +77,7 @@ export async function saveIntegration(provider: Provider, values: Record<string,
         if (value !== undefined) merged[name] = value;
       }
       if (provider === "sms") merged.OTP_PROVIDER = "twilio";
-      if (!integrationReadiness(merged)[provider].ready)
+      if (!(provider === "notificationSms" ? notificationSmsReadiness(merged) : integrationReadiness(merged)[provider]).ready)
         throw new HttpError(400, "Complete all required fields with valid values before saving.", "INTEGRATION_INVALID");
       await tx.insert(integrationCredentials).values({ provider, encrypted: encryptIntegration(provider, merged), revision: randomUUID() })
         .onConflictDoUpdate({ target: integrationCredentials.provider, set: { encrypted: encryptIntegration(provider, merged), revision: randomUUID() } });

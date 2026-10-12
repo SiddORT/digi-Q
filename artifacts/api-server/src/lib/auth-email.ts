@@ -20,7 +20,8 @@ export async function sendAuthEmail(to: string, subject: string, text: string,
     const attachments: any[] = [...files];
     if (rendered?.logoPath) {
       const { loadLogoBytes } = await import("./logo-bytes");
-      attachments.push({ filename: "clinic-logo.png", content: await loadLogoBytes(rendered.logoPath), contentType: "image/png", cid: "clinic-logo" });
+      try {attachments.push({ filename: "clinic-logo.png", content: await loadLogoBytes(rendered.logoPath), contentType: "image/png", cid: "clinic-logo" });}
+      catch {throw new HttpError(503,"Email preparation unavailable","EMAIL_PRE_DISPATCH_FAILED");}
     }
     const result = await client.sendMail({
       from: cfg.from, to, subject, ...(rendered || systemEmailTemplate(subject, text)),
@@ -33,8 +34,14 @@ export async function sendAuthEmail(to: string, subject: string, text: string,
       const delivery = result as { accepted?: unknown; rejected?: unknown };
       if ((Array.isArray(delivery.accepted) && delivery.accepted.length === 0) ||
           (Array.isArray(delivery.rejected) && delivery.rejected.length > 0))
-        throw new Error("Email not accepted");
+        throw new HttpError(503,"Email provider rejected the recipient","EMAIL_REJECTED");
     }
   }
-  catch { throw new HttpError(503, "Email delivery unavailable", "EMAIL_DELIVERY_FAILED"); }
+  catch (error:any) {
+    if(error instanceof HttpError && ["EMAIL_REJECTED","EMAIL_PRE_DISPATCH_FAILED"].includes(error.code!))throw error;
+    if(error?.code==="EAUTH"||error?.code==="EENVELOPE"||[530,535,550,551,552,553,554].includes(error?.responseCode))
+      throw new HttpError(503,"Email provider rejected the message","EMAIL_REJECTED");
+    if(["EDNS","ECONNECTION"].includes(error?.code))throw new HttpError(503,"Email connection unavailable","EMAIL_PRE_DISPATCH_FAILED");
+    throw new HttpError(503, "Email delivery outcome is uncertain", "EMAIL_DELIVERY_FAILED");
+  }
 }
