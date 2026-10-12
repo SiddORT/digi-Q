@@ -2,6 +2,14 @@ import { z } from "zod";
 import { lookup } from "node:dns/promises";
 import { request } from "node:https";
 import { BlockList, isIP } from "node:net";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+
+export const KEEP_IN_TOUCH_URL = "https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS";
+const keepInTouchMapping = {
+  encoding: "json", authMode: "bearer", authField: "Authorization",
+  fields: { recipient: "mobile", message: "message", senderId: "senderId", dltEntityId: "entityId", dltTemplateId: "templateId", clientId: "clientId" },
+  staticFields: {}, acceptedStatuses: [200], responseField: "success", responseValue: "true", dltRequired: false,
+} as const;
 
 const field = z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,49}$/);
 export const smsMappingSchema = z.object({
@@ -48,27 +56,43 @@ export function publicSmsAddress(ip: string) {
   return family === 4 ? !blocked.check(ip,"ipv4") : family === 6 && global6.check(ip,"ipv6") && !blocked.check(ip,"ipv6");
 }
 export function notificationSmsConfig(env: NodeJS.ProcessEnv) {
-  const url = smsUrl(env.NOTIFICATION_SMS_URL || "");
+  const provider = env.NOTIFICATION_SMS_PROVIDER || "generic";
+  if (!["generic", "keepInTouch"].includes(provider)) throw new Error("Invalid SMS provider");
+  const kit = provider === "keepInTouch";
+  const url = smsUrl(kit ? KEEP_IN_TOUCH_URL : env.NOTIFICATION_SMS_URL || "");
   const key = env.NOTIFICATION_SMS_KEY || "";
   if (!key || key.length > 2048 || !/^[\x21-\x7e]+$/.test(key)) throw new Error("Invalid SMS key");
+  const bearerToken = kit ? env.NOTIFICATION_SMS_BEARER_TOKEN || "" : "";
+  const protectedBearerToken = env.NOTIFICATION_SMS_BEARER_TOKEN || "";
+  const countryCodeFormat = env.NOTIFICATION_SMS_COUNTRY_CODE_FORMAT || "";
+  if (kit && (!bearerToken || bearerToken.length > 2048 || !/^[\x21-\x7e]+$/.test(bearerToken) ||
+      !["digits", "plus"].includes(countryCodeFormat))) throw new Error("Invalid Keep in Touch authentication or country code format");
   if((env.NOTIFICATION_SMS_MAPPING?.length||0)>8192)throw new Error("SMS mapping too large");
-  const mapping = smsMappingSchema.parse(JSON.parse(env.NOTIFICATION_SMS_MAPPING || ""));
+  const mapping = smsMappingSchema.parse(kit ? keepInTouchMapping : JSON.parse(env.NOTIFICATION_SMS_MAPPING || ""));
+  // Retained generic mappings are inactive, but cannot become a credential container.
+  if (kit && env.NOTIFICATION_SMS_MAPPING) {
+    const retained = smsMappingSchema.parse(JSON.parse(env.NOTIFICATION_SMS_MAPPING));
+    if (Object.values(retained.staticFields).some(v => v.includes(key) || v.includes(bearerToken)) ||
+        Object.keys(retained.staticFields).some(k => /password|secret|token|api_?key|authorization/i.test(k)))
+      throw new Error("Secret in static fields");
+  }
   // Static fields are not a second credential container.
-  if (Object.values(mapping.staticFields).some(v => v.includes(key)) ||
+  if (Object.values(mapping.staticFields).some(v => v.includes(key) || (protectedBearerToken && v.includes(protectedBearerToken))) ||
       Object.keys(mapping.staticFields).some(k=>/password|secret|token|api_?key|authorization/i.test(k))) throw new Error("Secret in static fields");
   const statusUrl = env.NOTIFICATION_SMS_STATUS_URL ? smsUrl(env.NOTIFICATION_SMS_STATUS_URL) : undefined;
   const enabled = env.NOTIFICATION_SMS_ENABLED?.trim();
   if (enabled && enabled !== "true" && enabled !== "false") throw new Error("Invalid SMS notification switch");
   const clientId = env.NOTIFICATION_SMS_CLIENT_ID || "";
   const senderId = env.NOTIFICATION_SMS_SENDER_ID || "";
-  const dltEntityId = env.NOTIFICATION_SMS_ENTITY_ID || "";
+  const dltEntityId = kit ? "" : env.NOTIFICATION_SMS_ENTITY_ID || "";
+  if (kit && (!clientId.trim() || !/^[A-Za-z0-9_-]{1,50}$/.test(senderId))) throw new Error("Keep in Touch identifiers required");
   if (clientId.length > 200 || /[\r\n]/.test(clientId) ||
       [senderId, dltEntityId].some(v => v.length > 50 || /[\r\n]/.test(v)))
     throw new Error("Invalid SMS provider identifiers");
   const clientField = mapping.fields.clientId ?? "client_id";
   if (clientId && [...Object.values(mapping.fields).filter(v => v !== mapping.fields.clientId), ...Object.keys(mapping.staticFields), ...(mapping.authMode === "body" ? [mapping.authField] : [])].includes(clientField))
     throw new Error("Client ID field conflicts with another provider field");
-  return { url, key, mapping, statusUrl, clientId, senderId, dltEntityId, notificationsEnabled: enabled !== "false" };
+  return { url, key, mapping, statusUrl, clientId, senderId, dltEntityId, provider, bearerToken, countryCodeFormat, notificationsEnabled: enabled !== "false" };
 }
 /** Optional notification channel only; never controls verification/OTP. */
 export function notificationSmsEnabled(env: NodeJS.ProcessEnv) {
@@ -76,21 +100,56 @@ export function notificationSmsEnabled(env: NodeJS.ProcessEnv) {
   return !value || value === "true";
 }
 export function notificationSmsReadiness(env: NodeJS.ProcessEnv) {
-  const names = ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED"];
-  const keys = names.map(key => ({key, status: env[key]?.trim() ? "configured" as const : "missing" as const}));
+  const kit = env.NOTIFICATION_SMS_PROVIDER === "keepInTouch";
+  const names = kit
+    ? ["NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT", "NOTIFICATION_SMS_ENABLED", "NOTIFICATION_SMS_MAPPING"]
+    : ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED"];
+  const keys = names.map(key => ({key, status: env[key]?.trim() ? "configured" as const :
+    kit && ["NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_ENABLED"].includes(key) ? "default" as const : "missing" as const}));
   let ready = false;
   try { notificationSmsConfig(env); ready = true; } catch { /* sanitized presence/syntax only */ }
   const publicUrl = (value: string | undefined) => { try { return value ? smsUrl(value).href : ""; } catch { return ""; } };
   return {
     ready, notificationsEnabled: notificationSmsEnabled(env),
-    apiUrl: publicUrl(env.NOTIFICATION_SMS_URL), statusApiUrl: publicUrl(env.NOTIFICATION_SMS_STATUS_URL),
-    keys: keys.map(item => !ready && item.status === "configured" ? { ...item, status: "invalid" as const } : item),
+    smsProvider: kit ? "keepInTouch" as const : "generic" as const,
+    countryCodeFormat: ["digits", "plus"].includes(env.NOTIFICATION_SMS_COUNTRY_CODE_FORMAT || "") ? env.NOTIFICATION_SMS_COUNTRY_CODE_FORMAT as "digits" | "plus" : undefined,
+    customApiUrl: publicUrl(env.NOTIFICATION_SMS_URL),
+    apiUrl: kit ? KEEP_IN_TOUCH_URL : publicUrl(env.NOTIFICATION_SMS_URL), statusApiUrl: publicUrl(env.NOTIFICATION_SMS_STATUS_URL),
+    keys: keys.map(item => {
+      if (!kit) return !ready && item.status === "configured" ? { ...item, status: "invalid" as const } : item;
+      if (item.status === "missing" || item.status === "default") return item;
+      const value = env[item.key]!;
+      const invalid = ["NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_BEARER_TOKEN"].includes(item.key)
+        ? value.length > 2048 || !/^[\x21-\x7e]+$/.test(value)
+        : item.key === "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT" ? !["digits","plus"].includes(value)
+        : item.key === "NOTIFICATION_SMS_ENABLED" ? !["true","false"].includes(value.trim())
+        : item.key === "NOTIFICATION_SMS_MAPPING" ? false
+        : item.key === "NOTIFICATION_SMS_SENDER_ID" ? !/^[A-Za-z0-9_-]{1,50}$/.test(value)
+        : value.length > (item.key === "NOTIFICATION_SMS_SENDER_ID" ? 50 : 200) || /[\r\n]/.test(value);
+      return invalid ? {...item,status:"invalid" as const} : item;
+    }),
   };
+}
+export function smsMetadataReady(cfg: ReturnType<typeof notificationSmsConfig>, meta: {senderId?:string;dltEntityId?:string;dltTemplateId?:string}) {
+  if (cfg.provider === "keepInTouch") return /^[A-Za-z0-9_-]{1,50}$/.test(meta.senderId || cfg.senderId) && /^[A-Za-z0-9_-]{1,50}$/.test(meta.dltTemplateId || "");
+  return !cfg.mapping.dltRequired || !!((meta.senderId || cfg.senderId) && (meta.dltEntityId || cfg.dltEntityId) && meta.dltTemplateId);
 }
 export function smsPayload(cfg: ReturnType<typeof notificationSmsConfig>, to: string, message: string, meta: {senderId?:string;dltEntityId?:string;dltTemplateId?:string}) {
   meta = { ...meta, senderId: meta.senderId || cfg.senderId, dltEntityId: meta.dltEntityId || cfg.dltEntityId };
+  if (cfg.provider === "keepInTouch") meta.dltEntityId = undefined;
   if (!/^\+[1-9]\d{6,14}$/.test(to) || !message || message.length > 1600 || Object.values(meta).some(v => v && (v.length > 50 || /[\r\n]/.test(v)))) throw new Error("Invalid SMS payload");
-  if (cfg.mapping.dltRequired && (!meta.senderId || !meta.dltEntityId || !meta.dltTemplateId)) throw new Error("DLT metadata required");
+  if (!smsMetadataReady(cfg, meta)) throw new Error("SMS template metadata required");
+  if (cfg.provider === "keepInTouch") {
+    const phone = parsePhoneNumberFromString(to);
+    if (!phone?.isValid() || phone.number !== to) throw new Error("Invalid international SMS recipient");
+    const body = JSON.stringify({
+      countryCode: `${cfg.countryCodeFormat === "plus" ? "+" : ""}${phone.countryCallingCode}`,
+      mobile: String(phone.nationalNumber), senderId: meta.senderId!, message,
+      apiKey: cfg.key, clientId: cfg.clientId, templateId: meta.dltTemplateId!,
+    });
+    if (Buffer.byteLength(body) > 16384) throw new Error("SMS payload too large");
+    return { body, headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.bearerToken}` } };
+  }
   const fields = cfg.mapping.fields;
   const values: Record<string,string> = { ...cfg.mapping.staticFields, [fields.recipient]:to, [fields.message]:message };
   if (cfg.clientId) values[fields.clientId ?? "client_id"] = cfg.clientId;
@@ -102,9 +161,15 @@ export function smsPayload(cfg: ReturnType<typeof notificationSmsConfig>, to: st
   if (Buffer.byteLength(body) > 16384) throw new Error("SMS payload too large");
   return {body,headers};
 }
-export function classifySmsResponse(mapping: SmsMapping, status: number, body: string): SmsOutcome {
+export function classifySmsResponse(mapping: SmsMapping, status: number, body: string, provider = "generic"): SmsOutcome {
   if (status >= 300 && status < 400) return "provider_rejected"; // Never follow redirects.
   if (!mapping.acceptedStatuses.includes(status)) return status >= 400 && status < 500 ? "provider_rejected" : "delivery_unknown";
+  if (provider === "keepInTouch") {
+    try {
+      const value = JSON.parse(body)?.success;
+      return value === true ? "provider_accepted" : value === false ? "provider_rejected" : "delivery_unknown";
+    } catch { return "delivery_unknown"; }
+  }
   if (!mapping.responseField) return "provider_accepted";
   try {
     let value: any = JSON.parse(body);
@@ -133,7 +198,7 @@ export async function sendNotificationSms(env: NodeJS.ProcessEnv, to: string, me
     }, res=>{
       let body = "", bytes = 0;
       res.on("data",chunk=>{bytes+=chunk.length;if(bytes>16384){finish("delivery_unknown");req.destroy();}else body+=chunk.toString("utf8");});
-      res.on("end",()=>finish(classifySmsResponse(cfg.mapping,res.statusCode || 0,body)));
+      res.on("end",()=>finish(classifySmsResponse(cfg.mapping,res.statusCode || 0,body,cfg.provider)));
       res.on("error",()=>finish("delivery_unknown"));
     });
     const timer = setTimeout(()=>{finish(dispatched?"delivery_unknown":"pre_dispatch_failed");req.destroy();},10000);

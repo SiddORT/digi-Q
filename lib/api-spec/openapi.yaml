@@ -1768,6 +1768,9 @@ components:
         notificationsEnabled: { type: boolean }
         apiUrl: { type: string }
         statusApiUrl: { type: string }
+        smsProvider: { type: string, enum: [generic, keepInTouch] }
+        countryCodeFormat: { type: string, enum: [digits, plus] }
+        customApiUrl: { type: string }
         smtpHost: { type: string }
         smtpPort: { type: integer }
         fromEmail: { type: string }

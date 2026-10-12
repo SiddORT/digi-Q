@@ -101,6 +101,7 @@ test("expanded row actions retain edit guards and activation confirmation withou
   await expect(page.getByRole("heading", { name: "Discard unsaved changes?" })).toBeVisible();
   await page.getByRole("button", { name: "Keep Editing", exact: true }).click();
   await expect(page.getByTestId("input-body")).toHaveValue("Unsaved wording");
+  await page.getByTestId("details-advanced").getByText("Advanced", { exact: true }).click();
   await page.getByTestId("button-save-draft").click();
   await expect(page.getByRole("heading", { name: "Save Draft?" })).toBeVisible();
   await page.getByTestId("button-confirm-cancel").click();

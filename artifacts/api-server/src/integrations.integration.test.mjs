@@ -56,8 +56,10 @@ before(async () => {
       b.onResolve({ filter: /\/notification-sms-transport$/ }, () => ({ path: "sms", namespace: "fake-sms" }));
       b.onLoad({ filter: /.*/, namespace: "fake-sms" }, () => ({ contents: `
         export * from ${JSON.stringify(resolve(root, "lib/notification-sms-transport.ts"))};
+         import {notificationSmsConfig,smsPayload} from ${JSON.stringify(resolve(root, "lib/notification-sms-transport.ts"))};
         export async function sendNotificationSms(env,to,message,meta) {
-          globalThis.integrationSms.push({to,message,meta});
+           const cfg=notificationSmsConfig(env),payload=smsPayload(cfg,to,message,meta);
+           globalThis.integrationSms.push({to,message,meta,url:cfg.url.href,headers:payload.headers,body:JSON.parse(cfg.mapping.encoding==="json"?payload.body:"{}")});
           return globalThis.integrationSmsOutcome;
         }
       `, resolveDir: root }));
@@ -75,6 +77,37 @@ before(async () => {
   server = api.app.listen(0, "127.0.0.1");
   await new Promise(resolve => server.once("listening", resolve));
   origin = `http://127.0.0.1:${server.address().port}`;
+});
+test("Keep in Touch password-confirmed route save is encrypted and write-only; explicit SMS uses exact contract without activating events",async()=>{
+ const beforeSms=globalThis.integrationSms.length;
+ await prepareEditor("admin7");
+ const values={NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_KEY:"route-fictional-body-key",
+  NOTIFICATION_SMS_BEARER_TOKEN:"route-fictional-distinct-token",NOTIFICATION_SMS_CLIENT_ID:"route-fictional-client",
+  NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"plus"};
+ const saved=await edit("admin7",{provider:"notificationSms",values});
+ assert.equal(saved.status,200);
+ assert.equal(saved.body.notificationSms.smsProvider,"keepInTouch");
+ assert.equal(saved.body.notificationSms.ready,true);
+ for(const value of [values.NOTIFICATION_SMS_KEY,values.NOTIFICATION_SMS_BEARER_TOKEN,values.NOTIFICATION_SMS_CLIENT_ID])assert(!JSON.stringify(saved.body).includes(value));
+ const row=(await harness.control.query("select encrypted from integration_credentials where provider='notificationSms'")).rows[0];
+ assert(!row.encrypted.includes(values.NOTIFICATION_SMS_BEARER_TOKEN));
+ const current=await api.resolvedIntegration("notificationSms");
+ assert.equal(current.env.NOTIFICATION_SMS_BEARER_TOKEN,values.NOTIFICATION_SMS_BEARER_TOKEN);
+ const result=await fetch(`${origin}/settings/integrations/notification-sms/test-message`,{
+  method:"POST",headers:{"x-test-user":"admin7","content-type":"application/json"},
+  body:JSON.stringify({recipient:"+919876543210",message:"Fictional test",dltTemplateId:"BOOKING"}),
+ });
+ assert.equal(result.status,200);assert.equal((await result.json()).status,"provider_accepted");
+ const wire=globalThis.integrationSms.at(-1);
+ assert.equal(wire.url,"https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS");
+ assert.equal(wire.headers.Authorization,"Bearer route-fictional-distinct-token");
+ assert.deepEqual(wire.body,{countryCode:"+91",mobile:"9876543210",senderId:"DIGIQ",message:"Fictional test",apiKey:"route-fictional-body-key",clientId:"route-fictional-client",templateId:"BOOKING"});
+ assert.equal((await harness.control.query("select count(*)::int n from settings where id like 'sms-template:%' or id like 'sms-outbox:%'")).rows[0].n,0);
+ const preserved=await edit("admin7",{provider:"notificationSms",revision:saved.body.notificationSms.revision,values:{NOTIFICATION_SMS_KEY:"",NOTIFICATION_SMS_BEARER_TOKEN:""}});
+ assert.equal(preserved.status,200);
+ assert.equal((await api.resolvedIntegration("notificationSms")).env.NOTIFICATION_SMS_BEARER_TOKEN,values.NOTIFICATION_SMS_BEARER_TOKEN);
+ assert.equal((await edit("admin7",{provider:"notificationSms",revision:preserved.body.notificationSms.revision,mode:"environment"})).status,200);
+ globalThis.integrationSms.splice(beforeSms);
 });
 after(async () => {
   if (server) await new Promise(resolve => server.close(resolve));
@@ -214,7 +247,7 @@ test("encrypted save, preserved blank fields, conflict, delivery resolution and 
   assert.equal(restored.status, 200);
   assert.equal(restored.body.smtp.source, "environment");
   assert.equal(restored.body.smtp.revision, null);
-  const audits = (await harness.control.query("select summary from audit_logs where entity_type='integration'")).rows;
+   const audits = (await harness.control.query("select summary from audit_logs where entity_type='integration' and entity_id='smtp'")).rows;
   assert.equal(audits.length, 3);
   assert.ok(!JSON.stringify(audits).includes("new-fixture-secret"));
 });

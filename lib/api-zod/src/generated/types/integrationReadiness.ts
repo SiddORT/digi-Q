@@ -21,6 +21,8 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { IntegrationKeyStatus } from './integrationKeyStatus';
+import type { IntegrationReadinessCountryCodeFormat } from './integrationReadinessCountryCodeFormat';
+import type { IntegrationReadinessSmsProvider } from './integrationReadinessSmsProvider';
 import type { IntegrationReadinessSource } from './integrationReadinessSource';
 
 export interface IntegrationReadiness {
@@ -31,6 +33,9 @@ export interface IntegrationReadiness {
   notificationsEnabled?: boolean;
   apiUrl?: string;
   statusApiUrl?: string;
+  smsProvider?: IntegrationReadinessSmsProvider;
+  countryCodeFormat?: IntegrationReadinessCountryCodeFormat;
+  customApiUrl?: string;
   smtpHost?: string;
   smtpPort?: number;
   fromEmail?: string;

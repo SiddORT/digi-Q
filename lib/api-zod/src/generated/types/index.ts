@@ -166,6 +166,8 @@ export * from './integrationCheckChecksItemStatus';
 export * from './integrationKeyStatus';
 export * from './integrationKeyStatusStatus';
 export * from './integrationReadiness';
+export * from './integrationReadinessCountryCodeFormat';
+export * from './integrationReadinessSmsProvider';
 export * from './integrationReadinessSource';
 export * from './integrationSettings';
 export * from './integrationUpdate';

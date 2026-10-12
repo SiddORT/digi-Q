@@ -20,9 +20,10 @@ await build({entryPoints:[resolve(import.meta.dirname,"lib/notification-sms-tran
         queueMicrotask(()=>{
           if(state.scenario==="before"){req.emit("error",Error("Secret before dispatch"));return;}
           const socket=new EventEmitter();req.emit("socket",socket);socket.emit("secureConnect");
-          if(state.scenario==="after"){req.emit("error",Error("Secret after dispatch"));return;}
-          const res=new EventEmitter();res.statusCode=state.scenario==="redirect"?302:200;
-          callback(res);res.emit("data",Buffer.from(state.scenario==="large"?"x".repeat(17000):'{"ok":"yes"}'));res.emit("end");
+           if(state.scenario==="after"){req.emit("error",Error("Secret after dispatch"));return;}
+           if(state.scenario==="timeout")return;
+           const res=new EventEmitter();res.statusCode=state.scenario==="redirect"?302:(state.status??200);
+           callback(res);res.emit("data",Buffer.from(state.scenario==="large"?"x".repeat(17000):(state.response??'{"ok":"yes"}')));res.emit("end");
         });
       };return req;
     }`
@@ -38,6 +39,87 @@ test("optional notification switch is backwards compatible and independent of pr
  assert.equal(api.notificationSmsEnabled({...env,NOTIFICATION_SMS_ENABLED:"invalid"}),false);
  assert.equal(api.notificationSmsReadiness({...env,NOTIFICATION_SMS_ENABLED:"false"}).ready,true);
  assert.throws(()=>api.notificationSmsConfig({...env,NOTIFICATION_SMS_ENABLED:"invalid"}));
+});
+const kitEnv={
+ NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_KEY:"fictional-body-key",
+ NOTIFICATION_SMS_BEARER_TOKEN:"fictional-distinct-bearer",NOTIFICATION_SMS_CLIENT_ID:"fictional-client",
+ NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits",
+};
+test("Keep in Touch exact fixed POST contract, independent credentials and event metadata",async()=>{
+ const state=globalThis.fakeSmsNetwork;state.addresses=[{address:"8.8.8.8",family:4}];state.scenario="accepted";
+ state.response='{"success":true,"message":"a human message is not the contract"}';
+ assert.equal(await api.sendNotificationSms(kitEnv,"+919876543210","Fictional message",{dltTemplateId:"event-booking",dltEntityId:"NOT_SENT"}),"provider_accepted");
+ assert.equal(state.url,"https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS");
+ assert.equal(state.options.method,"POST");assert.equal(state.options.agent,false);
+ assert.equal(state.options.headers.Authorization,"Bearer fictional-distinct-bearer");
+ assert.equal(state.options.headers["Content-Type"],"application/json");
+ assert.deepEqual(JSON.parse(state.body),{countryCode:"91",mobile:"9876543210",senderId:"DIGIQ",message:"Fictional message",apiKey:"fictional-body-key",clientId:"fictional-client",templateId:"event-booking"});
+ assert.equal(state.options.headers["Content-Length"],Buffer.byteLength(state.body));
+ assert.equal(state.pinned.address,"8.8.8.8");
+ const cfg=api.notificationSmsConfig(kitEnv);
+ assert.equal(api.smsMetadataReady(cfg,{dltTemplateId:"event"}),true);
+ assert.equal(api.smsMetadataReady(cfg,{}),false);
+ assert.equal(JSON.parse(api.smsPayload(cfg,"+919876543210","Fixture",{senderId:"OVERRIDE",dltTemplateId:"reminder"}).body).templateId,"reminder");
+ delete state.response;
+});
+test("Keep in Touch splits valid international recipients without dropping national leading zeros; format is explicit",()=>{
+ for(const [to,code,mobile] of [["+919876543210","91","9876543210"],["+442079460018","44","2079460018"],["+39066982","39","066982"],["+12025550123","1","2025550123"]]){
+  for(const format of ["digits","plus"]){
+   const cfg=api.notificationSmsConfig({...kitEnv,NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:format});
+   const payload=JSON.parse(api.smsPayload(cfg,to,"Fixture",{dltTemplateId:"event"}).body);
+   assert.equal(payload.countryCode,(format==="plus"?"+":"")+code);assert.equal(payload.mobile,mobile);
+  }
+ }
+ for(const to of ["9876543210","+910000000000","+999123456789","+390"," +919876543210","+919876543210ext1"]){
+  assert.throws(()=>api.smsPayload(api.notificationSmsConfig(kitEnv),to,"Fixture",{dltTemplateId:"event"}));
+ }
+ assert.throws(()=>api.smsPayload(api.notificationSmsConfig(kitEnv),"+919876543210","Fixture",{}));
+});
+test("Keep in Touch readiness requires independent protected fields, no unused entity or generic mapping, and never echoes values",()=>{
+ assert.equal(api.notificationSmsReadiness(kitEnv).ready,true);
+ for(const name of Object.keys(kitEnv)){
+  const missing={...kitEnv,[name]:""};
+  assert.equal(api.notificationSmsReadiness(missing).ready,false,name);
+ }
+ for(const format of ["auto","+91","91","plus-or-digits"]){
+  assert.equal(api.notificationSmsReadiness({...kitEnv,NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:format}).ready,false);
+ }
+ const readiness=api.notificationSmsReadiness(kitEnv);
+ for(const key of ["NOTIFICATION_SMS_KEY","NOTIFICATION_SMS_BEARER_TOKEN","NOTIFICATION_SMS_CLIENT_ID","NOTIFICATION_SMS_SENDER_ID"]){
+  assert.equal(JSON.stringify(readiness).includes(kitEnv[key]),false);
+  const missing=api.notificationSmsReadiness({...kitEnv,[key]:""});
+  assert.equal(missing.keys.find(k=>k.key===key).status,"missing");
+  const other = key === "NOTIFICATION_SMS_KEY" ? "NOTIFICATION_SMS_BEARER_TOKEN" : "NOTIFICATION_SMS_KEY";
+  assert.equal(missing.keys.find(k=>k.key===other)?.status,"configured");
+ }
+ for(const staticFields of [{apiKey:"private"},{route:kitEnv.NOTIFICATION_SMS_KEY},{route:kitEnv.NOTIFICATION_SMS_BEARER_TOKEN}]){
+  assert.throws(()=>api.notificationSmsConfig({...kitEnv,NOTIFICATION_SMS_MAPPING:JSON.stringify({...map,staticFields})}));
+ }
+ assert.throws(()=>api.notificationSmsConfig({...env,NOTIFICATION_SMS_BEARER_TOKEN:kitEnv.NOTIFICATION_SMS_BEARER_TOKEN,
+  NOTIFICATION_SMS_MAPPING:JSON.stringify({...map,staticFields:{route:kitEnv.NOTIFICATION_SMS_BEARER_TOKEN}})}));
+ assert.equal(api.notificationSmsReadiness({...kitEnv,NOTIFICATION_SMS_ENTITY_ID:"invalid\nunused"}).ready,true);
+});
+test("Keep in Touch accepts only boolean true on HTTP 200; false is rejected and all ambiguous outcomes remain unknown",async()=>{
+ const state=globalThis.fakeSmsNetwork;state.scenario="accepted";
+ const cfg=api.notificationSmsConfig(kitEnv);
+ for(const [body,outcome] of [['{"success":true}',"provider_accepted"],['{"success":false}',"provider_rejected"],
+  ['{"success":"true"}',"delivery_unknown"],['{"success":"false"}',"delivery_unknown"],['{"success":1}',"delivery_unknown"],
+  ['{"success":null}',"delivery_unknown"],['{"message":"SMS sent successfully"}',"delivery_unknown"],['[]',"delivery_unknown"],
+  ['{"success":{}}',"delivery_unknown"],["broken private diagnostic","delivery_unknown"]]){
+  assert.equal(api.classifySmsResponse(cfg.mapping,200,body,"keepInTouch"),outcome);
+  state.response=body;
+  assert.equal(await api.sendNotificationSms(kitEnv,"+919876543210","Fixture",{dltTemplateId:"event"}),outcome);
+ }
+ for(const [status,outcome] of [[202,"delivery_unknown"],[204,"delivery_unknown"],[302,"provider_rejected"],[401,"provider_rejected"],[500,"delivery_unknown"]]){
+  state.status=status;state.response='{"success":true,"message":"private"}';
+  assert.equal(await api.sendNotificationSms(kitEnv,"+919876543210","Fixture",{dltTemplateId:"event"}),outcome);
+ }
+ delete state.response;delete state.status;
+ for(const [scenario,outcome] of [["before","pre_dispatch_failed"],["after","delivery_unknown"],["timeout","delivery_unknown"]]){
+  state.scenario=scenario;
+  assert.equal(await api.sendNotificationSms(kitEnv,"+919876543210","Fixture",{dltTemplateId:"event"}),outcome);
+ }
+ state.scenario="accepted";
 });
 test("provider Client ID and DLT defaults enter the request, with explicit template metadata taking precedence",()=>{
  const config=api.notificationSmsConfig({...env,NOTIFICATION_SMS_CLIENT_ID:"private-client",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_ENTITY_ID:"entity-default"});

@@ -18,6 +18,66 @@ Restart through your normal operations process after changing environment config
 
 ## SMS and authentication
 
+### Keep in Touch notification SMS preset
+
+In **Communication Settings → SMS**, deliberately select **Keep in Touch**.
+This affects optional notification SMS only, never Twilio OTP or security messages.
+The preset uses the supplied endpoint:
+
+`https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS`
+
+Configure these write-only fields through the encrypted website editor, or privately
+through server environment settings:
+
+| Setting | Purpose |
+| --- | --- |
+| `NOTIFICATION_SMS_PROVIDER=keepInTouch` | Explicit provider selection; absent means the existing generic transport |
+| `NOTIFICATION_SMS_BEARER_TOKEN` | `Authorization: Bearer <token>` |
+| `NOTIFICATION_SMS_KEY` | Body `apiKey`; distinct from the Bearer token |
+| `NOTIFICATION_SMS_CLIENT_ID` | Required body `clientId` |
+| `NOTIFICATION_SMS_SENDER_ID` | Required default `senderId`; an event's Sender ID may override it |
+| `NOTIFICATION_SMS_COUNTRY_CODE_FORMAT` | Required explicit choice: `digits` or `plus` |
+
+No actual credentials were supplied. Do not assume the Bearer token and API key
+are identical. Never put either in mapping static fields, URLs, documentation,
+tests, screenshots or chat. Website saves require the server's existing
+`INTEGRATIONS_ENCRYPTION_KEY`, current Super Admin password and current revision.
+Blank protected fields preserve their previous value. Reads and readiness return
+only presence/validity, not protected values; database settings are AES-256-GCM
+encrypted, and audits contain field names only. Environment values are resolved
+server-side and stay write-only in the settings response.
+
+The preset always sends POST with `Content-Type: application/json` and exactly
+seven **string** body fields: `countryCode`, `mobile`, `senderId`, `message`,
+`apiKey`, `clientId`, `templateId`. The validated E.164 recipient is split using
+phone-number metadata, not a guessed prefix: `+919876543210` becomes country code
+`91` (or `+91`) and mobile `9876543210`. National leading zeros are preserved,
+including Italian numbers. There is no DLT Entity ID requirement or entity field
+on this wire contract. The selected event/recipient template's existing **DLT
+Template ID** supplies `templateId` and is required for activation and sending.
+
+**Unverified provider detail:** the supplied example used generic string
+placeholders and did not establish whether `countryCode` includes `+`. The app
+requires a bounded explicit `digits`/`plus` choice. Confirm it with the provider
+before an authorized real test. The app never probes both formats, falls back to
+another provider, or automatically resends an uncertain dispatch.
+
+The preset's allowed successful HTTP status is **200**, with JSON boolean
+`success: true`. Boolean `false` is rejection. Missing, nonboolean or malformed
+`success`, unexpected successful statuses, server errors and uncertain network
+outcomes are not successful delivery. Human `message` text is neither an
+acceptance rule nor a raw diagnostic returned to administrators. HTTPS,
+public-destination validation, DNS pinning, no redirects, request/response size
+bounds and timeouts remain shared with the generic sender.
+
+Saving or testing is **not activation**: event controls and the clinic notification
+gate still apply. Existing generic mapping and URL values are retained until
+explicitly edited; switching the preset does not rewrite them, enable events,
+activate clinics or replay old jobs. Provider acceptance is not handset delivery.
+Development verification uses disposable databases, fictional credentials and
+fake transports only. Live sending, provider/DLT approval and deployment are
+separate, explicitly authorized operational steps.
+
 SMS delivery uses Twilio's direct HTTPS API, not a Replit connector. Required environment values: `OTP_PROVIDER=twilio`, `TWILIO_ACCOUNT_SID`, `TWILIO_MESSAGING_SERVICE_SID`, `TWILIO_AUTH_TOKEN`. Website saves select Twilio automatically. Migrating an older connector-only installation requires adding its Twilio auth token privately; no credential is exported from a connector. Readiness does not verify provider permissions or delivery. `OTP_PROVIDER=development` works only from the environment with `NODE_ENV=development`, never from website settings. No SMS test is sent by this feature.
 
 The template uses `AUTH_SESSION_MODE=native`, preserving existing opaque-cookie continuity. To enable app-issued JWT sessions, first configure a dedicated high-entropy `JWT_SIGNING_KEY` of at least 32 UTF-8 bytes through the private server secret store, then explicitly set `AUTH_SESSION_MODE=jwt`. Do not reuse another integration's credential as the signing key. Misconfigured session issuance can return HTTP 503 with `AUTH_SESSION_UNCONFIGURED`. Switching modes invalidates existing cookies and requires users to sign in again.

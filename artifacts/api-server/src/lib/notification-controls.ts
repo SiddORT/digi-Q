@@ -6,7 +6,7 @@ import { assert } from "./http";
 import { authorizedTemplateScope, resolvedTemplate, type Channel } from "./notification-template-store";
 import { templateEvents, templateRecipients, templateContent, smsTemplateContent, renderNotification, substitute, type SmsTemplateContent } from "./notification-templates";
 import { integrationSettings, resolvedIntegration } from "./integration-vault";
-import { notificationSmsConfig, sendNotificationSms, notificationSmsReadiness, type SmsOutcome } from "./notification-sms-transport";
+import { notificationSmsConfig, sendNotificationSms, notificationSmsReadiness, smsMetadataReady, type SmsOutcome } from "./notification-sms-transport";
 import { smtpConfig, validEmailAddress } from "./integration-config";
 import { sendAuthEmail } from "./auth-email";
 import { getSettings } from "./store";
@@ -22,8 +22,8 @@ export async function eventControls(user:any,clinicId?:string) {
   const clinic=await authorizedTemplateScope(user,clinicId);
   const readiness=await integrationSettings();
   const gate=clinicId?(await getSettings(db,clinicId)).notificationsEnabled:undefined;
-  let dltRequired=false, providerSender=false, providerEntity=false;
-  try {const config=notificationSmsConfig((await resolvedIntegration("notificationSms")).env);dltRequired=config.mapping.dltRequired;providerSender=!!config.senderId;providerEntity=!!config.dltEntityId;}catch{/* missing configuration shown below */}
+   let smsConfig: ReturnType<typeof notificationSmsConfig> | undefined;
+   try {smsConfig=notificationSmsConfig((await resolvedIntegration("notificationSms")).env);}catch{/* missing configuration shown below */}
   const items=[];
   for(const channel of ["email","sms"] as const) for(const recipient of templateRecipients) for(const event of templateEvents) {
     if(event==="onboarding"&&recipient!=="clinicAdmin")continue;
@@ -33,7 +33,7 @@ export async function eventControls(user:any,clinicId?:string) {
     if(channel==="sms"&&readiness.notificationSms.notificationsEnabled===false)reasons.push("SMS notifications are disabled in Communication Settings");
     if(channel==="email"&&readiness.smtp.notificationsEnabled===false)reasons.push("Email notifications are disabled in Communication Settings");
     const sms=template.content as SmsTemplateContent;
-    if(channel==="sms"&&dltRequired&&!((sms.senderId||providerSender)&&(sms.dltEntityId||providerEntity)&&sms.dltTemplateId))reasons.push("Configure Sender and Entity IDs, and publish a DLT Template ID for this event");
+    if(channel==="sms"&&smsConfig&&!smsMetadataReady(smsConfig,sms))reasons.push(smsConfig.provider==="keepInTouch"?"Publish a DLT Template ID for this event; Keep in Touch uses Sender ID but no Entity ID":"Configure Sender and Entity IDs, and publish a DLT Template ID for this event");
     if(gate===false)reasons.push("Enable the clinic-wide notification gate in Clinic settings (not changed here)");
     if(!template.content.enabled)reasons.push("Published activation is off");
     items.push({channel,event,recipient,revision:template.local.revision,enabled:template.content.enabled,source:template.source,ready:reasons.length===0,blockedReasons:reasons,
@@ -89,7 +89,7 @@ export async function testTemplate(user:any,prepared:Awaited<ReturnType<typeof p
       const env=(await resolvedIntegration("notificationSms",tx)).env;
       assert(notificationSmsReadiness(env).ready,400,"Configure notification SMS before testing");
       const cfg=notificationSmsConfig(env),meta=content as SmsTemplateContent;
-      assert(!cfg.mapping.dltRequired||!!((meta.senderId||cfg.senderId)&&(meta.dltEntityId||cfg.dltEntityId)&&meta.dltTemplateId),400,"Sender and DLT metadata are required for this transport");
+      assert(smsMetadataReady(cfg,meta),400,"Required sender and event template metadata are missing");
     }else smtpConfig((await resolvedIntegration("smtp",tx)).env);
     const inserted=await tx.insert(settings).values({id,data:{digest,status:"delivery_unknown",createdAt:Date.now()}}).onConflictDoNothing().returning({id:settings.id});
     if(!inserted.length) {

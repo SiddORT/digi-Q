@@ -114,7 +114,7 @@ export function NotificationSmsSettings({ onDirtyChange, onBusyChange, inline = 
       {!d.editable && <p role="note" className="notice">Website editing is locked until the server encryption key is configured.</p>}
       {inline && d.editable && <Editor key={`${formKey}:${r.revision ?? ""}`} revision={r.revision ?? null} keys={r.keys} onDirtyChange={setDirty} onBusyChange={setBusy} onCancel={() => { setDirty(false); setFormKey(k => k + 1); }} onDone={() => { setDirty(false); setSaved(true); setBusy(false); setFormKey(k => k + 1); void query.refetch(); void qc.invalidateQueries({ queryKey: getGetIntegrationSettingsQueryKey() }); }} />}
       {!inline && editing && <AppDialog open variant="drawer" onClose={() => setEditing(false)} dirty={dirty} busy={busy} title="SMS provider configuration" description="Saving does not send a message.">
-        <Editor revision={r.revision ?? null} keys={r.keys} onDirtyChange={setDirty} onBusyChange={setBusy} onCancel={() => setEditing(false)} onDone={() => { setDirty(false); setEditing(false); setSaved(true); setBusy(false); void query.refetch(); void qc.invalidateQueries({ queryKey: getGetIntegrationSettingsQueryKey() }); }} /></AppDialog>}
+        <SmsProviderPanel key={r.revision ?? "rev"} r={r} editable={!!d.editable} onDirtyChange={setDirty} onBusyChange={setBusy} onSaved={() => { setEditing(false); setSaved(true); void query.refetch(); }} /></AppDialog>}
     </div>}
   </section>;
 }

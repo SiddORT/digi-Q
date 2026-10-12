@@ -13,6 +13,7 @@
 - [DigiQ standardization](digiq-standardization-decisions.md) — prompt is the approved reference; surface conflicts, inherit parent display formats, and use in-app warnings.
 - [Notification safety](notification-delivery-safety.md) — retry only known pre-dispatch failures; reminders refer to sessions, not promised consultation times.
 - [Notification channel boundary](notification-channel-boundary.md) — configurable SMS stays separate from OTP; booking retries never capture newly enabled notification jobs.
+- [Keep in Touch contract](keep-in-touch-contract.md) — credential equality and country-code '+' convention are unverified; no live probing under development authorization.
 - [Settings history validation](settings-history-validation.md) — Back → Cancel → Back → Discard exposes history corruption that a first prompt or sidebar link does not.
 - [Media storage choice](media-storage-choice.md) — uploads and HTTPS links; selectable local/object storage in one private server configuration file.
 - [Date/time reference scope](date-time-schedule-reference-scope.md) — four-issue scope only; reference layouts across pages/roles, preserving existing colours and styling.

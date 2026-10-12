@@ -9,7 +9,7 @@ export type Provider = "smtp" | "sms" | "notificationSms";
 export const integrationFields = {
   smtp: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM", "SMTP_SECURE", "SMTP_REQUIRE_TLS", "SMTP_FROM_NAME", "SMTP_NOTIFICATIONS_ENABLED"],
   sms: ["OTP_PROVIDER", "TWILIO_ACCOUNT_SID", "TWILIO_MESSAGING_SERVICE_SID", "TWILIO_AUTH_TOKEN"],
-  notificationSms: ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED"],
+  notificationSms: ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED", "NOTIFICATION_SMS_PROVIDER", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT"],
 } as const;
 
 function masterKey() {
@@ -73,7 +73,8 @@ export async function saveIntegration(provider: Provider, values: Record<string,
       const previous = current ? decryptIntegration(provider, current.encrypted) : process.env;
       const merged: Record<string, string> = {};
       for (const name of integrationFields[provider]) {
-        const value = values[name] ?? previous[name];
+        const protectedBlank = provider === "notificationSms" && ["NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID"].includes(name) && values[name] === "";
+        const value = protectedBlank ? previous[name] : values[name] ?? previous[name];
         if (value !== undefined) merged[name] = value;
       }
       if (provider === "sms") merged.OTP_PROVIDER = "twilio";

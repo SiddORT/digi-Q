@@ -640,6 +640,22 @@ export const IntegrationReadinessSource = {
   database: 'database',
 } as const;
 
+export type IntegrationReadinessSmsProvider = typeof IntegrationReadinessSmsProvider[keyof typeof IntegrationReadinessSmsProvider];
+
+
+export const IntegrationReadinessSmsProvider = {
+  generic: 'generic',
+  keepInTouch: 'keepInTouch',
+} as const;
+
+export type IntegrationReadinessCountryCodeFormat = typeof IntegrationReadinessCountryCodeFormat[keyof typeof IntegrationReadinessCountryCodeFormat];
+
+
+export const IntegrationReadinessCountryCodeFormat = {
+  digits: 'digits',
+  plus: 'plus',
+} as const;
+
 export interface IntegrationReadiness {
   source?: IntegrationReadinessSource;
   /** @nullable */
@@ -648,6 +664,9 @@ export interface IntegrationReadiness {
   notificationsEnabled?: boolean;
   apiUrl?: string;
   statusApiUrl?: string;
+  smsProvider?: IntegrationReadinessSmsProvider;
+  countryCodeFormat?: IntegrationReadinessCountryCodeFormat;
+  customApiUrl?: string;
   smtpHost?: string;
   smtpPort?: number;
   fromEmail?: string;

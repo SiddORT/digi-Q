@@ -9,6 +9,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { createQueueHarness } from "./test-support/postgres-queue.mjs";
 import { queueFixtureSql } from "./test-support/queue-fixtures.mjs";
+import { keepInTouchNetworkPlugin } from "./test-support/keep-in-touch-network.mjs";
 const bundle=resolve(import.meta.dirname,`.notification-settings-${process.pid}.mjs`);
 const mapping={encoding:"json",authMode:"header",authField:"X-API-Key",fields:{recipient:"to",message:"message",senderId:"sender",dltEntityId:"entity",dltTemplateId:"template"},staticFields:{route:"transactional"},acceptedStatuses:[200,202],responseField:"result.status",responseValue:"accepted",dltRequired:true};
 const env={NOTIFICATION_SMS_URL:"https://sms.example.invalid/send",NOTIFICATION_SMS_KEY:"synthetic-notification-key",NOTIFICATION_SMS_MAPPING:JSON.stringify(mapping)};
@@ -46,7 +47,7 @@ before(async()=>{
     app.use(notificationTemplatesRouter);app.use(integrationsRouter);
     app.use((err,req,res,next)=>res.status(err.status||400).json({error:"Sanitized",code:err.code}));`,
     resolveDir:import.meta.dirname,loader:"ts"},outfile:bundle,bundle:true,platform:"node",format:"esm",packages:"external",
-    plugins:[{name:"isolated",setup(b){
+    plugins:[keepInTouchNetworkPlugin,{name:"isolated",setup(b){
       b.onResolve({filter:/^@workspace\/db$/},()=>({path:"db",namespace:"fixture"}));
       b.onLoad({filter:/.*/,namespace:"fixture"},()=>({contents:`export * from "${resolve(import.meta.dirname,"../../../lib/db/src/schema/core.ts")}";export const db=globalThis.notificationSettingsDb;`,loader:"ts",resolveDir:import.meta.dirname}));
       b.onResolve({filter:/^@workspace\/api-zod$/},()=>({path:resolve(import.meta.dirname,"../../../lib/api-zod/src/index.ts")}));
@@ -55,6 +56,93 @@ before(async()=>{
       b.onLoad({filter:/.*/,namespace:"fixture-auth"},()=>({contents:`export async function requireUser(req){return {id:req.headers["x-user"],role:req.headers["x-user"]||"patient",clinicIds:["c"]};} export function roles(u,rs){if(!rs.includes(u.role))throw Object.assign(new Error("Forbidden"),{status:403});}`}));
     }}]});
   api=await import(bundle);
+});
+test("Keep in Touch encrypted save/reload preserves generic mapping, optional switches, blank secrets and redacts audit/readiness",async()=>{
+ const original=await api.resolvedIntegration("notificationSms");
+ const values={NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_KEY:"fictional-kit-body-key",
+  NOTIFICATION_SMS_BEARER_TOKEN:"fictional-kit-distinct-bearer",NOTIFICATION_SMS_CLIENT_ID:"fictional-kit-client",
+  NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"plus"};
+ const beforeJobs=(await h.control.query("select count(*)::int n from settings where id like 'sms-outbox:%'")).rows[0].n;
+ await api.saveIntegration("notificationSms",values,original.revision,"database",sa.id);
+ try {
+  const saved=await api.resolvedIntegration("notificationSms");
+  const cfg=api.notificationSmsConfig(saved.env);assert.equal(cfg.provider,"keepInTouch");
+  assert.equal(saved.env.NOTIFICATION_SMS_MAPPING,original.env.NOTIFICATION_SMS_MAPPING);
+  assert.equal(saved.env.NOTIFICATION_SMS_ENABLED,original.env.NOTIFICATION_SMS_ENABLED);
+  const publicSettings=await api.integrationSettings();
+  assert.equal(publicSettings.notificationSms.smsProvider,"keepInTouch");
+  assert.equal(publicSettings.notificationSms.countryCodeFormat,"plus");
+  assert.equal(publicSettings.notificationSms.ready,true);
+  const ciphertext=(await h.control.query("select encrypted from integration_credentials where provider='notificationSms'")).rows[0].encrypted;
+  const audit=await h.control.query("select summary from audit_logs");
+  for(const value of [values.NOTIFICATION_SMS_KEY,values.NOTIFICATION_SMS_BEARER_TOKEN,values.NOTIFICATION_SMS_CLIENT_ID]){
+   for(const text of [JSON.stringify(publicSettings),ciphertext,JSON.stringify(audit.rows)])assert(!text.includes(value));
+  }
+  await api.saveIntegration("notificationSms",{NOTIFICATION_SMS_KEY:"",NOTIFICATION_SMS_BEARER_TOKEN:""},saved.revision,"database",sa.id);
+  const preserved=await api.resolvedIntegration("notificationSms");
+  assert.equal(preserved.env.NOTIFICATION_SMS_KEY,values.NOTIFICATION_SMS_KEY);
+  assert.equal(preserved.env.NOTIFICATION_SMS_BEARER_TOKEN,values.NOTIFICATION_SMS_BEARER_TOKEN);
+  await assert.rejects(api.saveIntegration("notificationSms",{},saved.revision,"database",sa.id),{status:409});
+  assert.equal((await h.control.query("select count(*)::int n from settings where id like 'sms-outbox:%'")).rows[0].n,beforeJobs);
+  // Return to Custom API deliberately: its stored mapping is still the original.
+  await api.saveIntegration("notificationSms",{NOTIFICATION_SMS_PROVIDER:"generic"},preserved.revision,"database",sa.id);
+  assert.deepEqual(api.notificationSmsConfig((await api.resolvedIntegration("notificationSms")).env).mapping,JSON.parse(original.env.NOTIFICATION_SMS_MAPPING));
+ }finally{
+  const latest=await api.resolvedIntegration("notificationSms");
+  await api.saveIntegration("notificationSms",{},latest.revision,"environment",sa.id);
+ }
+});
+test("Keep in Touch explicit tests and eligible automatic notifications use the same exact contract, without Entity ID or unknown retries",async()=>{
+ const original=await api.resolvedIntegration("notificationSms");
+ const values={NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_KEY:"fictional-kit-body-key",
+  NOTIFICATION_SMS_BEARER_TOKEN:"fictional-kit-distinct-bearer",NOTIFICATION_SMS_CLIENT_ID:"fictional-kit-client",
+  NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits"};
+ await api.saveIntegration("notificationSms",values,original.revision,"database",sa.id);
+ globalThis.kitNetwork=[];
+ const id="kit-visit";
+ const eventKeys=["sms-template:c:completed","sms-template:c:cancelled"];
+ const existing=await h.control.query("select id,data from settings where id=any($1::text[])",[eventKeys]);
+ try {
+  const content={...smsContent("completed"),dltEntityId:"",senderId:"",dltTemplateId:"KIT_COMPLETED"};
+  await h.control.query("delete from settings where id=any($1::text[])",[eventKeys]);
+  await assert.rejects(api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"completed",revision:0,mode:"publish",content:{...content,enabled:true,dltTemplateId:""}}),{status:400});
+  await api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"completed",revision:0,mode:"publish",content:{...content,enabled:true}});
+  await api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"cancelled",revision:0,mode:"publish",content:{...content,enabled:false,dltTemplateId:""}});
+  await assert.rejects(api.changeActivation(sa,{channel:"sms",clinicId:"c",event:"cancelled",recipient:"patient",revision:1,enabled:true}),{status:400});
+  const reasons=(await api.eventControls(sa,"c")).items.find(i=>i.channel==="sms"&&i.event==="cancelled"&&i.recipient==="patient").blockedReasons.join(" ");
+  assert(reasons.includes("Template ID"));assert(!reasons.includes("Entity IDs"));
+  const prepared=await api.prepareTemplateTest(sa,{channel:"sms",event:"completed",clinicId:"c",recipientGroup:"patient",revision:1,content,values:{patient_name:"Fictional",clinic_name:"Test"},
+   recipient:"+919876543213",confirmed:true,requestId:randomUUID()});
+  assert.equal((await api.testTemplate(sa,prepared)).status,"provider_accepted");
+  const explicit=globalThis.kitNetwork[0];
+  assert.equal(explicit.body.templateId,"KIT_COMPLETED");assert.equal(explicit.body.mobile,"9876543213");
+  const row={id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"KIT",status:"completed",revision:1};
+  await h.db.insert(api.appointments).values({id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:row.date,status:row.status,data:row});
+  await api.enqueueSmsEvent(h.db,"completed",row);
+  globalThis.kitResponse={success:"true",message:"SMS sent successfully"};
+  // Other historical pending jobs must not enter this assertion.
+  await h.control.query("update settings set data=jsonb_set(data,'{state}','\"disabled\"') where id like 'sms-outbox:%' and id not like 'sms-outbox:completed:kit-visit:%' and data->>'state'='pending'");
+  await api.processSmsNotifications(h.db);
+  const automatic=globalThis.kitNetwork[1];assert(automatic);
+  for(const wire of [explicit,automatic]){
+   assert.equal(wire.url,api.KEEP_IN_TOUCH_URL);assert.equal(wire.options.method,"POST");
+   assert.equal(wire.options.headers.Authorization,"Bearer fictional-kit-distinct-bearer");
+   assert.equal(wire.options.headers["Content-Type"],"application/json");
+   assert.deepEqual(Object.keys(wire.body).sort(),["countryCode","mobile","senderId","message","apiKey","clientId","templateId"].sort());
+   assert.equal(wire.body.countryCode,"91");assert.equal(wire.body.apiKey,values.NOTIFICATION_SMS_KEY);
+   assert.equal(wire.body.templateId,"KIT_COMPLETED");
+  }
+  assert.equal((await h.control.query("select data->>'state' state from settings where id like 'sms-outbox:completed:kit-visit:%'")).rows[0].state,"delivery_unknown");
+  const count=globalThis.kitNetwork.length;
+  await api.processSmsNotifications(h.db);assert.equal(globalThis.kitNetwork.length,count);
+ }finally{
+  const latest=await api.resolvedIntegration("notificationSms");
+  await api.saveIntegration("notificationSms",{},latest.revision,"environment",sa.id);
+  await h.control.query("delete from settings where id=any($1::text[]) or id like 'sms-outbox:completed:kit-visit:%'",[eventKeys]);
+  for(const row of existing.rows)await h.control.query("insert into settings(id,data) values($1,$2)",[row.id,row.data]);
+  await h.control.query("delete from appointments where id=$1",[id]);
+  delete globalThis.kitNetwork;delete globalThis.kitResponse;
+ }
 });
 after(async()=>{await h?.close();await rm(bundle,{force:true});delete globalThis.notificationSettingsDb;});
 test("email form saves its name and optional switch without changing security SMTP or replaying pending mail",async()=>{
