@@ -10,6 +10,8 @@ import { FormActions } from "./FormActions";
 import { FormField } from "./FormField";
 import { ResourceLookup } from "./ResourceLookup";
 import { StatusSwitch } from "./StatusSwitch";
+import { AccordionItem, AccordionTrigger, AccordionContent } from "./ui/accordion";
+import { NotificationEventAccordion } from "./NotificationEventAccordion";
 import { titleCase } from "../lib/title-case";
 import { previewText } from "../lib/template-preview";
 import { eventControlBody, filterRows, type ListRow } from "../lib/communication-routes";
@@ -54,6 +56,8 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
     inherited: /default|inherit/i.test(r.source), preview: previews.get(`${r.channel}|${r.event}|${r.recipient}`) ?? "" }));
   const shown = filterRows(list, f) as typeof list;
   const groups = useMemo(() => { const m = new Map<string, typeof shown>(); for (const r of shown) m.set(r.event, [...(m.get(r.event) ?? []), r]); return [...m.entries()]; }, [shown]);
+  const filtered = !!(f.q.trim() || f.channel || f.recipient || f.status);
+  const expansionKey = JSON.stringify([identity.user?.id, superAdmin, clinicId, f.q.trim(), f.channel, f.recipient, f.status]);
   const closeEditor = () => { setEditing(null); setDirty(false); void qc.invalidateQueries({ queryKey: [api.getGetEventControlsQueryKey()[0]] }); };
   const [discard, setDiscard] = useState(false);
   useWorkspaceLeaveGuard("/admin/templates", dirty || busy, (o: any) => askRef.current(o), () => { setDirty(false); setBusy(false); setEditing(null); });
@@ -90,9 +94,12 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
       : controls.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : controls.isError ? <div role="alert" className="error-box" data-testid="state-error">Events could not be loaded. <button type="button" onClick={() => controls.refetch()} data-testid="button-retry">Retry</button></div>
       : !groups.length ? <div className="et-empty" data-testid="state-empty">No events match these filters.</div>
-      : groups.map(([event, rows]) => <section key={event} className="cm-event" data-testid={`group-event-${event}`}>
-        <header className="cm-event-head"><h3>{titleCase(event)}</h3>{rows[0].row.timing && <p className="muted">{rows[0].row.timing}</p>}</header>
-        <ul className="cm-rows">{rows.map(r => <li key={`${r.channel}|${r.recipient}`} className="cm-row" data-testid={`card-template-${r.channel}-${event}-${r.recipient}`}>
+       : <NotificationEventAccordion key={expansionKey} events={groups.map(([event]) => event)} filtered={filtered}>
+         {groups.map(([event, rows]) => <AccordionItem key={event} value={event} className="cm-event" data-testid={`group-event-${event}`}>
+         <AccordionTrigger className="cm-event-trigger" data-testid={`button-event-${event}`}>
+           <span className="cm-event-head"><span className="cm-event-title">{titleCase(event)}</span>{rows[0].row.timing && <span className="muted cm-event-timing">{rows[0].row.timing}</span>}</span>
+         </AccordionTrigger>
+         <AccordionContent className="cm-event-content"><ul className="cm-rows">{rows.map(r => <li key={`${r.channel}|${r.recipient}`} className="cm-row" data-testid={`card-template-${r.channel}-${event}-${r.recipient}`}>
           <div className="cm-row-main">
             <div className="cm-row-meta"><span className="cm-channel">{r.channel === "sms" ? "SMS" : "Email"}</span><span>to {label(r.recipient)}</span>
               <span className={`et-chip ${r.enabled && r.ready ? "live" : ""}`}>{r.enabled ? (r.ready ? "On" : "On, blocked") : "Off"}</span>
@@ -103,8 +110,8 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
           <div className="cm-row-actions">
             <StatusSwitch active={r.enabled} disabled={update.isPending} label={`${r.channel} ${titleCase(event)} ${label(r.recipient)}`} onChange={next => { setNotice(""); setConfirmed(false); setPending({ row: r.row, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{r.enabled ? "On" : "Off"}</StatusSwitch>
             <button type="button" className="button secondary small" onClick={() => setEditing({ channel: r.channel, event, recipient: r.recipient })} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>
-          </div></li>)}</ul>
-      </section>)}
+           </div></li>)}</ul></AccordionContent>
+       </AccordionItem>)}</NotificationEventAccordion>}
     {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title={`${titleCase(editing.event)} - ${editing.channel === "sms" ? "SMS" : "Email"} to ${label(editing.recipient)}`} description="Saving never sends a message.">
       <EmailTemplates key={`${editing.channel}|${editing.event}|${editing.recipient}|${clinicId}`} identity={identity} channel={editing.channel} fixed={{ clinicId, event: editing.event, recipient: editing.recipient as any }} onDirtyChange={setDirty} onBusyChange={setBusy} />
     </AppDialog>}

@@ -70,8 +70,15 @@ test("email form saves its name and optional switch without changing security SM
     for(const secret of ["fixture-user","fixture-pass"])assert.equal(JSON.stringify(readiness).includes(secret),false);
     assert.equal((await h.control.query("select data from settings where id='mail-outbox:channel-disable-fixture'")).rows[0].data.state,"disabled");
     const before=(await h.control.query("select count(*)::int count from settings where id like 'mail-outbox:%'")).rows[0].count;
-    await api.enqueueEvent(h.db,"booking",{id:"disabled-email-fixture",clinicId:"c"});
+    // A ready, opted-in SMS channel must still capture the same new event
+    // while optional email is off. No provider transport is invoked here.
+    await api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...smsContent(),enabled:true}});
+    await api.enqueueEvent(h.db,"booking",{id:"disabled-email-fixture",clinicId:"c",patientId:"p",branchId:"b",doctorId:"d"});
     assert.equal((await h.control.query("select count(*)::int count from settings where id like 'mail-outbox:%'")).rows[0].count,before);
+    const smsJobs=await h.control.query("select data from settings where id like 'sms-outbox:booking:disabled-email-fixture:%'");
+    assert.equal(smsJobs.rows.length,1,"email opt-out must not suppress SMS capture");
+    assert.equal(smsJobs.rows[0].data.state,"pending");
+    assert.equal(smsJobs.rows[0].data.recipientGroup,"patient");
     await api.saveIntegration("smtp",{SMTP_NOTIFICATIONS_ENABLED:"true",SMTP_FROM_NAME:""},current.revision,"database",sa.id);
     assert.equal(api.smtpConfig((await api.resolvedIntegration("smtp")).env).from,"sender@example.invalid");
     let sent=0;await api.processNotifications(h.db,async()=>{sent++;});
@@ -80,6 +87,7 @@ test("email form saves its name and optional switch without changing security SM
     const latest=await api.resolvedIntegration("smtp");
     await api.saveIntegration("smtp",{},latest.revision,"environment",sa.id);
     await h.control.query("delete from settings where id='mail-outbox:channel-disable-fixture'");
+    await h.control.query("delete from settings where id='sms-template:c:booking' or id like 'sms-outbox:booking:disabled-email-fixture:%'");
   }
 });
 test("screenshot provider fields persist privately and the disabled channel neither captures nor replays SMS jobs",async()=>{

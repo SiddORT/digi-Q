@@ -43,7 +43,6 @@ export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {
   if(process.env.NODE_ENV==="development")return;
-  if (!emailNotificationsEnabled((await resolvedIntegration("smtp", conn)).env)) return;
   if (!(await getSettings(conn, row.clinicId)).notificationsEnabled) return;
   if (typeof previousDetails === "object") previousDetails = confirmationText(previousDetails, await one(clinics, row.clinicId, conn)).replace("Your appointment is confirmed.", "Previous visit details:");
   // Each channel has its own savepoint. Both successful preparations survive
@@ -57,6 +56,7 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
   } catch { console.error("Email event preparation unavailable; visit and SMS retained"); }
 }
 async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string) {
+  if (!emailNotificationsEnabled((await resolvedIntegration("smtp", conn)).env)) return;
   const usedEmails = new Set<string>();
   if (row.patientId && (await resolvedTemplate(event, row.clinicId, conn, "patient")).content.enabled) {
     const patient = await one(patients, row.patientId, conn);
