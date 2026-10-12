@@ -32,3 +32,4 @@
 - [Registration completion recovery](registration-completion-recovery.md) — uncertain clinic creation must reconcile an actor-scoped receipt before a retry; edits must preserve its metadata.
 - [Node render tests](node-test-bundling.md) — React server-render bundles need a CommonJS-compatible boundary; ESM data URLs can fail before rendering.
 - [Booking history paging](booking-history-paging.md) — preserve numeric-page compatibility; index clinic growth separately from deep-offset costs.
+- [Preview browser secret boundary](preview-browser-secret-boundary.md) — delegated browsers may lack workspace secrets; verify securely through the actual Preview without exposing credentials.
