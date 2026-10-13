@@ -8,6 +8,7 @@ import { EmailInput } from "./EmailInput";
 import { PhoneInput } from "./PhoneInput";
 import { LoadingButton } from "./LoadingButton";
 import { canStartNewTemplateTest } from "../lib/template-test-recovery";
+import { templateTestRequestError } from "../lib/template-test-request-error";
 
 type Content = api.NotificationTemplateContent;
 const PH = /\{\{\s*([a-z0-9_]+)\s*\}\}/gi;
@@ -67,6 +68,8 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
   }, [rsig]);
   const body = { channel: channel as api.EventTemplateTestInputChannel, event: event as api.EventTemplateTestInputEvent, recipientGroup: group as api.EventTemplateTestInputRecipientGroup, clinicId: clinicId || undefined, revision, content, values: exact };
   const result = test.data ?? preview.data;
+  const requestError = test.isError ? templateTestRequestError(test.error)
+    : preview.isError ? templateTestRequestError(preview.error, "preview") : null;
   const failed = result?.status === "pre_dispatch_failed" || result?.status === "provider_rejected";
   const label = channel === "sms" ? "Phone number" : "Email address";
   const send = () => {
@@ -105,10 +108,13 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     </FormField>
     <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} data-testid="checkbox-confirm-test" /> Yes, send one real {channel === "sms" ? "SMS" : "email"} to this recipient</label>
     <div className="et-actions">
-      <LoadingButton type="button" className="button" loading={test.isPending} loadingText="Sending…" disabled={!confirmed || !complete || !to.trim() || !readiness.ready || test.isSuccess} onClick={send} data-testid="button-send-test">Send Test</LoadingButton>
+      <LoadingButton type="button" className="button" loading={test.isPending} loadingText="Sending…" disabled={!confirmed || !complete || !to.trim() || !readiness.ready || test.isSuccess || test.isError} onClick={send} data-testid="button-send-test">Send Test</LoadingButton>
     </div>
-    {(preview.isError || test.isError) && <p role="alert" className="error-box" data-testid="status-test-error">The test could not run. Retrying reuses the same request, so it cannot duplicate a message the provider already accepted.
-      {test.isError && submitted.current && <button type="button" onClick={retry} data-testid="button-retry-test">Retry Same Request</button>}</p>}
+    {requestError && <div role="alert" className="error-box et-test-request-error" data-testid="status-test-error">
+      <strong>{requestError.title}</strong>
+      <p>{requestError.detail}</p>
+      {test.isError && submitted.current && <button type="button" className="button secondary" disabled={test.isPending} onClick={retry} data-testid="button-retry-test">Retry Same Request</button>}
+    </div>}
     {result && <div role={failed ? "alert" : "status"} className={`et-test-result ${failed ? "error-box" : "et-notice"}`} data-testid="status-test-result"><strong>{OUTCOME[result.status] ?? result.status}</strong> {result.message}
       {canStartNewTemplateTest(test.data?.status) && <p>After resolving the issue, start a new test and confirm again.
         <button type="button" className="button secondary small" disabled={test.isPending} onClick={startNewTest} data-testid="button-start-new-test">Start New Test</button></p>}

@@ -51,6 +51,10 @@
 .et-test-result>strong{display:block;margin-bottom:4px}
 .et-test-result>p{margin-top:8px}
 .et-test-result>p>button{margin:8px 0;display:flex}
+.et-test .et-test-request-error{display:block;min-width:0;overflow-wrap:anywhere}
+.et-test-request-error>strong{display:block;margin-bottom:4px}
+.et-test-request-error>p{margin:0}
+.et-test-request-error>button{margin-top:12px;max-width:100%;width:auto;white-space:normal}
 .event-controls .ec-event{margin-top:18px}
 .event-controls .ec-table{width:100%;border-collapse:collapse}
 .event-controls .ec-table th,.event-controls .ec-table td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--border,#e5e7eb)}

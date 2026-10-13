@@ -17,3 +17,16 @@ can explain the same failure without dispatching again. An explicit provider
 rejection may offer a new, manually confirmed test; accepted or uncertain results
 must not offer that shortcut. Never change DLT settings or send live tests merely
 to discover an error reason.
+
+Distinguish ClinicFlow request failures from provider outcomes. Display fixed,
+safe request-status explanations rather than raw exception/response text. Only
+recognized, pre-dispatch request failures may claim this attempt was blocked;
+network and server errors must retain original-request duplicate protection.
+
+**Why:** A test request blocked by ClinicFlow throttling looked like another SMS
+delivery failure because the interface hid its HTTP status. A generic server
+failure, unlike local throttling, does not prove nothing was dispatched.
+
+**How to apply:** Keep request-error and provider-result feedback separate.
+Reconstruct wait times only from the known rate-limit response format, and never
+automatically retry a real-message test.
