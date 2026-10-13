@@ -17,6 +17,7 @@ import { BookingMailOutcomes } from "./BookingMailOutcomes";
 import { EventTemplateTest } from "./EventTemplateTest";
 import { StatusSwitch } from "./StatusSwitch";
 import { isRealSuperAdmin } from "../lib/settings-access";
+import { templateSaveError } from "../lib/communication-routes";
 
 type Content = api.NotificationTemplateContent;
 type Mode = "draft" | "publish" | "reset";
@@ -248,7 +249,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
         {unknown.length > 0 && <p role="alert" className="error-box">Unknown variables: {unknown.join(", ")}. Use only the variables listed above.</p>}
         {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Someone else changed this template. Your edits are kept here.
           <button type="button" onClick={() => { resetLocal(); void catalog.refetch(); }} data-testid="button-reload">Discard My Edits and Reload</button></div>}
-        {save.isError && !conflict && <p role="alert" className="error-box">The template was not saved. Check the fields and try again.</p>}
+        {save.isError && !conflict && <p role="alert" className="error-box" data-testid="status-template-save-error">{templateSaveError(save.error)}</p>}
         {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
         <details className="td-adv" data-testid="details-advanced"><summary>Advanced</summary>
           {!sms && identity.user?.role === "clinicAdmin" && clinicId && <BookingMailOutcomes key={`${identity.user.id}:${clinicId}`} actorId={identity.user.id} clinicId={clinicId} />}
@@ -282,7 +283,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
           {unknown.length > 0 && <p role="alert" className="error-box">Unknown variables: {unknown.join(", ")}. Use only the variables listed above.</p>}
           {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Someone else changed this template. Your edits are kept here.
             <button type="button" onClick={() => { resetLocal(); void catalog.refetch(); }} data-testid="button-reload">Discard My Edits and Reload</button></div>}
-          {save.isError && !conflict && <p role="alert" className="error-box">The template was not saved. Check the fields and try again.</p>}
+          {save.isError && !conflict && <p role="alert" className="error-box" data-testid="status-template-save-error">{templateSaveError(save.error)}</p>}
           {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
           <div className="et-actions">
             <FormActions wide={false} secondary={<button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to Default</button>}

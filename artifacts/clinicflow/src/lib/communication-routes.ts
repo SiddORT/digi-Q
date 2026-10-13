@@ -28,6 +28,13 @@ export function eventControlError(error: unknown) {
     ? `The change was not saved. ${detail}`
     : "The change was not saved. Please try again.";
 }
+/** Show only the sanitized API response, not raw transport/debug information. */
+export function templateSaveError(error: unknown) {
+  const detail = (error as { data?: { error?: unknown } } | null)?.data?.error;
+  return typeof detail === "string" && detail.trim()
+    ? `The template was not saved. ${detail}`
+    : "The template was not saved. No detailed error was returned. Please try again.";
+}
 /** An off switch is not missing configuration; expose the other delivery gates. */
 export function eventSetupReasons(row: { blockedReasons: string[] }) {
   return row.blockedReasons.filter(reason => reason !== "Published activation is off");
