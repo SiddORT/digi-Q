@@ -22,18 +22,19 @@ import { templateContentForSave } from "../lib/notification-template-input";
 
 type Content = api.NotificationTemplateContent;
 type Mode = "draft" | "publish" | "reset";
-const EVENTS = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder"] as const;
-type Recipient = "patient" | "clinicAdmin" | "doctor" | "receptionist";
+const EVENTS = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "patient_login_otp"] as const;
+type Recipient = "patient" | "clinicAdmin" | "doctor" | "receptionist" | "superAdmin";
 export const RECIPIENTS: { value: Recipient; label: string; who: string }[] = [
+  { value: "superAdmin", label: "System Admin", who: "active platform Superadmins" },
   { value: "patient", label: "Patient", who: "the patient on the appointment" },
   { value: "clinicAdmin", label: "Clinic Admin", who: "the admin who owns the clinic" },
   { value: "doctor", label: "Doctor", who: "the doctor on the appointment" },
   { value: "receptionist", label: "Receptionist", who: "receptionists assigned to the clinic" },
 ];
 /** Onboarding is addressed to the clinic admin only; every other recipient omits it. */
-export function eventsFor(recipient: Recipient) { return EVENTS.filter(e => e !== "onboarding" || recipient === "clinicAdmin"); }
+export function eventsFor(recipient: Recipient, channel: "email" | "sms" = "email") { return EVENTS.filter(e => recipient === "superAdmin" ? e === "onboarding" : e === "patient_login_otp" ? recipient === "patient" && channel === "sms" : e !== "onboarding" || recipient === "clinicAdmin"); }
 /** Event switches may force a recipient: onboarding always targets the clinic admin. */
-export function recipientForEvent(event: string, current: Recipient): Recipient { return event === "onboarding" ? "clinicAdmin" : current; }
+export function recipientForEvent(event: string, current: Recipient): Recipient { return event === "patient_login_otp" ? "patient" : event === "onboarding" && current !== "superAdmin" ? "clinicAdmin" : current; }
 const SMS_BODY_MAX_C = 1600;
 type TextKey = Exclude<keyof Content, "enabled">;
 const FIELDS: [TextKey, string, number, string][] = [
@@ -131,7 +132,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
     window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const variables = catalog.data?.variables ?? [];
+  const variables = (catalog.data?.variables ?? []).filter(v => item?.event === "patient_login_otp" ? ["otp","expiry_minutes"].includes(v) : !["otp","expiry_minutes"].includes(v));
   const scopeName = catalog.data?.scopeName ?? "";
   const unknown = useMemo(() => form ? unknownVariables(sms ? { ...form, subject: "", prefix: "", footer: "", logoUrl: "" } : form, variables) : [], [form, variables, sms]);
   const errors = form ? {
@@ -227,12 +228,12 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
         {(a) => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => guard(() => { setClinicId(v); resetLocal(); })} />}
       </FormField>}
       <FormField label="Recipient" helper={`Sent to ${recipientInfo.who}.`}>
-        {(a) => <SearchableSelect {...a} value={recipient} onChange={v => guard(() => { const r = v as Recipient; setRecipient(r); if (!eventsFor(r).includes(event as any)) setEvent("booking"); resetLocal(); })}
+        {(a) => <SearchableSelect {...a} value={recipient} onChange={v => guard(() => { const r = v as Recipient; setRecipient(r); const events = eventsFor(r,sms?"sms":"email"); if (!events.includes(event as any)) setEvent(events[0]); resetLocal(); })}
           options={RECIPIENTS.map(r => ({ value: r.value, label: r.label }))} />}
       </FormField>
       <FormField label="Event" helper={recipient === "clinicAdmin" ? undefined : "Onboarding is available for the Clinic admin recipient."}>
         {(a) => <SearchableSelect {...a} value={event} onChange={v => guard(() => { setEvent(v); setRecipient(r => recipientForEvent(v, r)); resetLocal(); })}
-          options={eventsFor(recipient).map(e => ({ value: e, label: titleCase(catalog.data?.items.find(i => i.event === e)?.title ?? e) }))} />}
+          options={eventsFor(recipient,sms?"sms":"email").map(e => ({ value: e, label: titleCase(catalog.data?.items.find(i => i.event === e)?.title ?? e) }))} />}
       </FormField>
     </div>}
 
@@ -244,7 +245,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
       : !item || !form ? <div className="et-empty" data-testid="state-empty">This event has no template for the selected scope.</div>
       : fixed ? <form className="et-drawer" onSubmit={e => { e.preventDefault(); setConfirm("publish"); }}>
         <TemplateDrawerFields form={form} templateKey={item.event} savedDltTemplateId={item.content.dltTemplateId} sms={sms} errors={errors} variables={variables} scopeName={scopeName} set={set}
-          active={<div className="td-active" data-testid="row-enabled"><span>Active</span><StatusSwitch active={isOn} onChange={setEnabled} disabled={save.isPending} label={`Active: send ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s`} testId="input-enabled"><span className="sr-only">{isOn ? "On" : "Off"}</span></StatusSwitch></div>} />
+          active={<div className="td-active" data-testid="row-enabled"><span>{event === "patient_login_otp" ? "Required for SMS login" : "Active"}</span><StatusSwitch active={isOn} onChange={setEnabled} disabled={save.isPending || event === "patient_login_otp"} label={`Active: send ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s`} testId="input-enabled"><span className="sr-only">{isOn ? "On" : "Off"}</span></StatusSwitch></div>} />
         {unknown.length > 0 && <p role="alert" className="error-box">Unknown variables: {unknown.join(", ")}. Use only the variables listed above.</p>}
         {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Someone else changed this template. Your edits are kept here.
           <button type="button" onClick={() => { resetLocal(); void catalog.refetch(); }} data-testid="button-reload">Discard My Edits and Reload</button></div>}
@@ -271,7 +272,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
             <span className="et-rev">Revision {item.revision}</span>
           </div>
           <div className="et-toggle" data-testid="row-enabled">
-            <StatusSwitch active={isOn} onChange={setEnabled} disabled={save.isPending} label={`Send ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s for this event`} testId="input-enabled">Send this {sms ? "SMS" : "email"} to {recipientInfo.label.toLowerCase()}s for this event ({isOn ? "On" : "Off"})</StatusSwitch>
+            <StatusSwitch active={isOn} onChange={setEnabled} disabled={save.isPending || event === "patient_login_otp"} label={`Send ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s for this event`} testId="input-enabled">{event === "patient_login_otp" ? "Required for SMS login" : `Send this ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s for this event (${isOn ? "On" : "Off"})`}</StatusSwitch>
             <HelpTip text={recipient === "patient" ? "Turning this off stops the patient email for this event." : `Off by default. Publishing with this on adds real emails to ${recipientInfo.who}. An address that is already a target for this event receives one email, not duplicates.`}/>
           </div>
           {(sms ? SMS_FIELDS : FIELDS).map(renderField)}

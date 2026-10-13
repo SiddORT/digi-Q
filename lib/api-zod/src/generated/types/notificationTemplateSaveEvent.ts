@@ -31,4 +31,5 @@ export const NotificationTemplateSaveEvent = {
   cancelled: 'cancelled',
   completed: 'completed',
   reminder: 'reminder',
+  patient_login_otp: 'patient_login_otp',
 } as const;

@@ -74,7 +74,7 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
   const sel = (k: keyof typeof f, v: string, opts: [string, string][], name: string) => <select aria-label={name} value={v} onChange={e => setF(x => ({ ...x, [k]: e.target.value }))} data-testid={`select-filter-${k}`}><option value="">{name}: all</option>{opts.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>;
   return <section className="panel padded event-controls" data-testid="page-notification-templates">
     {confirm.dialog}
-    <p className="muted" data-testid="text-gate-note">Each switch below is scoped to one event, channel and recipient. Turning email notifications off here never disables the SMTP connection used for sign-in codes, invitations and password recovery. Provider connections are in Communication Settings.</p>
+    <p className="muted" data-testid="text-gate-note">Each notification switch is scoped to one event, channel and recipient. Patient login OTP is a required security message and ignores notification opt-outs. Turning email notifications off never disables sign-in codes, invitations or password recovery. Provider connections are in Communication Settings.</p>
     <div className="et-scope">
       <FormField label={superAdmin ? "Scope" : "Clinic Group"} optional={superAdmin} required={!superAdmin} helper={superAdmin ? "Empty edits platform defaults." : "Choose a clinic group you manage."}>
         {a => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => { setClinicId(v); setNotice(""); if (!update.isPending) update.reset(); }} placeholder={superAdmin ? "Platform defaults" : undefined} />}
@@ -97,7 +97,7 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
        : <NotificationEventAccordion key={expansionKey} events={groups.map(([event]) => event)} filtered={filtered}>
          {groups.map(([event, rows]) => <AccordionItem key={event} value={event} className="cm-event" data-testid={`group-event-${event}`}>
          <AccordionTrigger className="cm-event-trigger" data-testid={`button-event-${event}`}>
-           <span className="cm-event-head"><span className="cm-event-title">{titleCase(event)}</span>{rows[0].row.timing && <span className="muted cm-event-timing">{rows[0].row.timing}</span>}</span>
+           <span className="cm-event-head"><span className="cm-event-title">{titleCase(event === "onboarding" ? "Clinic onboarding" : event.replaceAll("_", " "))}</span>{rows[0].row.timing && <span className="muted cm-event-timing">{rows[0].row.timing}</span>}</span>
          </AccordionTrigger>
          <AccordionContent className="cm-event-content"><ul className="cm-rows">{rows.map(r => <li key={`${r.channel}|${r.recipient}`} className="cm-row" data-testid={`card-template-${r.channel}-${event}-${r.recipient}`}>
           <div className="cm-row-main">
@@ -108,11 +108,11 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
             {eventSetupReasons(r.row).length > 0 && <ul className="ec-blocked" data-testid={`setup-${r.channel}-${event}-${r.recipient}`}>{eventSetupReasons(r.row).map(b => <li key={b}>{b}</li>)}</ul>}
           </div>
           <div className="cm-row-actions">
-            <StatusSwitch active={r.enabled} disabled={update.isPending} label={`${r.channel} ${titleCase(event)} ${label(r.recipient)}`} onChange={next => { update.reset(); setNotice(""); setConfirmed(false); setPending({ row: r.row, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{r.enabled ? "On" : "Off"}</StatusSwitch>
+            <StatusSwitch active={r.enabled} disabled={update.isPending || event === "patient_login_otp"} label={`${r.channel} ${titleCase(event)} ${label(r.recipient)}`} onChange={next => { update.reset(); setNotice(""); setConfirmed(false); setPending({ row: r.row, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{event === "patient_login_otp" ? "Required" : r.enabled ? "On" : "Off"}</StatusSwitch>
             <button type="button" className="button secondary small" disabled={update.isPending} onClick={() => { update.reset(); setEditing({ channel: r.channel, event, recipient: r.recipient }); }} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>
            </div></li>)}</ul></AccordionContent>
        </AccordionItem>)}</NotificationEventAccordion>}
-    {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title="Edit Template" description={`${titleCase(editing.event)} / ${editing.channel === "sms" ? "SMS" : "EMAIL"} (${label(editing.recipient)})`}>
+    {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title="Edit Template" description={`${titleCase(editing.event.replaceAll("_", " "))} / ${editing.channel === "sms" ? "SMS" : "EMAIL"} (${label(editing.recipient)})`}>
       <EmailTemplates key={`${editing.channel}|${editing.event}|${editing.recipient}|${clinicId}`} identity={identity} channel={editing.channel} fixed={{ clinicId, event: editing.event, recipient: editing.recipient as any }} onDirtyChange={setDirty} onBusyChange={setBusy} />
     </AppDialog>}
     <AppDialog open={discard} onClose={() => setDiscard(false)} title="Discard unsaved changes?">

@@ -155,6 +155,9 @@ export async function createChallenge(input: { userId?: string; email: string; p
   await db.delete(authChallenges).where(lt(authChallenges.expiresAt, new Date()));
   await db.transaction(async tx => {
     if (input.userId) await lockCredentials(tx, input.userId);
+    if (input.userId && input.purpose === "patient-sms")
+      await tx.update(authChallenges).set({consumedAt:new Date(),data:{}})
+        .where(and(eq(authChallenges.userId,input.userId),eq(authChallenges.purpose,"patient-sms"),isNull(authChallenges.consumedAt)));
     await tx.insert(authChallenges).values({
     id, userId: input.userId, email: input.email, purpose: input.purpose, tokenHash: challengeDigest(id, input.purpose, input.secret),
     expiresAt: new Date(Date.now() + input.ttlMs), data: input.data || {},

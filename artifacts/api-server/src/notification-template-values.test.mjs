@@ -10,6 +10,7 @@ import { queueFixtureSql } from "./test-support/queue-fixtures.mjs";
 const bundle = resolve(import.meta.dirname, `.notification-values-${process.pid}.mjs`);
 Object.assign(process.env, {
   NODE_ENV:"test", INTEGRATIONS_ENCRYPTION_KEY:"ef".repeat(32),
+  CLINICFLOW_PUBLIC_ORIGIN:"https://booking.example.invalid",
   NOTIFICATION_SMS_PROVIDER:"keepInTouch", NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits",
   NOTIFICATION_SMS_KEY:"fictional-body-key", NOTIFICATION_SMS_BEARER_TOKEN:"fictional-bearer",
   NOTIFICATION_SMS_CLIENT_ID:"fictional-client", NOTIFICATION_SMS_SENDER_ID:"DIGIQ",
@@ -43,7 +44,7 @@ before(async()=>{
     ('du','doctor','doctor@example.invalid','Doctor Person','+919876543211'),
     ('ru','receptionist','reception@example.invalid','Reception Person','+919876543212'),
     ('pu','patient','patient@example.invalid','Patient Person','+919876543213');
-    insert into clinics(id,admin_id,data) values('c','ca','{"name":"Fictional Clinic","dateFormat":"DD/MM/YYYY","timeFormat":"24h","policies":{"notificationsEnabled":true}}');
+    insert into clinics(id,admin_id,data) values('c','ca','{"name":"Fictional Clinic","slug":"fictional-clinic","dateFormat":"DD/MM/YYYY","timeFormat":"24h","policies":{"notificationsEnabled":true}}');
     insert into branches(id,clinic_id,data) values('b','c','{"name":"Fictional Location"}');
     insert into doctors(id,user_id,owner_admin_id,data) values('d','du','ca','{"fullName":"Doctor Person"}');
     insert into assignments(id,user_id,clinic_id,branch_id) values('r','ru','c','b'),('d','du','c','b');
@@ -76,7 +77,8 @@ test("separate current/previous values retain prefixed and numeric tokens and no
   const content={...api.defaultTemplate("rescheduled"),enabled:true,prefix:"",footer:"",logoUrl:"",dltTemplateId:"DLT",senderId:"",dltEntityId:"",
     body:api.visitVariables.map(v=>`{{${v}}}`).join(" ")};
   assert(api.smsTemplateContent.safeParse(content).success);
-  for(const name of ["otp","username","password"])assert(!api.smsTemplateContent.safeParse({...content,body:`{{${name}}}`}).success);
+  for(const name of ["username","password"])assert(!api.smsTemplateContent.safeParse({...content,body:`{{${name}}}`}).success);
+  assert.equal(api.validEventContent("rescheduled",{...content,body:"{{otp}}"}),false);
 });
 
 const body="Hello {{recipient_name}}; patient {{patient_name}}; {{clinic_name}}; Dr {{doctor_name}}; {{appointment_date}} {{session_start}}-{{session_end}}; old {{previous_date}} {{previous_session_start}}-{{previous_session_end}}; token {{queue_token}} ({{token_number}})";
@@ -118,7 +120,7 @@ test("SMS draft, publish and activation work with only the event DLT ID and conf
   assert.equal(active.content.dltTemplateId,content.dltTemplateId);
 });
 test("published placeholders reach all four eligible SMS/email recipient groups with separate old/new times",async()=>{
-  for(const recipient of api.templateRecipients)for(const channel of ["sms","email"]){
+  for(const recipient of api.templateRecipients.filter(r=>r!=="superAdmin"))for(const channel of ["sms","email"]){
     const content={...api.defaultTemplate("rescheduled"),enabled:true,body,
       ...(channel==="sms"?{prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:"REGISTERED_RESCHEDULED"}:{subject:"Hello {{recipient_name}}",prefix:"",footer:""})};
     await api.saveTemplate(sa,{channel,event:"rescheduled",clinicId:"c",recipient,revision:0,mode:"publish",content});
@@ -178,7 +180,7 @@ test("cancellation reason uses only the latest cancellation, with safe substitut
 });
 
 test("cancellation reason reaches every SMS and email recipient through queued snapshots",async()=>{
-  for(const recipient of api.templateRecipients)for(const channel of ["sms","email"]){
+  for(const recipient of api.templateRecipients.filter(r=>r!=="superAdmin"))for(const channel of ["sms","email"]){
     const content={...api.defaultTemplate("cancelled"),enabled:true,body:"Reason: {{cancel_reason}}",
       prefix:"",footer:"",logoUrl:"",...(channel==="sms"?{senderId:"",dltEntityId:"",dltTemplateId:"REGISTERED_CANCELLED"}:{})};
     const current=await api.resolvedTemplate("cancelled","c",h.db,recipient,channel);
@@ -200,14 +202,66 @@ test("cancellation reason reaches every SMS and email recipient through queued s
   for(const text of [...smsCalls,...emailCalls])assert.equal(text,"Reason: Patient requested cancellation");
 });
 
-test("onboarding fills the owner's recipient name, without appointment or OTP values",async()=>{
-  await api.saveTemplate(sa,{channel:"sms",event:"onboarding",clinicId:"c",recipient:"clinicAdmin",revision:0,mode:"publish",
-    content:{...api.defaultTemplate("onboarding"),enabled:true,body:"Welcome {{recipient_name}} to {{clinic_name}}",prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:"REGISTERED_ONBOARDING"}});
-  await api.enqueueEvent(h.db,"onboarding",{id:"c",clinicId:"c"});
-  const calls=[];
-  await api.processSmsNotifications(h.db,async(env,to,message)=>{calls.push(message);return "provider_accepted";});
-  assert.deepEqual(calls,["Welcome Owner Person to Fictional Clinic"]);
+test("booking links use the canonical public clinic route and fail closed when unavailable",()=>{
+  assert.equal(api.clinicBookingLink({slug:"fictional-clinic"}),"https://booking.example.invalid/fictional-clinic");
+  assert.equal(api.clinicBookingLink({data:{slug:"second-clinic"}},"https://other.example.invalid/"),"https://other.example.invalid/second-clinic");
+  for(const origin of ["","http://example.invalid","https://user:password@example.invalid","https://example.invalid/path","https://example.invalid/?redirect=other","not a URL"])
+    assert.equal(api.clinicBookingLink({slug:"fictional-clinic"},origin),"");
+  assert.equal(api.clinicBookingLink({}),"");
+  assert.equal(api.clinicBookingLink({slug:"../private-ticket"}),"");
+  assert.equal(api.visitTemplateValues(null,{slug:"fictional-clinic"},"Owner").booking_link,"https://booking.example.invalid/fictional-clinic");
+  assert.deepEqual(api.missingVisitVariables(["Your booking link: {{booking_link}}."],{booking_link:""}),["booking_link"]);
+  assert(api.smsTemplateContent.safeParse({...api.defaultTemplate("onboarding"),prefix:"",footer:"",logoUrl:"",
+    body:"Welcome to Digi-Q, {{clinic_name}}! Complete your clinic opening hours, doctor sessions and staff assignments before sharing your booking link. Your booking link: {{booking_link}}."}).success);
+  assert.equal(api.validEventContent("patient_login_otp",{...api.defaultTemplate("patient_login_otp"),body:"{{otp}} {{booking_link}}"}),false);
 });
+
+test("onboarding fills the owner's recipient name and booking link in SMS and email",async()=>{
+  await api.saveTemplate(sa,{channel:"sms",event:"onboarding",clinicId:"c",recipient:"clinicAdmin",revision:0,mode:"publish",
+    content:{...api.defaultTemplate("onboarding"),enabled:true,body:"Welcome {{recipient_name}} to {{clinic_name}}. Your booking link: {{booking_link}}.",prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:"REGISTERED_ONBOARDING"}});
+  await api.saveTemplate(sa,{channel:"email",event:"onboarding",clinicId:"c",recipient:"clinicAdmin",revision:0,mode:"publish",
+    content:{...api.defaultTemplate("onboarding"),body:"Your booking link: {{booking_link}}."}});
+  const catalog=await api.templateCatalog(sa,"c","clinicAdmin","sms");
+  assert(catalog.variables.includes("booking_link"));
+  assert(catalog.items.find(item=>item.event==="onboarding")?.previewBody.includes("https://booking.example.invalid/fictional-clinic"));
+  await api.enqueueEvent(h.db,"onboarding",{id:"c",clinicId:"c"});
+  const calls=[],emails=[];
+  await api.processSmsNotifications(h.db,async(env,to,message)=>{calls.push(message);return "provider_accepted";});
+  await api.processNotifications(h.db,async(_to,_subject,text)=>{emails.push(text);});
+  assert.deepEqual(calls,["Welcome Owner Person to Fictional Clinic. Your booking link: https://booking.example.invalid/fictional-clinic."]);
+  assert(emails.some(text=>text.includes("Your booking link: https://booking.example.invalid/fictional-clinic.")));
+});
+test("System Admin onboarding targets active platform admins and rechecks their status before dispatch",async()=>{
+  await h.control.query(`insert into users(id,role,email,full_name,mobile) values
+    ('system-onboarding','superAdmin','system@example.invalid','System Admin','+919876543214'),
+    ('inactive-system','superAdmin','inactive-system@example.invalid','Inactive Admin','+919876543215');
+    update users set status='inactive' where id='inactive-system';
+    insert into clinics(id,admin_id,data) values('system-clinic','ca','{"name":"New Fictional Clinic","policies":{"notificationsEnabled":true}}');`);
+  await api.saveTemplate(sa,{channel:"sms",event:"onboarding",recipient:"superAdmin",revision:0,mode:"publish",
+    content:{...api.defaultTemplate("onboarding","superAdmin"),enabled:true,dltTemplateId:"FIXTURE_SYSTEM_ONBOARDING",senderId:"",dltEntityId:""}});
+  const controls=await api.eventControls(sa);
+  const activated=controls.items.find(row=>row.event==="onboarding"&&row.recipient==="superAdmin"&&row.channel==="sms");
+  await api.changeActivation(sa,{channel:"sms",event:"onboarding",recipient:"superAdmin",revision:activated.revision,enabled:false});
+  await api.changeActivation(sa,{channel:"sms",event:"onboarding",recipient:"superAdmin",revision:activated.revision+1,enabled:true});
+  assert(controls.items.some(row=>row.event==="onboarding"&&row.recipient==="superAdmin"&&row.channel==="email"));
+  assert(controls.items.some(row=>row.event==="patient_login_otp"&&row.recipient==="patient"&&row.channel==="sms"));
+  assert(!controls.items.some(row=>row.event==="patient_login_otp"&&row.channel==="email"));
+  await api.enqueueEvent(h.db,"onboarding",{id:"system-clinic",clinicId:"system-clinic"});
+  const sms=[],email=[];
+  await api.processSmsNotifications(h.db,async(_env,to,message)=>{sms.push({to,message});return "provider_accepted";});
+  await api.processNotifications(h.db,async(to,_subject,text)=>{email.push({to,text});});
+  assert(sms.some(row=>row.to==="+919876543214"&&row.message.includes("New Fictional Clinic")));
+  assert(email.some(row=>row.to==="system@example.invalid"&&row.text.includes("System Admin")));
+  assert(!email.some(row=>row.to==="inactive-system@example.invalid"));
+  await h.control.query(`insert into clinics(id,admin_id,data) values('system-clinic-second','ca','{"name":"Second Fictional Clinic","policies":{"notificationsEnabled":true}}');`);
+  await api.enqueueEvent(h.db,"onboarding",{id:"system-clinic-second",clinicId:"system-clinic-second"});
+  await h.control.query("update users set status='inactive' where id='system-onboarding'");
+  const second=[];
+  await api.processSmsNotifications(h.db,async(_env,to)=>{second.push(to);return "provider_accepted";});
+  await api.processNotifications(h.db,async(to)=>{second.push(to);});
+  assert(!second.includes("system@example.invalid")&&!second.includes("+919876543214"));
+});
+
 test("the separate patient booking email path substitutes the same fields and does not send missing tokens",async()=>{
   await api.saveTemplate(sa,{channel:"email",event:"booking",clinicId:"c",recipient:"patient",revision:0,mode:"publish",
     content:{...api.defaultTemplate("booking"),enabled:true,subject:"Hi {{recipient_name}}",prefix:"",footer:"",

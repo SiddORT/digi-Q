@@ -147,7 +147,7 @@ paths:
       operationId: getNotificationTemplates
       parameters:
         - { in: query, name: clinicId, schema: { type: string } }
-        - { in: query, name: recipient, schema: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] } }
+        - { in: query, name: recipient, schema: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] } }
         - { in: query, name: channel, schema: { type: string, enum: [email, sms] } }
       responses:
         "200":
@@ -561,14 +561,16 @@ paths:
     post:
       operationId: startPatientEmail
       security: []
-      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthEmailInput" } } } }
+      description: Requests email login (including new patients) or SMS login for existing active patient accounts. SMS uses the platform patient-login template, bypasses optional notification gates and never returns the code.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PatientLoginStartInput" } } } }
       responses:
         "200": { description: Patient challenge, content: { application/json: { schema: { $ref: "#/components/schemas/AuthChallenge" } } } }
   /auth/patient/verify:
     post:
       operationId: verifyPatientEmail
       security: []
-      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthCodeInput" } } } }
+      description: Consumes a single-use patient code for its exact delivery channel and establishes an HTTP-only session. SMS never creates users or verifies email ownership.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PatientLoginVerifyInput" } } } }
       responses:
         "200": { description: Patient session created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
         "503": { description: "Session issuance unavailable; code AUTH_SESSION_UNCONFIGURED when session mode or signing key is invalid." }
@@ -1685,6 +1687,28 @@ components:
         size: { type: integer }
         contentType: { type: string }
         clinicId: { type: string }
+    PatientLoginStartInput:
+      oneOf:
+        - type: object
+          required: [email]
+          additionalProperties: false
+          properties:
+            channel: { type: string, enum: [email] }
+            email: { type: string, format: email }
+        - type: object
+          required: [channel, mobile]
+          additionalProperties: false
+          properties:
+            channel: { type: string, enum: [sms] }
+            mobile: { type: string, pattern: '^\+[1-9][0-9]{6,14}$' }
+    PatientLoginVerifyInput:
+      type: object
+      required: [challengeId, code]
+      additionalProperties: false
+      properties:
+        channel: { type: string, enum: [email, sms], default: email }
+        challengeId: { type: string }
+        code: { type: string }
     NotificationTemplateContent:
       description: SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.
       type: object
@@ -1704,8 +1728,8 @@ components:
       required: [channel, event, recipientGroup, revision, content, values]
       properties:
         channel: { type: string, enum: [email, sms] }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder] }
-        recipientGroup: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp] }
+        recipientGroup: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
         revision: { type: integer, minimum: 0 }
         content: { $ref: "#/components/schemas/NotificationTemplateContent" }
@@ -1726,8 +1750,8 @@ components:
       required: [channel, event, recipient, revision, enabled, confirmed]
       properties:
         channel: { type: string, enum: [email, sms] }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder] }
-        recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp] }
+        recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
         revision: { type: integer, minimum: 0 }
         enabled: { type: boolean }
@@ -1738,7 +1762,7 @@ components:
       properties:
         channel: { type: string, enum: [email, sms] }
         event: { type: string }
-        recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] }
+        recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         revision: { type: integer }
         enabled: { type: boolean }
         source: { type: string }
@@ -1758,9 +1782,9 @@ components:
       required: [event, revision, mode]
       properties:
         channel: { type: string, enum: [email, sms] }
-        recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] }
+        recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp] }
         revision: { type: integer, minimum: 0 }
         mode: { type: string, enum: [draft, publish, reset] }
         content: { $ref: "#/components/schemas/NotificationTemplateContent" }
@@ -1777,7 +1801,7 @@ components:
             required: [event, title, revision, source, content, previewSubject, previewBody, delivery]
             properties:
               event: { type: string }
-              recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist] }
+              recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
               title: { type: string }
               revision: { type: integer }
               source: { type: string }

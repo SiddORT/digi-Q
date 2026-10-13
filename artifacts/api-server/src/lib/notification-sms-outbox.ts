@@ -13,6 +13,7 @@ import { logger } from "./logger";
 import { confirmationText } from "./appointment-confirmation";
 import { reminderDispatchEligible } from "./notification-outbox";
 import { visitTemplateValues, missingVisitVariables } from "./notification-template-values";
+import { validTemplateTarget } from "./notification-templates";
 
 const phoneKey=(phone:string)=>createHash("sha256").update(phone).digest("hex");
 export function notificationPhone(value:unknown) {
@@ -21,6 +22,7 @@ export function notificationPhone(value:unknown) {
   try {const phone=parsePhoneNumberFromString(raw,"IN");return phone?.isValid()?phone.number:"";}catch{return "";}
 }
 async function targetAccounts(conn:any,group:TemplateRecipient,row:any,clinic:any) {
+  if(group==="superAdmin") return conn.select().from(users).where(eq(users.role,"superAdmin"));
   if(group==="clinicAdmin") return [await one(users,clinic.adminId,conn)];
   if(group==="doctor") {
     if(!row.doctorId)return [];
@@ -44,13 +46,14 @@ async function targetAccounts(conn:any,group:TemplateRecipient,row:any,clinic:an
   return targets;
 }
 export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string="",previousSession?:any) {
+  if(event==="patient_login_otp")return; // Authentication codes never enter notification history/outbox.
   if(!await claimNotificationOccurrence(conn,"sms",event,row))return;
   const env=(await resolvedIntegration("notificationSms",conn)).env;
   const gate=(await getSettings(conn,row.clinicId)).notificationsEnabled;
   const clinic=await one(clinics,row.clinicId,conn);
   const used=new Set<string>();
   for(const group of templateRecipients) {
-    if(event==="onboarding"&&group!=="clinicAdmin")continue;
+    if(!validTemplateTarget(event,group,"sms"))continue;
     const template=await resolvedTemplate(event,row.clinicId,conn,group,"sms");
     const targets=await targetAccounts(conn,group,row,clinic);
     for(const account of targets.length?targets:[null]) {
@@ -107,7 +110,7 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
         if(!notificationSmsEnabled(env)){await update("disabled");return null;}
         if(!notificationSmsReadiness(env).ready){await update("configuration_failed");return null;}
         const targets=await targetAccounts(tx,data.recipientGroup,current||snapshot,clinic);
-        const target=targets.find(a=>data.recipientPatientId?a.targetPatientId===data.recipientPatientId:a.id===data.recipientUserId);
+        const target=targets.find((a:any)=>data.recipientPatientId?a.targetPatientId===data.recipientPatientId:a.id===data.recipientUserId);
         const phone=notificationPhone(target?.mobile);
         if(!target||target.status!=="active"||!phone||phoneKey(phone)!==data.recipientPhoneKey){await update("no_recipient");return null;}
         const patient=current?.patientId?await one(patients,current.patientId,tx):null;

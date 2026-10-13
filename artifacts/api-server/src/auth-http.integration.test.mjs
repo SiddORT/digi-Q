@@ -81,9 +81,15 @@ before(async () => {
   await harness.control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0012_native_auth_additive.sql"), "utf8"));
   globalThis.nativeAuthDb = harness.db;
   await build({
-    entryPoints: [resolve(root, "app.ts")], outfile: bundle, bundle: true,
+    stdin:{contents:'export {default} from "./app"; export * from "./lib/notification-template-store"; export * from "./lib/notification-templates";',resolveDir:root,loader:"ts"}, outfile: bundle, bundle: true,
     platform: "node", format: "esm", packages: "external",
     plugins: [{ name: "isolated-http-auth", setup(b) {
+      b.onResolve({filter:/notification-sms-transport$/},()=>({path:"sms-transport",namespace:"isolated-sms"}));
+      b.onLoad({filter:/.*/,namespace:"isolated-sms"},()=>({contents:`
+        export * from "${resolve(root,"lib/notification-sms-transport.ts")}";
+        export async function sendNotificationSms(_env,_mobile,message) {
+          globalThis.nativeAuthSms.push(message);return "provider_accepted";
+        }`,resolveDir:root,loader:"ts"}));
       b.onResolve({ filter: /^@workspace\/db$/ }, () => ({ path: "db", namespace: "isolated-db" }));
       b.onLoad({ filter: /.*/, namespace: "isolated-db" }, () => ({ contents: `
         export * from "${resolve(root, "../../../lib/db/src/schema/core.ts")}";
@@ -118,6 +124,7 @@ before(async () => {
 beforeEach(async () => {
   await harness.control.query("truncate auth_sessions, auth_challenges, auth_rate_limits, users cascade");
   globalThis.nativeAuthMail.length = 0;
+  globalThis.nativeAuthSms=[];
   jar.clear();
   sent.length = 0;
 });
@@ -130,6 +137,7 @@ after(async () => {
       ...(temp ? [rm(temp, { recursive: true, force: true })] : [])]);
     delete globalThis.nativeAuthDb;
     delete globalThis.nativeAuthMail;
+    delete globalThis.nativeAuthSms;
     delete globalThis.fetch;
   }
 });
@@ -243,4 +251,21 @@ test("origin gate rejects cross-site mutations even with valid CSRF; patient OTP
   assert.ok(started.challengeId);
   assert.equal((await authRequest("patient/verify", { challengeId: started.challengeId, code: mailCode() })).authenticated, true);
   assert.equal((await (await browserFetch("/api/auth/status")).json()).role, "patient");
+});
+
+test("SMS patient login uses the actual HTTPS/CSRF transport and establishes the existing patient session",async()=>{
+  Object.assign(process.env,{NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits",
+    NOTIFICATION_SMS_KEY:"fixture-key",NOTIFICATION_SMS_BEARER_TOKEN:"fixture-token",
+    NOTIFICATION_SMS_CLIENT_ID:"fixture-client",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_ENABLED:"false"});
+  await harness.control.query("insert into users(id,email,full_name,role,mobile) values('sms-http','sms-http@example.test','SMS HTTP Patient','patient','+919876543210')");
+  const current=await backend.resolvedTemplate("patient_login_otp",undefined,harness.db,"patient","sms");
+  await backend.saveTemplate({id:"fixture-admin",role:"superAdmin"},{channel:"sms",event:"patient_login_otp",recipient:"patient",
+    revision:current.local.revision,mode:"publish",content:{...backend.defaultTemplate("patient_login_otp"),senderId:"",dltEntityId:"",dltTemplateId:"FIXTURE_OTP"}});
+  const started=await authRequest("patient/start",{channel:"sms",mobile:"+919876543210"});
+  const otp=/login code is (\d{6})/.exec(globalThis.nativeAuthSms.at(-1))?.[1];assert(otp);
+  assert.equal((await authRequest("patient/verify",{channel:"sms",challengeId:started.challengeId,code:otp})).authenticated,true);
+  const status=await (await browserFetch("/api/auth/status")).json();
+  assert.equal(status.role,"patient");
+  assert.equal((await harness.control.query("select count(*)::int as n from auth_sessions where user_id='sms-http'")).rows[0].n,1);
+  await assert.rejects(authRequest("patient/verify",{channel:"sms",challengeId:started.challengeId,code:otp}));
 });

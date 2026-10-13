@@ -174,6 +174,8 @@ import type {
   PatientDocumentList,
   PatientInput,
   PatientList,
+  PatientLoginStartInput,
+  PatientLoginVerifyInput,
   PermissionPolicy,
   PermissionPolicyInput,
   PincodeLookup,
@@ -4373,7 +4375,10 @@ export const getStartPatientEmailUrl = () => {
   return `/api/auth/patient/start`
 }
 
-export const startPatientEmail = async (authEmailInput: AuthEmailInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthChallenge> => {
+/**
+ * Requests email login (including new patients) or SMS login for existing active patient accounts. SMS uses the platform patient-login template, bypasses optional notification gates and never returns the code.
+ */
+export const startPatientEmail = async (patientLoginStartInput: PatientLoginStartInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthChallenge> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -4394,7 +4399,7 @@ return customFetch<AuthChallenge>(getStartPatientEmailUrl(),
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(authEmailInput)
+    body: JSON.stringify(patientLoginStartInput)
   }
 );}
 
@@ -4432,9 +4437,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type StartPatientEmailMutationResult = NonNullable<Awaited<ReturnType<typeof startPatientEmail>>>
-    export type StartPatientEmailMutationBody = BodyType<AuthEmailInput>
+    export type StartPatientEmailMutationBody = BodyType<PatientLoginStartInput>
     export type StartPatientEmailMutationError = ErrorType<unknown>
-    export type StartPatientEmailMutationVariables = {data: BodyType<AuthEmailInput>}
+    export type StartPatientEmailMutationVariables = {data: BodyType<PatientLoginStartInput>}
 
     export const useStartPatientEmail = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startPatientEmail>>, TError,StartPatientEmailMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -4455,7 +4460,10 @@ export const getVerifyPatientEmailUrl = () => {
   return `/api/auth/patient/verify`
 }
 
-export const verifyPatientEmail = async (authCodeInput: AuthCodeInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthAuthenticated> => {
+/**
+ * Consumes a single-use patient code for its exact delivery channel and establishes an HTTP-only session. SMS never creates users or verifies email ownership.
+ */
+export const verifyPatientEmail = async (patientLoginVerifyInput: PatientLoginVerifyInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthAuthenticated> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -4476,7 +4484,7 @@ return customFetch<AuthAuthenticated>(getVerifyPatientEmailUrl(),
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(authCodeInput)
+    body: JSON.stringify(patientLoginVerifyInput)
   }
 );}
 
@@ -4514,9 +4522,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type VerifyPatientEmailMutationResult = NonNullable<Awaited<ReturnType<typeof verifyPatientEmail>>>
-    export type VerifyPatientEmailMutationBody = BodyType<AuthCodeInput>
+    export type VerifyPatientEmailMutationBody = BodyType<PatientLoginVerifyInput>
     export type VerifyPatientEmailMutationError = ErrorType<void>
-    export type VerifyPatientEmailMutationVariables = {data: BodyType<AuthCodeInput>}
+    export type VerifyPatientEmailMutationVariables = {data: BodyType<PatientLoginVerifyInput>}
 
     export const useVerifyPatientEmail = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyPatientEmail>>, TError,VerifyPatientEmailMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}

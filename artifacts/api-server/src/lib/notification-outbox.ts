@@ -13,6 +13,7 @@ import { resolvedIntegration } from "./integration-vault";
 import { createHash } from "node:crypto";
 import { assert } from "./http";
 import { previousSessionSnapshot, visitTemplateValues, missingVisitVariables } from "./notification-template-values";
+import { validTemplateTarget } from "./notification-templates";
 const emailKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 
 /** Explicit safe projection only: never return an outbox payload or recipient identifiers. */
@@ -45,6 +46,7 @@ export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, 
 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {
+  if(event==="patient_login_otp")return;
   if(event==="booking"){
     const {capturePatientConfirmation}=await import("./appointment-confirmation");
     await capturePatientConfirmation(conn,row);
@@ -53,7 +55,7 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
     for(const channel of ["email","sms"] as const){
       if(!await claimNotificationOccurrence(conn,channel,event,row))continue;
       for(const group of templateRecipients){
-      if((event==="onboarding"&&group!=="clinicAdmin")||(channel==="email"&&event==="booking"&&group==="patient"))continue;
+      if(!validTemplateTarget(event,group,channel)||(channel==="email"&&event==="booking"&&group==="patient"))continue;
       await recordDecision(conn,`${channel}-decision:${event}:${row.id}:${row.revision||0}:${group}:development`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},channel),"not_attempted");
       }
     }
@@ -69,7 +71,7 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
   } catch {
     logger.warn("SMS event preparation unavailable; visit and email retained");
     await conn.transaction((tx:any)=>claimNotificationOccurrence(tx,"sms",event,row)).catch(()=>false);
-    for(const group of templateRecipients) if(event!=="onboarding"||group==="clinicAdmin")
+    for(const group of templateRecipients) if(validTemplateTarget(event,group,"sms"))
       await recordDecision(conn,`sms-decision:${event}:${row.id}:${row.revision||0}:${group}:preparation`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"sms"),"preparation_failed");
   }
   try {
@@ -77,11 +79,12 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
   } catch {
     logger.warn("Email event preparation unavailable; visit and SMS retained");
     await conn.transaction((tx:any)=>claimNotificationOccurrence(tx,"email",event,row)).catch(()=>false);
-    for(const group of templateRecipients) if((event!=="onboarding"||group==="clinicAdmin")&&(event!=="booking"||group!=="patient"))
+    for(const group of templateRecipients) if(validTemplateTarget(event,group,"email")&&(event!=="booking"||group!=="patient"))
       await recordDecision(conn,`email-decision:${event}:${row.id}:${row.revision||0}:${group}:preparation`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"email"),"preparation_failed");
   }
 }
 async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string,previousSession?:any) {
+  if(event==="patient_login_otp")return;
   if(!await claimNotificationOccurrence(conn,"email",event,row))return;
   const env=(await resolvedIntegration("smtp",conn)).env;
   const gate=(await getSettings(conn,row.clinicId)).notificationsEnabled;
@@ -94,12 +97,13 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
     usedEmails.add(String(account?.email || patient.email || "").trim().toLowerCase());
   }
   for (const group of templateRecipients) {
-  if (event === "onboarding" && group !== "clinicAdmin") continue;
+  if (!validTemplateTarget(event,group,"email")) continue;
   if (event === "booking" && group === "patient") continue; // Existing confirmation claim owns this recipient.
   const template = await resolvedTemplate(event, row.clinicId, conn, group);
   const primary = group === defaultRecipient(event);
   let targets: any[] = [null];
   if (!primary) {
+    if (group === "superAdmin") targets = await conn.select().from(users).where(eq(users.role,"superAdmin"));
     if (group === "clinicAdmin") targets = [await one(users, (await one(clinics, row.clinicId, conn)).adminId, conn)];
     if (group === "doctor") targets = row.doctorId ? [await one(users, (await one(doctors, row.doctorId, conn)).userId, conn)] : [];
     if (group === "receptionist") {
@@ -218,6 +222,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       if (data.recipientUserId) {
         const account = await one(users, data.recipientUserId, tx);
         let member = data.recipientGroup === "clinicAdmin" && clinic.adminId === account.id;
+        if(data.recipientGroup==="superAdmin") member=data.event==="onboarding"&&account.role==="superAdmin";
         if (data.recipientGroup === "doctor" && current?.doctorId) {
           const doctor=await one(doctors,current.doctorId,tx);
           member=doctor.userId===account.id&&doctor.ownerAdminId===clinic.adminId&&!!current.branchId&&

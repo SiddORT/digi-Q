@@ -29,4 +29,5 @@ export const GetNotificationTemplatesRecipient = {
   clinicAdmin: 'clinicAdmin',
   doctor: 'doctor',
   receptionist: 'receptionist',
+  superAdmin: 'superAdmin',
 } as const;

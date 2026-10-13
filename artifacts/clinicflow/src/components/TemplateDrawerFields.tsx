@@ -19,7 +19,7 @@ export function TemplateDrawerFields({ form, sms, errors, variables, scopeName, 
   return <>
     <dl className="td-summary" data-testid="panel-template-summary">
       <div><dt>Template Key</dt><dd>{templateKey}</dd></div>
-      <div><dt>Variables <HelpTip text="Dates and session times use the clinic's display format and the visit's local timezone. Session times are not guaranteed consultation times. recipient_name is the actual recipient, while patient_name remains the patient. queue_token includes the prefix (Q-007); token_number is numeric (7). Previous date/time fields apply only to rescheduling; appointment fields do not apply to clinic onboarding. Missing required visit values prevent dispatch. OTP is separate and is not a supported placeholder." /></dt><dd>{variables.length ? variables.map(v => `{{${v}}}`).join(" ") : "None"}</dd></div>
+      <div><dt>Variables <HelpTip text="Dates and session times use the clinic's display format and the visit's local timezone. Session times are not guaranteed consultation times. recipient_name is the actual recipient, while patient_name remains the patient. queue_token includes the prefix (Q-007); token_number is numeric (7). Previous date/time fields apply only to rescheduling; appointment fields do not apply to clinic onboarding. Missing required visit values prevent dispatch. otp and expiry_minutes are supported only for the patient login SMS security template. Previews use example codes, never real login codes." /></dt><dd>{variables.length ? variables.map(v => `{{${v}}}`).join(" ") : "None"}</dd></div>
       {sms && <div><dt>DLT Template ID</dt><dd data-testid="text-saved-dlt">{savedDltTemplateId || "Not set"}</dd></div>}
     </dl>
     {active}

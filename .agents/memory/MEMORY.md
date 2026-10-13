@@ -12,7 +12,7 @@
 - [Booking readiness](booking-readiness.md) — opening hours are not sessions; empty dates do not prove weekly absence; bounded-search results require review.
 - [DigiQ standardization](digiq-standardization-decisions.md) — prompt is the approved reference; surface conflicts, inherit parent display formats, and use in-app warnings.
 - [Notification safety](notification-delivery-safety.md) — retry only known pre-dispatch failures; reminders refer to sessions, not promised consultation times.
-- [Notification channel boundary](notification-channel-boundary.md) — configurable SMS stays separate from OTP; booking retries never capture newly enabled notification jobs.
+- [Notification channel boundary](notification-channel-boundary.md) — patient SMS login bypasses optional gates; Twilio verification and future-event-only operational notices stay separate.
 - [Keep in Touch contract](keep-in-touch-contract.md) — credential equality and country-code '+' convention are unverified; no live probing under development authorization.
 - [Settings history validation](settings-history-validation.md) — Back → Cancel → Back → Discard exposes history corruption that a first prompt or sidebar link does not.
 - [Media storage choice](media-storage-choice.md) — uploads and HTTPS links; selectable local/object storage in one private server configuration file.

@@ -13,7 +13,7 @@ import { titleCase } from "../lib/title-case";
 
 type Row = api.EventControlRow;
 const status = (e: any) => e?.status ?? e?.response?.status;
-const RECIPIENT_LABEL: Record<string, string> = { patient: "Patient", clinicAdmin: "Clinic Admin", doctor: "Doctor", receptionist: "Receptionist" };
+const RECIPIENT_LABEL: Record<string, string> = { patient: "Patient", clinicAdmin: "Clinic Admin", doctor: "Doctor", receptionist: "Receptionist", superAdmin: "System Admin" };
 export const rowKey = (r: Pick<Row, "channel" | "event" | "recipient">) => `${r.channel}|${r.event}|${r.recipient}`;
 /** Groups catalog rows by event, preserving server order. */
 export function groupByEvent(items: Row[]) {
@@ -74,7 +74,7 @@ export function EventControls({ identity }: { identity: api.Identity }) {
                 {r.enabled && !r.ready && r.blockedReasons.length > 0 && <ul className="ec-blocked" data-testid={`list-blocked-${r.channel}-${event}-${r.recipient}`}>{r.blockedReasons.map(b => <li key={b}>{b}</li>)}
                   <li><Link href={area(r.channel)} className="text-link" data-testid={`link-fix-${r.channel}-${event}-${r.recipient}`}>Open {r.channel === "sms" ? "SMS" : "Email"} settings</Link></li></ul>}
                 {!r.enabled && r.blockedReasons.length > 0 && <small className="muted"> Needs: {r.blockedReasons.join("; ")} <Link href={area(r.channel)} className="text-link">Open {r.channel === "sms" ? "SMS" : "Email"} settings</Link></small>}</td>
-              <td><StatusSwitch active={r.enabled} disabled={update.isPending} label={`${r.channel} ${titleCase(event)} ${RECIPIENT_LABEL[r.recipient]}`} onChange={next => { setNotice(""); setConfirmed(false); setPending({ row: r, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{r.enabled ? "On" : "Off"}</StatusSwitch></td>
+              <td><StatusSwitch active={r.enabled} disabled={update.isPending || event === "patient_login_otp"} label={`${r.channel} ${titleCase(event)} ${RECIPIENT_LABEL[r.recipient]}`} onChange={next => { setNotice(""); setConfirmed(false); setPending({ row: r, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{event === "patient_login_otp" ? "Required" : r.enabled ? "On" : "Off"}</StatusSwitch></td>
             </tr>)}
           </tbody></table>
         </div>)}

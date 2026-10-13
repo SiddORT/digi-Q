@@ -8,6 +8,7 @@ import { resolvedIntegration } from "./integration-vault";
 import { notificationSmsConfig, smsMetadataReady } from "./notification-sms-transport";
 import { DEMO_FIXTURE } from "./demo-policy";
 import { visitTemplateValues } from "./notification-template-values";
+import { validTemplateTarget, validEventContent } from "./notification-templates";
 
 export type Channel = "email" | "sms";
 const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event), channel:Channel="email") => `${channel==="sms"?"sms":"notification"}-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
@@ -28,7 +29,7 @@ export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, 
   const platform = await stored(event, undefined, conn, recipient,channel);
   const local = clinicId ? await stored(event, clinicId, conn, recipient,channel) : platform;
   const fallback = defaultTemplate(event, recipient);
-  const content = local.published || platform.published || (channel === "sms" ? {...fallback, enabled:false,body:`${eventTitles[event]}: {{clinic_name}}\n${fallback.body}`,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""} : fallback);
+  const content = local.published || platform.published || (channel === "sms" ? {...fallback, enabled:event==="patient_login_otp",body:event==="patient_login_otp"?fallback.body:`${eventTitles[event]}: {{clinic_name}}\n${fallback.body}`,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""} : fallback);
   // Corrupt configuration fails explicitly, rather than silently sending a different template.
   return { content: channel === "sms" ? smsTemplateContent.parse(content) : templateContent.parse(content), local,
     activatedAt: Math.max((local.published ? local : platform).activatedAt ?? 0,local.activatedAt ?? 0),
@@ -38,20 +39,22 @@ export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, 
 }
 export async function templateCatalog(user: any, clinicId?: string, recipient?: TemplateRecipient,channel:Channel="email") {
   if(channel==="sms") assert(user.role==="superAdmin",403,"Superadmin access required");
+  if(recipient==="superAdmin") assert(user.role==="superAdmin",403,"Superadmin access required");
   const clinic = await authorizedTemplateScope(user, clinicId);
   const values = { ...visitTemplateValues({date:"2030-01-15",startTime:"09:00",endTime:"12:00",token:"Q-007",tokenNumber:7},
       clinic,"[Recipient name]",{date:"2030-01-14",startTime:"14:00",endTime:"17:00"}),
     clinic_name: clinic?.name || "Example clinic", clinic_contact: [clinic?.email, clinic?.phone].filter(Boolean).join(" · "),
     patient_name: "[Patient name]", doctor_name: "[Doctor name]", appointment_details: "[Clinic-formatted visit details]", previous_details: "[Previous visit details]", reference: "[Booking reference]", timezone: "[Clinic location timezone]" };
   values.cancel_reason = "[Cancellation reason]";
+  const previewValues = { ...values, booking_link: clinic ? values.booking_link || "[Clinic booking link unavailable]" : "https://example.invalid/example-clinic", otp: "123456", expiry_minutes: "10" };
   const items = [];
   for (const event of templateEvents) {
-    if (event === "onboarding" && recipient && recipient !== "clinicAdmin") continue;
+    if (!validTemplateTarget(event, recipient || defaultRecipient(event), channel) || event === "patient_login_otp" && clinicId) continue;
     const { content, local, source } = await resolvedTemplate(event, clinicId, db, recipient || defaultRecipient(event),channel);
-    const preview = renderNotification(local.draft || content, values);
+    const preview = renderNotification(local.draft || content, previewValues);
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
-      delivery: event === "booking" ? (recipient === "clinicAdmin" ? "Owning Clinic Admin booking email is enabled by default when clinic notifications are enabled. Explicit published opt-outs remain in effect. Delivery is asynchronous; development never sends automatically." : "Used for eligible patient booking confirmations; notification and delivery settings apply. Provider acceptance does not guarantee inbox delivery.") : event === "reminder" ? "Production worker sends one hour before the session start when clinic notifications are enabled. Not an exact consultation-time promise." : "Queued automatically for this event when clinic notifications are enabled. Production worker delivers; development never sends automatically." });
+      delivery: event === "patient_login_otp" ? "Sent immediately when an existing patient requests SMS login, including in development. This required security message ignores notification switches. Approved sender/DLT configuration is required; real codes never enter notification history." : event === "booking" ? (recipient === "clinicAdmin" ? "Owning Clinic Admin booking email is enabled by default when clinic notifications are enabled. Explicit published opt-outs remain in effect. Delivery is asynchronous; development never sends automatically." : "Used for eligible patient booking confirmations; notification and delivery settings apply. Provider acceptance does not guarantee inbox delivery.") : event === "reminder" ? "Production worker sends one hour before the session start when clinic notifications are enabled. Not an exact consultation-time promise." : "Queued automatically for this event when clinic notifications are enabled. Production worker delivers; development never sends automatically." });
   }
   return { scopeName: clinic?.name || "Platform defaults", variables: [...templateVariables], items };
 }
@@ -62,7 +65,10 @@ export async function saveTemplate(user: any, input: unknown) {
   const body = parsed.data!;
   if(body.channel==="sms") assert(user.role==="superAdmin",403,"Superadmin access required");
   if(body.content) body.content = (body.channel==="sms"?smsTemplateContent:templateContent).parse(body.content);
-  assert(body.event !== "onboarding" || !body.recipient || body.recipient === "clinicAdmin", 400, "Clinic onboarding is sent to the Clinic Admin");
+  assert(validTemplateTarget(body.event,body.recipient||defaultRecipient(body.event),body.channel),400,"Invalid event, recipient or channel");
+  if(body.recipient==="superAdmin" || body.event==="patient_login_otp") assert(user.role==="superAdmin",403,"Superadmin access required");
+  assert(body.event!=="patient_login_otp"||!body.clinicId,400,"Patient login OTP is platform-scoped");
+  if(body.content) assert(validEventContent(body.event,body.content),400,"Use this event's supported variables. Patient login OTP must include {{otp}} and cannot be disabled.");
   await db.transaction(async tx => {
     await authorizedTemplateScope(user, body.clinicId, tx);
     const id = key(body.event, body.clinicId, body.recipient,body.channel);
@@ -102,10 +108,11 @@ export async function saveTemplate(user: any, input: unknown) {
 
 /** Activation edits only published content; unpublished wording stays a draft. */
 export async function changeActivation(user:any, input:{channel:Channel;event:TemplateEvent;recipient:TemplateRecipient;clinicId?:string;revision:number;enabled:boolean}) {
+  assert(input.event!=="patient_login_otp",400,"Patient login OTP is a required security message and cannot be disabled");
+  assert(validTemplateTarget(input.event,input.recipient,input.channel),400,"Invalid event, recipient or channel");
   assert(user.role==="superAdmin" && !user.demo,403,"Real Superadmin access required");
   await db.transaction(async tx=>{
     await authorizedTemplateScope(user,input.clinicId,tx);
-    assert(input.event!=="onboarding"||input.recipient==="clinicAdmin",400,"Onboarding targets the Clinic Admin only");
     const id=key(input.event,input.clinicId,input.recipient,input.channel);
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${id},0))`);
     const effective=await resolvedTemplate(input.event,input.clinicId,tx,input.recipient,input.channel);

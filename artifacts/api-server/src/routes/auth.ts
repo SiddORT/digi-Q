@@ -7,6 +7,7 @@ import { uid, put, audit } from "../lib/store";
 import { isStaffRole, requireUser } from "../lib/auth";
 import { sendAuthEmail, smtpConfig } from "../lib/auth-email";
 import { resolvedIntegration } from "../lib/integration-vault";
+import { patientLoginPhone, startPatientSmsLogin, verifyPatientSmsLogin } from "../lib/patient-login-sms";
 import { createSession, revokeSession, hashPassword, verifyPassword, issueCsrf,
   lockCredentials, invalidateStaffCredentials, insertSession, sessionCookie, challengeUserId,
   resendRegistrationChallenge, getCookie,
@@ -165,6 +166,14 @@ authRouter.post("/auth/change-password", async (req, res) => {
   res.set("Cache-Control", "no-store").json({ changed: true });
 });
 authRouter.post("/auth/patient/start", async (req, res) => {
+  assert(req.body?.channel===undefined||["email","sms"].includes(req.body.channel),400,"Invalid login channel");
+  if(req.body?.channel==="sms") {
+    const mobile=patientLoginPhone(req.body.mobile);
+    await limit(req,mobile,"patient-sms-login");
+    const challengeId=await startPatientSmsLogin(mobile);
+    res.set("Cache-Control","no-store").json({challengeId});
+    return;
+  }
   const address = email(req.body?.email);
   await limit(req, address, "patient-login");
   smtpConfig((await resolvedIntegration("smtp")).env);
@@ -178,6 +187,13 @@ authRouter.post("/auth/patient/verify", async (req, res) => {
   await consumeRateLimit(`patient-verify:${req.ip || "unknown"}`, 25);
   const { challengeId, code: submitted } = req.body || {};
   if (typeof challengeId !== "string" || typeof submitted !== "string") throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
+  assert(req.body?.channel===undefined||["email","sms"].includes(req.body.channel),400,"Invalid login channel");
+  if(req.body?.channel==="sms") {
+    const session=await verifyPatientSmsLogin(challengeId,submitted);
+    sessionCookie(res,session);
+    res.set("Cache-Control","no-store").json({authenticated:true});
+    return;
+  }
   const challenge = await consumeChallenge(challengeId, "patient", submitted);
   const existing = await localUser(challenge.email);
   if (existing && (existing.role !== "patient" || existing.status !== "active"))

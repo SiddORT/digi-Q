@@ -1,12 +1,27 @@
 import { z } from "zod";
 import { visitVariables } from "./notification-template-values";
 
-export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder"] as const;
+export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "patient_login_otp"] as const;
 export type TemplateEvent = typeof templateEvents[number];
-export const templateRecipients = ["patient", "clinicAdmin", "doctor", "receptionist"] as const;
+export const templateRecipients = ["patient", "clinicAdmin", "doctor", "receptionist", "superAdmin"] as const;
 export type TemplateRecipient = typeof templateRecipients[number];
 export const defaultRecipient = (event: TemplateEvent): TemplateRecipient => event === "onboarding" ? "clinicAdmin" : "patient";
-export const templateVariables = ["clinic_name", "patient_name", "doctor_name", "appointment_details", "previous_details", "reference", "timezone", "clinic_contact", ...visitVariables] as const;
+export const templateVariables = ["clinic_name", "booking_link", "patient_name", "doctor_name", "appointment_details", "previous_details", "reference", "timezone", "clinic_contact", ...visitVariables, "otp", "expiry_minutes"] as const;
+export function validTemplateTarget(event: TemplateEvent, recipient: TemplateRecipient, channel: "email" | "sms") {
+  if (event === "patient_login_otp") return recipient === "patient" && channel === "sms";
+  if (recipient === "superAdmin") return event === "onboarding";
+  return event !== "onboarding" || recipient === "clinicAdmin";
+}
+export function variablesForTemplate(event: TemplateEvent): readonly string[] {
+  return event === "patient_login_otp" ? ["otp", "expiry_minutes"] : templateVariables.filter(v => v !== "otp" && v !== "expiry_minutes");
+}
+export function validEventContent(event: TemplateEvent, content: { subject: string; body: string; prefix: string; footer: string; enabled?: boolean }) {
+  const allowed = variablesForTemplate(event);
+  const used = [content.subject, content.body, content.prefix, content.footer].flatMap(text =>
+    [...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(match => match[1]));
+  return used.every(variable => allowed.includes(variable)) &&
+    (event !== "patient_login_otp" || content.enabled !== false && /\{\{\s*otp\s*\}\}/.test(content.body));
+}
 export const templateContent = z.object({
   enabled: z.boolean().default(true),
   subject: z.string().trim().min(1).max(180).refine(v => !/[\r\n]/.test(v), "Subject must be one line"),
@@ -61,6 +76,7 @@ export const templateSave = z.preprocess(input => {
 export const eventTitles: Record<TemplateEvent, string> = {
   booking: "Booking confirmation", onboarding: "Clinic onboarding", rescheduled: "Appointment rescheduled",
   cancelled: "Appointment cancelled", completed: "Thank you after your visit", reminder: "Appointment reminder",
+  patient_login_otp: "Patient login OTP",
 };
 const bodies: Record<TemplateEvent, string> = {
   booking: "Hello {{patient_name}},\n\nYour booking at {{clinic_name}} is confirmed.\n{{appointment_details}}\nReference: {{reference}}\n\n{{clinic_contact}}",
@@ -69,8 +85,11 @@ const bodies: Record<TemplateEvent, string> = {
   cancelled: "Hello {{patient_name}},\n\nYour booking at {{clinic_name}} has been cancelled.\n{{appointment_details}}\nReference: {{reference}}\nContact the clinic if you need to book another visit.\n{{clinic_contact}}",
   completed: "Hello {{patient_name}},\n\nThank you for visiting {{clinic_name}}. Your visit is now complete.\nFor further assistance, contact your clinic.\n{{clinic_contact}}",
   reminder: "Hello {{patient_name}},\n\nA reminder of your upcoming session at {{clinic_name}}.\n{{appointment_details}}\nReference: {{reference}}\nQueue-based visits do not guarantee an exact consultation time.",
+  patient_login_otp: "Your DigiQ Doctors login code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share this code.",
 };
 export function defaultTemplate(event: TemplateEvent, recipient: TemplateRecipient = defaultRecipient(event)): TemplateContent {
+  if (event === "patient_login_otp") return { enabled: true, subject: "Patient login OTP", body: bodies[event], prefix: "", footer: "", logoUrl: "" };
+  if (event === "onboarding" && recipient === "superAdmin") return { enabled: true, subject: "Clinic registered — {{clinic_name}}", body: "Hello {{recipient_name}},\n\nA clinic has completed registration: {{clinic_name}}.\n{{clinic_contact}}", prefix: "", footer: "", logoUrl: "" };
   return { enabled: recipient === defaultRecipient(event) || event === "booking" && recipient === "clinicAdmin", subject: `${eventTitles[event]} — {{clinic_name}}`, body: recipient === defaultRecipient(event) ? bodies[event] : `Clinic notification: ${eventTitles[event]}\nPatient: {{patient_name}}\nDoctor: {{doctor_name}}\n{{appointment_details}}\nReference: {{reference}}\n{{clinic_contact}}`, prefix: "", logoUrl: "", footer: "This is an automated clinic message. Contact your clinic for assistance." };
 }
 export function substitute(text: string, values: Record<string, string>): string {

@@ -1,5 +1,16 @@
 import { clinicDisplayPreferences } from "./display-preferences";
 
+/** Use the configured public site, never a request host or a private ticket URL. */
+export function clinicBookingLink(clinic: any, origin = process.env.CLINICFLOW_PUBLIC_ORIGIN) {
+  const slug = clinic?.slug ?? clinic?.data?.slug;
+  if (typeof slug !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !origin) return "";
+  try {
+    const site = new URL(origin);
+    if (site.protocol !== "https:" || site.username || site.password || site.search || site.hash || site.pathname !== "/") return "";
+    return `${site.origin}/${encodeURIComponent(slug)}`;
+  } catch { return ""; }
+}
+
 /** Calendar dates and session clocks are already in the visit timezone.
  * Never convert these into the server timezone or promise a consultation time. */
 export function formatTemplateSession(row: any, clinic: any) {
@@ -44,6 +55,7 @@ export function visitTemplateValues(row: any, clinic: any, recipientName: string
     : undefined;
   const cancelReason = typeof cancellation?.reason === "string" ? cancellation.reason.trim() : "";
   return {
+    booking_link: clinicBookingLink(clinic),
     recipient_name: recipientName || "",
     appointment_date: current.date, session_start: current.start, session_end: current.end,
     previous_date: old.date, previous_session_start: old.start, previous_session_end: old.end,
@@ -58,5 +70,5 @@ export function visitTemplateValues(row: any, clinic: any, recipientName: string
 export function missingVisitVariables(texts: string[], values: Record<string, string>) {
   return texts.flatMap(text => [...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)]
     .map(match => match[1]))
-    .filter(name => (visitVariables as readonly string[]).includes(name) && !values[name]?.trim());
+    .filter(name => ((visitVariables as readonly string[]).includes(name) || name === "booking_link") && !values[name]?.trim());
 }

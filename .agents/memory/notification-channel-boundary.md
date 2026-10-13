@@ -1,18 +1,49 @@
 ---
 name: Notification channel boundary
-description: Keep notification SMS separate from security OTP and preserve future-event-only activation
+description: Preserve security-message boundaries, the approved patient SMS login exception and future-event-only activation
 ---
 
 The administrator requested configurable notification SMS HTTP URL/key, not a fixed
-provider. Keep this channel separate from existing Twilio verification credentials,
+provider. Preserve the existing Twilio mobile-verification credentials and flow,
 and never make account/security messages disable-able appointment events.
 
-**Why:** Security verification, invitations and password recovery were explicitly out
-of scope; changing their transport or controls would change existing account behavior.
+**Why:** Security verification, invitations and password recovery were originally out
+of scope. The user subsequently approved patient SMS login alongside email OTP,
+not a general replacement of authentication or security-message transports.
 
 **How to apply:** Extend the shared encrypted vault and durable notification machinery
-for appointment channels rather than adding an alternative email sender or modifying OTP.
+for appointment channels rather than adding an alternative email sender or replacing
+Twilio verification, staff invitations, recovery or patient email login.
 Constrain configuration to declarative POST mappings, never executable provider scripts.
+
+Patient SMS login is the approved exception: it uses the configured SMS API but is
+a required security message, not an optional notification or outbox job. It serves
+existing uniquely matched patient accounts with real email identities; shared or
+unregistered phone numbers must not create or merge accounts.
+
+**Why:** The user explicitly chose “Add SMS login alongside email OTP.” Optional
+notification switches must not lock patients out, and real codes must not become
+notification history or provider-debug content.
+
+**How to apply:** Keep the editable login template platform/SMS/patient-only, require
+its OTP in the transmitted body and approved sender/DLT metadata, and preserve
+single-use, expiry and bounded attempts independently of notification opt-outs.
+Only examples may appear in template previews; never persist real login messages.
+
+System Admin clinic-onboarding notices use the existing active Superadmin role.
+
+**Why:** The user asked for onboarding “for system admin also,” not a new role or
+expanded permission to ordinary appointment notifications.
+
+**How to apply:** Preserve the owning Clinic Admin notice, scope System Admin
+recipients to onboarding and recheck their active role before dispatch.
+
+Clinic onboarding booking links are intended for clinics to share publicly.
+
+**Why:** The user requested a booking-link variable for the clinic's welcome SMS.
+
+**How to apply:** Use the clinic-wide public booking page, never a private patient
+ticket, a staff workspace address or an inferred branch-specific QR link.
 
 Enabling/configuring a channel must affect future eligible events only. In particular,
 idempotent booking retries must not capture fresh notification jobs for old bookings.

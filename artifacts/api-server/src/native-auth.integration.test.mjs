@@ -17,6 +17,11 @@ process.env.CLINICFLOW_PUBLIC_ORIGIN = "https://example.test";
 Object.assign(process.env, { SMTP_HOST: "localhost", SMTP_PORT: "587", SMTP_USER: "test",
   SMTP_PASSWORD: "test-not-a-credential", SMTP_FROM: "test@example.test" });
 globalThis.nativeAuthMail = [];
+Object.assign(process.env, { NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits",
+  NOTIFICATION_SMS_KEY:"fictional-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-token",
+  NOTIFICATION_SMS_CLIENT_ID:"fictional-client",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_ENABLED:"false" });
+globalThis.nativeAuthSms=[];
+const smsCalls=globalThis.nativeAuthSms;
 let h, api;
 before(async () => {
   h = await createQueueHarness({ empty: true });
@@ -27,10 +32,17 @@ before(async () => {
   await h.control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0012_native_auth_additive.sql"), "utf8"));
   globalThis.nativeAuthDb = h.db;
   await build({
-    stdin: { contents: 'export * from "./lib/native-auth"; export * from "./lib/jwt-session"; export * from "./lib/auth-email"; export * from "./routes/auth";',
+    stdin: { contents: 'export * from "./lib/native-auth"; export * from "./lib/jwt-session"; export * from "./lib/auth-email"; export * from "./routes/auth"; export * from "./lib/notification-template-store"; export * from "./lib/notification-templates"; export * from "./lib/patient-login-sms";',
       resolveDir: root },
     outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
     plugins: [{ name: "isolated-auth", setup(b) {
+      b.onResolve({filter:/notification-sms-transport$/},()=>({path:"sms-transport",namespace:"isolated-sms"}));
+      b.onLoad({filter:/.*/,namespace:"isolated-sms"},()=>({contents:`
+        export * from "${resolve(root,"lib/notification-sms-transport.ts")}";
+        export async function sendNotificationSms(_env,_mobile,message) {
+          globalThis.nativeAuthSms.push(message);return globalThis.nativeAuthSmsOutcome || "provider_accepted";
+        }
+      `,loader:"ts",resolveDir:root}));
       b.onResolve({ filter: /^@workspace\/db$/ }, () => ({ path: "db", namespace: "isolated" }));
       b.onLoad({ filter: /.*/, namespace: "isolated" }, () => ({ contents: `
         export * from "${resolve(root, "../../../lib/db/src/schema/core.ts")}";
@@ -49,8 +61,12 @@ before(async () => {
 beforeEach(async () => {
   await h.control.query("truncate auth_sessions, auth_challenges, auth_rate_limits, users cascade");
   globalThis.nativeAuthMail.length = 0;
+  smsCalls.length=0;
+  delete globalThis.nativeAuthSmsOutcome;
 });
 after(async () => {
+  delete globalThis.nativeAuthSms;
+  delete globalThis.nativeAuthSmsOutcome;
   try { if (h) await h.close(); }
   finally { await rm(bundle, { force: true }); delete globalThis.nativeAuthDb; delete globalThis.nativeAuthMail; }
 });
@@ -321,6 +337,97 @@ test("verified registration and patient email create separate roles without an e
   assert.ok(forbidden.res.body.challengeId);
   assert.equal(globalThis.nativeAuthMail.length, 0, "staff identity never gets a patient OTP");
 });
+async function setupSmsPatient() {
+  await h.control.query("insert into users(id,email,full_name,role,mobile) values('sms-patient','sms-patient@example.test','SMS Patient','patient','+919876543210')");
+  const current=await api.resolvedTemplate("patient_login_otp",undefined,h.db,"patient","sms");
+  await api.saveTemplate({id:"fixture-admin",role:"superAdmin"},{channel:"sms",event:"patient_login_otp",recipient:"patient",
+    revision:current.local.revision,mode:"publish",content:{...api.defaultTemplate("patient_login_otp"),senderId:"",dltEntityId:"",dltTemplateId:"FIXTURE_OTP"}});
+}
+const smsCode=()=>/login code is (\d{6})/.exec(smsCalls.at(-1))?.[1];
+
+test("SMS patient login preserves identity and issues a single-use secure session even with optional SMS disabled",async()=>{
+  await setupSmsPatient();
+  const started=await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
+  assert.equal(smsCalls.length,1);
+  const otp=smsCode();assert(otp);
+  assert(!JSON.stringify(started.res.body).includes(otp));
+  const challengeId=started.res.body.challengeId;
+  const challenge=(await h.control.query("select * from auth_challenges where id=$1",[challengeId])).rows[0];
+  assert.equal(challenge.purpose,"patient-sms");
+  assert.notEqual(challenge.token_hash,otp);
+  assert(!JSON.stringify(challenge.data).includes(otp));
+  const verified=await route("/auth/patient/verify",{channel:"sms",challengeId,code:otp});
+  assert.equal(verified.res.body.authenticated,true);
+  assert.equal(verified.res.cookies[api.SESSION_COOKIE].options.httpOnly,true);
+  const req=request({},`${api.SESSION_COOKIE}=${verified.res.cookies[api.SESSION_COOKIE].value}`);await resolveSession(req);
+  assert.equal(req.authUserId,"sms-patient");
+  await assert.rejects(route("/auth/patient/verify",{channel:"sms",challengeId,code:otp}));
+  const row=(await h.control.query("select * from users where id='sms-patient'")).rows[0];
+  assert.equal(row.role,"patient");
+  assert.equal(row.email_verified_at,null,"SMS must not verify email ownership");
+  assert.equal(row.data.mobileVerified,true);
+  assert.equal((await h.control.query("select count(*)::int as n from users")).rows[0].n,1);
+  assert.equal(globalThis.nativeAuthMail.length,0);
+  const saved=(await h.control.query("select data from settings")).rows;
+  assert(!JSON.stringify(saved).includes(otp),"No login code in notification history/outbox/settings");
+});
+test("wrong SMS codes consume the bounded attempt budget durably and cannot cross email verification",async()=>{
+  await setupSmsPatient();
+  const started=await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
+  const challengeId=started.res.body.challengeId,otp=smsCode();
+  const wrong=otp==="000000"?"111111":"000000";
+  for(let i=0;i<5;i++)await assert.rejects(route("/auth/patient/verify",{channel:"sms",challengeId,code:wrong}));
+  assert.equal((await h.control.query("select attempts from auth_challenges where id=$1",[challengeId])).rows[0].attempts,5);
+  await assert.rejects(route("/auth/patient/verify",{channel:"sms",challengeId,code:otp}));
+  const second=await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
+  await assert.rejects(route("/auth/patient/verify",{challengeId:second.res.body.challengeId,code:smsCode()}));
+});
+test("SMS login rejects expiry, changed phone/status and shared numbers without creating accounts",async()=>{
+  await setupSmsPatient();
+  const started=await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
+  await h.control.query("update auth_challenges set expires_at=now()-interval '1 minute' where id=$1",[started.res.body.challengeId]);
+  await assert.rejects(route("/auth/patient/verify",{channel:"sms",challengeId:started.res.body.challengeId,code:smsCode()}));
+  const second=await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
+  const otp=smsCode();
+  await h.control.query("update users set mobile='+919876543211' where id='sms-patient'");
+  await assert.rejects(route("/auth/patient/verify",{channel:"sms",challengeId:second.res.body.challengeId,code:otp}));
+  await h.control.query("update users set mobile='+919876543210',status='inactive' where id='sms-patient'");
+  smsCalls.length=0;
+  await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
+  assert.equal(smsCalls.length,0);
+  await h.control.query("update users set status='active' where id='sms-patient'; insert into users(id,email,full_name,role,mobile) values('shared','shared@example.test','Shared','patient','+919876543210')");
+  await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
+  await route("/auth/patient/start",{channel:"sms",mobile:"+919876543212"});
+  assert.equal(smsCalls.length,0);
+  assert.equal((await h.control.query("select count(*)::int as n from auth_sessions")).rows[0].n,0);
+});
+test("resending SMS invalidates the previous challenge and uncertain or rejected dispatch is never retried",async()=>{
+  await setupSmsPatient();
+  const first=await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"}),old=smsCode();
+  const second=await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"}),latest=smsCode();
+  await assert.rejects(route("/auth/patient/verify",{channel:"sms",challengeId:first.res.body.challengeId,code:old}));
+  assert.equal((await route("/auth/patient/verify",{channel:"sms",challengeId:second.res.body.challengeId,code:latest})).res.body.authenticated,true);
+  for(const outcome of ["provider_rejected","pre_dispatch_failed","delivery_unknown"]){
+    globalThis.nativeAuthSmsOutcome=outcome;
+    const count=smsCalls.length;
+    await assert.rejects(api.startPatientSmsLogin("+919876543210",h.db),error=>error.code==="PATIENT_SMS_DELIVERY_FAILED");
+    assert.equal(smsCalls.length,count+1,"Exactly one dispatch attempt");
+    const challenge=(await h.control.query("select consumed_at,data from auth_challenges order by created_at desc limit 1")).rows[0];
+    assert(challenge.consumed_at);assert.deepEqual(challenge.data,{});
+  }
+});
+test("patient OTP is platform-scoped, SMS-only, requires its token and cannot be disabled or used in ordinary events",async()=>{
+  await setupSmsPatient();
+  const sa={id:"fixture-admin",role:"superAdmin"};
+  const current=await api.resolvedTemplate("patient_login_otp",undefined,h.db,"patient","sms");
+  for(const patch of [{clinicId:"foreign"},{channel:"email"},{recipient:"doctor"},
+    {content:{...current.content,enabled:false}},{content:{...current.content,body:"No OTP placeholder"}},
+    {content:{...current.content,subject:"Code {{otp}}",body:"No body code"}}])
+    await assert.rejects(api.saveTemplate(sa,{channel:"sms",event:"patient_login_otp",recipient:"patient",revision:current.local.revision,mode:"publish",content:current.content,...patch}));
+  await assert.rejects(api.changeActivation(sa,{channel:"sms",event:"patient_login_otp",recipient:"patient",revision:current.local.revision,enabled:false}));
+  await assert.rejects(api.saveTemplate(sa,{channel:"email",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...api.defaultTemplate("booking"),body:"Code {{otp}}"}}));
+});
+
 test("recovery exceeds three requests without an account cap and keeps token safeguards", async () => {
   await h.control.query("insert into users(id,email,full_name,role) values ('recovery','recovery@example.test','Recovery','doctor')");
   // Even an already exhausted legacy account bucket must not block recovery.

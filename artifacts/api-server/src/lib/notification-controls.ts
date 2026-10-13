@@ -13,6 +13,7 @@ import { smtpConfig, validEmailAddress } from "./integration-config";
 import { sendAuthEmail } from "./auth-email";
 import { getSettings } from "./store";
 import { DEMO_FIXTURE } from "./demo-policy";
+import { validTemplateTarget, validEventContent } from "./notification-templates";
 
 export const eventControlInput = z.object({
   channel:z.enum(["email","sms"]),event:z.enum(templateEvents),recipient:z.enum(templateRecipients),
@@ -28,19 +29,20 @@ export async function eventControls(user:any,clinicId?:string) {
    try {smsConfig=notificationSmsConfig((await resolvedIntegration("notificationSms")).env);}catch{/* missing configuration shown below */}
   const items=[];
   for(const channel of ["email","sms"] as const) for(const recipient of templateRecipients) for(const event of templateEvents) {
-    if(event==="onboarding"&&recipient!=="clinicAdmin")continue;
+    if(!validTemplateTarget(event,recipient,channel)||event==="patient_login_otp"&&clinicId)continue;
     const template=await resolvedTemplate(event,clinicId,db,recipient,channel);
     const reasons:string[]=[];
     if(!(channel==="sms"?readiness.notificationSms:readiness.smtp).ready)reasons.push(`Configure ${channel==="sms"?"SMS API":"SMTP"} on the ${channel==="sms"?"SMS":"Email"} page`);
-    if(channel==="sms"&&readiness.notificationSms.notificationsEnabled===false)reasons.push("SMS notifications are disabled in Communication Settings");
+    if(channel==="sms"&&event!=="patient_login_otp"&&readiness.notificationSms.notificationsEnabled===false)reasons.push("SMS notifications are disabled in Communication Settings");
     if(channel==="email"&&readiness.smtp.notificationsEnabled===false)reasons.push("Email notifications are disabled in Communication Settings");
     const sms=template.content as SmsTemplateContent;
     if(channel==="sms"&&smsConfig&&!smsMetadataReady(smsConfig,sms))reasons.push(smsConfig.provider==="keepInTouch"?"Publish a DLT Template ID for this event; Keep in Touch uses Sender ID but no Entity ID":"Configure Sender and Entity IDs, and publish a DLT Template ID for this event");
-    if(gate===false)reasons.push("Enable the clinic-wide notification gate in Clinic settings (not changed here)");
+    if(gate===false&&event!=="patient_login_otp")reasons.push("Enable the clinic-wide notification gate in Clinic settings (not changed here)");
     if(!template.content.enabled)reasons.push("Published activation is off");
     items.push({channel,event,recipient,revision:template.local.revision,enabled:template.content.enabled,source:template.source,ready:reasons.length===0,blockedReasons:reasons,
-      timing:event==="reminder"?"One hour before the session start in the session timezone; not an exact consultation time":
-        event==="onboarding"?"After clinic registration commits, to the owning Clinic Admin":"After the corresponding visit change commits; current contact and membership rechecked"});
+      timing:event==="patient_login_otp"?"Security message sent immediately when an existing patient requests SMS login. Cannot be disabled; notification switches do not apply.":
+        event==="reminder"?"One hour before the session start in the session timezone; not an exact consultation time":
+        event==="onboarding"?(recipient==="superAdmin"?"After clinic registration commits, to active System Admins":"After clinic registration commits, to the owning Clinic Admin"):"After the corresponding visit change commits; current contact and membership rechecked"});
   }
   return {scopeName:clinic?.name||"Platform defaults",notificationsEnabled:gate,
     gateDescription:clinicId?`Clinic notification gate is ${gate?"on":"off"}. This page never changes it.`:"Platform defaults are inherited only when a clinic has no published override. Each clinic's notification gate still applies.",items};
@@ -62,10 +64,12 @@ export async function prepareTemplateTest(user:any,input:unknown) {
   assert(user.role==="superAdmin"&&!user.demo&&user.demoFixture!==DEMO_FIXTURE,403,"Real Superadmin access required");
   const body=eventTestInput.parse(input);
   await authorizedTemplateScope(user,body.clinicId);
-  assert(body.event!=="onboarding"||body.recipientGroup==="clinicAdmin",400,"Invalid event recipient");
+  assert(validTemplateTarget(body.event,body.recipientGroup,body.channel),400,"Invalid event recipient or channel");
+  assert(body.event!=="patient_login_otp"||!body.clinicId,400,"Patient login OTP is platform-scoped");
   const effective=await resolvedTemplate(body.event,body.clinicId,db,body.recipientGroup,body.channel);
   assert(effective.local.revision===body.revision,409,"Template changed. Refresh before testing.");
   const content=(body.channel==="sms"?smsTemplateContent:templateContent).parse(body.content);
+  assert(validEventContent(body.event,content),400,"Use this event's supported variables. Patient login OTP must include {{otp}} and cannot be disabled.");
   const texts=body.channel==="sms"?[content.body]:[content.subject,content.body,content.prefix,content.footer];
   const used=new Set(texts.flatMap(text=>[...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(m=>m[1])));
   assert(Object.keys(body.values).length===used.size&&Object.keys(body.values).every(k=>used.has(k))&&[...used].every(k=>body.values[k]?.trim()),400,"Provide exactly the placeholders used by this template");

@@ -29,4 +29,5 @@ export const NotificationTemplateCatalogItemsItemRecipient = {
   clinicAdmin: 'clinicAdmin',
   doctor: 'doctor',
   receptionist: 'receptionist',
+  superAdmin: 'superAdmin',
 } as const;

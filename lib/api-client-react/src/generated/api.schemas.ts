@@ -366,6 +366,29 @@ export interface LogoUploadInput {
   clinicId?: string;
 }
 
+export type PatientLoginStartInput = {
+  channel?: 'email';
+  email: string;
+} | {
+  channel: 'sms';
+  /** @pattern ^\+[1-9][0-9]{6,14}$ */
+  mobile: string;
+};
+
+export type PatientLoginVerifyInputChannel = typeof PatientLoginVerifyInputChannel[keyof typeof PatientLoginVerifyInputChannel];
+
+
+export const PatientLoginVerifyInputChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export interface PatientLoginVerifyInput {
+  channel?: PatientLoginVerifyInputChannel;
+  challengeId: string;
+  code: string;
+}
+
 /**
  * SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.
  */
@@ -413,6 +436,7 @@ export const EventTemplateTestInputEvent = {
   cancelled: 'cancelled',
   completed: 'completed',
   reminder: 'reminder',
+  patient_login_otp: 'patient_login_otp',
 } as const;
 
 export type EventTemplateTestInputRecipientGroup = typeof EventTemplateTestInputRecipientGroup[keyof typeof EventTemplateTestInputRecipientGroup];
@@ -423,6 +447,7 @@ export const EventTemplateTestInputRecipientGroup = {
   clinicAdmin: 'clinicAdmin',
   doctor: 'doctor',
   receptionist: 'receptionist',
+  superAdmin: 'superAdmin',
 } as const;
 
 export type EventTemplateTestInputValues = {[key: string]: string};
@@ -478,6 +503,7 @@ export const EventControlInputEvent = {
   cancelled: 'cancelled',
   completed: 'completed',
   reminder: 'reminder',
+  patient_login_otp: 'patient_login_otp',
 } as const;
 
 export type EventControlInputRecipient = typeof EventControlInputRecipient[keyof typeof EventControlInputRecipient];
@@ -488,6 +514,7 @@ export const EventControlInputRecipient = {
   clinicAdmin: 'clinicAdmin',
   doctor: 'doctor',
   receptionist: 'receptionist',
+  superAdmin: 'superAdmin',
 } as const;
 
 export interface EventControlInput {
@@ -517,6 +544,7 @@ export const EventControlRowRecipient = {
   clinicAdmin: 'clinicAdmin',
   doctor: 'doctor',
   receptionist: 'receptionist',
+  superAdmin: 'superAdmin',
 } as const;
 
 export interface EventControlRow {
@@ -554,6 +582,7 @@ export const NotificationTemplateSaveRecipient = {
   clinicAdmin: 'clinicAdmin',
   doctor: 'doctor',
   receptionist: 'receptionist',
+  superAdmin: 'superAdmin',
 } as const;
 
 export type NotificationTemplateSaveEvent = typeof NotificationTemplateSaveEvent[keyof typeof NotificationTemplateSaveEvent];
@@ -566,6 +595,7 @@ export const NotificationTemplateSaveEvent = {
   cancelled: 'cancelled',
   completed: 'completed',
   reminder: 'reminder',
+  patient_login_otp: 'patient_login_otp',
 } as const;
 
 export type NotificationTemplateSaveMode = typeof NotificationTemplateSaveMode[keyof typeof NotificationTemplateSaveMode];
@@ -596,6 +626,7 @@ export const NotificationTemplateCatalogItemsItemRecipient = {
   clinicAdmin: 'clinicAdmin',
   doctor: 'doctor',
   receptionist: 'receptionist',
+  superAdmin: 'superAdmin',
 } as const;
 
 export type NotificationTemplateCatalogItemsItem = {
@@ -2972,6 +3003,7 @@ export const GetNotificationTemplatesRecipient = {
   clinicAdmin: 'clinicAdmin',
   doctor: 'doctor',
   receptionist: 'receptionist',
+  superAdmin: 'superAdmin',
 } as const;
 
 export type GetNotificationTemplatesChannel = typeof GetNotificationTemplatesChannel[keyof typeof GetNotificationTemplatesChannel];

@@ -27,3 +27,13 @@ tests and complete-template dispatch did not exercise the same inputs.
 **How to apply:** Test both explicit template tests and automatic event dispatch
 with complete templates, rendered text and fake provider requests. Assert exact
 outbound message preservation and continued validation of the actual identifiers.
+
+Network isolation must replace the actual dispatch boundary, not just a convenient
+high-level HTTP API.
+
+**Why:** A global fetch double did not isolate the SMS client's pinned Node TLS
+transport. Fictional credentials are not a substitute for preventing network dispatch.
+
+**How to apply:** Use an explicitly injected sender or a transport-module double in
+authentication/notification fixtures. Keep real configuration and payload validation
+where possible, but prove the test cannot reach provider endpoints before running it.

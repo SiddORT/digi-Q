@@ -246,7 +246,7 @@ export const CompleteLogoUploadResponse = zod.object({
 
 export const GetNotificationTemplatesQueryParams = zod.object({
   "clinicId": zod.coerce.string().optional(),
-  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']).optional(),
   "channel": zod.enum(['email', 'sms']).optional()
 })
 
@@ -289,7 +289,7 @@ export const GetNotificationTemplatesResponse = zod.object({
   "variables": zod.array(zod.string()),
   "items": zod.array(zod.object({
   "event": zod.string(),
-  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']).optional(),
   "title": zod.string(),
   "revision": zod.number().int(),
   "source": zod.string(),
@@ -344,9 +344,9 @@ export const saveNotificationTemplateBodyContentLogoUrlMax = 1000;
 
 export const SaveNotificationTemplateBody = zod.object({
   "channel": zod.enum(['email', 'sms']).optional(),
-  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']).optional(),
   "clinicId": zod.string().optional(),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp']),
   "revision": zod.number().int().min(saveNotificationTemplateBodyRevisionMin),
   "mode": zod.enum(['draft', 'publish', 'reset']),
   "content": zod.object({
@@ -401,7 +401,7 @@ export const SaveNotificationTemplateResponse = zod.object({
   "variables": zod.array(zod.string()),
   "items": zod.array(zod.object({
   "event": zod.string(),
-  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']).optional(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']).optional(),
   "title": zod.string(),
   "revision": zod.number().int(),
   "source": zod.string(),
@@ -460,8 +460,8 @@ export const previewEventTemplateBodyRecipientMax = 254;
 
 export const PreviewEventTemplateBody = zod.object({
   "channel": zod.enum(['email', 'sms']),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
-  "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp']),
+  "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
   "revision": zod.number().int().min(previewEventTemplateBodyRevisionMin),
   "content": zod.object({
@@ -515,8 +515,8 @@ export const testEventTemplateBodyRecipientMax = 254;
 
 export const TestEventTemplateBody = zod.object({
   "channel": zod.enum(['email', 'sms']),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
-  "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp']),
+  "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
   "revision": zod.number().int().min(testEventTemplateBodyRevisionMin),
   "content": zod.object({
@@ -555,7 +555,7 @@ export const GetEventControlsResponse = zod.object({
   "items": zod.array(zod.object({
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
-  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "revision": zod.number().int(),
   "enabled": zod.boolean(),
   "source": zod.string(),
@@ -572,8 +572,8 @@ export const updateEventControlBodyRevisionMin = 0;
 
 export const UpdateEventControlBody = zod.object({
   "channel": zod.enum(['email', 'sms']),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder']),
-  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp']),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
   "revision": zod.number().int().min(updateEventControlBodyRevisionMin),
   "enabled": zod.boolean(),
@@ -587,7 +587,7 @@ export const UpdateEventControlResponse = zod.object({
   "items": zod.array(zod.object({
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
-  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist']),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "revision": zod.number().int(),
   "enabled": zod.boolean(),
   "source": zod.string(),
@@ -2441,13 +2441,19 @@ export const VerifyStaffDeviceBody = zod.object({
 export const VerifyStaffDeviceResponse = zod.void()
 
 
-export const startPatientEmailBodyEmailMax = 254;
+/**
+ * Requests email login (including new patients) or SMS login for existing active patient accounts. SMS uses the platform patient-login template, bypasses optional notification gates and never returns the code.
+ */
+export const startPatientEmailBodyTwoMobileRegExp = new RegExp('^\\+[1-9][0-9]{6,14}$');
 
 
-
-export const StartPatientEmailBody = zod.object({
-  "email": zod.string().email().max(startPatientEmailBodyEmailMax)
-})
+export const StartPatientEmailBody = zod.union([zod.object({
+  "channel": zod.enum(['email']).optional(),
+  "email": zod.string().email()
+}),zod.object({
+  "channel": zod.enum(['sms']),
+  "mobile": zod.string().regex(startPatientEmailBodyTwoMobileRegExp)
+})])
 
 export const StartPatientEmailResponse = zod.object({
   "challengeId": zod.string(),
@@ -2455,14 +2461,15 @@ export const StartPatientEmailResponse = zod.object({
 })
 
 
-export const verifyPatientEmailBodyCodeMin = 6;
-export const verifyPatientEmailBodyCodeMax = 6;
-
-
+/**
+ * Consumes a single-use patient code for its exact delivery channel and establishes an HTTP-only session. SMS never creates users or verifies email ownership.
+ */
+export const verifyPatientEmailBodyChannelDefault = `email`;
 
 export const VerifyPatientEmailBody = zod.object({
+  "channel": zod.enum(['email', 'sms']).default(verifyPatientEmailBodyChannelDefault),
   "challengeId": zod.string(),
-  "code": zod.string().min(verifyPatientEmailBodyCodeMin).max(verifyPatientEmailBodyCodeMax)
+  "code": zod.string()
 })
 
 export const VerifyPatientEmailResponse = zod.object({
