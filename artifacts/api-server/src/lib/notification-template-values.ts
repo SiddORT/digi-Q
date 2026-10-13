@@ -25,7 +25,7 @@ export function formatTemplateSession(row: any, clinic: any) {
 }
 
 export const visitVariables = ["recipient_name", "appointment_date", "session_start", "session_end",
-  "previous_date", "previous_session_start", "previous_session_end", "queue_token", "token_number"] as const;
+  "previous_date", "previous_session_start", "previous_session_end", "queue_token", "token_number", "cancel_reason"] as const;
 
 /** Save only the old session fields needed for reschedule substitution, not the entire old visit. */
 export function previousSessionSnapshot(row: any) {
@@ -37,12 +37,19 @@ export function previousSessionSnapshot(row: any) {
 export function visitTemplateValues(row: any, clinic: any, recipientName: string, previous?: any) {
   const current = formatTemplateSession(row, clinic);
   const old = formatTemplateSession(previous, clinic);
+  // Use the cancellation event in this immutable visit snapshot, never another
+  // action's reason or an earlier cancellation after the visit was reopened.
+  const cancellation = row?.status === "cancelled" && Array.isArray(row.history)
+    ? [...row.history].reverse().find((entry: any) => entry?.action === "cancel" && entry?.status === "cancelled")
+    : undefined;
+  const cancelReason = typeof cancellation?.reason === "string" ? cancellation.reason.trim() : "";
   return {
     recipient_name: recipientName || "",
     appointment_date: current.date, session_start: current.start, session_end: current.end,
     previous_date: old.date, previous_session_start: old.start, previous_session_end: old.end,
     queue_token: String(row?.token ?? ""),
     token_number: row?.tokenNumber == null ? "" : String(row.tokenNumber),
+    cancel_reason: row?.status === "cancelled" ? cancelReason || "Not specified" : "",
   };
 }
 

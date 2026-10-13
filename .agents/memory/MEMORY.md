@@ -38,3 +38,4 @@
 - [Preview browser secret boundary](preview-browser-secret-boundary.md) — delegated browsers may lack workspace secrets; verify securely through the actual Preview without exposing credentials.
 - [Notification fixture fidelity](notification-fixture-fidelity.md) — test both event snapshots and production-valid persisted records; dispatch hydration may exercise a different contract.
 - [Notification rejection diagnostics](notification-rejection-diagnostics.md) — retain safe error categories, not raw provider responses; explain replays without redispatch.
+- [Optional notification values](optional-notification-values.md) — missing cancellation reasons are explicit, not a reason to block cancellation notices.

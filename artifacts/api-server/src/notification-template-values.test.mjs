@@ -159,6 +159,47 @@ test("published placeholders reach all four eligible SMS/email recipient groups 
   assert.equal(calls,0);
   assert.equal((await h.control.query("select data->>'state' as state from settings where id='sms-outbox:historical-values'")).rows[0].state,"preparation_failed");
 });
+test("cancellation reason uses only the latest cancellation, with safe substitution and missing-reason text",()=>{
+  const history=[{action:"cancel",status:"cancelled",reason:"Old reason"},{action:"requeue",status:"waiting",reason:"Unrelated reason"},
+    {action:"cancel",status:"cancelled",reason:"  Patient unavailable <script> {{clinic_name}}  "}];
+  const values=api.visitTemplateValues({status:"cancelled",history},{},"Patient");
+  assert.equal(values.cancel_reason,"Patient unavailable <script> {{clinic_name}}");
+  assert.equal(api.visitTemplateValues({status:"waiting",history},{},"Patient").cancel_reason,"");
+  assert.equal(api.visitTemplateValues({status:"cancelled",history:[...history,{action:"cancel",status:"cancelled"}]},{},"Patient").cancel_reason,"Not specified");
+  assert.equal(api.visitTemplateValues({status:"cancelled"},{},"Patient").cancel_reason,"Not specified");
+  const email={...api.defaultTemplate("cancelled"),body:"Reason: {{cancel_reason}}"};
+  assert.equal(api.templateContent.safeParse(email).success,true);
+  assert.equal(api.smsTemplateContent.safeParse({...email,prefix:"",footer:"",logoUrl:""}).success,true);
+  const rendered=api.renderNotification(email,values);
+  assert.match(rendered.html,/&lt;script&gt;/);
+  assert.match(rendered.text,/\{\{clinic_name\}\}/);
+  assert.deepEqual(api.missingVisitVariables([email.body],values),[]);
+  assert.deepEqual(api.missingVisitVariables([email.body],api.visitTemplateValues(null,{},"Patient")),["cancel_reason"]);
+});
+
+test("cancellation reason reaches every SMS and email recipient through queued snapshots",async()=>{
+  for(const recipient of api.templateRecipients)for(const channel of ["sms","email"]){
+    const content={...api.defaultTemplate("cancelled"),enabled:true,body:"Reason: {{cancel_reason}}",
+      prefix:"",footer:"",logoUrl:"",...(channel==="sms"?{senderId:"",dltEntityId:"",dltTemplateId:"REGISTERED_CANCELLED"}:{})};
+    const current=await api.resolvedTemplate("cancelled","c",h.db,recipient,channel);
+    await api.saveTemplate(sa,{channel,event:"cancelled",clinicId:"c",recipient,revision:current.local.revision,mode:"publish",content});
+    const catalog=await api.templateCatalog(sa,"c",recipient,channel);
+    assert(catalog.variables.includes("cancel_reason"));
+    assert.match(catalog.items.find(item=>item.event==="cancelled").previewBody,/\[Cancellation reason\]/);
+  }
+  const row={id:"cancel-visit",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-15",
+    startTime:"09:00",endTime:"12:00",timezone:"Asia/Kolkata",reference:"CANCEL-FIXTURE",status:"cancelled",
+    revision:1,token:"Q-008",tokenNumber:8,doctorName:"Doctor Person",clinicName:"Fictional Clinic",branchName:"Fictional Location",
+    history:[{action:"cancel",status:"cancelled",reason:"Patient requested cancellation"}]};
+  await h.control.query("insert into appointments(id,clinic_id,branch_id,doctor_id,patient_id,date,token_number,status,data) values('cancel-visit','c','b','d','p',$1,8,'cancelled',$2)",[row.date,JSON.stringify(row)]);
+  await api.enqueueEvent(h.db,"cancelled",row);
+  const smsCalls=[],emailCalls=[];
+  await api.processSmsNotifications(h.db,async(_env,_to,message)=>{smsCalls.push(message);return "provider_accepted";});
+  await api.processNotifications(h.db,async(_to,_subject,text)=>{emailCalls.push(text);});
+  assert.equal(smsCalls.length,4);assert.equal(emailCalls.length,4);
+  for(const text of [...smsCalls,...emailCalls])assert.equal(text,"Reason: Patient requested cancellation");
+});
+
 test("onboarding fills the owner's recipient name, without appointment or OTP values",async()=>{
   await api.saveTemplate(sa,{channel:"sms",event:"onboarding",clinicId:"c",recipient:"clinicAdmin",revision:0,mode:"publish",
     content:{...api.defaultTemplate("onboarding"),enabled:true,body:"Welcome {{recipient_name}} to {{clinic_name}}",prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:"REGISTERED_ONBOARDING"}});

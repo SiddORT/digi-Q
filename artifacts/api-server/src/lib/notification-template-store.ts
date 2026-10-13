@@ -43,6 +43,7 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
       clinic,"[Recipient name]",{date:"2030-01-14",startTime:"14:00",endTime:"17:00"}),
     clinic_name: clinic?.name || "Example clinic", clinic_contact: [clinic?.email, clinic?.phone].filter(Boolean).join(" · "),
     patient_name: "[Patient name]", doctor_name: "[Doctor name]", appointment_details: "[Clinic-formatted visit details]", previous_details: "[Previous visit details]", reference: "[Booking reference]", timezone: "[Clinic location timezone]" };
+  values.cancel_reason = "[Cancellation reason]";
   const items = [];
   for (const event of templateEvents) {
     if (event === "onboarding" && recipient && recipient !== "clinicAdmin") continue;
