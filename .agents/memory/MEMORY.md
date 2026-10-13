@@ -39,3 +39,4 @@
 - [Notification fixture fidelity](notification-fixture-fidelity.md) — test both event snapshots and production-valid persisted records; dispatch hydration may exercise a different contract.
 - [Notification rejection diagnostics](notification-rejection-diagnostics.md) — retain safe error categories, not raw provider responses; explain replays without redispatch.
 - [Optional notification values](optional-notification-values.md) — missing cancellation reasons are explicit, not a reason to block cancellation notices.
+- [Permanent staff deletion](permanent-deletion-boundary.md) — user-owned data only; preserve shared clinical records and await explicit implementation approval.
