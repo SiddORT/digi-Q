@@ -21,12 +21,14 @@ test("email drawer puts summary and Active before subject/body without rendering
   assert.ok(!html.includes("<script>")); assert.ok(!html.includes("block-dlt"));
   for (const id of ["input-prefix", "input-footer", "input-logoUrl"]) assert.ok(!html.includes(id));
 });
-test("SMS drawer shows published DLT summary, editable current IDs, then its body", () => {
+test("SMS drawer shows the event DLT Template ID and configured sender guidance without an Entity ID field", () => {
   const html = render(true);
   assert.match(html, /text-saved-dlt[^>]*>published-template/);
-  assert.match(html, /value="draft-template"/); assert.match(html, /value="entity-fixture"/);
+  assert.match(html, /value="draft-template"/); assert.ok(!html.includes("value=\"entity-fixture\""));
   assert.ok(html.indexOf("active-fixture") < html.indexOf("block-dlt"));
-  assert.ok(html.indexOf("input-dltEntityId") < html.indexOf("input-body"));
+  assert.ok(html.indexOf("input-dltTemplateId") < html.indexOf("input-body"));
+  assert.ok(!html.includes("input-dltEntityId")); assert.ok(!html.includes("input-senderId"));
+  assert.match(html, /Sender ID is taken from Communication Settings/);
   assert.match(html, /Indian SMS Compliance/); assert.match(html, /SMS Body/);
   assert.match(html, /maxLength="1600"/i); assert.ok(!html.includes("input-subject"));
 });

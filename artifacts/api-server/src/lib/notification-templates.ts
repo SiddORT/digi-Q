@@ -43,13 +43,21 @@ export const smsTemplateContent = z.object({
   if (/[{}]/.test(remaining)) ctx.addIssue({code:"custom",path:["body"],message:"Use supported variables in double braces"});
 });
 export type SmsTemplateContent = z.infer<typeof smsTemplateContent>;
-export const templateSave = z.object({
-  channel: z.enum(["email","sms"]).default("email"),
+const templateSaveFields = {
   recipient: z.enum(templateRecipients).optional(),
   clinicId: z.string().min(1).max(100).optional(), event: z.enum(templateEvents),
   revision: z.number().int().min(0), mode: z.enum(["draft", "publish", "reset"]),
-  content: z.union([templateContent,smsTemplateContent]).optional(),
-}).strict().refine(v => v.mode === "reset" || !!v.content, { message: "Template content is required" });
+};
+// Preserve legacy email callers while validating SMS exclusively as SMS.
+// An untagged content union can report email-only key errors before the real SMS issue.
+export const templateSave = z.preprocess(input => {
+  if (input && typeof input === "object" && !Array.isArray(input) && !("channel" in input))
+    return { ...input, channel: "email" };
+  return input;
+}, z.discriminatedUnion("channel", [
+  z.object({ ...templateSaveFields, channel: z.literal("email"), content: templateContent.optional() }).strict(),
+  z.object({ ...templateSaveFields, channel: z.literal("sms"), content: smsTemplateContent.optional() }).strict(),
+])).refine(v => v.mode === "reset" || !!v.content, { message: "Template content is required" });
 export const eventTitles: Record<TemplateEvent, string> = {
   booking: "Booking confirmation", onboarding: "Clinic onboarding", rescheduled: "Appointment rescheduled",
   cancelled: "Appointment cancelled", completed: "Thank you after your visit", reminder: "Appointment reminder",

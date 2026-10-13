@@ -56,7 +56,8 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
 }
 export async function saveTemplate(user: any, input: unknown) {
   const parsed = templateSave.safeParse(input);
-  assert(parsed.success, 400, parsed.success ? "" : parsed.error.issues[0]?.message || "Invalid template");
+  assert(parsed.success, 400, parsed.success ? "" : parsed.error.issues.slice(0,5).map(issue =>
+    `${issue.path.join(".") || "template"}: ${issue.message}`).join("; ") || "Invalid template");
   const body = parsed.data!;
   if(body.channel==="sms") assert(user.role==="superAdmin",403,"Superadmin access required");
   if(body.content) body.content = (body.channel==="sms"?smsTemplateContent:templateContent).parse(body.content);

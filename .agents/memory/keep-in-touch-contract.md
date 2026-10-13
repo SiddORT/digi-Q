@@ -3,6 +3,18 @@ name: Keep in Touch contract boundary
 description: Supplied provider example leaves credential equality and country-code prefix unverified
 ---
 
+### SMS template editor ownership
+
+Use the configured Sender ID and do not expose an Entity ID field in the SMS
+template editor. Keep the event-specific DLT Template ID editable.
+
+**Why:** The user said, “i already have sender id in config” and recommended
+removing the optional Entity ID while correcting SMS template saves.
+
+**How to apply:** Do not reintroduce per-template Sender/Entity controls.
+Retain compatibility with previously stored metadata and other providers'
+configuration; this request did not authorize deleting provider settings.
+
 The user's successful Postman example uses a digits-only countryCode and distinct
 Bearer authorization and body apiKey fields. Never infer that the credentials
 are equal. Keep the deliberate country-code format choice for existing settings.

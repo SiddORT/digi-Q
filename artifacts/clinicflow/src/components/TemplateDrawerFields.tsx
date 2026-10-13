@@ -5,7 +5,7 @@ import { previewText } from "../lib/template-preview";
 import { HelpTip } from "./HelpTip";
 
 type Content = api.NotificationTemplateContent;
-type Key = "subject" | "body" | "dltEntityId" | "dltTemplateId";
+type Key = "subject" | "body" | "dltTemplateId";
 
 /** Compact primary fields for the template drawer. Email body is plain text (escaped by the server), not HTML. */
 export function TemplateDrawerFields({ form, sms, errors, variables, scopeName, set, templateKey, savedDltTemplateId, active }: {
@@ -25,8 +25,7 @@ export function TemplateDrawerFields({ form, sms, errors, variables, scopeName, 
     {active}
     {sms && <fieldset className="td-dlt" data-testid="block-dlt">
       <legend>DLT Registration (Indian SMS Compliance)</legend>
-      <FormField label="DLT Template ID" optional>{a => <input {...a} type="text" maxLength={50} value={form.dltTemplateId ?? ""} onChange={e => set("dltTemplateId", e.target.value)} data-testid="input-dltTemplateId" />}</FormField>
-      <FormField label="DLT Entity ID" optional>{a => <input {...a} type="text" maxLength={50} value={form.dltEntityId ?? ""} onChange={e => set("dltEntityId", e.target.value)} data-testid="input-dltEntityId" />}</FormField>
+      <FormField label="DLT Template ID" optional helper="Required to enable SMS. Sender ID is taken from Communication Settings; Keep in Touch does not need an Entity ID.">{a => <input {...a} type="text" maxLength={50} value={form.dltTemplateId ?? ""} onChange={e => set("dltTemplateId", e.target.value)} data-testid="input-dltTemplateId" />}</FormField>
     </fieldset>}
     {!sms && <FormField label="Subject" required error={errors.subject}>{a => <input {...a} type="text" maxLength={180} value={form.subject} onChange={e => set("subject", e.target.value)} data-testid="input-subject" />}</FormField>}
     <div className="td-body">

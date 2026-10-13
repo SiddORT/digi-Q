@@ -18,6 +18,7 @@ import { EventTemplateTest } from "./EventTemplateTest";
 import { StatusSwitch } from "./StatusSwitch";
 import { isRealSuperAdmin } from "../lib/settings-access";
 import { templateSaveError } from "../lib/communication-routes";
+import { templateContentForSave } from "../lib/notification-template-input";
 
 type Content = api.NotificationTemplateContent;
 type Mode = "draft" | "publish" | "reset";
@@ -44,8 +45,6 @@ const FIELDS: [TextKey, string, number, string][] = [
 ];
 const SMS_FIELDS: [TextKey, string, number, string][] = [
   ["body", "Message", SMS_BODY_MAX_C, "Required. Plain text up to 1600 characters; variables are filled in at send time."],
-  ["senderId", "Sender ID", 50, "Optional. Sent only when your provider mapping includes a Sender ID field."],
-  ["dltEntityId", "DLT Entity ID", 50, "Registered entity identifier, if your route requires one. Saving an ID does not confirm approval."],
   ["dltTemplateId", "DLT Template ID", 50, "Registered template identifier for this message. Saving an ID does not confirm approval."],
 ];
 const MODE_COPY: Record<Mode, { title: string; text: string; action: string }> = {
@@ -74,7 +73,7 @@ export function unknownVariables(content: Content, allowed: string[]) {
 const same = (a?: Content, b?: Content) => !!a && !!b && FIELDS.every(([k]) => a[k] === b[k]) && (["senderId", "dltEntityId", "dltTemplateId"] as const).every(k => (a[k] ?? "") === (b[k] ?? "")) && (a.enabled ?? null) === (b.enabled ?? null);
 const status = (e: any) => e?.status ?? e?.response?.status;
 
-/** SMS keeps one body plus sender/DLT metadata; subject is supplied from the event title on save. */
+/** SMS keeps one body plus the event's DLT Template ID; Sender ID comes from configuration. */
 export const SMS_BODY_MAX = 1600;
 export function EmailTemplates({ identity, channel = "email", onDirtyChange, onBusyChange, fixed }: { onBusyChange?: (busy: boolean) => void; identity: api.Identity; channel?: "email" | "sms"; onDirtyChange?: (dirty: boolean) => void; fixed?: { clinicId: string; event: string; recipient: Recipient } }) {
   const sms = channel === "sms";
@@ -147,7 +146,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
 
   function run(mode: Mode) {
     if (!item || !form) return;
-    save.mutate({ data: { channel, clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, recipient, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : sms ? { ...form, subject: form.subject.trim() || item.title, prefix: "", footer: "", logoUrl: "" } : form } }, {
+    save.mutate({ data: { channel, clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, recipient, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : templateContentForSave(form, channel, item.title) } }, {
       onSuccess: next => {
         queryClient.setQueryData(queryKey, next);
         void queryClient.invalidateQueries({ queryKey: [api.getGetEventControlsQueryKey()[0]] });
@@ -258,7 +257,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
             <button type="button" className="button secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save Draft</button>
             <button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to Default</button>
           </div>
-          {isRealSuperAdmin(identity.user) && <EventTemplateTest key={`${channel}|${clinicId}|${event}|${recipient}`} channel={channel} event={event} recipient={recipient} clinicId={clinicId} revision={editBase.current?.revision ?? item.revision} content={sms ? { ...form, subject: form.subject.trim() || item.title, prefix: "", footer: "", logoUrl: "" } : form} />}
+          {isRealSuperAdmin(identity.user) && <EventTemplateTest key={`${channel}|${clinicId}|${event}|${recipient}`} channel={channel} event={event} recipient={recipient} clinicId={clinicId} revision={editBase.current?.revision ?? item.revision} content={templateContentForSave(form, channel, item.title)} />}
         </details>
         {drawerFooter(save.isPending)}
       </form>
@@ -306,7 +305,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
           {!dirty && <button type="button" className="button secondary small et-server-open" aria-haspopup="dialog" onClick={() => setServerOpen(true)} data-testid="button-server-rendering">Server Rendering</button>}
           {serverOpen && <AppDialog open variant="drawer" onClose={() => setServerOpen(false)} title="Server Rendering"><div className="et-server"><div>{item.previewSubject}</div><pre>{item.previewBody}</pre></div></AppDialog>}
         </aside>
-        {isRealSuperAdmin(identity.user) && <EventTemplateTest key={`${channel}|${clinicId}|${event}|${recipient}`} channel={channel} event={event} recipient={recipient} clinicId={clinicId} revision={editBase.current?.revision ?? item.revision} content={sms ? { ...form, subject: form.subject.trim() || item.title, prefix: "", footer: "", logoUrl: "" } : form} />}
+        {isRealSuperAdmin(identity.user) && <EventTemplateTest key={`${channel}|${clinicId}|${event}|${recipient}`} channel={channel} event={event} recipient={recipient} clinicId={clinicId} revision={editBase.current?.revision ?? item.revision} content={templateContentForSave(form, channel, item.title)} />}
       </div>}
 
     <AppDialog open={!!confirm} onClose={() => !save.isPending && setConfirm(null)} title={confirm ? MODE_COPY[confirm].title : ""} busy={save.isPending}>

@@ -80,6 +80,43 @@ test("separate current/previous values retain prefixed and numeric tokens and no
 });
 
 const body="Hello {{recipient_name}}; patient {{patient_name}}; {{clinic_name}}; Dr {{doctor_name}}; {{appointment_date}} {{session_start}}-{{session_end}}; old {{previous_date}} {{previous_session_start}}-{{previous_session_end}}; token {{queue_token}} ({{token_number}})";
+test("SMS save errors use the SMS schema instead of misleading email-only key errors",()=>{
+  const content={...api.defaultTemplate("booking"),enabled:false,prefix:"",footer:"",logoUrl:"",
+    senderId:"",dltEntityId:"",dltTemplateId:"1700000000000000000",
+    body:"Dear {{patient_name}}, Dr {{doctor_name}}, {{appointment_date}}, token {{token_number}}, {{session_start}}."};
+  const input={channel:"sms",event:"booking",revision:0,mode:"publish",content};
+  assert(api.templateSave.safeParse(input).success);
+  const invalid=api.templateSave.safeParse({...input,content:{...content,body:"Hi {{appointment_time}}"}});
+  assert(!invalid.success);
+  assert.deepEqual(invalid.error.issues.map(i=>({path:i.path,message:i.message})),[
+    {path:["content","body"],message:"Unsupported variable: appointment_time"},
+  ]);
+  assert(!api.templateSave.safeParse({...input,channel:"email"}).success);
+  assert.equal(api.templateSave.parse({event:"booking",revision:0,mode:"draft",content:api.defaultTemplate("booking")}).channel,"email");
+});
+test("SMS draft, publish and activation work with only the event DLT ID and configured Sender ID",async()=>{
+  const content={...api.defaultTemplate("cancelled"),enabled:false,prefix:"",footer:"",logoUrl:"",
+    dltTemplateId:"1700000000000000000",body:"Dear {{patient_name}}, your visit on {{appointment_date}} is cancelled."};
+  const input={channel:"sms",clinicId:"c",event:"cancelled",recipient:"patient"};
+  const draft=await api.saveTemplate(sa,{...input,revision:0,mode:"draft",content});
+  assert.equal(draft.items.find(i=>i.event==="cancelled").draft.dltTemplateId,content.dltTemplateId);
+  assert(!(await api.resolvedTemplate("cancelled","c",h.db,"patient","sms")).content.enabled);
+  await assert.rejects(api.saveTemplate(sa,{...input,revision:1,mode:"publish",content:{...content,body:"Hi {{appointment_time}}"}}),error=>{
+    assert.equal(error.status,400);
+    assert.match(error.message,/content\.body: Unsupported variable: appointment_time/);
+    assert.doesNotMatch(error.message,/Unrecognized key/);
+    return true;
+  });
+  const saved=await api.saveTemplate(sa,{...input,revision:1,mode:"publish",content});
+  const row=saved.items.find(i=>i.event==="cancelled");
+  assert.equal(row.content.senderId,"");
+  assert.equal(row.content.dltEntityId,"");
+  assert.equal(row.content.dltTemplateId,content.dltTemplateId);
+  await api.changeActivation(sa,{...input,revision:row.revision,enabled:true});
+  const active=await api.resolvedTemplate("cancelled","c",h.db,"patient","sms");
+  assert(active.content.enabled);
+  assert.equal(active.content.dltTemplateId,content.dltTemplateId);
+});
 test("published placeholders reach all four eligible SMS/email recipient groups with separate old/new times",async()=>{
   for(const recipient of api.templateRecipients)for(const channel of ["sms","email"]){
     const content={...api.defaultTemplate("rescheduled"),enabled:true,body,
