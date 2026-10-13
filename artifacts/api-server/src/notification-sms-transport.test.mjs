@@ -77,7 +77,7 @@ test("Keep in Touch splits valid international recipients without dropping natio
 });
 test("Keep in Touch readiness requires independent protected fields, no unused entity or generic mapping, and never echoes values",()=>{
  assert.equal(api.notificationSmsReadiness(kitEnv).ready,true);
- for(const name of Object.keys(kitEnv)){
+  for(const name of Object.keys(kitEnv).filter(name => name !== "NOTIFICATION_SMS_SENDER_ID")){
   const missing={...kitEnv,[name]:""};
   assert.equal(api.notificationSmsReadiness(missing).ready,false,name);
  }
@@ -88,7 +88,7 @@ test("Keep in Touch readiness requires independent protected fields, no unused e
  for(const key of ["NOTIFICATION_SMS_KEY","NOTIFICATION_SMS_BEARER_TOKEN","NOTIFICATION_SMS_CLIENT_ID","NOTIFICATION_SMS_SENDER_ID"]){
   assert.equal(JSON.stringify(readiness).includes(kitEnv[key]),false);
   const missing=api.notificationSmsReadiness({...kitEnv,[key]:""});
-  assert.equal(missing.keys.find(k=>k.key===key).status,"missing");
+   assert.equal(missing.keys.find(k=>k.key===key).status,key === "NOTIFICATION_SMS_SENDER_ID" ? "default" : "missing");
   const other = key === "NOTIFICATION_SMS_KEY" ? "NOTIFICATION_SMS_BEARER_TOKEN" : "NOTIFICATION_SMS_KEY";
   assert.equal(missing.keys.find(k=>k.key===other)?.status,"configured");
  }
@@ -98,6 +98,27 @@ test("Keep in Touch readiness requires independent protected fields, no unused e
  assert.throws(()=>api.notificationSmsConfig({...env,NOTIFICATION_SMS_BEARER_TOKEN:kitEnv.NOTIFICATION_SMS_BEARER_TOKEN,
   NOTIFICATION_SMS_MAPPING:JSON.stringify({...map,staticFields:{route:kitEnv.NOTIFICATION_SMS_BEARER_TOKEN}})}));
  assert.equal(api.notificationSmsReadiness({...kitEnv,NOTIFICATION_SMS_ENTITY_ID:"invalid\nunused"}).ready,true);
+});
+test("Keep in Touch requires bearer, API key and client, but neither sender nor entity",()=>{
+ const optional={...kitEnv,NOTIFICATION_SMS_SENDER_ID:"",NOTIFICATION_SMS_ENTITY_ID:""};
+ assert.equal(api.notificationSmsReadiness(optional).ready,true);
+ const cfg=api.notificationSmsConfig(optional);
+ assert.equal(api.smsMetadataReady(cfg,{dltTemplateId:"booking"}),true);
+ const payload=api.smsPayload(cfg,"+919876543210","Fictional message",{dltTemplateId:"booking"});
+ assert.equal(payload.headers.Authorization,"Bearer fictional-distinct-bearer");
+ const body=JSON.parse(payload.body);
+ assert.equal(body.apiKey,kitEnv.NOTIFICATION_SMS_KEY);assert.equal(body.clientId,kitEnv.NOTIFICATION_SMS_CLIENT_ID);
+ assert.equal(Object.hasOwn(body,"senderId"),false);assert.equal(Object.hasOwn(body,"entityId"),false);
+ assert.equal(api.notificationSmsReadiness({...optional,NOTIFICATION_SMS_BEARER_TOKEN:""}).ready,false);
+ assert.equal(api.notificationSmsReadiness({...optional,NOTIFICATION_SMS_CLIENT_ID:""}).ready,false);
+ assert.equal(api.notificationSmsReadiness({...optional,NOTIFICATION_SMS_KEY:""}).ready,false);
+ assert.equal(api.smsMetadataReady(cfg,{senderId:"invalid sender",dltTemplateId:"booking"}),false);
+});
+test("Custom API bearer uses its separate token and preserves legacy API-key fallback",()=>{
+ const bearerEnv={...env,NOTIFICATION_SMS_MAPPING:JSON.stringify({...map,authMode:"bearer"})};
+ assert.equal(api.smsPayload(api.notificationSmsConfig({...bearerEnv,NOTIFICATION_SMS_BEARER_TOKEN:"fictional-bearer"}),"+919876543210","Fixture",{}).headers.Authorization,"Bearer fictional-bearer");
+ assert.equal(api.smsPayload(api.notificationSmsConfig(bearerEnv),"+919876543210","Fixture",{}).headers.Authorization,`Bearer ${env.NOTIFICATION_SMS_KEY}`);
+ assert.throws(()=>api.notificationSmsConfig({...bearerEnv,NOTIFICATION_SMS_BEARER_TOKEN:"invalid token"}));
 });
 test("Keep in Touch accepts only boolean true on HTTP 200; false is rejected and all ambiguous outcomes remain unknown",async()=>{
  const state=globalThis.fakeSmsNetwork;state.scenario="accepted";

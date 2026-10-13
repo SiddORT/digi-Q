@@ -59,8 +59,8 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
   const full: SmsMapping = { ...map, acceptedStatuses: parseStatuses(statuses) };
   const errs = mapTouched ? validateMapping(full) : [];
   const urlErr = (kit ? (kitUrl.trim() ? validateUrl(kitUrl.trim()) : "Enter the Keep in Touch https:// endpoint.") : validateUrl(url)) ?? undefined; const stErr = validateUrl(statusUrl);
-  const kitMissing = kit && (!countryFormat || (["key", "bearer", "client", "sender"] as const).some(k =>
-    !secrets[k] && !saved({ key: "NOTIFICATION_SMS_KEY", bearer: "NOTIFICATION_SMS_BEARER_TOKEN", client: "NOTIFICATION_SMS_CLIENT_ID", sender: "NOTIFICATION_SMS_SENDER_ID" }[k])));
+  const kitMissing = kit && (!countryFormat || (["key", "bearer", "client"] as const).some(k =>
+    !secrets[k] && !saved({ key: "NOTIFICATION_SMS_KEY", bearer: "NOTIFICATION_SMS_BEARER_TOKEN", client: "NOTIFICATION_SMS_CLIENT_ID" }[k])));
   const blocked = !editable || (mode === "database" ? (!!urlErr || !!stErr || (!kit && errs.length > 0) || kitMissing) : !envOk);
   const patch = (p: Partial<typeof map>) => { setMapTouched(true); setMap(m => ({ ...m, ...p })); };
   const setS = (k: keyof typeof secrets) => (v: string) => setSecrets(s => ({ ...s, [k]: v }));
@@ -111,8 +111,8 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
       <div className="form-field"><label htmlFor="sms-provider">SMS Provider</label>
         <select id="sms-provider" value={provider} onChange={e => setProvider(e.target.value as typeof provider)} data-testid="select-sms-provider"><option value="generic">Custom API</option><option value="keepInTouch">Keep in Touch</option></select></div>
       {kit && <div className="notice" data-testid="help-keep-in-touch">
-        <p>Keep in Touch uses POST with application/json and Authorization: Bearer token. The body contains exactly countryCode, mobile, senderId, message, apiKey, clientId and templateId. Bearer token and body API key are separate protected values; do not assume they are identical.</p>
-        <p>Sender ID and Client ID are required provider identifiers. The selected event's DLT Template ID supplies templateId. Entity ID is neither required nor sent. Per-event Template IDs live in Notification Templates; publish each event's registered template ID there. The Keep in Touch URL is separate from the Custom API URL, which is kept when you switch providers.</p>
+        <p>Keep in Touch uses POST with application/json and Authorization: Bearer token. The body contains countryCode, mobile, message, apiKey, clientId and templateId; senderId is included only when provided. Bearer Token and API Key are separate required protected values; do not assume they are identical.</p>
+        <p>Client ID is required. Sender ID is optional. The selected event's DLT Template ID supplies templateId. Entity ID is neither required nor sent. Per-event Template IDs live in Notification Templates; publish each event's registered template ID there. The Keep in Touch URL is separate from the Custom API URL, which is kept when you switch providers.</p>
         <p>Only HTTP 200 with boolean success:true means provider acceptance. success:false is rejection; malformed or uncertain responses are not successful delivery. Saving or testing does not activate events or clinic notifications. Any saved Custom API mapping is retained unchanged.</p>
         <div className="form-field"><label htmlFor="sms-country-format">Country Code format (confirm with provider)</label>
           <select id="sms-country-format" value={countryFormat} onChange={e => setCountryFormat(e.target.value as typeof countryFormat)} data-testid="select-sms-country-format">
@@ -123,17 +123,18 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
       </div>}
       {mode === "database" && <>
         <div className="sms-ref-grid">
-          <div className="form-field"><label htmlFor="sms-url">{kit ? "Keep in Touch API URL" : "API Base URL"}</label>
+          <div className="form-field"><label htmlFor="sms-url">API Base URL</label>
             <input id="sms-url" inputMode="url" spellCheck={false} maxLength={2048} value={kit ? kitUrl : url} placeholder="https://" onChange={e => kit ? setKitUrl(e.target.value) : setUrl(e.target.value)} data-testid="input-sms-url" />
             {urlErr && <p role="alert" className="field-error" data-testid="error-sms-url">{urlErr}</p>}</div>
           <div className="form-field"><label htmlFor="sms-status-url">Status API URL</label>
             <input id="sms-status-url" inputMode="url" spellCheck={false} maxLength={2048} value={statusUrl} placeholder="Optional" onChange={e => setStatusUrl(e.target.value)} data-testid="input-sms-status-url" />
             {stErr && <p role="alert" className="field-error" data-testid="error-sms-status-url">{stErr}</p>}</div>
-          {sec("sms-key", kit ? "Body API Key (apiKey)" : "API Key", "key", "NOTIFICATION_SMS_KEY")}
-          {kit && sec("sms-bearer", "Bearer token", "bearer", "NOTIFICATION_SMS_BEARER_TOKEN")}
-          {sec("sms-client", "Client ID", "client", "NOTIFICATION_SMS_CLIENT_ID")}
-          {sec("sms-sender", "Sender ID (DLT)", "sender", "NOTIFICATION_SMS_SENDER_ID")}
-          {!kit && sec("sms-entity", "Entity ID (DLT)", "entity", "NOTIFICATION_SMS_ENTITY_ID")}
+          {sec("sms-key", kit ? "API Key (required)" : "API Key", "key", "NOTIFICATION_SMS_KEY")}
+          {sec("sms-client", kit ? "Client ID (required)" : "Client ID", "client", "NOTIFICATION_SMS_CLIENT_ID")}
+          {sec("sms-bearer", kit ? "Bearer Token (required)" : "Bearer Token (optional)", "bearer", "NOTIFICATION_SMS_BEARER_TOKEN")}
+          <small className="muted">Enter the token only, without the “Bearer ” prefix. Custom APIs use this value when Bearer authentication is selected; blank preserves the saved token or existing API-key authentication.</small>
+          {sec("sms-sender", "Sender ID (optional)", "sender", "NOTIFICATION_SMS_SENDER_ID")}
+          {!kit && sec("sms-entity", "Entity ID (optional)", "entity", "NOTIFICATION_SMS_ENTITY_ID")}
         </div>
       </>}
     </fieldset>
