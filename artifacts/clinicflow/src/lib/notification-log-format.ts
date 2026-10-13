@@ -1,6 +1,10 @@
 import type { ListNotificationLogsParams } from "@workspace/api-client-react";
 export const LOG_TIMEZONE = "Asia/Kolkata";
 export const UNAVAILABLE = "Unavailable";
+export function smsProviderErrorHelp(log: { channel: string; httpStatus?: number | null }): string | null {
+  if (log.channel !== "sms" || log.httpStatus !== 401) return null;
+  return "HTTP 401: the SMS provider rejected authentication. For the Keep in Touch API, select Keep in Touch in SMS Settings and check the saved Bearer Token against the working Postman token. Enter the token only, without the “Bearer ” prefix. API Key and Client ID belong in the JSON body and are separate settings. This message is not retried automatically.";
+}
 export const STATUS_COPY: Record<string, string> = {
   pending: "Queued; not yet dispatched.",
   sending: "Dispatch claimed. Outcome is unconfirmed.",

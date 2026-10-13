@@ -71,6 +71,11 @@
 .em-cred-field input{border:0;background:transparent;box-shadow:none;min-width:0;flex:1;padding:0;opacity:1;color:var(--muted,inherit);-webkit-text-fill-color:currentColor}
 .em-cred-field{min-height:40px}.em-cred-edit{padding:0;border:0;background:none;color:inherit}.em-cred-edit>*{flex:1}
 @media (max-width:767px){.em-cred-field{min-height:44px}.em-cred{flex-wrap:wrap}}
+.nl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.nl-toolbar .sms-ref-title{margin:0}
+.nl-filter-panel{border:1px solid var(--dq-line);border-radius:8px;padding:0 12px;margin:.75rem 0}
+.nl-filter-panel>summary{cursor:pointer;font-weight:600;min-height:44px;line-height:44px}
+.nl-filter-panel>summary:focus-visible{outline:2px solid var(--primary,#1e5da8);outline-offset:3px}
 .nl-filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.6rem;margin:.75rem 0}
 .nl-table{width:100%;border-collapse:collapse;font-size:.85rem}
 .nl-table th,.nl-table td{text-align:left;padding:.45rem .5rem;border-bottom:1px solid rgba(0,0,0,.1);vertical-align:top}

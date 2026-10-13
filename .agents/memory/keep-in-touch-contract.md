@@ -39,3 +39,17 @@ were incompatible with the user's working Postman response.
 **How to apply:** Use the shared transport for explicit tests and triggered
 events. Preserve unknown outcomes without automatic retry, and do not equate
 provider acceptance with confirmed handset delivery.
+
+Check the selected provider as well as credential presence when investigating
+an authentication rejection. A Keep in Touch endpoint saved under Custom API
+does not activate the dedicated KIT JSON/Bearer contract, even if settings report
+syntactic readiness.
+
+**Why:** Portal tests returned HTTP 401 while safe settings metadata showed the
+KIT endpoint selected as Generic. Presence checks alone did not reveal the
+request-contract mismatch.
+
+**How to apply:** Inspect only public readiness metadata and sanitized log
+outcomes. Offer an explicit draft preset correction requiring ordinary
+administrator confirmation; do not inspect credential values, silently rewrite
+saved settings, or use real SMS sends to probe the cause.

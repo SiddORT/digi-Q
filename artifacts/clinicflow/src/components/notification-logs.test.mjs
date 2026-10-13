@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { kolkataToIso, formatLogTime, buildLogParams, show, EMPTY_FILTERS } from "../lib/notification-log-format.ts";
+import { kolkataToIso, formatLogTime, buildLogParams, show, EMPTY_FILTERS, smsProviderErrorHelp } from "../lib/notification-log-format.ts";
 import { communicationTab } from "../lib/communication-routes.ts";
 const rd = f => readFileSync(new URL(f, import.meta.url), "utf8");
 test("kolkata conversion and formatting", () => {
@@ -19,9 +19,27 @@ test("logs tab deep link and no persistence", () => {
   const s = rd("./NotificationLogs.tsx");
   assert.ok(s.includes("gcTime: 0") && !/localStorage|sessionStorage/.test(s));
 });
+test("SMS authentication rejection has actionable, credential-free guidance", () => {
+  const help = smsProviderErrorHelp({ channel: "sms", httpStatus: 401 });
+  assert.match(help, /HTTP 401/);
+  assert.match(help, /select Keep in Touch/);
+  assert.match(help, /Postman token/);
+  assert.match(help, /not retried automatically/);
+  assert.equal(smsProviderErrorHelp({ channel: "email", httpStatus: 401 }), null);
+  assert.equal(smsProviderErrorHelp({ channel: "sms", httpStatus: 200 }), null);
+  assert.equal(smsProviderErrorHelp({ channel: "sms", httpStatus: null }), null);
+});
 test("kit url separate from custom url", () => {
   const p = rd("./SmsProviderPanel.tsx");
   assert.ok(p.includes("NOTIFICATION_SMS_KEEP_IN_TOUCH_URL") && p.includes("setKitUrl") && !/readOnly=\{kit\}/.test(p));
+});
+test("Keep in Touch endpoint in Custom API mode offers a draft-only explicit correction",()=>{
+  const p=rd("./SmsProviderPanel.tsx");
+  assert.match(p,/!kit && url\.trim\(\) === KEEP_IN_TOUCH_URL/);
+  assert.match(p,/warning-sms-kit-provider/);
+  assert.match(p,/setProvider\("keepInTouch"\); setCountryFormat\("digits"\)/);
+  assert.match(p,/draft only/);
+  assert.match(p,/Saved credentials are preserved/);
 });
 import {createRequire} from "node:module";
 import {createElement} from "react";
@@ -47,6 +65,16 @@ before(async()=>{
  const m={exports:{}}; new Function("require","module","exports",r.outputFiles[0].text)(require,m,m.exports); Logs=m.exports.NotificationLogs;
 });
 const html=()=>renderToStaticMarkup(createElement(QueryClientProvider,{client:new QueryClient()},createElement(Logs)));
+test("filters start collapsed, preserve mounted controls and keep refresh outside the panel",()=>{
+  state.list={data:{items:[],timezone:"Asia/Kolkata"}};
+  const h=html();
+  assert.match(h,/<details class="nl-filter-panel" data-testid="panel-log-filters">/);
+  assert.match(h,/<summary data-testid="toggle-log-filters">Filters<\/summary>/);
+  assert.match(h,/button-apply-log-filters/);
+  assert(h.indexOf('data-testid="button-refresh-logs"')<h.indexOf('<details'));
+  const source=rd("./NotificationLogs.tsx");
+  assert.match(source,/Object\.values\(applied\)\.filter\(Boolean\)\.length/);
+});
 test("rendered states",()=>{
  state.list={isLoading:true}; assert.match(html(),/loading-logs/);
  state.list={isError:true}; assert.match(html(),/error-logs/);

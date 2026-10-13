@@ -19,3 +19,14 @@ missing application provider.
 **How to apply:** For CommonJS render bundles, load both the provider and hook
 dependency through the same anchored CommonJS loader; keep it external instead of
 bundling another instance.
+
+Anchor external dependency resolution to each importing workspace package,
+rather than assuming the process entrypoint can resolve every transitive module.
+
+**Why:** A read-only backend metadata bundle initially failed because PostgreSQL
+was installed for the database workspace, not the API entrypoint. Loader failures
+can mask healthy application code.
+
+**How to apply:** Preserve importer-relative resolution when externalizing
+dependencies in diagnostic or test bundles. Return public metadata only from
+credential-bearing application helpers; never print their internal inputs.

@@ -108,6 +108,11 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
       <p className="muted field-hint">Applies to optional notifications only. Account security codes are unaffected.</p>
       <div className="form-field"><label htmlFor="sms-provider">SMS Provider</label>
         <select id="sms-provider" value={provider} onChange={e => setProvider(e.target.value as typeof provider)} data-testid="select-sms-provider"><option value="generic">Custom API</option><option value="keepInTouch">Keep in Touch</option></select></div>
+      {!kit && url.trim() === KEEP_IN_TOUCH_URL && <div className="notice" role="note" data-testid="warning-sms-kit-provider">
+        <p>The Keep in Touch endpoint is saved as Custom API. That mode does not use the dedicated Keep in Touch JSON body and Bearer authorization. Select Keep in Touch and digits-only country codes to match the working Postman request.</p>
+        <button type="button" className="button secondary" data-testid="button-use-kit-provider" onClick={() => { setProvider("keepInTouch"); setCountryFormat("digits"); setMsg(null); test.reset(); }}>Use Keep in Touch (91)</button>
+        <p className="muted">This prepares a draft only. Confirm and save with your password to change the provider. Saved credentials are preserved; no message is sent.</p>
+      </div>}
       {kit && <div className="notice" data-testid="help-keep-in-touch">
         <p>Keep in Touch uses POST with application/json and Authorization: Bearer token. The body contains countryCode, mobile, senderId, message, apiKey, clientId and templateId. Bearer Token and API Key are separate required protected values; do not assume they are identical.</p>
         <p>Client ID and Sender ID are required. The selected event's DLT Template ID supplies templateId. Entity ID is neither required nor sent. Per-event Template IDs live in Notification Templates; publish each event's registered template ID there. The Keep in Touch URL is separate from the Custom API URL, which is kept when you switch providers.</p>
