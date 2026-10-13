@@ -16,12 +16,14 @@ country-code format choice. Any live verification needs provider clarification,
 approved credentials and a controlled recipient; never probe both formats or
 automatically resend an uncertain dispatch.
 
-Keep in Touch requires a Bearer Token, but Sender ID is optional and Entity ID
-is neither required nor sent.
+SMS Settings requires both Bearer Token and Sender ID for both provider options.
+Remove Status API URL and Entity ID controls from the settings page. Entity ID
+is neither required nor sent for Keep in Touch.
 
-**Why:** The user clarified that Sender ID and Entity ID are not required and
-that the KIT API requires a Bearer Token.
+**Why:** The user corrected the earlier optional-Sender requirement: “remove
+Status API URL,Entity ID (optional)” and “bearer token and sender id are mandatory
+nt optional.”
 
-**How to apply:** Keep Bearer Token separate from API Key. Do not reintroduce
-Sender ID or Entity ID as required fields in settings, readiness or dispatch;
-omit an absent optional Sender ID from the KIT request.
+**How to apply:** Keep Bearer Token separate from API Key. Require both Bearer
+Token and Sender ID in settings, readiness and dispatch, allowing existing saved
+values to satisfy the form. Do not reintroduce the removed settings controls.

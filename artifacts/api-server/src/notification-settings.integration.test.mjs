@@ -12,7 +12,7 @@ import { queueFixtureSql } from "./test-support/queue-fixtures.mjs";
 import { keepInTouchNetworkPlugin } from "./test-support/keep-in-touch-network.mjs";
 const bundle=resolve(import.meta.dirname,`.notification-settings-${process.pid}.mjs`);
 const mapping={encoding:"json",authMode:"header",authField:"X-API-Key",fields:{recipient:"to",message:"message",senderId:"sender",dltEntityId:"entity",dltTemplateId:"template"},staticFields:{route:"transactional"},acceptedStatuses:[200,202],responseField:"result.status",responseValue:"accepted",dltRequired:true};
-const env={NOTIFICATION_SMS_URL:"https://sms.example.invalid/send",NOTIFICATION_SMS_KEY:"synthetic-notification-key",NOTIFICATION_SMS_MAPPING:JSON.stringify(mapping)};
+const env={NOTIFICATION_SMS_URL:"https://sms.example.invalid/send",NOTIFICATION_SMS_KEY:"synthetic-notification-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-settings-bearer",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_MAPPING:JSON.stringify(mapping)};
 Object.assign(process.env,env,{NODE_ENV:"test",INTEGRATIONS_ENCRYPTION_KEY:"cd".repeat(32),SMTP_HOST:"smtp.example.invalid",SMTP_PORT:"587",SMTP_USER:"fixture-user",SMTP_PASSWORD:"fixture-pass",SMTP_FROM:"sender@example.invalid"});
 let h,api;
 const context=new AsyncLocalStorage();
@@ -240,7 +240,7 @@ test("request mappings support JSON/form and header/Bearer/body without collisio
     const body=encoding==="json"?JSON.parse(req.body):Object.fromEntries(new URLSearchParams(req.body));
     assert.equal(body.to,"+919876543213");assert.equal(body.message,"Fixture");
     if(authMode==="body")assert.equal(body.api_key,env.NOTIFICATION_SMS_KEY);
-    else assert.equal(req.headers[authMode==="bearer"?"Authorization":"X-API-Key"],authMode==="bearer"?`Bearer ${env.NOTIFICATION_SMS_KEY}`:env.NOTIFICATION_SMS_KEY);
+    else assert.equal(req.headers[authMode==="bearer"?"Authorization":"X-API-Key"],authMode==="bearer"?`Bearer ${env.NOTIFICATION_SMS_BEARER_TOKEN}`:env.NOTIFICATION_SMS_KEY);
   }
   for(const authField of ["Host","Cookie","Content-Length","Proxy-Authorization"])assert(!api.smsMappingSchema.safeParse({...mapping,authField}).success);
   assert(!api.smsMappingSchema.safeParse({...mapping,staticFields:{to:"collision"}}).success);
@@ -267,7 +267,7 @@ test("SMS defaults off, valid recipients, DLT activation, draft isolation and pu
   assert((await api.templateCatalog(sa,undefined,"patient","sms")).items.every(i=>!i.content.enabled));
   await assert.rejects(api.templateCatalog({role:"clinicAdmin",id:"ca"},"c","patient","sms"),{status:403});
   await assert.rejects(api.saveTemplate(sa,{channel:"sms",event:"onboarding",recipient:"patient",revision:0,mode:"publish",content:smsContent()}),{status:400});
-  await assert.rejects(api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...smsContent(),enabled:true,senderId:""}}),{status:400});
+  await assert.rejects(api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...smsContent(),enabled:true,dltTemplateId:""}}),{status:400});
   await api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",revision:0,mode:"draft",content:{...smsContent(),enabled:true}});
   assert(!(await api.resolvedTemplate("booking","c",h.db,"patient","sms")).content.enabled);
   await api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",revision:1,mode:"publish",content:smsContent()});
