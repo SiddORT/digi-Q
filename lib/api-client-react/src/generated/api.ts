@@ -134,6 +134,7 @@ import type {
   ListDoctorsParams,
   ListGuestRequestsParams,
   ListMastersParams,
+  ListNotificationLogsParams,
   ListNotificationsParams,
   ListPatientActivityParams,
   ListPatientsParams,
@@ -153,6 +154,8 @@ import type {
   Message,
   NativeStaffLoginInput,
   NotificationList,
+  NotificationLog,
+  NotificationLogPage,
   NotificationReadInput,
   NotificationSmsTestInput,
   NotificationSmsTestResult,
@@ -11572,6 +11575,155 @@ export function useListNotifications<TData = Awaited<ReturnType<typeof listNotif
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListNotificationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListNotificationLogsUrl = (params?: ListNotificationLogsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/management/notification-logs?${stringifiedParams}` : `/api/management/notification-logs`
+}
+
+export const listNotificationLogs = async (params?: ListNotificationLogsParams, options?: Parameters<typeof customFetch>[1]): Promise<NotificationLogPage> => {
+
+  return customFetch<NotificationLogPage>(getListNotificationLogsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNotificationLogsQueryKey = (params?: ListNotificationLogsParams,) => {
+    return [
+    `/api/management/notification-logs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListNotificationLogsQueryOptions = <TData = Awaited<ReturnType<typeof listNotificationLogs>>, TError = ErrorType<unknown>>(params?: ListNotificationLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotificationLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationLogsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotificationLogs>>> = ({ signal }) => listNotificationLogs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNotificationLogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNotificationLogsQueryResult = NonNullable<Awaited<ReturnType<typeof listNotificationLogs>>>
+export type ListNotificationLogsQueryError = ErrorType<unknown>
+
+
+
+export function useListNotificationLogs<TData = Awaited<ReturnType<typeof listNotificationLogs>>, TError = ErrorType<unknown>>(
+ params?: ListNotificationLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotificationLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNotificationLogsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetNotificationLogUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/notification-logs/${id}`
+}
+
+export const getNotificationLog = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<NotificationLog> => {
+
+  return customFetch<NotificationLog>(getGetNotificationLogUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNotificationLogQueryKey = (id: string,) => {
+    return [
+    `/api/management/notification-logs/${id}`
+    ] as const;
+    }
+
+
+export const getGetNotificationLogQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationLog>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNotificationLogQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotificationLog>>> = ({ signal }) => getNotificationLog(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNotificationLog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNotificationLogQueryResult = NonNullable<Awaited<ReturnType<typeof getNotificationLog>>>
+export type GetNotificationLogQueryError = ErrorType<unknown>
+
+
+
+export function useGetNotificationLog<TData = Awaited<ReturnType<typeof getNotificationLog>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNotificationLogQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

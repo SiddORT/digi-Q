@@ -2,6 +2,7 @@ import { db, settings } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { randomUUID, createHash } from "node:crypto";
 import { z } from "zod";
+import { dispatchNotificationTest } from "./notification-test-dispatch";
 import { assert } from "./http";
 import { authorizedTemplateScope, resolvedTemplate, type Channel } from "./notification-template-store";
 import { templateEvents, templateRecipients, templateContent, smsTemplateContent, renderNotification, substitute, type SmsTemplateContent } from "./notification-templates";
@@ -78,37 +79,11 @@ export async function testTemplate(user:any,prepared:Awaited<ReturnType<typeof p
   const {body,content,rendered}=prepared;
   assert(body.confirmed===true&&body.requestId,400,"Confirm one real test send and provide a request ID");
   assert(body.recipient && (body.channel==="sms"?/^\+[1-9]\d{6,14}$/.test(body.recipient):validEmailAddress(body.recipient)),400,"Enter one valid explicit recipient");
-  const id=`notification-test:${user.id}:${body.requestId}`;
-  const digest=createHash("sha256").update(JSON.stringify(body)).digest("hex");
-  const replay=await db.transaction(async tx=>{
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${id}))`);
-    const [prior]=await tx.select().from(settings).where(eq(settings.id,id));
-    if(prior){assert(prior.data.digest===digest,409,"Request ID already used for a different test");return prior.data.status||"delivery_unknown";}
-    // Readiness is required, not implied by an earlier successful test.
-    if(body.channel==="sms") {
-      const env=(await resolvedIntegration("notificationSms",tx)).env;
-      assert(notificationSmsReadiness(env).ready,400,"Configure notification SMS before testing");
-      const cfg=notificationSmsConfig(env),meta=content as SmsTemplateContent;
-      assert(smsMetadataReady(cfg,meta),400,"Required sender and event template metadata are missing");
-    }else smtpConfig((await resolvedIntegration("smtp",tx)).env);
-    const inserted=await tx.insert(settings).values({id,data:{digest,status:"delivery_unknown",createdAt:Date.now()}}).onConflictDoNothing().returning({id:settings.id});
-    if(!inserted.length) {
-      const [existing]=await tx.select().from(settings).where(eq(settings.id,id));
-      assert(existing?.data.digest===digest,409,"Request ID already used for a different test");
-      return existing.data.status||"delivery_unknown";
-    }
-    return null;
-  });
-  let status:SmsOutcome=replay as SmsOutcome;
-  if(!replay) {
-    status="delivery_unknown";
-    try {
-      if(body.channel==="sms") status=await smsSend((await resolvedIntegration("notificationSms")).env,body.recipient!,rendered.text,content as SmsTemplateContent);
-      else {await emailSend(body.recipient!,rendered.subject,rendered.text,undefined,rendered as any);status="provider_accepted";}
-    }catch(error:any){status=error?.code==="EMAIL_UNCONFIGURED"?"pre_dispatch_failed":error?.code==="EMAIL_REJECTED"?"provider_rejected":error?.code==="EMAIL_PRE_DISPATCH_FAILED"?"pre_dispatch_failed":"delivery_unknown";}
-    await db.update(settings).set({data:{digest,status,finishedAt:Date.now()}}).where(eq(settings.id,id));
-    const {auditLogs}=await import("@workspace/db");
-    await db.insert(auditLogs).values({id:randomUUID(),actorId:user.id,action:"notification_test",entityType:"notification_templates",entityId:body.channel,summary:`${body.channel} ${body.event} ${body.recipientGroup} test: ${status}`});
-  }
+  const status=await dispatchNotificationTest(user.id,{
+    channel:body.channel,event:body.event,recipientGroup:body.recipientGroup,clinicId:body.clinicId,
+    recipient:body.recipient!,subject:rendered.subject,message:rendered.text,confirmed:true,requestId:body.requestId!,
+    templateId:`${body.channel}:${body.event}:${body.recipientGroup}`,templateRevision:body.revision,templateScope:"test_draft",
+    content:body.channel==="sms"?content as SmsTemplateContent:undefined,rendered:body.channel==="email"?rendered as any:undefined,
+  },db,smsSend,emailSend);
   return {status,message:outcomeMessages[status],subject:rendered.subject,body:rendered.text};
 }

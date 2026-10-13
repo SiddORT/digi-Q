@@ -13,6 +13,10 @@ await build({
  plugins:[{name:"isolated-mail",setup(b){
   b.onResolve({filter:/\/notification-outbox$/},()=>({path:"outbox",namespace:"outbox-fixture"}));
   b.onLoad({filter:/.*/,namespace:"outbox-fixture"},()=>({contents:"export const enqueueEvent=async()=>{};"}));
+  b.onResolve({filter:/\/notification-history$/},()=>({path:"history",namespace:"history-fixture"}));
+  b.onLoad({filter:/.*/,namespace:"history-fixture"},()=>({contents:"export const historyId=k=>k; export const recordNotification=async()=>{}; export const recordDecision=async()=>{}; export const notificationEntry=()=>({}); export const templateSnapshot=()=>({});"}));
+  b.onResolve({filter:/\/integration-vault$/},()=>({path:"vault",namespace:"vault-fixture"}));
+  b.onLoad({filter:/.*/,namespace:"vault-fixture"},()=>({contents:'export const resolvedIntegration=async()=>({env:{SMTP_HOST:"smtp.example.invalid",SMTP_PORT:"587",SMTP_USER:"fixture-user",SMTP_PASSWORD:"fixture-pass",SMTP_FROM:"sender@example.invalid"}});'}));
   b.onResolve({filter:/^fixture$|^@workspace\/db$|^drizzle-orm$|\/store$|\/auth-email$|\/notification-template-store$|^\.\/appointments$/},a=>({path:a.path,namespace:"fixture"}));
   b.onLoad({filter:/.*/,namespace:"fixture"},a=>{
    if(a.path==="fixture")return {contents:`
@@ -21,13 +25,14 @@ await build({
     export const conn={
      transaction:async fn=>{let release;const before=tail;tail=new Promise(r=>release=r);await before;try{return await fn(conn)}finally{release()}},
      execute:async()=>{},
+      select:()=>({from:()=>({where:async()=>[]})}),
      update:()=>({set:values=>({where:async condition=>{
        const outcome=JSON.parse(values.data.values[1]).confirmationEmail;
        if(state.failClaim&&outcome==="not_attempted"||state.failOutcome&&outcome!=="not_attempted")throw Error("storage unavailable");
        state.rows.appointments.find(r=>r.id===condition.id).confirmationEmail=outcome;
      }})})
     };`};
-   if(a.path==="@workspace/db")return {contents:'export {conn as db} from "fixture"; export const appointments={id:"id",data:"data"},patients="patients",clinics="clinics",users="users";'};
+    if(a.path==="@workspace/db")return {contents:'export {conn as db} from "fixture"; export const appointments={id:"id",data:"data"},settings={id:"id"},patients="patients",clinics="clinics",users="users";'};
    if(a.path==="drizzle-orm")return {contents:'export const sql=(strings,...values)=>({strings,values});export const eq=(_,id)=>({id});'};
    if(a.path.endsWith("/notification-template-store"))return {contents:'export const resolvedTemplate=async()=>({source:"default",content:{enabled:true}});'};
    if(a.path.endsWith("/auth-email"))return {contents:'export const sendAuthEmail=()=>{throw Error("Real SMTP forbidden in tests")};'};
@@ -40,7 +45,7 @@ const {state,conn,confirmAppointmentEmail,confirmationText,initialConfirmationEm
 function seed(){
  state.enabled=true;state.failClaim=false;state.failOutcome=false;
  state.rows={appointments:[{id:"a",patientId:"p",clinicId:"c",status:"waiting",date:"2030-01-07",startTime:"14:05",endTime:"15:05",timezone:"Asia/Kolkata",clinicName:"Clinic",branchName:"Location",doctorName:"Doctor",reference:"REF",token:"A-01",notes:"private clinical notes"}],
- patients:[{id:"p",email:"patient@example.invalid"}],clinics:[{id:"c",dateFormat:"DD/MM/YYYY",timeFormat:"24h"}],users:[]};
+  patients:[{id:"p",email:"patient@example.invalid",status:"active"}],clinics:[{id:"c",dateFormat:"DD/MM/YYYY",timeFormat:"24h"}],users:[]};
 }
 test("enabled confirmation uses parent display settings and excludes clinical notes",async()=>{
  seed();const calls=[];

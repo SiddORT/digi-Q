@@ -1,4 +1,7 @@
 import { Router } from "express";
+import { recordDecision } from "../lib/notification-history";
+import { db } from "@workspace/db";
+import { templateEvents } from "../lib/notification-templates";
 import { requireUser } from "../lib/auth";
 import { assert } from "../lib/http";
 import { consumeRateLimit } from "../lib/native-auth";
@@ -49,5 +52,16 @@ notificationTemplatesRouter.post("/management/templates/test",async(req,res)=>{
   const user=await requireUser(req);roles(user,["superAdmin"]);
   await consumeRateLimit(`template-test:${user.id}`,3,900000);
   await consumeRateLimit(`template-test:ip:${ipKeyGenerator(req.ip||"unknown")}`,10,900000);
-  res.json(await testTemplate(user,await prepareTemplateTest(user,req.body)));
+  try {
+    res.json(await testTemplate(user,await prepareTemplateTest(user,req.body)));
+  } catch(error) {
+    const b=req.body;
+    if(!user.demo && b?.confirmed===true && /^[a-f0-9-]{36}$/i.test(b.requestId||"") &&
+      ["sms","email"].includes(b.channel)&&templateEvents.includes(b.event)&&templateRecipients.includes(b.recipientGroup))
+      await recordDecision(db,`notification-test:${user.id}:${b.requestId}`,{
+        channel:b.channel,event:b.event,recipientGroup:b.recipientGroup,source:"test",occurrence:b.requestId,
+        clinicId:typeof b.clinicId==="string"&&b.clinicId.length<=100?b.clinicId:undefined,
+      },"preparation_failed");
+    throw error;
+  }
 });

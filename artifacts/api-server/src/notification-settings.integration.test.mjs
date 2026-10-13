@@ -39,12 +39,15 @@ before(async()=>{
     export * from "./lib/notification-templates"; export * from "./lib/notification-template-store";
     export * from "./lib/notification-controls"; export * from "./lib/notification-sms-outbox";
     export * from "./lib/notification-outbox"; export * from "./lib/store"; export * from "@workspace/db";
+    export * from "./lib/notification-history"; export * from "./lib/notification-test-dispatch";
+    export * from "./lib/appointment-confirmation";
+    import {notificationHistoryRouter} from "./routes/notification-history";
     import {notificationTemplatesRouter} from "./routes/notification-templates";
     import {integrationsRouter} from "./routes/integrations";
     import express from "express";
     export const app=express();app.use(express.json());
     app.use((req,res,next)=>{req.authUserId=req.headers["x-user"];req.authSessionHash="fixture";next();});
-    app.use(notificationTemplatesRouter);app.use(integrationsRouter);
+    app.use(notificationTemplatesRouter);app.use(integrationsRouter);app.use(notificationHistoryRouter);
     app.use((err,req,res,next)=>res.status(err.status||400).json({error:"Sanitized",code:err.code}));`,
     resolveDir:import.meta.dirname,loader:"ts"},outfile:bundle,bundle:true,platform:"node",format:"esm",packages:"external",
     plugins:[keepInTouchNetworkPlugin,{name:"isolated",setup(b){
@@ -363,8 +366,12 @@ test("completed/cancelled/reminder dispatch eligibility uses exact revision, sta
   assert.equal(seen.length,12);
   await api.processSmsNotifications(h.db,async()=>{throw Error("Must not retry");},now+100);
   // Enqueue a valid event, then revoke staff membership/change contact before dispatch.
-  const row=await api.one(api.appointments,"eligible-completed",h.db);
+  const originalRow=await api.one(api.appointments,"eligible-completed",h.db);
   await h.control.query("delete from settings where id like 'sms-outbox:completed:eligible-completed:%'");
+  await api.enqueueEvent(h.db,"completed",originalRow);
+  assert.equal((await h.control.query("select id from settings where id like 'sms-outbox:completed:eligible-completed:%'")).rows.length,0,"Permanent capture claims survive outbox deletion");
+  const row={...originalRow,revision:3};
+  await h.control.query("update appointments set data=$1 where id=$2",[JSON.stringify(row),row.id]);
   await api.enqueueEvent(h.db,"completed",row);
   await h.control.query("delete from assignments where user_id='ru';update users set mobile='+919876543219' where id='du'");
   let sent=0;await api.processSmsNotifications(h.db,async()=>{sent++;return "provider_rejected";},now);
@@ -379,12 +386,126 @@ test("routes enforce global control/test/SMS/template/credential role boundary i
         ["/management/templates?channel=sms","GET"],["/management/event-controls","GET"],
         ["/settings/integrations","GET"],["/settings/integrations","PUT",{}],
         ["/management/templates/preview","POST",{}],["/management/templates/test","POST",{}],
-        ["/management/event-controls","PUT",{}],
+        ["/management/event-controls","PUT",{}],["/management/notification-logs","GET"],
+        ["/management/notification-logs/notification-history:"+"a".repeat(64),"GET"],
       ]){
         const response=await fetch(origin+path,{method,headers:{"x-user":role,"content-type":"application/json"},...(body?{body:JSON.stringify(body)}:{})});
         assert.equal(response.status,403,`${role} ${method} ${path}`);
       }
     }
+  }finally{await new Promise(r=>server.close(r));}
+});
+test("history snapshots are encrypted, credential/private-link redacted, immutable and filtered with stable bounded pages",async()=>{
+  const now=Date.now(),reference="PROTECTED_HISTORY";
+  for(let i=0;i<3;i++){
+    const entry={channel:i===0?"sms":"email",event:"booking",recipientGroup:"patient",clinicId:"c",reference,occurrence:`prospective-${i}`,createdAt:now+i};
+    await api.recordNotification(h.db,`protected-${i}`,entry,"pending",undefined,[],now+i);
+    await api.recordNotification(h.db,`protected-${i}`,entry,"sending",{
+      sender:"sent@example.invalid",recipient:"actual@example.invalid",subject:"Fictional appointment",message:"Visit https://example.invalid/book/private-token Token: PRIVATE_QR synthetic-secret",
+      templateId:"email:booking:patient",templateScope:"platform",templateRevision:4,provider:"smtp",
+    },["synthetic-secret"],now+i+10);
+    await api.recordNotification(h.db,`protected-${i}`,entry,"provider_accepted",undefined,[],now+i+20);
+    // Recapture or today's changed contact/content must never replace dispatched values.
+    await api.recordDecision(h.db,`protected-${i}`,entry,"pending");
+  }
+  const raw=(await h.control.query("select data from settings where id=$1",[api.historyId("protected-0")])).rows[0].data;
+  for(const forbidden of ["actual@example.invalid","sent@example.invalid","Fictional appointment","PRIVATE_QR","synthetic-secret","private-token"])
+    assert(!JSON.stringify(raw).includes(forbidden),forbidden);
+  const first=await api.listNotificationLogs(sa,{reference,pageSize:2},h.db,now+100);
+  assert.equal(first.items.length,2);assert(first.nextCursor);
+  const second=await api.listNotificationLogs(sa,{reference,pageSize:2,cursor:first.nextCursor},h.db,now+100);
+  assert.equal(second.items.length,1);assert.equal(second.nextCursor,null);
+  assert.equal(new Set([...first.items,...second.items].map(i=>i.id)).size,3);
+  const item=await api.getNotificationLog(sa,api.historyId("protected-0"),h.db,now+100);
+  assert.equal(item.status,"provider_accepted");assert.equal(item.sender,"sent@example.invalid");assert.equal(item.templateRevision,4);
+  assert(item.message.includes("[link withheld]"));assert(item.message.includes("[protected value withheld]"));assert(item.message.includes("[credential withheld]"));
+  assert.equal(item.timeline.length,3);assert.equal(item.dispatchAt,now+10);
+  for(const [filter,count] of [
+    [{channel:"sms"},1],[{channel:"email"},2],[{event:"booking",status:"provider_accepted",clinicId:"c",recipientGroup:"patient",source:"automatic"},3],
+    [{sender:"sent@example.invalid",recipient:"actual@example.invalid"},3],
+    [{recipient:"changed@example.invalid"},0],[{from:new Date(now+1).toISOString(),to:new Date(now+2).toISOString()},2],
+  ])assert.equal((await api.listNotificationLogs(sa,{reference,...filter},h.db,now+100)).items.length,count,JSON.stringify(filter));
+  for(const bad of [{pageSize:101},{pageSize:0},{status:"delivered"},{cursor:"invalid"},{from:"yesterday"},{from:new Date(now+2).toISOString(),to:new Date(now).toISOString()},{channel:["email","sms"]}])
+    await assert.rejects(api.listNotificationLogs(sa,bad,h.db),{status:400});
+  for(const user of [{role:"patient"},{role:"clinicAdmin"},{role:"superAdmin",demo:true}])
+    await assert.rejects(api.getNotificationLog(user,item.id,h.db),{status:403});
+});
+test("stale claims become uncertain without resend; legacy fields stay unavailable and retention keeps permanent safeguards",async()=>{
+  const now=Date.now(),entry={channel:"sms",event:"reminder",recipientGroup:"patient",clinicId:"c",reference:"STALE_HISTORY",createdAt:now-600000};
+  await api.recordNotification(h.db,"stale-protected",entry,"sending",{sender:"DIGIQ",recipient:"+919876543213",message:"Session begins in an hour"},[],now-600000);
+  const item=await api.getNotificationLog(sa,api.historyId("stale-protected"),h.db,now);
+  assert.equal(item.status,"delivery_unknown");assert.equal(item.reason,"abandoned_dispatch_claim");
+  assert.equal(item.timeline.at(-1).reason,"abandoned_dispatch_claim");
+  assert.equal((await api.listNotificationLogs(sa,{reference:"STALE_HISTORY",status:"delivery_unknown"},h.db,now)).items.length,1);
+  await h.control.query("insert into settings(id,data) values($1,$2)",["mail-outbox:booking:legacy-history",{event:"booking",state:"provider_accepted",createdAt:now,clinicId:"c",recipientGroup:"clinicAdmin",snapshot:{reference:"LEGACY_HISTORY"}}]);
+  const legacy=(await api.listNotificationLogs(sa,{reference:"LEGACY_HISTORY"},h.db,now)).items[0];
+  assert(legacy.legacy);assert.equal(legacy.sender,null);assert.equal(legacy.recipient,null);assert.equal(legacy.message,null);assert.equal(legacy.dispatchAt,null);assert.deepEqual(legacy.timeline,[]);
+  assert.equal((await api.getNotificationLog(sa,legacy.id,h.db,now)).status,"provider_accepted");
+  await api.recordNotification(h.db,"expired-history",{...entry,createdAt:now-91*86400000},"disabled",undefined,[],now-91*86400000);
+  await h.control.query("insert into settings(id,data) values('notification-test:retained:claim','{\"status\":\"delivery_unknown\"}'),('notification-occurrence:retained:claim','{}')");
+  await api.cleanupNotificationHistory(h.db,now);
+  assert.equal((await h.control.query("select id from settings where id=$1",[api.historyId("expired-history")])).rows.length,0);
+  assert.equal((await h.control.query("select id from settings where id in ('notification-test:retained:claim','notification-occurrence:retained:claim','mail-outbox:booking:legacy-history')")).rows.length,3);
+});
+test("provider test dispatch uses a configurable Keep in Touch endpoint, independent keys and durable request identity",async()=>{
+  const original=await api.resolvedIntegration("notificationSms");
+  try{
+    await api.saveIntegration("notificationSms",{
+      NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_KEEP_IN_TOUCH_URL:"https://sms.example.invalid/alternate",
+      NOTIFICATION_SMS_KEY:"fictional-body-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-independent-bearer",NOTIFICATION_SMS_CLIENT_ID:"fictional-client",
+      NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"plus",
+    },original.revision,"database",sa.id);
+    const readiness=(await api.integrationSettings()).notificationSms;
+    assert.equal(readiness.keepInTouchApiUrl,"https://sms.example.invalid/alternate");
+    assert.equal(readiness.customApiUrl,"https://sms.example.invalid/send");
+    assert.equal(api.notificationSmsConfig({...env,NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_KEY:"fictional-body-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-independent-bearer",NOTIFICATION_SMS_CLIENT_ID:"fictional-client",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"plus"}).url.href,"https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS");
+    globalThis.kitNetwork=[];
+    const input={channel:"sms",event:"provider_test",recipientGroup:"explicit",recipient:"+919876543213",subject:"",message:"Fictional SMS",requestId:randomUUID(),confirmed:true,content:{dltTemplateId:"TEST_REGISTERED"}};
+    assert.equal(await api.dispatchNotificationTest(sa.id,input,h.db),"provider_accepted");
+    assert.equal(await api.dispatchNotificationTest(sa.id,input,h.db),"provider_accepted");
+    assert.equal(globalThis.kitNetwork.length,1);assert.equal(globalThis.kitNetwork[0].url,"https://sms.example.invalid/alternate");
+    assert.equal(globalThis.kitNetwork[0].options.headers.Authorization,"Bearer fictional-independent-bearer");
+    assert.deepEqual(globalThis.kitNetwork[0].body,{countryCode:"+91",mobile:"9876543213",senderId:"DIGIQ",message:"Fictional SMS",apiKey:"fictional-body-key",clientId:"fictional-client",templateId:"TEST_REGISTERED"});
+    const detail=await api.getNotificationLog(sa,api.historyId(`notification-test:${sa.id}:${input.requestId}`),h.db);
+    assert.equal(detail.httpStatus,200);assert.equal(detail.source,"test");assert.equal(detail.dltTemplateId,"TEST_REGISTERED");
+    await assert.rejects(api.dispatchNotificationTest(sa.id,{...input,message:"Changed"},h.db),{status:409});
+    let sends=0;const unknown={...input,requestId:randomUUID()};
+    assert.equal(await api.dispatchNotificationTest(sa.id,unknown,h.db,async()=>{sends++;throw Error("Raw authentication payload");}),"delivery_unknown");
+    assert.equal(await api.dispatchNotificationTest(sa.id,unknown,h.db,async()=>{sends++;return "provider_accepted";}),"delivery_unknown");
+    assert.equal(sends,1);
+    await api.saveIntegration("notificationSms",{NOTIFICATION_SMS_PROVIDER:"generic"},(await api.resolvedIntegration("notificationSms")).revision,"database",sa.id);
+    assert.equal(api.notificationSmsConfig((await api.resolvedIntegration("notificationSms")).env).url.href,"https://sms.example.invalid/send");
+    await api.saveIntegration("notificationSms",{NOTIFICATION_SMS_PROVIDER:"keepInTouch"},(await api.resolvedIntegration("notificationSms")).revision,"database",sa.id);
+    assert.equal(api.notificationSmsConfig((await api.resolvedIntegration("notificationSms")).env).url.href,"https://sms.example.invalid/alternate");
+  }finally{
+    await api.saveIntegration("notificationSms",{},(await api.resolvedIntegration("notificationSms")).revision,"environment",sa.id);
+    delete globalThis.kitNetwork;
+  }
+});
+test("history failures are isolated savepoints and never turn an accepted test into a second dispatch",async()=>{
+  await h.control.query(`create or replace function fail_fictional_history() returns trigger language plpgsql as $$
+    begin if NEW.id like 'notification-history:%' then raise exception 'synthetic history unavailable'; end if; return NEW; end $$;
+    create trigger fail_fictional_history before insert or update on settings for each row execute function fail_fictional_history();`);
+  try{
+    let sends=0;
+    const input={channel:"email",event:"provider_test",recipientGroup:"explicit",recipient:"fictional@example.invalid",subject:"Fixture",message:"Fixture",requestId:randomUUID(),confirmed:true};
+    const send=async()=>{sends++;};
+    assert.equal(await api.dispatchNotificationTest(sa.id,input,h.db,undefined,send),"provider_accepted");
+    assert.equal(await api.dispatchNotificationTest(sa.id,input,h.db,undefined,send),"provider_accepted");
+    assert.equal(sends,1);
+  }finally{await h.control.query("drop trigger fail_fictional_history on settings;drop function fail_fictional_history();");}
+});
+test("history APIs are no-store and failed filters are not broadened",async()=>{
+  const server=api.app.listen(0,"127.0.0.1");await new Promise(r=>server.once("listening",r));
+  const origin=`http://127.0.0.1:${server.address().port}`;
+  try{
+    const response=await fetch(origin+"/management/notification-logs?reference=PROTECTED_HISTORY",{headers:{"x-user":"superAdmin"}});
+    assert.equal(response.status,200);assert.equal(response.headers.get("cache-control"),"no-store");
+    const data=await response.json();assert.equal(data.items.length,3);
+    const detail=await fetch(origin+"/management/notification-logs/"+data.items[0].id,{headers:{"x-user":"superAdmin"}});
+    assert.equal(detail.status,200);assert.equal(detail.headers.get("cache-control"),"no-store");
+    const bad=await fetch(origin+"/management/notification-logs?unrecognized=anything",{headers:{"x-user":"superAdmin"}});
+    assert.equal(bad.status,400);assert.equal(bad.headers.get("cache-control"),"no-store");
   }finally{await new Promise(r=>server.close(r));}
 });
 test("resetting an explicit clinic SMS opt-out stamps future-only activation without changing inheritance",async()=>{
@@ -453,4 +574,54 @@ test("an SMS poll before scheduler commit does not lose reminders at the next po
   assert(terminal.rowCount>0&&terminal.rows.every(r=>r.state==="obsolete"));
   assert.equal(api.reminderDispatchEligible({...row,status:"cancelled"},nextPoll),false);
   assert.equal(api.reminderDispatchEligible({...row,checkedInAt:nextPoll},nextPoll),false);
+});
+test("patient booking confirmation has one prospective history and immutable dispatch details despite retry/contact edits",async()=>{
+  const existing=(await h.control.query("select id,data from settings where id='notification-template:c:booking'")).rows;
+  const originalPatient=(await h.control.query("select email from users where id='pu'")).rows[0].email;
+  try{
+    await h.control.query("delete from settings where id='notification-template:c:booking';update users set email='captured@example.invalid' where id='pu'");
+    await api.saveTemplate(sa,{channel:"email",clinicId:"c",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...api.defaultTemplate("booking"),enabled:true}});
+    const row={id:"prospective-patient-confirmation",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",clinicName:"Fictional clinic",branchName:"Fictional branch",doctorName:"Fictional doctor",date:"2030-02-03",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"PATIENT_HISTORY",token:"A-01",status:"waiting",revision:0};
+    await h.control.query("insert into appointments(id,clinic_id,branch_id,doctor_id,patient_id,date,status,data) values($1,'c','b','d','p',$2,'waiting',$3)",[row.id,row.date,row]);
+    await api.capturePatientConfirmation(h.db,row);await api.capturePatientConfirmation(h.db,row);
+    let sends=0;
+    assert.equal(await api.confirmAppointmentEmail(row.id,h.db,async(to,subject,text)=>{sends++;assert.equal(to,"captured@example.invalid");assert.match(text,/session/i);}),"provider_accepted");
+    await h.control.query("update users set email='later-contact@example.invalid' where id='pu'");
+    assert.equal(await api.confirmAppointmentEmail(row.id,h.db,async()=>{sends++;}),"provider_accepted");
+    assert.equal(sends,1);
+    const items=(await api.listNotificationLogs(sa,{reference:"PATIENT_HISTORY",channel:"email"},h.db)).items;
+    assert.equal(items.length,1);assert.equal(items[0].recipient,"captured@example.invalid");assert.equal(items[0].sender,"sender@example.invalid");
+    assert.equal(items[0].templateId,"email:booking:patient");assert.equal(items[0].templateRevision,1);assert.equal(items[0].templateScope,"clinic");
+    assert.deepEqual(items[0].timeline.map(t=>t.status),["pending","sending","provider_accepted"]);
+    // Draft revision is not a published-content revision.
+    await api.saveTemplate(sa,{channel:"email",clinicId:"c",event:"booking",recipient:"patient",revision:1,mode:"draft",content:{...api.defaultTemplate("booking"),subject:"Unpublished"}});
+    assert.equal((await api.resolvedTemplate("booking","c",h.db,"patient","email")).effectiveRevision,1);
+    assert.equal((await api.getNotificationLog(sa,items[0].id,h.db)).templateRevision,1);
+  }finally{
+    await h.control.query("delete from settings where id='notification-template:c:booking'");
+    await h.control.query("update users set email=$1 where id='pu'",[originalPatient]);
+    for(const row of existing)await h.control.query("insert into settings(id,data) values($1,$2)",[row.id,row.data]);
+  }
+});
+test("skips remain traceable but never become a backlog on repeated capture after policy activation",async()=>{
+  const row={id:"prospective-skip",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-04",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"SKIP_HISTORY",status:"waiting",revision:0};
+  await h.control.query("update clinics set data=jsonb_set(data,'{policies,notificationsEnabled}','false') where id='c'");
+  try{await api.enqueueEvent(h.db,"reminder",row);await api.enqueueEvent(h.db,"reminder",row);}
+  finally{await h.control.query("update clinics set data=jsonb_set(data,'{policies,notificationsEnabled}','true') where id='c'");}
+  const items=(await api.listNotificationLogs(sa,{reference:"SKIP_HISTORY"},h.db)).items;
+  assert.equal(items.length,8);assert(items.every(i=>i.status==="disabled"&&i.templateId));
+  await api.enqueueEvent(h.db,"reminder",row);
+  assert.equal((await api.listNotificationLogs(sa,{reference:"SKIP_HISTORY"},h.db)).items.length,8);
+  assert.equal((await h.control.query("select id from settings where id like '%outbox:reminder:prospective-skip:%'")).rows.length,0);
+});
+test("missing encryption never falls back to plaintext and still records explicit incomplete dispatch metadata",async()=>{
+  const old=process.env.INTEGRATIONS_ENCRYPTION_KEY;
+  delete process.env.INTEGRATIONS_ENCRYPTION_KEY;
+  try{
+    await api.recordNotification(h.db,"no-encryption",{channel:"email",event:"provider_test",recipientGroup:"explicit",source:"test"},"sending",{recipient:"never-plaintext@example.invalid",message:"private rendered fixture"});
+    const item=await api.getNotificationLog(sa,api.historyId("no-encryption"),h.db);
+    assert(item.detailsUnavailable);assert.equal(item.recipient,null);assert.equal(item.message,null);assert(item.dispatchAt);
+    const raw=(await h.control.query("select data from settings where id=$1",[item.id])).rows[0].data;
+    assert(!JSON.stringify(raw).includes("never-plaintext"));assert(!JSON.stringify(raw).includes("private rendered"));
+  }finally{process.env.INTEGRATIONS_ENCRYPTION_KEY=old;}
 });

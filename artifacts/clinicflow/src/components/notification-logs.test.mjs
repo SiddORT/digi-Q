@@ -1,0 +1,57 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFileSync } from "node:fs";
+import { kolkataToIso, formatLogTime, buildLogParams, show, EMPTY_FILTERS } from "../lib/notification-log-format.ts";
+import { communicationTab } from "../lib/communication-routes.ts";
+const rd = f => readFileSync(new URL(f, import.meta.url), "utf8");
+test("kolkata conversion and formatting", () => {
+  assert.equal(kolkataToIso("2025-01-01T05:30"), "2025-01-01T00:00:00.000Z");
+  assert.match(formatLogTime(0), /Asia\/Kolkata/);
+  assert.equal(formatLogTime(null), "Unavailable");
+  assert.equal(show(null), "Unavailable");
+});
+test("params omit empties and carry cursor", () => {
+  const p = buildLogParams({ ...EMPTY_FILTERS, status: "delivery_unknown", reference: " r1 " }, "c1");
+  assert.deepEqual(p, { pageSize: 25, status: "delivery_unknown", reference: "r1", cursor: "c1" });
+});
+test("logs tab deep link and no persistence", () => {
+  assert.equal(communicationTab("logs"), "logs");
+  const s = rd("./NotificationLogs.tsx");
+  assert.ok(s.includes("gcTime: 0") && !/localStorage|sessionStorage/.test(s));
+});
+test("kit url separate from custom url", () => {
+  const p = rd("./SmsProviderPanel.tsx");
+  assert.ok(p.includes("NOTIFICATION_SMS_KEEP_IN_TOUCH_URL") && p.includes("setKitUrl") && !/readOnly=\{kit\}/.test(p));
+});
+import {createRequire} from "node:module";
+import {createElement} from "react";
+import {renderToStaticMarkup} from "react-dom/server";
+import {before} from "node:test";
+const require=createRequire(import.meta.url);
+const {QueryClient,QueryClientProvider}=require("@tanstack/react-query");
+const {build}=createRequire(import.meta.resolve("vite"))("esbuild");
+let Logs, state={};
+before(async()=>{
+ globalThis.__logState=state;
+ const r=await build({entryPoints:[new URL("./NotificationLogs.tsx",import.meta.url).pathname],bundle:true,platform:"node",format:"cjs",write:false,jsx:"automatic",loader:{".css":"empty"},
+  external:["react","react-dom","react-dom/server","react/jsx-runtime","@tanstack/react-query"],
+  plugins:[{name:"fx",setup(b){
+   b.onResolve({filter:/^@workspace\/api-client-react$/},()=>({path:"api",namespace:"fixture"}));
+   b.onResolve({filter:/\/AppDialog$/},()=>({path:"dlg",namespace:"fixture"}));
+   b.onLoad({filter:/^api$/,namespace:"fixture"},()=>({contents:`
+    export const getListNotificationLogsQueryKey=p=>["l",p]; export const getGetNotificationLogQueryKey=i=>["g",i];
+    export const useListNotificationLogs=()=>({refetch(){},...globalThis.__logState.list});
+    export const useGetNotificationLog=()=>({refetch(){},...globalThis.__logState.one});`}));
+   b.onLoad({filter:/^dlg$/,namespace:"fixture"},()=>({contents:`export const AppDialog=p=>p.children;`}));
+  }}]});
+ const m={exports:{}}; new Function("require","module","exports",r.outputFiles[0].text)(require,m,m.exports); Logs=m.exports.NotificationLogs;
+});
+const html=()=>renderToStaticMarkup(createElement(QueryClientProvider,{client:new QueryClient()},createElement(Logs)));
+test("rendered states",()=>{
+ state.list={isLoading:true}; assert.match(html(),/loading-logs/);
+ state.list={isError:true}; assert.match(html(),/error-logs/);
+ state.list={data:{items:[],nextCursor:null,timezone:"Asia/Kolkata"}}; assert.match(html(),/empty-logs/);
+ assert.match(html(),/select-log-event/); assert.match(html(),/exact matches/);
+ state.list={data:{items:[{id:"a1",channel:"sms",event:"booking",status:"delivery_unknown",source:"automatic",legacy:true,createdAt:0,recipient:null,reference:null,timeline:[]}],nextCursor:"n",timezone:"Asia/Kolkata"}};
+ const h=html(); assert.match(h,/row-log-a1/); assert.match(h,/Unavailable/);
+});

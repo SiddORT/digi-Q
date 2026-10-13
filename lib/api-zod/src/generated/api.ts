@@ -624,6 +624,7 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "smsProvider": zod.enum(['generic', 'keepInTouch']).optional(),
   "countryCodeFormat": zod.enum(['digits', 'plus']).optional(),
   "customApiUrl": zod.string().optional(),
+  "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
   "smtpPort": zod.number().int().optional(),
   "fromEmail": zod.string().optional(),
@@ -645,6 +646,7 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "smsProvider": zod.enum(['generic', 'keepInTouch']).optional(),
   "countryCodeFormat": zod.enum(['digits', 'plus']).optional(),
   "customApiUrl": zod.string().optional(),
+  "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
   "smtpPort": zod.number().int().optional(),
   "fromEmail": zod.string().optional(),
@@ -666,6 +668,7 @@ export const UpdateIntegrationSettingsResponse = zod.object({
   "smsProvider": zod.enum(['generic', 'keepInTouch']).optional(),
   "countryCodeFormat": zod.enum(['digits', 'plus']).optional(),
   "customApiUrl": zod.string().optional(),
+  "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
   "smtpPort": zod.number().int().optional(),
   "fromEmail": zod.string().optional(),
@@ -695,6 +698,7 @@ export const GetIntegrationSettingsResponse = zod.object({
   "smsProvider": zod.enum(['generic', 'keepInTouch']).optional(),
   "countryCodeFormat": zod.enum(['digits', 'plus']).optional(),
   "customApiUrl": zod.string().optional(),
+  "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
   "smtpPort": zod.number().int().optional(),
   "fromEmail": zod.string().optional(),
@@ -716,6 +720,7 @@ export const GetIntegrationSettingsResponse = zod.object({
   "smsProvider": zod.enum(['generic', 'keepInTouch']).optional(),
   "countryCodeFormat": zod.enum(['digits', 'plus']).optional(),
   "customApiUrl": zod.string().optional(),
+  "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
   "smtpPort": zod.number().int().optional(),
   "fromEmail": zod.string().optional(),
@@ -737,6 +742,7 @@ export const GetIntegrationSettingsResponse = zod.object({
   "smsProvider": zod.enum(['generic', 'keepInTouch']).optional(),
   "countryCodeFormat": zod.enum(['digits', 'plus']).optional(),
   "customApiUrl": zod.string().optional(),
+  "keepInTouchApiUrl": zod.string().optional(),
   "smtpHost": zod.string().optional(),
   "smtpPort": zod.number().int().optional(),
   "fromEmail": zod.string().optional(),
@@ -759,11 +765,13 @@ export const sendSmtpTestEmailBodyRecipientMax = 254;
 
 
 export const SendSmtpTestEmailBody = zod.object({
+  "confirmed": zod.literal(true),
+  "requestId": zod.string().uuid(),
   "recipient": zod.string().email().max(sendSmtpTestEmailBodyRecipientMax)
 })
 
 export const SendSmtpTestEmailResponse = zod.object({
-  "status": zod.enum(['provider_accepted']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown']),
   "message": zod.string()
 })
 
@@ -786,6 +794,8 @@ export const sendNotificationSmsTestMessageBodyDltTemplateIdMax = 50;
 
 
 export const SendNotificationSmsTestMessageBody = zod.object({
+  "confirmed": zod.literal(true),
+  "requestId": zod.string().uuid(),
   "recipient": zod.string().max(sendNotificationSmsTestMessageBodyRecipientMax).regex(sendNotificationSmsTestMessageBodyRecipientRegExp),
   "message": zod.string().min(1).max(sendNotificationSmsTestMessageBodyMessageMax),
   "senderId": zod.string().max(sendNotificationSmsTestMessageBodySenderIdMax).optional(),
@@ -6991,6 +7001,121 @@ export const ListNotificationsResponse = zod.object({
   "date": zod.string().nullish()
 })),
   "unread": zod.number().int()
+})
+
+
+export const listNotificationLogsQuerySenderMax = 254;
+
+export const listNotificationLogsQueryRecipientMax = 254;
+
+export const listNotificationLogsQueryReferenceMax = 100;
+
+export const listNotificationLogsQueryCursorMax = 1000;
+
+export const listNotificationLogsQueryPageSizeDefault = 20;
+export const listNotificationLogsQueryPageSizeMax = 100;
+
+
+
+export const ListNotificationLogsQueryParams = zod.object({
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "channel": zod.enum(['email', 'sms']).optional(),
+  "event": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
+  "clinicId": zod.coerce.string().optional(),
+  "recipientGroup": zod.coerce.string().optional(),
+  "source": zod.enum(['automatic', 'test']).optional(),
+  "sender": zod.coerce.string().max(listNotificationLogsQuerySenderMax).optional(),
+  "recipient": zod.coerce.string().max(listNotificationLogsQueryRecipientMax).optional(),
+  "reference": zod.coerce.string().max(listNotificationLogsQueryReferenceMax).optional(),
+  "cursor": zod.coerce.string().max(listNotificationLogsQueryCursorMax).optional(),
+  "pageSize": zod.coerce.number().int().min(1).max(listNotificationLogsQueryPageSizeMax).default(listNotificationLogsQueryPageSizeDefault)
+})
+
+export const ListNotificationLogsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.string(),
+  "status": zod.string(),
+  "source": zod.enum(['automatic', 'test']),
+  "occurrence": zod.string().nullish(),
+  "clinicId": zod.string().nullish(),
+  "reference": zod.string().nullish(),
+  "recipientGroup": zod.string(),
+  "provider": zod.string().nullish(),
+  "sender": zod.string().nullish(),
+  "recipient": zod.string().nullish(),
+  "subject": zod.string().nullish(),
+  "message": zod.string().nullish(),
+  "templateId": zod.string().nullish(),
+  "templateRevision": zod.number().int().nullish(),
+  "templateScope": zod.string().nullish(),
+  "dltTemplateId": zod.string().nullish(),
+  "createdAt": zod.number().int().nullable(),
+  "queuedAt": zod.number().int().nullish(),
+  "dueAt": zod.number().int().nullish(),
+  "dispatchAt": zod.number().int().nullish(),
+  "completedAt": zod.number().int().nullish(),
+  "reason": zod.string().nullish(),
+  "httpStatus": zod.number().int().nullish(),
+  "providerId": zod.string().nullish(),
+  "legacy": zod.boolean(),
+  "detailsUnavailable": zod.boolean().optional(),
+  "timeline": zod.array(zod.object({
+  "status": zod.string(),
+  "at": zod.number().int(),
+  "reason": zod.string().nullish()
+}))
+})),
+  "nextCursor": zod.string().nullable(),
+  "timezone": zod.string()
+})
+
+
+export const getNotificationLogPathIdMax = 200;
+
+
+
+export const GetNotificationLogParams = zod.object({
+  "id": zod.coerce.string().max(getNotificationLogPathIdMax)
+})
+
+export const GetNotificationLogResponse = zod.object({
+  "id": zod.string(),
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.string(),
+  "status": zod.string(),
+  "source": zod.enum(['automatic', 'test']),
+  "occurrence": zod.string().nullish(),
+  "clinicId": zod.string().nullish(),
+  "reference": zod.string().nullish(),
+  "recipientGroup": zod.string(),
+  "provider": zod.string().nullish(),
+  "sender": zod.string().nullish(),
+  "recipient": zod.string().nullish(),
+  "subject": zod.string().nullish(),
+  "message": zod.string().nullish(),
+  "templateId": zod.string().nullish(),
+  "templateRevision": zod.number().int().nullish(),
+  "templateScope": zod.string().nullish(),
+  "dltTemplateId": zod.string().nullish(),
+  "createdAt": zod.number().int().nullable(),
+  "queuedAt": zod.number().int().nullish(),
+  "dueAt": zod.number().int().nullish(),
+  "dispatchAt": zod.number().int().nullish(),
+  "completedAt": zod.number().int().nullish(),
+  "reason": zod.string().nullish(),
+  "httpStatus": zod.number().int().nullish(),
+  "providerId": zod.string().nullish(),
+  "legacy": zod.boolean(),
+  "detailsUnavailable": zod.boolean().optional(),
+  "timeline": zod.array(zod.object({
+  "status": zod.string(),
+  "at": zod.number().int(),
+  "reason": zod.string().nullish()
+}))
 })
 
 

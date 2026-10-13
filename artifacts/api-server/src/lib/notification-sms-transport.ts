@@ -59,7 +59,7 @@ export function notificationSmsConfig(env: NodeJS.ProcessEnv) {
   const provider = env.NOTIFICATION_SMS_PROVIDER || "generic";
   if (!["generic", "keepInTouch"].includes(provider)) throw new Error("Invalid SMS provider");
   const kit = provider === "keepInTouch";
-  const url = smsUrl(kit ? KEEP_IN_TOUCH_URL : env.NOTIFICATION_SMS_URL || "");
+  const url = smsUrl(kit ? env.NOTIFICATION_SMS_KEEP_IN_TOUCH_URL || KEEP_IN_TOUCH_URL : env.NOTIFICATION_SMS_URL || "");
   const key = env.NOTIFICATION_SMS_KEY || "";
   if (!key || key.length > 2048 || !/^[\x21-\x7e]+$/.test(key)) throw new Error("Invalid SMS key");
   const bearerToken = kit ? env.NOTIFICATION_SMS_BEARER_TOKEN || "" : "";
@@ -102,10 +102,10 @@ export function notificationSmsEnabled(env: NodeJS.ProcessEnv) {
 export function notificationSmsReadiness(env: NodeJS.ProcessEnv) {
   const kit = env.NOTIFICATION_SMS_PROVIDER === "keepInTouch";
   const names = kit
-    ? ["NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT", "NOTIFICATION_SMS_ENABLED", "NOTIFICATION_SMS_MAPPING"]
-    : ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED"];
+    ? ["NOTIFICATION_SMS_KEEP_IN_TOUCH_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT", "NOTIFICATION_SMS_ENABLED", "NOTIFICATION_SMS_MAPPING"]
+    : ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEEP_IN_TOUCH_URL", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED"];
   const keys = names.map(key => ({key, status: env[key]?.trim() ? "configured" as const :
-    kit && ["NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_ENABLED"].includes(key) ? "default" as const : "missing" as const}));
+    key==="NOTIFICATION_SMS_KEEP_IN_TOUCH_URL" || kit && ["NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_ENABLED"].includes(key) ? "default" as const : "missing" as const}));
   let ready = false;
   try { notificationSmsConfig(env); ready = true; } catch { /* sanitized presence/syntax only */ }
   const publicUrl = (value: string | undefined) => { try { return value ? smsUrl(value).href : ""; } catch { return ""; } };
@@ -114,17 +114,18 @@ export function notificationSmsReadiness(env: NodeJS.ProcessEnv) {
     smsProvider: kit ? "keepInTouch" as const : "generic" as const,
     countryCodeFormat: ["digits", "plus"].includes(env.NOTIFICATION_SMS_COUNTRY_CODE_FORMAT || "") ? env.NOTIFICATION_SMS_COUNTRY_CODE_FORMAT as "digits" | "plus" : undefined,
     customApiUrl: publicUrl(env.NOTIFICATION_SMS_URL),
-    apiUrl: kit ? KEEP_IN_TOUCH_URL : publicUrl(env.NOTIFICATION_SMS_URL), statusApiUrl: publicUrl(env.NOTIFICATION_SMS_STATUS_URL),
+    keepInTouchApiUrl: publicUrl(env.NOTIFICATION_SMS_KEEP_IN_TOUCH_URL || KEEP_IN_TOUCH_URL),
+    apiUrl: kit ? publicUrl(env.NOTIFICATION_SMS_KEEP_IN_TOUCH_URL || KEEP_IN_TOUCH_URL) : publicUrl(env.NOTIFICATION_SMS_URL), statusApiUrl: publicUrl(env.NOTIFICATION_SMS_STATUS_URL),
     keys: keys.map(item => {
-      if (!kit) return !ready && item.status === "configured" ? { ...item, status: "invalid" as const } : item;
       if (item.status === "missing" || item.status === "default") return item;
       const value = env[item.key]!;
       const invalid = ["NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_BEARER_TOKEN"].includes(item.key)
         ? value.length > 2048 || !/^[\x21-\x7e]+$/.test(value)
         : item.key === "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT" ? !["digits","plus"].includes(value)
         : item.key === "NOTIFICATION_SMS_ENABLED" ? !["true","false"].includes(value.trim())
-        : item.key === "NOTIFICATION_SMS_MAPPING" ? false
-        : item.key === "NOTIFICATION_SMS_SENDER_ID" ? !/^[A-Za-z0-9_-]{1,50}$/.test(value)
+        : item.key.endsWith("_URL") ? !publicUrl(value)
+        : item.key === "NOTIFICATION_SMS_MAPPING" ? (()=>{try{smsMappingSchema.parse(JSON.parse(value));return false;}catch{return true;}})()
+        : item.key === "NOTIFICATION_SMS_SENDER_ID" && kit ? !/^[A-Za-z0-9_-]{1,50}$/.test(value)
         : value.length > (item.key === "NOTIFICATION_SMS_SENDER_ID" ? 50 : 200) || /[\r\n]/.test(value);
       return invalid ? {...item,status:"invalid" as const} : item;
     }),
@@ -180,7 +181,7 @@ export function classifySmsResponse(mapping: SmsMapping, status: number, body: s
 }
 /** Resolve once, validate every answer and pin that exact address in TLS request lookup.
  * No fetch/global agent/proxy redirects or second DNS lookup can bypass the public-IP check. */
-export async function sendNotificationSms(env: NodeJS.ProcessEnv, to: string, message: string, meta: {senderId?:string;dltEntityId?:string;dltTemplateId?:string}): Promise<SmsOutcome> {
+export async function sendNotificationSms(env: NodeJS.ProcessEnv, to: string, message: string, meta: {senderId?:string;dltEntityId?:string;dltTemplateId?:string}, onHttpStatus?: (code: number) => void): Promise<SmsOutcome> {
   let cfg: ReturnType<typeof notificationSmsConfig>, payload: ReturnType<typeof smsPayload>;
   let pinned: {address:string;family:number};
   try {
@@ -196,6 +197,7 @@ export async function sendNotificationSms(env: NodeJS.ProcessEnv, to: string, me
     const req = request(cfg.url, { method:"POST",agent:false,headers:{...payload.headers,"Content-Length":Buffer.byteLength(payload.body)},
       lookup: ((_host: string, options: any, callback: any) => options?.all ? callback(null,[pinned]) : callback(null,pinned.address,pinned.family)) as any,
     }, res=>{
+      if(res.statusCode)onHttpStatus?.(res.statusCode);
       let body = "", bytes = 0;
       res.on("data",chunk=>{bytes+=chunk.length;if(bytes>16384){finish("delivery_unknown");req.destroy();}else body+=chunk.toString("utf8");});
       res.on("end",()=>finish(classifySmsResponse(cfg.mapping,res.statusCode || 0,body,cfg.provider)));

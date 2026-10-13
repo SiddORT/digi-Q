@@ -13,6 +13,7 @@ import { mediaConfig } from "../lib/local-media";
 import { sendAuthEmail } from "../lib/auth-email";
 import { DEMO_FIXTURE } from "../lib/demo-policy";
 import { notificationSmsConfig, sendNotificationSms } from "../lib/notification-sms-transport";
+import { dispatchNotificationTest } from "../lib/notification-test-dispatch";
 
 export const integrationsRouter = Router();
 const path = "/settings/integrations";
@@ -63,12 +64,11 @@ integrationsRouter.post(`${path}/notification-sms/test-message`, async (req, res
     throw new HttpError(400, "Enter a valid international phone number, message and sender identifiers", "INVALID_SMS_TEST");
   await consumeRateLimit(`sms-test:ip:${ipKeyGenerator(req.ip || "unknown")}`, 10, 900_000);
   await consumeRateLimit(`sms-test:actor:${res.locals.integrationActor}`, 3, 900_000);
-  const { env } = await resolvedIntegration("notificationSms");
-  try { notificationSmsConfig(env); } catch {
-    throw new HttpError(503, "Save a valid notification SMS configuration before testing", "SMS_UNCONFIGURED");
-  }
-  const { recipient, message, senderId, dltEntityId, dltTemplateId } = parsed.data;
-  const outcome = await sendNotificationSms(env, recipient, message, { senderId, dltEntityId, dltTemplateId });
+  const { recipient, message, senderId, dltEntityId, dltTemplateId, requestId, confirmed } = parsed.data;
+  const outcome = await dispatchNotificationTest(res.locals.integrationActor, {
+    channel:"sms",event:"provider_test",recipientGroup:"explicit",recipient,subject:"",message,requestId,confirmed,
+    content:{senderId,dltEntityId,dltTemplateId},
+  });
   const status = outcome === "pre_dispatch_failed" ? "not_dispatched" : outcome;
   const messages = {
     provider_accepted: "The provider accepted the test message. Handset delivery is not confirmed.",
@@ -90,12 +90,17 @@ integrationsRouter.post(`${path}/smtp/test-email`, async (req, res) => {
   const parsed = SendSmtpTestEmailBody.strict().safeParse(req.body);
   if (!parsed.success || !validEmailAddress(parsed.data.recipient))
     throw new HttpError(400, "Enter one valid recipient email address", "INVALID_RECIPIENT");
-  smtpConfig((await resolvedIntegration("smtp")).env);
-  try {
-    await sendAuthEmail(parsed.data.recipient,"DigiQ Doctors — SMTP configuration test",
-      "This is a test email requested by a DigiQ Doctors Super Admin to check SMTP configuration. No patient or account information is included.");
-  } catch {
-    throw new HttpError(503, "Email delivery unavailable", "EMAIL_DELIVERY_FAILED");
-  }
-  res.json({ status: "provider_accepted", message: "The SMTP provider accepted the test message. Inbox delivery is not confirmed." });
+  const status=await dispatchNotificationTest(res.locals.integrationActor,{
+    channel:"email",event:"provider_test",recipientGroup:"explicit",recipient:parsed.data.recipient,
+    confirmed:parsed.data.confirmed,requestId:parsed.data.requestId,
+    subject:"DigiQ Doctors — SMTP configuration test",
+    message:"This is a test email requested by a DigiQ Doctors Super Admin to check SMTP configuration. No patient or account information is included.",
+  });
+  const messages={
+    provider_accepted:"The SMTP provider accepted the test message. Inbox delivery is not confirmed.",
+    provider_rejected:"The SMTP provider rejected the test message.",
+    pre_dispatch_failed:"The test was not dispatched. Check SMTP configuration.",
+    delivery_unknown:"Dispatch outcome is uncertain. Do not resend without checking the provider.",
+  };
+  res.json({status,message:messages[status]});
 });

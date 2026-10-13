@@ -58,6 +58,14 @@ export function IntegrationSettings({ fixedService, onDirtyChange, onBusyChange 
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [confirmSend, setConfirmSend] = useState(false);
+  const testClaim=useRef(false);
+  const submitTest=(recipient:string)=>{
+    if(!confirmSend||testClaim.current||send.isPending)return;
+    testClaim.current=true;
+    send.mutate({data:{recipient,confirmed:true,requestId:crypto.randomUUID()}},{
+      onSettled:()=>{testClaim.current=false;setConfirmSend(false);},
+    });
+  };
   const [editorDirty, setEditorDirty] = useState(false);
   const [editorBusy, setEditorBusy] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
@@ -107,7 +115,7 @@ export function IntegrationSettings({ fixedService, onDirtyChange, onBusyChange 
           onCancel={() => { setEditorDirty(false); setFormKey(k => k + 1); }} onDone={() => { setEditorDirty(false); setSaved(true); send.reset(); setFormKey(k => k + 1); void query.refetch(); }} />}
         {inline && <section className="int-inline-test" aria-label="Send an SMTP test" data-testid="section-smtp-test"><h3>Send an SMTP test</h3><p className="muted">Sends one fixed DigiQ Doctors message to the address you enter. Provider acceptance does not confirm inbox delivery. Limited to 3 attempts per user and 10 per IP every 15 minutes.</p>
         <Form {...form}>
-          <form className="int-test-form" onSubmit={form.handleSubmit(d => { if (confirmSend) send.mutate({ data: d }, { onSettled: () => setConfirmSend(false) }); })}>
+          <form className="int-test-form" onSubmit={form.handleSubmit(d => submitTest(d.recipient))}>
             <FormField control={form.control} name="recipient" rules={{ required: "Enter a recipient", maxLength: { value: 254, message: "Address is too long" } }} render={({ field }) => <FormItem>
               <FormLabel>Test recipient</FormLabel>
               <FormControl><EmailInput {...field} autoComplete="off" required data-testid="input-smtp-test-recipient" onChange={event => { field.onChange(event); send.reset(); setConfirmSend(false); }} /></FormControl>
@@ -127,7 +135,7 @@ export function IntegrationSettings({ fixedService, onDirtyChange, onBusyChange 
       {service === "sms" && <p className="listing-hint">SMS connects directly to Twilio <HelpTip text="Uses your Twilio account credentials. Development OTP is not a production SMS provider."/></p>}
       {service === "smtp" && !inline && testOpen && <AppDialog open onClose={closeTest} busy={send.isPending} dirty={!!form.watch("recipient") && !send.isSuccess} title="Send an SMTP Test" description="Sends one fixed DigiQ Doctors message to the address you enter. Provider acceptance does not confirm inbox delivery. Limited to 3 attempts per user and 10 per IP every 15 minutes.">
         <Form {...form}>
-          <form className="int-test-form" onSubmit={form.handleSubmit(d => { if (confirmSend) send.mutate({ data: d }, { onSettled: () => setConfirmSend(false) }); })}>
+          <form className="int-test-form" onSubmit={form.handleSubmit(d => submitTest(d.recipient))}>
             <FormField control={form.control} name="recipient" rules={{ required: "Enter a recipient", maxLength: { value: 254, message: "Address is too long" } }} render={({ field }) => <FormItem>
               <FormLabel>Test recipient</FormLabel>
               <FormControl><EmailInput {...field} autoComplete="off" required data-testid="input-smtp-test-recipient" onChange={event => { field.onChange(event); send.reset(); setConfirmSend(false); }} /></FormControl>

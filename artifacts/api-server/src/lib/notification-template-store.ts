@@ -10,7 +10,7 @@ import { DEMO_FIXTURE } from "./demo-policy";
 
 export type Channel = "email" | "sms";
 const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event), channel:Channel="email") => `${channel==="sms"?"sms":"notification"}-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
-type RecordData = { revision: number; published?: TemplateContent | SmsTemplateContent; draft?: TemplateContent | SmsTemplateContent; activatedAt?: number };
+type RecordData = { revision: number; publishedRevision?:number; published?: TemplateContent | SmsTemplateContent; draft?: TemplateContent | SmsTemplateContent; activatedAt?: number };
 async function stored(event: TemplateEvent, clinicId?: string, conn: any = db, recipient = defaultRecipient(event),channel:Channel="email"): Promise<RecordData> {
   const [row] = await conn.select().from(settings).where(eq(settings.id, key(event, clinicId, recipient,channel)));
   return row?.data || { revision: 0 };
@@ -31,6 +31,8 @@ export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, 
   // Corrupt configuration fails explicitly, rather than silently sending a different template.
   return { content: channel === "sms" ? smsTemplateContent.parse(content) : templateContent.parse(content), local,
     activatedAt: Math.max((local.published ? local : platform).activatedAt ?? 0,local.activatedAt ?? 0),
+    effectiveRevision: local.published ? local.publishedRevision ?? (local.draft ? undefined : local.revision) :
+      platform.published ? platform.publishedRevision ?? (platform.draft ? undefined : platform.revision) : 0,
     source: local.published ? (clinicId ? "clinic" : "platform") : platform.published ? "platform" : "default" };
 }
 export async function templateCatalog(user: any, clinicId?: string, recipient?: TemplateRecipient,channel:Channel="email") {
@@ -80,9 +82,13 @@ export async function saveTemplate(user: any, input: unknown) {
         assert(smsMetadataReady(cfg!,sms),400,cfg!.provider==="keepInTouch"?"Sender ID and this event's DLT Template ID are required for activation":"Sender ID, DLT Entity ID and DLT Template ID are required for activation");
       }
       next.published = body.content;
+      next.publishedRevision = next.revision;
       next.activatedAt = body.content?.enabled && !previous.content.enabled ? Date.now() : previous.activatedAt;
     }
-    if(body.mode==="draft") next.activatedAt=current.activatedAt;
+    if(body.mode==="draft") {
+      next.activatedAt=current.activatedAt;
+      next.publishedRevision=current.publishedRevision ?? (current.published&&!current.draft?current.revision:undefined);
+    }
     await tx.insert(settings).values({ id, data: next }).onConflictDoUpdate({ target: settings.id, set: { data: next } });
     await audit(user, `template_${body.mode}`, "notification_templates", { id, clinicId: body.clinicId }, tx);
   });
@@ -105,7 +111,7 @@ export async function changeActivation(user:any, input:{channel:Channel;event:Te
       const content=effective.content as SmsTemplateContent;
       assert(smsMetadataReady(cfg!,content),400,"Publish required sender and event template metadata before activation");
     }
-    const data={...effective.local,revision:effective.local.revision+1,published:{...effective.content,enabled:input.enabled},
+    const data={...effective.local,revision:effective.local.revision+1,publishedRevision:effective.local.revision+1,published:{...effective.content,enabled:input.enabled},
       activatedAt:input.enabled&&!effective.content.enabled?Date.now():effective.local.activatedAt};
     await tx.insert(settings).values({id,data}).onConflictDoUpdate({target:settings.id,set:{data}});
     await audit(user,"template_activation","notification_templates",{id,clinicId:input.clinicId},tx);

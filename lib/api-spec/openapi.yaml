@@ -1217,6 +1217,40 @@ paths:
         - { name: kind, in: query, schema: { type: string, enum: [all, appointments, queue, system], default: all } }
       responses:
         "200": { description: Notifications, content: { application/json: { schema: { $ref: "#/components/schemas/NotificationList" } } } }
+  /management/notification-logs:
+    get:
+      operationId: listNotificationLogs
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { name: channel, in: query, schema: { type: string, enum: [email, sms] } }
+        - { name: event, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: clinicId, in: query, schema: { type: string } }
+        - { name: recipientGroup, in: query, schema: { type: string } }
+        - { name: source, in: query, schema: { type: string, enum: [automatic, test] } }
+        - { name: sender, in: query, schema: { type: string, maxLength: 254 } }
+        - { name: recipient, in: query, schema: { type: string, maxLength: 254 } }
+        - { name: reference, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: cursor, in: query, schema: { type: string, maxLength: 1000 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: Protected platform notification history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationLogPage" }
+  /management/notification-logs/{id}:
+    get:
+      operationId: getNotificationLog
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, maxLength: 200 } }
+      responses:
+        "200":
+          description: Protected notification details
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationLog" }
   /management/booking-mail-outcomes:
     get:
       operationId: listBookingMailOutcomes
@@ -1758,6 +1792,57 @@ components:
       properties:
         key: { type: string }
         status: { type: string, enum: [configured, missing, invalid, default] }
+    NotificationLogTransition:
+      type: object
+      required: [status, at]
+      properties:
+        status: { type: string }
+        at: { type: integer }
+        reason: { type: ["string", "null"] }
+    NotificationLog:
+      type: object
+      required: [id, channel, event, status, source, recipientGroup, createdAt, legacy, timeline]
+      properties:
+        id: { type: string }
+        channel: { type: string, enum: [email, sms] }
+        event: { type: string }
+        status: { type: string }
+        source: { type: string, enum: [automatic, test] }
+        occurrence: { type: ["string", "null"] }
+        clinicId: { type: ["string", "null"] }
+        reference: { type: ["string", "null"] }
+        recipientGroup: { type: string }
+        provider: { type: ["string", "null"] }
+        sender: { type: ["string", "null"] }
+        recipient: { type: ["string", "null"] }
+        subject: { type: ["string", "null"] }
+        message: { type: ["string", "null"] }
+        templateId: { type: ["string", "null"] }
+        templateRevision: { type: ["integer", "null"] }
+        templateScope: { type: ["string", "null"] }
+        dltTemplateId: { type: ["string", "null"] }
+        createdAt: { type: ["integer", "null"] }
+        queuedAt: { type: ["integer", "null"] }
+        dueAt: { type: ["integer", "null"] }
+        dispatchAt: { type: ["integer", "null"] }
+        completedAt: { type: ["integer", "null"] }
+        reason: { type: ["string", "null"] }
+        httpStatus: { type: ["integer", "null"] }
+        providerId: { type: ["string", "null"] }
+        legacy: { type: boolean }
+        detailsUnavailable: { type: boolean }
+        timeline:
+          type: array
+          items: { $ref: "#/components/schemas/NotificationLogTransition" }
+    NotificationLogPage:
+      type: object
+      required: [items, nextCursor, timezone]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/NotificationLog" }
+        nextCursor: { type: ["string", "null"] }
+        timezone: { type: string }
     IntegrationReadiness:
       type: object
       required: [ready, keys]
@@ -1771,6 +1856,7 @@ components:
         smsProvider: { type: string, enum: [generic, keepInTouch] }
         countryCodeFormat: { type: string, enum: [digits, plus] }
         customApiUrl: { type: string }
+        keepInTouchApiUrl: { type: string }
         smtpHost: { type: string }
         smtpPort: { type: integer }
         fromEmail: { type: string }
@@ -1803,8 +1889,10 @@ components:
     NotificationSmsTestInput:
       type: object
       additionalProperties: false
-      required: [recipient, message]
+      required: [recipient, message, confirmed, requestId]
       properties:
+        confirmed: { type: boolean, enum: [true] }
+        requestId: { type: string, format: uuid }
         recipient: { type: string, pattern: "^\\+[1-9][0-9]{6,14}$", maxLength: 16 }
         message: { type: string, minLength: 1, maxLength: 1600 }
         senderId: { type: string, maxLength: 50 }
@@ -1819,14 +1907,16 @@ components:
     SmtpTestInput:
       type: object
       additionalProperties: false
-      required: [recipient]
+      required: [recipient, confirmed, requestId]
       properties:
+        confirmed: { type: boolean, enum: [true] }
+        requestId: { type: string, format: uuid }
         recipient: { type: string, format: email, maxLength: 254 }
     SmtpTestResult:
       type: object
       required: [status, message]
       properties:
-        status: { type: string, enum: [provider_accepted] }
+        status: { type: string, enum: [provider_accepted, provider_rejected, pre_dispatch_failed, delivery_unknown] }
         message: { type: string }
     NativeStaffLoginInput:
       type: object

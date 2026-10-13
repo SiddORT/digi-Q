@@ -33,6 +33,16 @@ or sign-in, invitations and recovery.
 **How to apply:** Apply each channel's opt-out inside its own preparation/dispatch path,
 after the shared clinic gate. Verify that another enabled channel still queues when one is off.
 
+Prospective skipped notification decisions are observations, not a retry backlog.
+Their event-capture authority must survive expiry of detailed notification history.
+
+**Why:** The user explicitly requires traceable disabled/missing-contact decisions
+without replaying historical events after configuration or contact changes.
+
+**How to apply:** Repeated reminder polling and booking retries must retain the
+original decision. History retention must not delete operational idempotency or
+non-send capture safeguards. Only a genuinely new event may make a new decision.
+
 SMS/email template drawers should remain simple like the user's supplied references:
 template key/variables, Active, email Subject/Body or SMS DLT registration/Body, and
 Cancel/Save Template at the bottom.

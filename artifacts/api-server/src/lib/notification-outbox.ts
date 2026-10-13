@@ -6,7 +6,9 @@ import { isClinicalMember } from "./clinical-membership";
 import { resolvedTemplate } from "./notification-template-store";
 import { sendAuthEmail } from "./auth-email";
 import { confirmationText } from "./appointment-confirmation";
-import { validEmailAddress, emailNotificationsEnabled } from "./integration-config";
+import { validEmailAddress, emailNotificationsEnabled, smtpConfig } from "./integration-config";
+import { recordNotification, recordDecision, claimNotificationOccurrence, notificationEntry, templateSnapshot, cleanupNotificationHistory } from "./notification-history";
+import { logger } from "./logger";
 import { resolvedIntegration } from "./integration-vault";
 import { createHash } from "node:crypto";
 import { assert } from "./http";
@@ -42,21 +44,47 @@ export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, 
 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {
-  if(process.env.NODE_ENV==="development")return;
-  if (!(await getSettings(conn, row.clinicId)).notificationsEnabled) return;
+  if(event==="booking"){
+    const {capturePatientConfirmation}=await import("./appointment-confirmation");
+    await capturePatientConfirmation(conn,row);
+  }
+  if(process.env.NODE_ENV==="development"){
+    for(const channel of ["email","sms"] as const){
+      if(!await claimNotificationOccurrence(conn,channel,event,row))continue;
+      for(const group of templateRecipients){
+      if((event==="onboarding"&&group!=="clinicAdmin")||(channel==="email"&&event==="booking"&&group==="patient"))continue;
+      await recordDecision(conn,`${channel}-decision:${event}:${row.id}:${row.revision||0}:${group}:development`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},channel),"not_attempted");
+      }
+    }
+    return;
+  }
   if (typeof previousDetails === "object") previousDetails = confirmationText(previousDetails, await one(clinics, row.clinicId, conn)).replace("Your appointment is confirmed.", "Previous visit details:");
   // Each channel has its own savepoint. Both successful preparations survive
   // failures in the other channel and still commit atomically with the visit.
   try {
     const {enqueueSmsEvent}=await import("./notification-sms-outbox");
     await conn.transaction((tx:any)=>enqueueSmsEvent(tx,event,row,previousDetails));
-  } catch { console.error("SMS event preparation unavailable; visit and email retained"); }
+  } catch {
+    logger.warn("SMS event preparation unavailable; visit and email retained");
+    await conn.transaction((tx:any)=>claimNotificationOccurrence(tx,"sms",event,row)).catch(()=>false);
+    for(const group of templateRecipients) if(event!=="onboarding"||group==="clinicAdmin")
+      await recordDecision(conn,`sms-decision:${event}:${row.id}:${row.revision||0}:${group}:preparation`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"sms"),"preparation_failed");
+  }
   try {
     await conn.transaction((tx:any)=>enqueueEmailEvent(tx,event,row,previousDetails));
-  } catch { console.error("Email event preparation unavailable; visit and SMS retained"); }
+  } catch {
+    logger.warn("Email event preparation unavailable; visit and SMS retained");
+    await conn.transaction((tx:any)=>claimNotificationOccurrence(tx,"email",event,row)).catch(()=>false);
+    for(const group of templateRecipients) if((event!=="onboarding"||group==="clinicAdmin")&&(event!=="booking"||group!=="patient"))
+      await recordDecision(conn,`email-decision:${event}:${row.id}:${row.revision||0}:${group}:preparation`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"email"),"preparation_failed");
+  }
 }
 async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string) {
-  if (!emailNotificationsEnabled((await resolvedIntegration("smtp", conn)).env)) return;
+  if(!await claimNotificationOccurrence(conn,"email",event,row))return;
+  const env=(await resolvedIntegration("smtp",conn)).env;
+  const gate=(await getSettings(conn,row.clinicId)).notificationsEnabled;
+  let configured=true;
+  try{smtpConfig(env);}catch{configured=false;}
   const usedEmails = new Set<string>();
   if (row.patientId && (await resolvedTemplate(event, row.clinicId, conn, "patient")).content.enabled) {
     const patient = await one(patients, row.patientId, conn);
@@ -67,7 +95,6 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
   if (event === "onboarding" && group !== "clinicAdmin") continue;
   if (event === "booking" && group === "patient") continue; // Existing confirmation claim owns this recipient.
   const template = await resolvedTemplate(event, row.clinicId, conn, group);
-  if (!template.content.enabled) continue;
   const primary = group === defaultRecipient(event);
   let targets: any[] = [null];
   if (!primary) {
@@ -82,19 +109,36 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
       }
     }
   }
-  for (const target of targets) {
+  for (const target of targets.length?targets:[null]) {
+  let email="";
+  let active=true;
   if (target) {
-    const email = String(target.email || "").trim().toLowerCase();
-    if (target.status !== "active" || !validEmailAddress(email) || usedEmails.has(email)) continue;
-    usedEmails.add(email);
+    email = String(target.email || "").trim().toLowerCase();
+  }else if(primary){
+    if(row.patientId){
+      const patient=await one(patients,row.patientId,conn);
+      const account=patient.userId?await one(users,patient.userId,conn):null;
+      email=String(account?.email||patient.email||"").trim().toLowerCase();
+      active=patient.status==="active"&&(!account||account.status==="active");
+    }else email=String((await one(users,(await one(clinics,row.clinicId,conn)).adminId,conn)).email||"").trim().toLowerCase();
   }
+  const decision=`email-decision:${event}:${row.id}:${row.revision||0}:${group}:${target?.id||"primary"}`;
+  const entry=notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"email");
+  const status=!gate||!emailNotificationsEnabled(env)||!template.content.enabled?"disabled":!configured?"configuration_failed":
+    !active||(target&&target.status!=="active")||!validEmailAddress(email)?"no_recipient":
+    target&&usedEmails.has(email)?"not_attempted":null;
+  if(status){await recordDecision(conn,decision,entry,status,{...templateSnapshot(template,event,group,"email"),recipient:email||undefined,provider:"smtp"});continue;}
+  usedEmails.add(email);
   const id = `mail-outbox:${event}:${row.id}:${row.revision || 0}`;
+  const createdAt=Date.now();
   await conn.insert(settings).values({ id: primary ? id : `${id}:recipient:${emailKey(target.email)}`, data: {
+    historyKey:decision,
     recipientGroup: group, recipientUserId: target?.id,
     recipientEmailKey: target ? emailKey(target.email) : undefined,
     event, appointmentId: event === "onboarding" ? undefined : row.id, clinicId: row.clinicId,
-    previousDetails, snapshot: row, state: "pending", attempts: 0, dueAt: Date.now(), createdAt: Date.now(),
+    previousDetails, snapshot: row, state: "pending", attempts: 0, dueAt: createdAt, createdAt,
   } }).onConflictDoNothing();
+  await recordDecision(conn,decision,{...entry,createdAt,dueAt:createdAt},"pending");
   }
   }
 }
@@ -127,7 +171,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
     for (const raw of rows) {
       const row = { ...raw.data, ...raw };
       let due = false;
-      try { due = reminderDue(row, now); } catch { console.error("Reminder skipped: invalid session timing"); }
+      try { due = reminderDue(row, now); } catch { logger.warn("Reminder skipped: invalid session timing"); }
       if (due) await enqueueEvent(tx, "reminder", row);
     }
     return true;
@@ -141,7 +185,10 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       const [fresh] = await tx.select().from(settings).where(eq(settings.id, record.id));
       const data = fresh.data;
       if (data.state !== "pending" || data.dueAt > now) return null;
-      const update = async (patch: any) => tx.update(settings).set({ data: { ...data, ...patch } }).where(eq(settings.id, record.id));
+      const update = async (patch: any) => {
+        await tx.update(settings).set({ data: { ...data, ...patch } }).where(eq(settings.id, record.id));
+        if(patch.state) await recordNotification(tx,data.historyKey||record.id,notificationEntry(data,"email"),patch.state,undefined,[],now);
+      };
       if (!(await getSettings(tx, data.clinicId)).notificationsEnabled ||
           !emailNotificationsEnabled((await resolvedIntegration("smtp", tx)).env)) { await update({ state: "disabled" }); return null; }
       const clinic = await one(clinics, data.clinicId, tx);
@@ -158,6 +205,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       if (current) {
         patient = await one(patients, current.patientId, tx);
         const account = patient.userId ? await one(users, patient.userId, tx) : null;
+        if(patient.status!=="active"||(account&&account.status!=="active")){await update({state:"obsolete"});return null;}
         recipient = account?.email || patient.email || "";
       } else recipient = (await one(users, clinic.adminId, tx)).email || "";
       if (data.recipientUserId) {
@@ -183,29 +231,41 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       const rendered = renderNotification(template.content, { clinic_name: clinic.name, patient_name: patient?.fullName || "", doctor_name: row.doctorName || "",
         appointment_details: current ? confirmationText(row, clinic).replace("Your appointment is confirmed.", "Visit details:") : "",
         previous_details: data.previousDetails || "", reference: row.reference || "", timezone: row.timezone || clinic.timezone || "", clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · ") });
+      const env=(await resolvedIntegration("smtp",tx)).env;
+      let cfg;
+      try{cfg=smtpConfig(env);}catch{await update({state:"configuration_failed"});return null;}
+      await recordNotification(tx,data.historyKey||record.id,notificationEntry(data,"email"),"sending",{
+        sender:cfg.from,recipient,subject:rendered.subject,message:rendered.text,provider:"smtp",
+        ...templateSnapshot(template,data.event,data.recipientGroup||defaultRecipient(data.event),"email"),
+      },[cfg.password],now);
       // Durable dispatch claim. A crash/timeout after this point is unknown, never blindly retried.
       await update({ state: "sending", claimedAt: now, attempts: data.attempts + 1 });
-      return { recipient, rendered, data };
+      return { recipient, rendered, data, env };
     });
     if (!claimed) continue;
     let state = "provider_accepted";
-    try { await send(claimed.recipient, claimed.rendered.subject, claimed.rendered.text, undefined, claimed.rendered); }
+    try { await send(claimed.recipient, claimed.rendered.subject, claimed.rendered.text, undefined, claimed.rendered, [], claimed.env); }
     catch (error: any) {
       state = error?.code === "EMAIL_REJECTED" ? "provider_rejected" : error?.code === "EMAIL_PRE_DISPATCH_FAILED" ? "pre_dispatch_failed" : error?.code === "EMAIL_UNCONFIGURED"
         ? claimed.data.attempts < 4 ? "pending" : "configuration_failed"
         : "delivery_unknown";
     }
-    await conn.update(settings).set({ data: { ...claimed.data, state, attempts: claimed.data.attempts + 1, dueAt: now + 60000 * 2 ** claimed.data.attempts, finishedAt: Date.now() } }).where(eq(settings.id, record.id));
+    const completed={...claimed.data,state,claimedAt:now,attempts:claimed.data.attempts+1,dueAt:now+60000*2**claimed.data.attempts,finishedAt:Date.now()};
+    await conn.update(settings).set({ data: completed }).where(eq(settings.id, record.id));
+    await recordNotification(conn,claimed.data.historyKey||record.id,notificationEntry(completed,"email"),state as any);
     } catch {
       // Preparation failures remain pending and retry next tick; one bad item must not block other clinics.
       // If dispatch was already claimed, its state remains sending and is never automatically resent.
-      console.error("Notification item failed; durable dispatch state retained");
+      logger.warn("Notification item failed; durable dispatch state retained");
       await conn.transaction(async (tx: any) => {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${record.id}))`);
         const [latest] = await tx.select().from(settings).where(eq(settings.id, record.id));
         if (latest?.data.state !== "pending") return;
         const attempts = (latest.data.attempts || 0) + 1;
-        await tx.update(settings).set({ data: { ...latest.data, attempts, state: attempts >= 5 ? "preparation_failed" : "pending", dueAt: now + 60000 * 2 ** attempts } }).where(eq(settings.id, record.id));
+        const next={...latest.data,attempts,state:attempts>=5?"preparation_failed":"pending",dueAt:now+60000*2**attempts};
+        await tx.update(settings).set({ data: next }).where(eq(settings.id, record.id));
+        await recordNotification(tx,latest.data.historyKey||record.id,notificationEntry(latest.data,"email"),"preparation_failed");
+        if(attempts<5)await recordNotification(tx,latest.data.historyKey||record.id,notificationEntry(next,"email"),"pending");
       });
     }
   }
@@ -217,11 +277,11 @@ export function startNotificationWorker() {
   const tick = () => {
     // Separate busy gates: a slow/failed provider must not delay the other channel's
     // next poll. Per-record durable claims still protect multiple server instances.
-    if(!busy){busy=true;void processNotifications().catch(()=>console.error("Email worker failed; pending work retained")).finally(()=>{busy=false;});}
+    if(!busy){busy=true;void processNotifications().then(()=>cleanupNotificationHistory()).catch(()=>logger.warn("Email worker failed; pending work retained")).finally(()=>{busy=false;});}
     if(!smsBusy){
       smsBusy=true;
       void import("./notification-sms-outbox").then(m=>m.processSmsNotifications())
-        .catch(()=>console.error("SMS worker failed; pending work retained")).finally(()=>{smsBusy=false;});
+        .catch(()=>logger.warn("SMS worker failed; pending work retained")).finally(()=>{smsBusy=false;});
     }
   };
   const timer = setInterval(() => void tick(), 30000); timer.unref();

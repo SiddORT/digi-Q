@@ -120,6 +120,13 @@
       "when": 1790980000002,
       "tag": "0017_booking_mail_history",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790980000003,
+      "tag": "0018_notification_history",
+      "breakpoints": true
     }
   ]
 }

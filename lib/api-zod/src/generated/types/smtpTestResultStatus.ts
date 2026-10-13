@@ -26,4 +26,7 @@ export type SmtpTestResultStatus = typeof SmtpTestResultStatus[keyof typeof Smtp
 
 export const SmtpTestResultStatus = {
   provider_accepted: 'provider_accepted',
+  provider_rejected: 'provider_rejected',
+  pre_dispatch_failed: 'pre_dispatch_failed',
+  delivery_unknown: 'delivery_unknown',
 } as const;

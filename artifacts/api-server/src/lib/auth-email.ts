@@ -8,8 +8,8 @@ export { smtpConfig } from "./integration-config";
 export async function sendAuthEmail(to: string, subject: string, text: string,
   transport?: { sendMail: (options: { from: string; to: string; subject: string; text: string }) => Promise<unknown> },
   rendered?: { text: string; html: string; logoPath?: string },
-  files: { filename: string; content: Buffer; contentType: string }[] = []) {
-  const cfg = smtpConfig((await resolvedIntegration("smtp")).env);
+  files: { filename: string; content: Buffer; contentType: string }[] = [], savedEnv?: NodeJS.ProcessEnv) {
+  const cfg = smtpConfig(savedEnv || (await resolvedIntegration("smtp")).env);
   const client = transport || nodemailer.createTransport({
     host: cfg.host, port: cfg.port, secure: cfg.secure,
     auth: { user: cfg.user, pass: cfg.password }, requireTLS: !cfg.secure && cfg.requireTLS,

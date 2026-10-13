@@ -11,6 +11,7 @@ import { DEFAULT_MAPPING, parseStatuses, serializeMapping, validateMapping, vali
 const KEEP_IN_TOUCH_URL = "https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS";
 
 export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onSaved }: { r: IntegrationReadiness; editable: boolean; onDirtyChange: (d: boolean) => void; onBusyChange: (b: boolean) => void; onSaved: () => void }) {
+  const initKit = r.keepInTouchApiUrl ?? (r.smsProvider === "keepInTouch" && r.apiUrl ? r.apiUrl : KEEP_IN_TOUCH_URL);
   const initUrl = r.customApiUrl ?? (r.smsProvider === "keepInTouch" ? "" : r.apiUrl ?? ""); const initStatus = r.statusApiUrl ?? ""; const initEnabled = r.notificationsEnabled ?? true;
   const saved = (k: string) => r.keys.find(i => i.key === k)?.status === "configured";
   const initProvider = r.smsProvider ?? "generic";
@@ -20,6 +21,7 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
   const kit = provider === "keepInTouch";
   const [enabled, setEnabled] = useState(initEnabled);
   const [url, setUrl] = useState(initUrl);
+  const [kitUrl, setKitUrl] = useState(initKit);
   const [statusUrl, setStatusUrl] = useState(initStatus);
   const [secrets, setSecrets] = useState({ key: "", bearer: "", client: "", sender: "", entity: "" });
   const [map, setMap] = useState<SmsMapping>(DEFAULT_MAPPING);
@@ -37,17 +39,18 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
   const test = useSendNotificationSmsTestMessage();
   const confirm = useConfirm();
   const qc = useQueryClient();
-  const lastInit = useRef({ initUrl, initStatus, initEnabled, initProvider, initFormat });
+  const lastInit = useRef({ initKit, initUrl, initStatus, initEnabled, initProvider, initFormat });
   useEffect(() => {
     const p = lastInit.current;
+    if (p.initKit !== initKit) setKitUrl(c => c === p.initKit ? initKit : c);
     if (p.initUrl !== initUrl) setUrl(c => c === p.initUrl ? initUrl : c);
     if (p.initStatus !== initStatus) setStatusUrl(c => c === p.initStatus ? initStatus : c);
     if (p.initEnabled !== initEnabled) setEnabled(c => c === p.initEnabled ? initEnabled : c);
     if (p.initProvider !== initProvider) setProvider(c => c === p.initProvider ? initProvider : c);
     if (p.initFormat !== initFormat) setCountryFormat(c => c === p.initFormat ? initFormat : c);
-    lastInit.current = { initUrl, initStatus, initEnabled, initProvider, initFormat };
-  }, [initUrl, initStatus, initEnabled, initProvider, initFormat]);
-  const dirty = provider !== initProvider || countryFormat !== initFormat || enabled !== initEnabled || url !== initUrl || statusUrl !== initStatus || Object.values(secrets).some(Boolean) || mapTouched || mode !== "database";
+    lastInit.current = { initKit, initUrl, initStatus, initEnabled, initProvider, initFormat };
+  }, [initKit, initUrl, initStatus, initEnabled, initProvider, initFormat]);
+  const dirty = provider !== initProvider || countryFormat !== initFormat || enabled !== initEnabled || url !== initUrl || kitUrl !== initKit || statusUrl !== initStatus || Object.values(secrets).some(Boolean) || mapTouched || mode !== "database";
   const dr = useRef(onDirtyChange); dr.current = onDirtyChange;
   useEffect(() => { dr.current(dirty); }, [dirty]);
   const br = useRef(onBusyChange); br.current = onBusyChange;
@@ -55,7 +58,7 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
   useEffect(() => { br.current(busy); }, [busy]);
   const full: SmsMapping = { ...map, acceptedStatuses: parseStatuses(statuses) };
   const errs = mapTouched ? validateMapping(full) : [];
-  const urlErr = kit ? undefined : validateUrl(url) ?? undefined; const stErr = validateUrl(statusUrl);
+  const urlErr = (kit ? (kitUrl.trim() ? validateUrl(kitUrl.trim()) : "Enter the Keep in Touch https:// endpoint.") : validateUrl(url)) ?? undefined; const stErr = validateUrl(statusUrl);
   const kitMissing = kit && (!countryFormat || (["key", "bearer", "client", "sender"] as const).some(k =>
     !secrets[k] && !saved({ key: "NOTIFICATION_SMS_KEY", bearer: "NOTIFICATION_SMS_BEARER_TOKEN", client: "NOTIFICATION_SMS_CLIENT_ID", sender: "NOTIFICATION_SMS_SENDER_ID" }[k])));
   const blocked = !editable || (mode === "database" ? (!!urlErr || !!stErr || (!kit && errs.length > 0) || kitMissing) : !envOk);
@@ -67,6 +70,7 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
     v.NOTIFICATION_SMS_PROVIDER = provider;
     if (countryFormat) v.NOTIFICATION_SMS_COUNTRY_CODE_FORMAT = countryFormat;
     if (!kit && url && url !== initUrl) v.NOTIFICATION_SMS_URL = url;
+    if (kit && kitUrl.trim() !== initKit) v.NOTIFICATION_SMS_KEEP_IN_TOUCH_URL = kitUrl.trim();
     if (statusUrl && statusUrl !== initStatus) v.NOTIFICATION_SMS_STATUS_URL = statusUrl;
     if (secrets.key) v.NOTIFICATION_SMS_KEY = secrets.key;
     if (secrets.bearer) v.NOTIFICATION_SMS_BEARER_TOKEN = secrets.bearer;
@@ -83,10 +87,15 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
     onError: () => setPw(""),
   });
   const can = !dirty && (!kit || !!tplId.trim()) && canSendSmsTest({ ready: r.ready, confirmed: true, recipient: to, message: body, pending: test.isPending });
+  const testing = useRef(false);
   const runTest = async () => {
     if (!can) return;
+    if (testing.current) return;
+    testing.current = true;
+    try {
     if (!await confirm.ask({ title: "Send a real test SMS?", description: `A real message will be sent to ${to} using saved provider settings and the template ID and body entered here. This does not enable optional notifications.`, confirmLabel: "Send test SMS", tone: "danger" })) return;
-    test.mutate({ data: { recipient: to, message: body, dltTemplateId: tplId || undefined } });
+    await test.mutateAsync({ data: { recipient: to, message: body, dltTemplateId: tplId || undefined, confirmed: true, requestId: crypto.randomUUID() } }).catch(() => {});
+    } finally { testing.current = false; }
   };
   const sec = (id: string, label: string, k: "key" | "bearer" | "client" | "sender" | "entity", key: string) =>
     <div className="form-field"><label htmlFor={id}>{label}</label><SecretField id={id} label={label} testId={id} configured={saved(key)} value={secrets[k]} onChange={setS(k)} /></div>;
@@ -103,7 +112,7 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
         <select id="sms-provider" value={provider} onChange={e => setProvider(e.target.value as typeof provider)} data-testid="select-sms-provider"><option value="generic">Custom API</option><option value="keepInTouch">Keep in Touch</option></select></div>
       {kit && <div className="notice" data-testid="help-keep-in-touch">
         <p>Keep in Touch uses POST with application/json and Authorization: Bearer token. The body contains exactly countryCode, mobile, senderId, message, apiKey, clientId and templateId. Bearer token and body API key are separate protected values; do not assume they are identical.</p>
-        <p>Sender ID and Client ID are required provider identifiers. The selected event's DLT Template ID supplies templateId. Entity ID is neither required nor sent. Publish each event's registered template ID separately.</p>
+        <p>Sender ID and Client ID are required provider identifiers. The selected event's DLT Template ID supplies templateId. Entity ID is neither required nor sent. Per-event Template IDs live in Notification Templates; publish each event's registered template ID there. The Keep in Touch URL is separate from the Custom API URL, which is kept when you switch providers.</p>
         <p>Only HTTP 200 with boolean success:true means provider acceptance. success:false is rejection; malformed or uncertain responses are not successful delivery. Saving or testing does not activate events or clinic notifications. Any saved Custom API mapping is retained unchanged.</p>
         <div className="form-field"><label htmlFor="sms-country-format">Country Code format (confirm with provider)</label>
           <select id="sms-country-format" value={countryFormat} onChange={e => setCountryFormat(e.target.value as typeof countryFormat)} data-testid="select-sms-country-format">
@@ -114,8 +123,8 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
       </div>}
       {mode === "database" && <>
         <div className="sms-ref-grid">
-          <div className="form-field"><label htmlFor="sms-url">API Base URL</label>
-            <input id="sms-url" inputMode="url" spellCheck={false} maxLength={2048} value={kit ? KEEP_IN_TOUCH_URL : url} readOnly={kit} placeholder="https://" onChange={e => setUrl(e.target.value)} data-testid="input-sms-url" />
+          <div className="form-field"><label htmlFor="sms-url">{kit ? "Keep in Touch API URL" : "API Base URL"}</label>
+            <input id="sms-url" inputMode="url" spellCheck={false} maxLength={2048} value={kit ? kitUrl : url} placeholder="https://" onChange={e => kit ? setKitUrl(e.target.value) : setUrl(e.target.value)} data-testid="input-sms-url" />
             {urlErr && <p role="alert" className="field-error" data-testid="error-sms-url">{urlErr}</p>}</div>
           <div className="form-field"><label htmlFor="sms-status-url">Status API URL</label>
             <input id="sms-status-url" inputMode="url" spellCheck={false} maxLength={2048} value={statusUrl} placeholder="Optional" onChange={e => setStatusUrl(e.target.value)} data-testid="input-sms-status-url" />

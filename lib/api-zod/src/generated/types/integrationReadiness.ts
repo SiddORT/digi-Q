@@ -36,6 +36,7 @@ export interface IntegrationReadiness {
   smsProvider?: IntegrationReadinessSmsProvider;
   countryCodeFormat?: IntegrationReadinessCountryCodeFormat;
   customApiUrl?: string;
+  keepInTouchApiUrl?: string;
   smtpHost?: string;
   smtpPort?: number;
   fromEmail?: string;

@@ -22,6 +22,8 @@
  */
 
 export interface SmtpTestInput {
+  confirmed: true;
+  requestId: string;
   /** @maxLength 254 */
   recipient: string;
 }

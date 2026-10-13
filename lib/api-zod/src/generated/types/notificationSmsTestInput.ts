@@ -22,6 +22,8 @@
  */
 
 export interface NotificationSmsTestInput {
+  confirmed: true;
+  requestId: string;
   /**
      * @maxLength 16
      * @pattern ^\+[1-9][0-9]{6,14}$

@@ -115,8 +115,18 @@ export const settings = pgTable("settings", { id: id(), data: data() }, t => [
   index("settings_owner_booking_history_idx").on(
     sql`(${t.data}->>'clinicId')`,
     sql`((${t.data}->>'createdAt')::bigint) desc nulls last`,
-    t.id.desc(),
+    t.id.desc().nullsFirst(),
   ).where(sql`${t.id} like 'mail-outbox:booking:%' and ${t.data}->>'event' = 'booking' and ${t.data}->>'recipientGroup' = 'clinicAdmin'`),
+  index("settings_notification_history_page_idx").on(sql`((${t.data}->>'createdAt')::bigint) desc`, t.id.desc().nullsFirst())
+    .where(sql`${t.id} like 'notification-history:%'`),
+  index("settings_notification_history_scope_idx").on(sql`(${t.data}->>'clinicId')`, sql`(${t.data}->>'channel')`, sql`((${t.data}->>'createdAt')::bigint) desc`, t.id.desc().nullsFirst())
+    .where(sql`${t.id} like 'notification-history:%'`),
+  index("settings_notification_history_recipient_idx").on(sql`(${t.data}->>'recipientHash')`, sql`((${t.data}->>'createdAt')::bigint) desc`, t.id.desc().nullsFirst())
+    .where(sql`${t.id} like 'notification-history:%'`),
+  index("settings_notification_history_sender_idx").on(sql`(${t.data}->>'senderHash')`, sql`((${t.data}->>'createdAt')::bigint) desc`, t.id.desc().nullsFirst())
+    .where(sql`${t.id} like 'notification-history:%'`),
+  index("settings_legacy_notification_time_idx").on(sql`((${t.data}->>'createdAt')::bigint) desc`, t.id.desc().nullsFirst())
+    .where(sql`${t.id} like 'mail-outbox:%' or ${t.id} like 'sms-outbox:%'`),
 ]);
 // Deliberately separate from the generic settings/resources APIs.
 export const integrationCredentials = pgTable("integration_credentials", {

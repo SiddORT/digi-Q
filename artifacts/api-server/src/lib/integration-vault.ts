@@ -3,13 +3,13 @@ import { eq } from "drizzle-orm";
 import { db, integrationCredentials, auditLogs, settings } from "@workspace/db";
 import { HttpError } from "./http";
 import { integrationReadiness } from "./integration-config";
-import { notificationSmsReadiness } from "./notification-sms-transport";
+import { notificationSmsReadiness, smsUrl } from "./notification-sms-transport";
 
 export type Provider = "smtp" | "sms" | "notificationSms";
 export const integrationFields = {
   smtp: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM", "SMTP_SECURE", "SMTP_REQUIRE_TLS", "SMTP_FROM_NAME", "SMTP_NOTIFICATIONS_ENABLED"],
   sms: ["OTP_PROVIDER", "TWILIO_ACCOUNT_SID", "TWILIO_MESSAGING_SERVICE_SID", "TWILIO_AUTH_TOKEN"],
-  notificationSms: ["NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED", "NOTIFICATION_SMS_PROVIDER", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT"],
+  notificationSms: ["NOTIFICATION_SMS_KEEP_IN_TOUCH_URL", "NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED", "NOTIFICATION_SMS_PROVIDER", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT"],
 } as const;
 
 function masterKey() {
@@ -78,6 +78,10 @@ export async function saveIntegration(provider: Provider, values: Record<string,
         if (value !== undefined) merged[name] = value;
       }
       if (provider === "sms") merged.OTP_PROVIDER = "twilio";
+      if(provider==="notificationSms"){
+        try{for(const field of ["NOTIFICATION_SMS_URL","NOTIFICATION_SMS_KEEP_IN_TOUCH_URL","NOTIFICATION_SMS_STATUS_URL"])if(merged[field])smsUrl(merged[field]);}
+        catch{throw new HttpError(400,"Use a public HTTPS endpoint without credentials, queries or fragments.","INTEGRATION_INVALID");}
+      }
       if (!(provider === "notificationSms" ? notificationSmsReadiness(merged) : integrationReadiness(merged)[provider]).ready)
         throw new HttpError(400, "Complete all required fields with valid values before saving.", "INTEGRATION_INVALID");
       await tx.insert(integrationCredentials).values({ provider, encrypted: encryptIntegration(provider, merged), revision: randomUUID() })
@@ -86,9 +90,11 @@ export async function saveIntegration(provider: Provider, values: Record<string,
           (provider === "smtp" && merged.SMTP_NOTIFICATIONS_ENABLED === "false")) {
         // Cancel pending optional jobs now: a quick re-enable must not replay them.
         // Already-dispatched requests cannot be recalled; security messages and other channels are untouched.
-        await tx.update(settings).set({
+        const stopped=await tx.update(settings).set({
           data: sql`${settings.data} || ${JSON.stringify({ state: "disabled", finishedAt: Date.now() })}::jsonb`,
-        }).where(sql`${settings.id} like ${provider === "smtp" ? "mail-outbox:%" : "sms-outbox:%"} and ${settings.data}->>'state' = 'pending'`);
+        }).where(sql`${settings.id} like ${provider === "smtp" ? "mail-outbox:%" : "sms-outbox:%"} and ${settings.data}->>'state' = 'pending'`).returning();
+        const {recordNotification,notificationEntry}=await import("./notification-history");
+        for(const row of stopped)await recordNotification(tx,(row.data as any).historyKey||row.id,notificationEntry(row.data,provider==="smtp"?"email":"sms"),"disabled");
       }
     }
     await tx.insert(auditLogs).values({

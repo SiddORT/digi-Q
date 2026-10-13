@@ -5,8 +5,8 @@ export function communicationRedirect(userRole: string, area: string | null): st
   if (userRole === "clinicAdmin" && !area) return "/admin/templates";
   return null;
 }
-export type CommunicationTab = "sms" | "email";
-export function communicationTab(raw: string | null): CommunicationTab { return raw === "email" ? "email" : "sms"; }
+export type CommunicationTab = "sms" | "email" | "logs";
+export function communicationTab(raw: string | null): CommunicationTab { return raw === "email" || raw === "logs" ? raw : "sms"; }
 /** Pure helpers for the event-first template list. */
 export type ListRow = { channel: "email" | "sms"; event: string; recipient: string; enabled: boolean; ready: boolean; source: string; inherited: boolean; preview: string };
 export function filterRows(rows: ListRow[], f: { q: string; channel: string; recipient: string; status: string }) {

@@ -208,3 +208,77 @@ Queued reminders tolerate up to five minutes beyond their narrow scheduling wind
 to account for worker polling and transaction-commit delays. This allowance does not
 capture new reminders or replay old events; current status, revision, check-in state,
 session timezone and recipient eligibility are still checked before dispatch.
+
+## Keep in Touch endpoint and protected notification history
+
+Superadmin SMS Settings supports a dedicated editable
+`NOTIFICATION_SMS_KEEP_IN_TOUCH_URL`. Its absence preserves the existing
+`https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS` endpoint.
+The Custom API URL/mapping remain separate; switching provider never copies the
+generic URL into the preset. Both saved endpoint types are checked for public
+HTTPS syntax, and dispatch applies the same DNS/public-address checks, pinned
+TLS destination, no-redirect rule, size limit and timeout. No save or check probes
+the provider's country-code convention.
+
+Bearer token, body API key, Client ID, Sender ID and explicitly selected
+digits/plus country-code format are required independently. Blank protected
+fields preserve existing encrypted values. Each enabled event/recipient uses
+its effective published wording and DLT Template ID from Notification Templates.
+The preset accepts only HTTP 200 with boolean `success: true`; acceptance is not
+handset delivery. Provider and template tests require explicit confirmation and
+a UUID request ID. Their permanent claim is committed before transport; identical
+requests replay the saved result, changed requests conflict, and uncertain sends
+are not retried. Test requests do not enable notification switches or templates.
+
+The existing settings workspace has a deep link:
+`/admin/communication?tab=logs`. Its list and detail APIs are
+`GET /api/management/notification-logs` and
+`GET /api/management/notification-logs/:id`; both independently require a real,
+non-demo Superadmin and return `Cache-Control: no-store`. Clinic Admin booking
+email history remains separate with its existing visibility restrictions.
+
+History captures prospective Email/SMS decisions for booking, clinic onboarding,
+reschedule, cancellation, completion and session-relative reminders, including
+the separate patient booking confirmation and explicit provider/template tests.
+Disabled configuration/templates/clinic gates, missing contacts, deduplicated
+addresses and preparation failures are non-send records, not replayable jobs.
+Permanent per-event/channel capture claims prevent polling from reconsidering
+skips after policy changes. Operational outboxes and the patient confirmation
+claim remain the dispatch authority; a history write failure is contained in a
+savepoint and cannot roll back a visit or permit another transport attempt.
+
+Contacts, actual dispatch sender, safe subject/text and effective template
+identity/revision/scope/Template ID are AES-256-GCM snapshots, bound to the stable
+log ID, using the existing integration encryption key. Each dispatch attempt
+retains its protected snapshot; later contact, provider or draft edits do not
+rewrite it. Published revisions are tracked separately from unpublished drafts.
+Contact searches use keyed HMAC hashes and exact, case-normalized matching.
+Credentials, authentication headers, raw provider bodies, HTML and private URLs
+are not exposed. Known credential values and all web/private booking links are
+removed from rendered text before storage. If a snapshot cannot be protected,
+only metadata is retained, with an explicit incomplete-details warning; there
+is no plaintext fallback. History is not included in ordinary audit messages,
+console diagnostics or browser storage.
+
+Date/time filters refer to occurrence creation time. They accept ISO instants;
+the UI explicitly interprets date inputs and displays timestamps in
+Asia/Kolkata (IST, UTC+05:30). Other bounded server filters are channel, event,
+status, clinic ID, recipient group, automatic/test source, exact sender/recipient
+and exact appointment reference. Pagination uses descending creation time plus
+stable ID, not offset paging. New indexes support time, clinic/channel and
+contact-hash searches; available legacy outboxes have a separate time index.
+
+Historical outboxes are read-only, marked legacy and expose only timestamps and
+outcomes actually stored. Missing sender, recipient, rendered content or revision
+remain unavailable; today's templates/contacts are never substituted. Legacy
+records without a stored creation timestamp are not included in date-paged
+history. A sending claim older than five minutes appears as uncertain, including
+an abandoned-claim timeline note, without reclaiming or resending it.
+
+**Retention:** the list/detail window is 90 days from creation. The production
+worker deletes at most 500 expired protected-history rows per email-worker tick
+(30 seconds). This bounds both each cleanup transaction and the read window.
+Operational Email/SMS outboxes, booking outcomes, test claims and event-capture
+claims are never removed by history retention. They preserve at-most-once
+safeguards after detailed history expires. No migration replays old events or
+activates clinics/templates.

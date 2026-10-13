@@ -92,10 +92,15 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
     onError: () => setPw(""),
   });
   const canTest = ready && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) && !busy;
+  const testing = useRef(false);
   const runTest = async () => {
     if (!canTest) return;
+    if (testing.current) return;
+    testing.current = true;
+    try {
     if (!await confirm.ask({ title: "Send a real test email?", description: `One fixed DigiQ test message will be sent to ${to} using saved SMTP settings.`, confirmLabel: "Send test email", tone: "danger" })) return;
-    test.mutate({ data: { recipient: to.trim() } });
+    await test.mutateAsync({ data: { recipient: to.trim(), confirmed: true, requestId: crypto.randomUUID() } }).catch(() => {});
+    } finally { testing.current = false; }
   };
   return <div className="sms-ref">
     {confirm.dialog}

@@ -632,6 +632,88 @@ export interface IntegrationKeyStatus {
   status: IntegrationKeyStatusStatus;
 }
 
+export interface NotificationLogTransition {
+  status: string;
+  at: number;
+  /** @nullable */
+  reason?: string | null;
+}
+
+export type NotificationLogChannel = typeof NotificationLogChannel[keyof typeof NotificationLogChannel];
+
+
+export const NotificationLogChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export type NotificationLogSource = typeof NotificationLogSource[keyof typeof NotificationLogSource];
+
+
+export const NotificationLogSource = {
+  automatic: 'automatic',
+  test: 'test',
+} as const;
+
+export interface NotificationLog {
+  id: string;
+  channel: NotificationLogChannel;
+  event: string;
+  status: string;
+  source: NotificationLogSource;
+  /** @nullable */
+  occurrence?: string | null;
+  /** @nullable */
+  clinicId?: string | null;
+  /** @nullable */
+  reference?: string | null;
+  recipientGroup: string;
+  /** @nullable */
+  provider?: string | null;
+  /** @nullable */
+  sender?: string | null;
+  /** @nullable */
+  recipient?: string | null;
+  /** @nullable */
+  subject?: string | null;
+  /** @nullable */
+  message?: string | null;
+  /** @nullable */
+  templateId?: string | null;
+  /** @nullable */
+  templateRevision?: number | null;
+  /** @nullable */
+  templateScope?: string | null;
+  /** @nullable */
+  dltTemplateId?: string | null;
+  /** @nullable */
+  createdAt: number | null;
+  /** @nullable */
+  queuedAt?: number | null;
+  /** @nullable */
+  dueAt?: number | null;
+  /** @nullable */
+  dispatchAt?: number | null;
+  /** @nullable */
+  completedAt?: number | null;
+  /** @nullable */
+  reason?: string | null;
+  /** @nullable */
+  httpStatus?: number | null;
+  /** @nullable */
+  providerId?: string | null;
+  legacy: boolean;
+  detailsUnavailable?: boolean;
+  timeline: NotificationLogTransition[];
+}
+
+export interface NotificationLogPage {
+  items: NotificationLog[];
+  /** @nullable */
+  nextCursor: string | null;
+  timezone: string;
+}
+
 export type IntegrationReadinessSource = typeof IntegrationReadinessSource[keyof typeof IntegrationReadinessSource];
 
 
@@ -667,6 +749,7 @@ export interface IntegrationReadiness {
   smsProvider?: IntegrationReadinessSmsProvider;
   countryCodeFormat?: IntegrationReadinessCountryCodeFormat;
   customApiUrl?: string;
+  keepInTouchApiUrl?: string;
   smtpHost?: string;
   smtpPort?: number;
   fromEmail?: string;
@@ -716,6 +799,8 @@ export interface IntegrationUpdate {
 }
 
 export interface NotificationSmsTestInput {
+  confirmed: true;
+  requestId: string;
   /**
      * @maxLength 16
      * @pattern ^\+[1-9][0-9]{6,14}$
@@ -750,6 +835,8 @@ export interface NotificationSmsTestResult {
 }
 
 export interface SmtpTestInput {
+  confirmed: true;
+  requestId: string;
   /** @maxLength 254 */
   recipient: string;
 }
@@ -759,6 +846,9 @@ export type SmtpTestResultStatus = typeof SmtpTestResultStatus[keyof typeof Smtp
 
 export const SmtpTestResultStatus = {
   provider_accepted: 'provider_accepted',
+  provider_rejected: 'provider_rejected',
+  pre_dispatch_failed: 'pre_dispatch_failed',
+  delivery_unknown: 'delivery_unknown',
 } as const;
 
 export interface SmtpTestResult {
@@ -3597,6 +3687,54 @@ export const ListNotificationsKind = {
   appointments: 'appointments',
   queue: 'queue',
   system: 'system',
+} as const;
+
+export type ListNotificationLogsParams = {
+from?: string;
+to?: string;
+channel?: ListNotificationLogsChannel;
+event?: string;
+status?: string;
+clinicId?: string;
+recipientGroup?: string;
+source?: ListNotificationLogsSource;
+/**
+ * @maxLength 254
+ */
+sender?: string;
+/**
+ * @maxLength 254
+ */
+recipient?: string;
+/**
+ * @maxLength 100
+ */
+reference?: string;
+/**
+ * @maxLength 1000
+ */
+cursor?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type ListNotificationLogsChannel = typeof ListNotificationLogsChannel[keyof typeof ListNotificationLogsChannel];
+
+
+export const ListNotificationLogsChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export type ListNotificationLogsSource = typeof ListNotificationLogsSource[keyof typeof ListNotificationLogsSource];
+
+
+export const ListNotificationLogsSource = {
+  automatic: 'automatic',
+  test: 'test',
 } as const;
 
 export type ListBookingMailOutcomesParams = {
