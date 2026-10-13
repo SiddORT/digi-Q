@@ -16,3 +16,14 @@ the distinction until the booking-render test failed.
 snapshots, respect appointment uniqueness, and keep send-callback assertions
 outside callbacks whose errors are intentionally converted to delivery outcomes.
 Use fictional data and fake transports; never compensate with live SMS probes.
+
+Include ordinary-length and multi-line messages in transport regression fixtures,
+not only short smoke-test strings.
+
+**Why:** Short fixtures hid a cross-layer boundary error: message content was
+accidentally subject to an identifier-only size/format check. Direct provider
+tests and complete-template dispatch did not exercise the same inputs.
+
+**How to apply:** Test both explicit template tests and automatic event dispatch
+with complete templates, rendered text and fake provider requests. Assert exact
+outbound message preservation and continued validation of the actual identifiers.

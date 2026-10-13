@@ -37,6 +37,22 @@ const api=await import(path);
 const map={encoding:"json",authMode:"header",authField:"X-API-Key",fields:{recipient:"to",message:"message",senderId:"sender",dltEntityId:"entity",dltTemplateId:"template"},staticFields:{},acceptedStatuses:[200],responseField:"ok",responseValue:"yes",dltRequired:false};
 const env={NOTIFICATION_SMS_URL:"https://rebinding.example.invalid/send",NOTIFICATION_SMS_KEY:"synthetic-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-generic-bearer",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_MAPPING:JSON.stringify(map)};
 after(async()=>{await rm(path,{force:true});delete globalThis.fakeSmsNetwork;});
+test("SMS metadata validation ignores full-template bodies and validates only actual provider IDs",()=>{
+ const message="Dear Fictional Patient,\nyour visit with Dr Fictional Doctor is confirmed for 15 Oct 2030. Queue No: 03. Session starts at 5 pm. Please check in with reception. - Digi-Q";
+ const template={enabled:false,subject:"Booking confirmation",body:message,prefix:"",footer:"",logoUrl:"",
+  senderId:"",dltEntityId:"",dltTemplateId:"1700000000000000000"};
+ for(const provider of ["generic","keepInTouch"]){
+  const e={...env,NOTIFICATION_SMS_PROVIDER:provider,NOTIFICATION_SMS_CLIENT_ID:"fictional-client",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits"};
+  const cfg=api.notificationSmsConfig(e);
+  const full=api.smsPayload(cfg,"+919876543210",message,template);
+  const ids=api.smsPayload(cfg,"+919876543210",message,{dltTemplateId:template.dltTemplateId});
+  assert.deepEqual(full,ids);
+  assert.equal(JSON.parse(full.body).message,message);
+  assert.throws(()=>api.smsPayload(cfg,"+919876543210",message,{...template,senderId:"x".repeat(51)}));
+  assert.throws(()=>api.smsPayload(cfg,"+919876543210",message,{...template,dltTemplateId:"bad\nid"}));
+  assert.throws(()=>api.smsPayload(cfg,"+919876543210","x".repeat(1601),template));
+ }
+});
 test("optional notification switch is backwards compatible and independent of provider readiness",()=>{
  assert.equal(api.notificationSmsEnabled(env),true);
  assert.equal(api.notificationSmsEnabled({...env,NOTIFICATION_SMS_ENABLED:"false"}),false);

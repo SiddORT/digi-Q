@@ -139,7 +139,10 @@ export function smsMetadataReady(cfg: ReturnType<typeof notificationSmsConfig>, 
   return !cfg.mapping.dltRequired || !!((meta.senderId || cfg.senderId) && (meta.dltEntityId || cfg.dltEntityId) && meta.dltTemplateId);
 }
 export function smsPayload(cfg: ReturnType<typeof notificationSmsConfig>, to: string, message: string, meta: {senderId?:string;dltEntityId?:string;dltTemplateId?:string}) {
-  meta = { ...meta, senderId: meta.senderId || cfg.senderId, dltEntityId: meta.dltEntityId || cfg.dltEntityId };
+  // Callers may pass the complete template. Only provider IDs are metadata:
+  // the body/subject must never inherit the identifiers' 50-character/no-newline limit.
+  meta = { senderId: meta.senderId || cfg.senderId, dltEntityId: meta.dltEntityId || cfg.dltEntityId,
+    dltTemplateId: meta.dltTemplateId };
   if (cfg.provider === "keepInTouch") meta.dltEntityId = undefined;
   if (!/^\+[1-9]\d{6,14}$/.test(to) || !message || message.length > 1600 || Object.values(meta).some(v => v && (v.length > 50 || /[\r\n]/.test(v)))) throw new Error("Invalid SMS payload");
   if (!smsMetadataReady(cfg, meta)) throw new Error("SMS template metadata required");

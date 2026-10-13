@@ -106,7 +106,8 @@ test("Keep in Touch explicit tests and eligible automatic notifications use the 
  const eventKeys=["sms-template:c:completed","sms-template:c:cancelled"];
  const existing=await h.control.query("select id,data from settings where id=any($1::text[])",[eventKeys]);
  try {
-  const content={...smsContent("completed"),dltEntityId:"",senderId:"",dltTemplateId:"KIT_COMPLETED"};
+   const content={...smsContent("completed"),dltEntityId:"",senderId:"",dltTemplateId:"KIT_COMPLETED",
+    body:"Dear {{patient_name}},\nyour visit at {{clinic_name}} has been completed. Thank you for choosing our clinic. Contact reception if you need any further help."};
   await h.control.query("delete from settings where id=any($1::text[])",[eventKeys]);
   await assert.rejects(api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"completed",revision:0,mode:"publish",content:{...content,enabled:true,dltTemplateId:""}}),{status:400});
   await api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"completed",revision:0,mode:"publish",content:{...content,enabled:true}});
@@ -125,6 +126,8 @@ test("Keep in Touch explicit tests and eligible automatic notifications use the 
   assert.equal((await api.testTemplate(sa,prepared)).status,"provider_accepted");
   const explicit=globalThis.kitNetwork[0];
   assert.equal(explicit.body.templateId,"KIT_COMPLETED");assert.equal(explicit.body.mobile,"9876543213");
+  assert.equal(explicit.body.message,prepared.rendered.text);
+  assert(explicit.body.message.length>50);assert(explicit.body.message.includes("\n"));
   const row={id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"KIT",status:"completed",revision:1};
   await h.db.insert(api.appointments).values({id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:row.date,status:row.status,data:row});
   await api.enqueueSmsEvent(h.db,"completed",row);
@@ -140,6 +143,7 @@ test("Keep in Touch explicit tests and eligible automatic notifications use the 
    assert.deepEqual(Object.keys(wire.body).sort(),["countryCode","mobile","senderId","message","apiKey","clientId","templateId"].sort());
    assert.equal(wire.body.countryCode,"91");assert.equal(wire.body.apiKey,values.NOTIFICATION_SMS_KEY);
    assert.equal(wire.body.templateId,"KIT_COMPLETED");
+   assert(wire.body.message.length>50);assert(wire.body.message.includes("\n"));
   }
    assert.equal((await h.control.query("select data->>'state' state from settings where id like 'sms-outbox:completed:kit-visit:%'")).rows[0].state,"provider_accepted");
   const count=globalThis.kitNetwork.length;
@@ -314,6 +318,19 @@ test("draft tests use exact bounded placeholders, explicit recipient and durable
   assert(!(await api.resolvedTemplate("completed",undefined,h.db,"patient","sms")).content.enabled);
   const persisted=await h.control.query("select data from settings where id like 'notification-test:%'");
   assert(!JSON.stringify(persisted.rows).includes("Synthetic"));assert(!JSON.stringify(persisted.rows).includes("+919876543213"));
+});
+test("a known pre-dispatch failure stays replay-safe and a fresh confirmed request can send",async()=>{
+  const input={channel:"sms",event:"completed",recipientGroup:"patient",revision:0,content:smsContent(),
+    values:{patient_name:"Fictional",clinic_name:"Fictional clinic"},recipient:"+919876543213",
+    confirmed:true,requestId:randomUUID()};
+  const prepared=await api.prepareTemplateTest(sa,input);
+  let calls=0;
+  assert.equal((await api.testTemplate(sa,prepared,async()=>{calls++;return "pre_dispatch_failed";})).status,"pre_dispatch_failed");
+  assert.equal((await api.testTemplate(sa,prepared,async()=>{calls++;return "provider_accepted";})).status,"pre_dispatch_failed");
+  assert.equal(calls,1,"repeating the same request never dispatches again");
+  const fresh=await api.prepareTemplateTest(sa,{...input,requestId:randomUUID()});
+  assert.equal((await api.testTemplate(sa,fresh,async()=>{calls++;return "provider_accepted";})).status,"provider_accepted");
+  assert.equal(calls,2,"only a fresh explicit request can try after known no-dispatch");
 });
 test("disabled email tests use the existing sender interface, exact sample values and sanitized outcomes without normal jobs",async()=>{
   const content={enabled:false,subject:"Hello {{doctor_name}}",body:"Clinic {{clinic_name}}",prefix:"",footer:"",logoUrl:""};

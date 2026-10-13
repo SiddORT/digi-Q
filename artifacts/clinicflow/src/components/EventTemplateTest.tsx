@@ -7,6 +7,7 @@ import { HelpTip } from "./HelpTip";
 import { EmailInput } from "./EmailInput";
 import { PhoneInput } from "./PhoneInput";
 import { LoadingButton } from "./LoadingButton";
+import { canStartNewTemplateTest } from "../lib/template-test-recovery";
 
 type Content = api.NotificationTemplateContent;
 const PH = /\{\{\s*([a-z0-9_]+)\s*\}\}/gi;
@@ -66,6 +67,7 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
   }, [rsig]);
   const body = { channel: channel as api.EventTemplateTestInputChannel, event: event as api.EventTemplateTestInputEvent, recipientGroup: group as api.EventTemplateTestInputRecipientGroup, clinicId: clinicId || undefined, revision, content, values: exact };
   const result = test.data ?? preview.data;
+  const failed = result?.status === "pre_dispatch_failed" || result?.status === "provider_rejected";
   const label = channel === "sms" ? "Phone number" : "Email address";
   const send = () => {
     if (sending.current || !confirmed || !complete || !to.trim() || !readiness.ready) return;
@@ -78,6 +80,12 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     const payload = submitted.current; if (!payload || sending.current) return;
     sending.current = true;
     test.mutate({ data: payload }, { onSettled: () => { sending.current = false; } });
+  };
+  const startNewTest = () => {
+    if (sending.current || test.isPending || !canStartNewTemplateTest(test.data?.status)) return;
+    requestId.current = newRequestId();
+    submitted.current = null;
+    test.reset(); preview.reset(); setConfirmed(false);
   };
   return <section className="panel padded et-test" aria-label="Test this template" data-testid="panel-template-test">
     <h3>Test This Template <HelpTip text="Uses your current edits, including drafts and disabled templates, without publishing or enabling anything. No appointment is created and nothing is queued. Sends one real message to the recipient you enter." /></h3>
@@ -101,7 +109,9 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     </div>
     {(preview.isError || test.isError) && <p role="alert" className="error-box" data-testid="status-test-error">The test could not run. Retrying reuses the same request, so it cannot duplicate a message the provider already accepted.
       {test.isError && submitted.current && <button type="button" onClick={retry} data-testid="button-retry-test">Retry Same Request</button>}</p>}
-    {result && <div role="status" className="et-notice" data-testid="status-test-result"><strong>{OUTCOME[result.status] ?? result.status}</strong> {result.message}
+    {result && <div role={failed ? "alert" : "status"} className={failed ? "error-box" : "et-notice"} data-testid="status-test-result"><strong>{OUTCOME[result.status] ?? result.status}</strong> {result.message}
+      {canStartNewTemplateTest(test.data?.status) && <p>Nothing was dispatched. After resolving the issue, start a new test and confirm again.
+        <button type="button" className="button secondary small" disabled={test.isPending} onClick={startNewTest} data-testid="button-start-new-test">Start New Test</button></p>}
       {channel === "email" && <div data-testid="text-test-subject">{result.subject}</div>}<pre data-testid="text-test-body">{result.body}</pre></div>}
   </section>;
 }
