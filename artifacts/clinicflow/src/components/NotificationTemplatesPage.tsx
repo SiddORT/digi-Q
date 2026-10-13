@@ -14,7 +14,7 @@ import { AccordionItem, AccordionTrigger, AccordionContent } from "./ui/accordio
 import { NotificationEventAccordion } from "./NotificationEventAccordion";
 import { titleCase } from "../lib/title-case";
 import { previewText } from "../lib/template-preview";
-import { eventControlBody, filterRows, type ListRow } from "../lib/communication-routes";
+import { eventControlBody, eventControlError, eventSetupReasons, filterRows, type ListRow } from "../lib/communication-routes";
 import "./email-templates.css";
 import "./communication.css";
 
@@ -77,7 +77,7 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
     <p className="muted" data-testid="text-gate-note">Each switch below is scoped to one event, channel and recipient. Turning email notifications off here never disables the SMTP connection used for sign-in codes, invitations and password recovery. Provider connections are in Communication Settings.</p>
     <div className="et-scope">
       <FormField label={superAdmin ? "Scope" : "Clinic Group"} optional={superAdmin} required={!superAdmin} helper={superAdmin ? "Empty edits platform defaults." : "Choose a clinic group you manage."}>
-        {a => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => { setClinicId(v); setNotice(""); }} placeholder={superAdmin ? "Platform defaults" : undefined} />}
+        {a => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => { setClinicId(v); setNotice(""); if (!update.isPending) update.reset(); }} placeholder={superAdmin ? "Platform defaults" : undefined} />}
       </FormField>
     </div>
     {enabled && controls.data && <p className="muted" data-testid="text-scope-gate"><span className={`et-chip ${clinicId ? "" : "live"}`} data-testid="chip-scope">{clinicId ? "Clinic" : "Platform"}</span> <strong>{controls.data.scopeName}</strong>{clinicId ? " inherits platform defaults where it has no override. " : " (clinics inherit these unless they override). "}{controls.data.notificationsEnabled === false ? "Clinic notifications are off, so nothing is delivered. " : ""}{controls.data.gateDescription}</p>}
@@ -89,7 +89,7 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
       {sel("status", f.status, [["on", "On and ready"], ["blocked", "On, blocked"], ["off", "Off"]], "Status")}
     </div>
     {notice && <p role="status" className="et-notice" data-testid="status-save">{notice}</p>}
-    {update.isError && <p role="alert" className="error-box" data-testid="status-update-error">The change was not saved. The latest values are shown; try again.</p>}
+    {update.isError && <p role="alert" className="error-box" data-testid="status-update-error">{eventControlError(update.error)}</p>}
     {!enabled ? <div className="et-empty" data-testid="state-select-clinic">Select a clinic group to view its notification templates.</div>
       : controls.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : controls.isError ? <div role="alert" className="error-box" data-testid="state-error">Events could not be loaded. <button type="button" onClick={() => controls.refetch()} data-testid="button-retry">Retry</button></div>
@@ -105,11 +105,11 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
               <span className={`et-chip ${r.enabled && r.ready ? "live" : ""}`}>{r.enabled ? (r.ready ? "On" : "On, blocked") : "Off"}</span>
               {!r.inherited && <span className="et-chip">Override</span>}</div>
             <p className="cm-preview" data-testid={`text-preview-${r.channel}-${event}-${r.recipient}`}>{r.preview ? previewText(r.preview, controls.data?.scopeName ?? "").slice(0, 160) : "Loading preview"}</p>
-            {r.enabled && !r.ready && r.row.blockedReasons.length > 0 && <ul className="ec-blocked">{r.row.blockedReasons.map(b => <li key={b}>{b}</li>)}</ul>}
+            {eventSetupReasons(r.row).length > 0 && <ul className="ec-blocked" data-testid={`setup-${r.channel}-${event}-${r.recipient}`}>{eventSetupReasons(r.row).map(b => <li key={b}>{b}</li>)}</ul>}
           </div>
           <div className="cm-row-actions">
-            <StatusSwitch active={r.enabled} disabled={update.isPending} label={`${r.channel} ${titleCase(event)} ${label(r.recipient)}`} onChange={next => { setNotice(""); setConfirmed(false); setPending({ row: r.row, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{r.enabled ? "On" : "Off"}</StatusSwitch>
-            <button type="button" className="button secondary small" onClick={() => setEditing({ channel: r.channel, event, recipient: r.recipient })} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>
+            <StatusSwitch active={r.enabled} disabled={update.isPending} label={`${r.channel} ${titleCase(event)} ${label(r.recipient)}`} onChange={next => { update.reset(); setNotice(""); setConfirmed(false); setPending({ row: r.row, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{r.enabled ? "On" : "Off"}</StatusSwitch>
+            <button type="button" className="button secondary small" disabled={update.isPending} onClick={() => { update.reset(); setEditing({ channel: r.channel, event, recipient: r.recipient }); }} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>
            </div></li>)}</ul></AccordionContent>
        </AccordionItem>)}</NotificationEventAccordion>}
     {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title="Edit Template" description={`${titleCase(editing.event)} / ${editing.channel === "sms" ? "SMS" : "EMAIL"} (${label(editing.recipient)})`}>
@@ -122,6 +122,9 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
     <AppDialog open={!!pending} onClose={() => !update.isPending && setPending(null)} title={pending ? `${pending.next ? "Enable" : "Disable"} ${pending.row.channel.toUpperCase()}?` : ""} busy={update.isPending}>
       {pending && <div className="et-dialog">
         <p>{pending.next ? "Eligible future events will send to " : "Future events will stop sending to "}{label(pending.row.recipient).toLowerCase()}s for {titleCase(pending.row.event)}. Past bookings are never replayed.</p>
+        {pending.next && eventSetupReasons(pending.row).length > 0 && <div data-testid="control-setup-requirements"><p>Delivery requirements still to resolve:</p><ul className="ec-blocked">{eventSetupReasons(pending.row).map(reason => <li key={reason}>{reason}</li>)}</ul>
+          {pending.row.channel === "sms" && <p>Use Edit to add this event's registered DLT Template ID and publish the template. Saving a draft does not update the active template.</p>}
+        </div>}
         <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} data-testid="checkbox-confirm-control" /> I confirm this change</label>
         <FormActions wide={false} onCancel={() => setPending(null)} cancelLabel="Go Back" busy={update.isPending} disabled={!confirmed} onSubmit={apply} submitLabel={pending.next ? "Enable" : "Disable"} submitTestId="button-control-confirm" /></div>}
     </AppDialog>

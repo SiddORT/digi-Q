@@ -111,7 +111,13 @@ test("Keep in Touch explicit tests and eligible automatic notifications use the 
   await assert.rejects(api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"completed",revision:0,mode:"publish",content:{...content,enabled:true,dltTemplateId:""}}),{status:400});
   await api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"completed",revision:0,mode:"publish",content:{...content,enabled:true}});
   await api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"cancelled",revision:0,mode:"publish",content:{...content,enabled:false,dltTemplateId:""}});
-  await assert.rejects(api.changeActivation(sa,{channel:"sms",clinicId:"c",event:"cancelled",recipient:"patient",revision:1,enabled:true}),{status:400});
+   await assert.rejects(api.changeActivation(sa,{channel:"sms",clinicId:"c",event:"cancelled",recipient:"patient",revision:1,enabled:true}),error=>{
+    assert.equal(error.status,400);
+    assert.match(error.message,/DLT Template ID/);
+    assert.match(error.message,/saved drafts do not count/);
+    assert.match(error.message,/does not require an Entity ID/);
+    return true;
+   });
   const reasons=(await api.eventControls(sa,"c")).items.find(i=>i.channel==="sms"&&i.event==="cancelled"&&i.recipient==="patient").blockedReasons.join(" ");
   assert(reasons.includes("Template ID"));assert(!reasons.includes("Entity IDs"));
   const prepared=await api.prepareTemplateTest(sa,{channel:"sms",event:"completed",clinicId:"c",recipientGroup:"patient",revision:1,content,values:{patient_name:"Fictional",clinic_name:"Test"},

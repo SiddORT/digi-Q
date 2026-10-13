@@ -112,7 +112,9 @@ export async function changeActivation(user:any, input:{channel:Channel;event:Te
       let cfg:ReturnType<typeof notificationSmsConfig>|undefined;
       try {cfg=notificationSmsConfig((await resolvedIntegration("notificationSms",tx)).env);} catch {assert(false,400,"Configure notification SMS before activation");}
       const content=effective.content as SmsTemplateContent;
-      assert(smsMetadataReady(cfg!,content),400,"Publish required sender and event template metadata before activation");
+      assert(smsMetadataReady(cfg!,content),400,cfg!.provider==="keepInTouch"
+        ? "Publish a valid DLT Template ID for this event and configure a valid Sender ID before enabling SMS. Use Edit to publish the template; saved drafts do not count. Keep in Touch does not require an Entity ID."
+        : "Publish this event's DLT Template ID and configure Sender and DLT Entity IDs before enabling SMS. Use Edit to publish the template; saved drafts do not count.");
     }
     const data={...effective.local,revision:effective.local.revision+1,publishedRevision:effective.local.revision+1,published:{...effective.content,enabled:input.enabled},
       activatedAt:input.enabled&&!effective.content.enabled?Date.now():effective.local.activatedAt};

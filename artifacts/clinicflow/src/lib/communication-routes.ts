@@ -19,6 +19,19 @@ export function filterRows(rows: ListRow[], f: { q: string; channel: string; rec
 export function eventControlBody(row: { channel: string; event: string; recipient: string; revision: number }, next: boolean, clinicId: string) {
   return { channel: row.channel, event: row.event, recipient: row.recipient, clinicId: clinicId || undefined, revision: row.revision, enabled: next, confirmed: true as const };
 }
+/** API errors are sanitized by the server. Never label every failure a stale edit. */
+export function eventControlError(error: unknown) {
+  const failure = error as { status?: number; data?: { error?: unknown } } | null;
+  if (failure?.status === 409) return "The change was not saved because this template changed. The latest values are being reloaded; review them before trying again.";
+  const detail = failure?.data?.error;
+  return typeof detail === "string" && detail.trim()
+    ? `The change was not saved. ${detail}`
+    : "The change was not saved. Please try again.";
+}
+/** An off switch is not missing configuration; expose the other delivery gates. */
+export function eventSetupReasons(row: { blockedReasons: string[] }) {
+  return row.blockedReasons.filter(reason => reason !== "Published activation is off");
+}
 /** SMS test sends only after an explicit confirmation with a ready saved configuration. */
 export function canSendSmsTest(s: { ready: boolean; confirmed: boolean; recipient: string; message: string; pending: boolean }) {
   return s.ready && s.confirmed && !!s.recipient && !!s.message.trim() && !s.pending;
