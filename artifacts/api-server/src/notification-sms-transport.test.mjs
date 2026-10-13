@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {build} from "esbuild";
 import {rm} from "node:fs/promises";
 import {resolve} from "node:path";
+import {setImmediate as flushAsync} from "node:timers/promises";
 const path=resolve(import.meta.dirname,`.sms-transport-${process.pid}.mjs`);
 globalThis.fakeSmsNetwork={addresses:[{address:"8.8.8.8",family:4}],scenario:"accepted",calls:0};
 await build({entryPoints:[resolve(import.meta.dirname,"lib/notification-sms-transport.ts")],outfile:path,bundle:true,platform:"node",format:"esm",packages:"external",
@@ -22,8 +23,11 @@ await build({entryPoints:[resolve(import.meta.dirname,"lib/notification-sms-tran
           const socket=new EventEmitter();req.emit("socket",socket);socket.emit("secureConnect");
            if(state.scenario==="after"){req.emit("error",Error("Secret after dispatch"));return;}
            if(state.scenario==="timeout")return;
-           const res=new EventEmitter();res.statusCode=state.scenario==="redirect"?302:(state.status??200);
-           callback(res);res.emit("data",Buffer.from(state.scenario==="large"?"x".repeat(17000):(state.response??'{"ok":"yes"}')));res.emit("end");
+           const respond=()=>{
+             const res=new EventEmitter();res.statusCode=state.scenario==="redirect"?302:(state.status??200);
+             callback(res);res.emit("data",Buffer.from(state.scenario==="large"?"x".repeat(17000):(state.response??'{"ok":"yes"}')));res.emit("end");
+           };
+           if(state.responseDelayMs)setTimeout(respond,state.responseDelayMs);else respond();
         });
       };return req;
     }`
@@ -126,10 +130,12 @@ test("Custom API requires sender and separate bearer token without API-key subst
  }
  assert.throws(()=>api.notificationSmsConfig({...bearerEnv,NOTIFICATION_SMS_BEARER_TOKEN:"invalid token"}));
 });
-test("Keep in Touch accepts only boolean true on HTTP 200; false is rejected and all ambiguous outcomes remain unknown",async()=>{
+test("Keep in Touch accepts uppercase/lowercase boolean success on HTTP 200 and rejects ambiguous responses",async()=>{
  const state=globalThis.fakeSmsNetwork;state.scenario="accepted";
  const cfg=api.notificationSmsConfig(kitEnv);
- for(const [body,outcome] of [['{"success":true}',"provider_accepted"],['{"success":false}',"provider_rejected"],
+ for(const [body,outcome] of [['{"Success":true,"Message":"SMS sent successfully"}',"provider_accepted"],['{"Success":false}',"provider_rejected"],
+  ['{"Success":"true"}',"delivery_unknown"],['{"Success":true,"success":false}',"delivery_unknown"],['{"Success":false,"success":true}',"delivery_unknown"],
+  ['{"Success":true,"success":true}',"provider_accepted"],['{"success":true}',"provider_accepted"],['{"success":false}',"provider_rejected"],
   ['{"success":"true"}',"delivery_unknown"],['{"success":"false"}',"delivery_unknown"],['{"success":1}',"delivery_unknown"],
   ['{"success":null}',"delivery_unknown"],['{"message":"SMS sent successfully"}',"delivery_unknown"],['[]',"delivery_unknown"],
   ['{"success":{}}',"delivery_unknown"],["broken private diagnostic","delivery_unknown"]]){
@@ -142,11 +148,46 @@ test("Keep in Touch accepts only boolean true on HTTP 200; false is rejected and
   assert.equal(await api.sendNotificationSms(kitEnv,"+919876543210","Fixture",{dltTemplateId:"event"}),outcome);
  }
  delete state.response;delete state.status;
- for(const [scenario,outcome] of [["before","pre_dispatch_failed"],["after","delivery_unknown"],["timeout","delivery_unknown"]]){
+ for(const [scenario,outcome] of [["before","pre_dispatch_failed"],["after","delivery_unknown"]]){
   state.scenario=scenario;
   assert.equal(await api.sendNotificationSms(kitEnv,"+919876543210","Fixture",{dltTemplateId:"event"}),outcome);
  }
  state.scenario="accepted";
+});
+test("Keep in Touch waits for a 15.5-second Postman-style response instead of timing out at 10 seconds",async t=>{
+ const state=globalThis.fakeSmsNetwork;state.scenario="accepted";
+ state.response='{"Success":true,"Message":"SMS sent successfully"}';state.responseDelayMs=15500;
+ t.mock.timers.enable({apis:["setTimeout"]});
+ try{
+  let settled=false;
+  const pending=api.sendNotificationSms(kitEnv,"+919876543210","Fictional message",{dltTemplateId:"booking"});
+  pending.then(()=>{settled=true;});
+  await flushAsync();
+  t.mock.timers.tick(10000);await flushAsync();assert.equal(settled,false);
+  t.mock.timers.tick(5500);assert.equal(await pending,"provider_accepted");
+ }finally{delete state.response;delete state.responseDelayMs;}
+});
+test("Keep in Touch still bounds a stalled dispatch at 30 seconds and never calls it successful",async t=>{
+ const state=globalThis.fakeSmsNetwork;state.scenario="timeout";
+ t.mock.timers.enable({apis:["setTimeout"]});
+ try{
+  let settled=false;
+  const pending=api.sendNotificationSms(kitEnv,"+919876543210","Fictional message",{dltTemplateId:"booking"});
+  pending.then(()=>{settled=true;});
+  await flushAsync();
+  t.mock.timers.tick(29999);await flushAsync();assert.equal(settled,false);
+  t.mock.timers.tick(1);assert.equal(await pending,"delivery_unknown");
+ }finally{state.scenario="accepted";}
+});
+test("all six event template IDs use the same Keep in Touch JSON and separate Bearer credentials",async()=>{
+ const state=globalThis.fakeSmsNetwork;state.scenario="accepted";state.response='{"Success":true}';
+ try{
+  for(const event of ["booking","rescheduled","cancelled","completed","reminder","onboarding"]){
+   assert.equal(await api.sendNotificationSms(kitEnv,"+919876543210",`Fictional ${event}`,{dltTemplateId:`registered-${event}`}),"provider_accepted");
+   assert.equal(state.options.headers.Authorization,`Bearer ${kitEnv.NOTIFICATION_SMS_BEARER_TOKEN}`);
+   assert.deepEqual(JSON.parse(state.body),{countryCode:"91",mobile:"9876543210",senderId:"DIGIQ",message:`Fictional ${event}`,apiKey:kitEnv.NOTIFICATION_SMS_KEY,clientId:kitEnv.NOTIFICATION_SMS_CLIENT_ID,templateId:`registered-${event}`});
+  }
+ }finally{delete state.response;}
 });
 test("provider Client ID and DLT defaults enter the request, with explicit template metadata taking precedence",()=>{
  const config=api.notificationSmsConfig({...env,NOTIFICATION_SMS_CLIENT_ID:"private-client",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_ENTITY_ID:"entity-default"});

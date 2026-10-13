@@ -13,7 +13,7 @@ export const keepInTouchNetworkPlugin = {
            queueMicrotask(()=>{
              const socket=new EventEmitter();req.emit("socket",socket);socket.emit("secureConnect");
              const res=new EventEmitter();res.statusCode=200;callback(res);
-             res.emit("data",Buffer.from(JSON.stringify(globalThis.kitResponse??{success:true,message:"private diagnostic"})));
+             res.emit("data",Buffer.from(JSON.stringify(globalThis.kitResponse??{Success:true,Message:"private diagnostic"})));
              res.emit("end");
            });
          };return req;

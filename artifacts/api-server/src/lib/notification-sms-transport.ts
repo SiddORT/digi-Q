@@ -5,10 +5,11 @@ import { BlockList, isIP } from "node:net";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 export const KEEP_IN_TOUCH_URL = "https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS";
+export const KEEP_IN_TOUCH_REQUEST_TIMEOUT_MS = 30000;
 const keepInTouchMapping = {
   encoding: "json", authMode: "bearer", authField: "Authorization",
   fields: { recipient: "mobile", message: "message", senderId: "senderId", dltEntityId: "entityId", dltTemplateId: "templateId", clientId: "clientId" },
-  staticFields: {}, acceptedStatuses: [200], responseField: "success", responseValue: "true", dltRequired: false,
+  staticFields: {}, acceptedStatuses: [200], responseField: "Success", responseValue: "true", dltRequired: false,
 } as const;
 
 const field = z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,49}$/);
@@ -169,7 +170,11 @@ export function classifySmsResponse(mapping: SmsMapping, status: number, body: s
   if (!mapping.acceptedStatuses.includes(status)) return status >= 400 && status < 500 ? "provider_rejected" : "delivery_unknown";
   if (provider === "keepInTouch") {
     try {
-      const value = JSON.parse(body)?.success;
+      const result = JSON.parse(body);
+      // KIT's Postman response uses PascalCase; retain lowercase compatibility.
+      // Conflicting aliases must never turn an uncertain result into acceptance.
+      if (Object.hasOwn(result ?? {}, "Success") && Object.hasOwn(result ?? {}, "success") && result.Success !== result.success) return "delivery_unknown";
+      const value = result?.Success ?? result?.success;
       return value === true ? "provider_accepted" : value === false ? "provider_rejected" : "delivery_unknown";
     } catch { return "delivery_unknown"; }
   }
@@ -205,7 +210,7 @@ export async function sendNotificationSms(env: NodeJS.ProcessEnv, to: string, me
       res.on("end",()=>finish(classifySmsResponse(cfg.mapping,res.statusCode || 0,body,cfg.provider)));
       res.on("error",()=>finish("delivery_unknown"));
     });
-    const timer = setTimeout(()=>{finish(dispatched?"delivery_unknown":"pre_dispatch_failed");req.destroy();},10000);
+    const timer = setTimeout(()=>{finish(dispatched?"delivery_unknown":"pre_dispatch_failed");req.destroy();},cfg.provider === "keepInTouch" ? KEEP_IN_TOUCH_REQUEST_TIMEOUT_MS : 10000);
     req.on("socket",socket=>socket.once("secureConnect",()=>{dispatched=true;}));
     req.on("error",()=>finish(dispatched?"delivery_unknown":"pre_dispatch_failed"));
     req.end(payload.body);

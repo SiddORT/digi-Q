@@ -122,7 +122,7 @@ test("Keep in Touch explicit tests and eligible automatic notifications use the 
   const row={id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"KIT",status:"completed",revision:1};
   await h.db.insert(api.appointments).values({id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:row.date,status:row.status,data:row});
   await api.enqueueSmsEvent(h.db,"completed",row);
-  globalThis.kitResponse={success:"true",message:"SMS sent successfully"};
+   globalThis.kitResponse={Success:true,Message:"SMS sent successfully"};
   // Other historical pending jobs must not enter this assertion.
   await h.control.query("update settings set data=jsonb_set(data,'{state}','\"disabled\"') where id like 'sms-outbox:%' and id not like 'sms-outbox:completed:kit-visit:%' and data->>'state'='pending'");
   await api.processSmsNotifications(h.db);
@@ -135,15 +135,24 @@ test("Keep in Touch explicit tests and eligible automatic notifications use the 
    assert.equal(wire.body.countryCode,"91");assert.equal(wire.body.apiKey,values.NOTIFICATION_SMS_KEY);
    assert.equal(wire.body.templateId,"KIT_COMPLETED");
   }
-  assert.equal((await h.control.query("select data->>'state' state from settings where id like 'sms-outbox:completed:kit-visit:%'")).rows[0].state,"delivery_unknown");
+   assert.equal((await h.control.query("select data->>'state' state from settings where id like 'sms-outbox:completed:kit-visit:%'")).rows[0].state,"provider_accepted");
   const count=globalThis.kitNetwork.length;
   await api.processSmsNotifications(h.db);assert.equal(globalThis.kitNetwork.length,count);
+   const unknownId="kit-visit-unknown";
+   const unknownRow={...row,id:unknownId};
+   await h.db.insert(api.appointments).values({id:unknownId,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:row.date,status:row.status,data:unknownRow});
+   await api.enqueueSmsEvent(h.db,"completed",unknownRow);
+   globalThis.kitResponse={Success:"true",Message:"SMS sent successfully"};
+   await api.processSmsNotifications(h.db);
+   assert.equal((await h.control.query("select data->>'state' state from settings where id like 'sms-outbox:completed:kit-visit-unknown:%'")).rows[0].state,"delivery_unknown");
+   const unknownCount=globalThis.kitNetwork.length;
+   await api.processSmsNotifications(h.db);assert.equal(globalThis.kitNetwork.length,unknownCount);
  }finally{
   const latest=await api.resolvedIntegration("notificationSms");
   await api.saveIntegration("notificationSms",{},latest.revision,"environment",sa.id);
-  await h.control.query("delete from settings where id=any($1::text[]) or id like 'sms-outbox:completed:kit-visit:%'",[eventKeys]);
+   await h.control.query("delete from settings where id=any($1::text[]) or id like 'sms-outbox:completed:kit-visit:%' or id like 'sms-outbox:completed:kit-visit-unknown:%'",[eventKeys]);
   for(const row of existing.rows)await h.control.query("insert into settings(id,data) values($1,$2)",[row.id,row.data]);
-  await h.control.query("delete from appointments where id=$1",[id]);
+   await h.control.query("delete from appointments where id=any($1::text[])",[[id,"kit-visit-unknown"]]);
   delete globalThis.kitNetwork;delete globalThis.kitResponse;
  }
 });
