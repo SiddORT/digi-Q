@@ -50,8 +50,10 @@ notificationTemplatesRouter.post("/management/templates/preview",async(req,res)=
 notificationTemplatesRouter.post("/management/templates/test",async(req,res)=>{
   res.setHeader("Cache-Control","no-store");
   const user=await requireUser(req);roles(user,["superAdmin"]);
-  await consumeRateLimit(`template-test:${user.id}`,3,900000);
-  await consumeRateLimit(`template-test:ip:${ipKeyGenerator(req.ip||"unknown")}`,10,900000);
+  const sms=req.body?.channel==="sms";
+  const testKey=sms?"template-test:sms":"template-test";
+  await consumeRateLimit(`${testKey}:${user.id}`,sms?15:3,900000);
+  await consumeRateLimit(`${testKey}:ip:${ipKeyGenerator(req.ip||"unknown")}`,sms?15:10,900000);
   try {
     res.json(await testTemplate(user,await prepareTemplateTest(user,req.body)));
   } catch(error) {
