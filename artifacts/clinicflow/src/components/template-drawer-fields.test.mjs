@@ -30,3 +30,9 @@ test("SMS drawer shows published DLT summary, editable current IDs, then its bod
   assert.match(html, /Indian SMS Compliance/); assert.match(html, /SMS Body/);
   assert.match(html, /maxLength="1600"/i); assert.ok(!html.includes("input-subject"));
 });
+test("drawer exposes the separate visit placeholders supplied by the catalog", () => {
+  const variables=["recipient_name","appointment_date","session_start","session_end","previous_date","previous_session_start","previous_session_end","queue_token","token_number"];
+  const html=renderToStaticMarkup(React.createElement(TemplateDrawerFields,{form,sms:true,errors:{},variables,scopeName:"Fictional Clinic",set:()=>{},templateKey:"rescheduled",active:null}));
+  for(const variable of variables)assert(html.includes(`{{${variable}}}`));
+  assert.match(html,/help-trigger|Help|help/i);
+});

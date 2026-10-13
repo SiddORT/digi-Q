@@ -12,6 +12,7 @@ import { recordNotification, recordDecision, claimNotificationOccurrence, notifi
 import { logger } from "./logger";
 import { confirmationText } from "./appointment-confirmation";
 import { reminderDispatchEligible } from "./notification-outbox";
+import { visitTemplateValues, missingVisitVariables } from "./notification-template-values";
 
 const phoneKey=(phone:string)=>createHash("sha256").update(phone).digest("hex");
 export function notificationPhone(value:unknown) {
@@ -42,7 +43,7 @@ async function targetAccounts(conn:any,group:TemplateRecipient,row:any,clinic:an
   }
   return targets;
 }
-export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string="") {
+export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string="",previousSession?:any) {
   if(!await claimNotificationOccurrence(conn,"sms",event,row))return;
   const env=(await resolvedIntegration("notificationSms",conn)).env;
   const gate=(await getSettings(conn,row.clinicId)).notificationsEnabled;
@@ -69,7 +70,7 @@ export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previ
         historyKey:decision,
         recipientGroup:group,recipientUserId:account.targetPatientId?undefined:account.id,
         recipientPatientId:account.targetPatientId,recipientPhoneKey:phoneKey(phone),
-        snapshot:row,previousDetails,state:"pending",createdAt,dueAt:createdAt,attempts:0,
+        snapshot:row,previousDetails,previousSession,state:"pending",createdAt,dueAt:createdAt,attempts:0,
       }}).onConflictDoNothing();
       await recordDecision(conn,decision,{...entry,createdAt,dueAt:createdAt},"pending");
     }
@@ -110,11 +111,13 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
         const phone=notificationPhone(target?.mobile);
         if(!target||target.status!=="active"||!phone||phoneKey(phone)!==data.recipientPhoneKey){await update("no_recipient");return null;}
         const patient=current?.patientId?await one(patients,current.patientId,tx):null;
-        const values={clinic_name:clinic.name,patient_name:patient?.fullName||"",doctor_name:snapshot.doctorName||"",
+        const values={...visitTemplateValues(data.appointmentId?snapshot:null,clinic,target.fullName||"",data.previousSession),
+          clinic_name:clinic.name,patient_name:patient?.fullName||"",doctor_name:snapshot.doctorName||"",
           appointment_details:current?confirmationText(snapshot,clinic).replace("Your appointment is confirmed.","Visit details:"):"",
           previous_details:data.previousDetails||"",reference:snapshot.reference||"",timezone:snapshot.timezone||clinic.timezone||"",
           clinic_contact:[clinic.email,clinic.phone].filter(Boolean).join(" · ")};
         const content=template.content as SmsTemplateContent;
+        if(missingVisitVariables([content.body],values).length){await update("preparation_failed");return null;}
         const message=substitute(content.body,values);
         if(message.length>1600){await update("preparation_failed");return null;}
         const cfg=notificationSmsConfig(env);

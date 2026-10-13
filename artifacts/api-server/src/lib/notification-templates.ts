@@ -1,11 +1,12 @@
 import { z } from "zod";
+import { visitVariables } from "./notification-template-values";
 
 export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder"] as const;
 export type TemplateEvent = typeof templateEvents[number];
 export const templateRecipients = ["patient", "clinicAdmin", "doctor", "receptionist"] as const;
 export type TemplateRecipient = typeof templateRecipients[number];
 export const defaultRecipient = (event: TemplateEvent): TemplateRecipient => event === "onboarding" ? "clinicAdmin" : "patient";
-export const templateVariables = ["clinic_name", "patient_name", "doctor_name", "appointment_details", "previous_details", "reference", "timezone", "clinic_contact"] as const;
+export const templateVariables = ["clinic_name", "patient_name", "doctor_name", "appointment_details", "previous_details", "reference", "timezone", "clinic_contact", ...visitVariables] as const;
 export const templateContent = z.object({
   enabled: z.boolean().default(true),
   subject: z.string().trim().min(1).max(180).refine(v => !/[\r\n]/.test(v), "Subject must be one line"),

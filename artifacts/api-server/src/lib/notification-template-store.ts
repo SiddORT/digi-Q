@@ -7,6 +7,7 @@ import { defaultRecipient, type TemplateRecipient } from "./notification-templat
 import { resolvedIntegration } from "./integration-vault";
 import { notificationSmsConfig, smsMetadataReady } from "./notification-sms-transport";
 import { DEMO_FIXTURE } from "./demo-policy";
+import { visitTemplateValues } from "./notification-template-values";
 
 export type Channel = "email" | "sms";
 const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event), channel:Channel="email") => `${channel==="sms"?"sms":"notification"}-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
@@ -38,7 +39,9 @@ export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, 
 export async function templateCatalog(user: any, clinicId?: string, recipient?: TemplateRecipient,channel:Channel="email") {
   if(channel==="sms") assert(user.role==="superAdmin",403,"Superadmin access required");
   const clinic = await authorizedTemplateScope(user, clinicId);
-  const values = { clinic_name: clinic?.name || "Example clinic", clinic_contact: [clinic?.email, clinic?.phone].filter(Boolean).join(" · "),
+  const values = { ...visitTemplateValues({date:"2030-01-15",startTime:"09:00",endTime:"12:00",token:"Q-007",tokenNumber:7},
+      clinic,"[Recipient name]",{date:"2030-01-14",startTime:"14:00",endTime:"17:00"}),
+    clinic_name: clinic?.name || "Example clinic", clinic_contact: [clinic?.email, clinic?.phone].filter(Boolean).join(" · "),
     patient_name: "[Patient name]", doctor_name: "[Doctor name]", appointment_details: "[Clinic-formatted visit details]", previous_details: "[Previous visit details]", reference: "[Booking reference]", timezone: "[Clinic location timezone]" };
   const items = [];
   for (const event of templateEvents) {

@@ -12,6 +12,7 @@ import { logger } from "./logger";
 import { resolvedIntegration } from "./integration-vault";
 import { createHash } from "node:crypto";
 import { assert } from "./http";
+import { previousSessionSnapshot, visitTemplateValues, missingVisitVariables } from "./notification-template-values";
 const emailKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 
 /** Explicit safe projection only: never return an outbox payload or recipient identifiers. */
@@ -58,12 +59,13 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
     }
     return;
   }
-  if (typeof previousDetails === "object") previousDetails = confirmationText(previousDetails, await one(clinics, row.clinicId, conn)).replace("Your appointment is confirmed.", "Previous visit details:");
+  const previousSession = previousSessionSnapshot(previousDetails);
+  if (previousSession) previousDetails = confirmationText(previousDetails, await one(clinics, row.clinicId, conn)).replace("Your appointment is confirmed.", "Previous visit details:");
   // Each channel has its own savepoint. Both successful preparations survive
   // failures in the other channel and still commit atomically with the visit.
   try {
     const {enqueueSmsEvent}=await import("./notification-sms-outbox");
-    await conn.transaction((tx:any)=>enqueueSmsEvent(tx,event,row,previousDetails));
+    await conn.transaction((tx:any)=>enqueueSmsEvent(tx,event,row,previousDetails,previousSession));
   } catch {
     logger.warn("SMS event preparation unavailable; visit and email retained");
     await conn.transaction((tx:any)=>claimNotificationOccurrence(tx,"sms",event,row)).catch(()=>false);
@@ -71,7 +73,7 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
       await recordDecision(conn,`sms-decision:${event}:${row.id}:${row.revision||0}:${group}:preparation`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"sms"),"preparation_failed");
   }
   try {
-    await conn.transaction((tx:any)=>enqueueEmailEvent(tx,event,row,previousDetails));
+    await conn.transaction((tx:any)=>enqueueEmailEvent(tx,event,row,previousDetails,previousSession));
   } catch {
     logger.warn("Email event preparation unavailable; visit and SMS retained");
     await conn.transaction((tx:any)=>claimNotificationOccurrence(tx,"email",event,row)).catch(()=>false);
@@ -79,7 +81,7 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
       await recordDecision(conn,`email-decision:${event}:${row.id}:${row.revision||0}:${group}:preparation`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"email"),"preparation_failed");
   }
 }
-async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string) {
+async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string,previousSession?:any) {
   if(!await claimNotificationOccurrence(conn,"email",event,row))return;
   const env=(await resolvedIntegration("smtp",conn)).env;
   const gate=(await getSettings(conn,row.clinicId)).notificationsEnabled;
@@ -136,7 +138,7 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
     recipientGroup: group, recipientUserId: target?.id,
     recipientEmailKey: target ? emailKey(target.email) : undefined,
     event, appointmentId: event === "onboarding" ? undefined : row.id, clinicId: row.clinicId,
-    previousDetails, snapshot: row, state: "pending", attempts: 0, dueAt: createdAt, createdAt,
+    previousDetails, previousSession, snapshot: row, state: "pending", attempts: 0, dueAt: createdAt, createdAt,
   } }).onConflictDoNothing();
   await recordDecision(conn,decision,{...entry,createdAt,dueAt:createdAt},"pending");
   }
@@ -201,13 +203,18 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       if (data.event === "reminder" && (!current || !reminderDispatchEligible(current, now) || current.revision !== data.snapshot.revision)) {
         await update({ state: "obsolete" }); return null;
       }
-      let recipient: string, patient: any = null;
+      let recipient: string, recipientName = "", patient: any = null;
       if (current) {
         patient = await one(patients, current.patientId, tx);
         const account = patient.userId ? await one(users, patient.userId, tx) : null;
         if(patient.status!=="active"||(account&&account.status!=="active")){await update({state:"obsolete"});return null;}
         recipient = account?.email || patient.email || "";
-      } else recipient = (await one(users, clinic.adminId, tx)).email || "";
+        recipientName = patient.fullName || account?.fullName || "";
+      } else {
+        const account = await one(users, clinic.adminId, tx);
+        recipient = account.email || "";
+        recipientName = account.fullName || "";
+      }
       if (data.recipientUserId) {
         const account = await one(users, data.recipientUserId, tx);
         let member = data.recipientGroup === "clinicAdmin" && clinic.adminId === account.id;
@@ -222,15 +229,21 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
         }
         if (!member || account.status !== "active") { await update({ state: "obsolete" }); return null; }
         recipient = account.email || "";
+        recipientName = account.fullName || "";
         if (data.recipientEmailKey && emailKey(recipient) !== data.recipientEmailKey) { await update({ state: "obsolete" }); return null; }
       }
       if (!validEmailAddress(recipient)) { await update({ state: "no_recipient" }); return null; }
       const template = await resolvedTemplate(data.event, data.clinicId, tx, data.recipientGroup || defaultRecipient(data.event));
       if (!template.content.enabled || template.activatedAt > data.createdAt) { await update({ state: "disabled" }); return null; }
       const row = data.snapshot;
-      const rendered = renderNotification(template.content, { clinic_name: clinic.name, patient_name: patient?.fullName || "", doctor_name: row.doctorName || "",
+      const values = { ...visitTemplateValues(current?row:null,clinic,recipientName,data.previousSession),
+        clinic_name: clinic.name, patient_name: patient?.fullName || "", doctor_name: row.doctorName || "",
         appointment_details: current ? confirmationText(row, clinic).replace("Your appointment is confirmed.", "Visit details:") : "",
-        previous_details: data.previousDetails || "", reference: row.reference || "", timezone: row.timezone || clinic.timezone || "", clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · ") });
+        previous_details: data.previousDetails || "", reference: row.reference || "", timezone: row.timezone || clinic.timezone || "", clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · ") };
+      if(missingVisitVariables([template.content.subject,template.content.body,template.content.prefix,template.content.footer],values).length){
+        await update({state:"preparation_failed"});return null;
+      }
+      const rendered = renderNotification(template.content, values);
       const env=(await resolvedIntegration("smtp",tx)).env;
       let cfg;
       try{cfg=smtpConfig(env);}catch{await update({state:"configuration_failed"});return null;}

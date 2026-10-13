@@ -36,3 +36,4 @@
 - [Node render tests](node-test-bundling.md) — React server-render bundles need a CommonJS-compatible boundary; ESM data URLs can fail before rendering.
 - [Booking history paging](booking-history-paging.md) — preserve numeric-page compatibility; index clinic growth separately from deep-offset costs.
 - [Preview browser secret boundary](preview-browser-secret-boundary.md) — delegated browsers may lack workspace secrets; verify securely through the actual Preview without exposing credentials.
+- [Notification fixture fidelity](notification-fixture-fidelity.md) — test both event snapshots and production-valid persisted records; dispatch hydration may exercise a different contract.

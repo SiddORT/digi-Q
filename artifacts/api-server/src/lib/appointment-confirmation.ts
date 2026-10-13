@@ -5,7 +5,7 @@ import { sendAuthEmail } from "./auth-email";
 import { validEmailAddress, emailNotificationsEnabled, smtpConfig } from "./integration-config";
 import { resolvedIntegration } from "./integration-vault";
 import { recordNotification, recordDecision, notificationEntry, historyId, templateSnapshot } from "./notification-history";
-import { clinicDisplayPreferences } from "./display-preferences";
+import { formatTemplateSession, visitTemplateValues, missingVisitVariables } from "./notification-template-values";
 import { lockQueue } from "./appointments";
 import { resolvedTemplate } from "./notification-template-store";
 import { renderNotification } from "./notification-templates";
@@ -42,20 +42,9 @@ export async function initialConfirmationEmail(patient: any, enabled: boolean, c
 }
 
 export function confirmationText(row: any, clinic: any) {
-  const preferences = clinicDisplayPreferences(clinic);
-  const [year, month, day] = row.date.split("-");
-  const date = preferences.dateFormat === "DD/MM/YYYY" ? `${day}/${month}/${year}`
-    : preferences.dateFormat === "MM/DD/YYYY" ? `${month}/${day}/${year}`
-    : preferences.dateFormat === "YYYY-MM-DD" ? row.date
-    : `${day} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][Number(month)-1]} ${year}`;
-  const time = (value: string | undefined) => {
-    if (!value) return "Not recorded";
-    if (preferences.timeFormat === "24h") return value;
-    const [hour, minute] = value.split(":");
-    return `${Number(hour)%12||12}:${minute} ${Number(hour)<12?"AM":"PM"}`;
-  };
+  const { date, start, end } = formatTemplateSession(row, clinic);
   // No medical notes, receipt secret, QR bearer payload or account tokens.
-  return `Your appointment is confirmed.\n\n${row.clinicName} · ${row.branchName}\nDoctor: ${row.doctorName}\nDate: ${date}\nSession: ${time(row.startTime)}–${time(row.endTime)} (${row.timezone || "timezone unavailable"})\nReference: ${row.reference}\nToken: ${row.token}\n\nKeep your appointment ticket. A session is a time range, not an exact consultation time. Check in with reception when you arrive.`;
+  return `Your appointment is confirmed.\n\n${row.clinicName} · ${row.branchName}\nDoctor: ${row.doctorName}\nDate: ${date}\nSession: ${start || "Not recorded"}–${end || "Not recorded"} (${row.timezone || "timezone unavailable"})\nReference: ${row.reference}\nToken: ${row.token}\n\nKeep your appointment ticket. A session is a time range, not an exact consultation time. Check in with reception when you arrive.`;
 }
 
 async function saveOutcome(conn: any, id: string, outcome: ConfirmationEmail, dispatchOutcome?: "provider_accepted" | "provider_rejected" | "pre_dispatch_failed" | "delivery_unknown") {
@@ -121,12 +110,19 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
         await log("not_attempted");
         await saveOutcome(tx,id,"not_attempted","pre_dispatch_failed");return {outcome:"not_attempted"};
       }
-      const rendered = template.source === "default" ? undefined : renderNotification(template.content, {
+      const values = {
+        ...visitTemplateValues(row, clinic, patient.fullName || patientAccount?.fullName || ""),
         clinic_name: clinic.name, patient_name: patient.fullName || "Patient",
         doctor_name: row.doctorName || "Your doctor", appointment_details: confirmationText(row, clinic),
         reference: row.reference || "", timezone: row.timezone || "", previous_details: "",
         clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · "),
-      });
+      };
+      if (template.source !== "default" && missingVisitVariables([template.content.subject, template.content.body, template.content.prefix, template.content.footer], values).length) {
+        await log("preparation_failed");
+        await saveOutcome(tx,id,"unavailable","pre_dispatch_failed");
+        return {outcome:"unavailable"};
+      }
+      const rendered = template.source === "default" ? undefined : renderNotification(template.content, values);
       let cfg;
       try{cfg=smtpConfig(env);}catch{
         await log("configuration_failed");
