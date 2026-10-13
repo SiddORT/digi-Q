@@ -47,7 +47,8 @@ syntactic readiness.
 
 **Why:** Portal tests returned HTTP 401 while safe settings metadata showed the
 KIT endpoint selected as Generic. Presence checks alone did not reveal the
-request-contract mismatch.
+request-contract mismatch. The user subsequently confirmed SMS was working
+after the explicit dedicated-provider correction.
 
 **How to apply:** Inspect only public readiness metadata and sanitized log
 outcomes. Offer an explicit draft preset correction requiring ordinary
