@@ -7,6 +7,7 @@ import { resolvedIntegration } from "./integration-vault";
 import { smtpConfig } from "./integration-config";
 import { notificationSmsConfig, smsPayload, sendNotificationSms, type SmsOutcome } from "./notification-sms-transport";
 import { sendAuthEmail } from "./auth-email";
+import { storedSmsDiagnostic, type SmsDiagnostic } from "./notification-sms-diagnostics";
 
 type TestInput = {
   channel: "email" | "sms"; event: string; recipientGroup: string; clinicId?: string;
@@ -18,7 +19,10 @@ type TestInput = {
 /** One claim shared by provider and template tests. Explicit requests bypass optional
  * activation gates but never configuration, authentication or durable at-most-once. */
 export async function dispatchNotificationTest(actor: string, input: TestInput, conn: any = db,
-  smsSend = sendNotificationSms, emailSend = sendAuthEmail): Promise<SmsOutcome> {
+  smsSend = sendNotificationSms, emailSend = sendAuthEmail, onDiagnostic?: (diagnostic: SmsDiagnostic) => void): Promise<SmsOutcome> {
+  const reportDiagnostic = (diagnostic: SmsDiagnostic) => {
+    try { onDiagnostic?.(diagnostic); } catch { /* Reporting never permits a resend. */ }
+  };
   assert(input.confirmed && /^[a-f0-9-]{36}$/i.test(input.requestId), 400, "Confirm the test and provide a request ID");
   const id = `notification-test:${actor}:${input.requestId}`;
   const digest = createHash("sha256").update(JSON.stringify(input)).digest("hex");
@@ -29,7 +33,7 @@ export async function dispatchNotificationTest(actor: string, input: TestInput, 
     const [prior] = await tx.select().from(settings).where(eq(settings.id, id));
     if (prior) {
       assert(prior.data.digest === digest, 409, "Request ID already used for a different test");
-      return { replay: prior.data.status as SmsOutcome };
+      return { replay: prior.data.status as SmsOutcome, diagnostic: storedSmsDiagnostic(prior.data.diagnosticCode, prior.data.httpStatus) };
     }
     let env: NodeJS.ProcessEnv, sender: string, provider: string, secrets: string[];
     try {
@@ -60,10 +64,15 @@ export async function dispatchNotificationTest(actor: string, input: TestInput, 
     }, secrets);
     return { env };
   });
-  if (claim.replay) return claim.replay;
+  if (claim.replay) {
+    if (claim.replay === "provider_rejected" && "diagnostic" in claim && claim.diagnostic) reportDiagnostic(claim.diagnostic);
+    return claim.replay;
+  }
   let status: SmsOutcome = "delivery_unknown", httpStatus: number | undefined;
+  let diagnostic: SmsDiagnostic | undefined;
   try {
-    if (input.channel === "sms") status = await smsSend(claim.env!, input.recipient, input.message, input.content || {}, code => { httpStatus = code; });
+    if (input.channel === "sms") status = await smsSend(claim.env!, input.recipient, input.message, input.content || {}, code => { httpStatus = code; },
+      info => { diagnostic = storedSmsDiagnostic(info.code, httpStatus); });
     else {
       await emailSend(input.recipient, input.subject, input.message, undefined, input.rendered, [], claim.env!);
       status = "provider_accepted";
@@ -72,10 +81,13 @@ export async function dispatchNotificationTest(actor: string, input: TestInput, 
     status = error?.code === "EMAIL_REJECTED" ? "provider_rejected" :
       ["EMAIL_UNCONFIGURED", "EMAIL_PRE_DISPATCH_FAILED"].includes(error?.code) ? "pre_dispatch_failed" : "delivery_unknown";
   }
+  if (status !== "provider_rejected") diagnostic = undefined;
   // If final persistence fails, the permanent unknown claim prevents replay.
   try {
-    await conn.update(settings).set({ data: { digest, status, finishedAt: Date.now() } }).where(eq(settings.id, id));
+    await conn.update(settings).set({ data: { digest, status, finishedAt: Date.now(),
+      ...(diagnostic ? { diagnosticCode: diagnostic.code, httpStatus: diagnostic.httpStatus } : {}) } }).where(eq(settings.id, id));
     await recordNotification(conn, id, entry, status, undefined, [], Date.now(), httpStatus);
   } catch { /* Durable unknown claim retained; never rethrow to encourage a new send. */ }
+  if (diagnostic) reportDiagnostic(diagnostic);
   return status;
 }

@@ -148,6 +148,15 @@ test("Keep in Touch explicit tests and eligible automatic notifications use the 
    assert.equal((await h.control.query("select data->>'state' state from settings where id like 'sms-outbox:completed:kit-visit:%'")).rows[0].state,"provider_accepted");
   const count=globalThis.kitNetwork.length;
   await api.processSmsNotifications(h.db);assert.equal(globalThis.kitNetwork.length,count);
+   globalThis.kitResponse={Success:false,Message:"Invalid DLT template. fictional-kit-body-key +919876543213"};
+   const rejectedPrepared=await api.prepareTemplateTest(sa,{...prepared.body,confirmed:true,requestId:randomUUID()});
+   const rejected=await api.testTemplate(sa,rejectedPrepared);
+   assert.equal(rejected.status,"provider_rejected");assert.match(rejected.message,/HTTP 200/);
+   assert.match(rejected.message,/DLT\/template problem/);
+   assert(!rejected.message.includes("fictional-kit-body-key"));assert(!rejected.message.includes("+919876543213"));
+   const rejectedCount=globalThis.kitNetwork.length;
+   assert.deepEqual(await api.testTemplate(sa,rejectedPrepared),rejected,"a replay retains the safe diagnosis");
+   assert.equal(globalThis.kitNetwork.length,rejectedCount,"rejection replay never sends again");
    const unknownId="kit-visit-unknown";
    const unknownRow={...row,id:unknownId};
    await h.db.insert(api.appointments).values({id:unknownId,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:row.date,status:row.status,data:unknownRow});

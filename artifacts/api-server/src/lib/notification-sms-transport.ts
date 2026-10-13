@@ -3,6 +3,7 @@ import { lookup } from "node:dns/promises";
 import { request } from "node:https";
 import { BlockList, isIP } from "node:net";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { smsRejectionDiagnostic, type SmsDiagnostic } from "./notification-sms-diagnostics";
 
 export const KEEP_IN_TOUCH_URL = "https://api.keepintouch.life/kitversion01/api/DripMaster/SendSMS";
 export const KEEP_IN_TOUCH_REQUEST_TIMEOUT_MS = 30000;
@@ -191,7 +192,7 @@ export function classifySmsResponse(mapping: SmsMapping, status: number, body: s
 }
 /** Resolve once, validate every answer and pin that exact address in TLS request lookup.
  * No fetch/global agent/proxy redirects or second DNS lookup can bypass the public-IP check. */
-export async function sendNotificationSms(env: NodeJS.ProcessEnv, to: string, message: string, meta: {senderId?:string;dltEntityId?:string;dltTemplateId?:string}, onHttpStatus?: (code: number) => void): Promise<SmsOutcome> {
+export async function sendNotificationSms(env: NodeJS.ProcessEnv, to: string, message: string, meta: {senderId?:string;dltEntityId?:string;dltTemplateId?:string}, onHttpStatus?: (code: number) => void, onDiagnostic?: (diagnostic: SmsDiagnostic) => void): Promise<SmsOutcome> {
   let cfg: ReturnType<typeof notificationSmsConfig>, payload: ReturnType<typeof smsPayload>;
   let pinned: {address:string;family:number};
   try {
@@ -210,7 +211,15 @@ export async function sendNotificationSms(env: NodeJS.ProcessEnv, to: string, me
       if(res.statusCode)onHttpStatus?.(res.statusCode);
       let body = "", bytes = 0;
       res.on("data",chunk=>{bytes+=chunk.length;if(bytes>16384){finish("delivery_unknown");req.destroy();}else body+=chunk.toString("utf8");});
-      res.on("end",()=>finish(classifySmsResponse(cfg.mapping,res.statusCode || 0,body,cfg.provider)));
+      res.on("end",()=>{
+        if (finished) return;
+        const outcome = classifySmsResponse(cfg.mapping,res.statusCode || 0,body,cfg.provider);
+        if (outcome === "provider_rejected") {
+          try { onDiagnostic?.(smsRejectionDiagnostic(res.statusCode || 0,body)); }
+          catch { /* Diagnostic consumers must not change a dispatch outcome. */ }
+        }
+        finish(outcome);
+      });
       res.on("error",()=>finish("delivery_unknown"));
     });
     const timer = setTimeout(()=>{finish(dispatched?"delivery_unknown":"pre_dispatch_failed");req.destroy();},cfg.provider === "keepInTouch" ? KEEP_IN_TOUCH_REQUEST_TIMEOUT_MS : 10000);

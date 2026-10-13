@@ -47,6 +47,10 @@
 .et-test{grid-column:1/-1;display:grid;gap:12px}
 .et-test-values{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
 .et-test pre{white-space:pre-wrap;margin:8px 0 0}
+.et-test .et-test-result{display:block;min-width:0;overflow-wrap:anywhere}
+.et-test-result>strong{display:block;margin-bottom:4px}
+.et-test-result>p{margin-top:8px}
+.et-test-result>p>button{margin:8px 0;display:flex}
 .event-controls .ec-event{margin-top:18px}
 .event-controls .ec-table{width:100%;border-collapse:collapse}
 .event-controls .ec-table th,.event-controls .ec-table td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--border,#e5e7eb)}

@@ -109,8 +109,8 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     </div>
     {(preview.isError || test.isError) && <p role="alert" className="error-box" data-testid="status-test-error">The test could not run. Retrying reuses the same request, so it cannot duplicate a message the provider already accepted.
       {test.isError && submitted.current && <button type="button" onClick={retry} data-testid="button-retry-test">Retry Same Request</button>}</p>}
-    {result && <div role={failed ? "alert" : "status"} className={failed ? "error-box" : "et-notice"} data-testid="status-test-result"><strong>{OUTCOME[result.status] ?? result.status}</strong> {result.message}
-      {canStartNewTemplateTest(test.data?.status) && <p>Nothing was dispatched. After resolving the issue, start a new test and confirm again.
+    {result && <div role={failed ? "alert" : "status"} className={`et-test-result ${failed ? "error-box" : "et-notice"}`} data-testid="status-test-result"><strong>{OUTCOME[result.status] ?? result.status}</strong> {result.message}
+      {canStartNewTemplateTest(test.data?.status) && <p>After resolving the issue, start a new test and confirm again.
         <button type="button" className="button secondary small" disabled={test.isPending} onClick={startNewTest} data-testid="button-start-new-test">Start New Test</button></p>}
       {channel === "email" && <div data-testid="text-test-subject">{result.subject}</div>}<pre data-testid="text-test-body">{result.body}</pre></div>}
   </section>;

@@ -37,6 +37,23 @@ const api=await import(path);
 const map={encoding:"json",authMode:"header",authField:"X-API-Key",fields:{recipient:"to",message:"message",senderId:"sender",dltEntityId:"entity",dltTemplateId:"template"},staticFields:{},acceptedStatuses:[200],responseField:"ok",responseValue:"yes",dltRequired:false};
 const env={NOTIFICATION_SMS_URL:"https://rebinding.example.invalid/send",NOTIFICATION_SMS_KEY:"synthetic-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-generic-bearer",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_MAPPING:JSON.stringify(map)};
 after(async()=>{await rm(path,{force:true});delete globalThis.fakeSmsNetwork;});
+test("transport diagnostics are safe, emitted only for rejection and cannot change the outcome",async()=>{
+ const state=globalThis.fakeSmsNetwork;
+ const diagnosticEnv={...env,NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_CLIENT_ID:"fictional-client",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits"};
+ const prior={scenario:state.scenario,response:state.response,status:state.status};
+ try{
+  state.scenario="accepted";state.status=200;
+  for(const [success,outcome] of [[false,"provider_rejected"],[true,"provider_accepted"],["true","delivery_unknown"]]){
+   state.response=JSON.stringify({Success:success,Message:"Invalid TemplateId; private-key +919876543210"});
+   const diagnostics=[];
+   assert.equal(await api.sendNotificationSms(diagnosticEnv,"+919876543210","Fixture",{dltTemplateId:"1700000000000000000"},undefined,d=>diagnostics.push(d)),outcome);
+   assert.equal(diagnostics.length,success===false?1:0);
+   if(diagnostics.length){assert.equal(diagnostics[0].code,"dlt_validation_failed");assert(!JSON.stringify(diagnostics).includes("private-key"));}
+  }
+  state.response=JSON.stringify({Success:false,Message:"Invalid SenderId"});
+  assert.equal(await api.sendNotificationSms(diagnosticEnv,"+919876543210","Fixture",{dltTemplateId:"1700000000000000000"},undefined,()=>{throw Error("Reporting unavailable");}),"provider_rejected");
+ }finally{Object.assign(state,prior);}
+});
 test("SMS metadata validation ignores full-template bodies and validates only actual provider IDs",()=>{
  const message="Dear Fictional Patient,\nyour visit with Dr Fictional Doctor is confirmed for 15 Oct 2030. Queue No: 03. Session starts at 5 pm. Please check in with reception. - Digi-Q";
  const template={enabled:false,subject:"Booking confirmation",body:message,prefix:"",footer:"",logoUrl:"",

@@ -1,4 +1,5 @@
 import { db, settings } from "@workspace/db";
+import type { SmsDiagnostic } from "./notification-sms-diagnostics";
 import { eq, sql } from "drizzle-orm";
 import { randomUUID, createHash } from "node:crypto";
 import { z } from "zod";
@@ -79,11 +80,15 @@ export async function testTemplate(user:any,prepared:Awaited<ReturnType<typeof p
   const {body,content,rendered}=prepared;
   assert(body.confirmed===true&&body.requestId,400,"Confirm one real test send and provide a request ID");
   assert(body.recipient && (body.channel==="sms"?/^\+[1-9]\d{6,14}$/.test(body.recipient):validEmailAddress(body.recipient)),400,"Enter one valid explicit recipient");
+  let diagnostic: SmsDiagnostic | undefined;
   const status=await dispatchNotificationTest(user.id,{
     channel:body.channel,event:body.event,recipientGroup:body.recipientGroup,clinicId:body.clinicId,
     recipient:body.recipient!,subject:rendered.subject,message:rendered.text,confirmed:true,requestId:body.requestId!,
     templateId:`${body.channel}:${body.event}:${body.recipientGroup}`,templateRevision:body.revision,templateScope:"test_draft",
     content:body.channel==="sms"?content as SmsTemplateContent:undefined,rendered:body.channel==="email"?rendered as any:undefined,
-  },db,smsSend,emailSend);
-  return {status,message:outcomeMessages[status],subject:rendered.subject,body:rendered.text};
+  },db,smsSend,emailSend, info => { diagnostic = info; });
+  const message = diagnostic
+    ? `${diagnostic.httpStatus ? `HTTP ${diagnostic.httpStatus}. ` : ""}${diagnostic.message}`
+    : outcomeMessages[status];
+  return {status,message,subject:rendered.subject,body:rendered.text};
 }
