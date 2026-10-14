@@ -61,4 +61,5 @@ Thumbs.db
 
 # Disposable acceptance server bundles
 .acceptance-*.mjs
+.feature-harness-*.mjs
 /generated-artifacts/
