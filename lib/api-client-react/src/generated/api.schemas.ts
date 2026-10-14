@@ -20,6 +20,121 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export type HistoryReviewRecordStatus = typeof HistoryReviewRecordStatus[keyof typeof HistoryReviewRecordStatus];
+
+
+export const HistoryReviewRecordStatus = {
+  blocked: 'blocked',
+  unresolved: 'unresolved',
+} as const;
+
+export interface HistoryReviewRecord {
+  id: string;
+  version: string;
+  channel: string;
+  event: string;
+  envelopeCount: number;
+  status: HistoryReviewRecordStatus;
+  unresolvedReason: string | null;
+  /** Unix time in milliseconds */
+  reviewedAt: number | null;
+}
+
+export interface HistoryReviewCursorInput {
+  cursor: string;
+}
+
+export interface HistoryReviewPage {
+  items: HistoryReviewRecord[];
+  nextCursor: string | null;
+  scannedCount: number;
+}
+
+export interface HistoryEvidenceInput {
+  historyId: string;
+  version: string;
+  /**
+     * Original signed archive JSON: {id,data}, or an array of such records. Never a freshly signed copy of current metadata.
+     * @maxLength 100000
+     */
+  evidence: string;
+}
+
+export type HistoryEvidenceReviewStatus = typeof HistoryEvidenceReviewStatus[keyof typeof HistoryEvidenceReviewStatus];
+
+
+export const HistoryEvidenceReviewStatus = {
+  eligible: 'eligible',
+  unresolved: 'unresolved',
+} as const;
+
+export type HistoryEvidenceReviewOwnership = typeof HistoryEvidenceReviewOwnership[keyof typeof HistoryEvidenceReviewOwnership];
+
+
+export const HistoryEvidenceReviewOwnership = {
+  includes_target: 'includes_target',
+  excludes_target: 'excludes_target',
+  unknown: 'unknown',
+} as const;
+
+export interface HistoryEvidenceReview {
+  status: HistoryEvidenceReviewStatus;
+  historyId: string;
+  version: string;
+  reason: string;
+  ownership: HistoryEvidenceReviewOwnership;
+  envelopeCount: number;
+  sourceCount: number;
+  subjectCount: number;
+  reviewToken: string | null;
+}
+
+export type HistoryEvidenceCommitConfirmation = typeof HistoryEvidenceCommitConfirmation[keyof typeof HistoryEvidenceCommitConfirmation];
+
+
+export const HistoryEvidenceCommitConfirmation = {
+  restore: 'restore',
+} as const;
+
+export interface HistoryEvidenceCommit {
+  historyId: string;
+  version: string;
+  /** @maxLength 100000 */
+  evidence: string;
+  reviewToken: string;
+  confirmation: HistoryEvidenceCommitConfirmation;
+}
+
+export type HistoryUnresolvedInputReason = typeof HistoryUnresolvedInputReason[keyof typeof HistoryUnresolvedInputReason];
+
+
+export const HistoryUnresolvedInputReason = {
+  original_missing: 'original_missing',
+  incomplete_evidence: 'incomplete_evidence',
+  conflicting_sources: 'conflicting_sources',
+  unreadable_archive: 'unreadable_archive',
+} as const;
+
+export interface HistoryUnresolvedInput {
+  historyId: string;
+  version: string;
+  reason: HistoryUnresolvedInputReason;
+}
+
+export type HistoryReconciliationResultStatus = typeof HistoryReconciliationResultStatus[keyof typeof HistoryReconciliationResultStatus];
+
+
+export const HistoryReconciliationResultStatus = {
+  verified: 'verified',
+  unresolved: 'unresolved',
+} as const;
+
+export interface HistoryReconciliationResult {
+  status: HistoryReconciliationResultStatus;
+  historyId: string;
+  message: string;
+}
+
 export interface GeographySuggestions {
   items: string[];
   /** Whether the given city belongs to the given state; true when the directory cannot judge */

@@ -18,7 +18,7 @@ const ident = (s: string) => sql.raw(`"${s.replaceAll('"', '""')}"`);
 const fingerprint = (s: string) => createHash("sha256").update(s).digest("hex");
 const proposal = { kind: "staff-account-removal" };
 const personalLimiterFamilies = ["document-upload", "logo-upload", "staff-invite", "template-edit",
-  "event-control", "template-preview", "template-test", "template-test:sms", "ticket-email",
+  "event-control", "template-preview", "template-test", "template-test:sms", "history-reconciliation", "ticket-email",
   "integration-check", "integration-edit:actor", "sms-test:actor", "smtp-test:actor"];
 const read = async (tx: any, q: ReturnType<typeof sql>) => (await tx.execute(q)).rows as any[];
 
@@ -88,7 +88,8 @@ async function inspect(tx: any, context: Context) {
   const changes: { id: string; action: string; data?: any }[] = [];
   for (const row of settingsRows) {
     const decision = classifyStaffSetting(row, attribution, media);
-    if (decision.action === "resolve") warn("SETTINGS_REFERENCE_REVIEW", decision.reason!, "settings", [row.id]);
+    if (decision.action === "resolve") warn(row.id.startsWith("notification-history:") ? "ENCRYPTED_HISTORY_REVIEW" : "SETTINGS_REFERENCE_REVIEW",
+      decision.reason!, "settings", [row.id]);
     else if (decision.action !== "preserve") changes.push({ id: row.id, action: decision.action, data: decision.data });
   }
   const graph = media?.evidence ?? (await staffMediaGraph(tx)).map(g => ({ table: g.table, row: g.row }));

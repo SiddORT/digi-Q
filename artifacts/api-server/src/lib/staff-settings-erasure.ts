@@ -14,6 +14,21 @@ export function classifyStaffSetting(row: { id: string; data: any }, target: Sta
   email?: string; mobile?: string; fullName?: string; clerkId?: string;
 }, media?: { exclusiveLogoIds: string[]; sharedLogoIds: string[] }): SettingsDisposition {
   const { id, data } = row, family = id.split(":")[0];
+  if (family === "notification-history-reconciliation") {
+    // This family stores only anonymous review receipts, never source exports.
+    // Strict shape validation prevents a later private field from inheriting it.
+    const common = ["recordVersion", "reviewedAt", "reviewerFingerprint", "status"];
+    const fields = data?.status === "verified" ? [...common, "sourceCount", "envelopeCount"] : [...common, "reason"];
+    const valid = /^notification-history-reconciliation:[a-f0-9]{64}$/.test(id) &&
+      data && typeof data === "object" && Object.keys(data).sort().join(",") === fields.sort().join(",") &&
+      /^[a-f0-9]{64}$/.test(data.recordVersion) && /^[a-f0-9]{64}$/.test(data.reviewerFingerprint) &&
+      Number.isSafeInteger(data.reviewedAt) && data.reviewedAt >= 0 &&
+      (data.status === "verified"
+        ? Number.isSafeInteger(data.sourceCount) && data.sourceCount >= 1 && data.sourceCount <= 10 &&
+          Number.isSafeInteger(data.envelopeCount) && data.envelopeCount >= 0
+        : data.status === "unresolved" && ["original_missing", "incomplete_evidence", "conflicting_sources", "unreadable_archive"].includes(data.reason));
+    return valid ? { action: "preserve" } : { action: "resolve", reason: "Unclassified history reconciliation receipt" };
+  }
   if (data?.erased === true) return Object.keys(data).sort().join(",") === "erased,reason" &&
     data.reason === "staff_account_removed" &&
     !id.split(":").some(part => [target.userId, target.clerkId].filter(Boolean).includes(part))

@@ -121,6 +121,13 @@ import type {
   GuestRequestInput,
   GuestRequestList,
   HealthStatus,
+  HistoryEvidenceCommit,
+  HistoryEvidenceInput,
+  HistoryEvidenceReview,
+  HistoryReconciliationResult,
+  HistoryReviewCursorInput,
+  HistoryReviewPage,
+  HistoryUnresolvedInput,
   Identity,
   IntegrationCheck,
   IntegrationSettings,
@@ -787,6 +794,415 @@ export function useGetStaffDeletionImpact<TData = Awaited<ReturnType<typeof getS
 
 
 
+
+export const getGetStaffHistoryReviewUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/notification-history-review`
+}
+
+/**
+ * Superadmin-only bounded scan of unproven history. Unknown ownership can block any staff removal.
+ */
+export const getStaffHistoryReview = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<HistoryReviewPage> => {
+
+  return customFetch<HistoryReviewPage>(getGetStaffHistoryReviewUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffHistoryReviewQueryKey = (id: string,) => {
+    return [
+    `/api/management/system-users/${id}/notification-history-review`
+    ] as const;
+    }
+
+
+export const getGetStaffHistoryReviewQueryOptions = <TData = Awaited<ReturnType<typeof getStaffHistoryReview>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffHistoryReview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffHistoryReviewQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffHistoryReview>>> = ({ signal }) => getStaffHistoryReview(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffHistoryReview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffHistoryReviewQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffHistoryReview>>>
+export type GetStaffHistoryReviewQueryError = ErrorType<void>
+
+
+
+export function useGetStaffHistoryReview<TData = Awaited<ReturnType<typeof getStaffHistoryReview>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffHistoryReview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffHistoryReviewQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getScanStaffHistoryReviewUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/notification-history-review/scan`
+}
+
+/**
+ * Read-only cursor scan; no history or account changes.
+ */
+export const scanStaffHistoryReview = async (id: string,
+    historyReviewCursorInput: HistoryReviewCursorInput, options?: Parameters<typeof customFetch>[1]): Promise<HistoryReviewPage> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<HistoryReviewPage>(getScanStaffHistoryReviewUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(historyReviewCursorInput)
+  }
+);}
+
+
+
+
+
+export const getScanStaffHistoryReviewMutationKey = () => ['scanStaffHistoryReview'] as const;
+
+export const getScanStaffHistoryReviewMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanStaffHistoryReview>>, TError,ScanStaffHistoryReviewMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof scanStaffHistoryReview>>, TError,ScanStaffHistoryReviewMutationVariables, TContext> => {
+
+const mutationKey = getScanStaffHistoryReviewMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof scanStaffHistoryReview>>, ScanStaffHistoryReviewMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  scanStaffHistoryReview(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ScanStaffHistoryReviewMutationResult = NonNullable<Awaited<ReturnType<typeof scanStaffHistoryReview>>>
+    export type ScanStaffHistoryReviewMutationBody = BodyType<HistoryReviewCursorInput>
+    export type ScanStaffHistoryReviewMutationError = ErrorType<unknown>
+    export type ScanStaffHistoryReviewMutationVariables = {id: string;data: BodyType<HistoryReviewCursorInput>}
+
+    export const useScanStaffHistoryReview = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scanStaffHistoryReview>>, TError,ScanStaffHistoryReviewMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof scanStaffHistoryReview>>,
+        TError,
+        ScanStaffHistoryReviewMutationVariables,
+        TContext
+      > => {
+      return useMutation(getScanStaffHistoryReviewMutationOptions(options));
+    }
+
+export const getPreviewStaffHistoryEvidenceUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/notification-history-review/preview`
+}
+
+export const previewStaffHistoryEvidence = async (id: string,
+    historyEvidenceInput: HistoryEvidenceInput, options?: Parameters<typeof customFetch>[1]): Promise<HistoryEvidenceReview> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<HistoryEvidenceReview>(getPreviewStaffHistoryEvidenceUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(historyEvidenceInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewStaffHistoryEvidenceMutationKey = () => ['previewStaffHistoryEvidence'] as const;
+
+export const getPreviewStaffHistoryEvidenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewStaffHistoryEvidence>>, TError,PreviewStaffHistoryEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewStaffHistoryEvidence>>, TError,PreviewStaffHistoryEvidenceMutationVariables, TContext> => {
+
+const mutationKey = getPreviewStaffHistoryEvidenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewStaffHistoryEvidence>>, PreviewStaffHistoryEvidenceMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  previewStaffHistoryEvidence(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewStaffHistoryEvidenceMutationResult = NonNullable<Awaited<ReturnType<typeof previewStaffHistoryEvidence>>>
+    export type PreviewStaffHistoryEvidenceMutationBody = BodyType<HistoryEvidenceInput>
+    export type PreviewStaffHistoryEvidenceMutationError = ErrorType<void>
+    export type PreviewStaffHistoryEvidenceMutationVariables = {id: string;data: BodyType<HistoryEvidenceInput>}
+
+    export const usePreviewStaffHistoryEvidence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewStaffHistoryEvidence>>, TError,PreviewStaffHistoryEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewStaffHistoryEvidence>>,
+        TError,
+        PreviewStaffHistoryEvidenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPreviewStaffHistoryEvidenceMutationOptions(options));
+    }
+
+export const getRestoreStaffHistoryEvidenceUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/notification-history-review/restore`
+}
+
+export const restoreStaffHistoryEvidence = async (id: string,
+    historyEvidenceCommit: HistoryEvidenceCommit, options?: Parameters<typeof customFetch>[1]): Promise<HistoryReconciliationResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<HistoryReconciliationResult>(getRestoreStaffHistoryEvidenceUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(historyEvidenceCommit)
+  }
+);}
+
+
+
+
+
+export const getRestoreStaffHistoryEvidenceMutationKey = () => ['restoreStaffHistoryEvidence'] as const;
+
+export const getRestoreStaffHistoryEvidenceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreStaffHistoryEvidence>>, TError,RestoreStaffHistoryEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreStaffHistoryEvidence>>, TError,RestoreStaffHistoryEvidenceMutationVariables, TContext> => {
+
+const mutationKey = getRestoreStaffHistoryEvidenceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreStaffHistoryEvidence>>, RestoreStaffHistoryEvidenceMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  restoreStaffHistoryEvidence(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreStaffHistoryEvidenceMutationResult = NonNullable<Awaited<ReturnType<typeof restoreStaffHistoryEvidence>>>
+    export type RestoreStaffHistoryEvidenceMutationBody = BodyType<HistoryEvidenceCommit>
+    export type RestoreStaffHistoryEvidenceMutationError = ErrorType<void>
+    export type RestoreStaffHistoryEvidenceMutationVariables = {id: string;data: BodyType<HistoryEvidenceCommit>}
+
+    export const useRestoreStaffHistoryEvidence = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreStaffHistoryEvidence>>, TError,RestoreStaffHistoryEvidenceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof restoreStaffHistoryEvidence>>,
+        TError,
+        RestoreStaffHistoryEvidenceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRestoreStaffHistoryEvidenceMutationOptions(options));
+    }
+
+export const getMarkStaffHistoryUnresolvedUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/notification-history-review/unresolved`
+}
+
+export const markStaffHistoryUnresolved = async (id: string,
+    historyUnresolvedInput: HistoryUnresolvedInput, options?: Parameters<typeof customFetch>[1]): Promise<HistoryReconciliationResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<HistoryReconciliationResult>(getMarkStaffHistoryUnresolvedUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(historyUnresolvedInput)
+  }
+);}
+
+
+
+
+
+export const getMarkStaffHistoryUnresolvedMutationKey = () => ['markStaffHistoryUnresolved'] as const;
+
+export const getMarkStaffHistoryUnresolvedMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markStaffHistoryUnresolved>>, TError,MarkStaffHistoryUnresolvedMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markStaffHistoryUnresolved>>, TError,MarkStaffHistoryUnresolvedMutationVariables, TContext> => {
+
+const mutationKey = getMarkStaffHistoryUnresolvedMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markStaffHistoryUnresolved>>, MarkStaffHistoryUnresolvedMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  markStaffHistoryUnresolved(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkStaffHistoryUnresolvedMutationResult = NonNullable<Awaited<ReturnType<typeof markStaffHistoryUnresolved>>>
+    export type MarkStaffHistoryUnresolvedMutationBody = BodyType<HistoryUnresolvedInput>
+    export type MarkStaffHistoryUnresolvedMutationError = ErrorType<void>
+    export type MarkStaffHistoryUnresolvedMutationVariables = {id: string;data: BodyType<HistoryUnresolvedInput>}
+
+    export const useMarkStaffHistoryUnresolved = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markStaffHistoryUnresolved>>, TError,MarkStaffHistoryUnresolvedMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markStaffHistoryUnresolved>>,
+        TError,
+        MarkStaffHistoryUnresolvedMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMarkStaffHistoryUnresolvedMutationOptions(options));
+    }
 
 export const getPermanentlyRemoveStaffUrl = (id: string,) => {
 

@@ -179,6 +179,123 @@ export const GetStaffDeletionImpactResponse = zod.object({
 })
 
 
+/**
+ * Superadmin-only bounded scan of unproven history. Unknown ownership can block any staff removal.
+ */
+export const GetStaffHistoryReviewParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetStaffHistoryReviewResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "version": zod.string(),
+  "channel": zod.string(),
+  "event": zod.string(),
+  "envelopeCount": zod.number().int(),
+  "status": zod.enum(['blocked', 'unresolved']),
+  "unresolvedReason": zod.string().nullable(),
+  "reviewedAt": zod.number().int().nullable().describe('Unix time in milliseconds')
+})),
+  "nextCursor": zod.string().nullable(),
+  "scannedCount": zod.number().int()
+})
+
+
+/**
+ * Read-only cursor scan; no history or account changes.
+ */
+export const ScanStaffHistoryReviewParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ScanStaffHistoryReviewBody = zod.object({
+  "cursor": zod.string()
+})
+
+export const ScanStaffHistoryReviewResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "version": zod.string(),
+  "channel": zod.string(),
+  "event": zod.string(),
+  "envelopeCount": zod.number().int(),
+  "status": zod.enum(['blocked', 'unresolved']),
+  "unresolvedReason": zod.string().nullable(),
+  "reviewedAt": zod.number().int().nullable().describe('Unix time in milliseconds')
+})),
+  "nextCursor": zod.string().nullable(),
+  "scannedCount": zod.number().int()
+})
+
+
+export const PreviewStaffHistoryEvidenceParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const previewStaffHistoryEvidenceBodyEvidenceMax = 100000;
+
+
+
+export const PreviewStaffHistoryEvidenceBody = zod.object({
+  "historyId": zod.string(),
+  "version": zod.string(),
+  "evidence": zod.string().max(previewStaffHistoryEvidenceBodyEvidenceMax).describe('Original signed archive JSON: {id,data}, or an array of such records. Never a freshly signed copy of current metadata.')
+})
+
+export const PreviewStaffHistoryEvidenceResponse = zod.object({
+  "status": zod.enum(['eligible', 'unresolved']),
+  "historyId": zod.string(),
+  "version": zod.string(),
+  "reason": zod.string(),
+  "ownership": zod.enum(['includes_target', 'excludes_target', 'unknown']),
+  "envelopeCount": zod.number().int(),
+  "sourceCount": zod.number().int(),
+  "subjectCount": zod.number().int(),
+  "reviewToken": zod.string().nullable()
+})
+
+
+export const RestoreStaffHistoryEvidenceParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const restoreStaffHistoryEvidenceBodyEvidenceMax = 100000;
+
+
+
+export const RestoreStaffHistoryEvidenceBody = zod.object({
+  "historyId": zod.string(),
+  "version": zod.string(),
+  "evidence": zod.string().max(restoreStaffHistoryEvidenceBodyEvidenceMax),
+  "reviewToken": zod.string(),
+  "confirmation": zod.enum(['restore'])
+})
+
+export const RestoreStaffHistoryEvidenceResponse = zod.object({
+  "status": zod.enum(['verified', 'unresolved']),
+  "historyId": zod.string(),
+  "message": zod.string()
+})
+
+
+export const MarkStaffHistoryUnresolvedParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const MarkStaffHistoryUnresolvedBody = zod.object({
+  "historyId": zod.string(),
+  "version": zod.string(),
+  "reason": zod.enum(['original_missing', 'incomplete_evidence', 'conflicting_sources', 'unreadable_archive'])
+})
+
+export const MarkStaffHistoryUnresolvedResponse = zod.object({
+  "status": zod.enum(['verified', 'unresolved']),
+  "historyId": zod.string(),
+  "message": zod.string()
+})
+
+
 export const PermanentlyRemoveStaffParams = zod.object({
   "id": zod.coerce.string()
 })

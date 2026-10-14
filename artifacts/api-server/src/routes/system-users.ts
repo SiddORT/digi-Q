@@ -11,6 +11,9 @@ import { reviewStaffRemoval, commitStaffRemoval, retryStaffFileCleanup } from ".
 import { getDeletionReceipt } from "../lib/staff-deletion-receipts";
 import { reviewStaffVisitHandoff, commitStaffVisitHandoff } from "../lib/staff-visit-handoff";
 import { reviewStaffResponsibilityHandoff, commitStaffResponsibilityHandoff } from "../lib/staff-responsibility-handoff";
+import { historyEvidenceInput, historyRestoreInput, historyUnresolvedInput, listHistoryReconciliation,
+  previewHistoryReconciliation, restoreHistoryReconciliation, markHistoryUnresolved } from "../lib/notification-history-reconciliation";
+import { consumeRateLimit } from "../lib/native-auth";
 
 export const systemUsersRouter = Router();
 systemUsersRouter.use("/management/system-users", async (req, res, next) => {
@@ -43,6 +46,27 @@ systemUsersRouter.get("/management/system-users/:id/deletion-impact", async (req
   res.json(await reviewStaffRemoval({ actorId: actor.id, sessionHash: req.authSessionHash!, targetId: req.params.id as string }));
 });
 const key = z.string().min(1).max(200);
+systemUsersRouter.get("/management/system-users/:id/notification-history-review", async (req, res) => {
+  const actor = await requireUser(req);
+  res.json(await listHistoryReconciliation({ actorId: actor.id, sessionHash: req.authSessionHash!, targetId: req.params.id as string }));
+});
+for (const action of ["scan", "preview", "restore", "unresolved"] as const) {
+  systemUsersRouter.post(`/management/system-users/:id/notification-history-review/${action}`, async (req, res) => {
+    const actor = await requireUser(req);
+    await consumeRateLimit(`history-reconciliation:${actor.id}`, 30, 900_000);
+    const context = { actorId: actor.id, sessionHash: req.authSessionHash!, targetId: req.params.id as string };
+    if (action === "scan") {
+      const input = body(z.object({ cursor: z.string().regex(/^notification-history:[a-f0-9]{64}$/) }).strict(), req.body);
+      res.json(await listHistoryReconciliation({ ...context, ...input }));
+    } else if (action === "preview") {
+      res.json(await previewHistoryReconciliation({ ...context, ...body(historyEvidenceInput, req.body) }));
+    } else if (action === "restore") {
+      res.json(await restoreHistoryReconciliation({ ...context, ...body(historyRestoreInput, req.body) }));
+    } else {
+      res.json(await markHistoryUnresolved({ ...context, ...body(historyUnresolvedInput, req.body) }));
+    }
+  });
+}
 const move = z.object({ appointmentId: key, doctorId: key, branchId: key,
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), expectedRevision: z.number().int().min(0),
   sessionId: key.optional(), startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(), reason: z.string().max(500).optional() }).strict();

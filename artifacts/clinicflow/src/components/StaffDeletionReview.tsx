@@ -5,6 +5,7 @@ import { customFetch, getGetStaffDeletionImpactQueryKey, useGetStaffDeletionImpa
 import type { StaffDeletionImpact } from "@workspace/api-client-react";
 import { AppDialog } from "./AppDialog";
 import { saveRemoval } from "../lib/staff-removal-receipts";
+import { HistoryReconciliationReview } from "./HistoryReconciliationReview";
 import { SessionSelector, useDailySession } from "./queue/SessionSelector";
 
 export interface StaffDeletionTargetRef { /** Sign-in user id (never the doctor profile id). */ userId: string; name: string }
@@ -151,13 +152,14 @@ function ReviewBody({ target, actorId, onClose, onRemoved }: StaffDeletionReview
   const [handoffDone, setHandoffDone] = useState("");
   const [handoffBusy, setHandoffBusy] = useState<Record<string, boolean>>({});
   const anyHandoff = Object.values(handoffBusy).some(Boolean);
+  const onHistoryBusy = useCallback((b: boolean) => setHandoffBusy(p => (!!p.history === b ? p : { ...p, history: b })), []);
   const onHandoffBusy = useCallback((k: string, b: boolean) => setHandoffBusy(p => (p[k] === b ? p : { ...p, [k]: b })), []);
   const lock = useRef(false);
   const fieldId = useId();
   const q = useGetStaffDeletionImpact(id, { query: {
     queryKey: [...getGetStaffDeletionImpactQueryKey(id), actorId ?? "unknown"],
     enabled: !!id && !!actorId && !receipt && !uncertain, staleTime: 0, gcTime: 0, retry: false,
-    refetchOnMount: "always", refetchOnWindowFocus: true, refetchInterval: busy ? false : 30000,
+    refetchOnMount: "always", refetchOnWindowFocus: true, refetchInterval: busy || anyHandoff ? false : 30000,
   } });
   const settled = q.isSuccess && !q.isFetching && !receipt;
   const impact: ImpactX | null = settled && q.data && q.data.target.id === id ? q.data : null;
@@ -264,7 +266,7 @@ function ReviewBody({ target, actorId, onClose, onRemoved }: StaffDeletionReview
         {(roleKey === "doctor" || roleKey === "clinicAdmin") && <>
           {roleKey === "clinicAdmin" && <p className="muted">A Clinic Admin may also hold a consulting doctor profile. Future visits and clinic responsibilities are handed over separately, each reviewed and committed on its own.</p>}
           {((roleKey === "clinicAdmin" ? ["visits", "clinic-responsibilities"] : ["visits"]) as ("visits" | "clinic-responsibilities")[]).map(k =>
-            <Handoff key={k} kind={k} userId={id} version={impact.version} disabled={!!busy} onBusy={onHandoffBusy} onClose={onClose} onCommitted={onHandoff} />)}
+            <Handoff key={k} kind={k} userId={id} version={impact.version} disabled={!!busy || !!handoffBusy.history} onBusy={onHandoffBusy} onClose={onClose} onCommitted={onHandoff} />)}
         </>}
         <section>
           <h3>Removal</h3>
@@ -274,6 +276,11 @@ function ReviewBody({ target, actorId, onClose, onRemoved }: StaffDeletionReview
           </div>}
         </section>
       </>}
+      {q.isSuccess && !receipt && !uncertain && q.data?.target.id === id &&
+        q.data.blockers.some(b => b.code === "ENCRYPTED_HISTORY_REVIEW") &&
+        <HistoryReconciliationReview key={`${actorId}:${id}`} userId={id} actorId={actorId}
+          disabled={q.isFetching || !!busy || anyHandoff} onBusy={onHistoryBusy}
+          onDecision={() => { setHandoffDone(""); void q.refetch(); }} />}
       <div className="row-actions" style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "flex-end" }}>
         {!receipt && !uncertain && <button type="button" data-testid="button-staff-deletion-refresh" disabled={q.isFetching || !!busy || anyHandoff} onClick={refreshAll}>{q.isFetching ? "Refreshing…" : "Refresh impact"}</button>}
         <button type="button" data-testid="button-staff-deletion-cancel" disabled={!!busy || anyHandoff} onClick={onClose}>{receipt ? "Close" : "Cancel"}</button>

@@ -25,7 +25,13 @@ Do not make unproven legacy notification history deletable merely by signing its
 
 **Why:** A new signature proves that today's metadata was signed, not that it describes all earlier recipients, staff subjects or encrypted snapshots. Guessing would risk either retaining erased identity or deleting unrelated shared history.
 
-**How to apply:** Preserve the fail-closed review boundary during future history backfills and reconciliation work; require trustworthy source evidence for every retained historical envelope.
+**How to apply:** Preserve the fail-closed review boundary during future history backfills and reconciliation work; require trustworthy source evidence for every retained historical envelope. An original signed archive can restore a lost capture proof, but an unsigned older backup cannot become proven just because it is available.
+
+History reconciliation implementation is approved; real-data reconciliation and cleanup still require separate explicit approval.
+
+**Why:** The user approved building the review process after being told it would not automatically clean up real data or bypass deletion safety checks.
+
+**How to apply:** Use disposable sources for development and testing. Never interpret implementation approval as permission to import a real archive, restore live ownership proofs or remove an account.
 
 Treat the rare removal write boundary as an explicit safety tradeoff, not a template for ordinary requests. Busy pre-existing writers must cause a bounded conflict, not partial-lock waiting across the legacy application's mixed lock orders.
 

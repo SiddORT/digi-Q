@@ -59,6 +59,7 @@ export function verifyHistorySubjects(id: string, data: any): string[] | null {
   } catch { return null; }
 }
 export function classifyHistoryForRemoval(id: string, data: any, targetFingerprint: string) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return "blocked" as const;
   if (data.erased === true)
     return data.reason === "staff_account_removed" && Object.keys(data).sort().join(",") === "erased,reason"
       ? "preserve" as const : "blocked" as const;

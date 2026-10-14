@@ -100,6 +100,59 @@ paths:
         "401": { description: Sign-in required }
         "403": { description: Real active Superadmin required }
         "404": { description: Staff account not found }
+  /management/system-users/{id}/notification-history-review:
+    get:
+      operationId: getStaffHistoryReview
+      description: Superadmin-only bounded scan of unproven history. Unknown ownership can block any staff removal.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Safe metadata only, content: { application/json: { schema: { $ref: "#/components/schemas/HistoryReviewPage" } } } }
+        "403": { description: Active native non-demo Superadmin required }
+  /management/system-users/{id}/notification-history-review/scan:
+    post:
+      operationId: scanStaffHistoryReview
+      description: Read-only cursor scan; no history or account changes.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/HistoryReviewCursorInput" } } }
+      responses:
+        "200": { description: Safe metadata only, content: { application/json: { schema: { $ref: "#/components/schemas/HistoryReviewPage" } } } }
+  /management/system-users/{id}/notification-history-review/preview:
+    post:
+      operationId: previewStaffHistoryEvidence
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/HistoryEvidenceInput" } } }
+      responses:
+        "200": { description: Evidence checked without writes, content: { application/json: { schema: { $ref: "#/components/schemas/HistoryEvidenceReview" } } } }
+        "409": { description: History changed; refresh review }
+  /management/system-users/{id}/notification-history-review/restore:
+    post:
+      operationId: restoreStaffHistoryEvidence
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/HistoryEvidenceCommit" } } }
+      responses:
+        "200": { description: Original proof restored; no account or history deleted, content: { application/json: { schema: { $ref: "#/components/schemas/HistoryReconciliationResult" } } } }
+        "409": { description: "Stale, expired, busy or mismatched evidence; no changes committed" }
+  /management/system-users/{id}/notification-history-review/unresolved:
+    post:
+      operationId: markStaffHistoryUnresolved
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/HistoryUnresolvedInput" } } }
+      responses:
+        "200": { description: Explicit unresolved decision retained; deletion stays blocked, content: { application/json: { schema: { $ref: "#/components/schemas/HistoryReconciliationResult" } } } }
+        "409": { description: History changed; refresh review }
   /management/system-users/{id}/permanent-removal:
     post:
       operationId: permanentlyRemoveStaff
@@ -1476,6 +1529,73 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    HistoryReviewRecord:
+      type: object
+      required: [id, version, channel, event, envelopeCount, status, unresolvedReason, reviewedAt]
+      properties:
+        id: { type: string }
+        version: { type: string }
+        channel: { type: string }
+        event: { type: string }
+        envelopeCount: { type: integer }
+        status: { type: string, enum: [blocked, unresolved] }
+        unresolvedReason: { type: string, nullable: true }
+        reviewedAt: { type: integer, nullable: true, description: Unix time in milliseconds }
+    HistoryReviewCursorInput:
+      type: object
+      required: [cursor]
+      properties:
+        cursor: { type: string }
+    HistoryReviewPage:
+      type: object
+      required: [items, nextCursor, scannedCount]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/HistoryReviewRecord" } }
+        nextCursor: { type: string, nullable: true }
+        scannedCount: { type: integer }
+    HistoryEvidenceInput:
+      type: object
+      required: [historyId, version, evidence]
+      properties:
+        historyId: { type: string }
+        version: { type: string }
+        evidence: { type: string, maxLength: 100000, description: "Original signed archive JSON: {id,data}, or an array of such records. Never a freshly signed copy of current metadata." }
+    HistoryEvidenceReview:
+      type: object
+      required: [status, historyId, version, reason, ownership, envelopeCount, sourceCount, subjectCount, reviewToken]
+      properties:
+        status: { type: string, enum: [eligible, unresolved] }
+        historyId: { type: string }
+        version: { type: string }
+        reason: { type: string }
+        ownership: { type: string, enum: [includes_target, excludes_target, unknown] }
+        envelopeCount: { type: integer }
+        sourceCount: { type: integer }
+        subjectCount: { type: integer }
+        reviewToken: { type: string, nullable: true }
+    HistoryEvidenceCommit:
+      type: object
+      required: [historyId, version, evidence, reviewToken, confirmation]
+      properties:
+        historyId: { type: string }
+        version: { type: string }
+        evidence: { type: string, maxLength: 100000 }
+        reviewToken: { type: string }
+        confirmation: { type: string, enum: [restore] }
+    HistoryUnresolvedInput:
+      type: object
+      required: [historyId, version, reason]
+      properties:
+        historyId: { type: string }
+        version: { type: string }
+        reason: { type: string, enum: [original_missing, incomplete_evidence, conflicting_sources, unreadable_archive] }
+    HistoryReconciliationResult:
+      type: object
+      required: [status, historyId, message]
+      properties:
+        status: { type: string, enum: [verified, unresolved] }
+        historyId: { type: string }
+        message: { type: string }
     GeographySuggestions:
       type: object
       required: [items]
