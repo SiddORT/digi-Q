@@ -4,6 +4,7 @@ import { assert } from "./http";
 import { statusGroups } from "./queue-order";
 import { clinicalMembership, managedDoctorLinks } from "./clinical-membership";
 import { doctorRegistrationSql } from "./patient-registration-scope";
+import { retainedDoctorVisitSql } from "./retained-doctor-access";
 
 const names: Record<string, string> = { users: "users", doctors: "doctors", clinics: "clinics", branches: "branches", patients: "patients", masters: "masters", schedules: "schedules", "availability-exceptions": "availability_exceptions", qrs: "qrs", appointments: "appointments", "audit-logs": "audit_logs" };
 const raw = sql.raw;
@@ -28,7 +29,7 @@ export function readScope(user: any, kind: string): SQL {
     if (user.role === "patient") return sql`r.id=${user.patientId || ""}`;
     const registered = operationalScope(user, raw("r.clinic_id"), raw("r.branch_id"));
     const ownClinic = user.role === "doctor" ? sql`(${registered} and ${doctorRegistrationSql(user, raw("r.clinic_id"), raw("r.branch_id"))})` : registered;
-    return sql`(${ownClinic} or exists(select 1 from appointments ap where ap.patient_id=r.id and ${operationalScope(user, raw("ap.clinic_id"), raw("ap.branch_id"))} ${user.role === "doctor" ? sql`and ap.doctor_id=${user.doctorId || ""}` : raw("")}))`;
+    return sql`(${ownClinic} or ${retainedDoctorVisitSql(user, raw("r.id"))} or exists(select 1 from appointments ap where ap.patient_id=r.id and ${operationalScope(user, raw("ap.clinic_id"), raw("ap.branch_id"))} ${user.role === "doctor" ? sql`and ap.doctor_id=${user.doctorId || ""}` : raw("")}))`;
   }
   if (kind === "clinics") return operationalScope(user, raw("r.id"), raw("null"));
   if (user.role === "patient") return kind === "appointments" ? sql`r.patient_id=${user.patientId || ""}` : raw("false");
@@ -46,7 +47,7 @@ export function documentSql(kind: string, assignmentDocument?: SQL): SQL {
   // column through generic list/export serialization.
   if (kind === "users") doc = sql`(${doc}) - 'passwordHash' - 'password_hash' - 'tokenHash' - 'token_hash' - 'clerkId'`;
   if (["users", "doctors"].includes(kind)) doc = sql`${doc} || ${assignmentDocument || sql`jsonb_build_object('clinicIds',coalesce((select jsonb_agg(distinct l.clinic_id) from (${links(kind)}) l),'[]'::jsonb),'branchIds',coalesce((select jsonb_agg(distinct l.branch_id) filter(where l.branch_id is not null) from (${links(kind)}) l),'[]'::jsonb))`}`;
-  if (kind === "doctors") doc = sql`${doc} || (select jsonb_build_object('fullName',u.full_name,'email',u.email,'mobile',coalesce(u.mobile,''),'passwordEnabled',u.password_hash is not null,'managingAdminId',r.owner_admin_id,'managingAdminName',(select full_name from users where id=r.owner_admin_id),'invitationStatus',case when u.password_hash is not null then 'notRequired' else u.invitation_status end,'status',case when u.status<>'active' then 'inactive' else r.status end) from users u where u.id=r.user_id) || jsonb_build_object('specializationName',(select data->>'name' from masters where id=r.specialization_id),'qualificationNames',coalesce((select jsonb_agg(data->>'name') from masters where id in (select jsonb_array_elements_text(coalesce(r.data->'qualificationIds','[]'::jsonb)))),'[]'::jsonb))`;
+  if (kind === "doctors") doc = sql`${doc} || coalesce((select jsonb_build_object('fullName',u.full_name,'email',u.email,'mobile',coalesce(u.mobile,''),'passwordEnabled',u.password_hash is not null,'managingAdminId',r.owner_admin_id,'managingAdminName',(select full_name from users where id=r.owner_admin_id),'invitationStatus',case when u.password_hash is not null then 'notRequired' else u.invitation_status end,'status',case when u.status<>'active' then 'inactive' else r.status end) from users u where u.id=r.user_id),jsonb_build_object('fullName','Deleted doctor','email','','mobile','','passwordEnabled',false,'status','retired','managingAdminId',null,'managingAdminName',null,'invitationStatus','notRequired')) || jsonb_build_object('specializationName',(select data->>'name' from masters where id=r.specialization_id),'qualificationNames',coalesce((select jsonb_agg(data->>'name') from masters where id in (select jsonb_array_elements_text(coalesce(r.data->'qualificationIds','[]'::jsonb)))),'[]'::jsonb))`;
   if (kind === "users") doc = sql`${doc} || jsonb_build_object('mobile',coalesce(r.mobile,''),'passwordEnabled',r.password_hash is not null,'managingAdminName',(select full_name from users where id=r.managing_admin_id),'invitationStatus',case when r.password_hash is not null then 'notRequired' else r.invitation_status end)`;
   if (kind === "clinics") doc = sql`${doc} || jsonb_build_object('adminName',(select full_name from users where id=r.admin_id))`;
   if (kind === "branches") doc = sql`${doc} || jsonb_build_object('clinicName',(select data->>'name' from clinics where id=r.clinic_id),
@@ -54,9 +55,11 @@ export function documentSql(kind: string, assignmentDocument?: SQL): SQL {
     'inheritPhone',coalesce((r.data->>'inheritPhone')::boolean,nullif(r.data->>'phone','') is null),
     'effectiveEmail',case when coalesce((r.data->>'inheritEmail')::boolean,nullif(r.data->>'email','') is null) then (select data->>'email' from clinics where id=r.clinic_id) else r.data->>'email' end,
     'effectivePhone',case when coalesce((r.data->>'inheritPhone')::boolean,nullif(r.data->>'phone','') is null) then (select data->>'phone' from clinics where id=r.clinic_id) else r.data->>'phone' end)`;
-  if (["schedules", "availability-exceptions", "qrs"].includes(kind)) doc = sql`${doc} || jsonb_build_object('doctorName',(select u.full_name from doctors d join users u on u.id=d.user_id where d.id=r.doctor_id),'branchName',(select data->>'name' from branches where id=r.branch_id))`;
+  if (["schedules", "availability-exceptions", "qrs"].includes(kind)) doc = sql`${doc} || jsonb_build_object('doctorName',(select case when d.status='retired' then 'Deleted doctor' else u.full_name end from doctors d left join users u on u.id=d.user_id where d.id=r.doctor_id),'branchName',(select data->>'name' from branches where id=r.branch_id))`;
   if (kind === "qrs") doc = sql`${doc} || jsonb_build_object('reference',r.public_reference)`;
-  if (kind === "audit-logs") doc = sql`${doc} || jsonb_build_object('actorName',(select full_name from users where id=r.actor_id),'actorRole',(select role from users where id=r.actor_id))`;
+  if (kind === "appointments") doc = sql`${doc} || case when exists(select 1 from doctors d where d.id=r.doctor_id and d.status='retired')
+    then jsonb_build_object('doctorName','Deleted doctor') else '{}'::jsonb end`;
+  if (kind === "audit-logs") doc = sql`${doc} || jsonb_build_object('actorName',case when r.deleted_actor then 'Deleted user' else (select full_name from users where id=r.actor_id) end,'actorRole',(select role from users where id=r.actor_id))`;
   return doc;
 }
 export function filterSql(q: any): SQL {
@@ -100,7 +103,7 @@ export function sourceSql(user: any, kind: string, extra: SQL = raw("true")) {
       'branchIds',coalesce(jsonb_agg(distinct l.branch_id) filter(where l.branch_id is not null and (${unrestricted} or ${operationalScope(user, raw("l.clinic_id"), raw("l.branch_id"))})),'[]'::jsonb))`;
     return sql`select ${documentSql(kind, raw("assignment_doc.doc"))} as doc from ${raw(names[kind])} r
       cross join lateral (select ${assignmentDocument} as doc from (${links(kind)}) l) assignment_doc
-      where (${readScope(user, kind)}) and (${extra})`;
+      where (${readScope(user, kind)}) and (${extra}) and (${kind === "doctors" ? sql`r.status <> 'retired'` : raw("true")})`;
   }
   return sql`select ${documentSql(kind)} as doc from ${raw(names[kind])} r where (${readScope(user, kind)}) and (${extra})`;
 }

@@ -127,6 +127,41 @@
       "when": 1790980000003,
       "tag": "0018_notification_history",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790980000004,
+      "tag": "0019_retired_staff_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790980000005,
+      "tag": "0020_staff_deletion_receipts",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790980000006,
+      "tag": "0021_immutable_visit_transitions",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790980000007,
+      "tag": "0022_erased_asset_fences",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790980000008,
+      "tag": "0023_staff_identity_write_fences",
+      "breakpoints": true
     }
   ]
 }

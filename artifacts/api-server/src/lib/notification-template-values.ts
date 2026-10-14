@@ -41,7 +41,9 @@ export const visitVariables = ["recipient_name", "appointment_date", "session_st
 /** Save only the old session fields needed for reschedule substitution, not the entire old visit. */
 export function previousSessionSnapshot(row: any) {
   return row && typeof row === "object"
-    ? { date: row.date, startTime: row.startTime, endTime: row.endTime }
+    ? { date: row.date, startTime: row.startTime, endTime: row.endTime,
+      ...(row.doctorId ? { doctorId: row.doctorId, doctorName: row.doctorName } : {}),
+      ...(row.actorId ? { actorId: row.actorId } : {}) }
     : undefined;
 }
 

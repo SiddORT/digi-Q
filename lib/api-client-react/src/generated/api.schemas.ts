@@ -325,6 +325,163 @@ export interface CustomRoleConfiguration {
   bindings: CustomRoleBinding[];
 }
 
+export interface StaffDeletionTarget {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  status: string;
+}
+
+export interface StaffDeletionImpactGroup {
+  source: string;
+  action: string;
+  ids: string[];
+  /** @minimum 0 */
+  count: number;
+}
+
+export interface StaffDeletionBlocker {
+  code: string;
+  message: string;
+  source?: string;
+  ids?: string[];
+}
+
+export interface StaffDeletionImpact {
+  target: StaffDeletionTarget;
+  version: string;
+  groups: StaffDeletionImpactGroup[];
+  blockers: StaffDeletionBlocker[];
+  warnings: string[];
+  ready: boolean;
+  /** @nullable */
+  reviewToken: string | null;
+  /** @nullable */
+  operationId: string | null;
+}
+
+export type StaffRemovalInputConfirmation = typeof StaffRemovalInputConfirmation[keyof typeof StaffRemovalInputConfirmation];
+
+
+export const StaffRemovalInputConfirmation = {
+  delete: 'delete',
+} as const;
+
+export interface StaffRemovalInput {
+  /** @pattern ^[a-f0-9]{64}$ */
+  version: string;
+  /** @maxLength 4096 */
+  reviewToken: string;
+  confirmation: StaffRemovalInputConfirmation;
+}
+
+export type StaffRemovalReceiptState = typeof StaffRemovalReceiptState[keyof typeof StaffRemovalReceiptState];
+
+
+export const StaffRemovalReceiptState = {
+  complete: 'complete',
+  cleanup_pending: 'cleanup_pending',
+} as const;
+
+export interface StaffRemovalReceipt {
+  operationId: string;
+  accountRemoved: true;
+  state: StaffRemovalReceiptState;
+  /** @minimum 0 */
+  files: number;
+  /** @minimum 0 */
+  verifiedFiles: number;
+  pendingReasons: string[];
+}
+
+export interface StaffVisitMove {
+  appointmentId: string;
+  doctorId: string;
+  branchId: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  sessionId?: string;
+  /** @pattern ^\d{2}:\d{2}$ */
+  startTime?: string;
+  /** @maxLength 500 */
+  reason?: string;
+}
+
+export type StaffHandoffSelection = {
+  kind: 'visits';
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  moves: StaffVisitMove[];
+} | {
+  kind: 'clinic-responsibilities';
+  replacementId: string;
+};
+
+export type StaffHandoffApprovalKind = typeof StaffHandoffApprovalKind[keyof typeof StaffHandoffApprovalKind];
+
+
+export const StaffHandoffApprovalKind = {
+  visits: 'visits',
+  'clinic-responsibilities': 'clinic-responsibilities',
+} as const;
+
+export type StaffHandoffApprovalProposal = { [key: string]: unknown };
+
+export interface StaffHandoffApproval {
+  kind: StaffHandoffApprovalKind;
+  proposal: StaffHandoffApprovalProposal;
+  /** @maxLength 4096 */
+  reviewToken: string;
+}
+
+export type StaffHandoffReviewKind = typeof StaffHandoffReviewKind[keyof typeof StaffHandoffReviewKind];
+
+
+export const StaffHandoffReviewKind = {
+  visits: 'visits',
+  'clinic-responsibilities': 'clinic-responsibilities',
+} as const;
+
+export type StaffHandoffReviewProposal = { [key: string]: unknown };
+
+export type StaffHandoffReviewVisitsItem = { [key: string]: unknown };
+
+export interface StaffHandoffReview {
+  kind: StaffHandoffReviewKind;
+  operationId: string;
+  version?: string;
+  proposal: StaffHandoffReviewProposal;
+  reviewToken: string;
+  visits?: StaffHandoffReviewVisitsItem[];
+}
+
+export interface StaffHandoffReceipt {
+  operationId: string;
+  count?: number;
+  appointmentIds?: string[];
+  clinicCount?: number;
+  staffCount?: number;
+  doctorCount?: number;
+  accountRemoved?: boolean;
+}
+
+export type StaffHandoffOptionsDoctorsItem = { [key: string]: unknown };
+
+export type StaffHandoffOptionsAdminsItem = { [key: string]: unknown };
+
+export type StaffHandoffOptionsVisitsItem = { [key: string]: unknown };
+
+export interface StaffHandoffOptions {
+  doctors: StaffHandoffOptionsDoctorsItem[];
+  admins: StaffHandoffOptionsAdminsItem[];
+  visits: StaffHandoffOptionsVisitsItem[];
+}
+
 export type SystemUserClinicsItem = {
   id: string;
   name: string;
@@ -1927,6 +2084,8 @@ export interface AuthStatus {
   /** @nullable */
   role: string | null;
   staffPasswordVerified: boolean;
+  /** Opaque staff-removal revision for invalidating signed-in directory and historical attribution caches. */
+  staffDirectoryRevision?: string;
   requiresStaffPassword: boolean;
 }
 
@@ -3896,4 +4055,3 @@ export type ListSavedViewsParams = {
  */
 tableKey: string;
 };
-

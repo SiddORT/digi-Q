@@ -14,6 +14,8 @@ import { createHash } from "node:crypto";
 import { assert } from "./http";
 import { previousSessionSnapshot, visitTemplateValues, missingVisitVariables } from "./notification-template-values";
 import { validTemplateTarget } from "./notification-templates";
+import { withStaffDispatch } from "./staff-dispatch-barrier";
+import { notificationStaffSubjects } from "./notification-staff-subjects";
 const emailKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 
 /** Explicit safe projection only: never return an outbox payload or recipient identifiers. */
@@ -261,6 +263,8 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       return { recipient, rendered, data, env };
     });
     if (!claimed) continue;
+    const subjectIds = await notificationStaffSubjects(conn, claimed.data);
+    await withStaffDispatch(subjectIds, "notification", async () => {
     let state = "provider_accepted";
     try { await send(claimed.recipient, claimed.rendered.subject, claimed.rendered.text, undefined, claimed.rendered, [], claimed.env); }
     catch (error: any) {
@@ -269,8 +273,10 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
         : "delivery_unknown";
     }
     const completed={...claimed.data,state,claimedAt:now,attempts:claimed.data.attempts+1,dueAt:now+60000*2**claimed.data.attempts,finishedAt:Date.now()};
-    await conn.update(settings).set({ data: completed }).where(eq(settings.id, record.id));
-    await recordNotification(conn,claimed.data.historyKey||record.id,notificationEntry(completed,"email"),state as any);
+    const saved = await conn.update(settings).set({ data: completed }).where(sql`${settings.id}=${record.id} and ${settings.data}->>'state'='sending' and ${settings.data}->>'claimedAt'=${String(now)}`).returning({ id: settings.id });
+    if (saved.length) await recordNotification(conn,claimed.data.historyKey||record.id,notificationEntry(completed,"email"),state as any);
+    return state;
+    }, conn, state => state === "delivery_unknown");
     } catch {
       // Preparation failures remain pending and retry next tick; one bad item must not block other clinics.
       // If dispatch was already claimed, its state remains sending and is never automatically resent.

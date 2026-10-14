@@ -10,7 +10,7 @@ type NativeAuth = {
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 };
-type Status = { authenticated?: boolean; isSignedIn?: boolean; role?: string | null; csrfToken?: string };
+type Status = { authenticated?: boolean; isSignedIn?: boolean; role?: string | null; csrfToken?: string; staffDirectoryRevision?: string };
 const Context = createContext<NativeAuth | null>(null);
 
 type SessionState = { isLoaded: boolean; isSignedIn: boolean; error: string };
@@ -26,6 +26,7 @@ export function createSessionLifecycle(options: {
 }) {
   let signed = false, epoch = 0, boundaryAt = 0;
   let pending: Promise<void> | undefined;
+  let directoryRevision: string | undefined;
   const clear = () => {
     void options.queryClient.cancelQueries().catch(() => undefined);
     options.queryClient.clear();
@@ -58,6 +59,15 @@ export function createSessionLifecycle(options: {
       if (requestEpoch !== epoch) return;
       const authenticated = status.authenticated === true || status.isSignedIn === true || !!status.role;
       if (!authenticated) { invalidate(); return; }
+      if (directoryRevision !== undefined && status.staffDirectoryRevision !== directoryRevision) {
+        // A different signed-in client removed an account. Cancel old reads
+        // before resetting all observed identity/data projections.
+        const projection = { predicate: (q: { queryKey: readonly unknown[] }) => q.queryKey[0] !== "/api/auth/status" };
+        await options.queryClient.cancelQueries(projection);
+        if (requestEpoch !== epoch) return;
+        void options.queryClient.resetQueries(projection).catch(() => undefined);
+      }
+      directoryRevision = status.staffDirectoryRevision;
       // AuthAccess observes this response instead of independently checking the
       // same session. Epoch checks above prevent old-account cache hydration.
       options.queryClient.setQueryData(["/api/auth/status"], status);

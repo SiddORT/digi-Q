@@ -14,6 +14,8 @@ import { confirmationText } from "./appointment-confirmation";
 import { reminderDispatchEligible } from "./notification-outbox";
 import { visitTemplateValues, missingVisitVariables } from "./notification-template-values";
 import { validTemplateTarget } from "./notification-templates";
+import { withStaffDispatch } from "./staff-dispatch-barrier";
+import { notificationStaffSubjects } from "./notification-staff-subjects";
 
 const phoneKey=(phone:string)=>createHash("sha256").update(phone).digest("hex");
 export function notificationPhone(value:unknown) {
@@ -132,11 +134,16 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
         return {data,env,phone,message,content};
       });
       if(!claim)continue;
+      const subjectIds = await notificationStaffSubjects(conn, claim.data);
+      await withStaffDispatch(subjectIds, "notification", async () => {
       let state="delivery_unknown";
       let httpStatus:number|undefined;
       try{state=await send(claim.env,claim.phone,claim.message,claim.content,code=>{httpStatus=code;});}catch{/* claim persists; never retry uncertain dispatch */}
-      await conn.update(settings).set({data:{...claim.data,state,claimedAt:now,attempts:claim.data.attempts+1,finishedAt:Date.now()}}).where(eq(settings.id,record.id));
-      await recordNotification(conn,claim.data.historyKey||record.id,notificationEntry(claim.data,"sms"),state as any,undefined,[],Date.now(),httpStatus);
+      const saved = await conn.update(settings).set({data:{...claim.data,state,claimedAt:now,attempts:claim.data.attempts+1,finishedAt:Date.now()}})
+        .where(sql`${settings.id}=${record.id} and ${settings.data}->>'state'='sending' and ${settings.data}->>'claimedAt'=${String(now)}`).returning({ id: settings.id });
+      if(saved.length)await recordNotification(conn,claim.data.historyKey||record.id,notificationEntry(claim.data,"sms"),state as any,undefined,[],Date.now(),httpStatus);
+      return state;
+      }, conn, state => state === "delivery_unknown");
     }catch{
       logger.warn("SMS notification preparation failed; durable dispatch state retained");
       // Preparation errors can be retried only while the durable row is still pending.

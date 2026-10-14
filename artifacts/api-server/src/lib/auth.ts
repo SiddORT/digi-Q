@@ -7,6 +7,7 @@ import { isClinicalMember } from "./clinical-membership";
 import { doctorRegisteredPatient } from "./patient-registration-scope";
 import { narrowToWorkspace } from "./feature-policy";
 import { DEMO_FIXTURE, demoWriteAllowed } from "./demo-policy";
+import { retainedDoctorVisitSql } from "./retained-doctor-access";
 export const STAFF_ROLES = ["superAdmin", "clinicAdmin", "doctor", "receptionist"] as const;
 export function isStaffRole(role: string | null | undefined): boolean {
   return Boolean(role && STAFF_ROLES.includes(role as (typeof STAFF_ROLES)[number]));
@@ -47,7 +48,8 @@ export async function findUser(userId: string) {
   const links = (await all(assignments)).filter(a => a.userId === user.id && activeClinics.has(a.clinicId) && (!a.branchId || activeBranches.has(a.branchId)));
   const [doctor] = await db.select().from(doctors).where(eq(doctors.userId, user.id));
   const [patient] = await db.select().from(patients).where(eq(patients.userId, user.id));
-  return { ...user, mobile: user.mobile || "", managingAdminId: user.role === "doctor" ? doctor?.ownerAdminId || null : user.managingAdminId || null, clinicIds: [...new Set(links.map(a => a.clinicId))], branchIds: [...new Set(links.filter(a => a.branchId).map(a => a.branchId))], doctorId: doctor?.id || null, patientId: patient?.id || null };
+  const handoffHistoryInstalled = user.role === "doctor" && (await db.execute(sql`select to_regclass('public.appointment_transitions') is not null as present`)).rows[0]?.present === true;
+  return { ...user, handoffHistoryInstalled, mobile: user.mobile || "", managingAdminId: user.role === "doctor" ? doctor?.ownerAdminId || null : user.managingAdminId || null, clinicIds: [...new Set(links.map(a => a.clinicId))], branchIds: [...new Set(links.filter(a => a.branchId).map(a => a.branchId))], doctorId: doctor?.id || null, patientId: patient?.id || null };
 }
 /** Applies the server-stored active workspace. Only narrows to an already-assigned clinic. */
 export async function applyWorkspace<T extends { id: string; role: string; clinicIds: string[]; branchIds: string[] }>(user: T) {
@@ -90,7 +92,8 @@ export async function canRead(user: any, kind: string, row: any, conn: any = db)
     if (user.role === "patient") return row.id === user.patientId;
     if (scope(user, row.clinicId, row.branchId) &&
         (user.role !== "doctor" || await doctorRegisteredPatient(user, row, conn))) return true;
-    return (await all(appointments, conn)).some(a => a.patientId === row.id && (user.role === "doctor" ? a.doctorId === user.doctorId && scope(user, a.clinicId, a.branchId) : scope(user, a.clinicId, a.branchId)));
+    if ((await all(appointments, conn)).some(a => a.patientId === row.id && (user.role === "doctor" ? a.doctorId === user.doctorId && scope(user, a.clinicId, a.branchId) : scope(user, a.clinicId, a.branchId)))) return true;
+    return (await conn.execute(sql`select 1 where ${retainedDoctorVisitSql(user, sql`${row.id}`)}`)).rows.length > 0;
   }
   if (kind === "clinics") return scope(user, row.id);
   if (user.role === "patient") return kind === "appointments" && row.patientId === user.patientId;

@@ -376,7 +376,11 @@ test("disabled email tests use the existing sender interface, exact sample value
 test("all six lifecycle events enqueue once per channel and eligible recipient; unknown dispatch is never resent",async()=>{
   await h.control.query("delete from settings where id like 'sms-template:%' or id like 'sms-outbox:%' or id like 'mail-outbox:%'");
   for(const event of api.templateEvents)for(const group of api.templateRecipients){
-    if(api.requiredEvent(event) || !api.validTemplateTarget(event,group,"sms"))continue;
+    // Patient authentication codes are not lifecycle jobs. Keep this scenario's
+    // four visit recipients plus clinic-owner onboarding; Superadmin onboarding
+    // and OTP delivery have their own coverage.
+    if(api.requiredEvent(event) || !api.validTemplateTarget(event,group,"sms") ||
+      group==="superAdmin" || event==="onboarding"&&group!=="clinicAdmin")continue;
     await api.saveTemplate(sa,{channel:"sms",event,recipient:group,revision:0,mode:"publish",content:{...smsContent(event),enabled:true}});
   }
   const row={id:"visit",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"UTC",reference:"FIXTURE",status:"waiting",revision:0};

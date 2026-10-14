@@ -25,5 +25,7 @@ export interface AuthStatus {
   /** @nullable */
   role: string | null;
   staffPasswordVerified: boolean;
+  /** Opaque staff-removal revision for invalidating signed-in directory and historical attribution caches. */
+  staffDirectoryRevision?: string;
   requiresStaffPassword: boolean;
 }

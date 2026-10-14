@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { db, settings, auditLogs } from "@workspace/db";
+import { db, settings, auditLogs, users } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { assert } from "./http";
 import { recordNotification, recordDecision } from "./notification-history";
@@ -8,6 +8,8 @@ import { smtpConfig } from "./integration-config";
 import { notificationSmsConfig, smsPayload, sendNotificationSms, type SmsOutcome } from "./notification-sms-transport";
 import { sendAuthEmail } from "./auth-email";
 import { storedSmsDiagnostic, type SmsDiagnostic } from "./notification-sms-diagnostics";
+import { withStaffDispatch } from "./staff-dispatch-barrier";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
 
 type TestInput = {
   channel: "email" | "sms"; event: string; recipientGroup: string; clinicId?: string;
@@ -20,6 +22,23 @@ type TestInput = {
  * activation gates but never configuration, authentication or durable at-most-once. */
 export async function dispatchNotificationTest(actor: string, input: TestInput, conn: any = db,
   smsSend = sendNotificationSms, emailSend = sendAuthEmail, onDiagnostic?: (diagnostic: SmsDiagnostic) => void): Promise<SmsOutcome> {
+  assert(input.confirmed && /^[a-f0-9-]{36}$/i.test(input.requestId), 400, "Confirm the test and provide a request ID");
+  const ids = new Set([actor]);
+  const accounts = await conn.select({ id: users.id, role: users.role, email: users.email, mobile: users.mobile }).from(users);
+  const phone = (value: unknown) => {
+    try { return parsePhoneNumberFromString(String(value || ""), "IN")?.number || ""; } catch { return ""; }
+  };
+  for (const account of accounts) {
+    if (!["superAdmin", "clinicAdmin", "doctor", "receptionist"].includes(account.role)) continue;
+    if (input.channel === "email" ? account.email.toLowerCase() === input.recipient.toLowerCase() :
+      Boolean(phone(input.recipient)) && phone(account.mobile) === phone(input.recipient)) ids.add(account.id);
+  }
+  return withStaffDispatch([...ids], "test",
+    () => dispatchNotificationTestInternal(actor, input, conn, smsSend, emailSend, onDiagnostic), conn,
+    outcome => outcome === "delivery_unknown");
+}
+async function dispatchNotificationTestInternal(actor: string, input: TestInput, conn: any,
+  smsSend: typeof sendNotificationSms, emailSend: typeof sendAuthEmail, onDiagnostic?: (diagnostic: SmsDiagnostic) => void): Promise<SmsOutcome> {
   const reportDiagnostic = (diagnostic: SmsDiagnostic) => {
     try { onDiagnostic?.(diagnostic); } catch { /* Reporting never permits a resend. */ }
   };
@@ -27,7 +46,8 @@ export async function dispatchNotificationTest(actor: string, input: TestInput, 
   const id = `notification-test:${actor}:${input.requestId}`;
   const digest = createHash("sha256").update(JSON.stringify(input)).digest("hex");
   const entry = { channel: input.channel, event: input.event, recipientGroup: input.recipientGroup,
-    clinicId: input.clinicId, source: "test" as const, occurrence: input.requestId };
+    clinicId: input.clinicId, source: "test" as const, occurrence: input.requestId,
+    _sourceInput: { snapshot: { actorId: actor } } };
   const claim = await conn.transaction(async (tx: any) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${id}))`);
     const [prior] = await tx.select().from(settings).where(eq(settings.id, id));

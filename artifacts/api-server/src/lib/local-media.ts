@@ -30,8 +30,7 @@ function filePath(key: string) {
   assert(isAbsolute(root), 503, "MEDIA_ROOT is required to read local logos");
   return join(root, key);
 }
-export async function saveLocalLogo(bytes: Buffer) {
-  const key = `${randomUUID()}.png`;
+export async function saveLocalLogo(bytes: Buffer, key = `${randomUUID()}.png`) {
   const handle = await open(filePath(key), "wx", 0o600);
   try { await handle.writeFile(bytes); await handle.sync(); } finally { await handle.close(); }
   return key;

@@ -49,6 +49,18 @@ async function signedHarness() {
   h.client.setQueryData(["private-record"], { fixture: true });
   return h;
 }
+test("a removal revision cancels and resets cached projections on the next native session poll", async () => {
+  const h = harness();
+  globalThis.fetch = async () => json({ role: "doctor", staffDirectoryRevision: "0" });
+  await h.lifecycle.refresh();
+  h.client.setQueryData(["patient-activity"], { doctorName: "Fictional old name" });
+  globalThis.fetch = async () => json({ role: "doctor", staffDirectoryRevision: "1" });
+  await h.lifecycle.refresh(true);
+  assert.equal(h.client.getQueryData(["patient-activity"]), undefined);
+  assert.equal(h.client.getQueryData(["/api/auth/status"]).staffDirectoryRevision, "1");
+  assert.equal(h.latest().isSignedIn, true);
+  h.lifecycle.stop(); h.client.clear();
+});
 test("auth errors preserve safe status/code/cooldown and hide provider diagnostics", async () => {
   globalThis.fetch = async input => String(input).endsWith("/csrf") ? json({ csrfToken: "fixture" })
     : json({ error: "Please wait before requesting another code", code: "REGISTRATION_RESEND_COOLDOWN" }, 429, { "Retry-After": "60" });

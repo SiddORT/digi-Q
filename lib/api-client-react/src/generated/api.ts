@@ -219,8 +219,16 @@ import type {
   SmtpTestInput,
   SmtpTestResult,
   StaffAssignmentOptions,
+  StaffDeletionImpact,
   StaffGuestRequest,
+  StaffHandoffApproval,
+  StaffHandoffOptions,
+  StaffHandoffReceipt,
+  StaffHandoffReview,
+  StaffHandoffSelection,
   StaffLoginResponse,
+  StaffRemovalInput,
+  StaffRemovalReceipt,
   StartClinicRegistrationInput,
   StorageConfiguration,
   SystemUsersPage,
@@ -705,6 +713,539 @@ export function useGetSystemUsers<TData = Awaited<ReturnType<typeof getSystemUse
 
 
 
+
+export const getGetStaffDeletionImpactUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/deletion-impact`
+}
+
+/**
+ * Live Superadmin-only staff impact. A blocked review does not authorize deletion.
+ */
+export const getStaffDeletionImpact = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<StaffDeletionImpact> => {
+
+  return customFetch<StaffDeletionImpact>(getGetStaffDeletionImpactUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffDeletionImpactQueryKey = (id: string,) => {
+    return [
+    `/api/management/system-users/${id}/deletion-impact`
+    ] as const;
+    }
+
+
+export const getGetStaffDeletionImpactQueryOptions = <TData = Awaited<ReturnType<typeof getStaffDeletionImpact>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffDeletionImpact>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffDeletionImpactQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffDeletionImpact>>> = ({ signal }) => getStaffDeletionImpact(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffDeletionImpact>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffDeletionImpactQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffDeletionImpact>>>
+export type GetStaffDeletionImpactQueryError = ErrorType<void>
+
+
+
+export function useGetStaffDeletionImpact<TData = Awaited<ReturnType<typeof getStaffDeletionImpact>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffDeletionImpact>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffDeletionImpactQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getPermanentlyRemoveStaffUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/permanent-removal`
+}
+
+export const permanentlyRemoveStaff = async (id: string,
+    staffRemovalInput: StaffRemovalInput, options?: Parameters<typeof customFetch>[1]): Promise<StaffRemovalReceipt> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StaffRemovalReceipt>(getPermanentlyRemoveStaffUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(staffRemovalInput)
+  }
+);}
+
+
+
+
+
+export const getPermanentlyRemoveStaffMutationKey = () => ['permanentlyRemoveStaff'] as const;
+
+export const getPermanentlyRemoveStaffMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof permanentlyRemoveStaff>>, TError,PermanentlyRemoveStaffMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof permanentlyRemoveStaff>>, TError,PermanentlyRemoveStaffMutationVariables, TContext> => {
+
+const mutationKey = getPermanentlyRemoveStaffMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof permanentlyRemoveStaff>>, PermanentlyRemoveStaffMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  permanentlyRemoveStaff(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PermanentlyRemoveStaffMutationResult = NonNullable<Awaited<ReturnType<typeof permanentlyRemoveStaff>>>
+    export type PermanentlyRemoveStaffMutationBody = BodyType<StaffRemovalInput>
+    export type PermanentlyRemoveStaffMutationError = ErrorType<void>
+    export type PermanentlyRemoveStaffMutationVariables = {id: string;data: BodyType<StaffRemovalInput>}
+
+    export const usePermanentlyRemoveStaff = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof permanentlyRemoveStaff>>, TError,PermanentlyRemoveStaffMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof permanentlyRemoveStaff>>,
+        TError,
+        PermanentlyRemoveStaffMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPermanentlyRemoveStaffMutationOptions(options));
+    }
+
+export const getGetStaffRemovalReceiptUrl = (operationId: string,) => {
+
+
+
+
+  return `/api/management/staff-removals/${operationId}`
+}
+
+export const getStaffRemovalReceipt = async (operationId: string, options?: Parameters<typeof customFetch>[1]): Promise<StaffRemovalReceipt> => {
+
+  return customFetch<StaffRemovalReceipt>(getGetStaffRemovalReceiptUrl(operationId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffRemovalReceiptQueryKey = (operationId: string,) => {
+    return [
+    `/api/management/staff-removals/${operationId}`
+    ] as const;
+    }
+
+
+export const getGetStaffRemovalReceiptQueryOptions = <TData = Awaited<ReturnType<typeof getStaffRemovalReceipt>>, TError = ErrorType<void>>(operationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffRemovalReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffRemovalReceiptQueryKey(operationId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffRemovalReceipt>>> = ({ signal }) => getStaffRemovalReceipt(operationId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: operationId !== null && operationId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffRemovalReceipt>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffRemovalReceiptQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffRemovalReceipt>>>
+export type GetStaffRemovalReceiptQueryError = ErrorType<void>
+
+
+
+export function useGetStaffRemovalReceipt<TData = Awaited<ReturnType<typeof getStaffRemovalReceipt>>, TError = ErrorType<void>>(
+ operationId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffRemovalReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffRemovalReceiptQueryOptions(operationId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRetryStaffRemovalCleanupUrl = (operationId: string,) => {
+
+
+
+
+  return `/api/management/staff-removals/${operationId}/retry-cleanup`
+}
+
+export const retryStaffRemovalCleanup = async (operationId: string, options?: Parameters<typeof customFetch>[1]): Promise<StaffRemovalReceipt> => {
+
+  return customFetch<StaffRemovalReceipt>(getRetryStaffRemovalCleanupUrl(operationId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRetryStaffRemovalCleanupMutationKey = () => ['retryStaffRemovalCleanup'] as const;
+
+export const getRetryStaffRemovalCleanupMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryStaffRemovalCleanup>>, TError,RetryStaffRemovalCleanupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retryStaffRemovalCleanup>>, TError,RetryStaffRemovalCleanupMutationVariables, TContext> => {
+
+const mutationKey = getRetryStaffRemovalCleanupMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retryStaffRemovalCleanup>>, RetryStaffRemovalCleanupMutationVariables> = (props) => {
+          const {operationId} = props ?? {};
+
+          return  retryStaffRemovalCleanup(operationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetryStaffRemovalCleanupMutationResult = NonNullable<Awaited<ReturnType<typeof retryStaffRemovalCleanup>>>
+
+    export type RetryStaffRemovalCleanupMutationError = ErrorType<unknown>
+    export type RetryStaffRemovalCleanupMutationVariables = {operationId: string}
+
+    export const useRetryStaffRemovalCleanup = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retryStaffRemovalCleanup>>, TError,RetryStaffRemovalCleanupMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof retryStaffRemovalCleanup>>,
+        TError,
+        RetryStaffRemovalCleanupMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRetryStaffRemovalCleanupMutationOptions(options));
+    }
+
+export const getGetStaffHandoffOptionsUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/handoff-options`
+}
+
+export const getStaffHandoffOptions = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<StaffHandoffOptions> => {
+
+  return customFetch<StaffHandoffOptions>(getGetStaffHandoffOptionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffHandoffOptionsQueryKey = (id: string,) => {
+    return [
+    `/api/management/system-users/${id}/handoff-options`
+    ] as const;
+    }
+
+
+export const getGetStaffHandoffOptionsQueryOptions = <TData = Awaited<ReturnType<typeof getStaffHandoffOptions>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffHandoffOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffHandoffOptionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffHandoffOptions>>> = ({ signal }) => getStaffHandoffOptions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffHandoffOptions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffHandoffOptionsQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffHandoffOptions>>>
+export type GetStaffHandoffOptionsQueryError = ErrorType<unknown>
+
+
+
+export function useGetStaffHandoffOptions<TData = Awaited<ReturnType<typeof getStaffHandoffOptions>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffHandoffOptions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffHandoffOptionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReviewStaffHandoffUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/handoff-impact`
+}
+
+export const reviewStaffHandoff = async (id: string,
+    staffHandoffSelection: StaffHandoffSelection, options?: Parameters<typeof customFetch>[1]): Promise<StaffHandoffReview> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StaffHandoffReview>(getReviewStaffHandoffUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(staffHandoffSelection)
+  }
+);}
+
+
+
+
+
+export const getReviewStaffHandoffMutationKey = () => ['reviewStaffHandoff'] as const;
+
+export const getReviewStaffHandoffMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewStaffHandoff>>, TError,ReviewStaffHandoffMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewStaffHandoff>>, TError,ReviewStaffHandoffMutationVariables, TContext> => {
+
+const mutationKey = getReviewStaffHandoffMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewStaffHandoff>>, ReviewStaffHandoffMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewStaffHandoff(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewStaffHandoffMutationResult = NonNullable<Awaited<ReturnType<typeof reviewStaffHandoff>>>
+    export type ReviewStaffHandoffMutationBody = BodyType<StaffHandoffSelection>
+    export type ReviewStaffHandoffMutationError = ErrorType<void>
+    export type ReviewStaffHandoffMutationVariables = {id: string;data: BodyType<StaffHandoffSelection>}
+
+    export const useReviewStaffHandoff = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewStaffHandoff>>, TError,ReviewStaffHandoffMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewStaffHandoff>>,
+        TError,
+        ReviewStaffHandoffMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReviewStaffHandoffMutationOptions(options));
+    }
+
+export const getCommitStaffHandoffUrl = (id: string,) => {
+
+
+
+
+  return `/api/management/system-users/${id}/handoff`
+}
+
+export const commitStaffHandoff = async (id: string,
+    staffHandoffApproval: StaffHandoffApproval, options?: Parameters<typeof customFetch>[1]): Promise<StaffHandoffReceipt> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StaffHandoffReceipt>(getCommitStaffHandoffUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(staffHandoffApproval)
+  }
+);}
+
+
+
+
+
+export const getCommitStaffHandoffMutationKey = () => ['commitStaffHandoff'] as const;
+
+export const getCommitStaffHandoffMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitStaffHandoff>>, TError,CommitStaffHandoffMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitStaffHandoff>>, TError,CommitStaffHandoffMutationVariables, TContext> => {
+
+const mutationKey = getCommitStaffHandoffMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitStaffHandoff>>, CommitStaffHandoffMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  commitStaffHandoff(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitStaffHandoffMutationResult = NonNullable<Awaited<ReturnType<typeof commitStaffHandoff>>>
+    export type CommitStaffHandoffMutationBody = BodyType<StaffHandoffApproval>
+    export type CommitStaffHandoffMutationError = ErrorType<void>
+    export type CommitStaffHandoffMutationVariables = {id: string;data: BodyType<StaffHandoffApproval>}
+
+    export const useCommitStaffHandoff = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitStaffHandoff>>, TError,CommitStaffHandoffMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitStaffHandoff>>,
+        TError,
+        CommitStaffHandoffMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCommitStaffHandoffMutationOptions(options));
+    }
 
 export const getGetCustomRolesUrl = () => {
 
@@ -13097,4 +13638,3 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getDeleteSavedViewMutationOptions(options));
     }
-

@@ -14,6 +14,8 @@ import { OverflowText } from "./components/OverflowText";
 const STAFF_VIEW_KEYS = ["status", "clinicId", "branchId", "managingAdminId", "specializationId", "sort", "pageSize"];
 import { useQueries, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
+import { StaffDeletionReview } from "./components/StaffDeletionReview";
+import { Trash2 } from "lucide-react";
 import { Plus, Pencil, Send, KeyRound, ArrowDown, ArrowUp, ArrowDownUp } from "lucide-react";
 import { Link, useLocation, useSearch } from "wouter";
 import { ExactRecordDrawer, RecordFacts, useExactRecord } from "./components/RecordDetails";
@@ -81,6 +83,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
    const draftChange = (patch:Partial<StaffContext>) => setDraft(previous=>({...previous,...patch}));
   const term = useDebouncedValue(context.search);
   const [editing, setEditing] = useState<any>(null);
+  const [deletion, setDeletion] = useState<{ userId: string; name: string } | null>(null);
   // Role chosen in the Add Staff dialog; independent of the list's role filter.
   const [editTab, setEditTab] = useState<StaffTab>(tab);
   const snapshot = useRef<{values:Record<string,unknown>;defaults:Record<string,unknown>}>({values:{},defaults:{}});
@@ -137,7 +140,6 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   const client = useQueryClient();
    const [recoveryId, setRecoveryId] = useState("");
    const [recoveryOpen, setRecoveryOpen] = useState(false);
-   
    
    
    const [statusTarget,setStatusTarget]=useState<{id:string;userId?:string;name:string;status:"active"|"inactive"}|null>(null);
@@ -205,6 +207,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
   const filterNames = useFilterNames({clinicId:context.clinicId,branchId:context.branchId,specializationId:context.specializationId,managingAdminId:context.managingAdminId});
   const userCell = (k: string, row: any) => k === "member" ? <><OverflowText as="strong" value={row.fullName} testId={`text-staff-name-${row.id}`}/>{tab==="doctors"&&row.specializationName&&<small><OverflowText value={row.specializationName}/></small>}</> : k === "admin" ? <OverflowText value={row.managingAdminName || row.ownerAdminName}/> : k === "assignments" ? <><AssignmentSummary owner={row.fullName} groups={row.clinicNames} clinics={tab!=="admins"?row.branchNames:undefined} testId={`button-assignments-${row.id}`}/></> : k === "status" ? <><StatusSwitch label={`Account active for ${row.fullName}`} active={row.status==="active"} busy={statusUpdate.isPending&&statusTarget?.id===row.id} title={row.id===identity.user?.id||row.userId===identity.user?.id?"You cannot deactivate your own account.":tab==="admins"&&row.status==="active"&&row.clinicIds?.length?"Transfer clinic ownership before deactivation.":undefined} disabled={statusUpdate.isPending||row.id===identity.user?.id||row.userId===identity.user?.id||(tab==="admins"&&row.status==="active"&&!!row.clinicIds?.length)} onChange={async checked=>{const next=checked?"active":"inactive";if(next==="inactive"&&!await confirmAction.ask({title:`Deactivate ${row.fullName}?`,description:"They will lose access. Clinic ownership restrictions may prevent this change. Historical records are preserved.",confirmLabel:"Deactivate",tone:"danger"}))return;setStatusError("");setStatusTarget({id:row.id,userId:row.userId,name:row.fullName,status:next});statusUpdate.mutate({row,status:next,staffTab:tab});}}/><small className="status-sub">{row.passwordEnabled === true ? "Password Set" : row.invitationStatus === "sent" ? "Pending Setup" : row.invitationStatus === "failed" ? "Invitation Unconfirmed" : "Needs Password Setup"}</small></> : null;
    return <>{confirmAction.dialog}{filterNames.errors}
+      <StaffDeletionReview target={isSuperAdmin?deletion:null} actorId={identity.user?.id} onClose={()=>setDeletion(null)} />
      {counts.some(item=>item.error)&&<div role="alert" className="error-box">Unable to load staff status counts. <button type="button" onClick={()=>counts.forEach(item=>{if(item.error)void item.refetch();})}>Retry Counts</button></div>}
        <FilterBar compactToolbar title={<h2>Staff</h2>} secondary={<>{role !== "doctor" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setRecoveryOpen(true)} data-testid="button-open-account-recovery"><KeyRound size={15} aria-hidden /> Recovery</button>}{cols.settings}</>} actions={<>{creatable.length ? <button type="button" className="button small" aria-haspopup="dialog" onClick={beginAdd} data-testid="button-add-staff"><Plus size={17} aria-hidden /> Add Staff</button> : null}</>} activeCount={[context.status,!clinicId&&context.clinicId,context.branchId,context.specializationId,context.managingAdminId,context.sort!=="-createdAt",tab!==tabs[0].id].filter(Boolean).length} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter Staff" chips={[
        ...(tab!==tabs[0].id?[{key:"adv:staffType",label:`Staff type: ${tabs.find(item=>item.id===tab)?.label}`,onRemove:()=>setTab(tabs[0].id)}]:[]),
@@ -244,9 +247,9 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
           {cols.visible.map(k=><td key={k} data-label={cols.label(k)} className={cols.cls(k,k==="member"?"admin-record":k==="status"?"col-status":undefined)}>{userCell(k,row)}</td>)}
 
 
-
           <td data-label="Actions" className="col-actions sticky"><div className="row-actions">
             <IconAction label={`Edit ${row.fullName}`} hint="Edit staff details and assignments" icon={<Pencil size={15} aria-hidden />} onClick={() => beginEdit(row)} testId={`button-edit-staff-${row.id}`} />
+            {isSuperAdmin&&(()=>{const uid:string|undefined=tab==="doctors"?row.userId:row.id;return <IconAction label={`Review permanent removal of ${row.fullName}`} hint="Review permanent removal" icon={<Trash2 size={15} aria-hidden />} tone="danger" disabled={!uid||uid===identity.user?.id} disabledReason={!uid?"This doctor has no linked sign-in account.":uid===identity.user?.id?"You cannot remove your own account.":undefined} onClick={()=>{if(uid)setDeletion({userId:uid,name:row.fullName});}} testId={`button-review-removal-${row.id}`} />;})()}
             {tab==="doctors"&&<button type="button" className="text-link" data-testid={`button-manage-schedule-${row.id}`} onClick={()=>{setScheduleDirty(false);setScheduleBusy(false);setScheduleDoctor(row);}}>Manage schedule</button>}
             {row.invitationStatus !== "notRequired" && <RowMenu label={`More actions for ${row.fullName}`} testId={`menu-staff-${row.id}`} items={[{key:"resend",label:"Resend Invitation",hint:staffInvitationRestriction(row,tab)||"Replace the pending invitation and send a new set-password link. This does not deactivate the account or revoke sessions.",disabled:invitationBusy||!!staffInvitationRestriction(row,tab),testId:`action-resend-invitation-${row.id}`,onSelect:()=>{void (async()=>{ if (!invitationBusy && await confirmAction.ask({title:"Resend Invitation?",description:"The pending invitation will be replaced and a new set-password email requested. This does not deactivate the account or revoke sessions.",confirmLabel:"Resend Invitation"})) resendInvitation.mutate({row,staffTab:tab}); })();}}]}/>}
           </div>{invitationFeedback&&invitationFeedback.rowId===row.id&&<small role="status">{invitationFeedback.message}</small>}</td>

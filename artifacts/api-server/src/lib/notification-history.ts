@@ -1,10 +1,14 @@
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, createHash } from "node:crypto";
-import { db, settings } from "@workspace/db";
+import { assertNoErasedAssetReference } from "./erased-asset-guard";
+import { db, settings, users } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { assert } from "./http";
 import { DEMO_FIXTURE } from "./demo-policy";
 import { logger } from "./logger";
+import { notificationStaffSubjects } from "./notification-staff-subjects";
+import { signHistorySubjects, verifyHistorySubjects } from "./notification-history-provenance";
+import { explicitNotificationSubjects } from "./notification-explicit-subjects";
 
 // History retention is independent of permanent dispatch/idempotency claims.
 export const HISTORY_RETENTION_DAYS = 90;
@@ -13,7 +17,7 @@ export const historyId = (key: string) => prefix + createHash("sha256").update(k
 const states = ["pending", "sending", "provider_accepted", "provider_rejected", "pre_dispatch_failed", "delivery_unknown", "configuration_failed", "preparation_failed", "disabled", "obsolete", "no_recipient", "not_attempted"] as const;
 type State = typeof states[number];
 type Snapshot = { sender?: string; recipient?: string; subject?: string; message?: string; templateId?: string; templateRevision?: number; templateScope?: string; dltTemplateId?: string; provider?: string };
-type Entry = { channel: "email" | "sms"; event: string; source?: "automatic" | "test"; clinicId?: string; reference?: string; recipientGroup: string; occurrence?: string; createdAt?: number; dueAt?: number };
+type Entry = { channel: "email" | "sms"; event: string; source?: "automatic" | "test"; clinicId?: string; reference?: string; recipientGroup: string; occurrence?: string; createdAt?: number; dueAt?: number; _sourceInput?: any };
 function key() {
   const raw = process.env.INTEGRATIONS_ENCRYPTION_KEY;
   if (!raw || !/^[a-f0-9]{64}$/i.test(raw)) throw new Error("History encryption unavailable");
@@ -46,6 +50,12 @@ function reveal(id: string, encrypted: string): Snapshot {
   cipher.setAAD(Buffer.from(id)); cipher.setAuthTag(Buffer.from(tag, "base64"));
   return JSON.parse(Buffer.concat([cipher.update(Buffer.from(body, "base64")), cipher.final()]).toString("utf8"));
 }
+/** Internal erasure graph only; never expose decrypted snapshots through impact
+ * or receipts. All historical envelopes matter, not just the newest message. */
+export function historyAssetSnapshots(id: string, data: any): Snapshot[] {
+  return [data.encrypted, ...(data.snapshots ?? []).map((s: any) => s.encrypted)]
+    .filter(Boolean).map((encrypted: string) => reveal(id, encrypted));
+}
 const contactHash = (v: string) => createHmac("sha256", key()).update(v.trim().toLowerCase()).digest("hex");
 /** A savepoint isolates any history write failure from the operational transaction.
  * Snapshot is immutable after the first sending claim. No exception data is logged. */
@@ -56,11 +66,31 @@ export async function recordNotification(conn: any, job: string, entry: Entry, s
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${id}))`);
       const [prior] = await tx.select().from(settings).where(eq(settings.id, id));
       const old = prior?.data;
+      // A permanent-erasure marker is authoritative over stale completions.
+      // It contains no envelope or private snapshot and must never be revived.
+      if (old?.erased === true) return;
+      const previousSubjects = old?.provenance ? verifyHistorySubjects(id, old) : null;
+      if (old?.provenance && !previousSubjects) throw new Error("Historical source proof is invalid");
+      // This context is process-local only: never store raw subject IDs or a
+      // duplicate appointment snapshot in the history payload.
+      const { _sourceInput, ...publicEntry } = entry;
+      const subjects = _sourceInput ? await notificationStaffSubjects(tx, _sourceInput) : null;
+      if (subjects && entry.source === "test" && snapshot?.recipient)
+        subjects.push(...await explicitNotificationSubjects(tx, entry.channel, snapshot.recipient));
+      // Hold native identities through the write. A cached completion cannot
+      // introduce a new private envelope after its account has disappeared.
+      for (const subject of [...new Set(subjects ?? [])].sort()) {
+        const [native] = await tx.select({ id: users.id }).from(users).where(eq(users.id, subject)).for("share");
+        if (!native) throw new Error("Notification subject account is unavailable");
+      }
       const previousStatus = old?.status;
       if (initialOnly && old) return;
-      const data: any = old || { ...entry, source: entry.source || "automatic", createdAt: entry.createdAt ?? now, status, timeline: [] };
+      const data: any = old || { ...publicEntry, source: entry.source || "automatic", createdAt: entry.createdAt ?? now, status, timeline: [] };
+      const unprovenHistoricalEnvelope = !!old && !previousSubjects &&
+        !!(old.encrypted || old.snapshots?.length || old.senderHash || old.recipientHash);
       if (previousStatus === status && (!snapshot || status === "sending")) return;
       if (snapshot && (status !== "sending" ? !data.dispatchAt : previousStatus !== "sending")) {
+        await assertNoErasedAssetReference(tx, snapshot);
         try {
           data.encrypted = protect(id, snapshot, secrets);
           data.senderHash = snapshot.sender ? contactHash(snapshot.sender) : undefined;
@@ -81,6 +111,12 @@ export async function recordNotification(conn: any, job: string, entry: Entry, s
       if (!["pending", "sending"].includes(status)) data.completedAt = now;
       if (httpStatus && Number.isInteger(httpStatus) && httpStatus >= 100 && httpStatus <= 599) data.httpStatus = httpStatus;
       data.timeline = [...data.timeline, { status, at: now, reason: data.reason }].slice(-30);
+      // Existing unproven envelopes must not acquire a retrospective identity
+      // claim from today's doctor, owner, or recipient. They stay fail-closed.
+      if (subjects && !unprovenHistoricalEnvelope) {
+        try { data.provenance = signHistorySubjects(id, data, subjects, previousSubjects ?? []); }
+        catch { delete data.provenance; data.provenanceUnavailable = true; }
+      }
       await tx.insert(settings).values({ id, data }).onConflictDoUpdate({ target: settings.id, set: { data } });
     });
   } catch { logger.warn("Notification history unavailable; operational dispatch state preserved"); }
@@ -98,7 +134,7 @@ export async function claimNotificationOccurrence(conn: any, channel: string, ev
 export function notificationEntry(data: any, channel: "email" | "sms"): Entry {
   return { channel, event: data.event, clinicId: data.clinicId, reference: data.snapshot?.reference,
     recipientGroup: data.recipientGroup || "patient", occurrence: `${data.event}:${data.appointmentId || data.snapshot?.id || data.clinicId}:${data.snapshot?.revision || 0}`,
-    createdAt: data.createdAt, dueAt: data.dueAt };
+    createdAt: data.createdAt, dueAt: data.dueAt, _sourceInput: data };
 }
 export function templateSnapshot(template: any, event: string, group: string, channel: string) {
   return { templateId: `${channel}:${event}:${group}`, templateScope: template.source, templateRevision: template.effectiveRevision ?? template.local?.revision ?? 0 };
@@ -155,7 +191,7 @@ export async function listNotificationLogs(user: any, input: unknown, conn: any 
   const parsed = querySchema.safeParse(input); assert(parsed.success, 400, "Invalid notification history filters");
   const q = parsed.data!;
   assert(!q.from || !q.to || Date.parse(q.from) <= Date.parse(q.to), 400, "Invalid date range");
-  const conditions = [sql`${settings.id} like ${prefix + "%"}`, sql`(${settings.data}->>'createdAt')::bigint >= ${now - HISTORY_RETENTION_DAYS * 86400000}`];
+  const conditions = [sql`${settings.id} like ${prefix + "%"}`, sql`coalesce(${settings.data}->>'erased','false') <> 'true'`, sql`(${settings.data}->>'createdAt')::bigint >= ${now - HISTORY_RETENTION_DAYS * 86400000}`];
   for (const field of ["channel", "event", "clinicId", "recipientGroup", "source", "reference"] as const)
     if (q[field]) conditions.push(sql`${settings.data}->>${field} = ${q[field]}`);
   const statusExpr = sql`case when ${settings.data}->>'status' = 'sending' and (${settings.data}->>'dispatchAt')::bigint < ${now - 300000} then 'delivery_unknown' else ${settings.data}->>'status' end`;
@@ -194,10 +230,10 @@ export async function getNotificationLog(user: any, id: string, conn: any = db, 
         dueAt:d.dueAt,dispatchAt:d.claimedAt,completedAt:d.finishedAt,legacy:true}};
     }
   }else [row]=await conn.select().from(settings).where(eq(settings.id,id));
-  assert(row && row.data.createdAt >= now - HISTORY_RETENTION_DAYS * 86400000, 404, "Notification log unavailable");
+  assert(row && row.data.erased !== true && row.data.createdAt >= now - HISTORY_RETENTION_DAYS * 86400000, 404, "Notification log unavailable");
   return projection(row, now);
 }
 export async function cleanupNotificationHistory(conn: any = db, now = Date.now()) {
   // Bounded batches; never delete mail-outbox, sms-outbox or test claims.
-  await conn.execute(sql`delete from settings where id in (select id from settings where id like ${prefix + "%"} and (data->>'createdAt')::bigint < ${now - HISTORY_RETENTION_DAYS * 86400000} order by id limit 500)`);
+  await conn.execute(sql`delete from settings where id in (select id from settings where id like ${prefix + "%"} and coalesce(data->>'erased','false') <> 'true' and (data->>'createdAt')::bigint < ${now - HISTORY_RETENTION_DAYS * 86400000} order by id limit 500)`);
 }

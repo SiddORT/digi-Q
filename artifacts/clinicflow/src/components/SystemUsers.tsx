@@ -4,7 +4,9 @@ import { useConfirm } from "./ConfirmDialog";
 import { friendlyError } from "../lib/friendly-error";
 import { notifySuccess } from "../lib/notify";
 import { AssignmentSummary } from "./AssignmentSummary";
-import { ShieldCheck, UserCheck, UserX } from "lucide-react";
+import { ShieldCheck, UserCheck, UserX, Trash2 } from "lucide-react";
+import { StaffDeletionReview } from "./StaffDeletionReview";
+import { PendingRemovalReceipts } from "./PendingRemovalReceipts";
 import { IconAction } from "./IconAction";
 import { Link } from "wouter";
 import { useGetSystemUsers, getSystemUsers, getUser, updateUser, getGetSystemUsersQueryKey, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetCustomRoles, getGetCustomRolesQueryKey } from "@workspace/api-client-react";
@@ -90,9 +92,10 @@ export function SystemUsers() {
   const [clinicId, setClinicId] = useState("");
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState("");
+  const [deletion, setDeletion] = useState<{ userId: string; name: string } | null>(null);
   useEffect(() => setPage(1), [debounced, role, status, clinicId]);
   const params = { page, search: debounced || undefined, role: role || undefined, status: status || undefined, clinicId: clinicId || undefined } as Params;
-  const q = useGetSystemUsers(params, { query: { queryKey: getGetSystemUsersQueryKey(params), placeholderData: (p: unknown) => p, refetchOnWindowFocus: true } as never });
+  const q = useGetSystemUsers(params, { query: { queryKey: getGetSystemUsersQueryKey(params), placeholderData: (p: unknown) => p, refetchOnWindowFocus: true, refetchInterval: 30000 } as never });
   const data = q.data as Page | undefined;
   const countParams={...params,page:1,status:undefined};
   const counts=useQueries({queries:["","active","inactive"].map(value=>({
@@ -128,6 +131,8 @@ export function SystemUsers() {
   return <>
     {confirmAction.dialog}
     {filterNames.errors}
+    <PendingRemovalReceipts actorId={viewer?.role==="superAdmin"?viewer.id:undefined} />
+    <StaffDeletionReview target={viewer?.role==="superAdmin"?deletion:null} actorId={viewer?.id} onClose={()=>setDeletion(null)} />
     {statusError&&<p role="alert" className="error-box">{statusError} <button onClick={()=>setStatusError("")}>Dismiss</button></p>}
     {statusUpdate.isPending&&<p role="status">Updating account status for {statusUpdate.variables.user.fullName}…</p>}
     {counts.some(c=>c.error)&&<p role="alert">Account status counts could not be loaded. <button onClick={()=>counts.forEach(c=>void c.refetch())}>Retry Counts</button></p>}
@@ -147,7 +152,7 @@ export function SystemUsers() {
         : q.error ? <div className="error-box" role="alert">Accounts could not be loaded. <button type="button" onClick={() => void q.refetch()}>Retry</button></div>
          : data?.data.length ? <><div className="table-wrap"><table><thead><tr>{cols.visible.map(k => <th key={k} className={cols.cls(k)}>{cols.label(k)}</th>)}<th className="col-actions sticky"><span className="sr-only">Actions</span></th></tr></thead><tbody>
           {data.data.map(u => <Fragment key={u.id}><tr data-testid={`row-system-user-${u.id}`}>{cols.visible.map((k, ci) => <td key={k} data-label={cols.label(k)} className={cols.cls(k)}>{ci === 0 && cols.hidden.length ? <span className="row-lead">{cols.toggle(u.id, u.fullName)}{sysCell(k, u)}</span> : sysCell(k, u)}</td>)}
-             <td data-label="Actions" className="col-actions sticky"><div className="row-actions"><IconAction label={`View effective permissions for ${u.fullName}`} hint="Effective permissions" icon={<ShieldCheck size={15} aria-hidden />} onClick={() => setExpanded(u.id)} testId={`button-effective-${u.id}`} /><IconAction label={`${u.status==="active"?"Deactivate":"Activate"} ${u.fullName}`} hint={statusUpdate.isPending&&statusUpdate.variables?.user.id===u.id?"Updating account…":u.status==="active"?"Deactivate account":"Activate account"} icon={u.status==="active"?<UserX size={15}/>:<UserCheck size={15}/>} tone={u.status==="active"?"danger":undefined} disabled={statusUpdate.isPending||!!statusReason(u)||q.isPlaceholderData||q.isFetching} disabledReason={statusReason(u)} onClick={()=>void changeStatus(u)} testId={`button-status-${u.id}`}/></div></td></tr>{cols.expansion(u.id, cols.visible.length + 1, k => sysCell(k, u))}</Fragment>)}
+             <td data-label="Actions" className="col-actions sticky"><div className="row-actions"><IconAction label={`View effective permissions for ${u.fullName}`} hint="Effective permissions" icon={<ShieldCheck size={15} aria-hidden />} onClick={() => setExpanded(u.id)} testId={`button-effective-${u.id}`} /><IconAction label={`${u.status==="active"?"Deactivate":"Activate"} ${u.fullName}`} hint={statusUpdate.isPending&&statusUpdate.variables?.user.id===u.id?"Updating account…":u.status==="active"?"Deactivate account":"Activate account"} icon={u.status==="active"?<UserX size={15}/>:<UserCheck size={15}/>} tone={u.status==="active"?"danger":undefined} disabled={statusUpdate.isPending||!!statusReason(u)||q.isPlaceholderData||q.isFetching} disabledReason={statusReason(u)} onClick={()=>void changeStatus(u)} testId={`button-status-${u.id}`}/>{viewer?.role==="superAdmin"&&<IconAction label={`Review permanent removal of ${u.fullName}`} hint="Review permanent removal" icon={<Trash2 size={15} aria-hidden />} tone="danger" disabled={u.id===viewer.id} disabledReason={u.id===viewer.id?"You cannot remove your own account.":undefined} onClick={()=>setDeletion({userId:u.id,name:u.fullName})} testId={`button-review-removal-${u.id}`}/>}</div></td></tr>{cols.expansion(u.id, cols.visible.length + 1, k => sysCell(k, u))}</Fragment>)}
         </tbody></table></div><Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPageChange={setPage} /></>
         : <div className="empty" data-testid="status-empty"><h3>{active ? "No matching accounts" : "No accounts yet"}</h3>{active && <button type="button" onClick={reset}>Clear Filters</button>}</div>}
     </section>

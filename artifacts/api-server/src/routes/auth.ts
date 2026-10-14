@@ -16,6 +16,7 @@ import { createSession, revokeSession, hashPassword, verifyPassword, issueCsrf,
   lockCredentials, invalidateStaffCredentials, insertSession, sessionCookie, challengeUserId,
   resendRegistrationChallenge, getCookie,
   createChallenge, validateChallenge, consumeChallenge, consumeRateLimit, passwordInput } from "../lib/native-auth";
+import { withStaffDispatch } from "../lib/staff-dispatch-barrier";
 
 export const authRouter = Router();
 const CODE_AGE = 10 * 60_000;
@@ -60,6 +61,7 @@ async function mailLink(req: any, address: string, userId: string, purpose: stri
   const secret = randomBytes(32).toString("base64url");
   const id = await createChallenge({ userId, email: address, purpose, secret, ttlMs: LINK_AGE });
   url.searchParams.set("token", `${id}.${secret}`);
+  return withStaffDispatch([userId], purpose === "invitation" ? "invitation" : "recovery", async () => {
   if (purpose === "invitation") {
     const user = await localUser(address);
     const recipient = user.role as "doctor" | "clinicAdmin" | "receptionist";
@@ -73,6 +75,7 @@ async function mailLink(req: any, address: string, userId: string, purpose: stri
   }
   await sendAuthEmail(address, "DigiQ Doctors account access", `Use this link within 30 minutes: ${url}`);
   return undefined;
+  }, db, outcomes => outcomes?.email.status === "delivery_unknown" || outcomes?.sms.status === "delivery_unknown");
 }
 /** Configuration errors must be detected before committing a new staff profile. */
 export async function ensureStaffInvitationConfigured() {
@@ -102,10 +105,14 @@ authRouter.get("/auth/status", async (req, res) => {
   const userId = (req as any).authUserId as string | undefined;
   const [user] = userId ? await db.select({ role: users.role }).from(users).where(eq(users.id, userId)) : [];
   const role = user?.role ?? null;
-  // Session checks can overlap the login form's CSRF bootstrap on first load.
-  // They must not issue a second cookie that invalidates the bootstrap header.
+  let staffDirectoryRevision: string | undefined;
+  if (role) {
+    const installed = (await db.execute(sql`select to_regclass('public.staff_deletion_receipts') as present`)).rows[0] as any;
+    if (installed?.present)
+      staffDirectoryRevision = String((await db.execute(sql`select count(*)::text as revision from staff_deletion_receipts`)).rows[0]?.revision);
+  }
   // Only /auth/csrf owns CSRF cookie issuance.
-  res.json({ role, staffPasswordVerified: Boolean(role && isStaffRole(role)), requiresStaffPassword: false });
+  res.json({ role, staffPasswordVerified: Boolean(role && isStaffRole(role)), requiresStaffPassword: false, staffDirectoryRevision });
 });
 authRouter.post("/auth/login", async (req, res) => {
   const address = email(req.body?.email), password = req.body?.password;

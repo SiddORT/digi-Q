@@ -26,3 +26,15 @@ Register shared Node test cleanup hooks at file or suite scope, not inside a set
 **Why:** A cleanup hook registered inside a before hook can belong to that hook's context and close the disposable server before the first test request.
 
 **How to apply:** Register teardown alongside setup, guard partially initialized resources, and keep setup-failure cleanup in the harness.
+
+Database replacement requires fresh imported harness modules, not only fresh database objects.
+
+**Why:** Node caches imported ESM modules by URL. Reusing a generated bundle URL retained bindings to a closed earlier fixture even after a replacement database was created.
+
+**How to apply:** Give each independently initialized harness a distinct module identity; do not assume regenerating the same file resets its imports.
+
+Distinguish native Node/Wasm crashes from relational assertion failures.
+
+**Why:** Node 24.13 occasionally aborted during PGlite teardown with a V8 JIT allocation assertion while compilation and test processes ran together. The affected relational assertions passed when run alone.
+
+**How to apply:** Inspect the native stack, rerun only the affected file without parallel builds, and report the interrupted combined run accurately. Do not weaken relational assertions to hide an engine crash.

@@ -440,7 +440,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
     if ("status" in table) fields.status = body.status || old?.status || "active";
     for (const key of ["clinicId", "branchId", "doctorId", "dayOfWeek", "date", "category", "parentId", "specializationId"]) if (key in table && merged[key] !== undefined) fields[key] = merged[key];
     if (kind === "clinics") {
-      fields.ownerId = old?.ownerId || user.id;
+      fields.ownerId = old ? old.ownerId : user.id;
       if (old) fields.adminId = body.adminId || old.adminId;
       else if (user.role === "clinicAdmin") fields.adminId = user.id;
       else if (user.role === "doctor") {
@@ -636,7 +636,7 @@ function discardedIncomingSave(kind: string, table: any, user: any, body: any, o
     if ("status" in table) fields.status = body.status || old?.status || "active";
     for (const key of ["clinicId", "branchId", "doctorId", "dayOfWeek", "date", "category", "parentId", "specializationId"]) if (key in table && merged[key] !== undefined) fields[key] = merged[key];
     if (kind === "clinics") {
-      fields.ownerId = old?.ownerId || user.id;
+      fields.ownerId = old ? old.ownerId : user.id;
       if (old) fields.adminId = body.adminId || old.adminId;
       else if (user.role === "clinicAdmin") fields.adminId = user.id;
       else if (user.role === "doctor") {
@@ -761,6 +761,7 @@ for (const [kind, table, schema, listSchema] of definitions) {
   });
   resourcesRouter.get(`/${kind}/:id`, async (req, res) => {
     const user = await requireUser(req), row = await enrich(kind, await one(table, req.params.id as string));
+    assert(kind !== "doctors" || row.status !== "retired", 404, "Doctor profile is no longer available");
     assert(await canRead(user, kind, row), 403, "Record outside your scope");
     res.json(await withPasswordState(await projectAssignmentScope(user, kind, row)));
   });

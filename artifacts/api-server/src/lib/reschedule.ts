@@ -7,8 +7,9 @@ import { lockQueue, appointmentView } from "./appointments";
 import { allocateToken, snapshotDuration } from "./session-duration";
 import { sessionRows, rank } from "./queue-order";
 import { enrich } from "./entities";
+import { recordStaffHandoffTransition } from "./staff-handoff-transition";
 
-export async function reschedule(user: any, id: string, body: any, tx: any) {
+export async function reschedule(user: any, id: string, body: any, tx: any, staffHandoff?: { operationId: string; targetUserId: string }) {
   let row = await one(appointments, id, tx);
   assert(await canRead(user, "appointments", row), 403, "Appointment outside your scope");
   if (user.role !== "patient") roles(user, ["superAdmin", "clinicAdmin", "doctor", "receptionist"]);
@@ -19,6 +20,14 @@ export async function reschedule(user: any, id: string, body: any, tx: any) {
   row = await one(appointments, id, tx);
   assert(row.doctorId === original.doctorId && row.branchId === original.branchId && row.date === original.date && (row.revision || 0) === body.expectedRevision, 409, "Appointment changed; refresh and retry");
   assert(["booked", "checkedIn", "waiting", "called"].includes(row.status) && !row.checkedInAt, 409, "Only appointments before check-in can be rescheduled");
+  if (staffHandoff) {
+    assert(user.role === "superAdmin", 403, "Superadmin handoff required");
+    const sourceDoctor = await one(doctors, row.doctorId, tx);
+    assert(sourceDoctor.userId === staffHandoff.targetUserId, 409, "Visit no longer belongs to the reviewed staff account");
+    assert(row.status === "booked" && !row.checkedInAt && row.timezone,
+      409, "Resolve overdue, waiting or in-progress care and incomplete original coordinates before a staff handoff");
+    assert(body.doctorId !== row.doctorId, 400, "Choose a different eligible doctor");
+  }
   const config = await getSettings(tx, row.clinicId), now = localNow(row.timezone || "Asia/Kolkata");
   const difference = (Date.parse(row.date) - Date.parse(now.date)) / 60000 + minutes(row.startTime || "00:00") - now.minute;
   assert(difference >= config.cancellationCutoffMinutes, 409, "Cancellation cutoff has passed");
@@ -33,7 +42,7 @@ export async function reschedule(user: any, id: string, body: any, tx: any) {
   const destination = { ...body, clinicId: row.clinicId };
   const rows = sessionRows(await all(appointments, tx), destination);
   assert(!rows.some(a => a.patientId === row.patientId && !["cancelled", "completed", "noShow"].includes(a.status)), 409, "Patient already has an active booking for the destination");
-  await snapshotDuration(row, tx);
+  const originalDuration = await snapshotDuration(row, tx);
   await allocateToken(row, tx, false);
   const duration = await snapshotDuration(destination, tx), tokenNumber = await allocateToken(destination, tx);
   const doctor = await enrich("doctors", await one(doctors, body.doctorId, tx), tx);
@@ -49,6 +58,8 @@ export async function reschedule(user: any, id: string, body: any, tx: any) {
       to: { doctorId: body.doctorId, branchId: body.branchId, date: body.date, sessionId: body.sessionId, startTime: body.startTime, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber } }],
   };
   const updated = await change(appointments, id, { status: "waiting", doctorId: body.doctorId, branchId: body.branchId, date: body.date, tokenNumber, data }, tx);
+  if (staffHandoff)
+    await recordStaffHandoffTransition(tx, staffHandoff.operationId, user.id, row, updated, originalDuration, duration);
   await put(appointmentHistory, { id: uid(), appointmentId: id, actorId: user.id, fromStatus: row.status, toStatus: "waiting" }, tx);
   await audit(user, "reschedule", "appointments", updated, tx);
   const { enqueueEvent } = await import("./notification-outbox");

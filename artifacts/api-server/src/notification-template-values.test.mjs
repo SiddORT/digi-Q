@@ -151,7 +151,8 @@ test("published placeholders reach all four eligible SMS/email recipient groups 
   for(const call of smsCalls)assert.equal(call.meta.dltTemplateId,"REGISTERED_RESCHEDULED");
   const captured=(await h.control.query("select id,data from settings where id like '%outbox:rescheduled:visit:%'")).rows;
   assert.equal(captured.length,8);
-  for(const {data} of captured)assert.deepEqual(data.previousSession,{date:"2030-01-14",startTime:"14:00",endTime:"17:00"});
+  for(const {data} of captured)assert.deepEqual(data.previousSession,{date:"2030-01-14",startTime:"14:00",endTime:"17:00",
+    doctorId:"d",doctorName:"Doctor Person"});
   // A historical job without structured prior values must not send blank old dates.
   const old=captured.find(row=>row.id.startsWith("sms-outbox:")).data;
   const historical={...old,previousSession:undefined,state:"pending",createdAt:Date.now(),dueAt:0,historyKey:"historical-no-previous"};

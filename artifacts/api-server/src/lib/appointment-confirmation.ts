@@ -2,6 +2,8 @@ import { db, appointments, patients, clinics, users, settings } from "@workspace
 import { eq, sql } from "drizzle-orm";
 import { one, getSettings } from "./store";
 import { sendAuthEmail } from "./auth-email";
+import { withStaffDispatch } from "./staff-dispatch-barrier";
+import { notificationStaffSubjects } from "./notification-staff-subjects";
 import { validEmailAddress, emailNotificationsEnabled, smtpConfig } from "./integration-config";
 import { resolvedIntegration } from "./integration-vault";
 import { recordNotification, recordDecision, notificationEntry, historyId, templateSnapshot } from "./notification-history";
@@ -66,7 +68,7 @@ async function lockConfirmation(conn: any, id: string) {
 /** Called only after booking commit. At-most-once dispatch, never SMTP inside the booking transaction. */
 export async function confirmAppointmentEmail(id: string, conn: any = db, send?: Sender): Promise<ConfirmationEmail> {
   const sender=send||sendAuthEmail;
-  let claimed: { outcome: ConfirmationEmail; recipient?: string; text?: string; rendered?: ReturnType<typeof renderNotification>; env?: NodeJS.ProcessEnv; historyEntry?: any };
+  let claimed: { outcome: ConfirmationEmail; recipient?: string; text?: string; rendered?: ReturnType<typeof renderNotification>; env?: NodeJS.ProcessEnv; historyEntry?: any; snapshot?: any };
   try {
     claimed = await conn.transaction(async (tx: any) => {
       const row = await lockConfirmation(tx,id);
@@ -140,19 +142,23 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
       },[cfg.password]);
       // A crash after this durable claim remains unknown, never automatically resent.
       await saveOutcome(tx,id,"not_attempted","delivery_unknown");
-      return {outcome:"not_attempted",recipient,text:confirmationText(row,clinic),rendered,env,historyEntry:entry};
+      return {outcome:"not_attempted",recipient,text:confirmationText(row,clinic),rendered,env,historyEntry:entry,snapshot:row};
     });
   } catch {
     // The committed booking is authoritative even if notification storage is unavailable.
     return "unavailable";
   }
   if (!claimed.recipient || !claimed.text) return claimed.outcome;
+  const recipient = claimed.recipient, text = claimed.text;
   let outcome: ConfirmationEmail = "provider_accepted";
   let dispatchOutcome: "provider_accepted" | "provider_rejected" | "pre_dispatch_failed" | "delivery_unknown" = "provider_accepted";
   try {
+    const subjectIds = await notificationStaffSubjects(conn, { snapshot: claimed.snapshot, recipientGroup: "patient" });
+    return await withStaffDispatch(subjectIds, "booking", async () => {
+  try {
     if (sender === sendAuthEmail)
-      await sendAuthEmail(claimed.recipient, claimed.rendered?.subject||"DigiQ Doctors — Appointment confirmation", claimed.rendered?.text||claimed.text, undefined, claimed.rendered, [], claimed.env);
-    else await sender(claimed.recipient,claimed.rendered?.subject || "DigiQ Doctors — Appointment confirmation",claimed.rendered?.text || claimed.text);
+      await sendAuthEmail(recipient, claimed.rendered?.subject||"DigiQ Doctors — Appointment confirmation", claimed.rendered?.text||text, undefined, claimed.rendered, [], claimed.env);
+    else await sender(recipient,claimed.rendered?.subject || "DigiQ Doctors — Appointment confirmation",claimed.rendered?.text || text);
   }
   catch(error:any) {
     outcome = "unavailable";
@@ -163,4 +169,10 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
   catch { return "not_attempted"; }
   if(claimed.historyEntry)await recordNotification(conn,`patient-booking:${id}`,claimed.historyEntry,dispatchOutcome);
   return outcome;
+    }, conn, () => dispatchOutcome === "delivery_unknown");
+  } catch {
+    // The durable booking claim remains unknown; never encourage a resend or
+    // turn a failed staff-subject barrier into an unguarded provider call.
+    return "not_attempted";
+  }
 }

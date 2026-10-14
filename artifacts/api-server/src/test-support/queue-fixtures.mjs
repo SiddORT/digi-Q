@@ -6,22 +6,22 @@ CREATE TABLE integration_credentials (provider text PRIMARY KEY, encrypted text 
   create table branches(id text primary key,clinic_id text,status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
   create unique index clinic_slug_unique on clinics((data->>'slug'));
   create unique index branch_slug_clinic_unique on branches(clinic_id,(data->>'slug'));
-  create table doctors(id text primary key,user_id text,owner_admin_id text,specialization_id text,status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
+  create table doctors(id text primary key,user_id text,owner_admin_id text,specialization_id text,status text default 'active',data jsonb not null default '{}',retired_at timestamptz,created_at timestamptz default now());
   create table assignments(id text primary key,user_id text,clinic_id text,branch_id text);
   create table patients(id text primary key,user_id text,clinic_id text,branch_id text,mobile text,mobile_verified boolean default false,status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
   create table schedules(id text primary key,doctor_id text,clinic_id text,branch_id text,day_of_week int,status text default 'active',data jsonb not null default '{}');
   create table availability_exceptions(id text primary key,doctor_id text,branch_id text,date text,status text default 'active',data jsonb not null default '{}');
-  create table appointments(id text primary key,patient_id text,doctor_id text,clinic_id text,branch_id text,date text,token_number int,status text default 'booked',request_id text,actor_id text,data jsonb not null default '{}',created_at timestamptz default now());
+  create table appointments(id text primary key,patient_id text,doctor_id text,clinic_id text,branch_id text,date text,token_number int,status text default 'booked',request_id text,actor_id text,deleted_actor boolean not null default false,data jsonb not null default '{}',created_at timestamptz default now());
   create unique index token_unique on appointments(doctor_id,branch_id,date,coalesce(data->>'startTime',''),token_number);
   create unique index active_patient_unique on appointments(patient_id,doctor_id,branch_id,date,coalesce(data->>'startTime','')) where status not in ('cancelled','completed','noShow');
   create unique index current_unique on appointments(doctor_id,branch_id,date,coalesce(data->>'startTime','')) where status in ('called','inConsultation');
   create unique index request_unique on appointments(actor_id,request_id);
-  create table appointment_history(id text primary key,appointment_id text,actor_id text,from_status text,to_status text,created_at timestamptz default now());
-  create table audit_logs(id text primary key,actor_id text,clinic_id text,branch_id text,action text,entity_type text,entity_id text,summary text,created_at timestamptz default now());
+  create table appointment_history(id text primary key,appointment_id text,actor_id text,deleted_actor boolean not null default false,from_status text,to_status text,created_at timestamptz default now());
+  create table audit_logs(id text primary key,actor_id text,deleted_actor boolean not null default false,clinic_id text,branch_id text,action text,entity_type text,entity_id text,summary text,created_at timestamptz default now());
   create table settings(id text primary key,data jsonb not null default '{}');
   create table masters(id text primary key,category text,code text,parent_id text,status text default 'active',data jsonb not null default '{}');
   create table qrs(id text primary key,clinic_id text,branch_id text,doctor_id text,public_reference text,status text default 'active',data jsonb not null default '{}',created_at timestamptz default now());
-  create table guest_requests(id text primary key,request_id text not null unique,receipt_hash text not null unique,input_hash text not null,clinic_id text,branch_id text,doctor_id text,date text,status text default 'pending',appointment_id text unique,decided_by text,data jsonb not null default '{}',created_at timestamptz default now());
+  create table guest_requests(id text primary key,request_id text not null unique,receipt_hash text not null unique,input_hash text not null,clinic_id text,branch_id text,doctor_id text,date text,status text default 'pending',appointment_id text unique,decided_by text,deleted_decider boolean not null default false,data jsonb not null default '{}',created_at timestamptz default now());
 `;
 
 export async function seedQueueFixtures(api, t, database) {

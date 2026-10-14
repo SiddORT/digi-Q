@@ -50,11 +50,15 @@ export const masters = pgTable("masters", {
   id: id(), category: text("category").notNull(), code: text("code").notNull(), parentId: text("parent_id").references((): AnyPgColumn => masters.id), status: text("status").notNull().default("active"), data: data(),
 }, t => [uniqueIndex("master_category_code").on(t.category, t.code)]);
 export const doctors = pgTable("doctors", {
-  id: id(), userId: text("user_id").notNull().unique().references(() => users.id),
-  ownerAdminId: text("owner_admin_id").notNull().references(() => users.id),
+  id: id(), userId: text("user_id").unique().references(() => users.id),
+  ownerAdminId: text("owner_admin_id").references(() => users.id),
   specializationId: text("specialization_id").references(() => masters.id), status: text("status").notNull().default("active"), data: data(),
+  retiredAt: timestamp("retired_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-}, t => [index("doctor_owner_admin_idx").on(t.ownerAdminId)]);
+}, t => [
+  index("doctor_owner_admin_idx").on(t.ownerAdminId),
+  check("doctor_retired_identity", sql`(${t.status} = 'retired' and ${t.userId} is null and ${t.ownerAdminId} is null and ${t.retiredAt} is not null) or (${t.status} <> 'retired' and ${t.userId} is not null and ${t.ownerAdminId} is not null and ${t.retiredAt} is null)`),
+]);
 export const patients = pgTable("patients", {
   id: id(), userId: text("user_id").unique().references(() => users.id), clinicId: text("clinic_id").references(() => clinics.id),
   branchId: text("branch_id").references(() => branches.id), mobile: text("mobile"),
@@ -76,7 +80,8 @@ export const appointments = pgTable("appointments", {
   id: id(), patientId: text("patient_id").notNull().references(() => patients.id), doctorId: text("doctor_id").notNull().references(() => doctors.id),
   clinicId: text("clinic_id").notNull().references(() => clinics.id), branchId: text("branch_id").notNull().references(() => branches.id),
   date: text("date").notNull(), tokenNumber: integer("token_number").notNull(), status: text("status").notNull().default("booked"),
-  requestId: text("request_id"), actorId: text("actor_id").notNull().references(() => users.id), data: data(), createdAt: created(),
+  requestId: text("request_id"), actorId: text("actor_id").references(() => users.id),
+  deletedActor: boolean("deleted_actor").notNull().default(false), data: data(), createdAt: created(),
 }, t => [
   uniqueIndex("appointment_token_idx").on(t.doctorId, t.branchId, t.date, sql`coalesce(${t.data}->>'startTime','')`, t.tokenNumber),
   uniqueIndex("appointment_request_idx").on(t.actorId, t.requestId),
@@ -86,20 +91,50 @@ export const appointments = pgTable("appointments", {
   uniqueIndex("appointment_one_consult_idx").on(t.doctorId, t.branchId, t.date, sql`coalesce(${t.data}->>'startTime','')`).where(sql`${t.status} in ('called','inConsultation')`),
   check("appointment_status_check", sql`${t.status} in ('booked','checkedIn','waiting','called','inConsultation','completed','noShow','cancelled')`),
   check("appointment_token_positive", sql`${t.tokenNumber} > 0`),
+  check("appointment_anonymous_actor", sql`(${t.actorId} is not null and not ${t.deletedActor}) or (${t.actorId} is null and ${t.deletedActor})`),
 ]);
 export const appointmentHistory = pgTable("appointment_history", {
-  id: id(), appointmentId: text("appointment_id").notNull().references(() => appointments.id), actorId: text("actor_id").notNull().references(() => users.id),
+  id: id(), appointmentId: text("appointment_id").notNull().references(() => appointments.id), actorId: text("actor_id").references(() => users.id),
+  deletedActor: boolean("deleted_actor").notNull().default(false),
   fromStatus: text("from_status"), toStatus: text("to_status").notNull(), createdAt: created(),
-}, t => [index("history_appointment_idx").on(t.appointmentId)]);
+}, t => [index("history_appointment_idx").on(t.appointmentId),
+  check("history_anonymous_actor", sql`(${t.actorId} is not null and not ${t.deletedActor}) or (${t.actorId} is null and ${t.deletedActor})`)]);
+/** Immutable clinical-coordinate evidence for reviewed doctor handoffs. */
+export const appointmentTransitions = pgTable("appointment_transitions", {
+  id: id(), operationId: text("operation_id").notNull(),
+  appointmentId: text("appointment_id").notNull().references(() => appointments.id),
+  patientId: text("patient_id").notNull().references(() => patients.id),
+  clinicId: text("clinic_id").notNull().references(() => clinics.id),
+  actorId: text("actor_id").references(() => users.id), deletedActor: boolean("deleted_actor").notNull().default(false),
+  fromDoctorId: text("from_doctor_id").notNull().references(() => doctors.id),
+  toDoctorId: text("to_doctor_id").notNull().references(() => doctors.id),
+  fromBranchId: text("from_branch_id").notNull().references(() => branches.id),
+  toBranchId: text("to_branch_id").notNull().references(() => branches.id),
+  beforeCoordinates: jsonb("before_coordinates").$type<Record<string, unknown>>().notNull(),
+  afterCoordinates: jsonb("after_coordinates").$type<Record<string, unknown>>().notNull(),
+  referenceFingerprint: text("reference_fingerprint").notNull(),
+  fromRevision: integer("from_revision").notNull(), toRevision: integer("to_revision").notNull(), createdAt: created(),
+}, t => [
+  uniqueIndex("transition_operation_visit").on(t.operationId, t.appointmentId),
+  uniqueIndex("transition_visit_revision").on(t.appointmentId, t.toRevision), index("transition_visit_idx").on(t.appointmentId),
+  check("transition_anonymous_actor", sql`(${t.actorId} is not null and not ${t.deletedActor}) or (${t.actorId} is null and ${t.deletedActor})`),
+  check("transition_reference_fingerprint", sql`${t.referenceFingerprint} ~ '^[a-f0-9]{64}$'`),
+  check("transition_revision", sql`${t.fromRevision} >= 0 and ${t.toRevision} = ${t.fromRevision} + 1`),
+  check("transition_doctor_change", sql`${t.fromDoctorId} <> ${t.toDoctorId}`),
+  check("transition_coordinates", sql`jsonb_typeof(${t.beforeCoordinates}) = 'object' and jsonb_typeof(${t.afterCoordinates}) = 'object'
+    and ${t.beforeCoordinates} - ARRAY['date','sessionId','startTime','endTime','timezone','token','tokenNumber','expectedDurationMinutes']::text[] = '{}'::jsonb
+    and ${t.afterCoordinates} - ARRAY['date','sessionId','startTime','endTime','timezone','token','tokenNumber','expectedDurationMinutes']::text[] = '{}'::jsonb`),
+]);
 export const guestRequests = pgTable("guest_requests", {
   id: id(), requestId: text("request_id").notNull().unique(), receiptHash: text("receipt_hash").notNull().unique(),
   inputHash: text("input_hash").notNull(), clinicId: text("clinic_id").notNull().references(() => clinics.id),
   branchId: text("branch_id").notNull().references(() => branches.id), doctorId: text("doctor_id").notNull().references(() => doctors.id),
   date: text("date").notNull(), status: text("status").notNull().default("pending"),
   appointmentId: text("appointment_id").unique().references(() => appointments.id),
-  decidedBy: text("decided_by").references(() => users.id), data: data(), createdAt: created(),
+  decidedBy: text("decided_by").references(() => users.id), deletedDecider: boolean("deleted_decider").notNull().default(false), data: data(), createdAt: created(),
 }, t => [index("guest_request_scope_idx").on(t.clinicId, t.branchId, t.status),
-  check("guest_request_status", sql`${t.status} in ('pending','confirmed','rejected')`)]);
+  check("guest_request_status", sql`${t.status} in ('pending','confirmed','rejected')`),
+  check("guest_anonymous_decider", sql`not ${t.deletedDecider} or ${t.decidedBy} is null`)]);
 export const qrs = pgTable("qrs", {
   id: id(), clinicId: text("clinic_id").notNull().references(() => clinics.id), branchId: text("branch_id").references(() => branches.id),
   doctorId: text("doctor_id").references(() => doctors.id), publicReference: text("public_reference").notNull().unique(),
@@ -108,8 +143,10 @@ export const qrs = pgTable("qrs", {
 export const auditLogs = pgTable("audit_logs", {
   id: id(), actorId: text("actor_id").references(() => users.id), clinicId: text("clinic_id").references(() => clinics.id),
   branchId: text("branch_id").references(() => branches.id),
+  deletedActor: boolean("deleted_actor").notNull().default(false),
   action: text("action").notNull(), entityType: text("entity_type").notNull(), entityId: text("entity_id").notNull(), summary: text("summary").notNull(), createdAt: created(),
-}, t => [index("audit_scope_idx").on(t.clinicId, t.branchId, t.createdAt)]);
+}, t => [index("audit_scope_idx").on(t.clinicId, t.branchId, t.createdAt),
+  check("audit_anonymous_actor", sql`not ${t.deletedActor} or ${t.actorId} is null`)]);
 export const settings = pgTable("settings", { id: id(), data: data() }, t => [
   // Must match the owner-history predicate and numeric timestamp/null ordering exactly.
   index("settings_owner_booking_history_idx").on(
@@ -173,6 +210,11 @@ export const authChallenges = pgTable("auth_challenges", {
 }, t => [index("auth_challenge_email_idx").on(t.email, t.purpose), index("auth_challenge_expiry_idx").on(t.expiresAt)]);
 
 /** Shared across workers; no per-process rate-limit bypass. */
+export const staffErasedIdentities = pgTable("staff_erased_identities", {
+  identityFingerprint: text("identity_fingerprint").primaryKey(),
+  operationId: text("operation_id").notNull().references(() => staffDeletionReceipts.id),
+  createdAt: created(),
+}, t => [check("staff_erased_identities_fingerprint", sql`${t.identityFingerprint} ~ '^[a-f0-9]{64}$'`)]);
 export const authRateLimits = pgTable("auth_rate_limits", {
   key: text("key").primaryKey(),
   attempts: integer("attempts").notNull().default(0),
@@ -188,15 +230,38 @@ export const notificationReads = pgTable("notification_reads", {
 export const patientDocuments = pgTable("patient_documents", {
   id: id(), patientId: text("patient_id").notNull().references(() => patients.id),
   clinicId: text("clinic_id").notNull().references(() => clinics.id),
-  uploadedBy: text("uploaded_by").notNull().references(() => users.id),
+  uploadedBy: text("uploaded_by").references(() => users.id),
+  deletedUploader: boolean("deleted_uploader").notNull().default(false),
   name: text("name").notNull(), contentType: text("content_type").notNull(), size: integer("size").notNull(),
   provider: text("provider").notNull(), storageKey: text("storage_key").notNull(),
   status: text("status").notNull().default("active"), createdAt: created(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
-}, t => [index("patient_document_patient_idx").on(t.patientId, t.clinicId)]);
+}, t => [index("patient_document_patient_idx").on(t.patientId, t.clinicId),
+  check("document_anonymous_uploader", sql`(${t.uploadedBy} is not null and not ${t.deletedUploader}) or (${t.uploadedBy} is null and ${t.deletedUploader})`)]);
 /** Synced listing views. Only allowlisted structured filters and column layout; never search text. */
 export const savedViews = pgTable("saved_views", {
-  id: id(), userId: text("user_id").notNull().references(() => users.id), tableKey: text("table_key").notNull(),
+  id: id(), userId: text("user_id").references(() => users.id), deletedOwner: boolean("deleted_owner").notNull().default(false), tableKey: text("table_key").notNull(),
   name: text("name").notNull(), data: data(), sharedRole: text("shared_role"),
   clinicIds: jsonb("clinic_ids").$type<string[]>().notNull().default([]), createdAt: created(),
-}, t => [index("saved_view_owner_idx").on(t.userId, t.tableKey), index("saved_view_shared_idx").on(t.sharedRole, t.tableKey)]);
+}, t => [index("saved_view_owner_idx").on(t.userId, t.tableKey), index("saved_view_shared_idx").on(t.sharedRole, t.tableKey),
+  check("saved_views_retired_owner", sql`${t.userId} is not null or (${t.sharedRole} is not null and ${t.deletedOwner})`)]);
+
+/** Anonymous removal receipt. Pending file keys are encrypted and disappear on verified completion. */
+export const staffDeletionReceipts = pgTable("staff_deletion_receipts", {
+  id: id(), accountFingerprint: text("account_fingerprint").notNull().unique(),
+  reviewHash: text("review_hash").notNull(), state: text("state").notNull(),
+  encryptedJobs: text("encrypted_jobs"), fileCount: integer("file_count").notNull(),
+  verifiedCount: integer("verified_count").notNull().default(0),
+  createdAt: created(), completedAt: timestamp("completed_at", { withTimezone: true }),
+}, t => [
+  check("staff_receipt_fingerprints", sql`${t.accountFingerprint} ~ '^[a-f0-9]{64}$' and ${t.reviewHash} ~ '^[a-f0-9]{64}$'`),
+  check("staff_receipt_progress", sql`${t.fileCount} >= 0 and ${t.verifiedCount} >= 0 and ${t.verifiedCount} <= ${t.fileCount}`),
+  check("staff_receipt_state", sql`(${t.state} = 'complete' and ${t.verifiedCount} = ${t.fileCount} and ${t.completedAt} is not null and ${t.encryptedJobs} is null)
+    or (${t.state} = 'cleanup_pending' and ${t.verifiedCount} < ${t.fileCount} and ${t.completedAt} is null and ${t.encryptedJobs} is not null)`),
+]);
+/** Non-reversible aliases; raw storage locators are dropped after cleanup. */
+export const staffErasedAssets = pgTable("staff_erased_assets", {
+  assetFingerprint: text("asset_fingerprint").primaryKey(),
+  operationId: text("operation_id").notNull().references(() => staffDeletionReceipts.id),
+  createdAt: created(),
+}, t => [check("staff_erased_asset_fingerprint", sql`${t.assetFingerprint} ~ '^[a-f0-9]{64}$'`)]);

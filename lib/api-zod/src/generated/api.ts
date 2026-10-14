@@ -140,6 +140,193 @@ export const GetSystemUsersResponse = zod.object({
 })
 
 
+/**
+ * Live Superadmin-only staff impact. A blocked review does not authorize deletion.
+ */
+export const GetStaffDeletionImpactParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getStaffDeletionImpactResponseGroupsItemCountMin = 0;
+
+
+
+export const GetStaffDeletionImpactResponse = zod.object({
+  "target": zod.object({
+  "id": zod.string(),
+  "fullName": zod.string(),
+  "email": zod.string(),
+  "role": zod.string(),
+  "status": zod.string()
+}),
+  "version": zod.string(),
+  "groups": zod.array(zod.object({
+  "source": zod.string(),
+  "action": zod.string(),
+  "ids": zod.array(zod.string()),
+  "count": zod.number().int().min(getStaffDeletionImpactResponseGroupsItemCountMin)
+})),
+  "blockers": zod.array(zod.object({
+  "code": zod.string(),
+  "message": zod.string(),
+  "source": zod.string().optional(),
+  "ids": zod.array(zod.string()).optional()
+})),
+  "warnings": zod.array(zod.string()),
+  "ready": zod.boolean(),
+  "reviewToken": zod.string().nullable(),
+  "operationId": zod.string().nullable()
+})
+
+
+export const PermanentlyRemoveStaffParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const permanentlyRemoveStaffBodyVersionRegExp = new RegExp('^[a-f0-9]{64}$');
+export const permanentlyRemoveStaffBodyReviewTokenMax = 4096;
+
+
+
+export const PermanentlyRemoveStaffBody = zod.object({
+  "version": zod.string().regex(permanentlyRemoveStaffBodyVersionRegExp),
+  "reviewToken": zod.string().max(permanentlyRemoveStaffBodyReviewTokenMax),
+  "confirmation": zod.enum(['delete'])
+})
+
+export const permanentlyRemoveStaffResponseFilesMin = 0;
+
+export const permanentlyRemoveStaffResponseVerifiedFilesMin = 0;
+
+
+
+export const PermanentlyRemoveStaffResponse = zod.object({
+  "operationId": zod.string(),
+  "accountRemoved": zod.literal(true),
+  "state": zod.enum(['complete', 'cleanup_pending']),
+  "files": zod.number().int().min(permanentlyRemoveStaffResponseFilesMin),
+  "verifiedFiles": zod.number().int().min(permanentlyRemoveStaffResponseVerifiedFilesMin),
+  "pendingReasons": zod.array(zod.string())
+})
+
+
+export const GetStaffRemovalReceiptParams = zod.object({
+  "operationId": zod.coerce.string().uuid()
+})
+
+export const getStaffRemovalReceiptResponseFilesMin = 0;
+
+export const getStaffRemovalReceiptResponseVerifiedFilesMin = 0;
+
+
+
+export const GetStaffRemovalReceiptResponse = zod.object({
+  "operationId": zod.string(),
+  "accountRemoved": zod.literal(true),
+  "state": zod.enum(['complete', 'cleanup_pending']),
+  "files": zod.number().int().min(getStaffRemovalReceiptResponseFilesMin),
+  "verifiedFiles": zod.number().int().min(getStaffRemovalReceiptResponseVerifiedFilesMin),
+  "pendingReasons": zod.array(zod.string())
+})
+
+
+export const RetryStaffRemovalCleanupParams = zod.object({
+  "operationId": zod.coerce.string().uuid()
+})
+
+export const retryStaffRemovalCleanupResponseFilesMin = 0;
+
+export const retryStaffRemovalCleanupResponseVerifiedFilesMin = 0;
+
+
+
+export const RetryStaffRemovalCleanupResponse = zod.object({
+  "operationId": zod.string(),
+  "accountRemoved": zod.literal(true),
+  "state": zod.enum(['complete', 'cleanup_pending']),
+  "files": zod.number().int().min(retryStaffRemovalCleanupResponseFilesMin),
+  "verifiedFiles": zod.number().int().min(retryStaffRemovalCleanupResponseVerifiedFilesMin),
+  "pendingReasons": zod.array(zod.string())
+})
+
+
+export const GetStaffHandoffOptionsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetStaffHandoffOptionsResponse = zod.object({
+  "doctors": zod.array(zod.record(zod.string(), zod.unknown())),
+  "admins": zod.array(zod.record(zod.string(), zod.unknown())),
+  "visits": zod.array(zod.record(zod.string(), zod.unknown()))
+})
+
+
+export const ReviewStaffHandoffParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const reviewStaffHandoffBodyOneMovesItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const reviewStaffHandoffBodyOneMovesItemExpectedRevisionMin = 0;
+
+export const reviewStaffHandoffBodyOneMovesItemStartTimeRegExp = new RegExp('^\\d{2}:\\d{2}$');
+export const reviewStaffHandoffBodyOneMovesItemReasonMax = 500;
+
+export const reviewStaffHandoffBodyOneMovesMax = 50;
+
+
+
+export const ReviewStaffHandoffBody = zod.union([zod.object({
+  "kind": zod.enum(['visits']),
+  "moves": zod.array(zod.object({
+  "appointmentId": zod.string(),
+  "doctorId": zod.string(),
+  "branchId": zod.string(),
+  "date": zod.string().regex(reviewStaffHandoffBodyOneMovesItemDateRegExp),
+  "expectedRevision": zod.number().int().min(reviewStaffHandoffBodyOneMovesItemExpectedRevisionMin),
+  "sessionId": zod.string().optional(),
+  "startTime": zod.string().regex(reviewStaffHandoffBodyOneMovesItemStartTimeRegExp).optional(),
+  "reason": zod.string().max(reviewStaffHandoffBodyOneMovesItemReasonMax).optional()
+})).min(1).max(reviewStaffHandoffBodyOneMovesMax)
+}),zod.object({
+  "kind": zod.enum(['clinic-responsibilities']),
+  "replacementId": zod.string()
+})])
+
+export const ReviewStaffHandoffResponse = zod.object({
+  "kind": zod.enum(['visits', 'clinic-responsibilities']),
+  "operationId": zod.string(),
+  "version": zod.string().optional(),
+  "proposal": zod.record(zod.string(), zod.unknown()),
+  "reviewToken": zod.string(),
+  "visits": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+})
+
+
+export const CommitStaffHandoffParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const commitStaffHandoffBodyReviewTokenMax = 4096;
+
+
+
+export const CommitStaffHandoffBody = zod.object({
+  "kind": zod.enum(['visits', 'clinic-responsibilities']),
+  "proposal": zod.record(zod.string(), zod.unknown()),
+  "reviewToken": zod.string().max(commitStaffHandoffBodyReviewTokenMax)
+})
+
+export const CommitStaffHandoffResponse = zod.object({
+  "operationId": zod.string(),
+  "count": zod.number().int().optional(),
+  "appointmentIds": zod.array(zod.string()).optional(),
+  "clinicCount": zod.number().int().optional(),
+  "staffCount": zod.number().int().optional(),
+  "doctorCount": zod.number().int().optional(),
+  "accountRemoved": zod.boolean().optional()
+})
+
+
 export const GetCustomRolesResponse = zod.object({
   "revision": zod.number().int(),
   "roles": zod.array(zod.object({
@@ -2758,6 +2945,7 @@ export const LogoutNativeSessionResponse = zod.object({
 export const GetAuthStatusResponse = zod.object({
   "role": zod.string().nullable(),
   "staffPasswordVerified": zod.boolean(),
+  "staffDirectoryRevision": zod.string().optional().describe('Opaque staff-removal revision for invalidating signed-in directory and historical attribution caches.'),
   "requiresStaffPassword": zod.boolean()
 })
 
@@ -7726,5 +7914,3 @@ export const DeleteSavedViewParams = zod.object({
 })
 
 export const DeleteSavedViewResponse = zod.void()
-
-
