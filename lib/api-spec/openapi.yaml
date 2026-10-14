@@ -565,6 +565,14 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PatientLoginStartInput" } } } }
       responses:
         "200": { description: Patient challenge, content: { application/json: { schema: { $ref: "#/components/schemas/AuthChallenge" } } } }
+  /auth/patient/resend:
+    post:
+      operationId: resendPatientEmailCode
+      security: []
+      description: Rotates an eligible email code on the same intent, preserving optional phone proof, original expiry and attempt limits. Generic response does not confirm account matching or delivery.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RegistrationChallengeReference" } } } }
+      responses:
+        "200": { description: Generic challenge reference, content: { application/json: { schema: { $ref: "#/components/schemas/AuthChallenge" } } } }
   /auth/patient/verify:
     post:
       operationId: verifyPatientEmail
@@ -574,6 +582,22 @@ paths:
       responses:
         "200": { description: Patient session created, content: { application/json: { schema: { $ref: "#/components/schemas/AuthAuthenticated" } } } }
         "503": { description: "Session issuance unavailable; code AUTH_SESSION_UNCONFIGURED when session mode or signing key is invalid." }
+  /auth/registration/mobile/request:
+    post:
+      operationId: requestRegistrationMobileCode
+      security: []
+      description: Requests a separate optional phone code for a pending email registration intent. Does not create a session or verify email.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RegistrationChallengeReference" } } } }
+      responses:
+        "200": { description: SMS transport outcome only, content: { application/json: { schema: { $ref: "#/components/schemas/RegistrationMobileOutcome" } } } }
+  /auth/registration/mobile/verify:
+    post:
+      operationId: verifyRegistrationMobileCode
+      security: []
+      description: Verifies only the intent-bound phone. Required email proof remains independent. No account merge or login.
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AuthCodeInput" } } } }
+      responses:
+        "200": { description: Mobile proof recorded on the pending intent, content: { application/json: { schema: { $ref: "#/components/schemas/RegistrationMobileProof" } } } }
   /auth/register/start:
     post:
       operationId: startClinicRegistration
@@ -1695,6 +1719,7 @@ components:
           properties:
             channel: { type: string, enum: [email] }
             email: { type: string, format: email }
+            mobile: { type: string, pattern: '^\+[1-9][0-9]{6,14}$', description: "Optional mobile for new email registration. Separate SMS proof never replaces email proof or updates an existing account." }
         - type: object
           required: [channel, mobile]
           additionalProperties: false
@@ -1728,7 +1753,7 @@ components:
       required: [channel, event, recipientGroup, revision, content, values]
       properties:
         channel: { type: string, enum: [email, sms] }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete] }
         recipientGroup: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
         revision: { type: integer, minimum: 0 }
@@ -1750,7 +1775,7 @@ components:
       required: [channel, event, recipient, revision, enabled, confirmed]
       properties:
         channel: { type: string, enum: [email, sms] }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete] }
         recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
         revision: { type: integer, minimum: 0 }
@@ -1767,6 +1792,7 @@ components:
         enabled: { type: boolean }
         source: { type: string }
         ready: { type: boolean }
+        required: { type: boolean, description: "Security event policy; independent from optional communication gates. Does not certify provider or DLT approval." }
         blockedReasons: { type: array, items: { type: string } }
         timing: { type: string }
     EventControlCatalog:
@@ -1784,7 +1810,7 @@ components:
         channel: { type: string, enum: [email, sms] }
         recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete] }
         revision: { type: integer, minimum: 0 }
         mode: { type: string, enum: [draft, publish, reset] }
         content: { $ref: "#/components/schemas/NotificationTemplateContent" }
@@ -1810,6 +1836,7 @@ components:
               previewSubject: { type: string }
               previewBody: { type: string }
               delivery: { type: string }
+              required: { type: boolean }
     IntegrationKeyStatus:
       type: object
       required: [key, status]
@@ -1968,6 +1995,7 @@ components:
       properties:
         email: { type: string, format: email }
         fullName: { type: string, minLength: 1, maxLength: 200 }
+        mobile: { type: string, pattern: '^\+[1-9][0-9]{6,14}$' }
         password: { type: string, minLength: 8, maxLength: 1024, pattern: '^(?=[\s\S]*[A-Za-z])(?=[\s\S]*[0-9])[\s\S]*$', description: "Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server." }
     RegistrationResumeIdentity:
       type: object
@@ -1980,6 +2008,7 @@ components:
       required: [challengeId]
       properties:
         challengeId: { type: [string, "null"] }
+        mobilePending: { type: boolean, description: "The cookie-bound pending intent has an optional mobile; never exposes the number." }
     ChangeNativePasswordInput:
       type: object
       required: [currentPassword, password]
@@ -1997,6 +2026,7 @@ components:
       required: [authenticated]
       properties:
         authenticated: { type: boolean }
+        channels: { $ref: "#/components/schemas/SecurityChannelOutcomes" }
     DemoSetupAction:
       type: object
       required: [action]
@@ -2356,12 +2386,34 @@ components:
       required: [challengeId]
       properties:
         challengeId: { type: string }
+    SecurityChannelOutcome:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [provider_accepted, provider_rejected, pre_dispatch_failed, delivery_unknown, unavailable, not_requested] }
+        destination: { type: string, description: "Masked destination only. Acceptance is not receipt." }
+    SecurityChannelOutcomes:
+      type: object
+      properties:
+        email: { $ref: "#/components/schemas/SecurityChannelOutcome" }
+        sms: { $ref: "#/components/schemas/SecurityChannelOutcome" }
+    RegistrationMobileOutcome:
+      type: object
+      required: [sms]
+      properties:
+        sms: { $ref: "#/components/schemas/SecurityChannelOutcome" }
+    RegistrationMobileProof:
+      type: object
+      required: [mobileVerified]
+      properties:
+        mobileVerified: { type: boolean }
     AuthChallenge:
       type: object
       required: [challengeId]
       properties:
         challengeId: { type: string }
         requiresVerification: { type: boolean }
+        channels: { $ref: "#/components/schemas/SecurityChannelOutcomes" }
     AuthCodeInput:
       type: object
       required: [challengeId, code]
@@ -2454,6 +2506,7 @@ components:
             managingAdminId: { type: [string, "null"] }
             managingAdminName: { type: [string, "null"] }
             invitationStatus: { type: string, enum: [sent, failed, notRequired] }
+            setupNotificationOutcomes: { $ref: "#/components/schemas/SecurityChannelOutcomes" }
             passwordEnabled: { type: boolean, description: Whether this staff record has a local password configured. }
             createdAt: { type: [string, "null"], format: date-time }
             lastLoginAt: { type: [string, "null"], format: date-time }
@@ -2644,6 +2697,7 @@ components:
             managingAdminId: { type: string }
             managingAdminName: { type: string }
             invitationStatus: { type: string, enum: [sent, failed, notRequired] }
+            setupNotificationOutcomes: { $ref: "#/components/schemas/SecurityChannelOutcomes" }
             createdAt: { type: [string, "null"], format: date-time }
             specializationName: { type: string }
             qualificationNames: { type: array, items: { type: string } }

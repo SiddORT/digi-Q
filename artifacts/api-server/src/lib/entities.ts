@@ -25,6 +25,7 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
     row.managingAdminName = (await one(users, row.ownerAdminId, conn)).fullName;
     const [credential] = await conn.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, account.id));
     row.invitationStatus = credential?.passwordHash ? "notRequired" : account.invitationStatus;
+    row.setupNotificationOutcomes = account.setupNotificationOutcomes;
     if (account.status !== "active") row.status = "inactive";
     if (row.specializationId) row.specializationName = (await one(masters, row.specializationId, conn)).name;
     row.qualificationNames = (await all(masters, conn)).filter(m => row.qualificationIds?.includes(m.id)).map(m => m.name);

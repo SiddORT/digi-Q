@@ -22,6 +22,7 @@
  */
 import type { DoctorInput } from './doctorInput';
 import type { DoctorInvitationStatus } from './doctorInvitationStatus';
+import type { SecurityChannelOutcomes } from './securityChannelOutcomes';
 
 export type Doctor = DoctorInput & ({
   id: string;
@@ -30,6 +31,7 @@ export type Doctor = DoctorInput & ({
   managingAdminId: string;
   managingAdminName: string;
   invitationStatus: DoctorInvitationStatus;
+  setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** @nullable */
   createdAt: Date | null;
   specializationName?: string;
@@ -41,6 +43,7 @@ export type Doctor = DoctorInput & ({
   managingAdminId: string;
   managingAdminName: string;
   invitationStatus: DoctorInvitationStatus;
+  setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** @nullable */
   createdAt: Date | null;
   specializationName?: string;

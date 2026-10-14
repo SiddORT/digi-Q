@@ -20,6 +20,7 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { SecurityChannelOutcomes } from './securityChannelOutcomes';
 import type { UserInput } from './userInput';
 import type { UserInvitationStatus } from './userInvitationStatus';
 
@@ -30,6 +31,7 @@ export type User = UserInput & ({
   /** @nullable */
   managingAdminName: string | null;
   invitationStatus: UserInvitationStatus;
+  setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** Whether this staff record has a local password configured. */
   passwordEnabled?: boolean;
   /** @nullable */
@@ -43,6 +45,7 @@ export type User = UserInput & ({
   /** @nullable */
   managingAdminName: string | null;
   invitationStatus: UserInvitationStatus;
+  setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** Whether this staff record has a local password configured. */
   passwordEnabled?: boolean;
   /** @nullable */

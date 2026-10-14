@@ -32,4 +32,10 @@ export const NotificationTemplateSaveEvent = {
   completed: 'completed',
   reminder: 'reminder',
   patient_login_otp: 'patient_login_otp',
+  clinic_registration_otp: 'clinic_registration_otp',
+  patient_email_otp: 'patient_email_otp',
+  registration_mobile_otp: 'registration_mobile_otp',
+  doctor_setup: 'doctor_setup',
+  staff_setup: 'staff_setup',
+  password_setup_complete: 'password_setup_complete',
 } as const;

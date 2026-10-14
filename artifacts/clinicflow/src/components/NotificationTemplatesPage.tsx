@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { requiredSecurityEvent } from "../lib/security-template-events";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { useGetEventControls, getGetEventControlsQueryKey, useUpdateEventControl } from "@workspace/api-client-react";
@@ -108,7 +109,7 @@ export function NotificationTemplatesPage({ identity }: { identity: api.Identity
             {eventSetupReasons(r.row).length > 0 && <ul className="ec-blocked" data-testid={`setup-${r.channel}-${event}-${r.recipient}`}>{eventSetupReasons(r.row).map(b => <li key={b}>{b}</li>)}</ul>}
           </div>
           <div className="cm-row-actions">
-            <StatusSwitch active={r.enabled} disabled={update.isPending || event === "patient_login_otp"} label={`${r.channel} ${titleCase(event)} ${label(r.recipient)}`} onChange={next => { update.reset(); setNotice(""); setConfirmed(false); setPending({ row: r.row, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{event === "patient_login_otp" ? "Required" : r.enabled ? "On" : "Off"}</StatusSwitch>
+            <StatusSwitch active={r.enabled} disabled={update.isPending || requiredSecurityEvent(event)} label={`${r.channel} ${titleCase(event)} ${label(r.recipient)}`} onChange={next => { update.reset(); setNotice(""); setConfirmed(false); setPending({ row: r.row, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{requiredSecurityEvent(event) ? "Required" : r.enabled ? "On" : "Off"}</StatusSwitch>
             <button type="button" className="button secondary small" disabled={update.isPending} onClick={() => { update.reset(); setEditing({ channel: r.channel, event, recipient: r.recipient }); }} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>
            </div></li>)}</ul></AccordionContent>
        </AccordionItem>)}</NotificationEventAccordion>}

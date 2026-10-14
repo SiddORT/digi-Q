@@ -203,11 +203,12 @@ export async function challengeUserId(id: string) {
  * Delivery is inside the transaction: failed delivery preserves the old code.
  */
 export async function resendRegistrationChallenge(id: string,
-  deliver: (address: string, secret: string) => Promise<void>) {
+  deliver: (address: string, secret: string, expiresAt: Date) => Promise<void>,
+  purpose: "register" | "patient" = "register") {
   return db.transaction(async tx => {
     const [challenge] = await tx.select().from(authChallenges)
       .where(eq(authChallenges.id, id)).for("update");
-    if (!challenge || challenge.purpose !== "register" || challenge.userId ||
+    if (!challenge || challenge.purpose !== purpose || purpose === "register" && challenge.userId ||
       challenge.consumedAt || challenge.expiresAt <= new Date() || challenge.attempts >= 5)
       throw new HttpError(400, "Invalid or expired verification", "INVALID_VERIFICATION");
     const remaining = Math.ceil((challenge.createdAt.getTime() + 60_000 - Date.now()) / 1000);
@@ -225,10 +226,10 @@ export async function resendRegistrationChallenge(id: string,
       throw new HttpError(429, "Please wait before requesting another code", "REGISTRATION_RESEND_COOLDOWN");
     let secret: string;
     do { secret = String(randomInt(100000, 1000000)); }
-    while (safeEqual(challenge.tokenHash, challengeDigest(id, "register", secret)));
-    await tx.update(authChallenges).set({ tokenHash: challengeDigest(id, "register", secret) })
+    while (safeEqual(challenge.tokenHash, challengeDigest(id, purpose, secret)));
+    await tx.update(authChallenges).set({ tokenHash: challengeDigest(id, purpose, secret) })
       .where(eq(authChallenges.id, id));
-    await deliver(challenge.email, secret);
+    await deliver(challenge.email, secret, challenge.expiresAt);
     return id;
   });
 }

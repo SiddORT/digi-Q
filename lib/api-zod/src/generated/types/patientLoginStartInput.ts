@@ -24,6 +24,11 @@
 export type PatientLoginStartInput = {
   channel?: 'email';
   email: string;
+  /**
+     * Optional mobile for new email registration. Separate SMS proof never replaces email proof or updates an existing account.
+     * @pattern ^\+[1-9][0-9]{6,14}$
+     */
+  mobile?: string;
 } | {
   channel: 'sms';
   /** @pattern ^\+[1-9][0-9]{6,14}$ */

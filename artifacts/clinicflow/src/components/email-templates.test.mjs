@@ -27,7 +27,7 @@ test("background revision refresh preserves edits and saves use the editing revi
 });
 test("recipient-aware: onboarding only for clinic admin, recipient sent on save", async () => {
   assert.ok(src.includes('e !== "onboarding" || recipient === "clinicAdmin"'));
-  assert.ok(src.includes('event === "onboarding" ? "clinicAdmin" : current'));
+  assert.ok(src.includes('event === "onboarding" && current !== "superAdmin" ? "clinicAdmin" : current'));
   assert.match(src, /NotificationTemplateSaveEvent, recipient, revision/);
   assert.match(src, /useState<Recipient>\(fixed\?\.recipient \?\? "patient"\)/);
   assert.ok(src.includes("adds real emails"));

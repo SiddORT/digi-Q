@@ -34,7 +34,7 @@ await build({
     };`};
     if(a.path==="@workspace/db")return {contents:'export {conn as db} from "fixture"; export const appointments={id:"id",data:"data"},settings={id:"id"},patients="patients",clinics="clinics",users="users";'};
    if(a.path==="drizzle-orm")return {contents:'export const sql=(strings,...values)=>({strings,values});export const eq=(_,id)=>({id});'};
-   if(a.path.endsWith("/notification-template-store"))return {contents:'export const resolvedTemplate=async()=>({source:"default",content:{enabled:true}});'};
+   if(a.path.endsWith("/notification-template-store"))return {contents:'import {state} from "fixture"; export const resolvedTemplate=async()=>state.template||({source:"default",content:{enabled:true}});'};
    if(a.path.endsWith("/auth-email"))return {contents:'export const sendAuthEmail=()=>{throw Error("Real SMTP forbidden in tests")};'};
    if(a.path==="./appointments")return {contents:'export const lockQueue=async()=>{};'};
    return {contents:'import {state} from "fixture"; export const one=async(table,id)=>state.rows[typeof table==="string"?table:"appointments"].find(r=>r.id===id);export const getSettings=async()=>({notificationsEnabled:state.enabled});'};
@@ -94,4 +94,17 @@ test("default automatic patient email never dispatches in development",async()=>
  try{assert.equal(await confirmAppointmentEmail("a",conn),"not_attempted");}
  finally{if(previous===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=previous;}
  assert.equal(state.rows.appointments[0].confirmationEmail,"not_attempted");
+});
+test("custom published wording cannot remove committed ticket fields or clinic contact",async()=>{
+ seed();
+ state.rows.clinics[0].email="contact@example.invalid";
+ state.template={source:"platform",content:{enabled:true,subject:"Your visit",body:"Custom greeting only.",prefix:"",footer:"",logoUrl:""}};
+ let text="";
+ try {
+  assert.equal(await confirmAppointmentEmail("a",conn,async(_to,_subject,body)=>{text=body;}),"provider_accepted");
+  const row=state.rows.appointments[0];
+  for(const value of [row.reference,row.token,row.clinicName,row.branchName,row.doctorName,row.timezone,"contact@example.invalid"])assert(text.includes(value));
+  assert(text.includes("Custom greeting only."));
+  assert(!text.includes("token="));
+ } finally {delete state.template;}
 });

@@ -7,6 +7,7 @@ import { authErrorMessage } from "./errors";
 import { AuthCard, AuthShell } from "./AuthShell";
 import { authRequest, useNativeAuth } from "./native-auth";
 import { PhoneInput } from "../components/PhoneInput";
+import { RegistrationMobileProof } from "./RegistrationMobileProof";
 
 export function PatientLogin() {
   const [, navigate] = useLocation();
@@ -31,12 +32,13 @@ export function PatientLogin() {
     if (busy || (step === "code" && cooldown > 0)) return;
     setBusy(true); setError("");
     try {
-      const result = await authRequest<{ challengeId: string }>("patient/start",
-        channel === "sms" ? { channel, mobile: mobile.trim() } : { email: email.trim().toLowerCase() });
+      const resendEmail = step === "code" && channel === "email";
+      const result = await authRequest<{ challengeId: string }>(resendEmail ? "patient/resend" : "patient/start",
+        resendEmail ? {challengeId} : channel === "sms" ? { channel, mobile: mobile.trim() } : { email: email.trim().toLowerCase(),...(mobile.trim() ? {mobile:mobile.trim()} : {}) });
       if (!result.challengeId) throw new Error("Unable to start patient verification. Please retry.");
       setChallengeId(result.challengeId);
       setStep("code");
-      setCooldown(30);
+      setCooldown(60);
       setCode("");
     } catch (caught) { setError(authErrorMessage(caught, "Unable to send a login code.")); }
     finally { setBusy(false); }
@@ -57,7 +59,7 @@ export function PatientLogin() {
   }
 
   return <AuthShell eyebrow="Patient Access">
-    <AuthCard title="Patient Login" description={step === "email" ? `Enter your ${channel === "sms" ? "mobile number" : "email"} and we’ll send a one-time login code.` : `Enter the code sent to ${channel === "sms" ? mobile : email}.`}>
+    <AuthCard title="Patient Login" description={step === "email" ? `Enter your ${channel === "sms" ? "mobile number" : "email"} to request a one-time login code.` : "If this account is eligible, a code has been requested. Provider acceptance and delivery are not confirmed here."}>
       <div className="patient-entry-options" aria-label="Book without logging in">
         <p>Booking a visit? No account needed.</p>
         <Link className="button" href="/scan-qr" data-testid="link-patient-scan"><QrCode size={18}/> Scan QR Code</Link>
@@ -71,10 +73,12 @@ export function PatientLogin() {
       {step === "email" ? <form onSubmit={sendCode}>
         {channel === "email" ? <FormField id="patient-login-email" label="Email address" required><EmailInput trimOnBlur={false} data-testid="input-patient-email" required value={email} onChange={event => setEmail(event.target.value)} /></FormField>
           : <FormField id="patient-login-mobile" label="Mobile number" required helper="Use the mobile number saved on your existing patient account. New patients can register using email."><PhoneInput data-testid="input-patient-mobile" required value={mobile} onChange={setMobile} autoComplete="tel" /></FormField>}
+        {channel === "email" && <FormField label="Optional registration mobile" helper="For new email registrations only. A separate SMS code cannot replace email verification or change an existing account's mobile."><PhoneInput value={mobile} onChange={setMobile}/></FormField>}
         {error && <div className="error-box" role="alert" data-testid="status-patient-login-error">{error}</div>}
         <button className="button auth-submit" data-testid="button-send-patient-code" type="submit" disabled={busy}>{busy ? "Sending…" : "Send login code"}</button>
       </form> : <form onSubmit={verifyCode}>
         <FormField id="patient-login-code" label="One-time code" required><input data-testid="input-patient-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)} /></FormField>
+        {channel === "email" && mobile && <RegistrationMobileProof key={challengeId} challengeId={challengeId}/>}
         {error && <div className="error-box" role="alert" data-testid="status-patient-code-error">{error}</div>}
         <button className="button auth-submit" data-testid="button-verify-patient-code" type="submit" disabled={busy}>{busy ? "Verifying…" : "Verify and continue"}</button>
         <div className="auth-links"><button type="button" className="text-link" disabled={busy} data-testid="button-change-patient-email" onClick={() => { setStep("email"); setCode(""); setChallengeId(""); setError(""); }}>Change {channel === "sms" ? "Mobile" : "Email"}</button><button type="button" className="text-link" data-testid="button-resend-patient-code" disabled={busy || cooldown > 0} onClick={() => void sendCode()}>{cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}</button></div>

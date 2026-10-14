@@ -20,8 +20,10 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { SecurityChannelOutcomes } from './securityChannelOutcomes';
 
 export interface AuthChallenge {
   challengeId: string;
   requiresVerification?: boolean;
+  channels?: SecurityChannelOutcomes;
 }

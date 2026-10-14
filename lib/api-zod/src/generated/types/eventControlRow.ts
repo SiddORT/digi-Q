@@ -31,6 +31,8 @@ export interface EventControlRow {
   enabled: boolean;
   source: string;
   ready: boolean;
+  /** Security event policy; independent from optional communication gates. Does not certify provider or DLT approval. */
+  required?: boolean;
   blockedReasons: string[];
   timing: string;
 }

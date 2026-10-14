@@ -20,7 +20,9 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { SecurityChannelOutcomes } from './securityChannelOutcomes';
 
 export interface AuthAuthenticated {
   authenticated: boolean;
+  channels?: SecurityChannelOutcomes;
 }

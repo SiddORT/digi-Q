@@ -191,6 +191,8 @@ import type {
   QueueSelection,
   RecordSearchResult,
   RegistrationChallengeReference,
+  RegistrationMobileOutcome,
+  RegistrationMobileProof,
   RegistrationOptions,
   RegistrationResumeIdentity,
   RegistrationResumeResult,
@@ -4452,6 +4454,91 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getStartPatientEmailMutationOptions(options));
     }
 
+export const getResendPatientEmailCodeUrl = () => {
+
+
+
+
+  return `/api/auth/patient/resend`
+}
+
+/**
+ * Rotates an eligible email code on the same intent, preserving optional phone proof, original expiry and attempt limits. Generic response does not confirm account matching or delivery.
+ */
+export const resendPatientEmailCode = async (registrationChallengeReference: RegistrationChallengeReference, options?: Parameters<typeof customFetch>[1]): Promise<AuthChallenge> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AuthChallenge>(getResendPatientEmailCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(registrationChallengeReference)
+  }
+);}
+
+
+
+
+
+export const getResendPatientEmailCodeMutationKey = () => ['resendPatientEmailCode'] as const;
+
+export const getResendPatientEmailCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendPatientEmailCode>>, TError,ResendPatientEmailCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendPatientEmailCode>>, TError,ResendPatientEmailCodeMutationVariables, TContext> => {
+
+const mutationKey = getResendPatientEmailCodeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendPatientEmailCode>>, ResendPatientEmailCodeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  resendPatientEmailCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendPatientEmailCodeMutationResult = NonNullable<Awaited<ReturnType<typeof resendPatientEmailCode>>>
+    export type ResendPatientEmailCodeMutationBody = BodyType<RegistrationChallengeReference>
+    export type ResendPatientEmailCodeMutationError = ErrorType<unknown>
+    export type ResendPatientEmailCodeMutationVariables = {data: BodyType<RegistrationChallengeReference>}
+
+    export const useResendPatientEmailCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendPatientEmailCode>>, TError,ResendPatientEmailCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendPatientEmailCode>>,
+        TError,
+        ResendPatientEmailCodeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getResendPatientEmailCodeMutationOptions(options));
+    }
+
 export const getVerifyPatientEmailUrl = () => {
 
 
@@ -4535,6 +4622,176 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getVerifyPatientEmailMutationOptions(options));
+    }
+
+export const getRequestRegistrationMobileCodeUrl = () => {
+
+
+
+
+  return `/api/auth/registration/mobile/request`
+}
+
+/**
+ * Requests a separate optional phone code for a pending email registration intent. Does not create a session or verify email.
+ */
+export const requestRegistrationMobileCode = async (registrationChallengeReference: RegistrationChallengeReference, options?: Parameters<typeof customFetch>[1]): Promise<RegistrationMobileOutcome> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RegistrationMobileOutcome>(getRequestRegistrationMobileCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(registrationChallengeReference)
+  }
+);}
+
+
+
+
+
+export const getRequestRegistrationMobileCodeMutationKey = () => ['requestRegistrationMobileCode'] as const;
+
+export const getRequestRegistrationMobileCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestRegistrationMobileCode>>, TError,RequestRegistrationMobileCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestRegistrationMobileCode>>, TError,RequestRegistrationMobileCodeMutationVariables, TContext> => {
+
+const mutationKey = getRequestRegistrationMobileCodeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestRegistrationMobileCode>>, RequestRegistrationMobileCodeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestRegistrationMobileCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestRegistrationMobileCodeMutationResult = NonNullable<Awaited<ReturnType<typeof requestRegistrationMobileCode>>>
+    export type RequestRegistrationMobileCodeMutationBody = BodyType<RegistrationChallengeReference>
+    export type RequestRegistrationMobileCodeMutationError = ErrorType<unknown>
+    export type RequestRegistrationMobileCodeMutationVariables = {data: BodyType<RegistrationChallengeReference>}
+
+    export const useRequestRegistrationMobileCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestRegistrationMobileCode>>, TError,RequestRegistrationMobileCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestRegistrationMobileCode>>,
+        TError,
+        RequestRegistrationMobileCodeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestRegistrationMobileCodeMutationOptions(options));
+    }
+
+export const getVerifyRegistrationMobileCodeUrl = () => {
+
+
+
+
+  return `/api/auth/registration/mobile/verify`
+}
+
+/**
+ * Verifies only the intent-bound phone. Required email proof remains independent. No account merge or login.
+ */
+export const verifyRegistrationMobileCode = async (authCodeInput: AuthCodeInput, options?: Parameters<typeof customFetch>[1]): Promise<RegistrationMobileProof> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RegistrationMobileProof>(getVerifyRegistrationMobileCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(authCodeInput)
+  }
+);}
+
+
+
+
+
+export const getVerifyRegistrationMobileCodeMutationKey = () => ['verifyRegistrationMobileCode'] as const;
+
+export const getVerifyRegistrationMobileCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyRegistrationMobileCode>>, TError,VerifyRegistrationMobileCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyRegistrationMobileCode>>, TError,VerifyRegistrationMobileCodeMutationVariables, TContext> => {
+
+const mutationKey = getVerifyRegistrationMobileCodeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyRegistrationMobileCode>>, VerifyRegistrationMobileCodeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyRegistrationMobileCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyRegistrationMobileCodeMutationResult = NonNullable<Awaited<ReturnType<typeof verifyRegistrationMobileCode>>>
+    export type VerifyRegistrationMobileCodeMutationBody = BodyType<AuthCodeInput>
+    export type VerifyRegistrationMobileCodeMutationError = ErrorType<unknown>
+    export type VerifyRegistrationMobileCodeMutationVariables = {data: BodyType<AuthCodeInput>}
+
+    export const useVerifyRegistrationMobileCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyRegistrationMobileCode>>, TError,VerifyRegistrationMobileCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyRegistrationMobileCode>>,
+        TError,
+        VerifyRegistrationMobileCodeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getVerifyRegistrationMobileCodeMutationOptions(options));
     }
 
 export const getStartClinicRegistrationUrl = () => {

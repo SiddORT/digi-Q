@@ -30,6 +30,32 @@ its OTP in the transmitted body and approved sender/DLT metadata, and preserve
 single-use, expiry and bounded attempts independently of notification opt-outs.
 Only examples may appear in template previews; never persist real login messages.
 
+Registration and initial staff setup are approved additional security SMS uses,
+not optional appointment notifications. Optional registration phone proof must
+never substitute for email identity proof or change another account's mobile.
+New security SMS needs explicitly approved published wording even for generic
+providers that do not technically demand DLT metadata.
+
+**Why:** The user authorized focused registration/setup coverage while explicitly
+excluding provider replacement, new DLT wording projects and live sends. Provider
+configuration alone is not content approval.
+
+**How to apply:** Preserve the existing vault/transports and Twilio boundary.
+Keep security templates platform-owned and required independently of operational
+gates, and use fictional previews rather than recording rendered security bodies.
+
+Do not save an unverified optional registration mobile into an identity's
+phone-login matching field.
+
+**Why:** Even without account takeover, an attacker who controls a second email
+could supply another patient's number and make its SMS login ambiguous, denying
+access. Merely recording `mobileVerified: false` does not protect a legacy
+matcher that intentionally accepts existing saved numbers.
+
+**How to apply:** Keep pending numbers in the expiring registration intent and
+save them only after mobile proof. Preserve existing-account phone-login policy
+and regress both successful-send-without-proof and failed-send registration.
+
 System Admin clinic-onboarding notices use the existing active Superadmin role.
 
 **Why:** The user asked for onboarding “for system admin also,” not a new role or

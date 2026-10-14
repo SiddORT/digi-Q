@@ -1,25 +1,36 @@
 import { z } from "zod";
 import { visitVariables } from "./notification-template-values";
+import { securityEvents, isSecurityEvent, securityVariables, securityDefault, securityTitles, validSecurityContent } from "./security-template-definitions";
+export { requiredEvent, isSecurityEvent } from "./security-template-definitions";
 
-export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "patient_login_otp"] as const;
+export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "patient_login_otp", ...securityEvents] as const;
 export type TemplateEvent = typeof templateEvents[number];
 export const templateRecipients = ["patient", "clinicAdmin", "doctor", "receptionist", "superAdmin"] as const;
 export type TemplateRecipient = typeof templateRecipients[number];
-export const defaultRecipient = (event: TemplateEvent): TemplateRecipient => event === "onboarding" ? "clinicAdmin" : "patient";
-export const templateVariables = ["clinic_name", "booking_link", "patient_name", "doctor_name", "appointment_details", "previous_details", "reference", "timezone", "clinic_contact", ...visitVariables, "otp", "expiry_minutes"] as const;
+export const defaultRecipient = (event: TemplateEvent): TemplateRecipient => event === "onboarding" || event === "clinic_registration_otp" ? "clinicAdmin" : event === "doctor_setup" ? "doctor" : event === "staff_setup" || event === "password_setup_complete" ? "receptionist" : "patient";
+export const templateVariables = ["clinic_name", "booking_link", "patient_name", "doctor_name", "appointment_details", "previous_details", "reference", "timezone", "clinic_contact", ...visitVariables, "otp", "expiry_minutes", "setup_link", "role_name"] as const;
 export function validTemplateTarget(event: TemplateEvent, recipient: TemplateRecipient, channel: "email" | "sms") {
+  if (isSecurityEvent(event)) {
+    if (event === "clinic_registration_otp") return recipient === "clinicAdmin" && channel === "email";
+    if (event === "patient_email_otp") return recipient === "patient" && channel === "email";
+    if (event === "registration_mobile_otp") return ["patient", "clinicAdmin"].includes(recipient) && channel === "sms";
+    if (event === "doctor_setup") return recipient === "doctor";
+    return ["clinicAdmin", "receptionist", "superAdmin", ...(event === "password_setup_complete" ? ["doctor"] : [])].includes(recipient);
+  }
   if (event === "patient_login_otp") return recipient === "patient" && channel === "sms";
   if (recipient === "superAdmin") return event === "onboarding";
   return event !== "onboarding" || recipient === "clinicAdmin";
 }
 export function variablesForTemplate(event: TemplateEvent): readonly string[] {
-  return event === "patient_login_otp" ? ["otp", "expiry_minutes"] : templateVariables.filter(v => v !== "otp" && v !== "expiry_minutes");
+  if (isSecurityEvent(event)) return securityVariables(event);
+  return event === "patient_login_otp" ? ["otp", "expiry_minutes"] : templateVariables.filter(v => !["otp","expiry_minutes","setup_link","role_name"].includes(v));
 }
 export function validEventContent(event: TemplateEvent, content: { subject: string; body: string; prefix: string; footer: string; enabled?: boolean }) {
   const allowed = variablesForTemplate(event);
   const used = [content.subject, content.body, content.prefix, content.footer].flatMap(text =>
     [...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(match => match[1]));
   return used.every(variable => allowed.includes(variable)) &&
+    (!isSecurityEvent(event) || validSecurityContent(event, content)) &&
     (event !== "patient_login_otp" || content.enabled !== false && /\{\{\s*otp\s*\}\}/.test(content.body));
 }
 export const templateContent = z.object({
@@ -74,11 +85,12 @@ export const templateSave = z.preprocess(input => {
   z.object({ ...templateSaveFields, channel: z.literal("sms"), content: smsTemplateContent.optional() }).strict(),
 ])).refine(v => v.mode === "reset" || !!v.content, { message: "Template content is required" });
 export const eventTitles: Record<TemplateEvent, string> = {
+  ...securityTitles,
   booking: "Booking confirmation", onboarding: "Clinic onboarding", rescheduled: "Appointment rescheduled",
   cancelled: "Appointment cancelled", completed: "Thank you after your visit", reminder: "Appointment reminder",
   patient_login_otp: "Patient login OTP",
 };
-const bodies: Record<TemplateEvent, string> = {
+const bodies: Partial<Record<TemplateEvent, string>> = {
   booking: "Hello {{patient_name}},\n\nYour booking at {{clinic_name}} is confirmed.\n{{appointment_details}}\nReference: {{reference}}\n\n{{clinic_contact}}",
   onboarding: "Welcome to {{clinic_name}}.\n\nComplete your clinic opening hours, doctor sessions and staff assignments before sharing your booking link.\n\n{{clinic_contact}}",
   rescheduled: "Hello {{patient_name}},\n\nYour visit at {{clinic_name}} has been rescheduled.\nPrevious details: {{previous_details}}\nNew details:\n{{appointment_details}}\nReference: {{reference}}",
@@ -88,9 +100,10 @@ const bodies: Record<TemplateEvent, string> = {
   patient_login_otp: "Your DigiQ Doctors login code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share this code.",
 };
 export function defaultTemplate(event: TemplateEvent, recipient: TemplateRecipient = defaultRecipient(event)): TemplateContent {
-  if (event === "patient_login_otp") return { enabled: true, subject: "Patient login OTP", body: bodies[event], prefix: "", footer: "", logoUrl: "" };
+  if (isSecurityEvent(event)) return securityDefault(event);
+  if (event === "patient_login_otp") return { enabled: true, subject: "Patient login OTP", body: bodies[event]!, prefix: "", footer: "", logoUrl: "" };
   if (event === "onboarding" && recipient === "superAdmin") return { enabled: true, subject: "Clinic registered — {{clinic_name}}", body: "Hello {{recipient_name}},\n\nA clinic has completed registration: {{clinic_name}}.\n{{clinic_contact}}", prefix: "", footer: "", logoUrl: "" };
-  return { enabled: recipient === defaultRecipient(event) || event === "booking" && recipient === "clinicAdmin", subject: `${eventTitles[event]} — {{clinic_name}}`, body: recipient === defaultRecipient(event) ? bodies[event] : `Clinic notification: ${eventTitles[event]}\nPatient: {{patient_name}}\nDoctor: {{doctor_name}}\n{{appointment_details}}\nReference: {{reference}}\n{{clinic_contact}}`, prefix: "", logoUrl: "", footer: "This is an automated clinic message. Contact your clinic for assistance." };
+  return { enabled: recipient === defaultRecipient(event) || event === "booking" && recipient === "clinicAdmin", subject: `${eventTitles[event]} — {{clinic_name}}`, body: recipient === defaultRecipient(event) ? bodies[event]! : `Clinic notification: ${eventTitles[event]}\nPatient: {{patient_name}}\nDoctor: {{doctor_name}}\n{{appointment_details}}\nReference: {{reference}}\n{{clinic_contact}}`, prefix: "", logoUrl: "", footer: "This is an automated clinic message. Contact your clinic for assistance." };
 }
 export function substitute(text: string, values: Record<string, string>): string {
   // A single replacement pass: patient-supplied braces can never become another variable.

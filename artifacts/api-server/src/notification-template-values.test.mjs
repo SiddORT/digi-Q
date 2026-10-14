@@ -275,6 +275,11 @@ test("the separate patient booking email path substitutes the same fields and do
     const outcome=await api.confirmAppointmentEmail(id,h.db,async(to,subject,text)=>{calls.push({to,subject,text});});
     assert.equal(outcome,expected);
     assert.equal(calls.length,token?1:0);
-    if(token)assert.deepEqual(calls[0],{to:"patient@example.invalid",subject:"Hi Patient Person",text:"Patient Person 15/01/2030 10:00-12:00 Q-007 7"});
+    if(token) {
+      assert.equal(calls[0].to,"patient@example.invalid");
+      assert.equal(calls[0].subject,"Hi Patient Person");
+      assert(calls[0].text.startsWith("Patient Person 15/01/2030 10:00-12:00 Q-007 7"));
+      for(const value of ["Reference: booking-values","Token: Q-007","Fictional Clinic","Fictional Location","Doctor Person","Asia/Kolkata","Clinic contact:"])assert(calls[0].text.includes(value));
+    }
   }
 });

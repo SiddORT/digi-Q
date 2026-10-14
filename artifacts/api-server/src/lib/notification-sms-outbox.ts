@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { one, getSettings, flatten } from "./store";
 import { isClinicalMember } from "./clinical-membership";
-import { templateRecipients, substitute, type TemplateEvent, type TemplateRecipient, type SmsTemplateContent } from "./notification-templates";
+import { templateRecipients, substitute, requiredEvent, type TemplateEvent, type TemplateRecipient, type SmsTemplateContent } from "./notification-templates";
 import { resolvedTemplate } from "./notification-template-store";
 import { resolvedIntegration } from "./integration-vault";
 import { notificationSmsReadiness, notificationSmsEnabled, notificationSmsConfig, sendNotificationSms } from "./notification-sms-transport";
@@ -46,7 +46,7 @@ async function targetAccounts(conn:any,group:TemplateRecipient,row:any,clinic:an
   return targets;
 }
 export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string="",previousSession?:any) {
-  if(event==="patient_login_otp")return; // Authentication codes never enter notification history/outbox.
+  if(requiredEvent(event))return; // Authentication codes never enter notification history/outbox.
   if(!await claimNotificationOccurrence(conn,"sms",event,row))return;
   const env=(await resolvedIntegration("notificationSms",conn)).env;
   const gate=(await getSettings(conn,row.clinicId)).notificationsEnabled;

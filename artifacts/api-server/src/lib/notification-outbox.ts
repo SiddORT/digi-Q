@@ -1,7 +1,7 @@
 import { db, settings, appointments, clinics, patients, users, doctors, assignments } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { one, getSettings } from "./store";
-import { templateRecipients, defaultRecipient, renderNotification, type TemplateEvent } from "./notification-templates";
+import { templateRecipients, defaultRecipient, renderNotification, requiredEvent, type TemplateEvent } from "./notification-templates";
 import { isClinicalMember } from "./clinical-membership";
 import { resolvedTemplate } from "./notification-template-store";
 import { sendAuthEmail } from "./auth-email";
@@ -46,7 +46,7 @@ export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, 
 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {
-  if(event==="patient_login_otp")return;
+  if(requiredEvent(event))return; // Authentication never enters operational outbox/history.
   if(event==="booking"){
     const {capturePatientConfirmation}=await import("./appointment-confirmation");
     await capturePatientConfirmation(conn,row);

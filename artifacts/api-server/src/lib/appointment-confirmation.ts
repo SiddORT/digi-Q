@@ -44,7 +44,7 @@ export async function initialConfirmationEmail(patient: any, enabled: boolean, c
 export function confirmationText(row: any, clinic: any) {
   const { date, start, end } = formatTemplateSession(row, clinic);
   // No medical notes, receipt secret, QR bearer payload or account tokens.
-  return `Your appointment is confirmed.\n\n${row.clinicName} · ${row.branchName}\nDoctor: ${row.doctorName}\nDate: ${date}\nSession: ${start || "Not recorded"}–${end || "Not recorded"} (${row.timezone || "timezone unavailable"})\nReference: ${row.reference}\nToken: ${row.token}\n\nKeep your appointment ticket. A session is a time range, not an exact consultation time. Check in with reception when you arrive.`;
+  return `Your appointment is confirmed.\n\n${row.clinicName} · ${row.branchName}\nDoctor: ${row.doctorName}\nDate: ${date}\nSession: ${start || "Not recorded"}–${end || "Not recorded"} (${row.timezone || "timezone unavailable"})\nReference: ${row.reference}\nToken: ${row.token}\nClinic contact: ${[clinic.email, clinic.phone].filter(Boolean).join(" · ") || "Contact reception at the clinic"}\n\nKeep your appointment ticket. A session is a time range, not an exact consultation time. Check in with reception when you arrive.`;
 }
 
 async function saveOutcome(conn: any, id: string, outcome: ConfirmationEmail, dispatchOutcome?: "provider_accepted" | "provider_rejected" | "pre_dispatch_failed" | "delivery_unknown") {
@@ -122,7 +122,11 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
         await saveOutcome(tx,id,"unavailable","pre_dispatch_failed");
         return {outcome:"unavailable"};
       }
-      const rendered = template.source === "default" ? undefined : renderNotification(template.content, values);
+      // Published wording cannot remove the committed ticket. Keep custom wording
+      // intact and append a non-editable factual ticket block when not using details.
+      const rendered = template.source === "default" ? undefined : renderNotification({
+        ...template.content,body:template.content.body + (/\{\{\s*appointment_details\s*\}\}/.test(template.content.body) ? "" : "\n\n{{appointment_details}}")
+      }, values);
       let cfg;
       try{cfg=smtpConfig(env);}catch{
         await log("configuration_failed");

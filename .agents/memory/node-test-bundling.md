@@ -30,3 +30,12 @@ can mask healthy application code.
 **How to apply:** Preserve importer-relative resolution when externalizing
 dependencies in diagnostic or test bundles. Return public metadata only from
 credential-bearing application helpers; never print their internal inputs.
+
+Workspace source packages are not necessarily executable as external Node modules.
+
+**Why:** The runtime can load TypeScript while still rejecting extensionless
+imports in a source package's barrel, so adding an otherwise valid generated
+schema import can fail an isolated bundle before any test executes.
+
+**How to apply:** Explicitly bundle the workspace schema entry in isolated tests
+instead of treating all workspace packages as Node-executable external modules.

@@ -34,4 +34,5 @@ export type NotificationTemplateCatalogItemsItem = {
   previewSubject: string;
   previewBody: string;
   delivery: string;
+  required?: boolean;
 };

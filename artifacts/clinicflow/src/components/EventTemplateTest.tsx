@@ -9,6 +9,7 @@ import { PhoneInput } from "./PhoneInput";
 import { LoadingButton } from "./LoadingButton";
 import { canStartNewTemplateTest } from "../lib/template-test-recovery";
 import { templateTestRequestError } from "../lib/template-test-request-error";
+import { SECURITY_EVENTS } from "../lib/security-template-events";
 
 type Content = api.NotificationTemplateContent;
 const PH = /\{\{\s*([a-z0-9_]+)\s*\}\}/gi;
@@ -45,6 +46,7 @@ const OUTCOME: Record<string, string> = {
 export function EventTemplateTest({ channel, event, recipient: group, clinicId, revision, content }: {
   channel: "email" | "sms"; event: string; recipient: string; clinicId: string; revision: number; content: Content;
 }) {
+  const securityPreview = (SECURITY_EVENTS as readonly string[]).includes(event);
   const used = useMemo(() => usedPlaceholders(content, channel), [content, channel]);
   const [values, setValues] = useState<Record<string, string>>({});
   const [to, setTo] = useState("");
@@ -55,8 +57,9 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
   const preview = usePreviewEventTemplate({ mutation: { retry: false } });
   const test = useTestEventTemplate({ mutation: { retry: false } });
   const readiness = useChannelReadiness(channel);
-  const exact = Object.fromEntries(used.map(k => [k, values[k] ?? ""]));
-  const complete = used.every(k => (values[k] ?? "").trim() !== "");
+  const fictional:Record<string,string> = {otp:"123456",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-preview-only",recipient_name:"Example Recipient",role_name:"staff member"};
+  const exact = Object.fromEntries(used.map(k => [k, securityPreview ? fictional[k] || "[Example value]" : values[k] ?? ""]));
+  const complete = securityPreview || used.every(k => (values[k] ?? "").trim() !== "");
   const sig = testSignature({ channel, event, group, clinicId, revision, content, values: exact });
   const rsig = `${sig}|${to}`;
   const first = useRef(true);
@@ -91,17 +94,17 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     test.reset(); preview.reset(); setConfirmed(false);
   };
   return <section className="panel padded et-test" aria-label="Test this template" data-testid="panel-template-test">
-    <h3>Test This Template <HelpTip text="Uses your current edits, including drafts and disabled templates, without publishing or enabling anything. No appointment is created and nothing is queued. Sends one real message to the recipient you enter." /></h3>
+    <h3>{securityPreview ? "Preview security template" : "Test This Template"} <HelpTip text={securityPreview ? "Fictional preview only. No real codes, links or security bodies enter history. Delivery verification requires separate authorization." : "Uses your current edits, including drafts and disabled templates, without publishing or enabling anything. No appointment is created and nothing is queued. Sends one real message to the recipient you enter."} /></h3>
     {!readiness.ready && <p role="note" className="error-box" data-testid="status-test-not-ready">{readiness.reason} <Link href={`/admin/settings?area=${channel === "sms" ? "sms" : "email"}`} className="text-link" data-testid="link-test-configure">Open {channel === "sms" ? "SMS" : "Email"} settings</Link>{!readiness.loading && <> <button type="button" onClick={readiness.retry} data-testid="button-test-recheck">Check Again</button></>}</p>}
     {used.length === 0 ? <p className="muted">This template uses no placeholders.</p> : <div className="et-test-values">
       {used.map(k => <FormField key={k} label={k.replace(/_/g, " ")} required>
-        {(a) => <input {...a} type="text" maxLength={500} value={values[k] ?? ""} onChange={e => setValues(v => ({ ...v, [k]: e.target.value }))} data-testid={`input-test-value-${k}`} />}
+        {(a) => <input {...a} type="text" maxLength={500} readOnly={securityPreview} value={securityPreview ? exact[k] : values[k] ?? ""} onChange={e => setValues(v => ({ ...v, [k]: e.target.value }))} data-testid={`input-test-value-${k}`} />}
       </FormField>)}
     </div>}
     <div className="et-actions">
       <LoadingButton type="button" className="button secondary" loading={preview.isPending} loadingText="Rendering…" disabled={!complete} onClick={() => preview.mutate({ data: body })} data-testid="button-test-preview">Render Preview</LoadingButton>
     </div>
-    <FormField label={`Test ${label}`} required helper="One explicit recipient. Never taken from a real patient or staff record.">
+    {!securityPreview && <><FormField label={`Test ${label}`} required helper="One explicit recipient. Never taken from a real patient or staff record.">
       {(a) => channel === "sms"
         ? <PhoneInput {...a} value={to} onChange={setTo} autoComplete="off" data-testid="input-test-recipient" />
         : <EmailInput {...a} value={to} onChange={e => setTo(e.target.value)} autoComplete="off" data-testid="input-test-recipient" />}
@@ -109,7 +112,7 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} data-testid="checkbox-confirm-test" /> Yes, send one real {channel === "sms" ? "SMS" : "email"} to this recipient</label>
     <div className="et-actions">
       <LoadingButton type="button" className="button" loading={test.isPending} loadingText="Sending…" disabled={!confirmed || !complete || !to.trim() || !readiness.ready || test.isSuccess || test.isError} onClick={send} data-testid="button-send-test">Send Test</LoadingButton>
-    </div>
+    </div></>}
     {requestError && <div role="alert" className="error-box et-test-request-error" data-testid="status-test-error">
       <strong>{requestError.title}</strong>
       <p>{requestError.detail}</p>

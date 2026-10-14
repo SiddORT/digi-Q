@@ -290,9 +290,10 @@ test("acceptance, rejection and uncertain responses never echo provider data",()
   assert.equal(api.classifySmsResponse(mapping,302,"private diagnostic"),"provider_rejected");
 });
 test("SMS defaults off, valid recipients, DLT activation, draft isolation and published policy synchronization",async()=>{
-  assert.equal((await api.templateCatalog(sa,undefined,"patient","sms")).items.length,5);
-  assert.equal((await api.templateCatalog(sa,undefined,"clinicAdmin","sms")).items.length,6);
-  assert((await api.templateCatalog(sa,undefined,"patient","sms")).items.every(i=>!i.content.enabled));
+  const operational = items => items.filter(i=>!i.required);
+  assert.equal(operational((await api.templateCatalog(sa,undefined,"patient","sms")).items).length,5);
+  assert.equal(operational((await api.templateCatalog(sa,undefined,"clinicAdmin","sms")).items).length,6);
+  assert(operational((await api.templateCatalog(sa,undefined,"patient","sms")).items).every(i=>!i.content.enabled));
   await assert.rejects(api.templateCatalog({role:"clinicAdmin",id:"ca"},"c","patient","sms"),{status:403});
   await assert.rejects(api.saveTemplate(sa,{channel:"sms",event:"onboarding",recipient:"patient",revision:0,mode:"publish",content:smsContent()}),{status:400});
   await assert.rejects(api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...smsContent(),enabled:true,dltTemplateId:""}}),{status:400});
@@ -308,6 +309,22 @@ test("SMS defaults off, valid recipients, DLT activation, draft isolation and pu
   await api.saveTemplate(sa,{channel:"sms",clinicId:"c",event:"booking",recipient:"patient",revision:0,mode:"publish",content:smsContent()});
   assert(!(await api.resolvedTemplate("booking","c",h.db,"patient","sms")).content.enabled);
   assert((await api.resolvedTemplate("booking",undefined,h.db,"patient","sms")).content.enabled);
+});
+test("Required security effective-state ignores optional gates and security previews use fictional credentials only",async()=>{
+  await h.control.query("update settings set data=data||'{\"emailNotificationsEnabled\":false}'::jsonb where id='integration:smtp'");
+  const controls=await api.eventControls(sa);
+  const email=controls.items.find(i=>i.event==="patient_email_otp"&&i.channel==="email");
+  assert.equal(email.required,true);
+  assert(!email.blockedReasons.some(reason=>/notifications are disabled|clinic-wide/.test(reason)));
+  const sms=controls.items.find(i=>i.event==="registration_mobile_otp"&&i.recipient==="patient");
+  assert(sms.required);
+  assert(sms.blockedReasons.some(reason=>/approved security SMS wording/.test(reason)));
+  const content=api.defaultTemplate("patient_email_otp");
+  const prepared=await api.prepareTemplateTest(sa,{channel:"email",event:"patient_email_otp",recipientGroup:"patient",
+    revision:0,content,values:{otp:"654321",expiry_minutes:"99"}});
+  assert(prepared.rendered.text.includes("123456"));
+  assert(!prepared.rendered.text.includes("654321"));
+  await assert.rejects(api.testTemplate(sa,prepared,()=>assert.fail("No SMS"),()=>assert.fail("No SMTP")),{status:400});
 });
 test("draft tests use exact bounded placeholders, explicit recipient and durable replay without publishing",async()=>{
   const content=smsContent();
@@ -359,7 +376,7 @@ test("disabled email tests use the existing sender interface, exact sample value
 test("all six lifecycle events enqueue once per channel and eligible recipient; unknown dispatch is never resent",async()=>{
   await h.control.query("delete from settings where id like 'sms-template:%' or id like 'sms-outbox:%' or id like 'mail-outbox:%'");
   for(const event of api.templateEvents)for(const group of api.templateRecipients){
-    if(event==="onboarding"&&group!=="clinicAdmin")continue;
+    if(api.requiredEvent(event) || !api.validTemplateTarget(event,group,"sms"))continue;
     await api.saveTemplate(sa,{channel:"sms",event,recipient:group,revision:0,mode:"publish",content:{...smsContent(event),enabled:true}});
   }
   const row={id:"visit",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"UTC",reference:"FIXTURE",status:"waiting",revision:0};

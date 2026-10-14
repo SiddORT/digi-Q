@@ -24,4 +24,6 @@
 export interface RegistrationResumeResult {
   /** @nullable */
   challengeId: string | null;
+  /** The cookie-bound pending intent has an optional mobile; never exposes the number. */
+  mobilePending?: boolean;
 }

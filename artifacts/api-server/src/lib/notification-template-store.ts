@@ -9,6 +9,7 @@ import { notificationSmsConfig, smsMetadataReady } from "./notification-sms-tran
 import { DEMO_FIXTURE } from "./demo-policy";
 import { visitTemplateValues } from "./notification-template-values";
 import { validTemplateTarget, validEventContent } from "./notification-templates";
+import { requiredEvent, isSecurityEvent, securityDefault } from "./security-template-definitions";
 
 export type Channel = "email" | "sms";
 const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event), channel:Channel="email") => `${channel==="sms"?"sms":"notification"}-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
@@ -29,7 +30,7 @@ export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, 
   const platform = await stored(event, undefined, conn, recipient,channel);
   const local = clinicId ? await stored(event, clinicId, conn, recipient,channel) : platform;
   const fallback = defaultTemplate(event, recipient);
-  const content = local.published || platform.published || (channel === "sms" ? {...fallback, enabled:event==="patient_login_otp",body:event==="patient_login_otp"?fallback.body:`${eventTitles[event]}: {{clinic_name}}\n${fallback.body}`,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""} : fallback);
+  const content = local.published || platform.published || (channel === "sms" ? {...(isSecurityEvent(event) ? securityDefault(event,true) : fallback), enabled:requiredEvent(event),body:isSecurityEvent(event)?securityDefault(event,true).body:event==="patient_login_otp"?fallback.body:`${eventTitles[event]}: {{clinic_name}}\n${fallback.body}`,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""} : fallback);
   // Corrupt configuration fails explicitly, rather than silently sending a different template.
   return { content: channel === "sms" ? smsTemplateContent.parse(content) : templateContent.parse(content), local,
     activatedAt: Math.max((local.published ? local : platform).activatedAt ?? 0,local.activatedAt ?? 0),
@@ -46,15 +47,16 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
     clinic_name: clinic?.name || "Example clinic", clinic_contact: [clinic?.email, clinic?.phone].filter(Boolean).join(" · "),
     patient_name: "[Patient name]", doctor_name: "[Doctor name]", appointment_details: "[Clinic-formatted visit details]", previous_details: "[Previous visit details]", reference: "[Booking reference]", timezone: "[Clinic location timezone]" };
   values.cancel_reason = "[Cancellation reason]";
-  const previewValues = { ...values, booking_link: clinic ? values.booking_link || "[Clinic booking link unavailable]" : "https://example.invalid/example-clinic", otp: "123456", expiry_minutes: "10" };
+   const previewValues = { ...values, booking_link: clinic ? values.booking_link || "[Clinic booking link unavailable]" : "https://example.invalid/example-clinic", otp: "123456", expiry_minutes: "10", setup_link: "https://example.invalid/set-password?token=fictional-preview-only", role_name: "staff member" };
   const items = [];
   for (const event of templateEvents) {
-    if (!validTemplateTarget(event, recipient || defaultRecipient(event), channel) || event === "patient_login_otp" && clinicId) continue;
+     if (!validTemplateTarget(event, recipient || defaultRecipient(event), channel) || requiredEvent(event) && clinicId) continue;
     const { content, local, source } = await resolvedTemplate(event, clinicId, db, recipient || defaultRecipient(event),channel);
     const preview = renderNotification(local.draft || content, previewValues);
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
-      delivery: event === "patient_login_otp" ? "Sent immediately when an existing patient requests SMS login, including in development. This required security message ignores notification switches. Approved sender/DLT configuration is required; real codes never enter notification history." : event === "booking" ? (recipient === "clinicAdmin" ? "Owning Clinic Admin booking email is enabled by default when clinic notifications are enabled. Explicit published opt-outs remain in effect. Delivery is asynchronous; development never sends automatically." : "Used for eligible patient booking confirmations; notification and delivery settings apply. Provider acceptance does not guarantee inbox delivery.") : event === "reminder" ? "Production worker sends one hour before the session start when clinic notifications are enabled. Not an exact consultation-time promise." : "Queued automatically for this event when clinic notifications are enabled. Production worker delivers; development never sends automatically." });
+       required: requiredEvent(event),
+       delivery: requiredEvent(event) ? "Required platform security message. Optional notification switches do not apply. SMS requires approved published wording and sender/DLT configuration. Provider acceptance is not delivery. Real codes and links never enter notification history." : event === "booking" ? (recipient === "clinicAdmin" ? "Owning Clinic Admin booking email is enabled by default when clinic notifications are enabled. Explicit published opt-outs remain in effect. Delivery is asynchronous; development never sends automatically." : "Used for eligible patient booking confirmations; notification and delivery settings apply. Provider acceptance does not guarantee inbox delivery.") : event === "reminder" ? "Production worker sends one hour before the session start when clinic notifications are enabled. Not an exact consultation-time promise." : "Queued automatically for this event when clinic notifications are enabled. Production worker delivers; development never sends automatically." });
   }
   return { scopeName: clinic?.name || "Platform defaults", variables: [...templateVariables], items };
 }
@@ -66,9 +68,13 @@ export async function saveTemplate(user: any, input: unknown) {
   if(body.channel==="sms") assert(user.role==="superAdmin",403,"Superadmin access required");
   if(body.content) body.content = (body.channel==="sms"?smsTemplateContent:templateContent).parse(body.content);
   assert(validTemplateTarget(body.event,body.recipient||defaultRecipient(body.event),body.channel),400,"Invalid event, recipient or channel");
-  if(body.recipient==="superAdmin" || body.event==="patient_login_otp") assert(user.role==="superAdmin",403,"Superadmin access required");
-  assert(body.event!=="patient_login_otp"||!body.clinicId,400,"Patient login OTP is platform-scoped");
+   if(body.recipient==="superAdmin" || requiredEvent(body.event)) assert(user.role==="superAdmin",403,"Superadmin access required");
+   assert(!requiredEvent(body.event)||!body.clinicId,400,"Security templates are platform-scoped");
   if(body.content) assert(validEventContent(body.event,body.content),400,"Use this event's supported variables. Patient login OTP must include {{otp}} and cannot be disabled.");
+   if(body.content && isSecurityEvent(body.event) && body.channel==="email" && ["doctor_setup","staff_setup"].includes(body.event))
+     assert(/\{\{\s*setup_link\s*\}\}/.test(body.content.body),400,"Setup email must include {{setup_link}}");
+   if(body.content && isSecurityEvent(body.event) && body.channel==="sms")
+     assert(!/\{\{\s*setup_link\s*\}\}/.test(body.content.body),400,"SMS must not include a bearer setup link");
   await db.transaction(async tx => {
     await authorizedTemplateScope(user, body.clinicId, tx);
     const id = key(body.event, body.clinicId, body.recipient,body.channel);
@@ -108,7 +114,7 @@ export async function saveTemplate(user: any, input: unknown) {
 
 /** Activation edits only published content; unpublished wording stays a draft. */
 export async function changeActivation(user:any, input:{channel:Channel;event:TemplateEvent;recipient:TemplateRecipient;clinicId?:string;revision:number;enabled:boolean}) {
-  assert(input.event!=="patient_login_otp",400,"Patient login OTP is a required security message and cannot be disabled");
+   assert(!requiredEvent(input.event),400,"Required security messages cannot be disabled");
   assert(validTemplateTarget(input.event,input.recipient,input.channel),400,"Invalid event, recipient or channel");
   assert(user.role==="superAdmin" && !user.demo,403,"Real Superadmin access required");
   await db.transaction(async tx=>{

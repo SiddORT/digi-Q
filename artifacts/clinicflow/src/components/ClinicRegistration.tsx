@@ -1,4 +1,7 @@
 import { EmailInput } from "@/components/EmailInput";
+import { PhoneInput } from "./PhoneInput";
+import { RegistrationMobileProof } from "../auth/RegistrationMobileProof";
+import { SecurityChannelNotice, type SecurityChannels } from "../auth/SecurityChannelNotice";
 import { useEffect, useRef, useState } from "react";
 import { useNativeAuth, authRequest } from "../auth/native-auth";
 import { Link } from "wouter";
@@ -42,6 +45,9 @@ function RegistrationAccount() {
   const [fullName, setFullName] = useState(draft.data?.fullName || "");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
+  const [mobile,setMobile] = useState("");
+  const [mobilePending,setMobilePending] = useState(false);
+  const [channels,setChannels] = useState<SecurityChannels>();
   const [challengeId, setChallengeId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -52,8 +58,8 @@ function RegistrationAccount() {
     if (draft.data?.step !== "verify") return;
     let active = true;
     setBusy(true);
-    authRequest<{ challengeId: string | null }>("registration/resume", { email: draft.data.email.trim().toLowerCase(), fullName: draft.data.fullName.trim() })
-      .then(result => { if (!active) return; if (result.challengeId) { setChallengeId(result.challengeId); setCooldown(60); } else { setStep("details"); setError("Verification could not be resumed. Your name and email are retained; re-enter your password to request a code."); } })
+    authRequest<{ challengeId: string | null;mobilePending?:boolean }>("registration/resume", { email: draft.data.email.trim().toLowerCase(), fullName: draft.data.fullName.trim() })
+      .then(result => { if (!active) return; if (result.challengeId) { setChallengeId(result.challengeId); setMobilePending(Boolean(result.mobilePending)); setCooldown(60); } else { setStep("details"); setError("Verification could not be resumed. Your name and email are retained; re-enter your password to request a code."); } })
       .catch(() => { if (active) { setStep("details"); setError("Verification could not be resumed. Re-enter your password to continue securely."); } })
       .finally(() => { if (active) setBusy(false); });
     return () => { active = false; };
@@ -63,7 +69,8 @@ function RegistrationAccount() {
     if(busy||cooldown>0||!challengeId)return;
     setBusy(true);setError("");setResendNotice("");
     try{
-      const result=await authRequest<{challengeId:string}>("registration/resend",{challengeId});
+      const result=await authRequest<{challengeId:string;channels?:SecurityChannels}>("registration/resend",{challengeId});
+      setChannels(result.channels);
       if(!result.challengeId)throw new Error("Could not resend the verification code. Please retry.");
       setChallengeId(result.challengeId);setCode("");setCooldown(60);setResendNotice("Use the code in the latest verification email. Earlier codes no longer work.");notifySuccess("Verification code resent");
     }catch(caught){const message=caught instanceof Error?caught.message:"";setError(/invalid or expired verification/i.test(message)?"This registration challenge is no longer valid. Choose Change details to restart registration.":friendlyError(caught,"auth"));if((caught as {status?:number})?.status===429||/wait before requesting another code/i.test(message))setCooldown(60);}
@@ -86,9 +93,11 @@ function RegistrationAccount() {
     try {
       if (step === "review") {
         if (!password) { setStep("details"); throw new Error("Re-enter your password; passwords are never retained in temporary drafts."); }
-        const result = await authRequest<{ challengeId: string }>("register/start", { email: email.trim().toLowerCase(), fullName: fullName.trim(), password });
+        const result = await authRequest<{ challengeId: string;channels?:SecurityChannels }>("register/start", { email: email.trim().toLowerCase(), fullName: fullName.trim(), password,...(mobile.trim()?{mobile:mobile.trim()}:{}) });
         if (!result.challengeId) throw new Error("Could not send the verification code. Please retry.");
         setChallengeId(result.challengeId);
+        setMobilePending(Boolean(mobile));
+        setChannels(result.channels);
         setCooldown(60);setResendNotice("");
         setPassword("");
         setStep("verify");
@@ -122,7 +131,10 @@ function RegistrationAccount() {
             <dt>Password</dt><dd>Entered securely. Not displayed in this summary.</dd>
           </dl>
           <button className="text-link" type="button" disabled={busy} onClick={() => { setError(""); setFieldErrors({}); setStep("details"); }}><ActionLabel>Edit Account Details</ActionLabel></button>
-        </section> : <FormField label={`Code Emailed to ${email.trim().toLowerCase()}`} required id="registration-account-code"><input type="text" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)}/></FormField>}
+        </section> : <FormField label="Required email verification code" required id="registration-account-code"><input type="text" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)}/></FormField>}
+        {step === "details" && <FormField label="Optional mobile" helper="Include country code. A separate mobile code never replaces the required email code."><PhoneInput value={mobile} onChange={setMobile}/></FormField>}
+        {step === "review" && mobile && <p>Optional mobile: ***{mobile.slice(-4)}</p>}
+        {step === "verify" && <><SecurityChannelNotice channels={channels}/>{(mobile || mobilePending) && <RegistrationMobileProof key={challengeId} challengeId={challengeId}/>}</>}
         {error && <div className="error-box" role="alert">{error}</div>}
         {step==="verify"&&resendNotice&&<p role="status">{resendNotice}</p>}
         <button className="button auth-submit" type="submit" disabled={busy}><ActionLabel>{busy ? "Please wait…" : step === "details" ? "Review account details" : step === "review" ? "Send verification code" : "Verify and continue"}</ActionLabel></button>

@@ -369,6 +369,11 @@ export interface LogoUploadInput {
 export type PatientLoginStartInput = {
   channel?: 'email';
   email: string;
+  /**
+     * Optional mobile for new email registration. Separate SMS proof never replaces email proof or updates an existing account.
+     * @pattern ^\+[1-9][0-9]{6,14}$
+     */
+  mobile?: string;
 } | {
   channel: 'sms';
   /** @pattern ^\+[1-9][0-9]{6,14}$ */
@@ -437,6 +442,12 @@ export const EventTemplateTestInputEvent = {
   completed: 'completed',
   reminder: 'reminder',
   patient_login_otp: 'patient_login_otp',
+  clinic_registration_otp: 'clinic_registration_otp',
+  patient_email_otp: 'patient_email_otp',
+  registration_mobile_otp: 'registration_mobile_otp',
+  doctor_setup: 'doctor_setup',
+  staff_setup: 'staff_setup',
+  password_setup_complete: 'password_setup_complete',
 } as const;
 
 export type EventTemplateTestInputRecipientGroup = typeof EventTemplateTestInputRecipientGroup[keyof typeof EventTemplateTestInputRecipientGroup];
@@ -504,6 +515,12 @@ export const EventControlInputEvent = {
   completed: 'completed',
   reminder: 'reminder',
   patient_login_otp: 'patient_login_otp',
+  clinic_registration_otp: 'clinic_registration_otp',
+  patient_email_otp: 'patient_email_otp',
+  registration_mobile_otp: 'registration_mobile_otp',
+  doctor_setup: 'doctor_setup',
+  staff_setup: 'staff_setup',
+  password_setup_complete: 'password_setup_complete',
 } as const;
 
 export type EventControlInputRecipient = typeof EventControlInputRecipient[keyof typeof EventControlInputRecipient];
@@ -555,6 +572,8 @@ export interface EventControlRow {
   enabled: boolean;
   source: string;
   ready: boolean;
+  /** Security event policy; independent from optional communication gates. Does not certify provider or DLT approval. */
+  required?: boolean;
   blockedReasons: string[];
   timing: string;
 }
@@ -596,6 +615,12 @@ export const NotificationTemplateSaveEvent = {
   completed: 'completed',
   reminder: 'reminder',
   patient_login_otp: 'patient_login_otp',
+  clinic_registration_otp: 'clinic_registration_otp',
+  patient_email_otp: 'patient_email_otp',
+  registration_mobile_otp: 'registration_mobile_otp',
+  doctor_setup: 'doctor_setup',
+  staff_setup: 'staff_setup',
+  password_setup_complete: 'password_setup_complete',
 } as const;
 
 export type NotificationTemplateSaveMode = typeof NotificationTemplateSaveMode[keyof typeof NotificationTemplateSaveMode];
@@ -640,6 +665,7 @@ export type NotificationTemplateCatalogItemsItem = {
   previewSubject: string;
   previewBody: string;
   delivery: string;
+  required?: boolean;
 };
 
 export interface NotificationTemplateCatalog {
@@ -933,6 +959,8 @@ export interface StartClinicRegistrationInput {
      * @maxLength 200
      */
   fullName: string;
+  /** @pattern ^\+[1-9][0-9]{6,14}$ */
+  mobile?: string;
   /**
      * Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server.
      * @minLength 8
@@ -950,6 +978,8 @@ export interface RegistrationResumeIdentity {
 export interface RegistrationResumeResult {
   /** @nullable */
   challengeId: string | null;
+  /** The cookie-bound pending intent has an optional mobile; never exposes the number. */
+  mobilePending?: boolean;
 }
 
 export interface ChangeNativePasswordInput {
@@ -971,8 +1001,32 @@ export interface DemoLoginInput {
   password: string;
 }
 
+export type SecurityChannelOutcomeStatus = typeof SecurityChannelOutcomeStatus[keyof typeof SecurityChannelOutcomeStatus];
+
+
+export const SecurityChannelOutcomeStatus = {
+  provider_accepted: 'provider_accepted',
+  provider_rejected: 'provider_rejected',
+  pre_dispatch_failed: 'pre_dispatch_failed',
+  delivery_unknown: 'delivery_unknown',
+  unavailable: 'unavailable',
+  not_requested: 'not_requested',
+} as const;
+
+export interface SecurityChannelOutcome {
+  status: SecurityChannelOutcomeStatus;
+  /** Masked destination only. Acceptance is not receipt. */
+  destination?: string;
+}
+
+export interface SecurityChannelOutcomes {
+  email?: SecurityChannelOutcome;
+  sms?: SecurityChannelOutcome;
+}
+
 export interface AuthAuthenticated {
   authenticated: boolean;
+  channels?: SecurityChannelOutcomes;
 }
 
 export type DemoSetupActionAction = typeof DemoSetupActionAction[keyof typeof DemoSetupActionAction];
@@ -1489,6 +1543,7 @@ export type User = UserInput & ({
   /** @nullable */
   managingAdminName: string | null;
   invitationStatus: UserInvitationStatus;
+  setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** Whether this staff record has a local password configured. */
   passwordEnabled?: boolean;
   /** @nullable */
@@ -1502,6 +1557,7 @@ export type User = UserInput & ({
   /** @nullable */
   managingAdminName: string | null;
   invitationStatus: UserInvitationStatus;
+  setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** Whether this staff record has a local password configured. */
   passwordEnabled?: boolean;
   /** @nullable */
@@ -1833,9 +1889,18 @@ export interface RegistrationChallengeReference {
   challengeId: string;
 }
 
+export interface RegistrationMobileOutcome {
+  sms: SecurityChannelOutcome;
+}
+
+export interface RegistrationMobileProof {
+  mobileVerified: boolean;
+}
+
 export interface AuthChallenge {
   challengeId: string;
   requiresVerification?: boolean;
+  channels?: SecurityChannelOutcomes;
 }
 
 export interface AuthCodeInput {
@@ -2069,6 +2134,7 @@ export type Doctor = DoctorInput & ({
   managingAdminId: string;
   managingAdminName: string;
   invitationStatus: DoctorInvitationStatus;
+  setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** @nullable */
   createdAt: string | null;
   specializationName?: string;
@@ -2080,6 +2146,7 @@ export type Doctor = DoctorInput & ({
   managingAdminId: string;
   managingAdminName: string;
   invitationStatus: DoctorInvitationStatus;
+  setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** @nullable */
   createdAt: string | null;
   specializationName?: string;

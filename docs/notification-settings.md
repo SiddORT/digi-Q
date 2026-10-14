@@ -14,7 +14,11 @@ and `/admin/integrations` links still work. Clinic Admins retain their existing
 owned-clinic email template editor; they cannot read global credentials, change SMS
 or Event controls, or send template tests. API authorization is independent of menu visibility.
 
-All notification SMS templates start **off**. Configuring a provider, saving a draft,
+Optional operational SMS templates start **off**. Required security events are
+separate: patient SMS login is existing-account-only; optional registration phone
+proof and staff setup notices require approved published security SMS content.
+See [the five-scenario report and operating guide](registration-setup-notifications.md).
+Configuring a provider, saving a draft,
 publishing disabled wording or opening a preview sends nothing. Enabling affects
 future eligible events and never enables clinic notifications or replays old bookings.
 Do not activate existing clinics as part of development or a configuration check.
@@ -33,7 +37,10 @@ Notification SMS uses provider `notificationSms` with:
 - `NOTIFICATION_SMS_KEY`: write-only API credential
 - `NOTIFICATION_SMS_MAPPING`: bounded declarative JSON mapping
 
-These are **not** `OTP_PROVIDER` or `TWILIO_*`: account/mobile verification is unchanged.
+These are **not** `OTP_PROVIDER` or `TWILIO_*`: existing Twilio mobile verification
+remains unchanged. Registration's separate intent-bound optional phone code uses
+the existing notification SMS transport with approved platform security content;
+it never replaces email proof or creates a phone-only identity.
 SMTP uses the existing `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, write-only
 `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_SECURE` and `SMTP_REQUIRE_TLS` configuration.
 SMTP always requires TLS; port 465 defaults to implicit TLS, other supported ports

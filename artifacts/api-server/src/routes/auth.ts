@@ -8,6 +8,10 @@ import { isStaffRole, requireUser } from "../lib/auth";
 import { sendAuthEmail, smtpConfig } from "../lib/auth-email";
 import { resolvedIntegration } from "../lib/integration-vault";
 import { patientLoginPhone, startPatientSmsLogin, verifyPatientSmsLogin } from "../lib/patient-login-sms";
+import { securityEmail, securitySms, eligibleStaffMobile, type SecurityOutcomes } from "../lib/security-notifications";
+import { parse } from "../lib/http";
+import { RequestRegistrationMobileCodeBody, VerifyRegistrationMobileCodeBody } from "@workspace/api-zod";
+import { optionalRegistrationMobile, requestRegistrationMobile, verifyRegistrationMobile } from "../lib/registration-mobile";
 import { createSession, revokeSession, hashPassword, verifyPassword, issueCsrf,
   lockCredentials, invalidateStaffCredentials, insertSession, sessionCookie, challengeUserId,
   resendRegistrationChallenge, getCookie,
@@ -36,14 +40,19 @@ async function limit(req: any, address: string, action: string, maximum = 5) {
   await consumeRateLimit(`${action}:account:${address}`, maximum);
   await consumeRateLimit(`${action}:ip:${req.ip || "unknown"}`, maximum * 10);
 }
+async function challengeMinutes(id: string) {
+  const [challenge] = await db.select({expiresAt:authChallenges.expiresAt}).from(authChallenges).where(eq(authChallenges.id,id));
+  assert(challenge,503,"Verification preparation unavailable");
+  return String(Math.max(1,Math.ceil((challenge.expiresAt.getTime()-Date.now())/60_000)));
+}
 async function mailCode(address: string, purpose: string, userId?: string, data?: Record<string, unknown>) {
   smtpConfig((await resolvedIntegration("smtp")).env);
   const secret = String(code());
   const challengeId = await createChallenge({ userId, email: address, purpose, secret, ttlMs: CODE_AGE, data });
-  await sendAuthEmail(address, purpose === "register" ? "Verify your DigiQ clinic registration" : "DigiQ Doctors verification",
-    purpose === "register" ? `Your clinic administrator registration code is ${secret}. It expires in 10 minutes. Verify your email to continue setting up your clinic. This is not a doctor invitation. If you did not start this registration, ignore this email.`
-      : `Your verification code is ${secret}. It expires in 10 minutes.`);
-  return challengeId;
+  const emailOutcome = await securityEmail(purpose === "register" ? "clinic_registration_otp" : "patient_email_otp",
+    purpose === "register" ? "clinicAdmin" : "patient",address,{otp:secret,expiry_minutes:await challengeMinutes(challengeId)});
+  const smsOutcome = data?.mobile ? await requestRegistrationMobile(challengeId) : {status:"not_requested" as const};
+  return {challengeId,channels:{email:emailOutcome,sms:smsOutcome}};
 }
 async function mailLink(req: any, address: string, userId: string, purpose: string, route: string) {
   await ensureStaffInvitationConfigured();
@@ -51,7 +60,19 @@ async function mailLink(req: any, address: string, userId: string, purpose: stri
   const secret = randomBytes(32).toString("base64url");
   const id = await createChallenge({ userId, email: address, purpose, secret, ttlMs: LINK_AGE });
   url.searchParams.set("token", `${id}.${secret}`);
+  if (purpose === "invitation") {
+    const user = await localUser(address);
+    const recipient = user.role as "doctor" | "clinicAdmin" | "receptionist";
+    const values = {recipient_name:user.fullName,role_name:recipient === "doctor" ? "doctor" : recipient === "clinicAdmin" ? "Clinic Admin" : "staff member",
+      setup_link:url.toString(),expiry_minutes:await challengeMinutes(id)};
+    const email = await securityEmail(recipient === "doctor" ? "doctor_setup" : "staff_setup",recipient,address,values);
+    // Advisory contains no bearer link. Independent transport failure cannot erase a saved profile.
+    const sms = await securitySms(recipient === "doctor" ? "doctor_setup" : "staff_setup",recipient,eligibleStaffMobile(user.mobile),values);
+    if (email.status !== "provider_accepted") await db.update(authChallenges).set({consumedAt:new Date(),data:{}}).where(eq(authChallenges.id,id));
+    return {email,sms};
+  }
   await sendAuthEmail(address, "DigiQ Doctors account access", `Use this link within 30 minutes: ${url}`);
+  return undefined;
 }
 /** Configuration errors must be detected before committing a new staff profile. */
 export async function ensureStaffInvitationConfigured() {
@@ -64,8 +85,9 @@ function splitToken(token: unknown) {
   return { id: parts[1], secret: parts[2] };
 }
 export async function inviteStaff(req: any, row: { id: string; email: string }) {
-  await mailLink(req, row.email.toLowerCase(), row.id, "invitation", "/set-password");
-  await db.update(users).set({ invitationStatus: "sent" }).where(eq(users.id, row.id));
+  const channels = await mailLink(req, row.email.toLowerCase(), row.id, "invitation", "/set-password");
+  await db.update(users).set({ invitationStatus: channels?.email.status === "provider_accepted" ? "sent" : "failed",
+    data:sql`${users.data} || ${JSON.stringify({setupNotificationOutcomes:channels})}::jsonb` }).where(eq(users.id, row.id));
 }
 export async function requestStaffReset(req: any, row: { id: string; email: string }) {
   // Assisted recovery follows the same no-account-cap policy as self-service.
@@ -129,7 +151,7 @@ async function updatePassword(req: any, res: any, purpose: "reset" | "invitation
   await validateChallenge(id, purpose, secret);
   const hashed = await hashPassword(req.body.password);
   const userId = await challengeUserId(id);
-  const token = await db.transaction(async tx => {
+  const completed = await db.transaction(async tx => {
     await lockCredentials(tx, userId);
     const challenge = await consumeChallenge(id, purpose, secret, tx);
     const [user] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
@@ -138,10 +160,23 @@ async function updatePassword(req: any, res: any, purpose: "reset" | "invitation
       throw new HttpError(400, "Invalid verification", "INVALID_VERIFICATION");
     await tx.update(users).set({ passwordHash: hashed, passwordChangedAt: new Date(), emailVerifiedAt: new Date(), invitationStatus: "notRequired" }).where(eq(users.id, user.id));
     await invalidateStaffCredentials(tx, user.id);
-    return purpose === "invitation" ? insertSession(tx, user.id) : undefined;
+    // Challenge consumption, credential invalidation and this durable claim commit together.
+    // A crash after commit is uncertain, never a reason to replay completion sends.
+    if (purpose === "invitation") await tx.update(users).set({
+      data:sql`${users.data} || '{"passwordSetupNoticeClaimed":true}'::jsonb`
+    }).where(eq(users.id,user.id));
+    return {token:purpose === "invitation" ? await insertSession(tx, user.id) : undefined,
+      notify:purpose === "invitation" && !user.passwordHash && !user.data?.passwordSetupNoticeClaimed,user};
   });
-  if (token) sessionCookie(res, token);
-  res.set("Cache-Control", "no-store").json(purpose === "invitation" ? { authenticated: true } : { reset: true });
+  if (completed.token) sessionCookie(res, completed.token);
+  let channels: SecurityOutcomes | undefined;
+  if (completed.notify) {
+    const user = completed.user, recipient = user.role as "doctor"|"clinicAdmin"|"receptionist"|"superAdmin";
+    const values = {recipient_name:user.fullName,role_name:recipient === "doctor" ? "doctor" : "staff member"};
+    channels = {email:await securityEmail("password_setup_complete",recipient,user.email,values),
+      sms:await securitySms("password_setup_complete",recipient,eligibleStaffMobile(user.mobile),values)};
+  }
+  res.set("Cache-Control", "no-store").json(purpose === "invitation" ? { authenticated: true,channels } : { reset: true });
 }
 authRouter.post("/auth/reset-password", async (req, res) => updatePassword(req, res, "reset"));
 authRouter.post("/auth/invitation/accept", async (req, res) => updatePassword(req, res, "invitation"));
@@ -178,10 +213,12 @@ authRouter.post("/auth/patient/start", async (req, res) => {
   await limit(req, address, "patient-login");
   smtpConfig((await resolvedIntegration("smtp")).env);
   const user = await localUser(address);
-  const challengeId = user && (user.status !== "active" || user.role !== "patient")
-    ? randomBytes(18).toString("base64url")
-    : await mailCode(address, "patient", user?.id);
-  res.set("Cache-Control", "no-store").json({ challengeId });
+   const mobile = optionalRegistrationMobile(req.body?.mobile);
+   const result = user && (user.status !== "active" || user.role !== "patient")
+     ? {challengeId:randomBytes(18).toString("base64url")}
+     : await mailCode(address, "patient", user?.id, mobile ? {mobile,mobileVerified:false} : undefined);
+   // All email-login starts use the same generic response; no account existence or delivery claim.
+   res.set("Cache-Control", "no-store").json({challengeId:result.challengeId});
 });
 authRouter.post("/auth/patient/verify", async (req, res) => {
   await consumeRateLimit(`patient-verify:${req.ip || "unknown"}`, 25);
@@ -202,11 +239,30 @@ authRouter.post("/auth/patient/verify", async (req, res) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"user-email:" + challenge.email}))`);
     const [nowExisting] = await tx.select().from(users).where(sql`lower(${users.email})=${challenge.email}`).limit(1);
     if (nowExisting) { assert(nowExisting.role === "patient" && nowExisting.status === "active", 401, "Invalid verification"); return nowExisting; }
-    return put(users, { id: uid(), email: challenge.email, fullName: "", role: "patient", invitationStatus: "notRequired", emailVerifiedAt: new Date() }, tx);
+     return put(users, { id: uid(), email: challenge.email, fullName: "", role: "patient", invitationStatus: "notRequired", emailVerifiedAt: new Date(),
+       // An unproved optional number must not enter phone-based identity matching.
+       mobile:challenge.data.mobileVerified === true && typeof challenge.data.mobile === "string" ? challenge.data.mobile : undefined,
+       data:{mobileVerified:challenge.data.mobileVerified === true} }, tx);
   });
   await db.update(users).set({ emailVerifiedAt: new Date() }).where(eq(users.id, user.id));
   await createSession(res, user.id);
   res.set("Cache-Control", "no-store").json({ authenticated: true });
+});
+authRouter.post("/auth/patient/resend",async(req,res)=>{
+  const body = parse(RequestRegistrationMobileCodeBody,req.body);
+  await consumeRateLimit(`patient-email-resend:ip:${req.ip || "unknown"}`,25);
+  // Preserve the same parent intent, phone proof, expiry and attempt budget.
+  // Unmatched/expired accounts and transport outcomes have the same public response.
+  try {
+    await resendRegistrationChallenge(body.challengeId,async(address,secret,expiresAt)=>{
+      const outcome = await securityEmail("patient_email_otp","patient",address,
+        {otp:secret,expiry_minutes:String(Math.max(1,Math.ceil((expiresAt.getTime()-Date.now())/60_000)))});
+      if(outcome.status!=="provider_accepted")throw new HttpError(503,"Email outcome unavailable","EMAIL_DELIVERY_FAILED");
+    },"patient");
+  } catch(error) {
+    if(!(error instanceof HttpError) || !["INVALID_VERIFICATION","REGISTRATION_RESEND_COOLDOWN","EMAIL_DELIVERY_FAILED"].includes(error.code!))throw error;
+  }
+  res.set("Cache-Control","no-store").json({challengeId:body.challengeId});
 });
 authRouter.post("/auth/register/start", async (req, res) => {
   const address = email(req.body?.email);
@@ -217,16 +273,18 @@ authRouter.post("/auth/register/start", async (req, res) => {
   smtpConfig((await resolvedIntegration("smtp")).env);
   if (await localUser(address)) throw new HttpError(409, "Account already registered", "ACCOUNT_EXISTS");
   const hash = await hashPassword(req.body.password);
-  const challengeId = await mailCode(address, "register", undefined, { fullName: name, passwordHash: hash });
+   const mobile = optionalRegistrationMobile(req.body?.mobile);
+   const result = await mailCode(address, "register", undefined, { fullName: name, passwordHash: hash,...(mobile ? {mobile,mobileVerified:false} : {}) });
+   const {challengeId} = result;
   res.cookie("digiq_registration", challengeId, { httpOnly: true, secure: true, sameSite: "strict", path: "/api/auth", maxAge: CODE_AGE });
-  res.set("Cache-Control", "no-store").json({ challengeId });
+   res.set("Cache-Control", "no-store").json(result);
 });
 // Credential remains in an HttpOnly cookie, never in a temporary form draft.
 authRouter.post("/auth/registration/resume", async (req, res) => {
   const id = getCookie(req, "digiq_registration");
   const [challenge] = typeof id === "string" ? await db.select().from(authChallenges).where(eq(authChallenges.id, id)) : [];
   const valid = challenge && challenge.purpose === "register" && !challenge.consumedAt && challenge.attempts < 5 && challenge.expiresAt > new Date() && challenge.email === email(req.body?.email) && challenge.data?.fullName === req.body?.fullName;
-  res.set("Cache-Control", "no-store").json({ challengeId: valid ? id : null });
+  res.set("Cache-Control", "no-store").json({ challengeId: valid ? id : null, mobilePending:Boolean(valid && challenge.data.mobile) });
 });
 authRouter.post("/auth/registration/resend", async (req, res) => {
   res.set("Cache-Control", "no-store");
@@ -236,9 +294,13 @@ authRouter.post("/auth/registration/resend", async (req, res) => {
     throw new HttpError(400, "Invalid or expired verification", "INVALID_VERIFICATION");
   smtpConfig((await resolvedIntegration("smtp")).env);
   try {
-    const challengeId = await resendRegistrationChallenge(id, (address, secret) =>
-      sendAuthEmail(address, "Verify your DigiQ clinic registration", `Your clinic administrator registration code is ${secret}. Use the code in this latest verification email. Earlier codes no longer work. Verify promptly to continue setting up your clinic. This is not a doctor invitation. If you did not start this registration, ignore this email.`));
-    res.json({ challengeId });
+     const challengeId = await resendRegistrationChallenge(id, async (address, secret, expiresAt) => {
+       const outcome = await securityEmail("clinic_registration_otp","clinicAdmin",address,
+         {otp:secret,expiry_minutes:String(Math.max(1,Math.ceil((expiresAt.getTime()-Date.now())/60_000)))});
+       if (outcome.status !== "provider_accepted") throw new HttpError(503, outcome.status === "delivery_unknown" ?
+         "Email outcome uncertain. The previous code remains valid; wait before retrying." : "Email was not accepted. The previous code remains valid.", "EMAIL_DELIVERY_FAILED");
+     });
+     res.json({ challengeId,channels:{email:{status:"provider_accepted"}} });
   } catch (error) {
     if (error instanceof HttpError && error.code === "REGISTRATION_RESEND_COOLDOWN")
       res.set("Retry-After", "60");
@@ -256,6 +318,8 @@ authRouter.post("/auth/register/verify", async (req, res) => {
     assert(!existing, 409, "Account already registered");
     const record = await put(users, { id: uid(), email: challenge.email, fullName: String(challenge.data.fullName),
       role: "clinicAdmin", status: "active", passwordHash: String(challenge.data.passwordHash),
+       mobile:challenge.data.mobileVerified === true && typeof challenge.data.mobile === "string" ? challenge.data.mobile : undefined,
+       data:{mobileVerified:challenge.data.mobileVerified === true},
       emailVerifiedAt: new Date(), invitationStatus: "notRequired" }, tx);
     await audit(record, "registerClinicAdmin", "users", record, tx);
     return record;
@@ -263,6 +327,19 @@ authRouter.post("/auth/register/verify", async (req, res) => {
   await createSession(res, user.id);
   res.clearCookie("digiq_registration", { httpOnly: true, secure: true, sameSite: "strict", path: "/api/auth" });
   res.set("Cache-Control", "no-store").json({ authenticated: true });
+});
+authRouter.post("/auth/registration/mobile/request",async(req,res)=>{
+  const body = parse(RequestRegistrationMobileCodeBody,req.body);
+  await consumeRateLimit(`registration-mobile:ip:${req.ip || "unknown"}`,25);
+  const sms = await requestRegistrationMobile(body.challengeId);
+  // Generic for patient intents; never certify delivery for an unmatched login identity.
+  res.set("Cache-Control","no-store").json({sms});
+});
+authRouter.post("/auth/registration/mobile/verify",async(req,res)=>{
+  const body = parse(VerifyRegistrationMobileCodeBody,req.body);
+  await consumeRateLimit(`registration-mobile-verify:ip:${req.ip || "unknown"}`,25);
+  await verifyRegistrationMobile(body.challengeId,body.code);
+  res.set("Cache-Control","no-store").json({mobileVerified:true});
 });
 // Old provider-only endpoints fail closed rather than silently granting access.
 authRouter.post("/auth/staff-verify", (_req, _res) => { throw new HttpError(410, "Use local staff login", "AUTH_METHOD_REMOVED"); });

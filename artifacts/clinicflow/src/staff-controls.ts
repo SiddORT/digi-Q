@@ -12,6 +12,7 @@ export function staffInvitationRestriction(row:any, tab:StaffTab):string|undefin
 
 export async function resendStaffInvitations(
   rows:any[], tab:StaffTab, send:(id:string)=>Promise<any>, describeError:(error:unknown)=>string,
+  describeResult?:(result:any)=>string,
 ):Promise<{label:string;ok:boolean;message?:string}[]> {
   const outcomes:{label:string;ok:boolean;message?:string}[]=[];
   for(const row of rows){
@@ -20,8 +21,10 @@ export async function resendStaffInvitations(
     if(restriction){outcomes.push({label,ok:false,message:restriction});continue;}
     try {
       const result=await send(tab==="doctors"?row.userId:row.id);
-      if(result.invitationStatus!=="sent")throw new Error("Invitation was not sent. Reload the account and retry if setup is still required.");
-      outcomes.push({label,ok:true});
+      const ok=result.invitationStatus==="sent";
+      outcomes.push({label,ok,message:describeResult?.(result) || (ok ?
+        "Email provider accepted the invitation; inbox delivery is not confirmed." :
+        "Email invitation outcome is unavailable. Check the provider before requesting another link.")});
     } catch(error) {outcomes.push({label,ok:false,message:describeError(error)});}
   }
   return outcomes;

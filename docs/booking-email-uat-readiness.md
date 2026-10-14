@@ -1,5 +1,12 @@
 # Booking-recipient email readiness: UAT
 
+Registration/setup security notifications are documented separately in
+[`registration-setup-notifications.md`](registration-setup-notifications.md).
+The patient confirmation preserves published wording and appends committed
+ticket details when the published body omits them. This is text/HTML content,
+not a PDF attachment or private bearer-ticket URL. Development regressions do
+not replace separately authorized live UAT evidence.
+
 ## Decision
 
 **Not cleared for live booking-email activation.** This is a read-only review, not a change request or evidence of message delivery. No templates were published, settings changed, deployment performed, bookings created, or messages sent.

@@ -8,6 +8,7 @@ import { LoadingButton } from "../components/LoadingButton";
 import { PASSWORD_RULE, validateEmail, validatePassword } from "../lib/validators";
 import { AuthCard, AuthShell } from "./AuthShell";
 import { authRequest, useNativeAuth } from "./native-auth";
+import { SecurityChannelNotice, type SecurityChannels } from "./SecurityChannelNotice";
 
 export function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -49,6 +50,7 @@ export function SetPassword() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [fieldError, setFieldError] = useState<string | undefined>();
+  const [completion,setCompletion] = useState<{channels?:SecurityChannels;authenticated?:boolean}>();
   const params = new URLSearchParams(window.location.search);
   const token = params.get("token");
   const reset = params.get("flow") === "reset";
@@ -61,9 +63,9 @@ export function SetPassword() {
     if (invalid) { document.querySelector<HTMLElement>('[name="new-password"]')?.focus(); return; }
     setBusy(true); setError("");
     try {
-      const result = await authRequest<{ authenticated?: boolean }>(reset ? "reset-password" : "invitation/accept", { token, password });
+      const result = await authRequest<{ authenticated?: boolean;channels?:SecurityChannels }>(reset ? "reset-password" : "invitation/accept", { token, password });
       setPassword("");
-      if (result.authenticated) { await refresh(); navigate("/onboarding", { replace: true }); }
+      if (result.authenticated) { setCompletion(result); }
       else navigate(`/sign-in?${reset ? "passwordReset" : "passwordSet"}=1`, { replace: true });
     } catch (caught) {
       setPassword("");
@@ -74,7 +76,8 @@ export function SetPassword() {
     <AuthCard title={reset ? "Reset your staff password" : "Set your staff password"} description="Choose a secure password, then sign in from the staff login page.">
       {!token && <div className="error-box" role="alert" data-testid="status-invitation-error">This password setup link is incomplete. Request a new one.</div>}
       {error && <div className="error-box" role="alert" data-testid="status-invitation-error">{error}</div>}
-      {token && <form onSubmit={save} noValidate>
+      {completion && <><p role="status">Your password is saved. Notification failure does not undo setup.</p><SecurityChannelNotice channels={completion.channels}/><button className="button" type="button" onClick={async()=>{await refresh();navigate("/onboarding",{replace:true});}}>Continue to workspace</button></>}
+      {token && !completion && <form onSubmit={save} noValidate>
         <FormField label="New Password" required helper={PASSWORD_RULE} error={fieldError}>
           <PasswordInput data-testid="input-invitation-password" name="new-password" autoComplete="new-password" showChecklist disabled={busy} value={password} onChange={event => { setPassword(event.target.value); if (fieldError) setFieldError(validatePassword(event.target.value)); }} />
         </FormField>

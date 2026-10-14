@@ -28,6 +28,8 @@ export interface StartClinicRegistrationInput {
      * @maxLength 200
      */
   fullName: string;
+  /** @pattern ^\+[1-9][0-9]{6,14}$ */
+  mobile?: string;
   /**
      * Requires letters and numbers; maximum 1024 UTF-8 bytes, enforced by server.
      * @minLength 8
