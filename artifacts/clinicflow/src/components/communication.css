@@ -1,5 +1,4 @@
 /* Communication Settings + Notifications. Governed scale: 8/16/24 spacing, 40/44px controls. */
-.cm-row-actions input[role=switch]{width:40px;min-height:40px;flex:none;accent-color:var(--dq-primary,#2563eb)}
 .cm-filter-toggle{display:none;min-height:44px;margin:var(--space-2,8px) 0}
 .cm-filters{display:flex;gap:8px;flex-wrap:nowrap;align-items:center;margin:16px 0}
 .cm-filters input[type=search]{flex:1 1 240px;min-width:0;max-width:360px;margin:0;min-height:40px}
@@ -83,3 +82,54 @@
 .nl-wrap{overflow-x:auto}
 [data-testid="drawer-notification-log"] dl{display:grid;grid-template-columns:9rem 1fr;gap:.3rem .6rem}
 [data-testid="drawer-notification-log"] dd{margin:0;overflow-wrap:anywhere}
+
+/* Notifications: scope, gate and event actions share a compact toolbar.
+   Explicit switch styles protect the shared Radix control from legacy button CSS. */
+.cm-notification-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px 24px;flex-wrap:wrap;margin-bottom:8px}
+.cm-notification-heading{display:flex;align-items:center;gap:4px}
+.cm-notification-scope{flex:0 1 400px;min-width:0;margin-left:auto}
+.cm-notification-scope .form-field{margin:0;display:flex;align-items:center;gap:8px;min-width:0}
+.cm-notification-scope .form-field-label{flex:none}
+.cm-notification-scope .searchable-select-field{flex:1;min-width:0}
+.cm-notification-scope select{margin:0;min-width:0}
+.cm-notification-scope [role=combobox]{white-space:normal;height:auto}
+.cm-notification-scope [role=combobox] .truncate{white-space:normal;overflow-wrap:anywhere;text-overflow:clip}
+.cm-notification-gate.ns{gap:2px;padding:8px 0;border-bottom:1px solid var(--dq-line);font-size:var(--type-label)}
+.cm-notification-gate .ns-scope{flex:1;min-width:0}
+.cm-scope-name{overflow-wrap:anywhere}
+.cm-notification-gate .ns-gate{flex:none;gap:8px}
+.cm-notification-gate label{cursor:pointer}
+.cm-gate-off{font-weight:600}
+.event-controls .cm-filters{margin:8px 0}
+.event-controls .cm-event{margin-bottom:8px}
+.cm-event-toolbar{display:flex;align-items:center;gap:8px;padding-right:12px;min-height:44px}
+.cm-event-toolbar>h3{flex:1;min-width:0}
+.event-controls .cm-event-trigger{min-height:44px;padding:8px 12px;gap:8px}
+.cm-event-title{overflow-wrap:anywhere;line-height:1.4}
+.cm-group-status{flex:none;white-space:nowrap}
+.event-controls .cm-row-actions{gap:12px}
+.event-controls .cm-row-actions .button{padding:6px 12px}
+.event-controls button.cm-switch{position:relative;display:inline-flex;align-items:center;justify-content:flex-start;flex:0 0 40px;width:40px;min-width:40px;max-width:40px;height:24px;min-height:24px;padding:2px;border:0;border-radius:999px;background:#94a3b8;box-shadow:inset 0 0 0 1px #64748b;gap:0}
+.event-controls button.cm-switch::before{content:"";position:absolute;inset:-10px -2px}
+.event-controls button.cm-switch[data-state=checked]{background:var(--teal,#2563eb);box-shadow:none}
+.event-controls button.cm-switch>span{display:block;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0003;translate:none;transform:translateX(0)}
+.event-controls button.cm-switch[data-state=checked]>span{transform:translateX(16px)}
+.event-controls button.cm-switch:disabled{opacity:.5;cursor:not-allowed}
+.event-controls button.cm-switch:focus-visible{outline:2px solid var(--teal,#2563eb);outline-offset:4px}
+.event-controls button.cm-info{display:inline-flex;align-items:center;justify-content:center;flex:none;width:32px;height:36px;min-height:36px;margin:0;padding:0;border:0;background:transparent;color:var(--soft);border-radius:6px;box-shadow:none}
+.event-controls button.cm-info:focus-visible{outline:2px solid var(--teal,#2563eb)}
+.cm-info-content{z-index:100;max-width:min(360px,calc(100vw - 24px));padding:8px 12px;border-radius:8px;background:var(--ink,#172b4d);color:white;font-size:var(--type-label);line-height:1.5;box-shadow:0 4px 12px #0003}
+@media(max-width:767px){
+  .cm-notification-toolbar{align-items:flex-start}
+  .cm-notification-scope{flex:1 1 100%;width:100%}
+  .cm-notification-scope .form-field{align-items:flex-start}
+  .cm-notification-scope .form-field-label{padding-top:10px}
+  .cm-notification-gate .ns-scope{flex:1 1 100%;align-items:flex-start}
+  .cm-notification-gate .cm-scope-name{flex:1;min-width:0}
+  .cm-notification-gate .ns-gate{min-height:44px}
+  .cm-event-toolbar{gap:4px;padding-right:10px}
+  .event-controls button.cm-info{width:36px;min-height:44px;height:44px}
+  .event-controls .cm-event-trigger{padding:8px;min-height:44px}
+  .cm-event-title{font-size:var(--type-label)}
+  .cm-group-status{padding:0 6px}
+}

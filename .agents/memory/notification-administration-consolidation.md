@@ -16,3 +16,14 @@ without restoring the removed preferences interface, and do not widen Clinic Adm
 activation/SMS/provider permissions. This approval does not authorize a backend
 redesign, changed defaults, migration, live message, production setting change or
 deployment.
+
+Bulk event activation describes and verifies the entire unfiltered event, but
+only writes optional rows whose activation must change.
+
+**Why:** Rewriting already-correct inherited options creates unnecessary local
+overrides, silently freezing their future inheritance. The user's group action
+must not alter the overall gate or imply provider readiness.
+
+**How to apply:** Exclude required messages, capture all event rows for stale-data
+checks, retain untouched inheritance, and verify the complete target after the
+atomic save before claiming success.

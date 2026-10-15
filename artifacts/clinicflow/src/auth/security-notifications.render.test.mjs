@@ -43,8 +43,9 @@ test("required event rules keep booking optional and security controls non-optio
   const root=new URL("../",import.meta.url);
   const templates=readFileSync(new URL("components/EmailTemplates.tsx",root),"utf8");
   const controls=readFileSync(new URL("components/NotificationTemplatesPage.tsx",root),"utf8");
-  assert.match(templates,/disabled=\{save.isPending \|\| requiredSecurityEvent\(event\)\}/);
-  assert.match(controls,/requiredSecurityEvent\(event\) \? "Required"/);
+  assert.match(templates,/<ActivationNote on=\{isOn\} required=\{requiredSecurityEvent\(event\)\}/);
+  assert.match(controls,/r\.row\.required \? "Required"/);
+  assert.match(controls,/r\.row\.required \? " \(required; cannot be disabled\)"/);
 });
 test("email registration collects optional phone but separate proof cannot replace required email code",()=>{
   const root=new URL("../",import.meta.url);

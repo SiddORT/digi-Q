@@ -816,6 +816,35 @@ test("scope policy batches are atomic, owner-only and narrow; preserve drafts an
   await assert.rejects(api.saveManagedNotificationSettings(sa,{clinicId:"c",revision:on.revision,notificationsEnabled:false,changes:[change]},h.db),{status:409});
   assert.equal((await api.getSettings(h.db,"c")).notificationsEnabled,true);
 });
+test("event activation batches roll back earlier rows on a late conflict and persist without changing gate or drafts",async()=>{
+  const scope=()=>api.managedNotificationSettings(sa,"c",h.db);
+  const initial=await scope();
+  const rows=initial.items.filter(r=>r.event==="booking"&&r.channel==="email"&&!r.required);
+  assert(rows.length>=2,"use multiple real event-recipient rows");
+  const ordered=[...rows].sort((a,b)=>`${a.channel}:${a.event}:${a.recipient}`.localeCompare(`${b.channel}:${b.event}:${b.recipient}`));
+  const first=ordered[0], last=ordered.at(-1);
+  const before=await api.resolvedTemplate("booking","c",h.db,first.recipient,"email");
+  const draftBody=`${before.content.body}\nUnpublished fictional group draft`;
+  await api.saveTemplate(sa,{channel:"email",event:"booking",recipient:first.recipient,clinicId:"c",
+    revision:before.local.revision,mode:"draft",content:{...before.content,body:draftBody}});
+  const baseline=await scope();
+  const changes=baseline.items.filter(r=>r.event==="booking"&&r.channel==="email"&&!r.required)
+    .map(r=>({channel:r.channel,event:r.event,recipient:r.recipient,revision:r.revision,enabled:!r.enabled}));
+  // A late sorted row fails after another row has already been written inside the transaction.
+  await assert.rejects(api.saveManagedNotificationSettings(sa,{clinicId:"c",revision:baseline.revision,confirmed:true,
+    changes:changes.map(c=>c.recipient===last.recipient?{...c,revision:c.revision+999}:c)},h.db),{status:409});
+  const rolledBack=await scope();
+  assert.equal(rolledBack.revision,baseline.revision);
+  for(const row of baseline.items.filter(r=>r.event==="booking"&&r.channel==="email")){
+    assert.deepEqual(rolledBack.items.find(r=>r.event===row.event&&r.channel===row.channel&&r.recipient===row.recipient),row);
+  }
+  const saved=await api.saveManagedNotificationSettings(sa,{clinicId:"c",revision:baseline.revision,confirmed:true,changes},h.db);
+  assert.equal(saved.notificationsEnabled,baseline.notificationsEnabled);
+  assert.equal(saved.inherited,baseline.inherited);
+  const reloaded=await scope();
+  for(const change of changes)assert.equal(reloaded.items.find(r=>r.channel===change.channel&&r.event===change.event&&r.recipient===change.recipient).enabled,change.enabled);
+  assert.equal((await api.resolvedTemplate("booking","c",h.db,first.recipient,"email")).local.draft.body,draftBody);
+});
 test("in-app choices hide feed and unread candidates without deleting history or changing read markers",async()=>{
   await resetChoices();
   await h.control.query("create table if not exists notification_reads(user_id text,notification_id text,primary key(user_id,notification_id))");

@@ -7,3 +7,9 @@ Check the configured concurrent validation run, not only isolated command succes
 **Why:** The same unchanged ticket and PostgreSQL checks passed sequentially but hit initialization, page-load and overall-test deadlines when completion validation ran them together.
 
 **How to apply:** Inspect the failure location and preserve assertions and retry policy. Give cold compilation and PDF rendering reasonable bounded setup/test budgets rather than bypassing checks or changing product behavior to address runner load.
+
+Isolated browser fixtures need separate dependency-optimizer caches from the running app, and concurrent browser runs must not share an output directory.
+
+**Why:** The app and fixture servers can invalidate each other's Vite optimized dependencies, causing 504 responses before rendering. Concurrent Playwright runs also delete each other's trace files and produce misleading missing-file failures.
+
+**How to apply:** Keep fixture optimizer caches separate. Do not launch a focused browser run into the same report/output directory while a configured browser validation is running.

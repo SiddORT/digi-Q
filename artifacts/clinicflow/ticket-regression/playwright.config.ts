@@ -22,7 +22,7 @@ export default defineConfig({
   webServer: {
     command: "pnpm --dir .. exec vite --config ticket-regression/vite.config.ts",
     url: "http://127.0.0.1:43719/?mode=appointment",
-    reuseExistingServer: false,
+    reuseExistingServer: process.env.REUSE_TICKET_SERVER === "1",
     timeout: 60000,
   },
 });

@@ -1,0 +1,3 @@
+@import "../src/index.css";
+/* The test server has a different root; scan the real shared components. */
+@source "../src";

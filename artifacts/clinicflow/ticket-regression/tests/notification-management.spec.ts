@@ -4,14 +4,14 @@ import { test, expect, type Page } from "@playwright/test";
 // separately against disposable PostgreSQL and native staff sessions.
 async function setup(page: Page, role = "superAdmin") {
   const writes: any[] = [];
-  const state = { fail: 0, revoke: false, delay: 0 };
+  const state = { fail: 0, revoke: false, delay: 0, staleReadback: false };
   const scopes = new Map<string, any>();
   const scope = (id: string) => {
     if (!scopes.has(id)) scopes.set(id, {
       revision: 1, notificationsEnabled: true, inherited: true,
-      scopeName: id ? "Fixture Clinic" : "Platform defaults", canActivate: role === "superAdmin",
+      scopeName: id ? "Fixture Clinic — North and Central Multispeciality Care Group" : "Platform defaults", canActivate: role === "superAdmin",
       items: [
-        { channel: "email", event: "booking", recipient: "patient", revision: 1, enabled: true, source: id ? "platform" : "default", ready: true, blockedReasons: [], timing: "" },
+        { channel: "email", event: "booking", recipient: "patient", revision: 1, enabled: true, source: id ? "platform" : "default", ready: true, blockedReasons: [], timing: "On booking confirmation; not a promise of consultation time." },
         { channel: "email", event: "booking", recipient: "doctor", revision: 1, enabled: false, source: "default", ready: false, blockedReasons: ["Provider unavailable"], timing: "" },
         ...(role === "superAdmin" ? [
           { channel: "sms", event: "booking", recipient: "patient", revision: 1, enabled: false, source: "default", ready: false, blockedReasons: ["Publish a valid DLT Template ID"], timing: "" },
@@ -49,8 +49,25 @@ async function setup(page: Page, role = "superAdmin") {
       if (state.fail) return route.fulfill({ status: state.fail, json: { error: state.fail === 409 ? "Changed elsewhere" : "Not authorized or unavailable" } });
     }
     if (path.endsWith("/notification-settings")) {
-      if (body) { s.notificationsEnabled = body.notificationsEnabled; s.inherited = false; s.revision++; }
+      if (body) {
+        if (body.revision !== s.revision || body.changes.some((change: any) =>
+          !s.items.some((row: any) => row.channel === change.channel && row.event === change.event && row.recipient === change.recipient && row.revision === change.revision && !row.required))) {
+          return route.fulfill({ status: 409, json: { error: "Changed elsewhere" } });
+        }
+        // Validate the whole batch before applying any changes, like the server transaction.
+        for (const change of body.changes) {
+          const row = s.items.find((r: any) => r.channel === change.channel && r.event === change.event && r.recipient === change.recipient);
+          row.enabled = change.enabled; row.revision++; row.source = body.clinicId ? "clinic" : "platform";
+          const t = template(s, change.channel, change.recipient, change.event);
+          t.content.enabled = change.enabled; t.revision++;
+        }
+        if (body.notificationsEnabled !== undefined) { s.notificationsEnabled = body.notificationsEnabled; s.inherited = false; }
+        s.revision++;
+      }
       const { templates: _, ...data } = s;
+      if (!body && writes.length && state.staleReadback) return route.fulfill({ json: {
+        ...data, items: data.items.map((row: any) => row.event === "booking" ? { ...row, enabled: false } : row),
+      } });
       return route.fulfill({ json: { ...data, canActivate: !state.revoke && s.canActivate } });
     }
     if (path.endsWith("/event-controls")) {
@@ -83,6 +100,24 @@ async function setup(page: Page, role = "superAdmin") {
 const booking = async (page: Page) => { await page.getByTestId("button-event-booking").click(); };
 const confirm = (page: Page) => page.getByTestId("confirm-dialog-confirm").click();
 const saved = (page: Page) => expect(page.getByTestId("status-management-save")).toBeVisible();
+
+for (const role of ["superAdmin", "clinicAdmin"]) test(`compact layout and visible switches: ${role}`, async ({ page }, testInfo) => {
+  await setup(page, role);
+  await page.setViewportSize({ width: 1366, height: 768 });
+  const header = await page.getByTestId("button-event-booking").boundingBox();
+  expect(header!.y).toBeLessThan(role === "superAdmin" ? 240 : 280);
+  expect(header!.height).toBeLessThanOrEqual(48);
+  const gate = page.getByTestId("checkbox-clinic-gate");
+  expect(await gate.evaluate(el => el.tagName)).toBe("BUTTON");
+  expect(await gate.evaluate(el => getComputedStyle(el).borderRadius)).toBe("999px");
+  expect(await gate.evaluate(el => {
+    const track = el.getBoundingClientRect(), thumb = el.firstElementChild!.getBoundingClientRect();
+    return thumb.left >= track.left && thumb.right <= track.right;
+  })).toBe(true);
+  await expect(page.getByTestId("switch-group-booking")).toBeEnabled({ enabled: role === "superAdmin" });
+  await page.screenshot({ path: testInfo.outputPath(`${role}-laptop.png`), fullPage: true });
+  console.log(role, header, await page.getByTestId("notification-scope").boundingBox());
+});
 
 test("gate and row confirmations cancel without writes; security is locked; saves persist independently after reload", async ({ page }) => {
   const { writes } = await setup(page);
@@ -213,4 +248,146 @@ test("ordinary roles never mount editable notification management", async ({ pag
     expect(writes).toHaveLength(0);
     await page.unrouteAll();
   }
+});
+
+test("group uses full unfiltered catalog, one atomic write, preserves inheritance, drafts and gate through reload", async ({ page }) => {
+  const { scope, template, writes } = await setup(page);
+  const s = scope("");
+  template(s, "email", "doctor", "booking").draft = { body: "Saved unpublished wording" };
+  await expect(page.getByTestId("status-event-booking")).toHaveText("Custom");
+  await expect(page.getByTestId("switch-group-patient_login_otp")).toHaveCount(0);
+  await expect(page.getByTestId("status-event-patient_login_otp")).toHaveText("Required");
+  await page.getByTestId("checkbox-clinic-gate").click(); await confirm(page); await saved(page);
+  await page.getByTestId("select-filter-channel").selectOption("email");
+  await page.getByTestId("select-filter-recipient").selectOption("doctor");
+  await page.getByTestId("select-filter-status").selectOption("off");
+  await page.getByTestId("input-search-events").fill("booking");
+  await expect(page.locator(".cm-row")).toHaveCount(1);
+  await page.getByTestId("switch-group-booking").click();
+  await expect(page.getByRole("dialog")).toContainText("All 3 optional channel/recipient options");
+  await expect(page.getByRole("dialog")).toContainText("even those hidden by filters");
+  await expect(page.getByRole("dialog")).toContainText("overall gate stays off");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  expect(writes).toHaveLength(1);
+  await expect(page.getByTestId("status-event-booking")).toHaveText("Custom");
+  await page.getByTestId("switch-group-booking").click(); await confirm(page); await saved(page);
+  expect(writes).toHaveLength(2);
+  expect(writes[1].path).toMatch(/notification-settings$/);
+  expect(writes[1].body).not.toHaveProperty("notificationsEnabled");
+  expect(writes[1].body.changes).toHaveLength(2);
+  expect(s.items.filter((row: any) => row.event === "booking").every((row: any) => row.enabled)).toBe(true);
+  expect(s.items[0].source).toBe("default"); // Already-enabled option did not become an override.
+  expect(template(s, "email", "doctor", "booking").draft.body).toBe("Saved unpublished wording");
+  expect(s.inherited).toBe(false); // Explicit gate remains off.
+  await page.reload();
+  await expect(page.getByTestId("status-event-booking")).toHaveText("Enabled");
+  await expect(page.getByTestId("checkbox-clinic-gate")).not.toBeChecked();
+  await expect(page.getByTestId("button-event-booking")).toHaveAttribute("aria-expanded", "false");
+  await page.getByTestId("switch-group-booking").click(); await confirm(page); await saved(page);
+  expect(writes[2].body.changes).toHaveLength(3);
+  await expect(page.getByTestId("status-event-booking")).toHaveText("Disabled");
+  await expect(page.getByTestId("button-event-booking")).toHaveAttribute("aria-expanded", "false");
+  await page.getByTestId("switch-group-booking").click(); await confirm(page); await saved(page);
+  await expect(page.getByTestId("status-event-booking")).toHaveText("Enabled");
+  expect(s.items.find((row: any) => row.required).enabled).toBe(true);
+});
+
+test("group stale catalog, permission loss, batch failures and repeated actions never claim success", async ({ page }) => {
+  const { scope, state, writes } = await setup(page);
+  const group = page.getByTestId("switch-group-booking");
+  await group.click();
+  scope("").items[1].revision++;
+  await confirm(page);
+  await expect(page.getByTestId("status-management-error")).toContainText("Nothing was saved");
+  expect(writes).toHaveLength(0);
+  await group.click(); state.revoke = true; await confirm(page);
+  await expect(page.getByTestId("status-management-error")).toContainText("permissions changed");
+  expect(writes).toHaveLength(0);
+  state.revoke = false; await page.reload();
+  state.fail = 409; await group.click(); await confirm(page);
+  await expect(page.getByTestId("status-management-error")).toContainText("not saved");
+  await expect(page.getByTestId("status-event-booking")).toHaveText("Custom");
+  await expect(page.getByTestId("status-management-save")).toHaveCount(0);
+  state.fail = 500; await group.click(); await confirm(page);
+  await expect(page.getByTestId("status-management-error")).toContainText("not saved");
+  await expect(page.getByTestId("status-event-booking")).toHaveText("Custom");
+  state.fail = 0; state.delay = 600;
+  await group.click();
+  await expect(page.getByTestId("checkbox-clinic-gate")).toBeDisabled();
+  await expect(page.getByTestId("notification-scope").locator('button[aria-haspopup="dialog"]')).toBeDisabled();
+  await group.evaluate((el: HTMLButtonElement) => { el.click(); el.click(); });
+  await confirm(page);
+  await saved(page);
+  expect(writes).toHaveLength(3); // Two failed transactions and one successful transaction.
+  expect(writes.at(-1).body).not.toHaveProperty("clinicId");
+});
+
+test("group detects a row revision conflict after confirmation and rolls back the full batch", async ({ page }) => {
+  const { scope, state } = await setup(page);
+  state.delay = 700;
+  await page.getByTestId("switch-group-booking").click();
+  const request = page.waitForRequest(req => req.method() !== "GET" && req.url().endsWith("/notification-settings"));
+  await confirm(page);
+  // The request is already in flight, after the confirmation recheck.
+  await request;
+  scope("").items[2].revision++;
+  await expect(page.getByTestId("status-management-error")).toContainText("not saved");
+  expect(scope("").items[1].enabled).toBe(false);
+  expect(scope("").items[0].enabled).toBe(true);
+  await expect(page.getByTestId("status-management-save")).toHaveCount(0);
+});
+
+test("an unconfirmed saved view never reports group success", async ({ page }) => {
+  const { state } = await setup(page);
+  state.staleReadback = true;
+  await page.getByTestId("switch-group-booking").click(); await confirm(page);
+  await expect(page.getByTestId("status-management-error")).toContainText("saved state could not be confirmed");
+  await expect(page.getByTestId("status-management-save")).toHaveCount(0);
+  state.staleReadback = false; await page.reload();
+  await expect(page.getByTestId("status-event-booking")).toHaveText("Enabled");
+});
+
+for (const width of [1366, 820, 390]) test(`information, independent accordion and responsive long scope at ${width}px`, async ({ page }, testInfo) => {
+  await page.setViewportSize({ width, height: 900 });
+  await setup(page);
+  await page.getByRole("button", { name: "Scope (optional)", exact: true }).click();
+  await page.getByRole("option", { name: "Fixture Clinic", exact: true }).click();
+  const info = page.getByRole("button", { name: "About Booking", exact: true });
+  await info.hover();
+  await expect(page.getByRole("tooltip")).toContainText("On booking confirmation");
+  await page.mouse.move(0, 0);
+  await info.focus();
+  await expect(page.getByRole("tooltip")).toContainText("On booking confirmation");
+  await info.press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
+  await info.dispatchEvent("click"); // Also works when touch has no hover or focus.
+  await expect(page.getByRole("tooltip")).toContainText("Custom means mixed");
+  await expect(page.getByTestId("button-event-booking")).toHaveAttribute("aria-expanded", "false");
+  await info.press("Escape");
+  await page.getByTestId("button-event-booking").focus();
+  await page.getByTestId("button-event-booking").press("Enter");
+  await expect(page.getByTestId("switch-email-booking-patient")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const bounds = await page.getByTestId("checkbox-clinic-gate").boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+  if (width < 768) {
+    const scopeName = await page.locator(".cm-scope-name").boundingBox();
+    expect(bounds!.y).toBeGreaterThanOrEqual(scopeName!.y + scopeName!.height);
+  }
+  await page.screenshot({ path: testInfo.outputPath(`notifications-${width}.png`), fullPage: true });
+});
+
+test("touch users can open and dismiss event information without expanding the event", async ({ browser }) => {
+  const context = await browser.newContext({ hasTouch: true, isMobile: true, viewport: { width: 390, height: 844 } });
+  try {
+    const page = await context.newPage();
+    await setup(page);
+    const info = page.getByRole("button", { name: "About Booking", exact: true });
+    await info.tap();
+    await expect(page.getByRole("tooltip")).toContainText("On booking confirmation");
+    await expect(page.getByTestId("button-event-booking")).toHaveAttribute("aria-expanded", "false");
+    await info.tap();
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+  } finally { await context.close(); }
 });

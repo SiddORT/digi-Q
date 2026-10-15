@@ -56,7 +56,10 @@ test("headings start collapsed; keyboard and independent expansion do not write"
   const writes = await setup(page);
   const booking = page.getByTestId("button-event-booking"), reminder = page.getByTestId("button-event-reminder");
   await expect(booking).toHaveAttribute("aria-expanded", "false");
-  await expect(reminder).toContainText("Before the session starts");
+  const timing = page.getByRole("button", { name: "About Reminder", exact: true });
+  await timing.focus();
+  await expect(page.getByRole("tooltip")).toContainText("Before the session starts");
+  await timing.press("Escape");
   await expect(page.getByTestId("card-template-email-booking-patient")).not.toBeVisible();
   await booking.focus();
   await booking.press("Enter");

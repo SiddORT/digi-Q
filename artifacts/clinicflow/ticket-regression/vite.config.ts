@@ -6,6 +6,8 @@ import path from "node:path";
 const root = path.dirname(new URL(import.meta.url).pathname);
 export default defineConfig({
   root,
+  // The running app and this fixture must not overwrite each other's optimizer.
+  cacheDir: path.resolve(root, "../node_modules/.vite-ticket-regression"),
   // Exercise the same checked-in public logo served by the production Vite app.
   publicDir: path.resolve(root, "../public"),
   plugins: [react(), tailwindcss({ optimize: false })],
