@@ -63,6 +63,7 @@ Thumbs.db
 .acceptance-*.mjs
 .feature-harness-*.mjs
 /generated-artifacts/
+.appointment-activation-*.mjs
 # Production VPS files
 /ecosystem.config.cjs
 /deploy-scripts/
