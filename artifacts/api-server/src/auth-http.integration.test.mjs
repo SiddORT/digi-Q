@@ -269,3 +269,21 @@ test("SMS patient login uses the actual HTTPS/CSRF transport and establishes the
   assert.equal((await harness.control.query("select count(*)::int as n from auth_sessions where user_id='sms-http'")).rows[0].n,1);
   await assert.rejects(authRequest("patient/verify",{channel:"sms",challengeId:started.challengeId,code:otp}));
 });
+test("disabled verification is a distinct safe frontend error with no false sent state or challenge",async()=>{
+  const actor={id:"fixture-admin",role:"superAdmin"};
+  const current=await backend.resolvedTemplate("patient_email_otp",undefined,harness.db,"patient","email");
+  await backend.changeActivation(actor,{event:"patient_email_otp",recipient:"patient",channel:"email",revision:current.local.revision,enabled:false});
+  await assert.rejects(authRequest("patient/start",{email:"disabled@example.test"}),error=>{
+    assert.equal(error.status,503);assert.equal(error.code,"SECURITY_DELIVERY_DISABLED");
+    assert.match(error.message,/disabled by the System Admin/);
+    assert.match(error.message,/Verification is still required; no message was sent/);
+    return true;
+  });
+  assert.equal(globalThis.nativeAuthMail.length,0);
+  assert.equal((await harness.control.query("select count(*)::int n from auth_challenges")).rows[0].n,0);
+  const off=await backend.resolvedTemplate("patient_email_otp",undefined,harness.db,"patient","email");
+  await backend.changeActivation(actor,{event:"patient_email_otp",recipient:"patient",channel:"email",revision:off.local.revision,enabled:true});
+  assert.equal(globalThis.nativeAuthMail.length,0);
+  assert((await authRequest("patient/start",{email:"enabled@example.test"})).challengeId);
+  assert.equal(globalThis.nativeAuthMail.length,1);
+});

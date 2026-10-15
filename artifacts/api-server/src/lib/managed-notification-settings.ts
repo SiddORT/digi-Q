@@ -28,12 +28,12 @@ export async function managedNotificationSettings(user: any, clinicId?: string, 
     events: templateEvents.map((id, order) => ({
       id, label: id === "onboarding" ? "Clinic Onboarding" : eventTitles[id], order,
       clinicApplicable: !requiredEvent(id),
-      explanation: requiredEvent(id) ? "Required authentication and security messages are managed at System Default and cannot be disabled by a clinic." : "",
+      explanation: requiredEvent(id) ? "Platform authentication and security delivery is controlled by Superadmin at System Default, not per clinic." : "",
     })),
     // Activation does not grant wording or provider access. No platform security
     // rows or Superadmin recipients are disclosed to clinic administrators.
     items: catalog.items.filter(r => user.role === "superAdmin" || !r.required && r.recipient !== "superAdmin").map(r => ({
-      ...r, canActivate: canActivate && !r.required,
+      ...r, canActivate,
       canEdit: user.role === "superAdmin" || r.channel === "email" && !r.required && r.recipient !== "superAdmin",
       blockedReasons: user.role === "superAdmin" ? r.blockedReasons : [...new Set(r.blockedReasons.map(reason =>
         /SMTP|SMS|Communication|DLT|Sender|Entity/.test(reason) ? "Delivery setup requires the System Admin; contact them to review provider and approved wording readiness." : reason))],

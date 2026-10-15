@@ -8,7 +8,7 @@ import { isStaffRole, requireUser } from "../lib/auth";
 import { sendAuthEmail, smtpConfig } from "../lib/auth-email";
 import { resolvedIntegration } from "../lib/integration-vault";
 import { patientLoginPhone, startPatientSmsLogin, verifyPatientSmsLogin } from "../lib/patient-login-sms";
-import { securityEmail, securitySms, eligibleStaffMobile, type SecurityOutcomes } from "../lib/security-notifications";
+import { securityEmail, securitySms, requireSecurityDelivery, eligibleStaffMobile, type SecurityOutcomes } from "../lib/security-notifications";
 import { parse } from "../lib/http";
 import { RequestRegistrationMobileCodeBody, VerifyRegistrationMobileCodeBody } from "@workspace/api-zod";
 import { optionalRegistrationMobile, requestRegistrationMobile, verifyRegistrationMobile } from "../lib/registration-mobile";
@@ -47,16 +47,24 @@ async function challengeMinutes(id: string) {
   return String(Math.max(1,Math.ceil((challenge.expiresAt.getTime()-Date.now())/60_000)));
 }
 async function mailCode(address: string, purpose: string, userId?: string, data?: Record<string, unknown>) {
+  await requireSecurityDelivery(purpose === "register" ? "clinic_registration_otp" : "patient_email_otp",
+    purpose === "register" ? "clinicAdmin" : "patient","email");
   smtpConfig((await resolvedIntegration("smtp")).env);
   const secret = String(code());
   const challengeId = await createChallenge({ userId, email: address, purpose, secret, ttlMs: CODE_AGE, data });
   const emailOutcome = await securityEmail(purpose === "register" ? "clinic_registration_otp" : "patient_email_otp",
     purpose === "register" ? "clinicAdmin" : "patient",address,{otp:secret,expiry_minutes:await challengeMinutes(challengeId)});
+  if (emailOutcome.status === "disabled") {
+    await db.update(authChallenges).set({consumedAt:new Date(),data:{}}).where(eq(authChallenges.id,challengeId));
+    throw new HttpError(503,"Verification email delivery is unavailable. Verification is still required.",
+      "SECURITY_DELIVERY_DISABLED");
+  }
   const smsOutcome = data?.mobile ? await requestRegistrationMobile(challengeId) : {status:"not_requested" as const};
   return {challengeId,channels:{email:emailOutcome,sms:smsOutcome}};
 }
 async function mailLink(req: any, address: string, userId: string, purpose: string, route: string) {
-  await ensureStaffInvitationConfigured();
+  const target = purpose === "invitation" ? await localUser(address) : undefined;
+  await ensureStaffInvitationConfigured(target?.role);
   const url = new URL(route, publicOrigin(req));
   const secret = randomBytes(32).toString("base64url");
   const id = await createChallenge({ userId, email: address, purpose, secret, ttlMs: LINK_AGE });
@@ -78,7 +86,9 @@ async function mailLink(req: any, address: string, userId: string, purpose: stri
   }, db, outcomes => outcomes?.email.status === "delivery_unknown" || outcomes?.sms.status === "delivery_unknown");
 }
 /** Configuration errors must be detected before committing a new staff profile. */
-export async function ensureStaffInvitationConfigured() {
+export async function ensureStaffInvitationConfigured(role?: string) {
+  if (role) await requireSecurityDelivery(role === "doctor" ? "doctor_setup" : "staff_setup",
+    role as "doctor" | "clinicAdmin" | "receptionist" | "superAdmin","email");
   smtpConfig((await resolvedIntegration("smtp")).env);
   publicOrigin(null);
 }
@@ -218,6 +228,7 @@ authRouter.post("/auth/patient/start", async (req, res) => {
   }
   const address = email(req.body?.email);
   await limit(req, address, "patient-login");
+  await requireSecurityDelivery("patient_email_otp","patient","email");
   smtpConfig((await resolvedIntegration("smtp")).env);
   const user = await localUser(address);
    const mobile = optionalRegistrationMobile(req.body?.mobile);
@@ -256,6 +267,7 @@ authRouter.post("/auth/patient/verify", async (req, res) => {
   res.set("Cache-Control", "no-store").json({ authenticated: true });
 });
 authRouter.post("/auth/patient/resend",async(req,res)=>{
+  await requireSecurityDelivery("patient_email_otp","patient","email");
   const body = parse(RequestRegistrationMobileCodeBody,req.body);
   await consumeRateLimit(`patient-email-resend:ip:${req.ip || "unknown"}`,25);
   // Preserve the same parent intent, phone proof, expiry and attempt budget.
@@ -264,7 +276,8 @@ authRouter.post("/auth/patient/resend",async(req,res)=>{
     await resendRegistrationChallenge(body.challengeId,async(address,secret,expiresAt)=>{
       const outcome = await securityEmail("patient_email_otp","patient",address,
         {otp:secret,expiry_minutes:String(Math.max(1,Math.ceil((expiresAt.getTime()-Date.now())/60_000)))});
-      if(outcome.status!=="provider_accepted")throw new HttpError(503,"Email outcome unavailable","EMAIL_DELIVERY_FAILED");
+      if(outcome.status!=="provider_accepted")throw new HttpError(503,"Email outcome unavailable",
+        outcome.status === "disabled" ? "SECURITY_DELIVERY_DISABLED" : "EMAIL_DELIVERY_FAILED");
     },"patient");
   } catch(error) {
     if(!(error instanceof HttpError) || !["INVALID_VERIFICATION","REGISTRATION_RESEND_COOLDOWN","EMAIL_DELIVERY_FAILED"].includes(error.code!))throw error;
@@ -272,6 +285,7 @@ authRouter.post("/auth/patient/resend",async(req,res)=>{
   res.set("Cache-Control","no-store").json({challengeId:body.challengeId});
 });
 authRouter.post("/auth/register/start", async (req, res) => {
+  await requireSecurityDelivery("clinic_registration_otp","clinicAdmin","email");
   const address = email(req.body?.email);
   const name = typeof req.body?.fullName === "string" ? req.body.fullName.trim() : "";
   if (!name || name.length > 200) throw new HttpError(400, "Full name required", "INVALID_NAME");
@@ -294,6 +308,7 @@ authRouter.post("/auth/registration/resume", async (req, res) => {
   res.set("Cache-Control", "no-store").json({ challengeId: valid ? id : null, mobilePending:Boolean(valid && challenge.data.mobile) });
 });
 authRouter.post("/auth/registration/resend", async (req, res) => {
+  await requireSecurityDelivery("clinic_registration_otp","clinicAdmin","email");
   res.set("Cache-Control", "no-store");
   await consumeRateLimit(`registration-resend:ip:${req.ip || "unknown"}`, 25);
   const id = req.body?.challengeId;
@@ -305,7 +320,8 @@ authRouter.post("/auth/registration/resend", async (req, res) => {
        const outcome = await securityEmail("clinic_registration_otp","clinicAdmin",address,
          {otp:secret,expiry_minutes:String(Math.max(1,Math.ceil((expiresAt.getTime()-Date.now())/60_000)))});
        if (outcome.status !== "provider_accepted") throw new HttpError(503, outcome.status === "delivery_unknown" ?
-         "Email outcome uncertain. The previous code remains valid; wait before retrying." : "Email was not accepted. The previous code remains valid.", "EMAIL_DELIVERY_FAILED");
+         "Email outcome uncertain. The previous code remains valid; wait before retrying." : "Email was not accepted. The previous code remains valid.",
+         outcome.status === "disabled" ? "SECURITY_DELIVERY_DISABLED" : "EMAIL_DELIVERY_FAILED");
      });
      res.json({ challengeId,channels:{email:{status:"provider_accepted"}} });
   } catch (error) {

@@ -98,14 +98,14 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
         {scopeControl}
         <div className="ns-gate"><Switch className="cm-switch" id="notification-delivery-gate" checked={controls.data?.notificationsEnabled ?? false} disabled={!enabled || !gateCan || unavailable || !!editing} onCheckedChange={() => void management.change()} data-testid="checkbox-clinic-gate" /><label htmlFor="notification-delivery-gate">Optional Delivery</label>
         <NotificationInfo label="About Optional Delivery">
-           {clinicId ? "Applies only to the selected clinic. Clinics inherit system values until explicitly changed." : "System Default is inherited by clinics without an explicit override; clinics with overrides may differ."} Required security messages ignore Optional Delivery and opt-outs. Enabling does not confirm delivery readiness: each event rechecks active recipients, assignments or ownership, opt-outs, valid contact and duplicate destinations. Provider setup is separate. Wording and drafts inherit independently; open Edit for details. Only future eligible events change; past events are never replayed.
+            {clinicId ? "Applies only to the selected clinic. Clinics inherit system values until explicitly changed." : "System Default is inherited by clinics without an explicit override; clinics with overrides may differ."} Platform security messages obey their own activation, not Optional Delivery or operational opt-outs. Enabling does not confirm delivery readiness: each event rechecks active recipients, assignments or ownership, opt-outs, valid contact and duplicate destinations. Provider setup is separate. Wording and drafts inherit independently; open Edit for details. Only future eligible events change; past events are never replayed.
           {controls.data && <> Current gate: {controls.data.notificationsEnabled ? "On" : "Off"}. {controls.data.inherited ? clinicId ? "Inherited system value." : "Default system value." : clinicId ? "Saved clinic value." : "Saved system value."}</>}
         </NotificationInfo>
         </div>
       </div>
     </header>
     {enabled && !controls.isError && controls.data && <>
-      {!controls.data.notificationsEnabled && <p className="notice cm-gate-warning" data-testid="text-gate-off">{clinicId ? "Optional delivery is off for this clinic, including enabled options." : "Optional delivery is off for System Default. Clinics with explicit overrides may differ."} Required security messages are not blocked by this gate.</p>}
+      {!controls.data.notificationsEnabled && <p className="notice cm-gate-warning" data-testid="text-gate-off">{clinicId ? "Optional delivery is off for this clinic, including enabled operational options." : "Optional delivery is off for System Default. Clinics with explicit overrides may differ."} Platform security messages are controlled separately by their own switches.</p>}
       {!gateCan && <p id="notification-activation-permission" className="muted">Activation is read-only for your account. You can still manage the wording you are allowed to edit.</p>}
     </>}
     {management.pending && <p role="status">Waiting for confirmation or saving. Scope and other delivery actions are locked.</p>}
@@ -118,7 +118,7 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
       {sel("status", f.status, [["on", "On and Ready"], ["blocked", "On, Blocked"], ["off", "Off"]], "Status")}
       {filtered && <button type="button" className="button secondary small" onClick={() => setF({ q: "", channel: "", recipient: "", status: "" })} data-testid="button-clear-filters">Clear Filters</button>}
     </div>
-    <p className="muted cm-group-guidance" id="notification-group-guidance">Group switches change all optional options, including filtered-out rows. From Mixed, switch on to enable all; from All Enabled, switch off to disable all. Optional Delivery is unchanged; enabling does not confirm delivery readiness. Required messages are excluded. Future eligible events only; no replay.</p>
+    <p className="muted cm-group-guidance" id="notification-group-guidance">Group switches change all authorized options for that event, including filtered-out rows. From Mixed, switch on to enable all; from All Enabled, switch off to disable all. Optional Delivery is unchanged; enabling does not confirm delivery readiness. Future eligible events only; no replay.</p>
     {catalogs.some(c => c.isError) && <p className="error-box" role="alert">Some message previews could not be loaded. Activation settings are separate. <button type="button" onClick={() => catalogs.forEach(c => { if (c.isError) void c.refetch(); })}>Retry Previews</button></p>}
     {!enabled ? <div className="et-empty" data-testid="state-select-clinic">Select a clinic group to view its notification templates.</div>
       : controls.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
@@ -148,10 +148,10 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
             <span className="cm-event-icon"><Icon size={18} aria-hidden="true" /></span><span className="cm-event-title">{title}</span><span className="cm-count">{count}</span>
           </AccordionTrigger>
            {items.find(row => row.event === event && row.timing)?.timing ? <NotificationInfo label={`About ${title}`}>{items.find(row => row.event === event && row.timing)?.timing}</NotificationInfo> : <span className="cm-info-spacer" aria-hidden="true" />}
-           <span className={`et-chip cm-group-status ${group.checked ? "live" : ""}`} data-testid={`status-event-${event}`}>{!total ? "No options" : group.status === "Enabled" ? "All Enabled" : group.status === "Disabled" ? "All Disabled" : group.status === "Custom" ? "Mixed" : "Required"}</span>
-           {group.optional.length > 0 ? <Switch className="cm-switch" aria-label={`${title}: all ${group.optional.length} optional options`} aria-describedby={`notification-group-guidance${!gateCan ? " notification-activation-permission" : ""}`} checked={group.checked} disabled={!gateCan || pending || !!editing || controls.isFetching} onCheckedChange={() => void management.changeGroup(event)} data-testid={`switch-group-${event}`} /> : <span className="cm-switch-spacer" aria-hidden="true" />}
+           <span className={`et-chip cm-group-status ${group.checked ? "live" : ""}`} data-testid={`status-event-${event}`}>{!total ? "No options" : group.status === "Enabled" ? "All Enabled" : group.status === "Disabled" ? "All Disabled" : group.status === "Custom" ? "Mixed" : "Unavailable"}</span>
+           {group.optional.length > 0 ? <Switch className="cm-switch" aria-label={`${title}: all ${group.optional.length} options`} aria-describedby={`notification-group-guidance${!gateCan ? " notification-activation-permission" : ""}`} checked={group.checked} disabled={!gateCan || pending || !!editing || controls.isFetching} onCheckedChange={() => void management.changeGroup(event)} data-testid={`switch-group-${event}`} /> : <span className="cm-switch-spacer" aria-hidden="true" />}
           </div>
-          <AccordionContent className="cm-event-content">{!group.optional.length && rows.length > 0 && <p className="cm-required-note">These security messages cannot be disabled and ignore Optional Delivery. Wording remains editable.</p>}
+          <AccordionContent className="cm-event-content">
           {!rows.length ? <p className="cm-required-note" data-testid={`empty-event-${event}`}>No channel or recipient options are available for this event in this scope.</p> : <>
           <div className="cm-cols" aria-hidden="true"><span>Channel &amp; Recipient</span><span>Status</span><span>Template Preview</span><span>Enabled</span><span>Action</span></div>
           <ul className="cm-rows">{rows.map(r => {
@@ -160,14 +160,14 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
             const canEdit = r.row.canEdit !== false && (superAdmin || r.channel === "email" && !r.row.required && r.recipient !== "superAdmin");
             const ch = r.channel === "sms" ? "SMS" : "Email";
             const ChIcon = r.channel === "sms" ? MessageSquare : Mail;
-            const status = r.row.required ? "Required" : !r.enabled ? "Off" : reasons.length ? "On, Blocked" : "On";
+            const status = !r.enabled ? "Off" : reasons.length || !r.row.required && controls.data?.notificationsEnabled === false ? "On, Blocked" : "On";
             const full = r.preview ? previewText(r.preview, controls.data?.scopeName ?? "") : "";
             return <li key={`${r.channel}|${r.recipient}`} className="cm-row" data-testid={`card-template-${r.channel}-${event}-${r.recipient}`}>
           <div className="cm-cell cm-who"><ChIcon size={18} aria-hidden="true" /><strong>{ch} to {label(r.recipient)}</strong></div>
           <div className="cm-cell cm-status" data-label="Status">
             <span className={`et-chip cm-state ${status === "On" ? "live" : status === "On, Blocked" ? "cm-blocked" : ""}`}>{status}</span>
             <NotificationInfo label={`Activation Details: ${r.channel} to ${label(r.recipient)}`}>
-                {activationSource(r.row.source, clinicId)}. {r.row.required ? "Always on; ignores Optional Delivery and opt-outs." : `Saved activation: ${r.enabled ? "on" : "off"}.`}
+                {activationSource(r.row.source, clinicId)}. Saved activation: {r.enabled ? "on" : "off"}. {r.row.required && "Platform security delivery; ignores Optional Delivery and operational opt-outs."}
                 {reasons.length ? ` Blocked: ${reasons.join(" · ")}` : !r.row.required && controls.data?.notificationsEnabled === false ? " Optional Delivery is off for this scope." : " Delivery still depends on eligibility at the event."}
             </NotificationInfo>
           </div>
@@ -178,7 +178,7 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
             {reasons.length > 0 && <ul className="ec-blocked" data-testid={`setup-${r.channel}-${event}-${r.recipient}`}>{reasons.map(b => <li key={b}>{b}</li>)}</ul>}
           </div>
           <div className="cm-cell cm-enabled" data-label="Enabled">
-            {!r.row.required ? <Switch className="cm-switch" aria-label={`${title} ${ch} to ${label(r.recipient)}`} aria-describedby={!rowCan ? "notification-activation-permission" : undefined} checked={r.enabled} disabled={!rowCan || unavailable || !!editing} onCheckedChange={() => void management.change(r.row)} data-testid={`switch-${r.channel}-${event}-${r.recipient}`} /> : <span className="cm-dash" aria-label="Always on">Always on</span>}
+            <Switch className="cm-switch" aria-label={`${title} ${ch} to ${label(r.recipient)}`} aria-describedby={!rowCan ? "notification-activation-permission" : undefined} checked={r.enabled} disabled={!rowCan || unavailable || !!editing} onCheckedChange={() => void management.change(r.row)} data-testid={`switch-${r.channel}-${event}-${r.recipient}`} />
           </div>
           <div className="cm-cell cm-action">
             {canEdit && <button type="button" className="button secondary small cm-edit" aria-label={`Edit ${title} ${ch} to ${label(r.recipient)}`} disabled={unavailable || !!editing} onClick={() => { if (!management.locked()) setEditing({ channel: r.channel, event, recipient: r.recipient }); }} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>}

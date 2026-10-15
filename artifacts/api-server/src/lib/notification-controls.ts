@@ -40,13 +40,13 @@ export async function deliveryControlCatalog(conn:any,clinicId?:string,clinic?:a
     if(!(channel==="sms"?readiness.notificationSms:readiness.smtp).ready)reasons.push(`Configure ${channel==="sms"?"SMS API":"SMTP"} on the ${channel==="sms"?"SMS":"Email"} page`);
      if(channel==="sms"&&!requiredEvent(event)&&readiness.notificationSms.notificationsEnabled===false)reasons.push("SMS notifications are disabled in Communication Settings");
      if(channel==="email"&&!requiredEvent(event)&&readiness.smtp.notificationsEnabled===false)reasons.push("Email notifications are disabled in Communication Settings");
-     if(channel==="sms"&&isSecurityEvent(event)&&template.source==="default")reasons.push("Publish approved security SMS wording before use");
+     if(channel==="sms"&&isSecurityEvent(event)&&!template.wordingPublished)reasons.push("Publish approved security SMS wording before use");
     const sms=template.content as SmsTemplateContent;
     if(channel==="sms"&&smsConfig&&!smsMetadataReady(smsConfig,sms))reasons.push(smsConfig.provider==="keepInTouch"?"Publish a DLT Template ID for this event; Keep in Touch uses Sender ID but no Entity ID":"Configure Sender and Entity IDs, and publish a DLT Template ID for this event");
      if(gate===false&&!requiredEvent(event))reasons.push(clinicId?"Clinic notification gate is off":"Platform default notification gate is off; clinics may have explicit overrides");
     if(!template.content.enabled)reasons.push("Published activation is off");
      items.push({channel,event,recipient,required:requiredEvent(event),revision:template.local.revision,enabled:template.content.enabled,source:template.source,ready:reasons.length===0,blockedReasons:reasons,
-       timing:requiredEvent(event)?"Required security message sent immediately on its authentication action. Cannot be disabled; optional notification switches do not apply. SMS is conditional on an eligible mobile and approved content.":
+       timing:requiredEvent(event)?"Platform security message sent on its authentication action when enabled at System Default. Optional Delivery does not apply. Disabling verification or setup delivery can prevent that action; SMS setup advisories do not replace the emailed link.":
         event==="reminder"?"One hour before the session start in the session timezone; not an exact consultation time":
         event==="onboarding"?(recipient==="superAdmin"?"After clinic registration commits, to active System Admins":"After clinic registration commits, to the owning Clinic Admin"):"After the corresponding visit change commits; current contact and membership rechecked"});
   }
@@ -75,7 +75,7 @@ export async function prepareTemplateTest(user:any,input:unknown) {
   const effective=await resolvedTemplate(body.event,body.clinicId,db,body.recipientGroup,body.channel);
   assert(effective.local.revision===body.revision,409,"Template changed. Refresh before testing.");
   const content=(body.channel==="sms"?smsTemplateContent:templateContent).parse(body.content);
-  assert(validEventContent(body.event,content),400,"Use this event's supported variables. Patient login OTP must include {{otp}} and cannot be disabled.");
+   assert(validEventContent(body.event,content),400,"Use this event's supported variables, including required code and expiry placeholders.");
    if(isSecurityEvent(body.event)) {
      assert(body.channel!=="email" || !["doctor_setup","staff_setup"].includes(body.event) || /\{\{\s*setup_link\s*\}\}/.test(content.body),400,"Setup email must include {{setup_link}}");
      assert(body.channel!=="sms" || !/\{\{\s*setup_link\s*\}\}/.test(content.body),400,"SMS cannot include setup links");

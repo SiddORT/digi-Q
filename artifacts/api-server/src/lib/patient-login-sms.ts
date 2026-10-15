@@ -7,6 +7,7 @@ import { resolvedIntegration } from "./integration-vault";
 import { resolvedTemplate } from "./notification-template-store";
 import { smsTemplateContent, validEventContent, substitute } from "./notification-templates";
 import { notificationSmsConfig, smsPayload, sendNotificationSms } from "./notification-sms-transport";
+import { requireSecurityDelivery } from "./security-notifications";
 
 export function patientLoginPhone(value: unknown) {
   assert(typeof value === "string" && /^\+[1-9]\d{6,14}$/.test(value.trim()),400,"Enter a mobile number with country code");
@@ -21,6 +22,7 @@ export async function patientAccountsForPhone(mobile: string, conn: any = db) {
 
 export async function sendPatientLoginSms(mobile: string, otp: string, expirySeconds: number,
   conn: any = db, send = sendNotificationSms) {
+  await requireSecurityDelivery("patient_login_otp","patient","sms",conn);
   const { env } = await resolvedIntegration("notificationSms",conn);
   const cfg = notificationSmsConfig(env);
   const template = await resolvedTemplate("patient_login_otp",undefined,conn,"patient","sms");
@@ -28,6 +30,7 @@ export async function sendPatientLoginSms(mobile: string, otp: string, expirySec
   assert(validEventContent("patient_login_otp",content),503,"Patient login SMS template is not configured");
   const message = substitute(content.body,{otp,expiry_minutes:String(Math.ceil(expirySeconds/60))});
   smsPayload(cfg,mobile,message,content); // Enforce sender/DLT before dispatch, independently of opt-out gates.
+  await requireSecurityDelivery("patient_login_otp","patient","sms",conn);
   const outcome = await send(env,mobile,message,content);
   if(outcome!=="provider_accepted") throw new HttpError(503,
     "The login SMS could not be confirmed. Wait before requesting a new code, or use email login.","PATIENT_SMS_DELIVERY_FAILED");
@@ -35,6 +38,7 @@ export async function sendPatientLoginSms(mobile: string, otp: string, expirySec
 }
 
 export async function startPatientSmsLogin(mobile: string, conn: any = db, deliver = sendPatientLoginSms) {
+  await requireSecurityDelivery("patient_login_otp","patient","sms",conn);
   const cfg=notificationSmsConfig((await resolvedIntegration("notificationSms",conn)).env);
   const template=await resolvedTemplate("patient_login_otp",undefined,conn,"patient","sms");
   assert(validEventContent("patient_login_otp",template.content),503,"Patient login SMS template is not configured");

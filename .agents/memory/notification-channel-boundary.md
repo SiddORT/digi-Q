@@ -4,12 +4,15 @@ description: Preserve security-message boundaries, the approved patient SMS logi
 ---
 
 The administrator requested configurable notification SMS HTTP URL/key, not a fixed
-provider. Preserve the existing Twilio mobile-verification credentials and flow,
-and never make account/security messages disable-able appointment events.
+provider. Preserve the existing Twilio mobile-verification credentials and flow.
+Platform security activation is now explicitly switchable by real Superadmin at
+System Default; it is not a clinic operational notification control.
 
 **Why:** Security verification, invitations and password recovery were originally out
 of scope. The user subsequently approved patient SMS login alongside email OTP,
 not a general replacement of authentication or security-message transports.
+The user later explicitly replaced the immutable activation policy while
+retaining authentication proof and platform ownership.
 
 **How to apply:** Extend the shared encrypted vault and durable notification machinery
 for appointment channels rather than adding an alternative email sender or replacing
@@ -17,12 +20,13 @@ Twilio verification, staff invitations, recovery or patient email login.
 Constrain configuration to declarative POST mappings, never executable provider scripts.
 
 Patient SMS login is the approved exception: it uses the configured SMS API but is
-a required security message, not an optional notification or outbox job. It serves
+a platform security message, not an optional notification or outbox job. It serves
 existing uniquely matched patient accounts with real email identities; shared or
 unregistered phone numbers must not create or merge accounts.
 
-**Why:** The user explicitly chose “Add SMS login alongside email OTP.” Optional
-notification switches must not lock patients out, and real codes must not become
+**Why:** The user explicitly chose “Add SMS login alongside email OTP.” Operational
+notification switches must not lock patients out; the security event's own explicit
+Superadmin activation does control delivery. Real codes must not become
 notification history or provider-debug content.
 
 **How to apply:** Keep the editable login template platform/SMS/patient-only, require
@@ -30,11 +34,48 @@ its OTP in the transmitted body and approved sender/DLT metadata, and preserve
 single-use, expiry and bounded attempts independently of notification opt-outs.
 Only examples may appear in template previews; never persist real login messages.
 
+Existing patient SMS login wording may contain only the OTP placeholder; the
+challenge still enforces expiry server-side.
+
+**Why:** Requiring a new expiry placeholder at dispatch would silently break
+previously valid published templates without any administrator activation change.
+
+**How to apply:** Preserve the established per-event content requirements when
+changing activation; newer security event templates retain their own expiry rules.
+
+The user requires minimal in-place edits to Notifications: reuse existing
+sections, row markup, switches, group handlers, editor, persistence and senders.
+Do not rebuild or restyle the page to change activation capability.
+
+**Why:** The user explicitly imposed this implementation constraint.
+
+**How to apply:** Keep platform classification separate from switchability,
+show an action-specific disabling warning, and fail closed with a truthful
+delivery-unavailable outcome rather than bypassing verification.
+
 Registration and initial staff setup are approved additional security SMS uses,
 not optional appointment notifications. Optional registration phone proof must
 never substitute for email identity proof or change another account's mobile.
 New security SMS needs explicitly approved published wording even for generic
 providers that do not technically demand DLT metadata.
+
+Switching default security SMS activation off and back on must not itself count
+as publishing approved wording.
+
+**Why:** Activation is delivery policy, not content approval; treating any saved
+activation record as approved wording would bypass the explicit publication boundary.
+
+**How to apply:** Preserve publication provenance independently of activation
+changes and drafts, including when no wording has previously been published.
+
+Resetting platform security wording must preserve its explicit activation, even
+when the reset removes the only published wording record.
+
+**Why:** Reset is a wording action, not permission to restore the default-on
+security delivery policy or to approve default SMS wording.
+
+**How to apply:** Preserve activation independently across reset and subsequent
+draft edits; only an explicit authorized activation/publication action may change it.
 
 **Why:** The user authorized focused registration/setup coverage while explicitly
 excluding provider replacement, new DLT wording projects and live sends. Provider

@@ -4,7 +4,7 @@ import { randomInt } from "node:crypto";
 import { createChallenge, consumeChallenge, consumeRateLimit } from "./native-auth";
 import { patientLoginPhone } from "./patient-login-sms";
 import { assert } from "./http";
-import { securitySms, type ChannelOutcome } from "./security-notifications";
+import { securitySms, requireSecurityDelivery, type ChannelOutcome } from "./security-notifications";
 
 export const optionalRegistrationMobile = (value: unknown) =>
   value === undefined || value === "" ? undefined : patientLoginPhone(value);
@@ -17,6 +17,9 @@ export async function requestRegistrationMobile(parentId: string) {
     parent.expiresAt > new Date() && parent.attempts < 5 && typeof parent.data.mobile === "string",400,"Invalid or expired registration");
   if (parent.data.mobileVerified === true) return {status:"not_requested"} as ChannelOutcome;
   const mobile = patientLoginPhone(parent.data.mobile);
+  const recipient = parent.purpose==="register" ? "clinicAdmin" : "patient";
+  try { await requireSecurityDelivery("registration_mobile_otp",recipient,"sms"); }
+  catch(error: any) { return {status:error?.code === "SECURITY_DELIVERY_DISABLED" ? "disabled" : "unavailable"} as ChannelOutcome; }
   const otp = String(randomInt(100000,1000000));
   const id = await createChallenge({email:parent.email,purpose:"registration-mobile",secret:otp,
     ttlMs:Math.max(1,parent.expiresAt.getTime()-Date.now()),data:{parentId,mobile}});
@@ -25,8 +28,11 @@ export async function requestRegistrationMobile(parentId: string) {
     assert(current && !current.consumedAt && current.expiresAt > new Date(),400,"Registration has expired");
     await tx.update(authChallenges).set({data:{...current.data,mobileChallengeId:id}}).where(eq(authChallenges.id,parentId));
   });
-  return securitySms("registration_mobile_otp",parent.purpose==="register"?"clinicAdmin":"patient",mobile,
+  const outcome = await securitySms("registration_mobile_otp",recipient,mobile,
     {otp,expiry_minutes:String(Math.max(1,Math.ceil((parent.expiresAt.getTime()-Date.now())/60_000)))});
+  if (outcome.status !== "provider_accepted")
+    await db.update(authChallenges).set({consumedAt:new Date(),data:{}}).where(eq(authChallenges.id,id));
+  return outcome;
 }
 export async function verifyRegistrationMobile(parentId: string, submitted: string) {
   const [parent] = await db.select().from(authChallenges).where(eq(authChallenges.id,parentId));

@@ -32,7 +32,7 @@ export function validEventContent(event: TemplateEvent, content: { subject: stri
     [...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(match => match[1]));
   return used.every(variable => allowed.includes(variable)) &&
     (!isSecurityEvent(event) || validSecurityContent(event, content)) &&
-    (event !== "patient_login_otp" || content.enabled !== false && /\{\{\s*otp\s*\}\}/.test(content.body));
+    (event !== "patient_login_otp" || /\{\{\s*otp\s*\}\}/.test(content.body));
 }
 export const templateContent = z.object({
   enabled: z.boolean().default(true),

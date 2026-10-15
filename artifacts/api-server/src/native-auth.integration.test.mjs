@@ -32,7 +32,7 @@ before(async () => {
   await h.control.query(await readFile(resolve(root, "../../../lib/db/drizzle/0012_native_auth_additive.sql"), "utf8"));
   globalThis.nativeAuthDb = h.db;
   await build({
-    stdin: { contents: 'export * from "./lib/native-auth"; export * from "./lib/jwt-session"; export * from "./lib/auth-email"; export * from "./routes/auth"; export * from "./lib/notification-template-store"; export * from "./lib/notification-templates"; export * from "./lib/patient-login-sms";',
+    stdin: { contents: 'export * from "./lib/native-auth"; export * from "./lib/jwt-session"; export * from "./lib/auth-email"; export * from "./routes/auth"; export * from "./lib/notification-template-store"; export * from "./lib/notification-templates"; export * from "./lib/patient-login-sms"; export * from "./lib/security-notifications";',
       resolveDir: root },
     outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
     plugins: [{ name: "isolated-auth", setup(b) {
@@ -420,16 +420,45 @@ test("resending SMS invalidates the previous challenge and uncertain or rejected
     assert(challenge.consumed_at);assert.deepEqual(challenge.data,{});
   }
 });
-test("patient OTP is platform-scoped, SMS-only, requires its token and cannot be disabled or used in ordinary events",async()=>{
+test("patient OTP is platform-scoped, SMS-only, switchable and requires its code placeholder",async()=>{
   await setupSmsPatient();
   const sa={id:"fixture-admin",role:"superAdmin"};
   const current=await api.resolvedTemplate("patient_login_otp",undefined,h.db,"patient","sms");
   for(const patch of [{clinicId:"foreign"},{channel:"email"},{recipient:"doctor"},
-    {content:{...current.content,enabled:false}},{content:{...current.content,body:"No OTP placeholder"}},
+    {content:{...current.content,body:"No OTP placeholder"}},
     {content:{...current.content,subject:"Code {{otp}}",body:"No body code"}}])
     await assert.rejects(api.saveTemplate(sa,{channel:"sms",event:"patient_login_otp",recipient:"patient",revision:current.local.revision,mode:"publish",content:current.content,...patch}));
-  await assert.rejects(api.changeActivation(sa,{channel:"sms",event:"patient_login_otp",recipient:"patient",revision:current.local.revision,enabled:false}));
+  await api.changeActivation(sa,{channel:"sms",event:"patient_login_otp",recipient:"patient",revision:current.local.revision,enabled:false});
+  await assert.rejects(api.startPatientSmsLogin("+919876543210",h.db),{code:"SECURITY_DELIVERY_DISABLED"});
+  const off=await api.resolvedTemplate("patient_login_otp",undefined,h.db,"patient","sms");
+  await api.changeActivation(sa,{channel:"sms",event:"patient_login_otp",recipient:"patient",revision:off.local.revision,enabled:true});
   await assert.rejects(api.saveTemplate(sa,{channel:"email",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...api.defaultTemplate("booking"),body:"Code {{otp}}"}}));
+});
+test("previously published OTP-only patient SMS wording stays usable and obeys activation",async()=>{
+  await setupSmsPatient();
+  const id="sms-template:platform:patient_login_otp";
+  // Model an existing saved template, not a fresh publish through new validation.
+  await h.control.query("update settings set data=jsonb_set(data,'{published,body}',to_jsonb($2::text)) where id=$1",
+    [id,"Your login code is {{otp}}. Do not share it."]);
+  const persisted=await api.resolvedTemplate("patient_login_otp",undefined,h.db,"patient","sms");
+  assert.equal(persisted.content.enabled,true);
+  assert(!persisted.content.body.includes("expiry_minutes"));
+  const first=await api.startPatientSmsLogin("+919876543210",h.db);
+  const otp=/code is (\d{6})/.exec(smsCalls.at(-1))?.[1];
+  assert(otp);
+  assert(first);
+  const challenge=(await h.control.query("select expires_at,consumed_at from auth_challenges where id=$1",[first])).rows[0];
+  assert(challenge.expires_at>new Date());assert.equal(challenge.consumed_at,null);
+  const target={event:"patient_login_otp",recipient:"patient",channel:"sms"};
+  const actor={id:"fixture-admin",role:"superAdmin"};
+  await api.changeActivation(actor,{...target,revision:persisted.local.revision,enabled:false});
+  await assert.rejects(api.startPatientSmsLogin("+919876543210",h.db),{code:"SECURITY_DELIVERY_DISABLED"});
+  assert.equal(smsCalls.length,1);
+  const off=await api.resolvedTemplate("patient_login_otp",undefined,h.db,"patient","sms");
+  await api.changeActivation(actor,{...target,revision:off.local.revision,enabled:true});
+  assert.equal(smsCalls.length,1);
+  await api.startPatientSmsLogin("+919876543210",h.db);
+  assert.equal(smsCalls.length,2);
 });
 
 test("recovery exceeds three requests without an account cap and keeps token safeguards", async () => {
@@ -641,18 +670,22 @@ test("mobile expiry, five wrong attempts, cross-purpose codes and superseded mob
   assert.equal((await h.control.query("select data from users where email='attempts@example.invalid'")).rows[0].data.mobileVerified,false);
 });
 
-test("required security templates reject disabling, missing essentials, clinic overrides, arbitrary URLs and SMS bearer links",async()=>{
+test("platform security templates allow off states but reject missing essentials, clinic overrides, URLs and SMS bearer links",async()=>{
   const admin = {id:"fictional-security-admin",role:"superAdmin"};
   for(const event of ["clinic_registration_otp","patient_email_otp","doctor_setup","staff_setup","password_setup_complete"]) {
     const content=api.defaultTemplate(event);
     const recipient=api.defaultRecipient(event);
-    for(const invalid of [{...content,enabled:false},{...content,body:content.body+"\nGo to https://attacker.invalid"}]) {
+    for(const invalid of [{...content,body:content.body+"\nGo to https://attacker.invalid"}]) {
       await assert.rejects(api.saveTemplate(admin,{event,recipient,revision:0,mode:"draft",content:invalid}),{status:400});
     }
     if(event!=="password_setup_complete") await assert.rejects(api.saveTemplate(admin,{event,recipient,revision:0,mode:"publish",
       content:{...content,body:"No authentication credential"}}),{status:400});
     await assert.rejects(api.saveTemplate(admin,{event,recipient,clinicId:"fictional",revision:0,mode:"publish",content}),{status:400});
-    await assert.rejects(api.changeActivation(admin,{event,recipient,channel:"email",revision:0,enabled:false}),{status:400});
+    await api.saveTemplate(admin,{event,recipient,revision:0,mode:"draft",content:{...content,enabled:false}});
+    await api.changeActivation(admin,{event,recipient,channel:"email",revision:1,enabled:false});
+    const disabled=await api.resolvedTemplate(event,undefined,h.db,recipient,"email");
+    assert.equal(disabled.content.enabled,false);
+    assert.equal(disabled.local.draft.enabled,false);
   }
   await assert.rejects(api.saveTemplate(admin,{channel:"sms",event:"doctor_setup",recipient:"doctor",revision:0,mode:"draft",
     content:{...(await api.resolvedTemplate("doctor_setup",undefined,h.db,"doctor","sms")).content,body:"Use {{setup_link}} in {{expiry_minutes}} minutes."}}),{status:400});
@@ -687,4 +720,59 @@ test("doctor and staff setup notices bypass optional gates, contain no SMS beare
     assert.equal(globalThis.nativeAuthMail.length,before+1);
     delete globalThis.nativeAuthMailFailure;delete globalThis.nativeAuthSmsOutcome;
   }
+});
+test("disabled verification and setup fail closed before challenges while independent security delivery stays usable",async()=>{
+  const admin={id:"fixture-admin",role:"superAdmin"};
+  const toggle=async(event,recipient,channel,enabled)=>{
+    const current=await api.resolvedTemplate(event,undefined,h.db,recipient,channel);
+    await api.changeActivation(admin,{event,recipient,channel,revision:current.local.revision,enabled});
+  };
+  await toggle("patient_email_otp","patient","email",false);
+  for(const email of ["new@example.invalid","inactive@example.invalid"]) {
+    if(email.startsWith("inactive"))await h.control.query("insert into users(id,email,full_name,role,status) values('inactive',$1,'Inactive','patient','inactive')",[email]);
+    await assert.rejects(route("/auth/patient/start",{email}),{code:"SECURITY_DELIVERY_DISABLED"});
+  }
+  await assert.rejects(route("/auth/patient/resend",{challengeId:"fictional"}),{code:"SECURITY_DELIVERY_DISABLED"});
+  assert.equal((await h.control.query("select count(*)::int n from auth_challenges")).rows[0].n,0);
+  assert.equal(globalThis.nativeAuthMail.length,0);
+  await setupSmsPatient();
+  // Disabling email must not accidentally disable the independent SMS login.
+  const sms=await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
+  assert(sms.res.body.challengeId);assert.equal(smsCalls.length,1);
+  await toggle("patient_login_otp","patient","sms",false);
+  const count=(await h.control.query("select count(*)::int n from auth_challenges")).rows[0].n;
+  await assert.rejects(route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"}),{code:"SECURITY_DELIVERY_DISABLED"});
+  assert.equal((await h.control.query("select count(*)::int n from auth_challenges")).rows[0].n,count);
+  assert.equal(smsCalls.length,1);
+  await toggle("patient_login_otp","patient","sms",true);
+  assert.equal(smsCalls.length,1,"enabling does not replay");
+  await toggle("clinic_registration_otp","clinicAdmin","email",false);
+  await assert.rejects(route("/auth/register/start",newAdmin("disabled")),{code:"SECURITY_DELIVERY_DISABLED"});
+  await assert.rejects(route("/auth/registration/resend",{challengeId:"fictional"}),{code:"SECURITY_DELIVERY_DISABLED"});
+  await toggle("doctor_setup","doctor","email",false);
+  await h.control.query("insert into users(id,email,full_name,role) values('disabled-doctor','disabled-doctor@example.invalid','Fixture','doctor')");
+  await assert.rejects(api.inviteStaff(null,{id:"disabled-doctor",email:"disabled-doctor@example.invalid"}),{code:"SECURITY_DELIVERY_DISABLED"});
+  assert.equal((await h.control.query("select count(*)::int n from auth_challenges")).rows[0].n,count);
+  assert.equal(globalThis.nativeAuthMail.length,0);
+  await toggle("registration_mobile_otp","patient","sms",false);
+  await toggle("patient_email_otp","patient","email",true);
+  const started=await route("/auth/patient/start",{email:"mobile-disabled@example.invalid",mobile:"+919876543219"});
+  assert(started.res.body.challengeId);
+  const parent=(await h.control.query("select data from auth_challenges where id=$1",[started.res.body.challengeId])).rows[0];
+  assert.equal(parent.data.mobileVerified,false);
+  assert.equal(parent.data.mobileChallengeId,undefined);
+  await assert.rejects(route("/auth/registration/mobile/verify",{challengeId:started.res.body.challengeId,code:"123456"}));
+  assert.equal((await h.control.query("select count(*)::int n from auth_sessions")).rows[0].n,0);
+});
+test("security email rechecks activation at SMTP dispatch after asynchronous preparation",async()=>{
+  let calls=0;
+  const send=async(to,subject,text,_transport,rendered,files,env,beforeDispatch)=>{
+    const current=await api.resolvedTemplate("patient_email_otp",undefined,h.db,"patient","email");
+    await api.changeActivation({id:"fixture-admin",role:"superAdmin"},{event:"patient_email_otp",recipient:"patient",channel:"email",revision:current.local.revision,enabled:false});
+    return api.sendAuthEmail(to,subject,text,{sendMail:async()=>{calls++;}},rendered,files,env,beforeDispatch);
+  };
+  const result=await api.securityEmail("patient_email_otp","patient","race@example.invalid",{otp:"123456",expiry_minutes:"10"},send,h.db);
+  assert.equal(result.status,"disabled");
+  assert.equal(calls,0);
+  assert.equal(globalThis.nativeAuthMail.length,0);
 });

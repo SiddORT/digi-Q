@@ -60,7 +60,7 @@ async function setup(page: Page, role = "superAdmin", clinicCount = 1, linked = 
       }
       if (body) {
         if (body.revision !== s.revision || body.changes.some((change: any) =>
-          !s.items.some((row: any) => row.channel === change.channel && row.event === change.event && row.recipient === change.recipient && row.revision === change.revision && !row.required))) {
+          !s.items.some((row: any) => row.channel === change.channel && row.event === change.event && row.recipient === change.recipient && row.revision === change.revision && row.canActivate !== false))) {
           return route.fulfill({ status: 409, json: { error: "Changed elsewhere" } });
         }
         // Validate the whole batch before applying any changes, like the server transaction.
@@ -133,7 +133,7 @@ for (const role of ["superAdmin", "clinicAdmin"]) test(`compact layout and visib
   console.log(role, header, await page.getByTestId("notification-scope").boundingBox());
 });
 
-test("gate and row confirmations cancel without writes; security is locked; saves persist independently after reload", async ({ page }) => {
+test("gate and row confirmations cancel without writes; security is switchable; saves persist independently after reload", async ({ page }) => {
   const { writes } = await setup(page);
   await booking(page);
   const row = page.getByTestId("switch-email-booking-patient"), gate = page.getByTestId("checkbox-clinic-gate");
@@ -147,14 +147,48 @@ test("gate and row confirmations cancel without writes; security is locked; save
   await expect(row).toBeChecked(); await expect(gate).not.toBeChecked();
   await expect(page.getByTestId("text-gate-off")).toContainText("Clinics with explicit overrides may differ");
   await page.getByTestId("button-event-patient_login_otp").click();
-  await expect(page.getByTestId("switch-sms-patient_login_otp-patient")).toHaveCount(0);
-  await expect(page.getByTestId("status-event-patient_login_otp")).toHaveText("Required");
+  await expect(page.getByTestId("switch-sms-patient_login_otp-patient")).toBeEnabled();
+  await expect(page.getByTestId("status-event-patient_login_otp")).toHaveText("All Enabled");
   await row.click(); await confirm(page); await saved(page);
   await page.reload(); await booking(page);
   await expect(row).not.toBeChecked(); await expect(gate).not.toBeChecked();
   expect(writes).toHaveLength(2);
   expect(writes[0].body).toMatchObject({ notificationsEnabled: false, changes: [], revision: 1, confirmed: true });
   expect(writes[1].body).toMatchObject({ revision: 2, changes: [{ channel: "email", event: "booking", recipient: "patient", revision: 1, enabled: false }], confirmed: true });
+});
+for (const width of [1366,390]) test(`security switches persist off/on with warnings and editor activation at ${width}px`,async({page},testInfo)=>{
+  const {writes,scope,template}=await setup(page);
+  await page.setViewportSize({width,height:844});
+  const s=scope("");
+  s.items.push({channel:"email",event:"doctor_setup",recipient:"doctor",required:true,canActivate:true,
+    enabled:true,revision:1,source:"platform",ready:true,blockedReasons:[],timing:"Platform security delivery"});
+  template(s,"sms","patient","patient_login_otp").draft={...template(s,"sms","patient","patient_login_otp").content,body:"Saved unpublished security wording"};
+  await page.reload();
+  await page.getByTestId("button-event-patient_login_otp").click();
+  const row=page.getByTestId("switch-sms-patient_login_otp-patient");
+  await expect(row).toBeChecked();
+  await row.focus();await row.press("Space");
+  await expect(page.getByRole("dialog")).toContainText("New SMS login codes will be unavailable");
+  await expect(page.getByRole("dialog")).toContainText("Messages already dispatched cannot be recalled");
+  await confirm(page);await saved(page);
+  await expect(row).not.toBeChecked();
+  await expect(page.getByTestId("card-template-sms-patient_login_otp-patient")).toContainText("Off");
+  expect(s.notificationsEnabled).toBe(true);
+  expect(s.items.find((r:any)=>r.event==="doctor_setup").enabled).toBe(true);
+  await page.reload();await page.getByTestId("button-event-patient_login_otp").click();
+  await expect(row).not.toBeChecked();
+  await page.getByTestId("button-edit-sms-patient_login_otp-patient").click();
+  await expect(page.getByTestId("text-activation-note")).toContainText("Currently off");
+  await expect(page.getByTestId("input-body")).toHaveValue("Saved unpublished security wording");
+  await page.screenshot({path:testInfo.outputPath(`security-editor-${width}.png`)});
+  await page.getByTestId("button-cancel").click();
+  await page.getByTestId("switch-group-patient_login_otp").click();
+  await confirm(page);await saved(page);
+  await expect(row).toBeChecked();
+  expect(writes).toHaveLength(2);
+  expect(writes.every(w=>w.body.notificationsEnabled===undefined)).toBe(true);
+  await page.screenshot({path:testInfo.outputPath(`security-switches-${width}.png`),fullPage:true});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
 test("clinic scope shares inherited gate, rows and editor; pending actions lock scope and prevent double writes", async ({ page }) => {
@@ -309,8 +343,8 @@ test("group uses full unfiltered catalog, one atomic write, preserves inheritanc
   const s = scope("");
   template(s, "email", "doctor", "booking").draft = { body: "Saved unpublished wording" };
   await expect(page.getByTestId("status-event-booking")).toHaveText("Mixed");
-  await expect(page.getByTestId("switch-group-patient_login_otp")).toHaveCount(0);
-  await expect(page.getByTestId("status-event-patient_login_otp")).toHaveText("Required");
+  await expect(page.getByTestId("switch-group-patient_login_otp")).toBeEnabled();
+  await expect(page.getByTestId("status-event-patient_login_otp")).toHaveText("All Enabled");
   await page.getByTestId("checkbox-clinic-gate").click(); await confirm(page); await saved(page);
   await page.getByTestId("select-filter-channel").selectOption("email");
   await page.getByTestId("select-filter-recipient").selectOption("doctor");
@@ -318,8 +352,8 @@ test("group uses full unfiltered catalog, one atomic write, preserves inheritanc
   await page.getByTestId("input-search-events").fill("booking");
   await expect(page.locator(".cm-row")).toHaveCount(1);
   await page.getByTestId("switch-group-booking").click();
-  await expect(page.getByRole("dialog").getByRole("heading", { name: "Enable Booking — All 3 Optional Options?" })).toBeVisible();
-  await expect(page.getByRole("dialog")).toContainText("All 3 optional channel/recipient options");
+  await expect(page.getByRole("dialog").getByRole("heading", { name: "Enable Booking — All 3 Options?" })).toBeVisible();
+  await expect(page.getByRole("dialog")).toContainText("All 3 authorized channel/recipient options");
   await expect(page.getByRole("dialog")).toContainText("even those hidden by filters");
   await expect(page.getByRole("dialog")).toContainText("overall gate stays off");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
@@ -552,8 +586,8 @@ test("common gate warning appears once; distinct blockers, required treatment an
   await expect(page.getByRole("tooltip")).toContainText("Complete ending remains available.");
   await preview.press("Escape");
   await page.getByTestId("button-event-patient_login_otp").click();
-  await expect(page.getByTestId("status-event-patient_login_otp")).toHaveText("Required");
-  await expect(page.getByTestId("group-event-patient_login_otp").getByRole("switch")).toHaveCount(0);
+  await expect(page.getByTestId("status-event-patient_login_otp")).toHaveText("All Enabled");
+  await expect(page.getByTestId("group-event-patient_login_otp").getByRole("switch")).toHaveCount(2);
   await expect(page.getByTestId("button-edit-sms-patient_login_otp-patient")).toBeEnabled();
 });
 

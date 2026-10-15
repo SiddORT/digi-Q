@@ -203,11 +203,13 @@ export async function deliverInvitation(userId: string, redirectUrl?: string) {
   } catch (error) {
     // Only mail/configuration failures are an invitation outcome. Database and
     // programming failures still propagate rather than claiming a successful save.
-    if (!(error instanceof HttpError) || !["EMAIL_DELIVERY_FAILED", "EMAIL_UNCONFIGURED", "PUBLIC_ORIGIN_UNCONFIGURED"].includes(error.code)) throw error;
+    if (!(error instanceof HttpError) || !["EMAIL_DELIVERY_FAILED", "EMAIL_UNCONFIGURED", "PUBLIC_ORIGIN_UNCONFIGURED", "SECURITY_DELIVERY_DISABLED"].includes(error.code)) throw error;
     await db.update(authChallenges).set({ consumedAt: new Date() }).where(and(
       eq(authChallenges.userId, userId), eq(authChallenges.purpose, "invitation"),
     ));
     await change(users, userId, { invitationStatus: "failed" });
+    if (error.code === "SECURITY_DELIVERY_DISABLED")
+      await db.update(users).set({data:sql`${users.data} || ${JSON.stringify({setupNotificationOutcomes:{email:{status:"disabled"}}})}::jsonb`}).where(eq(users.id,userId));
   }
 }
 export async function createClinicAdminOnboarding(actor: any, body: any, redirectUrl?: string) {
@@ -220,7 +222,7 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
     const completed = await registrationCompletion(actor.id, body.requestId, "admin", db, body);
     if (completed) return completed;
   }
-  await ensureStaffInvitationConfigured();
+  await ensureStaffInvitationConfigured("clinicAdmin");
   const result = await db.transaction(async tx => {
     if (body.requestId) {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"registration:" + actor.id + ":" + body.requestId}))`);
@@ -270,7 +272,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
     const existing = (await all(users)).find(u => u.email === body.email);
     assert(!existing, 409, "Email already belongs to an existing profile; roles cannot be silently changed");
     if (kind === "doctors" || ["clinicAdmin", "doctor", "receptionist"].includes(body.role))
-      await ensureStaffInvitationConfigured();
+      await ensureStaffInvitationConfigured(kind === "doctors" ? "doctor" : body.role);
   }
   const saved = await db.transaction(async tx => {
     const proposed = { ...old, ...body };

@@ -10,6 +10,7 @@ import { StatusSwitch } from "./StatusSwitch";
 import { HelpTip } from "./HelpTip";
 import { ResourceLookup } from "./ResourceLookup";
 import { titleCase } from "../lib/title-case";
+import { securityDisableWarning } from "./useNotificationManagement";
 
 type Row = api.EventControlRow;
 const status = (e: any) => e?.status ?? e?.response?.status;
@@ -74,7 +75,7 @@ export function EventControls({ identity }: { identity: api.Identity }) {
                 {r.enabled && !r.ready && r.blockedReasons.length > 0 && <ul className="ec-blocked" data-testid={`list-blocked-${r.channel}-${event}-${r.recipient}`}>{r.blockedReasons.map(b => <li key={b}>{b}</li>)}
                   <li><Link href={area(r.channel)} className="text-link" data-testid={`link-fix-${r.channel}-${event}-${r.recipient}`}>Open {r.channel === "sms" ? "SMS" : "Email"} settings</Link></li></ul>}
                 {!r.enabled && r.blockedReasons.length > 0 && <small className="muted"> Needs: {r.blockedReasons.join("; ")} <Link href={area(r.channel)} className="text-link">Open {r.channel === "sms" ? "SMS" : "Email"} settings</Link></small>}</td>
-              <td><StatusSwitch active={r.enabled} disabled={update.isPending || event === "patient_login_otp"} label={`${r.channel} ${titleCase(event)} ${RECIPIENT_LABEL[r.recipient]}`} onChange={next => { setNotice(""); setConfirmed(false); setPending({ row: r, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{event === "patient_login_otp" ? "Required" : r.enabled ? "On" : "Off"}</StatusSwitch></td>
+              <td><StatusSwitch active={r.enabled} disabled={update.isPending || r.canActivate === false} label={`${r.channel} ${titleCase(event)} ${RECIPIENT_LABEL[r.recipient]}`} onChange={next => { setNotice(""); setConfirmed(false); setPending({ row: r, next }); }} testId={`switch-${r.channel}-${event}-${r.recipient}`}>{r.enabled ? "On" : "Off"}</StatusSwitch></td>
             </tr>)}
           </tbody></table>
         </div>)}
@@ -82,6 +83,7 @@ export function EventControls({ identity }: { identity: api.Identity }) {
     <AppDialog open={!!pending} onClose={() => !update.isPending && setPending(null)} title={pending ? `${pending.next ? "Enable" : "Disable"} ${pending.row.channel.toUpperCase()}?` : ""} busy={update.isPending}>
       {pending && <div className="et-dialog">
         <p>{pending.next ? "Eligible future events will send to " : "Future events will stop sending to "}{RECIPIENT_LABEL[pending.row.recipient].toLowerCase()}s for {titleCase(pending.row.event)}. Past bookings are never replayed. This is the same published setting shown on the template.</p>
+        {!pending.next && pending.row.required && <p role="alert">{securityDisableWarning(pending.row.event,pending.row.channel)} Already dispatched messages cannot be recalled.</p>}
         <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} data-testid="checkbox-confirm-control" /> I confirm this change</label>
         <FormActions wide={false} onCancel={() => setPending(null)} cancelLabel="Go Back" cancelTestId="button-control-cancel" busy={update.isPending} disabled={!confirmed} onSubmit={apply} submitLabel={pending.next ? "Enable" : "Disable"} submitTestId="button-control-confirm" /></div>}
     </AppDialog>

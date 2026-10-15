@@ -65,6 +65,9 @@ export function friendlyError(error: unknown, context: ErrorContext = "generic",
   if (error instanceof Error && error.name === "TimeoutError")
     return "Loading took too long. Check your connection and retry.";
   const status = errorStatus(error);
+  if (error && typeof error === "object" &&
+    field((error as {data?: unknown}).data, "code") === "SECURITY_DELIVERY_DISABLED")
+    return "Delivery for this action is disabled by the System Admin. Verification is still required; no message was sent. Contact the System Admin.";
   if (context === "auth" && error && typeof error === "object") {
     const code = field((error as {data?: unknown}).data, "code");
     if (code === "EMAIL_UNCONFIGURED" || code === "PUBLIC_ORIGIN_UNCONFIGURED")

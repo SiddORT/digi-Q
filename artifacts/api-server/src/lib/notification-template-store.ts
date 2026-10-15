@@ -15,7 +15,7 @@ import { appointmentActivationId, appointmentNotificationTarget } from "./appoin
 export type Channel = "email" | "sms";
 const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event), channel:Channel="email") => `${channel==="sms"?"sms":"notification"}-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
 export const notificationTemplateKey = key;
-type RecordData = { revision: number; publishedRevision?:number; published?: TemplateContent | SmsTemplateContent; draft?: TemplateContent | SmsTemplateContent; activatedAt?: number };
+type RecordData = { revision: number; publishedRevision?:number; published?: TemplateContent | SmsTemplateContent; draft?: TemplateContent | SmsTemplateContent; activatedAt?: number; activationOnly?: boolean; activationEnabled?: boolean };
 async function stored(event: TemplateEvent, clinicId?: string, conn: any = db, recipient = defaultRecipient(event),channel:Channel="email"): Promise<RecordData> {
   const [row] = await conn.select().from(settings).where(eq(settings.id, key(event, clinicId, recipient,channel)));
   return row?.data || { revision: 0 };
@@ -36,7 +36,10 @@ export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, 
    const [activation] = appointmentNotificationTarget(event, recipient)
      ? await conn.select().from(settings).where(eq(settings.id, appointmentActivationId)) : [];
   // Corrupt configuration fails explicitly, rather than silently sending a different template.
-  return { content: channel === "sms" ? smsTemplateContent.parse(content) : templateContent.parse(content), local,
+   const effectiveContent = requiredEvent(event) && typeof platform.activationEnabled === "boolean"
+     ? {...content,enabled:platform.activationEnabled} : content;
+   return { content: channel === "sms" ? smsTemplateContent.parse(effectiveContent) : templateContent.parse(effectiveContent), local,
+     wordingPublished: !!(local.published || platform.published) && !(local.published ? local : platform).activationOnly,
      activatedAt: Math.max((local.published ? local : platform).activatedAt ?? 0,local.activatedAt ?? 0,activation?.data?.cutoff ?? 0),
     effectiveRevision: local.published ? local.publishedRevision ?? (local.draft ? undefined : local.revision) :
       platform.published ? platform.publishedRevision ?? (platform.draft ? undefined : platform.revision) : 0,
@@ -60,7 +63,7 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
        required: requiredEvent(event),
-       delivery: requiredEvent(event) ? "Required platform security message. Optional notification switches do not apply. SMS requires approved published wording and sender/DLT configuration. Provider acceptance is not delivery. Real codes and links never enter notification history." : event === "onboarding" ? "Clinic onboarding retains its own activation and recipient policy. Communication Settings and eligible recipient contact apply. Development never sends automatically." : "Appointment Email and SMS default on for patient, owning Clinic Admin and assigned Doctor. Published overrides and personal opt-outs still apply. Active membership and valid unique contact are rechecked. SMS uses existing provider-specific sender/DLT metadata. Reminders are one hour before session start in its timezone, not a consultation-time promise. Development never sends automatically; provider acceptance is not delivery." });
+       delivery: requiredEvent(event) ? "Platform security message controlled at System Default. Own activation applies; Optional Delivery and operational provider switches do not. SMS requires approved published wording and sender/DLT configuration. Provider acceptance is not delivery. Real codes and links never enter notification history." : event === "onboarding" ? "Clinic onboarding retains its own activation and recipient policy. Communication Settings and eligible recipient contact apply. Development never sends automatically." : "Appointment Email and SMS default on for patient, owning Clinic Admin and assigned Doctor. Published overrides and personal opt-outs still apply. Active membership and valid unique contact are rechecked. SMS uses existing provider-specific sender/DLT metadata. Reminders are one hour before session start in its timezone, not a consultation-time promise. Development never sends automatically; provider acceptance is not delivery." });
   }
   return { scopeName: clinic?.name || "Platform defaults", variables: [...templateVariables], items };
 }
@@ -75,7 +78,7 @@ export async function saveTemplate(user: any, input: unknown, conn:any=db,
   assert(validTemplateTarget(body.event,body.recipient||defaultRecipient(body.event),body.channel),400,"Invalid event, recipient or channel");
    if(body.recipient==="superAdmin" || requiredEvent(body.event)) assert(user.role==="superAdmin",403,"Superadmin access required");
    assert(!requiredEvent(body.event)||!body.clinicId,400,"Security templates are platform-scoped");
-  if(body.content) assert(validEventContent(body.event,body.content),400,"Use this event's supported variables. Patient login OTP must include {{otp}} and cannot be disabled.");
+   if(body.content) assert(validEventContent(body.event,body.content),400,"Use this event's supported variables, including required code and expiry placeholders.");
    if(body.content && isSecurityEvent(body.event) && body.channel==="email" && ["doctor_setup","staff_setup"].includes(body.event))
      assert(/\{\{\s*setup_link\s*\}\}/.test(body.content.body),400,"Setup email must include {{setup_link}}");
    if(body.content && isSecurityEvent(body.event) && body.channel==="sms")
@@ -92,9 +95,10 @@ export async function saveTemplate(user: any, input: unknown, conn:any=db,
       const inherited=body.clinicId
         ?await resolvedTemplate(body.event,undefined,tx,body.recipient||defaultRecipient(body.event),body.channel)
          :{content:{enabled:body.channel==="email"?defaultTemplate(body.event,body.recipient||defaultRecipient(body.event)).enabled:requiredEvent(body.event)||appointmentNotificationTarget(body.event,body.recipient||defaultRecipient(body.event))}};
-      next.activatedAt=inherited.content.enabled&&!before.content.enabled?Date.now():before.activatedAt;
+       if(requiredEvent(body.event)) next.activationEnabled=before.content.enabled;
+       next.activatedAt=!requiredEvent(body.event)&&inherited.content.enabled&&!before.content.enabled?Date.now():before.activatedAt;
     }
-    if (body.mode === "draft") Object.assign(next, { published: current.published, draft: body.content });
+    if (body.mode === "draft") Object.assign(next, { published: current.published, draft: body.content, activationOnly: current.activationOnly, activationEnabled: current.activationEnabled });
     if (body.mode === "publish") {
       const previous=await resolvedTemplate(body.event,body.clinicId,tx,body.recipient||defaultRecipient(body.event),body.channel);
       if(body.channel==="sms" && body.content?.enabled) {
@@ -104,6 +108,7 @@ export async function saveTemplate(user: any, input: unknown, conn:any=db,
         assert(smsMetadataReady(cfg!,sms),400,cfg!.provider==="keepInTouch"?"Sender ID and this event's DLT Template ID are required for activation":"Sender ID, DLT Entity ID and DLT Template ID are required for activation");
       }
       next.published = body.content;
+      if(requiredEvent(body.event)) next.activationEnabled=body.content!.enabled;
       next.publishedRevision = next.revision;
       next.activatedAt = body.content?.enabled && !previous.content.enabled ? Date.now() : previous.activatedAt;
        if(maintenance.preserveDraft && current.draft) next.draft=current.draft;
@@ -124,7 +129,10 @@ export async function saveTemplate(user: any, input: unknown, conn:any=db,
 export async function changeActivation(user:any, input:{channel:Channel;event:TemplateEvent;recipient:TemplateRecipient;clinicId?:string;revision:number;enabled:boolean},conn:any=db) {
   assert((templateEvents as readonly string[]).includes(input.event),400,"Unsupported notification event");
   assert(["patient","clinicAdmin","doctor","receptionist","superAdmin"].includes(input.recipient),400,"Unsupported recipient");
-   assert(!requiredEvent(input.event),400,"Required security messages cannot be disabled");
+   if(requiredEvent(input.event)) {
+     assert(user.role==="superAdmin",403,"Superadmin access required");
+     assert(!input.clinicId,400,"Security messages are managed at System Default");
+   }
   assert(validTemplateTarget(input.event,input.recipient,input.channel),400,"Invalid event, recipient or channel");
   assert(user.role==="superAdmin" || user.role==="clinicAdmin" && !!input.clinicId && input.recipient!=="superAdmin",403,"Activation requires System Admin access or an owned clinic and clinic recipient");
   await conn.transaction(async (tx:any)=>{
@@ -134,6 +142,7 @@ export async function changeActivation(user:any, input:{channel:Channel;event:Te
     const effective=await resolvedTemplate(input.event,input.clinicId,tx,input.recipient,input.channel);
     assert(effective.local.revision===input.revision,409,"Template changed. Refresh before changing activation.");
     if(input.channel==="sms"&&input.enabled) {
+       assert(!isSecurityEvent(input.event)||effective.wordingPublished,400,"Publish approved security SMS wording before activation");
       let cfg:ReturnType<typeof notificationSmsConfig>|undefined;
       try {cfg=notificationSmsConfig((await resolvedIntegration("notificationSms",tx)).env);} catch {assert(false,400,"Configure notification SMS before activation");}
       const content=effective.content as SmsTemplateContent;
@@ -141,7 +150,7 @@ export async function changeActivation(user:any, input:{channel:Channel;event:Te
         ? "Publish a valid DLT Template ID for this event and configure a valid Sender ID before enabling SMS. Use Edit to publish the template; saved drafts do not count. Keep in Touch does not require an Entity ID."
         : "Publish this event's DLT Template ID and configure Sender and DLT Entity IDs before enabling SMS. Use Edit to publish the template; saved drafts do not count.");
     }
-    const data={...effective.local,revision:effective.local.revision+1,publishedRevision:effective.local.revision+1,published:{...effective.content,enabled:input.enabled},
+    const data={...effective.local,...(requiredEvent(input.event)?{activationEnabled:input.enabled}:{}),activationOnly:!effective.wordingPublished,revision:effective.local.revision+1,publishedRevision:effective.local.revision+1,published:{...effective.content,enabled:input.enabled},
       activatedAt:input.enabled&&!effective.content.enabled?Date.now():effective.local.activatedAt};
     await tx.insert(settings).values({id,data}).onConflictDoUpdate({target:settings.id,set:{data}});
     await audit(user,"template_activation","notification_templates",{id,clinicId:input.clinicId},tx);

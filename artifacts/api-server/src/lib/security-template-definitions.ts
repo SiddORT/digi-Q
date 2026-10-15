@@ -28,7 +28,6 @@ export function securityDefault(event: SecurityEvent, sms = false) {
     body:event === "clinic_registration_otp" ? "Your clinic administrator registration code is {{otp}}. It expires in {{expiry_minutes}} minutes. Verify your email to continue setting up your clinic. This is not a doctor invitation. If you did not start this registration, ignore this email." : body, prefix: "", footer: "", logoUrl: "" };
 }
 export function validSecurityContent(event: SecurityEvent, content: {subject:string;body:string;prefix:string;footer:string;enabled?:boolean}) {
-  if (content.enabled === false) return false;
   const body = content.body;
   const required = event.endsWith("_otp") ? ["otp", "expiry_minutes"] :
     event === "password_setup_complete" ? [] : ["expiry_minutes"];

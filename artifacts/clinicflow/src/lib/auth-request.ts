@@ -15,7 +15,7 @@ export class AuthRequestError extends Error {
     const status = response.status;
     const code = typeof body.code === "string" && /^[A-Z][A-Z0-9_]{0,79}$/.test(body.code) ? body.code : undefined;
     const safeMessage = [body.message, body.error].find(isFriendlyText);
-    const message = friendlyError({ status, data: { error: safeMessage } }, "auth",
+    const message = friendlyError({ status, data: { error: safeMessage, code } }, "auth",
       "The request could not be completed. Please try again.");
     super(message);
     this.status = status;

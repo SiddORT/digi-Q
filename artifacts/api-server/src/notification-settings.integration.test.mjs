@@ -45,6 +45,8 @@ before(async()=>{
     export * from "./lib/personal-notification-settings";
     export * from "./lib/managed-notification-settings";
     export { requiredEvent } from "./lib/security-template-definitions";
+    export * from "./lib/security-notifications";
+    export * from "./lib/patient-login-sms";
     export { listNotificationsFor } from "./routes/workspace-features";
     import { notificationSettingsRouter } from "./routes/notification-settings";
     import {notificationHistoryRouter} from "./routes/notification-history";
@@ -947,7 +949,7 @@ test("Clinic Admin gate terminally cancels both channels, never replays old work
     ]})).status,403);
     assert.equal((await request("/management/notification-settings",{clinicId:"c",revision:restarted.revision,changes:[
       {channel:"sms",event:"patient_login_otp",recipient:"patient",revision:0,enabled:false},
-    ]})).status,400);
+    ]})).status,403);
     assert.equal((await request("/management/templates?clinicId=c&channel=sms&recipient=patient")).status,403);
   }finally{await new Promise(r=>running.server.close(r));}
 });
@@ -1085,4 +1087,98 @@ test("missing encryption never falls back to plaintext and still records explici
     const raw=(await h.control.query("select data from settings where id=$1",[item.id])).rows[0].data;
     assert(!JSON.stringify(raw).includes("never-plaintext"));assert(!JSON.stringify(raw).includes("private rendered"));
   }finally{process.env.INTEGRATIONS_ENCRYPTION_KEY=old;}
+});
+test("every platform security target persists on/off/on, preserves drafts and suppresses direct dispatch without operational gates",async()=>{
+  const targets=(await api.managedNotificationSettings(sa,undefined,h.db)).items.filter(r=>r.required);
+  assert(targets.length>15);
+  const historyBefore=(await h.control.query("select count(*)::int n from settings where id like 'notification-history:%'")).rows[0].n;
+  let sends=0;
+  const emailSend=async()=>{sends++;};
+  const smsSend=async()=>{sends++;return "provider_accepted";};
+  const values={otp:"456789",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-only",recipient_name:"Fixture",role_name:"staff"};
+  const send=async row=>row.event==="patient_login_otp"
+    ? api.sendPatientLoginSms("+919876543213",values.otp,600,h.db,smsSend)
+    : row.channel==="email"
+      ? api.securityEmail(row.event,row.recipient,"fixture@example.invalid",values,emailSend,h.db)
+      : api.securitySms(row.event,row.recipient,"+919876543213",values,smsSend,h.db);
+  for(const target of targets) {
+    let current=await api.resolvedTemplate(target.event,undefined,h.db,target.recipient,target.channel);
+    // Explicit fictional publication; never approve defaults via an activation edit.
+    const content={...current.content,enabled:false,...(target.channel==="sms"?{senderId:"DIGIQ",dltEntityId:"FIXTURE_ENTITY",dltTemplateId:"FIXTURE_TEMPLATE"}:{})};
+    await api.saveTemplate(sa,{channel:target.channel,event:target.event,recipient:target.recipient,
+      revision:current.local.revision,mode:"publish",content},h.db);
+    current=await api.resolvedTemplate(target.event,undefined,h.db,target.recipient,target.channel);
+    await api.saveTemplate(sa,{channel:target.channel,event:target.event,recipient:target.recipient,
+      revision:current.local.revision,mode:"draft",content:{...content,body:content.body+"\nFictional unpublished draft"}},h.db);
+    let policy=await api.managedNotificationSettings(sa,undefined,h.db);
+    let row=policy.items.find(r=>r.channel===target.channel&&r.event===target.event&&r.recipient===target.recipient);
+    assert(row.canActivate);
+    const change=enabled=>({channel:row.channel,event:row.event,recipient:row.recipient,revision:row.revision,enabled});
+    const stale=policy;
+    policy=await api.saveManagedNotificationSettings(sa,{revision:policy.revision,confirmed:true,changes:[change(true)]},h.db);
+    assert.equal(policy.notificationsEnabled,stale.notificationsEnabled);
+    await assert.rejects(api.saveManagedNotificationSettings(sa,{revision:stale.revision,changes:[]},h.db),{status:409});
+    assert.equal((await api.resolvedTemplate(target.event,undefined,h.db,target.recipient,target.channel)).local.draft.body,content.body+"\nFictional unpublished draft");
+    const before=sends;
+    await send(row);assert.equal(sends,before+1);
+    row=policy.items.find(r=>r.channel===target.channel&&r.event===target.event&&r.recipient===target.recipient);
+    policy=await api.saveManagedNotificationSettings(sa,{revision:policy.revision,changes:[change(false)]},h.db);
+    row=policy.items.find(r=>r.channel===target.channel&&r.event===target.event&&r.recipient===target.recipient);
+    assert.equal(row.enabled,false);
+    if(row.event==="patient_login_otp")await assert.rejects(send(row),{code:"SECURITY_DELIVERY_DISABLED"});
+    else assert.equal((await send(row)).status,"disabled");
+    assert.equal(sends,before+1);
+    await assert.rejects(api.changeActivation({id:"ca",role:"clinicAdmin"},{...change(true),clinicId:"c"},h.db),{status:403});
+    await assert.rejects(api.changeActivation(sa,{...change(true),clinicId:"c"},h.db),{status:400});
+    await api.saveManagedNotificationSettings(sa,{revision:policy.revision,confirmed:true,changes:[change(true)]},h.db);
+    assert.equal(sends,before+1,"reactivation never dispatches or replays old actions");
+    await send(row);assert.equal(sends,before+2);
+  }
+  assert.equal((await h.control.query("select count(*)::int n from settings where id like 'notification-history:%'")).rows[0].n,historyBefore);
+});
+test("activation-only security SMS edits do not approve unpublished default wording",async()=>{
+  const event="registration_mobile_otp",recipient="patient",channel="sms";
+  const id=api.notificationTemplateKey(event,undefined,recipient,channel);
+  const saved=(await h.control.query("select data from settings where id=$1",[id])).rows[0].data;
+  try {
+    await h.control.query("delete from settings where id=$1",[id]);
+    await api.changeActivation(sa,{event,recipient,channel,revision:0,enabled:false},h.db);
+    const off=await api.resolvedTemplate(event,undefined,h.db,recipient,channel);
+    assert.equal(off.content.enabled,false);assert.equal(off.wordingPublished,false);
+    await assert.rejects(api.changeActivation(sa,{event,recipient,channel,revision:off.local.revision,enabled:true},h.db),{status:400});
+    const view=await api.managedNotificationSettings(sa,undefined,h.db);
+    assert(view.items.find(r=>r.event===event&&r.recipient===recipient).blockedReasons.some(r=>/approved security SMS wording/.test(r)));
+  } finally {
+    await h.control.query("update settings set data=$2::jsonb where id=$1",[id,JSON.stringify(saved)]);
+  }
+});
+test("resetting every security target preserves off delivery independently of wording approval and drafts",async()=>{
+  const targets=(await api.managedNotificationSettings(sa,undefined,h.db)).items.filter(r=>r.required);
+  const values={otp:"456789",expiry_minutes:"10",setup_link:"https://example.invalid/fictional",recipient_name:"Fixture",role_name:"staff"};
+  for(const row of targets) {
+    const target={channel:row.channel,event:row.event,recipient:row.recipient};
+    await api.changeActivation(sa,{...target,revision:row.revision,enabled:false},h.db);
+    let current=await api.resolvedTemplate(row.event,undefined,h.db,row.recipient,row.channel);
+    await api.saveTemplate(sa,{...target,revision:current.local.revision,mode:"reset"},h.db);
+    current=await api.resolvedTemplate(row.event,undefined,h.db,row.recipient,row.channel);
+    assert.equal(current.content.enabled,false,`${row.event}/${row.channel}/${row.recipient}`);
+    assert.equal(current.source,"default");assert.equal(current.wordingPublished,false);
+    assert.equal(current.local.draft,undefined);
+    if(row.event==="patient_login_otp")
+      await assert.rejects(api.sendPatientLoginSms("+919876543213",values.otp,600,h.db,()=>assert.fail("disabled SMS dispatch")),{code:"SECURITY_DELIVERY_DISABLED"});
+    else if(row.channel==="email")
+      assert.equal((await api.securityEmail(row.event,row.recipient,"fixture@example.invalid",values,()=>assert.fail("disabled email dispatch"),h.db)).status,"disabled");
+    else
+      assert.equal((await api.securitySms(row.event,row.recipient,"+919876543213",values,()=>assert.fail("disabled SMS dispatch"),h.db)).status,"disabled");
+    // Saving a new draft must also retain the independently saved off state.
+    await api.saveTemplate(sa,{...target,revision:current.local.revision,mode:"draft",content:{...current.content,body:current.content.body+"\nFictional draft"}},h.db);
+    current=await api.resolvedTemplate(row.event,undefined,h.db,row.recipient,row.channel);
+    assert.equal(current.content.enabled,false);
+    if(row.channel==="email") {
+      await api.changeActivation(sa,{...target,revision:current.local.revision,enabled:true},h.db);
+      assert.equal((await api.securityEmail(row.event,row.recipient,"fixture@example.invalid",values,async()=>{},h.db)).status,"provider_accepted");
+    } else if(row.event!=="patient_login_otp") {
+      await assert.rejects(api.changeActivation(sa,{...target,revision:current.local.revision,enabled:true},h.db),{status:400});
+    }
+  }
 });

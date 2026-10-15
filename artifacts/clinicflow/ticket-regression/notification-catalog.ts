@@ -5,5 +5,5 @@ export const eventSections = [
 ].map((id, order) => ({
   id, order, label: id === "onboarding" ? "Clinic Onboarding" : id.replaceAll("_", " ").replace(/\b\w/g, s => s.toUpperCase()),
   clinicApplicable: order < 6,
-  explanation: order < 6 ? "" : "Required authentication and security messages are managed at System Default and cannot be disabled by a clinic.",
+  explanation: order < 6 ? "" : "Platform authentication and security delivery is controlled by Superadmin at System Default, not per clinic.",
 }));

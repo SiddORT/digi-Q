@@ -5,6 +5,7 @@ const copy:Record<string,string> = {
   pre_dispatch_failed:"Message was not sent.",
   delivery_unknown:"Outcome uncertain. Wait and check before requesting another message.",
   unavailable:"Unavailable. Approved template and provider configuration may be required.",
+  disabled:"Delivery is disabled by the System Admin. Verification is still required; no message was sent.",
   not_requested:"Not requested.",
 };
 export function securityChannelSummary(channels?:SecurityChannels) {

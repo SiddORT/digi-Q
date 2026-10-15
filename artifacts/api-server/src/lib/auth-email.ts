@@ -8,7 +8,8 @@ export { smtpConfig } from "./integration-config";
 export async function sendAuthEmail(to: string, subject: string, text: string,
   transport?: { sendMail: (options: { from: string; to: string; subject: string; text: string }) => Promise<unknown> },
   rendered?: { text: string; html: string; logoPath?: string },
-  files: { filename: string; content: Buffer; contentType: string }[] = [], savedEnv?: NodeJS.ProcessEnv) {
+  files: { filename: string; content: Buffer; contentType: string }[] = [], savedEnv?: NodeJS.ProcessEnv,
+  beforeDispatch?: () => Promise<void>) {
   const cfg = smtpConfig(savedEnv || (await resolvedIntegration("smtp")).env);
   const client = transport || nodemailer.createTransport({
     host: cfg.host, port: cfg.port, secure: cfg.secure,
@@ -23,6 +24,7 @@ export async function sendAuthEmail(to: string, subject: string, text: string,
       try {attachments.push({ filename: "clinic-logo.png", content: await loadLogoBytes(rendered.logoPath), contentType: "image/png", cid: "clinic-logo" });}
       catch {throw new HttpError(503,"Email preparation unavailable","EMAIL_PRE_DISPATCH_FAILED");}
     }
+    await beforeDispatch?.();
     const result = await client.sendMail({
       from: cfg.from, to, subject, ...(rendered || systemEmailTemplate(subject, text)),
       attachments,
@@ -38,7 +40,7 @@ export async function sendAuthEmail(to: string, subject: string, text: string,
     }
   }
   catch (error:any) {
-    if(error instanceof HttpError && ["EMAIL_REJECTED","EMAIL_PRE_DISPATCH_FAILED"].includes(error.code!))throw error;
+    if(error instanceof HttpError && ["EMAIL_REJECTED","EMAIL_PRE_DISPATCH_FAILED","SECURITY_DELIVERY_DISABLED"].includes(error.code!))throw error;
     if(error?.code==="EAUTH"||error?.code==="EENVELOPE"||[530,535,550,551,552,553,554].includes(error?.responseCode))
       throw new HttpError(503,"Email provider rejected the message","EMAIL_REJECTED");
     if(["EDNS","ECONNECTION"].includes(error?.code))throw new HttpError(503,"Email connection unavailable","EMAIL_PRE_DISPATCH_FAILED");
