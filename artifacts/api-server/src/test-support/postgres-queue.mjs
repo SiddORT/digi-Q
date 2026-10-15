@@ -135,11 +135,13 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
       const layer = router.stack.find(l => l.route?.path === path && l.route.methods[method]);
       assert.ok(layer, path);
       let result;
-      const response = { status: () => response, json: value => { result = value; }, sendStatus: value => { result = value; } };
+      const response = { set: () => response, setHeader: () => response, status: () => response, json: value => { result = value; }, sendStatus: value => { result = value; } };
       // Routes open transactions themselves; within a raced transaction these
       // are savepoints on that connection, never transactions on the control DB.
       return context.run({ actor, authenticate, db: tx || context.getStore()?.db || db }, async () => {
-        await layer.route.stack[0].handle({ body, params, query, method:method.toUpperCase(),path,authUserId:authenticate?actor.id:undefined,authSessionHash:authenticate?"isolated-session-proof":undefined }, response);
+        // Domain route adapter, not HTTP middleware: actual rate limiting is
+        // exercised through the real Express/browser boundary.
+        await layer.route.stack.at(-1).handle({ body, params, query, method:method.toUpperCase(),path,authUserId:authenticate?actor.id:undefined,authSessionHash:authenticate?"isolated-session-proof":undefined }, response);
         return result;
       });
     }

@@ -24,6 +24,7 @@ import type { AppointmentActionType } from './appointmentActionType';
 import type { AppointmentStatus } from './appointmentStatus';
 
 export interface AppointmentAction {
+  releaseCallConfirmed?: boolean;
   action: AppointmentActionType;
   reason?: string;
   cancellationReasonId?: string;

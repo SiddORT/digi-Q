@@ -16,6 +16,31 @@ const first = {
 };
 const second = { ...first, id: "appointment-2", patientName: "Morgan Sample", reference: "BOOKING-SECOND", token: "A-02", tokenNumber: 2, notes: "", history: [], status: "completed", checkedInAt: "2030-06-14T09:00:00Z", completedAt: "2030-06-14T09:15:00Z" };
 type State = { appointment: typeof first; failAppointment?: boolean; failStatus?: number; failQr?: boolean; failQueue?: boolean; delay?: number; reads: number };
+for (const mode of ["shift", "requeue"] as const) {
+  test(`row ${mode} opens the shared review and submits the exact reviewed position`, async ({page}) => {
+    const state=await mount(page,"rows");
+    Object.assign(state.appointment,{status:mode==="shift"?"waiting":"noShow",allowedActions:[mode],canReschedule:mode==="shift"});
+    let submitted:any;
+    await page.route("**/api/appointments/appointment-1/movement",route=>route.fulfill({json:{
+      appointment:state.appointment,queueVersion:"reviewed-queue",currentPosition:mode==="shift"?1:0,pendingCount:2,positions:mode==="shift"?[2]:[1,2,3],
+    }}));
+    await page.route("**/api/appointments/appointment-1/actions",async route=>{
+      submitted=route.request().postDataJSON();
+      Object.assign(state.appointment,{status:"waiting",revision:2});
+      await route.fulfill({json:state.appointment});
+    });
+    await page.getByRole("button",{name:"Refresh fixture"}).click();
+    await page.getByTestId("menu-appointment-1").click();
+    await page.getByTestId(`action-${mode}-appointment-1`).click();
+    await expect(page.getByTestId(`form-${mode}`)).toBeVisible();
+    await page.getByTestId("radio-position-2").check();
+    await page.getByTestId("input-movement-reason").fill("Fictional reviewed movement");
+    await page.getByTestId("check-confirm-movement").check();
+    await page.getByRole("button",{name:mode==="shift"?"Confirm Shift Time":"Confirm Re-enter",exact:true}).click();
+    await expect(page.getByTestId(`form-${mode}`)).not.toBeVisible();
+    expect(submitted).toMatchObject({action:mode,expectedRevision:1,expectedQueueVersion:"reviewed-queue",position:2,reason:"Fictional reviewed movement"});
+  });
+}
 async function mount(page: Page, surface = "", linked = false) {
   const state: State = { appointment: structuredClone(first), reads: 0 };
   await page.addInitScript(() => {
@@ -26,7 +51,8 @@ async function mount(page: Page, surface = "", linked = false) {
     const path = new URL(route.request().url()).pathname;
     let body: unknown;
     let status = 200;
-    if (path === "/api/me") body = { user: { id: "fixture-admin", role: "clinicAdmin" }, needsOnboarding: false };
+    if (path === "/api/auth/csrf") body = {csrfToken:"fictional-browser-csrf"};
+    else if (path === "/api/me") body = { user: { id: "fixture-admin", role: "clinicAdmin" }, needsOnboarding: false };
     else if (path === "/api/appointments") body = { items: [state.appointment, second], total: 2, page: 1, pageSize: 100 };
     else if (path === "/api/appointments/appointment-1" || path === "/api/appointments/appointment-2") {
       state.reads++;

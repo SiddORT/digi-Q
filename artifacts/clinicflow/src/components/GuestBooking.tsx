@@ -24,6 +24,7 @@ import { BookingField, bookingFields, bookingValidation } from "./booking/bookin
 import { BookingVisitSummary } from "./booking/BookingVisitSummary";
 import { bookingReviewKey } from "./booking/session-selection";
 import { DateTimePreferencesProvider } from "./DateTimePreferences";
+import { ReceiptManagement } from "./appointments/ReceiptManagement";
 import { refreshAppointmentObservers } from "./appointments/refresh";
 
 const toTicket=(r:api.GuestReceipt):TicketData=>({dateFormat:r.dateFormat,timeFormat:r.timeFormat,patientName:r.fullName,clinicName:r.clinicName,branchName:r.branchName,address:r.branchAddress,doctorName:r.doctorName,date:r.date,startTime:r.startTime,endTime:r.endTime,timezone:r.timezone,waitingNumber:r.token,reference:r.reference,statusLabel:bookingStatusLabel(r.appointmentStatus),qrUrl:r.checkInUrl});
@@ -120,10 +121,12 @@ function GuestBookingForm({reference,context}:{reference:string;context:api.QrCo
   return toTicket(second);
  }
  const issued=r&&r.status!=="pending"&&r.status!=="rejected";
+ const currentTitle=r?.appointmentStatus==="cancelled"?"Booking Cancelled":r?.appointmentStatus==="completed"?"Visit Completed":r?.appointmentStatus==="noShow"?"Patient Marked Absent":"You're Booked";
+ const showConfirmationEmail=!!r&&!["cancelled","completed","noShow"].includes(r.appointmentStatus||"");
  if(attempt)return <section aria-label="Your visit ticket" data-testid="guest-receipt"><BookingSteps step={issued?4:3}/>
-  <h2>{issued?"You're Booked":r?.status==="rejected"?"Booking Not Available":r?"Booking Received":"Issuing Your Ticket"}</h2>
+  <h2>{issued?currentTitle:r?.status==="rejected"?"Booking Not Available":r?"Booking Received":"Issuing Your Ticket"}</h2>
   {!r&&<p role="status">{attempt.fullName} · {attempt.date}. Keep this page open; do not book again.</p>}
-  {issued&&r&&<>{confirmationEmailMessage(r.confirmationEmail)&&<p role="status">{confirmationEmailMessage(r.confirmationEmail)}</p>}<VisitTicket testId="guest-ticket" ticket={toTicket(r)} prepareExport={prepareExport} exportDisabled={!committed||status.isPending}/></>}
+  {issued&&r&&<>{showConfirmationEmail&&confirmationEmailMessage(r.confirmationEmail)&&<p role="status">{confirmationEmailMessage(r.confirmationEmail)}</p>}<VisitTicket testId="guest-ticket" ticket={toTicket(r)} prepareExport={prepareExport} exportDisabled={!committed||status.isPending}/>{committed&&attempt&&<ReceiptManagement receiptSecret={attempt.receiptSecret} onRefresh={()=>pollRef.current()}/>}</>}
   {r?.status==="pending"&&<p className="notice">This earlier request is still with reception. No waiting number has been issued yet.</p>}
   {r?.status==="rejected"&&<p role="status">{r.reason||"Please speak to reception."}</p>}
   {receiptFresh.stale&&updated>0&&<p className="muted">Ticket shown as last loaded.</p>}

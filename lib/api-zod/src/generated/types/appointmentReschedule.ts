@@ -22,6 +22,7 @@
  */
 
 export interface AppointmentReschedule {
+  releaseCallConfirmed?: boolean;
   sessionId?: string;
   startTime?: string;
   doctorId: string;

@@ -94,6 +94,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import { processSmsNotifications } from "./lib/notification-sms-outbox";
       export const dispatchSmsOutbox = (send) => processSmsNotifications(db, send);
       import { appointmentsRouter } from "./routes/appointments";
+      import { queueRouter } from "./routes/queue";
       import { guestRequestsRouter } from "./routes/guest-requests";
       import { appointmentQrRouter } from "./routes/appointment-qr";
       import { resourcesRouter as lookupResourcesRouter } from "./routes/resources";` : ""}
@@ -116,7 +117,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         app.use("/api", notificationTemplatesRouter);` : ""}
         ${administration ? `app.use("/api", resourcesRouter, identityRouter, systemUsersRouter, permissionPolicyRouter);` : ""}
         ${registration ? `app.use("/api", clinicExpansionRouter);` : ""}
-        ${bookingLookups ? `app.use("/api", publicRouter, appointmentsRouter, guestRequestsRouter, appointmentQrRouter, lookupResourcesRouter);` : ""}
+        ${bookingLookups ? `app.use("/api", publicRouter, appointmentsRouter, guestRequestsRouter, appointmentQrRouter, lookupResourcesRouter, queueRouter);` : ""}
         ${simulatedMail ? `app.use("/api", authRouter);` : ""}
          // Fixture-only diagnostics capture the underlying error before the
          // production handler deliberately masks private database parameters.

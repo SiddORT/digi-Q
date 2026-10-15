@@ -43,3 +43,4 @@
 - [Optional notification values](optional-notification-values.md) — missing cancellation reasons are explicit, not a reason to block cancellation notices.
 - [Permanent staff deletion](permanent-deletion-boundary.md) — user-owned data only; preserve shared clinical records and await explicit implementation approval.
 - [OpenAPI query exports](openapi-query-export-collisions.md) — Orval can emit colliding path-validator/query-type names; check the shared-library build, not just generation.
+- [Appointment movement policy](appointment-movement-policy.md) — one place later is allowed; ordinary mobility does not broaden account handoffs or live delivery authorization.

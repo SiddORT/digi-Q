@@ -8,6 +8,7 @@ import { allocateToken, snapshotDuration } from "./session-duration";
 import { sessionRows, rank } from "./queue-order";
 import { enrich } from "./entities";
 import { recordStaffHandoffTransition } from "./staff-handoff-transition";
+import { movementReason, assertSourceSessionOpen } from "./appointment-eligibility";
 
 export async function reschedule(user: any, id: string, body: any, tx: any, staffHandoff?: { operationId: string; targetUserId: string }) {
   let row = await one(appointments, id, tx);
@@ -19,7 +20,9 @@ export async function reschedule(user: any, id: string, body: any, tx: any, staf
   for (const session of locks) await lockQueue(tx, session.doctorId, session.branchId, session.date);
   row = await one(appointments, id, tx);
   assert(row.doctorId === original.doctorId && row.branchId === original.branchId && row.date === original.date && (row.revision || 0) === body.expectedRevision, 409, "Appointment changed; refresh and retry");
-  assert(["booked", "checkedIn", "waiting", "called"].includes(row.status) && !row.checkedInAt, 409, "Only appointments before check-in can be rescheduled");
+  const blocked = movementReason(row, user); assert(!blocked, 409, blocked || "");
+  await assertSourceSessionOpen(row, tx);
+  if (row.status === "called") assert(user.role !== "patient" && body.releaseCallConfirmed === true, 409, "Confirm releasing the call and returning the unserved patient to pending");
   if (staffHandoff) {
     assert(user.role === "superAdmin", 403, "Superadmin handoff required");
     const sourceDoctor = await one(doctors, row.doctorId, tx);
@@ -30,13 +33,13 @@ export async function reschedule(user: any, id: string, body: any, tx: any, staf
   }
   const config = await getSettings(tx, row.clinicId), now = localNow(row.timezone || "Asia/Kolkata");
   const difference = (Date.parse(row.date) - Date.parse(now.date)) / 60000 + minutes(row.startTime || "00:00") - now.minute;
-  assert(difference >= config.cancellationCutoffMinutes, 409, "Cancellation cutoff has passed");
+  if (staffHandoff) assert(difference >= config.cancellationCutoffMinutes, 409, "Cancellation cutoff has passed");
   const branch = await one(branches, body.branchId, tx);
   assert(branch.clinicId === row.clinicId, 403, "Rescheduling must stay within the same clinic");
   if (user.role !== "patient") assert(scope(user, row.clinicId, branch.id) && (user.role !== "doctor" || body.doctorId === user.doctorId), 403, "Destination outside assigned scope");
   const available = await availability(body.doctorId, body.branchId, body.date, tx, body);
   body = { ...body, sessionId: available.sessionId, startTime: available.startTime };
-  assert(row.doctorId !== body.doctorId || row.branchId !== body.branchId || row.date !== body.date || row.startTime !== body.startTime, 400, "Choose a different destination session");
+  assert(row.doctorId !== body.doctorId || row.branchId !== body.branchId || row.date !== body.date || row.startTime !== body.startTime, 400, "Same session: use Shift Time to choose a later pending position");
   assert(available.available, 409, available.reason || "Destination unavailable");
   assert(available.queueMode !== "walkInsOnly", 409, "Destination accepts walk-ins only");
   const destination = { ...body, clinicId: row.clinicId };
@@ -53,7 +56,7 @@ export async function reschedule(user: any, id: string, body: any, tx: any, staf
     startTime: available.startTime, endTime: available.endTime,
     expectedDurationMinutes: duration, queueRank: Math.max(0, ...rows.map(rank)) + 1, revision: (row.revision || 0) + 1,
     waitingAt: timestamp, calledAt: null,
-    history: [...(row.history || []), { status: "waiting", action: "reschedule", occurredAt: timestamp, actorId: user.id, reason: body.reason,
+    history: [...(row.history || []), { status: "waiting", action: "reschedule", occurredAt: timestamp, actorId: user.id, actorKind: user.privateReceipt ? "privateReceipt" : user.role, reason: body.reason, ...(row.status === "called" ? { callReleased: true } : {}),
       from: { doctorId: row.doctorId, branchId: row.branchId, date: row.date, sessionId: row.sessionId, startTime: row.startTime, token: row.token, tokenNumber: row.tokenNumber },
       to: { doctorId: body.doctorId, branchId: body.branchId, date: body.date, sessionId: body.sessionId, startTime: body.startTime, token: `${available.tokenPrefix}-${String(tokenNumber).padStart(2, "0")}`, tokenNumber } }],
   };

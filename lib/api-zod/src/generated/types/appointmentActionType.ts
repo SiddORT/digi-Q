@@ -33,4 +33,5 @@ export const AppointmentActionType = {
   noShow: 'noShow',
   requeue: 'requeue',
   cancel: 'cancel',
+  shift: 'shift',
 } as const;

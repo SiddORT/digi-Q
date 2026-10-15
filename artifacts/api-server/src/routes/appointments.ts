@@ -13,6 +13,7 @@ import { resolveQr } from "./public";
 import { queryAppointmentPage, queryAppointmentCalendar } from "../lib/list-query";
 import { snapshotDuration, allocateToken } from "../lib/session-duration";
 import { reschedule } from "../lib/reschedule";
+import { appointmentMovement } from "../lib/appointment-movement";
 import { rank, sessionRows } from "../lib/queue-order";
 import { confirmAppointmentEmail, initialConfirmationEmail } from "../lib/appointment-confirmation";
 export const appointmentsRouter = Router();
@@ -119,4 +120,8 @@ appointmentsRouter.post("/appointments/:id/actions", async (req, res) => {
 appointmentsRouter.post("/appointments/:id/reschedule", async (req, res) => {
   const user = await requireUser(req), body = parse(z.RescheduleAppointmentBody, req.body);
   res.json(await appointmentViewWithBranch(await db.transaction(tx => reschedule(user, req.params.id as string, body, tx)), user));
+});
+appointmentsRouter.get("/appointments/:id/movement", async (req, res) => {
+  const user = await requireUser(req);
+  res.set("Cache-Control", "no-store").json(await db.transaction(tx => appointmentMovement(user, req.params.id as string, tx)));
 });

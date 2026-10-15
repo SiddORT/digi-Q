@@ -1,13 +1,14 @@
 // Explicit development-only opt-in. Never connects to DATABASE_URL, real
 // delivery providers, App Storage, or the normal application database.
 import { createServer, request } from "node:http";
-import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, mkdir, access } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomBytes, createHash } from "node:crypto";
 import argon2 from "argon2";
 import { createFeatureHarness } from "./feature-harness.mjs";
 import { seedFeatureFixtures } from "./feature-fixtures.mjs";
+import { seedMovementBrowser } from "./appointment-movement-browser.mjs";
 
 if (process.env.NODE_ENV !== "development") throw new Error("Disposable browser fixture is development-only");
 const root = await mkdtemp(join(tmpdir(), "staff-removal-browser-"));
@@ -27,6 +28,8 @@ const h = await createFeatureHarness({ postgres: true, deletion: true, administr
 await seedFeatureFixtures(h.pg);
 const password = "Fixture-Only!DigiQ-2026";
 await h.pg.query("update users set password_hash=$1,email_verified_at=now()", [await argon2.hash(password)]);
+const movementMode=await access("../../.local/appointment-movement-browser-fixture").then(()=>true,()=>false);
+const movement=movementMode?await seedMovementBrowser(h,password):null;
 // An authenticated patient session permits authorization checks without
 // changing or bypassing the application's unchanged OTP login implementation.
 const patientSessionToken = randomBytes(32).toString("base64url");
@@ -46,7 +49,7 @@ if (!Number.isInteger(port) || port < 1) throw new Error("A routed development P
 proxy.listen(port, "0.0.0.0", () => console.log("Disposable staff-removal browser API ready; no normal database or live delivery"));
 await mkdir("../../.local", { recursive: true });
 await writeFile("../../.local/staff-removal-browser-info.json", JSON.stringify({
-  password, patientSessionToken, accounts: ["sa", "adm", "docu", "rec", "rec2", "patu"].map(id => ({ email: id + "@test.invalid", id })),
+  password, patientSessionToken, movement, accounts: ["sa", "adm", "docu", "rec", "rec2", "patu"].map(id => ({ email: id + "@test.invalid", id })),
 }));
 let closing = false;
 async function close() {

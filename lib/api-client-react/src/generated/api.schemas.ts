@@ -2789,6 +2789,7 @@ export const AppointmentActionType = {
   noShow: 'noShow',
   requeue: 'requeue',
   cancel: 'cancel',
+  shift: 'shift',
 } as const;
 
 export interface AppointmentSessionHistory {
@@ -2849,6 +2850,9 @@ export type Appointment = AppointmentInput & ({
   /** @nullable */
   completedAt?: string | null;
   allowedActions: AppointmentActionType[];
+  canReschedule?: boolean;
+  /** @nullable */
+  movementReason?: string | null;
   history?: StatusEvent[];
 });
 
@@ -2876,7 +2880,16 @@ export interface AppointmentQrCheckInResult {
   message: string;
 }
 
+export interface AppointmentMovement {
+  appointment: Appointment;
+  queueVersion: string;
+  currentPosition: number;
+  pendingCount: number;
+  positions: number[];
+}
+
 export interface AppointmentAction {
+  releaseCallConfirmed?: boolean;
   action: AppointmentActionType;
   reason?: string;
   cancellationReasonId?: string;
@@ -2889,6 +2902,25 @@ export interface AppointmentAction {
      * @minimum 1
      */
   position?: number;
+}
+
+export interface AppointmentReschedule {
+  releaseCallConfirmed?: boolean;
+  sessionId?: string;
+  startTime?: string;
+  doctorId: string;
+  branchId: string;
+  date: string;
+  /** @minimum 0 */
+  expectedRevision: number;
+  reason?: string;
+}
+
+export interface ReceiptManagement {
+  /** @pattern ^[a-f0-9]{64}$ */
+  receiptSecret: string;
+  action?: AppointmentAction;
+  destination?: AppointmentReschedule;
 }
 
 export interface QueueSelection {
@@ -3002,17 +3034,6 @@ export interface DoctorDurationInput {
   date?: string;
   confirmRunningSession?: boolean;
   expectedQueueVersion?: string;
-}
-
-export interface AppointmentReschedule {
-  sessionId?: string;
-  startTime?: string;
-  doctorId: string;
-  branchId: string;
-  date: string;
-  /** @minimum 0 */
-  expectedRevision: number;
-  reason?: string;
 }
 
 export interface CallNextResult {

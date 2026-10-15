@@ -15,6 +15,10 @@ import { bookAppointment } from "./appointments";
 import { createAppointmentQrPayload } from "../lib/appointment-qr";
 import { clinicDisplayPreferences } from "../lib/display-preferences";
 import { confirmAppointmentEmail } from "../lib/appointment-confirmation";
+import { appointmentMovement } from "../lib/appointment-movement";
+import { transition } from "../lib/appointments";
+import { reschedule } from "../lib/reschedule";
+import { enforcePermissionPolicy } from "../lib/permission-policy";
 
 export const guestRequestsRouter = Router();
 export const guestListControls = schema.object({
@@ -134,6 +138,43 @@ guestRequestsRouter.post("/public/guest-receipt", receiptLimit, async (req, res)
   const [row] = await db.select().from(guestRequests).where(eq(guestRequests.receiptHash, guestHash(body.receiptSecret)));
   assert(row, 404, "Receipt not found");
   res.json(z.GetGuestReceiptResponse.parse(await currentReceipt(flatten(row))));
+});
+export async function manageReceipt(body: any, conn: any = db) {
+  assert(!(body.action && body.destination), 400, "Choose one operation");
+  return conn.transaction(async (tx: any) => {
+    // Lock the capability row so revocation and mutation cannot pass each other.
+    const [raw] = await tx.select().from(guestRequests).where(eq(guestRequests.receiptHash, guestHash(body.receiptSecret))).for("update");
+    assert(raw && raw.status === "confirmed" && raw.appointmentId, 404, "Confirmed receipt not found");
+    const row = await one(appointments, raw.appointmentId, tx);
+    assert(row.bookingOrigin === "anonymousGuest" && row.clinicId === raw.clinicId, 403, "Receipt management unavailable");
+    // The persisted booking principal is retained for FK audit provenance only.
+    // Patient ownership is exact; this never creates a staff session.
+    const actor = { id: row.actorId, role: "patient", patientId: row.patientId, privateReceipt: true };
+    if (body.action) {
+      assert(["shift", "cancel"].includes(body.action.action), 403, "Patients may only shift or cancel their pending booking");
+      assert(body.action.expectedRevision !== undefined, 400, "Review the current booking before confirming");
+      assert(typeof body.action.reason === "string" && body.action.reason.trim().length > 0 && body.action.reason.length <= 1000, 400, "A reason is required (at most 1000 characters)");
+      await enforcePermissionPolicy(actor, { method: "POST", path: `/appointments/${row.id}/actions`, body: body.action });
+      await transition(actor, row.id, body.action, tx);
+    }
+    if (body.destination) {
+      await enforcePermissionPolicy(actor, { method: "POST", path: `/appointments/${row.id}/reschedule`, body: body.destination });
+      await reschedule(actor, row.id, body.destination, tx);
+    }
+    return appointmentMovement(actor, row.id, tx);
+  });
+}
+guestRequestsRouter.post("/public/guest-receipt/manage", receiptLimit, async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  // Validate the raw nested date before codegen's date coercion can normalize
+  // an invalid calendar date into a different destination.
+  const destination = req.body?.destination ? parse(z.RescheduleAppointmentBody, req.body.destination) : undefined;
+  const body = parse(z.ManageGuestReceiptBody, req.body);
+  const movement=await manageReceipt({...body, ...(destination ? {destination} : {})});
+  const response=z.ManageGuestReceiptResponse.parse(movement);
+  // Keep the OpenAPI date-only wire format; codegen coerces it to Date while
+  // validating, which would otherwise serialize as an unusable ISO timestamp.
+  res.json({...response,appointment:{...response.appointment,date:movement.appointment.date}});
 });
 guestRequestsRouter.get("/guest-requests", async (req, res) => {
   const user = await staff(req), q = { ...query(z.ListGuestRequestsQueryParams, req), ...query(guestListControls,req) };

@@ -56,6 +56,10 @@ async function mount(page: Page, mode: Mode, f: Fixtures, recovered = false) {
     let reply: Reply;
     if (path === "/api/auth/csrf") {
       reply = { body: { csrfToken: "isolated-ticket-fixture-csrf" } };
+    } else if (path === "/api/public/guest-receipt/manage" && req.method() === "POST") {
+      const body=req.postDataJSON();
+      expect(body.receiptSecret).toBe(guestSecret);
+      reply={body:{appointment,queueVersion:"ticket-fixture-queue",currentPosition:1,pendingCount:1,positions:[]}};
     } else if (path === "/api/public/guest-receipt" && req.method() === "POST") {
       const body = req.postDataJSON();
       expect(body.receiptSecret).toBe(guestSecret);
@@ -331,6 +335,10 @@ for (const mode of ["guest", "appointment"] as const) {
     f.calls.length = 0;
     const printed = await print(page);
     expect(printed).toContain("Cancelled");
+    if(mode==="guest"){
+      await expect(page.getByRole("heading",{name:"Booking Cancelled",exact:true})).toBeVisible();
+      await expect(page.getByText(/Booking confirmed\./)).toHaveCount(0);
+    }
     expect(printed).toContain("21 Jun 2030");
     expect(printed).toContain("2:00 PM – 4:00 PM");
     assertFreshOrder(f, mode);
@@ -401,6 +409,11 @@ test("guest recovery API error warns and refresh can restore ticket", async ({ p
     }
     if (path === "/api/public/availability/context") {
       await route.fulfill({ json: { timezone: availability[0].timezone, today: date, lastBookableDate: date } });
+      return;
+    }
+    if(path==="/api/public/guest-receipt/manage"){
+      expect(route.request().postDataJSON().receiptSecret).toBe(guestSecret);
+      await route.fulfill({json:{appointment,queueVersion:"recovered-ticket-queue",currentPosition:1,pendingCount:1,positions:[]}});
       return;
     }
     if (path !== "/api/public/guest-receipt") throw new Error(`Unexpected call ${path}`);

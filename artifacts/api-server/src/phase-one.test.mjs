@@ -259,13 +259,13 @@ test("real SQL immediate waiting preserves reservation order and explicit skip",
   q = await queue();
   assert.equal(q.currentToken, b.token);
 });
-test("re-entry requires reception, reason, fresh queue version, position; retains token and audits", async () => {
+test("re-entry requires assigned staff, reason, fresh queue version, position; retains token and audits", async () => {
   await seed();
   const a = await book(), b = await book("p2"), c = await book("p3");
   const absent = await act(a.id, { action: "noShow", reason: "Stepped outside" });
   const version = api.queueVersion(await rows());
   const body = { action: "requeue", reason: "Returned; agreed after next reservation", position: 2, expectedRevision: absent.revision, expectedQueueVersion: version };
-  await assert.rejects(act(a.id, body, { ...staff, role: "doctor", doctorId: "d" }), /Permission/);
+  await assert.rejects(act(a.id, body, { ...staff, role: "doctor", doctorId: "d2" }), /scope/);
   await assert.rejects(act(a.id, { ...body, reason: " " }), /reason/);
   await api.change(t.appointments, c.id, { data: { ...c, revision: 1 } });
   await assert.rejects(act(a.id, body), /Queue changed/);
@@ -275,7 +275,7 @@ test("re-entry requires reception, reason, fresh queue version, position; retain
   assert.equal(returned.history.at(-1).reason, body.reason);
   assert.ok((await api.all(t.auditLogs)).some(a => a.action === "requeue"));
 });
-test("atomic reschedule retains reference/history, changes destination token, rejects stale/check-in/cutoff/cross-tenant", async () => {
+test("atomic reschedule retains reference/history, changes destination token, rejects stale/cross-tenant", async () => {
   await seed();
   const original = await book("p1", tomorrow);
   const destination = { doctorId: "d2", branchId: "b2", date: tomorrow, expectedRevision: 0 };
@@ -293,7 +293,8 @@ test("full destination and failing audit roll back every reschedule write", asyn
   await seed();
   const original = await book("p1", tomorrow), weekday = new Date(tomorrow).getUTCDay();
   const schedule = await api.one(t.schedules, "d2" + weekday);
-  await api.change(t.schedules, schedule.id, { data: { ...schedule, maxTokens: 0 } });
+  await api.change(t.schedules, schedule.id, { data: { ...schedule, maxTokens: 1 } });
+  await book("p2", tomorrow, {doctorId:"d2",branchId:"b2"});
   const body = { doctorId: "d2", branchId: "b2", date: tomorrow, expectedRevision: 0 };
   await assert.rejects(globalThis.phaseDb.transaction(tx => api.reschedule(patient, original.id, body, tx)), /capacity/);
   assert.equal((await api.one(t.appointments, original.id)).token, "A-01");
@@ -360,18 +361,21 @@ test("concurrent calls/start/completion have one winner; concurrent duplicate/ca
 test("patient/staff tenant privacy and duration restrictions", async () => {
   await seed(); const a = await book();
   await assert.rejects(queue({ ...patient, patientId: "stranger" }), /do not have/);
-  await assert.rejects(act(a.id, { action: "checkIn" }, patient), /only cancel/);
+  await assert.rejects(act(a.id, { action: "checkIn" }, patient), /only manage their own pending/);
   await assert.rejects(act(a.id, { action: "noShow", reason: "Absent" }, { ...staff, clinicIds: ["elsewhere"] }), /outside/);
   await assert.rejects(route(api.durationRouter, "patch", "/doctors/:id/duration/:clinicId", patient, { clinicId: "c", expectedDurationMinutes: 20, effect: "futureOnly" }, { id: "d", clinicId: "c" }), /Permission/);
   await assert.rejects(route(api.durationRouter, "patch", "/doctors/:id/duration/:clinicId", staff, { clinicId: "c", expectedDurationMinutes: 10, effect: "futureOnly" }, { id: "d", clinicId: "c" }));
 });
-test("cutoff and prior check-in forbid rescheduling without changing original", async () => {
+test("cancellation cutoff does not block reschedule, but consultation still prevents movement", async () => {
   await seed();
   const a = await book(), body = { doctorId: "d2", branchId: "b2", date: tomorrow, expectedRevision: 0 };
-  await assert.rejects(globalThis.phaseDb.transaction(tx => api.reschedule(patient, a.id, body, tx)), /cutoff/);
-  await act(a.id, { action: "checkIn" });
-  await assert.rejects(globalThis.phaseDb.transaction(tx => api.reschedule(patient, a.id, { ...body, expectedRevision: 1 }, tx)), /before check-in/);
-  assert.equal((await api.one(t.appointments, a.id)).token, "A-01");
+  await assert.rejects(act(a.id, {action:"cancel",reason:"Cannot attend"},patient),/cutoff/);
+  const moved=await globalThis.phaseDb.transaction(tx => api.reschedule(patient, a.id, body, tx));
+  assert.equal(moved.reference,a.reference);
+  const b=await book("p2");
+  await act(b.id, { action: "checkIn" });
+  await assert.rejects(globalThis.phaseDb.transaction(tx => api.reschedule({...patient,patientId:"p2"}, b.id, { ...body, expectedRevision: 1 }, tx)), /already started/);
+  assert.equal((await api.one(t.appointments, b.id)).token, b.token);
 });
 test("concurrent reschedule versus check-in has exactly one success, with coherent final session", async () => {
   await seed();

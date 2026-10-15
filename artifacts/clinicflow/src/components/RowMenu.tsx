@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { HelpTip, dismissTooltips } from "./HelpTip";
 import { computeMenuPosition, type MenuPosition } from "./row-menu-position";
 
-export type RowMenuItem = { key: string; label: string; onSelect?: () => void; href?: string; hint?: string; disabled?: boolean; danger?: boolean; testId?: string };
+export type RowMenuItem = { key: string; label: string; onSelect?: () => void; href?: string; hint?: string; disabled?: boolean; danger?: boolean; testId?: string; separated?: boolean };
 
 
 /** Secondary row actions in a portal so table scroll containers and sticky cells never clip the list.
@@ -49,7 +49,7 @@ export function RowMenu({ label, items, testId, trigger: triggerContent }: { lab
   const safe = items.filter(i => !i.danger), danger = items.filter(i => i.danger);
   const render = (i: RowMenuItem) => i.href && !i.disabled
     ? <Link key={i.key} role="menuitem" href={i.href} title={i.hint} data-testid={i.testId} onClick={() => close(false)}>{i.label}</Link>
-    : <button key={i.key} type="button" role="menuitem" title={i.hint} className={i.danger ? "danger" : undefined} disabled={i.disabled} data-testid={i.testId} onClick={() => { close(true); i.onSelect?.(); }}>{i.label}</button>;
+    : <button key={i.key} type="button" role="menuitem" title={i.hint} className={i.danger ? "danger" : undefined} style={i.separated ? { borderTop: "1px solid currentColor", marginTop: 4, paddingTop: 8, borderTopColor: "rgba(120,120,120,.35)" } : undefined} disabled={i.disabled} data-testid={i.testId} onClick={() => { close(true); i.onSelect?.(); }}>{i.label}</button>;
   const keys = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Tab") { close(false); return; }
     if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return; e.preventDefault();

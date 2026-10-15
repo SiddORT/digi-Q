@@ -1272,6 +1272,18 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorDurationInput" } } } }
       responses:
         "200": { description: Saved duration, content: { application/json: { schema: { $ref: "#/components/schemas/DoctorDuration" } } } }
+  /appointments/{id}/movement:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getAppointmentMovement
+      responses:
+        "200": { description: Private position review without patient identities, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentMovement" } } } }
+  /public/guest-receipt/manage:
+    post:
+      operationId: manageGuestReceipt
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ReceiptManagement" } } } }
+      responses:
+        "200": { description: Current protected booking and movement review, content: { application/json: { schema: { $ref: "#/components/schemas/AppointmentMovement" } } } }
   /appointments/{id}/reschedule:
     post:
       operationId: rescheduleAppointment
@@ -3374,6 +3386,8 @@ components:
             consultationStartedAt: { type: [string, "null"], format: date-time }
             completedAt: { type: [string, "null"], format: date-time }
             allowedActions: { type: array, items: { $ref: "#/components/schemas/AppointmentActionType" } }
+            canReschedule: { type: boolean }
+            movementReason: { type: ["string", "null"] }
             history: { type: array, items: { $ref: "#/components/schemas/StatusEvent" } }
     AppointmentQr:
       type: object
@@ -3402,11 +3416,28 @@ components:
         appointment: { $ref: "#/components/schemas/Appointment" }
         alreadyCheckedIn: { type: boolean }
         message: { type: string }
-    AppointmentActionType: { type: string, enum: [checkIn, enqueue, call, start, complete, noShow, requeue, cancel] }
+    AppointmentMovement:
+      type: object
+      required: [appointment, queueVersion, currentPosition, pendingCount, positions]
+      properties:
+        appointment: { $ref: "#/components/schemas/Appointment" }
+        queueVersion: { type: string }
+        currentPosition: { type: integer }
+        pendingCount: { type: integer }
+        positions: { type: array, items: { type: integer } }
+    ReceiptManagement:
+      type: object
+      required: [receiptSecret]
+      properties:
+        receiptSecret: { type: string, pattern: '^[a-f0-9]{64}$' }
+        action: { $ref: "#/components/schemas/AppointmentAction" }
+        destination: { $ref: "#/components/schemas/AppointmentReschedule" }
+    AppointmentActionType: { type: string, enum: [checkIn, enqueue, call, start, complete, noShow, requeue, cancel, shift] }
     AppointmentAction:
       type: object
       required: [action]
       properties:
+        releaseCallConfirmed: { type: boolean }
         action: { $ref: "#/components/schemas/AppointmentActionType" }
         reason: { type: string }
         cancellationReasonId: { type: string }
@@ -3520,6 +3551,7 @@ components:
       type: object
       required: [doctorId, branchId, date, expectedRevision]
       properties:
+        releaseCallConfirmed: { type: boolean }
         sessionId: { type: string }
         startTime: { type: string }
         doctorId: { type: string }

@@ -41,6 +41,7 @@ import type {
   AppointmentCalendar,
   AppointmentInput,
   AppointmentList,
+  AppointmentMovement,
   AppointmentQr,
   AppointmentQrCheckInResult,
   AppointmentQrPayload,
@@ -201,6 +202,7 @@ import type {
   QrInput,
   QrList,
   QueueSelection,
+  ReceiptManagement,
   RecordSearchResult,
   RegistrationChallengeReference,
   RegistrationMobileOutcome,
@@ -11850,6 +11852,159 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUpdateDoctorDurationMutationOptions(options));
+    }
+
+export const getGetAppointmentMovementUrl = (id: string,) => {
+
+
+
+
+  return `/api/appointments/${id}/movement`
+}
+
+export const getAppointmentMovement = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<AppointmentMovement> => {
+
+  return customFetch<AppointmentMovement>(getGetAppointmentMovementUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAppointmentMovementQueryKey = (id: string,) => {
+    return [
+    `/api/appointments/${id}/movement`
+    ] as const;
+    }
+
+
+export const getGetAppointmentMovementQueryOptions = <TData = Awaited<ReturnType<typeof getAppointmentMovement>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointmentMovement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAppointmentMovementQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAppointmentMovement>>> = ({ signal }) => getAppointmentMovement(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAppointmentMovement>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAppointmentMovementQueryResult = NonNullable<Awaited<ReturnType<typeof getAppointmentMovement>>>
+export type GetAppointmentMovementQueryError = ErrorType<unknown>
+
+
+
+export function useGetAppointmentMovement<TData = Awaited<ReturnType<typeof getAppointmentMovement>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAppointmentMovement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAppointmentMovementQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getManageGuestReceiptUrl = () => {
+
+
+
+
+  return `/api/public/guest-receipt/manage`
+}
+
+export const manageGuestReceipt = async (receiptManagement: ReceiptManagement, options?: Parameters<typeof customFetch>[1]): Promise<AppointmentMovement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AppointmentMovement>(getManageGuestReceiptUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(receiptManagement)
+  }
+);}
+
+
+
+
+
+export const getManageGuestReceiptMutationKey = () => ['manageGuestReceipt'] as const;
+
+export const getManageGuestReceiptMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageGuestReceipt>>, TError,ManageGuestReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof manageGuestReceipt>>, TError,ManageGuestReceiptMutationVariables, TContext> => {
+
+const mutationKey = getManageGuestReceiptMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof manageGuestReceipt>>, ManageGuestReceiptMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  manageGuestReceipt(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManageGuestReceiptMutationResult = NonNullable<Awaited<ReturnType<typeof manageGuestReceipt>>>
+    export type ManageGuestReceiptMutationBody = BodyType<ReceiptManagement>
+    export type ManageGuestReceiptMutationError = ErrorType<unknown>
+    export type ManageGuestReceiptMutationVariables = {data: BodyType<ReceiptManagement>}
+
+    export const useManageGuestReceipt = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof manageGuestReceipt>>, TError,ManageGuestReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof manageGuestReceipt>>,
+        TError,
+        ManageGuestReceiptMutationVariables,
+        TContext
+      > => {
+      return useMutation(getManageGuestReceiptMutationOptions(options));
     }
 
 export const getRescheduleAppointmentUrl = (id: string,) => {

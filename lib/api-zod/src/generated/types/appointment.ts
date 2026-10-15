@@ -68,5 +68,8 @@ export type Appointment = AppointmentInput & ({
   /** @nullable */
   completedAt?: Date | null;
   allowedActions: AppointmentActionType[];
+  canReschedule?: boolean;
+  /** @nullable */
+  movementReason?: string | null;
   history?: StatusEvent[];
 });
