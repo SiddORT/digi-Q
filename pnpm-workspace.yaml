@@ -125,3 +125,8 @@ overrides:
   rollup>@rollup/rollup-win32-ia32-msvc: '-'
   rollup>@rollup/rollup-win32-x64-gnu: '-'
   rollup>@rollup/rollup-win32-x64-msvc: '-'
+  
+allowBuilds:
+  argon2: true
+  core-js: false
+  esbuild: true
