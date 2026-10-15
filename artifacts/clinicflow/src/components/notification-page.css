@@ -69,3 +69,77 @@
   .event-controls .cm-row-meta button.cm-info { width:40px; height:44px; min-height:44px }
   .cm-template-editor .cm-template-footer .button { min-height:44px; flex:1 1 auto }
 }
+
+/* Reference-aligned header, event groups and responsive option columns. */
+.event-controls .cm-notification-toolbar { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:12px 24px }
+.event-controls .ns-heading { flex:1 1 320px; min-width:0 }
+.event-controls .ns-heading h1 { font-size:var(--type-page); margin:0 }
+.event-controls .ns-heading p { color:var(--muted,#56657d); font-size:var(--type-label); margin-top:2px }
+.event-controls .ns-controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; justify-content:flex-end; flex:0 1 auto }
+.event-controls .ns-search { position:relative; flex:1 1 260px; max-width:420px; min-width:0 }
+.event-controls .ns-search > svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--soft); pointer-events:none }
+.event-controls .cm-inline-filters .ns-search input[type=search] { width:100%; max-width:none; margin:0; padding-left:36px }
+.event-controls .cm-inline-filters select { margin:0 }
+.event-controls .cm-event { margin:0 0 8px; border-radius:10px }
+.event-controls .cm-event[data-state=open] { border-color:#a9c3e6; box-shadow:inset 3px 0 0 var(--dq-blue) }
+.event-controls .cm-event-trigger { justify-content:flex-start; gap:10px }
+.event-controls .cm-event-trigger > svg { order:-1; flex:none }
+.event-controls .cm-event-icon { display:inline-flex; color:var(--dq-blue); flex:none }
+.event-controls .cm-event-title { font-weight:600; color:var(--ink) }
+.event-controls .cm-count { font-size:var(--type-caption); background:#eef3f8; border-radius:6px; padding:2px 8px; color:var(--soft); white-space:nowrap }
+.event-controls .cm-event-toolbar { grid-template-columns:minmax(0,1fr) 40px 112px 44px }
+.event-controls .cm-switch-spacer { width:44px }
+.event-controls .cm-group-status { justify-self:end }
+.event-controls .cm-managed-note { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:10px 16px 14px; color:var(--muted); font-size:var(--type-label) }
+.event-controls .cm-managed-note p { flex:1 1 280px }
+.event-controls .cm-cols, .event-controls .cm-row { display:grid; grid-template-columns:minmax(190px,1.1fr) minmax(120px,.7fr) minmax(0,2.4fr) 76px 64px; gap:12px; align-items:center; padding:8px 16px }
+.event-controls .cm-cols { background:#f3f7fc; border-block:1px solid var(--dq-line); font-size:var(--type-caption); font-weight:600; color:var(--soft); padding-block:6px }
+.event-controls .cm-cols span:nth-child(4) { text-align:center }
+.event-controls .cm-rows { list-style:none; margin:0; padding:0 }
+.event-controls .cm-row { border-bottom:1px solid var(--dq-line) }
+.event-controls .cm-row:last-child { border-bottom:0 }
+.event-controls .cm-cell { min-width:0; display:flex; align-items:center; gap:6px }
+.event-controls .cm-who { gap:8px; color:var(--dq-blue) }
+.event-controls .cm-who strong { color:var(--ink); font-size:var(--type-body); font-weight:600 }
+.event-controls .cm-preview-cell { flex-wrap:wrap }
+.event-controls .cm-preview-cell .cm-preview { flex:1 1 0; min-width:0 }
+.event-controls .cm-managed-sms { color:var(--soft); font-size:var(--type-label) }
+.event-controls .cm-enabled { justify-content:center }
+.event-controls .cm-dash { font-size:var(--type-caption); color:var(--soft); text-align:center }
+.event-controls .cm-state.live { color:#14673a; background:#e6f5ec }
+.event-controls .cm-edit.button { width:auto; min-width:56px; height:36px; min-height:36px; padding:0 14px; color:var(--dq-blue); font-weight:600 }
+.event-controls .cm-preview-cell .ec-blocked { flex-basis:100% }
+/* The staff shell's button:not(.button) rule has greater specificity than the
+   shared switch styles. Keep this protection local to Notifications. */
+.event-controls[data-testid="page-notification-templates"] button.cm-switch {
+  width:40px; min-width:40px; max-width:40px; height:24px; min-height:24px;
+  padding:2px; border:0; border-radius:999px; flex:0 0 40px;
+}
+.event-controls[data-testid="page-notification-templates"] button.cm-switch > span {
+  flex:0 0 20px; width:20px; height:20px; border-radius:50%;
+}
+.event-controls[data-testid="page-notification-templates"] button.cm-info {
+  width:40px; height:40px; min-height:40px; padding:0;
+}
+.event-controls[data-testid="page-notification-templates"] .cm-event-trigger {
+  min-height:44px; padding:8px 12px;
+}
+@media(max-width:900px) {
+  .event-controls .cm-cols { display:none }
+  .event-controls .cm-row { grid-template-columns:1fr auto; grid-template-areas:"who status" "prev prev" "en act"; gap:8px 12px; margin:8px; padding:12px; border:1px solid var(--dq-line); border-radius:10px }
+  .event-controls .cm-row:last-child { border-bottom:1px solid var(--dq-line) }
+  .event-controls .cm-who { grid-area:who }
+  .event-controls .cm-status { grid-area:status; justify-self:end }
+  .event-controls .cm-preview-cell { grid-area:prev }
+  .event-controls .cm-enabled { grid-area:en; justify-content:flex-start }
+  .event-controls .cm-enabled::before { content:"Enabled"; font-size:var(--type-caption); color:var(--soft); margin-right:6px }
+  .event-controls .cm-action { grid-area:act; justify-self:end }
+  .event-controls .cm-edit.button { min-height:44px }
+}
+@media(max-width:767px) {
+  .event-controls[data-testid="page-notification-templates"] button.cm-info { height:44px; min-height:44px }
+  .event-controls .ns-controls { justify-content:flex-start; width:100% }
+  .event-controls .ns-search { flex:1 1 100% }
+  .event-controls .cm-event-toolbar { grid-template-columns:minmax(0,1fr) 40px; }
+  .event-controls .cm-event-toolbar > .cm-switch-spacer { display:none }
+}

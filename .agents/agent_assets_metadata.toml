@@ -316,3 +316,17 @@ mtime_ms = 1792044865202
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/5bc2253d-d8df-482e-b6be-9df7e95d2d1c/db0b8b73-2ae5-43f9-b5ea-73dbbd1ed905"
 storage_version_token = "1792044890379755"
 content_type = "text/html"
+
+[[outputs]]
+id = "EtDBWVdQ0V3F9Nr_5sH55"
+uri = "file://generated-artifacts/notification-reference/layout-comparison.html"
+type = "html"
+title = "Final Notifications layout comparison"
+description = "Before/after fixtures at four widths, including final workspace-style switch and touch-target corrections."
+logical_id = "fdf9cc55-2097-4806-92d5-9de91c811701"
+content_hash = "sha256:05891a795b70781480c57094cbc257a6a787fac37f392cba0371c1a0de191611"
+size = 1108320
+mtime_ms = 1792070968166
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/fdf9cc55-2097-4806-92d5-9de91c811701/b905489e-8281-4158-934d-65425108cc9a"
+storage_version_token = "1792070969736526"
+content_type = "text/html"

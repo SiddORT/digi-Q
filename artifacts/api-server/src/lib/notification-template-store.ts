@@ -126,7 +126,7 @@ export async function changeActivation(user:any, input:{channel:Channel;event:Te
   assert(["patient","clinicAdmin","doctor","receptionist","superAdmin"].includes(input.recipient),400,"Unsupported recipient");
    assert(!requiredEvent(input.event),400,"Required security messages cannot be disabled");
   assert(validTemplateTarget(input.event,input.recipient,input.channel),400,"Invalid event, recipient or channel");
-  assert(user.role==="superAdmin" && !user.demo,403,"Real Superadmin access required");
+  assert(user.role==="superAdmin" || user.role==="clinicAdmin" && !!input.clinicId && input.recipient!=="superAdmin",403,"Activation requires System Admin access or an owned clinic and clinic recipient");
   await conn.transaction(async (tx:any)=>{
     await authorizedTemplateScope(user,input.clinicId,tx);
     const id=key(input.event,input.clinicId,input.recipient,input.channel);

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
-import { eventControlBody, eventControlError } from "../lib/communication-routes";
+import { eventControlError } from "../lib/communication-routes";
 import { refreshNotificationManagement } from "../lib/notification-management";
 import { useConfirm } from "./ConfirmDialog";
 import { groupActivationChanges, notificationGroup, sameActivationRows } from "../lib/notification-groups";
@@ -15,7 +15,6 @@ export function useNotificationManagement(clinicId: string, enabled: boolean, su
     queryKey: api.getGetManagedNotificationSettingsQueryKey(params), enabled, staleTime: 15000,
   } });
   const gateSave = api.useSaveManagedNotificationSettings();
-  const rowSave = api.useUpdateEventControl();
   const confirm = useConfirm();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -27,8 +26,8 @@ export function useNotificationManagement(clinicId: string, enabled: boolean, su
   async function change(row?: api.EventControlRow, event?: string) {
     const baseline = latest.current.data;
     const group = baseline && event ? notificationGroup(baseline.items, event) : undefined;
-    if (lock.current || blocked() || !baseline || latest.current.isError || latest.current.isFetching ||
-        ((row || event) && (!superAdmin || !baseline.canActivate || row?.required)) || (group && !group.optional.length)) return;
+    if (lock.current || blocked() || !baseline || !baseline.canActivate || latest.current.isError || latest.current.isFetching ||
+        ((row || event) && (!baseline.canActivate || row?.canActivate === false || row?.required)) || (group && !group.optional.length)) return;
     lock.current = true; setPending(true); setError(""); setNotice("");
     const next = group ? group.next : !(row ? row.enabled : baseline.notificationsEnabled);
     try {
@@ -42,18 +41,18 @@ export function useNotificationManagement(clinicId: string, enabled: boolean, su
       const current = await latest.current.refetch();
       if (!alive.current) return;
       const freshRow = row && current.data?.items.find(r => r.channel === row.channel && r.event === row.event && r.recipient === row.recipient);
-      if (current.isError || current.data?.revision !== baseline.revision || current.data?.notificationsEnabled !== baseline.notificationsEnabled || current.data?.inherited !== baseline.inherited ||
-          (row && (!current.data?.canActivate || !freshRow || freshRow.required || freshRow.revision !== row.revision || freshRow.enabled !== row.enabled || freshRow.source !== row.source)) ||
+      if (current.isError || !current.data?.canActivate || current.data?.revision !== baseline.revision || current.data?.notificationsEnabled !== baseline.notificationsEnabled || current.data?.inherited !== baseline.inherited ||
+          (row && (!current.data?.canActivate || !freshRow || freshRow.canActivate === false || freshRow.required || freshRow.revision !== row.revision || freshRow.enabled !== row.enabled || freshRow.source !== row.source)) ||
           (group && (!current.data?.canActivate || !sameActivationRows(baseline.items.filter(r => r.event === event), current.data.items.filter(r => r.event === event))))) {
         setError("Settings or permissions changed during confirmation. Nothing was saved. Review the latest values and try again.");
         return;
       }
-      if (row) {
-        await rowSave.mutateAsync({ data: eventControlBody(row, next, clinicId) as api.EventControlInput });
-      } else {
+      {
         const result = await gateSave.mutateAsync({ data: {
           ...(clinicId ? { clinicId } : {}), revision: baseline.revision,
-          ...(group ? { changes: groupActivationChanges(group.optional, next) } : { notificationsEnabled: next, changes: [] }),
+          ...(group ? { changes: groupActivationChanges(group.optional, next) } : row ? {
+            changes: [{ channel: row.channel, event: row.event, recipient: row.recipient, revision: row.revision, enabled: next }],
+          } : { notificationsEnabled: next, changes: [] }),
           confirmed: true,
         } });
         qc.setQueryData(api.getGetManagedNotificationSettingsQueryKey(params), result);

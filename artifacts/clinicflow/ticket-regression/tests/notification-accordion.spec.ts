@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { eventSections } from "../notification-catalog";
 
 const events = ["booking", "reminder"];
 const rows = events.flatMap(event => ["email", "sms"].flatMap(channel => ["patient", "doctor"].map(recipient => ({
@@ -31,7 +32,7 @@ async function setup(page: Page) {
     if (path.endsWith("/notification-settings")) return route.fulfill({ json: {
       revision: 1, canActivate: true, inherited: true,
       scopeName: url.searchParams.get("clinicId") ? "Fixture Clinic" : "Platform defaults",
-      notificationsEnabled: true, items: rows,
+      notificationsEnabled: true, events: eventSections, items: rows,
     } });
     if (path.endsWith("/templates")) return route.fulfill({ json: {
       scopeName: "Fixture Clinic", variables: [], items: events.map(event => ({
@@ -65,6 +66,10 @@ test("headings start collapsed; keyboard and independent expansion do not write"
   await booking.press("Enter");
   await expect(booking).toHaveAttribute("aria-expanded", "true");
   await booking.press("ArrowDown");
+  await page.getByTestId("button-event-onboarding").press("ArrowDown");
+  await page.getByTestId("button-event-rescheduled").press("ArrowDown");
+  await page.getByTestId("button-event-cancelled").press("ArrowDown");
+  await page.getByTestId("button-event-completed").press("ArrowDown");
   await expect(reminder).toBeFocused();
   await reminder.press("Space");
   await expect(reminder).toHaveAttribute("aria-expanded", "true");

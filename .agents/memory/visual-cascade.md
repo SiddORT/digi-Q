@@ -110,3 +110,14 @@ Check pointer and keyboard activation as well as rectangle containment when narr
 **Why:** A visually contained select trigger can still be covered by a higher-layer decorative wrapper, so a bounds-only check does not prove its menu is usable.
 
 **How to apply:** Open narrowed selects and menus through their accessible controls. Keep decorative layers non-interactive and preserve any meaningful buttons.
+
+Historical visual baselines must run against the historical source, while retaining
+the monorepo's TypeScript reference and dependency context.
+
+**Why:** An isolated frontend archive can serve HTML successfully but fail before
+rendering when Vite follows missing workspace TypeScript references. That is a
+baseline harness failure, not evidence the historical screen was broken.
+
+**How to apply:** Preserve workspace configuration and shared dependency resolution
+in ignored baseline copies; distinguish reconstructed fixture baselines from
+authenticated screenshots captured before editing.

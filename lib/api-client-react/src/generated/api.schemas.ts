@@ -80,6 +80,14 @@ export interface PersonalNotificationSettings {
   activeClinicId: string | null;
 }
 
+export interface NotificationEventSection {
+  id: string;
+  label: string;
+  order: number;
+  clinicApplicable: boolean;
+  explanation: string;
+}
+
 export type EventControlRowChannel = typeof EventControlRowChannel[keyof typeof EventControlRowChannel];
 
 
@@ -100,6 +108,8 @@ export const EventControlRowRecipient = {
 } as const;
 
 export interface EventControlRow {
+  canActivate?: boolean;
+  canEdit?: boolean;
   channel: EventControlRowChannel;
   event: string;
   recipient: EventControlRowRecipient;
@@ -119,6 +129,7 @@ export interface ManagedNotificationSettings {
   notificationsEnabled: boolean;
   inherited: boolean;
   canActivate: boolean;
+  events: NotificationEventSection[];
   items: EventControlRow[];
 }
 

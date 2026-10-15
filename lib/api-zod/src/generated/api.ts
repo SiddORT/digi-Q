@@ -91,7 +91,16 @@ export const GetManagedNotificationSettingsResponse = zod.object({
   "notificationsEnabled": zod.boolean(),
   "inherited": zod.boolean(),
   "canActivate": zod.boolean(),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "order": zod.number().int(),
+  "clinicApplicable": zod.boolean(),
+  "explanation": zod.string()
+})),
   "items": zod.array(zod.object({
+  "canActivate": zod.boolean().optional(),
+  "canEdit": zod.boolean().optional(),
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
@@ -136,7 +145,16 @@ export const SaveManagedNotificationSettingsResponse = zod.object({
   "notificationsEnabled": zod.boolean(),
   "inherited": zod.boolean(),
   "canActivate": zod.boolean(),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "order": zod.number().int(),
+  "clinicApplicable": zod.boolean(),
+  "explanation": zod.string()
+})),
   "items": zod.array(zod.object({
+  "canActivate": zod.boolean().optional(),
+  "canEdit": zod.boolean().optional(),
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
@@ -987,6 +1005,8 @@ export const GetEventControlsResponse = zod.object({
   "notificationsEnabled": zod.boolean().optional(),
   "gateDescription": zod.string(),
   "items": zod.array(zod.object({
+  "canActivate": zod.boolean().optional(),
+  "canEdit": zod.boolean().optional(),
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
@@ -1020,6 +1040,8 @@ export const UpdateEventControlResponse = zod.object({
   "notificationsEnabled": zod.boolean().optional(),
   "gateDescription": zod.string(),
   "items": zod.array(zod.object({
+  "canActivate": zod.boolean().optional(),
+  "canEdit": zod.boolean().optional(),
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),

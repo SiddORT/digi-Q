@@ -5,7 +5,8 @@ import { deliveryControlCatalog } from "./notification-controls";
 import { lockNotificationPreferences } from "./notification-preferences";
 import { getSettings, audit } from "./store";
 import { assert } from "./http";
-import type { TemplateEvent, TemplateRecipient } from "./notification-templates";
+import { templateEvents, eventTitles, type TemplateEvent, type TemplateRecipient } from "./notification-templates";
+import { requiredEvent } from "./security-template-definitions";
 import { recordNotification, notificationEntry, historyId } from "./notification-history";
 
 const revisionId = (clinicId?: string) => `notification-policy-revision:${clinicId || "platform"}`;
@@ -19,15 +20,23 @@ async function policyRevision(conn: any, clinicId?: string) {
 export async function managedNotificationSettings(user: any, clinicId?: string, conn: any = db) {
   const clinic = await authorizedTemplateScope(user, clinicId, conn);
   const catalog = await deliveryControlCatalog(conn, clinicId, clinic);
-  const canActivate = user.role === "superAdmin";
+  const canActivate = user.role === "superAdmin" || user.role === "clinicAdmin" && !!clinicId;
   const [platform] = await conn.select().from(settings).where(eq(settings.id, "platform"));
   const inherited = clinicId ? typeof clinic?.policies?.notificationsEnabled !== "boolean" : typeof platform?.data?.notificationsEnabled !== "boolean";
   return { revision: await policyRevision(conn, clinicId), scopeName: catalog.scopeName, notificationsEnabled: !!catalog.notificationsEnabled,
     inherited, canActivate,
-    // Clinic Admins have no existing activation permission. Provider details and
-    // administrator-only recipient policies are not disclosed through this endpoint.
-    items: canActivate ? catalog.items : catalog.items.filter(r => r.channel === "email" && r.recipient !== "superAdmin").map(r => ({
-      ...r, blockedReasons: r.blockedReasons.map(reason => /SMTP|SMS|Communication/.test(reason) ? "Delivery provider is not ready; contact the platform administrator" : reason),
+    events: templateEvents.map((id, order) => ({
+      id, label: id === "onboarding" ? "Clinic Onboarding" : eventTitles[id], order,
+      clinicApplicable: !requiredEvent(id),
+      explanation: requiredEvent(id) ? "Required authentication and security messages are managed at System Default and cannot be disabled by a clinic." : "",
+    })),
+    // Activation does not grant wording or provider access. No platform security
+    // rows or Superadmin recipients are disclosed to clinic administrators.
+    items: catalog.items.filter(r => user.role === "superAdmin" || !r.required && r.recipient !== "superAdmin").map(r => ({
+      ...r, canActivate: canActivate && !r.required,
+      canEdit: user.role === "superAdmin" || r.channel === "email" && !r.required && r.recipient !== "superAdmin",
+      blockedReasons: user.role === "superAdmin" ? r.blockedReasons : [...new Set(r.blockedReasons.map(reason =>
+        /SMTP|SMS|Communication|DLT|Sender|Entity/.test(reason) ? "Delivery setup requires the System Admin; contact them to review provider and approved wording readiness." : reason))],
     })) };
 }
 type PolicyInput = { clinicId?: string; revision: number; notificationsEnabled?: boolean; confirmed?: boolean;
@@ -36,7 +45,6 @@ export async function saveManagedNotificationSettings(user: any, input: PolicyIn
   await conn.transaction(async (tx: any) => {
     await lockNotificationPreferences(tx);
     const clinic = await authorizedTemplateScope(user, input.clinicId, tx);
-    assert(user.role === "superAdmin" || input.changes.length === 0, 403, "Only Superadmins can change event activation");
     assert(await policyRevision(tx, input.clinicId) === input.revision, 409, "Notification policy changed. Reload before saving.");
     assert(new Set(input.changes.map(c => `${c.channel}:${c.event}:${c.recipient}`)).size === input.changes.length, 400, "Duplicate event activation");
     // Scope row locks serialize narrow gate merges with legacy full policy writers.

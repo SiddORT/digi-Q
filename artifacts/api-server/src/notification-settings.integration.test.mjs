@@ -44,6 +44,7 @@ before(async()=>{
     export * from "./lib/notification-preferences";
     export * from "./lib/personal-notification-settings";
     export * from "./lib/managed-notification-settings";
+    export { requiredEvent } from "./lib/security-template-definitions";
     export { listNotificationsFor } from "./routes/workspace-features";
     import { notificationSettingsRouter } from "./routes/notification-settings";
     import {notificationHistoryRouter} from "./routes/notification-history";
@@ -61,7 +62,7 @@ before(async()=>{
       b.onResolve({filter:/^@workspace\/api-zod$/},()=>({path:resolve(import.meta.dirname,"../../../lib/api-zod/src/index.ts")}));
       // Authentication is an injected fixture at the router boundary; the real guards still run.
       b.onResolve({filter:/\/auth$/},args=>args.importer.includes("/routes/")?{path:"auth",namespace:"fixture-auth"}:undefined);
-      b.onLoad({filter:/.*/,namespace:"fixture-auth"},()=>({contents:`export async function requireUser(req){return {id:req.headers["x-user"],role:req.headers["x-user"]||"patient",clinicIds:["c"]};} export async function findUser(){return null;} export function roles(u,rs){if(!rs.includes(u.role))throw Object.assign(new Error("Forbidden"),{status:403});}`}));
+      b.onLoad({filter:/.*/,namespace:"fixture-auth"},()=>({contents:`export async function requireUser(req){const id=req.headers["x-user"];return {id,role:id==="ca"?"clinicAdmin":id||"patient",clinicIds:["c"]};} export async function findUser(){return null;} export function roles(u,rs){if(!rs.includes(u.role))throw Object.assign(new Error("Forbidden"),{status:403});}`}));
     }}]});
   api=await import(bundle);
 });
@@ -793,11 +794,12 @@ test("pending channel jobs terminally cancel on opt-out; reenable and recapture 
 test("scope policy batches are atomic, owner-only and narrow; preserve drafts and opt-outs",async()=>{
   await resetChoices();await publishPreferenceTemplates();
   const ca=await api.managedNotificationSettings(ownerActor,"c",h.db);
-  assert.equal(ca.canActivate,false);assert(ca.items.every(r=>r.channel==="email"&&r.recipient!=="superAdmin"));
+  assert.equal(ca.canActivate,true);assert(ca.items.every(r=>!r.required&&r.recipient!=="superAdmin"));
+  assert(ca.items.some(r=>r.channel==="sms"&&r.canActivate&&!r.canEdit));
   await assert.rejects(api.managedNotificationSettings(patientActor,"c",h.db),{status:403});
   await assert.rejects(api.managedNotificationSettings({...ownerActor,id:"du"},"c",h.db),{status:403});
   await assert.rejects(api.managedNotificationSettings(ownerActor,undefined,h.db),{status:403});
-  await assert.rejects(api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:ca.revision,changes:[{channel:"email",event:"booking",recipient:"patient",revision:0,enabled:false}]},h.db),{status:403});
+  await assert.rejects(api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:ca.revision,changes:[{channel:"email",event:"onboarding",recipient:"superAdmin",revision:0,enabled:false}]},h.db),{status:403});
   const before=await api.resolvedTemplate("cancelled","c",h.db,"patient","email");
   await api.saveTemplate(sa,{channel:"email",event:"cancelled",recipient:"patient",clinicId:"c",revision:before.local.revision,mode:"draft",content:{...before.content,subject:"Unpublished fictional draft"}});
   const control=await api.managedNotificationSettings(sa,"c",h.db);
@@ -844,6 +846,110 @@ test("event activation batches roll back earlier rows on a late conflict and per
   const reloaded=await scope();
   for(const change of changes)assert.equal(reloaded.items.find(r=>r.channel===change.channel&&r.event===change.event&&r.recipient===change.recipient).enabled,change.enabled);
   assert.equal((await api.resolvedTemplate("booking","c",h.db,first.recipient,"email")).local.draft.body,draftBody);
+});
+test("canonical sections match System Default and two clinics without disclosing security content",async()=>{
+  await h.control.query(`insert into clinics(id,admin_id,data) values('catalog-clinic','ca','{"name":"Fictional second clinic"}') on conflict do nothing`);
+  const catalogs=await Promise.all([undefined,"c","catalog-clinic"].map(id=>api.managedNotificationSettings(sa,id,h.db)));
+  const expected=api.templateEvents;
+  for(const catalog of catalogs)assert.deepEqual(catalog.events.map(e=>e.id),expected);
+  const before=catalogs.map(c=>[...new Set(c.items.map(r=>r.event))]);
+  const omitted=expected.filter(e=>!before[1].includes(e));
+  assert.deepEqual(omitted,expected.filter(api.requiredEvent));
+  assert.deepEqual(before[1],before[2]);
+  for(const id of ["c","catalog-clinic"]){
+    const view=await api.managedNotificationSettings(ownerActor,id,h.db);
+    assert.deepEqual(view.events.map(e=>e.id),expected);
+    assert(view.events.filter(e=>!e.clinicApplicable).every(e=>e.explanation&&!JSON.stringify(e).includes("setup_link")));
+    assert(view.items.every(r=>!r.required&&r.recipient!=="superAdmin"));
+    assert(view.items.filter(r=>r.channel==="sms").every(r=>r.canActivate&&!r.canEdit));
+  }
+  console.info("Canonical event diagnosis:",JSON.stringify({before,after:catalogs.map(c=>c.events.map(e=>e.id)),additionalOmissions:[]}));
+});
+test("owned-clinic Email and SMS opt-outs survive fresh connections, preserve wording and never change other scopes",async()=>{
+  await resetChoices();await publishPreferenceTemplates();
+  const before=await api.managedNotificationSettings(ownerActor,"c",h.db);
+  const originalPlatform=await api.managedNotificationSettings(sa,undefined,h.db);
+  const originalOther=await api.managedNotificationSettings(sa,"catalog-clinic",h.db);
+  const targets=before.items.filter(r=>r.event==="cancelled"&&r.recipient==="patient");
+  assert.equal(targets.length,2);
+  const wording=await Promise.all(targets.map(r=>api.resolvedTemplate(r.event,"c",h.db,r.recipient,r.channel)));
+  const changes=targets.map(r=>({channel:r.channel,event:r.event,recipient:r.recipient,revision:r.revision,enabled:false}));
+  const off=await api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:before.revision,confirmed:true,changes},h.db);
+  assert.equal(off.notificationsEnabled,before.notificationsEnabled);
+  const freshClient=await h.connect();
+  try{
+    const fresh=await api.managedNotificationSettings(ownerActor,"c",drizzle(freshClient));
+    for(const target of targets)assert.equal(fresh.items.find(r=>r.channel===target.channel&&r.event===target.event&&r.recipient===target.recipient).enabled,false);
+  }finally{await freshClient.end();}
+  for(let i=0;i<targets.length;i++){
+    const r=targets[i],after=await api.resolvedTemplate(r.event,"c",h.db,r.recipient,r.channel);
+    assert.deepEqual({...after.content,enabled:true},{...wording[i].content,enabled:true});
+    assert.deepEqual(after.local.draft,wording[i].local.draft);
+  }
+  assert.deepEqual((await api.managedNotificationSettings(sa,undefined,h.db)).items,originalPlatform.items);
+  assert.deepEqual((await api.managedNotificationSettings(sa,"catalog-clinic",h.db)).items,originalOther.items);
+  await assert.rejects(api.saveManagedNotificationSettings(ownerActor,{revision:off.revision,changes:[]},h.db),{status:403});
+  await assert.rejects(api.saveManagedNotificationSettings({...ownerActor,id:"du"},{clinicId:"c",revision:off.revision,changes:[]},h.db),{status:403});
+  for(const forbidden of [
+    {channel:"email",event:"onboarding",recipient:"superAdmin"},
+    {channel:"email",event:"clinic_registration_otp",recipient:"clinicAdmin"},
+  ])await assert.rejects(api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:off.revision,confirmed:true,changes:[{...forbidden,revision:0,enabled:false}]},h.db));
+  await assert.rejects(api.templateCatalog(ownerActor,"c","patient","sms",h.db),{status:403});
+  await assert.rejects(api.templateCatalog(ownerActor,undefined,"patient","email",h.db),{status:403});
+  const sms=await api.resolvedTemplate("cancelled","c",h.db,"patient","sms");
+  await assert.rejects(api.saveTemplate(ownerActor,{clinicId:"c",channel:"sms",event:"cancelled",recipient:"patient",revision:sms.local.revision,mode:"draft",content:sms.content},h.db),{status:403});
+  // Re-enabling the gate must not reset individual saved opt-outs.
+  const gateOff=await api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:off.revision,notificationsEnabled:false,changes:[]},h.db);
+  const gateOn=await api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:gateOff.revision,notificationsEnabled:true,confirmed:true,changes:[]},h.db);
+  assert(gateOn.items.filter(r=>r.event==="cancelled"&&r.recipient==="patient").every(r=>!r.enabled));
+  await h.control.query("update clinics set admin_id='du' where id='catalog-clinic'");
+  await assert.rejects(api.saveManagedNotificationSettings(ownerActor,{clinicId:"catalog-clinic",revision:originalOther.revision,changes:[],notificationsEnabled:false},h.db),{status:403});
+  await h.control.query("update clinics set admin_id='ca' where id='catalog-clinic'");
+});
+test("Clinic Admin gate terminally cancels both channels, never replays old work, and HTTP opt-outs survive server restart",async()=>{
+  await resetChoices();await publishPreferenceTemplates();
+  await h.control.query("create table if not exists auth_rate_limits(key text primary key,attempts int not null default 0,expires_at timestamptz not null)");
+  const visit=fictionalVisit("clinic-gate-restart","cancelled");await storeVisit(visit);
+  await h.db.transaction(tx=>api.enqueueEvent(tx,"cancelled",visit));
+  const jobs=await h.control.query("select id,data from settings where (id like $1 or id like $2) and data->>'recipientGroup'='patient'",[
+    `mail-outbox:cancelled:${visit.id}:%`,`sms-outbox:cancelled:${visit.id}:%`,
+  ]);
+  assert.equal(jobs.rows.length,2);
+  let baseline=await api.managedNotificationSettings(ownerActor,"c",h.db);
+  baseline=await api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:baseline.revision,notificationsEnabled:false,changes:[]},h.db);
+  for(const job of jobs.rows)assert.equal((await h.control.query("select data->>'state' state from settings where id=$1",[job.id])).rows[0].state,"disabled");
+  await api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:baseline.revision,notificationsEnabled:true,confirmed:true,changes:[]},h.db);
+  await h.db.transaction(tx=>api.enqueueEvent(tx,"cancelled",visit));
+  for(const job of jobs.rows)assert.equal((await h.control.query("select data->>'state' state from settings where id=$1",[job.id])).rows[0].state,"disabled");
+  assert.equal((await api.resolvedTemplate("patient_login_otp",undefined,h.db,"patient","sms")).content.enabled,true);
+  const start=async()=>{
+    const server=api.app.listen(0,"127.0.0.1");await new Promise(r=>server.once("listening",r));
+    return {server,origin:`http://127.0.0.1:${server.address().port}`};
+  };
+  let running=await start();
+  const request=(path,body)=>fetch(`${running.origin}${path}`,{
+    method:body?"PUT":"GET",headers:{"x-user":"ca","content-type":"application/json"},...(body?{body:JSON.stringify(body)}:{}),
+  });
+  try{
+    let response=await request("/management/notification-settings?clinicId=c");
+    assert.equal(response.status,200);const view=await response.json();
+    assert.equal(view.events.length,api.templateEvents.length);
+    const row=view.items.find(r=>r.channel==="sms"&&r.event==="cancelled"&&r.recipient==="patient");
+    response=await request("/management/notification-settings",{clinicId:"c",revision:view.revision,confirmed:true,
+      changes:[{channel:row.channel,event:row.event,recipient:row.recipient,revision:row.revision,enabled:false}]});
+    assert.equal(response.status,200);
+    await new Promise(r=>running.server.close(r));running=await start();
+    const restarted=await (await request("/management/notification-settings?clinicId=c")).json();
+    assert.equal(restarted.items.find(r=>r.channel===row.channel&&r.event===row.event&&r.recipient===row.recipient).enabled,false);
+    assert.equal((await request("/management/notification-settings",{revision:restarted.revision,changes:[]})).status,403);
+    assert.equal((await request("/management/notification-settings",{clinicId:"c",revision:restarted.revision,changes:[
+      {channel:"email",event:"onboarding",recipient:"superAdmin",revision:0,enabled:false},
+    ]})).status,403);
+    assert.equal((await request("/management/notification-settings",{clinicId:"c",revision:restarted.revision,changes:[
+      {channel:"sms",event:"patient_login_otp",recipient:"patient",revision:0,enabled:false},
+    ]})).status,400);
+    assert.equal((await request("/management/templates?clinicId=c&channel=sms&recipient=patient")).status,403);
+  }finally{await new Promise(r=>running.server.close(r));}
 });
 test("in-app choices hide feed and unread candidates without deleting history or changing read markers",async()=>{
   await resetChoices();

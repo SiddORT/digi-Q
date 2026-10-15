@@ -12,10 +12,16 @@ delivery-management screens or another settings layer.
 
 **How to apply:** Reuse existing saved-policy and template mechanisms. Keep provider
 configuration/diagnostics and read-only logs separate, preserve personal preferences
-without restoring the removed preferences interface, and do not widen Clinic Admin
-activation/SMS/provider permissions. This approval does not authorize a backend
+without restoring the removed preferences interface. Clinic Admins may manage the
+optional-delivery gate and optional event/recipient activation for Email and SMS
+only in their currently owned clinic. This does not grant SMS wording, platform
+security, Superadmin-recipient or provider access. This approval does not authorize a backend
 redesign, changed defaults, migration, live message, production setting change or
 deployment.
+
+**Why:** The user explicitly extended Clinic Admin authority to switch unwanted
+optional clinic notifications off. This supersedes the prior Superadmin-only
+activation restriction, not the other configuration boundaries.
 
 Bulk event activation describes and verifies the entire unfiltered event, but
 only writes optional rows whose activation must change.

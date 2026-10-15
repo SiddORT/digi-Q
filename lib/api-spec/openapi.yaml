@@ -1618,14 +1618,24 @@ components:
         activeClinicId: { type: ['string', 'null'] }
     ManagedNotificationSettings:
       type: object
-      required: [revision, scopeName, notificationsEnabled, inherited, canActivate, items]
+      required: [revision, scopeName, notificationsEnabled, inherited, canActivate, events, items]
       properties:
         revision: { type: integer }
         scopeName: { type: string }
         notificationsEnabled: { type: boolean }
         inherited: { type: boolean }
         canActivate: { type: boolean }
+        events: { type: array, items: { $ref: '#/components/schemas/NotificationEventSection' } }
         items: { type: array, items: { $ref: '#/components/schemas/EventControlRow' } }
+    NotificationEventSection:
+      type: object
+      required: [id, label, order, clinicApplicable, explanation]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        order: { type: integer }
+        clinicApplicable: { type: boolean }
+        explanation: { type: string }
     ManagedActivation:
       type: object
       additionalProperties: false
@@ -2209,6 +2219,8 @@ components:
       type: object
       required: [channel, event, recipient, revision, enabled, source, ready, blockedReasons, timing]
       properties:
+        canActivate: { type: boolean }
+        canEdit: { type: boolean }
         channel: { type: string, enum: [email, sms] }
         event: { type: string }
         recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }

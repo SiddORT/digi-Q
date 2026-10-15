@@ -21,6 +21,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { EventControlRow } from './eventControlRow';
+import type { NotificationEventSection } from './notificationEventSection';
 
 export interface ManagedNotificationSettings {
   revision: number;
@@ -28,5 +29,6 @@ export interface ManagedNotificationSettings {
   notificationsEnabled: boolean;
   inherited: boolean;
   canActivate: boolean;
+  events: NotificationEventSection[];
   items: EventControlRow[];
 }

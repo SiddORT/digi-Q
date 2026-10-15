@@ -24,6 +24,8 @@ import type { EventControlRowChannel } from './eventControlRowChannel';
 import type { EventControlRowRecipient } from './eventControlRowRecipient';
 
 export interface EventControlRow {
+  canActivate?: boolean;
+  canEdit?: boolean;
   channel: EventControlRowChannel;
   event: string;
   recipient: EventControlRowRecipient;

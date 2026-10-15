@@ -234,6 +234,7 @@ export * from './message';
 export * from './nativeStaffLoginInput';
 export * from './notificationChoice';
 export * from './notificationClinicScope';
+export * from './notificationEventSection';
 export * from './notificationList';
 export * from './notificationLog';
 export * from './notificationLogChannel';

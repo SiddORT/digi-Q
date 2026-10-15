@@ -9,7 +9,7 @@ import { FormActions } from "./FormActions";
 import { ResourceLookup } from "./ResourceLookup";
 import { SearchableSelect } from "./SearchableSelect";
 import { OverflowText } from "./OverflowText";
-import { Pencil } from "lucide-react";
+import { Bell, CalendarClock, CheckCircle2, FileText, KeyRound, Lock, Mail, MessageSquare, Search, ShieldCheck, UserPlus, XCircle, Building2, Smartphone, type LucideIcon } from "lucide-react";
 import { AccordionItem, AccordionTrigger, AccordionContent } from "./ui/accordion";
 import { NotificationEventAccordion } from "./NotificationEventAccordion";
 import { titleCase } from "../lib/title-case";
@@ -26,10 +26,12 @@ import "./notification-settings.css";
 import "./notification-page.css";
 
 type Row = api.EventControlRow;
+type EventMeta = api.NotificationEventSection;
+const EVENT_ICONS: Record<string, LucideIcon> = { booking: Mail, rescheduled: CalendarClock, cancelled: XCircle, completed: CheckCircle2, reminder: Bell, patient_login_otp: KeyRound, patient_email_otp: Mail, registration_mobile_otp: Smartphone, clinic_registration_otp: FileText, onboarding: Building2, doctor_setup: UserPlus, staff_setup: UserPlus, password_setup_complete: ShieldCheck };
 const label = (r: string) => RECIPIENTS.find(x => x.value === r)?.label ?? r;
 const CHANNELS = ["email", "sms"] as const;
 
-function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, interactionLock, scopeChanging }: { identity: api.Identity; clinicId: string; onDirty: (v: boolean) => void; onPending: (v: boolean) => void; scopeControl: ReactNode; interactionLock: MutableRefObject<boolean>; scopeChanging: boolean }) {
+function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, interactionLock, scopeChanging, changeScope }: { changeScope: (next: string) => Promise<void>; identity: api.Identity; clinicId: string; onDirty: (v: boolean) => void; onPending: (v: boolean) => void; scopeControl: ReactNode; interactionLock: MutableRefObject<boolean>; scopeChanging: boolean }) {
   const superAdmin = identity.user?.role === "superAdmin";
   const [f, setF] = useState({ q: "", channel: "", recipient: "", status: "" });
   const [editing, setEditing] = useState<{ channel: "email" | "sms"; event: string; recipient: string } | null>(null);
@@ -54,11 +56,10 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
     catalogs.forEach((c, i) => c.data?.items.forEach(it => m.set(`${combos[i].channel}|${it.event}|${combos[i].recipient}`, (it.draft ?? it.content).body)));
     return m;
   }, [catalogs]); // eslint-disable-line react-hooks/exhaustive-deps
-  const items = controls.data?.items ?? [];
+  const items: Row[] = controls.data?.items ?? [];
   const list: (ListRow & { row: Row })[] = items.map(r => ({ row: r, channel: r.channel, event: r.event, recipient: r.recipient, enabled: r.enabled, ready: r.ready && (r.required || controls.data?.notificationsEnabled === true), source: r.source,
     inherited: clinicId ? r.source !== "clinic" : r.source === "default", preview: previews.get(`${r.channel}|${r.event}|${r.recipient}`) ?? "" }));
   const shown = filterRows(list, f) as typeof list;
-  const groups = useMemo(() => { const m = new Map<string, typeof shown>(); for (const r of shown) m.set(r.event, [...(m.get(r.event) ?? []), r]); return [...m.entries()]; }, [shown]);
   const filtered = !!(f.q.trim() || f.channel || f.recipient || f.status);
   const expansionKey = JSON.stringify([identity.user?.id, superAdmin, clinicId, f.q.trim(), f.channel, f.recipient, f.status]);
   const closeEditor = () => { setEditing(null); setDirty(false); void controls.refetch(); };
@@ -71,28 +72,47 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty, pending]);
   const requestClose = () => busy ? undefined : dirty ? setDiscard(true) : closeEditor();
+  const meta: EventMeta[] = controls.data?.events ?? [];
+  const sections = [...meta].sort((a, b) => a.order - b.order);
+  const q = f.q.trim().toLowerCase();
+  const rowFilter = !!(f.channel || f.recipient || f.status);
+  const visible = sections.map(m => {
+    const all = items.filter(r => r.event === m.id);
+    const labelMatch = !!q && `${m.id.replaceAll("_", " ")} ${m.label}`.toLowerCase().includes(q);
+    const rows = (labelMatch ? filterRows(list, { ...f, q: "" }) as typeof list : shown).filter(r => r.event === m.id);
+    if (clinicId && !m.clinicApplicable) {
+      const hit = !rowFilter && (!q || `${m.label} ${m.explanation} managed at system default`.toLowerCase().includes(q));
+      return hit ? { m, rows: [], total: 0 } : null;
+    }
+    if (filtered && !rows.length) return null;
+    return { m, rows, total: all.length };
+  }).filter(Boolean) as { m: EventMeta; rows: typeof shown; total: number }[];
   const sel = (k: keyof typeof f, v: string, opts: [string, string][], name: string) => <select aria-label={name} value={v} onChange={e => setF(x => ({ ...x, [k]: e.target.value }))} data-testid={`select-filter-${k}`}><option value="">{name}: All</option>{opts.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>;
+  const gateCan = !!controls.data?.canActivate;
   return <section className="panel padded event-controls" data-testid="page-notification-templates">
     {confirm.dialog}
     {management.dialog}
     <header className="cm-notification-toolbar">
-      {scopeControl}
-      <div className="ns-gate"><Switch className="cm-switch" id="notification-delivery-gate" checked={controls.data?.notificationsEnabled ?? false} disabled={!enabled || unavailable || !!editing} onCheckedChange={() => void management.change()} data-testid="checkbox-clinic-gate" /><label htmlFor="notification-delivery-gate">Optional Delivery</label>
+      <div className="ns-heading"><h1>Notifications</h1><p>Configure delivery and wording for appointment, security and onboarding messages.</p></div>
+      <div className="ns-controls">
+        {scopeControl}
+        <div className="ns-gate"><Switch className="cm-switch" id="notification-delivery-gate" checked={controls.data?.notificationsEnabled ?? false} disabled={!enabled || !gateCan || unavailable || !!editing} onCheckedChange={() => void management.change()} data-testid="checkbox-clinic-gate" /><label htmlFor="notification-delivery-gate">Optional Delivery</label>
         <NotificationInfo label="About Optional Delivery">
           {clinicId ? "Applies only to the selected clinic. Clinics inherit system values until explicitly changed." : "System Default is inherited by clinics without an explicit override; clinics with overrides may differ."} Required security messages ignore Optional Delivery and opt-outs. Activation and wording are separate. Enabling does not confirm delivery readiness. Only future eligible events change; past events are never replayed.
           {controls.data && <> Current gate: {controls.data.notificationsEnabled ? "On" : "Off"}. {controls.data.inherited ? clinicId ? "Inherited system value." : "Default system value." : clinicId ? "Saved clinic value." : "Saved system value."}</>}
         </NotificationInfo>
+        </div>
       </div>
     </header>
     {enabled && !controls.isError && controls.data && <>
       {!controls.data.notificationsEnabled && <p className="notice cm-gate-warning" data-testid="text-gate-off">{clinicId ? "Optional delivery is off for this clinic, including enabled options." : "Optional delivery is off for System Default. Clinics with explicit overrides may differ."} Required security messages are not blocked by this gate.</p>}
-      {!controls.data.canActivate && <p id="notification-activation-permission" className="muted">Activation is read-only. Only the System Admin can change it. You can manage Optional Delivery and email wording.</p>}
+      {!gateCan && <p id="notification-activation-permission" className="muted">Activation is read-only for your account. You can still manage the wording you are allowed to edit.</p>}
     </>}
     {management.pending && <p role="status">Waiting for confirmation or saving. Scope and other delivery actions are locked.</p>}
     {management.error && <p className="error-box" role="alert" data-testid="status-management-error">{management.error}</p>}
     {management.notice && <p className="et-notice" role="status" data-testid="status-management-save">{management.notice}</p>}
     <div className="cm-filters cm-inline-filters" role="search" aria-label="Filter Notification Events">
-      <input type="search" aria-label="Search Events" placeholder="Search Events or Wording" value={f.q} onChange={e => setF(x => ({ ...x, q: e.target.value }))} data-testid="input-search-events" />
+      <div className="ns-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Search Events" placeholder="Search events or wording" value={f.q} onChange={e => setF(x => ({ ...x, q: e.target.value }))} data-testid="input-search-events" /></div>
       {sel("channel", f.channel, [["email", "Email"], ["sms", "SMS"]], "Channel")}
       {sel("recipient", f.recipient, RECIPIENTS.filter(r => superAdmin || r.value !== "superAdmin").map(r => [r.value, r.label]), "Recipient")}
       {sel("status", f.status, [["on", "On and Ready"], ["blocked", "On, Blocked"], ["off", "Off"]], "Status")}
@@ -102,41 +122,69 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
     {!enabled ? <div className="et-empty" data-testid="state-select-clinic">Select a clinic group to view its notification templates.</div>
       : controls.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : controls.isError ? <div role="alert" className="error-box" data-testid="state-error">Events could not be loaded. <button type="button" onClick={() => controls.refetch()} data-testid="button-retry">Retry</button></div>
-      : !items.length ? <div className="et-empty" data-testid="state-empty-catalog">No notification events are available for this selection.</div>
-      : !groups.length ? <div className="et-empty" data-testid="state-empty">{catalogs.some(c => c.isFetching) ? "Loading message previews…" : "No events match these filters."}</div>
-       : <NotificationEventAccordion key={expansionKey} events={groups.map(([event]) => event)} filtered={filtered}>
-         {groups.map(([event, rows]) => {
-           const group = notificationGroup(items, event);
-           const title = titleCase(event === "onboarding" ? "Clinic onboarding" : event.replaceAll("_", " "));
-           return <AccordionItem key={event} value={event} className="cm-event" data-testid={`group-event-${event}`}>
-         <div className="cm-event-toolbar">
-         <AccordionTrigger className="cm-event-trigger" data-testid={`button-event-${event}`}>
-           <span className="cm-event-title">{title}</span>
-         </AccordionTrigger>
-         <NotificationInfo label={`About ${title}`}>
-           {rows[0].row.timing && <>{rows[0].row.timing} </>}
-            {group.optional.length ? `Saved activation across all ${group.optional.length} optional channel/recipient options, including those hidden by filters. Mixed means some are enabled: switch on to enable all; from All Enabled, switch off to disable all. This does not change Optional Delivery or confirm delivery readiness. Required recipients are excluded.` : "Required security messages cannot be disabled and ignore Optional Delivery. Wording can still be edited."}
-         </NotificationInfo>
-          <span className={`et-chip cm-group-status ${group.checked ? "live" : ""}`} data-testid={`status-event-${event}`}>{group.status === "Enabled" ? "All Enabled" : group.status === "Disabled" ? "All Disabled" : group.status === "Custom" ? "Mixed" : "Required"}</span>
-         {group.optional.length > 0 && <Switch className="cm-switch" aria-label={`${title}: all ${group.optional.length} optional options`} aria-describedby={!controls.data?.canActivate ? "notification-activation-permission" : undefined} checked={group.checked} disabled={!superAdmin || !controls.data?.canActivate || pending || !!editing || controls.isFetching} onCheckedChange={() => void management.changeGroup(event)} data-testid={`switch-group-${event}`} />}
-         </div>
-          <AccordionContent className="cm-event-content">{!group.optional.length && <p className="cm-required-note">These security messages cannot be disabled and ignore Optional Delivery. Wording remains editable.</p>}<ul className="cm-rows">{rows.map(r => <li key={`${r.channel}|${r.recipient}`} className="cm-row" data-testid={`card-template-${r.channel}-${event}-${r.recipient}`}>
-          <div className="cm-row-main">
-            <div className="cm-row-meta"><span className="cm-channel">{r.channel === "sms" ? "SMS" : "Email"}</span><span className="cm-recipient">{label(r.recipient)}</span>
-              {r.row.required && group.optional.length > 0 && <span className="et-chip">Required</span>}
-              {r.enabled && rowDeliveryReasons(r.row, controls.data?.notificationsEnabled === false).length > 0 && <span className="et-chip cm-blocked">Delivery Blocked</span>}
-              <NotificationInfo label={`Activation Details: ${r.channel} to ${label(r.recipient)}`}>
-                {activationSource(r.row.source, clinicId)}. {r.row.required ? "Read-only security activation." : `Saved activation is ${r.enabled ? "on" : "off"}; it does not guarantee delivery. Provider readiness is separate from recipient eligibility: active status, patient opt-outs, clinic ownership or doctor assignment, valid contact and duplicate destinations are checked for each event.`} Wording has its own inheritance and unpublished drafts; open Edit for wording details. SMS uses the provider configuration on Communication Settings and each template's own DLT Template ID.
-              </NotificationInfo>
-              </div>
-            <OverflowText className="cm-preview" testId={`text-preview-${r.channel}-${event}-${r.recipient}`} value={r.preview ? previewText(r.preview, controls.data?.scopeName ?? "") : catalogs.some(c => c.isError) ? "Preview unavailable. Open Edit or retry previews." : "Loading Preview…"} />
-            {rowDeliveryReasons(r.row, controls.data?.notificationsEnabled === false).length > 0 && <ul className="ec-blocked" data-testid={`setup-${r.channel}-${event}-${r.recipient}`}>{rowDeliveryReasons(r.row, controls.data?.notificationsEnabled === false).map(b => <li key={b}>{b}</li>)}</ul>}
+      : !sections.length ? <div className="et-empty" data-testid="state-empty-catalog">No notification events are available for this selection.</div>
+      : !visible.length ? <div className="et-empty" data-testid="state-empty">{catalogs.some(c => c.isFetching) ? "Loading message previews…" : "No events match these filters."}</div>
+      : <NotificationEventAccordion key={expansionKey} events={visible.map(v => v.m.id)} filtered={filtered}>
+        {visible.map(({ m, rows, total }) => {
+          const event = m.id;
+          const title = m.label;
+          const Icon = EVENT_ICONS[event] ?? Bell;
+           if (clinicId && !m.clinicApplicable) return <AccordionItem key={event} value={event} className="cm-event cm-event-managed" data-testid={`group-event-${event}`}>
+            <div className="cm-event-toolbar">
+              <AccordionTrigger className="cm-event-trigger" data-testid={`button-event-${event}`}><span className="cm-event-icon"><Icon size={18} aria-hidden="true" /></span><span className="cm-event-title">{title}</span></AccordionTrigger>
+              <span className="et-chip cm-group-status" data-testid={`status-event-${event}`}>Managed at System Default</span>
+            </div>
+            <AccordionContent className="cm-event-content"><div className="cm-managed-note" data-testid={`note-managed-${event}`}>
+              <Lock size={16} aria-hidden="true" /><p>{m.explanation || "These platform security messages are managed at System Default and are not configured per clinic."}</p>
+              {superAdmin && clinicId && <button type="button" className="button secondary small" disabled={pending || !!editing} onClick={() => void changeScope("")} data-testid={`button-system-default-${event}`}>Switch to System Default</button>}
+            </div></AccordionContent>
+          </AccordionItem>;
+          const group = notificationGroup(items, event);
+          const count = filtered && rows.length !== total ? `${rows.length} of ${total} options` : `${total} ${total === 1 ? "option" : "options"}`;
+          return <AccordionItem key={event} value={event} className="cm-event" data-testid={`group-event-${event}`}>
+          <div className="cm-event-toolbar">
+          <AccordionTrigger className="cm-event-trigger" data-testid={`button-event-${event}`}>
+            <span className="cm-event-icon"><Icon size={18} aria-hidden="true" /></span><span className="cm-event-title">{title}</span><span className="cm-count">{count}</span>
+          </AccordionTrigger>
+          <NotificationInfo label={`About ${title}`}>
+            {rows[0]?.row.timing && <>{rows[0].row.timing} </>}
+             {group.optional.length ? `Saved activation across all ${group.optional.length} optional channel/recipient options, including those hidden by filters. Mixed means some are enabled: switch on to enable all; from All Enabled, switch off to disable all. This does not change Optional Delivery or confirm delivery readiness. Required recipients are excluded.` : total ? "Required security messages cannot be disabled and ignore Optional Delivery. Wording can still be edited." : "No actionable options were returned for this event. Reload or contact the System Admin if options were expected."}
+          </NotificationInfo>
+           <span className={`et-chip cm-group-status ${group.checked ? "live" : ""}`} data-testid={`status-event-${event}`}>{!total ? "No options" : group.status === "Enabled" ? "All Enabled" : group.status === "Disabled" ? "All Disabled" : group.status === "Custom" ? "Mixed" : "Required"}</span>
+          {group.optional.length > 0 ? <Switch className="cm-switch" aria-label={`${title}: all ${group.optional.length} optional options`} aria-describedby={!gateCan ? "notification-activation-permission" : undefined} checked={group.checked} disabled={!gateCan || pending || !!editing || controls.isFetching} onCheckedChange={() => void management.changeGroup(event)} data-testid={`switch-group-${event}`} /> : <span className="cm-switch-spacer" aria-hidden="true" />}
           </div>
-          <div className="cm-row-actions">
-            {!r.row.required && <Switch className="cm-switch" aria-label={`${titleCase(event.replaceAll("_", " "))} ${r.channel === "sms" ? "SMS" : "Email"} to ${label(r.recipient)}`} aria-describedby={!controls.data?.canActivate ? "notification-activation-permission" : undefined} checked={r.enabled} disabled={!superAdmin || !controls.data?.canActivate || unavailable || !!editing} onCheckedChange={() => void management.change(r.row)} data-testid={`switch-${r.channel}-${event}-${r.recipient}`} />}
-            <button type="button" className="button secondary small cm-edit" aria-label={`Edit ${title} ${r.channel === "sms" ? "SMS" : "Email"} to ${label(r.recipient)}`} title="Edit Template" disabled={unavailable || !!editing} onClick={() => { if (!management.locked()) setEditing({ channel: r.channel, event, recipient: r.recipient }); }} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}><Pencil size={18} aria-hidden="true" /></button>
-           </div></li>)}</ul></AccordionContent>
-       </AccordionItem>; })}</NotificationEventAccordion>}
+          <AccordionContent className="cm-event-content">{!group.optional.length && rows.length > 0 && <p className="cm-required-note">These security messages cannot be disabled and ignore Optional Delivery. Wording remains editable.</p>}
+          {!rows.length ? <p className="cm-required-note" data-testid={`empty-event-${event}`}>No channel or recipient options are available for this event in this scope.</p> : <>
+          <div className="cm-cols" aria-hidden="true"><span>Channel &amp; Recipient</span><span>Status</span><span>Template Preview</span><span>Enabled</span><span>Action</span></div>
+          <ul className="cm-rows">{rows.map(r => {
+            const reasons = rowDeliveryReasons(r.row, controls.data?.notificationsEnabled === false);
+            const rowCan = r.row.canActivate ?? gateCan;
+            const canEdit = r.row.canEdit !== false && (superAdmin || r.channel === "email" && !r.row.required && r.recipient !== "superAdmin");
+            const ch = r.channel === "sms" ? "SMS" : "Email";
+            const ChIcon = r.channel === "sms" ? MessageSquare : Mail;
+            const status = r.row.required ? "Required" : !r.enabled ? "Off" : reasons.length ? "On, Blocked" : "On";
+            const full = r.preview ? previewText(r.preview, controls.data?.scopeName ?? "") : "";
+            return <li key={`${r.channel}|${r.recipient}`} className="cm-row" data-testid={`card-template-${r.channel}-${event}-${r.recipient}`}>
+          <div className="cm-cell cm-who"><ChIcon size={18} aria-hidden="true" /><strong>{ch} to {label(r.recipient)}</strong></div>
+          <div className="cm-cell cm-status" data-label="Status">
+            <span className={`et-chip cm-state ${status === "On" ? "live" : status === "On, Blocked" ? "cm-blocked" : ""}`}>{status}</span>
+            <NotificationInfo label={`Activation Details: ${r.channel} to ${label(r.recipient)}`}>
+               {activationSource(r.row.source, clinicId)}. {r.row.required ? "Read-only security activation." : `Saved activation is ${r.enabled ? "on" : "off"}; it does not guarantee delivery. Provider readiness is separate from recipient eligibility: active status, patient opt-outs, clinic ownership or doctor assignment, valid contact and duplicate destinations are checked for each event.`} {canEdit ? "Wording has its own inheritance and unpublished drafts; open Edit for wording details." : "SMS wording is managed by the System Admin; switching activation never edits it."} {superAdmin && "SMS uses provider configuration on Communication Settings and each template's own DLT Template ID."}
+            </NotificationInfo>
+          </div>
+          <div className="cm-cell cm-preview-cell" data-label="Template Preview">
+            {r.channel === "sms" && !canEdit && !superAdmin ? <span className="cm-managed-sms" data-testid={`text-preview-${r.channel}-${event}-${r.recipient}`}>SMS wording managed by System Admin</span> : <>
+            <OverflowText className="cm-preview" testId={`text-preview-${r.channel}-${event}-${r.recipient}`} value={full || (catalogs.some(c => c.isError) ? "Preview unavailable. Open Edit or retry previews." : "Loading Preview…")} />
+            {full && <NotificationInfo label={`Full preview: ${ch} to ${label(r.recipient)}`}>{full}</NotificationInfo>}</>}
+            {reasons.length > 0 && <ul className="ec-blocked" data-testid={`setup-${r.channel}-${event}-${r.recipient}`}>{reasons.map(b => <li key={b}>{b}</li>)}</ul>}
+          </div>
+          <div className="cm-cell cm-enabled" data-label="Enabled">
+            {!r.row.required ? <Switch className="cm-switch" aria-label={`${title} ${ch} to ${label(r.recipient)}`} aria-describedby={!rowCan ? "notification-activation-permission" : undefined} checked={r.enabled} disabled={!rowCan || unavailable || !!editing} onCheckedChange={() => void management.change(r.row)} data-testid={`switch-${r.channel}-${event}-${r.recipient}`} /> : <span className="cm-dash" aria-label="Always on">Always on</span>}
+          </div>
+          <div className="cm-cell cm-action">
+            {canEdit && <button type="button" className="button secondary small cm-edit" aria-label={`Edit ${title} ${ch} to ${label(r.recipient)}`} disabled={unavailable || !!editing} onClick={() => { if (!management.locked()) setEditing({ channel: r.channel, event, recipient: r.recipient }); }} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>}
+          </div></li>; })}</ul></>}</AccordionContent>
+        </AccordionItem>; })}</NotificationEventAccordion>}
     {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title="Edit Template" description={`${titleCase(editing.event.replaceAll("_", " "))} · ${editing.channel === "sms" ? "SMS" : "Email"} · ${label(editing.recipient)}`}>
       <EmailTemplates key={`${editing.channel}|${editing.event}|${editing.recipient}|${clinicId}`} notificationPage identity={identity} channel={editing.channel} fixed={{ clinicId, event: editing.event, recipient: editing.recipient as any }} onDirtyChange={setDirty} onBusyChange={setBusy} />
     </AppDialog>}
@@ -182,7 +230,7 @@ function NotificationScope({ identity, initial = "", clinics }: { identity: api.
   };
   return <>
     {confirm.dialog}
-    <EventTemplates key={`${identity.user?.id}|${identity.user?.role}|${clinicId}`} identity={identity} clinicId={clinicId} onDirty={setDirty} onPending={setPending} interactionLock={interactionLock} scopeChanging={scopeChanging} scopeControl={
+    <EventTemplates key={`${identity.user?.id}|${identity.user?.role}|${clinicId}`} identity={identity} clinicId={clinicId} onDirty={setDirty} onPending={setPending} interactionLock={interactionLock} scopeChanging={scopeChanging} changeScope={changeScope} scopeControl={
       <div className="cm-notification-scope" data-testid="notification-scope">
         <span className="sr-only" id="notification-scope-label">Notification Clinic</span>
         {superAdmin ? <ResourceLookup resource="clinics" aria-labelledby="notification-scope-label" compactLabel clearable={false} emptyOption={{ value: "__system_default__", label: "System Default" }} value={clinicId} disabled={pending || scopeChanging} onChange={v => void changeScope(v)} placeholder="System Default" />
