@@ -28,6 +28,11 @@ async function setup(page: Page) {
       scopeName: url.searchParams.get("clinicId") ? "Fixture Clinic" : "Platform defaults",
       gateDescription: "", notificationsEnabled: true, items: rows,
     } });
+    if (path.endsWith("/notification-settings")) return route.fulfill({ json: {
+      revision: 1, canActivate: true, inherited: true,
+      scopeName: url.searchParams.get("clinicId") ? "Fixture Clinic" : "Platform defaults",
+      notificationsEnabled: true, items: rows,
+    } });
     if (path.endsWith("/templates")) return route.fulfill({ json: {
       scopeName: "Fixture Clinic", variables: [], items: events.map(event => ({
         event, recipient: url.searchParams.get("recipient") || "patient", title: event, source: "default",
@@ -92,7 +97,7 @@ test("search and filters open matching rows; clearing filters and changing scope
   await expect(page.getByTestId("button-event-booking")).toHaveAttribute("aria-expanded", "false");
 });
 
-test("expanded wording actions retain edit guards and link activation to Settings without writing", async ({ page }) => {
+test("expanded wording actions retain edit guards and keep activation on the same page without writing", async ({ page }) => {
   const writes = await setup(page);
   await page.getByTestId("button-event-booking").click();
   await page.getByTestId("button-edit-email-booking-patient").click();
@@ -107,8 +112,8 @@ test("expanded wording actions retain edit guards and link activation to Setting
   await page.getByTestId("button-confirm-cancel").click();
   await page.getByRole("button", { name: "Close", exact: true }).first().click();
   await page.getByTestId("button-discard-editor").click();
-  await expect(page.getByTestId("switch-email-booking-patient")).toHaveCount(0);
-  await expect(page.getByTestId("link-activation-settings")).toHaveAttribute("href", "/admin/settings?area=notifications");
+  await expect(page.getByTestId("switch-email-booking-patient")).toBeVisible();
+  await expect(page.getByTestId("link-activation-settings")).toHaveCount(0);
   expect(writes).toEqual([]);
 });
 

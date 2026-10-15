@@ -6,7 +6,7 @@ import { title } from "../resources";
 const icons: Record<string, any> = { dashboard: LayoutDashboard, appointments: CalendarDays, queue: Activity, clinic: Building2, clinics: Building2, branches: MapPin, patients: UsersIcon, users: UsersIcon, settings: Settings, reports: FileText, audit: ShieldCheck, availability: Clock3, exceptions: CalendarDays, qrs: QrCode, masters: SlidersHorizontal, profile: UserRound, book: Plus, demo: QrCode, "system-users": UserRound, communication: MessageSquare, templates: FileText };
 
 export function navLabel(p: string, role: string) {
-  if (p === "templates") return "Notification Templates";
+  if (p === "templates") return "Notifications";
   if (p === "communication") return "Communication Settings";
   if (p === "permissions") return "Roles & Permissions";
   if (p === "integrations") return "Integrations";

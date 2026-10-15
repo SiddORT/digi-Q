@@ -1,14 +1,18 @@
 # Notification settings, delivery policy and providers
 
+For reproducible before/after evidence and local-only limitations, see
+[Notifications management verification](notification-management-verification.md).
+
 ## Access and safe defaults
 
-**Settings → Notifications** has been removed from the interface, including its
-sidebar/profile entry for roles with no other Settings areas and the bell's
-settings shortcut. Legacy notification Settings URLs show Platform for Superadmins,
-Clinic for Clinic Admins and Profile for doctors, receptionists and patients.
-Ordinary roles are never redirected to restricted Communication credentials.
+**Notifications** (`/admin/templates`, retaining the compatible URL) is the single
+administrative destination for overall optional delivery, per-template activation
+and wording. One scope selector applies to all three. Legacy Settings
+`area=notifications`, `area=events` and `area=templates` links redirect here for
+Superadmins and Clinic Admins. Doctors, receptionists and patients keep their
+existing permitted landing pages, never restricted Communication credentials.
 
-Only the UI was removed. Saved personal preferences, explicit opt-outs, inherited
+The old Settings delivery matrix is removed. Saved personal preferences, explicit opt-outs, inherited
 defaults, clinic/platform gates, revisions, templates and notification history
 remain unchanged. No preferences are reset and no policy matrix is moved into
 provider configuration. The notification inbox, read markers and unread counts
@@ -21,9 +25,22 @@ for administrators, are separate from outbound Email/SMS. Hidden categories are
 excluded from unread counts and Mark All as Read without deleting history or
 changing existing read markers.
 
-The removed preference/policy screen is not a second SMTP editor. Its saved
-delivery policies continue to be enforced by unchanged backend endpoints and
-workers. Existing Clinic Admin email wording permissions remain unchanged.
+The existing policy endpoint still saves the overall gate transactionally, including
+pending-unclaimed cancellation safeguards. Row switches use the existing
+revision-protected activation endpoint. Both paths refresh the same saved views.
+No page-entry writes, defaults, migrations, inheritance reset or delivery algorithms
+are added. Turning a gate off does not turn template switches off. Required security
+messages are protected and independent of optional gates. Inherited gate and
+activation values are identified separately from explicit overrides.
+
+Clinic Admins retain their owned-clinic overall gate and email wording rights;
+they cannot change event activation, SMS, providers or System Admin recipients.
+The removed personal-preferences interface is not restored; stored preferences,
+inbox enforcement and opt-outs are unchanged and distinct from administration.
+Editing locks delivery actions; scope changes ask before discarding unsaved
+wording. Saved unpublished drafts survive activation changes. Delivery confirmations
+hold the selected scope and revision, block repeated actions and scope changes,
+and only acknowledge a successful save after reading the saved state back.
 
 Advanced provider configuration and wording remain secondary:
 
@@ -34,7 +51,7 @@ Advanced provider configuration and wording remain secondary:
   email. They use saved settings, not unsaved edits; saved configuration changes
   clear old results. A successful connection does not prove inbox delivery;
 - `/admin/communication?tab=logs`: outbound history;
-- `/admin/templates`: existing template interfaces, without links to the removed screen.
+- `/admin/templates`: Notifications, with existing accordions, filters and wording drawer.
 
 Legacy Settings `area=sms`, `area=email`, `area=smtp`, `area=events` and `area=templates`
 links still redirect to the corresponding existing pages.
@@ -300,7 +317,7 @@ the provider's country-code convention.
 Bearer token, body API key, Client ID, Sender ID and explicitly selected
 digits/plus country-code format are required independently. Blank protected
 fields preserve existing encrypted values. Each enabled event/recipient uses
-its effective published wording and DLT Template ID from Notification Templates.
+its effective published wording and DLT Template ID from Notifications.
 The preset accepts only HTTP 200 with boolean `success: true`; acceptance is not
 handset delivery. Provider and template tests require explicit confirmation and
 a UUID request ID. Their permanent claim is committed before transport; identical

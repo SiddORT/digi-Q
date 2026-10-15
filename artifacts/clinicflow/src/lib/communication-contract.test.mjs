@@ -24,12 +24,14 @@ test("auth flows are never routed to optional templates", () => {
 });
 test("nothing sends or writes on page load, draft save goes through confirm, SMS test is button-only", () => {
   const page = src("NotificationTemplatesPage.tsx"), t = src("EmailTemplates.tsx"), sms = src("SmsProviderPanel.tsx"), cs = src("CommunicationSettings.tsx");
-  assert.ok(!/useEffect/.test(page), "no effects that could mutate on load");
+  const management = src("useNotificationManagement.ts");
+  assert.doesNotMatch(page, /useEffect\([^]*?\.mutate/);
   assert.match(t, /setConfirm\("draft"\)/);
   assert.match(t, /onSubmit=\{\(\) => run\(confirm\)\}/);
   assert.match(sms, /const runTest = async \(\) => \{\s*if \(!can\) return;[\s\S]*if \(!await confirm\.ask/);
   assert.match(sms, /onClick=\{\(\) => void runTest\(\)\}/);
-  assert.match(page, /confirmed/);
+  assert.match(management, /confirmed: true/);
+  assert.match(management, /if \(!ok \|\| !alive.current\) return/);
 });
 test("provider screens are inline, not drawers", () => {
   assert.match(src("CommunicationSettings.tsx"), /NotificationSmsSettings key=\{`sms-\$\{resetN\}`\} inline/);
@@ -76,10 +78,10 @@ test("actual legacyDestination redirects old settings areas to the new pages and
   assert.equal(d("settings", "clinicAdmin", "?area=sms"), "/admin/clinic");
   for (const role of ["clinicAdmin", "doctor", "receptionist", "patient"]) {
     const landing = retiredSettingsDestination(role);
-    assert.equal(d("settings", role, "?area=notifications"), landing);
-    assert.equal(d("settings", role, "?area=notifications&clinicId=fictional"), role === "clinicAdmin" ? "/admin/clinic?area=notifications&clinicId=fictional" : landing);
+    assert.equal(d("settings", role, "?area=notifications"), role === "clinicAdmin" ? "/admin/templates" : landing);
+    assert.equal(d("settings", role, "?area=notifications&clinicId=fictional"), role === "clinicAdmin" ? "/admin/templates?clinicId=fictional" : landing);
   }
-  assert.equal(d("settings", "superAdmin", "?area=notifications"), null); // Settings falls back to Platform.
+  assert.equal(d("settings", "superAdmin", "?area=notifications"), "/admin/templates");
   assert.equal(d("settings", "superAdmin", "?area=smtp"), "/admin/communication?tab=email");
   assert.equal(d("communication", "superAdmin", "?tab=email"), null); // No redirect loop.
   assert.equal(d("integrations", "superAdmin", ""), "/admin/settings?area=integrations");

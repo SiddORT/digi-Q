@@ -18,6 +18,7 @@ import { EventTemplateTest } from "./EventTemplateTest";
 import { isRealSuperAdmin } from "../lib/settings-access";
 import { templateSaveError } from "../lib/communication-routes";
 import { templateContentForSave } from "../lib/notification-template-input";
+import { refreshNotificationManagement } from "../lib/notification-management";
 import { SECURITY_EVENTS, requiredSecurityEvent, securityTemplateTarget, securityTemplateVariables } from "../lib/security-template-events";
 
 type Content = api.NotificationTemplateContent;
@@ -153,7 +154,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
     save.mutate({ data: { channel, clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, recipient, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : templateContentForSave({...form,enabled:item.content.enabled}, channel, item.title) } }, {
       onSuccess: next => {
         queryClient.setQueryData(queryKey, next);
-        void queryClient.invalidateQueries({ queryKey: [api.getGetEventControlsQueryKey()[0]] });
+        void refreshNotificationManagement(queryClient);
         const fresh = next.items.find(i => i.event === event && (i.recipient ?? "patient") === recipient);
         loadedFor.current = "";
         if (fresh) {

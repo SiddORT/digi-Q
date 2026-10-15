@@ -3,6 +3,8 @@ import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import { communicationRedirect, communicationTab, filterRows, eventControlError, eventSetupReasons, templateSaveError, retiredSettingsDestination, hasWorkspaceSettings } from "./communication-routes.ts";
 test("legacy settings areas redirect", () => {
+  assert.equal(communicationRedirect("superAdmin", "notifications"), "/admin/templates");
+  assert.equal(communicationRedirect("clinicAdmin", "notifications"), "/admin/templates");
   assert.equal(communicationRedirect("superAdmin", "sms"), "/admin/communication?tab=sms");
   assert.equal(communicationRedirect("superAdmin", "email"), "/admin/communication?tab=email");
   assert.equal(communicationRedirect("superAdmin", "events"), "/admin/templates");

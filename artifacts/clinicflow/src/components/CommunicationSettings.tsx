@@ -9,7 +9,7 @@ import { NotificationLogs } from "./NotificationLogs";
 import { useConfirm } from "./ConfirmDialog";
 import "./communication.css";
 
-/** Provider credentials only. Event wording and activation live in Notification Templates. */
+/** Provider credentials only. Overall delivery, activation and wording live in Notifications. */
 export function CommunicationSettings() {
   const search = useSearch(); const [location, navigate] = useLocation();
   const tab = communicationTab(new URLSearchParams(search).get("tab"));

@@ -1,7 +1,7 @@
 /** Legacy /admin/settings?area= values that moved to dedicated pages. Returns null when the area stays in Settings. */
 export function communicationRedirect(userRole: string, area: string | null): string | null {
   if ((area === "sms" || area === "email" || area === "smtp") && userRole === "superAdmin") return `/admin/communication?tab=${area === "smtp" ? "email" : area}`;
-  if ((area === "events" || area === "templates") && ["superAdmin", "clinicAdmin"].includes(userRole)) return "/admin/templates";
+  if ((area === "events" || area === "templates" || area === "notifications") && ["superAdmin", "clinicAdmin"].includes(userRole)) return "/admin/templates";
   return null;
 }
 /** Roles without a remaining Settings area get an existing, permitted workspace. */

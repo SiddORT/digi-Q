@@ -4,7 +4,8 @@ import "../src/index.css";
 
 // All API traffic is intercepted by the regression tests. No real session,
 // provider connection or notification delivery is used by this fixture.
-const identity = { user: { id: "template-fixture", role: "superAdmin", demoFixture: "template-fixture" } } as Identity;
 export function NotificationTemplatesFixture() {
+  const role = new URLSearchParams(location.search).get("role") || "superAdmin";
+  const identity = { user: { id: "template-fixture", role, demoFixture: "template-fixture" } } as Identity;
   return <main style={{ padding: 16 }}><NotificationTemplatesPage identity={identity} /></main>;
 }
