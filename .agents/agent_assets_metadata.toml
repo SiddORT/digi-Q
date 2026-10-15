@@ -302,3 +302,17 @@ mtime_ms = 1791557844067
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/ad00809e-0918-4427-8860-8d6c30200391/4a6458da-8051-4149-ab8f-ae064708ca78"
 storage_version_token = "1791558067602544"
 content_type = "image/png"
+
+[[outputs]]
+id = "YcwbvRtU2i2ruX9XxyPcR"
+uri = "file://generated-artifacts/notification-journey-audit.html"
+type = "html"
+title = "ClinicFlow notification journey audit"
+description = "Read-only report: journey coverage, exact subjects, observed development settings, prioritized findings, and fictional email/SMS previews. 68 isolated checks passed; UAT delivery is not certified."
+logical_id = "5bc2253d-d8df-482e-b6be-9df7e95d2d1c"
+content_hash = "sha256:a05e891ba92c3c8ffc422cfe82fa56713372fd54430a544e1e8e62973cc2cd2b"
+size = 80771
+mtime_ms = 1792044865202
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/5bc2253d-d8df-482e-b6be-9df7e95d2d1c/db0b8b73-2ae5-43f9-b5ea-73dbbd1ed905"
+storage_version_token = "1792044890379755"
+content_type = "text/html"
