@@ -91,6 +91,8 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import { db } from "@workspace/db";
       import { processNotifications } from "./lib/notification-outbox";
       export const dispatchOutbox = () => processNotifications(db);
+      import { processSmsNotifications } from "./lib/notification-sms-outbox";
+      export const dispatchSmsOutbox = (send) => processSmsNotifications(db, send);
       import { appointmentsRouter } from "./routes/appointments";
       import { guestRequestsRouter } from "./routes/guest-requests";
       import { appointmentQrRouter } from "./routes/appointment-qr";
@@ -178,7 +180,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         export async function removeDocument(_p, key) { globalThis.__featureBlobs.delete(key); }` }));
     } }],
   }).catch(failedSetup);
-   const { createApp, dispatchOutbox, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
+   const { createApp, dispatchOutbox, dispatchSmsOutbox, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
   const server = createApp().listen(0);
   await new Promise(r => server.once("listening", r));
   const base = `http://127.0.0.1:${server.address().port}/api`;
@@ -191,5 +193,5 @@ export async function createFeatureHarness({administration=false, simulatedMail=
     const data = type.includes("json") ? await res.json() : Buffer.from(await res.arrayBuffer());
     return { status: res.status, data, headers: res.headers };
   }
-   return { pg, call, blobs, mail, base, pool, errors, dispatchOutbox, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
+   return { pg, call, blobs, mail, base, pool, errors, dispatchOutbox, dispatchSmsOutbox, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
 }

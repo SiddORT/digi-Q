@@ -38,5 +38,8 @@ export async function seedQueueFixtures(api, t, database) {
       data: { isOpen: true, startTime: "00:00", endTime: "23:59", timezone: "UTC", consultationMinutes: 10, bufferMinutes: 5, maxTokens: 10, tokenPrefix: id === "d" ? "A" : "B" } });
   }
   for (let i = 1; i <= 4; i++) await api.put(t.patients, { id: "p" + i, userId: "u" + i, clinicId: "c", branchId: "b", data: { fullName: "Patient " + i }, mobile: "+1555555000" + i });
-  await api.put(t.settings, { id: "platform", data: { cancellationCutoffMinutes: 0, bookingHorizonDays: 60 } });
+  // Queue-lock fixtures intentionally omit linked patient accounts/contacts.
+  // Keep communication explicitly off, rather than relying on product defaults,
+  // so contention checks never contact providers or test notification fixtures.
+  await api.put(t.settings, { id: "platform", data: { notificationsEnabled: false, cancellationCutoffMinutes: 0, bookingHorizonDays: 60 } });
 }

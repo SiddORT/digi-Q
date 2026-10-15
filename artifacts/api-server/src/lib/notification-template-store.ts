@@ -10,9 +10,11 @@ import { DEMO_FIXTURE } from "./demo-policy";
 import { visitTemplateValues } from "./notification-template-values";
 import { validTemplateTarget, validEventContent } from "./notification-templates";
 import { requiredEvent, isSecurityEvent, securityDefault } from "./security-template-definitions";
+import { appointmentActivationId, appointmentNotificationTarget } from "./appointment-notification-scope";
 
 export type Channel = "email" | "sms";
 const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event), channel:Channel="email") => `${channel==="sms"?"sms":"notification"}-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
+export const notificationTemplateKey = key;
 type RecordData = { revision: number; publishedRevision?:number; published?: TemplateContent | SmsTemplateContent; draft?: TemplateContent | SmsTemplateContent; activatedAt?: number };
 async function stored(event: TemplateEvent, clinicId?: string, conn: any = db, recipient = defaultRecipient(event),channel:Channel="email"): Promise<RecordData> {
   const [row] = await conn.select().from(settings).where(eq(settings.id, key(event, clinicId, recipient,channel)));
@@ -30,10 +32,12 @@ export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, 
   const platform = await stored(event, undefined, conn, recipient,channel);
   const local = clinicId ? await stored(event, clinicId, conn, recipient,channel) : platform;
   const fallback = defaultTemplate(event, recipient);
-  const content = local.published || platform.published || (channel === "sms" ? {...(isSecurityEvent(event) ? securityDefault(event,true) : fallback), enabled:requiredEvent(event),body:isSecurityEvent(event)?securityDefault(event,true).body:event==="patient_login_otp"?fallback.body:`${eventTitles[event]}: {{clinic_name}}\n${fallback.body}`,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""} : fallback);
+   const content = local.published || platform.published || (channel === "sms" ? {...(isSecurityEvent(event) ? securityDefault(event,true) : fallback), enabled:requiredEvent(event)||appointmentNotificationTarget(event,recipient),body:isSecurityEvent(event)?securityDefault(event,true).body:event==="patient_login_otp"?fallback.body:`${eventTitles[event]}: {{clinic_name}}\n${fallback.body}`,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""} : fallback);
+   const [activation] = appointmentNotificationTarget(event, recipient)
+     ? await conn.select().from(settings).where(eq(settings.id, appointmentActivationId)) : [];
   // Corrupt configuration fails explicitly, rather than silently sending a different template.
   return { content: channel === "sms" ? smsTemplateContent.parse(content) : templateContent.parse(content), local,
-    activatedAt: Math.max((local.published ? local : platform).activatedAt ?? 0,local.activatedAt ?? 0),
+     activatedAt: Math.max((local.published ? local : platform).activatedAt ?? 0,local.activatedAt ?? 0,activation?.data?.cutoff ?? 0),
     effectiveRevision: local.published ? local.publishedRevision ?? (local.draft ? undefined : local.revision) :
       platform.published ? platform.publishedRevision ?? (platform.draft ? undefined : platform.revision) : 0,
     source: local.published ? (clinicId ? "clinic" : "platform") : platform.published ? "platform" : "default" };
@@ -56,7 +60,7 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
        required: requiredEvent(event),
-       delivery: requiredEvent(event) ? "Required platform security message. Optional notification switches do not apply. SMS requires approved published wording and sender/DLT configuration. Provider acceptance is not delivery. Real codes and links never enter notification history." : event === "booking" ? (recipient === "clinicAdmin" ? "Owning Clinic Admin booking email is enabled by default when clinic notifications are enabled. Explicit published opt-outs remain in effect. Delivery is asynchronous; development never sends automatically." : "Used for eligible patient booking confirmations; notification and delivery settings apply. Provider acceptance does not guarantee inbox delivery.") : event === "reminder" ? "Production worker sends one hour before the session start when clinic notifications are enabled. Not an exact consultation-time promise." : "Queued automatically for this event when clinic notifications are enabled. Production worker delivers; development never sends automatically." });
+       delivery: requiredEvent(event) ? "Required platform security message. Optional notification switches do not apply. SMS requires approved published wording and sender/DLT configuration. Provider acceptance is not delivery. Real codes and links never enter notification history." : event === "onboarding" ? "Clinic onboarding retains its own activation and recipient policy. Communication Settings and eligible recipient contact apply. Development never sends automatically." : "Appointment Email and SMS default on for patient, owning Clinic Admin and assigned Doctor. Published overrides and personal opt-outs still apply. Active membership and valid unique contact are rechecked. SMS uses existing provider-specific sender/DLT metadata. Reminders are one hour before session start in its timezone, not a consultation-time promise. Development never sends automatically; provider acceptance is not delivery." });
   }
   return { scopeName: clinic?.name || "Platform defaults", variables: [...templateVariables], items };
 }
@@ -86,7 +90,7 @@ export async function saveTemplate(user: any, input: unknown) {
       const before=await resolvedTemplate(body.event,body.clinicId,tx,body.recipient||defaultRecipient(body.event),body.channel);
       const inherited=body.clinicId
         ?await resolvedTemplate(body.event,undefined,tx,body.recipient||defaultRecipient(body.event),body.channel)
-        :{content:{enabled:body.channel==="email"&&defaultTemplate(body.event,body.recipient||defaultRecipient(body.event)).enabled}};
+         :{content:{enabled:body.channel==="email"?defaultTemplate(body.event,body.recipient||defaultRecipient(body.event)).enabled:requiredEvent(body.event)||appointmentNotificationTarget(body.event,body.recipient||defaultRecipient(body.event))}};
       next.activatedAt=inherited.content.enabled&&!before.content.enabled?Date.now():before.activatedAt;
     }
     if (body.mode === "draft") Object.assign(next, { published: current.published, draft: body.content });

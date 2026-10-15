@@ -294,16 +294,16 @@ test("acceptance, rejection and uncertain responses never echo provider data",()
   assert.equal(api.classifySmsResponse(mapping,401,"private diagnostic"),"provider_rejected");
   assert.equal(api.classifySmsResponse(mapping,302,"private diagnostic"),"provider_rejected");
 });
-test("SMS defaults off, valid recipients, DLT activation, draft isolation and published policy synchronization",async()=>{
+test("appointment SMS defaults on, valid recipients, DLT activation, draft isolation and published policy synchronization",async()=>{
   const operational = items => items.filter(i=>!i.required);
   assert.equal(operational((await api.templateCatalog(sa,undefined,"patient","sms")).items).length,5);
   assert.equal(operational((await api.templateCatalog(sa,undefined,"clinicAdmin","sms")).items).length,6);
-  assert(operational((await api.templateCatalog(sa,undefined,"patient","sms")).items).every(i=>!i.content.enabled));
+  assert(operational((await api.templateCatalog(sa,undefined,"patient","sms")).items).every(i=>i.content.enabled));
   await assert.rejects(api.templateCatalog({role:"clinicAdmin",id:"ca"},"c","patient","sms"),{status:403});
   await assert.rejects(api.saveTemplate(sa,{channel:"sms",event:"onboarding",recipient:"patient",revision:0,mode:"publish",content:smsContent()}),{status:400});
   await assert.rejects(api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...smsContent(),enabled:true,dltTemplateId:""}}),{status:400});
   await api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",revision:0,mode:"draft",content:{...smsContent(),enabled:true}});
-  assert(!(await api.resolvedTemplate("booking","c",h.db,"patient","sms")).content.enabled);
+  assert((await api.resolvedTemplate("booking","c",h.db,"patient","sms")).content.enabled);
   await api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",revision:1,mode:"publish",content:smsContent()});
   await api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",revision:2,mode:"draft",content:{...smsContent(),body:"Unpublished {{patient_name}}"}});
   await api.changeActivation(sa,{channel:"sms",event:"booking",recipient:"patient",revision:3,enabled:true});
@@ -346,7 +346,7 @@ test("draft tests use exact bounded placeholders, explicit recipient and durable
   const clients=await Promise.all([h.connect(),h.connect()]);
   const results=await Promise.all(clients.map(client=>context.run(drizzle(client),()=>api.testTemplate(sa,preparedInput,send))));
   assert.equal(calls,1);assert(results.every(r=>r.status==="delivery_unknown"));
-  assert(!(await api.resolvedTemplate("completed",undefined,h.db,"patient","sms")).content.enabled);
+  assert((await api.resolvedTemplate("completed",undefined,h.db,"patient","sms")).content.enabled);
   const persisted=await h.control.query("select data from settings where id like 'notification-test:%'");
   assert(!JSON.stringify(persisted.rows).includes("Synthetic"));assert(!JSON.stringify(persisted.rows).includes("+919876543213"));
 });

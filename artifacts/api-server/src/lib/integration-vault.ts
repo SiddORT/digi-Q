@@ -49,8 +49,8 @@ export async function resolvedIntegration(provider: Provider, conn: Pick<typeof 
     revision: row?.revision ?? null,
   };
 }
-export async function integrationSettings() {
-  const [smtp, sms, notificationSms] = await Promise.all([resolvedIntegration("smtp"), resolvedIntegration("sms"), resolvedIntegration("notificationSms")]);
+export async function integrationSettings(conn: Pick<typeof db, "select"> = db) {
+  const [smtp, sms, notificationSms] = await Promise.all([resolvedIntegration("smtp",conn), resolvedIntegration("sms",conn), resolvedIntegration("notificationSms",conn)]);
   return {
     editable: vaultConfigured(),
     smtp: { ...integrationReadiness(smtp.env).smtp, source: smtp.source, revision: smtp.revision },

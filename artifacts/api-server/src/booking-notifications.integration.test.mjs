@@ -8,8 +8,13 @@ import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
 
 let h, date, sessionId;
 const cookies={};
+const smsMessages=[];
 process.env.AUTH_SESSION_MODE="native";
 before(async()=>{
+  Object.assign(process.env,{NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_KEY:"fictional-booking-api-key",
+    NOTIFICATION_SMS_BEARER_TOKEN:"fictional-booking-bearer",NOTIFICATION_SMS_CLIENT_ID:"fictional-client",
+    NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits",NOTIFICATION_SMS_ENABLED:"true",
+    NOTIFICATION_SMS_MAPPING:""});
   h=await createFeatureHarness({bookingLookups:true,postgres:true,fakeBookingMail:true});
   await seedFeatureFixtures(h.pg);
   for(const role of ["sa","adm","adm2","docu","rec","patu"]){
@@ -19,9 +24,18 @@ before(async()=>{
   }
   await h.pg.exec(`insert into settings(id,data) values('platform','{"notificationsEnabled":true,"requireMobileVerification":false}');
     update patients set mobile='+919000000001' where id='p1';
+    update users set mobile='+919876543211' where id='adm';
+    update users set mobile='+919876543212' where id='docu';
     update clinics set data=data||'{"dateFormat":"DD/MM/YYYY","timeFormat":"24h"}'::jsonb where id='c1';
     update branches set data=data||'{"timezone":"UTC"}'::jsonb where id='b1';
     insert into qrs(id,clinic_id,branch_id,doctor_id,public_reference,data) values('unified-qr','c1','b1','d1','unified-public','{}');`);
+  for(const recipient of ["patient","clinicAdmin","doctor"]) {
+    const id=`sms-template:platform:booking${recipient==="patient"?"":`:${recipient}`}`;
+    await h.pg.query("insert into settings(id,data) values($1,$2)",[id,{revision:1,published:{
+      enabled:true,subject:"Fictional booking",body:"Booking {{reference}} at {{clinic_name}}",
+      prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:`fictional-booking-${recipient}`,
+    }}]);
+  }
   date=new Date(Date.now()+2*86400000).toISOString().slice(0,10);
   const session=await call("adm","POST","/schedules",{doctorId:"d1",branchId:"b1",clinicId:"c1",dayOfWeek:new Date(`${date}T12:00:00Z`).getUTCDay(),startTime:"09:00",endTime:"12:00",timezone:"UTC",isOpen:true,maxTokens:40,tokenPrefix:"U",consultationMinutes:20,queueMode:"mixed"});
   assert.equal(session.status,201,JSON.stringify(session.data));sessionId=session.data.id;
@@ -29,7 +43,7 @@ before(async()=>{
 after(async()=>{await h?.close();});
 const call=(role,method,path,body)=>h.call(null,method,path,body,role?{cookie:cookies[role]}:{});
 async function patient(id,email){
-  await h.pg.query("insert into patients(id,clinic_id,branch_id,data) values($1,'c1','b1',$2)",[id,{fullName:"Fictional Unified Patient",email}]);
+  await h.pg.query("insert into patients(id,clinic_id,branch_id,mobile,data) values($1,'c1','b1','+919876543210',$2)",[id,{fullName:"Fictional Unified Patient",email}]);
   return id;
 }
 const payload=patientId=>({clinicId:"c1",branchId:"b1",doctorId:"d1",patientId,date,sessionId,source:"phone",termsAccepted:true,requestId:randomUUID(),notes:"PRIVATE-NOTE-NEVER-EMAIL"});
@@ -42,11 +56,11 @@ async function assertNotice(appointmentId){
   assert.equal((await call("adm2","GET","/notifications")).data.items.some(n=>n.appointmentId===appointmentId),false);
   return notices[0];
 }
-test("guest, patient and every permitted staff creation agree with saved tickets, one owner notice and both emails",async()=>{
+test("guest, patient and every permitted staff creation agree with tickets, one owner notice and all three Email/SMS recipients",async()=>{
   for(const role of ["sa","adm","docu","rec","patu","guest"]){
     const patientId=role==="patu"?"p1":role==="guest"?null:await patient(`unified-${role}`,`${role}-patient@test.invalid`);
     const before=(await h.pg.query("select count(*)::int n from patients")).rows[0].n;
-    const body=role==="guest"?{qrReference:"unified-public",branchId:"b1",doctorId:"d1",date,sessionId,fullName:"Fictional Unified Guest",email:"guest@test.invalid",requestId:randomUUID(),receiptSecret:"9".repeat(64)}:{...payload(patientId),source:role==="patu"?"online":"phone"};
+    const body=role==="guest"?{qrReference:"unified-public",branchId:"b1",doctorId:"d1",date,sessionId,fullName:"Fictional Unified Guest",email:"guest@test.invalid",mobile:"+919876543210",requestId:randomUUID(),receiptSecret:"9".repeat(64)}:{...payload(patientId),source:role==="patu"?"online":"phone"};
     const path=role==="guest"?"/public/guest-requests":"/appointments";
     const created=await call(role==="guest"?null:role,"POST",path,body);
     assert.equal(created.status,201,`${role}: ${JSON.stringify(created.data)}`);
@@ -61,9 +75,11 @@ test("guest, patient and every permitted staff creation agree with saved tickets
     }
     const sentBefore=h.mail.messages.length;
     await h.dispatchOutbox();
-    assert.equal(h.mail.messages.length,sentBefore+1,"owner email is asynchronous and exactly once");
+    await h.dispatchSmsOutbox(async(_env,to,text)=>{smsMessages.push({to,text});return "provider_accepted";});
+    assert.equal(smsMessages.filter(m=>m.text.includes(created.data.reference)).length,3,`${role}: all SMS recipients`);
+    assert.equal(h.mail.messages.length,sentBefore+2,"owner and assigned doctor emails are asynchronous and exactly once");
     const messages=h.mail.messages.filter(m=>m.text.includes(created.data.reference));
-    assert.equal(messages.length,2,role);
+    assert.equal(messages.length,3,role);
     for(const message of messages){
       for(const value of [saved.data.reference,saved.data.doctorName,saved.data.clinicName,saved.data.branchName,"09:00","12:00","UTC"])assert.ok(message.text.includes(value));
       const [y,m,d]=date.split("-");assert.ok(message.text.includes(`${d}/${m}/${y}`));
@@ -73,7 +89,9 @@ test("guest, patient and every permitted staff creation agree with saved tickets
     const retry=await call(role==="guest"?null:role,"POST",path,body);
     assert.equal(retry.data.reference,created.data.reference);
     await h.dispatchOutbox();
-    assert.equal(h.mail.messages.filter(m=>m.text.includes(created.data.reference)).length,2,"idempotent retry sends nothing");
+    await h.dispatchSmsOutbox(async(_env,to,text)=>{smsMessages.push({to,text});return "provider_accepted";});
+    assert.equal(smsMessages.filter(m=>m.text.includes(created.data.reference)).length,3,"idempotent retry sends no SMS");
+    assert.equal(h.mail.messages.filter(m=>m.text.includes(created.data.reference)).length,3,"idempotent retry sends nothing");
     await assertNotice(saved.id);
   }
 });
@@ -81,7 +99,7 @@ test("no-email booking still notifies owner; uncertain patient/admin dispatch ca
   const none=await call("adm","POST","/appointments",payload(await patient("unified-no-email")));
   assert.equal(none.data.confirmationEmail,"no_recipient");await assertNotice(none.data.id);
   await h.dispatchOutbox();
-  assert.equal(h.mail.messages.filter(m=>m.text.includes(none.data.reference)).length,1);
+  assert.equal(h.mail.messages.filter(m=>m.text.includes(none.data.reference)).length,2);
   h.mail.fail=true;
   const body=payload(await patient("unified-failure","failure@test.invalid"));
   const failedMail=await call("rec","POST","/appointments",body);
@@ -96,11 +114,11 @@ test("no-email booking still notifies owner; uncertain patient/admin dispatch ca
 });
 test("same patient/owner address is deduplicated; explicit template and clinic opt-outs stay unchanged",async()=>{
   const same=await call("adm","POST","/appointments",payload(await patient("unified-shared","adm@test.invalid")));
-  await h.dispatchOutbox();assert.equal(h.mail.messages.filter(m=>m.text.includes(same.data.reference)).length,1);
+  await h.dispatchOutbox();assert.equal(h.mail.messages.filter(m=>m.text.includes(same.data.reference)).length,2);
   const content={enabled:false,subject:"Owner opt-out",body:"{{appointment_details}}",prefix:"",logoUrl:"",footer:""};
   await h.pg.query("insert into settings(id,data) values('notification-template:c1:booking:clinicAdmin',$1)",[{revision:1,published:content}]);
   const opted=await call("adm","POST","/appointments",payload(await patient("unified-opted","opted@test.invalid")));
-  await h.dispatchOutbox();assert.equal(h.mail.messages.filter(m=>m.text.includes(opted.data.reference)).length,1);
+  await h.dispatchOutbox();assert.equal(h.mail.messages.filter(m=>m.text.includes(opted.data.reference)).length,2);
   assert.deepEqual((await h.pg.query("select data from settings where id='notification-template:c1:booking:clinicAdmin'")).rows[0].data,{revision:1,published:content});
   await h.pg.exec(`update clinics set data=data||'{"policies":{"notificationsEnabled":false}}'::jsonb where id='c1'`);
   const disabled=await call("adm","POST","/appointments",payload(await patient("unified-disabled","disabled@test.invalid")));

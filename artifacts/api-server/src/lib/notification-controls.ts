@@ -28,7 +28,7 @@ export async function eventControls(user:any,clinicId?:string) {
 }
 /** Internal shared policy projection. Callers must authorize scope before using it. */
 export async function deliveryControlCatalog(conn:any,clinicId?:string,clinic?:any) {
-  const readiness=await integrationSettings();
+   const readiness=await integrationSettings(conn);
   const gate=(await getSettings(conn,clinicId)).notificationsEnabled;
    let smsConfig: ReturnType<typeof notificationSmsConfig> | undefined;
    try {smsConfig=notificationSmsConfig((await resolvedIntegration("notificationSms",conn)).env);}catch{/* missing configuration shown below */}

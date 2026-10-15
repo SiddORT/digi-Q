@@ -126,7 +126,7 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
               {r.row.required && group.optional.length > 0 && <span className="et-chip">Required</span>}
               {r.enabled && rowDeliveryReasons(r.row, controls.data?.notificationsEnabled === false).length > 0 && <span className="et-chip cm-blocked">Delivery Blocked</span>}
               <NotificationInfo label={`Activation Details: ${r.channel} to ${label(r.recipient)}`}>
-                {activationSource(r.row.source, clinicId)}. {r.row.required ? "Read-only security activation." : `Saved activation is ${r.enabled ? "on" : "off"}; it does not guarantee delivery.`} Wording has its own inheritance and unpublished drafts; open Edit for wording details.
+                {activationSource(r.row.source, clinicId)}. {r.row.required ? "Read-only security activation." : `Saved activation is ${r.enabled ? "on" : "off"}; it does not guarantee delivery. Provider readiness is separate from recipient eligibility: active status, patient opt-outs, clinic ownership or doctor assignment, valid contact and duplicate destinations are checked for each event.`} Wording has its own inheritance and unpublished drafts; open Edit for wording details. SMS uses the provider configuration on Communication Settings and each template's own DLT Template ID.
               </NotificationInfo>
               </div>
             <OverflowText className="cm-preview" testId={`text-preview-${r.channel}-${event}-${r.recipient}`} value={r.preview ? previewText(r.preview, controls.data?.scopeName ?? "") : catalogs.some(c => c.isError) ? "Preview unavailable. Open Edit or retry previews." : "Loading Preview…"} />

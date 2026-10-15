@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { visitVariables } from "./notification-template-values";
+import { appointmentNotificationTarget } from "./appointment-notification-scope";
 import { securityEvents, isSecurityEvent, securityVariables, securityDefault, securityTitles, validSecurityContent } from "./security-template-definitions";
 export { requiredEvent, isSecurityEvent } from "./security-template-definitions";
 
@@ -103,7 +104,7 @@ export function defaultTemplate(event: TemplateEvent, recipient: TemplateRecipie
   if (isSecurityEvent(event)) return securityDefault(event);
   if (event === "patient_login_otp") return { enabled: true, subject: "Patient login OTP", body: bodies[event]!, prefix: "", footer: "", logoUrl: "" };
   if (event === "onboarding" && recipient === "superAdmin") return { enabled: true, subject: "Clinic registered — {{clinic_name}}", body: "Hello {{recipient_name}},\n\nA clinic has completed registration: {{clinic_name}}.\n{{clinic_contact}}", prefix: "", footer: "", logoUrl: "" };
-  return { enabled: recipient === defaultRecipient(event) || event === "booking" && recipient === "clinicAdmin", subject: `${eventTitles[event]} — {{clinic_name}}`, body: recipient === defaultRecipient(event) ? bodies[event]! : `Clinic notification: ${eventTitles[event]}\nPatient: {{patient_name}}\nDoctor: {{doctor_name}}\n{{appointment_details}}\nReference: {{reference}}\n{{clinic_contact}}`, prefix: "", logoUrl: "", footer: "This is an automated clinic message. Contact your clinic for assistance." };
+  return { enabled: appointmentNotificationTarget(event, recipient) || recipient === defaultRecipient(event) || event === "booking" && recipient === "clinicAdmin", subject: `${eventTitles[event]} — {{clinic_name}}`, body: recipient === defaultRecipient(event) ? bodies[event]! : `Clinic notification: ${eventTitles[event]}\nPatient: {{patient_name}}\nDoctor: {{doctor_name}}\n{{appointment_details}}\nReference: {{reference}}\n{{clinic_contact}}`, prefix: "", logoUrl: "", footer: "This is an automated clinic message. Contact your clinic for assistance." };
 }
 export function substitute(text: string, values: Record<string, string>): string {
   // A single replacement pass: patient-supplied braces can never become another variable.

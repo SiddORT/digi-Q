@@ -116,7 +116,9 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
       const clinic = await one(clinics,row.clinicId,tx);
       const template = await resolvedTemplate("booking", row.clinicId, tx);
       const env=(await resolvedIntegration("smtp",tx)).env;
-      if (!template.content.enabled || !emailNotificationsEnabled(env) || (history && template.activatedAt > history.data.createdAt)) {
+      const capturedAt = history?.data.createdAt ?? (typeof row.createdAt === "number" ? row.createdAt : new Date(row.createdAt).getTime());
+      if (!template.content.enabled || !emailNotificationsEnabled(env) ||
+          template.activatedAt && (!Number.isFinite(capturedAt) || template.activatedAt > capturedAt)) {
         await log("disabled");
         await saveOutcome(tx,id,"disabled"); return {outcome:"disabled"};
       }

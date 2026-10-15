@@ -5,6 +5,28 @@ description: Supplied provider example leaves credential equality and country-co
 
 ### SMS template editor ownership
 
+Appointment activation changes belong in development. The user pushes the patch
+to the separately hosted UAT through GitHub; a supplied UAT link or screenshot
+does not authorize signing in, deploying or changing UAT settings.
+
+**Why:** The user clarified that the link is live after development and that
+"we push the patch to uat via github" and "changes are done in the development."
+
+**How to apply:** Check the development effective catalog and explain any UAT
+data mismatch without changing either environment's template wording. Reuse the
+common Keep in Touch account configuration; do not assume different templates'
+DLT Template IDs are interchangeable.
+
+All appointment SMS must use the provider configuration from
+`/admin/communication`, retaining each template's own DLT Template ID.
+
+**Why:** The user explicitly selected shared provider configuration with
+template-specific DLT IDs and said "use sms proivider configuarion from link
+/admin/communication".
+
+**How to apply:** Do not introduce recipient/event-specific provider accounts or
+copy a booking DLT ID to a different message. Preserve existing per-template IDs.
+
 Use the configured Sender ID and do not expose an Entity ID field in the SMS
 template editor. Keep the event-specific DLT Template ID editable.
 

@@ -7,7 +7,7 @@ import { isClinicalMember } from "./clinical-membership";
 import { templateRecipients, substitute, requiredEvent, type TemplateEvent, type TemplateRecipient, type SmsTemplateContent } from "./notification-templates";
 import { resolvedTemplate } from "./notification-template-store";
 import { resolvedIntegration } from "./integration-vault";
-import { notificationSmsReadiness, notificationSmsEnabled, notificationSmsConfig, sendNotificationSms } from "./notification-sms-transport";
+import { notificationSmsReadiness, notificationSmsEnabled, notificationSmsConfig, sendNotificationSms, smsMetadataReady } from "./notification-sms-transport";
 import { recordNotification, recordDecision, claimNotificationOccurrence, notificationEntry, templateSnapshot } from "./notification-history";
 import { logger } from "./logger";
 import { confirmationText } from "./appointment-confirmation";
@@ -17,6 +17,8 @@ import { validTemplateTarget } from "./notification-templates";
 import { withStaffDispatch } from "./staff-dispatch-barrier";
 import { notificationStaffSubjects } from "./notification-staff-subjects";
 import { lockNotificationPreferences, recipientPreference, pendingPreferenceAllowed } from "./notification-preferences";
+import { appointmentCaptureAfterCutover } from "./appointment-notification-cutover";
+import { appointmentNotificationTarget } from "./appointment-notification-scope";
 
 const phoneKey=(phone:string)=>createHash("sha256").update(phone).digest("hex");
 export function notificationPhone(value:unknown) {
@@ -65,8 +67,10 @@ export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previ
       const preference=await recipientPreference(conn,preferenceUserId,"sms",event);
       const decision=`sms-decision:${event}:${row.id}:${row.revision||0}:${group}:${account?.id||"missing"}`;
       const entry=notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"sms");
-      const status=!preference.enabled||!gate||!notificationSmsEnabled(env)||!template.content.enabled?"disabled":
-        !notificationSmsReadiness(env).ready?"configuration_failed":
+       const status=!preference.enabled||!gate||!notificationSmsEnabled(env)||!template.content.enabled||
+         !appointmentCaptureAfterCutover(event,group,template.activatedAt,row)?"disabled":
+         !notificationSmsReadiness(env).ready||
+         appointmentNotificationTarget(event,group)&&!smsMetadataReady(notificationSmsConfig(env),template.content as SmsTemplateContent)?"configuration_failed":
         !account||account.status!=="active"||!notificationPhone(account.mobile)?"no_recipient":
         used.has(notificationPhone(account.mobile))?"not_attempted":null;
       if(status){await recordDecision(conn,decision,entry,status,{...templateSnapshot(template,event,group,"sms"),recipient:notificationPhone(account?.mobile)||undefined,dltTemplateId:(template.content as SmsTemplateContent).dltTemplateId});continue;}
@@ -133,6 +137,8 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
         const message=substitute(content.body,values);
         if(message.length>1600){await update("preparation_failed");return null;}
         const cfg=notificationSmsConfig(env);
+         if(appointmentNotificationTarget(data.event,data.recipientGroup)&&
+           !smsMetadataReady(cfg,content)){await update("configuration_failed");return null;}
         await recordNotification(tx,data.historyKey||record.id,notificationEntry(data,"sms"),"sending",{
           sender:content.senderId||cfg.senderId,recipient:phone,message,provider:cfg.provider,
           ...templateSnapshot(template,data.event,data.recipientGroup,"sms"),dltTemplateId:content.dltTemplateId,

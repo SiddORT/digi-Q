@@ -29,7 +29,7 @@ export async function audit(user: any, action: string, type: string, row: any, c
 export const defaultSettings = {
   platformName: "DigiQ Doctors", timezone: "Asia/Kolkata", bookingHorizonDays: 60, cancellationCutoffMinutes: 0,
   requireMobileVerification: false, otpExpirySeconds: 300, otpMaxAttempts: 5, sessionTimeoutMinutes: 60,
-  notificationsEnabled: false, queuePollSeconds: 30,
+  notificationsEnabled: true, queuePollSeconds: 30,
 };
 export async function getSettings(conn: any = db, clinicId?: string) {
   const [row] = await conn.select().from(settings).where(eq(settings.id, "platform"));

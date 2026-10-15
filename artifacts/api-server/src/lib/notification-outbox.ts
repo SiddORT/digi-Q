@@ -17,6 +17,7 @@ import { validTemplateTarget } from "./notification-templates";
 import { withStaffDispatch } from "./staff-dispatch-barrier";
 import { notificationStaffSubjects } from "./notification-staff-subjects";
 import { lockNotificationPreferences, recipientPreference, pendingPreferenceAllowed } from "./notification-preferences";
+import { appointmentCaptureAfterCutover } from "./appointment-notification-cutover";
 const emailKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 
 /** Explicit safe projection only: never return an outbox payload or recipient identifiers. */
@@ -141,7 +142,8 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
   const preference=await recipientPreference(conn,preferenceUserId,"email",event);
   const decision=`email-decision:${event}:${row.id}:${row.revision||0}:${group}:${target?.id||"primary"}`;
   const entry=notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"email");
-  const status=!preference.enabled||!gate||!emailNotificationsEnabled(env)||!template.content.enabled?"disabled":!configured?"configuration_failed":
+   const status=!preference.enabled||!gate||!emailNotificationsEnabled(env)||!template.content.enabled||
+     !appointmentCaptureAfterCutover(event,group,template.activatedAt,row)?"disabled":!configured?"configuration_failed":
     !active||(target&&target.status!=="active")||!validEmailAddress(email)?"no_recipient":
     target&&usedEmails.has(email)?"not_attempted":null;
   if(status){await recordDecision(conn,decision,entry,status,{...templateSnapshot(template,event,group,"email"),recipient:email||undefined,provider:"smtp"});continue;}

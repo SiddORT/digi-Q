@@ -2,6 +2,12 @@
 
 **Read-only audit · 15 October 2026 · workspace code and development metadata**
 
+> Historical pre-activation snapshot. The development activation and current
+> 30-combination readiness matrix are recorded in
+> [Appointment notification activation](appointment-notification-activation.md).
+> That change supersedes this audit's default-off observations for the five
+> appointment events and patient/owning Clinic Admin/assigned Doctor only.
+
 ## Executive answers
 
 - **Email and SMS are not universally enabled by default.** The shared operational `notificationsEnabled` fallback is **false**. Individual email templates may default on, but that does not open the clinic gate. Optional operational SMS templates default off. Configured channel switches default permissive when absent; a provider still has to be configured.

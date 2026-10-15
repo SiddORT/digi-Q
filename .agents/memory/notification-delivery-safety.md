@@ -33,11 +33,20 @@ queue-based care does not promise exact consultation times.
 **How to apply:** Preserve the development safety boundary and recheck visit eligibility
 at dispatch rather than trusting an earlier reminder snapshot.
 
-Additional staff recipient groups start disabled except the explicitly approved owning Clinic Admin **booking** recipient, which is enabled by default when notifications are enabled. Existing explicitly disabled published templates and clinic opt-outs still require owner activation. Shared addresses across patient and staff roles receive one message for an event.
+The user authorized Email and SMS defaults and existing-clinic activation for booking,
+rescheduled, cancelled, completed and reminder events, to patient, owning Clinic Admin
+and assigned Doctor. This supersedes earlier default-off restrictions for that scope
+only. Receptionist, Superadmin, onboarding/security messages and personal opt-outs
+are not included. Shared destinations receive one message per channel and event.
 
-**Why:** The user approved one owning-admin booking notification/email for every creation entry point, including self-created bookings, without changing live settings or unrelated recipient groups. Other expansions still need explicit publication.
+**Why:** The user explicitly selected defaults plus existing clinics and reiterated
+"activate all mails and sms, as we have put the approved tempaltes only."
 
-**How to apply:** Preserve primary-recipient compatibility and address-based deduplication when adding recipient groups or changing role assignments.
+**How to apply:** Reuse the existing templates and sender/DLT validation, without a
+new approval mechanism. The user says templates saved on the SMS Templates page
+are approved. Inventory the full effective catalog, not only saved overrides; if
+the screenshot and workspace differ, identify the exact environment before writes.
+Ask before adding extra scope; never invent registration IDs or infer them from an image.
 
 Queued reminders have a five-minute dispatch allowance beyond the narrow scheduling
 window; this must not widen event capture or replay a historical backlog.
