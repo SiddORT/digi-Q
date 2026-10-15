@@ -143,7 +143,6 @@ export function SearchableSelect({
               aria-invalid={invalid ?? !!error}
               aria-describedby={[describedBy, value ? `${controlId}-value` : undefined, error ? errorId : undefined].filter(Boolean).join(" ") || undefined}
               aria-labelledby={labelledBy}
-              title={compactLabel ? (value ? displayLabel : placeholder) : undefined}
               disabled={disabled}
               className="absolute inset-0 z-0 h-full w-full rounded-lg bg-transparent outline-none cursor-pointer"
               aria-label={

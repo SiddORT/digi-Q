@@ -121,11 +121,11 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
     </AppDialog>}
   </div>;
 }
-/** Readable created date with time on a quiet second line; full value kept as a tooltip. */
+/** Date and time are both visible, so no duplicate timestamp tooltip is needed. */
 export function CreatedCell({value,timezone,preferences}:{value?:string|null;timezone?:string;preferences?:any}) {
   const parts=formatTimestampParts(value,timezone,preferences);
   if(!parts)return <span className="muted">—</span>;
-  return <span className="created-cell" title={parts.full} data-testid="text-created"><span className="created-date">{parts.date}</span>{parts.time&&<small className="created-time">{parts.time}</small>}</span>;
+  return <span className="created-cell" data-testid="text-created"><span className="created-date">{parts.date}</span>{parts.time&&<small className="created-time">{parts.time}</small>}</span>;
 }
 /** Compact, collapsed-by-default outcome summary. Failure count is always in the visible line and failures list first. */
 export function ResultSummary({title,items,testId,onDismiss}:{title:string;items:{label:string;ok:boolean;message?:string}[];testId?:string;onDismiss?:()=>void}) {

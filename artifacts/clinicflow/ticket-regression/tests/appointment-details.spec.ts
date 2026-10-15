@@ -74,6 +74,21 @@ async function mount(page: Page, surface = "", linked = false) {
 const details = (page: Page) => page.getByTestId("appointment-details");
 const tab = (page: Page, name: string) => details(page).getByRole("tab", { name, exact: true });
 
+for (const width of [1280, 820, 390]) {
+  test(`visit date has no repeated context help; token and action guidance remain at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await mount(page, "rows");
+    const date = page.locator(".appointment-visit-date").first();
+    await expect(date).toBeVisible();
+    await expect(date.locator(".helptip,[title]")).toHaveCount(0);
+    await expect(page.getByTestId("text-token-appointment-1")).toBeVisible();
+    await page.getByTestId("text-token-appointment-1").focus();
+    await expect(page.locator(".helptip-bubble")).toContainText("Booking reference");
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+  });
+}
+
 for (const surface of ["rows", "linked", "calendar"]) {
   test(`${surface}: a denied exact-ID refresh immediately hides cached details and QR`, async ({ page }) => {
     const state = await mount(page, surface === "linked" ? "rows" : surface);
@@ -313,7 +328,7 @@ for (const width of [1366, 1024, 768, 390]) {
         return failures;
       });
       expect(failures).toEqual([]);
-      await page.screenshot({ path: `screenshots/appointment-tabs/${width}-${name.toLowerCase()}.png`, fullPage: true });
+      await page.screenshot({ path: `generated-artifacts/appointment-tabs/${width}-${name.toLowerCase()}.png`, fullPage: true });
     }
   });
 }

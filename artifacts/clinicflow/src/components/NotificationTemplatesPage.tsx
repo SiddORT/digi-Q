@@ -98,7 +98,7 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
         {scopeControl}
         <div className="ns-gate"><Switch className="cm-switch" id="notification-delivery-gate" checked={controls.data?.notificationsEnabled ?? false} disabled={!enabled || !gateCan || unavailable || !!editing} onCheckedChange={() => void management.change()} data-testid="checkbox-clinic-gate" /><label htmlFor="notification-delivery-gate">Optional Delivery</label>
         <NotificationInfo label="About Optional Delivery">
-          {clinicId ? "Applies only to the selected clinic. Clinics inherit system values until explicitly changed." : "System Default is inherited by clinics without an explicit override; clinics with overrides may differ."} Required security messages ignore Optional Delivery and opt-outs. Activation and wording are separate. Enabling does not confirm delivery readiness. Only future eligible events change; past events are never replayed.
+           {clinicId ? "Applies only to the selected clinic. Clinics inherit system values until explicitly changed." : "System Default is inherited by clinics without an explicit override; clinics with overrides may differ."} Required security messages ignore Optional Delivery and opt-outs. Enabling does not confirm delivery readiness: each event rechecks active recipients, assignments or ownership, opt-outs, valid contact and duplicate destinations. Provider setup is separate. Wording and drafts inherit independently; open Edit for details. Only future eligible events change; past events are never replayed.
           {controls.data && <> Current gate: {controls.data.notificationsEnabled ? "On" : "Off"}. {controls.data.inherited ? clinicId ? "Inherited system value." : "Default system value." : clinicId ? "Saved clinic value." : "Saved system value."}</>}
         </NotificationInfo>
         </div>
@@ -118,6 +118,7 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
       {sel("status", f.status, [["on", "On and Ready"], ["blocked", "On, Blocked"], ["off", "Off"]], "Status")}
       {filtered && <button type="button" className="button secondary small" onClick={() => setF({ q: "", channel: "", recipient: "", status: "" })} data-testid="button-clear-filters">Clear Filters</button>}
     </div>
+    <p className="muted cm-group-guidance" id="notification-group-guidance">Group switches change all optional options, including filtered-out rows. From Mixed, switch on to enable all; from All Enabled, switch off to disable all. Optional Delivery is unchanged; enabling does not confirm delivery readiness. Required messages are excluded. Future eligible events only; no replay.</p>
     {catalogs.some(c => c.isError) && <p className="error-box" role="alert">Some message previews could not be loaded. Activation settings are separate. <button type="button" onClick={() => catalogs.forEach(c => { if (c.isError) void c.refetch(); })}>Retry Previews</button></p>}
     {!enabled ? <div className="et-empty" data-testid="state-select-clinic">Select a clinic group to view its notification templates.</div>
       : controls.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
@@ -146,12 +147,9 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
           <AccordionTrigger className="cm-event-trigger" data-testid={`button-event-${event}`}>
             <span className="cm-event-icon"><Icon size={18} aria-hidden="true" /></span><span className="cm-event-title">{title}</span><span className="cm-count">{count}</span>
           </AccordionTrigger>
-          <NotificationInfo label={`About ${title}`}>
-            {rows[0]?.row.timing && <>{rows[0].row.timing} </>}
-             {group.optional.length ? `Saved activation across all ${group.optional.length} optional channel/recipient options, including those hidden by filters. Mixed means some are enabled: switch on to enable all; from All Enabled, switch off to disable all. This does not change Optional Delivery or confirm delivery readiness. Required recipients are excluded.` : total ? "Required security messages cannot be disabled and ignore Optional Delivery. Wording can still be edited." : "No actionable options were returned for this event. Reload or contact the System Admin if options were expected."}
-          </NotificationInfo>
+           {items.find(row => row.event === event && row.timing)?.timing ? <NotificationInfo label={`About ${title}`}>{items.find(row => row.event === event && row.timing)?.timing}</NotificationInfo> : <span className="cm-info-spacer" aria-hidden="true" />}
            <span className={`et-chip cm-group-status ${group.checked ? "live" : ""}`} data-testid={`status-event-${event}`}>{!total ? "No options" : group.status === "Enabled" ? "All Enabled" : group.status === "Disabled" ? "All Disabled" : group.status === "Custom" ? "Mixed" : "Required"}</span>
-          {group.optional.length > 0 ? <Switch className="cm-switch" aria-label={`${title}: all ${group.optional.length} optional options`} aria-describedby={!gateCan ? "notification-activation-permission" : undefined} checked={group.checked} disabled={!gateCan || pending || !!editing || controls.isFetching} onCheckedChange={() => void management.changeGroup(event)} data-testid={`switch-group-${event}`} /> : <span className="cm-switch-spacer" aria-hidden="true" />}
+           {group.optional.length > 0 ? <Switch className="cm-switch" aria-label={`${title}: all ${group.optional.length} optional options`} aria-describedby={`notification-group-guidance${!gateCan ? " notification-activation-permission" : ""}`} checked={group.checked} disabled={!gateCan || pending || !!editing || controls.isFetching} onCheckedChange={() => void management.changeGroup(event)} data-testid={`switch-group-${event}`} /> : <span className="cm-switch-spacer" aria-hidden="true" />}
           </div>
           <AccordionContent className="cm-event-content">{!group.optional.length && rows.length > 0 && <p className="cm-required-note">These security messages cannot be disabled and ignore Optional Delivery. Wording remains editable.</p>}
           {!rows.length ? <p className="cm-required-note" data-testid={`empty-event-${event}`}>No channel or recipient options are available for this event in this scope.</p> : <>
@@ -169,13 +167,14 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
           <div className="cm-cell cm-status" data-label="Status">
             <span className={`et-chip cm-state ${status === "On" ? "live" : status === "On, Blocked" ? "cm-blocked" : ""}`}>{status}</span>
             <NotificationInfo label={`Activation Details: ${r.channel} to ${label(r.recipient)}`}>
-               {activationSource(r.row.source, clinicId)}. {r.row.required ? "Read-only security activation." : `Saved activation is ${r.enabled ? "on" : "off"}; it does not guarantee delivery. Provider readiness is separate from recipient eligibility: active status, patient opt-outs, clinic ownership or doctor assignment, valid contact and duplicate destinations are checked for each event.`} {canEdit ? "Wording has its own inheritance and unpublished drafts; open Edit for wording details." : "SMS wording is managed by the System Admin; switching activation never edits it."} {superAdmin && "SMS uses provider configuration on Communication Settings and each template's own DLT Template ID."}
+                {activationSource(r.row.source, clinicId)}. {r.row.required ? "Always on; ignores Optional Delivery and opt-outs." : `Saved activation: ${r.enabled ? "on" : "off"}.`}
+                {reasons.length ? ` Blocked: ${reasons.join(" · ")}` : !r.row.required && controls.data?.notificationsEnabled === false ? " Optional Delivery is off for this scope." : " Delivery still depends on eligibility at the event."}
             </NotificationInfo>
           </div>
           <div className="cm-cell cm-preview-cell" data-label="Template Preview">
             {r.channel === "sms" && !canEdit && !superAdmin ? <span className="cm-managed-sms" data-testid={`text-preview-${r.channel}-${event}-${r.recipient}`}>SMS wording managed by System Admin</span> : <>
             <OverflowText className="cm-preview" testId={`text-preview-${r.channel}-${event}-${r.recipient}`} value={full || (catalogs.some(c => c.isError) ? "Preview unavailable. Open Edit or retry previews." : "Loading Preview…")} />
-            {full && <NotificationInfo label={`Full preview: ${ch} to ${label(r.recipient)}`}>{full}</NotificationInfo>}</>}
+             </>}
             {reasons.length > 0 && <ul className="ec-blocked" data-testid={`setup-${r.channel}-${event}-${r.recipient}`}>{reasons.map(b => <li key={b}>{b}</li>)}</ul>}
           </div>
           <div className="cm-cell cm-enabled" data-label="Enabled">

@@ -422,7 +422,9 @@ for (const width of [1440, 1024, 768, 390]) test(`information, independent accor
   await info.press("Escape");
   await expect(page.getByRole("tooltip")).toHaveCount(0);
   await info.dispatchEvent("click"); // Also works when touch has no hover or focus.
-  await expect(page.getByRole("tooltip")).toContainText("Mixed means some are enabled");
+  await expect(page.getByRole("tooltip")).toContainText("On booking confirmation");
+  await expect(page.locator("#notification-group-guidance")).toHaveCount(1);
+  await expect(page.locator("#notification-group-guidance")).toContainText("From Mixed, switch on to enable all");
   await expect(page.getByTestId("button-event-booking")).toHaveAttribute("aria-expanded", "false");
   await info.press("Escape");
   await page.getByTestId("button-event-booking").focus();

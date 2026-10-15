@@ -9,7 +9,7 @@ const rows = events.flatMap(event => ["email", "sms"].flatMap(channel => ["patie
 }))));
 const content = { subject: "Visit", prefix: "", body: "Your visit wording", footer: "", logoUrl: "", enabled: true };
 
-async function setup(page: Page) {
+async function setup(page: Page, longPreview = false) {
   const writes: { path: string; body: any }[] = [];
   // Never let fixture traffic reach any real API.
   await page.route("**/api/**", async route => {
@@ -37,7 +37,7 @@ async function setup(page: Page) {
     if (path.endsWith("/templates")) return route.fulfill({ json: {
       scopeName: "Fixture Clinic", variables: [], items: events.map(event => ({
         event, recipient: url.searchParams.get("recipient") || "patient", title: event, source: "default",
-        revision: 1, delivery: "active", content, draft: null, previewSubject: "Visit", previewBody: content.body,
+        revision: 1, delivery: "active", content: longPreview && url.searchParams.get("recipient") === "patient" ? { ...content, body: "Your fictional appointment is booked. ".repeat(20) } : content, draft: null, previewSubject: "Visit", previewBody: content.body,
       })),
     } });
     if (path.endsWith("/me")) return route.fulfill({ json: { user: { id: "template-fixture", role: "superAdmin" } } });
@@ -126,6 +126,37 @@ test("expanded wording actions retain edit guards and keep activation on the sam
 });
 
 for (const width of [1280, 820, 390]) {
+  test(`single clipped preview reveal and no unclipped bubble at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setup(page, true);
+    await page.getByTestId("button-event-booking").click();
+    const long = page.getByTestId("text-preview-email-booking-patient");
+    const short = page.getByTestId("text-preview-email-booking-doctor");
+    await expect(page.getByRole("button", { name: /^Full preview:/ })).toHaveCount(0);
+    await expect(long).toHaveAttribute("tabindex", "0");
+    await expect(short).toHaveAttribute("tabindex", "-1");
+    await short.hover();
+    await expect(page.locator(".ov-pop")).toHaveCount(0);
+    await long.hover();
+    await expect(page.locator(".ov-pop")).toHaveCount(1);
+    const info = page.getByRole("button", { name: "Activation Details: email to Patient", exact: true });
+    await info.click();
+    await expect(page.locator(".ov-pop")).toHaveCount(0);
+    await expect(page.locator(".cm-info-content")).toContainText("Default activation");
+    await long.hover();
+    await expect(page.locator(".cm-info-content")).toHaveCount(0);
+    await expect(page.locator(".ov-pop")).toHaveCount(1);
+    await long.focus();
+    await long.press("Escape");
+    await expect(page.locator(".ov-pop")).toHaveCount(0);
+    await long.press("Enter");
+    await expect(page.locator(".ov-pop")).toHaveCount(1);
+    await page.getByTestId("button-edit-email-booking-patient").focus();
+    await expect(page.locator(".ov-pop")).toHaveCount(0);
+    await expect(page.locator("#notification-group-guidance")).toHaveCount(1);
+    await expect(page.locator("#notification-group-guidance")).toContainText("filtered-out rows");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
   test(`readable headings, focus and expanded rows at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await setup(page);

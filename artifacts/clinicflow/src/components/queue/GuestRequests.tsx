@@ -9,6 +9,7 @@ import { SearchableSelect } from "../SearchableSelect";
 import { useFreshWorkspace } from "./useFreshWorkspace";
 import { AppDialog } from "../AppDialog";
 import { HelpTip } from "../HelpTip";
+import { OverflowText } from "../OverflowText";
 import { formatDate } from "../../lib/date-time";
 import { formatSessionHours } from "./SessionSelector";
 
@@ -43,7 +44,7 @@ export function GuestRequests({clinicId,branchId,doctorId,date,sessionId,startTi
   {fresh.stale&&!requests.isLoading&&<p role="alert">Requests are offline or out of date. Refresh before deciding.</p>}
   <IconAction label="Refresh requests" icon={<RotateCw size={15} aria-hidden/>} testId="button-refresh-requests" onClick={()=>void requests.refetch()} disabled={requests.isFetching} disabledReason="Refreshing…"/>
   {requests.isLoading?<p role="status">Loading requests…</p>:requests.error?null:requests.data?.items.length?<div className="activity-list">{requests.data.items.map(item=><article key={item.id} className="guest-request-row">
-   <div className="guest-request-main"><strong title={item.fullName}>{item.fullName}</strong><span className="muted">{[item.mobile||item.email||"No contact details",formatSessionHours(item)].join(" · ")}</span><HelpTip label={`Request details for ${item.fullName}`} text={[item.doctorName,formatDate(item.date,item),item.branchName,item.timezone,item.email,item.mobile].filter(Boolean).join(" · ")}/></div>
+   <div className="guest-request-main"><OverflowText as="strong" value={item.fullName}/><span className="muted">{[item.mobile,item.email].filter(Boolean).join(" · ")||"No contact details"} · {formatSessionHours(item)}</span><span className="muted">{[item.doctorName,formatDate(item.date,item),item.branchName,item.timezone].filter(Boolean).join(" · ")}</span></div>
    <div className="toolbar guest-request-actions"><button type="button" className="button small" data-testid={`button-approve-${item.id}`} disabled={fresh.stale||requests.isFetching||decision.isPending} onClick={()=>void act(item.id,"confirm","Confirmed by reception after reviewing the guest request.")}>{decision.isPending&&decision.variables?.id===item.id?"Updating…":"Approve"}</button><button type="button" className="button secondary small" data-testid={`button-decline-${item.id}`} disabled={fresh.stale||requests.isFetching||decision.isPending} onClick={()=>{decision.reset();setDeclining(item);setReason("");}}>Decline</button></div>
   </article>)}</div>:<p>No requests awaiting confirmation for this session.</p>}
   <Pagination page={page} pageSize={pageSize} total={requests.data?.total??0} onPageChange={setPage} onPageSizeChange={setPageSize}/>

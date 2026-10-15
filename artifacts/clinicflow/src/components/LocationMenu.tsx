@@ -1,6 +1,7 @@
 import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Check, Search } from "lucide-react";
 import type { WorkspaceBranchOption } from "../lib/workspace-branch";
+import { OverflowText } from "./OverflowText";
 
 // Two single-line labels fit in a fixed row, so scrolling never needs to
 // measure thousands of DOM nodes. Keep this in sync with .loc-option virtual CSS.
@@ -76,9 +77,8 @@ export function LocationMenu({ branches, selectedId, onChoose }: {
           aria-posinset={i + 1} aria-setsize={options.length}
           className={`loc-option${i === activeIndex ? " is-active" : ""}`}
           style={{ top: i * ROW_HEIGHT, height: ROW_HEIGHT }}
-          onMouseEnter={() => setActive(i)} onClick={() => onChoose(b.id)} data-testid={`option-location-${b.id}`}
-          title={`${b.name} · ${b.clinicName}`}>
-          <span><strong>{b.name}</strong><small>{b.clinicName}</small></span>{b.id === selectedId && <Check size={15} aria-hidden />}
+          onMouseEnter={() => setActive(i)} onClick={() => onChoose(b.id)} data-testid={`option-location-${b.id}`}>
+          <span><OverflowText as="strong" value={b.name}/><small><OverflowText value={b.clinicName}/></small></span>{b.id === selectedId && <Check size={15} aria-hidden />}
         </li>;
       })}
       {!options.length && <li className="loc-empty" role="presentation">No matching locations.</li>}

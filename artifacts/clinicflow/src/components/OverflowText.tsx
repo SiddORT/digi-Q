@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import * as Popover from "@radix-ui/react-popover";
+import { DISMISS_TOOLTIPS, dismissTooltips } from "./tooltip-dismiss";
 import "./overflow-text.css";
 
 /**
@@ -12,6 +13,13 @@ export function OverflowText({ value, children, as = "span", className, lines = 
   const [open, setOpen] = useState(false);
   const [truncated, setTruncated] = useState(false);
   const closeTimer = useRef<number | undefined>(undefined);
+  const id = useId();
+  const touchFocus = useRef(false);
+  useEffect(() => {
+    const dismiss = () => { window.clearTimeout(closeTimer.current); setOpen(false); };
+    window.addEventListener(DISMISS_TOOLTIPS, dismiss);
+    return () => window.removeEventListener(DISMISS_TOOLTIPS, dismiss);
+  }, []);
   useLayoutEffect(() => {
     const el = ref.current;
     const measure = () => {
@@ -27,22 +35,25 @@ export function OverflowText({ value, children, as = "span", className, lines = 
   }, [text, children, lines]);
   if (!text) return <>{children ?? "—"}</>;
   const measure = () => { const el = ref.current; const t = !!el && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1); setTruncated(t); return t; };
-  const show = () => { window.clearTimeout(closeTimer.current); if (measure()) setOpen(true); };
+  const show = () => { window.clearTimeout(closeTimer.current); if (measure()) { dismissTooltips(); setOpen(true); } };
+  const toggle = () => { const next = !open; dismissTooltips(); if (measure()) setOpen(next); };
   const hide = () => { closeTimer.current = window.setTimeout(() => setOpen(false), 120); };
   const Tag = as;
   return <Popover.Root open={open && truncated} onOpenChange={setOpen}>
     <Popover.Anchor asChild>
       <Tag ref={ref as any} className={`ov-text${lines === 2 ? " ov-2" : ""}${className ? ` ${className}` : ""}`} data-testid={testId}
         tabIndex={truncated ? 0 : -1} aria-label={truncated ? text : undefined}
-        onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}
-        onPointerDown={e => { if (e.pointerType !== "mouse" && measure()) setOpen(v => !v); }}
-        onKeyDown={e => { if (e.key === "Escape") setOpen(false); if ((e.key === "Enter" || e.key === " ") && truncated) { e.preventDefault(); setOpen(v => !v); } }}>
+        aria-describedby={open && truncated ? id : undefined}
+        onMouseEnter={show} onMouseLeave={hide} onFocus={() => { if (!touchFocus.current) show(); }} onBlur={hide}
+        onPointerDown={e => { if (e.pointerType !== "mouse" && measure()) { e.preventDefault(); touchFocus.current = true; ref.current?.focus(); touchFocus.current = false; toggle(); } }}
+        onKeyDown={e => { if (e.key === "Escape") setOpen(false); if ((e.key === "Enter" || e.key === " ") && truncated) { e.preventDefault(); toggle(); } }}>
         {children ?? text}
       </Tag>
     </Popover.Anchor>
     <Popover.Portal>
-      <Popover.Content className="ov-pop" side="top" align="start" sideOffset={6} collisionPadding={8} role="tooltip"
+      <Popover.Content id={id} className="ov-pop" side="top" align="start" sideOffset={6} collisionPadding={8} role="tooltip"
         onOpenAutoFocus={e => e.preventDefault()} onCloseAutoFocus={e => e.preventDefault()}
+        onInteractOutside={e => { if (ref.current?.contains(e.target as Node)) e.preventDefault(); }}
         onMouseEnter={() => window.clearTimeout(closeTimer.current)} onMouseLeave={hide}>
         {text}
       </Popover.Content>

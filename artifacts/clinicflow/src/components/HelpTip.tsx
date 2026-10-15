@@ -5,6 +5,8 @@ import {
 import { createPortal } from "react-dom";
 import { HelpCircle } from "lucide-react";
 import "./help-tip.css";
+import { DISMISS_TOOLTIPS, dismissTooltips } from "./tooltip-dismiss";
+export { DISMISS_TOOLTIPS, dismissTooltips } from "./tooltip-dismiss";
 
 export interface HelpTipProps { text: string; children?: ReactNode; icon?: ReactNode; label?: string }
 
@@ -18,9 +20,6 @@ type ChildProps = {
   onBlur?: (e: FocusEvent) => void;
   onPointerDown?: (e: ReactPointerEvent) => void;
 };
-
-export const DISMISS_TOOLTIPS = "dq:dismiss-tooltips";
-export const dismissTooltips = () => window.dispatchEvent(new Event(DISMISS_TOOLTIPS));
 
 /** Tooltip rendered in a body portal, positioned against the anchor with flip + viewport clamp. */
 function Bubble({ anchor, text, id }: { anchor: RefObject<HTMLSpanElement | null>; text: string; id?: string }) {
@@ -65,6 +64,7 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
   const timer = useRef<number | undefined>(undefined);
 
   const close = () => { setOpen(false); setPinned(false); };
+  const show = () => { dismissTooltips(); setOpen(true); };
   // Menus and popovers broadcast this so a trigger's tooltip never overlaps the opened menu.
   useEffect(() => { const dismiss = () => { setOpen(false); setPinned(false); }; window.addEventListener(DISMISS_TOOLTIPS, dismiss); return () => window.removeEventListener(DISMISS_TOOLTIPS, dismiss); }, []);
 
@@ -79,7 +79,7 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const bubble = open ? <Bubble anchor={ref} text={text} /> : null;
-  const hoverProps = { onMouseEnter: () => setOpen(true), onMouseLeave: () => { if (!pinned) setOpen(false); } };
+  const hoverProps = { onMouseEnter: show, onMouseLeave: () => { if (!pinned) setOpen(false); } };
 
   if (isValidElement(children)) {
     const child = children as ReactElement<ChildProps>;
@@ -91,8 +91,8 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
       // Disabled controls can't receive focus/hover; a focusable wrapper carries the help.
       return <span className="helptip helptip-disabled" ref={ref} {...hoverProps}>
         <span tabIndex={0} className="helptip-focus" aria-describedby={id} aria-label={text}
-          onFocus={() => setOpen(true)} onBlur={() => { if (!pinned) setOpen(false); }}
-          onClick={() => { const n = !pinned; setPinned(n); setOpen(n); }} data-testid="helptip-disabled-wrapper">
+          onFocus={show} onBlur={close}
+          onClick={() => { const n = !pinned; dismissTooltips(); setPinned(n); setOpen(n); }} data-testid="helptip-disabled-wrapper">
           {child}
         </span>
         <span id={id} className="sr-only-helptip">{text}</span>
@@ -102,13 +102,13 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
 
     const trigger = cloneElement(child, {
       "aria-describedby": describedBy,
-      onMouseEnter: (e: MouseEvent) => { p.onMouseEnter?.(e); setOpen(true); },
+      onMouseEnter: (e: MouseEvent) => { p.onMouseEnter?.(e); show(); },
       onMouseLeave: (e: MouseEvent) => { p.onMouseLeave?.(e); if (!pinned) setOpen(false); },
-      onFocus: (e: FocusEvent) => { p.onFocus?.(e); setOpen(true); },
+      onFocus: (e: FocusEvent) => { p.onFocus?.(e); show(); },
       onBlur: (e: FocusEvent) => { p.onBlur?.(e); if (!pinned) setOpen(false); },
       onPointerDown: (e: ReactPointerEvent) => {
         p.onPointerDown?.(e);
-        if (e.pointerType === "touch") { setOpen(true); window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setOpen(false), 2500); }
+        if (e.pointerType === "touch") { show(); window.clearTimeout(timer.current); timer.current = window.setTimeout(() => setOpen(false), 2500); }
       },
     });
     // Description is always in the DOM so aria-describedby resolves even when bubble is hidden.
@@ -121,8 +121,8 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
 
   return <span className="helptip" ref={ref} {...hoverProps}>
     <button type="button" className="helptip-trigger" aria-label={label ?? "Help"} aria-describedby={id} aria-expanded={open}
-      onFocus={() => setOpen(true)} onBlur={() => { if (!pinned) setOpen(false); }}
-      onClick={() => { const n = !pinned; setPinned(n); setOpen(n); }} data-testid="button-help-tip">
+      onFocus={show} onBlur={close}
+      onClick={() => { const n = !pinned; dismissTooltips(); setPinned(n); setOpen(n); }} data-testid="button-help-tip">
       {children ?? icon ?? <HelpCircle size={15} aria-hidden="true" />}
     </button>
     <span id={id} className="sr-only-helptip">{text}</span>
