@@ -113,11 +113,13 @@ export async function saveTemplate(user: any, input: unknown) {
 }
 
 /** Activation edits only published content; unpublished wording stays a draft. */
-export async function changeActivation(user:any, input:{channel:Channel;event:TemplateEvent;recipient:TemplateRecipient;clinicId?:string;revision:number;enabled:boolean}) {
+export async function changeActivation(user:any, input:{channel:Channel;event:TemplateEvent;recipient:TemplateRecipient;clinicId?:string;revision:number;enabled:boolean},conn:any=db) {
+  assert((templateEvents as readonly string[]).includes(input.event),400,"Unsupported notification event");
+  assert(["patient","clinicAdmin","doctor","receptionist","superAdmin"].includes(input.recipient),400,"Unsupported recipient");
    assert(!requiredEvent(input.event),400,"Required security messages cannot be disabled");
   assert(validTemplateTarget(input.event,input.recipient,input.channel),400,"Invalid event, recipient or channel");
   assert(user.role==="superAdmin" && !user.demo,403,"Real Superadmin access required");
-  await db.transaction(async tx=>{
+  await conn.transaction(async (tx:any)=>{
     await authorizedTemplateScope(user,input.clinicId,tx);
     const id=key(input.event,input.clinicId,input.recipient,input.channel);
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${id},0))`);

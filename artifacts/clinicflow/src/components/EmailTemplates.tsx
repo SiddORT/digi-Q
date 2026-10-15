@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { FormActions } from "./FormActions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,7 +16,6 @@ import "./email-templates.css";
 import { previewText } from "../lib/template-preview";
 import { BookingMailOutcomes } from "./BookingMailOutcomes";
 import { EventTemplateTest } from "./EventTemplateTest";
-import { StatusSwitch } from "./StatusSwitch";
 import { isRealSuperAdmin } from "../lib/settings-access";
 import { templateSaveError } from "../lib/communication-routes";
 import { templateContentForSave } from "../lib/notification-template-input";
@@ -72,16 +72,19 @@ export function unknownVariables(content: Content, allowed: string[]) {
   for (const v of Object.values(content)) for (const m of String(v).matchAll(/\{\{\s*([a-z0-9_]+)\s*\}\}/gi)) if (!allowed.includes(m[1])) found.add(m[1]);
   return [...found];
 }
+function ActivationNote({ on, required }: { on: boolean; required: boolean }) {
+  return <span className="muted" data-testid="text-activation-note">{required ? "Required security message." : `Currently ${on ? "on" : "off"}. Wording saves keep this setting.`} {!required && <Link href="/admin/settings?area=notifications" className="text-link" data-testid="link-activation-notifications">Manage activation in Notifications</Link>}</span>;
+}
 const same = (a?: Content, b?: Content) => !!a && !!b && FIELDS.every(([k]) => a[k] === b[k]) && (["senderId", "dltEntityId", "dltTemplateId"] as const).every(k => (a[k] ?? "") === (b[k] ?? "")) && (a.enabled ?? null) === (b.enabled ?? null);
 const status = (e: any) => e?.status ?? e?.response?.status;
 
 /** SMS keeps one body plus the event's DLT Template ID; Sender ID comes from configuration. */
 export const SMS_BODY_MAX = 1600;
-export function EmailTemplates({ identity, channel = "email", onDirtyChange, onBusyChange, fixed }: { onBusyChange?: (busy: boolean) => void; identity: api.Identity; channel?: "email" | "sms"; onDirtyChange?: (dirty: boolean) => void; fixed?: { clinicId: string; event: string; recipient: Recipient } }) {
+export function EmailTemplates({ identity, channel = "email", onDirtyChange, onBusyChange, fixed, initialClinicId }: { initialClinicId?: string; onBusyChange?: (busy: boolean) => void; identity: api.Identity; channel?: "email" | "sms"; onDirtyChange?: (dirty: boolean) => void; fixed?: { clinicId: string; event: string; recipient: Recipient } }) {
   const sms = channel === "sms";
   const dialogClose = useAppDialogClose();
   const superAdmin = identity.user?.role === "superAdmin";
-  const [clinicId, setClinicId] = useState(fixed?.clinicId ?? "");
+  const [clinicId, setClinicId] = useState(fixed?.clinicId ?? initialClinicId ?? "");
   const [event, setEvent] = useState<string>(fixed?.event ?? "booking");
   const [recipient, setRecipient] = useState<Recipient>(fixed?.recipient ?? "patient");
   const [form, setForm] = useState<Content | null>(null);
@@ -148,7 +151,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
 
   function run(mode: Mode) {
     if (!item || !form) return;
-    save.mutate({ data: { channel, clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, recipient, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : templateContentForSave(form, channel, item.title) } }, {
+    save.mutate({ data: { channel, clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, recipient, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : templateContentForSave({...form,enabled:item.content.enabled}, channel, item.title) } }, {
       onSuccess: next => {
         queryClient.setQueryData(queryKey, next);
         void queryClient.invalidateQueries({ queryKey: [api.getGetEventControlsQueryKey()[0]] });
@@ -197,9 +200,8 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
   }
 
   const set = (k: TextKey, v: string) => { setNotice(""); setForm(f => f ? { ...f, [k]: v } : f); };
-  const setEnabled = (v: boolean) => { setNotice(""); setForm(f => f ? { ...f, enabled: v } : f); };
   const recipientInfo = RECIPIENTS.find(r => r.value === recipient)!;
-  const isOn = form ? (form.enabled ?? recipient === "patient") : false;
+  const isOn = item?.content.enabled ?? false;
   const preview = form ? { subject: previewText(`${form.prefix ? form.prefix + " " : ""}${form.subject}`, scopeName), body: previewText(form.body, scopeName), footer: previewText(form.footer, scopeName) } : null;
 
   const renderField = ([k, label, max, help]: [TextKey, string, number, string]) => form &&  <FormField key={k} label={label} required={k === "subject" || k === "body"} optional={k !== "subject" && k !== "body"} helper={help} error={(errors as any)[k]}>
@@ -246,7 +248,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
       : !item || !form ? <div className="et-empty" data-testid="state-empty">This event has no template for the selected scope.</div>
       : fixed ? <form className="et-drawer" onSubmit={e => { e.preventDefault(); setConfirm("publish"); }}>
         <TemplateDrawerFields form={form} templateKey={item.event} savedDltTemplateId={item.content.dltTemplateId} sms={sms} errors={errors} variables={variables} scopeName={scopeName} set={set}
-          active={<div className="td-active" data-testid="row-enabled"><span>{requiredSecurityEvent(event) ? "Required security message" : "Active"}</span><StatusSwitch active={isOn} onChange={setEnabled} disabled={save.isPending || requiredSecurityEvent(event)} label={`Active: send ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s`} testId="input-enabled"><span className="sr-only">{isOn ? "On" : "Off"}</span></StatusSwitch></div>} />
+          active={<div className="td-active" data-testid="row-enabled"><ActivationNote on={isOn} required={requiredSecurityEvent(event)} /></div>} />
         {unknown.length > 0 && <p role="alert" className="error-box">Unknown variables: {unknown.join(", ")}. Use only the variables listed above.</p>}
         {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Someone else changed this template. Your edits are kept here.
           <button type="button" onClick={() => { resetLocal(); void catalog.refetch(); }} data-testid="button-reload">Discard My Edits and Reload</button></div>}
@@ -272,10 +274,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
             {item.draft && <span className="et-chip draft">Unpublished Draft</span>}
             <span className="et-rev">Revision {item.revision}</span>
           </div>
-          <div className="et-toggle" data-testid="row-enabled">
-            <StatusSwitch active={isOn} onChange={setEnabled} disabled={save.isPending || requiredSecurityEvent(event)} label={`Send ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s for this event`} testId="input-enabled">{requiredSecurityEvent(event) ? "Required security message" : `Send this ${sms ? "SMS" : "email"} to ${recipientInfo.label.toLowerCase()}s for this event (${isOn ? "On" : "Off"})`}</StatusSwitch>
-            <HelpTip text={recipient === "patient" ? "Turning this off stops the patient email for this event." : `Off by default. Publishing with this on adds real emails to ${recipientInfo.who}. An address that is already a target for this event receives one email, not duplicates.`}/>
-          </div>
+          <div className="et-toggle" data-testid="row-enabled"><ActivationNote on={isOn} required={requiredSecurityEvent(event)} /></div>
           {(sms ? SMS_FIELDS : FIELDS).map(renderField)}
           <div className="et-vars" data-testid="list-variables">
             <span>Available Variables</span>

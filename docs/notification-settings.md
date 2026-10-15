@@ -1,12 +1,46 @@
-# SMS, Email and Event controls
+# Notification settings, delivery policy and providers
 
 ## Access and safe defaults
 
-Real Superadmins can open **Settings** from their profile menu or the sidebar:
+Every supported signed-in role can open **Settings → Notifications** from the
+sidebar or profile menu, or use **Notification settings** in the bell inbox:
 
-- `/admin/settings?area=sms`: notification SMS provider and templates
-- `/admin/settings?area=email`: existing SMTP configuration and email templates
-- `/admin/settings?area=events`: published event/recipient activation
+- `/admin/settings?area=notifications` for Superadmins and Clinic Admins;
+- `/doctor/settings?area=notifications`, `/receptionist/settings?area=notifications`
+  and `/patient/settings?area=notifications` for personal settings only.
+
+**My notifications** is always personal, including for Superadmins. The compact
+event/channel matrix shows saved choices, inherited defaults, effective status
+and blocking reasons together. Edit several checkboxes and press **Save** once;
+**Cancel** restores saved choices. **Restore inherited** removes an explicit
+choice. Preferences are server-owned, revision-protected and shared across devices.
+Refresh does not replace dirty drafts; conflicts require an explicit reload.
+
+Absent preferences inherit **On**: allow currently eligible behavior, not permission
+to bypass clinic, template, provider, contact or membership restrictions. Personal
+**Off** affects only that event/channel. Badges distinguish **Off**, **On**,
+**On but blocked**, **Required** and **Unavailable**. Loading failures show Retry,
+never unchecked defaults. In-app appointments/queue categories, and system updates
+for administrators, are separate from outbound Email/SMS. Hidden categories are
+excluded from unread counts and Mark All as Read without deleting history or
+changing existing read markers.
+
+In **Delivery management**, real Superadmins explicitly select **Platform defaults**
+or **One clinic**, then save its gate and published event/recipient activation as
+one batch. Clinic Admins see their verified owned-clinic gate, with a sole clinic
+preselected; event activation remains Superadmin-only. Scope changes guard dirty
+edits. Activation needs at most one confirmation naming the scope; personal opt-outs
+need none. Existing Clinic Admin email wording permissions remain unchanged.
+
+Advanced provider configuration and wording remain secondary:
+
+- `/admin/communication?tab=sms`: notification SMS provider;
+- `/admin/communication?tab=email`: SMTP provider;
+- `/admin/communication?tab=logs`: outbound history;
+- `/admin/templates`: wording editors; activation links back to Notifications.
+
+Legacy Settings `area=sms`, `area=email`, `area=events` and `area=templates`
+links still redirect to the corresponding existing pages.
 
 Platform settings, Integrations (including storage and Twilio OTP), reference data,
 audit and demo management remain available. Legacy `area=templates`, `/admin/templates`
@@ -101,14 +135,36 @@ No provider compatibility or DLT approval is implied by saving settings.
 
 The six operational events are booking, clinic onboarding, rescheduled, cancelled,
 completed and reminder. Appointment events can target patient, owning Clinic Admin,
-appointment doctor and assigned receptionists. Clinic onboarding targets **only**
-the owning Clinic Admin. Unsupported operational events are not presented.
+appointment doctor and assigned receptionists. Clinic onboarding supports the
+owning Clinic Admin and the platform Superadmin group. Unsupported combinations
+are not presented.
 
 Effective published precedence is:
 
 1. clinic-published override, including explicit `enabled: false`;
 2. platform-published content and activation;
 3. existing email defaults, or SMS defaults (all disabled).
+
+The shared platform gate still defaults to **false**. Existing clinic overrides
+and explicit published opt-outs are retained. A checked personal or published
+checkbox does not establish delivery eligibility. Provider readiness is a
+configuration check, not proof of provider acceptance or delivery.
+
+Personal opt-outs are enforced during capture (including the separate patient
+booking-confirmation path) and again inside the durable dispatch claim. Linked
+patient accounts are resolved from saved relations; unlinked guest contacts keep
+their existing behavior. Opt-out cancels matching pending jobs and advances a
+durable channel/event epoch. Re-enabling affects new occurrences only, never old
+skipped/cancelled jobs or durable occurrence claims. Already-sending and uncertain
+jobs are not recalled or retried. Login OTP, verification, invitations and password
+recovery never pass through optional preference enforcement.
+
+Preferences use dedicated namespaced records in the existing PostgreSQL settings
+store, not user profile JSON or browser storage. No new database migration or
+provider credentials are needed. `/me/notification-settings` derives its owner
+only from the authenticated account; `/management/notification-settings` separately
+checks real administrator role and current clinic ownership. Gate updates merge
+only the notification gate; activation updates preserve unpublished drafts.
 
 Drafts never change delivery. Numeric revisions protect template and activation edits.
 Reset removes local published/draft content and restores inheritance without resetting
@@ -197,19 +253,31 @@ synthetic credentials and fake senders. It covers encryption/redaction, provider
 request mapping, SSRF/address restrictions, acceptance classification, DLT activation,
 revision conflict, inheritance/opt-outs, draft tests, replay, all six event jobs,
 missing contacts, timing/status/contact/assignment checks and independent channels.
+It also covers personal inheritance, revision conflicts, channel-specific capture,
+linked/guest patient confirmation, pending cancellation, required-message exemptions,
+in-app filtering/read-state preservation, authenticated self ownership, and two
+observed multi-connection PostgreSQL race orderings (capture/opt-out and
+dispatch/opt-out). Staff-removal coverage includes owned preference-record cleanup.
 The existing integration, notification-template, appointment-confirmation and booking
 regressions remain relevant. Frontend checks use fictional identities/providers; browser
 checks must not enter credentials, activate clinics or send real recipients.
 
-Preview UI verification used intercepted, fictional API responses, not a live staff
-login or real provider. It verified role-specific menu visibility, clinic-admin email
-access, the three layouts at 1366/1024/768/390 pixels, keyboard switch confirmation,
-preview substitution, one request on fake-send double-click, uncertain-result wording,
-and dirty tab/sidebar navigation. A targeted follow-up verified repeated browser
-Back/Cancel/Discard and draft retention after fixing history handling. Full browser
-SMTP delivery and draft/publish conflict scenarios were not exercised; corresponding
-sender, draft isolation and revision behavior were checked with isolated backend and
-component tests instead. None of these fixtures establish handset/inbox delivery.
+Notifications-area browser verification used real native sessions for five fictional
+roles against a disposable PostgreSQL API, with fake senders and external network
+disabled. It checked role navigation, required controls, grouped saving and reload,
+one scope-named activation confirmation, patient keyboard operation, unsaved-leave
+Cancel/Discard and tablet/mobile layouts. The disposable fixture initially omitted
+the existing templates router; after mounting it, authenticated requests confirmed
+both owned Clinic Admin template catalogs load. Authenticated request checks also
+confirmed new-session persistence, two-choice grouped saving, ordinary-role management
+denial and feed/count hide/restore without changing read state.
+
+The earlier wording/provider-editor checks used intercepted fictional responses
+for accordion layout, preview substitution, draft/test safeguards and dirty navigation.
+No verification used real recipients, provider credential changes or live delivery.
+The exact browser request count and all role-by-breakpoint combinations were not
+measured; grouped writes are additionally covered by the route tests. None of these
+fixtures establish handset/inbox delivery or separately deployed readiness.
 
 Queued reminders tolerate up to five minutes beyond their narrow scheduling window
 to account for worker polling and transaction-commit delays. This allowance does not

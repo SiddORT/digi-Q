@@ -13,7 +13,7 @@ const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 let harnessSequence = 0;
 
-export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false}={}) {
+export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false}={}) {
   const cluster=postgres?await createQueueHarness({empty:true}):null;
   const {Pool}=postgres?createRequire(resolve(root,"lib/db/package.json"))("pg"):{};
   const pool=postgres?new Pool({host:cluster.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8,statement_timeout:10000}):null;
@@ -45,6 +45,8 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import { workspaceFeaturesRouter } from "./routes/workspace-features";
       import { patientRecordsRouter } from "./routes/patient-records";
       import { reportingRouter } from "./routes/reporting";
+      ${notificationSettings ? `import { notificationSettingsRouter } from "./routes/notification-settings";
+      import { notificationTemplatesRouter } from "./routes/notification-templates";` : ""}
       export { listOwnerBookingMailOutcomes } from "./lib/notification-outbox";
        ${deletion ? `import { db as deletionDb } from "@workspace/db";
        import { computeStaffDeletionImpact } from "./lib/staff-deletion-impact";
@@ -108,6 +110,8 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         ${!bookingLookups ? `app.use((req, _res, next) => { const id = req.get("x-test-user"); if (id) { req.authUserId = id; req.authSessionHash = "test-session-" + id; } next(); });` : ""}
         app.use(express.json());
         app.use("/api", workspaceFeaturesRouter, patientRecordsRouter, reportingRouter);
+        ${notificationSettings ? `app.use("/api", notificationSettingsRouter);
+        app.use("/api", notificationTemplatesRouter);` : ""}
         ${administration ? `app.use("/api", resourcesRouter, identityRouter, systemUsersRouter, permissionPolicyRouter);` : ""}
         ${registration ? `app.use("/api", clinicExpansionRouter);` : ""}
         ${bookingLookups ? `app.use("/api", publicRouter, appointmentsRouter, guestRequestsRouter, appointmentQrRouter, lookupResourcesRouter);` : ""}

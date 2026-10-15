@@ -16,6 +16,7 @@ import { previousSessionSnapshot, visitTemplateValues, missingVisitVariables } f
 import { validTemplateTarget } from "./notification-templates";
 import { withStaffDispatch } from "./staff-dispatch-barrier";
 import { notificationStaffSubjects } from "./notification-staff-subjects";
+import { lockNotificationPreferences, recipientPreference, pendingPreferenceAllowed } from "./notification-preferences";
 const emailKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 
 /** Explicit safe projection only: never return an outbox payload or recipient identifiers. */
@@ -49,6 +50,7 @@ export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {
   if(requiredEvent(event))return; // Authentication never enters operational outbox/history.
+  await lockNotificationPreferences(conn);
   if(event==="booking"){
     const {capturePatientConfirmation}=await import("./appointment-confirmation");
     await capturePatientConfirmation(conn,row);
@@ -119,6 +121,7 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
   }
   for (const target of targets.length?targets:[null]) {
   let email="";
+  let preferenceUserId=target?.id || null;
   let active=true;
   if (target) {
     email = String(target.email || "").trim().toLowerCase();
@@ -126,13 +129,19 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
     if(row.patientId){
       const patient=await one(patients,row.patientId,conn);
       const account=patient.userId?await one(users,patient.userId,conn):null;
+      preferenceUserId=account?.id || null;
       email=String(account?.email||patient.email||"").trim().toLowerCase();
       active=patient.status==="active"&&(!account||account.status==="active");
-    }else email=String((await one(users,(await one(clinics,row.clinicId,conn)).adminId,conn)).email||"").trim().toLowerCase();
+    }else {
+      const owner=await one(users,(await one(clinics,row.clinicId,conn)).adminId,conn);
+      preferenceUserId=owner.id;
+      email=String(owner.email||"").trim().toLowerCase();
+    }
   }
+  const preference=await recipientPreference(conn,preferenceUserId,"email",event);
   const decision=`email-decision:${event}:${row.id}:${row.revision||0}:${group}:${target?.id||"primary"}`;
   const entry=notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"email");
-  const status=!gate||!emailNotificationsEnabled(env)||!template.content.enabled?"disabled":!configured?"configuration_failed":
+  const status=!preference.enabled||!gate||!emailNotificationsEnabled(env)||!template.content.enabled?"disabled":!configured?"configuration_failed":
     !active||(target&&target.status!=="active")||!validEmailAddress(email)?"no_recipient":
     target&&usedEmails.has(email)?"not_attempted":null;
   if(status){await recordDecision(conn,decision,entry,status,{...templateSnapshot(template,event,group,"email"),recipient:email||undefined,provider:"smtp"});continue;}
@@ -141,6 +150,7 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
   const createdAt=Date.now();
   await conn.insert(settings).values({ id: primary ? id : `${id}:recipient:${emailKey(target.email)}`, data: {
     historyKey:decision,
+    preferenceUserId,preferenceEpoch:preference.epoch,
     recipientGroup: group, recipientUserId: target?.id,
     recipientEmailKey: target ? emailKey(target.email) : undefined,
     event, appointmentId: event === "onboarding" ? undefined : row.id, clinicId: row.clinicId,
@@ -189,6 +199,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
   for (const record of candidates) {
     try {
     const claimed = await conn.transaction(async (tx: any) => {
+      await lockNotificationPreferences(tx);
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${record.id}))`);
       const [fresh] = await tx.select().from(settings).where(eq(settings.id, record.id));
       const data = fresh.data;
@@ -197,6 +208,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
         await tx.update(settings).set({ data: { ...data, ...patch } }).where(eq(settings.id, record.id));
         if(patch.state) await recordNotification(tx,data.historyKey||record.id,notificationEntry(data,"email"),patch.state,undefined,[],now);
       };
+      if (!await pendingPreferenceAllowed(tx,data,"email")) { await update({state:"disabled"}); return null; }
       if (!(await getSettings(tx, data.clinicId)).notificationsEnabled ||
           !emailNotificationsEnabled((await resolvedIntegration("smtp", tx)).env)) { await update({ state: "disabled" }); return null; }
       const clinic = await one(clinics, data.clinicId, tx);

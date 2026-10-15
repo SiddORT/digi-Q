@@ -23,7 +23,7 @@ globalThis.fetch = (input, options) => {
   return realFetch(input, options);
 };
 const h = await createFeatureHarness({ postgres: true, deletion: true, administration: true,
-  bookingLookups: true, simulatedMail: true, fakeBookingMail: true });
+  bookingLookups: true, simulatedMail: true, fakeBookingMail: true, notificationSettings: true });
 await seedFeatureFixtures(h.pg);
 const password = "Fixture-Only!DigiQ-2026";
 await h.pg.query("update users set password_hash=$1,email_verified_at=now()", [await argon2.hash(password)]);

@@ -11,6 +11,12 @@ await build({
  stdin:{contents:'export * from "./lib/appointment-confirmation"; export * from "fixture";',resolveDir:import.meta.dirname},
  outfile:join(dir,"test.mjs"),bundle:true,platform:"node",format:"esm",
  plugins:[{name:"isolated-mail",setup(b){
+  // These lifecycle barriers are exercised with real PostgreSQL by the
+  // notification integration suite; this unit fixture only models SMTP claims.
+  b.onResolve({filter:/\/staff-dispatch-barrier$/},()=>({path:"staff-barrier",namespace:"staff-fixture"}));
+  b.onLoad({filter:/.*/,namespace:"staff-fixture"},()=>({contents:"export const withStaffDispatch=async(ids,operation,work)=>work();"}));
+  b.onResolve({filter:/\/notification-staff-subjects$/},()=>({path:"subjects",namespace:"subject-fixture"}));
+  b.onLoad({filter:/.*/,namespace:"subject-fixture"},()=>({contents:"export const notificationStaffSubjects=async()=>[];"}));
   b.onResolve({filter:/\/notification-outbox$/},()=>({path:"outbox",namespace:"outbox-fixture"}));
   b.onLoad({filter:/.*/,namespace:"outbox-fixture"},()=>({contents:"export const enqueueEvent=async()=>{};"}));
   b.onResolve({filter:/\/notification-history$/},()=>({path:"history",namespace:"history-fixture"}));

@@ -11,20 +11,25 @@ import { formatTemplateSession, visitTemplateValues, missingVisitVariables } fro
 import { lockQueue } from "./appointments";
 import { resolvedTemplate } from "./notification-template-store";
 import { renderNotification } from "./notification-templates";
+import { lockNotificationPreferences, recipientPreference } from "./notification-preferences";
 
 export type ConfirmationEmail = "provider_accepted" | "unavailable" | "disabled" | "no_recipient" | "not_attempted";
 type Sender = (to: string, subject: string, text: string) => Promise<unknown>;
 
 /** Called at actual booking creation only; idempotent booking retries do not recapture. */
 export async function capturePatientConfirmation(conn: any, row: any) {
+  await lockNotificationPreferences(conn);
   const entry=notificationEntry({event:"booking",clinicId:row.clinicId,snapshot:row,recipientGroup:"patient"},"email");
   try {
     const patient=await one(patients,row.patientId,conn);
+    const preference=await recipientPreference(conn,patient.userId,"email","booking");
+    await conn.insert(settings).values({id:`patient-confirmation-preference:${row.id}`,data:{userId:patient.userId||null,epoch:preference.epoch,enabled:preference.enabled}})
+      .onConflictDoNothing();
     const template=await resolvedTemplate("booking",row.clinicId,conn);
     const env=(await resolvedIntegration("smtp",conn)).env;
     const recipient=await confirmationRecipient(patient,conn);
     let ready=true;try{smtpConfig(env);}catch{ready=false;}
-    const status=!(await getSettings(conn,row.clinicId)).notificationsEnabled||!template.content.enabled||!emailNotificationsEnabled(env)?"disabled":
+    const status=!preference.enabled||!(await getSettings(conn,row.clinicId)).notificationsEnabled||!template.content.enabled||!emailNotificationsEnabled(env)?"disabled":
       !validEmailAddress(recipient)?"no_recipient":!ready?"configuration_failed":
       process.env.NODE_ENV==="development"?"not_attempted":"pending";
     await recordDecision(conn,`patient-booking:${row.id}`,entry,status,{...templateSnapshot(template,"booking","patient","email"),recipient:recipient||undefined,provider:"smtp"});
@@ -39,6 +44,7 @@ async function confirmationRecipient(patient: any, conn: any) {
 /** Persist known no-dispatch decisions with the booking itself, including service callers. */
 export async function initialConfirmationEmail(patient: any, enabled: boolean, conn: any): Promise<ConfirmationEmail | undefined> {
   if (!enabled) return "disabled";
+  if (!(await recipientPreference(conn,patient.userId,"email","booking")).enabled) return "disabled";
   if (!validEmailAddress(await confirmationRecipient(patient,conn))) return "no_recipient";
   return undefined; // Eligible email is claimed only after the booking commits.
 }
@@ -72,6 +78,7 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
   try {
     claimed = await conn.transaction(async (tx: any) => {
       const row = await lockConfirmation(tx,id);
+      await lockNotificationPreferences(tx);
       const [history]=await tx.select().from(settings).where(eq(settings.id,historyId(`patient-booking:${id}`)));
       const entry=history?notificationEntry({event:"booking",clinicId:row.clinicId,snapshot:row,recipientGroup:"patient"},"email"):undefined;
       const log=async(state:any)=>{if(entry)await recordNotification(tx,`patient-booking:${id}`,entry,state);};
@@ -91,6 +98,13 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
       }
       const patient = await one(patients,row.patientId,tx);
       const patientAccount=patient.userId?await one(users,patient.userId,tx):null;
+      const [receipt]=await tx.select().from(settings).where(eq(settings.id,`patient-confirmation-preference:${id}`));
+      const preference=await recipientPreference(tx,patient.userId,"email","booking",receipt?.data.epoch??0);
+      if(!preference.enabled||receipt?.data.enabled===false||
+        receipt&&receipt.data.userId!==(patient.userId||null)||
+        history&&["disabled","not_attempted","no_recipient","configuration_failed","preparation_failed","obsolete"].includes(history.data.status)){
+        await log("disabled");await saveOutcome(tx,id,"disabled");return {outcome:"disabled"};
+      }
       if(patient.status!=="active"||(patientAccount&&patientAccount.status!=="active")){
         await log("obsolete");await saveOutcome(tx,id,"not_attempted");return {outcome:"not_attempted"};
       }

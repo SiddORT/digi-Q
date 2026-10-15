@@ -92,7 +92,7 @@ test("search and filters open matching rows; clearing filters and changing scope
   await expect(page.getByTestId("button-event-booking")).toHaveAttribute("aria-expanded", "false");
 });
 
-test("expanded row actions retain edit guards and activation confirmation without sending", async ({ page }) => {
+test("expanded wording actions retain edit guards and link activation to Settings without writing", async ({ page }) => {
   const writes = await setup(page);
   await page.getByTestId("button-event-booking").click();
   await page.getByTestId("button-edit-email-booking-patient").click();
@@ -107,13 +107,9 @@ test("expanded row actions retain edit guards and activation confirmation withou
   await page.getByTestId("button-confirm-cancel").click();
   await page.getByRole("button", { name: "Close", exact: true }).first().click();
   await page.getByTestId("button-discard-editor").click();
-  await page.getByTestId("switch-email-booking-patient").click();
-  await expect(page.getByTestId("button-control-confirm")).toBeDisabled();
-  await page.getByTestId("checkbox-confirm-control").check();
-  await page.getByTestId("button-control-confirm").click();
-  await expect(page.getByTestId("status-save")).toBeVisible();
-  expect(writes).toHaveLength(1);
-  expect(writes[0]).toMatchObject({ path: "/api/management/event-controls", body: { confirmed: true, enabled: false, event: "booking", channel: "email", recipient: "patient" } });
+  await expect(page.getByTestId("switch-email-booking-patient")).toHaveCount(0);
+  await expect(page.getByTestId("link-activation-settings")).toHaveAttribute("href", "/admin/settings?area=notifications");
+  expect(writes).toEqual([]);
 });
 
 for (const width of [1280, 820, 390]) {

@@ -24,14 +24,18 @@ export const eventControlInput = z.object({
 export async function eventControls(user:any,clinicId?:string) {
   assert(user.role==="superAdmin"&&!user.demo&&user.demoFixture!==DEMO_FIXTURE,403,"Real Superadmin access required");
   const clinic=await authorizedTemplateScope(user,clinicId);
+  return deliveryControlCatalog(db,clinicId,clinic);
+}
+/** Internal shared policy projection. Callers must authorize scope before using it. */
+export async function deliveryControlCatalog(conn:any,clinicId?:string,clinic?:any) {
   const readiness=await integrationSettings();
-  const gate=clinicId?(await getSettings(db,clinicId)).notificationsEnabled:undefined;
+  const gate=(await getSettings(conn,clinicId)).notificationsEnabled;
    let smsConfig: ReturnType<typeof notificationSmsConfig> | undefined;
-   try {smsConfig=notificationSmsConfig((await resolvedIntegration("notificationSms")).env);}catch{/* missing configuration shown below */}
+   try {smsConfig=notificationSmsConfig((await resolvedIntegration("notificationSms",conn)).env);}catch{/* missing configuration shown below */}
   const items=[];
   for(const channel of ["email","sms"] as const) for(const recipient of templateRecipients) for(const event of templateEvents) {
      if(!validTemplateTarget(event,recipient,channel)||requiredEvent(event)&&clinicId)continue;
-    const template=await resolvedTemplate(event,clinicId,db,recipient,channel);
+    const template=await resolvedTemplate(event,clinicId,conn,recipient,channel);
     const reasons:string[]=[];
     if(!(channel==="sms"?readiness.notificationSms:readiness.smtp).ready)reasons.push(`Configure ${channel==="sms"?"SMS API":"SMTP"} on the ${channel==="sms"?"SMS":"Email"} page`);
      if(channel==="sms"&&!requiredEvent(event)&&readiness.notificationSms.notificationsEnabled===false)reasons.push("SMS notifications are disabled in Communication Settings");
@@ -39,7 +43,7 @@ export async function eventControls(user:any,clinicId?:string) {
      if(channel==="sms"&&isSecurityEvent(event)&&template.source==="default")reasons.push("Publish approved security SMS wording before use");
     const sms=template.content as SmsTemplateContent;
     if(channel==="sms"&&smsConfig&&!smsMetadataReady(smsConfig,sms))reasons.push(smsConfig.provider==="keepInTouch"?"Publish a DLT Template ID for this event; Keep in Touch uses Sender ID but no Entity ID":"Configure Sender and Entity IDs, and publish a DLT Template ID for this event");
-     if(gate===false&&!requiredEvent(event))reasons.push("Enable the clinic-wide notification gate in Clinic settings (not changed here)");
+     if(gate===false&&!requiredEvent(event))reasons.push(clinicId?"Clinic notification gate is off":"Platform default notification gate is off; clinics may have explicit overrides");
     if(!template.content.enabled)reasons.push("Published activation is off");
      items.push({channel,event,recipient,required:requiredEvent(event),revision:template.local.revision,enabled:template.content.enabled,source:template.source,ready:reasons.length===0,blockedReasons:reasons,
        timing:requiredEvent(event)?"Required security message sent immediately on its authentication action. Cannot be disabled; optional notification switches do not apply. SMS is conditional on an eligible mobile and approved content.":

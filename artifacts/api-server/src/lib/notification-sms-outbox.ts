@@ -16,6 +16,7 @@ import { visitTemplateValues, missingVisitVariables } from "./notification-templ
 import { validTemplateTarget } from "./notification-templates";
 import { withStaffDispatch } from "./staff-dispatch-barrier";
 import { notificationStaffSubjects } from "./notification-staff-subjects";
+import { lockNotificationPreferences, recipientPreference, pendingPreferenceAllowed } from "./notification-preferences";
 
 const phoneKey=(phone:string)=>createHash("sha256").update(phone).digest("hex");
 export function notificationPhone(value:unknown) {
@@ -36,7 +37,7 @@ async function targetAccounts(conn:any,group:TemplateRecipient,row:any,clinic:an
     if(!row.patientId)return [];
     const patient=await one(patients,row.patientId,conn);
     const account=patient.userId?await one(users,patient.userId,conn):null;
-    return [{...patient, mobile:account?.mobile||patient.mobile, targetPatientId:patient.id,
+    return [{...patient, preferenceUserId:account?.id||null, mobile:account?.mobile||patient.mobile, targetPatientId:patient.id,
       status:patient.status==="active"&&(!account||account.status==="active")?"active":"inactive"}];
   }
   const links=await conn.select().from(assignments).where(eq(assignments.clinicId,row.clinicId));
@@ -49,6 +50,7 @@ async function targetAccounts(conn:any,group:TemplateRecipient,row:any,clinic:an
 }
 export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string="",previousSession?:any) {
   if(requiredEvent(event))return; // Authentication codes never enter notification history/outbox.
+  await lockNotificationPreferences(conn);
   if(!await claimNotificationOccurrence(conn,"sms",event,row))return;
   const env=(await resolvedIntegration("notificationSms",conn)).env;
   const gate=(await getSettings(conn,row.clinicId)).notificationsEnabled;
@@ -59,9 +61,11 @@ export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previ
     const template=await resolvedTemplate(event,row.clinicId,conn,group,"sms");
     const targets=await targetAccounts(conn,group,row,clinic);
     for(const account of targets.length?targets:[null]) {
+      const preferenceUserId=account?.targetPatientId?account.preferenceUserId:account?.id||null;
+      const preference=await recipientPreference(conn,preferenceUserId,"sms",event);
       const decision=`sms-decision:${event}:${row.id}:${row.revision||0}:${group}:${account?.id||"missing"}`;
       const entry=notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"sms");
-      const status=!gate||!notificationSmsEnabled(env)||!template.content.enabled?"disabled":
+      const status=!preference.enabled||!gate||!notificationSmsEnabled(env)||!template.content.enabled?"disabled":
         !notificationSmsReadiness(env).ready?"configuration_failed":
         !account||account.status!=="active"||!notificationPhone(account.mobile)?"no_recipient":
         used.has(notificationPhone(account.mobile))?"not_attempted":null;
@@ -73,6 +77,7 @@ export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previ
       await conn.insert(settings).values({id,data:{
         event,clinicId:row.clinicId,appointmentId:event==="onboarding"?undefined:row.id,
         historyKey:decision,
+        preferenceUserId,preferenceEpoch:preference.epoch,
         recipientGroup:group,recipientUserId:account.targetPatientId?undefined:account.id,
         recipientPatientId:account.targetPatientId,recipientPhoneKey:phoneKey(phone),
         snapshot:row,previousDetails,previousSession,state:"pending",createdAt,dueAt:createdAt,attempts:0,
@@ -88,6 +93,7 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
   for(const record of candidates) {
     try {
       const claim=await conn.transaction(async(tx:any)=>{
+        await lockNotificationPreferences(tx);
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${record.id}))`);
         const [fresh]=await tx.select().from(settings).where(eq(settings.id,record.id));
         const data=fresh.data;
@@ -96,6 +102,7 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
           await tx.update(settings).set({data:{...data,state,finishedAt:now}}).where(eq(settings.id,record.id));
           await recordNotification(tx,data.historyKey||record.id,notificationEntry(data,"sms"),state,undefined,[],now);
         };
+        if(!await pendingPreferenceAllowed(tx,data,"sms")){await update("disabled");return null;}
         if(!(await getSettings(tx,data.clinicId)).notificationsEnabled){await update("disabled");return null;}
         const clinic=await one(clinics,data.clinicId,tx);
         const current=data.appointmentId?flatten((await tx.select().from(appointments).where(eq(appointments.id,data.appointmentId)))[0]):null;

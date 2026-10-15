@@ -154,7 +154,7 @@ export async function computeStaffDeletionImpact(conn: any, actorId: string, tar
   const settings = await rawRows(conn, sql`select * from settings order by id`);
   // Until every JSON writer and encrypted payload has an explicit classifier,
   // do not claim a generic string replacement is a safe erasure algorithm.
-  const knownPrivatePrefixes = ["workspace:", "staff-invitation:", "staff-recovery:", "notification-read:"];
+  const knownPrivatePrefixes = ["workspace:", "staff-invitation:", "staff-recovery:", "notification-read:", "notification-preferences:"];
   for (const row of settings) {
     if (row.id.startsWith("staff-handoff:") && row.data?.sourceFingerprint === accountSubjectFingerprint(targetId))
       snapshots.push({ source: "completed-handoff-evidence", rows: [row] });

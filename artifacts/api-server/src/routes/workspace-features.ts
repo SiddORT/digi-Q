@@ -8,6 +8,7 @@ import { audit, uid, getSettings } from "../lib/store";
 import { sourceSql } from "../lib/list-query";
 import { notificationKind, sanitizeSavedView, SHARE_ROLES, shareAudience, receivesSharedView } from "../lib/feature-policy";
 import { listOwnerBookingMailOutcomes } from "../lib/notification-outbox";
+import { personalPreferences } from "../lib/notification-preferences";
 
 export const workspaceFeaturesRouter = Router();
 const statusText: Record<string, string> = { booked: "Booked", checkedIn: "Checked In", waiting: "Waiting", called: "Called Next", inConsultation: "In Consultation", completed: "Completed", noShow: "Marked Absent", cancelled: "Cancelled" };
@@ -43,7 +44,8 @@ export async function listNotificationsFor(user: any) {
     items.push(...(system.rows as any[]).map(r => ({ id: `a:${r.id}`, kind: "system", title: r.summary, body: r.actor ? `By ${r.actor}` : undefined, createdAt: new Date(r.createdAt).toISOString(), read: !!r.read, appointmentId: null, date: null })));
   }
   items.sort((x, y) => y.createdAt.localeCompare(x.createdAt));
-  return items;
+  const preferences = await personalPreferences(user.id);
+  return items.filter(item => preferences.choices[`inApp:${item.kind}`] !== false);
 }
 workspaceFeaturesRouter.get("/management/booking-mail-outcomes", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");

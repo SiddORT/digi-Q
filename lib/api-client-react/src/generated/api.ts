@@ -105,6 +105,7 @@ import type {
   GetDashboardParams,
   GetDoctorPresenceParams,
   GetEventControlsParams,
+  GetManagedNotificationSettingsParams,
   GetNotificationTemplatesParams,
   GetPublicAvailabilityParams,
   GetPublicAvailabilitySessionsParams,
@@ -155,6 +156,8 @@ import type {
   LiveQueue,
   LogoUploadInput,
   LogoutNativeSession200,
+  ManagedNotificationInput,
+  ManagedNotificationSettings,
   Master,
   MasterInput,
   MasterList,
@@ -185,6 +188,8 @@ import type {
   PatientLoginVerifyInput,
   PermissionPolicy,
   PermissionPolicyInput,
+  PersonalNotificationInput,
+  PersonalNotificationSettings,
   PincodeLookup,
   ProfileInput,
   PublicBookingContext,
@@ -276,6 +281,319 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetMyNotificationSettingsUrl = () => {
+
+
+
+
+  return `/api/me/notification-settings`
+}
+
+export const getMyNotificationSettings = async ( options?: Parameters<typeof customFetch>[1]): Promise<PersonalNotificationSettings> => {
+
+  return customFetch<PersonalNotificationSettings>(getGetMyNotificationSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyNotificationSettingsQueryKey = () => {
+    return [
+    `/api/me/notification-settings`
+    ] as const;
+    }
+
+
+export const getGetMyNotificationSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getMyNotificationSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyNotificationSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyNotificationSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyNotificationSettings>>> = ({ signal }) => getMyNotificationSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyNotificationSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMyNotificationSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getMyNotificationSettings>>>
+export type GetMyNotificationSettingsQueryError = ErrorType<unknown>
+
+
+
+export function useGetMyNotificationSettings<TData = Awaited<ReturnType<typeof getMyNotificationSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMyNotificationSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMyNotificationSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveMyNotificationSettingsUrl = () => {
+
+
+
+
+  return `/api/me/notification-settings`
+}
+
+export const saveMyNotificationSettings = async (personalNotificationInput: PersonalNotificationInput, options?: Parameters<typeof customFetch>[1]): Promise<PersonalNotificationSettings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PersonalNotificationSettings>(getSaveMyNotificationSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(personalNotificationInput)
+  }
+);}
+
+
+
+
+
+export const getSaveMyNotificationSettingsMutationKey = () => ['saveMyNotificationSettings'] as const;
+
+export const getSaveMyNotificationSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMyNotificationSettings>>, TError,SaveMyNotificationSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveMyNotificationSettings>>, TError,SaveMyNotificationSettingsMutationVariables, TContext> => {
+
+const mutationKey = getSaveMyNotificationSettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveMyNotificationSettings>>, SaveMyNotificationSettingsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveMyNotificationSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveMyNotificationSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof saveMyNotificationSettings>>>
+    export type SaveMyNotificationSettingsMutationBody = BodyType<PersonalNotificationInput>
+    export type SaveMyNotificationSettingsMutationError = ErrorType<unknown>
+    export type SaveMyNotificationSettingsMutationVariables = {data: BodyType<PersonalNotificationInput>}
+
+    export const useSaveMyNotificationSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveMyNotificationSettings>>, TError,SaveMyNotificationSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveMyNotificationSettings>>,
+        TError,
+        SaveMyNotificationSettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveMyNotificationSettingsMutationOptions(options));
+    }
+
+export const getGetManagedNotificationSettingsUrl = (params?: GetManagedNotificationSettingsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/management/notification-settings?${stringifiedParams}` : `/api/management/notification-settings`
+}
+
+export const getManagedNotificationSettings = async (params?: GetManagedNotificationSettingsParams, options?: Parameters<typeof customFetch>[1]): Promise<ManagedNotificationSettings> => {
+
+  return customFetch<ManagedNotificationSettings>(getGetManagedNotificationSettingsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetManagedNotificationSettingsQueryKey = (params?: GetManagedNotificationSettingsParams,) => {
+    return [
+    `/api/management/notification-settings`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetManagedNotificationSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getManagedNotificationSettings>>, TError = ErrorType<unknown>>(params?: GetManagedNotificationSettingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getManagedNotificationSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetManagedNotificationSettingsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getManagedNotificationSettings>>> = ({ signal }) => getManagedNotificationSettings(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getManagedNotificationSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetManagedNotificationSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getManagedNotificationSettings>>>
+export type GetManagedNotificationSettingsQueryError = ErrorType<unknown>
+
+
+
+export function useGetManagedNotificationSettings<TData = Awaited<ReturnType<typeof getManagedNotificationSettings>>, TError = ErrorType<unknown>>(
+ params?: GetManagedNotificationSettingsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getManagedNotificationSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetManagedNotificationSettingsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveManagedNotificationSettingsUrl = () => {
+
+
+
+
+  return `/api/management/notification-settings`
+}
+
+export const saveManagedNotificationSettings = async (managedNotificationInput: ManagedNotificationInput, options?: Parameters<typeof customFetch>[1]): Promise<ManagedNotificationSettings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ManagedNotificationSettings>(getSaveManagedNotificationSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(managedNotificationInput)
+  }
+);}
+
+
+
+
+
+export const getSaveManagedNotificationSettingsMutationKey = () => ['saveManagedNotificationSettings'] as const;
+
+export const getSaveManagedNotificationSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveManagedNotificationSettings>>, TError,SaveManagedNotificationSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveManagedNotificationSettings>>, TError,SaveManagedNotificationSettingsMutationVariables, TContext> => {
+
+const mutationKey = getSaveManagedNotificationSettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveManagedNotificationSettings>>, SaveManagedNotificationSettingsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveManagedNotificationSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveManagedNotificationSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof saveManagedNotificationSettings>>>
+    export type SaveManagedNotificationSettingsMutationBody = BodyType<ManagedNotificationInput>
+    export type SaveManagedNotificationSettingsMutationError = ErrorType<unknown>
+    export type SaveManagedNotificationSettingsMutationVariables = {data: BodyType<ManagedNotificationInput>}
+
+    export const useSaveManagedNotificationSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveManagedNotificationSettings>>, TError,SaveManagedNotificationSettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveManagedNotificationSettings>>,
+        TError,
+        SaveManagedNotificationSettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveManagedNotificationSettingsMutationOptions(options));
+    }
 
 export const getSearchGeographyUrl = (params: SearchGeographyParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -14054,3 +14372,4 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getDeleteSavedViewMutationOptions(options));
     }
+

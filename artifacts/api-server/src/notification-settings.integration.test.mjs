@@ -41,13 +41,18 @@ before(async()=>{
     export * from "./lib/notification-outbox"; export * from "./lib/store"; export * from "@workspace/db";
     export * from "./lib/notification-history"; export * from "./lib/notification-test-dispatch";
     export * from "./lib/appointment-confirmation";
+    export * from "./lib/notification-preferences";
+    export * from "./lib/personal-notification-settings";
+    export * from "./lib/managed-notification-settings";
+    export { listNotificationsFor } from "./routes/workspace-features";
+    import { notificationSettingsRouter } from "./routes/notification-settings";
     import {notificationHistoryRouter} from "./routes/notification-history";
     import {notificationTemplatesRouter} from "./routes/notification-templates";
     import {integrationsRouter} from "./routes/integrations";
     import express from "express";
     export const app=express();app.use(express.json());
     app.use((req,res,next)=>{req.authUserId=req.headers["x-user"];req.authSessionHash="fixture";next();});
-    app.use(notificationTemplatesRouter);app.use(integrationsRouter);app.use(notificationHistoryRouter);
+    app.use(notificationTemplatesRouter);app.use(integrationsRouter);app.use(notificationHistoryRouter);app.use(notificationSettingsRouter);
     app.use((err,req,res,next)=>res.status(err.status||400).json({error:"Sanitized",code:err.code}));`,
     resolveDir:import.meta.dirname,loader:"ts"},outfile:bundle,bundle:true,platform:"node",format:"esm",packages:"external",
     plugins:[keepInTouchNetworkPlugin,{name:"isolated",setup(b){
@@ -56,7 +61,7 @@ before(async()=>{
       b.onResolve({filter:/^@workspace\/api-zod$/},()=>({path:resolve(import.meta.dirname,"../../../lib/api-zod/src/index.ts")}));
       // Authentication is an injected fixture at the router boundary; the real guards still run.
       b.onResolve({filter:/\/auth$/},args=>args.importer.includes("/routes/")?{path:"auth",namespace:"fixture-auth"}:undefined);
-      b.onLoad({filter:/.*/,namespace:"fixture-auth"},()=>({contents:`export async function requireUser(req){return {id:req.headers["x-user"],role:req.headers["x-user"]||"patient",clinicIds:["c"]};} export function roles(u,rs){if(!rs.includes(u.role))throw Object.assign(new Error("Forbidden"),{status:403});}`}));
+      b.onLoad({filter:/.*/,namespace:"fixture-auth"},()=>({contents:`export async function requireUser(req){return {id:req.headers["x-user"],role:req.headers["x-user"]||"patient",clinicIds:["c"]};} export async function findUser(){return null;} export function roles(u,rs){if(!rs.includes(u.role))throw Object.assign(new Error("Forbidden"),{status:403});}`}));
     }}]});
   api=await import(bundle);
 });
@@ -675,6 +680,265 @@ test("skips remain traceable but never become a backlog on repeated capture afte
   await api.enqueueEvent(h.db,"reminder",row);
   assert.equal((await api.listNotificationLogs(sa,{reference:"SKIP_HISTORY"},h.db)).items.length,8);
   assert.equal((await h.control.query("select id from settings where id like '%outbox:reminder:prospective-skip:%'")).rows.length,0);
+});
+
+const patientActor={id:"pu",role:"patient",patientId:"p",clinicIds:[],branchIds:[]};
+const ownerActor={id:"ca",role:"clinicAdmin",clinicIds:["c"],branchIds:[]};
+const preferenceRow=(data,key)=>data.items.find(row=>row.key===key);
+async function resetChoices(){
+  await h.control.query("delete from settings where id like 'notification-preferences:%'");
+}
+async function prefSave(user,choices,conn=h.db){
+  const current=await api.personalPreferences(user.id,conn);
+  return api.savePersonalNotificationSettings(user,{revision:current.revision,choices},conn);
+}
+function fictionalVisit(suffix,event="booking"){
+  return {id:`pref-${suffix}`,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",
+    date:`2035-02-${String(1+Number(suffix.replace(/\D/g,"")||0)%27).padStart(2,"0")}`,startTime:"10:00",endTime:"11:00",
+    timezone:"Asia/Kolkata",reference:`PREF_${suffix}`,token:"P-01",tokenNumber:1,status:event==="cancelled"?"cancelled":"waiting",revision:0};
+}
+async function storeVisit(row){
+  await h.control.query("insert into appointments(id,clinic_id,branch_id,doctor_id,patient_id,date,status,data) values($1,'c','b','d','p',$2,$3,$4)",[row.id,row.date,row.status,row]);
+}
+async function publishPreferenceTemplates(){
+  await h.control.query("update clinics set data=jsonb_set(data,'{policies,notificationsEnabled}','true') where id='c'");
+  for(const channel of ["email","sms"])for(const event of ["booking","cancelled"]){
+    const current=await api.resolvedTemplate(event,"c",h.db,"patient",channel);
+    const content={...current.content,enabled:true,...(channel==="sms"?{senderId:"DIGIQ",dltEntityId:"synthetic-entity",dltTemplateId:"synthetic-template"}:{})};
+    await api.saveTemplate(sa,{channel,event,recipient:"patient",clinicId:"c",revision:current.local.revision,mode:"publish",content});
+  }
+}
+test("personal settings inherit current behavior, enforce independent supported choices, revisions and required exemptions",async()=>{
+  await resetChoices();await publishPreferenceTemplates();
+  const initial=await api.personalNotificationSettings(patientActor,h.db);
+  assert.equal(initial.revision,0);
+  assert.equal(preferenceRow(initial,"email:booking").saved,null);
+  assert.equal(preferenceRow(initial,"email:booking").selected,true);
+  assert.equal(preferenceRow(initial,"email:booking").state,"On");
+  assert.equal(initial.canManage,false);
+  assert(!initial.items.some(row=>row.event==="system"||row.event==="onboarding"));
+  const required=initial.items.filter(row=>row.state==="Required");
+  assert(required.length>0);
+  await assert.rejects(api.savePersonalNotificationSettings(patientActor,{revision:0,choices:[{key:required[0].key,enabled:false}]},h.db),{status:400});
+  await assert.rejects(api.savePersonalNotificationSettings(patientActor,{revision:0,choices:[{key:"email:unknown",enabled:true}]},h.db),{status:400});
+  const saved=await prefSave(patientActor,[{key:"email:booking",enabled:false},{key:"inApp:queue",enabled:false}]);
+  assert.equal(saved.revision,1);assert.equal(preferenceRow(saved,"email:booking").state,"Off");
+  assert.equal(preferenceRow(saved,"sms:booking").selected,true);
+  assert.equal(preferenceRow(saved,"inApp:queue").selected,false);
+  await assert.rejects(api.savePersonalNotificationSettings(patientActor,{revision:0,choices:[]},h.db),{status:409});
+  const reloaded=await api.personalNotificationSettings(patientActor,h.db);
+  assert.equal(preferenceRow(reloaded,"email:booking").saved,false);
+  const inherited=await prefSave(patientActor,[{key:"email:booking",enabled:null}]);
+  assert.equal(preferenceRow(inherited,"email:booking").saved,null);
+  assert.equal(preferenceRow(inherited,"email:booking").selected,true);
+  assert.equal((await api.recipientPreference(h.db,"pu","sms",required.find(r=>r.channel==="sms")?.event||"patient_login_otp")).enabled,true);
+  await resetChoices();
+});
+test("personal opt-outs affect capture, linked patient confirmation and guests without overriding published/template/provider gates",async()=>{
+  await resetChoices();await publishPreferenceTemplates();
+  await prefSave(patientActor,[{key:"email:cancelled",enabled:false},{key:"email:booking",enabled:false}]);
+  const cancelled=fictionalVisit("capture1","cancelled");await storeVisit(cancelled);
+  await h.db.transaction(tx=>api.enqueueEvent(tx,"cancelled",cancelled));
+  const email=(await h.control.query("select data from settings where id like $1",[`mail-outbox:cancelled:${cancelled.id}:%`])).rows;
+  assert.equal(email.filter(r=>r.data.recipientGroup==="patient").length,0);
+  const sms=(await h.control.query("select data from settings where id like $1",[`sms-outbox:cancelled:${cancelled.id}:%`])).rows;
+  assert.equal(sms.filter(r=>r.data.recipientGroup==="patient").length,1);
+  const booking=fictionalVisit("confirmation2");await storeVisit(booking);
+  await h.db.transaction(tx=>api.capturePatientConfirmation(tx,booking));
+  let sends=0;
+  assert.equal(await api.confirmAppointmentEmail(booking.id,h.db,async()=>sends++),"disabled");
+  assert.equal(sends,0);
+  // The guest contact is not silently matched by address to the signed-in account.
+  await h.control.query("insert into patients(id,clinic_id,mobile,data) values('preference-guest','c','+919876543214','{\"fullName\":\"Fictional guest\",\"email\":\"guest@example.invalid\"}')");
+  const guest={...fictionalVisit("guest3"),patientId:"preference-guest"};await storeVisit(guest);
+  // storeVisit intentionally writes the standard fixture patient; make this relation authoritative.
+  await h.control.query("update appointments set patient_id='preference-guest' where id=$1",[guest.id]);
+  await h.db.transaction(tx=>api.capturePatientConfirmation(tx,guest));
+  assert.equal(await api.confirmAppointmentEmail(guest.id,h.db,async()=>sends++),"provider_accepted");
+  assert.equal(sends,1);
+  await prefSave(patientActor,[{key:"email:booking",enabled:true}]);
+  assert.equal(await api.confirmAppointmentEmail(booking.id,h.db,async()=>sends++),"disabled","reenabling does not resurrect an opted-out booking");
+  await h.control.query("update clinics set data=jsonb_set(data,'{policies,notificationsEnabled}','false') where id='c'");
+  const blocked=await api.personalNotificationSettings(patientActor,h.db);
+  assert.equal(preferenceRow(blocked,"email:booking").state,"On but blocked");
+  assert(preferenceRow(blocked,"email:booking").reasons.some(r=>/gate is off/.test(r)));
+  await h.control.query("update clinics set data=jsonb_set(data,'{policies,notificationsEnabled}','true') where id='c'");
+  await resetChoices();
+});
+test("pending channel jobs terminally cancel on opt-out; reenable and recapture cannot replay; claimed work stays untouched",async()=>{
+  await resetChoices();await publishPreferenceTemplates();
+  await h.control.query("delete from settings where (id like 'mail-outbox:%' or id like 'sms-outbox:%') and data->>'state'='pending'");
+  const row=fictionalVisit("pending4","cancelled");await storeVisit(row);
+  await h.db.transaction(tx=>api.enqueueEvent(tx,"cancelled",row));
+  const pending=await h.control.query("select id,data from settings where (id like $1 or id like $2) and data->>'recipientGroup'='patient'",[`mail-outbox:cancelled:${row.id}:%`,`sms-outbox:cancelled:${row.id}:%`]);
+  assert.equal(pending.rows.length,2);
+  await h.control.query("insert into settings(id,data) values('mail-outbox:already-sending',$1)",[{...pending.rows.find(r=>r.id.startsWith("mail")).data,state:"sending"}]);
+  await prefSave(patientActor,[{key:"email:cancelled",enabled:false},{key:"sms:cancelled",enabled:false}]);
+  for(const job of pending.rows)assert.equal((await h.control.query("select data->>'state' state from settings where id=$1",[job.id])).rows[0].state,"disabled");
+  assert.equal((await h.control.query("select data->>'state' state from settings where id='mail-outbox:already-sending'")).rows[0].state,"sending");
+  await prefSave(patientActor,[{key:"email:cancelled",enabled:true},{key:"sms:cancelled",enabled:true}]);
+  await h.db.transaction(tx=>api.enqueueEvent(tx,"cancelled",row));
+  const contact=(await h.control.query("select email,mobile from users where id='pu'")).rows[0];
+  let sends=0;await api.processNotifications(h.db,async(to)=>{if(to===contact.email)sends++;});
+  await api.processSmsNotifications(h.db,async(_env,to)=>{if(to===api.notificationPhone(contact.mobile))sends++;return "provider_accepted";});
+  assert.equal(sends,0);
+  // Even restoring a cancelled job to pending cannot bypass the persistent epoch.
+  const job=pending.rows.find(r=>r.id.startsWith("sms"));
+  await h.control.query("update settings set data=$2 where id=$1",[job.id,job.data]);
+  await api.processSmsNotifications(h.db,async(_env,to)=>{if(to===api.notificationPhone(contact.mobile))sends++;return "provider_accepted";});
+  assert.equal(sends,0);
+  assert.equal((await h.control.query("select data->>'state' state from settings where id=$1",[job.id])).rows[0].state,"disabled");
+  await resetChoices();
+});
+test("scope policy batches are atomic, owner-only and narrow; preserve drafts and opt-outs",async()=>{
+  await resetChoices();await publishPreferenceTemplates();
+  const ca=await api.managedNotificationSettings(ownerActor,"c",h.db);
+  assert.equal(ca.canActivate,false);assert(ca.items.every(r=>r.channel==="email"&&r.recipient!=="superAdmin"));
+  await assert.rejects(api.managedNotificationSettings(patientActor,"c",h.db),{status:403});
+  await assert.rejects(api.managedNotificationSettings({...ownerActor,id:"du"},"c",h.db),{status:403});
+  await assert.rejects(api.managedNotificationSettings(ownerActor,undefined,h.db),{status:403});
+  await assert.rejects(api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:ca.revision,changes:[{channel:"email",event:"booking",recipient:"patient",revision:0,enabled:false}]},h.db),{status:403});
+  const before=await api.resolvedTemplate("cancelled","c",h.db,"patient","email");
+  await api.saveTemplate(sa,{channel:"email",event:"cancelled",recipient:"patient",clinicId:"c",revision:before.local.revision,mode:"draft",content:{...before.content,subject:"Unpublished fictional draft"}});
+  const control=await api.managedNotificationSettings(sa,"c",h.db);
+  const row=control.items.find(r=>r.channel==="email"&&r.event==="cancelled"&&r.recipient==="patient");
+  const change={channel:row.channel,event:row.event,recipient:row.recipient,revision:row.revision,enabled:false};
+  const off=await api.saveManagedNotificationSettings(sa,{clinicId:"c",revision:control.revision,notificationsEnabled:false,changes:[change]},h.db);
+  assert.equal(off.notificationsEnabled,false);
+  const after=await api.resolvedTemplate("cancelled","c",h.db,"patient","email");
+  assert.equal(after.local.draft.subject,"Unpublished fictional draft");
+  assert.equal(after.content.enabled,false);
+  await assert.rejects(api.saveManagedNotificationSettings(sa,{clinicId:"c",revision:control.revision,changes:[]},h.db),{status:409});
+  await assert.rejects(api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:off.revision,notificationsEnabled:true,changes:[]},h.db),{status:400});
+  const on=await api.saveManagedNotificationSettings(ownerActor,{clinicId:"c",revision:off.revision,notificationsEnabled:true,confirmed:true,changes:[]},h.db);
+  assert.equal(on.notificationsEnabled,true);
+  // A failed row revision rolls back the gate edit as well.
+  await assert.rejects(api.saveManagedNotificationSettings(sa,{clinicId:"c",revision:on.revision,notificationsEnabled:false,changes:[change]},h.db),{status:409});
+  assert.equal((await api.getSettings(h.db,"c")).notificationsEnabled,true);
+});
+test("in-app choices hide feed and unread candidates without deleting history or changing read markers",async()=>{
+  await resetChoices();
+  await h.control.query("create table if not exists notification_reads(user_id text,notification_id text,primary key(user_id,notification_id))");
+  const row=fictionalVisit("inbox5");await storeVisit(row);
+  await h.control.query("insert into appointment_history(id,appointment_id,from_status,to_status) values('pref-booking-history',$1,null,'booked'),('pref-queue-history',$1,'booked','waiting')",[row.id]);
+  const initial=await api.listNotificationsFor(patientActor);
+  assert(initial.some(n=>n.id==="h:pref-booking-history"));assert(initial.some(n=>n.id==="h:pref-queue-history"));
+  await h.control.query("insert into notification_reads values('pu','h:pref-booking-history')");
+  await prefSave(patientActor,[{key:"inApp:appointments",enabled:false}]);
+  const hidden=await api.listNotificationsFor(patientActor);
+  assert(!hidden.some(n=>n.kind==="appointments"));assert(hidden.some(n=>n.kind==="queue"));
+  await prefSave(patientActor,[{key:"inApp:appointments",enabled:null}]);
+  const shown=await api.listNotificationsFor(patientActor);
+  assert.equal(shown.find(n=>n.id==="h:pref-booking-history").read,true);
+  assert.equal(shown.find(n=>n.id==="h:pref-queue-history").read,false);
+  assert.equal((await h.control.query("select count(*)::int n from appointment_history where id like 'pref-%'")).rows[0].n,2);
+  await resetChoices();
+});
+async function observedBarrier(blocker, contender, work){
+  await blocker.query("begin");await blocker.query("select pg_advisory_xact_lock(hashtext('notification-preference-barrier'))");
+  const waiting=work();
+  let observed=false;
+  for(let i=0;i<100;i++){
+    const result=await blocker.query("select wait_event_type from pg_stat_activity where pid=$1",[contender.processID]);
+    if(result.rows[0]?.wait_event_type==="Lock"){observed=true;break;}
+    await new Promise(r=>setTimeout(r,10));
+  }
+  assert(observed,"independent PostgreSQL backend must actually wait for the preference barrier");
+  return {waiting,release:()=>blocker.query("commit")};
+}
+test("multi-connection PostgreSQL opt-out serializes capture and dispatch and cannot be undone by reenable",async()=>{
+  await resetChoices();await publishPreferenceTemplates();
+  await h.control.query("delete from settings where (id like 'mail-outbox:%' or id like 'sms-outbox:%') and data->>'state'='pending'");
+  const blocker=await h.connect(),captureClient=await h.connect(),writerClient=await h.connect();
+  assert.notEqual(blocker.processID,captureClient.processID);assert.notEqual(captureClient.processID,writerClient.processID);
+  const captureDb=drizzle(captureClient),writerDb=drizzle(writerClient);
+  const row=fictionalVisit("race6","cancelled");await storeVisit(row);
+  const barrier=await observedBarrier(blocker,captureClient,()=>context.run(captureDb,()=>captureDb.transaction(tx=>api.enqueueEvent(tx,"cancelled",row))));
+  await barrier.release();await barrier.waiting;
+  const pending=(await h.control.query("select data from settings where id like $1 and data->>'recipientGroup'='patient'",[`sms-outbox:cancelled:${row.id}:%`])).rows;
+  assert.equal(pending.length,1);
+  // Hold opt-out open after it has taken the same barrier. The dispatch backend
+  // must wait, then see the committed disable instead of claiming stale work.
+  let releaseWriter,writerReady;
+  const ready=new Promise(r=>writerReady=r),release=new Promise(r=>releaseWriter=r);
+  const writing=context.run(writerDb,()=>writerDb.transaction(async tx=>{
+    await api.lockNotificationPreferences(tx);
+    await api.savePersonalNotificationSettings(patientActor,{revision:0,choices:[{key:"sms:cancelled",enabled:false}]},tx);
+    writerReady();await release;
+  }));
+  await ready;
+  let sends=0;
+  const contact=(await h.control.query("select mobile from users where id='pu'")).rows[0];
+  const dispatching=context.run(captureDb,()=>api.processSmsNotifications(captureDb,async(_env,to)=>{if(to===api.notificationPhone(contact.mobile))sends++;return "provider_accepted";}));
+  let waited=false;
+  for(let i=0;i<100;i++){
+    const result=await blocker.query("select wait_event_type from pg_stat_activity where pid=$1",[captureClient.processID]);
+    if(result.rows[0]?.wait_event_type==="Lock"){waited=true;break;}
+    await new Promise(r=>setTimeout(r,10));
+  }
+  assert(waited,"dispatch waited on the open opt-out transaction");
+  releaseWriter();await writing;await dispatching;assert.equal(sends,0);
+  await prefSave(patientActor,[{key:"sms:cancelled",enabled:true}]);
+  await api.processSmsNotifications(h.db,async(_env,to)=>{if(to===api.notificationPhone(contact.mobile))sends++;return "provider_accepted";});
+  assert.equal(sends,0);
+  await resetChoices();
+});
+test("opt-out commits before a blocked capture; the skipped occurrence is never captured after reenable",async()=>{
+  await resetChoices();await publishPreferenceTemplates();
+  const writerClient=await h.connect(),captureClient=await h.connect(),observer=await h.connect();
+  const writerDb=drizzle(writerClient),captureDb=drizzle(captureClient);
+  const row=fictionalVisit("before7","cancelled");await storeVisit(row);
+  let readyWriter,releaseWriter;
+  const ready=new Promise(r=>readyWriter=r),release=new Promise(r=>releaseWriter=r);
+  const writing=context.run(writerDb,()=>writerDb.transaction(async tx=>{
+    await api.savePersonalNotificationSettings(patientActor,{revision:0,choices:[{key:"sms:cancelled",enabled:false}]},tx);
+    readyWriter();await release;
+  }));
+  await ready;
+  const capturing=context.run(captureDb,()=>captureDb.transaction(tx=>api.enqueueSmsEvent(tx,"cancelled",row)));
+  let waited=false;
+  for(let i=0;i<100;i++){
+    const result=await observer.query("select wait_event_type from pg_stat_activity where pid=$1",[captureClient.processID]);
+    if(result.rows[0]?.wait_event_type==="Lock"){waited=true;break;}
+    await new Promise(r=>setTimeout(r,10));
+  }
+  releaseWriter();await writing;await capturing;
+  assert(waited,"capture actually waited for the opt-out transaction");
+  const query="select count(*)::int n from settings where id like $1 and data->>'recipientGroup'='patient'";
+  assert.equal((await h.control.query(query,[`sms-outbox:cancelled:${row.id}:%`])).rows[0].n,0);
+  await prefSave(patientActor,[{key:"sms:cancelled",enabled:true}]);
+  await h.db.transaction(tx=>api.enqueueSmsEvent(tx,"cancelled",row));
+  assert.equal((await h.control.query(query,[`sms-outbox:cancelled:${row.id}:%`])).rows[0].n,0);
+  await resetChoices();
+});
+test("a captured pending patient confirmation stays cancelled after personal disable and reenable",async()=>{
+  await resetChoices();await publishPreferenceTemplates();
+  const row=fictionalVisit("pending-confirmation8");await storeVisit(row);
+  await h.db.transaction(tx=>api.capturePatientConfirmation(tx,row));
+  assert.equal((await h.control.query("select data->>'status' status from settings where id=$1",[api.historyId(`patient-booking:${row.id}`)])).rows[0].status,"pending");
+  await prefSave(patientActor,[{key:"email:booking",enabled:false}]);
+  assert.equal((await h.control.query("select data->>'status' status from settings where id=$1",[api.historyId(`patient-booking:${row.id}`)])).rows[0].status,"disabled");
+  await prefSave(patientActor,[{key:"email:booking",enabled:true}]);
+  let sends=0;assert.equal(await api.confirmAppointmentEmail(row.id,h.db,async()=>sends++),"disabled");assert.equal(sends,0);
+  await resetChoices();
+});
+test("personal HTTP owner is authentication-derived; extra identity targets are rejected and other users remain unchanged",async()=>{
+  await resetChoices();
+  await h.control.query("create table if not exists auth_rate_limits(key text primary key,attempts int not null default 0,expires_at timestamptz not null)");
+  const server=api.app.listen(0,"127.0.0.1");await new Promise(r=>server.once("listening",r));
+  const origin=`http://127.0.0.1:${server.address().port}`;
+  try{
+    const response=await fetch(`${origin}/me/notification-settings`,{headers:{"x-user":"pu"}});
+    assert.equal(response.status,200);assert.equal(response.headers.get("cache-control"),"no-store");
+    const data=await response.json();assert.equal(data.revision,0);assert.equal(data.canManage,false);
+    const targeted=await fetch(`${origin}/me/notification-settings`,{method:"PUT",headers:{"x-user":"pu","content-type":"application/json"},body:JSON.stringify({revision:0,userId:"ca",choices:[{key:"email:booking",enabled:false}]})});
+    assert.equal(targeted.status,400);
+    const saved=await fetch(`${origin}/me/notification-settings`,{method:"PUT",headers:{"x-user":"pu","content-type":"application/json"},body:JSON.stringify({revision:0,choices:[{key:"email:booking",enabled:false},{key:"sms:booking",enabled:true}]})});
+    assert.equal(saved.status,200);assert.equal((await api.personalPreferences("ca",h.db)).revision,0);
+    assert.equal((await api.personalPreferences("pu",h.db)).choices["email:booking"],false);
+    const managed=await fetch(`${origin}/management/notification-settings?clinicId=c`,{headers:{"x-user":"pu"}});
+    assert.equal(managed.status,403);
+  }finally{await new Promise(r=>server.close(r));await resetChoices();}
 });
 test("missing encryption never falls back to plaintext and still records explicit incomplete dispatch metadata",async()=>{
   const old=process.env.INTEGRATIONS_ENCRYPTION_KEY;

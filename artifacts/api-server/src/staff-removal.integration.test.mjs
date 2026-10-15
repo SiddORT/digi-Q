@@ -29,6 +29,7 @@ test("native-only reviewed removal commits anonymous shared care and a replayabl
       assert.equal((await call(role, "GET", path + "/deletion-impact")).status, 403);
     assert.equal((await h.call("sa", "GET", path + "/deletion-impact")).status, 401, "test actor header is not a native session");
     await h.pg.exec(`insert into settings(id,data) values ('workspace:rec','{"private":"preferences"}'),
+      ('notification-preferences:rec','{"revision":1,"choices":{"email:booking":false},"epochs":{"email:booking":1}}'),
       ('custom-roles','{"revision":0,"roles":[],"bindings":[{"userId":"rec","roleId":"custom"},{"userId":"rec2","roleId":"other"}]}');
       insert into patient_documents(id,patient_id,clinic_id,uploaded_by,name,content_type,size,provider,storage_key)
       values('preserved-document','p1','c1','rec','Clinical findings','application/pdf',17,'local','clinical-kept');`);

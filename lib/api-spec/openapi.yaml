@@ -23,6 +23,52 @@ servers:
 security:
   - NativeSession: []
 paths:
+  /me/notification-settings:
+    get:
+      operationId: getMyNotificationSettings
+      responses:
+        '200':
+          description: Saved personal choices and effective delivery restrictions; never credentials.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PersonalNotificationSettings' }
+    put:
+      operationId: saveMyNotificationSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PersonalNotificationInput' }
+      responses:
+        '200':
+          description: Saved with optimistic revision protection.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PersonalNotificationSettings' }
+  /management/notification-settings:
+    get:
+      operationId: getManagedNotificationSettings
+      parameters:
+        - { in: query, name: clinicId, schema: { type: string } }
+      responses:
+        '200':
+          description: Authorized scope gate and published activation controls.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ManagedNotificationSettings' }
+    put:
+      operationId: saveManagedNotificationSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ManagedNotificationInput' }
+      responses:
+        '200':
+          description: Atomic scoped batch; drafts and unrelated policy preserved.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ManagedNotificationSettings' }
   /geography:
     get:
       operationId: searchGeography
@@ -1529,6 +1575,77 @@ components:
     From: { name: from, in: query, schema: { type: string, format: date } }
     To: { name: to, in: query, schema: { type: string, format: date } }
   schemas:
+    NotificationChoice:
+      type: object
+      additionalProperties: false
+      required: [key, enabled]
+      properties:
+        key: { type: string, maxLength: 100 }
+        enabled: { type: ['boolean', 'null'] }
+    PersonalNotificationInput:
+      type: object
+      additionalProperties: false
+      required: [revision, choices]
+      properties:
+        revision: { type: integer, minimum: 0 }
+        choices: { type: array, maxItems: 100, items: { $ref: '#/components/schemas/NotificationChoice' } }
+    NotificationPreferenceRow:
+      type: object
+      required: [key, event, channel, saved, inherited, selected, state, reasons]
+      properties:
+        key: { type: string }
+        event: { type: string }
+        channel: { type: string, enum: [email, sms, inApp] }
+        saved: { type: ['boolean', 'null'] }
+        inherited: { type: boolean }
+        selected: { type: boolean }
+        state: { type: string, enum: [Off, On, On but blocked, Required, Unavailable] }
+        reasons: { type: array, items: { type: string } }
+    NotificationClinicScope:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+    PersonalNotificationSettings:
+      type: object
+      required: [revision, items, clinics, canManage, activeClinicId]
+      properties:
+        revision: { type: integer }
+        items: { type: array, items: { $ref: '#/components/schemas/NotificationPreferenceRow' } }
+        clinics: { type: array, items: { $ref: '#/components/schemas/NotificationClinicScope' } }
+        canManage: { type: boolean }
+        activeClinicId: { type: ['string', 'null'] }
+    ManagedNotificationSettings:
+      type: object
+      required: [revision, scopeName, notificationsEnabled, inherited, canActivate, items]
+      properties:
+        revision: { type: integer }
+        scopeName: { type: string }
+        notificationsEnabled: { type: boolean }
+        inherited: { type: boolean }
+        canActivate: { type: boolean }
+        items: { type: array, items: { $ref: '#/components/schemas/EventControlRow' } }
+    ManagedActivation:
+      type: object
+      additionalProperties: false
+      required: [channel, event, recipient, revision, enabled]
+      properties:
+        channel: { type: string, enum: [email, sms] }
+        event: { type: string }
+        recipient: { type: string }
+        revision: { type: integer, minimum: 0 }
+        enabled: { type: boolean }
+    ManagedNotificationInput:
+      type: object
+      additionalProperties: false
+      required: [revision, changes]
+      properties:
+        clinicId: { type: string, minLength: 1, maxLength: 100 }
+        revision: { type: integer, minimum: 0 }
+        notificationsEnabled: { type: boolean }
+        confirmed: { type: boolean }
+        changes: { type: array, maxItems: 200, items: { $ref: '#/components/schemas/ManagedActivation' } }
     HistoryReviewRecord:
       type: object
       required: [id, version, channel, event, envelopeCount, status, unresolvedReason, reviewedAt]

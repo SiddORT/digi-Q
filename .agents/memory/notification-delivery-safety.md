@@ -9,6 +9,18 @@ following its durable dispatch claim. Retry only when delivery is known not to h
 **Why:** SMTP acceptance and database persistence cannot be committed atomically.
 Blind retries can send duplicate patient notifications even when the first call timed out.
 
+Absent personal notification preferences inherit current eligible behavior; they
+must not become a new blanket-off switch. Personal enablement cannot override
+clinic, template, provider, contact or authorization restrictions. Account-security
+messages remain mandatory.
+
+**Why:** The user explicitly required preserving current behavior and existing
+opt-outs without silently activating real clinics or recipients.
+
+**How to apply:** Resolve linked accounts before checking optional preferences.
+Opt-out and dispatch claims must share a transactional barrier, and re-enabling
+must never replay historical skipped or cancelled occurrences.
+
 **How to apply:** Preserve explicit unknown outcomes during retries, operator tooling
 and provider changes. Never report SMTP acceptance as confirmed inbox delivery.
 

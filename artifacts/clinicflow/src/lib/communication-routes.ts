@@ -2,7 +2,6 @@
 export function communicationRedirect(userRole: string, area: string | null): string | null {
   if ((area === "sms" || area === "email") && userRole === "superAdmin") return `/admin/communication?tab=${area}`;
   if ((area === "events" || area === "templates") && ["superAdmin", "clinicAdmin"].includes(userRole)) return "/admin/templates";
-  if (userRole === "clinicAdmin" && !area) return "/admin/templates";
   return null;
 }
 export type CommunicationTab = "sms" | "email" | "logs";

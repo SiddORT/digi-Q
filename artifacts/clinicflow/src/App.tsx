@@ -83,9 +83,9 @@ function PublicBookingRoute({reference}: {reference:string}) {
 }
 const routes: Record<string,string[]> = {
    admin:["dashboard","clinic","clinics","branches","users","staff","patients","masters","appointments","queue","reports","settings","audit","qrs","book","availability","exceptions","profile","demo","templates","communication","permissions","integrations","system-users"],
-  doctor:["dashboard","profile","clinics","branches","availability","exceptions","appointments","queue","patients","qrs","book","users"],
-   receptionist:["dashboard","appointments","queue","patients","book","qrs","availability","exceptions","profile"],
-  patient:["dashboard","book","appointments","queue","profile"],
+  doctor:["dashboard","profile","clinics","branches","availability","exceptions","appointments","queue","patients","qrs","book","users","settings"],
+   receptionist:["dashboard","appointments","queue","patients","book","qrs","availability","exceptions","profile","settings"],
+  patient:["dashboard","book","appointments","queue","profile","settings"],
 };
 function Providers(){
   return <QueryClientProvider client={queryClient}><NativeAuthProvider><Switch>

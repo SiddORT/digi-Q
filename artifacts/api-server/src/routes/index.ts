@@ -22,9 +22,11 @@ import { permissionPolicyRouter } from "./permission-policy";
 import { logosRouter } from "./logos";
 import { systemUsersRouter } from "./system-users";
 import { workspaceFeaturesRouter } from "./workspace-features";
+import { notificationSettingsRouter } from "./notification-settings";
 import { patientRecordsRouter } from "./patient-records";
 
 const router: IRouter = Router();
+router.use(notificationSettingsRouter);
 router.use(geographyRouter);
 router.use(systemUsersRouter);
 

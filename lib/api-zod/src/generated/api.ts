@@ -23,6 +23,134 @@
 import * as zod from 'zod';
 
 
+export const GetMyNotificationSettingsResponse = zod.object({
+  "revision": zod.number().int(),
+  "items": zod.array(zod.object({
+  "key": zod.string(),
+  "event": zod.string(),
+  "channel": zod.enum(['email', 'sms', 'inApp']),
+  "saved": zod.boolean().nullable(),
+  "inherited": zod.boolean(),
+  "selected": zod.boolean(),
+  "state": zod.enum(['Off', 'On', 'On but blocked', 'Required', 'Unavailable']),
+  "reasons": zod.array(zod.string())
+})),
+  "clinics": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+})),
+  "canManage": zod.boolean(),
+  "activeClinicId": zod.string().nullable()
+})
+
+
+export const saveMyNotificationSettingsBodyRevisionMin = 0;
+
+export const saveMyNotificationSettingsBodyChoicesItemKeyMax = 100;
+
+export const saveMyNotificationSettingsBodyChoicesMax = 100;
+
+
+
+export const SaveMyNotificationSettingsBody = zod.object({
+  "revision": zod.number().int().min(saveMyNotificationSettingsBodyRevisionMin),
+  "choices": zod.array(zod.object({
+  "key": zod.string().max(saveMyNotificationSettingsBodyChoicesItemKeyMax),
+  "enabled": zod.boolean().nullable()
+})).max(saveMyNotificationSettingsBodyChoicesMax)
+})
+
+export const SaveMyNotificationSettingsResponse = zod.object({
+  "revision": zod.number().int(),
+  "items": zod.array(zod.object({
+  "key": zod.string(),
+  "event": zod.string(),
+  "channel": zod.enum(['email', 'sms', 'inApp']),
+  "saved": zod.boolean().nullable(),
+  "inherited": zod.boolean(),
+  "selected": zod.boolean(),
+  "state": zod.enum(['Off', 'On', 'On but blocked', 'Required', 'Unavailable']),
+  "reasons": zod.array(zod.string())
+})),
+  "clinics": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+})),
+  "canManage": zod.boolean(),
+  "activeClinicId": zod.string().nullable()
+})
+
+
+export const GetManagedNotificationSettingsQueryParams = zod.object({
+  "clinicId": zod.coerce.string().optional()
+})
+
+export const GetManagedNotificationSettingsResponse = zod.object({
+  "revision": zod.number().int(),
+  "scopeName": zod.string(),
+  "notificationsEnabled": zod.boolean(),
+  "inherited": zod.boolean(),
+  "canActivate": zod.boolean(),
+  "items": zod.array(zod.object({
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.string(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
+  "revision": zod.number().int(),
+  "enabled": zod.boolean(),
+  "source": zod.string(),
+  "ready": zod.boolean(),
+  "required": zod.boolean().optional().describe('Security event policy; independent from optional communication gates. Does not certify provider or DLT approval.'),
+  "blockedReasons": zod.array(zod.string()),
+  "timing": zod.string()
+}))
+})
+
+
+export const saveManagedNotificationSettingsBodyClinicIdMax = 100;
+
+export const saveManagedNotificationSettingsBodyRevisionMin = 0;
+
+export const saveManagedNotificationSettingsBodyChangesItemRevisionMin = 0;
+
+export const saveManagedNotificationSettingsBodyChangesMax = 200;
+
+
+
+export const SaveManagedNotificationSettingsBody = zod.object({
+  "clinicId": zod.string().min(1).max(saveManagedNotificationSettingsBodyClinicIdMax).optional(),
+  "revision": zod.number().int().min(saveManagedNotificationSettingsBodyRevisionMin),
+  "notificationsEnabled": zod.boolean().optional(),
+  "confirmed": zod.boolean().optional(),
+  "changes": zod.array(zod.object({
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.string(),
+  "recipient": zod.string(),
+  "revision": zod.number().int().min(saveManagedNotificationSettingsBodyChangesItemRevisionMin),
+  "enabled": zod.boolean()
+})).max(saveManagedNotificationSettingsBodyChangesMax)
+})
+
+export const SaveManagedNotificationSettingsResponse = zod.object({
+  "revision": zod.number().int(),
+  "scopeName": zod.string(),
+  "notificationsEnabled": zod.boolean(),
+  "inherited": zod.boolean(),
+  "canActivate": zod.boolean(),
+  "items": zod.array(zod.object({
+  "channel": zod.enum(['email', 'sms']),
+  "event": zod.string(),
+  "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
+  "revision": zod.number().int(),
+  "enabled": zod.boolean(),
+  "source": zod.string(),
+  "ready": zod.boolean(),
+  "required": zod.boolean().optional().describe('Security event policy; independent from optional communication gates. Does not certify provider or DLT approval.'),
+  "blockedReasons": zod.array(zod.string()),
+  "timing": zod.string()
+}))
+})
+
+
 export const searchGeographyQuerySearchMax = 100;
 
 export const searchGeographyQueryCountryMax = 100;
@@ -8031,3 +8159,5 @@ export const DeleteSavedViewParams = zod.object({
 })
 
 export const DeleteSavedViewResponse = zod.void()
+
+

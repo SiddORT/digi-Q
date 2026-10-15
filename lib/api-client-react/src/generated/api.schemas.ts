@@ -20,6 +20,139 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+export interface NotificationChoice {
+  /** @maxLength 100 */
+  key: string;
+  /** @nullable */
+  enabled: boolean | null;
+}
+
+export interface PersonalNotificationInput {
+  /** @minimum 0 */
+  revision: number;
+  /** @maxItems 100 */
+  choices: NotificationChoice[];
+}
+
+export type NotificationPreferenceRowChannel = typeof NotificationPreferenceRowChannel[keyof typeof NotificationPreferenceRowChannel];
+
+
+export const NotificationPreferenceRowChannel = {
+  email: 'email',
+  sms: 'sms',
+  inApp: 'inApp',
+} as const;
+
+export type NotificationPreferenceRowState = typeof NotificationPreferenceRowState[keyof typeof NotificationPreferenceRowState];
+
+
+export const NotificationPreferenceRowState = {
+  Off: 'Off',
+  On: 'On',
+  On_but_blocked: 'On but blocked',
+  Required: 'Required',
+  Unavailable: 'Unavailable',
+} as const;
+
+export interface NotificationPreferenceRow {
+  key: string;
+  event: string;
+  channel: NotificationPreferenceRowChannel;
+  /** @nullable */
+  saved: boolean | null;
+  inherited: boolean;
+  selected: boolean;
+  state: NotificationPreferenceRowState;
+  reasons: string[];
+}
+
+export interface NotificationClinicScope {
+  id: string;
+  name: string;
+}
+
+export interface PersonalNotificationSettings {
+  revision: number;
+  items: NotificationPreferenceRow[];
+  clinics: NotificationClinicScope[];
+  canManage: boolean;
+  /** @nullable */
+  activeClinicId: string | null;
+}
+
+export type EventControlRowChannel = typeof EventControlRowChannel[keyof typeof EventControlRowChannel];
+
+
+export const EventControlRowChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export type EventControlRowRecipient = typeof EventControlRowRecipient[keyof typeof EventControlRowRecipient];
+
+
+export const EventControlRowRecipient = {
+  patient: 'patient',
+  clinicAdmin: 'clinicAdmin',
+  doctor: 'doctor',
+  receptionist: 'receptionist',
+  superAdmin: 'superAdmin',
+} as const;
+
+export interface EventControlRow {
+  channel: EventControlRowChannel;
+  event: string;
+  recipient: EventControlRowRecipient;
+  revision: number;
+  enabled: boolean;
+  source: string;
+  ready: boolean;
+  /** Security event policy; independent from optional communication gates. Does not certify provider or DLT approval. */
+  required?: boolean;
+  blockedReasons: string[];
+  timing: string;
+}
+
+export interface ManagedNotificationSettings {
+  revision: number;
+  scopeName: string;
+  notificationsEnabled: boolean;
+  inherited: boolean;
+  canActivate: boolean;
+  items: EventControlRow[];
+}
+
+export type ManagedActivationChannel = typeof ManagedActivationChannel[keyof typeof ManagedActivationChannel];
+
+
+export const ManagedActivationChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export interface ManagedActivation {
+  channel: ManagedActivationChannel;
+  event: string;
+  recipient: string;
+  /** @minimum 0 */
+  revision: number;
+  enabled: boolean;
+}
+
+export interface ManagedNotificationInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  clinicId?: string;
+  /** @minimum 0 */
+  revision: number;
+  notificationsEnabled?: boolean;
+  confirmed?: boolean;
+  /** @maxItems 200 */
+  changes: ManagedActivation[];
+}
+
 export type HistoryReviewRecordStatus = typeof HistoryReviewRecordStatus[keyof typeof HistoryReviewRecordStatus];
 
 
@@ -815,39 +948,6 @@ export interface EventControlInput {
   revision: number;
   enabled: boolean;
   confirmed: boolean;
-}
-
-export type EventControlRowChannel = typeof EventControlRowChannel[keyof typeof EventControlRowChannel];
-
-
-export const EventControlRowChannel = {
-  email: 'email',
-  sms: 'sms',
-} as const;
-
-export type EventControlRowRecipient = typeof EventControlRowRecipient[keyof typeof EventControlRowRecipient];
-
-
-export const EventControlRowRecipient = {
-  patient: 'patient',
-  clinicAdmin: 'clinicAdmin',
-  doctor: 'doctor',
-  receptionist: 'receptionist',
-  superAdmin: 'superAdmin',
-} as const;
-
-export interface EventControlRow {
-  channel: EventControlRowChannel;
-  event: string;
-  recipient: EventControlRowRecipient;
-  revision: number;
-  enabled: boolean;
-  source: string;
-  ready: boolean;
-  /** Security event policy; independent from optional communication gates. Does not certify provider or DLT approval. */
-  required?: boolean;
-  blockedReasons: string[];
-  timing: string;
 }
 
 export interface EventControlCatalog {
@@ -3252,6 +3352,10 @@ export type FromParameter = string;
 
 export type ToParameter = string;
 
+export type GetManagedNotificationSettingsParams = {
+clinicId?: string;
+};
+
 export type SearchGeographyParams = {
 kind: SearchGeographyKind;
 /**
@@ -4170,3 +4274,4 @@ export type ListSavedViewsParams = {
  */
 tableKey: string;
 };
+
