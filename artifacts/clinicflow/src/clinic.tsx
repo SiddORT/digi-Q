@@ -30,10 +30,8 @@ import { clinicLandingDestination } from "./lib/clinic-navigation";
 import { DemoClinicManagement } from "./components/DemoClinicManagement";
 import { IntegrationSettings } from "./components/IntegrationSettings";
 import { isRealSuperAdmin } from "./lib/settings-access";
-import { useWorkspaceLeaveGuard } from "./lib/use-workspace-leave-guard";
-import { communicationRedirect } from "./lib/communication-routes";
+import { communicationRedirect, retiredSettingsDestination, hasWorkspaceSettings } from "./lib/communication-routes";
 import { CommunicationSettings } from "./components/CommunicationSettings";
-import { NotificationSettings } from "./components/NotificationSettings";
 import { NotificationTemplatesPage } from "./components/NotificationTemplatesPage";
 import { AccessRules } from "./components/AccessRules";
 import { CustomRoles } from "./components/CustomRoles";
@@ -196,7 +194,7 @@ function PortalWorkspace({identity,role,page}:{identity:api.Identity;role:string
  const name=identity.user!.fullName;
  const defaultDoctorId=doctorWorkspaceScope(identity).doctorId;
  // Clinic Admins manage staff from Clinic > Staff; only Super Admin keeps the separate Users workspace.
-  const navigation=navConfig[role].filter(p=>(p!=="users"&&p!=="communication")||identity.user!.role==="superAdmin").map(p=>p==="clinic"&&identity.user!.role==="superAdmin"?"clinics":p);
+  const navigation=navConfig[role].filter(p=>p==="settings"?hasWorkspaceSettings(identity.user!.role):(p!=="users"&&p!=="communication")||identity.user!.role==="superAdmin").map(p=>p==="clinic"&&identity.user!.role==="superAdmin"?"clinics":p);
  // Listing pages render their page title inside the shared list header (title + search + actions on one row).
  const legacy=legacyDestination(page,identity.user!.role,window.location.search);
  const listingPage=["appointments","patients","staff","branches","masters","reports"].includes(page)||(page==="users"&&identity.user!.role!=="superAdmin")||(page==="clinics"&&role!=="doctor")||(["system-users","audit"].includes(page)&&identity.user!.role==="superAdmin");
@@ -215,7 +213,7 @@ export function legacyDestination(page:string,userRole:string,search:string):str
    if(destination){
     const target=new URL(destination,"https://local.invalid");
     query.delete("area");
-    query.forEach((value,key)=>target.searchParams.set(key,value));
+     query.forEach((value,key)=>{if(!target.searchParams.has(key))target.searchParams.set(key,value);});
     return `${target.pathname}${target.search}`;
    }
   }
@@ -223,7 +221,8 @@ export function legacyDestination(page:string,userRole:string,search:string):str
   if(landing)return landing;
  const query=new URLSearchParams(search);
  const withArea=(base:string,area:string)=>{const next=new URLSearchParams(query);next.set("area",area);return `${base}?${next}`;};
- if(page==="settings"&&(query.has("clinicId")||query.has("section")))return `/admin/clinic?${query}`;
+  if(page==="settings"&&["superAdmin","clinicAdmin"].includes(userRole)&&(query.has("clinicId")||query.has("section")))return `/admin/clinic?${query}`;
+  if(page==="settings"&&userRole!=="superAdmin")return retiredSettingsDestination(userRole);
  if(page==="users"&&userRole==="clinicAdmin"){const next=new URLSearchParams(query);next.set("section","staff");return `/admin/clinic?${next}`;}
  if(page==="users"&&userRole==="doctor")return withArea("/doctor/clinics","staff");
  if(page==="branches"&&userRole!=="doctor"){const next=new URLSearchParams(query);next.set("section","locations");return `/admin/clinic?${next}`;}
@@ -278,34 +277,12 @@ export function UsersWorkspace({identity}:{identity:api.Identity}){
 }
 /** Settings groups only the areas the signed-in role may already open; nothing here widens access. */
 function WorkspaceSettings({identity,role}:{identity:api.Identity;role:string}){
- const superAdmin=identity.user?.role==="superAdmin";
- const tabs:WorkspaceTab[]=superAdmin?[{id:"platform",label:"Platform"},{id:"notifications",label:"Notifications"},{id:"integrations",label:"Integrations"},{id:"masters",label:"Reference data"},{id:"audit",label:"Audit log"},{id:"demo",label:"Demo clinic"}]:[{id:"notifications",label:"Notifications"}];
- // Legacy ?area=templates stays valid and is an alias of the Email page.
- const resolvable=[...tabs,...(superAdmin?[{id:"templates",label:"Email"}]:[])];
- const {area:raw,select:rawSelect}=useAreaTab(resolvable,tabs[0].id);
- const area=raw;
- const [visited,setVisited]=useState<string[]>([area]);
- const [dirtyAreas,setDirtyAreas]=useState<Record<string,boolean>>({});
- const anyDirty=Object.values(dirtyAreas).some(Boolean);
- useEffect(()=>{setVisited(v=>v.includes(area)?v:[...v,area]);},[area]);
- useEffect(()=>{if(!anyDirty)return;const warn=(e:BeforeUnloadEvent)=>{e.preventDefault();e.returnValue="";};window.addEventListener("beforeunload",warn);return()=>window.removeEventListener("beforeunload",warn);},[anyDirty]);
- const askRef=useRef<(o:any)=>Promise<boolean>>(async()=>true);
- useWorkspaceLeaveGuard(`/${role}/settings`,anyDirty,(o:any)=>askRef.current(o));
- const mark=(id:string)=>(d:boolean)=>setDirtyAreas(m=>m[id]===d?m:{...m,[id]:d});
- const confirmNavigation=useConfirm();
- askRef.current=confirmNavigation.ask as any;
- const select=async(next:string)=>{
-  if(anyDirty&&!await confirmNavigation.ask({title:"Continue without saving?",description:"You have unsaved changes. They stay in this workspace while you switch pages, but reloading or leaving will discard them.",confirmLabel:"Continue"}))return;
-  rawSelect(next);
- };
- const has=(id:string)=>visited.includes(id)||area===id;
- const panel=(id:string,node:React.ReactNode)=>has(id)?<div hidden={area!==id} data-testid={`settings-panel-${id}`}>{node}</div>:null;
- return <>{confirmNavigation.dialog}{tabs.length>1&&<WorkspaceTabs tabs={tabs} area={area} onSelect={id=>void select(id)} label="Settings areas"/>}
-  {!superAdmin&&identity.user?.role==="clinicAdmin"&&<p className="listing-hint">Clinic details, locations, staff and booking policies are managed in <Link href="/admin/clinic" className="text-link" data-testid="link-settings-clinic">Clinic</Link>.</p>}
-  {panel("notifications",<NotificationSettings superAdmin={superAdmin} onDirtyChange={mark("notifications")}/>)}
-  {superAdmin?<>
+ const tabs:WorkspaceTab[]=[{id:"platform",label:"Platform"},{id:"integrations",label:"Integrations"},{id:"masters",label:"Reference data"},{id:"audit",label:"Audit log"},{id:"demo",label:"Demo clinic"}];
+ const {area,select}=useAreaTab(tabs,"platform");
+ if(!hasWorkspaceSettings(identity.user?.role||""))return <Redirect to={retiredSettingsDestination(identity.user?.role||role)||`/${role}/profile`}/>;
+ return <><WorkspaceTabs tabs={tabs} area={area} onSelect={select} label="Settings areas"/>
    {area==="platform"?<PlatformSettings/>:area==="integrations"?<IntegrationSettings/>:area==="demo"?<DemoClinicManagement/>:["masters","audit"].includes(area)?<ResourcePage key={area} resource={area} identity={identity} allowCreate={area!=="audit"}/>:null}
-  </>:identity.user?.role==="clinicAdmin"?<p className="listing-hint">Notification wording is managed in <Link href="/admin/templates" className="text-link" data-testid="link-settings-templates">Notification Templates</Link>.</p>:null}</>;
+ </>;
 }
 const ACTIVITY_VERBS:Record<string,string>={book:"Booked",update:"Updated",create:"Created",delete:"Deactivated",call:"Called",checkin:"Checked in",check_in:"Checked in",start:"Started",complete:"Checked out",cancel:"Cancelled",noshow:"Marked absent",no_show:"Marked absent",requeue:"Returned to queue",reschedule:"Rescheduled",template_publish:"Published",template_draft:"Saved draft of",template_reset:"Reset"};
 /** Turns technical audit summaries such as "template_publish notification_templates record" into readable labels without inventing events. */
@@ -610,11 +587,11 @@ export function DoctorClinics({ identity, embedded = false }: { identity: api.Id
 }
 
 function PlatformSettings(){
- return <><PlatformPreferences/><IntegrationSettings/></>;
+ return <PlatformPreferences/>;
 }
 function PlatformPreferences(){
  const q=api.useGetSettings();const client=useQueryClient();const mutation=usePendingGuard(api.useUpdateSettings({mutation:{onSuccess:()=>client.invalidateQueries()}}));
-  return <section className="panel padded platform-preferences"><div className="panel-heading compact-heading section-head"><div><h2>Platform Preferences</h2><p className="muted">Platform-wide booking, verification and policy-link defaults.</p></div></div><ErrorNotice error={q.error||mutation.error}/>{q.isLoading&&<div className="skeleton">Loading platform preferences…</div>}{q.error&&<button onClick={()=>q.refetch()}>Retry Settings</button>}{q.error&&q.data&&<p className="notice" role="alert">Settings could not refresh. Review them after reconnecting before saving.</p>}<p className="muted">Notification delivery on or off is managed in <Link href="/admin/settings?area=notifications" className="text-link" data-testid="link-platform-notifications">Notifications</Link>.</p><details className="settings-integration-note"><summary>Integrations and Session Limits</summary><p>Appointment notifications are sent by the background event worker when notifications are enabled for the deployment; message content is managed in Email templates. Session timeout is managed by the authentication service; platform preferences do not change your authentication session.</p><p>SMS provider: {q.isLoading?"Loading…":q.error?"Unavailable":q.data?.otpProviderConfigured?"Configured":"Not connected"} · Queue refresh: 30 seconds</p></details>{mutation.isSuccess&&<p className="notice" role="status">Settings saved.</p>}{q.data&&<fieldset disabled={!!q.error||q.isFetching||mutation.isPending}><Editor initial={q.data} fields={settingsFields} busy={mutation.isPending} onSave={data=>{if(!mutation.isPending)mutation.mutate({data});}}/></fieldset>}</section>;
+  return <section className="panel padded platform-preferences"><div className="panel-heading compact-heading section-head"><div><h2>Platform Preferences</h2><p className="muted">Platform-wide booking, verification and policy-link defaults.</p></div></div><ErrorNotice error={q.error||mutation.error}/>{q.isLoading&&<div className="skeleton">Loading platform preferences…</div>}{q.error&&<button onClick={()=>q.refetch()}>Retry Settings</button>}{q.error&&q.data&&<p className="notice" role="alert">Settings could not refresh. Review them after reconnecting before saving.</p>}<details className="settings-integration-note"><summary>Integrations and Session Limits</summary><p>Appointment notifications are sent by the background event worker when notifications are enabled for the deployment; message content is managed in Notification Templates. Saved notification preferences and delivery policies remain in effect. Session timeout is managed by the authentication service; platform preferences do not change your authentication session.</p><p>SMS provider: {q.isLoading?"Loading…":q.error?"Unavailable":q.data?.otpProviderConfigured?"Configured":"Not connected"} · Queue refresh: 30 seconds</p></details>{mutation.isSuccess&&<p className="notice" role="status">Settings saved.</p>}{q.data&&<fieldset disabled={!!q.error||q.isFetching||mutation.isPending}><Editor initial={q.data} fields={settingsFields} busy={mutation.isPending} onSave={data=>{if(!mutation.isPending)mutation.mutate({data});}}/></fieldset>}</section>;
 }
 function Reports(){
  // Global search links preserve group/from/to/search; invalid values fall back to today.

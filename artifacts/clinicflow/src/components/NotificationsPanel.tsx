@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Bell, CheckCheck, Settings, X } from "lucide-react";
+import { Bell, CheckCheck, X } from "lucide-react";
 import { OverflowText } from "./OverflowText";
 import * as api from "@/lib/api";
 import { formatConfiguredTimestamp } from "@/lib/date-time";
@@ -39,7 +38,7 @@ export function NotificationsPanel({ timezone, role }: { timezone?: string; role
       <Bell size={18} aria-hidden />{unread > 0 && <span className="notif-count" aria-hidden>{unread > 99 ? "99+" : unread}</span>}
     </button>
     {open && <div className="notif-panel" role="dialog" aria-label="Notifications" data-testid="panel-notifications">
-      <div className="notif-head"><strong>Notifications</strong>{role && <Link href={`/${role}/settings?area=notifications`} className="button secondary small" onClick={() => setOpen(false)} data-testid="link-notification-settings"><Settings size={14} aria-hidden />Notification settings</Link>}
+      <div className="notif-head"><strong>Notifications</strong>
         <button type="button" className="notif-close" aria-label="Close notifications" onClick={() => { setOpen(false); trigger.current?.focus(); }}><X size={16} aria-hidden /></button></div>
       <div className="notif-tabs" aria-label="Notification type" {...tabs.list}>{TAB_IDS.map(t => <button key={t} type="button" {...tabs.tab(t)} data-testid={`tab-notifications-${t}`}>{LABELS[t]}</button>)}</div>
       <div className="notif-body" {...tabs.panel(tab)}>

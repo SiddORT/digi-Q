@@ -2,44 +2,41 @@
 
 ## Access and safe defaults
 
-Every supported signed-in role can open **Settings → Notifications** from the
-sidebar or profile menu, or use **Notification settings** in the bell inbox:
+**Settings → Notifications** has been removed from the interface, including its
+sidebar/profile entry for roles with no other Settings areas and the bell's
+settings shortcut. Legacy notification Settings URLs show Platform for Superadmins,
+Clinic for Clinic Admins and Profile for doctors, receptionists and patients.
+Ordinary roles are never redirected to restricted Communication credentials.
 
-- `/admin/settings?area=notifications` for Superadmins and Clinic Admins;
-- `/doctor/settings?area=notifications`, `/receptionist/settings?area=notifications`
-  and `/patient/settings?area=notifications` for personal settings only.
-
-**My notifications** is always personal, including for Superadmins. The compact
-event/channel matrix shows saved choices, inherited defaults, effective status
-and blocking reasons together. Edit several checkboxes and press **Save** once;
-**Cancel** restores saved choices. **Restore inherited** removes an explicit
-choice. Preferences are server-owned, revision-protected and shared across devices.
-Refresh does not replace dirty drafts; conflicts require an explicit reload.
+Only the UI was removed. Saved personal preferences, explicit opt-outs, inherited
+defaults, clinic/platform gates, revisions, templates and notification history
+remain unchanged. No preferences are reset and no policy matrix is moved into
+provider configuration. The notification inbox, read markers and unread counts
+continue to use the existing server policy.
 
 Absent preferences inherit **On**: allow currently eligible behavior, not permission
 to bypass clinic, template, provider, contact or membership restrictions. Personal
-**Off** affects only that event/channel. Badges distinguish **Off**, **On**,
-**On but blocked**, **Required** and **Unavailable**. Loading failures show Retry,
-never unchecked defaults. In-app appointments/queue categories, and system updates
+**Off** affects only that event/channel. In-app appointments/queue categories, and system updates
 for administrators, are separate from outbound Email/SMS. Hidden categories are
 excluded from unread counts and Mark All as Read without deleting history or
 changing existing read markers.
 
-In **Delivery management**, real Superadmins explicitly select **Platform defaults**
-or **One clinic**, then save its gate and published event/recipient activation as
-one batch. Clinic Admins see their verified owned-clinic gate, with a sole clinic
-preselected; event activation remains Superadmin-only. Scope changes guard dirty
-edits. Activation needs at most one confirmation naming the scope; personal opt-outs
-need none. Existing Clinic Admin email wording permissions remain unchanged.
+The removed preference/policy screen is not a second SMTP editor. Its saved
+delivery policies continue to be enforced by unchanged backend endpoints and
+workers. Existing Clinic Admin email wording permissions remain unchanged.
 
 Advanced provider configuration and wording remain secondary:
 
 - `/admin/communication?tab=sms`: notification SMS provider;
-- `/admin/communication?tab=email`: SMTP provider;
+- `/admin/communication?tab=email`: the single SMTP editor and confirmed test-email
+  flow, plus Diagnostics with saved readiness/source, safe key statuses, refresh and
+  a manual connection check. Checks never run automatically on entry and send no
+  email. They use saved settings, not unsaved edits; saved configuration changes
+  clear old results. A successful connection does not prove inbox delivery;
 - `/admin/communication?tab=logs`: outbound history;
-- `/admin/templates`: wording editors; activation links back to Notifications.
+- `/admin/templates`: existing template interfaces, without links to the removed screen.
 
-Legacy Settings `area=sms`, `area=email`, `area=events` and `area=templates`
+Legacy Settings `area=sms`, `area=email`, `area=smtp`, `area=events` and `area=templates`
 links still redirect to the corresponding existing pages.
 
 Platform settings, Integrations (including storage and Twilio OTP), reference data,
@@ -47,6 +44,11 @@ audit and demo management remain available. Legacy `area=templates`, `/admin/tem
 and `/admin/integrations` links still work. Clinic Admins retain their existing
 owned-clinic email template editor; they cannot read global credentials, change SMS
 or Event controls, or send template tests. API authorization is independent of menu visibility.
+
+Platform contains only its existing preferences, not an embedded Integrations panel.
+Integrations links email users to Communication → Email Settings; it no longer
+offers SMTP editing or test sends. Twilio authentication and storage controls remain
+in Integrations. Operational SMS Settings and Notification Logs remain in Communication.
 
 Optional operational SMS templates start **off**. Required security events are
 separate: patient SMS login is existing-account-only; optional registration phone

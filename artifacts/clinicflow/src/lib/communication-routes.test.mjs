@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
-import { communicationRedirect, communicationTab, filterRows, eventControlError, eventSetupReasons, templateSaveError } from "./communication-routes.ts";
+import { communicationRedirect, communicationTab, filterRows, eventControlError, eventSetupReasons, templateSaveError, retiredSettingsDestination, hasWorkspaceSettings } from "./communication-routes.ts";
 test("legacy settings areas redirect", () => {
   assert.equal(communicationRedirect("superAdmin", "sms"), "/admin/communication?tab=sms");
   assert.equal(communicationRedirect("superAdmin", "email"), "/admin/communication?tab=email");
@@ -15,7 +15,20 @@ test("profile Settings opens general settings, not communication settings", () =
   const shell = readFileSync(new URL("../components/WorkspaceShell.tsx", import.meta.url), "utf8");
   const settingsLink = shell.match(/^.*<Link\b[^\n]*data-testid="menu-settings"[^\n]*$/m)?.[0];
   assert.ok(settingsLink);
-  assert.match(settingsLink, /href="\/admin\/settings"/);
+  assert.match(settingsLink, /navigation\.includes\("settings"\)/);
+  assert.match(settingsLink, /href=\{`\/\$\{role\}\/settings`\}/);
+});
+test("retired Settings areas never grant provider access to ordinary roles", () => {
+  assert.equal(retiredSettingsDestination("superAdmin"), null);
+  assert.equal(retiredSettingsDestination("clinicAdmin"), "/admin/clinic");
+  for (const role of ["doctor", "receptionist", "patient"]) {
+    assert.equal(retiredSettingsDestination(role), `/${role}/profile`);
+    assert.equal(hasWorkspaceSettings(role), false);
+    for (const area of ["email", "smtp", "sms", "notifications"]) assert.equal(communicationRedirect(role, area), null);
+  }
+  assert.equal(hasWorkspaceSettings("clinicAdmin"), false);
+  assert.equal(hasWorkspaceSettings("superAdmin"), true);
+  assert.equal(communicationRedirect("superAdmin", "smtp"), "/admin/communication?tab=email");
 });
 test("tab and filters", () => {
   assert.equal(communicationTab("x"), "sms");

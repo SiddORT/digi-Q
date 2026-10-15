@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from "react";
-import { Link } from "wouter";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { useGetEventControls, getGetEventControlsQueryKey } from "@workspace/api-client-react";
@@ -60,7 +59,7 @@ function EventTemplates({ identity }: { identity: api.Identity }) {
   const sel = (k: keyof typeof f, v: string, opts: [string, string][], name: string) => <select aria-label={name} value={v} onChange={e => setF(x => ({ ...x, [k]: e.target.value }))} data-testid={`select-filter-${k}`}><option value="">{name}: all</option>{opts.map(([a, b]) => <option key={a} value={a}>{b}</option>)}</select>;
   return <section className="panel padded event-controls" data-testid="page-notification-templates">
     {confirm.dialog}
-    <p className="muted" data-testid="text-gate-note">Each notification switch is scoped to one event, channel and recipient. Patient login OTP is a required security message and ignores notification opt-outs. Turning email notifications off never disables sign-in codes, invitations or password recovery. Provider connections are in Communication Settings. Switch activation lives in <Link href="/admin/settings?area=notifications" className="text-link" data-testid="link-activation-settings">Notification settings</Link>; this page edits wording only.</p>
+    <p className="muted" data-testid="text-gate-note">Each notification switch is scoped to one event, channel and recipient. Patient login OTP is a required security message and ignores notification opt-outs. Turning email notifications off never disables sign-in codes, invitations or password recovery. Provider connections are in Communication Settings. Saved delivery preferences and policies still apply; wording edits do not change them.</p>
     <div className="et-scope">
       <FormField label={superAdmin ? "Scope" : "Clinic Group"} optional={superAdmin} required={!superAdmin} helper={superAdmin ? "Empty edits platform defaults." : "Choose a clinic group you manage."}>
         {a => <ResourceLookup resource="clinics" {...a} value={clinicId} onChange={v => { setClinicId(v); }} placeholder={superAdmin ? "Platform defaults" : undefined} />}
@@ -111,7 +110,7 @@ function ClinicAdminTemplates({ identity }: { identity: api.Identity }) {
   const owned = q.data.clinics;
   const initial = q.data.activeClinicId ?? (owned.length === 1 ? owned[0].id : "");
   return <section className="panel padded event-controls" data-testid="page-notification-templates">
-    <p className="muted">Edit notification wording here. Switching delivery on or off is in <Link href="/admin/settings?area=notifications" className="text-link" data-testid="link-activation-settings">Notification settings</Link>.</p>
+    <p className="muted">Edit notification wording here. Saved delivery preferences and policies still apply; wording edits do not change them.</p>
     <EmailTemplates key={initial} identity={identity} channel="email" initialClinicId={initial} />
   </section>;
 }

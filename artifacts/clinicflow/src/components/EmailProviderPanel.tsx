@@ -5,6 +5,7 @@ import { getGetIntegrationSettingsQueryKey, useGetIntegrationSettings, useSendSm
 import { AppDialog } from "./AppDialog";
 import { PasswordInput } from "./PasswordInput";
 import { useConfirm } from "./ConfirmDialog";
+import { EmailDiagnostics } from "./EmailDiagnostics";
 
 const pub = (r: IntegrationReadiness) => ({ smtpHost: r.smtpHost ?? "", smtpPort: r.smtpPort ?? 587, fromEmail: r.fromEmail ?? "", fromName: r.fromName ?? "", useTls: r.useTls ?? true, useSsl: r.useSsl ?? false, notificationsEnabled: r.notificationsEnabled ?? true });
 
@@ -33,6 +34,7 @@ export function EmailProviderPanel({ onDirtyChange, onBusyChange }: { onDirtyCha
     {query.isLoading && <p role="status" data-testid="status-integrations-loading">Loading email settings…</p>}
     {query.isError && <p role="alert" className="error-box" data-testid="status-integrations-error">Email settings are unavailable. <button type="button" className="button secondary" onClick={() => query.refetch()}>Retry</button></p>}
     {data && <EmailForm r={data.smtp} editable={data.editable !== false} onDirty={d => dr.current?.(d)} onBusy={b => br.current?.(b)} />}
+    {data && <EmailDiagnostics r={data.smtp} refreshing={query.isFetching} onRefresh={() => { void query.refetch(); }} />}
   </section>;
 }
 

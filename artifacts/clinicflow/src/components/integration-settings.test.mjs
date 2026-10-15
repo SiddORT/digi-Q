@@ -3,16 +3,19 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 const src = readFileSync(new URL("./IntegrationSettings.tsx", import.meta.url), "utf8");
 const ed = readFileSync(new URL("./IntegrationEditor.tsx", import.meta.url), "utf8");
+const check = readFileSync(new URL("./IntegrationConnectionCheck.tsx", import.meta.url), "utf8");
 test("only supported providers, storage env-only with docs", () => {
   assert.ok(src.includes('{ value: "smtp", label: "SMTP" }') && src.includes('{ value: "twilio", label: "Twilio" }'));
   for (const k of ["MEDIA_STORAGE", "MEDIA_ROOT", "MEDIA_URL"]) assert.ok(src.includes(k));
-  assert.match(src, /useCheckIntegrationConnection\(\)/);
-  assert.match(src, /check\.mutate\(\{ provider \}(\)|, \{ onSuccess)/);
+  assert.match(check, /useCheckIntegrationConnection\(\)/);
+  assert.match(check, /onClick=\{\(\) => check\.mutate\(\{ provider \}/);
   assert.match(src, /useGetStorageConfiguration\(/);
 });
-test("smtp test requires explicit confirmation", () => {
-  assert.match(src, /disabled=\{!confirmSend \|\|/);
-  assert.match(src, /if \(confirmSend\) send\.mutate/);
+test("Integrations links SMTP to the one retained editor and cannot send test email", () => {
+  assert.match(src, /href="\/admin\/communication\?tab=email"/);
+  assert.doesNotMatch(src, /useSendSmtpTestEmail|provider="smtp"|Send Test Email|fixedService/);
+  assert.match(src, /Configure Twilio/);
+  assert.match(src, /<ConnectionCheck provider="storage"/);
 });
 test("editor keeps password confirmation, env switch and masked secrets", () => {
   assert.ok(ed.includes('mode === "environment" ? {}'));

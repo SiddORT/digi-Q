@@ -1,4 +1,3 @@
-import { Link } from "wouter";
 import { FormActions } from "./FormActions";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -73,7 +72,7 @@ export function unknownVariables(content: Content, allowed: string[]) {
   return [...found];
 }
 function ActivationNote({ on, required }: { on: boolean; required: boolean }) {
-  return <span className="muted" data-testid="text-activation-note">{required ? "Required security message." : `Currently ${on ? "on" : "off"}. Wording saves keep this setting.`} {!required && <Link href="/admin/settings?area=notifications" className="text-link" data-testid="link-activation-notifications">Manage activation in Notifications</Link>}</span>;
+  return <span className="muted" data-testid="text-activation-note">{required ? "Required security message." : `Currently ${on ? "on" : "off"}. Wording saves keep this setting.`}</span>;
 }
 const same = (a?: Content, b?: Content) => !!a && !!b && FIELDS.every(([k]) => a[k] === b[k]) && (["senderId", "dltEntityId", "dltTemplateId"] as const).every(k => (a[k] ?? "") === (b[k] ?? "")) && (a.enabled ?? null) === (b.enabled ?? null);
 const status = (e: any) => e?.status ?? e?.response?.status;

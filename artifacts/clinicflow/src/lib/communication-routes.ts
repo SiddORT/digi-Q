@@ -1,9 +1,16 @@
 /** Legacy /admin/settings?area= values that moved to dedicated pages. Returns null when the area stays in Settings. */
 export function communicationRedirect(userRole: string, area: string | null): string | null {
-  if ((area === "sms" || area === "email") && userRole === "superAdmin") return `/admin/communication?tab=${area}`;
+  if ((area === "sms" || area === "email" || area === "smtp") && userRole === "superAdmin") return `/admin/communication?tab=${area === "smtp" ? "email" : area}`;
   if ((area === "events" || area === "templates") && ["superAdmin", "clinicAdmin"].includes(userRole)) return "/admin/templates";
   return null;
 }
+/** Roles without a remaining Settings area get an existing, permitted workspace. */
+export function retiredSettingsDestination(userRole: string): string | null {
+  if (userRole === "superAdmin") return null;
+  if (userRole === "clinicAdmin") return "/admin/clinic";
+  return `/${userRole}/profile`;
+}
+export function hasWorkspaceSettings(userRole: string) { return userRole === "superAdmin"; }
 export type CommunicationTab = "sms" | "email" | "logs";
 export function communicationTab(raw: string | null): CommunicationTab { return raw === "email" || raw === "logs" ? raw : "sms"; }
 /** Pure helpers for the event-first template list. */

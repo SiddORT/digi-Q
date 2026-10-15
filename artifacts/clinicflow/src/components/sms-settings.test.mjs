@@ -51,8 +51,9 @@ test("event controls confirm before updating", () => {
 test("templates support sms channel and dirty reporting", () => {
   assert.ok(et.includes("channel = \"email\"") && et.includes("SMS_BODY_MAX") && et.includes("onDirtyChange") && et.includes("EventTemplateTest"));
 });
-test("settings link only for actual superAdmin; legacy templates alias kept", () => {
-  assert.ok(sh.includes('actualRole === "superAdmin"'));
+test("settings link follows permitted navigation; legacy templates alias kept", () => {
+  assert.ok(sh.includes('navigation.includes("settings")'));
+  assert.ok(cl.includes('p==="settings"?hasWorkspaceSettings(identity.user!.role)'));
   assert.ok(cl.includes('communicationRedirect(userRole,query.get("area"))') && cl.includes('page==="templates"&&["superAdmin","clinicAdmin"]'));
 });
 import { isRealSuperAdmin, internalHref } from "../lib/settings-access.ts";
