@@ -48,6 +48,20 @@ are approved. Inventory the full effective catalog, not only saved overrides; if
 the screenshot and workspace differ, identify the exact environment before writes.
 Ask before adding extra scope; never invent registration IDs or infer them from an image.
 
+The user's later confirmed scope is 11 supported appointment SMS combinations;
+Clinic Admin/Doctor reschedule and reminder SMS stay off without their own supplied
+registrations. Appointment email wording should be persisted from existing built-in
+defaults unchanged, retaining saved overrides and branding.
+
+**Why:** After supplying the full DLT list, the user selected “Leave those four off”
+and “Existing built-in wording unchanged.” The source explicitly limits reminders
+to patients. This narrows the earlier all-recipient SMS activation request.
+
+**How to apply:** Do not re-enable these four just because broad built-in defaults
+are enabled. Shared team registrations may cover multiple listed recipients only
+with identical approved wording for the same event; a reschedule is not a new booking.
+Database publications, not the maintenance source list, remain the dispatch authority.
+
 Queued reminders have a five-minute dispatch allowance beyond the narrow scheduling
 window; this must not widen event capture or replay a historical backlog.
 

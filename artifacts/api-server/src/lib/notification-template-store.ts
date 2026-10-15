@@ -42,10 +42,10 @@ export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, 
       platform.published ? platform.publishedRevision ?? (platform.draft ? undefined : platform.revision) : 0,
     source: local.published ? (clinicId ? "clinic" : "platform") : platform.published ? "platform" : "default" };
 }
-export async function templateCatalog(user: any, clinicId?: string, recipient?: TemplateRecipient,channel:Channel="email") {
+export async function templateCatalog(user: any, clinicId?: string, recipient?: TemplateRecipient,channel:Channel="email",conn:any=db) {
   if(channel==="sms") assert(user.role==="superAdmin",403,"Superadmin access required");
   if(recipient==="superAdmin") assert(user.role==="superAdmin",403,"Superadmin access required");
-  const clinic = await authorizedTemplateScope(user, clinicId);
+   const clinic = await authorizedTemplateScope(user, clinicId,conn);
   const values = { ...visitTemplateValues({date:"2030-01-15",startTime:"09:00",endTime:"12:00",token:"Q-007",tokenNumber:7},
       clinic,"[Recipient name]",{date:"2030-01-14",startTime:"14:00",endTime:"17:00"}),
     clinic_name: clinic?.name || "Example clinic", clinic_contact: [clinic?.email, clinic?.phone].filter(Boolean).join(" · "),
@@ -55,7 +55,7 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
   const items = [];
   for (const event of templateEvents) {
      if (!validTemplateTarget(event, recipient || defaultRecipient(event), channel) || requiredEvent(event) && clinicId) continue;
-    const { content, local, source } = await resolvedTemplate(event, clinicId, db, recipient || defaultRecipient(event),channel);
+     const { content, local, source } = await resolvedTemplate(event, clinicId, conn, recipient || defaultRecipient(event),channel);
     const preview = renderNotification(local.draft || content, previewValues);
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
@@ -64,7 +64,8 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
   }
   return { scopeName: clinic?.name || "Platform defaults", variables: [...templateVariables], items };
 }
-export async function saveTemplate(user: any, input: unknown) {
+export async function saveTemplate(user: any, input: unknown, conn:any=db,
+  maintenance: { preserveDraft?: boolean; activatedAtFloor?: number } = {}) {
   const parsed = templateSave.safeParse(input);
   assert(parsed.success, 400, parsed.success ? "" : parsed.error.issues.slice(0,5).map(issue =>
     `${issue.path.join(".") || "template"}: ${issue.message}`).join("; ") || "Invalid template");
@@ -79,7 +80,7 @@ export async function saveTemplate(user: any, input: unknown) {
      assert(/\{\{\s*setup_link\s*\}\}/.test(body.content.body),400,"Setup email must include {{setup_link}}");
    if(body.content && isSecurityEvent(body.event) && body.channel==="sms")
      assert(!/\{\{\s*setup_link\s*\}\}/.test(body.content.body),400,"SMS must not include a bearer setup link");
-  await db.transaction(async tx => {
+   await conn.transaction(async (tx:any) => {
     await authorizedTemplateScope(user, body.clinicId, tx);
     const id = key(body.event, body.clinicId, body.recipient,body.channel);
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${id}, 0))`);
@@ -105,6 +106,9 @@ export async function saveTemplate(user: any, input: unknown) {
       next.published = body.content;
       next.publishedRevision = next.revision;
       next.activatedAt = body.content?.enabled && !previous.content.enabled ? Date.now() : previous.activatedAt;
+       if(maintenance.preserveDraft && current.draft) next.draft=current.draft;
+       if(maintenance.activatedAtFloor !== undefined)
+         next.activatedAt=Math.max(next.activatedAt ?? 0,maintenance.activatedAtFloor);
     }
     if(body.mode==="draft") {
       next.activatedAt=current.activatedAt;
@@ -113,7 +117,7 @@ export async function saveTemplate(user: any, input: unknown) {
     await tx.insert(settings).values({ id, data: next }).onConflictDoUpdate({ target: settings.id, set: { data: next } });
     await audit(user, `template_${body.mode}`, "notification_templates", { id, clinicId: body.clinicId }, tx);
   });
-  return templateCatalog(user, body.clinicId, body.recipient,body.channel);
+   return templateCatalog(user, body.clinicId, body.recipient,body.channel,conn);
 }
 
 /** Activation edits only published content; unpublished wording stays a draft. */

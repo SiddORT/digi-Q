@@ -1,0 +1,119 @@
+Digi-Q — Final SMS Template List for DLT Approval
+Sender ID: DIGIQU 
+Product: Digi-Q 
+Company: ORTSPL 
+Status: Drafts prepared for DLT submission; content approval is still pending.
+We have prepared 10 SMS templates across booking, cancellation, appointment completion, reminders and onboarding. The appointment reminder is for the patient only.
+ 
+1. Patient Login OTP
+Dear User, your Digi-Q login OTP is {#var#}. It is valid for {#var#} minutes. Do not share this OTP with anyone.
+ 
+2. Patient Booking Confirmation
+Dear {#var#}, your appointment with Dr. {#var#} is confirmed for {#var#}. Queue No: {#var#}. Expected time: {#var#}. Please arrive 10 minutes before your expected time. - Digi-Q
+1777179180199333856
+ 
+3. Clinic Team Booking Notification
+New appointment booked on Digi-Q. Patient: {#var#}. Doctor: Dr. {#var#}. Appointment: {#var#} at {#var#}. - Digi-Q
+Recipients: Clinic Admin, Doctor and Receptionist.
+1777179180212222829
+ 
+4. Patient Appointment Cancellation
+Dear {#var#}, your appointment with Dr. {#var#} on {#var#} at {#var#} (Queue No: {#var#}) has been cancelled. Reason: {#var#}. Please contact the clinic if you need assistance. - Digi-Q
+1777179180230206932
+ 
+5. Clinic Team Cancellation Notification
+Appointment cancelled on Digi-Q. Patient: {#var#}. Doctor: Dr. {#var#}. Appointment: {#var#} at {#var#}. Queue No: {#var#}. Reason: {#var#}. - Digi-Q
+Recipients: Clinic Admin, Doctor and Receptionist.
+1777179180247974768
+ 
+6. Patient Appointment Completion
+Dear {#var#}, your appointment with Dr. {#var#} on {#var#} at {#var#} (Queue No: {#var#}) has been completed. Thank you for choosing Digi-Q. - Digi-Q
+1777179180260833424
+ 
+7. Clinic Team Appointment Completion
+Appointment completed on Digi-Q. Patient: {#var#}. Doctor: Dr. {#var#}. Appointment: {#var#} at {#var#}. Queue No: {#var#}. - Digi-Q
+1777179180271292281
+Recipients: Clinic Admin, Doctor and Receptionist.
+ 
+8. Patient Appointment Reminder 
+Dear {#var#}, reminder: your appointment with Dr. {#var#} is scheduled for {#var#} at {#var#}. Queue No: {#var#}. Please arrive 10 minutes before your appointment time. - Digi-Q
+1777179180284769924
+ 
+9. Clinic Onboarding — Platform Defaults
+Welcome to Digi-Q, {#var#}! Complete your clinic opening hours, doctor sessions and staff assignments before sharing your booking link. Your booking link: {#var#}.
+1777179180913265071
+ 
+10. Clinic Admin Onboarded
+A Clinic Admin, {#var#}, has been successfully onboarded on Digi-Q for {#var#}.
+1777179180324816576
+ 
+11. DIGIQ Patient Appointment Rescheduled
+Dear {#var#}, your appointment with Dr. {#var#} has been rescheduled to {#var#} at {#var#}. Queue No: {#var#}. Please arrive 10 minutes before your appointment time. - Digi-Q
+1777179180927080590
+ 
+Final summary
+ 
+Event
+	
+Templates
+	
+Recipients
+
+
+Patient login OTP
+	
+1
+	
+Patient
+
+
+Booking confirmation
+	
+2
+	
+Patient; clinic team
+
+
+Appointment cancellation
+	
+2
+	
+Patient; clinic team
+
+
+Appointment completion
+	
+2
+	
+Patient; clinic team
+
+
+Appointment reminder
+	
+1
+	
+Patient only
+
+
+Clinic onboarding
+	
+1
+	
+Clinic Admin
+
+
+Clinic Admin onboarded
+	
+1
+	
+System Admin
+
+
+Total
+	
+10
+	 
+ 
+ 
+following templates have been put for approval
+ 

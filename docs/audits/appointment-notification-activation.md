@@ -1,5 +1,98 @@
 # Appointment Email and SMS activation
 
+## Current development registration result — 2026-10-15
+
+This section supersedes the initial 17-ready/13-blocked snapshot below. The user
+supplied full wording and template-specific DLT IDs, chose **11 supported appointment
+SMS combinations with four unsupported combinations off**, and requested that all
+15 appointment email defaults be saved unchanged in the database. The source's
+older “approval pending” header was not independently verified against a provider;
+approval relies on the user's explicit confirmation. No provider was contacted.
+
+- **Applied:** 2026-10-15T12:27:14.519Z (17:57:14.519 Asia/Kolkata), development only.
+- **Storage:** existing `settings.data` JSON, keyed by
+  `notification-template:platform:<event>[:<recipient>]` for email and
+  `sms-template:platform:<event>[:<recipient>]` for SMS. Patient is the omitted
+  recipient suffix for appointment events. `published` is used for dispatch;
+  `draft` remains separate. No new table, provider account or dispatch path.
+- **Email:** 15 platform publications created from the exact effective built-in
+  defaults. The existing receptionist email publication was retained, not duplicated.
+- **SMS:** nine supported publications created; the two existing booking
+  registrations retained their original IDs. Patient booking wording was aligned
+  with the supplied full registered text: the old stored text omitted the date and
+  differed in punctuation/spacing. Clinic Admin booking wording was already exact.
+- **Unsupported SMS:** four explicit off publications prevent broad built-in
+  enabled defaults from making staff reschedule/reminder messages appear active.
+- **Readiness:** platform and each of nine clinics have 26 configuration-ready
+  combinations (15 email + 11 SMS), four explicitly off SMS combinations and no
+  other configuration blockers. Configuration-ready does not prove contact
+  eligibility, provider acceptance or delivery.
+- **Provider settings:** unchanged, including encrypted credentials and switches.
+  All templates use the existing shared Keep in Touch configuration. No per-template
+  sender/account was introduced; each registration retains its supplied DLT ID.
+- **Safety:** existing prospective activation is reused atomically. New/aligned
+  publications have a prospective cutoff. Historical jobs are not replayed,
+  uncertain outcomes are not retried, and development automatic sends remain off.
+- **Reruns:** a separate durable registration receipt makes later invocations
+  non-mutating, preserving subsequent edits and opt-outs.
+
+### Current redacted readiness matrix
+
+Each cell names the recipients for that event/channel. “Off” is intentional and
+does not mean a missing registration was invented.
+
+| Event | Email: Patient / Clinic Admin / Doctor | SMS: Patient | SMS: Clinic Admin | SMS: Doctor |
+|---|---|---|---|---|
+| Booking | Ready / Ready / Ready | Ready | Ready | Ready |
+| Rescheduled | Ready / Ready / Ready | Ready | Off — no supplied registration | Off — no supplied registration |
+| Cancelled | Ready / Ready / Ready | Ready | Ready | Ready |
+| Completed | Ready / Ready / Ready | Ready | Ready | Ready |
+| Reminder | Ready / Ready / Ready | Ready | Off — source is patient-only | Off — source is patient-only |
+
+The shared **team booking** registration legitimately covers Admin and Doctor
+using identical approved wording. Team cancellation and completion likewise share
+their own event's ID. No booking ID is copied to another event. Patient reschedules
+use the supplied reschedule registration and updated appointment date/session
+start, not a “new booking” notice. Time variables refer to clinic-formatted session
+times; the approved text was not rewritten into a guaranteed consultation time.
+Receptionist SMS, onboarding, login/registration OTP and security templates remain
+outside this operation.
+
+### Maintenance and verification
+
+```sh
+# Read-only, redacted inventory; no network/provider calls.
+NODE_ENV=development node artifacts/api-server/src/appointment-template-registration.mjs
+
+# Explicit atomic development application; later runs return alreadyApplied.
+NODE_ENV=development node artifacts/api-server/src/appointment-template-registration.mjs --apply-workspace-development
+```
+
+The development post-merge script runs the second command. The source manifest is
+maintenance input only, never a new runtime fallback or application-startup seed.
+The operation fails atomically on stale configuration, conflicting existing DLT
+IDs, unavailable shared provider configuration or audit failure. It reuses the
+ordinary template publication schema, scope authorization and SMS metadata
+validation; it preserves drafts and existing email/clinic publications.
+
+Focused tests cover exact supplied text/IDs, all 30 publications, four off targets,
+preserved drafts/branding/providers, post-import page projection/inheritance,
+non-development rejection, stale configuration, late rollback and rerun safety.
+Injected fake transports exercised 26 eligible deliveries and repeat-poll
+deduplication in disposable PostgreSQL only. No real message or UAT write occurred.
+All 54 focused activation/settings/booking tests passed across the verification
+runs, as did the shared-library build and API-server TypeScript check. A development
+rerun returned `alreadyApplied` and a complete settings fingerprint stayed unchanged.
+The API workflow restarted cleanly and its health endpoint returned `{"status":"ok"}`.
+The UAT HTML was useful status evidence but contained truncated previews and no
+actual registration IDs. The full user-supplied text, not that HTML, provided the
+approved registration mappings.
+
+## Historical activation evidence
+
+The remainder records the earlier activation operation and its initial catalog
+snapshot. It is not the current readiness result.
+
 ## Applied scope and evidence
 
 - **Environment:** this workspace's development database, not the separately
