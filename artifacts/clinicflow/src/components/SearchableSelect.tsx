@@ -4,6 +4,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readableLabel } from "@/lib/selection-label";
+import { OverflowText } from "./OverflowText";
 
 export interface SearchableSelectProps extends Pick<React.AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> {
   options: { value: string; label: string; disabled?: boolean; /** Compact text for the closed control (e.g. "+91 IN"); label stays searchable. */ selectedLabel?: string }[];
@@ -26,6 +27,9 @@ export interface SearchableSelectProps extends Pick<React.AriaAttributes, "aria-
   /** Actor/resource scope for retained display labels. */
   labelScope?: string;
   retainSelectionLabel?: boolean;
+  /** Opt-in compact value with complete-text help; ordinary callers are unchanged. */
+  compactLabel?: boolean;
+  clearable?: boolean;
 }
 
 export function SearchableSelect({
@@ -46,6 +50,8 @@ export function SearchableSelect({
   testId,
   labelScope = "",
   retainSelectionLabel = true,
+  compactLabel = false,
+  clearable = true,
   "aria-describedby": describedBy,
   "aria-invalid": invalid,
   "aria-required": ariaRequired,
@@ -137,6 +143,7 @@ export function SearchableSelect({
               aria-invalid={invalid ?? !!error}
               aria-describedby={[describedBy, value ? `${controlId}-value` : undefined, error ? errorId : undefined].filter(Boolean).join(" ") || undefined}
               aria-labelledby={labelledBy}
+              title={compactLabel ? (value ? displayLabel : placeholder) : undefined}
               disabled={disabled}
               className="absolute inset-0 z-0 h-full w-full rounded-lg bg-transparent outline-none cursor-pointer"
               aria-label={
@@ -154,11 +161,11 @@ export function SearchableSelect({
               !value ? "text-muted-foreground" : "text-foreground font-medium"
             )}
           >
-            {value ? displayLabel : placeholder}
+            {compactLabel ? <OverflowText value={value ? displayLabel : placeholder} /> : value ? displayLabel : placeholder}
           </span>
 
-          <div className="relative z-20 flex items-center gap-1 shrink-0 px-1">
-            {value && !disabled && (
+          <div className={cn("relative z-20 flex items-center gap-1 shrink-0 px-1", !clearable && "pointer-events-none")}>
+            {clearable && value && !disabled && (
               <button
                 type="button"
                 className="searchable-select-clear flex h-6 w-6 items-center justify-center rounded-md hover:bg-slate-100 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-colors border-none p-0"

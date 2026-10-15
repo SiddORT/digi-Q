@@ -27,3 +27,13 @@ must not alter the overall gate or imply provider readiness.
 **How to apply:** Exclude required messages, capture all event rows for stale-data
 checks, retain untouched inheritance, and verify the complete target after the
 atomic save before claiming success.
+
+Super Admin notification administration starts at System Default, even when an
+old link contains a clinic selection. Clinic Admins retain owned-clinic-only
+selection. Selection alone must never save settings or create overrides.
+
+**Why:** The user explicitly overrode the former deep-link initialization and
+wants the system context to be a real selectable entry, not an empty placeholder.
+
+**How to apply:** Keep this rule confined to Notifications. Do not remove clinic
+context from unrelated routes or infer wider Clinic Admin permissions.

@@ -94,9 +94,9 @@ test("search and filters open matching rows; clearing filters and changing scope
   for (const filter of ["channel", "recipient", "status"]) await page.getByTestId(`select-filter-${filter}`).selectOption("");
   await expect(page.getByTestId("button-event-booking")).toHaveAttribute("aria-expanded", "false");
   await page.getByTestId("button-event-booking").click();
-  await page.getByRole("button", { name: "Scope (optional)", exact: true }).click();
+  await page.getByRole("button", { name: "Notification Clinic", exact: true }).click();
   await page.getByRole("option", { name: "Fixture Clinic", exact: true }).click();
-  await expect(page.getByTestId("chip-scope")).toHaveText("Clinic");
+  await expect(page.getByTestId("notification-scope")).toContainText("Fixture Clinic");
   await expect(page.getByTestId("button-event-booking")).toHaveAttribute("aria-expanded", "false");
 });
 
@@ -106,7 +106,7 @@ test("expanded wording actions retain edit guards and keep activation on the sam
   await page.getByTestId("button-edit-email-booking-patient").click();
   await page.getByTestId("input-body").fill("Unsaved wording");
   await page.getByRole("button", { name: "Close", exact: true }).first().click();
-  await expect(page.getByRole("heading", { name: "Discard unsaved changes?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Discard Unsaved Changes?" })).toBeVisible();
   await page.getByRole("button", { name: "Keep Editing", exact: true }).click();
   await expect(page.getByTestId("input-body")).toHaveValue("Unsaved wording");
   await page.getByTestId("details-advanced").getByText("Advanced", { exact: true }).click();

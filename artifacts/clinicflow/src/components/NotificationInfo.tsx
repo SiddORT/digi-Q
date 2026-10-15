@@ -13,10 +13,10 @@ export function NotificationInfo({ label, children }: { label: string; children:
         onClick={event => { event.preventDefault(); pinned.current = !pinned.current; setOpen(pinned.current); }}
         onKeyDown={event => { if (event.key === "Escape") dismiss(); }}
         onBlur={dismiss}>
-        <Info size={16} aria-hidden="true" />
+        <Info size={20} aria-hidden="true" />
       </button>
     </TooltipTrigger>
-    <TooltipContent className="cm-info-content" onEscapeKeyDown={dismiss} onPointerDownOutside={event => {
+    <TooltipContent className="cm-info-content" collisionPadding={12} onEscapeKeyDown={dismiss} onPointerDownOutside={event => {
       if (!(event.target instanceof Element && event.target.closest(".cm-info"))) dismiss();
     }}>{children}</TooltipContent>
   </Tooltip></TooltipProvider>;

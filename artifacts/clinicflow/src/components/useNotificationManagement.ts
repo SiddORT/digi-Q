@@ -5,6 +5,7 @@ import { eventControlBody, eventControlError } from "../lib/communication-routes
 import { refreshNotificationManagement } from "../lib/notification-management";
 import { useConfirm } from "./ConfirmDialog";
 import { groupActivationChanges, notificationGroup, sameActivationRows } from "../lib/notification-groups";
+import { titleCase } from "../lib/title-case";
 
 /** Mounted for one actor/scope only. Confirmations and requests hold that target. */
 export function useNotificationManagement(clinicId: string, enabled: boolean, superAdmin: boolean, lock: MutableRefObject<boolean>, blocked: () => boolean) {
@@ -32,7 +33,7 @@ export function useNotificationManagement(clinicId: string, enabled: boolean, su
     const next = group ? group.next : !(row ? row.enabled : baseline.notificationsEnabled);
     try {
       const ok = await confirm.ask({
-        title: `${next ? "Enable" : "Disable"} ${group ? `${event!.replaceAll("_", " ")} — all ${group.optional.length} optional options` : row ? `${row.event.replaceAll("_", " ")} ${row.channel} to ${row.recipient}` : "overall optional delivery"}?`,
+        title: titleCase(`${next ? "Enable" : "Disable"} ${group ? `${event!.replaceAll("_", " ")} — all ${group.optional.length} optional options` : row ? `${row.event.replaceAll("_", " ")} ${row.channel} to ${row.recipient}` : "overall optional delivery"}?`),
         description: `Scope: ${baseline.scopeName} (${clinicId ? "clinic override" : "platform defaults"}). ${group ? `All ${group.optional.length} optional channel/recipient options for this event are included, even those hidden by filters. Required rows are excluded. Existing inheritance is retained for unchanged options; changed options are saved in this scope. Wording and unpublished drafts are kept. The overall gate stays ${baseline.notificationsEnabled ? "on" : "off"}; activation does not confirm provider readiness.` : row ? "Only this event, channel and recipient will change. Wording and unpublished drafts are kept." : "This gate is separate from template activation. Required security messages remain protected."} Only future eligible events are affected; past events are never replayed. Pending unclaimed messages may be cancelled when disabled.`,
         confirmLabel: next ? "Enable" : "Disable", tone: next ? "default" : "danger",
       });

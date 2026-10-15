@@ -80,7 +80,7 @@ const status = (e: any) => e?.status ?? e?.response?.status;
 
 /** SMS keeps one body plus the event's DLT Template ID; Sender ID comes from configuration. */
 export const SMS_BODY_MAX = 1600;
-export function EmailTemplates({ identity, channel = "email", onDirtyChange, onBusyChange, fixed, initialClinicId }: { initialClinicId?: string; onBusyChange?: (busy: boolean) => void; identity: api.Identity; channel?: "email" | "sms"; onDirtyChange?: (dirty: boolean) => void; fixed?: { clinicId: string; event: string; recipient: Recipient } }) {
+export function EmailTemplates({ identity, channel = "email", onDirtyChange, onBusyChange, fixed, initialClinicId, notificationPage = false }: { notificationPage?: boolean; initialClinicId?: string; onBusyChange?: (busy: boolean) => void; identity: api.Identity; channel?: "email" | "sms"; onDirtyChange?: (dirty: boolean) => void; fixed?: { clinicId: string; event: string; recipient: Recipient } }) {
   const sms = channel === "sms";
   const dialogClose = useAppDialogClose();
   const superAdmin = identity.user?.role === "superAdmin";
@@ -221,8 +221,18 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
               </div>
               : <input {...a} type="text" maxLength={max} value={form[k] ?? ""} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />}
           </FormField>;
-  const drawerFooter = (cancelDisabled: boolean) => <div className="et-drawer-footer"><button type="button" className="button secondary" onClick={() => dialogClose ? dialogClose() : undefined} disabled={cancelDisabled} data-testid="button-cancel">Cancel</button><button type="submit" className="button" disabled={busyNow || invalid || conflict} data-testid="button-publish">{save.isPending && confirm === "publish" ? "Saving…" : "Save Template"}</button></div>;
-  return <section className="email-templates" data-testid="email-templates">
+  const actionReason = busyNow ? "Wait for the current save or upload to finish." : conflict ? "Resolve the conflict before saving or resetting. Your edits are kept." : invalid ? "Correct the field errors and unknown variables before saving." : "";
+  const resetUnavailable = item?.source === "default" && !item?.draft;
+  const drawerFooter = (cancelDisabled: boolean) => notificationPage ? <>
+    {actionReason && <p className="muted" role="status" id="notification-template-action-help">{actionReason}</p>}
+    <div className="et-drawer-footer cm-template-footer">
+      <button type="button" className="button secondary" onClick={() => dialogClose?.()} disabled={busyNow} data-testid="button-cancel">Cancel</button>
+      <button type="button" className="button secondary danger" disabled={busyNow || conflict || resetUnavailable} title={resetUnavailable ? "Already Using Default Wording; No Saved Draft" : "Remove This Wording and Its Saved Draft"} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to Default</button>
+      <button type="button" className="button secondary" disabled={busyNow || invalid || conflict || !dirty} title={!dirty ? "No Unsaved Wording Changes" : actionReason || "Store an Unpublished Draft"} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save Draft</button>
+      <button type="submit" className="button" disabled={busyNow || invalid || conflict} title={actionReason || "Publish Wording Without Changing Activation"} data-testid="button-publish">{save.isPending && confirm === "publish" ? "Publishing…" : "Publish"}</button>
+    </div>
+  </> : <div className="et-drawer-footer"><button type="button" className="button secondary" onClick={() => dialogClose ? dialogClose() : undefined} disabled={cancelDisabled} data-testid="button-cancel">Cancel</button><button type="submit" className="button" disabled={busyNow || invalid || conflict} data-testid="button-publish">{save.isPending && confirm === "publish" ? "Saving…" : "Save Template"}</button></div>;
+  return <section className={`email-templates${notificationPage ? " cm-template-editor" : ""}`} data-testid="email-templates">
     {!fixed && <p className="et-intro muted">Edit the wording each recipient receives per event. Saving here never sends {sms ? "an SMS" : "an email"}.{sms && <> Enabled templates stay off for every recipient until you switch them on; a draft may be incomplete, but publishing an enabled template requires DLT IDs when your provider mapping requires them.</>} <span role="note" className="et-limit-tip" data-testid="text-delivery-limit"><HelpTip text="Booking confirmations use the existing delivery flow. Other events are queued when clinic notifications are enabled and delivered by the production worker. Reminders refer to the session start, not an exact consultation time. Development never sends these queued emails automatically." /></span></p>}
     {!fixed && <div className="et-scope">
       {superAdmin ? <FormField label="Scope" optional helper="Leave empty to edit platform defaults.">
@@ -246,8 +256,13 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
       : catalog.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : catalog.isError ? <div role="alert" className="error-box" data-testid="state-error">Templates could not be loaded. <button type="button" onClick={() => catalog.refetch()} data-testid="button-retry">Retry</button></div>
       : !item || !form ? <div className="et-empty" data-testid="state-empty">This event has no template for the selected scope.</div>
-      : fixed ? <form className="et-drawer" onSubmit={e => { e.preventDefault(); setConfirm("publish"); }}>
-        <TemplateDrawerFields form={form} templateKey={item.event} savedDltTemplateId={item.content.dltTemplateId} sms={sms} errors={errors} variables={variables} scopeName={scopeName} set={set}
+      : fixed ? <form className="et-drawer" onSubmit={e => { e.preventDefault(); if (!busyNow && !invalid && !conflict) setConfirm("publish"); }}>
+        {notificationPage && <div className="cm-wording-details" data-testid="text-wording-source">
+          <p><strong>Wording:</strong> {item.source === "clinic" ? "Saved clinic wording" : item.source === "platform" ? clinicId ? "Inherited system wording" : "Saved system wording" : "Default wording"}{item.draft ? " · Unpublished Draft Loaded" : ""} · Revision {item.revision}</p>
+          <p className="muted">Publishing changes wording only, not activation or delivery readiness. No message is sent.</p>
+          <p className="muted">Reset is {resetUnavailable ? "unavailable: this template already uses default wording and has no saved draft." : "available: remove this scope’s saved wording and draft to use the inherited default."} {!dirty && "Save Draft is unavailable until wording changes."}</p>
+        </div>}
+        <TemplateDrawerFields compact={notificationPage} form={form} templateKey={item.event} savedDltTemplateId={item.content.dltTemplateId} sms={sms} errors={errors} variables={variables} scopeName={scopeName} set={set}
           active={<div className="td-active" data-testid="row-enabled"><ActivationNote on={isOn} required={requiredSecurityEvent(event)} /></div>} />
         {unknown.length > 0 && <p role="alert" className="error-box">Unknown variables: {unknown.join(", ")}. Use only the variables listed above.</p>}
         {conflict && <div role="alert" className="error-box" data-testid="state-conflict">Someone else changed this template. Your edits are kept here.
@@ -257,10 +272,10 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
         <details className="td-adv" data-testid="details-advanced"><summary>Advanced</summary>
           {!sms && identity.user?.role === "clinicAdmin" && clinicId && <BookingMailOutcomes key={`${identity.user.id}:${clinicId}`} actorId={identity.user.id} clinicId={clinicId} />}
           {(sms ? SMS_FIELDS.filter(f => f[0] === "senderId") : FIELDS.filter(f => f[0] !== "subject" && f[0] !== "body")).map(renderField)}
-          <div className="et-actions">
+          {!notificationPage && <div className="et-actions">
             <button type="button" className="button secondary" disabled={save.isPending || invalid || conflict || !dirty} onClick={() => setConfirm("draft")} data-testid="button-save-draft">Save Draft</button>
             <button type="button" className="button secondary danger" disabled={save.isPending || conflict || (item.source === "default" && !item.draft)} onClick={() => setConfirm("reset")} data-testid="button-reset">Reset to Default</button>
-          </div>
+          </div>}
           {isRealSuperAdmin(identity.user) && <EventTemplateTest key={`${channel}|${clinicId}|${event}|${recipient}`} channel={channel} event={event} recipient={recipient} clinicId={clinicId} revision={editBase.current?.revision ?? item.revision} content={templateContentForSave(form, channel, item.title)} />}
         </details>
         {drawerFooter(save.isPending)}
@@ -310,7 +325,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
       </div>}
 
     <AppDialog open={!!confirm} onClose={() => !save.isPending && setConfirm(null)} title={confirm ? MODE_COPY[confirm].title : ""} busy={save.isPending}>
-      {confirm && <div className="et-dialog"><p>{MODE_COPY[confirm].text}</p>
+      {confirm && <div className="et-dialog"><p>{notificationPage && confirm === "publish" ? "Publish this wording for the selected scope. Activation and Optional Delivery are unchanged. Publishing does not enable delivery or send a message." : MODE_COPY[confirm].text}</p>
         <FormActions wide={false} onCancel={() => setConfirm(null)} cancelLabel="Go Back" cancelTestId="button-confirm-cancel" busy={save.isPending} onSubmit={() => run(confirm)} submitClassName={confirm === "reset" ? "danger" : undefined} submitLabel={MODE_COPY[confirm].action} submitTestId="button-confirm-save" /></div>}
     </AppDialog>
     <AppDialog open={!!pendingNav} onClose={() => setPendingNav(null)} title="Discard unsaved changes?">
