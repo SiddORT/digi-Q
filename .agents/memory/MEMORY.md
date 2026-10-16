@@ -35,6 +35,7 @@
 - [Patient profile visibility](patient-profile-visibility.md) — registration grants scoped doctor profile visibility, not clinical records, documents, or create/edit permissions.
 - [Public booking intent](public-booking-intent.md) — QR booking stays patient-facing even for authorized staff; preserve workspace permissions and staff booking rules.
 - [Registration completion recovery](registration-completion-recovery.md) — uncertain clinic creation must reconcile an actor-scoped receipt before a retry; edits must preserve its metadata.
+- [Clinic address entry](clinic-address-entry.md) — optional clinic address means automatic URL selection, not an external website or optional location slug.
 - [Node render tests](node-test-bundling.md) — React server-render bundles need a CommonJS-compatible boundary; ESM data URLs can fail before rendering.
 - [Booking history paging](booking-history-paging.md) — preserve numeric-page compatibility; index clinic growth separately from deep-offset costs.
 - [Preview browser secret boundary](preview-browser-secret-boundary.md) — delegated browsers may lack workspace secrets; verify securely through the actual Preview without exposing credentials.

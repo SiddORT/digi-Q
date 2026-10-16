@@ -25,9 +25,10 @@ import { buildWeek, dayErrors, toOwnerSessions, type DraftDay } from "./schedule
 import { clearRegistrationDraft, readRegistrationDraft, writeRegistrationDraft, setupDraftSchema } from "../lib/registration-draft";
 import type { LocalitySelection } from "../lib/locality-selection";
 import { ActionLabel } from "./ActionLabel";
+import { clinicAddressProblem, clinicAddressConflict, normalizeClinicSlug, resolveClinicAddress } from "../lib/clinic-address";
 
 export const publishedClinicBase = "https://clinic-flow-new-platform.replit.app";
-export const normalizeClinicSlug = (value: string) => value.toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 63);
+export { normalizeClinicSlug } from "../lib/clinic-address";
 export type RegistrationBranch = { name: string; slug: string; address: string; city: string; state?: string; pincode?: string; country?: string; timezone: string; email: string; phone: string; inheritEmail: boolean; inheritPhone: boolean; hours: RegistrationDay[]; localities?: LocalitySelection[] };
 export type RegistrationValues = {
   dateFormat: DateTimePreferences["dateFormat"]; timeFormat: DateTimePreferences["timeFormat"];
@@ -103,7 +104,8 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
   const set = form.setValue;
   const updateBranch = (index: number, patch: Partial<RegistrationBranch>) => set("branches", values.branches.map((b, i) => i === index ? { ...b, ...patch } : b), { shouldDirty: true });
   function validate(target: number) {
-    if (target === 0 && (!values.name.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(values.slug) || values.slug.length < 3 || !values.fullName.trim() || !values.email.trim())) return "Complete the administrator name, email, clinic name and a valid public address (at least 3 characters).";
+    if (target === 0 && (!values.name.trim() || !values.fullName.trim() || !values.email.trim())) return "Complete the administrator name, email and clinic name.";
+    if (target === 0 && values.slug.trim() && clinicAddressProblem(values.slug)) return clinicAddressProblem(values.slug);
     if (target === 1 && values.branches.some(b => !b.name.trim() || !b.address.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(b.slug) || b.slug.length < 3 || !b.timezone.trim())) return "Each location needs a name, address, timezone and valid URL slug (at least 3 characters).";
     if (target === 1 && values.branches.some(b => validatePostalCode(b.pincode, b.country) !== true)) return "Check the PIN code for each location (India: 6 digits).";
     if (target === 1 && new Set(values.branches.map(b => b.slug)).size !== values.branches.length) return "Each location needs a different URL slug.";
@@ -139,9 +141,12 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
     const problem = validate(step);
     if (problem) return setValidation(problem);
     if (step === 0) {
-      if (["doctor", "patient", "receptionist", "audit", "qrs", "exceptions", "health", "healthz", "robots", "sitemap"].includes(values.slug)) return setValidation("This address is reserved for the application. Choose a clinic-specific name.");
       setChecking(true);
-      try { const available = await checkSlug(values.slug); setSlugStatus({ slug: values.slug, available }); if (!available) { setValidation("This clinic address is unavailable. Try adding your city or a distinctive clinic name."); return; } }
+      try {
+        const slug = await resolveClinicAddress(values.name, values.slug, checkSlug);
+        set("slug", slug, { shouldDirty: true });
+        setSlugStatus({ slug, available: true });
+      }
        catch (e) { setValidation(friendlyError(e,"load")); return; }
       finally { setChecking(false); }
     }
@@ -150,10 +155,13 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
   }
   async function finish() {
     if (advancing.current) return;
+    if (!values.slug.trim()) { setValidation("Continue from Clinic identity to generate and check your public address."); setStep(0); return; }
     for (let i = 0; i < steps.length - 1; i++) { const problem = validate(i); if (problem) { setValidation(problem); setStep(i); return; } }
     setValidation("");
     advancing.current = true; setSubmitting(true);
-     try { await onSubmit({...values,mobile:normalizePhone(values.mobile),phone:normalizePhone(values.phone),branches:values.branches.map(branch=>({...branch,phone:normalizePhone(branch.phone)}))}, requestId); if (draftKey) clearRegistrationDraft(draftKey); } catch (e) { setValidation(friendlyError(e,"save")); }
+     try { await onSubmit({...values,mobile:normalizePhone(values.mobile),phone:normalizePhone(values.phone),branches:values.branches.map(branch=>({...branch,phone:normalizePhone(branch.phone)}))}, requestId); if (draftKey) clearRegistrationDraft(draftKey); } catch (e) {
+       setValidation(clinicAddressConflict(e) ? "A public clinic or location address was taken before creation. Use Edit beside Clinic identity or Locations to change it. For an automatic clinic address, clear Public clinic address and Continue. Review again before finishing; nothing will be retried automatically." : friendlyError(e,"save"));
+     }
      finally { advancing.current = false; setSubmitting(false); }
   }
    const field = (key: "fullName" | "email" | "mobile" | "name" | "referralCode" | "clinicEmail" | "phone", label: string, required = false, type = "text") => type==="tel"?<Controller name={key} control={form.control} rules={{validate:value=>(required?requireValue()(value):undefined)||validatePhone(value)||true}} render={({field:input})=><FormField label={label} required={required} optional={!required} error={form.formState.errors[key]?.message}><PhoneInput {...input} value={input.value||""}/></FormField>}/>:<FormField label={label} required={required} optional={!required&&!label.includes("(optional)")} error={form.formState.errors[key]?.message}><input {...form.register(key,{validate:value=>(required?requireValue()(value):undefined)||(key==="fullName"?validatePersonName(value):undefined)||(type==="email"?validateEmail(value):undefined)||true})} type={type} data-testid={`registration-${key}`} readOnly={!adminMode && key === "email"}/></FormField>;
@@ -170,7 +178,7 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
       {field("clinicEmail","Clinic Group email",false,"email")}{field("phone","Clinic Group phone",false,"tel")}
       <Controller name="specialityIds" control={form.control} render={({field:input})=><SearchableMultiSelect label="Specialities (optional)" value={input.value} onChange={input.onChange} options={specialities.map(o=>({value:o.id,label:o.name}))}/>}/>
       {field("referralCode","Reference / referral code (optional)")}
-       <FormField className="wide" label="Public clinic address" required helper={<button type="button" className="text-link" data-testid="registration-suggest-slug" onClick={()=>{set("slug",normalizeClinicSlug(values.name),{shouldDirty:true});setSlugStatus(null);}}>Suggest From Clinic Name</button>} error={validation&&!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(values.slug)?"Use lowercase letters, numbers and hyphens between words.":undefined}><input value={values.slug} onChange={e=>{set("slug",e.target.value.toLowerCase(),{shouldDirty:true});setSlugStatus(null);}} required minLength={3} maxLength={63} data-testid="registration-slug"/></FormField>
+        <FormField className="wide" label="Public clinic address" optional helper={<>Leave blank to generate an available address from the clinic name when you Continue. You can review it before creating the clinic. <button type="button" className="text-link" data-testid="registration-suggest-slug" onClick={()=>{set("slug",normalizeClinicSlug(values.name),{shouldDirty:true});setSlugStatus(null);}}>Suggest From Clinic Name</button></>} error={validation&&values.slug.trim()?clinicAddressProblem(values.slug)||undefined:undefined}><input value={values.slug} onChange={e=>{set("slug",e.target.value.toLowerCase(),{shouldDirty:true});setSlugStatus(null);}} minLength={3} maxLength={63} data-testid="registration-slug"/></FormField>
       <div className="registration-url wide"><strong>Published base address · read only</strong><br/>{publishedClinicBase}/<strong>{values.slug||"your-clinic"}</strong>{slugStatus?.slug===values.slug&&<p role="status">{slugStatus.available?"This address is currently available.":"This address is unavailable."}</p>}</div><p className="registration-note wide">Use lowercase letters, numbers and hyphens. Reserved application paths cannot be used. This address becomes permanent after registration; changing the clinic name will not change existing patient links.</p>
     </div></FormSection></div>}
     {step === 1 && <><div className="notice">Clinic Group: <strong>{values.name}</strong>. Now name each physical clinic location, not the group again. A single-location clinic may use the same name. Each location has its own address and timezone. Email and phone inheritance are independent.</div>{values.branches.map((branch,index)=><details className="registration-branch" key={index} open><summary>{branch.name||`Clinic location ${index+1}`}</summary><div className="registration-fields">

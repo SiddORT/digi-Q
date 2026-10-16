@@ -5,6 +5,14 @@ import { createRequire } from "node:module";
 import { createFeatureHarness } from "./test-support/feature-harness.mjs";
 import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
 
+const { build } = createRequire(import.meta.url)("esbuild");
+const addressBundle = await build({ entryPoints: [new URL("../../clinicflow/src/lib/clinic-address.ts", import.meta.url).pathname], bundle: true, platform: "node", format: "esm", write: false });
+const { resolveClinicAddress } = await import(`data:text/javascript;base64,${Buffer.from(addressBundle.outputFiles[0].text).toString("base64")}`);
+const available = async slug => {
+  const response = await h.call(null, "GET", `/public/slug-availability?slug=${encodeURIComponent(slug)}`);
+  assert.equal(response.status, 200, JSON.stringify(response.data));
+  return response.data.available;
+};
 let h;
 before(async () => {
   Object.assign(process.env, { CLINICFLOW_PUBLIC_ORIGIN: "https://fictional.test.invalid",
@@ -62,11 +70,16 @@ test("self-registration requires verified ownership and a password; success can 
   const hash = await argon2.hash("FictionalPass123", { type: argon2.argon2id });
   await h.pg.query("insert into users(id,email,full_name,role,status,email_verified_at,password_hash) values ('self-fixture','self@test.invalid','Fictional Owner','clinicAdmin','active',now(),$1)", [hash]);
   const { admin, ...input } = body("self-owner", crypto.randomUUID());
+  input.clinic.slug = await resolveClinicAddress(input.clinic.name, "", available);
   input.fullName = "Fictional Owner"; input.password = "FictionalPass123";
   const wrong = await h.call("self-fixture", "POST", "/clinic-registration", { ...input, password: "WrongPass123" });
   assert.equal(wrong.status, 401);
   const result = await h.call("self-fixture", "POST", "/clinic-registration", input);
   assert.equal(result.status, 201, JSON.stringify(result.data));
+  assert.equal(result.data.clinic.slug, input.clinic.slug);
+  const patientPage = await h.call(null, "GET", `/public/clinics-by-slug/${result.data.clinic.slug}/${result.data.branches[0].slug}`);
+  assert.equal(patientPage.status, 200, JSON.stringify(patientPage.data));
+  assert.equal(patientPage.data.clinic.id, result.data.clinic.id);
   const retry = await h.call("self-fixture", "POST", "/clinic-registration", input);
   assert.equal(retry.status, 201);
   assert.equal(retry.data.clinic.id, result.data.clinic.id);
@@ -75,6 +88,38 @@ test("self-registration requires verified ownership and a password; success can 
   const changed = await h.call("self-fixture", "POST", "/clinic-registration", {...input, clinic: {...input.clinic, name:"Changed"}});
   assert.equal(changed.status, 409);
   assert.equal((await h.pg.query("select count(*)::int n from clinics where admin_id='self-fixture'")).rows[0].n, 1);
+});
+test("admin generated collision alternative is saved, resolves for patients and cannot change an existing URL", async () => {
+  const input = body("generated-address", crypto.randomUUID());
+  input.clinic.name = "Fictional parallel owner";
+  input.clinic.slug = await resolveClinicAddress(input.clinic.name, "", available);
+  assert.equal(input.clinic.slug, "fictional-parallel-owner-2");
+  const result = await h.call("sa", "POST", "/clinic-admin-onboarding", input);
+  assert.equal(result.status, 201, JSON.stringify(result.data));
+  assert.equal(result.data.clinic.slug, input.clinic.slug);
+  const completion = await h.call("sa", "GET", `/clinic-admin-onboarding/completion?requestId=${input.requestId}`);
+  assert.equal(completion.data.result.clinic.slug, input.clinic.slug);
+  const patientPage = await h.call(null, "GET", `/public/clinics-by-slug/${input.clinic.slug}/${result.data.branches[0].slug}`);
+  assert.equal(patientPage.status, 200, JSON.stringify(patientPage.data));
+  assert.equal(patientPage.data.clinic.id, result.data.clinic.id);
+  const change = await h.call("sa", "PATCH", `/clinics/${result.data.clinic.id}/settings`, { clinic: { slug: "changed-generated-address" } });
+  assert.equal(change.status, 409);
+  assert.match(change.data.error, /locked after creation/);
+  const unchanged = await h.call("sa", "GET", `/clinics/${result.data.clinic.id}/settings`);
+  assert.equal(unchanged.data.clinic.slug, input.clinic.slug);
+});
+
+test("creation still rejects invalid, reserved and newly taken custom clinic addresses", async () => {
+  const input = body("rejected-address", crypto.randomUUID());
+  for (const slug of ["xy", "admin", "bad slug", "fictional-parallel-owner"]) {
+    const response = await h.call("sa", "POST", "/clinic-admin-onboarding", { ...input, clinic: { ...input.clinic, slug } });
+    assert.ok([400, 409].includes(response.status), JSON.stringify(response.data));
+    const receipt = await h.call("sa", "GET", `/clinic-admin-onboarding/completion?requestId=${input.requestId}`);
+    assert.equal(receipt.data.result, null);
+  }
+  // A definite failed create may be corrected explicitly with the same request identity.
+  const corrected = await h.call("sa", "POST", "/clinic-admin-onboarding", input);
+  assert.equal(corrected.status, 201, JSON.stringify(corrected.data));
 });
 test("custom consulting-owner sessions are saved atomically and a retry cannot duplicate them", async () => {
   const input = body("custom-owner", crypto.randomUUID());
