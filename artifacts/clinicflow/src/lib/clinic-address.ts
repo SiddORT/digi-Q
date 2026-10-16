@@ -9,8 +9,8 @@ export const normalizeClinicSlug = (value: string) => value.toLowerCase().normal
 
 export function clinicAddressProblem(slug: string): string {
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length < 3 || slug.length > 63)
-    return "Use a public address of 3–63 lowercase letters, numbers and hyphens between words.";
-  if (reserved.has(slug)) return "This address is reserved for the application. Choose a clinic-specific name.";
+    return "Clinic URL name must use 3–63 lowercase letters, numbers and hyphens between words.";
+  if (reserved.has(slug)) return "This Clinic URL name is reserved for the application. Choose a clinic-specific name.";
   return "";
 }
 
@@ -19,7 +19,7 @@ export async function resolveClinicAddress(name: string, input: string, check: (
   if (input.trim()) {
     const problem = clinicAddressProblem(input);
     if (problem) throw new Error(problem);
-    if (!await check(input)) throw new Error("This clinic address is unavailable. Try adding your city or a distinctive clinic name.");
+    if (!await check(input)) throw new Error("This Clinic URL name is unavailable. Try adding your city or a distinctive clinic name.");
     return input;
   }
   const normalized = normalizeClinicSlug(name);
@@ -29,7 +29,40 @@ export async function resolveClinicAddress(name: string, input: string, check: (
     const candidate = `${base.slice(0, 63 - suffix.length).replace(/-+$/g, "")}${suffix}`;
     if (!clinicAddressProblem(candidate) && await check(candidate)) return candidate;
   }
-  throw new Error("Could not find an available clinic address. Try again or enter a distinctive public clinic address.");
+  throw new Error("Could not find an available Clinic URL name. Try again or enter a distinctive Clinic URL name.");
+}
+
+export function locationAddressProblem(slug: string): string {
+  return clinicAddressProblem(slug).replace(/Clinic URL name/g, "Location URL name").replace("clinic-specific", "location-specific");
+}
+
+/** Reserve every explicit (including previously generated) value before resolving blanks.
+ * New locations have no saved namespace yet; the creation transaction remains authoritative.
+ */
+export function resolveLocationAddresses<T extends { name: string; slug: string }>(locations: T[]): T[] {
+  const taken = new Set<string>();
+  for (const location of locations) {
+    if (!location.slug.trim()) continue;
+    const problem = locationAddressProblem(location.slug);
+    if (problem) throw new Error(problem);
+    if (taken.has(location.slug)) throw new Error("Each location needs a different Location URL name.");
+    taken.add(location.slug);
+  }
+  return locations.map(location => {
+    if (location.slug.trim()) return location;
+    const normalized = normalizeClinicSlug(location.name);
+    const base = normalized.length < 3 ? (normalized ? `location-${normalized}` : "location") : normalized;
+    // At most locations.length names are occupied, plus one reserved base.
+    for (let attempt = 0; attempt < locations.length + 2; attempt++) {
+      const suffix = attempt ? `-${attempt + 1}` : "";
+      const slug = `${base.slice(0, 63 - suffix.length).replace(/-+$/g, "")}${suffix}`;
+      if (!taken.has(slug) && !locationAddressProblem(slug)) {
+        taken.add(slug);
+        return { ...location, slug };
+      }
+    }
+    throw new Error("Could not generate a Location URL name. Enter a distinctive name and Continue.");
+  });
 }
 
 /** Only a definite URL rejection gets edit guidance; uncertain creates retain their receipt path. */

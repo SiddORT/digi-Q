@@ -7,7 +7,7 @@ import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
 
 const { build } = createRequire(import.meta.url)("esbuild");
 const addressBundle = await build({ entryPoints: [new URL("../../clinicflow/src/lib/clinic-address.ts", import.meta.url).pathname], bundle: true, platform: "node", format: "esm", write: false });
-const { resolveClinicAddress } = await import(`data:text/javascript;base64,${Buffer.from(addressBundle.outputFiles[0].text).toString("base64")}`);
+const { resolveClinicAddress, resolveLocationAddresses } = await import(`data:text/javascript;base64,${Buffer.from(addressBundle.outputFiles[0].text).toString("base64")}`);
 const available = async slug => {
   const response = await h.call(null, "GET", `/public/slug-availability?slug=${encodeURIComponent(slug)}`);
   assert.equal(response.status, 200, JSON.stringify(response.data));
@@ -71,12 +71,17 @@ test("self-registration requires verified ownership and a password; success can 
   await h.pg.query("insert into users(id,email,full_name,role,status,email_verified_at,password_hash) values ('self-fixture','self@test.invalid','Fictional Owner','clinicAdmin','active',now(),$1)", [hash]);
   const { admin, ...input } = body("self-owner", crypto.randomUUID());
   input.clinic.slug = await resolveClinicAddress(input.clinic.name, "", available);
+  // Display names remain subject to the existing name-uniqueness policy.
+  // Distinct accented names exercise URL normalization collisions without changing that policy.
+  input.branches = resolveLocationAddresses(["Fictional Location", "Fictional Lócation"].map(name => ({...input.branches[0], name, slug: ""})));
+  input.ownDoctor = false; delete input.ownerSchedule;
   input.fullName = "Fictional Owner"; input.password = "FictionalPass123";
   const wrong = await h.call("self-fixture", "POST", "/clinic-registration", { ...input, password: "WrongPass123" });
   assert.equal(wrong.status, 401);
   const result = await h.call("self-fixture", "POST", "/clinic-registration", input);
   assert.equal(result.status, 201, JSON.stringify(result.data));
   assert.equal(result.data.clinic.slug, input.clinic.slug);
+  assert.deepEqual(result.data.branches.map(b => b.slug).sort(), input.branches.map(b => b.slug).sort());
   const patientPage = await h.call(null, "GET", `/public/clinics-by-slug/${result.data.clinic.slug}/${result.data.branches[0].slug}`);
   assert.equal(patientPage.status, 200, JSON.stringify(patientPage.data));
   assert.equal(patientPage.data.clinic.id, result.data.clinic.id);
@@ -94,6 +99,8 @@ test("admin generated collision alternative is saved, resolves for patients and 
   input.clinic.name = "Fictional parallel owner";
   input.clinic.slug = await resolveClinicAddress(input.clinic.name, "", available);
   assert.equal(input.clinic.slug, "fictional-parallel-owner-2");
+  input.branches = resolveLocationAddresses(["医院", "診所", "A", "admin", "x".repeat(100), "Fictional Location"].map(name => ({ ...input.branches[0], name, slug: "" })));
+  input.ownDoctor = false; delete input.ownerSchedule;
   const result = await h.call("sa", "POST", "/clinic-admin-onboarding", input);
   assert.equal(result.status, 201, JSON.stringify(result.data));
   assert.equal(result.data.clinic.slug, input.clinic.slug);
@@ -107,6 +114,26 @@ test("admin generated collision alternative is saved, resolves for patients and 
   assert.match(change.data.error, /locked after creation/);
   const unchanged = await h.call("sa", "GET", `/clinics/${result.data.clinic.id}/settings`);
   assert.equal(unchanged.data.clinic.slug, input.clinic.slug);
+  const beforeQrs = (await h.pg.query("select public_reference,data->>'bookingUrl' url from qrs where clinic_id=$1 order by id", [result.data.clinic.id])).rows;
+  assert.equal(beforeQrs.length, input.branches.length);
+  const renamed = await h.call("sa", "PATCH", `/clinics/${result.data.clinic.id}/settings`, {
+    clinic: { name: "Renamed Group" }, branches: result.data.branches.map((b, i) => ({ id: b.id, name: "Renamed Location " + i, address: b.address })),
+  });
+  assert.equal(renamed.status, 200, JSON.stringify(renamed.data));
+  assert.deepEqual((await h.pg.query("select public_reference,data->>'bookingUrl' url from qrs where clinic_id=$1 order by id", [result.data.clinic.id])).rows, beforeQrs);
+  for (const branch of result.data.branches) {
+    const page = await h.call(null, "GET", `/public/clinics-by-slug/${input.clinic.slug}/${branch.slug}`);
+    assert.equal(page.status, 200, JSON.stringify(page.data));
+    assert.equal(page.data.branch.id, branch.id);
+    assert.match(page.data.branch.name, /^Renamed Location \d$/);
+    assert.equal(page.data.clinic.name, "Renamed Group");
+    const locked = await h.call("sa", "PATCH", `/clinics/${result.data.clinic.id}/settings`, { branches: [{ id: branch.id, name: branch.name, address: branch.address, slug: "new-location-url" }] });
+    assert.equal(locked.status, 409);
+  }
+  const replay = await h.call("sa", "POST", "/clinic-admin-onboarding", input);
+  assert.equal(replay.status, 201, JSON.stringify(replay.data));
+  assert.equal(replay.data.clinic.id, result.data.clinic.id);
+  assert.deepEqual(replay.data.branches.map(b => b.slug).sort(), input.branches.map(b => b.slug).sort());
 });
 
 test("creation still rejects invalid, reserved and newly taken custom clinic addresses", async () => {
@@ -132,4 +159,23 @@ test("custom consulting-owner sessions are saved atomically and a retry cannot d
   const saved = (await h.pg.query("select data from schedules where clinic_id=$1", [response.data.clinic.id])).rows;
   assert.equal(saved.length, 1);
   assert.equal(saved[0].data.startTime, "09:00");
+});
+
+test("location conflicts roll back creation, preserve request identity and require explicitly corrected values", async () => {
+  const input = body("location-conflict", crypto.randomUUID());
+  input.ownDoctor = false; delete input.ownerSchedule;
+  for (const slug of ["ab", "admin", "bad slug", "x".repeat(64), input.branches[0].slug]) {
+    const response = await h.call("sa", "POST", "/clinic-admin-onboarding", { ...input, branches: [...input.branches, { ...input.branches[0], name: "Other Location", slug }] });
+    assert.ok([400, 409].includes(response.status), JSON.stringify(response.data));
+    const receipt = await h.call("sa", "GET", `/clinic-admin-onboarding/completion?requestId=${input.requestId}`);
+    assert.equal(receipt.data.result, null);
+    assert.equal((await h.pg.query("select id from users where email=$1", [input.admin.email])).rows.length, 0);
+  }
+  input.branches = resolveLocationAddresses([input.branches[0], { ...input.branches[0], name: "Other Location", slug: "" }]);
+  const saved = await h.call("sa", "POST", "/clinic-admin-onboarding", input);
+  assert.equal(saved.status, 201, JSON.stringify(saved.data));
+  const replay = await h.call("sa", "POST", "/clinic-admin-onboarding", input);
+  assert.equal(replay.data.clinic.id, saved.data.clinic.id);
+  const changed = await h.call("sa", "POST", "/clinic-admin-onboarding", { ...input, branches: input.branches.map(b => ({...b, slug: `${b.slug}-other`})) });
+  assert.equal(changed.status, 409);
 });

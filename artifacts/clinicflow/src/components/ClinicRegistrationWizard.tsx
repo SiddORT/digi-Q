@@ -25,7 +25,7 @@ import { buildWeek, dayErrors, toOwnerSessions, type DraftDay } from "./schedule
 import { clearRegistrationDraft, readRegistrationDraft, writeRegistrationDraft, setupDraftSchema } from "../lib/registration-draft";
 import type { LocalitySelection } from "../lib/locality-selection";
 import { ActionLabel } from "./ActionLabel";
-import { clinicAddressProblem, clinicAddressConflict, normalizeClinicSlug, resolveClinicAddress } from "../lib/clinic-address";
+import { clinicAddressProblem, clinicAddressConflict, locationAddressProblem, resolveClinicAddress, resolveLocationAddresses } from "../lib/clinic-address";
 
 export const publishedClinicBase = "https://clinic-flow-new-platform.replit.app";
 export { normalizeClinicSlug } from "../lib/clinic-address";
@@ -69,7 +69,7 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
   const [slugStatus, setSlugStatus] = useState<{ slug: string; available: boolean } | null>(null);
   const [checking, setChecking] = useState(false);
   const defaults: RegistrationValues = { dateFormat: "DD MMM YYYY", timeFormat: "12h", fullName: "", email: "", mobile: "", name: "", slug: "", categoryId: "", specialityIds: [], referralCode: "", clinicEmail: "", phone: "", branches: [newBranch()], alsoConsult: false, specializationId: "", qualificationIds: [], linkConsultationHours: true, sessionCapacity: "", consultationMinutes: "", ...initial };
-  const form = useForm<RegistrationValues>({ defaultValues: { ...defaults, ...restored.data?.values, ...(!adminMode ? initial : {}) } });
+  const form = useForm<RegistrationValues>({ defaultValues: { ...defaults, ...restored.data?.values, ...(!adminMode && initial?.email ? { email: initial.email } : {}) } });
   useEffect(() => {
     if (!draftKey) return;
     const save = () => {
@@ -103,12 +103,19 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
   const values = form.watch();
   const set = form.setValue;
   const updateBranch = (index: number, patch: Partial<RegistrationBranch>) => set("branches", values.branches.map((b, i) => i === index ? { ...b, ...patch } : b), { shouldDirty: true });
-  function validate(target: number) {
+  function validate(target: number, requireResolved = false) {
     if (target === 0 && (!values.name.trim() || !values.fullName.trim() || !values.email.trim())) return "Complete the administrator name, email and clinic name.";
     if (target === 0 && values.slug.trim() && clinicAddressProblem(values.slug)) return clinicAddressProblem(values.slug);
-    if (target === 1 && values.branches.some(b => !b.name.trim() || !b.address.trim() || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(b.slug) || b.slug.length < 3 || !b.timezone.trim())) return "Each location needs a name, address, timezone and valid URL slug (at least 3 characters).";
+    if (target === 1 && values.branches.some(b => !b.name.trim() || !b.address.trim() || !b.timezone.trim())) return "Each location needs a name, address and timezone.";
+    if (target === 1) for (const branch of values.branches) {
+      if (requireResolved && !branch.slug.trim()) return "Continue from Locations to generate each Location URL name, then review the links.";
+      if (branch.slug.trim() && locationAddressProblem(branch.slug)) return locationAddressProblem(branch.slug);
+    }
     if (target === 1 && values.branches.some(b => validatePostalCode(b.pincode, b.country) !== true)) return "Check the PIN code for each location (India: 6 digits).";
-    if (target === 1 && new Set(values.branches.map(b => b.slug)).size !== values.branches.length) return "Each location needs a different URL slug.";
+    if (target === 1) {
+      const chosen = values.branches.filter(b => b.slug.trim()).map(b => b.slug);
+      if (new Set(chosen).size !== chosen.length) return "Each location needs a different Location URL name.";
+    }
     if (target === 0) {
       const problem = validatePersonName(values.fullName) || validateEmail(values.email) || validatePhone(values.mobile) || validateEmail(values.clinicEmail) || validatePhone(values.phone);
       if (problem) return problem;
@@ -150,17 +157,24 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
        catch (e) { setValidation(friendlyError(e,"load")); return; }
       finally { setChecking(false); }
     }
+    if (step === 1) {
+      try { set("branches", resolveLocationAddresses(values.branches), { shouldDirty: true }); }
+      catch (e) { setValidation(friendlyError(e)); return; }
+    }
     setStep(s => s + 1);
     } finally { advancing.current = false; }
   }
   async function finish() {
     if (advancing.current) return;
-    if (!values.slug.trim()) { setValidation("Continue from Clinic identity to generate and check your public address."); setStep(0); return; }
-    for (let i = 0; i < steps.length - 1; i++) { const problem = validate(i); if (problem) { setValidation(problem); setStep(i); return; } }
+    if (!values.slug.trim()) { setValidation("Continue from Clinic identity to generate and check your Clinic URL name."); setStep(0); return; }
+    for (let i = 0; i < steps.length - 1; i++) { const problem = validate(i, true); if (problem) { setValidation(problem); setStep(i); return; } }
     setValidation("");
     advancing.current = true; setSubmitting(true);
      try { await onSubmit({...values,mobile:normalizePhone(values.mobile),phone:normalizePhone(values.phone),branches:values.branches.map(branch=>({...branch,phone:normalizePhone(branch.phone)}))}, requestId); if (draftKey) clearRegistrationDraft(draftKey); } catch (e) {
-       setValidation(clinicAddressConflict(e) ? "A public clinic or location address was taken before creation. Use Edit beside Clinic identity or Locations to change it. For an automatic clinic address, clear Public clinic address and Continue. Review again before finishing; nothing will be retried automatically." : friendlyError(e,"save"));
+       if (clinicAddressConflict(e)) {
+         setStep(0);
+         setValidation("A Clinic URL name or Location URL name was taken before creation. Check Clinic identity and Locations; change the URL name or clear it and Continue to generate another. Review all links before finishing. Nothing is retried automatically.");
+       } else setValidation(friendlyError(e,"save"));
      }
      finally { advancing.current = false; setSubmitting(false); }
   }
@@ -178,11 +192,13 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
       {field("clinicEmail","Clinic Group email",false,"email")}{field("phone","Clinic Group phone",false,"tel")}
       <Controller name="specialityIds" control={form.control} render={({field:input})=><SearchableMultiSelect label="Specialities (optional)" value={input.value} onChange={input.onChange} options={specialities.map(o=>({value:o.id,label:o.name}))}/>}/>
       {field("referralCode","Reference / referral code (optional)")}
-        <FormField className="wide" label="Public clinic address" optional helper={<>Leave blank to generate an available address from the clinic name when you Continue. You can review it before creating the clinic. <button type="button" className="text-link" data-testid="registration-suggest-slug" onClick={()=>{set("slug",normalizeClinicSlug(values.name),{shouldDirty:true});setSlugStatus(null);}}>Suggest From Clinic Name</button></>} error={validation&&values.slug.trim()?clinicAddressProblem(values.slug)||undefined:undefined}><input value={values.slug} onChange={e=>{set("slug",e.target.value.toLowerCase(),{shouldDirty:true});setSlugStatus(null);}} minLength={3} maxLength={63} data-testid="registration-slug"/></FormField>
-      <div className="registration-url wide"><strong>Published base address · read only</strong><br/>{publishedClinicBase}/<strong>{values.slug||"your-clinic"}</strong>{slugStatus?.slug===values.slug&&<p role="status">{slugStatus.available?"This address is currently available.":"This address is unavailable."}</p>}</div><p className="registration-note wide">Use lowercase letters, numbers and hyphens. Reserved application paths cannot be used. This address becomes permanent after registration; changing the clinic name will not change existing patient links.</p>
+         <FormField className="wide" label="Clinic URL name" optional helper="Leave blank to generate an available Clinic URL name from the Clinic Group name when you Continue. Review the final link before creating the clinic." error={validation&&values.slug.trim()?clinicAddressProblem(values.slug)||undefined:undefined}><input value={values.slug} onChange={e=>{set("slug",e.target.value.toLowerCase(),{shouldDirty:true});setSlugStatus(null);}} maxLength={63} data-testid="registration-slug"/></FormField>
+       <div className="registration-url wide"><strong>Clinic link · published base is read only</strong><br/>{publishedClinicBase}/<strong>{values.slug||"your-clinic"}</strong>{slugStatus?.slug===values.slug&&<p role="status">{slugStatus.available?"This Clinic URL name is currently available.":"This Clinic URL name is unavailable."}</p>}</div><p className="registration-note wide">Use lowercase letters, numbers and hyphens. Reserved application paths cannot be used. This URL name becomes permanent after registration; changing the clinic name will not change existing patient links.</p>
     </div></FormSection></div>}
     {step === 1 && <><div className="notice">Clinic Group: <strong>{values.name}</strong>. Now name each physical clinic location, not the group again. A single-location clinic may use the same name. Each location has its own address and timezone. Email and phone inheritance are independent.</div>{values.branches.map((branch,index)=><details className="registration-branch" key={index} open><summary>{branch.name||`Clinic location ${index+1}`}</summary><div className="registration-fields">
-             {(["name","slug"] as const).map(key=><FormField key={key} label={{name:"Clinic location name",slug:"Clinic URL slug"}[key]} required helper={key === "slug" ? <button type="button" className="text-link" onClick={()=>updateBranch(index,{slug:normalizeClinicSlug(branch.name)})}>Suggest URL From Clinic Name</button> : undefined} error={validation&&!branch[key].trim()?"This field is required":undefined}><input value={branch[key]} required data-testid={`registration-branch-${index}-${key}`} onChange={e=>updateBranch(index,{[key]:key==="slug"?e.target.value.toLowerCase():e.target.value})}/></FormField>)}
+       <FormField label="Clinic location name" required error={validation&&!branch.name.trim()?"This field is required":undefined}><input value={branch.name} required data-testid={`registration-branch-${index}-name`} onChange={e=>updateBranch(index,{name:e.target.value})}/></FormField>
+       <FormField label="Location URL name" optional helper="Leave blank to generate a distinct Location URL name from this location's name when you Continue. Changing a display name does not replace a resolved URL name." error={validation&&branch.slug.trim()?locationAddressProblem(branch.slug)||undefined:undefined}><input value={branch.slug} maxLength={63} data-testid={`registration-branch-${index}-slug`} onChange={e=>updateBranch(index,{slug:e.target.value.toLowerCase()})}/></FormField>
+       <p className="registration-url wide">Location link: {publishedClinicBase}/{values.slug||"your-clinic"}/{branch.slug||"your-location"}</p>
       {index === 0 && <button type="button" className="text-link" onClick={()=>updateBranch(index,{name:values.name})}>Use Clinic Group Name for This Location</button>}
       <AddressFields directory="public" idPrefix={`registration-branch-${index}-`} required testId={`registration-branch-${index}-address`} value={branch} onChange={patch=>updateBranch(index,patch)} errors={validation&&!branch.address.trim()?{address:"This field is required"}:{}}/>
       <TimezoneSelect value={branch.timezone} onChange={timezone=>updateBranch(index,{timezone})}/>
@@ -196,7 +212,10 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
     {step === 3 && values.alsoConsult && <section className="notice"><label className="check-label"><input type="checkbox" {...form.register("linkConsultationHours")} data-testid="registration-link-hours"/>Use clinic hours for my consultations</label><p>{values.linkConsultationHours ? "One timetable: finishing registration creates linked doctor sessions together with the clinic. Later opening-hour changes require a safe impact review." : "Custom consultation hours: enter your weekly sessions below. Finishing registration saves them once, together with the clinic and your doctor profile."}</p><div className="form-grid"><label>Patients per session<input type="number" min="1" step="1" required {...form.register("sessionCapacity")} data-testid="registration-session-capacity"/></label><Controller name="consultationMinutes" control={form.control} render={({field:input})=><SearchableSelect label="Expected Consultation Duration" required value={input.value} onChange={input.onChange} options={[...new Set(["20","30","60", ...(input.value ? [input.value] : [])])].map(value=>({value,label:`${value} minutes`}))} placeholder="Select duration…"/>}/><p>Applies to every open interval at the chosen locations. Queue policy: patient appointments and walk-ins. Review capacity before finishing.</p></div>{!values.linkConsultationHours && <OwnerWeeklySessions branches={values.branches} weeks={values.branches.map((_, i) => values.ownerWeeks?.[i] || buildWeek([]))} onChange={weeks => set("ownerWeeks", weeks, { shouldDirty: true })} preferences={{ dateFormat: values.dateFormat, timeFormat: values.timeFormat }}/>}</section>}
     {step === 4 && <section className="registration-review"><div className="notice"><Building2 size={22}/><h3>Your clinic comes first. Your team can follow.</h3><p>One clinic and one location are enough. Team invitations are optional. After registration, use Staff management to invite doctors and receptionists, choose their locations and track delivery. No second administrator or doctor account is required to consult yourself.</p><p>No invitations are sent from this step.</p></div></section>}
     {step === 5 && <div className="notice" role="status"><strong>{values.alsoConsult && values.linkConsultationHours ? "Linked consultation sessions included." : values.alsoConsult ? `Custom consultation sessions included: ${toOwnerSessions(values.branches.map((_, i) => values.ownerWeeks?.[i] || buildWeek([]))).length}.` : "Doctor sessions still need configuration."}</strong><p>{values.alsoConsult && !values.linkConsultationHours ? `Finish saves your clinic, doctor profile and these weekly sessions together: ${values.sessionCapacity} patients per session, ${values.consultationMinutes} minutes per consultation.` : values.alsoConsult && values.linkConsultationHours ? `Finish saves your clinic and doctor sessions together: ${values.sessionCapacity} patients per session, ${values.consultationMinutes} minutes per consultation. Doctor sessions use each location's opening hours. Availability remains subject to date, capacity and booking policies.` : "Finish creates the clinic and opening hours. Set custom doctor sessions in Clinic settings before sharing the booking QR."}</p>Review every chosen open day and time below.</div>}
-    {step === 5 && <div className="registration-review"><section><h3>{values.name}</h3><p>{values.clinicEmail || "No clinic email"} · {values.phone || "No clinic phone"}</p><p className="registration-url">{publishedClinicBase}/{values.slug}</p><p>Administrator: {values.fullName} · {values.email}</p></section>{values.branches.map((b, i) => <section key={i}><h3>{b.name}</h3><p>{b.address}{b.city ? `, ${b.city}` : ""}</p><p>{b.inheritEmail ? values.clinicEmail || "No clinic email" : b.email || "No location email"} · {b.inheritPhone ? values.phone || "No clinic phone" : b.phone || "No location phone"}</p><p>{b.hours.filter(d => d.isOpen).length} open days per week · {b.timezone}</p><small>/{values.slug}/{b.slug}</small></section>)}<section><h3>One owner, one account</h3><p>{values.alsoConsult ? "Clinic Admin and doctor in the same account, with a doctor profile at your clinic's locations." : "Clinic Admin account. No doctor profile requested."} Staff can be invited after setup; no extra user is required.</p></section><p className="registration-note">Finish saves the clinic setup together. The server rechecks ownership, URL availability and all details. Your public clinic and location addresses cannot be changed later.</p></div>}
+    {step === 5 && <div className="registration-review">
+      <section><h3>{values.name}</h3><p>{values.clinicEmail || "No clinic email"} · {values.phone || "No clinic phone"}</p><p className="registration-url">Clinic link: {publishedClinicBase}/{values.slug}</p><p>Administrator: {values.fullName} · {values.email}</p></section>
+      {values.branches.map((b, i) => <section key={i}><h3>{b.name}</h3><p>{b.address}{b.city ? `, ${b.city}` : ""}</p><p>{b.inheritEmail ? values.clinicEmail || "No clinic email" : b.email || "No location email"} · {b.inheritPhone ? values.phone || "No clinic phone" : b.phone || "No location phone"}</p><p>{b.hours.filter(d => d.isOpen).length} open days per week · {b.timezone}</p><p className="registration-url">Location link: {publishedClinicBase}/{values.slug}/{b.slug}</p></section>)}
+      <section><h3>One owner, one account</h3><p>{values.alsoConsult ? "Clinic Admin and doctor in the same account, with a doctor profile at your clinic's locations." : "Clinic Admin account. No doctor profile requested."} Staff can be invited after setup; no extra user is required.</p></section><p className="registration-note">Finish saves the clinic setup together. The server rechecks ownership, URL availability and all details. Your Clinic URL name and each Location URL name cannot be changed later.</p></div>}
     {step === 5 && <section aria-label="Weekly timetable review">{values.branches.map((branch,i)=><details key={i} open><summary>{branch.name} · weekly timetable</summary><ul>{branch.hours.map(day=><li key={day.dayOfWeek}>{["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][day.dayOfWeek]}: {day.isOpen?day.sessions.map(session=>`${formatTime(session.startTime,values)}–${formatTime(session.endTime,values)}`).join(", "):"Closed"}</li>)}</ul></details>)}</section>}
     {step === 5 && finishSecurity}</fieldset>{(validation || step===5&&error) && <div className="error-box" role="alert" data-testid="registration-error">{validation || friendlyError(error,"save")}</div>}<FormActions wide={false} onCancel={() => { setValidation("");form.clearErrors(); setStep(s => s - 1); }} cancelLabel="Back" cancelDisabled={step === 0 || checking} cancelTestId="registration-back" busy={busy} busyLabel="Creating clinic…" disabled={checking} submitTestId="registration-next" submitLabel={checking ? "Checking address…" : step === steps.length - 1 ? "Finish registration" : "Continue"} /></form></main></div></div>;
 }

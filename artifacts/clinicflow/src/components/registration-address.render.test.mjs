@@ -18,9 +18,9 @@ before(async () => {
       const adminMode = new URLSearchParams(location.search).get("mode") === "admin";
       const initial = { fullName: "Fictional Owner", email: "owner@test.invalid", name: "Fictional Care",
         clinicEmail: "front@test.invalid", phone: "+919876543210",
-        branches: [{ name: "Fictional Location", slug: "fictional-location", address: "Fictional Way", city: "",
+         branches: [0,1,2].map(index => ({ name: "Fictional Location", slug: index === 2 ? "fictional-location" : "", address: "Fictional Way", city: "",
           timezone: "Asia/Kolkata", email: "", phone: "", inheritEmail: true, inheritPhone: true,
-          hours: Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, isOpen: dayOfWeek === 1, sessions: dayOfWeek === 1 ? [{startTime:"09:00",endTime:"12:00"}] : [] })) }] };
+           hours: Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, isOpen: dayOfWeek === 1, sessions: dayOfWeek === 1 ? [{startTime:"09:00",endTime:"12:00"}] : [] })) })) };
       window.checks = []; window.submissions = []; window.lookupFailure = false; window.conflict = false;
       function Harness() {
         const [saved, setSaved] = React.useState(null);
@@ -62,26 +62,52 @@ for (const mode of ["admin", "self"]) test(`${mode}: blank native-valid entry ad
     await slug.waitFor();
     assert.deepEqual(await slug.evaluate(el => ({ required: el.required, ariaRequired: el.getAttribute("aria-required"), valid: el.checkValidity(), value: el.value })),
       { required: false, ariaRequired: null, valid: true, value: "" });
-    assert.match(await page.locator("body").innerText(), /Leave blank to generate an available address/);
+    assert.match(await page.locator("body").innerText(), /Clinic URL name \(optional\)/);
+    assert.equal(await page.getByTestId("registration-name").getAttribute("aria-required"), "true");
+    assert.equal(await page.getByRole("button", { name: /Suggest/ }).count(), 0);
     await page.getByTestId("registration-next").click();
     await page.getByRole("heading", { name: "Locations", exact: true }).waitFor();
     assert.deepEqual(await page.evaluate(() => window.checks), ["fictional-care", "fictional-care-2"]);
     await page.reload();
     await page.getByRole("heading", { name: "Locations", exact: true }).waitFor();
+    const locationSlug = page.getByTestId("registration-branch-0-slug");
+    assert.deepEqual(await locationSlug.evaluate(el => ({ required: el.required, ariaRequired: el.getAttribute("aria-required"), valid: el.checkValidity(), value: el.value })),
+      { required: false, ariaRequired: null, valid: true, value: "" });
+    assert.equal(await page.getByTestId("registration-branch-0-name").getAttribute("required"), "");
+    assert.match(await page.locator("body").innerText(), /Location URL name \(optional\)/);
+    await page.getByTestId("registration-next").click();
+    await page.getByRole("heading", { name: "Opening hours", exact: true }).waitFor();
+    await page.getByTestId("registration-back").click();
+    assert.equal(await locationSlug.inputValue(), "fictional-location-2");
+    assert.equal(await page.getByTestId("registration-branch-1-slug").inputValue(), "fictional-location-3");
+    assert.equal(await page.getByTestId("registration-branch-2-slug").inputValue(), "fictional-location");
+    await page.getByTestId("registration-branch-0-name").fill("Renamed Location");
+    await page.reload();
+    assert.equal(await locationSlug.inputValue(), "fictional-location-2");
     for (let i = 0; i < 4; i++) await page.getByTestId("registration-next").click();
     await page.getByRole("heading", { name: "Review", exact: true }).waitFor();
-    assert.match(await page.locator(".registration-review").innerText(), /fictional-care-2/);
+    const review = await page.locator(".registration-review").innerText();
+    for (const slug of ["fictional-location-2", "fictional-location-3", "fictional-location"]) {
+      assert.ok(review.includes("https://clinic-flow-new-platform.replit.app/fictional-care-2/" + slug));
+    }
     await page.evaluate(() => { window.conflict = true; });
     await page.getByTestId("registration-next").click();
     await page.getByTestId("registration-error").waitFor();
-    assert.match(await page.getByTestId("registration-error").innerText(), /Use Edit beside Clinic identity or Locations/);
+    assert.match(await page.getByTestId("registration-error").innerText(), /Check Clinic identity and Locations/);
+    await page.getByRole("heading", { name: "Clinic identity", exact: true }).waitFor();
     assert.equal(await page.evaluate(() => window.submissions.length), 1);
     await page.evaluate(() => { window.conflict = false; });
+    // A definite conflict requires an explicit pass through correction and Review.
+    await page.getByTestId("registration-slug").fill("corrected-clinic");
+    for (let i = 0; i < 5; i++) await page.getByTestId("registration-next").click();
+    await page.getByRole("heading", { name: "Review", exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => window.submissions.length), 1);
     await page.getByTestId("registration-next").click();
     await page.getByRole("heading", { name: "Fictional Care is registered." }).waitFor();
-    assert.equal(await page.getByRole("link", { name: "Check Public Booking Page" }).getAttribute("href"), "/fictional-care-2");
+    assert.equal(await page.getByRole("link", { name: "Check Public Booking Page" }).getAttribute("href"), "/corrected-clinic");
     const submitted = await page.evaluate(() => window.submissions);
     assert.equal(submitted[0].values.slug, "fictional-care-2");
+    assert.deepEqual(submitted[0].values.branches.map(b => b.slug), ["fictional-location-2", "fictional-location-3", "fictional-location"]);
     assert.equal(submitted[0].requestId, submitted[1].requestId);
     assert.equal(await page.evaluate(mode => sessionStorage.getItem("render-" + mode), mode), null);
   } finally { await context.close(); }
@@ -100,10 +126,46 @@ test("rendered lookup failure stays on identity and leaves input blank; custom i
     await page.evaluate(() => { window.lookupFailure = false; });
     await page.getByTestId("registration-slug").fill("fictional-care");
     await page.getByTestId("registration-next").click();
-    await page.getByText("This clinic address is unavailable.", { exact: false }).waitFor();
+    await page.getByTestId("registration-error").filter({ hasText: "This Clinic URL name is unavailable." }).waitFor();
     assert.equal(await page.getByTestId("registration-slug").inputValue(), "fictional-care");
     await page.getByTestId("registration-slug").fill("admin");
     await page.getByTestId("registration-next").click();
     await page.getByTestId("registration-error").filter({ hasText: "reserved" }).waitFor();
+  } finally { await context.close(); }
+});
+
+for (const mode of ["admin", "self"]) test(`${mode}: whitespace resolves, invalid custom location names do not, and an unresolved restored review cannot create`, async () => {
+  const context = await browser.newContext(), page = await context.newPage();
+  try {
+    await page.goto(`${origin}/?mode=${mode}`);
+    await page.getByTestId("registration-slug").fill("  ");
+    assert.equal(await page.getByTestId("registration-slug").evaluate(el => el.checkValidity()), true);
+    await page.getByTestId("registration-next").click();
+    const slug = page.getByTestId("registration-branch-0-slug");
+    await slug.waitFor();
+    for (const [value, message] of [["ab", "3–63"], ["admin", "reserved"], ["fictional-location", "different Location URL name"]]) {
+      await slug.fill(value);
+      await page.getByTestId("registration-next").click();
+      await page.getByTestId("registration-error").filter({ hasText: message }).waitFor();
+      assert.equal(await slug.inputValue(), value);
+      assert.equal(await page.evaluate(() => window.submissions.length), 0);
+    }
+    await slug.fill("  ");
+    assert.equal(await slug.evaluate(el => el.checkValidity()), true);
+    // Old/incomplete drafts must be corrected at Locations, not submitted from Review.
+    await page.evaluate(mode => {
+      const key = "render-" + mode, draft = JSON.parse(sessionStorage.getItem(key));
+      draft.data.step = 5; sessionStorage.setItem(key, JSON.stringify(draft));
+    }, mode);
+    await page.reload();
+    await page.getByRole("heading", { name: "Review", exact: true }).waitFor();
+    await page.getByTestId("registration-next").click();
+    await page.getByRole("heading", { name: "Locations", exact: true }).waitFor();
+    assert.match(await page.getByTestId("registration-error").innerText(), /generate each Location URL name/);
+    assert.equal(await page.evaluate(() => window.submissions.length), 0);
+    await page.getByTestId("registration-next").click();
+    await page.getByRole("heading", { name: "Opening hours", exact: true }).waitFor();
+    await page.getByTestId("registration-back").click();
+    assert.equal(await slug.inputValue(), "fictional-location-2");
   } finally { await context.close(); }
 });
