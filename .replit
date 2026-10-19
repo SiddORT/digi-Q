@@ -74,5 +74,7 @@ timeoutMs = 20000
 [userenv.development]
 OTP_PROVIDER = "development"
 
+[userenv.shared]
+
 [nix]
 channel = "stable-25_05"
