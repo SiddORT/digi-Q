@@ -46,4 +46,4 @@
 - [OpenAPI query exports](openapi-query-export-collisions.md) — Orval can emit colliding path-validator/query-type names; check the shared-library build, not just generation.
 - [Appointment movement policy](appointment-movement-policy.md) — one place later is allowed; ordinary mobility does not broaden account handoffs or live delivery authorization.
 - [Tooltip input contract](tooltip-input-contract.md) — measure clipping and coordinate dismissal across help types; preserve explanations and verify focus, Escape and touch separately.
-- [SMTP namespace policy](smtp-namespace-policy.md) — environment-only migration; new secrets never authorize replacing saved providers or claiming inbox delivery.
+- [SMTP namespace policy](smtp-namespace-policy.md) — original names restored by user clarification; never infer value equality, replace saved providers, or claim live delivery from readiness.

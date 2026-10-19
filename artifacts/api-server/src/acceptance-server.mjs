@@ -38,7 +38,7 @@ process.env.AUTH_SESSION_MODE="native";
 process.env.CLINICFLOW_PUBLIC_ORIGIN="https://acceptance.test.invalid";
 // Satisfy invitation setup using public dummy values. The bundled nodemailer
 // replacement below simulates delivery without making any external request.
-Object.assign(process.env,{DIGI_SMTP_HOST:"mail.test.invalid",DIGI_SMTP_PORT:"587",DIGI_SMTP_USER:"disposable-fixture",DIGI_SMTP_PASSWORD:"disposable-fixture",DIGI_SMTP_FROM:"noreply@test.invalid",DIGI_SMTP_SECURE:"false",DIGI_SMTP_REQUIRE_TLS:"true"});
+Object.assign(process.env,{SMTP_HOST:"mail.test.invalid",SMTP_PORT:"587",SMTP_USER:"disposable-fixture",SMTP_PASSWORD:"disposable-fixture",SMTP_FROM:"noreply@test.invalid",SMTP_SECURE:"false",SMTP_REQUIRE_TLS:"true"});
 const {Pool}=createRequire(resolve(root,"../../../lib/db/package.json"))("pg");
 const pool=new Pool({host:harness.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8});
 // HTTP requests need independent transaction connections, like the real app.

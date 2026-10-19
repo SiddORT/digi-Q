@@ -11,9 +11,9 @@ after(() => rm(bundle, { force: true }));
 const env = { SMTP_HOST: "smtp.example.invalid", SMTP_PORT: "587", SMTP_USER: "private-fixture-user", SMTP_PASSWORD: "private-fixture-password", SMTP_FROM: "DigiQ Doctors <sender@example.invalid>" };
 const prefixed = Object.fromEntries(Object.entries(env).map(([key, value]) => [`DIGI_${key}`, value]));
 
-test("environment boundary uses only DIGI secrets, retaining canonical masked form keys", () => {
-  const resolved = api.smtpEnvironment({ ...env, ...prefixed, SMTP_HOST: "legacy.invalid", SMTP_PASSWORD: "legacy-secret",
-    SMTP_SECURE: "true", SMTP_REQUIRE_TLS: "false", SMTP_FROM_NAME: "Legacy", SMTP_NOTIFICATIONS_ENABLED: "false" });
+test("environment boundary uses only original SMTP keys, retaining canonical masked form keys", () => {
+  const resolved = api.smtpEnvironment({ ...env, ...prefixed, DIGI_SMTP_HOST: "ignored.invalid", DIGI_SMTP_PASSWORD: "ignored-secret",
+    DIGI_SMTP_SECURE: "true", DIGI_SMTP_REQUIRE_TLS: "false", DIGI_SMTP_FROM_NAME: "Ignored", DIGI_SMTP_NOTIFICATIONS_ENABLED: "false" });
   assert.equal(api.smtpConfig(resolved).host, env.SMTP_HOST);
   assert.equal(api.smtpConfig(resolved).password, env.SMTP_PASSWORD);
   const status = api.integrationReadiness(resolved).smtp;
@@ -22,23 +22,24 @@ test("environment boundary uses only DIGI secrets, retaining canonical masked fo
   assert.equal(status.fromName, "DigiQ Doctors"); assert.equal(status.notificationsEnabled, true);
   assert(status.keys.every(item => item.key.startsWith("SMTP_")));
   assert(!JSON.stringify(status).includes(env.SMTP_PASSWORD));
-  assert.throws(() => api.smtpConfig(api.smtpEnvironment(env)), { code: "EMAIL_UNCONFIGURED" });
+  assert.equal(api.smtpConfig(api.smtpEnvironment(env)).host, env.SMTP_HOST);
+  assert.throws(() => api.smtpConfig(api.smtpEnvironment(prefixed)), { code: "EMAIL_UNCONFIGURED" });
 });
-test("partial and malformed DIGI configuration never borrows legacy values", () => {
+test("partial and malformed original configuration never borrows DIGI values", () => {
   for (const field of Object.keys(env)) {
     const input = { ...env, ...prefixed };
-    delete input[`DIGI_${field}`];
+    delete input[field];
     assert.equal(api.integrationReadiness(api.smtpEnvironment(input)).smtp.ready, false);
     assert.throws(() => api.smtpConfig(api.smtpEnvironment(input)), { code: "EMAIL_UNCONFIGURED" });
   }
-  for (const patch of [{ DIGI_SMTP_PORT: "NaN" }, { DIGI_SMTP_PORT: "65536" }, { DIGI_SMTP_HOST: "bad\nhost" },
-    { DIGI_SMTP_FROM: "bad\nfrom@example.invalid" }, { DIGI_SMTP_SECURE: "yes" }, { DIGI_SMTP_REQUIRE_TLS: "false" }]) {
+  for (const patch of [{ SMTP_PORT: "NaN" }, { SMTP_PORT: "65536" }, { SMTP_HOST: "bad\nhost" },
+    { SMTP_FROM: "bad\nfrom@example.invalid" }, { SMTP_SECURE: "yes" }, { SMTP_REQUIRE_TLS: "false" }]) {
     assert.throws(() => api.smtpConfig(api.smtpEnvironment({ ...env, ...prefixed, ...patch })), { code: "EMAIL_UNCONFIGURED" });
   }
 });
-test("prefixed optional settings reach transport and security mail ignores optional opt-out", () => {
-  const resolved = api.smtpEnvironment({ ...prefixed, DIGI_SMTP_PORT: "465", DIGI_SMTP_REQUIRE_TLS: "false",
-    DIGI_SMTP_FROM_NAME: "New name", DIGI_SMTP_NOTIFICATIONS_ENABLED: "false" });
+test("original optional settings reach transport and security mail ignores optional opt-out", () => {
+  const resolved = api.smtpEnvironment({ ...prefixed, ...env, SMTP_PORT: "465", SMTP_REQUIRE_TLS: "false",
+    SMTP_FROM_NAME: "New name", SMTP_NOTIFICATIONS_ENABLED: "false" });
   assert.equal(api.integrationReadiness(resolved).smtp.notificationsEnabled, false);
   const cfg = api.smtpConfig(resolved);
   assert.equal(cfg.from, '"New name" <sender@example.invalid>');
@@ -51,16 +52,16 @@ test("prefixed optional settings reach transport and security mail ignores optio
   assert.equal(api.emailNotificationsEnabled(malformedFlag), false);
   assert.equal(api.smtpConfig(malformedFlag).host, env.SMTP_HOST);
 });
-test("default entry points resolve the prefixed environment, not legacy process values", () => {
+test("default entry points resolve original names, ignoring conflicting DIGI process values", () => {
   const names = [...api.smtpFields, ...api.smtpFields.map(key => `DIGI_${key}`)];
   const original = Object.fromEntries(names.map(name => [name, process.env[name]]));
   try {
     for (const name of names) delete process.env[name];
-    Object.assign(process.env, env, prefixed, { SMTP_SECURE: "true", SMTP_NOTIFICATIONS_ENABLED: "false" });
+    Object.assign(process.env, env, prefixed, { DIGI_SMTP_SECURE: "true", DIGI_SMTP_NOTIFICATIONS_ENABLED: "false" });
     assert.equal(api.smtpConfig().secure, false);
     assert.equal(api.integrationReadiness().smtp.ready, true);
     assert.equal(api.emailNotificationsEnabled(), true);
-    delete process.env.DIGI_SMTP_PASSWORD;
+    delete process.env.SMTP_PASSWORD;
     assert.throws(() => api.smtpConfig(), { code: "EMAIL_UNCONFIGURED" });
     assert.equal(api.integrationReadiness().smtp.ready, false);
   } finally {

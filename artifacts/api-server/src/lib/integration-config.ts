@@ -1,10 +1,10 @@
 import { HttpError } from "./http";
 
 type KeyStatus = { key: string; status: "configured" | "missing" | "invalid" | "default" };
-/** Canonical vault/form names are stable; only the server environment is prefixed. */
+/** Server environment, vault and form use the same canonical names; no namespace fallback. */
 export const smtpFields = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM", "SMTP_SECURE", "SMTP_REQUIRE_TLS", "SMTP_FROM_NAME", "SMTP_NOTIFICATIONS_ENABLED"] as const;
 export function smtpEnvironment(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
-  return Object.fromEntries(smtpFields.map(name => [name, env[`DIGI_${name}`]]));
+  return Object.fromEntries(smtpFields.map(name => [name, env[name]]));
 }
 export const emailAddressPattern = /^[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Za-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$/;
 export function validEmailAddress(value: string) {

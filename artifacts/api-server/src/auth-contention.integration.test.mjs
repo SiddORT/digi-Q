@@ -15,8 +15,8 @@ const context = new AsyncLocalStorage();
 let h, api, oldHash;
 process.env.SESSION_SECRET = "disposable-contention-signing-key-123456789";
 process.env.AUTH_SESSION_MODE = "native";
-Object.assign(process.env, { DIGI_SMTP_HOST: "smtp.example.invalid", DIGI_SMTP_PORT: "587", DIGI_SMTP_USER: "fixture",
-  DIGI_SMTP_PASSWORD: "disposable-fixture-not-a-secret", DIGI_SMTP_FROM: "fixture@example.invalid" });
+Object.assign(process.env, { SMTP_HOST: "smtp.example.invalid", SMTP_PORT: "587", SMTP_USER: "fixture",
+  SMTP_PASSWORD: "disposable-fixture-not-a-secret", SMTP_FROM: "fixture@example.invalid" });
 globalThis.authRaceMail = [];
 globalThis.authRaceMailFailure = false;
 before(async () => {

@@ -15,8 +15,8 @@ const mapping = { encoding: "json", authMode: "header", authField: "X-Key",
   fields: { recipient: "to", message: "text", senderId: "sender", dltEntityId: "entity", dltTemplateId: "template" },
   staticFields: {}, acceptedStatuses: [200], dltRequired: true };
 const fixtureEnv = { NODE_ENV: "test", INTEGRATIONS_ENCRYPTION_KEY: "ab".repeat(32),
-  DIGI_SMTP_HOST: "smtp.example.invalid", DIGI_SMTP_PORT: "587", DIGI_SMTP_USER: "fixture", DIGI_SMTP_PASSWORD: "fixture-password",
-  DIGI_SMTP_FROM: "fixture@example.invalid", DIGI_SMTP_NOTIFICATIONS_ENABLED: "false",
+  SMTP_HOST: "smtp.example.invalid", SMTP_PORT: "587", SMTP_USER: "fixture", SMTP_PASSWORD: "fixture-password",
+  SMTP_FROM: "fixture@example.invalid", SMTP_NOTIFICATIONS_ENABLED: "false",
   NOTIFICATION_SMS_PROVIDER: "generic", NOTIFICATION_SMS_URL: "https://sms.example.invalid/send",
   NOTIFICATION_SMS_KEY: "fixture-key", NOTIFICATION_SMS_BEARER_TOKEN: "fixture-bearer",
   NOTIFICATION_SMS_SENDER_ID: "DIGIQ", NOTIFICATION_SMS_ENTITY_ID: "fictional-entity",
@@ -100,7 +100,7 @@ async function visit(event, suffix = "", extra = {}) {
 }
 
 async function registrationFixture() {
-  Object.assign(process.env,{NODE_ENV:"development",DIGI_SMTP_NOTIFICATIONS_ENABLED:"true",
+  Object.assign(process.env,{NODE_ENV:"development",SMTP_NOTIFICATIONS_ENABLED:"true",
     NOTIFICATION_SMS_ENABLED:"true",NOTIFICATION_SMS_PROVIDER:"keepInTouch",
     NOTIFICATION_SMS_CLIENT_ID:"fictional-client",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"plus"});
   await h.control.query("truncate settings");
@@ -273,7 +273,7 @@ test("atomic existing-scope activation preserves content/drafts/branding/metadat
   const nonTarget = api.notificationTemplateKey("booking", undefined, "receptionist", "email");
   await setting(nonTarget, { revision: 2, published: { ...api.defaultTemplate("booking", "receptionist"), enabled: true } });
   // This clinic currently permits onboarding; platform gate off must not make it lose that behavior.
-  process.env.DIGI_SMTP_NOTIFICATIONS_ENABLED = "true";
+  process.env.SMTP_NOTIFICATIONS_ENABLED = "true";
   const beforeSecurity = await api.resolvedTemplate("patient_login_otp", undefined, h.db, "patient", "sms");
   const originals = (await h.control.query("select id,data from settings where id like '%-template:%'")).rows;
   const result = await activate();
@@ -406,7 +406,7 @@ test("missing metadata/contact, personal opt-outs, assignment checks and indepen
   const smtp = await api.resolvedIntegration("smtp", h.db);
   // Optional Email off does not gate SMS or required security content.
   await h.control.query("delete from integration_credentials where provider='smtp'");
-  process.env.DIGI_SMTP_NOTIFICATIONS_ENABLED = "false";
+  process.env.SMTP_NOTIFICATIONS_ENABLED = "false";
   const next = await visit("cancelled", "-independent");
   await api.enqueueEvent(h.db, "cancelled", next);
   assert.equal((await h.control.query("select count(*)::int n from settings where id like $1", [`mail-outbox:cancelled:${next.id}%`])).rows[0].n, 0);

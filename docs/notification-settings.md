@@ -96,8 +96,8 @@ the existing notification SMS transport with approved platform security content;
 it never replaces email proof or creates a phone-only identity.
 SMTP website/vault fields retain `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, write-only
 `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_SECURE` and `SMTP_REQUIRE_TLS`. Server environment
-configuration instead uses `DIGI_SMTP_*` (including optional sender name and notification
-flag); legacy `SMTP_*` secrets are ignored. Saved encrypted settings take precedence.
+configuration uses the same `SMTP_*` names (including optional sender name and notification
+flag); `DIGI_SMTP_*` values are ignored without fallback. Saved encrypted settings take precedence.
 See `integrations-configuration.md` for defaults and explicit source switching.
 SMTP always requires TLS; port 465 defaults to implicit TLS, other supported ports
 use STARTTLS unless implicit TLS is explicitly selected.

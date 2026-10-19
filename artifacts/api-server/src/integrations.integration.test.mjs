@@ -18,10 +18,10 @@ globalThis.integrationMail = [];
 globalThis.integrationFailure = false;
 globalThis.integrationSms = [];
 globalThis.integrationSmsOutcome = "provider_accepted";
-for (const name of ["HOST", "PORT", "USER", "PASSWORD", "FROM", "SECURE", "REQUIRE_TLS", "FROM_NAME", "NOTIFICATIONS_ENABLED"]) delete process.env[`DIGI_SMTP_${name}`];
-Object.assign(process.env, Object.fromEntries(Object.entries(env).map(([key,value]) => [`DIGI_${key}`,value])),
-  { NODE_ENV: "test", SMTP_HOST: "legacy.example.invalid", SMTP_PASSWORD: "legacy-ignored",
-    SMTP_SECURE: "true", SMTP_REQUIRE_TLS: "false", SMTP_NOTIFICATIONS_ENABLED: "false" });
+for (const name of ["HOST", "PORT", "USER", "PASSWORD", "FROM", "SECURE", "REQUIRE_TLS", "FROM_NAME", "NOTIFICATIONS_ENABLED"]) delete process.env[`SMTP_${name}`];
+Object.assign(process.env, env, Object.fromEntries(Object.entries(env).map(([key,value]) => [`DIGI_${key}`,value])),
+  { NODE_ENV: "test", DIGI_SMTP_HOST: "ignored.example.invalid", DIGI_SMTP_PASSWORD: "ignored-fixture",
+    DIGI_SMTP_SECURE: "true", DIGI_SMTP_REQUIRE_TLS: "false", DIGI_SMTP_NOTIFICATIONS_ENABLED: "false" });
 process.env.INTEGRATIONS_ENCRYPTION_KEY = "ab".repeat(32); // Synthetic fixture key only.
 
 before(async () => {
@@ -145,6 +145,10 @@ test("connection checks and storage configuration remain admin-only and checks n
   const result = await response.json();
   assert.equal(result.checks[0].status, "passed");
   assert.equal(result.checks[1].status, "not_verified");
+  assert.equal(globalThis.integrationTransport.host, env.SMTP_HOST);
+  assert.equal(globalThis.integrationTransport.auth.user, env.SMTP_USER);
+  assert.equal(globalThis.integrationTransport.auth.pass, env.SMTP_PASSWORD);
+  assert.equal(globalThis.integrationTransport.requireTLS, true);
   assert.equal(globalThis.integrationMail.length, before);
   assert.equal((await fetch(`${root}/unknown/check`, { method: "POST", headers: { "x-test-user": "admin11" } })).status, 400);
   globalThis.integrationFailure = true;
@@ -186,11 +190,11 @@ test("SMTP errors are generic; no config fails safely; injected auth email remai
   assert.equal(result.body.status, "delivery_unknown");
   assert.ok(!JSON.stringify(result).includes("fixture-password"));
   globalThis.integrationFailure = false;
-   process.env.DIGI_SMTP_PASSWORD = "";
+   process.env.SMTP_PASSWORD = "";
    const missing = await request("admin1", "POST");
    assert.equal(missing.status, 200);
    assert.equal(missing.body.status, "pre_dispatch_failed");
-   process.env.DIGI_SMTP_PASSWORD = env.SMTP_PASSWORD;
+   process.env.SMTP_PASSWORD = env.SMTP_PASSWORD;
   let delivered = false;
   await api.sendAuthEmail("recipient@example.invalid", "subject", "text", { async sendMail() { delivered = true; } });
   assert.equal(delivered, true);
@@ -255,12 +259,12 @@ test("encrypted save, preserved blank fields, conflict, delivery resolution and 
   await api.sendAuthEmail("fixture@example.invalid", "test", "test");
   assert.equal(globalThis.integrationTransport.auth.pass, "new-fixture-secret");
   assert.equal(globalThis.integrationTransport.host, "changed.example.invalid");
-  const priorDigiHost = process.env.DIGI_SMTP_HOST;
-  process.env.DIGI_SMTP_HOST = "";
+  const priorHost = process.env.SMTP_HOST;
+  process.env.SMTP_HOST = "";
   assert.equal((await api.resolvedIntegration("smtp")).source, "database");
   await api.sendAuthEmail("fixture@example.invalid", "test", "test");
   assert.equal(globalThis.integrationTransport.host, "changed.example.invalid");
-  process.env.DIGI_SMTP_HOST = priorDigiHost;
+  process.env.SMTP_HOST = priorHost;
   process.env.INTEGRATIONS_ENCRYPTION_KEY = "cd".repeat(32);
   await assert.rejects(api.resolvedIntegration("smtp"), { code: "INTEGRATION_DECRYPT_FAILED" });
   process.env.INTEGRATIONS_ENCRYPTION_KEY = "ab".repeat(32);
@@ -327,17 +331,25 @@ test("notification SMS tests are authorized, validated, explicit and report sani
     globalThis.integrationSmsOutcome = "provider_accepted";
   }
 });
-test("first encrypted save inherits prefixed optional flags and canonical credentials; partial saved records never fall back", async () => {
-  const names = ["DIGI_SMTP_SECURE", "DIGI_SMTP_REQUIRE_TLS", "DIGI_SMTP_FROM_NAME", "DIGI_SMTP_NOTIFICATIONS_ENABLED"];
+test("first encrypted save inherits original optional flags and canonical credentials; partial saved records never fall back", async () => {
+  const names = ["SMTP_SECURE", "SMTP_REQUIRE_TLS", "SMTP_FROM_NAME", "SMTP_NOTIFICATIONS_ENABLED"];
   const original = Object.fromEntries(names.map(name => [name, process.env[name]]));
   try {
-    Object.assign(process.env, { DIGI_SMTP_SECURE: "true", DIGI_SMTP_REQUIRE_TLS: "false",
-      DIGI_SMTP_FROM_NAME: "Prefixed name", DIGI_SMTP_NOTIFICATIONS_ENABLED: "false" });
+    const password = process.env.SMTP_PASSWORD;
+    try {
+      delete process.env.SMTP_PASSWORD;
+      await assert.rejects(api.saveIntegration("smtp", {}, null, "database", "admin6"), { code: "INTEGRATION_INVALID" });
+      assert.equal((await harness.control.query("select count(*)::int n from integration_credentials where provider='smtp'")).rows[0].n, 0);
+    } finally {
+      process.env.SMTP_PASSWORD = password;
+    }
+    Object.assign(process.env, { SMTP_SECURE: "true", SMTP_REQUIRE_TLS: "false",
+      SMTP_FROM_NAME: "Original name", SMTP_NOTIFICATIONS_ENABLED: "false" });
     await api.saveIntegration("smtp", {}, null, "database", "admin6");
     const resolved = await api.resolvedIntegration("smtp");
     assert.equal(resolved.source, "database");
     assert.equal(resolved.env.SMTP_PASSWORD, env.SMTP_PASSWORD);
-    assert.equal(resolved.env.SMTP_FROM_NAME, "Prefixed name");
+    assert.equal(resolved.env.SMTP_FROM_NAME, "Original name");
     assert.equal(resolved.env.SMTP_NOTIFICATIONS_ENABLED, "false");
     assert.equal(api.integrationReadiness(resolved.env).smtp.notificationsEnabled, false);
     const cfg = api.smtpConfig(resolved.env);

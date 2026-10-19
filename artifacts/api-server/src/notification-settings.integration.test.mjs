@@ -13,7 +13,7 @@ import { keepInTouchNetworkPlugin } from "./test-support/keep-in-touch-network.m
 const bundle=resolve(import.meta.dirname,`.notification-settings-${process.pid}.mjs`);
 const mapping={encoding:"json",authMode:"header",authField:"X-API-Key",fields:{recipient:"to",message:"message",senderId:"sender",dltEntityId:"entity",dltTemplateId:"template"},staticFields:{route:"transactional"},acceptedStatuses:[200,202],responseField:"result.status",responseValue:"accepted",dltRequired:true};
 const env={NOTIFICATION_SMS_URL:"https://sms.example.invalid/send",NOTIFICATION_SMS_KEY:"synthetic-notification-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-settings-bearer",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_MAPPING:JSON.stringify(mapping)};
-Object.assign(process.env,env,{NODE_ENV:"test",INTEGRATIONS_ENCRYPTION_KEY:"cd".repeat(32),DIGI_SMTP_HOST:"smtp.example.invalid",DIGI_SMTP_PORT:"587",DIGI_SMTP_USER:"fixture-user",DIGI_SMTP_PASSWORD:"fixture-pass",DIGI_SMTP_FROM:"sender@example.invalid"});
+Object.assign(process.env,env,{NODE_ENV:"test",INTEGRATIONS_ENCRYPTION_KEY:"cd".repeat(32),SMTP_HOST:"smtp.example.invalid",SMTP_PORT:"587",SMTP_USER:"fixture-user",SMTP_PASSWORD:"fixture-pass",SMTP_FROM:"sender@example.invalid"});
 let h,api;
 const context=new AsyncLocalStorage();
 const sa={id:"sa",role:"superAdmin"};

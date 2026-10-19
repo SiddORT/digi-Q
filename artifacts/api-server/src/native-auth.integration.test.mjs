@@ -14,9 +14,11 @@ const bundle = resolve(root, `.native-auth-test-${process.pid}.mjs`);
 process.env.SESSION_SECRET = "disposable-test-signing-key-not-for-production-123";
 process.env.AUTH_SESSION_MODE = "native";
 process.env.CLINICFLOW_PUBLIC_ORIGIN = "https://example.test";
-for (const name of ["SECURE", "REQUIRE_TLS", "FROM_NAME", "NOTIFICATIONS_ENABLED"]) delete process.env[`DIGI_SMTP_${name}`];
-Object.assign(process.env, { DIGI_SMTP_HOST: "localhost", DIGI_SMTP_PORT: "587", DIGI_SMTP_USER: "test",
-  DIGI_SMTP_PASSWORD: "test-not-a-credential", DIGI_SMTP_FROM: "test@example.test" });
+for (const name of ["SECURE", "REQUIRE_TLS", "FROM_NAME", "NOTIFICATIONS_ENABLED"]) delete process.env[`SMTP_${name}`];
+Object.assign(process.env, { SMTP_HOST: "localhost", SMTP_PORT: "587", SMTP_USER: "test",
+  SMTP_PASSWORD: "test-not-a-credential", SMTP_FROM: "test@example.test",
+  DIGI_SMTP_HOST: "ignored.example.invalid", DIGI_SMTP_PORT: "465", DIGI_SMTP_USER: "ignored",
+  DIGI_SMTP_PASSWORD: "ignored-fixture", DIGI_SMTP_FROM: "ignored@example.invalid" });
 globalThis.nativeAuthMail = [];
 Object.assign(process.env, { NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits",
   NOTIFICATION_SMS_KEY:"fictional-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-token",
@@ -156,7 +158,7 @@ test("retired device endpoint rejects even valid historical challenges without c
   assert.equal(globalThis.nativeAuthMail.length, 0);
 });
 test("disposable single-key cutover forces reauth; compromise revocation prevents old-key rollback resurrection", async () => {
-  const keys = ["AUTH_SESSION_MODE", "JWT_SIGNING_KEY", "DIGI_SMTP_HOST", "DIGI_SMTP_PORT", "DIGI_SMTP_USER", "DIGI_SMTP_PASSWORD", "DIGI_SMTP_FROM"];
+  const keys = ["AUTH_SESSION_MODE", "JWT_SIGNING_KEY", "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
   const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   const oldKey = "disposable-cutover-old-key-never-used-outside-tests";
   const newKey = "disposable-cutover-new-key-never-used-outside-tests";
@@ -170,7 +172,7 @@ test("disposable single-key cutover forces reauth; compromise revocation prevent
     return req;
   };
   try {
-    for (const key of keys.filter(key => key.startsWith("DIGI_SMTP_"))) delete process.env[key];
+    for (const key of keys.filter(key => key.startsWith("SMTP_"))) delete process.env[key];
     await h.control.query("insert into users(id,email,full_name,role,password_hash,clerk_id) values ('cutover','cutover@example.test','Cutover','doctor',$1,'preserved-provider-mapping')", [hash]);
     const baseline = await identity();
     process.env.AUTH_SESSION_MODE = "jwt";
@@ -240,7 +242,7 @@ test("unknown email has no session, bad tokens avoid hash work, and absent SMTP 
   assert.throws(() => api.passwordInput("x".repeat(1025)), error => error.code === "INVALID_PASSWORD");
 });
 test("all SMTP settings absent: staff login works, denials remain credential errors, mail endpoints fail explicitly", async () => {
-  const keys = ["DIGI_SMTP_HOST", "DIGI_SMTP_PORT", "DIGI_SMTP_USER", "DIGI_SMTP_PASSWORD", "DIGI_SMTP_FROM"];
+  const keys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
   const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   try {
     for (const key of keys) delete process.env[key];
@@ -318,7 +320,23 @@ test("account limiter and single-use challenge persist across requests", async (
   assert.deepEqual((await h.control.query("select data from auth_challenges where id=$1", [id])).rows[0].data, {});
   await assert.rejects(() => api.consumeChallenge(id, "patient", "123456"), /Invalid or expired/);
 });
-test("verified registration and patient email create separate roles without an email provider", async () => {
+test("registration preflight rejects every missing original field despite complete DIGI settings", async () => {
+  for (const field of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"]) {
+    const original = process.env[field];
+    try {
+      delete process.env[field];
+      await assert.rejects(() => route("/auth/register/start", {
+        email: `${field.toLowerCase()}@example.test`, fullName: "Fictional Admin", password: "fictional preflight password 123",
+      }), error => error.code === "EMAIL_UNCONFIGURED");
+      assert.equal((await h.control.query("select count(*)::int n from auth_challenges")).rows[0].n, 0);
+      assert.equal((await h.control.query("select count(*)::int n from users")).rows[0].n, 0);
+      assert.equal(globalThis.nativeAuthMail.length, 0);
+    } finally {
+      if (original === undefined) delete process.env[field]; else process.env[field] = original;
+    }
+  }
+});
+test("verified registration and patient email create separate roles with original SMTP settings and fictional transport", async () => {
   const register = await route("/auth/register/start", { email: "clinic@example.test",
     fullName: "Clinic Admin", password: "disposable clinic passphrase 123" });
   const registrationMail = globalThis.nativeAuthMail.pop();

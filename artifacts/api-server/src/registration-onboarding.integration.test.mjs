@@ -16,8 +16,8 @@ const available = async slug => {
 let h;
 before(async () => {
   Object.assign(process.env, { CLINICFLOW_PUBLIC_ORIGIN: "https://fictional.test.invalid",
-    DIGI_SMTP_HOST: "mail.test.invalid", DIGI_SMTP_PORT: "587", DIGI_SMTP_USER: "fictional",
-    DIGI_SMTP_PASSWORD: "fictional", DIGI_SMTP_FROM: "fictional@test.invalid", DIGI_SMTP_REQUIRE_TLS: "true" });
+    SMTP_HOST: "mail.test.invalid", SMTP_PORT: "587", SMTP_USER: "fictional",
+    SMTP_PASSWORD: "fictional", SMTP_FROM: "fictional@test.invalid", SMTP_REQUIRE_TLS: "true" });
   h = await createFeatureHarness({ administration: true, simulatedMail: true, postgres: true, registration: true });
   await seedFeatureFixtures(h.pg);
 });

@@ -21,8 +21,8 @@ process.env.LOG_LEVEL = "silent";
 process.env.SESSION_SECRET = "disposable-test-signing-key-not-for-production-123";
 process.env.AUTH_SESSION_MODE = "native";
 process.env.CLINICFLOW_PUBLIC_ORIGIN = "https://example.test";
-Object.assign(process.env, { DIGI_SMTP_HOST: "localhost", DIGI_SMTP_PORT: "587", DIGI_SMTP_USER: "test",
-  DIGI_SMTP_PASSWORD: "test-not-a-credential", DIGI_SMTP_FROM: "test@example.test" });
+Object.assign(process.env, { SMTP_HOST: "localhost", SMTP_PORT: "587", SMTP_USER: "test",
+  SMTP_PASSWORD: "test-not-a-credential", SMTP_FROM: "test@example.test" });
 globalThis.nativeAuthMail = [];
 let harness, temp, server, origin, backend, authRequest;
 const jar = new Map();
@@ -157,7 +157,7 @@ function mailCode() {
 }
 
 test("actual HTTPS frontend transport completes Argon2 staff login, session and logout with all SMTP settings absent", async () => {
-  const smtpKeys = ["DIGI_SMTP_HOST", "DIGI_SMTP_PORT", "DIGI_SMTP_USER", "DIGI_SMTP_PASSWORD", "DIGI_SMTP_FROM"];
+  const smtpKeys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
   const savedSmtp = Object.fromEntries(smtpKeys.map(key => [key, process.env[key]]));
   try {
     for (const key of smtpKeys) delete process.env[key];
