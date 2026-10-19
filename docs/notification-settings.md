@@ -53,6 +53,18 @@ Advanced provider configuration and wording remain secondary:
 - `/admin/communication?tab=logs`: outbound history;
 - `/admin/templates`: Notifications, with existing accordions, filters and wording drawer.
 
+After a completed SMTP provider test, the sending Superadmin can select **I received
+the test email** after checking their mailbox. The server saves an idempotent,
+actor-owned confirmation timestamp, visible after reload. This is labelled
+**User-confirmed received**, never automatic delivery verification. It does not
+send another email or change the provider outcome. The latest tracked test is
+shown without storing a new plaintext recipient. Earlier untracked tests cannot
+be retroactively confirmed. A changed or unreadable SMTP configuration marks the
+test as belonging to an earlier/unavailable configuration and blocks confirmation.
+Rejected, undispatched and unfinished tests cannot be confirmed. A completed
+uncertain dispatch may be manually confirmed without changing its uncertain
+provider status.
+
 Legacy Settings `area=sms`, `area=email`, `area=smtp`, `area=events` and `area=templates`
 links still redirect to the corresponding existing pages.
 

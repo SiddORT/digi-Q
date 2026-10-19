@@ -420,6 +420,33 @@ paths:
               schema: { $ref: "#/components/schemas/IntegrationSettings" }
         "401": { description: Sign in required }
         "403": { description: Super Admin required }
+  /settings/integrations/smtp/test-receipt:
+    get:
+      operationId: getSmtpTestReceipt
+      description: Latest SMTP test for the signed-in non-demo Superadmin. Receipt is a manual assertion, never delivery proof.
+      responses:
+        "200":
+          description: Latest test and manual receipt status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SmtpReceiptResult" }
+        "403": { description: Super Admin required }
+    post:
+      operationId: confirmSmtpTestReceipt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SmtpReceiptInput" }
+      responses:
+        "200":
+          description: User-confirmed receipt saved without sending mail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SmtpReceiptResult" }
+        "400": { description: Invalid confirmation }
+        "403": { description: Super Admin required }
+        "409": { description: Test or saved configuration changed }
   /settings/integrations/smtp/test-email:
     post:
       operationId: sendSmtpTestEmail
@@ -2403,6 +2430,25 @@ components:
       properties:
         status: { type: string, enum: [provider_accepted, provider_rejected, delivery_unknown, not_dispatched] }
         message: { type: string }
+    SmtpReceiptInput:
+      type: object
+      required: [requestId, received]
+      properties:
+        requestId: { type: string, format: uuid }
+        received: { type: boolean, enum: [true] }
+    SmtpReceiptResult:
+      type: object
+      required: [test]
+      properties:
+        test:
+          type: [object, "null"]
+          required: [requestId, sentAt, status, currentConfiguration, receivedAt]
+          properties:
+            requestId: { type: string }
+            sentAt: { type: string }
+            status: { type: string }
+            currentConfiguration: { type: boolean }
+            receivedAt: { type: [string, "null"] }
     SmtpTestInput:
       type: object
       additionalProperties: false

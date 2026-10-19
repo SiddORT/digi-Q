@@ -14,6 +14,8 @@ import { sendAuthEmail } from "../lib/auth-email";
 import { DEMO_FIXTURE } from "../lib/demo-policy";
 import { notificationSmsConfig, sendNotificationSms } from "../lib/notification-sms-transport";
 import { dispatchNotificationTest } from "../lib/notification-test-dispatch";
+import { ConfirmSmtpTestReceiptBody, GetSmtpTestReceiptResponse } from "@workspace/api-zod";
+import { confirmSmtpReceipt, latestSmtpTestReceipt } from "../lib/smtp-test-receipt";
 
 export const integrationsRouter = Router();
 const path = "/settings/integrations";
@@ -77,6 +79,15 @@ integrationsRouter.post(`${path}/notification-sms/test-message`, async (req, res
     not_dispatched: "The test was not dispatched. Check the provider endpoint and network configuration.",
   };
   res.json({ status, message: messages[status] });
+});
+integrationsRouter.get(`${path}/smtp/test-receipt`, async (_req, res) => {
+  res.json(GetSmtpTestReceiptResponse.parse(await latestSmtpTestReceipt(res.locals.integrationActor)));
+});
+integrationsRouter.post(`${path}/smtp/test-receipt`, async (req, res) => {
+  const parsed = ConfirmSmtpTestReceiptBody.strict().safeParse(req.body);
+  if (!parsed.success || parsed.data.received !== true || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(parsed.data.requestId))
+    throw new HttpError(400, "Confirm receipt of a valid SMTP test.", "INVALID_SMTP_RECEIPT");
+  res.json(GetSmtpTestReceiptResponse.parse(await confirmSmtpReceipt(res.locals.integrationActor, parsed.data.requestId)));
 });
 integrationsRouter.post(`${path}/smtp/test-email`, async (req, res) => {
   try {

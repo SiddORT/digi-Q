@@ -40,6 +40,7 @@ before(async()=>{
     export * from "./lib/notification-controls"; export * from "./lib/notification-sms-outbox";
     export * from "./lib/notification-outbox"; export * from "./lib/store"; export * from "@workspace/db";
     export * from "./lib/notification-history"; export * from "./lib/notification-test-dispatch";
+    export * from "./lib/smtp-test-receipt";
     export * from "./lib/appointment-confirmation";
     export * from "./lib/notification-preferences";
     export * from "./lib/personal-notification-settings";
@@ -67,6 +68,61 @@ before(async()=>{
       b.onLoad({filter:/.*/,namespace:"fixture-auth"},()=>({contents:`export async function requireUser(req){const id=req.headers["x-user"];return {id,role:id==="ca"?"clinicAdmin":id||"patient",clinicIds:["c"]};} export async function findUser(){return null;} export function roles(u,rs){if(!rs.includes(u.role))throw Object.assign(new Error("Forbidden"),{status:403});}`}));
     }}]});
   api=await import(bundle);
+});
+test("SMTP receipt binds a completed provider test to its actor and configuration without resending",async()=>{
+ const input={channel:"email",event:"provider_test",recipientGroup:"explicit",recipient:"receipt@example.invalid",
+  subject:"Fictional test",message:"Fictional message",confirmed:true,requestId:randomUUID()};
+ let sends=0;
+ assert.equal(await api.dispatchNotificationTest(sa.id,input,h.db,undefined,async()=>{sends++;}),"provider_accepted");
+ const first=await api.latestSmtpTestReceipt(sa.id,h.db);
+ assert.equal(first.test.requestId,input.requestId);
+ assert.equal(first.test.currentConfiguration,true);
+ assert.equal(first.test.receivedAt,null);
+ assert.equal((await api.latestSmtpTestReceipt("ca",h.db)).test,null);
+ await assert.rejects(api.confirmSmtpReceipt("ca",input.requestId,h.db),{status:409});
+ const saved=await api.confirmSmtpReceipt(sa.id,input.requestId,h.db);
+ assert(saved.test.receivedAt);
+ const repeated=await api.confirmSmtpReceipt(sa.id,input.requestId,h.db);
+ assert.equal(repeated.test.receivedAt,saved.test.receivedAt);
+ assert.equal(sends,1);
+ const audit=await h.control.query("select count(*)::int n from audit_logs where action='smtp_test_receipt'");
+ assert.equal(audit.rows[0].n,1);
+ const publicText=JSON.stringify(saved);
+ for(const secret of [input.recipient,input.message,process.env.SMTP_PASSWORD,process.env.SMTP_USER])
+  assert(!publicText.includes(secret));
+ const from=process.env.SMTP_FROM;
+ try{
+  process.env.SMTP_FROM="changed@example.invalid";
+  assert.equal((await api.latestSmtpTestReceipt(sa.id,h.db)).test.currentConfiguration,false);
+  await assert.rejects(api.confirmSmtpReceipt(sa.id,input.requestId,h.db),{status:409});
+ }finally{process.env.SMTP_FROM=from;}
+});
+test("SMTP receipt refuses failed, in-flight, unknown IDs and non-provider tests",async()=>{
+ for(const [status,finishedAt,kind] of [
+  ["provider_rejected",Date.now(),"smtp_provider_test"],
+  ["pre_dispatch_failed",Date.now(),"smtp_provider_test"],
+  ["delivery_unknown",undefined,"smtp_provider_test"],
+  ["provider_accepted",Date.now(),undefined],
+ ]){
+  const requestId=randomUUID();
+  await h.db.insert(api.settings).values({id:`notification-test:${sa.id}:${requestId}`,data:{
+   status,finishedAt,receiptKind:kind,createdAt:Date.now(),smtpFingerprint:api.smtpTestFingerprint(process.env),
+  }});
+  await assert.rejects(api.confirmSmtpReceipt(sa.id,requestId,h.db),{status:409});
+ }
+ await assert.rejects(api.confirmSmtpReceipt(sa.id,randomUUID(),h.db),{status:409});
+});
+test("SMTP receipt accepts a finished uncertain dispatch only as user confirmation",async()=>{
+ const requestId=randomUUID();
+ await h.db.insert(api.settings).values({id:`notification-test:${sa.id}:${requestId}`,data:{
+  status:"delivery_unknown",finishedAt:Date.now(),receiptKind:"smtp_provider_test",createdAt:Date.now()+100,
+  smtpFingerprint:api.smtpTestFingerprint(process.env),
+ }});
+ const result=await api.confirmSmtpReceipt(sa.id,requestId,h.db);
+ assert.equal(result.test.status,"delivery_unknown");
+ assert(result.test.receivedAt);
+ const row=(await h.control.query("select data from settings where id=$1",[`notification-test:${sa.id}:${requestId}`])).rows[0];
+ assert.equal(row.data.status,"delivery_unknown");
 });
 test("Keep in Touch encrypted save/reload preserves generic mapping, optional switches, blank secrets and redacts audit/readiness",async()=>{
  const original=await api.resolvedIntegration("notificationSms");

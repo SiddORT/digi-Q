@@ -230,6 +230,8 @@ import type {
   Settings,
   SettingsInput,
   SlugAvailability,
+  SmtpReceiptInput,
+  SmtpReceiptResult,
   SmtpTestInput,
   SmtpTestResult,
   StaffAssignmentOptions,
@@ -3164,6 +3166,162 @@ export function useGetIntegrationSettings<TData = Awaited<ReturnType<typeof getI
 
 
 
+
+export const getGetSmtpTestReceiptUrl = () => {
+
+
+
+
+  return `/api/settings/integrations/smtp/test-receipt`
+}
+
+/**
+ * Latest SMTP test for the signed-in non-demo Superadmin. Receipt is a manual assertion, never delivery proof.
+ */
+export const getSmtpTestReceipt = async ( options?: Parameters<typeof customFetch>[1]): Promise<SmtpReceiptResult> => {
+
+  return customFetch<SmtpReceiptResult>(getGetSmtpTestReceiptUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSmtpTestReceiptQueryKey = () => {
+    return [
+    `/api/settings/integrations/smtp/test-receipt`
+    ] as const;
+    }
+
+
+export const getGetSmtpTestReceiptQueryOptions = <TData = Awaited<ReturnType<typeof getSmtpTestReceipt>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSmtpTestReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSmtpTestReceiptQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSmtpTestReceipt>>> = ({ signal }) => getSmtpTestReceipt({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSmtpTestReceipt>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSmtpTestReceiptQueryResult = NonNullable<Awaited<ReturnType<typeof getSmtpTestReceipt>>>
+export type GetSmtpTestReceiptQueryError = ErrorType<void>
+
+
+
+export function useGetSmtpTestReceipt<TData = Awaited<ReturnType<typeof getSmtpTestReceipt>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSmtpTestReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSmtpTestReceiptQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getConfirmSmtpTestReceiptUrl = () => {
+
+
+
+
+  return `/api/settings/integrations/smtp/test-receipt`
+}
+
+export const confirmSmtpTestReceipt = async (smtpReceiptInput: SmtpReceiptInput, options?: Parameters<typeof customFetch>[1]): Promise<SmtpReceiptResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SmtpReceiptResult>(getConfirmSmtpTestReceiptUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(smtpReceiptInput)
+  }
+);}
+
+
+
+
+
+export const getConfirmSmtpTestReceiptMutationKey = () => ['confirmSmtpTestReceipt'] as const;
+
+export const getConfirmSmtpTestReceiptMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmSmtpTestReceipt>>, TError,ConfirmSmtpTestReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmSmtpTestReceipt>>, TError,ConfirmSmtpTestReceiptMutationVariables, TContext> => {
+
+const mutationKey = getConfirmSmtpTestReceiptMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmSmtpTestReceipt>>, ConfirmSmtpTestReceiptMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmSmtpTestReceipt(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmSmtpTestReceiptMutationResult = NonNullable<Awaited<ReturnType<typeof confirmSmtpTestReceipt>>>
+    export type ConfirmSmtpTestReceiptMutationBody = BodyType<SmtpReceiptInput>
+    export type ConfirmSmtpTestReceiptMutationError = ErrorType<void>
+    export type ConfirmSmtpTestReceiptMutationVariables = {data: BodyType<SmtpReceiptInput>}
+
+    export const useConfirmSmtpTestReceipt = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmSmtpTestReceipt>>, TError,ConfirmSmtpTestReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmSmtpTestReceipt>>,
+        TError,
+        ConfirmSmtpTestReceiptMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmSmtpTestReceiptMutationOptions(options));
+    }
 
 export const getSendSmtpTestEmailUrl = () => {
 

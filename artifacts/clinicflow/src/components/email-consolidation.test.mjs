@@ -29,6 +29,9 @@ before(async () => {
           export const useSendSmtpTestEmail=()=>({mutateAsync:noWrite,reset(){}});
           export const useUpdateIntegrationSettings=()=>({mutate:noWrite,reset(){}});
           export const useCheckIntegrationConnection=()=>({mutate:noWrite});
+          export const getGetSmtpTestReceiptQueryKey=()=>["fictional-receipt"];
+          export const useGetSmtpTestReceipt=()=>({data:{test:null},refetch:noWrite});
+          export const useConfirmSmtpTestReceipt=()=>({mutate:noWrite});
         ` }));
     } }],
   });

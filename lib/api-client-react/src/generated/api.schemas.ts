@@ -1274,6 +1274,28 @@ export interface NotificationSmsTestResult {
   message: string;
 }
 
+export interface SmtpReceiptInput {
+  requestId: string;
+  received: true;
+}
+
+/**
+ * @nullable
+ */
+export type SmtpReceiptResultTest = {
+  requestId: string;
+  sentAt: string;
+  status: string;
+  currentConfiguration: boolean;
+  /** @nullable */
+  receivedAt: string | null;
+} | null;
+
+export interface SmtpReceiptResult {
+  /** @nullable */
+  test: SmtpReceiptResultTest;
+}
+
 export interface SmtpTestInput {
   confirmed: true;
   requestId: string;

@@ -6,6 +6,8 @@ import { AppDialog } from "./AppDialog";
 import { PasswordInput } from "./PasswordInput";
 import { useConfirm } from "./ConfirmDialog";
 import { EmailDiagnostics } from "./EmailDiagnostics";
+import { SmtpTestReceipt } from "./SmtpTestReceipt";
+import { getGetSmtpTestReceiptQueryKey } from "@workspace/api-client-react";
 
 const pub = (r: IntegrationReadiness) => ({ smtpHost: r.smtpHost ?? "", smtpPort: r.smtpPort ?? 587, fromEmail: r.fromEmail ?? "", fromName: r.fromName ?? "", useTls: r.useTls ?? true, useSsl: r.useSsl ?? false, notificationsEnabled: r.notificationsEnabled ?? true });
 
@@ -90,6 +92,7 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
       setF({ enabled: nb.notificationsEnabled, host: nb.smtpHost, port: String(nb.smtpPort), from: nb.fromEmail, name: nb.fromName, tls: nb.useTls, ssl: nb.useSsl });
       setUser(""); setPass(""); setPw(""); setMode("database"); setEnvOk(false); setAskPw(false); setMsg("Email settings saved. No message was sent.");
       void qc.invalidateQueries({ queryKey: getGetIntegrationSettingsQueryKey() });
+      void qc.invalidateQueries({ queryKey: getGetSmtpTestReceiptQueryKey() });
     },
     onError: () => setPw(""),
   });
@@ -102,7 +105,10 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
     try {
     if (!await confirm.ask({ title: "Send a real test email?", description: `One fixed DigiQ test message will be sent to ${to} using saved SMTP settings.`, confirmLabel: "Send test email", tone: "danger" })) return;
     await test.mutateAsync({ data: { recipient: to.trim(), confirmed: true, requestId: crypto.randomUUID() } }).catch(() => {});
-    } finally { testing.current = false; }
+    } finally {
+      testing.current = false;
+      void qc.invalidateQueries({ queryKey: getGetSmtpTestReceiptQueryKey() });
+    }
   };
   return <div className="sms-ref">
     {confirm.dialog}
@@ -144,6 +150,7 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
         <button type="button" className="button secondary em-btn" disabled={!canTest} onClick={() => void runTest()} data-testid="button-send-smtp-test"><Send size={16} aria-hidden /> {test.isPending ? "Sending…" : "Test Email"}</button>
       </div>
     </div>
+    <SmtpTestReceipt disabled={busy} />
     {askPw && <AppDialog open onClose={() => { if (!save.isPending) { setAskPw(false); setPw(""); } }} dirty={false} busy={save.isPending} title="Confirm your password" description={mode === "database" && base.notificationsEnabled && !f.enabled ? "Turning off cancels pending optional email notifications. Sign-in, invitation and recovery emails continue. Saving does not send a message." : "Saving does not send a message."}>
       <form className="cf-form" autoComplete="off" onSubmit={e => { e.preventDefault(); doSave(); }}>
         <div className="form-field"><label htmlFor="em-pw">Current Super Admin password</label>

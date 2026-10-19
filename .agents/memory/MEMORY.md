@@ -47,3 +47,4 @@
 - [Appointment movement policy](appointment-movement-policy.md) — one place later is allowed; ordinary mobility does not broaden account handoffs or live delivery authorization.
 - [Tooltip input contract](tooltip-input-contract.md) — measure clipping and coordinate dismissal across help types; preserve explanations and verify focus, Escape and touch separately.
 - [SMTP namespace policy](smtp-namespace-policy.md) — original names restored by user clarification; never infer value equality, replace saved providers, or claim live delivery from readiness.
+- [Manual email receipt](manual-email-receipt.md) — receipt is an actor/test/configuration-bound assertion, separate from provider status and future delivery assurance.

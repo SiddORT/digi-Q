@@ -1216,6 +1216,36 @@ export const GetIntegrationSettingsResponse = zod.object({
 
 
 /**
+ * Latest SMTP test for the signed-in non-demo Superadmin. Receipt is a manual assertion, never delivery proof.
+ */
+export const GetSmtpTestReceiptResponse = zod.object({
+  "test": zod.object({
+  "requestId": zod.string(),
+  "sentAt": zod.string(),
+  "status": zod.string(),
+  "currentConfiguration": zod.boolean(),
+  "receivedAt": zod.string().nullable()
+}).nullable()
+})
+
+
+export const ConfirmSmtpTestReceiptBody = zod.object({
+  "requestId": zod.string().uuid(),
+  "received": zod.literal(true)
+})
+
+export const ConfirmSmtpTestReceiptResponse = zod.object({
+  "test": zod.object({
+  "requestId": zod.string(),
+  "sentAt": zod.string(),
+  "status": zod.string(),
+  "currentConfiguration": zod.boolean(),
+  "receivedAt": zod.string().nullable()
+}).nullable()
+})
+
+
+/**
  * Super Admin only. Sends a fixed DigiQ Doctors test message. Rate limited by user and IP.
  */
 export const sendSmtpTestEmailBodyRecipientMax = 254;

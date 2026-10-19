@@ -10,6 +10,7 @@ import { sendAuthEmail } from "./auth-email";
 import { storedSmsDiagnostic, type SmsDiagnostic } from "./notification-sms-diagnostics";
 import { withStaffDispatch } from "./staff-dispatch-barrier";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { smtpTestFingerprint } from "./smtp-test-receipt";
 
 type TestInput = {
   channel: "email" | "sms"; event: string; recipientGroup: string; clinicId?: string;
@@ -72,7 +73,10 @@ async function dispatchNotificationTestInternal(actor: string, input: TestInput,
       return { replay: "pre_dispatch_failed" as SmsOutcome };
     }
     // The permanent claim is the authority; history failure cannot permit a second send.
-    await tx.insert(settings).values({ id, data: { digest, status: "delivery_unknown", createdAt: Date.now(), claimedAt: Date.now() } });
+    await tx.insert(settings).values({ id, data: { digest, status: "delivery_unknown", createdAt: Date.now(), claimedAt: Date.now(),
+      ...(input.channel === "email" && input.event === "provider_test"
+        ? { receiptKind: "smtp_provider_test", smtpFingerprint: smtpTestFingerprint(env) } : {}),
+    } });
     await tx.insert(auditLogs).values({
       id:randomUUID(),actorId:actor,action:"notification_test",entityType:"notification_templates",entityId:input.channel,
       summary:`${input.channel} ${input.event} ${input.recipientGroup} test requested`,
@@ -104,8 +108,8 @@ async function dispatchNotificationTestInternal(actor: string, input: TestInput,
   if (status !== "provider_rejected") diagnostic = undefined;
   // If final persistence fails, the permanent unknown claim prevents replay.
   try {
-    await conn.update(settings).set({ data: { digest, status, finishedAt: Date.now(),
-      ...(diagnostic ? { diagnosticCode: diagnostic.code, httpStatus: diagnostic.httpStatus } : {}) } }).where(eq(settings.id, id));
+    await conn.update(settings).set({ data: sql`${settings.data} || ${JSON.stringify({ digest, status, finishedAt: Date.now(),
+      ...(diagnostic ? { diagnosticCode: diagnostic.code, httpStatus: diagnostic.httpStatus } : {}) })}::jsonb` }).where(eq(settings.id, id));
     await recordNotification(conn, id, entry, status, undefined, [], Date.now(), httpStatus);
   } catch { /* Durable unknown claim retained; never rethrow to encourage a new send. */ }
   if (diagnostic) reportDiagnostic(diagnostic);
