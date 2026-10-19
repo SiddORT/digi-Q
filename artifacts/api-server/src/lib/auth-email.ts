@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { HttpError } from "./http";
-import { smtpConfig } from "./integration-config";
+import { smtpConfig, smtpTransportOptions } from "./integration-config";
 import { systemEmailTemplate } from "./email-template";
 import { resolvedIntegration } from "./integration-vault";
 export { smtpConfig } from "./integration-config";
@@ -11,12 +11,7 @@ export async function sendAuthEmail(to: string, subject: string, text: string,
   files: { filename: string; content: Buffer; contentType: string }[] = [], savedEnv?: NodeJS.ProcessEnv,
   beforeDispatch?: () => Promise<void>) {
   const cfg = smtpConfig(savedEnv || (await resolvedIntegration("smtp")).env);
-  const client = transport || nodemailer.createTransport({
-    host: cfg.host, port: cfg.port, secure: cfg.secure,
-    auth: { user: cfg.user, pass: cfg.password }, requireTLS: !cfg.secure && cfg.requireTLS,
-    connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000,
-    disableFileAccess: true, disableUrlAccess: true,
-  });
+  const client = transport || nodemailer.createTransport(smtpTransportOptions(cfg));
   try {
     const attachments: any[] = [...files];
     if (rendered?.logoPath) {

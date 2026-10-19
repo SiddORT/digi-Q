@@ -2,12 +2,12 @@ import { createCipheriv, createDecipheriv, randomBytes, randomUUID } from "node:
 import { eq } from "drizzle-orm";
 import { db, integrationCredentials, auditLogs, settings } from "@workspace/db";
 import { HttpError } from "./http";
-import { integrationReadiness } from "./integration-config";
+import { integrationReadiness, smtpEnvironment, smtpFields } from "./integration-config";
 import { notificationSmsReadiness, smsUrl } from "./notification-sms-transport";
 
 export type Provider = "smtp" | "sms" | "notificationSms";
 export const integrationFields = {
-  smtp: ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM", "SMTP_SECURE", "SMTP_REQUIRE_TLS", "SMTP_FROM_NAME", "SMTP_NOTIFICATIONS_ENABLED"],
+  smtp: smtpFields,
   sms: ["OTP_PROVIDER", "TWILIO_ACCOUNT_SID", "TWILIO_MESSAGING_SERVICE_SID", "TWILIO_AUTH_TOKEN"],
   notificationSms: ["NOTIFICATION_SMS_KEEP_IN_TOUCH_URL", "NOTIFICATION_SMS_URL", "NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_MAPPING", "NOTIFICATION_SMS_STATUS_URL", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID", "NOTIFICATION_SMS_ENABLED", "NOTIFICATION_SMS_PROVIDER", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_COUNTRY_CODE_FORMAT"],
 } as const;
@@ -44,7 +44,7 @@ export async function resolvedIntegration(provider: Provider, conn: Pick<typeof 
   const [row] = await conn.select().from(integrationCredentials).where(eq(integrationCredentials.provider, provider));
   // No fallback when a saved record is unreadable: fail closed.
   return {
-    env: row ? { NODE_ENV: process.env.NODE_ENV, ...decryptIntegration(provider, row.encrypted) } : process.env,
+    env: row ? { NODE_ENV: process.env.NODE_ENV, ...decryptIntegration(provider, row.encrypted) } : provider === "smtp" ? smtpEnvironment() : process.env,
     source: row ? "database" as const : "environment" as const,
     revision: row?.revision ?? null,
   };
@@ -70,7 +70,7 @@ export async function saveIntegration(provider: Provider, values: Record<string,
     if (mode === "environment") {
       await tx.delete(integrationCredentials).where(eq(integrationCredentials.provider, provider));
     } else {
-      const previous = current ? decryptIntegration(provider, current.encrypted) : process.env;
+      const previous = current ? decryptIntegration(provider, current.encrypted) : provider === "smtp" ? smtpEnvironment() : process.env;
       const merged: Record<string, string> = {};
       for (const name of integrationFields[provider]) {
         const protectedBlank = provider === "notificationSms" && ["NOTIFICATION_SMS_KEY", "NOTIFICATION_SMS_BEARER_TOKEN", "NOTIFICATION_SMS_CLIENT_ID", "NOTIFICATION_SMS_SENDER_ID", "NOTIFICATION_SMS_ENTITY_ID"].includes(name) && values[name] === "";

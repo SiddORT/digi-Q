@@ -14,8 +14,9 @@ const bundle = resolve(root, `.native-auth-test-${process.pid}.mjs`);
 process.env.SESSION_SECRET = "disposable-test-signing-key-not-for-production-123";
 process.env.AUTH_SESSION_MODE = "native";
 process.env.CLINICFLOW_PUBLIC_ORIGIN = "https://example.test";
-Object.assign(process.env, { SMTP_HOST: "localhost", SMTP_PORT: "587", SMTP_USER: "test",
-  SMTP_PASSWORD: "test-not-a-credential", SMTP_FROM: "test@example.test" });
+for (const name of ["SECURE", "REQUIRE_TLS", "FROM_NAME", "NOTIFICATIONS_ENABLED"]) delete process.env[`DIGI_SMTP_${name}`];
+Object.assign(process.env, { DIGI_SMTP_HOST: "localhost", DIGI_SMTP_PORT: "587", DIGI_SMTP_USER: "test",
+  DIGI_SMTP_PASSWORD: "test-not-a-credential", DIGI_SMTP_FROM: "test@example.test" });
 globalThis.nativeAuthMail = [];
 Object.assign(process.env, { NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits",
   NOTIFICATION_SMS_KEY:"fictional-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-token",
@@ -155,7 +156,7 @@ test("retired device endpoint rejects even valid historical challenges without c
   assert.equal(globalThis.nativeAuthMail.length, 0);
 });
 test("disposable single-key cutover forces reauth; compromise revocation prevents old-key rollback resurrection", async () => {
-  const keys = ["AUTH_SESSION_MODE", "JWT_SIGNING_KEY", "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
+  const keys = ["AUTH_SESSION_MODE", "JWT_SIGNING_KEY", "DIGI_SMTP_HOST", "DIGI_SMTP_PORT", "DIGI_SMTP_USER", "DIGI_SMTP_PASSWORD", "DIGI_SMTP_FROM"];
   const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   const oldKey = "disposable-cutover-old-key-never-used-outside-tests";
   const newKey = "disposable-cutover-new-key-never-used-outside-tests";
@@ -169,7 +170,7 @@ test("disposable single-key cutover forces reauth; compromise revocation prevent
     return req;
   };
   try {
-    for (const key of keys.filter(key => key.startsWith("SMTP_"))) delete process.env[key];
+    for (const key of keys.filter(key => key.startsWith("DIGI_SMTP_"))) delete process.env[key];
     await h.control.query("insert into users(id,email,full_name,role,password_hash,clerk_id) values ('cutover','cutover@example.test','Cutover','doctor',$1,'preserved-provider-mapping')", [hash]);
     const baseline = await identity();
     process.env.AUTH_SESSION_MODE = "jwt";
@@ -239,7 +240,7 @@ test("unknown email has no session, bad tokens avoid hash work, and absent SMTP 
   assert.throws(() => api.passwordInput("x".repeat(1025)), error => error.code === "INVALID_PASSWORD");
 });
 test("all SMTP settings absent: staff login works, denials remain credential errors, mail endpoints fail explicitly", async () => {
-  const keys = ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"];
+  const keys = ["DIGI_SMTP_HOST", "DIGI_SMTP_PORT", "DIGI_SMTP_USER", "DIGI_SMTP_PASSWORD", "DIGI_SMTP_FROM"];
   const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   try {
     for (const key of keys) delete process.env[key];

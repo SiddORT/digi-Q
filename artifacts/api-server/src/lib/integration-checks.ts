@@ -1,7 +1,7 @@
-import nodemailer from "nodemailer";
 import { access, constants } from "node:fs/promises";
 import { resolvedIntegration } from "./integration-vault";
-import { integrationReadiness, smtpConfig } from "./integration-config";
+import { integrationReadiness } from "./integration-config";
+import { verifySmtp } from "./smtp-verification";
 import { mediaConfig } from "./local-media";
 import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 
@@ -11,9 +11,7 @@ export async function checkIntegration(provider: "smtp" | "sms" | "storage") {
   try {
     if (provider === "smtp") {
       const resolved = await resolvedIntegration("smtp"); source = resolved.source;
-      const cfg = smtpConfig(resolved.env);
-      const transport = nodemailer.createTransport({ host: cfg.host, port: cfg.port, secure: cfg.secure, requireTLS: !cfg.secure, auth: { user: cfg.user, pass: cfg.password }, connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000 });
-      try { await transport.verify(); } finally { transport.close(); }
+      await verifySmtp(resolved.env);
       checks.push({ name: "Connection and authentication", status: "passed", message: "SMTP connection, TLS and authentication succeeded. No message was sent." });
       checks.push({ name: "Sender permission and inbox delivery", status: "not_verified", message: "SMTP verification cannot prove sender authorization or inbox delivery. Use the separately confirmed test email." });
     } else if (provider === "sms") {

@@ -9,9 +9,9 @@ let h;
 before(async () => {
   Object.assign(process.env, {
     CLINICFLOW_PUBLIC_ORIGIN: "https://clinic.test.invalid",
-    SMTP_HOST: "mail.test.invalid", SMTP_PORT: "587", SMTP_USER: "fixture",
-    SMTP_PASSWORD: "fixture-only", SMTP_FROM: "noreply@test.invalid",
-    SMTP_SECURE: "false", SMTP_REQUIRE_TLS: "true",
+    DIGI_SMTP_HOST: "mail.test.invalid", DIGI_SMTP_PORT: "587", DIGI_SMTP_USER: "fixture",
+    DIGI_SMTP_PASSWORD: "fixture-only", DIGI_SMTP_FROM: "noreply@test.invalid",
+    DIGI_SMTP_SECURE: "false", DIGI_SMTP_REQUIRE_TLS: "true",
   });
   h = await createFeatureHarness({ administration: true, simulatedMail: true });
   await seedFeatureFixtures(h.pg);
@@ -74,12 +74,12 @@ test("configuration failures and validation failures before persistence never le
   assert.equal(missing.data.code, "PUBLIC_ORIGIN_UNCONFIGURED");
   assert.equal((await rows("select count(*)::int n from users where email=$1", ["no-origin@test.invalid"]))[0].n, 0);
   process.env.CLINICFLOW_PUBLIC_ORIGIN = "https://clinic.test.invalid";
-  process.env.SMTP_HOST = "";
+  process.env.DIGI_SMTP_HOST = "";
   const smtp = await h.call("adm", "POST", "/users", { ...input("no-smtp"), role: "receptionist" });
   assert.equal(smtp.status, 503);
   assert.equal(smtp.data.code, "EMAIL_UNCONFIGURED");
   assert.equal((await rows("select count(*)::int n from users where email=$1", ["no-smtp@test.invalid"]))[0].n, 0);
-  process.env.SMTP_HOST = "mail.test.invalid";
+  process.env.DIGI_SMTP_HOST = "mail.test.invalid";
   assert.equal((await h.call("adm", "POST", "/doctors", { ...input("invalid"), email: "invalid" })).status, 400);
   assert.equal((await rows("select count(*)::int n from users where email='invalid'"))[0].n, 0);
 });

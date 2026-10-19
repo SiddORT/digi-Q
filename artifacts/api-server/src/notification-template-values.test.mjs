@@ -15,8 +15,8 @@ Object.assign(process.env, {
   NOTIFICATION_SMS_KEY:"fictional-body-key", NOTIFICATION_SMS_BEARER_TOKEN:"fictional-bearer",
   NOTIFICATION_SMS_CLIENT_ID:"fictional-client", NOTIFICATION_SMS_SENDER_ID:"DIGIQ",
   NOTIFICATION_SMS_ENABLED:"true",
-  SMTP_HOST:"smtp.example.invalid", SMTP_PORT:"587", SMTP_USER:"fixture",
-  SMTP_PASSWORD:"fixture", SMTP_FROM:"sender@example.invalid", NOTIFICATION_EMAIL_ENABLED:"true",
+  DIGI_SMTP_HOST:"smtp.example.invalid", DIGI_SMTP_PORT:"587", DIGI_SMTP_USER:"fixture",
+  DIGI_SMTP_PASSWORD:"fixture", DIGI_SMTP_FROM:"sender@example.invalid", NOTIFICATION_EMAIL_ENABLED:"true",
 });
 let h, api;
 const sa={id:"sa",role:"superAdmin"};
