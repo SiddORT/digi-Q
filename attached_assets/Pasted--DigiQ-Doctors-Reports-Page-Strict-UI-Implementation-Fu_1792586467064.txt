@@ -1,0 +1,614 @@
+# DigiQ Doctors — Reports Page: Strict UI Implementation, Full Functionality & End-to-End QA
+
+## 1. Objective
+
+Implement the approved DigiQ Doctors Reports page inside the existing application.
+
+This is a complete implementation task—not a static mockup or a visual-only redesign.
+
+The completed page must:
+
+- Match the approved Reports screenshot as closely as possible.
+- Follow the established DigiQ visual design system.
+- Maintain consistent spacing, sizing, typography, alignment, and component styling.
+- Preserve all existing business logic, APIs, database relationships, authentication, and permissions.
+- Make every visible control and supported workflow functional.
+- Display real report data, accurate metrics, and meaningful charts.
+- Integrate correctly with the rest of the application.
+- Have no unresolved critical defects within the implemented and tested scope.
+
+**Do not make assumptions about unspecified functionality, data, routes, permissions, or business rules. Inspect the existing project first and ask targeted questions if an implementation-critical detail remains unclear.**
+
+## 2. Mandatory Reference Images and Design Authority
+
+Use the supplied screenshots as binding implementation references.
+
+| Reference | Authority |
+|---|---|
+| Approved Reports screenshot | Reports page layout, information hierarchy, controls, chart, table, and date-range placement |
+| Approved Clinic screenshot | Established compact UX, component sizing, spacing, and page structure conventions |
+| Approved Notifications screenshot | Shared visual styling, typography, controls, borders, colors, and application shell |
+| Existing application code | Actual routes, APIs, data models, permissions, and business logic |
+
+If the references conflict in an implementation-critical way, stop and ask for clarification instead of silently choosing an interpretation.
+
+Do not replace the approved design with a generic dashboard template.
+
+## 3. Strict UI/UX and Spacing Lock
+
+### No independent design decisions
+
+Inspect the existing application CSS, design tokens, shared components, and the approved reference screenshots before implementing the page.
+
+Match the references for:
+
+- Sidebar width and navigation spacing.
+- Top header height and alignment.
+- Breadcrumb placement.
+- Main content margins and offsets.
+- Page title positioning and typography.
+- Horizontal and vertical spacing.
+- Padding and gaps between components.
+- Card widths, heights, and internal layouts.
+- Input, dropdown, and button dimensions.
+- Font family, size, weight, and line height.
+- Icon size, stroke, alignment, and spacing.
+- Border thickness, colors, radii, and separators.
+- Active navigation and button states.
+- Summary-card dimensions and content alignment.
+- Chart height, padding, grid lines, and axis labels.
+- Table row heights, column alignment, and pagination spacing.
+- Empty, loading, error, and success-state styling.
+
+Use existing design tokens and shared components wherever possible.
+
+Do not arbitrarily enlarge controls, add whitespace, change typography, introduce new colors, or create a separate visual system.
+
+Where exact dimensions can be measured or extracted, use those values. Where a dimension cannot be established reliably and materially affects the result, ask before making a design decision.
+
+### Compactness requirements
+
+The page must remain compact, structured, and information-dense.
+
+- Do not waste the top-right header space.
+- Keep the date-range selector and comparison control in the approved title-row position.
+- Keep filters in a single compact row at desktop widths where the reference supports it.
+- Keep applied filter chips compact.
+- Avoid unnecessary cards, repeated date controls, duplicate filters, and excessive whitespace.
+- Maintain readable text and clear visual hierarchy.
+- Prevent clipping, overlapping, and broken wrapping.
+
+Use the latest approved Reports screenshot as the primary desktop visual acceptance target.
+
+## 4. Standard DigiQ Application Shell
+
+Reuse the existing application shell:
+
+- DigiQ Doctors branding.
+- Workspace indicator.
+- Sidebar navigation.
+- Breadcrumb.
+- Workspace search.
+- Secure workspace indicator.
+- Notification badge and panel.
+- Logged-in user and role menu.
+- Sign Out action.
+
+Keep the existing sidebar order, labels, permissions, active states, and navigation behavior.
+
+The Reports item must be highlighted when the Reports route is active.
+
+Do not duplicate the sidebar or header, or change unrelated pages.
+
+## 5. Approved Reports Page Layout
+
+Implement the following sections in the approved order.
+
+### A. Page heading and top-right controls
+
+Display:
+
+- Page title: `Reports`
+- A short, appropriate description.
+- A global date-range selector aligned to the top-right.
+- An optional comparison toggle.
+- A primary `Export` action.
+
+The date selector must support the actual date-range functionality described below.
+
+Do not display a redundant standalone date at the top-left. Do not duplicate the selected date range in another prominent control when the global selector already provides it.
+
+### B. Search and filter toolbar
+
+Include:
+
+- Search reports.
+- Group By.
+- Report Type.
+- Status.
+- Clinic.
+- Apply.
+- Clear All.
+
+Follow the screenshot's compact horizontal layout.
+
+All filter options must come from supported application capabilities and authorized data.
+
+Use a responsive layout on smaller screens without horizontal overflow.
+
+### C. Applied filter chips
+
+Show the currently applied filters as removable chips, including the selected date range where appropriate.
+
+Requirements:
+
+- Display the actual applied values.
+- Removing a chip must update the relevant filter state.
+- `Clear All` must reset the supported filters consistently.
+- Do not confuse draft filter selections with applied filters.
+- Do not show stale chips after a filter reset or clinic change.
+
+If filters require an explicit Apply action, draft selections must not silently change the displayed report results until applied.
+
+### D. Summary cards
+
+Use the approved compact card design for the report metrics supported by the existing data model.
+
+Potential metrics shown in the reference include:
+
+- Total Appointments.
+- Completed.
+- Cancelled.
+- No-shows.
+
+For each metric, display the real value and, when supported, a comparison with the previous period.
+
+Requirements:
+
+- Use actual authorized report data.
+- Respect the active date range, clinic, and applicable filters.
+- Calculate percentages correctly.
+- Handle zero denominators and unavailable comparison periods safely.
+- Do not display fabricated values, trends, or percentages.
+- Do not assume that all metrics exist in the current backend.
+
+If a metric cannot be supported, identify the missing capability instead of inventing data.
+
+### E. Appointments Trend chart
+
+Implement a real chart using the existing project charting library, if available.
+
+Requirements:
+
+- Render data from the actual report API or established data aggregation logic.
+- Update when the applied date range or relevant filters change.
+- Respect the selected Group By value where supported.
+- Use correct date labels and aggregation intervals.
+- Handle missing dates consistently.
+- Display appropriate axis labels and tooltips.
+- Support empty, loading, and error states.
+- Avoid misleading scales or fabricated trend lines.
+- Keep chart sizing, spacing, borders, and typography consistent with the approved screenshot.
+
+If the selected filters return no chart data, show a compact empty state with a useful explanation.
+
+### F. Report Results table
+
+Include the approved columns:
+
+- #
+- Date
+- Report / Event
+- Clinic
+- Type
+- Status
+- Actions
+
+Reuse the actual report schema and supported actions.
+
+Requirements:
+
+- Search must return matching records.
+- Sorting must work where supported.
+- Pagination must operate on the correct filtered dataset.
+- The rows-per-page selector must work.
+- The displayed record count must reflect the actual result set.
+- Status badges must represent real report states.
+- Row actions must open the correct existing details, download, or management workflow.
+- The Export CSV and Columns actions must work.
+- Column visibility changes must update the table.
+- Empty results must show a proper empty state.
+- Loading and API failures must not be misrepresented as empty results.
+
+Do not hardcode the sample report rows shown in the reference.
+
+## 6. Date-Range Selector — Required Behavior
+
+Implement a compact date-range dropdown or calendar popover consistent with the approved styling.
+
+Support these presets when compatible with the existing reporting requirements:
+
+- Today.
+- Yesterday.
+- Last 7 days.
+- Last 28 days.
+- Last 30 days.
+- This week.
+- Last week.
+- This month.
+- Last month.
+- Custom range.
+
+The selected date range must be visible in the closed selector.
+
+### Custom range
+
+- Provide start and end date selection.
+- Validate the date range.
+- Prevent invalid start/end combinations.
+- Respect the application's configured timezone and existing reporting conventions.
+- Display dates in the established DigiQ date format.
+- Handle inclusive/exclusive boundaries consistently with the backend.
+- Prevent accidental off-by-one-day errors.
+- Update applied filter chips correctly.
+
+Do not hardcode the reference date as the permanent current date.
+
+Use the real current date and the application's established timezone.
+
+### Comparison toggle
+
+If comparison is supported, allow comparison with the appropriate previous period.
+
+For example, comparing a seven-day period with the immediately preceding seven-day period.
+
+When enabled:
+
+- Use the correct previous period.
+- Display comparison values only when valid data exists.
+- Calculate percentage changes correctly.
+- Distinguish absolute changes from percentage changes.
+- Handle zero baselines and unavailable data safely.
+- Label the comparison period clearly.
+
+When comparison is unsupported by the current backend, do not fabricate results; identify the missing requirement.
+
+## 7. Functional Requirements for Every Control
+
+Audit every interactive element in the actual page and application shell.
+
+| Control | Required behavior |
+|---|---|
+| Logo | Navigate to the existing authorized destination. |
+| Breadcrumb | Navigate to the correct parent route. |
+| Sidebar links | Open the intended existing pages. |
+| Workspace search | Execute supported global search behavior. |
+| Notifications | Open the existing notification interface. |
+| User menu | Display supported authorized actions. |
+| Sign Out | Execute the actual logout workflow. |
+| Date-range selector | Open and apply valid date selections. |
+| Preset options | Select the correct date period. |
+| Custom range | Validate and apply selected dates. |
+| Comparison toggle | Update comparison metrics and chart when supported. |
+| Report search | Search the actual report dataset. |
+| Group By | Change the supported aggregation. |
+| Report Type | Filter the report dataset. |
+| Status | Filter the report dataset. |
+| Clinic | Filter authorized clinic records. |
+| Apply | Apply draft filters and refresh the report results. |
+| Clear All | Reset filters according to established defaults. |
+| Filter chips | Remove the corresponding applied filter. |
+| Summary cards | Show correct metrics; support navigation only if an existing behavior is defined. |
+| Chart selector | Change the displayed metric when supported. |
+| Chart tooltips | Show accurate values for the selected data point. |
+| Export | Execute the supported export workflow. |
+| Export CSV | Generate and download the actual filtered result set. |
+| Columns | Open the column configuration interface and apply changes. |
+| Views | Use existing saved-view functionality, if implemented. |
+| Table headers | Sort supported columns. |
+| Pagination | Load the correct result page. |
+| Rows per page | Change the number of displayed records. |
+| Row action menu | Open only supported, authorized actions. |
+
+This is a minimum list. Inspect and test every additional interactive element discovered in the codebase.
+
+No dead buttons, empty handlers, placeholder links, fake downloads, or false success messages are allowed.
+
+If a referenced action does not exist in the current application, ask before inventing its behavior.
+
+## 8. Export and Column Management
+
+### CSV export
+
+Export must:
+
+- Use actual records.
+- Respect the current authorized clinic scope and applied filters.
+- Include the appropriate fields.
+- Handle commas, quotation marks, newlines, and Unicode correctly.
+- Use a meaningful filename.
+- Handle empty results appropriately.
+- Report failures accurately.
+- Avoid exporting unauthorized data.
+
+If export is generated by the backend, use the established endpoint and response format.
+
+Do not create a fake download or export unfiltered data while claiming filters were applied.
+
+### Column controls
+
+- Display available supported columns.
+- Allow visibility changes.
+- Preserve existing table functionality.
+- Prevent hiding all meaningful columns without a valid recovery mechanism.
+- Preserve column settings only through the existing supported persistence mechanism.
+- Ensure the table remains responsive.
+
+### Saved views
+
+Inspect whether saved views already exist.
+
+If supported, ensure views correctly restore their configured filters, columns, and other supported settings.
+
+If not supported, do not display a nonfunctional Views control or silently introduce a new data model.
+
+## 9. Routes and Cross-Page Integrity
+
+Integrate the Reports page with the existing application.
+
+Requirements:
+
+- Reuse existing route definitions.
+- Ensure all internal links resolve correctly.
+- Support direct URL access and refresh.
+- Preserve valid query parameters where supported.
+- Handle invalid routes safely.
+- Respect authorization on direct access.
+- Ensure browser Back and Forward work correctly.
+- Avoid conflicting or duplicate routes.
+
+Where the application supports URL-addressable report filters, ensure the selected date range and filter state are restored consistently.
+
+Do not introduce new routes without verifying their intended behavior.
+
+Verify that changes made through Reports-related workflows are reflected in relevant application pages after refreshing data.
+
+## 10. API, Database and Data Integrity
+
+Inspect the existing report APIs, database schema, relationships, and aggregation logic before implementation.
+
+Verify:
+
+- Report identifiers and relationships.
+- Clinic associations.
+- Appointment and doctor dependencies.
+- Status mappings.
+- Date and timezone handling.
+- Tenant isolation.
+- Role-based authorization.
+- Pagination and sorting contracts.
+- Search and filter query parameters.
+- Export data sources.
+- Metric aggregation logic.
+
+Requirements:
+
+- Use authoritative backend data.
+- Never hardcode report metrics or table records in production.
+- Do not invent database fields or endpoints.
+- Do not expose data from unauthorized clinics.
+- Prevent duplicate requests from producing duplicate operations.
+- Preserve existing schema constraints.
+- Use safe parameterized queries and existing validation mechanisms.
+- Handle concurrent changes and stale data appropriately.
+- Avoid unnecessary migrations or destructive operations.
+
+If required analytics cannot be derived from the existing backend, document the missing capability and ask before changing the data model or API contract.
+
+## 11. Loading, Empty, Error and Success States
+
+Implement appropriate states for every data-driven section.
+
+| State | Expected behavior |
+|---|---|
+| Loading | Compact skeletons or indicators consistent with DigiQ styling. |
+| No chart data | Clear message and appropriate filter guidance. |
+| No report results | Clear empty state with current scope explained. |
+| API error | Actionable error and retry where appropriate. |
+| Unauthorized | Correct access-denied behavior. |
+| Export failure | Accurate failure message without false success. |
+| Invalid date range | Inline validation and no invalid query. |
+| Empty comparison period | Explain unavailable comparison data. |
+| Partial failure | Identify the failed section instead of fabricating results. |
+
+Do not show zero values when the API failed to return data.
+
+Do not display stale values from a previous date range while the new request is pending.
+
+Prevent duplicate submissions and preserve the user's selections after recoverable errors.
+
+## 12. Role-Based Access and Security
+
+The Reports page must respect existing DigiQ permissions.
+
+Inspect the current role hierarchy before implementation.
+
+Verify:
+
+- Users can access only authorized reports and clinics.
+- Clinic filters contain only permitted options.
+- Direct API requests cannot bypass permissions.
+- CSV exports enforce the same access restrictions as the UI.
+- Report details and row actions are authorized.
+- Search, chart aggregation, and summary metrics do not expose cross-clinic data.
+- Session expiration and logout follow existing behavior.
+
+Do not assume every role has the same reporting access.
+
+Do not create a new permission model or weaken existing restrictions to make the page work.
+
+## 13. Responsive Layout and Accessibility
+
+Validate at:
+
+- 1536 × 1024.
+- 1366 × 768.
+- 768 × 1024.
+- 390 × 844.
+
+Ensure:
+
+- No unintended horizontal overflow.
+- No clipped text or overlapping controls.
+- Filters wrap or collapse appropriately.
+- Summary cards adapt to available width.
+- Charts remain readable.
+- Tables remain usable on narrow screens.
+- Buttons remain accessible.
+- Keyboard navigation and visible focus indicators work.
+- Controls have meaningful accessible names.
+- Color contrast is appropriate.
+- Status is communicated through text as well as color.
+
+Preserve the approved desktop layout while adapting to smaller viewports using existing application patterns.
+
+## 14. Automated and Manual Testing
+
+Use the project's existing test infrastructure. Reuse installed Playwright or other browser automation tooling where available.
+
+### Build and runtime
+
+- Run the established build command.
+- Run available type checks and lint checks.
+- Start the application using its documented development command.
+- Inspect browser console errors.
+- Inspect failed network requests.
+- Inspect backend and database errors.
+- Verify the Reports route and related destinations.
+
+### Date and filter tests
+
+Test:
+
+- Each supported date preset.
+- Custom start and end dates.
+- Invalid date ranges.
+- Date boundary and timezone handling.
+- Group By changes.
+- Report Type filtering.
+- Status filtering.
+- Clinic filtering.
+- Combined filters.
+- Apply and Clear All.
+- Filter-chip removal.
+- Search combined with filters.
+- Browser refresh and URL restoration where supported.
+
+### Metrics and chart tests
+
+- Compare displayed metrics with authoritative source data.
+- Validate calculations.
+- Validate previous-period comparisons.
+- Validate zero and missing-data cases.
+- Verify chart aggregation and date labels.
+- Verify updates after filter changes.
+- Verify empty and error states.
+
+### Table and export tests
+
+- Search, sort, and paginate.
+- Change rows per page.
+- Change visible columns.
+- Open every supported row action.
+- Export the current filtered dataset.
+- Validate CSV contents.
+- Test empty exports and export failures.
+- Confirm unauthorized records are excluded.
+
+### Cross-role tests
+
+For each applicable existing role:
+
+1. Open Reports.
+2. Verify permitted reporting scope.
+3. Apply filters.
+4. Verify metrics and table rows.
+5. Attempt direct access to unauthorized report data.
+6. Verify export authorization.
+7. Confirm that no cross-clinic information is exposed.
+
+### Visual regression
+
+Capture the final page at the approved desktop resolution and compare it against the reference.
+
+Correct measurable differences in:
+
+- Spacing.
+- Sizing.
+- Alignment.
+- Typography.
+- Colors.
+- Component proportions.
+- Chart dimensions.
+- Table density.
+- Filter layout.
+
+Repeat the comparison after corrections.
+
+Do not claim a test passed unless it was actually executed.
+
+## 15. Implementation Rules
+
+- Preserve working application functionality.
+- Reuse existing routes, APIs, components, types, and design tokens.
+- Avoid unnecessary dependencies.
+- Avoid unrelated refactoring.
+- Do not replace real APIs with mock data.
+- Do not fabricate analytics or trend values.
+- Do not create nonfunctional buttons.
+- Do not suppress errors to make tests pass.
+- Do not modify unrelated pages.
+- Do not make destructive database changes.
+- Do not invent unspecified behavior.
+- Do not claim the entire application has been verified when only the Reports workflow was tested.
+
+If a requirement is unclear and cannot be resolved from the existing implementation or approved screenshots, stop and ask a specific question.
+
+## 16. Definition of Done
+
+- [ ] The Reports page matches the approved UI reference.
+- [ ] Spacing, sizing, typography, and component styling are consistent with DigiQ.
+- [ ] The top-right date selector and comparison control work.
+- [ ] Filters, search, Apply, Clear All, and applied chips work.
+- [ ] Summary cards display accurate, data-driven metrics.
+- [ ] The chart reflects the applied filters and actual data.
+- [ ] The results table supports the existing search, sorting, pagination, and row actions.
+- [ ] CSV export works with the correct filtered and authorized dataset.
+- [ ] Column management and saved views work if supported.
+- [ ] All visible links and controls perform their intended actions.
+- [ ] Routes, refresh, and browser navigation work.
+- [ ] Authorization and database relationships remain intact.
+- [ ] Loading, empty, error, and success states work correctly.
+- [ ] Responsive behavior and accessibility are checked.
+- [ ] No unresolved critical defects remain in the tested scope.
+- [ ] Build and applicable automated tests pass.
+- [ ] Remaining limitations are explicitly documented.
+
+## 17. Required Completion Report
+
+After implementation, provide:
+
+1. Files changed and their purpose.
+2. Existing routes, APIs, and data models reused.
+3. UI and styling changes completed.
+4. Functional controls and workflows implemented.
+5. Data and authorization behavior verified.
+6. Tests actually executed and their results.
+7. Defects discovered and fixed.
+8. Any unresolved blockers or unverified functionality.
+
+## Final Execution Instruction
+
+Inspect the existing application first. Follow the approved references strictly. Ask questions where implementation-critical information is missing. Implement the actual Reports page, connect the real data and workflows, execute the tests, and correct visual and functional defects.
+
+**The deliverable is a fully functional, reference-matched DigiQ Reports page—not merely a screenshot, a generic dashboard, or a visually convincing but nonfunctional mockup.**
