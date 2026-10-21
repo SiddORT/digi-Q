@@ -11,6 +11,7 @@
     "test:auth": "node --test ./src/native-auth.integration.test.mjs ./src/auth-http.integration.test.mjs ./src/jwt-session.test.mjs",
     "test:staff-removal": "node --test --test-concurrency=2 ./src/staff-*.integration.test.mjs ./src/staff-removal-review.test.mjs ./src/retired-staff*.integration.test.mjs ./src/development-deletion-guards.integration.test.mjs ./src/notification-history-provenance.integration.test.mjs ./src/exclusive-media-cleanup.integration.test.mjs",
     "test:jwt": "node --test ./src/jwt-session.test.mjs",
+    "test:public-metadata": "node --test ./src/public-page-metadata.integration.test.mjs",
     "test:staff-invitations": "node --test ./src/staff-invitation.integration.test.mjs",
     "test:booking-lookup-privacy": "node --test ./src/booking-lookup-privacy.integration.test.mjs",
     "test:owner-booking": "node --test ./src/owner-booking.integration.test.mjs",
@@ -19,6 +20,7 @@
     "test:features": "node --test ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs"
   },
   "dependencies": {
+    "@workspace/public-pages": "workspace:*",
     "@google-cloud/storage": "^8.2.0",
     "@replit/connectors-sdk": "^0.4.3",
     "@workspace/api-zod": "workspace:*",

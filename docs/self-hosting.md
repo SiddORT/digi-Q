@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-Use Node.js 22+, pnpm, PostgreSQL, HTTPS and a reverse proxy/static web server.
+Use Node.js 22+, pnpm, PostgreSQL, HTTPS and a reverse proxy.
 Replit Secrets is not required on your own server. This guide does not migrate or
 publish anything automatically, and workspace tests do not certify your live server.
 
@@ -39,6 +39,29 @@ private file when you want environment-managed integrations. Without these, a Su
 Admin can supply supported provider credentials through the website after bootstrap.
 
 ## Database and service
+
+### Route-aware HTML (required for public clinic metadata)
+
+The supported root-hosted API process now also serves ClinicFlow's built files
+and dynamically renders initial HTML. Proxy **all document routes** to that
+process, including `/`, clinic/location addresses, missing addresses and private
+routes. Continue routing `/api` and private media to the same API as before.
+Do not use `try_files ... /index.html`, a static SPA rewrite, or a proxy cache for
+document routes: those bypass clinic resolution, 404 status and crawler policy.
+Actual assets under `/assets/` may still be served statically from
+`artifacts/clinicflow/dist/public/assets`. Do not expose source, configuration,
+`.env`, database files or server bundles through the web root.
+
+The managed ClinicFlow artifact uses its own Node HTML process
+(`pnpm --filter @workspace/clinicflow run serve`), not static hosting. This
+process needs the same server-side `DATABASE_URL` and
+`CLINICFLOW_PUBLIC_ORIGIN` as the API; neither is embedded in the browser bundle.
+Vite development uses the same renderer. A static-only export is deliberately
+fail-closed and is **not** an equivalent deployment.
+
+See [public clinic HTML policy](public-clinic-html.md) for metadata behavior,
+privacy boundaries and workspace verification. These code/config changes are
+not a live proxy change or permission to roll out.
 
 ### Canonical public website address
 

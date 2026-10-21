@@ -18,12 +18,10 @@ import { SearchableSelect } from "./SearchableSelect";
 import "./clinic-registration.css";
 import { usePublicWebsite, PublicWebsiteStatus } from "../lib/public-website";
 import { setMeta, setPageMetadata } from "../lib/page-metadata";
+import { PRIVATE_PAGE_METADATA, publicClinicMetadata, publicPageRoute, validPublicSlug } from "@workspace/api-zod/public-page";
 
-const reserved = new Set(["admin", "doctor", "receptionist", "patient", "api", "auth", "sign-in", "sign-up", "login", "logout", "register", "register-clinic", "register-doctor", "onboarding", "patient-login", "scan-qr", "guest-booking", "forgot-password", "set-password", "check-in", "display", "book", "settings", "users", "assets", "public", "health", "healthz", "favicon", "robots", "sitemap", "clinics", "branches", "appointments", "patients", "queue", "reports", "masters", "audit", "qrs", "availability", "exceptions"]);
-for (const name of ["signup", "dashboard", "doctors", "schedules", "booking", "qr", "guest", "invite", "invitations", "reset-password", "account", "me", "clinicflow-project-deck"]) reserved.add(name);
-const validSlug = (value: string) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length >= 3 && value.length <= 63;
 export function PublicClinicPage({ clinicSlug, branchSlug }: { clinicSlug: string; branchSlug?: string }) {
-  if (!validSlug(clinicSlug) || reserved.has(clinicSlug) || (branchSlug && !validSlug(branchSlug))) return <div className="empty"><h1>Page Not Found</h1><Link href="/">Return Home</Link></div>;
+  if (!validPublicSlug(clinicSlug) || (branchSlug && !validPublicSlug(branchSlug))) return <div className="empty"><h1>Page Not Found</h1><Link href="/">Return Home</Link></div>;
   return <PublicClinicResolved key={`${clinicSlug}/${branchSlug || ""}`} clinicSlug={clinicSlug} branchSlug={branchSlug}/>;
 }
 
@@ -64,12 +62,12 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
     if (onlyBranch) navigate(`/${clinicSlug}/${onlyBranch.slug}?book=1`, { replace: true });
   }, [clinicSlug, onlyBranch?.slug, navigate]);
   useEffect(() => {
-    if (!data || query.error) { setMeta("name","robots","noindex, nofollow"); return; }
-    const place = [data.branch?.name, data.clinic.name].filter(Boolean).join(" · ");
-    const address = [data.branch?.address || data.clinic.address, data.branch?.city].filter(Boolean).join(", ");
-    setPageMetadata(`${place} | ${BRAND_NAME}`, `Visit ${place}${address ? ` at ${address}` : ""}. Find care specialists, clinic information and available booking options.`,
-      mode ? undefined : site.url(`/${clinicSlug}${branchSlug ? `/${branchSlug}` : ""}`));
-    setMeta("name","robots",mode ? "noindex, nofollow" : "index, follow");
+    const path = `/${clinicSlug}${branchSlug ? `/${branchSlug}` : ""}`;
+    const metadata = data && !query.error && publicPageRoute(`${path}${search ? `?${search}` : ""}`).kind === "clinic"
+      ? publicClinicMetadata(data.clinic, branchSlug ? data.branch ?? undefined : undefined, path, site.origin)
+      : PRIVATE_PAGE_METADATA;
+    setPageMetadata(metadata.title, metadata.description, metadata.canonical);
+    setMeta("name", "robots", metadata.robots);
   }, [data, query.error, site.origin, clinicSlug, branchSlug, mode, search]);
   if (onlyBranch) return <div className="page-loading" role="status">Opening your clinic’s only location…</div>;
   if (query.isLoading) return <div className="page-loading" role="status">Loading clinic information…</div>;

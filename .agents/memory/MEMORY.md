@@ -56,3 +56,4 @@
 - [Clinic workspace boundary](clinic-details-contract.md) — management is informational; private IDs and existing public slugs remain distinct identities.
 - [Head-only browser inspection](head-only-browser-inspection.md) — automatic page snapshots can capture queue and QR content; restrict metadata audits to document-head fields.
 - [Clinic metadata vocabulary](clinic-metadata-vocabulary.md) — custom clinic descriptions stay separate from master IDs and personal specialization; normalization must not corrupt onboarding recovery.
+- [Vite server modules](vite-server-module-loading.md) — native Node TypeScript support does not resolve linked packages' bundler-style imports; verify dev and bundled server paths.

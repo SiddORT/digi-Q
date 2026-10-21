@@ -5,14 +5,16 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts --host 0.0.0.0",
-    "build": "vite build --config vite.config.ts",
-    "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
+    "build": "vite build --config vite.config.ts && node build-server.mjs",
+    "serve": "node --enable-source-maps dist/server.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:selection-label": "node --test src/lib/selection-label.test.mjs",
     "test:weekly-drafts": "node --test src/components/schedule/week-plan.test.mjs src/components/schedule/compact-drafts.test.mjs src/components/schedule/copy-plan.test.mjs",
     "test:directory-cache": "node --test src/lib/directory-cache.test.mjs src/lib/public-care-options.test.mjs src/lib/sole-option.test.mjs src/auth/session-lifecycle.test.mjs"
   },
   "devDependencies": {
+    "esbuild": "0.28.2",
+    "@workspace/public-pages": "workspace:*",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.4",
     "@radix-ui/react-alert-dialog": "^1.1.7",

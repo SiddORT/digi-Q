@@ -9,6 +9,10 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { errors, HttpError } from "./lib/http";
 import { checkCsrf, nativeSession } from "./lib/native-auth";
+import { publicHtmlMiddleware } from "@workspace/public-pages";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const app: Express = express();
 
@@ -60,6 +64,11 @@ app.use("/api", checkCsrf);
 app.use("/api", router);
 app.use(mediaConfig().url, localMediaRouter);
 app.use("/api", (_req, res) => { res.status(404).json({ error: "API route not found" }); });
+// Root-hosted self-hosting: HTML must pass through the same route-aware renderer
+// as the managed frontend. Static index fallback bypasses status/privacy policy.
+const frontend = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../clinicflow/dist/public");
+app.use(publicHtmlMiddleware(() => readFile(path.join(frontend, "index.html"), "utf8")));
+app.use(express.static(frontend, { index: false }));
 app.use(errors);
 
 export default app;

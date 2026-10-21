@@ -1,0 +1,14 @@
+{
+  "name": "@workspace/public-pages",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./server": "./src/server.ts" },
+  "dependencies": {
+    "@workspace/api-zod": "workspace:*",
+    "@workspace/db": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "express": "^5.2.1"
+  },
+  "devDependencies": { "@types/node": "catalog:", "@types/express": "^5.0.6" }
+}

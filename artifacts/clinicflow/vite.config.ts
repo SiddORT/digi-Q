@@ -1,4 +1,5 @@
 import path from 'path';
+import { readFile } from 'node:fs/promises';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
@@ -30,6 +31,24 @@ if (!basePath) {
 export default defineConfig({
   base: basePath,
   plugins: [
+    {
+      name: 'public-clinic-initial-html',
+      configureServer(server) {
+        // Workspace exports are TypeScript with bundler-style imports. Load
+        // them through Vite's server module runner, not native Node imports.
+        let middleware: Promise<ReturnType<typeof import('@workspace/public-pages').publicHtmlMiddleware>> | undefined;
+        server.middlewares.use(async (req, res, next) => {
+          try {
+            middleware ??= server.ssrLoadModule('@workspace/public-pages').then(({ publicHtmlMiddleware }) =>
+              publicHtmlMiddleware(
+                () => readFile(path.resolve(import.meta.dirname, 'index.html'), 'utf8'),
+                (url: string, html: string) => server.transformIndexHtml(url, html),
+              ));
+            (await middleware)(req, res, next);
+          } catch (error) { next(error); }
+        });
+      },
+    },
     react(),
     tailwindcss({ optimize: false }),
     runtimeErrorOverlay(),
@@ -58,6 +77,9 @@ export default defineConfig({
       ),
     },
     dedupe: ['react', 'react-dom'],
+  },
+  ssr: {
+    noExternal: ['@workspace/public-pages', '@workspace/db', '@workspace/api-zod'],
   },
   root: path.resolve(import.meta.dirname),
   build: {
