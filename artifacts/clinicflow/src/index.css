@@ -4,6 +4,10 @@
 @import "./components/compact-listing.css";
 @import "./components/uniformity.css";
 
+/* Browser-test locators are not UI classes (for example, attribute :visible selectors).
+   Keep fixture/test text out of generated utilities without changing application sources. */
+@source not "../workspace-regression";
+
 @layer components {
   .workspace .sidebar { padding-top:16px; padding-bottom:12px; }
   .workspace .workspace-label { margin:24px 12px 12px; }
