@@ -56,5 +56,17 @@ export interface ClinicInput {
   clinicTypeId?: string;
   /** @nullable */
   categoryId?: string | null;
+  /**
+     * Clinic-owned text; mutually exclusive with categoryId. Null clears.
+     * @maxLength 100
+     * @nullable
+     */
+  customCategory?: string | null;
+  /**
+     * @maxItems 30
+     * @items.minLength 1
+     * @items.maxLength 100
+     */
+  customSpecialities?: string[];
   status?: RecordStatus;
 }

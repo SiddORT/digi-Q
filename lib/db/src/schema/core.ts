@@ -26,6 +26,8 @@ export const clinics = pgTable("clinics", {
   data: jsonb("data").$type<Record<string, any> & {
     dateFormat?: "DD MMM YYYY" | "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
     timeFormat?: "12h" | "24h";
+    customCategory?: string | null;
+    customSpecialities?: string[];
   }>().notNull().default({}), createdAt: created(),
 }, t => [index("clinic_owner_idx").on(t.ownerId), index("clinic_admin_idx").on(t.adminId), uniqueIndex("clinic_name_unique").on(sql`lower(${t.data}->>'name')`), uniqueIndex("clinic_slug_unique").on(sql`(${t.data}->>'slug')`)]);
 export const branches = pgTable("branches", {

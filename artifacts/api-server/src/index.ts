@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { startNotificationWorker } from "./lib/notification-outbox";
 import { initializeMedia } from "./lib/local-media";
 import { pincodeAssetStatus } from "./lib/pincode";
+import { db, provisionHealthcareVocabulary } from "@workspace/db";
 
 const rawPort = process.env["PORT"];
 
@@ -19,6 +20,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 await initializeMedia();
+await db.transaction(tx => provisionHealthcareVocabulary(tx));
 const pinAsset = pincodeAssetStatus();
 if (pinAsset.available) logger.info(pinAsset, "PIN directory loaded");
 else logger.warn("PIN directory missing: PIN assistance disabled, manual address entry continues");

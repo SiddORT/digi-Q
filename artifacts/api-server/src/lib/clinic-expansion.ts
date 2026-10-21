@@ -6,6 +6,7 @@ import { enrich } from "./entities";
 import { validateTimes, localNow, minutes, sameTimezone, weeklySessionsOverlap, outsideBranchHours, branchDayStatus } from "./availability";
 export { outsideBranchHours, branchDayStatus, OUTSIDE_LOCATION_HOURS_WARNING, LOCATION_CLOSED_REASON } from "./availability";
 import { lockLinkedDoctors, planLinkedSchedules, applyLinkedPlan } from "./linked-schedules";
+import { normalizeClinicMetadata } from "./clinic-metadata";
 
 const reserved = new Set(["api", "admin", "auth", "login", "logout", "register", "signup", "sign-in", "sign-up", "onboarding", "dashboard", "clinics", "branches", "doctors", "patients", "appointments", "queue", "settings", "reports", "users", "masters", "schedules", "availability", "booking", "book", "display", "qr", "public", "guest", "invite", "invitations", "forgot-password", "reset-password", "account", "me", "assets", "favicon", "__mockup", "clinicflow-project-deck"]);
 // Pre-0008 ownership functions permit a self-owned doctor profile, but prohibit
@@ -57,17 +58,10 @@ export async function provisionBranchQr(branch: any, old: any, conn: any) {
     await put(qrs, { id: uid(), clinicId: branch.clinicId, branchId: branch.id, publicReference: reference, data: { name: branch.name + " booking", bookingUrl: `/book/${reference}` } }, conn);
   }
 }
-export async function validateClinicMetadata(body: any, conn: any) {
+export async function validateClinicMetadata(body: any, conn: any, old: any = {}) {
   assert(body.dateFormat === undefined || ["DD MMM YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"].includes(body.dateFormat), 400, "Select a supported date format");
   assert(body.timeFormat === undefined || ["12h", "24h"].includes(body.timeFormat), 400, "Select a supported time format");
-  if (body.categoryId) {
-    const row = await one(masters, body.categoryId, conn);
-    assert(row.category === "clinicCategory" && row.status === "active", 400, "Invalid clinic category");
-  }
-  for (const id of body.specialityIds || []) {
-    const row = await one(masters, id, conn);
-    assert(row.category === "specialization" && row.status === "active", 400, "Invalid clinic speciality");
-  }
+  await normalizeClinicMetadata(body, conn, old);
 }
 export async function clinicSettingsResult(clinicId: string, conn: any = db) {
   const clinic = await one(clinics, clinicId, conn), platform = await getSettings(conn);
@@ -86,7 +80,7 @@ export async function saveClinicSetup(actor: any, clinicId: string, body: any, c
   assert(actor.role === "superAdmin" || actor.role === "clinicAdmin" && old.adminId === actor.id, 403, "Clinic settings are outside your ownership");
   await lockLinkedDoctors(old, body.branches || [], await all(branches, conn), conn);
   const detail = body.clinic || {};
-  await validateClinicMetadata(detail, conn);
+  await validateClinicMetadata(detail, conn, old);
   await validateSlugWrite("clinics", detail, old, conn);
   const clinic = await change(clinics, clinicId, { data: { ...clinicDisplayPreferences(old), ...old, ...detail, policies: { ...old.policies, ...body.policies } } }, conn);
   for (const input of body.branches || []) {
@@ -148,10 +142,12 @@ export async function createOwnedClinic(actor: any, admin: any, input: any, conn
   assert(!input.ownerCustomSchedule || input.ownDoctor, 400, "Custom owner sessions require the consulting owner profile.");
   assert(!(input.ownerSchedule && input.ownerCustomSchedule), 400, "Choose either linked location hours or custom weekly sessions, not both.");
   assert(input.clinic?.name?.trim() && typeof input.clinic.address === "string", 400, "Clinic name and address are required");
-  await validateClinicMetadata(input.clinic, conn);
-  await validateSlugWrite("clinics", input.clinic, null, conn);
+  // Keep the submitted payload intact for actor-scoped completion fingerprints.
+  const clinicInput = { ...input.clinic };
+  await validateClinicMetadata(clinicInput, conn);
+  await validateSlugWrite("clinics", clinicInput, null, conn);
   const id = uid();
-  const clinic = await put(clinics, { id, ownerId: actor.id, adminId: admin.id, data: { ...clinicDisplayPreferences(input.clinic), ...input.clinic, code: input.clinic.code || `CLN-${id.slice(0,8)}`, timezone: input.clinic.timezone || "Asia/Kolkata" } }, conn);
+  const clinic = await put(clinics, { id, ownerId: actor.id, adminId: admin.id, data: { ...clinicDisplayPreferences(clinicInput), ...clinicInput, code: clinicInput.code || `CLN-${id.slice(0,8)}`, timezone: clinicInput.timezone || "Asia/Kolkata" } }, conn);
   await conn.insert(assignments).values({ id: uid(), userId: admin.id, clinicId: id }).onConflictDoNothing();
   await audit(actor, "create", "clinics", clinic, conn);
   const { enqueueEvent } = await import("./notification-outbox");

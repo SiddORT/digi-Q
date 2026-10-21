@@ -81,8 +81,11 @@ async function withPasswordState(row: any) {
 export const CLINIC_OWNED_BRANCH_KEYS = ["openingHours", "timezone", "email", "phone", "inheritEmail", "inheritPhone", "linkedSchedule"];
 /** Identity and address of an EXISTING location are clinic-owned onboarding details (owner or Super Admin only). Creation keeps its existing policy. */
 export const CLINIC_OWNED_ADDRESS_KEYS = ["name", "slug", "address", "city", "state", "pincode", "country", "area"];
-export const CLINIC_OWNED_CLINIC_KEYS = ["name", "address", "city", "state", "pincode", "country", "area", "email", "phone", "slug", "timezone", "dateFormat", "timeFormat", "categoryId", "specialityIds", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"];
+export const CLINIC_OWNED_CLINIC_KEYS = ["name", "address", "city", "state", "pincode", "country", "area", "email", "phone", "slug", "timezone", "dateFormat", "timeFormat", "categoryId", "customCategory", "specialityIds", "customSpecialities", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"];
 export async function authorizeWrite(user: any, kind: string, body: any, old?: any, conn: any = db) {
+  if (kind === "clinics" && !old && ["categoryId", "customCategory", "specialityIds", "customSpecialities"].some(key => Array.isArray(body[key]) ? body[key].length : !!body[key])) {
+    roles(user, ["clinicAdmin", "superAdmin"]);
+  }
   if (kind === "doctors") {
     assert(body.userId === undefined, 409, "Doctor identity cannot be reassigned");
     if (old?.userId) {
@@ -166,6 +169,7 @@ export async function authorizeWrite(user: any, kind: string, body: any, old?: a
   }
   if ((body.clinicIds || body.branchIds) && user.role === "doctor") assert(kind === "users" && (body.role || old?.role) === "receptionist", 403, "Doctors may assign receptionists only");
   for (const [field, category] of Object.entries({ specializationId: "specialization", clinicTypeId: "clinicType", categoryId: "clinicCategory" })) {
+    if (kind === "clinics" && field === "categoryId") continue; // Clinic validator permits retained historical selections.
     if (body[field]) { const m = await one(masters, body[field], conn); assert(m.category === category && m.status === "active", 400, `Invalid ${field}`); }
   }
   for (const id of body.qualificationIds || []) { const m = await one(masters, id, conn); assert(m.category === "qualification" && m.status === "active", 400, "Invalid qualification"); }
@@ -268,7 +272,7 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       assert(!(await one(branches, old.id, tx)).linkedSchedule?.enabled, 409, "This location has linked doctor sessions. Change opening hours through Clinic settings to preview and synchronize safely.");
     }
     await validateSlugWrite(kind, body, old, tx);
-    if (kind === "clinics") await validateClinicMetadata(body, tx);
+    if (kind === "clinics") await validateClinicMetadata(body, tx, old);
     if (kind === "branches" && proposed.openingHours) {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"branch-hours:" + old?.id}))`);
       validateOpeningHours(proposed.openingHours);

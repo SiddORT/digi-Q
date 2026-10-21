@@ -33,7 +33,7 @@ const registrationLimit = rateLimit({ windowMs: 15 * 60_000, limit: 10, standard
 clinicExpansionRouter.get("/public/registration-options", anonymousLimit, async (_req, res) => {
   const result: Record<string, any[]> = {};
   for (const [key, category] of [["categories", "clinicCategory"], ["specialities", "specialization"], ["qualifications", "qualification"]]) {
-    result[key] = (await db.execute(sql`select id,data->>'name' as name from masters where status='active' and category=${category} order by data->>'name',id limit 200`)).rows;
+    result[key] = (await db.execute(sql`select id,coalesce(nullif(data->>'name',''),code) as name from masters where status='active' and category=${category} order by data->>'name',id`)).rows;
   }
   res.json(result);
 });

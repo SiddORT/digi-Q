@@ -28,12 +28,14 @@ import { ActionLabel } from "./ActionLabel";
 import { clinicAddressProblem, clinicAddressConflict, locationAddressProblem, resolveClinicAddress, resolveLocationAddresses } from "../lib/clinic-address";
 
 import { PublicWebsiteLink } from "../lib/public-website";
+import { ClinicMetadataFields, ClinicMetadataFacts } from "./ClinicMetadataFields";
 export { normalizeClinicSlug } from "../lib/clinic-address";
 export type RegistrationBranch = { name: string; slug: string; address: string; city: string; state?: string; pincode?: string; country?: string; timezone: string; email: string; phone: string; inheritEmail: boolean; inheritPhone: boolean; hours: RegistrationDay[]; localities?: LocalitySelection[] };
 export type RegistrationValues = {
   dateFormat: DateTimePreferences["dateFormat"]; timeFormat: DateTimePreferences["timeFormat"];
   fullName: string; email: string; mobile: string;
   name: string; slug: string; categoryId: string; specialityIds: string[]; referralCode: string; clinicEmail: string; phone: string;
+  customCategory: string | null; customSpecialities: string[];
   branches: RegistrationBranch[]; alsoConsult: boolean; specializationId: string; qualificationIds: string[];
   linkConsultationHours: boolean; sessionCapacity: string; consultationMinutes: string;
   /** Custom owner sessions per location (same index as branches); used when linkConsultationHours is off. */
@@ -49,10 +51,10 @@ export function ownerSchedulePayload(values: RegistrationValues) {
 }
 const newBranch = (): RegistrationBranch => ({ name: "", slug: "", address: "", city: "", state: "", pincode: "", country: "IN", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC", email: "", phone: "", inheritEmail: true, inheritPhone: true, hours: newWeek() });
 type Option = { id: string; name: string };
-type Props = { adminMode?: boolean; draftKey?: string; initial?: Partial<RegistrationValues>; categories: Option[]; specialities: Option[]; qualifications: Option[]; onSubmit: (values: RegistrationValues, requestId: string) => Promise<void>; carry?: Partial<Record<"fullName"|"email"|"mobile", string>>; onSnapshot?: (values: Record<string, unknown>, defaults: Record<string, unknown>) => void; checkSlug: (slug: string) => Promise<boolean>; busy: boolean; error?: string; referenceError?: string; finishSecurity?: ReactNode; onStepChange?: () => void; onDirtyChange?: (dirty: boolean) => void };
+type Props = { adminMode?: boolean; draftKey?: string; initial?: Partial<RegistrationValues>; categories: Option[]; specialities: Option[]; qualifications: Option[]; onSubmit: (values: RegistrationValues, requestId: string) => Promise<void>; carry?: Partial<Record<"fullName"|"email"|"mobile", string>>; onSnapshot?: (values: Record<string, unknown>, defaults: Record<string, unknown>) => void; checkSlug: (slug: string) => Promise<boolean>; busy: boolean; error?: string; referenceError?: string; referenceLoading?: boolean; onRetryReferences?: () => void; finishSecurity?: ReactNode; onStepChange?: () => void; onDirtyChange?: (dirty: boolean) => void };
 const steps = ["Clinic identity", "Locations", "Opening hours", "Your practice", "Care team", "Review"];
 
-export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, onSnapshot, categories, specialities, qualifications, onSubmit, checkSlug, busy: serverBusy, error, referenceError, finishSecurity, onStepChange, onDirtyChange }: Props) {
+export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, onSnapshot, categories, specialities, qualifications, onSubmit, checkSlug, busy: serverBusy, error, referenceError, referenceLoading, onRetryReferences, finishSecurity, onStepChange, onDirtyChange }: Props) {
   const advancing = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const busy = serverBusy || submitting;
@@ -68,7 +70,7 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
   const [validation, setValidation] = useState("");
   const [slugStatus, setSlugStatus] = useState<{ slug: string; available: boolean } | null>(null);
   const [checking, setChecking] = useState(false);
-  const defaults: RegistrationValues = { dateFormat: "DD MMM YYYY", timeFormat: "12h", fullName: "", email: "", mobile: "", name: "", slug: "", categoryId: "", specialityIds: [], referralCode: "", clinicEmail: "", phone: "", branches: [newBranch()], alsoConsult: false, specializationId: "", qualificationIds: [], linkConsultationHours: true, sessionCapacity: "", consultationMinutes: "", ...initial };
+  const defaults: RegistrationValues = { dateFormat: "DD MMM YYYY", timeFormat: "12h", fullName: "", email: "", mobile: "", name: "", slug: "", categoryId: "", specialityIds: [], customCategory: null, customSpecialities: [], referralCode: "", clinicEmail: "", phone: "", branches: [newBranch()], alsoConsult: false, specializationId: "", qualificationIds: [], linkConsultationHours: true, sessionCapacity: "", consultationMinutes: "", ...initial };
   const form = useForm<RegistrationValues>({ defaultValues: { ...defaults, ...restored.data?.values, ...(!adminMode && initial?.email ? { email: initial.email } : {}) } });
   useEffect(() => {
     if (!draftKey) return;
@@ -117,6 +119,9 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
       if (new Set(chosen).size !== chosen.length) return "Each location needs a different Location URL name.";
     }
     if (target === 0) {
+      if (values.customCategory !== null && !values.customCategory.trim() || values.customSpecialities.some(text => !text.trim())) return "Complete or remove blank custom clinic values.";
+      const labels = [...values.specialityIds.map(id => specialities.find(option => option.id === id)?.name || id), ...values.customSpecialities].map(text => text.trim().toLowerCase());
+      if (new Set(labels).size !== labels.length) return "Remove duplicate clinic specialities.";
       const problem = validatePersonName(values.fullName) || validateEmail(values.email) || validatePhone(values.mobile) || validateEmail(values.clinicEmail) || validatePhone(values.phone);
       if (problem) return problem;
     }
@@ -188,9 +193,8 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
       <FormSection title="Administrator" hint="Signs in and owns this Clinic Group." grid={false}><div className="registration-fields">
       {field("fullName","Administrator full name",true)}{field("email","Administrator email",true,"email")}{adminMode&&field("mobile","Administrator phone",false,"tel")}</div></FormSection>
       <FormSection title="Clinic Group" hint="Public identity shown to patients." grid={false}><div className="registration-fields">{field("name","Clinic Group name",true)}
-      <Controller name="categoryId" control={form.control} render={({field:input})=><SearchableSelect label="Category (optional)" value={input.value} onChange={input.onChange} options={categories.map(o=>({value:o.id,label:o.name}))}/>}/>
+      <ClinicMetadataFields value={values} categories={categories} specialities={specialities} loading={referenceLoading} error={!!referenceError} onRetry={onRetryReferences} onChange={patch => { for (const [key, value] of Object.entries(patch)) form.setValue(key as keyof RegistrationValues, value as any, { shouldDirty: true }); }}/>
       {field("clinicEmail","Clinic Group email",false,"email")}{field("phone","Clinic Group phone",false,"tel")}
-      <Controller name="specialityIds" control={form.control} render={({field:input})=><SearchableMultiSelect label="Specialities (optional)" value={input.value} onChange={input.onChange} options={specialities.map(o=>({value:o.id,label:o.name}))}/>}/>
       {field("referralCode","Reference / referral code (optional)")}
          <FormField className="wide" label="Clinic URL name" optional helper="Leave blank to generate an available Clinic URL name from the Clinic Group name when you Continue. Review the final link before creating the clinic." error={validation&&values.slug.trim()?clinicAddressProblem(values.slug)||undefined:undefined}><input value={values.slug} onChange={e=>{set("slug",e.target.value.toLowerCase(),{shouldDirty:true});setSlugStatus(null);}} maxLength={63} data-testid="registration-slug"/></FormField>
        <div className="registration-url wide"><strong>Clinic link · published base is read only</strong><br/><PublicWebsiteLink route={`/${values.slug||"your-clinic"}`}/>{slugStatus?.slug===values.slug&&<p role="status">{slugStatus.available?"This Clinic URL name is currently available.":"This Clinic URL name is unavailable."}</p>}</div><p className="registration-note wide">Use lowercase letters, numbers and hyphens. Reserved application paths cannot be used. This URL name becomes permanent after registration; changing the clinic name will not change existing patient links.</p>
@@ -213,6 +217,7 @@ export function ClinicRegistrationWizard({ adminMode, draftKey, initial, carry, 
     {step === 4 && <section className="registration-review"><div className="notice"><Building2 size={22}/><h3>Your clinic comes first. Your team can follow.</h3><p>One clinic and one location are enough. Team invitations are optional. After registration, use Staff management to invite doctors and receptionists, choose their locations and track delivery. No second administrator or doctor account is required to consult yourself.</p><p>No invitations are sent from this step.</p></div></section>}
     {step === 5 && <div className="notice" role="status"><strong>{values.alsoConsult && values.linkConsultationHours ? "Linked consultation sessions included." : values.alsoConsult ? `Custom consultation sessions included: ${toOwnerSessions(values.branches.map((_, i) => values.ownerWeeks?.[i] || buildWeek([]))).length}.` : "Doctor sessions still need configuration."}</strong><p>{values.alsoConsult && !values.linkConsultationHours ? `Finish saves your clinic, doctor profile and these weekly sessions together: ${values.sessionCapacity} patients per session, ${values.consultationMinutes} minutes per consultation.` : values.alsoConsult && values.linkConsultationHours ? `Finish saves your clinic and doctor sessions together: ${values.sessionCapacity} patients per session, ${values.consultationMinutes} minutes per consultation. Doctor sessions use each location's opening hours. Availability remains subject to date, capacity and booking policies.` : "Finish creates the clinic and opening hours. Set custom doctor sessions in Clinic settings before sharing the booking QR."}</p>Review every chosen open day and time below.</div>}
     {step === 5 && <div className="registration-review">
+      <section><h3>Clinic category and specialities</h3><dl><ClinicMetadataFacts clinic={{ categoryName: values.customCategory || categories.find(o => o.id === values.categoryId)?.name, specialityNames: [...values.specialityIds.map(id => specialities.find(o => o.id === id)?.name || "Saved speciality unavailable"), ...values.customSpecialities] }}/></dl></section>
       <section><h3>{values.name}</h3><p>{values.clinicEmail || "No clinic email"} · {values.phone || "No clinic phone"}</p><div className="registration-url">Clinic link: <PublicWebsiteLink route={`/${values.slug}`}/></div><p>Administrator: {values.fullName} · {values.email}</p></section>
       {values.branches.map((b, i) => <section key={i}><h3>{b.name}</h3><p>{b.address}{b.city ? `, ${b.city}` : ""}</p><p>{b.inheritEmail ? values.clinicEmail || "No clinic email" : b.email || "No location email"} · {b.inheritPhone ? values.phone || "No clinic phone" : b.phone || "No location phone"}</p><p>{b.hours.filter(d => d.isOpen).length} open days per week · {b.timezone}</p><div className="registration-url">Location link: <PublicWebsiteLink route={`/${values.slug}/${b.slug}`}/></div></section>)}
       <section><h3>One owner, one account</h3><p>{values.alsoConsult ? "Clinic Admin and doctor in the same account, with a doctor profile at your clinic's locations." : "Clinic Admin account. No doctor profile requested."} Staff can be invited after setup; no extra user is required.</p></section><p className="registration-note">Finish saves the clinic setup together. The server rechecks ownership, URL availability and all details. Your Clinic URL name and each Location URL name cannot be changed later.</p></div>}

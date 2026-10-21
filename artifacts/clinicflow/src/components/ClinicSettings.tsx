@@ -24,12 +24,13 @@ import { usePublicWebsite } from "../lib/public-website";
 import { ConfirmDialog, useConfirm } from "./ConfirmDialog";
 import { SearchableSelect } from "./SearchableSelect";
 import { useRegisterUnsaved, useWorkspaceBranchContext } from "./WorkspaceBranch";
+import { ClinicMetadataFacts } from "./ClinicMetadataFields";
 
 const sections = [["details","Details"],["locations","Locations"],["staff","Staff"],["policies","Policies"],["activity-history","Activity History"]] as const;
 type SectionKey = typeof sections[number][0];
 // This endpoint persists one full address string, not the separate geography
 // controls from the general resource editor. Blank nullable contacts clear them.
-const clinicEditFields=()=>resources.clinics.fields.filter(field=>["name","address","email","phone","slug","categoryId","specialityIds","referralCode"].includes(field.key)).map(field=>({
+const clinicEditFields=()=>resources.clinics.fields.filter(field=>["name","address","email","phone","slug","categoryId","customCategory","specialityIds","customSpecialities","referralCode"].includes(field.key)).map(field=>({
  ...field,
  ...(field.key==="address"?{type:"textarea",nullable:true}:{}),
  ...(["email","phone","categoryId","referralCode"].includes(field.key)?{nullable:true}:{}),
@@ -151,6 +152,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
      <section className="panel padded cs-card" aria-labelledby="cs-basic"><div className="cs-card-head"><h3 id="cs-basic"><Building2 size={18} aria-hidden/> Basic Information</h3><button type="button" className="button secondary small" disabled={locked} onClick={openClinicEdit} data-testid="button-edit-basic">Edit</button></div>
       <dl className="cs-list">
        <div><dt>Clinic Name</dt><dd>{clinic.name}</dd></div>
+        <ClinicMetadataFacts clinic={clinic}/>
        <div><dt>Address</dt><dd>{clinic.address||"Not set"}</dd></div>
        <div><dt>Web Address</dt><dd>{clinic.slug?<><Link href={`/${clinic.slug}`}>/{clinic.slug}</Link>{site.url(`/${clinic.slug}`)&&<CopyValue value={site.url(`/${clinic.slug}`)!} label="Web address"/>}</>:"Not set. Edit clinic to choose a permanent address."}</dd></div>
        <div><dt>Status</dt><dd><span className={`cs-status${active?" live":""}`}>{active?"Active":"Inactive"}</span></dd></div>

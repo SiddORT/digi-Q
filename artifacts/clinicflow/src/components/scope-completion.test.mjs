@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 const load = rel => {
   const source = readFileSync(new URL(rel, import.meta.url), "utf8");
   const out = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  const exports = {}; new Function("exports", "require", out)(exports, () => ({})); return exports;
+  const exports = {}; new Function("exports", "require", out)(exports, spec => spec === "./clinic-navigation" ? load("../lib/clinic-navigation.ts") : ({})); return exports;
 };
 const plan = load("./schedule/week-plan.ts");
 const tabs = load("../lib/form-tabs.ts");
@@ -63,7 +63,7 @@ test("inherited clinic defaults: only owner or Super Admin may change; new staff
   assert.equal(inherit.inheritedConfirmationError(true, ["c"], true), undefined);
   assert.equal(inherit.inheritedConfirmationError(false, ["c"], undefined), undefined);
   assert.equal(inherit.inheritedConfirmationError(true, [], undefined), undefined);
-  assert.equal(inherit.clinicSettingsHref("c 1", "policies"), "/admin/clinic?clinicId=c%201&section=policies");
+  assert.equal(inherit.clinicSettingsHref("c 1", "policies"), "/admin/clinics/c%201/policies");
   assert.equal(inherit.addressLine({ address: "1 Road", area: "Kothrud", city: "Pune", country: "IN" }), "1 Road, Kothrud, Pune, IN");
   assert.equal(inherit.contactSource({ inheritEmail: false, inheritPhone: true }), "Partly the clinic's contact");
   const summary = readFileSync(new URL("./InheritedClinicSummary.tsx", import.meta.url), "utf8");

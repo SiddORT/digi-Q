@@ -36,7 +36,7 @@ export function inheritedConfirmationError(isNew: boolean, clinicIds: unknown, c
 
 /** Mirrors server authorizeWrite: fields of an EXISTING clinic/location only the owner or Super Admin may change. */
 export const OWNER_ONLY_FIELDS: Record<string, string[]> = {
-  clinics: ["name", "address", "city", "state", "pincode", "country", "area", "email", "phone", "slug", "timezone", "dateFormat", "timeFormat", "categoryId", "specialityIds", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"],
+  clinics: ["name", "address", "city", "state", "pincode", "country", "area", "email", "phone", "slug", "timezone", "dateFormat", "timeFormat", "categoryId", "customCategory", "specialityIds", "customSpecialities", "referralCode", "bookingHorizonDays", "cancellationCutoffMinutes", "policies"],
   branches: ["name", "slug", "address", "city", "state", "pincode", "country", "area", "email", "phone", "inheritEmail", "inheritPhone", "timezone", "openingHours", "linkedSchedule"],
 };
 export const ownerOnlyLocked = (resource: string, key: string, isExisting: boolean, isOwner: boolean) =>

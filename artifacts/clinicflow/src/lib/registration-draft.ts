@@ -15,6 +15,7 @@ export const setupDraftSchema = z.object({
   values: z.object({
     dateFormat: z.enum(["DD MMM YYYY", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"]), timeFormat: z.enum(["12h", "24h"]),
     fullName: text, email: text, mobile: text, name: text, slug: text, categoryId: text, specialityIds: z.array(text),
+    customCategory: z.string().max(100).nullable().default(null), customSpecialities: z.array(z.string().max(100)).max(30).default([]),
     referralCode: text, clinicEmail: text, phone: text, branches: z.array(branch).min(1).max(30),
     alsoConsult: z.boolean(), specializationId: text, qualificationIds: z.array(text), linkConsultationHours: z.boolean(),
     sessionCapacity: text, consultationMinutes: text,

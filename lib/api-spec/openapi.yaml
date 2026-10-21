@@ -2686,6 +2686,8 @@ components:
         phone: { type: [string, "null"] }
         slug: { type: string, minLength: 3, maxLength: 63 }
         categoryId: { type: [string, "null"] }
+        customCategory: { type: [string, "null"], maxLength: 100, description: Clinic-owned text; mutually exclusive with categoryId. Null clears. }
+        customSpecialities: { type: array, maxItems: 30, items: { type: string, minLength: 1, maxLength: 100 } }
         specialityIds: { type: array, items: { type: string } }
         referralCode: { type: [string, "null"], maxLength: 100 }
     ClinicBranchSetup:
@@ -3126,6 +3128,8 @@ components:
             timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
             slug: { type: string, minLength: 3, maxLength: 63 }
             categoryId: { type: string }
+            customCategory: { type: [string, "null"], maxLength: 100 }
+            customSpecialities: { type: array, maxItems: 30, items: { type: string, minLength: 1, maxLength: 100 } }
             specialityIds: { type: array, items: { type: string } }
             referralCode: { type: [string, "null"], maxLength: 100 }
             name: { type: string, minLength: 1 }
@@ -3202,6 +3206,8 @@ components:
         description: { type: string }
         clinicTypeId: { type: string }
         categoryId: { type: [string, "null"] }
+        customCategory: { type: [string, "null"], maxLength: 100, description: Clinic-owned text; mutually exclusive with categoryId. Null clears. }
+        customSpecialities: { type: array, maxItems: 30, items: { type: string, minLength: 1, maxLength: 100 } }
         status: { $ref: "#/components/schemas/RecordStatus" }
     Clinic:
       allOf:
@@ -3212,6 +3218,8 @@ components:
             id: { type: string }
             code: { type: string }
             adminName: { type: string }
+            categoryName: { type: [string, "null"] }
+            specialityNames: { type: array, items: { type: string } }
             createdAt: { type: [string, "null"], format: date-time }
             doctorCount: { type: integer }
             branchCount: { type: integer }

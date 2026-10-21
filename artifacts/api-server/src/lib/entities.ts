@@ -2,6 +2,7 @@ import { db, doctors, users, assignments, masters, branches, clinics } from "@wo
 import { eq } from "drizzle-orm";
 import { all, flatten, one } from "./store";
 import { managedDoctorAssignments } from "./clinical-membership";
+import { clinicMetadataNames } from "./clinic-metadata";
 export async function enrich(kind: string, row: any, conn: any = db): Promise<any> {
   row = { ...row };
   if (kind === "clinics") delete row.registrationReceipt;
@@ -43,7 +44,10 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
     row.invitationStatus = credential?.passwordHash ? "notRequired" : row.invitationStatus;
     row.createdAt ||= null;
   }
-  if (kind === "clinics") row.adminName = (await one(users, row.adminId, conn)).fullName;
+  if (kind === "clinics") {
+    row.adminName = (await one(users, row.adminId, conn)).fullName;
+    Object.assign(row, await clinicMetadataNames(row, conn));
+  }
   if (kind === "branches") {
     const clinic = await one(clinics, row.clinicId, conn);
     row.clinicName = clinic.name; row.createdAt ||= null;

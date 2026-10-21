@@ -1647,6 +1647,18 @@ export interface ClinicDetails {
   slug?: string;
   /** @nullable */
   categoryId?: string | null;
+  /**
+     * Clinic-owned text; mutually exclusive with categoryId. Null clears.
+     * @maxLength 100
+     * @nullable
+     */
+  customCategory?: string | null;
+  /**
+     * @maxItems 30
+     * @items.minLength 1
+     * @items.maxLength 100
+     */
+  customSpecialities?: string[];
   specialityIds?: string[];
   /**
      * @maxLength 100
@@ -1848,6 +1860,18 @@ export interface ClinicInput {
   clinicTypeId?: string;
   /** @nullable */
   categoryId?: string | null;
+  /**
+     * Clinic-owned text; mutually exclusive with categoryId. Null clears.
+     * @maxLength 100
+     * @nullable
+     */
+  customCategory?: string | null;
+  /**
+     * @maxItems 30
+     * @items.minLength 1
+     * @items.maxLength 100
+     */
+  customSpecialities?: string[];
   status?: RecordStatus;
 }
 
@@ -1856,6 +1880,9 @@ export type Clinic = ClinicInput & ({
   code: string;
   adminName: string;
   /** @nullable */
+  categoryName?: string | null;
+  specialityNames?: string[];
+  /** @nullable */
   createdAt: string | null;
   doctorCount?: number;
   branchCount?: number;
@@ -1863,6 +1890,9 @@ export type Clinic = ClinicInput & ({
   id: string;
   code: string;
   adminName: string;
+  /** @nullable */
+  categoryName?: string | null;
+  specialityNames?: string[];
   /** @nullable */
   createdAt: string | null;
   doctorCount?: number;
@@ -2473,6 +2503,17 @@ export type ClinicAdminOnboardingInputClinic = {
      */
   slug?: string;
   categoryId?: string;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  customCategory?: string | null;
+  /**
+     * @maxItems 30
+     * @items.minLength 1
+     * @items.maxLength 100
+     */
+  customSpecialities?: string[];
   specialityIds?: string[];
   /**
      * @maxLength 100

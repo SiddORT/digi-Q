@@ -88,6 +88,7 @@ import "./components/listing-view-controls.css";
 import "./components/workspace-consolidation.css";
 import { roleDestination } from "./components/role-selection";
 import { useConfirm } from "./components/ConfirmDialog";
+import { OwnedClinicInformation } from "./components/OwnedClinicInformation";
 
 function useConfiguredTimezone(identity?:api.Identity) {
  const identityTimezone=(identity as (api.Identity&{settings?:{timezone?:string}})|undefined)?.settings?.timezone;
@@ -488,7 +489,7 @@ function Queue({identity,initial}:{identity:api.Identity;initial?:api.Appointmen
 }
 function Profile({identity}:{identity:api.Identity}){
  const [recordsOpen,setRecordsOpen]=useState(false);
- return <div className="profile-stack"><ProfileEditor identity={identity}/>{identity.user?.role==="patient"&&identity.patientId&&<section className="panel padded" aria-label="Your Visit Records">
+ return <div className="profile-stack"><ProfileEditor identity={identity}/>{identity.user?.role==="clinicAdmin"&&<OwnedClinicInformation key={identity.user.id} adminId={identity.user.id}/>} {identity.user?.role==="patient"&&identity.patientId&&<section className="panel padded" aria-label="Your Visit Records">
    <h2>Your Visit Records</h2><p className="muted">View your appointment history, status changes and documents shared by your clinic.</p>
    <button type="button" className="button secondary" onClick={()=>setRecordsOpen(true)} data-testid="button-my-patient-records">View My Records</button>
    {recordsOpen&&<PatientDetailsDrawer patient={{id:identity.patientId,fullName:identity.user.fullName,email:identity.user.email}} onClose={()=>setRecordsOpen(false)}/>}

@@ -1,4 +1,4 @@
-import { db, pool, masters, settings } from "@workspace/db";
+import { db, pool, masters, settings, provisionHealthcareVocabulary } from "@workspace/db";
 import { randomUUID } from "node:crypto";
 // System vocabulary only. This command never inserts people, clinics or bookings.
 const values: Record<string, string[]> = {
@@ -8,13 +8,14 @@ const values: Record<string, string[]> = {
   queueStatus: ["booked", "checkedIn", "waiting", "called", "inConsultation", "completed", "noShow", "cancelled"],
   bookingSource: ["online", "walkIn", "phone", "qr"], queueType: ["mixed", "appointmentsOnly", "walkInsOnly"],
   appointmentType: ["newVisit", "followUp"], consultationType: ["inPerson"],
-  clinicType: ["clinic", "hospital"], clinicCategory: ["general", "specialist"],
+   clinicType: ["clinic", "hospital"],
   queuePriority: ["standard"], tokenPrefix: ["A"],
   cancellationReason: ["patientRequest", "doctorUnavailable"],
-  specialization: ["generalMedicine"], qualification: ["MBBS"], department: ["outpatient"],
+   qualification: ["MBBS"], department: ["outpatient"],
 };
 async function main() {
   await db.transaction(async tx => {
+    await provisionHealthcareVocabulary(tx);
     for (const [category, codes] of Object.entries(values)) {
       for (const [sortOrder, code] of codes.entries()) {
         const name = code.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase());

@@ -32,6 +32,17 @@ export type ClinicAdminOnboardingInputClinic = {
      */
   slug?: string;
   categoryId?: string;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  customCategory?: string | null;
+  /**
+     * @maxItems 30
+     * @items.minLength 1
+     * @items.maxLength 100
+     */
+  customSpecialities?: string[];
   specialityIds?: string[];
   /**
      * @maxLength 100

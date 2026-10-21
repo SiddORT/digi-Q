@@ -1449,6 +1449,12 @@ export const registerClinicBodyPasswordMax = 1024;
 export const registerClinicBodyClinicSlugMin = 3;
 export const registerClinicBodyClinicSlugMax = 63;
 
+export const registerClinicBodyClinicCustomCategoryMax = 100;
+
+export const registerClinicBodyClinicCustomSpecialitiesItemMax = 100;
+
+export const registerClinicBodyClinicCustomSpecialitiesMax = 30;
+
 export const registerClinicBodyClinicReferralCodeMax = 100;
 
 
@@ -1509,6 +1515,8 @@ export const RegisterClinicBody = zod.object({
   "phone": zod.string().nullish(),
   "slug": zod.string().min(registerClinicBodyClinicSlugMin).max(registerClinicBodyClinicSlugMax).optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(registerClinicBodyClinicCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(registerClinicBodyClinicCustomSpecialitiesItemMax)).max(registerClinicBodyClinicCustomSpecialitiesMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(registerClinicBodyClinicReferralCodeMax).nullish()
 }),
@@ -1573,6 +1581,12 @@ export const registerClinicResponseClinicOneSlugMax = 63;
 export const registerClinicResponseClinicOneReferralCodeMax = 100;
 
 
+export const registerClinicResponseClinicOneCustomCategoryMax = 100;
+
+export const registerClinicResponseClinicOneCustomSpecialitiesItemMax = 100;
+
+export const registerClinicResponseClinicOneCustomSpecialitiesMax = 30;
+
 export const registerClinicResponseBranchesItemOneSlugMin = 3;
 export const registerClinicResponseBranchesItemOneSlugMax = 63;
 
@@ -1615,11 +1629,15 @@ export const RegisterClinicResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(registerClinicResponseClinicOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(registerClinicResponseClinicOneCustomSpecialitiesItemMax)).max(registerClinicResponseClinicOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -1679,6 +1697,12 @@ export const getClinicRegistrationCompletionResponseResultOneClinicOneSlugMax = 
 export const getClinicRegistrationCompletionResponseResultOneClinicOneReferralCodeMax = 100;
 
 
+export const getClinicRegistrationCompletionResponseResultOneClinicOneCustomCategoryMax = 100;
+
+export const getClinicRegistrationCompletionResponseResultOneClinicOneCustomSpecialitiesItemMax = 100;
+
+export const getClinicRegistrationCompletionResponseResultOneClinicOneCustomSpecialitiesMax = 30;
+
 export const getClinicRegistrationCompletionResponseResultOneBranchesItemOneSlugMin = 3;
 export const getClinicRegistrationCompletionResponseResultOneBranchesItemOneSlugMax = 63;
 
@@ -1722,11 +1746,15 @@ export const GetClinicRegistrationCompletionResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(getClinicRegistrationCompletionResponseResultOneClinicOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(getClinicRegistrationCompletionResponseResultOneClinicOneCustomSpecialitiesItemMax)).max(getClinicRegistrationCompletionResponseResultOneClinicOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -1813,6 +1841,12 @@ export const getClinicAdminSetupCompletionResponseResultOneClinicOneSlugMax = 63
 
 export const getClinicAdminSetupCompletionResponseResultOneClinicOneReferralCodeMax = 100;
 
+
+export const getClinicAdminSetupCompletionResponseResultOneClinicOneCustomCategoryMax = 100;
+
+export const getClinicAdminSetupCompletionResponseResultOneClinicOneCustomSpecialitiesItemMax = 100;
+
+export const getClinicAdminSetupCompletionResponseResultOneClinicOneCustomSpecialitiesMax = 30;
 
 
 
@@ -1908,11 +1942,15 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(getClinicAdminSetupCompletionResponseResultOneClinicOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(getClinicAdminSetupCompletionResponseResultOneClinicOneCustomSpecialitiesItemMax)).max(getClinicAdminSetupCompletionResponseResultOneClinicOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -1930,6 +1968,12 @@ export const getClinicSettingsResponseClinicOneSlugMax = 63;
 
 export const getClinicSettingsResponseClinicOneReferralCodeMax = 100;
 
+
+export const getClinicSettingsResponseClinicOneCustomCategoryMax = 100;
+
+export const getClinicSettingsResponseClinicOneCustomSpecialitiesItemMax = 100;
+
+export const getClinicSettingsResponseClinicOneCustomSpecialitiesMax = 30;
 
 export const getClinicSettingsResponseBranchesItemOneSlugMin = 3;
 export const getClinicSettingsResponseBranchesItemOneSlugMax = 63;
@@ -1973,11 +2017,15 @@ export const GetClinicSettingsResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(getClinicSettingsResponseClinicOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(getClinicSettingsResponseClinicOneCustomSpecialitiesItemMax)).max(getClinicSettingsResponseClinicOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -2035,6 +2083,12 @@ export const UpdateClinicSettingsParams = zod.object({
 export const updateClinicSettingsBodyClinicSlugMin = 3;
 export const updateClinicSettingsBodyClinicSlugMax = 63;
 
+export const updateClinicSettingsBodyClinicCustomCategoryMax = 100;
+
+export const updateClinicSettingsBodyClinicCustomSpecialitiesItemMax = 100;
+
+export const updateClinicSettingsBodyClinicCustomSpecialitiesMax = 30;
+
 export const updateClinicSettingsBodyClinicReferralCodeMax = 100;
 
 
@@ -2070,6 +2124,8 @@ export const UpdateClinicSettingsBody = zod.object({
   "phone": zod.string().nullish(),
   "slug": zod.string().min(updateClinicSettingsBodyClinicSlugMin).max(updateClinicSettingsBodyClinicSlugMax).optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(updateClinicSettingsBodyClinicCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(updateClinicSettingsBodyClinicCustomSpecialitiesItemMax)).max(updateClinicSettingsBodyClinicCustomSpecialitiesMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(updateClinicSettingsBodyClinicReferralCodeMax).nullish()
 }).optional(),
@@ -2113,6 +2169,12 @@ export const updateClinicSettingsResponseClinicOneSlugMax = 63;
 export const updateClinicSettingsResponseClinicOneReferralCodeMax = 100;
 
 
+export const updateClinicSettingsResponseClinicOneCustomCategoryMax = 100;
+
+export const updateClinicSettingsResponseClinicOneCustomSpecialitiesItemMax = 100;
+
+export const updateClinicSettingsResponseClinicOneCustomSpecialitiesMax = 30;
+
 export const updateClinicSettingsResponseBranchesItemOneSlugMin = 3;
 export const updateClinicSettingsResponseBranchesItemOneSlugMax = 63;
 
@@ -2155,11 +2217,15 @@ export const UpdateClinicSettingsResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(updateClinicSettingsResponseClinicOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(updateClinicSettingsResponseClinicOneCustomSpecialitiesItemMax)).max(updateClinicSettingsResponseClinicOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -2217,6 +2283,12 @@ export const PreviewClinicSettingsParams = zod.object({
 export const previewClinicSettingsBodyClinicSlugMin = 3;
 export const previewClinicSettingsBodyClinicSlugMax = 63;
 
+export const previewClinicSettingsBodyClinicCustomCategoryMax = 100;
+
+export const previewClinicSettingsBodyClinicCustomSpecialitiesItemMax = 100;
+
+export const previewClinicSettingsBodyClinicCustomSpecialitiesMax = 30;
+
 export const previewClinicSettingsBodyClinicReferralCodeMax = 100;
 
 
@@ -2252,6 +2324,8 @@ export const PreviewClinicSettingsBody = zod.object({
   "phone": zod.string().nullish(),
   "slug": zod.string().min(previewClinicSettingsBodyClinicSlugMin).max(previewClinicSettingsBodyClinicSlugMax).optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(previewClinicSettingsBodyClinicCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(previewClinicSettingsBodyClinicCustomSpecialitiesItemMax)).max(previewClinicSettingsBodyClinicCustomSpecialitiesMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(previewClinicSettingsBodyClinicReferralCodeMax).nullish()
 }).optional(),
@@ -3494,6 +3568,12 @@ export const listPublicClinicsResponseTwoItemsItemOneSlugMax = 63;
 export const listPublicClinicsResponseTwoItemsItemOneReferralCodeMax = 100;
 
 
+export const listPublicClinicsResponseTwoItemsItemOneCustomCategoryMax = 100;
+
+export const listPublicClinicsResponseTwoItemsItemOneCustomSpecialitiesItemMax = 100;
+
+export const listPublicClinicsResponseTwoItemsItemOneCustomSpecialitiesMax = 30;
+
 
 
 export const ListPublicClinicsResponse = zod.object({
@@ -3521,11 +3601,15 @@ export const ListPublicClinicsResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(listPublicClinicsResponseTwoItemsItemOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(listPublicClinicsResponseTwoItemsItemOneCustomSpecialitiesItemMax)).max(listPublicClinicsResponseTwoItemsItemOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -3784,6 +3868,12 @@ export const listClinicsResponseTwoItemsItemOneSlugMax = 63;
 export const listClinicsResponseTwoItemsItemOneReferralCodeMax = 100;
 
 
+export const listClinicsResponseTwoItemsItemOneCustomCategoryMax = 100;
+
+export const listClinicsResponseTwoItemsItemOneCustomSpecialitiesItemMax = 100;
+
+export const listClinicsResponseTwoItemsItemOneCustomSpecialitiesMax = 30;
+
 
 
 export const ListClinicsResponse = zod.object({
@@ -3811,11 +3901,15 @@ export const ListClinicsResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(listClinicsResponseTwoItemsItemOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(listClinicsResponseTwoItemsItemOneCustomSpecialitiesItemMax)).max(listClinicsResponseTwoItemsItemOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -3828,6 +3922,12 @@ export const createClinicBodySlugMax = 63;
 
 export const createClinicBodyReferralCodeMax = 100;
 
+
+export const createClinicBodyCustomCategoryMax = 100;
+
+export const createClinicBodyCustomSpecialitiesItemMax = 100;
+
+export const createClinicBodyCustomSpecialitiesMax = 30;
 
 
 
@@ -3850,6 +3950,8 @@ export const CreateClinicBody = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(createClinicBodyCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(createClinicBodyCustomSpecialitiesItemMax)).max(createClinicBodyCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
@@ -3858,6 +3960,12 @@ export const createClinicResponseOneSlugMax = 63;
 
 export const createClinicResponseOneReferralCodeMax = 100;
 
+
+export const createClinicResponseOneCustomCategoryMax = 100;
+
+export const createClinicResponseOneCustomSpecialitiesItemMax = 100;
+
+export const createClinicResponseOneCustomSpecialitiesMax = 30;
 
 
 
@@ -3880,11 +3988,15 @@ export const CreateClinicResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(createClinicResponseOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(createClinicResponseOneCustomSpecialitiesItemMax)).max(createClinicResponseOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -3900,6 +4012,12 @@ export const getClinicResponseOneSlugMax = 63;
 
 export const getClinicResponseOneReferralCodeMax = 100;
 
+
+export const getClinicResponseOneCustomCategoryMax = 100;
+
+export const getClinicResponseOneCustomSpecialitiesItemMax = 100;
+
+export const getClinicResponseOneCustomSpecialitiesMax = 30;
 
 
 
@@ -3922,11 +4040,15 @@ export const GetClinicResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(getClinicResponseOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(getClinicResponseOneCustomSpecialitiesItemMax)).max(getClinicResponseOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -3942,6 +4064,12 @@ export const updateClinicBodySlugMax = 63;
 
 export const updateClinicBodyReferralCodeMax = 100;
 
+
+export const updateClinicBodyCustomCategoryMax = 100;
+
+export const updateClinicBodyCustomSpecialitiesItemMax = 100;
+
+export const updateClinicBodyCustomSpecialitiesMax = 30;
 
 
 
@@ -3964,6 +4092,8 @@ export const UpdateClinicBody = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(updateClinicBodyCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(updateClinicBodyCustomSpecialitiesItemMax)).max(updateClinicBodyCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
@@ -3972,6 +4102,12 @@ export const updateClinicResponseOneSlugMax = 63;
 
 export const updateClinicResponseOneReferralCodeMax = 100;
 
+
+export const updateClinicResponseOneCustomCategoryMax = 100;
+
+export const updateClinicResponseOneCustomSpecialitiesItemMax = 100;
+
+export const updateClinicResponseOneCustomSpecialitiesMax = 30;
 
 
 
@@ -3994,11 +4130,15 @@ export const UpdateClinicResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(updateClinicResponseOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(updateClinicResponseOneCustomSpecialitiesItemMax)).max(updateClinicResponseOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -4946,6 +5086,12 @@ export const onboardClinicAdminBodyOwnerCustomScheduleSessionsMax = 500;
 export const onboardClinicAdminBodyClinicSlugMin = 3;
 export const onboardClinicAdminBodyClinicSlugMax = 63;
 
+export const onboardClinicAdminBodyClinicCustomCategoryMax = 100;
+
+export const onboardClinicAdminBodyClinicCustomSpecialitiesItemMax = 100;
+
+export const onboardClinicAdminBodyClinicCustomSpecialitiesMax = 30;
+
 export const onboardClinicAdminBodyClinicReferralCodeMax = 100;
 
 
@@ -5016,6 +5162,8 @@ export const OnboardClinicAdminBody = zod.object({
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "slug": zod.string().min(onboardClinicAdminBodyClinicSlugMin).max(onboardClinicAdminBodyClinicSlugMax).optional(),
   "categoryId": zod.string().optional(),
+  "customCategory": zod.string().max(onboardClinicAdminBodyClinicCustomCategoryMax).nullish(),
+  "customSpecialities": zod.array(zod.string().min(1).max(onboardClinicAdminBodyClinicCustomSpecialitiesItemMax)).max(onboardClinicAdminBodyClinicCustomSpecialitiesMax).optional(),
   "specialityIds": zod.array(zod.string()).optional(),
   "referralCode": zod.string().max(onboardClinicAdminBodyClinicReferralCodeMax).nullish(),
   "name": zod.string().min(1),
@@ -5062,6 +5210,12 @@ export const onboardClinicAdminResponseClinicOneSlugMax = 63;
 
 export const onboardClinicAdminResponseClinicOneReferralCodeMax = 100;
 
+
+export const onboardClinicAdminResponseClinicOneCustomCategoryMax = 100;
+
+export const onboardClinicAdminResponseClinicOneCustomSpecialitiesItemMax = 100;
+
+export const onboardClinicAdminResponseClinicOneCustomSpecialitiesMax = 30;
 
 
 
@@ -5156,11 +5310,15 @@ export const OnboardClinicAdminResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(onboardClinicAdminResponseClinicOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(onboardClinicAdminResponseClinicOneCustomSpecialitiesItemMax)).max(onboardClinicAdminResponseClinicOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()
@@ -5412,6 +5570,12 @@ export const getStaffAssignmentOptionsResponseClinicsItemOneSlugMax = 63;
 export const getStaffAssignmentOptionsResponseClinicsItemOneReferralCodeMax = 100;
 
 
+export const getStaffAssignmentOptionsResponseClinicsItemOneCustomCategoryMax = 100;
+
+export const getStaffAssignmentOptionsResponseClinicsItemOneCustomSpecialitiesItemMax = 100;
+
+export const getStaffAssignmentOptionsResponseClinicsItemOneCustomSpecialitiesMax = 30;
+
 export const getStaffAssignmentOptionsResponseBranchesItemOneSlugMin = 3;
 export const getStaffAssignmentOptionsResponseBranchesItemOneSlugMax = 63;
 
@@ -5453,11 +5617,15 @@ export const GetStaffAssignmentOptionsResponse = zod.object({
   "description": zod.string().optional(),
   "clinicTypeId": zod.string().optional(),
   "categoryId": zod.string().nullish(),
+  "customCategory": zod.string().max(getStaffAssignmentOptionsResponseClinicsItemOneCustomCategoryMax).nullish().describe('Clinic-owned text; mutually exclusive with categoryId. Null clears.'),
+  "customSpecialities": zod.array(zod.string().min(1).max(getStaffAssignmentOptionsResponseClinicsItemOneCustomSpecialitiesItemMax)).max(getStaffAssignmentOptionsResponseClinicsItemOneCustomSpecialitiesMax).optional(),
   "status": zod.enum(['active', 'inactive'])
 }).and(zod.object({
   "id": zod.string(),
   "code": zod.string(),
   "adminName": zod.string(),
+  "categoryName": zod.string().nullish(),
+  "specialityNames": zod.array(zod.string()).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "doctorCount": zod.number().int().optional(),
   "branchCount": zod.number().int().optional()

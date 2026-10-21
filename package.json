@@ -10,6 +10,7 @@
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck",
     "test:tickets": "playwright test --config artifacts/clinicflow/ticket-regression/playwright.config.ts",
+    "test:clinic-metadata": "node --test --test-concurrency=1 artifacts/api-server/src/clinic-metadata.integration.test.mjs artifacts/api-server/src/registration-onboarding.integration.test.mjs artifacts/clinicflow/src/components/clinic-metadata.test.mjs artifacts/clinicflow/src/components/clinic-navigation.test.mjs artifacts/clinicflow/src/components/scope-completion.test.mjs",
     "test:communication-usage": "node --test --test-concurrency=1 artifacts/api-server/src/communication-usage.integration.test.mjs artifacts/api-server/src/notification-history-provenance.integration.test.mjs artifacts/api-server/src/notification-history-reconciliation.integration.test.mjs artifacts/api-server/src/notification-settings.integration.test.mjs artifacts/clinicflow/src/components/communication-usage.test.mjs artifacts/clinicflow/src/components/notification-logs.test.mjs"
   },
   "private": true,

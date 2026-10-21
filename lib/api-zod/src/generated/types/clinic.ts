@@ -27,6 +27,9 @@ export type Clinic = ClinicInput & ({
   code: string;
   adminName: string;
   /** @nullable */
+  categoryName?: string | null;
+  specialityNames?: string[];
+  /** @nullable */
   createdAt: Date | null;
   doctorCount?: number;
   branchCount?: number;
@@ -34,6 +37,9 @@ export type Clinic = ClinicInput & ({
   id: string;
   code: string;
   adminName: string;
+  /** @nullable */
+  categoryName?: string | null;
+  specialityNames?: string[];
   /** @nullable */
   createdAt: Date | null;
   doctorCount?: number;

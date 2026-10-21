@@ -9,6 +9,8 @@ import argon2 from "argon2";
 import { createFeatureHarness } from "./feature-harness.mjs";
 import { seedFeatureFixtures } from "./feature-fixtures.mjs";
 import { seedMovementBrowser } from "./appointment-movement-browser.mjs";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { provisionHealthcareVocabulary } from "../../../../lib/db/src/healthcare-vocabulary.ts";
 
 if (process.env.NODE_ENV !== "development") throw new Error("Disposable browser fixture is development-only");
 const root = await mkdtemp(join(tmpdir(), "staff-removal-browser-"));
@@ -30,9 +32,15 @@ await seedFeatureFixtures(h.pg);
 const password = "Fixture-Only!DigiQ-2026";
 await h.pg.query("update users set password_hash=$1,email_verified_at=now()", [await argon2.hash(password)]);
 if(clinicMode){
+  await drizzle(h.pool).transaction(tx => provisionHealthcareVocabulary(tx));
   // Persisted, disposable records only; no existing application database is opened.
   await h.pg.exec(`update clinics set data=data||'{"address":"Shop 10, Lakeview Road, Pune, Maharashtra 411001","email":"care@test.invalid","phone":"+919876543210","dateFormat":"DD MMM YYYY","timeFormat":"12h"}';
     update branches set data=data||'{"address":"Lakeview Road","timezone":"UTC","inheritEmail":true,"inheritPhone":true}';`);
+  const metadataMode=await access("../../.local/clinic-metadata-browser-fixture").then(()=>true,()=>false);
+  if(metadataMode){
+    await h.pg.query("insert into users(id,email,full_name,role,email_verified_at,password_hash) values('newowner','newowner@test.invalid','Fictional New Owner','clinicAdmin',now(),$1)", [await argon2.hash(password)]);
+    await h.pg.exec(`update clinics set data=data||'{"customCategory":"Fictional Rural Care","customSpecialities":["Fictional Sleep Care"]}' where id='c2'`);
+  }
 }
 const movementMode=await access("../../.local/appointment-movement-browser-fixture").then(()=>true,()=>false);
 const movement=movementMode?await seedMovementBrowser(h,password):null;
