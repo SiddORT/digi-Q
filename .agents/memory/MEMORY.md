@@ -54,3 +54,4 @@
 - [Communication usage boundary](communication-usage-boundary.md) — observed acceptance is not billing authority; retain coverage gaps and privacy erasure in future packaging work.
 - [Staff visibility diagnosis](staff-visibility-diagnosis.md) — verify the actual actor and displayed staff category before attributing missing rows to ownership.
 - [Clinic workspace boundary](clinic-details-contract.md) — management is informational; private IDs and existing public slugs remain distinct identities.
+- [Head-only browser inspection](head-only-browser-inspection.md) — automatic page snapshots can capture queue and QR content; restrict metadata audits to document-head fields.
