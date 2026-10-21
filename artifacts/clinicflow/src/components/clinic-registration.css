@@ -28,6 +28,8 @@
 .public-clinic-actions{gap:8px;margin-top:16px}
 .public-clinic-booking-qr{gap:12px;margin-top:16px;padding-top:14px}
 .public-clinic-actions .button{min-height:44px}
+.registration-complete-actions .button{max-width:100%;white-space:normal}
+.registration-complete-actions .button svg{flex-shrink:0}
 @media(max-width:760px){.registration-layout{grid-template-columns:1fr;gap:12px}.registration-progress{padding:0}.registration-progress h2,.registration-progress small{display:none}.registration-progress ol{display:flex;overflow:auto;gap:4px;margin:0 0 16px}.registration-progress li{white-space:nowrap;font-size:var(--type-caption);padding:8px}.registration-fields{grid-template-columns:1fr}.registration-session{grid-template-columns:1fr 1fr}.registration-session button{grid-column:1/-1;text-align:left}.register-clinic-entry{align-items:flex-start;flex-direction:column}.registration-header{margin-bottom:16px}.public-clinic-hero{padding:24px}}
 
 /* Nested grids must shrink below their controls' intrinsic text widths. */
