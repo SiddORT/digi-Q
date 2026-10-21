@@ -1,3 +1,4 @@
+import { clinicWorkspaceHref } from "./clinic-navigation";
 /**
  * Clinic-owned onboarding defaults shown read-only in new staff forms. Values come from the authoritative clinic
  * and location records (no separate defaults store). Only the owning Clinic Admin or a Super Admin may change them,
@@ -23,7 +24,7 @@ export function openingHoursSummary(hours: InheritedBranch["openingHours"], fmt:
 export const addressLine = (r: { address?: string; area?: string; city?: string; state?: string; pincode?: string; country?: string }) => [r.address, r.area, r.city, r.state, r.pincode, r.country].filter(Boolean).join(", ") || "No address";
 /** Real Clinic settings route (ClinicSettings reads ?clinicId and ?section) for the owner or a Super Admin. */
 export const clinicSettingsHref = (clinicId: string, section: "general" | "locations" | "policies" = "general") =>
-  `/admin/clinic?clinicId=${encodeURIComponent(clinicId)}&section=${section}`;
+  clinicWorkspaceHref(clinicId, section);
 /** Contact source wording without exposing anything beyond the location record the viewer can already read. */
 export const contactSource = (b: { inheritEmail?: boolean; inheritPhone?: boolean }) =>
   b.inheritEmail === false && b.inheritPhone === false ? "Location's own contact" : b.inheritEmail === false || b.inheritPhone === false ? "Partly the clinic's contact" : "Clinic's contact";

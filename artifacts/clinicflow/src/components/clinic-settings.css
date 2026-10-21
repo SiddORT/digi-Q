@@ -1,5 +1,5 @@
 /* Clinic settings: section nav (not tabs), compact grouped panels. Uses compact-workspace tokens. */
-.clinic-settings { display: grid; gap:12px; }
+.clinic-settings { display: grid; grid-template-columns:minmax(0,1fr); gap:12px; }
 .clinic-settings [hidden] { display: none !important; }
 .clinic-settings-tabs { display:flex; gap:4px; overflow-x:auto; padding:4px; background:#eef3fa; border:1px solid var(--dq-line,#d7e2f0); border-radius:12px; width:max-content; max-width:100%; scrollbar-width:thin; }
 .clinic-settings-tabs button { flex:0 0 auto; min-height:var(--control-sm); padding:8px 12px; font-size:var(--type-label); font-weight:600; border:0; border-radius:8px; background:transparent; color:#40577a; }
@@ -27,3 +27,53 @@
 [data-location-editor] .field-cell:has(input[type=checkbox]){display:flex;align-items:flex-end;padding-bottom:8px}
 /* Section B15: fields scrolled into view stay clear of the sticky footer. */
 .app-dialog-body{scroll-padding-bottom:96px}
+/* Clinic Details workspace: horizontal overview, paired cards, hours summary. */
+.clinic-settings .cs-back{justify-self:start;font-size:var(--type-label);font-weight:600;color:var(--dq-blue);min-height:32px;display:inline-flex;align-items:center}
+.cs-overview{display:grid;grid-template-columns:76px minmax(0,1fr) minmax(190px,250px);gap:12px 16px;align-items:start}
+.cs-mark{width:76px;height:76px;border-radius:8px;display:grid;place-items:center;color:var(--dq-blue);background:linear-gradient(135deg,#e8f0fc,#d4e3fa)}
+.cs-identity{min-width:0}
+.cs-title{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.cs-title h2{margin:0;font-size:var(--type-page);overflow-wrap:anywhere}
+.cs-status{display:inline-flex;align-items:center;padding:2px 10px;border-radius:999px;font-size:var(--type-caption);font-weight:600;background:#eef3f8;color:var(--soft)}
+.cs-status.live{color:#14673a;background:#e6f5ec}
+.cs-address{display:flex;gap:6px;align-items:flex-start;margin:6px 0 12px;color:var(--muted);font-size:var(--type-label);overflow-wrap:anywhere}
+.cs-address svg{flex:none;margin-top:2px}
+.cs-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cs-actions .button{display:inline-flex;align-items:center;gap:6px;min-height:40px;margin:0}
+.cs-scope{display:inline-flex;align-items:center;gap:4px;font-size:var(--type-caption);color:var(--muted);font-weight:500}
+.cs-linked-card{border:1px solid var(--dq-line);border-radius:10px;background:#f7faff;overflow:hidden}
+.cs-linked-main{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;border:0;border-bottom:1px solid var(--dq-line);background:transparent;text-align:left;min-height:56px}
+.cs-linked-main small{display:block;color:var(--soft);font-size:var(--type-caption)}
+.cs-linked-main strong{font-size:var(--type-body)}
+.cs-readiness{display:inline-flex;align-items:center;gap:6px;color:var(--dq-blue);font-weight:600;font-size:var(--type-label);text-decoration:underline;min-height:40px}
+.cs-linked-card .cs-readiness{padding:6px 14px}
+.cs-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+.cs-card-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--dq-line)}
+.cs-card-head h3{display:flex;align-items:center;gap:8px;margin:0;font-size:var(--type-body);color:var(--ink)}
+.cs-card-head h3 svg{color:var(--dq-blue)}
+.cs-list{margin:0}
+.cs-list>div{display:grid;grid-template-columns:minmax(100px,32%) minmax(0,1fr);gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--dq-line)}
+.cs-list>div:last-child{border-bottom:0}
+.cs-list dt{color:var(--muted);font-size:var(--type-label)}
+.cs-list dd{margin:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-width:0;overflow-wrap:anywhere}
+.cs-wrap{overflow-wrap:anywhere}
+.clinic-settings button.cs-copy{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;min-height:32px;padding:0;border:0;border-radius:6px;background:transparent;color:var(--soft)}
+.clinic-settings button.cs-copy:hover{background:#eef3f8;color:var(--dq-blue)}
+.cs-hours{margin-top:12px}
+.cs-hours-body{display:grid;grid-template-columns:minmax(150px,200px) minmax(0,1fr) auto;gap:16px;align-items:center;padding-top:12px}
+.cs-hours-body small{display:block;color:var(--muted);font-size:var(--type-label)}
+.cs-hours-note{margin:0;padding:12px 14px;border-radius:8px;background:#eaf2fd;color:var(--ink);font-size:var(--type-label)}
+.clinic-settings,.clinic-workspace-content,.cs-card{min-width:0}
+.workspace .clinic-settings .cs-cards>section.panel.cs-card{margin:0}
+.workspace .clinic-settings .cs-card-head h3{margin:0}
+.clinic-settings .cs-copy{flex:0 0 32px}
+.clinic-settings .cs-copy svg{width:14px;height:14px;flex:none}
+.clinic-workspace-tabs-layout,.clinic-settings .settings-scope{min-width:0;max-width:100%}
+.clinic-settings .settings-scope-lookup{min-width:0;max-width:100%}
+.clinic-settings .workspace-tabs{max-width:100%;overflow-x:auto;flex-wrap:nowrap}
+.clinic-settings .workspace-tabs button{white-space:nowrap;flex:none}
+.cs-readiness{overflow-wrap:anywhere}
+@media(max-width:1100px){.cs-hours-body{grid-template-columns:minmax(120px,160px) minmax(0,1fr)}.cs-hours-body>.cs-readiness{grid-column:2}}
+@media(max-width:700px){.cs-overview{grid-template-columns:60px minmax(0,1fr)}.cs-mark{width:60px;height:60px}.cs-linked-card{grid-column:1/-1}.cs-cards{grid-template-columns:1fr}.cs-hours-body{grid-template-columns:1fr}.cs-hours-body>.cs-readiness{grid-column:auto}}
+@media(max-width:767px){.clinic-settings .cs-actions .button,.clinic-settings .cs-readiness,.clinic-settings .cs-hours .button{min-height:44px}.clinic-settings button.cs-copy{width:44px;height:44px;flex-basis:44px}}
+@media(max-width:480px){.cs-overview{grid-template-columns:1fr}.cs-list>div{grid-template-columns:1fr;gap:2px}}

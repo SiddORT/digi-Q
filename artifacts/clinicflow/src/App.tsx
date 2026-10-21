@@ -24,6 +24,7 @@ import { ToastHost } from "./components/ToastHost";
 import { friendlyError } from "./lib/friendly-error";
 import { useSettingsBrowserLocation } from "./lib/settings-navigation";
 import { PublicHeader } from "./components/PublicHeader";
+import { RouteMetadataBoundary } from "./lib/page-metadata";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, staleTime: 15000 } } });
@@ -88,7 +89,7 @@ const routes: Record<string,string[]> = {
   patient:["dashboard","book","appointments","queue","profile","settings"],
 };
 function Providers(){
-  return <QueryClientProvider client={queryClient}><NativeAuthProvider><Switch>
+  return <QueryClientProvider client={queryClient}><NativeAuthProvider><RouteMetadataBoundary/><Switch>
     <Route path="/" component={Home}/>
     <Route path="/sign-in/*?" component={StaffLogin}/>
     <Route path="/sign-up/*?" component={SignUpRoute}/>
@@ -108,6 +109,7 @@ function Providers(){
     <Route path="/admin/doctors"><Redirect to="/admin/staff?tab=doctors"/></Route>
     <Route path="/display/:reference">{p=><ClinicDisplay reference={p.reference}/>}</Route>
     <Route path="/book/:reference">{p=><PublicBookingRoute reference={p.reference}/>}</Route>
+    <Route path="/admin/clinics/:clinicId/:section?"><AuthAccess><Guard role="admin" page="clinic"/></AuthAccess></Route>
     {Object.entries(routes).flatMap(([role,pages])=>[<Route key={role} path={`/${role}`}><AuthAccess><Redirect to={`/${role}/dashboard`}/></AuthAccess></Route>,...pages.map(page=><Route key={`${role}/${page}`} path={`/${role}/${page}`}><AuthAccess><Guard role={role} page={page}/></AuthAccess></Route>)])}
     <Route path="/:clinicSlug/:branchSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug} branchSlug={p.branchSlug}/>}</Route>
     <Route path="/:clinicSlug">{p=><PublicClinicPage clinicSlug={p.clinicSlug}/>}</Route>

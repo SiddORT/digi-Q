@@ -10,8 +10,10 @@ export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{iden
  const search=useSearch();
  const params=new URLSearchParams(search);
  const pin=useWorkspaceBranch();
- const schedulePin=fixedClinicId?null:pin; // clinic settings stay unrestricted
- const clinicId=fixedClinicId||schedulePin?.clinicId||params.get("clinicId")||"";
+ const requestedClinicId=fixedClinicId||params.get("clinicId")||"";
+ // An explicit clinic handoff must never silently use another pinned location.
+ const schedulePin=requestedClinicId?null:pin;
+ const clinicId=requestedClinicId||schedulePin?.clinicId||"";
  const selectedPage=fixedClinicId?(params.get("schedule")==="exceptions"?"exceptions":"availability"):page;
  const role=identity.user?.role;
  const admin=role==="clinicAdmin"||role==="superAdmin";
@@ -30,7 +32,8 @@ export function SchedulingWorkspace({identity,page,clinicId:fixedClinicId}:{iden
       <div className="schedule-bar-actions">
    </div>
   </div>
-   {admin&&selectedPage==="availability"&&<><ErrorNotice error={settings.error}/>{settings.error&&<button type="button" onClick={()=>void settings.refetch()}>Retry Clinic Configuration</button>}</>}
-   <ResourcePage key={`${selectedPage}-${fixedClinicId||""}`} resource={selectedPage} identity={identity} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId} defaults={{clinicId,branchId:schedulePin?.branchId||params.get("branchId")||"",doctorId:params.get("doctorId")||doctorId||"",isOpen:true}}/>
+   {clinicId&&(admin?settings.isLoading:clinic.isLoading)?<p role="status">Verifying clinic context…</p>:
+    clinicId&&(admin?settings.error:clinic.error)?<><ErrorNotice error={admin?settings.error:clinic.error}/><button type="button" onClick={()=>void (admin?settings:clinic).refetch()}>Retry Clinic Context</button></>:
+    <ResourcePage key={`${selectedPage}-${clinicId}`} resource={selectedPage} identity={identity} embedded={!!fixedClinicId} fixedClinicId={requestedClinicId||undefined} defaults={{clinicId,verifiedClinicContext:!!requestedClinicId,branchId:schedulePin?.branchId||params.get("branchId")||"",doctorId:params.get("doctorId")||doctorId||"",isOpen:true}}/>}
  </section></DateTimePreferencesProvider>;
 }

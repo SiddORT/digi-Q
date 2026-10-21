@@ -17,6 +17,7 @@ import { FilterBar, Pagination, SearchInput, listingSuggestions, useDebouncedVal
 import { SearchableSelect } from "./SearchableSelect";
 import "./clinic-registration.css";
 import { usePublicWebsite, PublicWebsiteStatus } from "../lib/public-website";
+import { setMeta, setPageMetadata } from "../lib/page-metadata";
 
 const reserved = new Set(["admin", "doctor", "receptionist", "patient", "api", "auth", "sign-in", "sign-up", "login", "logout", "register", "register-clinic", "register-doctor", "onboarding", "patient-login", "scan-qr", "guest-booking", "forgot-password", "set-password", "check-in", "display", "book", "settings", "users", "assets", "public", "health", "healthz", "favicon", "robots", "sitemap", "clinics", "branches", "appointments", "patients", "queue", "reports", "masters", "audit", "qrs", "availability", "exceptions"]);
 for (const name of ["signup", "dashboard", "doctors", "schedules", "booking", "qr", "guest", "invite", "invitations", "reset-password", "account", "me", "clinicflow-project-deck"]) reserved.add(name);
@@ -63,13 +64,13 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
     if (onlyBranch) navigate(`/${clinicSlug}/${onlyBranch.slug}?book=1`, { replace: true });
   }, [clinicSlug, onlyBranch?.slug, navigate]);
   useEffect(() => {
-    const previous = document.title;
-    document.title = data ? `${data.branch?.name ? `${data.branch.name} · ` : ""}${data.clinic.name} | ${BRAND_NAME}` : `Clinic Information | ${BRAND_NAME}`;
-    const description = document.createElement("meta"); description.name = "description"; description.content = data ? `Visit ${data.clinic.name}. Find clinic locations, care specialists, live sessions and book a visit.` : "Clinic locations, care teams and booking information.";
-    const og = document.createElement("meta"); og.setAttribute("property", "og:title"); og.content = document.title;
-    document.head.append(description, og);
-    return () => { document.title = previous; description.remove(); og.remove(); };
-  }, [data?.clinic.name, data?.branch?.name]);
+    if (!data || query.error) { setMeta("name","robots","noindex, nofollow"); return; }
+    const place = [data.branch?.name, data.clinic.name].filter(Boolean).join(" · ");
+    const address = [data.branch?.address || data.clinic.address, data.branch?.city].filter(Boolean).join(", ");
+    setPageMetadata(`${place} | ${BRAND_NAME}`, `Visit ${place}${address ? ` at ${address}` : ""}. Find care specialists, clinic information and available booking options.`,
+      mode ? undefined : site.url(`/${clinicSlug}${branchSlug ? `/${branchSlug}` : ""}`));
+    setMeta("name","robots",mode ? "noindex, nofollow" : "index, follow");
+  }, [data, query.error, site.origin, clinicSlug, branchSlug, mode, search]);
   if (onlyBranch) return <div className="page-loading" role="status">Opening your clinic’s only location…</div>;
   if (query.isLoading) return <div className="page-loading" role="status">Loading clinic information…</div>;
   if (query.error || !data) return <div className="public-clinic"><Logo/><main className="registration-card"><h1>Clinic Page Unavailable</h1><p>This address may be unavailable, inactive or temporarily unreachable.</p><div className="error-box" role="alert">Unable to load clinic information. Please try again.</div><button type="button" className="button" data-testid="public-clinic-retry" onClick={() => query.refetch()}>Try Again</button> <Link href="/">Return Home</Link></main></div>;

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "export NODE_ENV=development && if [ -f ../../.local/owner-booking-browser-fixture ]; then node src/test-support/owner-booking-browser.mjs; elif [ -f ../../.local/staff-removal-browser-fixture ]; then node src/test-support/staff-removal-browser.mjs; else pnpm run build && pnpm run start; fi",
+    "dev": "export NODE_ENV=development && if [ -f ../../.local/owner-booking-browser-fixture ]; then node src/test-support/owner-booking-browser.mjs; elif [ -f ../../.local/staff-removal-browser-fixture ] || [ -f ../../.local/clinic-workspace-browser-fixture ]; then node src/test-support/staff-removal-browser.mjs; else pnpm run build && pnpm run start; fi",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",

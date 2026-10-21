@@ -1,3 +1,4 @@
+import { clinicWorkspaceHref } from "./clinic-navigation";
 // Pure category model for workspace search (unit tested without React).
 export type SearchCategory = "patients" | "appointments" | "staff" | "clinics" | "branches" | "schedules" | "reports" | "audit";
 export type SearchTab = "all" | "pages" | SearchCategory;
@@ -62,7 +63,7 @@ export const canLoadMore = (shown: number, total: number | null) => total !== nu
 
 /** Exact record links: the destination page opens this record id, the search term only narrows the list. */
 export function recordHref(role: string, page: string, id: string, search: string, extra: Record<string, string> = {}) {
-  if(role==="admin"&&page==="clinics")return `/admin/clinic?${new URLSearchParams({clinicId:id,...extra})}`;
+  if(role==="admin"&&page==="clinics")return clinicWorkspaceHref(id,"details",new URLSearchParams(extra).toString());
   const q = new URLSearchParams({ ...(search ? { search } : {}), open: id, ...extra });
   return `/${role}/${page}?${q}`;
 }

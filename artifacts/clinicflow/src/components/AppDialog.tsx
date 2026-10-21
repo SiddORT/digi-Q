@@ -111,6 +111,8 @@ export function AppDialog({
       }}
     >
       <DialogContent
+        aria-label={title}
+        aria-labelledby={undefined}
         className={`app-dialog ${variant==="drawer"?"app-dialog-drawer":size==="medium"?"app-dialog-wide app-dialog-medium sm:max-w-[820px]":size==="wide"?"app-dialog-wide sm:max-w-5xl":"sm:max-w-2xl"} bg-white border border-border shadow-xl`}
         {...(!description ? { "aria-describedby": undefined } : {})}
         aria-busy={busy || undefined}
@@ -128,6 +130,9 @@ export function AppDialog({
         onInteractOutside={(e) => {
           e.preventDefault();
           if (e.target instanceof Element && e.target.closest(".dtp-popover")) return;
+          // A navigation confirmation is another modal, not an outside-close
+          // request for the editor underneath it. Avoid stacked discard prompts.
+          if (e.target instanceof Element && e.target.closest('[role="dialog"],[role="alertdialog"]')) return;
           if (!confirming) requestClose();
         }}
         onEscapeKeyDown={(e) => {

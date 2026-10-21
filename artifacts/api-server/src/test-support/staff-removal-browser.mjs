@@ -23,11 +23,17 @@ globalThis.fetch = (input, options) => {
   if (!["127.0.0.1", "localhost"].includes(url.hostname)) throw new Error("External network disabled in disposable browser fixture");
   return realFetch(input, options);
 };
-const h = await createFeatureHarness({ postgres: true, deletion: true, administration: true,
+const clinicMode=await access("../../.local/clinic-workspace-browser-fixture").then(()=>true,()=>false);
+const h = await createFeatureHarness({ postgres: true, deletion: true, administration: true, registration:clinicMode,
   bookingLookups: true, simulatedMail: true, fakeBookingMail: true, notificationSettings: true });
 await seedFeatureFixtures(h.pg);
 const password = "Fixture-Only!DigiQ-2026";
 await h.pg.query("update users set password_hash=$1,email_verified_at=now()", [await argon2.hash(password)]);
+if(clinicMode){
+  // Persisted, disposable records only; no existing application database is opened.
+  await h.pg.exec(`update clinics set data=data||'{"address":"Shop 10, Lakeview Road, Pune, Maharashtra 411001","email":"care@test.invalid","phone":"+919876543210","dateFormat":"DD MMM YYYY","timeFormat":"12h"}';
+    update branches set data=data||'{"address":"Lakeview Road","timezone":"UTC","inheritEmail":true,"inheritPhone":true}';`);
+}
 const movementMode=await access("../../.local/appointment-movement-browser-fixture").then(()=>true,()=>false);
 const movement=movementMode?await seedMovementBrowser(h,password):null;
 // An authenticated patient session permits authorization checks without

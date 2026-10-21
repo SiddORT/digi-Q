@@ -46,7 +46,9 @@ async function fixture(page: Page, multiClinic = false, patientPickers = false):
     let reply: unknown;
     let status = 200;
     if (path === "/api/auth/csrf") reply = { csrfToken: "workspace-fixture" };
+    else if (path === "/api/public/website-config") reply = { publicOrigin:"https://clinic.example.invalid" };
     else if (path === "/api/settings") reply = { timezone: "Asia/Kolkata" };
+    else if (path === "/api/geography" || path === "/api/public/geography") reply = { items:[] };
     else if (path === "/api/me") reply = { clerkId: "fixture-only", user: { id: "fixture-admin", role: "superAdmin", fullName: "Fixture Administrator" }, doctorId: "doctor-1" };
     else if (path === "/api/clinics" && method === "GET") reply = listing((multiClinic ? [clinic, otherClinic] : [clinic]).filter(item =>
      (!url.searchParams.get("search") || item.name.toLowerCase().includes(url.searchParams.get("search")!.toLowerCase())) &&
@@ -80,6 +82,7 @@ async function fixture(page: Page, multiClinic = false, patientPickers = false):
     else if (path === "/api/appointments" && method === "GET") reply = listing([{id:"appointment-1", patientId:"patient-1",patientName:"Fixture Patient", doctorId:"doctor-1",doctorName:"Fixture Doctor",clinicId:clinic.id,clinicName:clinic.name,branchId:branch.id,branchName:branch.name,date:"2026-10-08",startTime:"09:00",endTime:"12:00",status:"booked",token:"A001",reference:"FIXTURE-001",allowedActions:[],revision:1}]);
     else if (path.includes("calendar")) reply = { days:[], total:0 };
     else if (path === "/api/clinics/clinic-1/settings" && method === "GET") reply = { clinic, branches: [branch], policies: { bookingHorizonDays: 30, cancellationCutoffMinutes: 60 } };
+    else if (path === "/api/clinics/clinic-2/settings" && method === "GET") reply = {clinic:otherClinic,branches:[otherBranch],policies:{bookingHorizonDays:14}};
     else if (path === "/api/clinics/clinic-1" && method === "GET") reply = clinic;
     else if (path === "/api/branches/branch-1" && method === "GET") reply = branch;
     else if (path === "/api/branches/branch-2" && method === "GET") reply = otherBranch;
@@ -103,6 +106,135 @@ async function fixture(page: Page, multiClinic = false, patientPickers = false):
 
 const listCalls = (state: Fixture, path: string) => state.calls.filter(call => call.pathname === path && call.method === "GET");
 
+test("Clinic canonical sections, legacy aliases, keyboard tabs and scoped switching",async({page})=>{
+ await fixture(page,true);
+ await page.goto("/admin/clinic?clinicId=clinic-1&section=history&returnTo=%2Fadmin%2Fclinics%3Fpage%3D2");
+ await expect(page).toHaveURL(/\/admin\/clinics\/clinic-1\/activity-history\?/);
+ await expect(page.getByRole("tab",{name:"Activity History",exact:true})).toHaveAttribute("aria-selected","true");
+ await expect(page.getByTestId("details-clinic-history")).toBeVisible();
+ for(const section of ["details","locations","staff","policies","activity-history"]){
+  await page.goto(`/admin/clinics/clinic-1/${section}`);
+  await expect(page.locator(`[role=tab][aria-selected=true]`)).toHaveAttribute("id",`clinic-tab-${section}`);
+  await expect(page.getByTestId("text-clinic-name")).toHaveText("Fixture Clinic");
+  await page.reload();
+  await expect(page.locator(`[role=tabpanel]`)).toHaveAttribute("id",`clinic-panel-${section}`);
+ }
+ await page.goto("/admin/clinics/clinic-1/not-a-section");
+ await expect(page).toHaveURL(/\/clinic-1\/details$/);
+ await expect(page.getByTestId("details-clinic-history")).toHaveCount(0);
+ await expect(page.getByRole("heading",{name:"Basic Information"})).toBeVisible();
+ await page.getByRole("tab",{name:"Details",exact:true}).focus();
+ await page.keyboard.press("ArrowRight");
+ await expect(page.getByRole("tab",{name:"Locations",exact:true})).toBeFocused();
+ await expect(page).toHaveURL(/\/clinic-1\/locations$/);
+ await page.goBack();
+ await expect(page.getByRole("tab",{name:"Details",exact:true})).toHaveAttribute("aria-selected","true");
+ const selector=page.getByTestId("settings-scope").getByRole("button",{name:/^Clinic Group:/});
+ await selector.click();
+ await page.getByRole("option",{name:"Other Fixture Clinic",exact:true}).click();
+ await expect(page).toHaveURL(/\/clinic-2\/details$/);
+ await expect(page.getByTestId("text-clinic-name")).toHaveText(otherClinic.name);
+ await expect(page.getByTestId("text-linked-count")).toHaveText("1 of 1 location(s)");
+ await expect(page.getByTestId("link-booking-readiness")).toHaveAttribute("href","/admin/availability?clinicId=clinic-2");
+});
+
+test("Clinic failed saves keep drafts, successful saves persist and repeated browser Back preserves history",async({page})=>{
+ await fixture(page);
+ let current={...clinic};
+ let fail=true;
+ let writes=0;
+ await page.route("**/api/clinics/clinic-1/settings",async route=>{
+  if(route.request().method()==="PATCH"){
+   writes++;
+   if(fail)return route.fulfill({status:503,json:{message:"Unavailable"}});
+   current={...current,...route.request().postDataJSON().clinic};
+  }
+  await route.fulfill({json:{clinic:current,branches:[branch],policies:{bookingHorizonDays:30,cancellationCutoffMinutes:60}}});
+ });
+ await page.goto("/admin/clinics");
+ await page.getByRole("link",{name:"View Fixture Clinic",exact:true}).click();
+ await page.getByTestId("button-edit-clinic").click();
+ const dialog=page.getByRole("dialog",{name:"Clinic Details",exact:true});
+ await dialog.getByRole("textbox",{name:"Name",exact:true}).fill("Draft Clinic");
+ await dialog.getByRole("button",{name:"Save Changes",exact:true}).click();
+ await expect(dialog.getByTestId("status-error")).toBeVisible();
+ await expect(dialog.getByRole("textbox",{name:"Name",exact:true})).toHaveValue("Draft Clinic");
+ expect(writes).toBe(1);
+ fail=false;
+ await dialog.getByRole("button",{name:"Save Changes",exact:true}).click();
+ await expect(dialog).toHaveCount(0);
+ await expect(page.getByTestId("text-clinic-name")).toHaveText("Draft Clinic");
+ await page.reload();
+ await expect(page.getByTestId("text-clinic-name")).toHaveText("Draft Clinic");
+ await page.getByTestId("button-edit-clinic").click();
+ await dialog.getByRole("textbox",{name:"Name",exact:true}).fill("Unsaved Again");
+ await page.goBack();
+ const leave=page.getByRole("dialog",{name:"Leave this page?",exact:true});
+ await expect(leave).toBeVisible();
+ await leave.getByRole("button",{name:"Cancel",exact:true}).click();
+ await expect(dialog.getByRole("textbox",{name:"Name",exact:true})).toHaveValue("Unsaved Again");
+ await page.goBack();
+ await expect(leave).toBeVisible();
+ await leave.getByRole("button",{name:"Discard and Leave",exact:true}).click();
+ await expect(page).toHaveURL(/\/admin\/clinics$/);
+ expect(current.name).toBe("Draft Clinic");
+});
+
+test("Clinic failures do not render empty summaries, and compact layout fits required widths",async({page},testInfo)=>{
+ await fixture(page);
+ let status=503;
+ await page.route("**/api/clinics/clinic-1/settings",route=>status===200?
+  route.fulfill({json:{clinic,branches:[],policies:{}}}):route.fulfill({status,json:{message:status===403?"Clinic settings are outside your ownership":"Unavailable"}}));
+ await page.goto("/admin/clinics/clinic-1/details");
+ await expect(page.getByRole("alert")).toBeVisible();
+ await expect(page.getByTestId("text-linked-count")).toHaveCount(0);
+ status=403;
+ await page.getByRole("button",{name:"Retry Clinic Settings"}).click();
+ await expect(page.getByRole("alert")).toContainText("ownership");
+ status=200;
+ await page.getByRole("button",{name:"Retry Clinic Settings"}).click();
+ await expect(page.getByTestId("text-linked-count")).toHaveText("0 of 0 location(s)");
+ for(const [width,height] of [[1024,683],[1536,1024],[1366,768],[768,1024],[390,844]]){
+  await page.setViewportSize({width,height});
+  await expect(page.getByTestId("button-edit-clinic")).toBeVisible();
+  const overflow=await page.evaluate(()=>Array.from(document.querySelectorAll("main *")).filter(el=>el.getBoundingClientRect().right>innerWidth+1).slice(0,12).map(el=>({tag:el.tagName,cls:el.className,right:el.getBoundingClientRect().right})));
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${width} overflow: ${JSON.stringify(overflow)}`).toBe(true);
+  if(width>700){
+   const tops=await page.locator(".cs-cards>.cs-card").evaluateAll(cards=>cards.map(card=>card.getBoundingClientRect().top));
+   expect(tops[0]).toBe(tops[1]);
+  }
+  await page.screenshot({path:testInfo.outputPath(`clinic-details-${width}x${height}.png`),fullPage:true});
+  await page.getByRole("tab",{name:"Activity History",exact:true}).scrollIntoViewIfNeeded();
+  await expect(page.getByRole("tab",{name:"Activity History",exact:true})).toBeInViewport();
+ }
+ await page.unroute("**/api/clinics/clinic-1/settings");
+ await page.reload();
+ await page.getByRole("tab",{name:"Locations",exact:true}).click();
+ await page.getByTestId("button-edit-branch-1").click();
+ const editor=page.getByRole("dialog");
+ await expect(editor.locator("#input-name")).toBeInViewport();
+ await page.screenshot({path:testInfo.outputPath("mobile-location-editor.png")});
+});
+
+test("Clinic help and section controls support keyboard and touch (intercepted fixtures)",async({browser})=>{
+ const context=await browser.newContext({hasTouch:true,viewport:{width:390,height:844}});
+ const page=await context.newPage();
+ await fixture(page);
+ await page.goto("/admin/clinics/clinic-1/details");
+ const help=page.getByRole("button",{name:"About clinic-wide management",exact:true});
+ await help.focus();
+ await expect(page.locator(".helptip-bubble")).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+ await help.tap();
+ await expect(page.locator(".helptip-bubble")).toBeVisible();
+ await page.getByRole("heading",{name:"Fixture Clinic",exact:true}).tap();
+ await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+ await page.getByRole("tab",{name:"Policies",exact:true}).tap();
+ await expect(page.getByRole("button",{name:"Edit Policies",exact:true})).toBeVisible();
+ await context.close();
+});
+
 test("Superadmin Clinic listing, View, tabs and both return paths retain URL state (intercepted fixtures)", async ({page})=>{
  await fixture(page);
  await page.route("**/api/clinics?*",route=>route.fulfill({json:{...listing([clinic]),total:101}}));
@@ -114,20 +246,20 @@ test("Superadmin Clinic listing, View, tabs and both return paths retain URL sta
  for(const value of ["CF-001","Fixture Owning Administrator","Central","Pune","+919876543210","care@example.invalid","Active"])await expect(row).toContainText(value);
  const view=page.getByRole("link",{name:"View Fixture Clinic",exact:true});
  const href=await view.getAttribute("href");
- expect(href).toMatch(/^\/admin\/clinic\?clinicId=clinic-1&returnTo=/);
+ expect(href).toMatch(/^\/admin\/clinics\/clinic-1\/details\?returnTo=/);
  await view.click();
  await expect(page.getByRole("heading",{name:"Fixture Clinic",exact:true})).toBeVisible();
  await expect(page.getByTestId("nav-clinics")).toHaveAttribute("aria-current","page");
- for(const tab of ["general","locations","staff","policies"])await expect(page.getByTestId(`tab-clinic-${tab}`)).toBeVisible();
+ for(const tab of ["details","locations","staff","policies","activity-history"])await expect(page.getByTestId(`tab-clinic-${tab}`)).toBeVisible();
  await page.getByTestId("tab-clinic-policies").click();
  await expect(page.getByText("Booking horizon: 30 days", {exact:false})).toBeVisible();
  await page.goBack();
- await expect(page.getByTestId("tab-clinic-general")).toHaveAttribute("aria-selected","true");
+ await expect(page.getByTestId("tab-clinic-details")).toHaveAttribute("aria-selected","true");
  await page.getByTestId("link-all-clinic-groups").click();
  expect(new URL(page.url()).pathname+new URL(page.url()).search).toBe(list);
  await expect(row).toBeVisible();
  await page.getByRole("link",{name:"View Fixture Clinic",exact:true}).click();
- await expect(page.getByTestId("tab-clinic-general")).toBeVisible();
+ await expect(page.getByTestId("tab-clinic-details")).toBeVisible();
  await page.goBack();
  expect(new URL(page.url()).pathname+new URL(page.url()).search).toBe(list);
 });
@@ -149,7 +281,7 @@ test("Clinic Admin settings and Doctor navigation remain role-specific (not real
  await fixture(page);
  await page.goto("/?mode=settings&fixtureRole=clinicAdmin",{waitUntil:"domcontentloaded"});
  await expect(page.getByTestId("nav-clinic")).toHaveAttribute("href","/admin/clinic");
- await expect(page.getByTestId("tab-clinic-general")).toHaveAttribute("aria-selected","true");
+ await expect(page.getByTestId("tab-clinic-details")).toHaveAttribute("aria-selected","true");
  await expect(page.getByRole("heading",{name:"Fixture Clinic",exact:true})).toBeVisible();
  await expect(page.getByTestId("link-all-clinic-groups")).toHaveCount(0);
  await page.getByTestId("tab-clinic-policies").click();
@@ -526,10 +658,9 @@ test("clinic staff link preserves global editing for unassigned staff outside Us
   await expect(link).toHaveAttribute("href","/admin/staff");
   await link.click();await expect(page).toHaveURL(/\/admin\/staff(?:\?.*)?$/);
   const listing=page.waitForRequest(r=>new URL(r.url()).pathname==="/api/users"&&new URL(r.url()).searchParams.get("role")==="receptionist"&&!new URL(r.url()).searchParams.has("clinicId"));
-  await page.getByTestId("button-toggle-advanced-filters").click();
   await page.getByRole("button",{name:/^Staff Type/}).click();
   await page.getByRole("option",{name:"Receptionists",exact:true}).click();
-  await page.getByTestId("button-close-filters").click();await listing;
+  await listing;
   await page.getByRole("button",{name:"Edit Fixture Receptionist"}).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByLabel("Full Name")).toBeEnabled();
@@ -633,7 +764,7 @@ test("mobile clinic workspace and list remain readable without overflow or under
   await screenshot(page, "clinic-settings-mobile.png");
   await page.getByRole("tab", { name: "Policies", exact: true }).click();
   await expect(page.getByRole("button", { name: "Edit Policies", exact: true })).toBeVisible();
-  await expect(page).toHaveURL(/clinicId=clinic-1.*section=policies/);
+  await expect(page).toHaveURL(/\/admin\/clinics\/clinic-1\/policies/);
   await page.goto(pageUrl("clinics"));
   await expect(page.getByTestId("row-clinics-clinic-1")).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

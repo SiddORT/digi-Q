@@ -23,7 +23,7 @@ export function useWorkspaceLeaveGuard(path:string,dirty:boolean,ask:(o:any)=>Pr
    void askRef.current({title:"Leave this page?",description:"You have unsaved changes. Leaving this page discards them.",confirmLabel:"Discard and Leave",tone:"danger"}).then(ok=>{if(ok){discardRef.current?.();setSettingsExitGuard(null);navigateAway(dest.path);}}).finally(()=>{leavingRef.current=false;});
   };
   document.addEventListener("click",onClick,true);return()=>document.removeEventListener("click",onClick,true);
- },[dirty,navigateAway]);
+ },[path,dirty,navigateAway]);
  // Browser back/forward can otherwise unmount the workspace before an anchor guard runs.
  // Keep intra-settings history free to move; only an exit with unsaved edits is intercepted.
  const [settingsLocation]=useLocation();
@@ -34,7 +34,7 @@ export function useWorkspaceLeaveGuard(path:string,dirty:boolean,ask:(o:any)=>Pr
   if(window.location.pathname.endsWith(path)){
    currentSettingsUrl.current=window.location.href;currentSettingsPosition.current=settingsHistoryPosition();
   }
- },[settingsLocation,settingsSearch]);
+ },[path,settingsLocation,settingsSearch]);
  useEffect(()=>{
   if(!dirty)return;
   const requestExit=(destination:string)=>{
@@ -65,5 +65,5 @@ export function useWorkspaceLeaveGuard(path:string,dirty:boolean,ask:(o:any)=>Pr
   setSettingsExitGuard({pathname:new URL(currentSettingsUrl.current).pathname,onExit:requestExit});
   window.addEventListener("popstate",pop,true);
   return()=>{setSettingsExitGuard(null);window.removeEventListener("popstate",pop,true);};
- },[dirty,navigateAway]);
+ },[path,dirty,navigateAway]);
 }

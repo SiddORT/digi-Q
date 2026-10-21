@@ -24,6 +24,8 @@ type Ctx = {
   select: (branchId: string) => Promise<void>;
   registerUnsaved: (id: string, dirty: boolean) => void;
   registerBusy: (id: string, busy: boolean) => void;
+  dirty: boolean;
+  busy: boolean;
 };
 const BranchContext = createContext<Ctx | null>(null);
 
@@ -57,8 +59,13 @@ export function WorkspaceBranchProvider({ identity, children }: { identity: api.
   }, [q.data, userId]);
   const unsaved = useRef(new Set<string>());
   const saving = useRef(new Set<string>());
-  const registerBusy = useCallback((id:string,busy:boolean)=>{if(busy)saving.current.add(id);else saving.current.delete(id);},[]);
-  const registerUnsaved = useCallback((id: string, dirty: boolean) => { if (dirty) unsaved.current.add(id); else unsaved.current.delete(id); }, []);
+  const [draftState,setDraftState]=useState({dirty:false,busy:false});
+  const updateDraftState=useCallback(()=>setDraftState(previous=>{
+    const next={dirty:unsaved.current.size>0,busy:saving.current.size>0};
+    return previous.dirty===next.dirty&&previous.busy===next.busy?previous:next;
+  }),[]);
+  const registerBusy = useCallback((id:string,busy:boolean)=>{if(busy)saving.current.add(id);else saving.current.delete(id);updateDraftState();},[updateDraftState]);
+  const registerUnsaved = useCallback((id: string, dirty: boolean) => { if (dirty) unsaved.current.add(id); else unsaved.current.delete(id);updateDraftState(); }, [updateDraftState]);
   const current = branches.find(b => b.id === selected);
   const pin = useMemo<BranchPin | null>(() => current ? { branchId: current.id, clinicId: current.clinicId, name: current.name, clinicName: current.clinicName } : null, [current]);
   const select = async (branchId: string) => {
@@ -76,11 +83,11 @@ export function WorkspaceBranchProvider({ identity, children }: { identity: api.
     void client.invalidateQueries({ predicate: query => !["workspace-branches", "directory-page", "directory-complete"].includes(String(query.queryKey[0])) }, {cancelRefetch: false});
   };
   const status: Ctx["status"] = !enabled ? "off" : q.isLoading ? "loading" : q.error ? "error" : !branches.length ? "none" : pin ? "ready" : branches.length > 1 ? "choice" : "loading";
-  const value: Ctx = { enabled, status, branches, pin: enabled ? pin : null, error: q.error, retry: () => void q.refetch(), select, registerUnsaved, registerBusy };
+  const value: Ctx = { enabled, status, branches, pin: enabled ? pin : null, error: q.error, retry: () => void q.refetch(), select, registerUnsaved, registerBusy, ...draftState };
   return <BranchContext.Provider value={value}>{confirmation.dialog}{children}</BranchContext.Provider>;
 }
 
-const OFF: Ctx = { enabled: false, status: "off", branches: [], pin: null, error: null, retry: () => {}, select: async () => {}, registerUnsaved: () => {}, registerBusy:()=>{} };
+const OFF: Ctx = { enabled: false, status: "off", branches: [], pin: null, error: null, retry: () => {}, select: async () => {}, registerUnsaved: () => {}, registerBusy:()=>{}, dirty:false, busy:false };
 export function useWorkspaceBranchContext() { return useContext(BranchContext) || OFF; }
 /** The enforced workspace location, or null when no location restriction applies (patients, guests, super admins, public booking). */
 export function useWorkspaceBranch() { return useWorkspaceBranchContext().pin; }

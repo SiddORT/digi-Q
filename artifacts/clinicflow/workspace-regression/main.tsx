@@ -4,7 +4,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ResourcePage } from "../src/resources";
 import { ClinicSettings } from "../src/components/ClinicSettings";
 import { WorkspaceNav } from "../src/components/WorkspaceNav";
-import { Redirect, useLocation, useSearch } from "wouter";
+import { Redirect, Router, useLocation, useSearch } from "wouter";
+import { useSettingsBrowserLocation } from "../src/lib/settings-navigation";
+import { WorkspaceBranchProvider } from "../src/components/WorkspaceBranch";
 import { clinicLandingDestination } from "../src/lib/clinic-navigation";
 import { Users } from "../src/Users";
 import { UsersWorkspace, Appointments, Booking } from "../src/clinic";
@@ -40,7 +42,7 @@ if (["selectors", "queue"].includes(params.get("mode") || "")) return <SelectorF
 const browsing=location.startsWith("/admin/");
 const [initialMode]=useState(()=>params.get("mode"));
 const scheduleRoute = /^\/(admin|doctor|receptionist)\/(availability|exceptions)$/.exec(location);
-const mode = scheduleRoute?"schedule":browsing?(location==="/admin/clinic"?"settings":location==="/admin/users"?"users":location==="/admin/staff"?"staff":location==="/admin/appointments"?"appointments":"resource"):params.get("mode")||initialMode;
+const mode = scheduleRoute?"schedule":browsing?(location==="/admin/clinic"||/^\/admin\/clinics\/[^/]+/.test(location)?"settings":location==="/admin/users"?"users":location==="/admin/staff"?"staff":location==="/admin/appointments"?"appointments":"resource"):params.get("mode")||initialMode;
 if (!["resource","settings","staff","users","appointments","schedule"].includes(mode||"")) throw new Error(`Unknown isolated fixture mode: ${mode}`);
 const resource = scheduleRoute?.[2] || params.get("resource") || "clinics";
 const fixedClinicId = params.get("fixedClinicId") || undefined;
@@ -51,7 +53,7 @@ const navigationRole=fixtureRole==="doctor"?"doctor":"admin";
 const navigation=fixtureRole==="clinicAdmin"?["clinic"]:["clinics"];
 const redirect=clinicLandingDestination(location.split("/").pop()||"",fixtureRole,search);
 return (
-    <div className="workspace">
+    <WorkspaceBranchProvider identity={fixtureIdentity}><div className="workspace">
       <aside className="sidebar" aria-label="Fixture workspace navigation">
         <div className="workspace-label">WORKSPACE</div>
         <WorkspaceNav navigation={navigation} role={navigationRole} page={mode==="settings"?"clinic":"clinics"} onNavigate={()=>{}}/>
@@ -65,7 +67,7 @@ return (
           </ListPageTitleContext.Provider>
         </main>
       </div>
-    </div>
+    </div></WorkspaceBranchProvider>
 );
 }
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false, refetchInterval: false }, mutations: { retry: false } } });
@@ -75,12 +77,13 @@ queryClient.setQueryDefaults(["doctor-editor-locations"],{staleTime:60000});
 /** Exercise the actual public and guarded workspace routes, including auth providers. */
 function FixtureRouter(){
   const [location]=useLocation();
-  return location.startsWith("/book/")||/^\/(admin|doctor|receptionist|patient)\/book$/.test(location)
+  const search=useSearch();
+  return new URLSearchParams(search).get("mode")==="app"||location.startsWith("/book/")||/^\/(admin|doctor|receptionist|patient)\/book$/.test(location)
     ? <App/> : <FixtureWorkspace/>;
 }
 
 createRoot(document.getElementById("root")!).render(
   <QueryClientProvider client={queryClient}>
-    <FixtureRouter/>
+    <Router hook={useSettingsBrowserLocation}><FixtureRouter/></Router>
   </QueryClientProvider>,
 );
