@@ -30,7 +30,7 @@ await build({
     b.onResolve({ filter: /^@workspace\/db$|\/store$/ }, a => ({ path: a.path, namespace: "scope-fixture" }));
     b.onLoad({ filter: /.*/, namespace: "scope-fixture" }, a => {
       if (a.path.endsWith("/store")) return { contents: "export const all=async t=>globalThis.scopeFixtures[t]||[]; export const one=async(t,id)=>(await all(t)).find(r=>r.id===id); export const flatten=r=>r; export const uid=()=>'';" };
-      return { contents: "export const db={};" + ["users","doctors","patients","assignments","branches","clinics","appointments","staffSessionProofs","settings"].map(t=>`export const ${t}="${t}";`).join("") };
+       return { contents: "export const db={execute:(...args)=>globalThis.fixtureExecute(...args)};" + ["users","doctors","patients","assignments","branches","clinics","appointments","staffSessionProofs","settings"].map(t=>`export const ${t}="${t}";`).join("") };
     });
   } }],
 });
@@ -52,7 +52,7 @@ await database.exec(`
   create table masters(id text primary key, category text, code text, status text, data jsonb);
   create table patients(id text primary key, user_id text, clinic_id text, branch_id text, mobile text, status text default 'active', data jsonb, created_at timestamptz default '2030-01-05');
   create table appointments(id text primary key, patient_id text, doctor_id text, clinic_id text, branch_id text, date text, token_number int, status text, data jsonb, created_at timestamptz default '2030-01-05');
-  create table audit_logs(id text, actor_id text, clinic_id text, branch_id text, action text, entity_type text, entity_id text, summary text, created_at timestamptz default now());
+  create table audit_logs(id text, actor_id text, clinic_id text, branch_id text, action text, entity_type text, entity_id text, summary text, created_at timestamptz default now(), deleted_actor boolean not null default false);
   create table schedules(id text, doctor_id text, clinic_id text, branch_id text, day_of_week int, status text default 'active', data jsonb default '{}');
   create table availability_exceptions(id text, doctor_id text, branch_id text, date text, status text default 'active', data jsonb default '{}');
   create table qrs(id text, doctor_id text, clinic_id text, branch_id text, public_reference text, status text default 'active', data jsonb default '{}', created_at timestamptz default now());
@@ -191,6 +191,29 @@ test("120 doctors and receptionists retain role and management boundaries", asyn
   assert.equal(staff.total, 60); assert.equal(staff.items.length, 20);
   assert.ok(staff.items.every(r => r.managingAdminId === "admin1"));
   assert.equal((await queryPage(admin, "doctors", { clinicId: "c61" }, undefined, conn)).total, 0);
+});
+test("missing or wrong receptionist manager cannot be replaced by a shared clinic label or workspace", async () => {
+  await database.exec(`insert into users(id,full_name,email,role,managing_admin_id) values
+    ('visibility-missing','Visibility Missing','missing@test.invalid','receptionist',null),
+    ('visibility-wrong','Visibility Wrong','wrong@test.invalid','receptionist','admin2');
+    insert into assignments values
+    ('visibility-a','visibility-missing','c1','b1'),
+    ('visibility-b','visibility-wrong','c1','b1');`);
+  try {
+    const q={role:"receptionist",search:"Visibility",clinicId:"c1",branchId:"b1",status:"active"};
+    for(const actor of [admin,{...admin,clinicIds:["c1"]},{...admin,clinicIds:[]}]){
+      assert.equal((await queryPage(actor,"users",q,undefined,conn)).total,0);
+      for(const id of ["visibility-missing","visibility-wrong"]){
+        const row=(await conn.execute(sourceSql({role:"superAdmin"},"users",sql`r.id=${id}`))).rows[0].doc;
+        assert.equal(await canRead(actor,"users",row),false);
+      }
+    }
+    assert.equal((await queryPage({role:"superAdmin"},"users",q,undefined,conn)).total,2);
+    assert.equal((await database.query("select managing_admin_id from users where id='visibility-missing'")).rows[0].managing_admin_id,null);
+    assert.equal((await database.query("select managing_admin_id from users where id='visibility-wrong'")).rows[0].managing_admin_id,"admin2");
+  } finally {
+    await database.exec("delete from assignments where id like 'visibility-%'; delete from users where id like 'visibility-%'");
+  }
 });
 test("600 appointments/patients: clinic, branch, own doctor, status, date and patient isolation", async () => {
   const page = await queryPage(admin, "appointments", { status: "waiting", date: "2030-01-05", sort: "-tokenNumber", pageSize: 20, page: 2 }, undefined, conn);

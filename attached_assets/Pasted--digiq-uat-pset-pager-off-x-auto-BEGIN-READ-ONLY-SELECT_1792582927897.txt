@@ -1,0 +1,112 @@
+
+digiq_uat=> \pset pager off
+\x auto
+
+BEGIN READ ONLY;
+
+SELECT
+  u.id AS receptionist_id,
+  u.full_name,
+  u.role,
+  u.status,
+  u.managing_admin_id,
+  m.full_name AS managing_admin_name,
+  a.clinic_id,
+  c.data->>'name' AS clinic_name,
+  c.admin_id AS clinic_owner_id,
+  o.full_name AS clinic_owner_name,
+  a.branch_id,
+  b.status AS branch_status
+FROM users u
+LEFT JOIN users m ON m.id = u.managing_admin_id
+LEFT JOIN assignments a ON a.user_id = u.id
+LEFT JOIN clinics c ON c.id = a.clinic_id
+LEFT JOIN users o ON o.id = c.admin_id
+LEFT JOIN branches b ON b.id = a.branch_id
+WHERE lower(trim(u.email)) = 'seema@gmail.com'
+ORDER BY a.clinic_id, a.branch_id;
+
+ROLLBACK;
+Pager usage is off.
+Expanded display is used automatically.
+\x: extra argument "BEGIN" ignored
+\x: extra argument "READ" ignored
+\x: extra argument "ONLY;" ignored
+\x: extra argument "SELECT" ignored
+\x: extra argument "u.id" ignored
+\x: extra argument "AS" ignored
+\x: extra argument "receptionist_id," ignored
+\x: extra argument "u.full_name," ignored
+\x: extra argument "u.role," ignored
+\x: extra argument "u.status," ignored
+\x: extra argument "u.managing_admin_id," ignored
+\x: extra argument "m.full_name" ignored
+\x: extra argument "AS" ignored
+\x: extra argument "managing_admin_name," ignored
+\x: extra argument "a.clinic_id," ignored
+\x: extra argument "c.data->>name" ignored
+\x: extra argument "AS" ignored
+\x: extra argument "clinic_name," ignored
+\x: extra argument "c.admin_id" ignored
+\x: extra argument "AS" ignored
+\x: extra argument "clinic_owner_id," ignored
+\x: extra argument "o.full_name" ignored
+\x: extra argument "AS" ignored
+\x: extra argument "clinic_owner_name," ignored
+\x: extra argument "a.branch_id," ignored
+\x: extra argument "b.status" ignored
+\x: extra argument "AS" ignored
+\x: extra argument "branch_status" ignored
+\x: extra argument "FROM" ignored
+\x: extra argument "users" ignored
+\x: extra argument "u" ignored
+\x: extra argument "LEFT" ignored
+\x: extra argument "JOIN" ignored
+\x: extra argument "users" ignored
+\x: extra argument "m" ignored
+\x: extra argument "ON" ignored
+\x: extra argument "m.id" ignored
+\x: extra argument "=" ignored
+\x: extra argument "u.managing_admin_id" ignored
+\x: extra argument "LEFT" ignored
+\x: extra argument "JOIN" ignored
+\x: extra argument "assignments" ignored
+\x: extra argument "a" ignored
+\x: extra argument "ON" ignored
+\x: extra argument "a.user_id" ignored
+\x: extra argument "=" ignored
+\x: extra argument "u.id" ignored
+\x: extra argument "LEFT" ignored
+\x: extra argument "JOIN" ignored
+\x: extra argument "clinics" ignored
+\x: extra argument "c" ignored
+\x: extra argument "ON" ignored
+\x: extra argument "c.id" ignored
+\x: extra argument "=" ignored
+\x: extra argument "a.clinic_id" ignored
+\x: extra argument "LEFT" ignored
+\x: extra argument "JOIN" ignored
+\x: extra argument "users" ignored
+\x: extra argument "o" ignored
+\x: extra argument "ON" ignored
+\x: extra argument "o.id" ignored
+\x: extra argument "=" ignored
+\x: extra argument "c.admin_id" ignored
+\x: extra argument "LEFT" ignored
+\x: extra argument "JOIN" ignored
+\x: extra argument "branches" ignored
+\x: extra argument "b" ignored
+\x: extra argument "ON" ignored
+\x: extra argument "b.id" ignored
+\x: extra argument "=" ignored
+\x: extra argument "a.branch_id" ignored
+\x: extra argument "WHERE" ignored
+\x: extra argument "lower(trim(u.email))" ignored
+\x: extra argument "=" ignored
+\x: extra argument "seema@gmail.com" ignored
+\x: extra argument "ORDER" ignored
+\x: extra argument "BY" ignored
+\x: extra argument "a.clinic_id," ignored
+\x: extra argument "a.branch_id;" ignored
+\x: extra argument "ROLLBACK;" ignored
+digiq_uat=> 

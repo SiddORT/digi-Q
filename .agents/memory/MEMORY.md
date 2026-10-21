@@ -52,3 +52,4 @@
 - [Public domain continuity](public-domain-continuity.md) — canonical-domain changes do not authorize old-host aliases, redirects or private-token migration.
 - [PDF fixture CSS isolation](pdf-fixture-css-isolation.md) — lazy-load styled fixture modes; host styles can change iframe PDF font measurements without changing ticket HTML.
 - [Communication usage boundary](communication-usage-boundary.md) — observed acceptance is not billing authority; retain coverage gaps and privacy erasure in future packaging work.
+- [Staff visibility diagnosis](staff-visibility-diagnosis.md) — verify the actual actor and displayed staff category before attributing missing rows to ownership.

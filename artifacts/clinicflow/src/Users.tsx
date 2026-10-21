@@ -48,6 +48,7 @@ import { STAFF_TABS, firstInvalidTab, invalidTabs } from "./lib/form-tabs";
 import { inheritedConfirmationError } from "./lib/inherited-defaults";
 import { DoctorScheduleContext } from "./components/schedule/DoctorScheduleContext";
 import "./components/doctor-editor.css";
+import "./staff-list.css";
 import { useRegisterUnsaved } from "./components/WorkspaceBranch";
 
 type StaffContext = {search:string;status:""|"active"|"inactive";clinicId:string;branchId:string;managingAdminId:string;specializationId:string;page:number;pageSize:number;sort:string};
@@ -181,8 +182,8 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     onSuccess:async outcomes=>{setBulkInvitationResults(outcomes);notifyBulk(outcomes,"sent an invitation");selection.clear();await client.invalidateQueries();},
   });
   const invitationBusy=resendInvitation.isPending||bulkInvitations.isPending;
-    const active = !!(tab!==tabs[0].id || context.sort !== "-createdAt" || context.search || context.status || (!clinicId&&context.clinicId) || context.branchId || context.managingAdminId || context.specializationId);
-    const reset = () => {change({ search: "", status: "", clinicId: "", branchId: "", managingAdminId: "", specializationId:"", sort: "-createdAt" });setContexts(previous=>({...previous,[tabs[0].id]:{...defaultContext(),pageSize:previous[tabs[0].id]?.pageSize||20}}));setTab(tabs[0].id);setDraftTab(tabs[0].id);setDraft(defaultContext());};
+    const active = !!(context.sort !== "-createdAt" || context.search || context.status || (!clinicId&&context.clinicId) || context.branchId || context.managingAdminId || context.specializationId);
+    const reset = () => {const next={...defaultContext(),pageSize:context.pageSize};setContexts(previous=>({...previous,[tab]:next}));setDraftTab(tab);setDraft(next);const q=new URLSearchParams(routeSearch);if(q.has("search")){q.delete("search");navigateTo(`${window.location.pathname}?${q}`,{replace:true});}};
     const beginEdit = (row: any, role:StaffTab = tab) => { setDirty(false); setBusy(false); snapshot.current={values:{},defaults:{}}; setCarry({}); setEditTab(role); setEditing(row.id?row:{...row,...(clinicId&&role!=="admins"?{clinicIds:[clinicId]}:{})}); };
     const creatable = tabs.filter(t => t.id !== "admins" || (isSuperAdmin && !embedded));
     const beginAdd = () => beginEdit({}, creatable.some(t => t.id === tab) ? tab : creatable[0].id);
@@ -209,8 +210,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
    return <>{confirmAction.dialog}{filterNames.errors}
       <StaffDeletionReview target={isSuperAdmin?deletion:null} actorId={identity.user?.id} onClose={()=>setDeletion(null)} />
      {counts.some(item=>item.error)&&<div role="alert" className="error-box">Unable to load staff status counts. <button type="button" onClick={()=>counts.forEach(item=>{if(item.error)void item.refetch();})}>Retry Counts</button></div>}
-       <FilterBar compactToolbar title={<h2>Staff</h2>} secondary={<>{role !== "doctor" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setRecoveryOpen(true)} data-testid="button-open-account-recovery"><KeyRound size={15} aria-hidden /> Recovery</button>}{cols.settings}</>} actions={<>{creatable.length ? <button type="button" className="button small" aria-haspopup="dialog" onClick={beginAdd} data-testid="button-add-staff"><Plus size={17} aria-hidden /> Add Staff</button> : null}</>} activeCount={[context.status,!clinicId&&context.clinicId,context.branchId,context.specializationId,context.managingAdminId,context.sort!=="-createdAt",tab!==tabs[0].id].filter(Boolean).length} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter Staff" chips={[
-       ...(tab!==tabs[0].id?[{key:"adv:staffType",label:`Staff type: ${tabs.find(item=>item.id===tab)?.label}`,onRemove:()=>setTab(tabs[0].id)}]:[]),
+       <FilterBar compactToolbar title={<h2>Staff</h2>} secondary={<>{tabs.length>1&&<div className="staff-type-selector"><SearchableSelect label="Staff Type" testId="select-staff-type" clearable={false} value={tab} onChange={value=>{const next=tabs.find(item=>item.id===value)?.id;if(!next)return;setTab(next);setDraftTab(next);setDraft({...defaultContext(),...contexts[next]});}} options={tabs.map(item=>({value:item.id,label:item.label}))}/></div>}{role !== "doctor" && <button type="button" className="button secondary small" aria-haspopup="dialog" onClick={() => setRecoveryOpen(true)} data-testid="button-open-account-recovery"><KeyRound size={15} aria-hidden /> Recovery</button>}{cols.settings}</>} actions={<>{creatable.length ? <button type="button" className="button small" aria-haspopup="dialog" onClick={beginAdd} data-testid="button-add-staff"><Plus size={17} aria-hidden /> Add Staff</button> : null}</>} activeCount={[context.status,!clinicId&&context.clinicId,context.branchId,context.specializationId,context.managingAdminId,context.sort!=="-createdAt"].filter(Boolean).length} active={active} onReset={reset} onOpen={openFilters} onApply={applyFilters} label="Filter Staff" chips={[
        ...(context.search?[{key:"search",label:`Search: ${context.search}`,onRemove:()=>change({search:""})}]:[]),
       ...(context.status?[{key:"adv:status",label:title(context.status),onRemove:()=>change({status:""})}]:[]),
        ...(!clinicId&&context.clinicId?[{key:"clinicId",label:`Clinic: ${filterNames.name("clinicId")}`,onRemove:()=>change({clinicId:"",branchId:""})}]:[]),
@@ -220,7 +220,6 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
        ...(context.sort!=="-createdAt"?[{key:"sort",label:`Sorted: ${sortName(context.sort)}`,onRemove:()=>change({sort:"-createdAt"})}]:[]),
     ]} advanced={<>
        <SearchableSelect label="Account Status" testId="select-staff-status" value={draft.status||"all"} onChange={value=>draftChange({status:(value==="active"||value==="inactive"?value:"") as StaffContext["status"]})} options={(["","active","inactive"] as const).map((status,index)=>({value:status||"all",label:`${status?title(status):"All"}${counts[index].data?` (${counts[index].data.total})`:""}`}))}/>
-      <SearchableSelect label="Staff Type" value={draftTab} onChange={value=>{const next=tabs.find(item=>item.id===value)?.id||tab;setDraftTab(next);setDraft({...defaultContext(),...contexts[next]});}} options={tabs.map(item=>({value:item.id,label:item.label}))}/>
        {draftTab==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={draft.specializationId} onChange={specializationId=>draftChange({specializationId})}/>}
        {isSuperAdmin && draftTab !== "admins" && <ResourceLookup resource="users" label="Managing Admin" params={{role:"clinicAdmin"}} value={draft.managingAdminId} onChange={managingAdminId => draftChange({ managingAdminId })} />}
         {!clinicId&&<ResourceLookup resource={draftTab==="admins"?"clinics":"assignment:clinics"} label="Clinic" params={draftTab==="admins"?undefined:{targetRole:assignmentTargetRole(draftTab)}} value={draft.clinicId} onChange={value=>draftChange({clinicId:value,branchId:""})}/>}
@@ -271,12 +270,22 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
        {!editing.id && !createdDoctor && creatable.length > 1 && <div className="staff-role-picker"><SearchableSelect label="Role" required testId="select-add-staff-role" value={editTab} disabled={busy} onChange={value => { const next = creatable.find(item => item.id === value)?.id; if (next) void chooseRole(next); }} options={creatable.map(item => ({ value: item.id, label: singular(item.id) }))}/></div>}
        {!editing.id && !createdDoctor && creatable.length === 1 && <p className="muted staff-role-picker" data-testid="text-add-staff-role">Role: <strong>{singular(editTab)}</strong></p>}
        {editTab === "admins" && !editing.id ? <ClinicAdminOnboarding guided carry={carry} onSnapshot={(values,defaults)=>{snapshot.current={values,defaults};}} onDirtyChange={setDirty} onBusyChange={setBusy}/> :
-       <UserEditor key={`${editTab}:${editing.id||"new"}`} tab={editTab} initial={editing} onCreated={(saved:any)=>{setScheduleDirty(false);setScheduleBusy(false);setScheduleDoctor(saved);}} carry={editing.id?undefined:carry} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onSnapshot={(values:Record<string,unknown>,defaults:Record<string,unknown>)=>{snapshot.current={values,defaults};}} onClose={(result:any) => { const wasEdit=!!editing.id;const savedTab=editTab;setEditing(null);if(!wasEdit&&savedTab!==tab){setTab(savedTab);setDraftTab(savedTab);}const message=wasEdit?"Updated successfully":`${singular(savedTab)} added. ${securityChannelSummary(result.setupNotificationOutcomes)}`;if(!wasEdit&&(result.invitationStatus==="failed"||Object.values(result.setupNotificationOutcomes||{}).some((c:any)=>!["provider_accepted","not_requested"].includes(c.status))))notifyWarning(message);else notifySuccess(message); }} />}
+       <UserEditor key={`${editTab}:${editing.id||"new"}`} tab={editTab} initial={editing} onFirstSave={()=>{
+         // A committed account must be findable even when its invitation fails
+         // and the editor remains open. Old role/search/status filters must not
+         // hide it when the administrator closes that saved-record dialog.
+         const next={...defaultContext(),pageSize:contexts[editTab]?.pageSize||20};
+         setContexts(previous=>({...previous,[editTab]:next}));
+         setTab(editTab);setDraftTab(editTab);setDraft(next);
+         const q=new URLSearchParams(routeSearch);
+         q.delete("search");q.delete("open");q.set("tab",editTab);
+         navigateTo(`${window.location.pathname}?${q}`,{replace:true});
+       }} onCreated={(saved:any)=>{setScheduleDirty(false);setScheduleBusy(false);setScheduleDoctor(saved);}} carry={editing.id?undefined:carry} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onSnapshot={(values:Record<string,unknown>,defaults:Record<string,unknown>)=>{snapshot.current={values,defaults};}} onClose={(result:any) => { const wasEdit=!!editing.id;const savedTab=editTab;setEditing(null);if(!wasEdit&&savedTab!==tab){setTab(savedTab);setDraftTab(savedTab);}const message=wasEdit?"Updated successfully":`${singular(savedTab)} added. ${securityChannelSummary(result.setupNotificationOutcomes)}`;if(!wasEdit&&(result.invitationStatus==="failed"||Object.values(result.setupNotificationOutcomes||{}).some((c:any)=>!["provider_accepted","not_requested"].includes(c.status))))notifyWarning(message);else notifySuccess(message); }} />}
     </AppDialog>}
   </>;
 }
 
-function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirtyChange, onBusyChange, onSnapshot, clinicId, identity, onCreated }: any) {
+function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirtyChange, onBusyChange, onSnapshot, clinicId, identity, onCreated, onFirstSave }: any) {
   const [initial, setSaved] = useState(opened);
   const scheduleDirty = false, scheduleBusy = false;
   const [savedMessage, setSavedMessage] = useState("");
@@ -317,6 +326,7 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
       return tab === "doctors" ? initial.id ? api.updateDoctor(initial.id, body) : api.createDoctor(body) : initial.id ? api.updateUser(initial.id, body) : api.createUser(body);
     },
     onSuccess: (result) => {
+      if(!initial.id)onFirstSave();
       void client.invalidateQueries();
       if(tab!=="doctors"&&result.invitationStatus!=="failed"){onClose(result);return;}
       setSaved(result); form.reset(doctorValues(result));

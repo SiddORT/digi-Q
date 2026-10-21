@@ -144,3 +144,43 @@ test("Clinic Admin onboarding keeps the atomically saved clinic and owner after 
   assert.equal(ok(await h.call("sa", "POST", `/users/${result.admin.id}/resend-invitation`)).invitationStatus, "sent");
   assert.equal((await rows("select count(*)::int n from clinics where admin_id=$1", [result.admin.id]))[0].n, 1);
 });
+
+test("receptionist ownership survives creation, invitation failure, filtered reload and unrelated-admin probes", async () => {
+  try {
+    for (const fail of [false, true]) {
+      h.mail.fail = fail;
+      const body = { ...input(`visibility-${fail ? "failed" : "sent"}`), role: "receptionist" };
+      const saved = ok(await h.call("adm", "POST", "/users", body), 201);
+      assert.equal(saved.managingAdminId, "adm");
+      assert.equal(saved.invitationStatus, fail ? "failed" : "sent");
+      for (let reload = 0; reload < 2; reload++) {
+        for (const actor of ["adm", "sa", "adm2"]) {
+          const page = ok(await h.call(actor, "GET", `/users?role=receptionist&clinicId=c1&branchId=b1&status=active&search=${encodeURIComponent(body.email)}`));
+          assert.equal(page.total, actor === "adm2" ? 0 : 1);
+          assert.deepEqual(page.items.map(row => row.id), actor === "adm2" ? [] : [saved.id]);
+          const detail = await h.call(actor, "GET", `/users/${saved.id}`);
+          if (actor === "adm2") assert.equal(detail.status, 403);
+          else {
+            assert.equal(ok(detail).id, saved.id);
+            assert.equal(detail.data.managingAdminId, "adm");
+            assert.deepEqual(detail.data.branchIds, ["b1"]);
+          }
+        }
+      }
+      for (const filter of ["status=inactive", "clinicId=c2", "branchId=b2", "role=doctor"]) {
+        const page = ok(await h.call("adm", "GET", `/users?search=${body.email}&${filter}`));
+        assert.equal(page.total, 0, `${filter} intentionally excludes this saved record`);
+      }
+      assert.equal((await h.call("adm", "POST", "/users", body)).status, 409);
+      assert.equal((await rows("select count(*)::int n from users where email=$1", [body.email]))[0].n, 1);
+      const before = await rows("select clinic_id,branch_id from assignments where user_id=$1 order by id", [saved.id]);
+      const transfer = await h.call("sa", "PATCH", `/users/${saved.id}`, { ...body, clinicIds:["c3"], branchIds:["b3"] });
+      assert.equal(transfer.status, 409);
+      assert.deepEqual(await rows("select clinic_id,branch_id from assignments where user_id=$1 order by id", [saved.id]), before);
+      assert.equal((await rows("select managing_admin_id from users where id=$1", [saved.id]))[0].managing_admin_id, "adm");
+    }
+    const mixed = await h.call("sa", "POST", "/users", { ...input("mixed-owners-desk"), role:"receptionist", clinicIds:["c1","c3"], branchIds:["b1","b3"] });
+    assert.equal(mixed.status, 409);
+    assert.equal((await rows("select count(*)::int n from users where email=$1", ["mixed-owners-desk@test.invalid"]))[0].n, 0);
+  } finally { h.mail.fail = false; }
+});

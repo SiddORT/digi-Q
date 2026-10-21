@@ -45,7 +45,8 @@ if (!["resource","settings","staff","users","appointments","schedule"].includes(
 const resource = scheduleRoute?.[2] || params.get("resource") || "clinics";
 const fixedClinicId = params.get("fixedClinicId") || undefined;
 const fixtureRole=params.get("fixtureRole")==="clinicAdmin"?"clinicAdmin":params.get("fixtureRole")==="doctor"?"doctor":"superAdmin";
-const fixtureIdentity={...identity,user:{...identity.user!,role:fixtureRole}} as typeof identity;
+const fixtureIdentityId=params.get("fixtureUserId") || identity.user?.id;
+const fixtureIdentity={...identity,user:{...identity.user!,id:fixtureIdentityId,role:fixtureRole}} as typeof identity;
 const navigationRole=fixtureRole==="doctor"?"doctor":"admin";
 const navigation=fixtureRole==="clinicAdmin"?["clinic"]:["clinics"];
 const redirect=clinicLandingDestination(location.split("/").pop()||"",fixtureRole,search);

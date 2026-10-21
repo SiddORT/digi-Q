@@ -26,6 +26,21 @@ test("a failed invitation is retained as a saved account and resend never uses c
   assert.match(ui,/mutationFn:\(\)=>api\.resendUserInvitation\(tab==="doctors"\?initial\.userId:initial\.id\)/);
   assert.match(ui,/button-resend-saved-invitation/);
 });
+test("first committed staff save reveals the saved role before handling invitation failure",()=>{
+  assert.match(ui,/onFirstSave=\{\(\)=>\{[^]*?defaultContext\(\)[^]*?setContexts[^]*?setTab\(editTab\);setDraftTab\(editTab\);setDraft\(next\)/);
+  assert.match(ui,/onSuccess: \(result\) => \{\s*if\(!initial\.id\)onFirstSave\(\);\s*void client\.invalidateQueries\(\);/);
+  assert.match(ui,/q\.delete\("search"\);q\.delete\("open"\);q\.set\("tab",editTab\);/);
+});
+test("staff type is visible outside the filter drawer and clearing filters preserves it",()=>{
+  assert.equal((ui.match(/label="Staff Type"/g)||[]).length,1);
+  assert.ok(ui.indexOf('testId="select-staff-type"')<ui.indexOf('advanced={<>'));
+  assert.match(ui,/testId="select-staff-type" clearable=\{false\} value=\{tab\}/);
+  const reset=ui.slice(ui.indexOf("const reset ="),ui.indexOf("const beginEdit ="));
+  assert.match(reset,/\[tab\]:next/);
+  assert.doesNotMatch(reset,/setTab|tabs\[0\]/);
+  assert.match(reset,/q\.delete\("search"\)/);
+  assert.doesNotMatch(ui,/adv:staffType/);
+});
 test("unchanged projected mappings are omitted from ordinary saves, preserving exact assignment rows",()=>{
   const original={id:"saved",clinicIds:["one"],branchIds:["branch-only"]};
   const body=clinicScopedStaffInput("doctors",{fullName:"Edited",email:"edited@example.invalid",clinicIds:["one"],branchIds:["branch-only"]},original);
