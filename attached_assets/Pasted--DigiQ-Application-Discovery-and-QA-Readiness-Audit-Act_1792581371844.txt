@@ -1,0 +1,99 @@
+# DigiQ — Application Discovery and QA Readiness Audit
+
+Act as a senior QA architect, full-stack engineer, database auditor, and application security tester.
+
+Inspect the **existing DigiQ application in this Replit project**. Your first task is discovery and documentation, not implementation.
+
+## Objectives
+
+Identify the complete, actual scope of the application so that a comprehensive, executable end-to-end testing plan can be created.
+
+### 1. Application architecture
+Inspect the repository, package manifests, frontend framework, backend framework, API implementation, database configuration, ORM or query layer, authentication system, authorization middleware, environment configuration, migrations and existing tests.
+
+Identify:
+- Frontend and backend entry points.
+- Actual database engine and schema-management approach.
+- All implemented modules and their dependencies.
+- External integrations and mocked services.
+- Existing test tools and commands.
+- Current application startup and test execution procedures.
+
+### 2. Complete module and functionality inventory
+Inspect the actual code and enumerate every implemented module, submodule, screen, form, action, background process and business workflow.
+
+Check for applicable modules including:
+- Super Admin dashboard and administration.
+- Clinic and location management.
+- Clinic Admin management.
+- Doctors, staff, operators and receptionists.
+- Patients and patient records.
+- Roles, permissions and user hierarchy.
+- Clinic operating hours and doctor schedules.
+- Appointments and bookings.
+- Live queue and queue status management.
+- QR tickets, check-in, check-out and validation.
+- Reports, dashboards and audit logs.
+- Application settings, notifications and authentication.
+
+These are discovery areas, not assumptions that every module exists. Record actual implemented, partially implemented, missing and obsolete functionality separately.
+
+### 3. Routes, navigation and APIs
+Inventory:
+- Frontend routes and nested routes.
+- Dynamic route parameters and query parameters.
+- Navigation menus, breadcrumbs, tabs and links.
+- Forms, buttons, dropdowns, modals and other interactive controls.
+- Backend API endpoints, HTTP methods, request parameters, validation rules and response structures.
+- Authentication and authorization requirements for each protected route and endpoint.
+- Redirects, fallback routes and error pages.
+
+Identify dead links, unimplemented actions, duplicate routes and frontend/backend contract mismatches where the source permits verification.
+
+### 4. Database schema and relationships
+Document actual tables, columns, types, primary keys, foreign keys, uniqueness constraints, nullability, indexes, join tables and migrations.
+
+Map relationships between clinics, users, roles, doctors, staff, patients, schedules, appointments, queues and tickets wherever implemented.
+
+Identify:
+- Missing or incorrect relationships.
+- Inconsistent ownership and tenant scoping.
+- Orphan-record risks.
+- Duplicate-record risks.
+- Invalid cascade or deletion behavior.
+- Fields used by the application but absent from the schema, and schema fields that appear unused.
+
+Do not assume the database schema from frontend forms alone. Verify against actual migrations, ORM models and database metadata where accessible.
+
+### 5. User hierarchy and business rules
+Determine the implemented hierarchy and permissions for Super Admin, Clinic Admin, Doctor, Receptionist, Operator, Patient and any additional roles.
+
+Document which roles can create, view, edit, deactivate and delete each record type, and which clinic boundaries apply.
+
+Investigate how users are assigned to clinics, how eligible doctors are determined, how dropdown options are populated, and how schedules are inherited or overridden.
+
+Explicitly flag rules that cannot be determined from the implementation.
+
+### 6. Deliverables
+Produce:
+
+1. Architecture and technology inventory.
+2. Complete module and feature inventory.
+3. Frontend route and navigation inventory.
+4. Backend API inventory.
+5. Database schema and relationship map.
+6. Role-permission matrix.
+7. Business-rule and dependency map.
+8. Existing test coverage and available test commands.
+9. Identified implementation gaps and high-risk areas.
+10. A prioritized QA plan with concrete test scenarios and required test data.
+
+For each finding, identify the relevant file, route, endpoint, table or component whenever possible.
+
+Distinguish verified facts from assumptions and unknowns. Do not report a feature as implemented merely because a menu item or placeholder screen exists.
+
+## Safety and scope
+
+Do not modify application code, migrations, production data, environment variables or deployment settings during this discovery phase. Do not expose secrets or credentials in the report.
+
+Finish the discovery report and wait for review before making changes.
