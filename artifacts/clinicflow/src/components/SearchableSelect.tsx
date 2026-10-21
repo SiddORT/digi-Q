@@ -5,6 +5,7 @@ import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readableLabel } from "@/lib/selection-label";
 import { OverflowText } from "./OverflowText";
+import { useLocalOptionPages } from "./LocalOptionPages";
 
 export interface SearchableSelectProps extends Pick<React.AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> {
   options: { value: string; label: string; disabled?: boolean; /** Compact text for the closed control (e.g. "+91 IN"); label stays searchable. */ selectedLabel?: string }[];
@@ -18,6 +19,8 @@ export interface SearchableSelectProps extends Pick<React.AriaAttributes, "aria-
   onSearchChange?: (search: string) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  /** Opt-in bounded local rendering; remote paging remains unchanged. */
+  localPageSize?: number;
   required?: boolean;
   /** Shown as a Retry action in the error state; the selected value is kept. */
   onRetry?: () => void;
@@ -44,6 +47,7 @@ export function SearchableSelect({
   onSearchChange,
   onLoadMore,
   hasMore = false,
+  localPageSize,
   required = false,
   onRetry,
   id,
@@ -77,6 +81,7 @@ export function SearchableSelect({
   const displayLabel = selectedLabel || (loading ? "Loading selected name…" : error ? "Selected name could not be loaded" : "Selected item unavailable");
 
   const handleSearch = (term: string) => {
+    localPages.reset();
     setSearch(term);
     onSearchChange?.(term);
   };
@@ -110,11 +115,8 @@ export function SearchableSelect({
   }, [handleObserver, open]);
 
   // If we are filtering locally (no onSearchChange), we should filter the options
-  const displayOptions = onSearchChange
-    ? options
-    : options.filter((opt) =>
-        readableLabel(opt.label, opt.value).toLowerCase().includes(search.toLowerCase())
-      );
+  const localPages = useLocalOptionPages(options, search, !!onSearchChange, localPageSize);
+  const displayOptions = localPages.options;
 
   return (
     <div className="searchable-select-field flex min-w-0 max-w-full flex-col gap-1.5 w-full">
@@ -123,7 +125,7 @@ export function SearchableSelect({
           {label} {required && <span className="text-destructive">*</span>}
         </label>
       )}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={next => { setOpen(next); if (!next) localPages.reset(); }}>
         <div
           className={cn(
             "searchable-select-control relative flex min-w-0 max-w-full min-h-[43px] w-full items-center justify-between rounded-lg border border-border bg-white px-3 py-2 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-primary/15",
@@ -195,14 +197,14 @@ export function SearchableSelect({
           align="start"
           style={{ width: "var(--radix-popover-trigger-width)" }}
         >
-          <Command label={label ? `Search ${label}` : "Search options"} shouldFilter={!onSearchChange} className="searchable-select-options max-h-[var(--radix-popover-content-available-height,300px)]">
+          <Command label={label ? `Search ${label}` : "Search options"} shouldFilter={!onSearchChange && !localPageSize} className="searchable-select-options max-h-[var(--radix-popover-content-available-height,300px)]">
             <CommandInput
               placeholder={label ? `Search ${label.toLowerCase()}…` : (placeholder?.startsWith("Search") ? placeholder : "Search…")}
               value={search}
               onValueChange={handleSearch}
               className="h-10 text-sm border-none focus:ring-0"
             />
-            <CommandList className="min-h-0 max-h-[250px] overflow-y-auto">
+            <CommandList key={localPages.pageKey} className="min-h-0 max-h-[250px] overflow-y-auto">
               <CommandEmpty>
                 {error && onRetry && !loading ? <span className="flex flex-col items-center gap-2">Unable to load options.<button type="button" className="button secondary small" onClick={onRetry}>Retry</button></span> : <>{loading ? (search ? "Searching…" : "Loading…") : error ? "Unable to load options." : search ? "No matching results." : "No options available."}</>}
               </CommandEmpty>
@@ -210,12 +212,13 @@ export function SearchableSelect({
                 {displayOptions.map((option) => (
                   <CommandItem
                     key={option.value}
-                    value={onSearchChange ? option.value : readableLabel(option.label, option.value) || "Name unavailable"}
+                    value={onSearchChange || localPageSize ? option.value : readableLabel(option.label, option.value) || "Name unavailable"}
                     disabled={option.disabled}
                     onSelect={() => {
                       onChange(option.value);
                       setOpen(false);
                       setSearch("");
+                      localPages.reset();
                       if (onSearchChange) onSearchChange("");
                     }}
                     className="cursor-pointer min-w-0"
@@ -240,6 +243,7 @@ export function SearchableSelect({
                 )}
               </CommandGroup>
             </CommandList>
+            {localPages.navigation}
           </Command>
         </PopoverContent>
       </Popover>

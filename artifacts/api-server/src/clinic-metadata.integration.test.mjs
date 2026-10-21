@@ -67,6 +67,33 @@ test("lookup completeness is not silently capped at 200 and does not create mast
   assert.equal((await h.pg.query("select count(*)::int n from masters")).rows[0].n, before);
 });
 
+test("large fictional setup catalog returns every active option with a measured payload", async t => {
+  // Only the disposable embedded database is populated; never workspace/prod data.
+  await h.pg.exec(`insert into masters(id,category,code,data)
+    select 'catalog-bench-'||category||'-'||n,category,'catalog-bench-'||category||'-'||n,
+      jsonb_build_object('name','Fictional '||category||' '||lpad(n::text,5,'0'))
+    from unnest(array['clinicCategory','specialization','qualification']) category
+    cross join generate_series(1,10000) n`);
+  try {
+    const before = (await h.pg.query("select count(*)::int n from masters")).rows[0].n;
+    const start = performance.now();
+    const result = await h.call(null, "GET", "/public/registration-options");
+    const elapsedMs = performance.now() - start;
+    assert.equal(result.status, 200);
+    for (const key of ["categories", "specialities", "qualifications"]) {
+      const fictional = result.data[key].filter(o => o.id.startsWith("catalog-bench-"));
+      assert.equal(fictional.length, 10000);
+      assert.equal(new Set(fictional.map(o => o.id)).size, 10000);
+      assert.ok(fictional.some(o => o.name.endsWith("10000")));
+      assert.ok(fictional.every(o => Object.keys(o).sort().join(",") === "id,name"));
+    }
+    assert.equal((await h.pg.query("select count(*)::int n from masters")).rows[0].n, before);
+    t.diagnostic(`30,000 fictional options + existing test catalog: ${Math.round(elapsedMs)}ms; ${Buffer.byteLength(JSON.stringify(result.data))} JSON bytes (embedded PostgreSQL, not a production latency estimate)`);
+  } finally {
+    await h.pg.exec("delete from masters where id like 'catalog-bench-%'");
+  }
+});
+
 test("custom values normalize, persist, reopen, resolve names and remain clinic-owned", async () => {
   const count = (await h.pg.query("select count(*)::int n from masters")).rows[0].n;
   const standard = (await h.call(null, "GET", "/public/registration-options")).data.specialities.find(r => r.name === "General Medicine");

@@ -33,6 +33,12 @@ Isolated component browser harnesses must explicitly scan the application's sour
 
 **How to apply:** Match the real CSS compiler and explicitly include external component sources in scanning. Assert computed flex/hidden styles before trusting visual evidence; then distinguish genuine selector mismatches and specificity problems from harness omissions.
 
+Use the same verified stylesheet/source-scanning setup for both sides of a UI performance comparison.
+
+**Why:** Missing utilities can leave thousands of unbounded option rows in the document while interaction timing still appears plausible; changing the harness styling invalidates the earlier timing baseline.
+
+**How to apply:** After correcting fixture CSS, rerun the baseline as well as the optimized case. Keep viewport emulation distinct from mobile CPU/network evidence.
+
 Listing regression harnesses should exercise the shell's title-ownership context, not supply a separate heading outside the listing.
 
 **Why:** A standalone fixture heading bypasses the shared header's title and secondary-count behavior, so it cannot establish the production toolbar's density or row layout.

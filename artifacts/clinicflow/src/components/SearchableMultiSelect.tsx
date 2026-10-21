@@ -4,6 +4,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readableLabel } from "@/lib/selection-label";
+import { useLocalOptionPages } from "./LocalOptionPages";
 
 export interface SearchableMultiSelectProps extends Pick<React.AriaAttributes, "aria-describedby" | "aria-invalid" | "aria-required" | "aria-labelledby"> {
   options: { value: string; label: string; hidden?: boolean; disabled?: boolean }[];
@@ -18,6 +19,8 @@ export interface SearchableMultiSelectProps extends Pick<React.AriaAttributes, "
   onSearchChange?: (search: string) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  /** Opt-in bounded local rendering; remote paging remains unchanged. */
+  localPageSize?: number;
   required?: boolean;
   /** Shown as a Retry action in the error state; the selected value is kept. */
   onRetry?: () => void;
@@ -39,6 +42,7 @@ export function SearchableMultiSelect({
   onSearchChange,
   onLoadMore,
   hasMore = false,
+  localPageSize,
   required = false,
   onRetry,
   id,
@@ -71,6 +75,7 @@ export function SearchableMultiSelect({
   const displayLabel = (id: string) => selectedLabels[id] || (isActuallyLoading ? "Loading selected name…" : error ? "Selected name could not be loaded" : "Selected item unavailable");
 
   const handleSearch = (term: string) => {
+    localPages.reset();
     setSearch(term);
     onSearchChange?.(term);
   };
@@ -103,11 +108,8 @@ export function SearchableMultiSelect({
     };
   }, [handleObserver, open, search]);
 
-  const displayOptions = onSearchChange
-    ? options
-    : options.filter((opt) =>
-        readableLabel(opt.label, opt.value).toLowerCase().includes(search.toLowerCase())
-      );
+  const localPages = useLocalOptionPages(options, search, !!onSearchChange, localPageSize);
+  const displayOptions = localPages.options;
 
   const toggleValue = (optValue: string) => {
     if (value.includes(optValue)) {
@@ -136,7 +138,7 @@ export function SearchableMultiSelect({
           {label} {required && <span className="text-destructive">*</span>}
         </label>
       )}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={next => { setOpen(next); if (!next) localPages.reset(); }}>
         <div
           className={cn(
             "relative flex min-w-0 max-w-full min-h-[43px] w-full items-center justify-between rounded-lg border border-border bg-white px-2 py-1.5 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15",
@@ -224,14 +226,14 @@ export function SearchableMultiSelect({
           align="start"
           style={{ width: "var(--radix-popover-trigger-width)" }}
         >
-          <Command label={label ? `Search ${label}` : "Search options"} shouldFilter={!onSearchChange} className="searchable-select-options max-h-[var(--radix-popover-content-available-height,300px)]">
+          <Command label={label ? `Search ${label}` : "Search options"} shouldFilter={!onSearchChange && !localPageSize} className="searchable-select-options max-h-[var(--radix-popover-content-available-height,300px)]">
             <CommandInput
               placeholder={label ? `Search ${label.toLowerCase()}...` : (placeholder?.startsWith("Search") ? placeholder : "Search...")}
               value={search}
               onValueChange={handleSearch}
               className="h-10 text-sm border-none focus:ring-0"
             />
-            <CommandList className="min-h-0 max-h-[250px] overflow-y-auto">
+            <CommandList key={localPages.pageKey} className="min-h-0 max-h-[250px] overflow-y-auto">
               <CommandEmpty>
                 {error && onRetry && !loading ? <span className="flex flex-col items-center gap-2">Unable to load options.<button type="button" className="button secondary small" onClick={onRetry}>Retry</button></span> : <>{isActuallyLoading ? "Searching..." : error ? "Unable to load options." : "No results found."}</>}
               </CommandEmpty>
@@ -243,7 +245,7 @@ export function SearchableMultiSelect({
                   return (
                     <CommandItem
                       key={option.value}
-                      value={onSearchChange ? option.value : readableLabel(option.label, option.value) || "Name unavailable"}
+                      value={onSearchChange || localPageSize ? option.value : readableLabel(option.label, option.value) || "Name unavailable"}
                       disabled={option.disabled}
                       onSelect={() => {
                         toggleValue(option.value);
@@ -275,6 +277,7 @@ export function SearchableMultiSelect({
                 )}
               </CommandGroup>
             </CommandList>
+            {localPages.navigation}
           </Command>
         </PopoverContent>
       </Popover>
