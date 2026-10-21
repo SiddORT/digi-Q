@@ -22,6 +22,7 @@ export async function patientAccountsForPhone(mobile: string, conn: any = db) {
 
 export async function sendPatientLoginSms(mobile: string, otp: string, expirySeconds: number,
   conn: any = db, send = sendNotificationSms) {
+  assert(/^\d{6}$/.test(otp) && Number.isFinite(expirySeconds) && expirySeconds > 0,503,"Login code or expiry is unavailable");
   await requireSecurityDelivery("patient_login_otp","patient","sms",conn);
   const { env } = await resolvedIntegration("notificationSms",conn);
   const cfg = notificationSmsConfig(env);

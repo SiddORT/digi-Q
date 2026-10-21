@@ -132,10 +132,10 @@ test("custom roles enforce clinic restrictions, revisions, base-role and assignm
   await assert.rejects(api.saveCustomRoles(sa, { ...saved, bindings: [{ ...saved.bindings[0], clinicId: "foreign" }] }), { status: 400 });
   await api.saveCustomRoles(sa, { ...saved, roles: [], bindings: [] });
 });
-test("recipient templates are isolated, secondary channels opt in and onboarding stays admin-only", async () => {
-  assert.equal(api.defaultTemplate("booking", "doctor").enabled, false);
+test("recipient templates are isolated, approved appointment defaults stay on and onboarding stays admin-only", async () => {
+  assert.equal(api.defaultTemplate("booking", "doctor").enabled, true);
   assert.equal(api.defaultTemplate("booking", "clinicAdmin").enabled, true, "approved owning-admin booking policy");
-  assert.equal(api.defaultTemplate("cancelled", "clinicAdmin").enabled, false, "unrelated secondary events remain opt-in");
+  assert.equal(api.defaultTemplate("cancelled", "clinicAdmin").enabled, true, "approved appointment-recipient policy");
   const before = await api.resolvedTemplate("booking", "c");
   const doctor = { ...api.defaultTemplate("booking", "doctor"), enabled: true, subject: "Doctor visit notice" };
   await api.saveTemplate(ca, { clinicId: "c", recipient: "doctor", event: "booking", revision: 0, mode: "publish", content: doctor });
@@ -166,10 +166,11 @@ test("system staff directory excludes patients and credential fields, scopes fil
 test("recipient delivery deduplicates multi-role staff and retries and respects opt-outs", async () => {
   await h.control.query(`insert into users(id,role,email,status) values('staff-doctor','doctor','owner@example.invalid','active'),('reception','receptionist','reception@example.invalid','active');
     insert into patients(id,clinic_id,data) values('recipient-patient','c','{"email":"patient-notices@example.invalid","fullName":"Example patient"}');
+    insert into branches(id,clinic_id,data) values('recipient-branch','c','{"name":"Location"}');
     insert into doctors(id,user_id,owner_admin_id) values('recipient-doctor','staff-doctor','ca');
-    insert into assignments(id,user_id,clinic_id) values('recipient-link','reception','c'),('recipient-doctor-link','staff-doctor','c');
-    insert into appointments(id,patient_id,doctor_id,clinic_id,date,token_number,status,data) values('recipient-visit','recipient-patient','recipient-doctor','c','2026-11-01',1,'completed','{"startTime":"10:00","endTime":"11:00","timezone":"UTC"}')`);
-  const row = { id: "recipient-visit", patientId: "recipient-patient", doctorId: "recipient-doctor", clinicId: "c", date: "2026-11-01", startTime: "10:00", endTime: "11:00", timezone: "UTC", revision: 0 };
+    insert into assignments(id,user_id,clinic_id,branch_id) values('recipient-link','reception','c',null),('recipient-doctor-link','staff-doctor','c','recipient-branch');
+    insert into appointments(id,patient_id,doctor_id,clinic_id,branch_id,date,token_number,status,data) values('recipient-visit','recipient-patient','recipient-doctor','c','recipient-branch','2026-11-01',1,'completed','{"startTime":"10:00","endTime":"11:00","timezone":"UTC"}')`);
+  const row = { id: "recipient-visit", patientId: "recipient-patient", doctorId: "recipient-doctor", clinicId: "c", branchId:"recipient-branch",patientName:"Example patient",doctorName:"Doctor",clinicName:"Actual Clinic",branchName:"Location",reference:"RECIPIENT",token:"Q-1",tokenNumber:1,date: "2026-11-01", startTime: "10:00", endTime: "11:00", timezone: "UTC", revision: 0 };
   for (const recipient of ["clinicAdmin", "doctor", "receptionist"]) {
     await api.saveTemplate(ca, { clinicId: "c", event: "completed", recipient, revision: 0, mode: "publish", content: { ...api.defaultTemplate("completed", recipient), enabled: true } });
   }

@@ -12,8 +12,8 @@ import { recordNotification, recordDecision, claimNotificationOccurrence, notifi
 import { logger } from "./logger";
 import { confirmationText } from "./appointment-confirmation";
 import { reminderDispatchEligible } from "./notification-outbox";
-import { visitTemplateValues, missingVisitVariables } from "./notification-template-values";
-import { validTemplateTarget } from "./notification-templates";
+import { visitTemplateValues, missingVisitVariables, snapshotIdentityMatches, appointmentSnapshotComplete } from "./notification-template-values";
+import { validTemplateTarget, validEventContent } from "./notification-templates";
 import { withStaffDispatch } from "./staff-dispatch-barrier";
 import { notificationStaffSubjects } from "./notification-staff-subjects";
 import { lockNotificationPreferences, recipientPreference, pendingPreferenceAllowed } from "./notification-preferences";
@@ -102,9 +102,9 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
         const [fresh]=await tx.select().from(settings).where(eq(settings.id,record.id));
         const data=fresh.data;
         if(data.state!=="pending"||data.dueAt>now)return null;
-        const update=async(state:any)=>{
-          await tx.update(settings).set({data:{...data,state,finishedAt:now}}).where(eq(settings.id,record.id));
-          await recordNotification(tx,data.historyKey||record.id,notificationEntry(data,"sms"),state,undefined,[],now);
+         const update=async(state:any,preparationReason?:string)=>{
+           await tx.update(settings).set({data:{...data,state,preparationReason,finishedAt:now}}).where(eq(settings.id,record.id));
+           await recordNotification(tx,data.historyKey||record.id,{...notificationEntry(data,"sms"),preparationReason},state,undefined,[],now);
         };
         if(!await pendingPreferenceAllowed(tx,data,"sms")){await update("disabled");return null;}
         if(!(await getSettings(tx,data.clinicId)).notificationsEnabled){await update("disabled");return null;}
@@ -126,14 +126,19 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
         const target=targets.find((a:any)=>data.recipientPatientId?a.targetPatientId===data.recipientPatientId:a.id===data.recipientUserId);
         const phone=notificationPhone(target?.mobile);
         if(!target||target.status!=="active"||!phone||phoneKey(phone)!==data.recipientPhoneKey){await update("no_recipient");return null;}
-        const patient=current?.patientId?await one(patients,current.patientId,tx):null;
+         if(current && !snapshotIdentityMatches(snapshot,current,clinic)){
+           await update("preparation_failed","Booking snapshot identity does not match this event");return null;
+         }
         const values={...visitTemplateValues(data.appointmentId?snapshot:null,clinic,target.fullName||"",data.previousSession),
-          clinic_name:clinic.name,patient_name:patient?.fullName||"",doctor_name:snapshot.doctorName||"",
-          appointment_details:current?confirmationText(snapshot,clinic).replace("Your appointment is confirmed.","Visit details:"):"",
-          previous_details:data.previousDetails||"",reference:snapshot.reference||"",timezone:snapshot.timezone||clinic.timezone||"",
+           appointment_details:current&&appointmentSnapshotComplete(snapshot)?confirmationText(snapshot,clinic).replace("Your appointment is confirmed.","Visit details:"):"",
+           previous_details:data.previousSession?.detailsAvailable?data.previousDetails||"":"",reference:snapshot.reference||"",timezone:snapshot.timezone||"",
           clinic_contact:[clinic.email,clinic.phone].filter(Boolean).join(" · ")};
         const content=template.content as SmsTemplateContent;
-        if(missingVisitVariables([content.body],values).length){await update("preparation_failed");return null;}
+         if(!validEventContent(data.event,content)){
+           await update("preparation_failed","Published template uses variables incompatible with this event; edit explicitly or reset");return null;
+         }
+         const missing=missingVisitVariables([content.body],values);
+         if(missing.length){await update("preparation_failed",`Missing required template values: ${missing.join(", ")}`);return null;}
         const message=substitute(content.body,values);
         if(message.length>1600){await update("preparation_failed");return null;}
         const cfg=notificationSmsConfig(env);

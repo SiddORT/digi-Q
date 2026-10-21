@@ -12,7 +12,8 @@ import { logger } from "./logger";
 import { resolvedIntegration } from "./integration-vault";
 import { createHash } from "node:crypto";
 import { assert } from "./http";
-import { previousSessionSnapshot, visitTemplateValues, missingVisitVariables } from "./notification-template-values";
+import { previousSessionSnapshot, visitTemplateValues, missingVisitVariables, snapshotIdentityMatches, appointmentSnapshotComplete } from "./notification-template-values";
+import { validEventContent } from "./notification-templates";
 import { validTemplateTarget } from "./notification-templates";
 import { withStaffDispatch } from "./staff-dispatch-barrier";
 import { notificationStaffSubjects } from "./notification-staff-subjects";
@@ -208,7 +209,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       if (data.state !== "pending" || data.dueAt > now) return null;
       const update = async (patch: any) => {
         await tx.update(settings).set({ data: { ...data, ...patch } }).where(eq(settings.id, record.id));
-        if(patch.state) await recordNotification(tx,data.historyKey||record.id,notificationEntry(data,"email"),patch.state,undefined,[],now);
+        if(patch.state) await recordNotification(tx,data.historyKey||record.id,{...notificationEntry(data,"email"),preparationReason:patch.preparationReason},patch.state,undefined,[],now);
       };
       if (!await pendingPreferenceAllowed(tx,data,"email")) { await update({state:"disabled"}); return null; }
       if (!(await getSettings(tx, data.clinicId)).notificationsEnabled ||
@@ -257,12 +258,18 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       const template = await resolvedTemplate(data.event, data.clinicId, tx, data.recipientGroup || defaultRecipient(data.event));
       if (!template.content.enabled || template.activatedAt > data.createdAt) { await update({ state: "disabled" }); return null; }
       const row = data.snapshot;
+      if(current && !snapshotIdentityMatches(row,current,clinic)){
+        await update({state:"preparation_failed",preparationReason:"Booking snapshot identity does not match this event"});return null;
+      }
       const values = { ...visitTemplateValues(current?row:null,clinic,recipientName,data.previousSession),
-        clinic_name: clinic.name, patient_name: patient?.fullName || "", doctor_name: row.doctorName || "",
-        appointment_details: current ? confirmationText(row, clinic).replace("Your appointment is confirmed.", "Visit details:") : "",
-        previous_details: data.previousDetails || "", reference: row.reference || "", timezone: row.timezone || clinic.timezone || "", clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · ") };
-      if(missingVisitVariables([template.content.subject,template.content.body,template.content.prefix,template.content.footer],values).length){
-        await update({state:"preparation_failed"});return null;
+        appointment_details: current && appointmentSnapshotComplete(row) ? confirmationText(row, clinic).replace("Your appointment is confirmed.", "Visit details:") : "",
+        previous_details: data.previousSession?.detailsAvailable ? data.previousDetails || "" : "", reference: row.reference || "", timezone: row.timezone || "", clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · ") };
+      if(!validEventContent(data.event,template.content)){
+        await update({state:"preparation_failed",preparationReason:"Published template uses variables incompatible with this event; edit explicitly or reset"});return null;
+      }
+      const missing=missingVisitVariables([template.content.subject,template.content.body,template.content.prefix,template.content.footer],values);
+      if(missing.length){
+        await update({state:"preparation_failed",preparationReason:`Missing required template values: ${missing.join(", ")}`});return null;
       }
       const rendered = renderNotification(template.content, values);
       const env=(await resolvedIntegration("smtp",tx)).env;

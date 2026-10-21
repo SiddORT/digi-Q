@@ -15,6 +15,7 @@ import { getSettings } from "./store";
 import { DEMO_FIXTURE } from "./demo-policy";
 import { validTemplateTarget, validEventContent } from "./notification-templates";
 import { requiredEvent, isSecurityEvent } from "./security-template-definitions";
+import { accountRoleLabel } from "@workspace/api-zod/notification-variable-contract";
 
 export const eventControlInput = z.object({
   channel:z.enum(["email","sms"]),event:z.enum(templateEvents),recipient:z.enum(templateRecipients),
@@ -57,7 +58,7 @@ export const eventTestInput=z.object({
   channel:z.enum(["email","sms"]),event:z.enum(templateEvents),recipientGroup:z.enum(templateRecipients),
   clinicId:z.string().min(1).max(100).optional(),revision:z.number().int().min(0),
   content:z.union([templateContent,smsTemplateContent]),
-  values:z.record(z.string(),z.string().min(1).max(1500)),recipient:z.string().max(254).optional(),
+  values:z.record(z.string(),z.string().max(1500)),recipient:z.string().max(254).optional(),
   confirmed:z.boolean().optional(),requestId:z.string().uuid().optional(),
 }).strict();
 export const outcomeMessages:Record<SmsOutcome,string>={
@@ -82,9 +83,9 @@ export async function prepareTemplateTest(user:any,input:unknown) {
    }
   const texts=body.channel==="sms"?[content.body]:[content.subject,content.body,content.prefix,content.footer];
   const used=new Set(texts.flatMap(text=>[...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(m=>m[1])));
-  assert(Object.keys(body.values).length===used.size&&Object.keys(body.values).every(k=>used.has(k))&&[...used].every(k=>body.values[k]?.trim()),400,"Provide exactly the placeholders used by this template");
+  assert(Object.keys(body.values).length===used.size&&Object.keys(body.values).every(k=>used.has(k))&&[...used].every(k=>k==="clinic_contact"||body.values[k]?.trim()),400,"Provide exactly the placeholders used by this template (clinic contact is optional)");
    // Security previews/tests use only fictional values, never caller-provided credentials.
-   const sample = {otp:"123456",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-preview-only",recipient_name:"Example Recipient",role_name:"staff member"};
+   const sample = {otp:"123456",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-preview-only",recipient_name:"Example Recipient",role_name:accountRoleLabel(body.recipientGroup)};
    const values = requiredEvent(body.event) ? sample : body.values;
    const rendered=body.channel==="sms"?{subject:"",text:substitute(content.body,values)}:renderNotification(content,values);
   assert(rendered.text.length<=(body.channel==="sms"?1600:24000),400,"Rendered message is too long");

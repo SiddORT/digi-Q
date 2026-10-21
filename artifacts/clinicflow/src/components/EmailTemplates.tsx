@@ -19,7 +19,8 @@ import { isRealSuperAdmin } from "../lib/settings-access";
 import { templateSaveError } from "../lib/communication-routes";
 import { templateContentForSave } from "../lib/notification-template-input";
 import { refreshNotificationManagement } from "../lib/notification-management";
-import { SECURITY_EVENTS, requiredSecurityEvent, securityTemplateTarget, securityTemplateVariables } from "../lib/security-template-events";
+import { SECURITY_EVENTS, requiredSecurityEvent, securityTemplateTarget } from "../lib/security-template-events";
+import { eventVariables } from "@workspace/api-zod/notification-variable-contract";
 
 type Content = api.NotificationTemplateContent;
 type Mode = "draft" | "publish" | "reset";
@@ -136,7 +137,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
     window.addEventListener("beforeunload", warn); return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  const variables = (catalog.data?.variables ?? []).filter(v => requiredSecurityEvent(item?.event || "") ? securityTemplateVariables(item!.event).includes(v) : !["otp","expiry_minutes","setup_link","role_name"].includes(v));
+  const variables = (catalog.data?.variables ?? []).filter(v => eventVariables(item?.event || "").includes(v));
   const scopeName = catalog.data?.scopeName ?? "";
   const unknown = useMemo(() => form ? unknownVariables(sms ? { ...form, subject: "", prefix: "", footer: "", logoUrl: "" } : form, variables) : [], [form, variables, sms]);
   const errors = form ? {

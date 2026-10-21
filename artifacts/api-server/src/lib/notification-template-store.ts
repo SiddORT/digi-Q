@@ -11,6 +11,7 @@ import { visitTemplateValues } from "./notification-template-values";
 import { validTemplateTarget, validEventContent } from "./notification-templates";
 import { requiredEvent, isSecurityEvent, securityDefault } from "./security-template-definitions";
 import { appointmentActivationId, appointmentNotificationTarget } from "./appointment-notification-scope";
+import { accountRoleLabel } from "@workspace/api-zod/notification-variable-contract";
 
 export type Channel = "email" | "sms";
 const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event), channel:Channel="email") => `${channel==="sms"?"sms":"notification"}-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
@@ -54,12 +55,14 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
     clinic_name: clinic?.name || "Example clinic", clinic_contact: [clinic?.email, clinic?.phone].filter(Boolean).join(" · "),
     patient_name: "[Patient name]", doctor_name: "[Doctor name]", appointment_details: "[Clinic-formatted visit details]", previous_details: "[Previous visit details]", reference: "[Booking reference]", timezone: "[Clinic location timezone]" };
   values.cancel_reason = "[Cancellation reason]";
-   const previewValues = { ...values, booking_link: clinic ? values.booking_link || "[Clinic booking link unavailable]" : "https://example.invalid/example-clinic", otp: "123456", expiry_minutes: "10", setup_link: "https://example.invalid/set-password?token=fictional-preview-only", role_name: "staff member" };
+   const previewValues = { ...values, booking_link: clinic ? values.booking_link || "[Clinic booking link unavailable]" : "https://example.invalid/example-clinic", otp: "123456", expiry_minutes: "10", setup_link: "https://example.invalid/set-password?token=fictional-preview-only", role_name: accountRoleLabel(recipient || "receptionist") };
   const items = [];
   for (const event of templateEvents) {
      if (!validTemplateTarget(event, recipient || defaultRecipient(event), channel) || requiredEvent(event) && clinicId) continue;
      const { content, local, source } = await resolvedTemplate(event, clinicId, conn, recipient || defaultRecipient(event),channel);
-    const preview = renderNotification(local.draft || content, previewValues);
+     const candidate=local.draft || content;
+     const preview = validEventContent(event,candidate) ? renderNotification(candidate, previewValues) :
+       {subject:"Template preparation unavailable",text:"This saved template uses variables incompatible with this event. Edit it explicitly or reset; saved wording has not been changed."};
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
        required: requiredEvent(event),

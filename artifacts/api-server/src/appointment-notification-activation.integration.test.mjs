@@ -93,7 +93,7 @@ async function visit(event, suffix = "", extra = {}) {
     status: event === "cancelled" ? "cancelled" : event === "completed" ? "completed" : "booked",
     revision: 1, startTime: event === "reminder" ? session.toISOString().slice(11, 16) : "09:00",
     endTime: "23:59", timezone: "UTC", reference: `REFERENCE-${event}${suffix}`, token: "Q-1", tokenNumber: 1,
-    clinicName: "Clinic", branchName: "Location", doctorName: "Doctor", ...extra };
+    clinicName: "Clinic", branchName: "Location", patientName: "Patient", doctorName: "Doctor", ...extra };
   await h.control.query(`insert into appointments(id,patient_id,clinic_id,branch_id,doctor_id,date,token_number,status,data)
     values($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [row.id, row.patientId, row.clinicId, row.branchId, row.doctorId, row.date, row.tokenNumber, row.status, row]);
   return row;
@@ -232,7 +232,7 @@ test("audit interruption rolls back all registration writes; retry and fake-only
   for(const event of events) {
     const row=await visit(event,"-registered");
     const start=deliveries.length;
-    await api.enqueueEvent(h.db,event,row);
+    await api.enqueueEvent(h.db,event,row,event==="rescheduled"?{...row,date:"2031-03-01"}:undefined);
     if(event==="booking")await api.confirmAppointmentEmail(row.id,h.db,email);
     const at=event==="reminder"?Date.now()+60000:Date.now()+10;
     await api.processNotifications(h.db,email,at);

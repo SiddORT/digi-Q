@@ -19,6 +19,33 @@ before(async () => {
 after(async () => await h?.close());
 const rows = async (sql, params) => (await h.pg.query(sql, params)).rows;
 const input = (name) => ({ fullName: name, email: `${name}@test.invalid`, status: "active", clinicIds: ["c1"], branchIds: ["b1"] });
+
+test("real invitation and first password completion use each actual staff account role",async()=>{
+  try {
+  for(const [role,label] of [["doctor","Doctor"],["clinicAdmin","Clinic Admin"],["receptionist","Receptionist"],["superAdmin","Superadmin"]]){
+    const name=`role-${role}`;
+    const body={id:name,email:`${name.toLowerCase()}@test.invalid`};
+    await h.pg.exec(`begin;
+      insert into users(id,email,full_name,role,status,managing_admin_id)
+      values('${name}','${body.email}','${name}','${role}','active',${role==="receptionist"?"'adm'":"null"});
+      ${role==="doctor"?`insert into doctors(id,user_id,owner_admin_id) values('role-doctor-profile','${name}','adm');`:""}
+      commit;`);
+    const start=h.mail.messages.length;
+    // Exercise the same invitation service used by creation, including the
+    // Superadmin role even though the resend UI deliberately excludes it.
+    await h.inviteStaffFixture(null,body);
+    const invitation=h.mail.messages.slice(start).find(m=>m.to===body.email);
+    assert(invitation,`${role}: invitation to the persisted account`);assert(invitation.text.includes(`DigiQ ${label} password`),invitation.text);
+    const token=new URL(invitation.text.match(/https:\/\/\S+/)[0]).searchParams.get("token");
+    const completion=await h.call(null,"POST","/auth/invitation/accept",{token,password:"Disposable-Password-42!"});
+    assert.equal(completion.status,200,JSON.stringify(completion.data));
+    const notices=h.mail.messages.slice(start);
+    assert.equal(notices.length,2);
+    assert(notices[1].text.includes(`DigiQ ${label} password setup is complete`),notices[1].text);
+    assert(!notices[1].text.includes("staff member"));
+  }
+  } finally { h.mail.messages.length=0; }
+});
 const ok = (result, status = 200) => { assert.equal(result.status, status, JSON.stringify(result.data)); return result.data; };
 
 test("successful doctor creation returns authorized persisted context and a sent invitation, without verifying the account", async () => {

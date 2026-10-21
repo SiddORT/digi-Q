@@ -7,6 +7,7 @@ import { notificationSmsConfig, smsPayload, sendNotificationSms, type SmsOutcome
 import { type SecurityEvent } from "./security-template-definitions";
 import { assert, HttpError } from "./http";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { missingVisitVariables } from "./notification-template-values";
 
 export type ChannelOutcome = { status: SmsOutcome | "disabled" | "unavailable" | "not_requested"; destination?: string };
 export type SecurityOutcomes = { email?: ChannelOutcome; sms?: ChannelOutcome };
@@ -40,6 +41,8 @@ export async function securityEmail(event: SecurityEvent, recipient: TemplateRec
     assert(validEventContent(event,template.content),503,"Security email template is invalid");
     if (event === "doctor_setup" || event === "staff_setup")
       assert(/\{\{\s*setup_link\s*\}\}/.test(template.content.body),503,"Setup link is required");
+    assert(!missingVisitVariables([template.content.subject, template.content.body, template.content.prefix, template.content.footer], values).length,
+      503,"Required security template values are missing");
     const rendered = renderNotification(template.content,values);
     await requireSecurityDelivery(event,recipient,"email",conn);
     prepared = true;
@@ -64,6 +67,7 @@ export async function securitySms(event: SecurityEvent, recipient: TemplateRecip
     assert(template.wordingPublished,503,"Publish approved security SMS content first");
     content = smsTemplateContent.parse(template.content);
     assert(validEventContent(event,content) && !/\{\{\s*setup_link\s*\}\}/.test(content.body),503,"Invalid security SMS");
+    assert(!missingVisitVariables([content.body], values).length,503,"Required security template values are missing");
     message = substitute(content.body,values);
     smsPayload(cfg,mobile,message,content);
   } catch(error: any) { return {status:error?.code === "SECURITY_DELIVERY_DISABLED" ? "disabled" : "unavailable",destination}; }

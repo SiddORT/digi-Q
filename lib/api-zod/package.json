@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./notification-variable-contract": "./src/notification-variable-contract.ts"
   },
   "dependencies": {
     "zod": "catalog:"

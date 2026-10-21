@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { visitVariables } from "./notification-template-values";
+import { notificationVariables, eventVariables } from "@workspace/api-zod/notification-variable-contract";
 import { appointmentNotificationTarget } from "./appointment-notification-scope";
-import { securityEvents, isSecurityEvent, securityVariables, securityDefault, securityTitles, validSecurityContent } from "./security-template-definitions";
+import { securityEvents, isSecurityEvent, securityDefault, securityTitles, validSecurityContent } from "./security-template-definitions";
 export { requiredEvent, isSecurityEvent } from "./security-template-definitions";
 
 export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "patient_login_otp", ...securityEvents] as const;
@@ -9,7 +9,7 @@ export type TemplateEvent = typeof templateEvents[number];
 export const templateRecipients = ["patient", "clinicAdmin", "doctor", "receptionist", "superAdmin"] as const;
 export type TemplateRecipient = typeof templateRecipients[number];
 export const defaultRecipient = (event: TemplateEvent): TemplateRecipient => event === "onboarding" || event === "clinic_registration_otp" ? "clinicAdmin" : event === "doctor_setup" ? "doctor" : event === "staff_setup" || event === "password_setup_complete" ? "receptionist" : "patient";
-export const templateVariables = ["clinic_name", "booking_link", "patient_name", "doctor_name", "appointment_details", "previous_details", "reference", "timezone", "clinic_contact", ...visitVariables, "otp", "expiry_minutes", "setup_link", "role_name"] as const;
+export const templateVariables = notificationVariables;
 export function validTemplateTarget(event: TemplateEvent, recipient: TemplateRecipient, channel: "email" | "sms") {
   if (isSecurityEvent(event)) {
     if (event === "clinic_registration_otp") return recipient === "clinicAdmin" && channel === "email";
@@ -23,8 +23,7 @@ export function validTemplateTarget(event: TemplateEvent, recipient: TemplateRec
   return event !== "onboarding" || recipient === "clinicAdmin";
 }
 export function variablesForTemplate(event: TemplateEvent): readonly string[] {
-  if (isSecurityEvent(event)) return securityVariables(event);
-  return event === "patient_login_otp" ? ["otp", "expiry_minutes"] : templateVariables.filter(v => !["otp","expiry_minutes","setup_link","role_name"].includes(v));
+  return eventVariables(event);
 }
 export function validEventContent(event: TemplateEvent, content: { subject: string; body: string; prefix: string; footer: string; enabled?: boolean }) {
   const allowed = variablesForTemplate(event);
@@ -58,7 +57,7 @@ export const templateContent = z.object({
 export type TemplateContent = z.infer<typeof templateContent>;
 export const smsTemplateContent = z.object({
   enabled: z.boolean().default(false), subject: z.string().min(1).max(180),
-  body: z.string().trim().min(1).max(1600), prefix: z.literal(""), footer: z.literal(""), logoUrl: z.literal(""),
+  body: z.string().min(1).max(1600).refine(v => !!v.trim(), "Message is required"), prefix: z.literal(""), footer: z.literal(""), logoUrl: z.literal(""),
   senderId: z.string().regex(/^[A-Za-z0-9_-]{0,50}$/).default(""),
   dltEntityId: z.string().regex(/^[A-Za-z0-9_-]{0,50}$/).default(""),
   dltTemplateId: z.string().regex(/^[A-Za-z0-9_-]{0,50}$/).default(""),

@@ -10,6 +10,7 @@ import { LoadingButton } from "./LoadingButton";
 import { canStartNewTemplateTest } from "../lib/template-test-recovery";
 import { templateTestRequestError } from "../lib/template-test-request-error";
 import { SECURITY_EVENTS } from "../lib/security-template-events";
+import { accountRoleLabel } from "@workspace/api-zod/notification-variable-contract";
 
 type Content = api.NotificationTemplateContent;
 const PH = /\{\{\s*([a-z0-9_]+)\s*\}\}/gi;
@@ -57,9 +58,9 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
   const preview = usePreviewEventTemplate({ mutation: { retry: false } });
   const test = useTestEventTemplate({ mutation: { retry: false } });
   const readiness = useChannelReadiness(channel);
-  const fictional:Record<string,string> = {otp:"123456",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-preview-only",recipient_name:"Example Recipient",role_name:"staff member"};
+  const fictional:Record<string,string> = {otp:"123456",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-preview-only",recipient_name:"Example Recipient",role_name:accountRoleLabel(group)};
   const exact = Object.fromEntries(used.map(k => [k, securityPreview ? fictional[k] || "[Example value]" : values[k] ?? ""]));
-  const complete = securityPreview || used.every(k => (values[k] ?? "").trim() !== "");
+  const complete = securityPreview || used.every(k => k === "clinic_contact" || (values[k] ?? "").trim() !== "");
   const sig = testSignature({ channel, event, group, clinicId, revision, content, values: exact });
   const rsig = `${sig}|${to}`;
   const first = useRef(true);
@@ -97,7 +98,7 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     <h3>{securityPreview ? "Preview security template" : "Test This Template"} <HelpTip text={securityPreview ? "Fictional preview only. No real codes, links or security bodies enter history. Delivery verification requires separate authorization." : "Uses your current edits, including drafts and disabled templates, without publishing or enabling anything. No appointment is created and nothing is queued. Sends one real message to the recipient you enter."} /></h3>
     {!readiness.ready && <p role="note" className="error-box" data-testid="status-test-not-ready">{readiness.reason} <Link href={`/admin/settings?area=${channel === "sms" ? "sms" : "email"}`} className="text-link" data-testid="link-test-configure">Open {channel === "sms" ? "SMS" : "Email"} settings</Link>{!readiness.loading && <> <button type="button" onClick={readiness.retry} data-testid="button-test-recheck">Check Again</button></>}</p>}
     {used.length === 0 ? <p className="muted">This template uses no placeholders.</p> : <div className="et-test-values">
-      {used.map(k => <FormField key={k} label={k.replace(/_/g, " ")} required>
+      {used.map(k => <FormField key={k} label={k.replace(/_/g, " ")} required={k !== "clinic_contact"}>
         {(a) => <input {...a} type="text" maxLength={500} readOnly={securityPreview} value={securityPreview ? exact[k] : values[k] ?? ""} onChange={e => setValues(v => ({ ...v, [k]: e.target.value }))} data-testid={`input-test-value-${k}`} />}
       </FormField>)}
     </div>}

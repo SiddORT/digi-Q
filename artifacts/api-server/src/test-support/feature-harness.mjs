@@ -90,9 +90,10 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       ${bookingLookups ? `import { publicRouter } from "./routes/public";
       import { db } from "@workspace/db";
       import { processNotifications } from "./lib/notification-outbox";
-      export const dispatchOutbox = () => processNotifications(db);
+      export const dispatchOutbox = (send, now) => processNotifications(db, send, now);
+      export { approvedAppointmentSms } from "./lib/approved-appointment-sms";
       import { processSmsNotifications } from "./lib/notification-sms-outbox";
-      export const dispatchSmsOutbox = (send) => processSmsNotifications(db, send);
+      export const dispatchSmsOutbox = (send, now) => processSmsNotifications(db, send, now);
       import { appointmentsRouter } from "./routes/appointments";
       import { queueRouter } from "./routes/queue";
       import { guestRequestsRouter } from "./routes/guest-requests";
@@ -104,7 +105,8 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import { identityRouter } from "./routes/identity";
       import { systemUsersRouter } from "./routes/system-users";
       import { permissionPolicyRouter } from "./routes/permission-policy";
-      ${simulatedMail ? `import { authRouter } from "./routes/auth";` : ""}` : ""}
+      ${simulatedMail ? `import { authRouter } from "./routes/auth";
+      export { inviteStaff as inviteStaffFixture } from "./routes/auth";` : ""}` : ""}
       import { errors } from "./lib/http";
       export function createApp() {
         const app = express();
@@ -181,7 +183,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         export async function removeDocument(_p, key) { globalThis.__featureBlobs.delete(key); }` }));
     } }],
   }).catch(failedSetup);
-   const { createApp, dispatchOutbox, dispatchSmsOutbox, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
+   const { createApp, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
   const server = createApp().listen(0);
   await new Promise(r => server.once("listening", r));
   const base = `http://127.0.0.1:${server.address().port}/api`;
@@ -194,5 +196,5 @@ export async function createFeatureHarness({administration=false, simulatedMail=
     const data = type.includes("json") ? await res.json() : Buffer.from(await res.arrayBuffer());
     return { status: res.status, data, headers: res.headers };
   }
-   return { pg, call, blobs, mail, base, pool, errors, dispatchOutbox, dispatchSmsOutbox, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
+   return { pg, call, blobs, mail, base, pool, errors, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
 }

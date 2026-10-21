@@ -1,3 +1,4 @@
+import { eventVariables } from "@workspace/api-zod/notification-variable-contract";
 /** Security events are platform-owned and bypass optional operational gates. */
 export const securityEvents = ["clinic_registration_otp", "patient_email_otp", "registration_mobile_otp",
   "doctor_setup", "staff_setup", "password_setup_complete"] as const;
@@ -14,9 +15,7 @@ export const securityTitles: Record<SecurityEvent, string> = {
   password_setup_complete: "Password setup completed",
 };
 export function securityVariables(event: SecurityEvent) {
-  return event.endsWith("_otp") ? ["otp", "expiry_minutes"] :
-    event === "password_setup_complete" ? ["recipient_name", "role_name"] :
-      ["recipient_name", "role_name", "setup_link", "expiry_minutes"];
+  return eventVariables(event);
 }
 export function securityDefault(event: SecurityEvent, sms = false) {
   const otp = event.endsWith("_otp");

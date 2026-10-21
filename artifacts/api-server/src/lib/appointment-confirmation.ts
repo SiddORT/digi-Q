@@ -7,10 +7,10 @@ import { notificationStaffSubjects } from "./notification-staff-subjects";
 import { validEmailAddress, emailNotificationsEnabled, smtpConfig } from "./integration-config";
 import { resolvedIntegration } from "./integration-vault";
 import { recordNotification, recordDecision, notificationEntry, historyId, templateSnapshot } from "./notification-history";
-import { formatTemplateSession, visitTemplateValues, missingVisitVariables } from "./notification-template-values";
+import { formatTemplateSession, visitTemplateValues, missingVisitVariables, appointmentSnapshotComplete } from "./notification-template-values";
 import { lockQueue } from "./appointments";
 import { resolvedTemplate } from "./notification-template-store";
-import { renderNotification } from "./notification-templates";
+import { renderNotification, validEventContent } from "./notification-templates";
 import { lockNotificationPreferences, recipientPreference } from "./notification-preferences";
 
 export type ConfirmationEmail = "provider_accepted" | "unavailable" | "disabled" | "no_recipient" | "not_attempted";
@@ -81,7 +81,7 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
       await lockNotificationPreferences(tx);
       const [history]=await tx.select().from(settings).where(eq(settings.id,historyId(`patient-booking:${id}`)));
       const entry=history?notificationEntry({event:"booking",clinicId:row.clinicId,snapshot:row,recipientGroup:"patient"},"email"):undefined;
-      const log=async(state:any)=>{if(entry)await recordNotification(tx,`patient-booking:${id}`,entry,state);};
+      const log=async(state:any,preparationReason?:string)=>{if(entry)await recordNotification(tx,`patient-booking:${id}`,{...entry,preparationReason},state);};
       // A previous claim is authoritative; never regress its outcome during a retry.
       if(row.confirmationEmail){
         if(entry&&!history.data.dispatchAt)await log(row.confirmationEmail==="unavailable"?"configuration_failed":row.confirmationEmail);
@@ -130,13 +130,16 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
       }
       const values = {
         ...visitTemplateValues(row, clinic, patient.fullName || patientAccount?.fullName || ""),
-        clinic_name: clinic.name, patient_name: patient.fullName || "Patient",
-        doctor_name: row.doctorName || "Your doctor", appointment_details: confirmationText(row, clinic),
+        appointment_details: appointmentSnapshotComplete(row) ? confirmationText(row, clinic) : "",
         reference: row.reference || "", timezone: row.timezone || "", previous_details: "",
         clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · "),
       };
-      if (template.source !== "default" && missingVisitVariables([template.content.subject, template.content.body, template.content.prefix, template.content.footer], values).length) {
-        await log("preparation_failed");
+      const missing=missingVisitVariables([template.content.subject, template.content.body, template.content.prefix, template.content.footer, "{{appointment_details}}"], values);
+      if (!validEventContent("booking",template.content) || missing.length ||
+          !row.patientId || row.patientId !== patient.id || row.clinicId !== clinic.id) {
+        await log("preparation_failed",!validEventContent("booking",template.content)
+          ? "Published template uses variables incompatible with this event; edit explicitly or reset"
+          : missing.length ? `Missing required template values: ${missing.join(", ")}` : "Booking snapshot identity does not match this event");
         await saveOutcome(tx,id,"unavailable","pre_dispatch_failed");
         return {outcome:"unavailable"};
       }

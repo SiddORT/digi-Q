@@ -48,3 +48,4 @@
 - [Tooltip input contract](tooltip-input-contract.md) — measure clipping and coordinate dismissal across help types; preserve explanations and verify focus, Escape and touch separately.
 - [SMTP namespace policy](smtp-namespace-policy.md) — original names restored by user clarification; never infer value equality, replace saved providers, or claim live delivery from readiness.
 - [Manual email receipt](manual-email-receipt.md) — receipt is an actor/test/configuration-bound assertion, separate from provider status and future delivery assurance.
+- [Automatic SMS evidence](sms-incident-evidence-boundary.md) — the reported repeated-name SMS was automatic, not a template test; verified corrections do not prove its historical cause.

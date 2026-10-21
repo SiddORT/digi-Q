@@ -1,3 +1,4 @@
+import { eventVariables } from "@workspace/api-zod/notification-variable-contract";
 export const SECURITY_EVENTS = ["clinic_registration_otp","patient_email_otp","registration_mobile_otp","doctor_setup","staff_setup","password_setup_complete"] as const;
 export const requiredSecurityEvent = (event:string) => event === "patient_login_otp" || (SECURITY_EVENTS as readonly string[]).includes(event);
 export function securityTemplateTarget(event:string,recipient:string,channel:string) {
@@ -8,6 +9,5 @@ export function securityTemplateTarget(event:string,recipient:string,channel:str
   return ["clinicAdmin","receptionist","superAdmin",...(event === "password_setup_complete" ? ["doctor"] : [])].includes(recipient);
 }
 export function securityTemplateVariables(event:string) {
-  if (event.endsWith("_otp")) return ["otp","expiry_minutes"];
-  return event === "password_setup_complete" ? ["recipient_name","role_name"] : ["recipient_name","role_name","setup_link","expiry_minutes"];
+  return eventVariables(event);
 }

@@ -192,7 +192,7 @@ test("Keep in Touch explicit tests and eligible automatic notifications use the 
   assert.equal(explicit.body.templateId,"KIT_COMPLETED");assert.equal(explicit.body.mobile,"9876543213");
   assert.equal(explicit.body.message,prepared.rendered.text);
   assert(explicit.body.message.length>50);assert(explicit.body.message.includes("\n"));
-  const row={id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"KIT",status:"completed",revision:1};
+  const row={id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",patientName:"Synthetic patient",doctorName:"Doctor",clinicName:"Synthetic clinic",branchName:"Synthetic location",token:"Q-1",tokenNumber:1,date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"KIT",status:"completed",revision:1};
   await h.db.insert(api.appointments).values({id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:row.date,status:row.status,data:row});
   await api.enqueueSmsEvent(h.db,"completed",row);
    globalThis.kitResponse={Success:true,Message:"SMS sent successfully"};
@@ -307,7 +307,7 @@ test("screenshot provider fields persist privately and the disabled channel neit
     await h.control.query("delete from settings where id='sms-outbox:channel-disable-fixture'");
   }
 });
-function smsContent(event="booking"){return {...api.defaultTemplate(event),enabled:false,prefix:"",footer:"",logoUrl:"",body:"Hello {{patient_name}} at {{clinic_name}}",senderId:"DIGIQ",dltEntityId:"12345",dltTemplateId:"67890"};}
+function smsContent(event="booking"){return {...api.defaultTemplate(event),enabled:false,prefix:"",footer:"",logoUrl:"",body:event==="onboarding"?"Welcome to {{clinic_name}}":"Hello {{patient_name}} at {{clinic_name}}",senderId:"DIGIQ",dltEntityId:"12345",dltTemplateId:"67890"};}
 test("vault binds ciphertext to channel, redacts readiness and protects optimistic revisions",async()=>{
   const cipher=api.encryptIntegration("notificationSms",env);
   assert(!cipher.includes(env.NOTIFICATION_SMS_KEY));
@@ -447,7 +447,7 @@ test("all six lifecycle events enqueue once per channel and eligible recipient; 
       group==="superAdmin" || event==="onboarding"&&group!=="clinicAdmin")continue;
     await api.saveTemplate(sa,{channel:"sms",event,recipient:group,revision:0,mode:"publish",content:{...smsContent(event),enabled:true}});
   }
-  const row={id:"visit",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"UTC",reference:"FIXTURE",status:"waiting",revision:0};
+  const row={id:"visit",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",patientName:"Synthetic patient",doctorName:"Doctor",clinicName:"Synthetic clinic",branchName:"Synthetic location",token:"Q-1",tokenNumber:1,date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"UTC",reference:"FIXTURE",status:"waiting",revision:0};
   await h.control.query("insert into appointments(id,clinic_id,branch_id,doctor_id,patient_id,date,status,data) values('visit','c','b','d','p','2030-01-01','waiting',$1)",[JSON.stringify(row)]);
   for(const event of api.templateEvents) {
     const target=event==="onboarding"?{id:"c",clinicId:"c"}:row;
@@ -483,7 +483,7 @@ test("missing contacts and disabled gate skip, old queued events don't resume af
 test("completed/cancelled/reminder dispatch eligibility uses exact revision, status and session timezone",async()=>{
   await h.control.query("update users set mobile='+919876543213' where id='pu';update patients set mobile='+919876543213' where id='p';delete from settings where id like 'sms-outbox:%';update appointments set status='completed' where id='visit'");
   for(const [event,status] of [["completed","completed"],["cancelled","cancelled"],["reminder","waiting"]]){
-    const row={id:`eligible-${event}`,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"FIXTURE",status,revision:2};
+    const row={id:`eligible-${event}`,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",patientName:"Synthetic patient",doctorName:"Doctor",clinicName:"Synthetic clinic",branchName:"Synthetic location",token:"Q-1",tokenNumber:1,date:"2030-01-01",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"FIXTURE",status,revision:2};
     await h.control.query("insert into appointments(id,clinic_id,branch_id,doctor_id,patient_id,date,status,data) values($1,'c','b','d','p','2030-01-01',$2,$3)",[row.id,status,JSON.stringify(row)]);
     await api.enqueueEvent(h.db,event,row);
   }
@@ -651,7 +651,7 @@ test("email preparation failure cannot roll back booking or scheduler SMS jobs i
     for(const id of ids)await h.control.query(
       "insert into settings(id,data) values($1,$2) on conflict(id) do update set data=excluded.data",
       [id,JSON.stringify({revision:1,published:{...api.defaultTemplate("booking"),subject:"invalid\nemail header",enabled:true}})]);
-    const row={id:"email-failed-booking",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-02",startTime:"08:00",endTime:"09:00",timezone:"Asia/Kolkata",reference:"FIXTURE",status:"waiting",revision:0};
+    const row={id:"email-failed-booking",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",patientName:"Synthetic patient",doctorName:"Doctor",clinicName:"Synthetic clinic",branchName:"Synthetic location",token:"Q-1",tokenNumber:1,date:"2030-01-02",startTime:"08:00",endTime:"09:00",timezone:"Asia/Kolkata",reference:"FIXTURE",status:"waiting",revision:0};
     await h.db.transaction(async tx=>{
       await tx.insert(api.appointments).values({id:row.id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:row.date,status:row.status,data:row});
       await api.enqueueEvent(tx,"booking",row);
@@ -674,7 +674,7 @@ test("email preparation failure cannot roll back booking or scheduler SMS jobs i
 });
 test("an SMS poll before scheduler commit does not lose reminders at the next poll outside the capture window",async()=>{
   await h.control.query("delete from settings where id like 'sms-outbox:%'");
-  const row={id:"delayed-reminder",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-03",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"FIXTURE",status:"waiting",revision:0};
+  const row={id:"delayed-reminder",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",patientName:"Synthetic patient",doctorName:"Doctor",clinicName:"Synthetic clinic",branchName:"Synthetic location",token:"Q-1",tokenNumber:1,date:"2030-01-03",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"FIXTURE",status:"waiting",revision:0};
   await h.db.insert(api.appointments).values({id:row.id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:row.date,status:row.status,data:row});
   const scheduled=Date.parse("2030-01-03T03:31:45Z"); // 09:01:45 local: last part of capture window.
   let calls=0;const send=async()=>{calls++;return "provider_accepted";};
@@ -707,7 +707,7 @@ test("patient booking confirmation has one prospective history and immutable dis
   try{
     await h.control.query("delete from settings where id='notification-template:c:booking';update users set email='captured@example.invalid' where id='pu'");
     await api.saveTemplate(sa,{channel:"email",clinicId:"c",event:"booking",recipient:"patient",revision:0,mode:"publish",content:{...api.defaultTemplate("booking"),enabled:true}});
-    const row={id:"prospective-patient-confirmation",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",clinicName:"Fictional clinic",branchName:"Fictional branch",doctorName:"Fictional doctor",date:"2030-02-03",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"PATIENT_HISTORY",token:"A-01",status:"waiting",revision:0};
+    const row={id:"prospective-patient-confirmation",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",patientName:"Synthetic patient",clinicName:"Fictional clinic",branchName:"Fictional branch",doctorName:"Fictional doctor",date:"2030-02-03",startTime:"10:00",endTime:"11:00",timezone:"Asia/Kolkata",reference:"PATIENT_HISTORY",token:"A-01",status:"waiting",revision:0};
     await h.control.query("insert into appointments(id,clinic_id,branch_id,doctor_id,patient_id,date,status,data) values($1,'c','b','d','p',$2,'waiting',$3)",[row.id,row.date,row]);
     await api.capturePatientConfirmation(h.db,row);await api.capturePatientConfirmation(h.db,row);
     let sends=0;
@@ -753,6 +753,7 @@ async function prefSave(user,choices,conn=h.db){
 }
 function fictionalVisit(suffix,event="booking"){
   return {id:`pref-${suffix}`,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",
+    patientName:"Synthetic patient",doctorName:"Doctor",clinicName:"Synthetic clinic",branchName:"Synthetic location",
     date:`2035-02-${String(1+Number(suffix.replace(/\D/g,"")||0)%27).padStart(2,"0")}`,startTime:"10:00",endTime:"11:00",
     timezone:"Asia/Kolkata",reference:`PREF_${suffix}`,token:"P-01",tokenNumber:1,status:event==="cancelled"?"cancelled":"waiting",revision:0};
 }

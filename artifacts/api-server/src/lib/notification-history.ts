@@ -17,7 +17,7 @@ export const historyId = (key: string) => prefix + createHash("sha256").update(k
 const states = ["pending", "sending", "provider_accepted", "provider_rejected", "pre_dispatch_failed", "delivery_unknown", "configuration_failed", "preparation_failed", "disabled", "obsolete", "no_recipient", "not_attempted"] as const;
 type State = typeof states[number];
 type Snapshot = { sender?: string; recipient?: string; subject?: string; message?: string; templateId?: string; templateRevision?: number; templateScope?: string; dltTemplateId?: string; provider?: string };
-type Entry = { channel: "email" | "sms"; event: string; source?: "automatic" | "test"; clinicId?: string; reference?: string; recipientGroup: string; occurrence?: string; createdAt?: number; dueAt?: number; _sourceInput?: any };
+type Entry = { channel: "email" | "sms"; event: string; source?: "automatic" | "test"; clinicId?: string; reference?: string; recipientGroup: string; occurrence?: string; createdAt?: number; dueAt?: number; _sourceInput?: any; preparationReason?: string };
 function key() {
   const raw = process.env.INTEGRATIONS_ENCRYPTION_KEY;
   if (!raw || !/^[a-f0-9]{64}$/i.test(raw)) throw new Error("History encryption unavailable");
@@ -105,7 +105,8 @@ export async function recordNotification(conn: any, job: string, entry: Entry, s
         }
       }
       data.status = status;
-      data.reason = status === "pending" || status === "sending" || status === "provider_accepted" ? null : status;
+      data.reason = status === "pending" || status === "sending" || status === "provider_accepted" ? null :
+        status === "preparation_failed" && entry.preparationReason ? entry.preparationReason : status;
       if (status === "pending") { data.queuedAt ??= now; data.dueAt = entry.dueAt ?? data.dueAt ?? now; delete data.completedAt; }
       if (status === "sending" && previousStatus !== "sending") data.dispatchAt = now;
       if (!["pending", "sending"].includes(status)) data.completedAt = now;

@@ -38,10 +38,18 @@ export function formatTemplateSession(row: any, clinic: any) {
 export const visitVariables = ["recipient_name", "appointment_date", "session_start", "session_end",
   "previous_date", "previous_session_start", "previous_session_end", "queue_token", "token_number", "cancel_reason"] as const;
 
+/** Composite details must not hide absent labels behind "undefined" or guessed prose. */
+export function appointmentSnapshotComplete(row: any) {
+  return !!row && ["patientName", "doctorName", "clinicName", "branchName", "timezone", "reference", "token"]
+    .every(key => typeof row[key] === "string" && !!row[key].trim()) &&
+    !!formatTemplateSession(row, {}).date && !!formatTemplateSession(row, {}).start && !!formatTemplateSession(row, {}).end;
+}
+
 /** Save only the old session fields needed for reschedule substitution, not the entire old visit. */
 export function previousSessionSnapshot(row: any) {
   return row && typeof row === "object"
     ? { date: row.date, startTime: row.startTime, endTime: row.endTime,
+      detailsAvailable: appointmentSnapshotComplete(row),
       ...(row.doctorId ? { doctorId: row.doctorId, doctorName: row.doctorName } : {}),
       ...(row.actorId ? { actorId: row.actorId } : {}) }
     : undefined;
@@ -58,11 +66,16 @@ export function visitTemplateValues(row: any, clinic: any, recipientName: string
   const cancelReason = typeof cancellation?.reason === "string" ? cancellation.reason.trim() : "";
   return {
     booking_link: clinicBookingLink(clinic),
+    clinic_name: row ? row.clinicName || "" : clinic?.name || "",
+    patient_name: row?.patientName || "",
+    doctor_name: row?.doctorName || "",
+    reference: row?.reference || "",
+    timezone: row?.timezone || "",
     recipient_name: recipientName || "",
     appointment_date: current.date, session_start: current.start, session_end: current.end,
     previous_date: old.date, previous_session_start: old.start, previous_session_end: old.end,
     queue_token: String(row?.token ?? ""),
-    token_number: row?.tokenNumber == null ? "" : String(row.tokenNumber),
+    token_number: Number.isInteger(row?.tokenNumber) && row.tokenNumber > 0 ? String(row.tokenNumber) : "",
     cancel_reason: row?.status === "cancelled" ? cancelReason || "Not specified" : "",
   };
 }
@@ -70,7 +83,21 @@ export function visitTemplateValues(row: any, clinic: any, recipientName: string
 /** Newly supported fields must never silently disappear from a dispatched message.
  * Older queued jobs have no structured previous session; do not guess it from prose. */
 export function missingVisitVariables(texts: string[], values: Record<string, string>) {
-  return texts.flatMap(text => [...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)]
-    .map(match => match[1]))
-    .filter(name => ((visitVariables as readonly string[]).includes(name) || name === "booking_link") && !values[name]?.trim());
+  const used = texts.flatMap(text => [...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(match => match[1]));
+  // Only contact is optional. Unknown keys also fail, rather than rendering an unresolved marker.
+  const required = used.filter(name => name !== "clinic_contact");
+  if (used.includes("appointment_details"))
+    required.push("clinic_name", "patient_name", "doctor_name", "appointment_date", "session_start", "session_end", "queue_token", "reference", "timezone");
+  if (used.includes("previous_details"))
+    required.push("previous_date", "previous_session_start", "previous_session_end");
+  return [...new Set(required.filter(name => typeof values[name] !== "string" || !values[name].trim() ||
+    name === "otp" && !/^\d{6}$/.test(values[name]) ||
+    name === "expiry_minutes" && (!/^\d+$/.test(values[name]) || Number(values[name]) <= 0)))];
+}
+
+/** Compare identifiers, never display names: equal names are legitimate. */
+export function snapshotIdentityMatches(snapshot: any, current: any, clinic: any) {
+  return !!snapshot && !!current && clinic?.id === snapshot.clinicId &&
+    ["id", "clinicId", "branchId", "patientId", "doctorId"].every(key =>
+      typeof snapshot[key] === "string" && !!snapshot[key] && snapshot[key] === current[key]);
 }

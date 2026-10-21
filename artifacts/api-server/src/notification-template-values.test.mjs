@@ -32,7 +32,10 @@ before(async()=>{
     export * from "./lib/notification-sms-outbox";
     export * from "./lib/appointment-confirmation";
     export * from "./lib/notification-controls";
-    export * from "./lib/notification-history";`,
+    export * from "./lib/notification-history";
+    export * from "./lib/security-notifications";
+    export { securityDefault } from "./lib/security-template-definitions";
+    export * from "@workspace/api-zod/notification-variable-contract";`,
     resolveDir:import.meta.dirname,loader:"ts"},outfile:bundle,bundle:true,platform:"node",format:"esm",packages:"external",
     plugins:[{name:"isolated",setup(b){
       b.onResolve({filter:/^@workspace\/db$/},()=>({path:"db",namespace:"fixture"}));
@@ -65,7 +68,7 @@ test("clinic date formats, midnight/noon, 24-hour clocks and invalid fields are 
 test("separate current/previous values retain prefixed and numeric tokens and no OTP or arbitrary username is allowed",()=>{
   const row={date:"2030-01-15",startTime:"09:00",endTime:"12:00",token:"Q-007",tokenNumber:7};
   const previous={date:"2030-01-14",startTime:"14:00",endTime:"17:00",medicalNotes:"never retain"};
-  assert.deepEqual(api.previousSessionSnapshot(previous),{date:"2030-01-14",startTime:"14:00",endTime:"17:00"});
+  assert.deepEqual(api.previousSessionSnapshot(previous),{date:"2030-01-14",startTime:"14:00",endTime:"17:00",detailsAvailable:false});
   const values=api.visitTemplateValues(row,{},"Owner Person",previous);
   assert.equal(values.recipient_name,"Owner Person");
   assert.equal(values.appointment_date,"15 Jan 2030");
@@ -102,7 +105,7 @@ test("SMS draft, publish and activation work with only the event DLT ID and conf
   const input={channel:"sms",clinicId:"c",event:"cancelled",recipient:"patient"};
   const draft=await api.saveTemplate(sa,{...input,revision:0,mode:"draft",content});
   assert.equal(draft.items.find(i=>i.event==="cancelled").draft.dltTemplateId,content.dltTemplateId);
-  assert(!(await api.resolvedTemplate("cancelled","c",h.db,"patient","sms")).content.enabled);
+  assert((await api.resolvedTemplate("cancelled","c",h.db,"patient","sms")).content.enabled, "draft does not disable the default-on appointment policy");
   await assert.rejects(api.saveTemplate(sa,{...input,revision:1,mode:"publish",content:{...content,body:"Hi {{appointment_time}}"}}),error=>{
     assert.equal(error.status,400);
     assert.match(error.message,/content\.body: Unsupported variable: appointment_time/);
@@ -130,7 +133,7 @@ test("published placeholders reach all four eligible SMS/email recipient groups 
   const preview=catalog.items.find(i=>i.event==="rescheduled").previewBody;
   assert(!preview.includes("{{"));assert(preview.includes("15/01/2030"));
   const row={id:"visit",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-15",startTime:"09:00",endTime:"12:00",
-    timezone:"Asia/Kolkata",reference:"FICTIONAL",status:"waiting",revision:1,token:"Q-007",tokenNumber:7,doctorName:"Doctor Person",clinicName:"Fictional Clinic",branchName:"Fictional Location"};
+    timezone:"Asia/Kolkata",reference:"FICTIONAL",status:"waiting",revision:1,token:"Q-007",tokenNumber:7,patientName:"Patient Person",doctorName:"Doctor Person",clinicName:"Fictional Clinic",branchName:"Fictional Location"};
   await h.control.query("insert into appointments(id,clinic_id,branch_id,doctor_id,patient_id,date,token_number,status,data) values('visit','c','b','d','p',$1,7,'waiting',$2)",[row.date,JSON.stringify(row)]);
   await api.enqueueEvent(h.db,"rescheduled",row,{...row,date:"2030-01-14",startTime:"14:00",endTime:"17:00",token:"OLD-001",revision:0});
   const smsCalls=[], emailCalls=[];
@@ -152,7 +155,7 @@ test("published placeholders reach all four eligible SMS/email recipient groups 
   const captured=(await h.control.query("select id,data from settings where id like '%outbox:rescheduled:visit:%'")).rows;
   assert.equal(captured.length,8);
   for(const {data} of captured)assert.deepEqual(data.previousSession,{date:"2030-01-14",startTime:"14:00",endTime:"17:00",
-    doctorId:"d",doctorName:"Doctor Person"});
+    detailsAvailable:true,doctorId:"d",doctorName:"Doctor Person"});
   // A historical job without structured prior values must not send blank old dates.
   const old=captured.find(row=>row.id.startsWith("sms-outbox:")).data;
   const historical={...old,previousSession:undefined,state:"pending",createdAt:Date.now(),dueAt:0,historyKey:"historical-no-previous"};
@@ -269,7 +272,7 @@ test("the separate patient booking email path substitutes the same fields and do
       body:"{{patient_name}} {{appointment_date}} {{session_start}}-{{session_end}} {{queue_token}} {{token_number}}"}});
   for(const [id,token,expected] of [["booking-values","Q-007","provider_accepted"],["booking-missing",null,"unavailable"]]){
     const row={id,clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",date:"2030-01-15",startTime:token?"10:00":"11:00",endTime:"12:00",
-      timezone:"Asia/Kolkata",reference:id,status:"waiting",revision:0,token,tokenNumber:7,doctorName:"Doctor Person",clinicName:"Fictional Clinic",branchName:"Fictional Location"};
+      timezone:"Asia/Kolkata",reference:id,status:"waiting",revision:0,token,tokenNumber:7,patientName:"Patient Person",doctorName:"Doctor Person",clinicName:"Fictional Clinic",branchName:"Fictional Location"};
     await h.control.query("insert into appointments(id,clinic_id,branch_id,doctor_id,patient_id,date,token_number,status,data) values($1,'c','b','d','p',$2,7,'waiting',$3)",[id,row.date,JSON.stringify(row)]);
     await api.capturePatientConfirmation(h.db,row);
     const calls=[];
@@ -283,4 +286,82 @@ test("the separate patient booking email path substitutes the same fields and do
       for(const value of ["Reference: booking-values","Token: Q-007","Fictional Clinic","Fictional Location","Doctor Person","Asia/Kolkata","Clinic contact:"])assert(calls[0].text.includes(value));
     }
   }
+});
+
+test("one event contract restricts all 23 variables in authoring without changing reset or activation-only operations",async()=>{
+  assert.equal(new Set(api.notificationVariables).size,23);
+  const prior=["previous_date","previous_session_start","previous_session_end","previous_details"];
+  for(const event of api.templateEvents){
+    assert.deepEqual(api.variablesForTemplate(event),api.eventVariables(event));
+    for(const name of prior)assert.equal(api.eventVariables(event).includes(name),event==="rescheduled");
+    assert.equal(api.eventVariables(event).includes("cancel_reason"),event==="cancelled");
+  }
+  for(const event of ["booking","cancelled","completed","reminder","onboarding"]){
+    for(const mode of ["draft","publish"]){
+      const content={...api.defaultTemplate(event),body:"{{previous_date}}"};
+      await assert.rejects(api.saveTemplate(sa,{event,mode,revision:0,content}),{status:400});
+    }
+  }
+  assert.equal(api.validEventContent("onboarding",{...api.defaultTemplate("onboarding"),body:"{{patient_name}}"}),false);
+  assert.equal(api.validEventContent("booking",{...api.defaultTemplate("booking"),body:"{{cancel_reason}}"}),false);
+  const fixed={...api.defaultTemplate("booking"),body:"  Hello {{patient_name}}.  ",prefix:"",footer:"",logoUrl:"",dltTemplateId:"FIXED_SPACES"};
+  assert.equal(api.smsTemplateContent.parse(fixed).body,fixed.body,"SMS bytes are not trimmed on read/save");
+  assert.deepEqual(api.missingVisitVariables(["{{clinic_contact}}"],{clinic_contact:""}),[]);
+  for(const name of ["patient_name","doctor_name","clinic_name","recipient_name","reference","timezone","appointment_details"])
+    assert.deepEqual(api.missingVisitVariables([`{{${name}}}`],{}).includes(name),true);
+});
+
+test("incompatible legacy publication is explained and blocked, not rewritten; activation and reset still work",async()=>{
+  const key=api.notificationTemplateKey("booking","c","patient","sms");
+  const content={...api.defaultTemplate("booking"),enabled:true,body:"  Old {{previous_date}}.  ",prefix:"",footer:"",logoUrl:"",
+    senderId:"",dltEntityId:"",dltTemplateId:"LEGACY_REGISTRATION"};
+  await h.control.query("insert into settings(id,data) values($1,$2)",[key,{revision:0,published:content}]);
+  const catalog=await api.templateCatalog(sa,"c","patient","sms");
+  assert.match(catalog.items.find(i=>i.event==="booking").previewBody,/incompatible.*event/);
+  const row={id:"legacy-incompatible",clinicId:"c",branchId:"b",doctorId:"d",patientId:"p",patientName:"Patient Person",
+    doctorName:"Doctor Person",clinicName:"Fictional Clinic",branchName:"Fictional Location",date:"2031-01-15",startTime:"09:00",endTime:"12:00",
+    timezone:"Asia/Kolkata",reference:"LEGACY",status:"waiting",revision:0,token:"Q-009",tokenNumber:9};
+  await h.control.query("insert into appointments(id,clinic_id,branch_id,doctor_id,patient_id,date,token_number,status,data) values($1,'c','b','d','p',$2,9,'waiting',$3)",[row.id,row.date,row]);
+  await api.enqueueEvent(h.db,"booking",row);
+  let calls=0;
+  await api.processSmsNotifications(h.db,async()=>{calls++;return "provider_accepted";});
+  assert.equal(calls,0);
+  const [job]=(await h.control.query("select data from settings where id like 'sms-outbox:booking:legacy-incompatible:%'")).rows;
+  assert.equal(job.data.state,"preparation_failed");assert.match(job.data.preparationReason,/incompatible/);
+  assert.deepEqual((await h.control.query("select data from settings where id=$1",[key])).rows[0].data.published,content);
+  await api.changeActivation(sa,{channel:"sms",event:"booking",recipient:"patient",clinicId:"c",revision:0,enabled:false});
+  await api.changeActivation(sa,{channel:"sms",event:"booking",recipient:"patient",clinicId:"c",revision:1,enabled:true});
+  assert.equal((await api.resolvedTemplate("booking","c",h.db,"patient","sms")).content.body,content.body);
+  await api.saveTemplate(sa,{channel:"sms",event:"booking",recipient:"patient",clinicId:"c",revision:2,mode:"reset"});
+  assert.equal((await api.resolvedTemplate("booking","c",h.db,"patient","sms")).source,"default");
+  await api.processSmsNotifications(h.db,async()=>{calls++;return "provider_accepted";});
+  assert.equal(calls,0,"fixing/resetting content does not replay a terminal preparation failure");
+});
+
+test("security invitation and completion map exact account roles and reject missing identity, OTP, setup and expiry values using fake transports",async()=>{
+  for(const [role,label] of [["doctor","Doctor"],["clinicAdmin","Clinic Admin"],["receptionist","Receptionist"],["superAdmin","Superadmin"]]){
+    assert.equal(api.accountRoleLabel(role),label);
+    for(const event of [role==="doctor"?"doctor_setup":"staff_setup","password_setup_complete"]){
+      const values={recipient_name:`Actual ${label}`,role_name:api.accountRoleLabel(role),setup_link:"https://booking.example.invalid/set-password?token=fictional",expiry_minutes:"30"};
+      const emails=[],sms=[];
+      assert.equal((await api.securityEmail(event,role,"fictional@example.invalid",values,async(_to,_subject,text)=>emails.push(text),h.db)).status,"provider_accepted");
+      assert(emails[0].includes(`Actual ${label}`)&&emails[0].includes(`DigiQ ${label}`));
+      const content={...api.securityDefault(event,true),senderId:"",dltEntityId:"",dltTemplateId:"FIXTURE_SECURITY"};
+      await h.control.query("insert into settings(id,data) values($1,$2) on conflict(id) do update set data=excluded.data",
+        [api.notificationTemplateKey(event,undefined,role,"sms"),{revision:1,published:content}]);
+      assert.equal((await api.securitySms(event,role,"+919876543210",values,async(_env,_to,text)=>{sms.push(text);return "provider_accepted";},h.db)).status,"provider_accepted");
+      assert(sms[0].includes(`Actual ${label}`)&&sms[0].includes(`DigiQ ${label}`));
+      for(const field of event==="password_setup_complete"?["recipient_name","role_name"]:["recipient_name","role_name","expiry_minutes"]){
+        const invalid={...values,[field]:""};
+        assert.equal((await api.securitySms(event,role,"+919876543210",invalid,async()=>{throw Error("must not dispatch");},h.db)).status,"unavailable");
+      }
+      for(const field of event==="password_setup_complete"?["recipient_name","role_name"]:["recipient_name","role_name","expiry_minutes","setup_link"]){
+        const invalid={...values,[field]:""};
+        assert.equal((await api.securityEmail(event,role,"fictional@example.invalid",invalid,async()=>{throw Error("must not dispatch");},h.db)).status,"pre_dispatch_failed");
+      }
+    }
+  }
+  for(const values of [{otp:"",expiry_minutes:"10"},{otp:"123456",expiry_minutes:""},{otp:"123456",expiry_minutes:"0"},{otp:"not-code",expiry_minutes:"10"}])
+    assert.equal((await api.securityEmail("patient_email_otp","patient","fictional@example.invalid",values,async()=>{throw Error("must not dispatch");},h.db)).status,"pre_dispatch_failed");
+  assert.equal(api.accountRoleLabel("unknown"),"");
 });

@@ -17,6 +17,7 @@ import { createSession, revokeSession, hashPassword, verifyPassword, issueCsrf,
   resendRegistrationChallenge, getCookie,
   createChallenge, validateChallenge, consumeChallenge, consumeRateLimit, passwordInput } from "../lib/native-auth";
 import { withStaffDispatch } from "../lib/staff-dispatch-barrier";
+import { accountRoleLabel } from "@workspace/api-zod/notification-variable-contract";
 
 export const authRouter = Router();
 const CODE_AGE = 10 * 60_000;
@@ -72,8 +73,9 @@ async function mailLink(req: any, address: string, userId: string, purpose: stri
   return withStaffDispatch([userId], purpose === "invitation" ? "invitation" : "recovery", async () => {
   if (purpose === "invitation") {
     const user = await localUser(address);
-    const recipient = user.role as "doctor" | "clinicAdmin" | "receptionist";
-    const values = {recipient_name:user.fullName,role_name:recipient === "doctor" ? "doctor" : recipient === "clinicAdmin" ? "Clinic Admin" : "staff member",
+     const recipient = user.role as "doctor" | "clinicAdmin" | "receptionist" | "superAdmin";
+     assert(user.id === userId, 400, "Invitation account changed");
+     const values = {recipient_name:user.fullName,role_name:accountRoleLabel(user.role),
       setup_link:url.toString(),expiry_minutes:await challengeMinutes(id)};
     const email = await securityEmail(recipient === "doctor" ? "doctor_setup" : "staff_setup",recipient,address,values);
     // Advisory contains no bearer link. Independent transport failure cannot erase a saved profile.
@@ -189,7 +191,7 @@ async function updatePassword(req: any, res: any, purpose: "reset" | "invitation
   let channels: SecurityOutcomes | undefined;
   if (completed.notify) {
     const user = completed.user, recipient = user.role as "doctor"|"clinicAdmin"|"receptionist"|"superAdmin";
-    const values = {recipient_name:user.fullName,role_name:recipient === "doctor" ? "doctor" : "staff member"};
+     const values = {recipient_name:user.fullName,role_name:accountRoleLabel(user.role)};
     channels = {email:await securityEmail("password_setup_complete",recipient,user.email,values),
       sms:await securitySms("password_setup_complete",recipient,eligibleStaffMobile(user.mobile),values)};
   }
