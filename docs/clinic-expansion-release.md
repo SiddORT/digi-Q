@@ -15,6 +15,11 @@ old-domain or security-token link continuity requires explicit domain control
 and separate approval. This implementation authorizes no live infrastructure,
 deployment, environment or delivery changes.
 
+The [old-domain inventory](old-domain-link-inventory.md) records the separate
+operator-input and approval gates. Until its domain-control and distributed-material
+inventory is confirmed, old-link continuity is unverified; do not treat the
+canonical-link implementation as clearance for a real address change.
+
 # Clinic expansion: migration readiness and release gate
 
 ## Decision

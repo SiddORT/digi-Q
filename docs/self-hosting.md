@@ -84,6 +84,8 @@ clinical work. There is no request-host, browser-host or Replit-domain fallback.
 - Reload already-open tabs after a server configuration change. Confirm QR
   payloads match displayed URLs and staff-only codes remain staff-only.
 - Inventory previously distributed emails, printed tickets and QR codes.
+  Use the [old-domain inventory and approval worksheet](old-domain-link-inventory.md)
+  with operator-provided redacted examples and explicit domain-control confirmation.
   Changing the origin does not rewrite them, rename slugs, rotate tokens or
   references, or migrate saved records/creation receipts. Relative stored
   routes and appointment identifiers remain unchanged.

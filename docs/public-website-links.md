@@ -39,6 +39,11 @@ clinic/location slug, QR reference, appointment identifier, security token or
 creation receipt is migrated. Previously sent messages and printed codes are
 unchanged; continuity for an old authority requires separate approval.
 
+Before planning a real domain change, complete the
+[old-domain inventory and decision gates](old-domain-link-inventory.md).
+Its fictional classification reference is not evidence of operator domain control
+or of which materials have actually been distributed.
+
 ## Verification
 
 All fictional fixtures and notification transports used here are isolated.
