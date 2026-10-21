@@ -9,6 +9,17 @@ Keep the embedded PostgreSQL test dependency at the workspace root rather than a
 
 **How to apply:** When changing embedded database test dependencies, check the pnpm peer graph and typecheck database consumers before attributing type errors to query code. Keep fixtures isolated from development and production records.
 
+Avoid HTTP keep-alive assumptions across synchronous embedded-database bulk setup.
+
+**Why:** Large PGlite fixture inserts can block the same event loop that services
+the disposable HTTP server and its idle-socket timers. A subsequent request may
+reuse a socket while the server is closing it, producing ECONNRESET despite valid
+SQL and passing smaller datasets.
+
+**How to apply:** Keep connection reuse disabled in the disposable feature
+harness; distinguish transport resets after fixture setup from query failures.
+Do not apply this test-only transport policy to the production server.
+
 Pass the active transaction connection through nested settings/readiness lookups.
 
 **Why:** Adding a global-connection credential lookup inside a booking transaction stalled the PGlite regressions: the lookup waited outside the transaction that was itself waiting for the lookup. Isolated provider tests did not expose this.

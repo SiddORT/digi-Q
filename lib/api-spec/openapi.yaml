@@ -1467,6 +1467,36 @@ paths:
         - { name: kind, in: query, schema: { type: string, enum: [all, appointments, queue, system], default: all } }
       responses:
         "200": { description: Notifications, content: { application/json: { schema: { $ref: "#/components/schemas/NotificationList" } } } }
+  /reports/communication-usage:
+    get:
+      operationId: getCommunicationUsage
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { name: channel, in: query, schema: { type: string, enum: [sms, email] } }
+        - { name: event, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [accepted, pending, failed, unknown, skipped] } }
+        - { name: clinicId, in: query, schema: { type: string } }
+        - { name: source, in: query, schema: { type: string, enum: [automatic, test] } }
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
+      responses:
+        "200":
+          description: Observed usage and a bounded metadata-only page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommunicationUsageReport" }
+  /reports/communication-usage/{id}:
+    get:
+      operationId: getCommunicationUsageDetail
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Restricted read-only metadata with masked contact, no message body
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommunicationUsageRecord" }
   /management/notification-logs:
     get:
       operationId: listNotificationLogs
@@ -2335,6 +2365,53 @@ components:
       properties:
         key: { type: string }
         status: { type: string, enum: [configured, missing, invalid, default] }
+    CommunicationUsageRecord:
+      type: object
+      required: [id, channel, event, status, bucket, recipientGroup, clinicId, createdAt, legacy, recipient, dispatchAt, completedAt, reason]
+      properties:
+        id: { type: string }
+        channel: { type: string }
+        event: { type: string }
+        status: { type: string }
+        bucket: { type: string }
+        recipientGroup: { type: string }
+        clinicId: { type: ["string", "null"] }
+        createdAt: { type: ["number", "null"] }
+        dispatchAt: { type: ["number", "null"] }
+        completedAt: { type: ["number", "null"] }
+        queuedAt: { type: ["number", "null"] }
+        dueAt: { type: ["number", "null"] }
+        httpStatus: { type: ["integer", "null"] }
+        legacy: { type: boolean }
+        recipient: { type: ["string", "null"] }
+        reason: { type: ["string", "null"] }
+    CommunicationUsageCount:
+      type: object
+      required: [channel, bucket, count, clinicId, clinicName]
+      properties:
+        channel: { type: string }
+        bucket: { type: string }
+        count: { type: number }
+        clinicId: { type: ["string", "null"] }
+        clinicName: { type: ["string", "null"] }
+    CommunicationUsageReport:
+      type: object
+      required: [items, nextCursor, timezone, total, counts, earliestAvailableAt, legacyCount, unattributedCount, scopeClinicId, scopeClinicName]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/CommunicationUsageRecord" }
+        nextCursor: { type: ["string", "null"] }
+        timezone: { type: string }
+        total: { type: number }
+        counts:
+          type: array
+          items: { $ref: "#/components/schemas/CommunicationUsageCount" }
+        earliestAvailableAt: { type: ["number", "null"] }
+        legacyCount: { type: number }
+        unattributedCount: { type: number }
+        scopeClinicId: { type: ["string", "null"] }
+        scopeClinicName: { type: ["string", "null"] }
     NotificationLogTransition:
       type: object
       required: [status, at]

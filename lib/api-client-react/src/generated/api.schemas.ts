@@ -1072,6 +1072,61 @@ export interface IntegrationKeyStatus {
   status: IntegrationKeyStatusStatus;
 }
 
+export interface CommunicationUsageRecord {
+  id: string;
+  channel: string;
+  event: string;
+  status: string;
+  bucket: string;
+  recipientGroup: string;
+  /** @nullable */
+  clinicId: string | null;
+  /** @nullable */
+  createdAt: number | null;
+  /** @nullable */
+  dispatchAt: number | null;
+  /** @nullable */
+  completedAt: number | null;
+  /** @nullable */
+  queuedAt?: number | null;
+  /** @nullable */
+  dueAt?: number | null;
+  /** @nullable */
+  httpStatus?: number | null;
+  legacy: boolean;
+  /** @nullable */
+  recipient: string | null;
+  /** @nullable */
+  reason: string | null;
+}
+
+export interface CommunicationUsageCount {
+  channel: string;
+  bucket: string;
+  count: number;
+  /** @nullable */
+  clinicId: string | null;
+  /** @nullable */
+  clinicName: string | null;
+}
+
+export interface CommunicationUsageReport {
+  items: CommunicationUsageRecord[];
+  /** @nullable */
+  nextCursor: string | null;
+  timezone: string;
+  total: number;
+  counts: CommunicationUsageCount[];
+  /** @nullable */
+  earliestAvailableAt: number | null;
+  legacyCount: number;
+  unattributedCount: number;
+  /** @nullable */
+  scopeClinicId: string | null;
+  /** @nullable */
+  scopeClinicName: string | null;
+}
+
 export interface NotificationLogTransition {
   status: string;
   at: number;
@@ -4222,6 +4277,49 @@ export const ListNotificationsKind = {
   appointments: 'appointments',
   queue: 'queue',
   system: 'system',
+} as const;
+
+export type GetCommunicationUsageParams = {
+from?: string;
+to?: string;
+channel?: GetCommunicationUsageChannel;
+event?: string;
+status?: GetCommunicationUsageStatus;
+clinicId?: string;
+source?: GetCommunicationUsageSource;
+cursor?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type GetCommunicationUsageChannel = typeof GetCommunicationUsageChannel[keyof typeof GetCommunicationUsageChannel];
+
+
+export const GetCommunicationUsageChannel = {
+  sms: 'sms',
+  email: 'email',
+} as const;
+
+export type GetCommunicationUsageStatus = typeof GetCommunicationUsageStatus[keyof typeof GetCommunicationUsageStatus];
+
+
+export const GetCommunicationUsageStatus = {
+  accepted: 'accepted',
+  pending: 'pending',
+  failed: 'failed',
+  unknown: 'unknown',
+  skipped: 'skipped',
+} as const;
+
+export type GetCommunicationUsageSource = typeof GetCommunicationUsageSource[keyof typeof GetCommunicationUsageSource];
+
+
+export const GetCommunicationUsageSource = {
+  automatic: 'automatic',
+  test: 'test',
 } as const;
 
 export type ListNotificationLogsParams = {

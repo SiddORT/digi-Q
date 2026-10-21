@@ -35,7 +35,7 @@ export function formatLogTime(ms: number | null | undefined, tz: string = LOG_TI
 export function kolkataToIso(local: string): string | undefined {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
   if (!m) return undefined;
-  const t = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - 330 * 60000;
+  const t = Date.parse(`${local}:00+05:30`);
   return Number.isNaN(t) ? undefined : new Date(t).toISOString();
 }
 export function buildLogParams(f: LogFilters, cursor?: string, pageSize = 25): ListNotificationLogsParams {

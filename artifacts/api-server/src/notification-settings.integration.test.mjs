@@ -570,7 +570,7 @@ test("stale claims become uncertain without resend; legacy fields stay unavailab
   await api.recordNotification(h.db,"expired-history",{...entry,createdAt:now-91*86400000},"disabled",undefined,[],now-91*86400000);
   await h.control.query("insert into settings(id,data) values('notification-test:retained:claim','{\"status\":\"delivery_unknown\"}'),('notification-occurrence:retained:claim','{}')");
   await api.cleanupNotificationHistory(h.db,now);
-  assert.equal((await h.control.query("select id from settings where id=$1",[api.historyId("expired-history")])).rows.length,0);
+  assert.equal((await h.control.query("select id from settings where id=$1",[api.historyId("expired-history")])).rows.length,1);
   assert.equal((await h.control.query("select id from settings where id in ('notification-test:retained:claim','notification-occurrence:retained:claim','mail-outbox:booking:legacy-history')")).rows.length,3);
 });
 test("provider test dispatch uses a configurable Keep in Touch endpoint, independent keys and durable request identity",async()=>{

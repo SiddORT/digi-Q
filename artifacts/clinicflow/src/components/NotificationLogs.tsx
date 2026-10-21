@@ -45,7 +45,7 @@ export function NotificationLogs() {
       <button type="button" className="button secondary" disabled={q.isFetching} onClick={() => void q.refetch()} data-testid="button-refresh-logs">Refresh</button>
     </div>
     <p className="muted">Read-only. Times are shown in {tz}. "Provider accepted" means the provider took the request, not that the recipient received it. Legacy records are incomplete and unknown values show as unavailable. A message stuck in sending is reported as delivery unknown by the server.</p>
-    <p className="muted" data-testid="note-log-exact">Last 90 days. Clinic ID, sender and recipient filters are exact matches, not partial searches.</p>
+    <p className="muted" data-testid="note-log-exact">All retained history, with optional open-ended dates. Previously deleted or never captured records cannot be recovered. Clinic ID, sender and recipient filters are exact matches, not partial searches.</p>
     <details className="nl-filter-panel" data-testid="panel-log-filters">
       <summary data-testid="toggle-log-filters">Filters{filterCount > 0 ? ` (${filterCount} applied)` : ""}</summary>
     <form className="nl-filters" onSubmit={e => { e.preventDefault(); apply(); }}>

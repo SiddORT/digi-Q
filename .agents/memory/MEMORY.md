@@ -51,3 +51,4 @@
 - [Automatic SMS evidence](sms-incident-evidence-boundary.md) — the reported repeated-name SMS was automatic, not a template test; verified corrections do not prove its historical cause.
 - [Public domain continuity](public-domain-continuity.md) — canonical-domain changes do not authorize old-host aliases, redirects or private-token migration.
 - [PDF fixture CSS isolation](pdf-fixture-css-isolation.md) — lazy-load styled fixture modes; host styles can change iframe PDF font measurements without changing ticket HTML.
+- [Communication usage boundary](communication-usage-boundary.md) — observed acceptance is not billing authority; retain coverage gaps and privacy erasure in future packaging work.

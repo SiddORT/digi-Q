@@ -13,7 +13,7 @@ const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 let harnessSequence = 0;
 
-export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false}={}) {
+export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false, communicationUsage=false}={}) {
   const cluster=postgres?await createQueueHarness({empty:true}):null;
   const {Pool}=postgres?createRequire(resolve(root,"lib/db/package.json"))("pg"):{};
   const pool=postgres?new Pool({host:cluster.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8,statement_timeout:10000}):null;
@@ -45,6 +45,10 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import { workspaceFeaturesRouter } from "./routes/workspace-features";
       import { patientRecordsRouter } from "./routes/patient-records";
       import { reportingRouter } from "./routes/reporting";
+      ${communicationUsage ? `import { notificationHistoryRouter } from "./routes/notification-history";
+      import { db as historyDb } from "@workspace/db";
+      import { cleanupNotificationHistory } from "./lib/notification-history";
+      export const cleanupHistory = now => cleanupNotificationHistory(historyDb, now);` : ""}
       ${notificationSettings ? `import { notificationSettingsRouter } from "./routes/notification-settings";
       import { notificationTemplatesRouter } from "./routes/notification-templates";` : ""}
       export { listOwnerBookingMailOutcomes } from "./lib/notification-outbox";
@@ -115,6 +119,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         ${!bookingLookups ? `app.use((req, _res, next) => { const id = req.get("x-test-user"); if (id) { req.authUserId = id; req.authSessionHash = "test-session-" + id; } next(); });` : ""}
         app.use(express.json());
         app.use("/api", workspaceFeaturesRouter, patientRecordsRouter, reportingRouter);
+        ${communicationUsage ? `app.use("/api", notificationHistoryRouter);` : ""}
         ${notificationSettings ? `app.use("/api", notificationSettingsRouter);
         app.use("/api", notificationTemplatesRouter);` : ""}
         ${administration ? `app.use("/api", resourcesRouter, identityRouter, systemUsersRouter, permissionPolicyRouter);` : ""}
@@ -183,12 +188,14 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         export async function removeDocument(_p, key) { globalThis.__featureBlobs.delete(key); }` }));
     } }],
   }).catch(failedSetup);
-   const { createApp, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
+   const { createApp, cleanupHistory, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
   const server = createApp().listen(0);
   await new Promise(r => server.once("listening", r));
   const base = `http://127.0.0.1:${server.address().port}/api`;
   async function call(user, method, path, body, headers = {}) {
-    const init = { method, headers: { ...(user ? { "x-test-user": user } : {}), ...headers } };
+    // PGlite bulk fixture setup can block idle-socket timers on this same event
+    // loop. Do not reuse an HTTP connection across that synchronous setup work.
+    const init = { method, headers: { connection: "close", ...(user ? { "x-test-user": user } : {}), ...headers } };
     if (body instanceof Buffer) { init.body = body; init.headers["content-type"] ||= "application/octet-stream"; }
     else if (body !== undefined) { init.body = JSON.stringify(body); init.headers["content-type"] = "application/json"; }
     const res = await fetch(base + path, {...init,signal:AbortSignal.timeout(20000)});
@@ -196,5 +203,5 @@ export async function createFeatureHarness({administration=false, simulatedMail=
     const data = type.includes("json") ? await res.json() : Buffer.from(await res.arrayBuffer());
     return { status: res.status, data, headers: res.headers };
   }
-   return { pg, call, blobs, mail, base, pool, errors, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
+   return { pg, call, cleanupHistory, blobs, mail, base, pool, errors, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
 }

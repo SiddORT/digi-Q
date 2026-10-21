@@ -78,6 +78,8 @@ import type {
   ClinicSettingsInput,
   ClinicSettingsPreview,
   ClinicSettingsResult,
+  CommunicationUsageRecord,
+  CommunicationUsageReport,
   CompleteLogoUpload200,
   CustomRoleConfiguration,
   Dashboard,
@@ -103,6 +105,7 @@ import type {
   GetBookingScheduleAccessParams,
   GetClinicAdminSetupCompletionParams,
   GetClinicRegistrationCompletionParams,
+  GetCommunicationUsageParams,
   GetDashboardParams,
   GetDoctorPresenceParams,
   GetEventControlsParams,
@@ -13500,6 +13503,155 @@ export function useListNotifications<TData = Awaited<ReturnType<typeof listNotif
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListNotificationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCommunicationUsageUrl = (params?: GetCommunicationUsageParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/communication-usage?${stringifiedParams}` : `/api/reports/communication-usage`
+}
+
+export const getCommunicationUsage = async (params?: GetCommunicationUsageParams, options?: Parameters<typeof customFetch>[1]): Promise<CommunicationUsageReport> => {
+
+  return customFetch<CommunicationUsageReport>(getGetCommunicationUsageUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCommunicationUsageQueryKey = (params?: GetCommunicationUsageParams,) => {
+    return [
+    `/api/reports/communication-usage`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCommunicationUsageQueryOptions = <TData = Awaited<ReturnType<typeof getCommunicationUsage>>, TError = ErrorType<unknown>>(params?: GetCommunicationUsageParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCommunicationUsage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCommunicationUsageQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCommunicationUsage>>> = ({ signal }) => getCommunicationUsage(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCommunicationUsage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCommunicationUsageQueryResult = NonNullable<Awaited<ReturnType<typeof getCommunicationUsage>>>
+export type GetCommunicationUsageQueryError = ErrorType<unknown>
+
+
+
+export function useGetCommunicationUsage<TData = Awaited<ReturnType<typeof getCommunicationUsage>>, TError = ErrorType<unknown>>(
+ params?: GetCommunicationUsageParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCommunicationUsage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCommunicationUsageQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetCommunicationUsageDetailUrl = (id: string,) => {
+
+
+
+
+  return `/api/reports/communication-usage/${id}`
+}
+
+export const getCommunicationUsageDetail = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<CommunicationUsageRecord> => {
+
+  return customFetch<CommunicationUsageRecord>(getGetCommunicationUsageDetailUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCommunicationUsageDetailQueryKey = (id: string,) => {
+    return [
+    `/api/reports/communication-usage/${id}`
+    ] as const;
+    }
+
+
+export const getGetCommunicationUsageDetailQueryOptions = <TData = Awaited<ReturnType<typeof getCommunicationUsageDetail>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCommunicationUsageDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCommunicationUsageDetailQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCommunicationUsageDetail>>> = ({ signal }) => getCommunicationUsageDetail(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCommunicationUsageDetail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCommunicationUsageDetailQueryResult = NonNullable<Awaited<ReturnType<typeof getCommunicationUsageDetail>>>
+export type GetCommunicationUsageDetailQueryError = ErrorType<unknown>
+
+
+
+export function useGetCommunicationUsageDetail<TData = Awaited<ReturnType<typeof getCommunicationUsageDetail>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCommunicationUsageDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCommunicationUsageDetailQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -7,7 +7,7 @@ import { resolvedTemplate } from "./notification-template-store";
 import { sendAuthEmail } from "./auth-email";
 import { confirmationText } from "./appointment-confirmation";
 import { validEmailAddress, emailNotificationsEnabled, smtpConfig } from "./integration-config";
-import { recordNotification, recordDecision, claimNotificationOccurrence, notificationEntry, templateSnapshot, cleanupNotificationHistory } from "./notification-history";
+import { recordNotification, recordDecision, claimNotificationOccurrence, notificationEntry, templateSnapshot } from "./notification-history";
 import { logger } from "./logger";
 import { resolvedIntegration } from "./integration-vault";
 import { createHash } from "node:crypto";
@@ -322,7 +322,7 @@ export function startNotificationWorker() {
   const tick = () => {
     // Separate busy gates: a slow/failed provider must not delay the other channel's
     // next poll. Per-record durable claims still protect multiple server instances.
-    if(!busy){busy=true;void processNotifications().then(()=>cleanupNotificationHistory()).catch(()=>logger.warn("Email worker failed; pending work retained")).finally(()=>{busy=false;});}
+    if(!busy){busy=true;void processNotifications().catch(()=>logger.warn("Email worker failed; pending work retained")).finally(()=>{busy=false;});}
     if(!smsBusy){
       smsBusy=true;
       void import("./notification-sms-outbox").then(m=>m.processSmsNotifications())

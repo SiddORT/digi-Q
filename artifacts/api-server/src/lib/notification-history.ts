@@ -10,8 +10,7 @@ import { notificationStaffSubjects } from "./notification-staff-subjects";
 import { signHistorySubjects, verifyHistorySubjects } from "./notification-history-provenance";
 import { explicitNotificationSubjects } from "./notification-explicit-subjects";
 
-// History retention is independent of permanent dispatch/idempotency claims.
-export const HISTORY_RETENTION_DAYS = 90;
+// Reporting history has no age expiry. Privacy erasure and dispatch claims remain independent.
 const prefix = "notification-history:";
 export const historyId = (key: string) => prefix + createHash("sha256").update(key).digest("hex");
 const states = ["pending", "sending", "provider_accepted", "provider_rejected", "pre_dispatch_failed", "delivery_unknown", "configuration_failed", "preparation_failed", "disabled", "obsolete", "no_recipient", "not_attempted"] as const;
@@ -124,7 +123,7 @@ export async function recordNotification(conn: any, job: string, entry: Entry, s
 }
 export const recordDecision = (conn: any, job: string, entry: Entry, state: State, snapshot?: Snapshot, secrets: string[] = []) =>
   recordNotification(conn, job, entry, state, snapshot, secrets, Date.now(), undefined, true);
-/** Permanent capture claim: skipped decisions are never a backlog, even after history expiry. */
+/** Permanent capture claim: skipped decisions never become a backlog, independently of privacy erasure. */
 export async function claimNotificationOccurrence(conn: any, channel: string, event: string, row: any) {
   const inserted=await conn.insert(settings).values({
     id:`notification-occurrence:${channel}:${event}:${row.id}:${row.revision||0}`,
@@ -151,7 +150,7 @@ const querySchema = z.object({
 export function authorizeNotificationHistory(user: any) {
   assert(user.role === "superAdmin" && !user.demo && user.demoFixture !== DEMO_FIXTURE, 403, "Real Superadmin access required");
 }
-function projection(row: any, now: number) {
+export function projection(row: any, now: number) {
   const d = row.data;
   const status = d.status === "sending" && d.dispatchAt < now - 300000 ? "delivery_unknown" : d.status;
   let snapshot: Snapshot = {};
@@ -168,8 +167,19 @@ function projection(row: any, now: number) {
 // Legacy outboxes expose only data they actually recorded. No rendered content,
 // contact or current configuration is substituted for unknown historical fields.
 const legacyIdPattern=/^legacy:(mail|sms)-outbox:[A-Za-z0-9:_-]{1,170}$/;
-const historyRecords = (from:number,to?:number) => sql`
-  select id, data from settings where id like 'notification-history:%'
+type HistorySelection = { id?: string; clinicId?: string; source?: "automatic" | "test"; ownerId?: string };
+export const historyRecords = (metadataOnly = false, selection: HistorySelection = {}) => sql`
+  select id, ${metadataOnly ? sql`jsonb_build_object(
+    'channel',data->'channel','event',data->'event','status',data->'status','source',data->'source',
+    'clinicId',data->'clinicId','recipientGroup',data->'recipientGroup','createdAt',data->'createdAt',
+    'dispatchAt',data->'dispatchAt','completedAt',data->'completedAt','queuedAt',data->'queuedAt',
+    'dueAt',data->'dueAt','httpStatus',data->'httpStatus','erased',data->'erased',
+    'provenance',jsonb_build_object('version',data->'provenance'->'version'))` : sql`data`} as data
+  from settings where id like 'notification-history:%'
+    ${selection.id ? sql`and id=${selection.id}` : sql``}
+    ${selection.clinicId ? sql`and data->>'clinicId'=${selection.clinicId}` : sql``}
+    ${selection.ownerId ? sql`and data->>'clinicId' in (select id from clinics where admin_id=${selection.ownerId})` : sql``}
+    ${selection.source ? sql`and data->>'source'=${selection.source}` : sql``}
   union all
   select 'legacy:' || s.id as id,
     jsonb_build_object(
@@ -181,8 +191,10 @@ const historyRecords = (from:number,to?:number) => sql`
       'dispatchAt',s.data->'claimedAt','completedAt',s.data->'finishedAt','legacy',true
     ) as data
   from settings s where (s.id like 'mail-outbox:%' or s.id like 'sms-outbox:%')
-    and (s.data->>'createdAt')::bigint >= ${from}
-    ${to===undefined?sql``:sql`and (s.data->>'createdAt')::bigint <= ${to}`}
+    ${selection.id ? sql`and s.id=${selection.id.startsWith("legacy:") ? selection.id.slice(7) : ""}` : sql``}
+    ${selection.clinicId ? sql`and s.data->>'clinicId'=${selection.clinicId}` : sql``}
+    ${selection.ownerId ? sql`and s.data->>'clinicId' in (select id from clinics where admin_id=${selection.ownerId})` : sql``}
+    ${selection.source === "test" ? sql`and false` : sql``}
     and not exists (
       select 1 from settings h where h.id =
         'notification-history:' || encode(sha256(convert_to(coalesce(s.data->>'historyKey',s.id),'UTF8')),'hex')
@@ -192,7 +204,7 @@ export async function listNotificationLogs(user: any, input: unknown, conn: any 
   const parsed = querySchema.safeParse(input); assert(parsed.success, 400, "Invalid notification history filters");
   const q = parsed.data!;
   assert(!q.from || !q.to || Date.parse(q.from) <= Date.parse(q.to), 400, "Invalid date range");
-  const conditions = [sql`${settings.id} like ${prefix + "%"}`, sql`coalesce(${settings.data}->>'erased','false') <> 'true'`, sql`(${settings.data}->>'createdAt')::bigint >= ${now - HISTORY_RETENTION_DAYS * 86400000}`];
+  const conditions = [sql`${settings.id} like ${prefix + "%"}`, sql`coalesce(${settings.data}->>'erased','false') <> 'true'`];
   for (const field of ["channel", "event", "clinicId", "recipientGroup", "source", "reference"] as const)
     if (q[field]) conditions.push(sql`${settings.data}->>${field} = ${q[field]}`);
   const statusExpr = sql`case when ${settings.data}->>'status' = 'sending' and (${settings.data}->>'dispatchAt')::bigint < ${now - 300000} then 'delivery_unknown' else ${settings.data}->>'status' end`;
@@ -204,18 +216,17 @@ export async function listNotificationLogs(user: any, input: unknown, conn: any 
     let cursor: any;
     try { cursor = JSON.parse(Buffer.from(q.cursor, "base64url").toString()); } catch { assert(false, 400, "Invalid cursor"); }
     assert(Array.isArray(cursor) && cursor.length === 2 && Number.isSafeInteger(cursor[0]) && typeof cursor[1] === "string" && (/^notification-history:[a-f0-9]{64}$/.test(cursor[1])||legacyIdPattern.test(cursor[1])), 400, "Invalid cursor");
-    conditions.push(sql`((${settings.data}->>'createdAt')::bigint, ${settings.id}) < (${cursor[0]}::bigint, ${cursor[1]}::text)`);
+    conditions.push(sql`(coalesce((${settings.data}->>'createdAt')::bigint,-9007199254740991), ${settings.id}) < (${cursor[0]}::bigint, ${cursor[1]}::text)`);
   }
   // Alias preserves the same parameterized filter expressions across both sources.
   conditions[0]=sql`true`;
-  const from=Math.max(now-HISTORY_RETENTION_DAYS*86400000,q.from?Date.parse(q.from):0);
-  const result=await conn.execute(sql`with notification_records as (${historyRecords(from,q.to?Date.parse(q.to):undefined)})
+  const result=await conn.execute(sql`with notification_records as (${historyRecords()})
     select settings.id, settings.data from notification_records settings
     where ${sql.join(conditions,sql` and `)}
-    order by (${settings.data}->>'createdAt')::bigint desc, ${settings.id} desc limit ${q.pageSize+1}`);
+    order by coalesce((${settings.data}->>'createdAt')::bigint,-9007199254740991) desc, ${settings.id} desc limit ${q.pageSize+1}`);
   const rows=result.rows;
   const selected = rows.slice(0, q.pageSize), last = selected.at(-1);
-  return { items: selected.map((r: any) => projection(r, now)), nextCursor: rows.length > q.pageSize ? Buffer.from(JSON.stringify([last.data.createdAt, last.id])).toString("base64url") : null, timezone: "Asia/Kolkata" };
+  return { items: selected.map((r: any) => projection(r, now)), nextCursor: rows.length > q.pageSize ? Buffer.from(JSON.stringify([last.data.createdAt ?? -9007199254740991, last.id])).toString("base64url") : null, timezone: "Asia/Kolkata" };
 }
 export async function getNotificationLog(user: any, id: string, conn: any = db, now = Date.now()) {
   authorizeNotificationHistory(user);
@@ -231,10 +242,10 @@ export async function getNotificationLog(user: any, id: string, conn: any = db, 
         dueAt:d.dueAt,dispatchAt:d.claimedAt,completedAt:d.finishedAt,legacy:true}};
     }
   }else [row]=await conn.select().from(settings).where(eq(settings.id,id));
-  assert(row && row.data.erased !== true && row.data.createdAt >= now - HISTORY_RETENTION_DAYS * 86400000, 404, "Notification log unavailable");
+  assert(row && row.data.erased !== true, 404, "Notification log unavailable");
   return projection(row, now);
 }
 export async function cleanupNotificationHistory(conn: any = db, now = Date.now()) {
-  // Bounded batches; never delete mail-outbox, sms-outbox or test claims.
-  await conn.execute(sql`delete from settings where id in (select id from settings where id like ${prefix + "%"} and coalesce(data->>'erased','false') <> 'true' and (data->>'createdAt')::bigint < ${now - HISTORY_RETENTION_DAYS * 86400000} order by id limit 500)`);
+  // Compatibility entry point: intentionally no age-based deletion.
+  // Permanent privacy erasure is handled by the existing removal safeguards.
 }

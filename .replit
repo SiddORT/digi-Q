@@ -28,6 +28,10 @@ args = "ticket-browser-regression"
 task = "workflow.run"
 args = "appointment-movement"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "communication-usage"
+
 [[workflows.workflow]]
 name = "queue-contention"
 author = "agent"
@@ -57,6 +61,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node --test artifacts/api-server/src/appointment-movement.test.mjs"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "communication-usage"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm test:communication-usage"
 
 [workflows.workflow.metadata]
 isValidation = true

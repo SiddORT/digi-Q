@@ -1,0 +1,21 @@
+.cu{display:grid;gap:.9rem}
+.cu-coverage p{margin:.2rem 0}
+.cu-presets{display:flex;flex-wrap:wrap;gap:.4rem}
+.cu-pill{border:1px solid currentColor;background:transparent;border-radius:999px;padding:.3rem .8rem;cursor:pointer;opacity:.75}
+.cu-pill.on{opacity:1;font-weight:700;box-shadow:inset 0 0 0 1px currentColor}
+.cu-total span{font-size:1.9rem;font-weight:700;margin-right:.35rem}
+.cu-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem}
+.cu-cards.five{grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))}
+.cu-card{display:grid;gap:.15rem;text-align:left;padding:.7rem .9rem;border:1px solid rgba(120,120,120,.35);border-radius:10px;background:transparent;color:inherit;cursor:pointer}
+.cu-card strong{font-size:1.5rem}
+.cu-channel-card .cu-card{width:100%}
+.cu-channel-breakdown{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem}
+.cu-channel-breakdown button{font-size:.8rem}
+.cu-card.on{outline:2px solid currentColor;outline-offset:1px}
+.cu-card.b-failed strong{color:#9b2c2c}
+.cu-clinics tr.sel{font-weight:700}
+.cu-clinic{grid-column:1/-1}
+.cu-skel{padding:1.2rem;border-radius:10px;background:rgba(120,120,120,.12);animation:cu-pulse 1.4s ease-in-out infinite}
+@keyframes cu-pulse{50%{opacity:.5}}
+@media (prefers-reduced-motion:reduce){.cu-skel{animation:none}}
+.report-tabs{display:flex;gap:.4rem;margin-bottom:.8rem}

@@ -7990,6 +7990,83 @@ export const ListNotificationsResponse = zod.object({
 })
 
 
+export const getCommunicationUsageQueryPageSizeMax = 100;
+
+
+
+export const GetCommunicationUsageQueryParams = zod.object({
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "channel": zod.enum(['sms', 'email']).optional(),
+  "event": zod.coerce.string().optional(),
+  "status": zod.enum(['accepted', 'pending', 'failed', 'unknown', 'skipped']).optional(),
+  "clinicId": zod.coerce.string().optional(),
+  "source": zod.enum(['automatic', 'test']).optional(),
+  "cursor": zod.coerce.string().optional(),
+  "pageSize": zod.coerce.number().int().min(1).max(getCommunicationUsageQueryPageSizeMax).optional()
+})
+
+export const GetCommunicationUsageResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "channel": zod.string(),
+  "event": zod.string(),
+  "status": zod.string(),
+  "bucket": zod.string(),
+  "recipientGroup": zod.string(),
+  "clinicId": zod.string().nullable(),
+  "createdAt": zod.number().nullable(),
+  "dispatchAt": zod.number().nullable(),
+  "completedAt": zod.number().nullable(),
+  "queuedAt": zod.number().nullish(),
+  "dueAt": zod.number().nullish(),
+  "httpStatus": zod.number().int().nullish(),
+  "legacy": zod.boolean(),
+  "recipient": zod.string().nullable(),
+  "reason": zod.string().nullable()
+})),
+  "nextCursor": zod.string().nullable(),
+  "timezone": zod.string(),
+  "total": zod.number(),
+  "counts": zod.array(zod.object({
+  "channel": zod.string(),
+  "bucket": zod.string(),
+  "count": zod.number(),
+  "clinicId": zod.string().nullable(),
+  "clinicName": zod.string().nullable()
+})),
+  "earliestAvailableAt": zod.number().nullable(),
+  "legacyCount": zod.number(),
+  "unattributedCount": zod.number(),
+  "scopeClinicId": zod.string().nullable(),
+  "scopeClinicName": zod.string().nullable()
+})
+
+
+export const GetCommunicationUsageDetailParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetCommunicationUsageDetailResponse = zod.object({
+  "id": zod.string(),
+  "channel": zod.string(),
+  "event": zod.string(),
+  "status": zod.string(),
+  "bucket": zod.string(),
+  "recipientGroup": zod.string(),
+  "clinicId": zod.string().nullable(),
+  "createdAt": zod.number().nullable(),
+  "dispatchAt": zod.number().nullable(),
+  "completedAt": zod.number().nullable(),
+  "queuedAt": zod.number().nullish(),
+  "dueAt": zod.number().nullish(),
+  "httpStatus": zod.number().int().nullish(),
+  "legacy": zod.boolean(),
+  "recipient": zod.string().nullable(),
+  "reason": zod.string().nullable()
+})
+
+
 export const listNotificationLogsQuerySenderMax = 254;
 
 export const listNotificationLogsQueryRecipientMax = 254;
