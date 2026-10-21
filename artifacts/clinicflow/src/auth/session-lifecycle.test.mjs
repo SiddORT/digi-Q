@@ -2,9 +2,10 @@
 import { before, after, beforeEach, test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { resolve } from "node:path";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 const { build } = createRequire(import.meta.resolve("vite"))("esbuild");
 
 const root = import.meta.dirname, bundle = resolve(root, `.session-lifecycle-${process.pid}.mjs`);
@@ -49,6 +50,36 @@ async function signedHarness() {
   h.client.setQueryData(["private-record"], { fixture: true });
   return h;
 }
+test("clinic registration preserves the lifecycle-owned status for immediate workspace access", async () => {
+  const source = readFileSync(new URL("../components/ClinicRegistration.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /client\.removeQueries\(\{\s*queryKey:\s*api\.getGetAuthStatusQueryKey\(\)/,
+    "AuthAccess is disabled-by-design; deleting its only status snapshot stalls Open Workspace");
+  const access = readFileSync(new URL("./AuthAccess.tsx", import.meta.url), "utf8");
+  assert.match(access, /enabled:\s*false/);
+  const h = harness();
+  globalThis.fetch = async () => json({ role: "clinicAdmin", staffPasswordVerified: true });
+  await h.lifecycle.refresh();
+  const statusKey = ["/api/auth/status"];
+  let duplicateReads = 0;
+  const observer = new QueryObserver(h.client, {
+    queryKey: statusKey, enabled: false,
+    queryFn: async () => { duplicateReads++; return { role: "clinicAdmin" }; },
+  });
+  const stop = observer.subscribe(() => {});
+  try {
+    h.client.setQueryData(["/api/me"], { user: { id: "owner", role: "clinicAdmin", clinicIds: [] } });
+    h.client.setQueryData(["directory-complete", ["owner"], "doctors"], { items: [], total: 0 });
+    // Same mutation policy as self-registration: retain /me until the success
+    // confirmation leaves, invalidate other projections, never delete status.
+    await h.client.invalidateQueries({ predicate: query => query.queryKey[0] !== "/api/me" });
+    assert.equal(observer.getCurrentResult().data.role, "clinicAdmin");
+    assert.equal(observer.getCurrentResult().isSuccess, true);
+    assert.equal(h.latest().isSignedIn, true);
+    assert.equal(duplicateReads, 0);
+    assert.equal(h.client.getQueryState(["directory-complete", ["owner"], "doctors"]).isInvalidated, true);
+    assert.equal(h.client.getQueryState(["/api/me"]).isInvalidated, false);
+  } finally { stop(); h.lifecycle.stop(); h.client.clear(); }
+});
 test("a removal revision cancels and resets cached projections on the next native session poll", async () => {
   const h = harness();
   globalThis.fetch = async () => json({ role: "doctor", staffDirectoryRevision: "0" });

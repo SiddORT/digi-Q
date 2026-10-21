@@ -25,8 +25,12 @@ test("inactive doctor is not a bookable dependency", () => {
 test("booking gates membership/date validity and never eagerly resets doctor on parent selection", () => {
   const source = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");
   const booking = source.slice(source.indexOf("function Booking("), source.indexOf("function Queue("));
-  assert.match(booking, /canContinue=dateValid&&!!date&&date>=visitToday&&membership==="valid"/);
-  assert.match(booking, /DateFormatInput required value=\{date\} min=\{visitToday\}/);
+  const gate = booking.match(/const canContinue=([^;]+);/)?.[1];
+  assert.ok(gate, "Booking must have an explicit continue gate");
+  for (const condition of ["discovery.ready", "dateValid", "!!date", "date>=visitToday", 'membership==="valid"']) {
+    assert.ok(gate.split("&&").includes(condition), `Continue must require ${condition}`);
+  }
+  assert.match(booking, /DateFormatInput required value=\{date\} min=\{visitToday\|\|undefined\}/);
   assert.match(booking, /onValidityChange=\{setDateValid\}/);
   assert.doesNotMatch(booking, /setDoctor\(restrictedDoctorId\)|setDoctor\(context\?\.doctorId/);
   assert.match(booking, /membership==="invalid"&&!context\?\.doctorId&&!restrictedDoctorId/);

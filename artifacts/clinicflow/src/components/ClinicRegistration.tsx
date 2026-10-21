@@ -190,7 +190,8 @@ function RegistrationForm({ actorId }: { actorId: string }) {
       setPassword("");
       setCompleted(result);
       // Do not invalidate /me here: that would unmount the success confirmation.
-      client.removeQueries({ queryKey: api.getGetAuthStatusQueryKey() });
+       // NativeAuth owns this session snapshot; AuthAccess only observes it.
+       // The account stays Clinic Admin, so preserve status for Open Workspace.
       client.invalidateQueries({ predicate: q => q.queryKey[0] !== api.getGetMeQueryKey()[0] });
     } catch (caught) {
       const saved = await api.getClinicRegistrationCompletion({ requestId });

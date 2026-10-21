@@ -57,6 +57,18 @@ Initial JWT compatibility work preserves the existing fixed 12-hour session poli
 
 **How to apply:** Treat short access-token/rotating refresh design as unfinished, not silently completed. Activation is explicit and requires a dedicated signing key; do not weaken validation or fall back on a missing JWT key.
 
+Mutations that leave the signed-in role unchanged must preserve the session
+lifecycle's authentication snapshot while refreshing saved business data.
+
+**Why:** Self-registration's cache removal left the workspace access screen
+waiting for a status response that its observer deliberately does not fetch.
+Removing a lifecycle-owned snapshot is not equivalent to invalidating resource
+queries.
+
+**How to apply:** Let the authentication lifecycle own session refresh and
+clearing. Refresh clinic/doctor/identity projections without deleting that
+snapshot; test immediate success-screen navigation as well as a hard reload.
+
 The user requested keeping the preview recovery password in workspace Secrets and having superadmin seeding always run on first deployment.
 
 **Why:** The user explicitly changed the recovery cleanup requirement and requested automatic first-deployment provisioning.

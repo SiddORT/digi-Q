@@ -16,3 +16,17 @@ views, one scoped to Clinic Admins and the other including receptionists.
 labels as evidence of the displayed category. Keep live owner-session acceptance
 separate from fixture-backed authorization tests; do not repair ownership merely
 because a different staff type is selected.
+
+For the reported Kushan Clinic owner-booking problem, take consulting consent as
+already supplied: the owner selected “also consults as a doctor,” and the failure
+was an empty Doctor dropdown in Clinic Admin → New Booking. Do not ask the user
+to repeat those facts or infer that the checkbox was omitted.
+
+**Why:** These were explicitly supplied facts in the reported failure. Fresh
+fictional onboarding success cannot establish the historical cause or repair of
+that deployed clinic.
+
+**How to apply:** Trace persisted self-owned doctor/location membership, actual
+authenticated directory request/response, and rendered selection to the first
+proven divergence. Do not broaden administrator consultation eligibility or
+automatically repair live records merely because the symptom was reported.
