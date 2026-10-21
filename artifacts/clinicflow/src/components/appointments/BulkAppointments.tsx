@@ -1,4 +1,5 @@
 import { assertIndividualCheckIn } from "@/lib/check-in-policy";
+import { absolutePublicUrl } from "../../lib/public-website";
 import { useRef, useState } from "react";
 import * as api from "@workspace/api-client-react";
 import QRCode from "qrcode";
@@ -34,6 +35,7 @@ export function BulkAppointments({ids,disabled,onClear,onRetain,labels={}}:{ids:
     const messages:string[]=[];const completedIds:string[]=[];const records:api.Appointment[]=[];const documentOut=document.implementation.createHTMLDocument(`${BRAND_NAME} private tickets`);
     try {
       if(kind==="print"&&!popup)throw new Error("Allow pop-ups to print selected tickets.");
+      if(kind==="print"||kind==="download") await absolutePublicUrl("/");
       const logo = kind==="print"||kind==="download" ? await embeddedTicketLogo() : null;
       for(const id of ids) {
         try {
@@ -48,7 +50,7 @@ export function BulkAppointments({ids,disabled,onClear,onRetain,labels={}}:{ids:
             const qr=await api.getAppointmentQr(id);
             if(!qr.checkInUrl?.trim())throw new Error("Personal QR unavailable. Refresh and try again.");
             if(qr.appointmentId!==id)throw new Error("Personal QR does not match the selected appointment.");
-            const url=qr.checkInUrl.startsWith("/")?`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/,"")}${qr.checkInUrl}`:qr.checkInUrl;
+            const url=await absolutePublicUrl(qr.checkInUrl);
             const image=await QRCode.toDataURL(url,{width:250,margin:2});
             const section=documentOut.createElement("section");section.style.cssText="page-break-after:always;padding:24px;font-family:sans-serif;color:#10274e;background:#fff;border-top:4px solid #087cb7";
             const brand=documentOut.createElement("img");brand.src=logo!;brand.alt="DigiQ Doctors logo";brand.style.cssText="display:block;width:108px;height:54px;object-fit:contain";

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { publicOrigin } from "../lib/public-website";
 import { randomBytes } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { db, users, authChallenges } from "@workspace/db";
@@ -28,11 +29,6 @@ function email(value: unknown) {
   if (!/^[^\s@]{1,64}@[^\s@]{1,189}\.[^\s@]{2,}$/.test(normalized))
     throw new HttpError(400, "Valid email required", "INVALID_EMAIL");
   return normalized;
-}
-function publicOrigin(req: any): string {
-  const origin = process.env.CLINICFLOW_PUBLIC_ORIGIN;
-  if (!origin || !/^https:\/\/[^/]+$/.test(origin)) throw new HttpError(503, "Public email links are not configured", "PUBLIC_ORIGIN_UNCONFIGURED");
-  return origin;
 }
 async function localUser(address: string) {
   const [row] = await db.select().from(users).where(sql`lower(${users.email})=${address}`).limit(1);
@@ -66,7 +62,7 @@ async function mailCode(address: string, purpose: string, userId?: string, data?
 async function mailLink(req: any, address: string, userId: string, purpose: string, route: string) {
   const target = purpose === "invitation" ? await localUser(address) : undefined;
   await ensureStaffInvitationConfigured(target?.role);
-  const url = new URL(route, publicOrigin(req));
+  const url = new URL(route, publicOrigin());
   const secret = randomBytes(32).toString("base64url");
   const id = await createChallenge({ userId, email: address, purpose, secret, ttlMs: LINK_AGE });
   url.searchParams.set("token", `${id}.${secret}`);
@@ -92,7 +88,7 @@ export async function ensureStaffInvitationConfigured(role?: string) {
   if (role) await requireSecurityDelivery(role === "doctor" ? "doctor_setup" : "staff_setup",
     role as "doctor" | "clinicAdmin" | "receptionist" | "superAdmin","email");
   smtpConfig((await resolvedIntegration("smtp")).env);
-  publicOrigin(null);
+  publicOrigin();
 }
 function splitToken(token: unknown) {
   const parts = typeof token === "string" ? /^([A-Za-z0-9_-]{24})\.([A-Za-z0-9_-]{43})$/.exec(token) : null;

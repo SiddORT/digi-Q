@@ -3406,6 +3406,10 @@ export type FromParameter = string;
 
 export type ToParameter = string;
 
+export type GetPublicWebsiteConfig200 = {
+  publicOrigin: string;
+};
+
 export type GetManagedNotificationSettingsParams = {
 clinicId?: string;
 };

@@ -1,3 +1,4 @@
+import { usePublicWebsite, PublicWebsiteStatus } from "./lib/public-website";
 import { useEffect, useRef, useState } from "react";
 import { Link, Redirect, useSearch } from "wouter";
 import { staffQrPayload } from "./lib/staff-qr";
@@ -77,6 +78,7 @@ export function QrValidationDialog({ open, onClose }: { open: boolean; onClose: 
 }
 
 function ScannerCore({ initialPayload, onClose }: { initialPayload: string | null; onClose?: () => void }) {
+  const site = usePublicWebsite();
   const [pasted, setPasted] = useState("");
   const [payload, setPayload] = useState<string | null>(initialPayload);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -199,7 +201,7 @@ function ScannerCore({ initialPayload, onClose }: { initialPayload: string | nul
   }, [mode, payload]);
 
   const handleScanResult = (result: string) => {
-    const parsed = staffQrPayload(result, window.location.origin, import.meta.env.BASE_URL);
+    const parsed = staffQrPayload(result, window.location.origin, import.meta.env.BASE_URL, site.origin);
     if ("error" in parsed) { setScanError(parsed.error); return; }
     setScanError(null);
     setPayload(parsed.payload);
@@ -319,6 +321,7 @@ function ScannerCore({ initialPayload, onClose }: { initialPayload: string | nul
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+      <PublicWebsiteStatus/>
       {scanError && <div className="error-box" role="alert">{scanError}</div>}
       <div className="toolbar" style={{ justifyContent: "center" }}>
         <button type="button" aria-pressed={mode === "camera"} className={`button small ${mode === "camera" ? "" : "light"}`} onClick={() => setMode("camera")} data-testid="button-scan-camera"><Camera size={16}/> Camera</button>

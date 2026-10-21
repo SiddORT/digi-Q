@@ -16,6 +16,7 @@ import { PublicClinicBookingQr } from "./PublicClinicBookingQr";
 import { FilterBar, Pagination, SearchInput, listingSuggestions, useDebouncedValue } from "./ListingControls";
 import { SearchableSelect } from "./SearchableSelect";
 import "./clinic-registration.css";
+import { usePublicWebsite, PublicWebsiteStatus } from "../lib/public-website";
 
 const reserved = new Set(["admin", "doctor", "receptionist", "patient", "api", "auth", "sign-in", "sign-up", "login", "logout", "register", "register-clinic", "register-doctor", "onboarding", "patient-login", "scan-qr", "guest-booking", "forgot-password", "set-password", "check-in", "display", "book", "settings", "users", "assets", "public", "health", "healthz", "favicon", "robots", "sitemap", "clinics", "branches", "appointments", "patients", "queue", "reports", "masters", "audit", "qrs", "availability", "exceptions"]);
 for (const name of ["signup", "dashboard", "doctors", "schedules", "booking", "qr", "guest", "invite", "invitations", "reset-password", "account", "me", "clinicflow-project-deck"]) reserved.add(name);
@@ -26,6 +27,7 @@ export function PublicClinicPage({ clinicSlug, branchSlug }: { clinicSlug: strin
 }
 
 function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; branchSlug?: string }) {
+  const site = usePublicWebsite();
   const search = useSearch();
   const [, navigate] = useLocation();
    const auth = useNativeAuth();
@@ -73,7 +75,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
   if (query.error || !data) return <div className="public-clinic"><Logo/><main className="registration-card"><h1>Clinic Page Unavailable</h1><p>This address may be unavailable, inactive or temporarily unreachable.</p><div className="error-box" role="alert">Unable to load clinic information. Please try again.</div><button type="button" className="button" data-testid="public-clinic-retry" onClick={() => query.refetch()}>Try Again</button> <Link href="/">Return Home</Link></main></div>;
   const { clinic, branch, branches, doctors, qrReference } = data;
   const path = `/${clinicSlug}${branch?.slug ? `/${branch.slug}` : ""}`;
-  const bookingUrl = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}${path}?book=1`;
+   const bookingUrl = site.url(`${path}?book=1`);
   if (mode && branch && qrReference) {
     if (mode === "display") return <ClinicDisplay reference={qrReference} bookingHref={bookingUrl}/>;
     if (!auth.isLoaded) return <div className="page-loading">Preparing secure booking…</div>;
@@ -108,7 +110,7 @@ function PublicClinicResolved({ clinicSlug, branchSlug }: { clinicSlug: string; 
       <dl><div><dt>Active doctors {branch ? "at this clinic" : "across this clinic"}</dt><dd data-testid="public-doctor-count">{branch ? data.branchDoctorCount ?? "Not available" : clinic.doctorCount ?? "Not available"}</dd></div><div><dt>Clinic-wide average actual consultation</dt><dd data-testid="public-average-duration">{clinic.averageConsultationMinutes == null ? "Not yet available" : `${Math.round(clinic.averageConsultationMinutes * 10) / 10} minutes`}</dd></div></dl>
       {branch && qrReference ? <div className="public-clinic-actions"><Link href={`${path}?book=1`} className="button" data-testid="public-book-visit">Book a Visit</Link><Link href={`${path}?display=1`} className="button secondary" data-testid="public-reception-display">Reception Display</Link></div> : branch ? <p className="notice" role="status">Online booking and reception display are temporarily unavailable. Please contact the clinic.</p> : <p className="notice">Choose a location to see its care team, booking and reception display.</p>}
       {branch && (data.branchCount ?? 0) > 1 && <Link href={`/${clinicSlug}${mode ? `?${mode}=1` : ""}`} className="text-link" data-testid="public-change-branch">Choose Another Clinic</Link>}
-      {branch && qrReference && <PublicClinicBookingQr bookingUrl={bookingUrl} branchName={branch.name}/>}
+       {branch && qrReference && (bookingUrl ? <PublicClinicBookingQr bookingUrl={bookingUrl} branchName={branch.name}/> : <PublicWebsiteStatus/>)}
     </section>
     {!branch && <section aria-label="Clinic directory">{directoryControls}<div className="public-clinic-grid">{branches.map(b => <article className="public-clinic-card" key={b.id}><MapPin size={22}/><h2><OverflowText value={b.name}/></h2><p><OverflowText lines={2} value={[b.address, b.city].filter(Boolean).join(", ")}/></p>{b.slug ? <Link className="button secondary" href={`/${clinicSlug}/${b.slug}${mode ? `?${mode}=1` : ""}`} data-testid={`public-select-branch-${b.id}`}>Choose Clinic</Link> : <p>Online access is not available for this clinic. Contact the clinic.</p>}</article>)}</div>{!branches.length && emptyDirectory}{directoryPagination}</section>}
     {branch && <div className="public-clinic-grid">

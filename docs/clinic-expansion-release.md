@@ -1,3 +1,20 @@
+## Canonical public-link rollout
+
+New public registration/setup, completion, booking/display sharing, ticket and
+message links use only validated `CLINICFLOW_PUBLIC_ORIGIN`. This is an HTTPS
+origin with no application path; public routes are root-hosted even when a
+local frontend has a path prefix. Internal navigation, assets and API/auth
+requests stay local and are not rewritten. No saved slug, QR reference, private
+payload, appointment identifier, registration receipt or stored relative route
+is migrated by this change.
+
+For a separately approved release, follow the canonical-address checklist in
+`docs/self-hosting.md`, including server restart and open-tab reload, separate
+UAT/production domains and review of previously distributed codes. Retaining
+old-domain or security-token link continuity requires explicit domain control
+and separate approval. This implementation authorizes no live infrastructure,
+deployment, environment or delivery changes.
+
 # Clinic expansion: migration readiness and release gate
 
 ## Decision

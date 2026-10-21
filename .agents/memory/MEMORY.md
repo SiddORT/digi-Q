@@ -49,3 +49,5 @@
 - [SMTP namespace policy](smtp-namespace-policy.md) — original names restored by user clarification; never infer value equality, replace saved providers, or claim live delivery from readiness.
 - [Manual email receipt](manual-email-receipt.md) — receipt is an actor/test/configuration-bound assertion, separate from provider status and future delivery assurance.
 - [Automatic SMS evidence](sms-incident-evidence-boundary.md) — the reported repeated-name SMS was automatic, not a template test; verified corrections do not prove its historical cause.
+- [Public domain continuity](public-domain-continuity.md) — canonical-domain changes do not authorize old-host aliases, redirects or private-token migration.
+- [PDF fixture CSS isolation](pdf-fixture-css-isolation.md) — lazy-load styled fixture modes; host styles can change iframe PDF font measurements without changing ticket HTML.

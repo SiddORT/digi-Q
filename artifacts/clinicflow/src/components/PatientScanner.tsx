@@ -5,8 +5,10 @@ import jsQR from "jsqr";
 import { Logo } from "../App";
 import { BRAND_NAME } from "../branding";
 import { patientBookingPath } from "./patient-qr";
+import { usePublicWebsite, PublicWebsiteStatus } from "../lib/public-website";
 
 export function PatientScanner() {
+  const site = usePublicWebsite();
   const [, navigate] = useLocation();
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(false);
@@ -14,7 +16,7 @@ export function PatientScanner() {
   const completed = useRef(false);
 
   function openBooking(value: string) {
-    const path = patientBookingPath(value, window.location.origin, import.meta.env.BASE_URL);
+    const path = patientBookingPath(value, window.location.origin, import.meta.env.BASE_URL, site.origin);
     if (!path) {
       setError(`This is not a ${BRAND_NAME} booking QR code for this website. Scan the clinic's booking QR, or choose Guest booking below. Appointment check-in codes are for staff only.`);
       completed.current = false;
@@ -94,6 +96,7 @@ export function PatientScanner() {
     <main className="panel padded">
       <span className="eyebrow">Patient Access · No Login Needed</span>
       <h1>Scan a Clinic Booking QR Code</h1>
+      <PublicWebsiteStatus/>
       <p>Scan the QR displayed at your clinic. We’ll show the clinic and location before you request a visit. You can also use your phone’s camera app to open the QR link directly.</p>
       <button className="button" type="button" data-testid="button-start-patient-scan" onClick={() => {completed.current = false; setError(""); setScanning(value => !value);}}><Camera size={18}/>{scanning ? "Stop camera" : "Start camera"}</button>
       {scanning && <video className="patient-scan-video" ref={video} playsInline muted aria-label="Camera preview for clinic booking QR"/>}

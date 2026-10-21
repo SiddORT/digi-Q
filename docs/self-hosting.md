@@ -40,6 +40,63 @@ Admin can supply supported provider credentials through the website after bootst
 
 ## Database and service
 
+### Canonical public website address
+
+Configure `CLINICFLOW_PUBLIC_ORIGIN` once in the private **server** environment,
+for example `https://care.example.invalid` (production) or
+`https://uat-care.example.invalid` (UAT). These are fictional examples, not
+destinations to use. Keep preview, UAT and production environments separate.
+The setting must be an HTTPS origin, optionally with a port: no credentials,
+application path, query or fragment. Whitespace around the value and trailing
+slashes are normalized; a path such as `/clinicflow` is rejected.
+
+Self-hosting is supported at the website root (`BASE_PATH=/`). Public clinic,
+booking, display, tracking, security and private ticket routes are root-relative.
+Existing frontend path prefixes are only for local app routing, API configuration
+and assets; they are **not** appended to canonical public links. Scanners can
+accept the configured canonical root URLs and their own existing local
+prefixed routes. They never accept an arbitrary external QR domain or redirect
+the browser to a scanned authority.
+
+The frontend reads only `{ publicOrigin }` from the unauthenticated, read-only
+`GET /api/public/website-config` endpoint. This response is validated and
+`Cache-Control: no-store`; it does not expose other environment values.
+No frontend source edit or domain-specific rebuild is required when the origin
+changes. Restart the server to load its new environment, then reload all open
+browser tabs (the validated configuration is shared in memory within each tab).
+Do not cache this endpoint in a proxy or service worker. A missing, malformed or
+unreachable configuration makes public-link actions unavailable with explicit
+retry controls; it does not disable saved records, booking, cancellation or
+clinical work. There is no request-host, browser-host or Replit-domain fallback.
+
+#### Rollout checklist — planning only, no live actions authorized
+
+- Before a separately approved rollout, confirm control of the target domain,
+  HTTPS certificate and root routing for frontend routes and `/api`. Verify
+  the SPA fallback for `/check-in`, clinic/location slugs and patient routes.
+- Confirm the intended environment's origin and database, then review the
+  public endpoint's minimal response. Verify an invalid/missing setting fails
+  clearly rather than using an alternate hostname.
+- From an alternate browser hostname, check registration and administrator-led
+  setup/review/completion; booking/display shares and decoded QR images;
+  patient status links; single/bulk print and PDF tickets; and notification
+  rendering with fictional data and mocked transports.
+- Reload already-open tabs after a server configuration change. Confirm QR
+  payloads match displayed URLs and staff-only codes remain staff-only.
+- Inventory previously distributed emails, printed tickets and QR codes.
+  Changing the origin does not rewrite them, rename slugs, rotate tokens or
+  references, or migrate saved records/creation receipts. Relative stored
+  routes and appointment identifiers remain unchanged.
+- Old-domain continuity requires explicit control of that domain and separate
+  routing/security approval. Do not enable automatic cross-domain redirects,
+  alias allowlists or token regeneration as part of this change. Private
+  ticket and invitation/reset-token routes need particular care: redirects
+  can expose tokens to the wrong destination. Decide separately whether to
+  retain the old host or deliberately replace previously distributed codes.
+
+This checklist does not authorize DNS/TLS/proxy changes, publishing, environment
+changes on a live target, or live email/SMS delivery.
+
 The additive schema change is `lib/db/drizzle/0015_integration_credentials.sql`.
 It creates only the dedicated encrypted-credential table. An operator must reconcile
 and apply schema changes to the identified external database through the approved

@@ -11,12 +11,12 @@ const reserved = new Set([
   "guest", "invite", "invitations", "reset-password", "account", "me",
   "clinicflow-project-deck", "__mockup",
 ]);
-export function patientBookingPath(value: string, origin: string, basePath = ""): string | null {
+export function patientBookingPath(value: string, origin: string, basePath = "", canonicalOrigin?: string | null): string | null {
   let url: URL;
   try { url = new URL(value.trim()); } catch { return null; }
-  if (url.origin !== origin || url.username || url.password) return null;
+  if ((url.origin !== origin && url.origin !== canonicalOrigin) || url.username || url.password) return null;
   const base = basePath.replace(/\/$/, "");
-  const path = base && url.pathname.startsWith(`${base}/`) ? url.pathname.slice(base.length) : !base ? url.pathname : "";
+  const path = base && url.pathname.startsWith(`${base}/`) && url.origin === origin ? url.pathname.slice(base.length) : url.origin === canonicalOrigin || !base ? url.pathname : "";
   if (!path) return null;
   if (/^\/book\/[A-Za-z0-9_-]+\/?$/.test(path) && !url.search && !url.hash) return `${path}`;
   if (/^\/[a-z0-9]+(?:-[a-z0-9]+)*\/[a-z0-9]+(?:-[a-z0-9]+)*\/?$/.test(path) && url.searchParams.get("book") === "1" && url.searchParams.size === 1 && !url.hash) {

@@ -16,6 +16,7 @@ import { resolvedIntegration } from "./integration-vault";
 import { sendAuthEmail } from "./auth-email";
 import { consumeRateLimit } from "./native-auth";
 import { logger } from "./logger";
+import { publicOrigin, publicUrl } from "./public-website";
 
 export async function ticketEmailPreview(user: any, id: string) {
   roles(user, ["superAdmin", "clinicAdmin", "doctor", "receptionist"]);
@@ -29,7 +30,7 @@ export async function ticketEmailPreview(user: any, id: string) {
   else if (!(await getSettings(db, row.clinicId)).notificationsEnabled) reason = "Email notifications are disabled for this clinic.";
   else if (!validEmailAddress(recipient)) reason = "No valid email address is recorded. Update the patient record first.";
   else {
-    try { smtpConfig((await resolvedIntegration("smtp")).env); }
+    try { publicOrigin(); smtpConfig((await resolvedIntegration("smtp")).env); }
     catch { reason = "Email delivery is not configured."; }
   }
   return { recipient, eligible: !reason, reason };
@@ -40,8 +41,7 @@ async function ticketAttachment(user: any, id: string) {
   const view = await appointmentViewWithBranch(row, user);
   const clinic = await one(clinics, row.clinicId);
   const qr = await getAppointmentQr(user, id);
-  const origin = process.env.CLINICFLOW_PUBLIC_ORIGIN;
-  assert(origin && /^https:\/\/[^/]+$/.test(origin), 503, "Public ticket links are not configured");
+  const ticketUrl = publicUrl(qr.checkInUrl);
   const pdf = new jsPDF();
   const root = process.cwd().endsWith("api-server") ? process.cwd() : resolve(process.cwd(), "artifacts/api-server");
   const font = await readFile(resolve(root, "assets/ticket-font.ttf"));
@@ -59,7 +59,7 @@ async function ticketAttachment(user: any, id: string) {
     pdf.text(line, 15, y); y += 6;
   }
   if (y > 205) { pdf.addPage(); y = 15; }
-  pdf.addImage(await QRCode.toDataURL(new URL(qr.checkInUrl, origin).href, { width: 500, margin: 2 }), "PNG", 15, y + 5, 60, 60);
+  pdf.addImage(await QRCode.toDataURL(ticketUrl, { width: 500, margin: 2 }), "PNG", 15, y + 5, 60, 60);
   return Buffer.from(pdf.output("arraybuffer"));
 }
 

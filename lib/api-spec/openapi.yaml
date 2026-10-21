@@ -23,6 +23,23 @@ servers:
 security:
   - NativeSession: []
 paths:
+  /public/website-config:
+    get:
+      operationId: getPublicWebsiteConfig
+      security: []
+      responses:
+        '200':
+          description: Validated root-hosted public website authority only. Never cache across deployments.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [publicOrigin]
+                properties:
+                  publicOrigin: { type: string, format: uri }
+        '503':
+          description: Public website links are not configured. Retry after operator correction.
   /me/notification-settings:
     get:
       operationId: getMyNotificationSettings

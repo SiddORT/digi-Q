@@ -70,6 +70,11 @@ before(async () => {
   });
   script = result.outputFiles[0].text;
   server = createServer((req, res) => {
+    if (req.url === "/api/public/website-config") {
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ publicOrigin: "https://care.example.invalid" }));
+      return;
+    }
     res.setHeader("content-type", req.url === "/bundle.js" ? "text/javascript" : req.url === "/styles.css" ? "text/css" : "text/html");
     res.end(req.url === "/bundle.js" ? script : req.url === "/styles.css" ? styles : '<meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/styles.css"><div id="root"></div><script src="/bundle.js"></script>');
   });
@@ -87,15 +92,16 @@ test("confirmation actions retain button styles, destinations, visible labels an
     const page = await context.newPage();
     try {
       // No live services, registrations, or font-provider requests.
-      await page.route("https://**", route => route.abort());
+      await page.route("https://**", route => route.fulfill({ contentType: "text/html", body: "<h1>Fictional public clinic</h1>" }));
       await page.goto(`${origin}/?complete=${role}${noSlug ? "&noSlug" : ""}`);
       const actions = page.locator(".registration-complete-actions a");
       await actions.first().waitFor();
+      if (!noSlug) await page.getByRole("link", { name: "Check Public Booking Page" }).waitFor();
       const expected = [
         [role === "doctor" ? "Review clinic configuration" : "Complete booking setup", "/admin/settings?clinicId=fictional%2Fid%20%26%20clinic", role === "doctor" ? "eye" : "save"],
         ["Open Workspace", "/admin/dashboard", "log-in"],
         ["Staff Management", "/admin/clinic?clinicId=fictional%2Fid%20%26%20clinic&section=staff", "users"],
-        ...noSlug ? [] : [["Check Public Booking Page", "/fictional-care", "globe"]],
+        ...noSlug ? [] : [["Check Public Booking Page", "https://care.example.invalid/fictional-care", "globe"]],
       ];
       assert.equal(await actions.count(), expected.length);
       assert.equal(await page.getByRole("link", { name: "Check Public Booking Page" }).count(), noSlug ? 0 : 1);
@@ -136,9 +142,11 @@ test("confirmation actions retain button styles, destinations, visible labels an
         await page.keyboard.press("Tab");
         assert.equal(await actions.nth(index).evaluate(el => el === document.activeElement && el.matches(":focus-visible")), true);
         assert.equal(await actions.nth(index).evaluate(el => getComputedStyle(el).outlineStyle !== "none"), true, "keyboard focus is visible");
+        // The canonical domain is intentionally fictional; do not navigate to DNS.
+        if (href.startsWith("https:")) continue;
         await page.keyboard.press("Enter");
-        await page.waitForURL(`${origin}${href}`);
-        assert.equal(await page.evaluate(() => window.invalidations), Math.min(index + 1, 3), "workspace links invalidate; public link does not");
+        await page.waitForURL(href.startsWith("https:") ? href : `${origin}${href}`);
+        if (!href.startsWith("https:")) assert.equal(await page.evaluate(() => window.invalidations), Math.min(index + 1, 3), "workspace links invalidate");
       }
     } finally { await context.close(); }
   }
@@ -177,8 +185,13 @@ for (const mode of ["admin", "self"]) test(`${mode}: blank native-valid entry ad
     for (let i = 0; i < 4; i++) await page.getByTestId("registration-next").click();
     await page.getByRole("heading", { name: "Review", exact: true }).waitFor();
     const review = await page.locator(".registration-review").innerText();
+    if (mode === "admin") {
+      const evidence = resolve(import.meta.dirname, "../../../../generated-artifacts/public-website");
+      await mkdir(evidence, { recursive: true });
+      await page.screenshot({ path: resolve(evidence, "setup-review.png"), fullPage: true });
+    }
     for (const slug of ["fictional-location-2", "fictional-location-3", "fictional-location"]) {
-      assert.ok(review.includes("https://clinic-flow-new-platform.replit.app/fictional-care-2/" + slug));
+      assert.ok(review.includes("https://care.example.invalid/fictional-care-2/" + slug));
     }
     await page.evaluate(() => { window.conflict = true; });
     await page.getByTestId("registration-next").click();
@@ -194,7 +207,7 @@ for (const mode of ["admin", "self"]) test(`${mode}: blank native-valid entry ad
     assert.equal(await page.evaluate(() => window.submissions.length), 1);
     await page.getByTestId("registration-next").click();
     await page.getByRole("heading", { name: "Fictional Care is registered." }).waitFor();
-    assert.equal(await page.getByRole("link", { name: "Check Public Booking Page" }).getAttribute("href"), "/corrected-clinic");
+    assert.equal(await page.getByRole("link", { name: "Check Public Booking Page" }).getAttribute("href"), "https://care.example.invalid/corrected-clinic");
     const submitted = await page.evaluate(() => window.submissions);
     assert.equal(submitted[0].values.slug, "fictional-care-2");
     assert.deepEqual(submitted[0].values.branches.map(b => b.slug), ["fictional-location-2", "fictional-location-3", "fictional-location"]);

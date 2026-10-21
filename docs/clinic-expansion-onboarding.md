@@ -23,7 +23,7 @@
 
 - Staff invitation step currently defers optional invitations to existing staff management after registration. No invitation is claimed to have been sent.
 - New registration requires at least one open day per location because an empty opening-hours array means unrestricted legacy hours on the backend. A wholly closed week is not representable by that contract.
-- Published base was verified through the deployment service for this app, not fabricated; the UI uses that confirmed URL. If deployment domains change in the future this displayed base needs configuration refresh.
+- Public links use the server-controlled `CLINICFLOW_PUBLIC_ORIGIN` runtime configuration, not a fixed deployment URL or browser host. The domain is read-only in setup. Missing/unavailable configuration offers retry without losing the setup draft or blocking clinic creation. See `docs/self-hosting.md` for root hosting, local path-prefix rules and the no-live-action rollout checklist. After changing the server environment, restart the server and reload open tabs; no domain-specific frontend rebuild is needed.
 - Backend reserved slugs must also include all frontend application roots (particularly `doctor`, `patient`, `receptionist`, `audit`, `qrs`, `exceptions`); the new wizard prevents these names client-side, but server settings need the same restriction.
 
 ## Verification boundary

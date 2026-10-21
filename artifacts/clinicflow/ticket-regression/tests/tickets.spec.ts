@@ -30,6 +30,7 @@ const availability = [{
 type Mode = "guest" | "appointment";
 type Reply = { status?: number; body?: unknown };
 type Fixtures = {
+  publicOrigin?: string;
   calls: string[];
   guestReads: number;
   appointmentReads: number;
@@ -54,7 +55,9 @@ async function mount(page: Page, mode: Mode, f: Fixtures, recovered = false) {
     const path = url.pathname;
     f.calls.push(`${req.method()} ${path}`);
     let reply: Reply;
-    if (path === "/api/auth/csrf") {
+    if (path === "/api/public/website-config") {
+      reply = { body: { publicOrigin: f.publicOrigin || "https://tickets.example.invalid" } };
+    } else if (path === "/api/auth/csrf") {
       reply = { body: { csrfToken: "isolated-ticket-fixture-csrf" } };
     } else if (path === "/api/public/guest-receipt/manage" && req.method() === "POST") {
       const body=req.postDataJSON();
@@ -399,6 +402,9 @@ test("guest recovery API error warns and refresh can restore ticket", async ({ p
     : { body: guest };
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
+    if (path === "/api/public/website-config") {
+      await route.fulfill({ json: { publicOrigin: "https://tickets.example.invalid" } }); return;
+    }
     if (path === "/api/auth/csrf") {
       await route.fulfill({ json: { csrfToken: "isolated-ticket-fixture-csrf" } });
       return;
@@ -442,7 +448,8 @@ test("appointment missing initial QR disables exports until API retry", async ({
     : { body: { appointmentId: appointment.id, payload: "signed", checkInUrl: qrUrl } };
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
-    const reply = path === "/api/appointments/appointment-1" ? f.mutateAppointment(++f.appointmentReads)
+    const reply = path === "/api/public/website-config" ? { body: { publicOrigin: "https://tickets.example.invalid" } }
+      : path === "/api/appointments/appointment-1" ? f.mutateAppointment(++f.appointmentReads)
       : path === "/api/appointments/appointment-1/qr" ? f.mutateQr(++f.qrReads)
       : path === "/api/me" ? { body: { clerkId: "fixture", user: { role: "patient" }, needsOnboarding: false } }
       : path === "/api/queue" ? { body: { doctorId: "doctor-1", branchId: "branch-1", date } }
@@ -459,6 +466,8 @@ test("appointment missing initial QR disables exports until API retry", async ({
 
 test("guest immediate creation commits recoverable receipt without account", async ({ page }) => {
   const f = fixture();
+  await page.route("**/api/public/website-config", route =>
+    route.fulfill({ json: { publicOrigin: "https://tickets.example.invalid" } }));
   await page.route("**/api/auth/csrf", route =>
     route.fulfill({ json: { csrfToken: "isolated-ticket-fixture-csrf" } }));
   await page.route("**/api/public/guest-requests", async route => {
@@ -546,10 +555,15 @@ const bulkAppointments = [3, 1, 2].map(n => ({
   checkInUrl: `https://tickets.example.invalid/check-in/signed-bulk-${n}`,
 }));
 type QrFailure = "outage" | "unavailable" | "mismatch";
-async function mountBulk(page: Page, state: { failure?: QrFailure } = {}) {
+async function mountBulk(page: Page, state: { failure?: QrFailure; origin?: string; configUnavailable?: boolean } = {}) {
   const calls: string[] = [];
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
+    if (path === "/api/public/website-config") {
+      await route.fulfill(state.configUnavailable
+        ? { status: 503, json: { error: "Public website links are unavailable. Retry." } }
+        : { json: { publicOrigin: state.origin || "https://tickets.example.invalid" } }); return;
+    }
     calls.push(path);
     const a = bulkAppointments.find(a => path === `/api/appointments/${a.id}` || path === `/api/appointments/${a.id}/qr`);
     if (route.request().method() !== "GET" || !a) {
@@ -565,7 +579,7 @@ async function mountBulk(page: Page, state: { failure?: QrFailure } = {}) {
     await route.fulfill({ json: isQr ? {
       appointmentId: a.id === bulkAppointments[1].id && state.failure === "mismatch" ? bulkAppointments[0].id : a.id,
       payload: "fictional-signed",
-      checkInUrl: a.id === bulkAppointments[1].id && state.failure === "unavailable" ? "" : a.checkInUrl,
+      checkInUrl: a.id === bulkAppointments[1].id && state.failure === "unavailable" ? "" : new URL(a.checkInUrl).pathname,
     } : a });
   });
   await page.goto("/?mode=bulk");
@@ -573,6 +587,44 @@ async function mountBulk(page: Page, state: { failure?: QrFailure } = {}) {
   return calls;
 }
 const bulkCalls = bulkAppointments.flatMap(a => [`/api/appointments/${a.id}`, `/api/appointments/${a.id}/qr`]);
+
+for (const origin of ["https://care.example.invalid", "https://uat-care.example.invalid:8443"]) {
+  test(`single and bulk PDF QR outputs use runtime ${origin}, not the alternate browser host`, async ({ page }) => {
+    const f = fixture();
+    f.publicOrigin = origin;
+    f.mutateQr = () => ({ body: { appointmentId: appointment.id, payload: "v1.fictional.signature", checkInUrl: "/check-in?payload=v1.fictional.signature" } });
+    await mount(page, "appointment", f);
+    await expect(page.getByTestId("link-ticket-patient-live")).toHaveAttribute("href", `${origin}/patient/queue?appointment=appointment-1`);
+    const single = await download(page);
+    expect(await decode(page, single.images[0])).toBe(`${origin}/check-in?payload=v1.fictional.signature`);
+    await mountBulk(page, { origin });
+    const pendingDownload = page.waitForEvent("download");
+    await clickBulkDownload(page);
+    const bulk = await readPdf(await (await pendingDownload).path());
+    expect(bulk.pages).toBe(3);
+    for (let i = 0; i < bulkAppointments.length; i++)
+      expect(await decode(page, bulk.images[i])).toBe(origin + new URL(bulkAppointments[i].checkInUrl).pathname);
+  });
+}
+
+test("bulk config outage exports nothing, preserves selection and retries without partial tickets", async ({ page }) => {
+  const state = { configUnavailable: true };
+  const calls = await mountBulk(page, state);
+  let downloads = 0;
+  page.on("download", () => { downloads++; });
+  await clickBulkDownload(page);
+  await expect(page.getByRole("alert")).toContainText(/unavailable/i);
+  expect(downloads).toBe(0);
+  expect(calls).toEqual([]);
+  await expect(page.getByTestId("text-bulk-count")).toHaveText("3 selected");
+  state.configUnavailable = false;
+  const pendingDownload = page.waitForEvent("download");
+  await clickBulkDownload(page);
+  const bulk = await readPdf(await (await pendingDownload).path());
+  expect(bulk.pages).toBe(3);
+  for (let i = 0; i < bulkAppointments.length; i++)
+    expect(await decode(page, bulk.images[i])).toBe(bulkAppointments[i].checkInUrl);
+});
 async function clickBulkDownload(page: Page) {
   await page.getByTestId("menu-bulk-more").click();
   await page.getByRole("menuitem", { name: "Download Tickets PDF" }).click();

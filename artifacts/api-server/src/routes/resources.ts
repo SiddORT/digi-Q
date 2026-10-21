@@ -1,3 +1,4 @@
+import { publicUrl } from "../lib/public-website";
 import { Router } from "express";
 import * as tables from "@workspace/db";
 import * as z from "@workspace/api-zod";
@@ -66,24 +67,8 @@ export function ownershipChangeRequested(value: unknown, current: unknown) {
   return value !== undefined && value !== current;
 }
 
-function invitationRedirectUrl(req: any) {
-  const configured = process.env.CLINICFLOW_PUBLIC_ORIGIN?.trim();
-  const requestOrigin = req?.get?.("origin")?.trim();
-  const candidate = configured || requestOrigin;
-  if (!candidate) return undefined;
-  try {
-    const url = new URL(candidate);
-    const forwardedHost = String(req?.get?.("x-forwarded-host") || req?.get?.("host") || "").split(",")[0].trim().toLowerCase();
-    const isRequestOrigin = !configured;
-    const localHost = ["localhost", "127.0.0.1", "::1"].includes(url.hostname.toLowerCase()) || url.hostname.endsWith(".localhost");
-    if (url.protocol !== "https:" || localHost || (isRequestOrigin && forwardedHost && url.host.toLowerCase() !== forwardedHost)) return undefined;
-    url.search = "";
-    url.hash = "";
-    url.pathname = `${url.pathname.replace(/\/+$/, "")}/set-password`;
-    return url.toString();
-  } catch {
-    return undefined;
-  }
+function invitationRedirectUrl(_req: any) {
+  try { return publicUrl("/set-password"); } catch { return undefined; }
 }
 
 async function withPasswordState(row: any) {

@@ -10,9 +10,11 @@ import { notifyBulk } from "@/lib/notify";
 import type { BulkOutcome } from "@/lib/bulk-summary";
 import { formatTimestampParts } from "@/lib/date-time";
 import "./admin-listing.css";
+import { absolutePublicUrl } from "../lib/public-website";
 
 export const recordName = (row:any) => row.fullName || row.name || row.code || row.id;
-export const publicQrLink = (reference:string, display=false) => `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/,"")}/${display?"display":"book"}/${encodeURIComponent(reference)}`;
+export const publicQrPath = (reference:string, display=false) => `/${display?"display":"book"}/${encodeURIComponent(reference)}`;
+export const publicQrLink = (reference:string, display=false) => absolutePublicUrl(publicQrPath(reference, display));
 function download(body:string,name:string,type:string) {
   const url=URL.createObjectURL(new Blob([body],{type}));
   const a=document.createElement("a");a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -76,31 +78,35 @@ export function ListingBulk({selection,resource,columns,identity,context}:{selec
     const popup=print?window.open("","_blank"):null;
     if(print&&!popup){setResults(["Printing was blocked. Allow pop-ups and retry."]);lock.current=false;setBusy(false);return;}
     try{
+      await absolutePublicUrl("/");
       const cards:string[]=[],outcomes:string[]=[];
       for(const selected of selection.selected)try{
         const row=await api.getQr(selected.id);
         if(row.status!=="active")throw new Error("QR is inactive; skipped.");
-        const url=publicQrLink(row.reference),image=await QRCode.toDataURL(url,{width:400,margin:2});
+        const url=await publicQrLink(row.reference),image=await QRCode.toDataURL(url,{width:400,margin:2});
         cards.push(`<section><h2>${html(row.name)}</h2><img alt="Booking QR code" src="${image}"><p>${html(url)}</p></section>`);
         outcomes.push(`${recordName(row)}: QR prepared using current active reference.`);
       }catch(error){outcomes.push(`${recordName(selected)}: failed — ${friendlyError(error)}`);}
       setResults(outcomes);
+      if(cards.length !== selection.selected.length) throw new Error("No QR sheet exported. Every selected QR must be available. Review failures and retry.");
       if(cards.length){
         const documentHtml=`<!doctype html><html><head><meta charset="utf-8"><title>Selected booking QR codes</title><style>body{font-family:sans-serif;color:#173332}section{text-align:center;break-inside:avoid;padding:24px;border-bottom:1px solid #ccc}img{width:240px}p{overflow-wrap:anywhere}@media print{button{display:none}}</style></head><body>${print?'<button onclick="window.print()">Print QR Codes</button>':""}${cards.join("")}</body></html>`;
         if(popup){popup.document.open();popup.document.write(documentHtml);popup.document.close();}
         else download(documentHtml,"selected-booking-qrs.html","text/html;charset=utf-8");
       }else popup?.close();
-    }catch(error){popup?.close();setResults([friendlyError(error)]);}finally{lock.current=false;setBusy(false);}
+    }catch(error){popup?.close();setResults(previous=>[...previous,friendlyError(error)]);}finally{lock.current=false;setBusy(false);}
   }
   async function copyQrLinks(){
     if(lock.current)return;lock.current=true;setBusy(true);
     const links:string[]=[],outcomes:string[]=[];
     try{
+      await absolutePublicUrl("/");
       for(const selected of selection.selected)try{
         const row=await api.getQr(selected.id);
         if(row.status!=="active")throw new Error("Inactive QR; no link copied.");
-        links.push(publicQrLink(row.reference));outcomes.push(`${recordName(row)}: active booking link included.`);
+        links.push(await publicQrLink(row.reference));outcomes.push(`${recordName(row)}: active booking link included.`);
       }catch(error){outcomes.push(`${recordName(selected)}: failed — ${friendlyError(error)}`);}
+      if(links.length !== selection.selected.length) throw new Error("No links copied. Every selected QR must be available.");
       if(links.length){await navigator.clipboard.writeText(links.join("\n"));outcomes.push(`${links.length} public booking links copied.`);}
       setResults(outcomes);
     }catch(error){setResults([...outcomes,`Copy failed — ${friendlyError(error)}`]);}finally{lock.current=false;setBusy(false);}

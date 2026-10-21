@@ -1,13 +1,13 @@
 import { clinicDisplayPreferences } from "./display-preferences";
+import { parsePublicOrigin, publicWebsiteUrl } from "@workspace/api-zod/public-website";
 
 /** Use the configured public site, never a request host or a private ticket URL. */
 export function clinicBookingLink(clinic: any, origin = process.env.CLINICFLOW_PUBLIC_ORIGIN) {
   const slug = clinic?.slug ?? clinic?.data?.slug;
   if (typeof slug !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || !origin) return "";
   try {
-    const site = new URL(origin);
-    if (site.protocol !== "https:" || site.username || site.password || site.search || site.hash || site.pathname !== "/") return "";
-    return `${site.origin}/${encodeURIComponent(slug)}`;
+    const site = parsePublicOrigin(origin);
+    return site ? publicWebsiteUrl(site, `/${encodeURIComponent(slug)}`) : "";
   } catch { return ""; }
 }
 

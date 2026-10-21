@@ -4,9 +4,9 @@ import QRCode from "qrcode";
 import { Activity, Clock3, MapPin, QrCode, RefreshCw, WifiOff, Users, Maximize2 } from "lucide-react";
 import "./clinic-display.css";
 import { BRAND_NAME } from "../branding";
+import { usePublicWebsite, PublicWebsiteStatus } from "../lib/public-website";
 import { formatConfiguredTimestamp, formatDate, formatTime, type DateTimePreferences } from "../lib/date-time";
 
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 type DisplaySession = PublicDisplay["sessions"][number];
 const errStatus = (e: unknown) => (e && typeof e === "object" && "status" in e ? Number((e as { status: unknown }).status) : 0);
 const isRevoked = (e: unknown) => [400, 403, 404, 410].includes(errStatus(e));
@@ -34,6 +34,7 @@ function useOnline() {
 }
 
 export function ClinicDisplay({ reference, bookingHref }: { reference: string; bookingHref?: string }) {
+  const site = usePublicWebsite();
   const online = useOnline();
   const q = useGetPublicDisplay(reference, { query: {
     queryKey: getGetPublicDisplayQueryKey(reference),
@@ -42,13 +43,14 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
     staleTime: 0,
     retry: (count, err) => !isRevoked(err) && count < 2,
   } });
-  const bookingUrl = bookingHref || `${window.location.origin}${basePath}/book/${encodeURIComponent(reference)}`;
+   const bookingUrl = site.url(bookingHref || `/book/${encodeURIComponent(reference)}`);
   const [qrResult, setQrResult] = useState({url:"", image:"", failed:false});
   const [qrAttempt, setQrAttempt] = useState(0);
   const qr = qrResult.url === bookingUrl ? qrResult.image : "";
   const qrFailed = qrResult.url === bookingUrl && qrResult.failed;
   useEffect(() => {
     let cancelled = false;
+    if (!bookingUrl) return;
     QRCode.toDataURL(bookingUrl, { margin: 1, width: 640, errorCorrectionLevel: "M", color: { dark: "#123a37", light: "#fbfdfb" } })
       .then(image => { if (!cancelled) setQrResult({url:bookingUrl,image,failed:false}); })
       .catch(() => { if (!cancelled) setQrResult({url:bookingUrl,image:"",failed:true}); });
@@ -97,14 +99,14 @@ export function ClinicDisplay({ reference, bookingHref }: { reference: string; b
         <span className="cd-eyebrow">Scan to Book</span>
         <h2>Reserve Your Place<br /><em>from your phone.</em></h2>
         <div className="cd-qr" data-testid="img-booking-qr">
-          {qr ? <img src={qr} alt="QR code linking to this branch's booking page" /> : qrFailed ? <div role="alert"><p>QR image could not be generated. You can use the booking link below.</p><button onClick={()=>setQrAttempt(n=>n+1)}>Retry QR Image</button></div> : <span className="cd-sk cd-sk-qr" />}
+           {!bookingUrl ? <PublicWebsiteStatus/> : qr ? <img src={qr} alt="QR code linking to this branch's booking page" /> : qrFailed ? <div role="alert"><p>QR image could not be generated. You can use the booking link below.</p><button onClick={()=>setQrAttempt(n=>n+1)}>Retry QR Image</button></div> : <span className="cd-sk cd-sk-qr" />}
         </div>
         <ol className="cd-steps">
           <li><span>1</span>Open your phone camera and point it at the code.</li>
           <li><span>2</span>Choose your doctor and confirm your visit.</li>
           <li><span>3</span>Your token appears here when it's your turn.</li>
         </ol>
-        <p className="cd-url" data-testid="text-booking-url">{bookingUrl.replace(/^https?:\/\//, "")}</p>
+         {bookingUrl && <p className="cd-url" data-testid="text-booking-url">{bookingUrl.replace(/^https?:\/\//, "")}</p>}
       </section>
 
       <section className="cd-queues" aria-label="Live doctor queues" aria-live="polite">

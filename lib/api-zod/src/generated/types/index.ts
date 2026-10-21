@@ -143,6 +143,7 @@ export * from './getNotificationTemplatesRecipient';
 export * from './getPublicAvailabilityParams';
 export * from './getPublicAvailabilitySessionsParams';
 export * from './getPublicBookingContextParams';
+export * from './getPublicWebsiteConfig200';
 export * from './getQueueParams';
 export * from './getReportsGroupBy';
 export * from './getReportsParams';

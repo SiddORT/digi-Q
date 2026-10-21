@@ -6,10 +6,12 @@ import { VisitTicket, bookingStatusLabel, type TicketData } from "../tickets/Vis
 import { useFreshWorkspace } from "../queue/useFreshWorkspace";
 import { confirmationEmailMessage } from "./confirmation-email";
 import { isPrivateAppointmentUnavailable } from "./presentation";
+import { usePublicWebsite, PublicWebsiteStatus } from "../../lib/public-website";
 
 const statusLabel=(status:string)=>status==="called"?"Called next":["booked","checkedIn","waiting"].includes(status)?"Waiting":title(status);
 
 export function AppointmentTicket({id,showHistory=true}:{id:string;showHistory?:boolean}) {
+  const site = usePublicWebsite();
   const appointment=api.useGetAppointment(id,{query:{queryKey:api.getGetAppointmentQueryKey(id),refetchInterval:30000,retry:false}});
   const me=api.useGetMe();
   const unavailable=isPrivateAppointmentUnavailable(appointment.error);
@@ -22,7 +24,7 @@ export function AppointmentTicket({id,showHistory=true}:{id:string;showHistory?:
   useEffect(()=>{const update=()=>setOnline(navigator.onLine);window.addEventListener("online",update);window.addEventListener("offline",update);return()=>{window.removeEventListener("online",update);window.removeEventListener("offline",update);};},[]);
   const role=me.data?.user?.role;
   const root=role==="superAdmin"||role==="clinicAdmin"?"admin":role;
-  const patientLiveUrl=`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/patient/queue?appointment=${encodeURIComponent(id)}`;
+  const patientLiveUrl=site.url(`/patient/queue?appointment=${encodeURIComponent(id)}`);
   async function prepareExport():Promise<TicketData>{
     if(freshness.stale||!navigator.onLine)throw new Error("Ticket is offline or stale. Reconnect and refresh first.");
     const fresh=await api.getAppointment(id);
@@ -47,7 +49,7 @@ export function AppointmentTicket({id,showHistory=true}:{id:string;showHistory?:
     {qr.error&&<><ErrorNotice error={qr.error}/><button onClick={()=>qr.refetch()} data-testid="button-retry-appointment-qr">Retry QR</button></>}
     <ErrorNotice error={queue.error}/>
     <div className="appt-ticket-info" data-testid="ticket-information">
-      <p className="span-2 appt-ticket-live" data-testid="text-ticket-booking-status"><span>Booking status (sign in with the account that owns this booking):</span> <a className="text-link" data-testid="link-ticket-patient-live" href={patientLiveUrl} title={patientLiveUrl}>Patient Booking Status Page</a></p>
+      <div className="span-2 appt-ticket-live" data-testid="text-ticket-booking-status"><span>Booking status (sign in with the account that owns this booking):</span> {patientLiveUrl ? <a className="text-link" data-testid="link-ticket-patient-live" href={patientLiveUrl} title={patientLiveUrl}>Patient Booking Status Page</a> : <PublicWebsiteStatus/>}</div>
       {!queue.error&&online&&queue.data?.presence&&<p className="notice" data-testid="text-ticket-doctor-status">Doctor status: {queue.data.presence.status==="onBreak"?"On break":queue.data.presence.status==="away"?"Away":"Available"}{queue.data.presence.status!=="available"&&" · Calling is paused; your booking is kept."}</p>}
       {estimate}
        {showHistory&&(root||!!a.history?.length)&&<div className="appt-ticket-links span-2">

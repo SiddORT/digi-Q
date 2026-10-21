@@ -4,9 +4,11 @@ import { Globe, Users } from "lucide-react";
 import * as api from "@workspace/api-client-react";
 import { Logo } from "../App";
 import { ActionLabel } from "./ActionLabel";
+import { usePublicWebsite, PublicWebsiteStatus, PublicWebsiteLink } from "../lib/public-website";
 
 export function ClinicRegistrationComplete({ result, invitationStatus }: { result: Pick<api.ClinicSettingsResult, "clinic" | "doctorId"> & { branches?: api.Branch[] }; invitationStatus?: string }) {
   const client = useQueryClient();
+  const site = usePublicWebsite();
   const linked = (result.branches || []).filter(branch => branch.linkedSchedule?.enabled);
   return <div className="clinic-registration"><Logo/><main className="registration-card">
     <span className="eyebrow">CLINIC CREATED · {!result.branches || result.doctorId ? "Review Saved Configuration" : "Doctor Sessions Required"}</span>
@@ -18,7 +20,8 @@ export function ClinicRegistrationComplete({ result, invitationStatus }: { resul
       <Link className="button" href={`/admin/settings?clinicId=${encodeURIComponent(result.clinic.id)}`} onClick={() => void client.invalidateQueries()} data-testid="registration-configure-sessions"><ActionLabel>{result.doctorId ? "Review clinic configuration" : "Complete booking setup"}</ActionLabel></Link>
       <Link className="button secondary" href="/admin/dashboard" onClick={() => void client.invalidateQueries()} data-testid="registration-open-workspace"><ActionLabel>Open Workspace</ActionLabel></Link>
       <Link className="button secondary" href={`/admin/clinic?clinicId=${encodeURIComponent(result.clinic.id)}&section=staff`} onClick={() => void client.invalidateQueries()}><ActionLabel><Users size={17} aria-hidden="true"/>Staff Management</ActionLabel></Link>
-      {result.clinic.slug && <Link className="button secondary" href={`/${result.clinic.slug}`}><ActionLabel><Globe size={17} aria-hidden="true"/>Check Public Booking Page</ActionLabel></Link>}
+       {result.clinic.slug && site.origin && <a className="button secondary" href={site.url(`/${result.clinic.slug}`)}><ActionLabel><Globe size={17} aria-hidden="true"/>Check Public Booking Page</ActionLabel></a>}
     </div>
-  </main></div>;
+     {result.clinic.slug && <><PublicWebsiteStatus/><div className="registration-url">Clinic link: <PublicWebsiteLink route={`/${result.clinic.slug}`}/></div>{result.branches?.filter(b => b.slug).map(b => <div className="registration-url" key={b.id}>{b.name}: <PublicWebsiteLink route={`/${result.clinic.slug}/${b.slug}`}/></div>)}</>}
+   </main></div>;
 }

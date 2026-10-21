@@ -10,7 +10,7 @@ const file = resolve(dir, "email.cjs");
 const mocks = {
   "@workspace/db": `const d=globalThis.mailFixture;export const db=d.db;export const appointments="appointments",patients="patients",users="users",settings="settings",clinics="clinics";`,
   "./auth": `export const roles=(u,rs)=>{if(!rs.includes(u.role))throw Error("Denied role")};export const canRead=async()=>globalThis.mailFixture.allowed;`,
-  "./http": `export const assert=(v,s,m)=>{if(!v)throw Error(m)};`,
+  "./http": `export const assert=(v,s,m)=>{if(!v)throw Error(m)};export class HttpError extends Error {constructor(s,m){super(m)}};`,
   "./store": `export const one=async(t,id)=>globalThis.mailFixture.records[t];export const getSettings=async()=>({notificationsEnabled:globalThis.mailFixture.enabled});export const audit=async()=>{};`,
   "./appointments": `export const appointmentViewWithBranch=async r=>r;`,
   "./appointment-confirmation": `export const confirmationText=r=>"Session 09:00-10:00\\nReference "+r.reference;`,

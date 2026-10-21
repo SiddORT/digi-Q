@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { absolutePublicUrl, usePublicWebsite, PublicWebsiteStatus } from "../../lib/public-website";
 import { Download, FileText, Printer } from "lucide-react";
 import { IconAction } from "../IconAction";
 import { BRAND_LOGO_URL, BRAND_NAME } from "../../branding";
@@ -27,7 +28,7 @@ export type TicketData = Partial<DateTimePreferences> & {
 
 const esc = (v: string) => v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 export const sessionRange = (t: TicketData) => t.startTime || t.endTime ? `${t.startTime ? formatTime(t.startTime,t) : "—"} – ${t.endTime ? formatTime(t.endTime,t) : "—"}${t.timezone ? ` (${t.timezone})` : ""}` : "Session time set by clinic";
-export const absoluteUrl = (u: string) => u.startsWith("/") ? `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}${u}` : u;
+export const absoluteUrl = absolutePublicUrl;
 
 let logoPromise: Promise<string> | undefined;
 /** Embed the actual supplied logo so saved and printed tickets work without network access. */
@@ -91,7 +92,7 @@ export function bookingStatusLabel(status?:string|null){
 
 async function qrImage(url?:string|null){
   if(!url)throw new Error("Your personal QR is not available yet. Refresh and try again.");
-  try{return await QRCode.toDataURL(absoluteUrl(url),{width:320,margin:1});}catch{throw new Error("Your personal QR could not be generated. Try again.");}
+  return QRCode.toDataURL(await absoluteUrl(url),{width:320,margin:1});
 }
 
 /**
@@ -99,6 +100,7 @@ async function qrImage(url?:string|null){
  * Exports never proceed without a QR.
  */
 export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExport, exportDisabled }: { ticket: TicketData; testId?: string; note?: string; prepareExport?: () => Promise<TicketData>; exportDisabled?: boolean }) {
+  const site = usePublicWebsite();
   const [qr, setQr] = useState<string | null>(null);
   const [qrError, setQrError] = useState("");
   const [qrTry, setQrTry] = useState(0);
@@ -107,9 +109,10 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
   const lock = useRef(false);
   useEffect(() => {
     let live = true; setQr(null); setQrError("");
+    if (!site.origin) return;
     qrImage(ticket.qrUrl).then(v => { if (live) setQr(v); }).catch(e => { if (live) setQrError(e.message); });
     return () => { live = false; };
-  }, [ticket.qrUrl, qrTry]);
+  }, [ticket.qrUrl, qrTry, site.origin]);
   const file = `clinicflow-ticket-${(ticket.reference || ticket.waitingNumber || "visit").replace(/[^a-z0-9-]/gi, "")}.pdf`;
   async function run(kind:"print"|"download"|"a4") {
     if (lock.current) return; lock.current = true; setErr(""); setBusy(kind);
@@ -132,7 +135,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
     } catch (e) { w?.close(); setErr(e instanceof Error ? e.message : "Ticket could not be prepared. Try again."); }
     finally { lock.current = false; setBusy(""); }
   }
-  const disabled = !!busy || exportDisabled || !qr;
+  const disabled = !!busy || exportDisabled || !qr || !site.origin;
   const m = modelFor(ticket);
   const why = busy ? "Checking the latest ticket first." : !qr ? "Personal QR is still loading." : "Reconnect and refresh the ticket first.";
   return <article className="vt" data-testid={testId} aria-label="Visit ticket" style={ticketCssVars() as CSSProperties}>
@@ -162,6 +165,7 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
       <div className="vt-qr">{qr ? <img src={qr} alt={m.qrAlt}/> : qrError ? <div role="alert" className="vt-qr-slot"><p style={{margin:"0 0 8px"}}>{qrError}</p><button type="button" className="button secondary" data-testid="button-retry-ticket-qr" onClick={() => setQrTry(n => n + 1)}>Retry QR</button></div> : <div className="vt-qr-slot vt-qr-loading" role="status" aria-label="Loading QR"/>}<small>{m.qrCaption}</small></div>
     </div>
     <footer className="vt-foot">
+      <PublicWebsiteStatus/>
       <p>{note || m.footer}</p>
       {err && <p role="alert" data-testid="ticket-export-error">{err}</p>}
     </footer>

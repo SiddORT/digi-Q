@@ -23,6 +23,11 @@
 import * as zod from 'zod';
 
 
+export const GetPublicWebsiteConfigResponse = zod.object({
+  "publicOrigin": zod.string().url()
+})
+
+
 export const GetMyNotificationSettingsResponse = zod.object({
   "revision": zod.number().int(),
   "items": zod.array(zod.object({

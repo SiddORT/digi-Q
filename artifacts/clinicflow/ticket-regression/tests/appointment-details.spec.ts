@@ -51,7 +51,8 @@ async function mount(page: Page, surface = "", linked = false) {
     const path = new URL(route.request().url()).pathname;
     let body: unknown;
     let status = 200;
-    if (path === "/api/auth/csrf") body = {csrfToken:"fictional-browser-csrf"};
+    if (path === "/api/public/website-config") body = { publicOrigin: "https://tickets.example.invalid" };
+    else if (path === "/api/auth/csrf") body = {csrfToken:"fictional-browser-csrf"};
     else if (path === "/api/me") body = { user: { id: "fixture-admin", role: "clinicAdmin" }, needsOnboarding: false };
     else if (path === "/api/appointments") body = { items: [state.appointment, second], total: 2, page: 1, pageSize: 100 };
     else if (path === "/api/appointments/appointment-1" || path === "/api/appointments/appointment-2") {

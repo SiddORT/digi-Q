@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { publicWebsiteConfig } from "../lib/public-website-config";
 import { db, clinics, branches, doctors, qrs, appointments } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import * as z from "@workspace/api-zod";
@@ -13,6 +14,7 @@ import { queryPage } from "../lib/list-query";
 import { clinicalMembership, clinicalBranchIds } from "../lib/clinical-membership";
 import { clinicDisplayPreferences } from "../lib/display-preferences";
 export const publicRouter = Router();
+publicRouter.get("/public/website-config", publicWebsiteConfig);
 for (const [kind, table, schema] of [
   ["clinics", clinics, z.ListPublicClinicsQueryParams],
   ["branches", branches, z.ListPublicBranchesQueryParams],

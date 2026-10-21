@@ -111,6 +111,7 @@ import type {
   GetPublicAvailabilityParams,
   GetPublicAvailabilitySessionsParams,
   GetPublicBookingContextParams,
+  GetPublicWebsiteConfig200,
   GetQueueParams,
   GetReportTrendsParams,
   GetReportsParams,
@@ -285,6 +286,77 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetPublicWebsiteConfigUrl = () => {
+
+
+
+
+  return `/api/public/website-config`
+}
+
+export const getPublicWebsiteConfig = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetPublicWebsiteConfig200> => {
+
+  return customFetch<GetPublicWebsiteConfig200>(getGetPublicWebsiteConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPublicWebsiteConfigQueryKey = () => {
+    return [
+    `/api/public/website-config`
+    ] as const;
+    }
+
+
+export const getGetPublicWebsiteConfigQueryOptions = <TData = Awaited<ReturnType<typeof getPublicWebsiteConfig>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWebsiteConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPublicWebsiteConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPublicWebsiteConfig>>> = ({ signal }) => getPublicWebsiteConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPublicWebsiteConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPublicWebsiteConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getPublicWebsiteConfig>>>
+export type GetPublicWebsiteConfigQueryError = ErrorType<void>
+
+
+
+export function useGetPublicWebsiteConfig<TData = Awaited<ReturnType<typeof getPublicWebsiteConfig>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPublicWebsiteConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPublicWebsiteConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetMyNotificationSettingsUrl = () => {
 

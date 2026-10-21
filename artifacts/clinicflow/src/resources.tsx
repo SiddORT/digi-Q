@@ -33,7 +33,8 @@ import { AppDialog } from "./components/AppDialog";
 import { SearchableSelect } from "./components/SearchableSelect";
 import { SuggestionInput } from "./components/SuggestionInput";
 import { emptyFieldValue, scheduleBreakFields, selectInputValue } from "./editor-input";
-import { ListingBulk, useListingSelection, publicQrLink, CreatedCell } from "./components/AdminListing";
+import { ListingBulk, useListingSelection, publicQrPath, CreatedCell } from "./components/AdminListing";
+import { usePublicWebsite, PublicWebsiteStatus } from "./lib/public-website";
 import { HelpTip } from "./components/HelpTip";
 import { collectFilteredPatients, filteredPatientsCsv } from "./components/patient-export";
 import { AddressFields, type AddressValue } from "./components/AddressFields";
@@ -419,24 +420,27 @@ function QrReadiness({row}:{row:any}){
  return <small className={`badge ${open.length?"active":"inactive"}`} data-testid={`status-qr-readiness-${row.id}`}>{open.length?`${open.length} open weekly sessions · ${days} days`:"No open weekly sessions configured"}</small>;
 }
 function QrCard({row,onRegenerated}:{row:any;onRegenerated?:()=>void}){
+ const site=usePublicWebsite();
  const confirmation=useConfirm();
  const [generated,setGenerated]=useState({url:"",image:""});
  const [error,setError]=useState<unknown>();
  const [attempt,setAttempt]=useState(0);
  const client=useQueryClient();
- const url=publicQrLink(row.reference);
+ const url=site.url(publicQrPath(row.reference));
  const [copied,setCopied]=useState(false);
  const image=generated.url===url?generated.image:"";
  useEffect(()=>{
   let cancelled=false;setError(undefined);
+  if(!url)return;
   QRCode.toDataURL(url,{width:400,margin:2}).then(image=>{if(!cancelled)setGenerated({url,image});}).catch(error=>{if(!cancelled)setError(error);});
   return()=>{cancelled=true;};
  },[url,attempt]);
  const regenerate=useMutation({mutationFn:()=>api.regenerateQr(row.id),onSuccess:async()=>{await client.invalidateQueries();onRegenerated?.();}});
- return <div className="qr-card compact">{confirmation.dialog}{image?<img src={image} alt={`Booking QR code for ${row.name}`}/>:!error&&<p role="status">Generating QR image…</p>}<strong>{row.name}</strong><small>{row.reference} · Active</small><QrReadiness row={row}/><a href={url} target="_blank" rel="noreferrer">{url}</a><div className="admin-qr-actions"><HelpTip text="Copy public booking link"><button aria-label={`Copy booking link for ${row.name}`} onClick={async()=>{try{await navigator.clipboard.writeText(url);setCopied(true);}catch(e){setError(e);}}}><Copy size={15}/></button></HelpTip>{image&&<HelpTip text="Download booking QR image"><a className="button secondary small" aria-label={`Download QR for ${row.name}`} href={image} download={`${row.name}-qr.png`}><Download size={15}/></a></HelpTip>}{row.branchId&&<HelpTip text="Open the public clinic queue display; no private patient tickets"><a className="button secondary small" aria-label={`Open queue display for ${row.name}`} href={publicQrLink(row.reference,true)} target="_blank" rel="noreferrer"><Monitor size={15}/></a></HelpTip>}</div>{copied&&<small role="status">Booking link copied.</small>}<button disabled={regenerate.isPending} onClick={async()=>{if(!regenerate.isPending&&await confirmation.ask({title:"Regenerate QR Code?",description:"Printed copies will stop working.",confirmLabel:"Regenerate Reference",tone:"danger"}))regenerate.mutate();}}>{regenerate.isPending?"Regenerating…":"Regenerate Reference"}</button>{regenerate.isSuccess&&<p className="notice" role="status">QR reference regenerated. Download and replace printed copies.</p>}<ErrorNotice error={error||regenerate.error}/>{!!error&&<button type="button" data-testid={`button-retry-qr-${row.id}`} onClick={()=>setAttempt(value=>value+1)}>Retry QR Image</button>}</div>;
+ return <div className="qr-card compact">{confirmation.dialog}<PublicWebsiteStatus/>{image&&url?<img src={image} alt={`Booking QR code for ${row.name}`}/>:url&&!error&&<p role="status">Generating QR image…</p>}<strong>{row.name}</strong><small>{row.reference} · Active</small><QrReadiness row={row}/>{url&&<a href={url} target="_blank" rel="noreferrer">{url}</a>}<div className="admin-qr-actions"><HelpTip text="Copy public booking link"><button disabled={!url} aria-label={`Copy booking link for ${row.name}`} onClick={async()=>{if(!url)return;try{await navigator.clipboard.writeText(url);setCopied(true);}catch(e){setError(e);}}}><Copy size={15}/></button></HelpTip>{image&&url&&<HelpTip text="Download booking QR image"><a className="button secondary small" aria-label={`Download QR for ${row.name}`} href={image} download={`${row.name}-qr.png`}><Download size={15}/></a></HelpTip>}{row.branchId&&url&&<HelpTip text="Open the public clinic queue display; no private patient tickets"><a className="button secondary small" aria-label={`Open queue display for ${row.name}`} href={site.url(publicQrPath(row.reference,true))} target="_blank" rel="noreferrer"><Monitor size={15}/></a></HelpTip>}</div>{copied&&<small role="status">Booking link copied.</small>}<button disabled={regenerate.isPending} onClick={async()=>{if(!regenerate.isPending&&await confirmation.ask({title:"Regenerate QR Code?",description:"Printed copies will stop working.",confirmLabel:"Regenerate Reference",tone:"danger"}))regenerate.mutate();}}>{regenerate.isPending?"Regenerating…":"Regenerate Reference"}</button>{regenerate.isSuccess&&<p className="notice" role="status">QR reference regenerated. Download and replace printed copies.</p>}<ErrorNotice error={error||regenerate.error}/>{!!error&&<button type="button" data-testid={`button-retry-qr-${row.id}`} onClick={()=>setAttempt(value=>value+1)}>Retry QR Image</button>}</div>;
 }
 const DAYS=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 function LocationActions({row,resource,portal,extra=[],viewHref}:{row:any;resource:string;portal:string;extra?:RowMenuItem[];viewHref?:string}){
+ const site=usePublicWebsite();
  const [action,setAction]=useState<"book"|"display"|null>(null);
  const [branchId,setBranchId]=useState("");
  const clinicId=resource==="clinics"?row.id:row.clinicId;
@@ -446,7 +450,7 @@ function LocationActions({row,resource,portal,extra=[],viewHref}:{row:any;resour
  const selected=api.useGetBranch(branchId,{query:{queryKey:api.getGetBranchQueryKey(branchId),enabled:!!action&&!!branchId}});
  const clinicSlug=resource==="clinics"?row.slug:clinic.data?.slug;
  const branch=resource==="branches"?row:(branches.data?.total===1?branches.data.items[0]:selected.data);
- const url=clinicSlug&&branch?.slug?`${import.meta.env.BASE_URL.replace(/\/$/,"")}/${encodeURIComponent(clinicSlug)}/${encodeURIComponent(branch.slug)}?${action}=1`:undefined;
+ const url=clinicSlug&&branch?.slug?site.url(`/${encodeURIComponent(clinicSlug)}/${encodeURIComponent(branch.slug)}?${action}=1`):undefined;
  const loading=clinic.isFetching||branches.isFetching||selected.isFetching;
  const error=clinic.error||branches.error||selected.error;
  // Section G: never navigate away or open windows automatically; the user explicitly opens the public page in a new tab.
@@ -459,6 +463,7 @@ function LocationActions({row,resource,portal,extra=[],viewHref}:{row:any;resour
     {key:"sessions",label:"Doctor Sessions",href:`/${portal}/availability?clinicId=${encodeURIComponent(clinicId)}${resource==="branches"?`&branchId=${encodeURIComponent(row.id)}`:""}`,testId:`link-sessions-${row.id}`},
     ...extra]}/>
  <AppDialog open={!!action} onClose={()=>setAction(null)} title={action==="display"?"Open Queue Display":"Open Clinic Booking"}>
+ <PublicWebsiteStatus/>
  <ErrorNotice error={error}/>{loading?<p role="status">Loading clinic address…</p>:!clinicSlug?<p className="notice">This clinic has no web address. <Link href={`/admin/settings?clinicId=${encodeURIComponent(clinicId)}`}>Set Web Address in Clinic Settings</Link>.</p>:<>
  {resource==="clinics"&&(branches.data?.total??0)>1&&<ResourceLookup resource="branches" label="Select Clinic" params={{clinicId,status:"active"}} value={branchId} onChange={setBranchId}/>}
  {branch&&!branch.slug&&<p className="notice">This clinic has no web address. <Link href={`/admin/settings?clinicId=${encodeURIComponent(clinicId)}`}>Set Web Address in Clinic Settings</Link>.</p>}

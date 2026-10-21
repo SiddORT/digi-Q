@@ -1,4 +1,5 @@
 import { QrInlineHost } from "./CheckIn";
+import { usePublicWebsite, PublicWebsiteStatus } from "./lib/public-website";
 import { BookingSteps } from "./components/BookingSteps";
 import { FormField } from "./components/FormField";
 import { BookingStageActions, StagedBooking } from "./components/booking/StagedBooking";
@@ -104,24 +105,23 @@ function usePendingGuard<T extends { mutateAsync: (variables: any) => Promise<an
 }
 
 export function AppointmentQr({ id, name, onReady }: { id: string; name: string; onReady?: (ready:boolean)=>void }) {
+  const site = usePublicWebsite();
   const qr = useGetAppointmentQr(id);
   const [image, setImage] = useState("");
   const [imageError, setImageError] = useState<Error | null>(null);
   const [imageAttempt,setImageAttempt]=useState(0);
-  useEffect(()=>{onReady?.(!!image&&!qr.error&&!imageError);},[image,qr.error,imageError,onReady]);
+  useEffect(()=>{onReady?.(!!image&&!!site.origin&&!qr.error&&!imageError);},[image,site.origin,qr.error,imageError,onReady]);
 
   useEffect(() => {
     let cancelled=false;
-    if (qr.data?.checkInUrl) {
-      let url = qr.data.checkInUrl;
-      if (url.startsWith("/")) {
-        url = `${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}${url}`;
-      }
-      setImage("");setImageError(null);
+    setImage("");setImageError(null);
+    if (qr.data?.checkInUrl && site.origin) {
+      const url = site.url(qr.data.checkInUrl);
+      if (!url) { setImageError(new Error("The private QR link is not trusted. Refresh and try again.")); return; }
       QRCode.toDataURL(url, { width: 300, margin: 2 }).then(value=>{if(!cancelled)setImage(value);}).catch(error=>{if(!cancelled)setImageError(error);});
     }
     return ()=>{cancelled=true;};
-  }, [qr.data?.checkInUrl,imageAttempt]);
+  }, [qr.data?.checkInUrl,imageAttempt,site.origin]);
 
   if (qr.isLoading) return <div className="skeleton">Loading QR code...</div>;
   if (qr.error || imageError) return <><ErrorNotice error={qr.error || imageError}/><button onClick={()=>{setImageAttempt(value=>value+1);qr.refetch();}}>Retry QR Code</button></>;
@@ -130,6 +130,7 @@ export function AppointmentQr({ id, name, onReady }: { id: string; name: string;
   return (
     <div className="appointment-qr-box" style={{ margin: "24px 0", padding: "16px", background: "var(--color-input)", borderRadius: "var(--radius)", display: "inline-flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
       <small><strong>Private Appointment QR</strong></small>
+      <PublicWebsiteStatus/>
       {image && <img src={image} alt={`Appointment verification QR for ${name}`} style={{ borderRadius: "8px", width: "200px" }} />}
       {image?<a className="button secondary small" href={image} download={`DigiQ-appointment-${id}-qr.png`}><QrCode size={15}/> Download QR</a>:<p role="status">Generating QR image…</p>}
     </div>

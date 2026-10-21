@@ -8,6 +8,7 @@ import { BRAND_NAME } from "../branding";
 import { useConfirm } from "./ConfirmDialog";
 import { friendlyError } from "../lib/friendly-error";
 import { HelpTip } from "./HelpTip";
+import { usePublicWebsite, PublicWebsiteStatus } from "../lib/public-website";
 
 type DemoStatus = {
   configured: boolean;
@@ -37,6 +38,7 @@ async function jsonRequest(url: string, options: RequestInit): Promise<DemoStatu
 }
 
 export function DemoClinicManagement() {
+  const site = usePublicWebsite();
   const [status, setStatus] = useState<DemoStatus | null>(null);
   const [credentials, setCredentials] = useState<{ username: string; password: string } | null>(null);
   const [qr, setQr] = useState("");
@@ -52,7 +54,7 @@ export function DemoClinicManagement() {
     }).catch(caught => { if (active) setError(friendlyError(caught, "load", "Unable to load demo setup.")); });
     return () => { active = false; };
   }, [revision]);
-  const absolute = (path?: string) => path ? new URL(`${root}${path.startsWith("/") ? path : `/${path}`}`, window.location.origin).href : "";
+  const absolute = (path?: string) => path ? site.url(path.startsWith("/") ? path : `/${path}`) || "" : "";
   const clinicUrl = absolute(status?.clinicPath);
   const bookingUrl = absolute(status?.bookingPath);
   const loginUrl = absolute(status?.loginPath);
@@ -126,11 +128,12 @@ export function DemoClinicManagement() {
         <h3>Save These Credentials Now</h3><p>The password is shown only once. Share it privately, separately from the public clinic link.</p>
         <p>Username: <strong>{credentials.username}</strong></p>
         <p>Password: <strong data-testid="demo-one-time-password">{credentials.password}</strong></p>
-        <button type="button" onClick={() => void navigator.clipboard.writeText(`Username: ${credentials.username}\nPassword: ${credentials.password}\nLogin: ${loginUrl}`).then(() => setNotice("Demo credentials copied. Keep them private.")).catch(() => setError("Clipboard access is unavailable; use the download option."))}>Copy Private Credentials</button>
-        <button type="button" onClick={() => download("clinicflow-demo-credentials.txt", `Username: ${credentials.username}\nPassword: ${credentials.password}\nLogin: ${loginUrl}\n`, "text/plain")}>Download Private Credentials</button>
+        <button type="button" onClick={() => void navigator.clipboard.writeText(`Username: ${credentials.username}\nPassword: ${credentials.password}${loginUrl ? `\nLogin: ${loginUrl}` : ""}`).then(() => setNotice("Demo credentials copied. Keep them private.")).catch(() => setError("Clipboard access is unavailable; use the download option."))}>Copy Private Credentials</button>
+        <button type="button" onClick={() => download("clinicflow-demo-credentials.txt", `Username: ${credentials.username}\nPassword: ${credentials.password}${loginUrl ? `\nLogin: ${loginUrl}` : ""}\n`, "text/plain")}>Download Private Credentials</button>
         <button type="button" onClick={() => setCredentials(null)}>Hide Credentials</button>
       </section>}
-      <div className="demo-share">
+      <PublicWebsiteStatus/>
+      {site.origin && <div className="demo-share">
       <div className="demo-share-main">
       <dl className="settings-facts">
         {([["Clinic page", clinicUrl], ["Booking link", bookingUrl]] as const).map(([name, url]) => <div key={name}><dt>{name}</dt><dd className="demo-link-actions">
@@ -145,7 +148,7 @@ export function DemoClinicManagement() {
       {qr && <div className="demo-qr"><img src={qr} alt={`Booking QR for ${status.clinicName}`} width="220" height="220"/><br/><button type="button" onClick={() => {
         const anchor = document.createElement("a"); anchor.href = qr; anchor.download = "clinicflow-demo-booking-qr.png"; anchor.click();
       }}>Download Booking QR</button></div>}
-      </div>
+      </div>}
     </>}
   </div></>;
 }
