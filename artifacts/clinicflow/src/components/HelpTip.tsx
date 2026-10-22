@@ -1,9 +1,9 @@
 import {
   cloneElement, isValidElement, useEffect, useId, useLayoutEffect, useRef, useState,
-  type FocusEvent, type MouseEvent, type PointerEvent as ReactPointerEvent, type ReactElement, type ReactNode, type RefObject,
+  type FocusEvent, type PointerEvent as ReactPointerEvent, type ReactElement, type ReactNode, type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { HelpCircle } from "lucide-react";
+import { Info } from "lucide-react";
 import "./help-tip.css";
 import { DISMISS_TOOLTIPS, dismissTooltips } from "./tooltip-dismiss";
 export { DISMISS_TOOLTIPS, dismissTooltips } from "./tooltip-dismiss";
@@ -14,8 +14,8 @@ type ChildProps = {
   disabled?: boolean;
   "aria-disabled"?: boolean | "true" | "false";
   "aria-describedby"?: string;
-  onMouseEnter?: (e: MouseEvent) => void;
-  onMouseLeave?: (e: MouseEvent) => void;
+  onPointerEnter?: (e: ReactPointerEvent) => void;
+  onPointerLeave?: (e: ReactPointerEvent) => void;
   onFocus?: (e: FocusEvent) => void;
   onBlur?: (e: FocusEvent) => void;
   onPointerDown?: (e: ReactPointerEvent) => void;
@@ -50,7 +50,7 @@ function Bubble({ anchor, text, id }: { anchor: RefObject<HTMLSpanElement | null
 
 /**
  * Accessible help tooltip.
- * - No children: renders a "?" icon button (tap toggles/pins).
+ * - No children: renders an information icon button (tap toggles/pins).
  * - One element child (button/link): child is used AS the trigger (no nesting). Hover/focus
  *   shows help; touch press shows it briefly; the child's own click/navigation is untouched.
  * - Disabled child: wrapped in a focusable span so help remains reachable.
@@ -79,7 +79,12 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
   useEffect(() => () => window.clearTimeout(timer.current), []);
 
   const bubble = open ? <Bubble anchor={ref} text={text} /> : null;
-  const hoverProps = { onMouseEnter: show, onMouseLeave: () => { if (!pinned) setOpen(false); } };
+  // Touch browsers may emit compatibility mouseenter after an outside tap. Only
+  // real hover pointers may reopen help; keyboard focus and tap toggling stay separate.
+  const hoverProps = {
+    onPointerEnter: (e: ReactPointerEvent) => { if (e.pointerType !== "touch") show(); },
+    onPointerLeave: (e: ReactPointerEvent) => { if (e.pointerType !== "touch" && !pinned) setOpen(false); },
+  };
 
   if (isValidElement(children)) {
     const child = children as ReactElement<ChildProps>;
@@ -102,8 +107,8 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
 
     const trigger = cloneElement(child, {
       "aria-describedby": describedBy,
-      onMouseEnter: (e: MouseEvent) => { p.onMouseEnter?.(e); show(); },
-      onMouseLeave: (e: MouseEvent) => { p.onMouseLeave?.(e); if (!pinned) setOpen(false); },
+      onPointerEnter: (e: ReactPointerEvent) => { p.onPointerEnter?.(e); if (e.pointerType !== "touch") show(); },
+      onPointerLeave: (e: ReactPointerEvent) => { p.onPointerLeave?.(e); if (e.pointerType !== "touch" && !pinned) setOpen(false); },
       onFocus: (e: FocusEvent) => { p.onFocus?.(e); show(); },
       onBlur: (e: FocusEvent) => { p.onBlur?.(e); if (!pinned) setOpen(false); },
       onPointerDown: (e: ReactPointerEvent) => {
@@ -123,7 +128,7 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
     <button type="button" className="helptip-trigger" aria-label={label ?? "Help"} aria-describedby={id} aria-expanded={open}
       onFocus={show} onBlur={close}
       onClick={() => { const n = !pinned; dismissTooltips(); setPinned(n); setOpen(n); }} data-testid="button-help-tip">
-      {children ?? icon ?? <HelpCircle size={15} aria-hidden="true" />}
+      {children ?? icon ?? <Info size={15} aria-hidden="true" />}
     </button>
     <span id={id} className="sr-only-helptip">{text}</span>
     {bubble}

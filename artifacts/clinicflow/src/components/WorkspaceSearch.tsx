@@ -1,3 +1,4 @@
+import { PageDescription } from "./PageDescription";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, Star, Clock3, ChevronDown, RotateCw } from "lucide-react";
@@ -224,7 +225,7 @@ export function WorkspaceSearch({ navigation, role, page, userId }: {
               ? tabButton(tab, CATEGORY_LABEL[tab as SearchCategory])
               : <RowMenu label="More search categories" testId="search-tab-more" trigger={<span className="ws-tab ws-more">More <ChevronDown size={14} aria-hidden/></span>} items={more.map(c => ({ key: c, label: CATEGORY_LABEL[c], onSelect: () => switchTab(c) }))}/>)}
           </div>
-          <p className="muted ws-note">Records need two characters. Favorites and recent pages are saved on this device; patient results and search terms are not saved.</p>
+          <PageDescription className="muted ws-note" text="Enter two characters to search records." label="About workspace search" help="Favorites and recent pages are saved on this device; patient results and search terms are not saved."/>
           {storageUnavailable && <p role="status">Browser storage is unavailable. Shortcuts will not persist after this session.</p>}
         </div>
         <div aria-live="polite" className="ws-body">

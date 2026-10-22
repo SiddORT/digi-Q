@@ -35,7 +35,8 @@ export function DemoLogin() {
       setError(caught instanceof Error ? caught.message : "Demo sign-in failed. Please try again.");
     } finally { setBusy(false); }
   }
-  return <AuthShell eyebrow="Demo Staff Access"><AuthCard title="Demo Clinic Login" description="Explore the fictional clinic with the dedicated demo account. Never enter real patient information.">
+  return <AuthShell eyebrow="Demo Staff Access"><AuthCard title="Demo Clinic Login" description="Explore the fictional clinic with its dedicated demo account.">
+    <p className="notice">Never enter real patient information.</p>
     <div className="notice"><strong>Demo login:</strong> clinicflow-demo · no email inbox needed</div>
     <form onSubmit={signIn}>
       <FormField id="demo-password" label="Demo Password" required><PasswordInput autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} required data-testid="input-demo-password"/></FormField>

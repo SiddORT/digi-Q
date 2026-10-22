@@ -1,3 +1,4 @@
+import { PageDescription } from "./PageDescription";
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
@@ -41,7 +42,7 @@ export function GuestClinicFinder() {
     <main className="panel padded">
       <span className="eyebrow">Patient Access · No Account Required</span>
       <h1>Guest Booking</h1>
-       <p>Find your clinic and location, then review the doctor and session before booking. If there is only one option, it is selected for you.</p>
+      <PageDescription text="Choose a clinic and location to book a visit." help="Review the doctor and session before booking. If there is only one option, it is selected for you." label="About guest booking"/>
       <div className="form-grid">
          <CareLookup publicAccess kind="clinics" label="Clinic" value={clinic?.id || ""} selectedLabel={clinic?.name} params={{status:"active"}} onChange={(_, record) => {
           setClinic((record as PublicOption | undefined) || null);

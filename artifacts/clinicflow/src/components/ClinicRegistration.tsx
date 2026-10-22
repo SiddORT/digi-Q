@@ -1,3 +1,4 @@
+import { PageDescription } from "./PageDescription";
 import { EmailInput } from "@/components/EmailInput";
 import { PhoneInput } from "./PhoneInput";
 import { RegistrationMobileProof } from "../auth/RegistrationMobileProof";
@@ -113,7 +114,7 @@ function RegistrationAccount() {
   }
   return <AuthShell eyebrow="Register a Clinic" registration><div className="auth-card registration-account-card">
     <h1>Start with your secure account.</h1>
-    <p>Create an account with a verified email and password. Then we’ll guide you through your clinic, locations and opening hours.</p>
+    <PageDescription text="Create a verified owner account for your clinic." help="After email verification, set up your clinic, locations and opening hours." label="About clinic registration"/>
     <nav aria-label="Account registration progress"><ol className="registration-account-steps">
       {(["details", "review", "verify"] as const).map((item, index) => <li key={item} aria-current={step === item ? "step" : undefined}><span>{index + 1}.</span> {item === "details" ? "Account details" : item === "review" ? "Review" : "Verify email"}</li>)}
     </ol></nav>

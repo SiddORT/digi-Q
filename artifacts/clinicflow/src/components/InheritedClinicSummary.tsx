@@ -3,13 +3,14 @@ import { Link } from "wouter";
 import { Lock } from "lucide-react";
 import { formatTime } from "../lib/date-time";
 import { addressLine, canChangeClinicDefaults, clinicSettingsHref, contactSource, openingHoursSummary } from "../lib/inherited-defaults";
+import { PageDescription } from "./PageDescription";
 
 /** Read-only clinic and location values a new doctor/receptionist inherits. Changed only via Clinic settings by the owner. */
 export function InheritedClinicSummary({ clinicIds, branchIds, user, doctor }: { clinicIds: string[]; branchIds: string[]; user?: { id?: string; role?: string }; doctor: boolean }) {
   if (!clinicIds.length) return <p className="muted wide" data-testid="text-inherited-empty">Choose a Clinic Group to see the clinic details this person inherits.</p>;
   return <div className="inherited-summary wide" data-testid="panel-inherited-defaults">
     {clinicIds.slice(0, 5).map(id => <InheritedClinic key={id} clinicId={id} branchIds={branchIds} user={user}/>)}
-    {doctor && <p className="muted">Doctor sessions are not copied here. After adding, choose sessions linked to location hours or custom weekly hours in Schedule. Patients per session is set there; it is never guessed.</p>}
+    {doctor && <PageDescription className="muted" text="Doctor sessions are not copied; configure them in Schedule." label="About inherited schedules" help="After adding, choose sessions linked to location hours or custom weekly hours. Set patients per session there; capacity is never guessed."/>}
   </div>;
 }
 

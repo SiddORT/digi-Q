@@ -30,7 +30,7 @@ export function ForgotPassword() {
     finally { setBusy(false); }
   }
   return <AuthShell eyebrow="Staff Password Recovery">
-    <AuthCard title="Reset Staff Password" description="If this email belongs to an active staff account, we'll send a secure, single-use password reset link.">
+    <AuthCard title="Reset Staff Password" description="Request a reset link for your active staff account." help="If the email matches an eligible account, a secure, single-use password reset link will be requested.">
       {sent ? <div className="notice" role="status" data-testid="status-password-reset-requested">If the account exists, check your email for a password reset link.</div> : <form onSubmit={send} noValidate>
         <FormField label="Staff Email" required error={emailError}>
           <EmailInput trimOnBlur={false} data-testid="input-reset-email" name="reset-email" autoComplete="username" disabled={busy} value={email} onChange={event => { setEmail(event.target.value); if (emailError) setEmailError(undefined); }} />

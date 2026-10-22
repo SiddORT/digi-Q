@@ -8,7 +8,7 @@ test("global staff management remains separate, reachable and Super Admin only",
   assert.match(app,/Redirect to="\/admin\/staff\?tab=doctors"/);
   assert.match(portal,/page==="staff"&&identity\.user!\.role==="superAdmin"\?<Users identity=\{identity\}\/>/);
   assert.match(settings,/href="\/admin\/staff" data-testid="link-global-staff"/);
-  assert.match(read("./ClinicRegistrationComplete.tsx"),/\/admin\/clinic\?clinicId=.*&section=staff/);
+  assert.match(read("./ClinicRegistrationComplete.tsx"),/href=\{clinicWorkspaceHref\(result\.clinic\.id,"staff"\)\}/);
 });
 
 test("patients can open their own records from Profile, not only through staff listings", () => {

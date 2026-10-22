@@ -1,3 +1,4 @@
+import { PageDescription } from "./PageDescription";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Camera, Image as ImageIcon } from "lucide-react";
@@ -97,7 +98,7 @@ export function PatientScanner() {
       <span className="eyebrow">Patient Access · No Login Needed</span>
       <h1>Scan a Clinic Booking QR Code</h1>
       <PublicWebsiteStatus/>
-      <p>Scan the QR displayed at your clinic. We’ll show the clinic and location before you request a visit. You can also use your phone’s camera app to open the QR link directly.</p>
+      <PageDescription text="Scan your clinic’s QR code to book a visit." help="Review the clinic and location before booking. You can also use your phone’s camera app to open the QR link directly." label="About scanning a booking QR"/>
       <button className="button" type="button" data-testid="button-start-patient-scan" onClick={() => {completed.current = false; setError(""); setScanning(value => !value);}}><Camera size={18}/>{scanning ? "Stop camera" : "Start camera"}</button>
       {scanning && <video className="patient-scan-video" ref={video} playsInline muted aria-label="Camera preview for clinic booking QR"/>}
       <label className="patient-scan-upload"><ImageIcon size={18}/> Upload a QR image

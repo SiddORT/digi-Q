@@ -305,7 +305,7 @@ export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel,
      {!compactToolbar && <span className="filter-toggle-text">Filters</span>}
      {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
    </button>;
-   const subtitle = pageTitle?.subtitle || (pageTitle?.title === "Reports" ? "View and analyze clinic reports." : null);
+   const subtitle = pageTitle?.subtitle || (pageTitle?.title === "Reports" ? "Review visits and outcomes for the selected period." : null);
    const heading = pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1>{subtitle && <p className="muted">{subtitle}</p>}</div>
      : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>;
    const primaryActions = actions && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup>{actions}</ResponsiveActionGroup></div>;

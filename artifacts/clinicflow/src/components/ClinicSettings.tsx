@@ -128,7 +128,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
   <div className="settings-scope" data-testid="settings-scope">{scopeSwitch}<div className="settings-scope-lookup"><ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Clinic Group":"Your Clinic Group"} value={clinicId} onChange={id=>{if(id!==clinicId)void guarded(()=>setClinic(id));}}/></div></div>
   {identity.user?.role==="superAdmin"&&<Link className="cs-back" href={clinicsReturnHref(search)} data-testid="link-all-clinic-groups">&larr; Back to Clinics</Link>}
   <ErrorNotice error={query.error||clinics.error}/>{query.error&&<button type="button" onClick={()=>query.refetch()}>Retry Clinic Settings</button>}
-  {!clinicId?<p className="empty">Select a clinic to manage its settings. Platform settings are separate.</p>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&clinic&&!query.error&&<>
+  {!clinicId?<p className="empty">Select a clinic to manage.</p>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&clinic&&!query.error&&<>
    <header className="panel padded cs-overview" data-testid="clinic-overview">
     <div className="cs-mark" aria-hidden><Building2 size={44}/></div>
     <div className="cs-identity">

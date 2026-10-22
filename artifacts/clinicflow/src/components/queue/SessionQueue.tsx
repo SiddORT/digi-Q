@@ -1,3 +1,4 @@
+import { PageDescription } from "../PageDescription";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearch } from "wouter";
 import * as api from "@workspace/api-client-react";
@@ -88,7 +89,7 @@ export function SessionQueue({identity,initial}:{identity:api.Identity;initial?:
  </div></section>
    {!queuePin&&branch.data&&<div className="sq-context" data-testid="text-queue-context"><strong>{String(branch.data.name||"Selected branch")}</strong><span className="muted"> · {formatDate(date,q)}</span>{branch.data.address?<span className="muted"> · {String(branch.data.address)}</span>:null}</div>}
 
-  {!isPatient&&!isDoctor&&branchId&&showSummary&&<AppDialog open variant="drawer" onClose={()=>setShowSummary(false)} title="Multi-doctor sessions · quick switch"><p className="muted">Each doctor's queue at this location and date. Choose a doctor, then a session if more than one is listed. Switching does not call or check in a patient.</p><ErrorNotice error={doctors.error}/>{doctors.error&&<button type="button" onClick={()=>doctors.refetch()}>Retry Doctors</button>}{doctors.isLoading?<p>Loading doctors…</p>:<div className="toolbar">{doctors.data?.items.map(d=><DoctorSummary key={d.id} doctor={d} branchId={branchId} date={date} selected={doctorId===d.id} onSelect={()=>{setDoctor(d.id);setAppointment("");setShowSummary(false);}}/>)}</div>}{(doctors.data?.total??0)>20&&<p>Showing the first 20 doctors; use Doctor search for all results.</p>}</AppDialog>}
+  {!isPatient&&!isDoctor&&branchId&&showSummary&&<AppDialog open variant="drawer" onClose={()=>setShowSummary(false)} title="Multi-doctor sessions · quick switch"><PageDescription text="Choose a doctor’s queue for this location and date." help="Choose a session if more than one is listed." label="About quick switch"/><p>Switching does not call or check in a patient.</p><ErrorNotice error={doctors.error}/>{doctors.error&&<button type="button" onClick={()=>doctors.refetch()}>Retry Doctors</button>}{doctors.isLoading?<p>Loading doctors…</p>:<div className="toolbar">{doctors.data?.items.map(d=><DoctorSummary key={d.id} doctor={d} branchId={branchId} date={date} selected={doctorId===d.id} onSelect={()=>{setDoctor(d.id);setAppointment("");setShowSummary(false);}}/>)}</div>}{(doctors.data?.total??0)>20&&<p>Showing the first 20 doctors; use Doctor search for all results.</p>}</AppDialog>}
  <ErrorNotice error={selected.error||queue.error||next.error}/>
   {!isPatient&&sort!=="queueRank"&&<p className="muted sq-sort-note">Sorting the list does not change who is called next.</p>}
 

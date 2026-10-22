@@ -1,0 +1,6 @@
+.page-description {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.page-description .helptip { vertical-align: middle; }

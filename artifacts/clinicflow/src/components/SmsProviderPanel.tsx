@@ -1,3 +1,4 @@
+import { PageDescription } from "./PageDescription";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetIntegrationSettingsQueryKey, type IntegrationReadiness, useSendNotificationSmsTestMessage, useUpdateIntegrationSettings } from "@workspace/api-client-react";
@@ -114,9 +115,9 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
         <p className="muted">This prepares a draft only. Confirm and save with your password to change the provider. Saved credentials are preserved; no message is sent.</p>
       </div>}
       {kit && <div className="notice" data-testid="help-keep-in-touch">
-        <p>Keep in Touch uses POST with application/json and Authorization: Bearer token. The body contains countryCode, mobile, senderId, message, apiKey, clientId and templateId. Bearer Token and API Key are separate required protected values; do not assume they are identical.</p>
-        <p>Client ID and Sender ID are required. The selected event's DLT Template ID supplies templateId. Entity ID is neither required nor sent. Per-event Template IDs live in Notifications; publish each event's registered template ID there. The Keep in Touch URL is separate from the Custom API URL, which is kept when you switch providers.</p>
-        <p>HTTP 200 with boolean Success:true means provider acceptance (lowercase success is also supported). Success:false is rejection; malformed or conflicting responses remain uncertain. Keep in Touch requests wait up to 30 seconds. Provider acceptance is not proof of delivery. Saving or testing does not activate events or clinic notifications. Any saved Custom API mapping is retained unchanged.</p>
+        <PageDescription text="Configure the Keep in Touch sender and credentials." label="About the Keep in Touch request" help="Uses POST with application/json and Bearer authorization. The body contains countryCode, mobile, senderId, message, apiKey, clientId and templateId. Entity ID is not sent. Publish each event’s DLT Template ID in Notifications. Its URL is separate from the retained Custom API URL and mapping. HTTP 200 with boolean Success:true (or lowercase success) means acceptance; Success:false is rejection. Malformed or conflicting responses remain uncertain. Requests wait up to 30 seconds."/>
+        <p>Bearer Token, API Key, Client ID and Sender ID are required; token and key are separate protected values.</p>
+        <p>Provider acceptance is not proof of delivery; saving or testing does not activate notifications.</p>
         <div className="form-field"><label htmlFor="sms-country-format">Country Code format (confirm with provider)</label>
           <select id="sms-country-format" value={countryFormat} onChange={e => setCountryFormat(e.target.value as typeof countryFormat)} data-testid="select-sms-country-format">
             <option value="">Choose explicitly</option><option value="digits">Digits only (91)</option><option value="plus">Plus-prefixed (+91)</option>
@@ -151,7 +152,8 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
       <details className="cm-advanced int-advanced" data-testid="details-sms-mapping"><summary>Advanced{mapTouched ? " (edited)" : ""}</summary>
         <div className="sms-ref-grid">
           {!kit && <>
-          <p className="muted sms-ref-wide">Request mapping describes a plain HTTPS POST. Data only; compatibility is confirmed by a successful test. The status URL is optional and kept for future provider receipt checks; nothing polls it and it does not confirm delivery. Sender and Entity IDs are defaults used unless an event template overrides them.</p>
+          <PageDescription className="muted sms-ref-wide" text="Map your provider’s HTTPS POST request." label="About custom SMS mapping" help="Data only; compatibility is confirmed by a successful test. Sender and Entity IDs are defaults unless an event template overrides them."/>
+          <p className="sms-ref-wide">The optional status URL is not polled and does not confirm delivery.</p>
           <div className="form-field"><label htmlFor="sms-enc">Body encoding</label><select id="sms-enc" value={map.encoding} onChange={e => patch({ encoding: e.target.value as SmsMapping["encoding"] })} data-testid="select-sms-encoding"><option value="json">JSON</option><option value="form">Form (urlencoded)</option></select></div>
           <div className="form-field"><label htmlFor="sms-auth">Authentication</label><select id="sms-auth" value={map.authMode} onChange={e => patch({ authMode: e.target.value as SmsMapping["authMode"] })} data-testid="select-sms-auth"><option value="header">API key header</option><option value="bearer">Bearer token</option><option value="body">Named body field</option></select></div>
           {map.authMode !== "bearer" && <div className="form-field"><label htmlFor="sms-authfield">{map.authMode === "header" ? "Header name" : "Body field name"}</label><input id="sms-authfield" value={map.authField} maxLength={50} onChange={e => patch({ authField: e.target.value })} data-testid="input-sms-authfield" /></div>}

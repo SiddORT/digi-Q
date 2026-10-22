@@ -1,3 +1,4 @@
+import { PageDescription } from "./PageDescription";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useGetIntegrationSettings, getGetIntegrationSettingsQueryKey, useUpdateIntegrationSettings } from "@workspace/api-client-react";
@@ -57,7 +58,7 @@ function Editor({ revision, keys, onDone, onCancel, onDirtyChange, onBusyChange 
             <SecretField id="sms-key" label="API key" testId="sms-key" configured={saved("NOTIFICATION_SMS_KEY")} value={apiKey} onChange={setApiKey} /></div>
         </div></FormSection>
         <FormSection title="Request mapping" grid={false}><details className="int-advanced" data-testid="details-sms-mapping"><summary>Advanced API mapping{mapTouched ? " (edited)" : ""}</summary><div className="cf-form">
-          <p className="muted">A URL and key alone cannot suit every provider, so this describes a plain HTTPS POST. It is data only: no scripts, no other protocols, no multi-step or OAuth flows. Compatibility is confirmed only by a successful test.</p>
+          <PageDescription className="muted" text="Map a plain HTTPS POST request for your provider." help="This is data only: no scripts, other protocols, multi-step or OAuth flows. Compatibility is confirmed only by a successful test." label="About request mapping"/>
           <div className="form-field"><label htmlFor="sms-enc">Body encoding</label><select id="sms-enc" value={map.encoding} onChange={e => patch({ encoding: e.target.value as SmsMapping["encoding"] })} data-testid="select-sms-encoding"><option value="json">JSON</option><option value="form">Form (urlencoded)</option></select></div>
           <div className="form-field"><label htmlFor="sms-auth">Authentication</label><select id="sms-auth" value={map.authMode} onChange={e => patch({ authMode: e.target.value as SmsMapping["authMode"] })} data-testid="select-sms-auth"><option value="header">API key header</option><option value="bearer">Bearer token</option><option value="body">Named body field</option></select></div>
           {map.authMode !== "bearer" && <div className="form-field"><label htmlFor="sms-authfield">{map.authMode === "header" ? "Header name" : "Body field name"}</label><input id="sms-authfield" value={map.authField} maxLength={50} onChange={e => patch({ authField: e.target.value })} data-testid="input-sms-authfield" /></div>}

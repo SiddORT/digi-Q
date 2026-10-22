@@ -1,3 +1,4 @@
+import { PageDescription } from "./PageDescription";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +12,7 @@ import { registrationDraftKey, readRegistrationDraft, setupDraftSchema, clearReg
 type SetupProps = { guided?: boolean; draftActor?: string; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void; carry?: Partial<Record<"fullName"|"email"|"mobile", string>>; onSnapshot?: (values: Record<string, unknown>, defaults: Record<string, unknown>) => void };
 export function ClinicAdminOnboarding({ guided = false, ...state }: SetupProps) {
   if (guided) return <GuidedAdminSetup {...state}/>;
-  return <section className="panel padded" style={{ marginBottom: 24 }}><h3>Clinic Admin Setup</h3><p className="muted">Invite a clinic owner and create their clinic, locations and hours together. Existing ownership is never transferred.</p><Link className="button small" href="/register-clinic" data-testid="button-setup-clinic-admin"><Plus size={17}/>Set Up Clinic Admin</Link></section>;
+  return <section className="panel padded" style={{ marginBottom: 24 }}><h3>Clinic Admin Setup</h3><PageDescription text="Create a new clinic and its owner account." help="Set up the clinic, locations and hours together." label="About clinic owner setup"/><p>Existing ownership is never transferred.</p><Link className="button small" href="/register-clinic" data-testid="button-setup-clinic-admin"><Plus size={17}/>Set Up Clinic Admin</Link></section>;
 }
 
 function GuidedAdminSetup({ draftActor, onDirtyChange, onBusyChange, carry, onSnapshot }: Omit<SetupProps, "guided">) {

@@ -1,3 +1,4 @@
+import { PageDescription } from "./PageDescription";
 import { useState } from "react";
 import { formatTime, isCanonicalTime, type DateTimePreferences } from "../lib/date-time";
 import { TimeFormatInput } from "./DateFormatInput";
@@ -49,7 +50,8 @@ export function ClinicRegistrationHours({ value, onChange, timezone, preferences
     {copyNotice && <p className="notice" role="status" data-testid="registration-copy-result">{copyNotice}</p>}
     {timezone && <p>Clinic timezone: {timezone}</p>}
     {!value.some(day => day.isOpen) && <p className="notice">Unconfigured draft: choose Open for at least one day, then enter exact hours. No working hours are assumed.</p>}
-    <p className="registration-note">Use the start and end sliders in 15-minute steps, or type exact minutes. Overnight sessions are not supported. Copy replaces the selected days' hours.</p>
+    <PageDescription className="registration-note" text="Set the opening intervals for each day." help="Use sliders in 15-minute steps or type exact minutes." label="About opening-hour entry"/>
+    <p className="registration-note">Overnight sessions are not supported; copying replaces the selected days’ hours.</p>
     {[...value].sort((a,b) => (a.dayOfWeek + 6) % 7 - (b.dayOfWeek + 6) % 7).map(day => {
       const error = dayError(day);
       const isExpanded = expanded.includes(day.dayOfWeek) || !!error; // closed rows expand to reach Copy only

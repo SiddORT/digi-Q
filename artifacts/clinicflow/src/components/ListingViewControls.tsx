@@ -4,6 +4,7 @@ import { AppDialog } from "./AppDialog";
 import { arrangeColumns, type ListingLayout, type SavedView } from "@/lib/listing-views";
 import "./listing-view-controls.css";
 import { HelpTip } from "./HelpTip";
+import { PageDescription } from "./PageDescription";
 
 export function ColumnSettings({ columns, layout, label, onChange, onReset, reorderable = true, pinnable = true, iconOnly = false }: {
   columns: string[]; layout: ListingLayout; label: (c: string) => string; reorderable?: boolean; pinnable?: boolean; iconOnly?: boolean;
@@ -23,7 +24,7 @@ export function ColumnSettings({ columns, layout, label, onChange, onReset, reor
    return <>
      {iconOnly ? <HelpTip text={`Show, order and pin columns${hidden.length ? `; ${hidden.length} hidden` : ""}. Preferences are saved on this device.`}>{trigger}</HelpTip> : trigger}
     <AppDialog open={open} onClose={() => setOpen(false)} title="Columns" variant="drawer">
-      <p className="muted">{reorderable ? "Show, order and pin columns. One column can be pinned to the left at a time; pinning another replaces it." : "Show or hide columns. Column order is fixed for this operational view; record order is never changed."} Layout is saved on this device for your account and role. Hidden values stay available in each row's details.</p>
+      <PageDescription className="muted" text={reorderable ? "Choose, order and pin your visible columns." : "Choose which columns to show."} label="About column layouts" help={`${reorderable ? "One column can be pinned to the left at a time; pinning another replaces it." : "Column order is fixed for this operational view; record order is never changed."} Layout is saved on this device for your account and role. Hidden values stay available in each row's details.`}/>
       <ul className="lvc-columns">{ordered.map((c, i) => <li key={c} data-testid={`column-setting-${c}`}>
         <label><input type="checkbox" checked={!hidden.includes(c)} disabled={c === required} onChange={() => toggle(c)} />{label(c)}{c === required && <small className="muted"> · always shown</small>}</label>
         <span className="lvc-row-actions">
@@ -56,14 +57,14 @@ export function SavedViews({ views, canSave, canShare = false, legacyViews = [],
       <Bookmark size={15} aria-hidden /><span>Views{views.length ? ` · ${views.length}` : ""}</span>
     </button>
     <AppDialog open={open} onClose={() => { setOpen(false); setError(""); setSaved(""); }} title="Saved Views" variant="drawer">
-      <p className="muted">Saved views keep filters, sort, page size and the column layout for your account, synced across your devices. Search text is never saved.</p>
+      <PageDescription className="muted" text="Save and reuse your filters and column layout." label="About saved views" help="Views keep filters, sort, page size and column layout for your account, synced across devices. Search text is never saved."/>
       {views.length ? <ul className="lvc-views">{views.map(v => <li key={v.id}>
         <button type="button" className="lvc-view-apply" onClick={() => { onApply(v); setOpen(false); }} data-testid={`button-apply-view-${v.id}`}><strong>{v.name}</strong><small>{Object.keys(v.filters).length} filter settings{v.columns ? " · column layout" : ""}{v.shared ? (v.ownedByMe === false ? " · shared with your role" : " · you shared this") : ""}</small></button>
         {v.ownedByMe !== false && <button type="button" aria-label={`Delete view ${v.name}`} onClick={() => onDelete(v.id)} data-testid={`button-delete-view-${v.id}`}><Trash2 size={14} aria-hidden /></button>}
       </li>)}</ul> : <p className="empty-inline">No saved views yet.</p>}
       {legacyViews.length > 0 && onImport && <section className="lvc-legacy" aria-label="Views on this device" data-testid="legacy-views">
         <h3>On This Device Only</h3>
-        <p className="muted">Saved before account sync. They stay on this device until you import them; importing copies only filters, sort and columns.</p>
+        <PageDescription className="muted" text="Import older views from this device." label="About local views" help="These were saved before account sync. They stay on this device until imported; importing copies only filters, sort and columns."/>
         <ul className="lvc-views">{legacyViews.map(v => { const done = accountNames.has(v.name.trim().toLowerCase()); return <li key={`legacy-${v.id}`}>
           <button type="button" className="lvc-view-apply" onClick={() => { onApply(v); setOpen(false); }} data-testid={`button-apply-legacy-view-${v.id}`}><strong>{v.name}</strong><small>{Object.keys(v.filters).length} filter settings · this device</small></button>
           <button type="button" className="button secondary small" disabled={done || importing === v.id} onClick={async () => { setImporting(v.id); const ok = await onImport(v); setImporting(null); setImportMsg(ok ? `View "${v.name}" imported to your account.` : `View "${v.name}" could not be imported.`); }} data-testid={`button-import-view-${v.id}`}>{done ? "Imported" : importing === v.id ? "Importing…" : "Import to Account"}</button>
