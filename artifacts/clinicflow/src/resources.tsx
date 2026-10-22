@@ -114,9 +114,10 @@ export function PatientEditor({initial={},onSave,busy=false,submitLabel="Save Pa
 }
 /** Free-text field with optional suggestions from the clinic's curated masters (e.g. Area). Address parts use AddressFields. */
 function MasterTextInput({field,control}:any){
+  const actor=useDirectoryActor();
  const [search,setSearch]=useState("");
  const term=useDebouncedValue(search);
- const q=useQuery({queryKey:["lookup","masters-text",field.category,term],queryFn:()=>api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any,{signal:AbortSignal.timeout(20000)}),retry:false,staleTime:600000});
+  const q=useQuery({queryKey:["lookup","masters-text",actor,field.category,term],queryFn:()=>api.listMasters({category:field.category,status:"active",search:term,pageSize:20} as any,{signal:AbortSignal.timeout(20000)}),retry:false,staleTime:600000});
  const fieldName=title(field.key).toLowerCase();
  return <Controller name={field.key} control={control} rules={{validate:value=>(field.required?required()(value):undefined)||true}} render={({field:input})=><><SuggestionInput id={`input-${field.key}`} value={input.value||""} onChange={input.onChange} onSearchChange={setSearch} options={q.error?[]:(q.data?.items||[]).map(row=>row.name)} placeholder={`Search ${fieldName}…`} clearLabel={`Clear ${fieldName}`} loading={q.isFetching} onRetry={()=>void q.refetch()} emptyMessage={`No matching ${fieldName}. Keep typing to enter it manually.`} error={q.error?`${friendlyError(q.error,"load")} You can still enter ${fieldName} manually.`:undefined}/><small className="muted field-hint"><HelpTip label={`About ${fieldName}`} text="Optional suggestions from your local catalog; manual entry is always allowed."/></small></>}/>;
 }

@@ -40,7 +40,7 @@ test("lookup is search-stable and does not poll option or selected lists", () =>
   assert.equal(retainSelectedRecords(cached,["selected"],[]).get("selected").name,"Known clinic");
   assert.equal(retainSelectedRecords(cached,["selected"],[{id:"selected",name:"Updated clinic"}]).get("selected").name,"Updated clinic");
   assert.equal(retainSelectedRecords(cached,[],[]).size,0);
-  assert.ok(lookup.includes("retainSelectedRecords(retained.current,selected,merged)"));
+  assert.ok(lookup.includes("retainSelectedRecords(selectedQuery.error ? new Map() : retained.current,selected,merged)"));
   assert.ok(lookup.includes("selectedRecords: [...rows, ...selectedRows]"));
   assert.ok(lookup.includes("selected.filter(id => !rows.some"));
   assert.ok(lookup.includes("staleTime: DIRECTORY_FRESH_MS"));

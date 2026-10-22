@@ -35,11 +35,12 @@ async function fixture(page:Page,role="superAdmin",opts:{empty?:boolean;multiple
    else if(p.endsWith("/patients"))json=list([{id:"p1",fullName:"Fictional Patient"}]);
    else if(p==="/api/staff-assignment-options")json={clinics:[clinic],branches:[branch],doctors:[doctor],pagination:{clinics:{total:1},branches:{total:1},doctors:{total:1}}};
    else if(p==="/api/appointments"&&m==="POST"){
-     status=201;state.appointment={id:"unified-appointment",...req.postDataJSON(),patientName:"Fictional Patient",doctorName:doctor.fullName,clinicName:clinic.name,branchName:branch.name,startTime:state.range,endTime:"12:00",timezone:"UTC",token:"D-1",reference:"FICTIONAL-TICKET",status:"waiting",revision:0,confirmationEmail:state.emailOutcome,createdAt:"2026-10-09T07:00:00Z",dateFormat:"YYYY-MM-DD",timeFormat:"24h"};json=state.appointment;
+     status=201;state.appointment={id:"unified-appointment",...req.postDataJSON(),patientName:"Fictional Patient",doctorName:doctor.fullName,clinicName:clinic.name,branchName:branch.name,startTime:state.range,endTime:"12:00",timezone:"UTC",token:"D-1",reference:"FICTIONAL-TICKET",status:"booked",canReschedule:true,revision:0,confirmationEmail:state.emailOutcome,createdAt:"2026-10-09T07:00:00Z",dateFormat:"YYYY-MM-DD",timeFormat:"24h"};json=state.appointment;
    }
    else if(p==="/api/appointments/unified-appointment/reschedule"){
      state.appointment={...state.appointment,...req.postDataJSON(),startTime:"09:00",endTime:"12:00",token:"D-2",revision:1};json=state.appointment;
    }
+   else if(p==="/api/appointments/unified-appointment/movement")json={appointment:state.appointment};
    else if(p==="/api/appointments/unified-appointment")json=state.appointment;
    else if(p==="/api/appointments/unified-appointment/qr")json={checkInUrl:"/check-in/FICTIONAL-TICKET"};
    else if(p==="/api/appointments")json=list(state.appointment?[state.appointment]:[]);

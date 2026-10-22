@@ -110,6 +110,7 @@ export function SearchableMultiSelect({
 
   const localPages = useLocalOptionPages(options, search, !!onSearchChange, localPageSize);
   const displayOptions = localPages.options;
+  useEffect(() => { setSearch(""); setOpen(false); }, [labelScope]);
 
   const toggleValue = (optValue: string) => {
     if (value.includes(optValue)) {
@@ -235,7 +236,7 @@ export function SearchableMultiSelect({
             />
             <CommandList key={localPages.pageKey} className="min-h-0 max-h-[250px] overflow-y-auto">
               <CommandEmpty>
-                {error && onRetry && !loading ? <span className="flex flex-col items-center gap-2">Unable to load options.<button type="button" className="button secondary small" onClick={onRetry}>Retry</button></span> : <>{isActuallyLoading ? "Searching..." : error ? "Unable to load options." : "No results found."}</>}
+                 {error && onRetry && !isActuallyLoading ? <span className="flex flex-col items-center gap-2">Unable to load options.<button type="button" className="button secondary small" onClick={onRetry}>Retry</button></span> : <>{isActuallyLoading ? (search ? "Searching…" : "Loading…") : error ? "Unable to load options." : search ? "No matching results." : "No options available."}</>}
               </CommandEmpty>
               <CommandGroup>
                 {displayOptions.map((option) => {

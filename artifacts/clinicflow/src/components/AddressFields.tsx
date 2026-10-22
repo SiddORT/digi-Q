@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { geoScope, validatePostalCode, DEFAULT_ADDRESS_COUNTRY } from "../lib/address";
 import { phoneCountries } from "../lib/phone";
-import { useDebouncedValue } from "../hooks/use-debounced-value";
+import { useLookupSearch } from "../hooks/use-lookup-search";
+import { useDirectoryActor } from "../lib/use-directory";
 import { SearchableSelect } from "./SearchableSelect";
 import { SuggestionInput } from "./SuggestionInput";
 import { HelpTip } from "./HelpTip";
@@ -35,8 +36,8 @@ async function searchNames(directory: AddressDirectory, kind: "state" | "city", 
   return [...new Set([...data.items, ...local.items.map(row => row.name)])].slice(0, 20);
 }
 function useNames(directory: AddressDirectory, kind: "state" | "city", search: string, scope: { country: string; state?: string }) {
-  const term = useDebouncedValue(search);
-  return useQuery({ queryKey: ["address-names", directory, kind, term, scope.country, kind === "city" ? scope.state : ""], retry: false, staleTime: 600_000, queryFn: () => searchNames(directory, kind, term, scope) });
+  const actor = useDirectoryActor();
+  return useQuery({ queryKey: ["address-names", actor, directory, kind, search, scope.country, kind === "city" ? scope.state : ""], retry: false, staleTime: 600_000, queryFn: () => searchNames(directory, kind, search, scope) });
 }
 
 /**
@@ -48,10 +49,11 @@ function useNames(directory: AddressDirectory, kind: "state" | "city", search: s
  * — never on first render. City is never filled from PIN data; State/UT only via an explicit button.
  */
 export function AddressFields({ value, onChange, directory = "private", required = false, errors = {}, testId = "address", idPrefix = "input-" }: { value: AddressValue; onChange: (patch: Partial<AddressValue>) => void; directory?: AddressDirectory; required?: boolean; errors?: AddressErrors; testId?: string; idPrefix?: string }) {
-  const [stateSearch, setStateSearch] = useState("");
-  const [citySearch, setCitySearch] = useState("");
+  const actor = useDirectoryActor();
   const country = value.country ?? "";
   const scope = geoScope(value);
+  const { debounced: stateSearch, setSearch: setStateSearch } = useLookupSearch(JSON.stringify([actor, directory, scope.country]));
+  const { debounced: citySearch, setSearch: setCitySearch } = useLookupSearch(JSON.stringify([actor, directory, scope.country, scope.state]));
   const states = useNames(directory, "state", stateSearch, scope);
   const cities = useNames(directory, "city", citySearch, scope);
   const pinError = errors.pincode || (validatePostalCode(value.pincode, scope.country) === true ? undefined : String(validatePostalCode(value.pincode, scope.country)));

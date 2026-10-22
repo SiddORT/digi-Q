@@ -117,6 +117,7 @@ export function SearchableSelect({
   // If we are filtering locally (no onSearchChange), we should filter the options
   const localPages = useLocalOptionPages(options, search, !!onSearchChange, localPageSize);
   const displayOptions = localPages.options;
+  useEffect(() => { setSearch(""); setOpen(false); }, [labelScope]);
 
   return (
     <div className="searchable-select-field flex min-w-0 max-w-full flex-col gap-1.5 w-full">

@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type AriaAttributes } from "react";
+import { useEffect, useRef, type AriaAttributes } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { SearchableSelect } from "./SearchableSelect";
 import { SearchableMultiSelect } from "./SearchableMultiSelect";
-import { useDebouncedValue } from "./ListingControls";
+import { useLookupSearch } from "../hooks/use-lookup-search";
 import { selectedIdBatches, retainSelectedRecords } from "./relation-validity";
 import { soleAssigned } from "../lib/sole-option";
 import { cachedComplete, directoryDetail, directoryPage, DIRECTORY_FRESH_MS } from "../lib/directory-cache";
@@ -25,8 +25,7 @@ function useOptions(resource: string, selected: string[], params: Record<string,
   const labelScope = JSON.stringify([actor, resource, params]);
   const retainedScope = useRef(labelScope);
   if (retainedScope.current !== labelScope) { retained.current.clear(); retainedScope.current = labelScope; }
-  const [search, setSearch] = useState("");
-  const debounced = useDebouncedValue(search);
+   const { debounced, setSearch } = useLookupSearch(labelScope);
   const assignment = resource.startsWith("assignment:");
   const kind = resource.split(":")[1];
   const query = useInfiniteQuery({
@@ -115,6 +114,13 @@ function useOptions(resource: string, selected: string[], params: Record<string,
     return { query, labelScope, loading: loading || (missing.length > 0 && selectedQuery.isFetching), selectedQuery, selectedPending: missing.length > 0 && selectedQuery.isPending, rows: merged, selectedRecords: [...rows, ...selectedRows].filter(row => selected.includes(row.id)), verifiedMissing, search: setSearch, options: visible.map(row => ({ value: row.id, label: `${recordLabel(row)}${row.status==="inactive"?" · Inactive":""}`, disabled: !rows.some(option => option.id === row.id)||(params.status==="active"&&row.status==="inactive") })) };
 }
 
+/** Readiness only: shares the picker queries, never renders or changes a draft. */
+export function ResourceLookupReadiness({ resource, value, params = {}, disabled, fixed, autoSole }: Omit<Props, "value" | "onChange"> & { value: string | string[] }) {
+  useOptions(resource, Array.isArray(value) ? value : value ? [value] : [], params, !!fixed || !disabled);
+  useDirectoryCardinality(resource, params, !!autoSole && !fixed && !disabled);
+  return null;
+}
+
 export function ResourceLookup({ resource, value, onChange, params = {}, onSelectedRecords, fixed = false, autoSole = false, wrapFixedLabel = false, emptyOption, ...props }: Props) {
   const lookup = useOptions(resource, value ? [value] : [], params, fixed || !props.disabled);
   // This request never uses picker search or hydrated selections. A partial page
@@ -126,20 +132,26 @@ export function ResourceLookup({ resource, value, onChange, params = {}, onSelec
    const recordsKey = JSON.stringify(lookup.selectedRecords);
    const missingKey = lookup.verifiedMissing.join(",");
    useEffect(() => { if (!lookup.query.isPending && !lookup.query.error && !lookup.selectedPending && !lookup.selectedQuery.error) onSelectedRecords?.(lookup.selectedRecords, lookup.verifiedMissing); }, [scopeKey, recordsKey, missingKey, lookup.query.isPending, lookup.query.error, lookup.selectedPending, lookup.selectedQuery.error, onSelectedRecords]);
-  const placeholder=props.placeholder||`Search ${lookupName(resource)}…`;
+   const prerequisite = props.disabled && !value && ["branches","doctors"].includes(resource.split(":").pop()!) && !params.clinicId ? "Choose a clinic group first." : undefined;
+   const placeholder=prerequisite||props.placeholder||`Search ${lookupName(resource)}…`;
   const awaitingScope=autoSole&&!props.disabled&&(scope.isPending||!!scope.error||scope.isSuccess&&scope.data?.total===0);
-  if (fixed || awaitingScope || (sole && (!value || value === sole.id))) {
+   if (fixed || awaitingScope || (sole && (!value || value === sole.id))) {
     const record = value ? lookup.selectedRecords.find(row => row.id === value) : sole;
+     const assignmentText = record ? recordLabel(record) : value
+       ? lookup.loading || lookup.selectedPending ? "Loading saved assignment…" : "Saved assignment unavailable"
+       : scope.error || lookup.query.error ? "Unable to load assigned options"
+       : scope.isPending && !fixed || lookup.loading ? "Loading assigned options…"
+       : "Not assigned";
     return <div className="fixed-scope" data-testid={`fixed-scope-${resource}`}>
       {props.label && <label htmlFor={props.id}>{props.label}{props.required ? " *" : ""}</label>}
-      {wrapFixedLabel?<div id={props.id} role="textbox" aria-readonly="true" aria-label={props.label} aria-describedby={props["aria-describedby"]} tabIndex={0} className="fixed-scope-value">{record ? recordLabel(record) : (value ? lookup.loading ? "Loading saved assignment…" : "Saved assignment unavailable" : scope.isPending&&!fixed ? "Loading assigned options…" : "Not assigned")}</div>:<input id={props.id} aria-label={props.label} readOnly value={record ? recordLabel(record) : (value ? lookup.loading ? "Loading saved assignment…" : "Saved assignment unavailable" : scope.isPending&&!fixed ? "Loading assigned options…" : "Not assigned")} aria-describedby={props["aria-describedby"]}/>}
+       {wrapFixedLabel?<div id={props.id} role="textbox" aria-readonly="true" aria-label={props.label} aria-describedby={props["aria-describedby"]} tabIndex={0} className="fixed-scope-value">{assignmentText}</div>:<input id={props.id} aria-label={props.label} readOnly value={assignmentText} aria-describedby={props["aria-describedby"]}/>}
       {props.error && <p role="alert" className="field-error">{props.error}</p>}
       <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => {void lookup.query.refetch();void lookup.selectedQuery.refetch();}}/>
       {autoSole&&scope.isSuccess&&scope.data?.total===0&&<p role="status">No active assigned {lookupName(resource)} are available in this scope. Ask your clinic administrator to review assignments.</p>}
       <LookupError error={scope.error} retry={() => {void scope.refetch();}}/>
     </div>;
   }
-   return <><SearchableSelect {...props} retainSelectionLabel={false} labelScope={lookup.labelScope} placeholder={placeholder} value={value || emptyOption?.value || ""} onChange={next => onChange(next === emptyOption?.value ? "" : next)} options={emptyOption ? [emptyOption, ...lookup.options] : lookup.options} onSearchChange={lookup.search} loading={lookup.loading} error={props.error||(lookup.selectedQuery.error ? "Unable to load selected names. Your selection has been retained." : lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{if(!props.disabled)void lookup.query.refetch();if(value)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
+    return <><SearchableSelect {...props} retainSelectionLabel={false} labelScope={lookup.labelScope} placeholder={placeholder} value={value || emptyOption?.value || ""} onChange={next => onChange(next === emptyOption?.value ? "" : next)} options={emptyOption ? [emptyOption, ...lookup.options] : lookup.options} onSearchChange={lookup.search} loading={lookup.loading} error={props.error||(lookup.selectedQuery.error ? "Unable to load selected names. Your selection has been retained." : lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{if(!props.disabled)void lookup.query.refetch();if(value)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
     {autoSole && scope.isSuccess && scope.data?.total === 0 && <p role="status">No active assigned {lookupName(resource)} are available in this scope. Ask your clinic administrator to review assignments.</p>}
     <LookupError error={scope.error} retry={() => {void scope.refetch();}}/>
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
@@ -152,7 +164,8 @@ export function ResourceMultiLookup({ resource, value, onChange, params = {}, on
    const selectedKey = JSON.stringify(lookup.selectedRecords);
    const missingKey = lookup.verifiedMissing.join(",");
    useEffect(() => { if (!lookup.query.isPending && !lookup.query.error && !lookup.selectedPending && !lookup.selectedQuery.error) onSelectedRecords?.(lookup.selectedRecords, lookup.verifiedMissing); }, [scopeKey, selectedKey, missingKey, lookup.query.isPending, lookup.query.error, lookup.selectedPending, lookup.selectedQuery.error, onSelectedRecords]);
-  const placeholder=props.placeholder||`Search ${lookupName(resource)}…`;
+   const prerequisite = props.disabled && !value.length && resource.endsWith("branches") && !params.clinicId ? "Choose a clinic group first." : undefined;
+   const placeholder=prerequisite||props.placeholder||`Search ${lookupName(resource)}…`;
     return <><SearchableMultiSelect {...props} retainSelectionLabel={false} labelScope={lookup.labelScope} placeholder={placeholder} value={value} onChange={onChange} options={lookup.options.map(option=>({...option,disabled:option.disabled||(!value.includes(option.value)&&!!isOptionDisabled?.(lookup.rows.find(row=>row.id===option.value)))}))} onSearchChange={lookup.search} isLoading={lookup.loading} error={props.error||(lookup.selectedQuery.error ? "Unable to load selected names. Your selection has been retained." : lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{if(!props.disabled)void lookup.query.refetch();if(value.length)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
 }

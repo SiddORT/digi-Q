@@ -98,9 +98,9 @@ test("confirmation actions retain button styles, destinations, visible labels an
       await actions.first().waitFor();
       if (!noSlug) await page.getByRole("link", { name: "Check Public Booking Page" }).waitFor();
       const expected = [
-        [role === "doctor" ? "Review clinic configuration" : "Complete booking setup", "/admin/settings?clinicId=fictional%2Fid%20%26%20clinic", role === "doctor" ? "eye" : "save"],
+        [role === "doctor" ? "Review clinic configuration" : "Complete booking setup", "/admin/clinics/fictional%2Fid%20%26%20clinic/details", role === "doctor" ? "eye" : "save"],
         ["Open Workspace", "/admin/dashboard", "log-in"],
-        ["Staff Management", "/admin/clinic?clinicId=fictional%2Fid%20%26%20clinic&section=staff", "users"],
+        ["Staff Management", "/admin/clinics/fictional%2Fid%20%26%20clinic/staff", "users"],
         ...noSlug ? [] : [["Check Public Booking Page", "https://care.example.invalid/fictional-care", "globe"]],
       ];
       assert.equal(await actions.count(), expected.length);

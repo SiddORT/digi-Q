@@ -37,7 +37,7 @@ export function WorkspaceScope({ role, roleLabel, open }: { role: string; roleLa
   const select = api.useSelectWorkspace({ mutation: { onSuccess: () => { void client.cancelQueries(); client.clear(); window.location.reload(); } } });
   const list = q.data?.workspaces ?? [];
   const active = q.data?.activeClinicId ?? null;
-  const scope = role === "superAdmin" ? "Platform-Wide" : role === "patient" ? "Your Patient Account" : q.isLoading ? "Loading…" : !list.length ? "No Clinic Assigned" : active ? (list.find(w => w.id === active)?.name || "One Clinic") : list.length === 1 ? list[0].name : `All ${list.length} Clinics`;
+  const scope = role === "superAdmin" ? "Platform-Wide" : role === "patient" ? "Your Patient Account" : q.isError ? "Workspace unavailable" : q.isPending ? "Loading…" : !list.length ? "No Clinic Assigned" : active ? (list.find(w => w.id === active)?.name || "One Clinic") : list.length === 1 ? list[0].name : `All ${list.length} Clinics`;
   return <div className="pm-scope" role="group" aria-label="Workspace" data-testid="menu-workspace">
     <small className="pm-scope-label">Workspace</small>
     <div className="pm-scope-current"><Building2 size={15} aria-hidden /><OverflowText value={`${roleLabel} · ${scope}`} /></div>
@@ -54,6 +54,8 @@ export function WorkspaceScope({ role, roleLabel, open }: { role: string; roleLa
 }
 
 export function ProfileMenu({ name, roleLabel, role, actualRole, navigation, page, userId, onSignOut }: { name: string; roleLabel: string; role: string; actualRole?: string; navigation: string[]; page: string; userId: string; clinicIds?: string[]; onSignOut: () => void }) {
+  // The menu is lazy-mounted, but its permitted options belong to this page.
+  api.useListWorkspaces({ query: { queryKey: api.getListWorkspacesQueryKey(), enabled: role !== "patient" && (actualRole || role) !== "superAdmin", staleTime: 60000 } });
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -78,7 +80,7 @@ export function ProfileMenu({ name, roleLabel, role, actualRole, navigation, pag
     </button>
     {open && <div className="profile-menu-panel" role="menu" aria-label="Account" ref={panel} onKeyDown={e => { if (e.key === "Tab") setOpen(false); else menuKeyDown(e); }}>
       <div className="pm-head"><strong>{name}</strong><br /><small className="muted">{roleLabel}</small></div>
-      <WorkspaceScope role={role} roleLabel={roleLabel} open={open} />
+      <WorkspaceScope role={actualRole === "superAdmin" ? "superAdmin" : role} roleLabel={roleLabel} open={open} />
       {quickActions(role, navigation).map(a => { const Icon = actionIcon[a.id] || Plus; return a.inline ? <button key={a.id} type="button" role="menuitem" onClick={() => { setOpen(false); openQrInline(); }} data-testid={`menu-${a.id}`}><Icon size={15} aria-hidden />{a.label}</button> : <Link key={a.id} role="menuitem" href={a.href} onClick={() => setOpen(false)} data-testid={`menu-${a.id}`}><Icon size={15} aria-hidden />{a.label}</Link>; })}
       {navigation.includes(page) && <button type="button" role="menuitem" aria-pressed={fav} onClick={() => toggleFavorite(page)} data-testid="menu-toggle-favorite"><Star size={15} fill={fav ? "currentColor" : "none"} aria-hidden />{fav ? "Remove page from favorites" : "Add page to favorites"}</button>}
       {navigation.includes("settings") && <Link role="menuitem" href={`/${role}/settings`} onClick={() => setOpen(false)} data-testid="menu-settings"><Settings size={15} aria-hidden />Settings</Link>}

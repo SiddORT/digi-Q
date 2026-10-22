@@ -6,6 +6,7 @@ import { SearchableSelect } from "./SearchableSelect";
 import { AppDialog } from "./AppDialog";
 import { ResponsiveActionGroup } from "./ResponsiveActionGroup";
 import { HelpTip } from "./HelpTip";
+import { LookupReadiness } from "./LookupReadiness";
 import "./clinic-listing-toolbar.css";
 
 // Export useDebouncedValue directly from here for convenience as requested
@@ -339,6 +340,7 @@ export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel,
   // and status tabs, 4) active filter chips with one Clear All. The search row never remounts while typing.
   return (
      <section className={cn("filter-bar list-header", compactToolbar && "list-header--compact")} aria-label={label} data-testid="list-header">
+       {!open && advanced && <LookupReadiness>{advanced}</LookupReadiness>}
        {!compactToolbar && (pageTitle || title || actions) && <div className={cn("filter-bar-row lh-row lh-top lh-head", (title || status) && "has-title")}>
          {heading}
          {primaryActions}

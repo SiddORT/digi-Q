@@ -120,16 +120,16 @@ for (const role of ["doctor","clinicAdmin","receptionist"]) test(`Queue restored
   await expect(page.getByRole("button",{name:"Doctor: Dr Fixture",exact:true})).toBeVisible();
 });
 
-test("Queue pinned clinic and location hydrate names even when disabled",async({page})=>{
+test("Queue pinned location summary and disabled doctor hydrate readable names without duplicate scope controls",async({page})=>{
   await fixtures(page);
   await page.addInitScript(({clinicId,first})=>{
     localStorage.setItem("dq.workspace.branch.selector-fixture",first);
     sessionStorage.setItem("clinicflow-staff-session",JSON.stringify({staffId:"selector-fixture",clinicId,branchId:first,doctorId:first,date:"2026-10-08"}));
   },{clinicId,first});
   await page.goto("/?mode=queue&fixtureRole=doctor&pinned=1");
-  await expect(page.getByRole("button",{name:"Location: Fixture Location",exact:true})).toBeDisabled();
-  await expect(page.getByRole("textbox",{name:"Clinic",exact:true})).toHaveValue("Fixture Clinic");
-  await expect(page.getByRole("textbox",{name:"Clinic",exact:true})).toHaveAttribute("readonly","");
+  await expect(page.getByText("Live queue for Fixture Location · Updated every 30 seconds",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:/^Location:/})).toHaveCount(0);
+  await expect(page.getByRole("textbox",{name:"Clinic",exact:true})).toHaveCount(0);
   await expect(page.getByRole("button",{name:"Doctor: Dr Fixture",exact:true})).toBeDisabled();
   await evidence(page,"queue-pinned");
 });

@@ -18,6 +18,7 @@ import { SelectorFixture } from "./SelectorFixture";
 import { RegistrationFixture } from "./RegistrationFixture";
 import { RescheduleFixture } from "./RescheduleFixture";
 import App from "../src/App";
+import { DropdownWorkspaceFixture } from "./DropdownWorkspaceFixture";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -31,6 +32,8 @@ const titleOwner=useRef<string|null>(null);
 const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
+const [dropdownWorkspace] = useState(() => params.get("mode") === "dropdown-workspace");
+if (dropdownWorkspace) return <DropdownWorkspaceFixture/>;
 if (params.get("mode") === "registration") return <RegistrationFixture/>;
 if (params.get("mode") === "onboarding") return <OnboardingFixture/>;
 if (params.get("mode") === "reschedule") return <RescheduleFixture/>;

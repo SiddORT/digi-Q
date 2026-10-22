@@ -1,7 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
+import { resolve } from "node:path";
 
 export default defineConfig({
   testDir: "./tests",
+  // The root validation command runs alongside other checks. Never let a
+  // different suite's cleanup delete in-flight PDF traces or attachments.
+  outputDir: resolve("generated-artifacts/ticket-regression/results"),
   // Cold Vite compilation and PDF work share resources with the PostgreSQL
   // contention check during completion validation. Keep assertions unchanged
   // while allowing those concurrent setup/render costs to finish.
@@ -11,7 +15,7 @@ export default defineConfig({
   // Rasterising PDFs at print resolution is memory-intensive.
   workers: 2,
   retries: 0,
-  reporter: [["list"], ["html", { open: "never" }]],
+  reporter: [["list"], ["html", { open: "never", outputFolder: resolve("generated-artifacts/ticket-regression/report") }]],
   use: {
     ...devices["Desktop Chrome"],
     baseURL: "http://127.0.0.1:43719",

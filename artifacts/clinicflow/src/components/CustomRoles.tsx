@@ -3,14 +3,15 @@ import { RowMenu } from "./RowMenu";
 import { IconAction } from "./IconAction";
 import { HelpTip } from "./HelpTip";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, Plus, X, ShieldCheck } from "lucide-react";
 import { systemSelection, customSelection } from "./role-selection";
-import { useGetCustomRoles, getGetCustomRolesQueryKey, useSaveCustomRoles, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetSystemUsers, getGetSystemUsersQueryKey } from "@workspace/api-client-react";
+import { useGetCustomRoles, getGetCustomRolesQueryKey, useSaveCustomRoles, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetSystemUsers, getSystemUsers } from "@workspace/api-client-react";
 import { AppDialog, useAppDialogClose } from "./AppDialog";
 import { SearchableSelect } from "./SearchableSelect";
 import { label } from "./permission-matrix";
-import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { useLookupSearch } from "@/hooks/use-lookup-search";
+import { useDirectoryActor } from "@/lib/use-directory";
 import { BASE_ROLES, type BaseRole, type CustomRole, type CustomRoleConfig, type RoleBinding, type SystemUser, addBinding, bindingError, bindingsFor, capKey, configsEqual, deleteRole, newRoleId, removeBinding, upsertRole, validateRole } from "./custom-roles";
 
 const status = (e: any) => e?.status ?? e?.response?.status;
@@ -166,14 +167,20 @@ function RoleEditor({ role, config, modules, actions, names, onBack, onChange, o
 }
 
 function Bindings({ role, config, names, onConfig }: { role: CustomRole; config: CustomRoleConfig; names: Map<string, SystemUser>; onConfig: (c: CustomRoleConfig) => void }) {
-  const [search, setSearch] = useState("");
-  const debounced = useDebouncedValue(search);
+  const actor = useDirectoryActor();
+  const labelScope = JSON.stringify([actor, role.id, role.baseRole]);
+  const { debounced, setSearch } = useLookupSearch(labelScope);
   const [userId, setUserId] = useState("");
   const [clinicId, setClinicId] = useState("");
   const [err, setErr] = useState("");
-  const params = { page: 1, search: debounced || undefined, role: role.baseRole, status: "active" } as UsersParams;
-  const users = useGetSystemUsers(params, { query: { queryKey: getGetSystemUsersQueryKey(params), placeholderData: (p: unknown) => p } as never });
-  const known = useMemo(() => { const list = ((users.data as { data?: SystemUser[] } | undefined)?.data) ?? []; list.forEach(u => names.set(u.id, u)); return list; }, [users.data, names]);
+  const params = { search: debounced || undefined, role: role.baseRole, status: "active" } as UsersParams;
+  const users = useInfiniteQuery({
+    queryKey: ["role-binding-users", actor, role.baseRole, params],
+    initialPageParam: 1, retry: false, staleTime: 60000,
+    queryFn: ({ pageParam, signal }) => getSystemUsers({ ...params, page: pageParam }, { signal }),
+    getNextPageParam: (last, pages) => pages.reduce((n, page) => n + page.data.length, 0) < last.total ? pages.length + 1 : undefined,
+  });
+  const known = useMemo(() => { const list = users.data?.pages.flatMap(page => page.data) ?? []; list.forEach(u => names.set(u.id, u)); return list; }, [users.data, names]);
   const selected = known.find(u => u.id === userId) || names.get(userId) || null;
   const list = bindingsFor(config, role.id);
   const add = () => {
@@ -185,7 +192,7 @@ function Bindings({ role, config, names, onConfig }: { role: CustomRole; config:
   return <div className="cr-bindings">
     <h3 className="cr-sub">Assigned Staff <small>{list.length}</small></h3>
     <div className="cr-bind-form">
-      <SearchableSelect label={`Staff Member (${label(role.baseRole)})`} value={userId} onChange={v => { setUserId(v); setClinicId(""); setErr(""); }} onSearchChange={setSearch} loading={users.isFetching} error={users.isError ? "Unable to load staff." : undefined} onRetry={() => void users.refetch()}
+      <SearchableSelect labelScope={labelScope} label={`Staff Member (${label(role.baseRole)})`} value={userId} onChange={v => { setUserId(v); setClinicId(""); setErr(""); }} onSearchChange={setSearch} loading={users.isFetching} error={users.isError ? "Unable to load staff." : undefined} onRetry={() => void users.refetch()} hasMore={users.hasNextPage} onLoadMore={() => void users.fetchNextPage()}
         options={known.map(u => ({ value: u.id, label: `${u.fullName} · ${u.email}` }))} placeholder="Search active staff…" testId="select-binding-user" />
       <SearchableSelect label="Clinic" value={clinicId} onChange={v => { setClinicId(v); setErr(""); }} disabled={!selected} placeholder="All of their clinics"
         options={[{ value: "", label: "All of Their Clinics" }, ...(selected?.clinics ?? []).map(c => ({ value: c.id, label: c.name }))]} testId="select-binding-clinic" />

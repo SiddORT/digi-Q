@@ -7,7 +7,9 @@ test("disabled dependent lookups do not claim an in-flight request",()=>{
   assert.match(source,/const loading = enabled &&/);
   assert.match(source,/loading=\{lookup.loading\}/);
   assert.match(source,/isLoading=\{lookup.loading\}/);
-  assert.match(source,/selectedPending: enabled && missing.length > 0/);
+  // Disabled controls still hydrate saved names. Editability must not hide
+  // selected-name pending state, only option-list loading.
+  assert.match(source,/selectedPending: missing.length > 0 && selectedQuery.isPending/);
 });
 test("option and selected-record reads remain bounded and retain manual retry",()=>{
   const cache=readFileSync(new URL("../lib/directory-cache.ts",import.meta.url),"utf8");

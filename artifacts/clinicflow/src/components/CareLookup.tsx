@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { SearchableSelect } from "./SearchableSelect";
-import { useDebouncedValue } from "./ListingControls";
-import { ResourceLookup } from "./ResourceLookup";
+import { useLookupSearch } from "../hooks/use-lookup-search";
+import { ResourceLookup, ResourceLookupReadiness } from "./ResourceLookup";
 import { useDirectoryActor } from "../lib/use-directory";
 import { recordLabel } from "../lib/selection-label";
 import { retainSelectedRecords } from "./relation-validity";
@@ -38,12 +38,15 @@ export function CareLookup(props: CareLookupProps) {
    if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookup resource={props.kind} label={props.label} required={props.required} value={props.value} onChange={props.onChange} params={{ ...props.params, status: "active" }} disabled={props.disabled} fixed={props.fixed} autoSole={["clinics","branches","doctors"].includes(props.kind)}/>;
   return <PublicCareLookup {...props}/>;
 }
-function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAccess = false, disabled = false, selectedLabel, required }: CareLookupProps) {
+export function CareLookupReadiness(props: CareLookupProps) {
+  if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookupReadiness resource={props.kind} value={props.value} params={{ ...props.params, status: "active" }} disabled={props.disabled} fixed={props.fixed} autoSole={["clinics","branches","doctors"].includes(props.kind)}/>;
+  return <PublicCareLookup {...props} readinessOnly/>;
+}
+function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAccess = false, disabled = false, selectedLabel, required, readinessOnly = false }: CareLookupProps & { readinessOnly?: boolean }) {
   const actor = useDirectoryActor();
   const client = useQueryClient();
   const labelScope = JSON.stringify([actor, kind, publicAccess, params]);
-  const [search, setSearch] = useState("");
-  const debounced = useDebouncedValue(search);
+   const { debounced, setSearch } = useLookupSearch(labelScope);
   const retained = useRef(new Map<string, RecordValue>());
   const retainedScope = useRef(labelScope);
   if (retainedScope.current !== labelScope) { retained.current.clear(); retainedScope.current = labelScope; }
@@ -90,12 +93,15 @@ function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAcc
      const record = retained.current.get(value);
      if (record) options.unshift({ value, label: display(record), disabled: true });
    }
-  const plural=label==="Your appointment"?"your appointments":`${label.toLowerCase()}s`;
+   const plural=label==="Your appointment"?"your appointments":`${label.toLowerCase()}s`;
+   const prerequisite = disabled && !value && kind === "branches" && !params.clinicId ? "Choose a clinic group first."
+     : disabled && !value && kind === "doctors" && !params.branchId ? "Choose a location first." : undefined;
+   if (readinessOnly) return null;
    return <><SearchableSelect retainSelectionLabel={false} required={required} labelScope={labelScope} label={label} value={value} options={options} onChange={id => {
      const record = records.find(item=>item.id===id);
      if (record && publicAccess && kind in publicLoaders && !query.isError) {
        retainPublicSelectedCare(client, actor, kind, params, record, query.dataUpdatedAt);
      }
      onChange(id, record || retained.current.get(id));
-   }} onSearchChange={setSearch} placeholder={`Search ${plural}…`} loading={query.isFetching || selected.isFetching} error={selected.error ? "Unable to load selected name. Your selection has been retained." : query.error ? `Unable to load ${plural}. Please try again.` : undefined} onRetry={()=>{if(!disabled)void query.refetch();if(value)void selected.refetch();}} disabled={disabled} hasMore={query.hasNextPage} onLoadMore={()=>{void query.fetchNextPage();}} /></>;
+    }} onSearchChange={setSearch} placeholder={prerequisite || `Search ${plural}…`} loading={query.isFetching || selected.isFetching} error={selected.error ? "Unable to load selected name. Your selection has been retained." : query.error ? `Unable to load ${plural}. Please try again.` : undefined} onRetry={()=>{if(!disabled)void query.refetch();if(value)void selected.refetch();}} disabled={disabled} hasMore={query.hasNextPage} onLoadMore={()=>{void query.fetchNextPage();}} /></>;
 }
