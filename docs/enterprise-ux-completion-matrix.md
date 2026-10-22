@@ -15,7 +15,7 @@ This records the earlier listing-controls pass. Current Title Case, truncation, 
 | Session queue | Yes | No (fixed operational order) | No | Yes | Not offered (clinical scope comes from the session selection) | Yes |
 | Staff users (per tab) | Yes | Yes | Yes | Yes | Yes (`STAFF_VIEW_KEYS`) | Yes |
 | System users | Yes | Yes | Yes | Yes | Yes (`SYSTEM_USER_VIEW_KEYS`) | Yes |
-| Reports | Yes | Yes | Yes | Yes | Yes (`REPORT_VIEW_KEYS`) | Expand toggle only (reports have no row actions) |
+| Reports | Yes | Yes | Yes | Yes | Yes (live analytics and retained operational detail) | Live summary details/row CSV, scoped visits where exact context is supported, focus clinic; legacy metrics retained in Operational Detail |
 
 - The order of records in the queue is never changed. Column preferences affect presentation only.
 - Pinning is limited to one column, which always renders first. Where there is a selection checkbox, that column is sticky at `left:0` and the pinned column is offset by the fixed select width, so they cannot overlap. Below 900px wide (which includes 150% zoom), sticky positioning is turned off.

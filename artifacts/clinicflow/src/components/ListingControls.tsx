@@ -190,7 +190,7 @@ export function listingSuggestions<T>(rows: readonly T[] | undefined | null, map
 // --- Page title ownership ---
 /** The workspace shell provides the page title; the first mounted list header renders it as the page <h1>
  *  on row 1 (beside search and actions) so listing pages do not repeat a separate heading row. */
-export interface ListPageTitle { title: React.ReactNode; eyebrow?: React.ReactNode; owner: React.MutableRefObject<string | null> }
+export interface ListPageTitle { title: React.ReactNode; eyebrow?: React.ReactNode; subtitle?: React.ReactNode; owner: React.MutableRefObject<string | null> }
 export const ListPageTitleContext = createContext<ListPageTitle | null>(null);
 function usePageTitleOwnership() {
   const ctx = useContext(ListPageTitleContext);
@@ -236,6 +236,9 @@ export interface FilterBarProps {
   onOpen?: () => void;
   /** Return false to keep the drawer open (e.g. caller-side validation failed). */
   onApply?: () => boolean | void;
+  /** Optional draft-only reset/cancel for transactional filter drawers. */
+  onResetDraft?: () => void;
+  onCancel?: () => void;
   /** Header title (left of the search). Typically the record type and result count. */
   title?: React.ReactNode;
   /** Status tabs on the second row. */
@@ -256,12 +259,13 @@ function useCompactFilters() {
   useEffect(() => { const m = window.matchMedia?.(query); if (!m) return; const on = () => setMatch(m.matches); on(); m.addEventListener("change", on); return () => m.removeEventListener("change", on); }, []);
   return match;
 }
-export function FilterBar({ children, advanced, onReset, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters, compactToolbar = false }: FilterBarProps) {
+export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters, compactToolbar = false }: FilterBarProps) {
   const advancedActiveCount = activeCount ?? chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
-  const closeFilters = () => {
+  const closeFilters = (cancel = true) => {
+    if (cancel) onCancel?.();
     setOpen(false);
     requestAnimationFrame(() => toggleRef.current?.focus());
   };
@@ -278,7 +282,7 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
     }
     if (onApply?.() === false) { setInvalidMessage("Correct the highlighted filters before applying."); return; }
     setInvalidMessage("");
-    closeFilters();
+    closeFilters(false);
   };
   const pageTitle = usePageTitleOwnership();
   // Phones: common filters collapse behind a one-line summary instead of stacking full-width controls forever.
@@ -301,7 +305,8 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
      {!compactToolbar && <span className="filter-toggle-text">Filters</span>}
      {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
    </button>;
-   const heading = pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1></div>
+   const subtitle = pageTitle?.subtitle || (pageTitle?.title === "Reports" ? "View and analyze clinic reports." : null);
+   const heading = pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1>{subtitle && <p className="muted">{subtitle}</p>}</div>
      : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>;
    const primaryActions = actions && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup>{actions}</ResponsiveActionGroup></div>;
    const tools = (
@@ -310,13 +315,13 @@ export function FilterBar({ children, advanced, onReset, active, chips = [], def
             {advanced && (
               <div className="filter-pop">
                   {compactToolbar ? <HelpTip text={`${label}. Open the drawer to choose and apply filters${advancedActiveCount ? `; ${advancedActiveCount} active` : ""}.`}>{filterTrigger}</HelpTip> : filterTrigger}
-                <AppDialog open={open} onClose={closeFilters} title={label} variant="drawer">
+                  <AppDialog open={open} onClose={() => closeFilters()} title={label} variant="drawer">
                   <form id={panelId} ref={formRef} className="filter-drawer-content" noValidate data-testid="form-filter-drawer"
                     onSubmit={e => e.preventDefault()}>
                     {invalidMessage && <p role="alert" className="field-error filter-drawer-error" data-testid="text-filter-drawer-error">{invalidMessage}</p>}
                     <div className="filter-panel-fields">{advanced}</div>
                     <div className="filter-panel-foot">
-                      {onReset && <button type="button" className="filter-clear" onClick={() => { onReset(); setInvalidMessage(""); closeFilters(); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
+                      {onReset && <button type="button" className="filter-clear" onClick={() => { if (onResetDraft) onResetDraft(); else { onReset(); closeFilters(false); } setInvalidMessage(""); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
                       <button type="button" className="filter-done" onClick={apply} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
                     </div>
                   </form>

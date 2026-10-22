@@ -7,7 +7,7 @@ import { assert } from "./http";
 import { DEMO_FIXTURE } from "./demo-policy";
 import { logger } from "./logger";
 import { notificationStaffSubjects } from "./notification-staff-subjects";
-import { signHistorySubjects, verifyHistorySubjects } from "./notification-history-provenance";
+import { signHistorySubjects, verifyHistorySubjects, accountSubjectFingerprint } from "./notification-history-provenance";
 import { explicitNotificationSubjects } from "./notification-explicit-subjects";
 
 // Reporting history has no age expiry. Privacy erasure and dispatch claims remain independent.
@@ -85,6 +85,17 @@ export async function recordNotification(conn: any, job: string, entry: Entry, s
       const previousStatus = old?.status;
       if (initialOnly && old) return;
       const data: any = old || { ...publicEntry, source: entry.source || "automatic", createdAt: entry.createdAt ?? now, status, timeline: [] };
+      // Capture explicit source coordinates once, never reconstruct old user
+      // attribution from current contacts or assignment memberships.
+      if (!old && _sourceInput && subjects) {
+        const actor = _sourceInput.actorId || (entry.event === "booking" || entry.source === "test" ? _sourceInput.snapshot?.actorId : undefined);
+        const recipient = _sourceInput.recipientUserId;
+        data.reporting = {
+          actor: actor && subjects.includes(actor) ? accountSubjectFingerprint(actor) : null,
+          recipient: recipient && subjects.includes(recipient) ? accountSubjectFingerprint(recipient) : null,
+          branchId: _sourceInput.snapshot?.branchId || null,
+        };
+      }
       const unprovenHistoricalEnvelope = !!old && !previousSubjects &&
         !!(old.encrypted || old.snapshots?.length || old.senderHash || old.recipientHash);
       if (previousStatus === status && (!snapshot || status === "sending")) return;
@@ -174,6 +185,7 @@ export const historyRecords = (metadataOnly = false, selection: HistorySelection
     'clinicId',data->'clinicId','recipientGroup',data->'recipientGroup','createdAt',data->'createdAt',
     'dispatchAt',data->'dispatchAt','completedAt',data->'completedAt','queuedAt',data->'queuedAt',
     'dueAt',data->'dueAt','httpStatus',data->'httpStatus','erased',data->'erased',
+    'reporting',data->'reporting',
     'provenance',jsonb_build_object('version',data->'provenance'->'version'))` : sql`data`} as data
   from settings where id like 'notification-history:%'
     ${selection.id ? sql`and id=${selection.id}` : sql``}

@@ -12,10 +12,21 @@ test("usage view is read-only, scoped and uncached", () => {
   assert.doesNotMatch(src, /localStorage|sessionStorage|resend/i);
   assert.match(src, /not proof that nothing was sent/);
 });
+test("staff reporting picker uses the scoped report identities, including linked doctors", () => {
+  const source=readFileSync(new URL("./CommunicationUsage.tsx",import.meta.url),"utf8");
+  assert.match(source,/SearchableSelect label="Staff User"/);
+  assert.match(source,/q\.data\?\.userOptions/);
+  assert.doesNotMatch(source,/ResourceLookup resource="users"/);
+  assert.match(source,/labelScope=\{`communication-report-users:/);
+});
 test("Reports tabs are not hidden by the location gate; clinical reports retain that gate",()=>{
   const clinic=readFileSync(new URL("../clinic.tsx",import.meta.url),"utf8");
   assert.match(clinic,/return page==="reports"\?<>\{children\}<\/>:/);
-  assert.match(clinic,/tab==="clinical"\?<WorkspaceBranchScopeGate page="reports"><Reports\/><\/WorkspaceBranchScopeGate>:/);
+  assert.match(clinic,/<ReportsWorkspace.*legacy=\{<LegacyReports\/>\}/);
+  const workspace=readFileSync(new URL("./reports/ReportsWorkspace.tsx",import.meta.url),"utf8");
+  assert.match(workspace,/tab === "live" \? <WorkspaceBranchScopeGate page="reports"><ReportsDashboard/);
+  assert.match(workspace,/tab === "operational" \? <WorkspaceBranchScopeGate page="reports">/);
+  assert.match(workspace,/: <CommunicationUsage/);
 });
 const require=createRequire(import.meta.url);
 const {build}=createRequire(import.meta.resolve("vite"))("esbuild");

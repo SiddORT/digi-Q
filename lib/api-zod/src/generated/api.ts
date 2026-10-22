@@ -8158,6 +8158,8 @@ export const ListNotificationsResponse = zod.object({
 })
 
 
+export const getCommunicationUsageQueryGroupByDefault = `clinic`;
+export const getCommunicationUsageQueryAttributionDefault = `recipient`;
 export const getCommunicationUsageQueryPageSizeMax = 100;
 
 
@@ -8170,6 +8172,10 @@ export const GetCommunicationUsageQueryParams = zod.object({
   "status": zod.enum(['accepted', 'pending', 'failed', 'unknown', 'skipped']).optional(),
   "clinicId": zod.coerce.string().optional(),
   "source": zod.enum(['automatic', 'test']).optional(),
+  "groupBy": zod.enum(['clinic', 'user', 'location', 'event', 'recipientGroup']).default(getCommunicationUsageQueryGroupByDefault),
+  "attribution": zod.enum(['recipient', 'actor']).default(getCommunicationUsageQueryAttributionDefault),
+  "userId": zod.coerce.string().optional(),
+  "branchId": zod.coerce.string().optional(),
   "cursor": zod.coerce.string().optional(),
   "pageSize": zod.coerce.number().int().min(1).max(getCommunicationUsageQueryPageSizeMax).optional()
 })
@@ -8207,7 +8213,18 @@ export const GetCommunicationUsageResponse = zod.object({
   "legacyCount": zod.number(),
   "unattributedCount": zod.number(),
   "scopeClinicId": zod.string().nullable(),
-  "scopeClinicName": zod.string().nullable()
+  "scopeClinicName": zod.string().nullable(),
+  "userOptions": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string()
+})).optional().describe('Staff identities visible through existing staff and doctor reporting scope. Never inferred from historical contacts.'),
+  "breakdowns": zod.array(zod.object({
+  "key": zod.string().nullable(),
+  "label": zod.string(),
+  "channel": zod.string(),
+  "bucket": zod.string(),
+  "count": zod.number()
+})).optional()
 })
 
 
@@ -8518,6 +8535,134 @@ export const ListPatientActivityResponse = zod.object({
   "total": zod.number().int(),
   "page": zod.number().int(),
   "pageSize": zod.number().int()
+})
+
+
+/**
+ * Live report families, full-scope KPIs and equal-length prior-period comparison in one read snapshot. Available denotes a computed live summary, never a completed report job. Export returns every matching aggregate row.
+ */
+export const getReportAnalyticsQueryPageDefault = 1;
+
+export const getReportAnalyticsQueryPageSizeDefault = 20;
+export const getReportAnalyticsQueryPageSizeMax = 100;
+
+export const getReportAnalyticsQuerySearchMax = 200;
+
+export const getReportAnalyticsQueryGroupByDefault = `date`;
+export const getReportAnalyticsQueryReportTypeDefault = `all`;
+export const getReportAnalyticsQueryStatusDefault = `all`;
+export const getReportAnalyticsQueryCompareDefault = false;
+export const getReportAnalyticsQueryExportAllDefault = false;
+export const getReportAnalyticsQuerySortDefault = `-date`;
+
+export const GetReportAnalyticsQueryParams = zod.object({
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "clinicId": zod.coerce.string().optional(),
+  "branchId": zod.coerce.string().optional(),
+  "doctorId": zod.coerce.string().optional(),
+  "sessionId": zod.coerce.string().optional(),
+  "startTime": zod.coerce.string().optional(),
+  "page": zod.coerce.number().int().min(1).default(getReportAnalyticsQueryPageDefault),
+  "pageSize": zod.coerce.number().int().min(1).max(getReportAnalyticsQueryPageSizeMax).default(getReportAnalyticsQueryPageSizeDefault),
+  "search": zod.coerce.string().max(getReportAnalyticsQuerySearchMax).optional(),
+  "groupBy": zod.enum(['date', 'clinic', 'doctor']).default(getReportAnalyticsQueryGroupByDefault),
+  "reportType": zod.enum(['all', 'appointments', 'doctors', 'noShow', 'patients', 'cancellations', 'activity', 'reschedules', 'clinicPerformance', 'patientActivity']).default(getReportAnalyticsQueryReportTypeDefault),
+  "status": zod.enum(['all', 'available', 'noData']).default(getReportAnalyticsQueryStatusDefault),
+  "compare": zod.coerce.boolean().default(getReportAnalyticsQueryCompareDefault),
+  "exportAll": zod.coerce.boolean().default(getReportAnalyticsQueryExportAllDefault),
+  "sort": zod.enum(['date', '-date', 'label', '-label', 'clinic', '-clinic', 'type', '-type', 'appointments', '-appointments', 'uniquePatients', '-uniquePatients', 'completed', '-completed', 'cancelled', '-cancelled', 'noShow', '-noShow', 'consultationMinutes', '-consultationMinutes', 'reschedules', '-reschedules']).default(getReportAnalyticsQuerySortDefault)
+})
+
+export const GetReportAnalyticsResponse = zod.object({
+  "from": zod.string(),
+  "to": zod.string(),
+  "timezone": zod.string(),
+  "generatedAt": zod.coerce.date(),
+  "summary": zod.object({
+  "appointments": zod.number().int(),
+  "completed": zod.number().int(),
+  "cancelled": zod.number().int(),
+  "noShow": zod.number().int(),
+  "uniquePatients": zod.number().int(),
+  "registrations": zod.number().int(),
+  "waiting": zod.number().int(),
+  "checkedIn": zod.number().int(),
+  "averageWaitMinutes": zod.number().nullable(),
+  "averageConsultationMinutes": zod.number().nullable(),
+  "consultationMinutes": zod.number().nullable(),
+  "timedConsultations": zod.number().int(),
+  "reschedules": zod.number().int(),
+  "rescheduledAppointments": zod.number().int(),
+  "activity": zod.number().int()
+}),
+  "previous": zod.union([zod.object({
+  "appointments": zod.number().int(),
+  "completed": zod.number().int(),
+  "cancelled": zod.number().int(),
+  "noShow": zod.number().int(),
+  "uniquePatients": zod.number().int(),
+  "registrations": zod.number().int(),
+  "waiting": zod.number().int(),
+  "checkedIn": zod.number().int(),
+  "averageWaitMinutes": zod.number().nullable(),
+  "averageConsultationMinutes": zod.number().nullable(),
+  "consultationMinutes": zod.number().nullable(),
+  "timedConsultations": zod.number().int(),
+  "reschedules": zod.number().int(),
+  "rescheduledAppointments": zod.number().int(),
+  "activity": zod.number().int()
+}),zod.null()]),
+  "previousFrom": zod.string(),
+  "previousTo": zod.string(),
+  "points": zod.array(zod.object({
+  "date": zod.string(),
+  "appointments": zod.number().int(),
+  "completed": zod.number().int(),
+  "cancelled": zod.number().int(),
+  "noShow": zod.number().int(),
+  "waiting": zod.number().int()
+})),
+  "previousPoints": zod.array(zod.object({
+  "date": zod.string(),
+  "appointments": zod.number().int(),
+  "completed": zod.number().int(),
+  "cancelled": zod.number().int(),
+  "noShow": zod.number().int(),
+  "waiting": zod.number().int()
+})),
+  "rows": zod.array(zod.object({
+  "id": zod.string(),
+  "date": zod.string(),
+  "label": zod.string(),
+  "group": zod.string(),
+  "clinicId": zod.string(),
+  "clinic": zod.string(),
+  "type": zod.string(),
+  "family": zod.string(),
+  "status": zod.enum(['available', 'noData']),
+  "metrics": zod.object({
+  "appointments": zod.number().int(),
+  "completed": zod.number().int(),
+  "cancelled": zod.number().int(),
+  "noShow": zod.number().int(),
+  "uniquePatients": zod.number().int(),
+  "registrations": zod.number().int(),
+  "waiting": zod.number().int(),
+  "checkedIn": zod.number().int(),
+  "averageWaitMinutes": zod.number().nullable(),
+  "averageConsultationMinutes": zod.number().nullable(),
+  "consultationMinutes": zod.number().nullable(),
+  "timedConsultations": zod.number().int(),
+  "reschedules": zod.number().int(),
+  "rescheduledAppointments": zod.number().int(),
+  "activity": zod.number().int()
+})
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int(),
+  "notes": zod.array(zod.string())
 })
 
 

@@ -20,8 +20,10 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { CommunicationUsageBreakdown } from './communicationUsageBreakdown';
 import type { CommunicationUsageCount } from './communicationUsageCount';
 import type { CommunicationUsageRecord } from './communicationUsageRecord';
+import type { CommunicationUsageReportUserOptionsItem } from './communicationUsageReportUserOptionsItem';
 
 export interface CommunicationUsageReport {
   items: CommunicationUsageRecord[];
@@ -38,4 +40,7 @@ export interface CommunicationUsageReport {
   scopeClinicId: string | null;
   /** @nullable */
   scopeClinicName: string | null;
+  /** Staff identities visible through existing staff and doctor reporting scope. Never inferred from historical contacts. */
+  userOptions?: CommunicationUsageReportUserOptionsItem[];
+  breakdowns?: CommunicationUsageBreakdown[];
 }

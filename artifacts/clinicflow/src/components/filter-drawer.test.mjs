@@ -9,7 +9,7 @@ test("drawer Apply checks form validity, honours caller false, and shows an inli
   assert.ok(apply.indexOf("checkValidity()") < apply.indexOf("onApply?.()"), "constraint validity runs before the caller commits");
   assert.match(apply, /:invalid"\)\?\.focus\(\)/);
   assert.match(apply, /if \(onApply\?\.\(\) === false\) \{ setInvalidMessage/);
-  assert.ok(apply.indexOf("closeFilters()") > apply.indexOf("=== false"), "drawer only closes after a successful apply");
+  assert.ok(apply.indexOf("closeFilters(false)") > apply.indexOf("=== false"), "drawer only closes after a successful apply without cancelling committed filters");
   assert.match(controls, /<form id=\{panelId\} ref=\{formRef\}[^>]*noValidate/);
   assert.match(controls, /role="alert" className="field-error filter-drawer-error"/);
   assert.match(controls, /onApply\?: \(\) => boolean \| void;/);

@@ -20,7 +20,9 @@
  *
  * OpenAPI spec version: 1.0.0
  */
+import type { GetCommunicationUsageAttribution } from './getCommunicationUsageAttribution';
 import type { GetCommunicationUsageChannel } from './getCommunicationUsageChannel';
+import type { GetCommunicationUsageGroupBy } from './getCommunicationUsageGroupBy';
 import type { GetCommunicationUsageSource } from './getCommunicationUsageSource';
 import type { GetCommunicationUsageStatus } from './getCommunicationUsageStatus';
 
@@ -32,6 +34,10 @@ event?: string;
 status?: GetCommunicationUsageStatus;
 clinicId?: string;
 source?: GetCommunicationUsageSource;
+groupBy?: GetCommunicationUsageGroupBy;
+attribution?: GetCommunicationUsageAttribution;
+userId?: string;
+branchId?: string;
 cursor?: string;
 /**
  * @minimum 1

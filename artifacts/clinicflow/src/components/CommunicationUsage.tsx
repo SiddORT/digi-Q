@@ -1,7 +1,9 @@
 import { Fragment, useMemo, useState } from "react";
 import { getGetCommunicationUsageQueryKey, getGetCommunicationUsageDetailQueryKey, useGetCommunicationUsage, useGetCommunicationUsageDetail, type CommunicationUsageCount, type CommunicationUsageRecord, type GetCommunicationUsageParams } from "@workspace/api-client-react";
 import { AppDialog } from "./AppDialog";
+import { SearchableSelect } from "./SearchableSelect";
 import { ResourceLookup } from "./ResourceLookup";
+import { csvCell } from "./admin-listing-data";
 import "./communication-usage.css";
 
 export const BUCKETS = ["accepted", "pending", "failed", "unknown", "skipped"] as const;
@@ -11,7 +13,7 @@ export type Preset = typeof PRESETS[number];
 const PRESET_LABEL: Record<Preset, string> = { all: "All time", today: "Today", last7: "Last 7 days", last30: "Last 30 days", currentMonth: "Current month", custom: "Custom" };
 const BUCKET_COPY: Record<string, string> = { accepted: "Provider accepted", pending: "Pending / in progress", failed: "Failed", unknown: "Delivery unknown", skipped: "Skipped / not attempted" };
 const IST = 330 * 60000;
-export interface UsageFilters { preset: Preset; from: string; to: string; channel: string; event: string; status: string; clinicId: string; source: string }
+export interface UsageFilters { preset: Preset; from: string; to: string; channel: string; event: string; status: string; clinicId: string; source: string; groupBy?: "clinic" | "user" | "location" | "event" | "recipientGroup"; attribution?: "recipient" | "actor"; userId?: string; branchId?: string }
 export const EMPTY_USAGE: UsageFilters = { preset: "all", from: "", to: "", channel: "", event: "", status: "", clinicId: "", source: "" };
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -33,6 +35,10 @@ export function buildUsageParams(f: UsageFilters, role: string, cursor?: string,
   if (f.channel) p.channel = f.channel as any; if (f.event) p.event = f.event; if (f.status) p.status = f.status as any;
   if (sa && f.clinicId) p.clinicId = f.clinicId;
   if (sa && f.source) p.source = f.source as any;
+  if (f.groupBy) p.groupBy = f.groupBy;
+  if (f.attribution) p.attribution = f.attribution;
+  if (f.userId) p.userId = f.userId;
+  if (f.branchId) p.branchId = f.branchId;
   if (cursor) p.cursor = cursor;
   return p;
 }
@@ -65,6 +71,7 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
   const [f, setF] = useState<UsageFilters>(EMPTY_USAGE);
   const [cursors, setCursors] = useState<string[]>([]);
   const [open, setOpen] = useState<string | null>(null);
+  const [exportError, setExportError] = useState("");
   const cursor = cursors[cursors.length - 1];
   const params = useMemo(() => buildUsageParams(f, role, cursor), [f, role, cursor]);
   const scope = [userId, role, sa ? f.clinicId || "all" : clinicScope] as const;
@@ -75,6 +82,28 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
   const toggle = (k: "channel" | "status", v: string) => apply({ ...f, [k]: f[k] === v ? "" : v });
   const counts = d?.counts ?? [];
   const clinics = useMemo(() => groupByClinic(counts), [counts]);
+  const breakdowns = useMemo(() => {
+    const groups = new Map<string, { key: string | null; label: string; sms: number; email: number; buckets: Record<string, number> }>();
+    for (const r of d?.breakdowns || []) {
+      const key = r.key ?? "unattributed";
+      const g = groups.get(key) || { key: r.key, label: r.label, sms: 0, email: 0, buckets: {} };
+      if (r.channel === "sms" || r.channel === "email") g[r.channel] += r.count;
+      g.buckets[r.bucket] = (g.buckets[r.bucket] || 0) + r.count;
+      groups.set(key, g);
+    }
+    return [...groups.values()].sort((a, b) => b.sms + b.email - a.sms - a.email);
+  }, [d?.breakdowns]);
+  const exportBreakdown = () => {
+    setExportError("");
+    try {
+      if (!d || q.isFetching || q.isError) throw new Error("Refresh usage before exporting.");
+      const csv = [["Group", "SMS Records", "Email Records", ...BUCKETS.map(b => BUCKET_COPY[b])].map(csvCell).join(","),
+        ...breakdowns.map(r => [r.label, r.sms, r.email, ...BUCKETS.map(b => r.buckets[b] || 0)].map(csvCell).join(","))].join("\r\n");
+      const url = URL.createObjectURL(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }));
+      const a = document.createElement("a"); a.href = url; a.download = `DigiQ-communication-${f.groupBy || "clinic"}.csv`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) { setExportError(e instanceof Error ? e.message : "Unable to export usage."); }
+  };
   const customBad = draft.preset === "custom" && draft.from && draft.to && draft.from > draft.to;
   const showCounts = !!d && !q.isError;
   const num = (n: number) => showCounts ? n.toLocaleString("en-IN") : "—";
@@ -98,6 +127,9 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
         {sa && <div className="form-field"><label htmlFor="cu-source">Source</label><select id="cu-source" value={draft.source} onChange={e => setDraft({ ...draft, source: e.target.value })} data-testid="select-usage-source"><option value="">Automatic only (default)</option><option value="automatic">Automatic</option><option value="test">Test sends</option></select></div>}
         {sa && <div className="form-field cu-clinic"><ResourceLookup resource="clinics" label="Clinic" clearable value={draft.clinicId === "unattributed" ? "" : draft.clinicId} onChange={v => setDraft({ ...draft, clinicId: v })} />
           <label className="check-label"><input type="checkbox" checked={draft.clinicId === "unattributed"} onChange={e => setDraft({ ...draft, clinicId: e.target.checked ? "unattributed" : "" })} data-testid="check-usage-unattributed" /> Unattributed / platform only</label></div>}
+        <label>Group By<select value={draft.groupBy || "clinic"} onChange={e => setDraft({ ...draft, groupBy: e.target.value as UsageFilters["groupBy"] })} data-testid="select-usage-group"><option value="clinic">Clinic</option><option value="user">Staff User</option><option value="location">Location</option><option value="event">Message Purpose</option><option value="recipientGroup">Recipient Role</option></select></label>
+        <label>User Attribution<select value={draft.attribution || "recipient"} onChange={e => setDraft({ ...draft, attribution: e.target.value as UsageFilters["attribution"] })}><option value="recipient">Staff Recipient</option><option value="actor">Staff Actor Who Triggered the Event</option></select></label>
+        <SearchableSelect label="Staff User" clearable labelScope={`communication-report-users:${userId}:${role}:${clinicScope}`} value={draft.userId || ""} onChange={v => setDraft({ ...draft, userId: v })} options={(q.data?.userOptions || []).map(u => ({ value: u.id, label: u.name }))} loading={q.isFetching} error={q.error ? "Staff reporting identities could not be loaded." : undefined} onRetry={() => void q.refetch()} />
         {customBad && <p className="error-box" role="alert">From must not be after To.</p>}
         <div className="et-actions"><button type="submit" className="button" disabled={!!customBad} data-testid="button-apply-usage">Apply filters</button>
           <button type="button" className="button secondary" onClick={() => apply(EMPTY_USAGE)} data-testid="button-reset-usage">Reset</button></div>
@@ -110,6 +142,13 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
         <div className="cu-cards five" data-testid="cards-usage-status">{BUCKETS.map(b => <button key={b} type="button" aria-pressed={f.status === b} className={`cu-card b-${b}${f.status === b ? " on" : ""}`} onClick={() => toggle("status", b)} data-testid={`card-usage-status-${b}`}><small>{BUCKET_COPY[b]}</small><strong>{num(sumCounts(counts, undefined, b))}</strong></button>)}</div>
         {sa && clinics.length > 0 && <div className="nl-wrap"><table className="nl-table cu-clinics" data-testid="table-usage-clinics"><caption>Clinic breakdown (clinics with matching records)</caption><thead><tr><th>Clinic</th><th>Total</th>{BUCKETS.map(b => <th key={b}>{BUCKET_COPY[b]}</th>)}</tr></thead>
           <tbody>{clinics.map(g => { const key = g.id ?? "unattributed"; return <tr key={key} className={f.clinicId === key ? "sel" : ""}><td><button type="button" className="table-sort" aria-pressed={f.clinicId === key} onClick={() => apply({ ...f, clinicId: f.clinicId === key ? "" : key })} data-testid={`row-usage-clinic-${key}`}>{g.name}</button></td><td>{g.total.toLocaleString("en-IN")}</td>{BUCKETS.map(b => <td key={b}>{(g.byBucket[b] || 0).toLocaleString("en-IN")}</td>)}</tr>; })}</tbody></table></div>}
+        <section aria-label="Communication Breakdown">
+          <div className="section-head"><h3>Usage by {f.groupBy === "user" ? `Staff ${f.attribution === "actor" ? "Actor" : "Recipient"}` : f.groupBy === "location" ? "Location" : f.groupBy === "event" ? "Message Purpose" : f.groupBy === "recipientGroup" ? "Recipient Role" : "Clinic"}</h3>
+            <button type="button" className="button secondary small" onClick={exportBreakdown} disabled={q.isFetching || q.isError || !breakdowns.length}>Export Breakdown CSV</button></div>
+          <p className="muted">All matching recorded messages, not just this page. User and location attribution is captured for new messages only; older or unrecorded identities remain Unattributed / Unavailable. Automatic messages may have no staff actor. These are observed message records, not billed SMS segments or confirmed delivery.</p>
+          {exportError && <p role="alert" className="error-box">{exportError}</p>}
+          <div className="table-scroll"><table className="nl-table" data-testid="table-usage-breakdown"><thead><tr><th>Group</th><th>SMS</th><th>Email</th>{BUCKETS.map(b => <th key={b}>{BUCKET_COPY[b]}</th>)}</tr></thead><tbody>{breakdowns.map(r => <tr key={r.key || "unattributed"}><td>{r.label}</td><td>{r.sms}</td><td>{r.email}</td>{BUCKETS.map(b => <td key={b}>{r.buckets[b] || 0}</td>)}</tr>)}</tbody></table></div>
+        </section>
         {!d.items.length ? <p className="notice" data-testid="empty-usage">No records match these filters{cursors.length ? " on this page" : ""}. This is not proof that nothing was sent; history is best effort and may have been purged.</p>
           : <div className="nl-wrap"><table className="nl-table" data-testid="table-usage"><thead><tr><th>Time</th><th>Channel</th><th>Event</th><th>Outcome</th><th>Recipient</th><th /></tr></thead>
             <tbody>{d.items.map(r => <tr key={r.id} data-testid={`row-usage-${r.id}`}><td>{fmt(r.createdAt, tz)}</td><td>{r.channel}</td><td>{label(r.event)}</td><td><span className="et-chip">{BUCKET_COPY[r.bucket] ?? r.bucket}</span>{r.legacy ? " legacy" : ""}</td><td>{r.recipient ?? "Unavailable"}</td><td><button type="button" onClick={() => setOpen(r.id)} data-testid={`button-open-usage-${r.id}`}>Details</button></td></tr>)}</tbody></table></div>}

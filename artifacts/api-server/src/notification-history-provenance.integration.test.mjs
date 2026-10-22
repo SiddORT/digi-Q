@@ -39,6 +39,13 @@ test("source proofs cover all historical envelopes and capture staff identities 
     assert.ok(p.verifyHistorySubjects(historyId, stored).includes(p.accountSubjectFingerprint("docu")));
     assert.ok(!JSON.stringify(stored).includes('"docu"'));
     assert.ok(!Object.hasOwn(stored, "_sourceInput"));
+    assert.equal(stored.reporting.actor,p.accountSubjectFingerprint("rec"));
+    assert.equal(stored.reporting.recipient,null);
+    // The booking creator is not evidence of who later rescheduled a visit.
+    await h.recordHistory("fixture-later-reschedule", { ...entry, event: "rescheduled" }, "pending");
+    const laterId="notification-history:"+createHash("sha256").update("fixture-later-reschedule").digest("hex");
+    const later=(await h.pg.query(`select data from settings where id=$1`,[laterId])).rows[0].data;
+    assert.equal(later.reporting.actor,null);
     await h.pg.query(`update settings set data=$2 where id=$1`, [historyId, JSON.stringify(p.erasedHistoryMarker())]);
     await h.recordHistory(job, entry, "provider_accepted", { message: "Stale private completion" });
     assert.deepEqual((await h.pg.query(`select data from settings where id=$1`, [historyId])).rows[0].data, p.erasedHistoryMarker());

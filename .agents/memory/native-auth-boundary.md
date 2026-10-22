@@ -69,15 +69,6 @@ queries.
 clearing. Refresh clinic/doctor/identity projections without deleting that
 snapshot; test immediate success-screen navigation as well as a hard reload.
 
-Complete the initial authenticated onboarding journey before starting a fresh
-login in parity tests.
-
-**Why:** A fresh login can refresh identity state and hide an immediate-session
-failure, even when both cookies are later accepted.
-
-**How to apply:** Check identity, saved-scope discovery and the requested writes
-with the onboarding session first; only then repeat with a new login.
-
 The user requested keeping the preview recovery password in workspace Secrets and having superadmin seeding always run on first deployment.
 
 **Why:** The user explicitly changed the recovery cleanup requirement and requested automatic first-deployment provisioning.

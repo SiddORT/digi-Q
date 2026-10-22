@@ -4,6 +4,8 @@ import { z } from "zod";
 import { assert } from "./http";
 import { DEMO_FIXTURE } from "./demo-policy";
 import { historyRecords, projection } from "./notification-history";
+import { accountSubjectFingerprint } from "./notification-history-provenance";
+import { sourceSql } from "./list-query";
 
 const events = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder"] as const;
 const buckets = ["accepted", "pending", "failed", "unknown", "skipped"] as const;
@@ -15,6 +17,10 @@ const filters = z.object({
   status: z.enum(buckets).optional(),
   clinicId: z.string().min(1).max(100).optional(),
   source: z.enum(["automatic", "test"]).default("automatic"),
+  groupBy: z.enum(["clinic", "user", "location", "event", "recipientGroup"]).default("clinic"),
+  attribution: z.enum(["recipient", "actor"]).default("recipient"),
+  userId: z.string().min(1).max(100).optional(),
+  branchId: z.string().min(1).max(100).optional(),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
   cursor: z.string().max(1000).optional(),
 }).strict();
@@ -96,6 +102,23 @@ export async function communicationUsage(user: any, input: unknown, conn: any = 
   if (owned) {
     assert(q.source === "automatic" && (!q.clinicId || owned.ids.includes(q.clinicId)), 403, "Current clinic scope required");
   }
+  // The general staff-management directory intentionally excludes some doctor
+  // accounts. Resolve those through the existing scoped doctor relationship,
+  // without widening that directory or inferring historical message identity.
+  const directory = (await conn.execute(sql`
+    select id,max(name) as name from (
+      select doc->>'id' as id,doc->>'fullName' as name
+      from (${sourceSql(user, "users")}) u
+      where doc->>'role' in ('superAdmin','clinicAdmin','doctor','receptionist')
+      union all
+      select doc->>'userId' as id,doc->>'fullName' as name
+      from (${sourceSql(user, "doctors")}) d
+    ) report_users where nullif(id,'') is not null
+    group by id order by max(name),id`)).rows;
+  if (q.userId) assert(directory.some((u: any) => u.id === q.userId), 403, "User outside your reporting scope");
+  const identities = directory.length
+    ? sql`values ${sql.join(directory.map((u: any) => sql`(${accountSubjectFingerprint(u.id)},${u.id},${u.name})`), sql`, `)}`
+    : sql`select null::text,null::text,null::text where false`;
   const base = [ownership(user), sql`data->>'source'=${q.source}`];
   if (q.clinicId) base.push(q.clinicId === "unattributed" ? sql`attributed_clinic is null` : sql`attributed_clinic=${q.clinicId}`);
   const conditions = [...base];
@@ -104,6 +127,15 @@ export async function communicationUsage(user: any, input: unknown, conn: any = 
   if (q.channel) conditions.push(sql`data->>'channel'=${q.channel}`);
   if (q.event) conditions.push(sql`data->>'event'=${q.event}`);
   if (q.status) conditions.push(sql`bucket=${q.status}`);
+  if (q.userId) conditions.push(sql`data->'reporting'->>${q.attribution}=${accountSubjectFingerprint(q.userId)}`);
+  if (q.branchId) conditions.push(sql`data->'reporting'->>'branchId'=${q.branchId}`);
+  const dimension = q.groupBy === "user" ? sql`identity.user_id`
+    : q.groupBy === "location" ? sql`data->'reporting'->>'branchId'`
+    : q.groupBy === "event" ? sql`data->>'event'`
+    : q.groupBy === "recipientGroup" ? sql`data->>'recipientGroup'` : sql`attributed_clinic`;
+  const dimensionLabel = q.groupBy === "user" ? sql`identity.name`
+    : q.groupBy === "location" ? sql`(select data->>'name' from branches where id=matching.data->'reporting'->>'branchId' and clinic_id=attributed_clinic)`
+    : q.groupBy === "clinic" ? sql`(select data->>'name' from clinics where id=attributed_clinic)` : dimension;
   const matching = sql.join(conditions, sql` and `);
   // One SQL statement supplies one MVCC snapshot for counts and the bounded page.
   let seek = sql`true`;
@@ -124,10 +156,15 @@ export async function communicationUsage(user: any, input: unknown, conn: any = 
     ), page as (
       select id, data, state, bucket, occurred_at, attributed_clinic from matching where ${seek}
       order by ${cursorTime} desc, id desc limit ${q.pageSize + 1}
-    )
+    ), identities(fingerprint,user_id,name) as (${identities}),
+    breakdowns as (select ${dimension} as key,coalesce(${dimensionLabel},'Unattributed / Unavailable') as label,
+      matching.data->>'channel' as channel,bucket,count(*)::float8 as count from matching
+      left join identities identity on identity.fingerprint=matching.data->'reporting'->>${q.attribution}
+      group by 1,2,3,4)
     select
       coalesce((select jsonb_agg(to_jsonb(page) order by coalesce(occurred_at,-9007199254740991) desc,id desc) from page),'[]') as page,
       coalesce((select jsonb_agg(to_jsonb(counts)) from counts),'[]') as counts,
+      coalesce((select jsonb_agg(to_jsonb(breakdowns)) from breakdowns),'[]') as breakdowns,
       (select count(*)::float8 from matching) as total,
       (select min(occurred_at)::float8 from records where ${sql.join(base, sql` and `)}) as earliest,
       (select count(*)::float8 from matching where data->>'legacy'='true') as legacy,
@@ -135,7 +172,8 @@ export async function communicationUsage(user: any, input: unknown, conn: any = 
   const r = result.rows[0];
   const page = r.page.slice(0, q.pageSize), last = page.at(-1);
   return {
-    items: page.map(metadata), counts: r.counts, total: r.total,
+    items: page.map(metadata), counts: r.counts, breakdowns: r.breakdowns, total: r.total,
+    userOptions: directory.map((u: any) => ({ id: u.id, name: u.name || "Staff name unavailable" })),
     nextCursor: r.page.length > q.pageSize ? Buffer.from(JSON.stringify([last.occurred_at == null ? -9007199254740991 : Number(last.occurred_at), last.id])).toString("base64url") : null,
     timezone: "Asia/Kolkata", earliestAvailableAt: r.earliest,
     legacyCount: r.legacy, unattributedCount: r.unattributed,

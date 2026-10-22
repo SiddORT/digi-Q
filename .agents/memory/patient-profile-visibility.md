@@ -7,3 +7,9 @@ Doctors may read patient profiles registered in their saved, authorized Clinic G
 **Why:** Newly registered patients must be discoverable before booking, but a demographic profile must not grant another doctor's clinical data or document access.
 
 **How to apply:** Keep patient-list and individual-profile eligibility aligned. Preserve own-doctor appointment scoping independently, and require the existing visit-based entitlement for doctor documents. Do not grant doctors patient-create/edit permissions or manufacture appointments to make profiles visible.
+
+Visit-based patient-profile visibility does not authorize reporting the patient's registration event at a different clinic or location.
+
+**Why:** A patient can register elsewhere and later visit an authorized clinic. Reusing the profile-visible set as registration-report authority reveals another clinic's activity.
+
+**How to apply:** Constrain registration analytics independently to the reporting actor's authorized registration clinics/locations, while retaining the permitted local visit and profile. Exercise the foreign-registration/local-visit case in scope checks and exports.

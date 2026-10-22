@@ -2,10 +2,43 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { createFeatureHarness } from "./test-support/feature-harness.mjs";
+import { seedFeatureFixtures } from "./test-support/feature-fixtures.mjs";
 
 const endpoint = "/reports/communication-usage";
 const id = n => "notification-history:" + createHash("sha256").update(String(n)).digest("hex");
 const old = Date.parse("2020-01-01T00:00:00Z");
+test("clinic-admin usage resolves scoped doctor recipients without widening staff access", { timeout: 60000 }, async () => {
+  const h = await createFeatureHarness({ communicationUsage: true, deletion: true });
+  try {
+    await seedFeatureFixtures(h.pg);
+    const fingerprint = h.historyProvenance.accountSubjectFingerprint;
+    for (const [key, clinicId, reporting] of [
+      ["doctor-own", "c1", { recipient: fingerprint("docu"), actor: fingerprint("rec"), branchId: "b1" }],
+      ["doctor-foreign", "c3", { recipient: fingerprint("docu"), actor: fingerprint("rec"), branchId: "b3" }],
+      ["historical-own", "c1", undefined],
+    ]) {
+      const historyId = id(key);
+      const data = { channel: "email", event: "booking", source: "automatic", clinicId, recipientGroup: "doctor", createdAt: old, status: "provider_accepted", ...(reporting ? { reporting } : {}) };
+      data.provenance = h.historyProvenance.signHistorySubjects(historyId, data, [fingerprint("docu"), fingerprint("rec")]);
+      await h.pg.query("insert into settings(id,data) values($1,$2)", [historyId, JSON.stringify(data)]);
+    }
+    const grouped = await h.call("adm", "GET", endpoint + "?groupBy=user");
+    assert.equal(grouped.status, 200);
+    assert.equal(grouped.data.total, 2);
+    assert.equal(grouped.data.breakdowns.find(r => r.key === "docu").count, 1);
+    assert.equal(grouped.data.breakdowns.find(r => r.key === "docu").label, "Dr Meera Rao");
+    assert.equal(grouped.data.breakdowns.find(r => r.key === null).count, 1);
+    assert.equal(grouped.data.userOptions.filter(u => u.id === "docu").length, 1);
+    assert(!grouped.data.userOptions.some(u => ["doc3u", "patu"].includes(u.id)));
+    for (const query of ["?groupBy=user&userId=docu", "?groupBy=clinic&userId=docu", "?groupBy=user&userId=rec&attribution=actor"]) {
+      const r = await h.call("adm", "GET", endpoint + query);
+      assert.equal(r.status, 200, query);
+      assert.equal(r.data.total, 1, query);
+    }
+    assert.equal((await h.call("adm", "GET", endpoint + "?userId=doc3u")).status, 403);
+    assert.equal((await h.call("adm2", "GET", endpoint + "?userId=docu")).status, 403);
+  } finally { await h.close(); }
+});
 test("unlimited observed usage: buckets, legacy, isolation, cleanup, stable pages and volume", { timeout: 120000 }, async t => {
   process.env.INTEGRATIONS_ENCRYPTION_KEY = "ab".repeat(32); // Fictional disposable key only.
   const h = await createFeatureHarness({ communicationUsage: true, deletion: true });
@@ -32,7 +65,8 @@ test("unlimited observed usage: buckets, legacy, isolation, cleanup, stable page
       insert into clinics(id,admin_id,owner_id,data) values
       ('c1','adm','adm','{"name":"Lakeview Clinic"}'),
       ('c3','adm2','adm2','{"name":"Other Clinic"}')`);
-    await put(id("accepted"));
+    const fingerprint = value => createHash("sha256").update(value).digest("hex");
+    await put(id("accepted"), { reporting: { recipient: fingerprint("adm"), actor: fingerprint("adm"), branchId: null } });
     await put(id("failed"),{channel:"email",status:"provider_rejected"});
     await put(id("pending"),{status:"pending"});
     await put(id("sending"),{status:"sending",dispatchAt:Date.now()});
@@ -57,6 +91,17 @@ test("unlimited observed usage: buckets, legacy, isolation, cleanup, stable page
     assert.equal(all.legacyCount,1);
     assert.equal(all.unattributedCount,3);
     assert.equal(all.counts.reduce((n,c)=>n+c.count,0),all.total);
+    assert.equal(all.breakdowns.reduce((n,c)=>n+c.count,0),all.total);
+    const byUser = await read("sa","?groupBy=user&userId=adm");
+    assert.equal(byUser.total,1);
+    assert.equal(byUser.breakdowns[0].key,"adm");
+    assert.equal(byUser.breakdowns[0].label,"Owner");
+    assert.equal((await read("sa","?groupBy=user&userId=adm&attribution=actor")).total,1);
+    for (const dimension of ["location","event","recipientGroup"]) {
+      const r = await read("sa",`?groupBy=${dimension}`);
+      assert.equal(r.breakdowns.reduce((n,c)=>n+c.count,0),r.total,dimension);
+    }
+    assert.equal((await h.call("adm","GET",endpoint+"?groupBy=user&userId=adm2")).status,403);
     assert(!JSON.stringify(all).includes("encrypted"));
     assert.equal((await read("sa","?source=test")).total,1);
     const owned=await read("adm");

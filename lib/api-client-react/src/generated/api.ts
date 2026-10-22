@@ -116,6 +116,7 @@ import type {
   GetPublicBookingContextParams,
   GetPublicWebsiteConfig200,
   GetQueueParams,
+  GetReportAnalyticsParams,
   GetReportTrendsParams,
   GetReportsParams,
   GetSessionContextsParams,
@@ -215,6 +216,7 @@ import type {
   RegistrationResumeIdentity,
   RegistrationResumeResult,
   Report,
+  ReportAnalytics,
   ReportTrend,
   RequestLogoUpload200,
   RequestPasswordRecovery200,
@@ -14511,6 +14513,87 @@ export function useListPatientActivity<TData = Awaited<ReturnType<typeof listPat
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListPatientActivityQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetReportAnalyticsUrl = (params?: GetReportAnalyticsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reports/analytics?${stringifiedParams}` : `/api/reports/analytics`
+}
+
+/**
+ * Live report families, full-scope KPIs and equal-length prior-period comparison in one read snapshot. Available denotes a computed live summary, never a completed report job. Export returns every matching aggregate row.
+ */
+export const getReportAnalytics = async (params?: GetReportAnalyticsParams, options?: Parameters<typeof customFetch>[1]): Promise<ReportAnalytics> => {
+
+  return customFetch<ReportAnalytics>(getGetReportAnalyticsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetReportAnalyticsQueryKey = (params?: GetReportAnalyticsParams,) => {
+    return [
+    `/api/reports/analytics`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetReportAnalyticsQueryOptions = <TData = Awaited<ReturnType<typeof getReportAnalytics>>, TError = ErrorType<unknown>>(params?: GetReportAnalyticsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetReportAnalyticsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getReportAnalytics>>> = ({ signal }) => getReportAnalytics(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getReportAnalytics>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetReportAnalyticsQueryResult = NonNullable<Awaited<ReturnType<typeof getReportAnalytics>>>
+export type GetReportAnalyticsQueryError = ErrorType<unknown>
+
+
+
+export function useGetReportAnalytics<TData = Awaited<ReturnType<typeof getReportAnalytics>>, TError = ErrorType<unknown>>(
+ params?: GetReportAnalyticsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getReportAnalytics>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetReportAnalyticsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

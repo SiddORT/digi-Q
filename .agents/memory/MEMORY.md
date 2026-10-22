@@ -57,3 +57,4 @@
 - [Head-only browser inspection](head-only-browser-inspection.md) — automatic page snapshots can capture queue and QR content; restrict metadata audits to document-head fields.
 - [Clinic metadata vocabulary](clinic-metadata-vocabulary.md) — custom clinic descriptions stay separate from master IDs and personal specialization; normalization must not corrupt onboarding recovery.
 - [Vite server modules](vite-server-module-loading.md) — native Node TypeScript support does not resolve linked packages' bundler-style imports; verify dev and bundled server paths.
+- [Reports product scope](reports-product-scope.md) — live dashboard plus reusable templates; clinic/doctor performance, reschedules and communication usage breakdowns.

@@ -1110,6 +1110,20 @@ export interface CommunicationUsageCount {
   clinicName: string | null;
 }
 
+export type CommunicationUsageReportUserOptionsItem = {
+  id: string;
+  name: string;
+};
+
+export interface CommunicationUsageBreakdown {
+  /** @nullable */
+  key: string | null;
+  label: string;
+  channel: string;
+  bucket: string;
+  count: number;
+}
+
 export interface CommunicationUsageReport {
   items: CommunicationUsageRecord[];
   /** @nullable */
@@ -1125,6 +1139,9 @@ export interface CommunicationUsageReport {
   scopeClinicId: string | null;
   /** @nullable */
   scopeClinicName: string | null;
+  /** Staff identities visible through existing staff and doctor reporting scope. Never inferred from historical contacts. */
+  userOptions?: CommunicationUsageReportUserOptionsItem[];
+  breakdowns?: CommunicationUsageBreakdown[];
 }
 
 export interface NotificationLogTransition {
@@ -3303,6 +3320,66 @@ export interface Dashboard {
   recentActivity?: AuditLog[];
 }
 
+export interface ReportAnalyticsMetrics {
+  appointments: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+  uniquePatients: number;
+  registrations: number;
+  waiting: number;
+  checkedIn: number;
+  /** @nullable */
+  averageWaitMinutes: number | null;
+  /** @nullable */
+  averageConsultationMinutes: number | null;
+  /** @nullable */
+  consultationMinutes: number | null;
+  timedConsultations: number;
+  reschedules: number;
+  rescheduledAppointments: number;
+  activity: number;
+}
+
+export type ReportAnalyticsRowStatus = typeof ReportAnalyticsRowStatus[keyof typeof ReportAnalyticsRowStatus];
+
+
+export const ReportAnalyticsRowStatus = {
+  available: 'available',
+  noData: 'noData',
+} as const;
+
+export interface ReportAnalyticsRow {
+  id: string;
+  date: string;
+  label: string;
+  group: string;
+  clinicId: string;
+  clinic: string;
+  type: string;
+  family: string;
+  status: ReportAnalyticsRowStatus;
+  metrics: ReportAnalyticsMetrics;
+}
+
+export interface ReportAnalytics {
+  from: string;
+  to: string;
+  timezone: string;
+  generatedAt: string;
+  summary: ReportAnalyticsMetrics;
+  previous: ReportAnalyticsMetrics | null;
+  previousFrom: string;
+  previousTo: string;
+  points: ReportTrendPoint[];
+  previousPoints: ReportTrendPoint[];
+  rows: ReportAnalyticsRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  notes: string[];
+}
+
 export interface ReportRow {
   key: string;
   label: string;
@@ -4328,6 +4405,10 @@ event?: string;
 status?: GetCommunicationUsageStatus;
 clinicId?: string;
 source?: GetCommunicationUsageSource;
+groupBy?: GetCommunicationUsageGroupBy;
+attribution?: GetCommunicationUsageAttribution;
+userId?: string;
+branchId?: string;
 cursor?: string;
 /**
  * @minimum 1
@@ -4361,6 +4442,25 @@ export type GetCommunicationUsageSource = typeof GetCommunicationUsageSource[key
 export const GetCommunicationUsageSource = {
   automatic: 'automatic',
   test: 'test',
+} as const;
+
+export type GetCommunicationUsageGroupBy = typeof GetCommunicationUsageGroupBy[keyof typeof GetCommunicationUsageGroupBy];
+
+
+export const GetCommunicationUsageGroupBy = {
+  clinic: 'clinic',
+  user: 'user',
+  location: 'location',
+  event: 'event',
+  recipientGroup: 'recipientGroup',
+} as const;
+
+export type GetCommunicationUsageAttribution = typeof GetCommunicationUsageAttribution[keyof typeof GetCommunicationUsageAttribution];
+
+
+export const GetCommunicationUsageAttribution = {
+  recipient: 'recipient',
+  actor: 'actor',
 } as const;
 
 export type ListNotificationLogsParams = {
@@ -4448,6 +4548,97 @@ page?: PageParameter;
  */
 pageSize?: PageSizeParameter;
 };
+
+export type GetReportAnalyticsParams = {
+from?: FromParameter;
+to?: ToParameter;
+clinicId?: ClinicIdParameter;
+branchId?: BranchIdParameter;
+doctorId?: DoctorIdParameter;
+sessionId?: SessionIdParameter;
+startTime?: StartTimeParameter;
+/**
+ * @minimum 1
+ */
+page?: PageParameter;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: PageSizeParameter;
+/**
+ * @maxLength 200
+ */
+search?: string;
+groupBy?: GetReportAnalyticsGroupBy;
+reportType?: GetReportAnalyticsReportType;
+status?: GetReportAnalyticsStatus;
+compare?: boolean;
+exportAll?: boolean;
+sort?: GetReportAnalyticsSort;
+};
+
+export type GetReportAnalyticsGroupBy = typeof GetReportAnalyticsGroupBy[keyof typeof GetReportAnalyticsGroupBy];
+
+
+export const GetReportAnalyticsGroupBy = {
+  date: 'date',
+  clinic: 'clinic',
+  doctor: 'doctor',
+} as const;
+
+export type GetReportAnalyticsReportType = typeof GetReportAnalyticsReportType[keyof typeof GetReportAnalyticsReportType];
+
+
+export const GetReportAnalyticsReportType = {
+  all: 'all',
+  appointments: 'appointments',
+  doctors: 'doctors',
+  noShow: 'noShow',
+  patients: 'patients',
+  cancellations: 'cancellations',
+  activity: 'activity',
+  reschedules: 'reschedules',
+  clinicPerformance: 'clinicPerformance',
+  patientActivity: 'patientActivity',
+} as const;
+
+export type GetReportAnalyticsStatus = typeof GetReportAnalyticsStatus[keyof typeof GetReportAnalyticsStatus];
+
+
+export const GetReportAnalyticsStatus = {
+  all: 'all',
+  available: 'available',
+  noData: 'noData',
+} as const;
+
+export type GetReportAnalyticsSort = typeof GetReportAnalyticsSort[keyof typeof GetReportAnalyticsSort];
+
+
+export const GetReportAnalyticsSort = {
+  date: 'date',
+  '-date': '-date',
+  label: 'label',
+  '-label': '-label',
+  clinic: 'clinic',
+  '-clinic': '-clinic',
+  type: 'type',
+  '-type': '-type',
+  appointments: 'appointments',
+  '-appointments': '-appointments',
+  uniquePatients: 'uniquePatients',
+  '-uniquePatients': '-uniquePatients',
+  completed: 'completed',
+  '-completed': '-completed',
+  cancelled: 'cancelled',
+  '-cancelled': '-cancelled',
+  noShow: 'noShow',
+  '-noShow': '-noShow',
+  consultationMinutes: 'consultationMinutes',
+  '-consultationMinutes': '-consultationMinutes',
+  reschedules: 'reschedules',
+  '-reschedules': '-reschedules',
+} as const;
 
 export type GetReportTrendsParams = {
 from?: FromParameter;

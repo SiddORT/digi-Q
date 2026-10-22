@@ -330,3 +330,31 @@ mtime_ms = 1792070968166
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/fdf9cc55-2097-4806-92d5-9de91c811701/b905489e-8281-4158-934d-65425108cc9a"
 storage_version_token = "1792070969736526"
 content_type = "text/html"
+
+[[outputs]]
+id = "cA-33bATMTYf-5DYE3M4L"
+uri = "file://generated-artifacts/reports/reference-dashboard-comparison.jpg"
+type = "image"
+title = "Reports dashboard — reference comparison"
+description = "User reference alongside the actual development Preview. Recorded development values are not replaced with illustrated numbers."
+logical_id = "11941633-1dad-41bf-ba6a-34e7afa9c933"
+content_hash = "sha256:277f0a4d98910f8fe27520ff62f3fb9e724424bf8e402324d78fbeca7f03fa0a"
+size = 372747
+mtime_ms = 1792652719144
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/11941633-1dad-41bf-ba6a-34e7afa9c933/88aae163-0d73-4e6d-b49e-0b825a405fec"
+storage_version_token = "1792652867059577"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "cxdkDO7mXR59DM8zgpsCH"
+uri = "file://generated-artifacts/reports/reference-drawer-comparison.jpg"
+type = "image"
+title = "Reports filter drawer — reference comparison"
+description = "User reference alongside the actual authenticated development drawer. Development-preview chrome may appear; this is not UAT evidence."
+logical_id = "08ffd4a0-4935-437e-889f-c9b524c8c466"
+content_hash = "sha256:8e872ac27ca0aec915fba65857f2f0cc5371ae4cf49d2660f4df52de1a1a4b8b"
+size = 320001
+mtime_ms = 1792652719532
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/08ffd4a0-4935-437e-889f-c9b524c8c466/806f266c-bec7-41de-afd0-1184ceab033b"
+storage_version_token = "1792652868505477"
+content_type = "image/jpeg"

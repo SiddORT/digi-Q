@@ -1478,6 +1478,10 @@ paths:
         - { name: status, in: query, schema: { type: string, enum: [accepted, pending, failed, unknown, skipped] } }
         - { name: clinicId, in: query, schema: { type: string } }
         - { name: source, in: query, schema: { type: string, enum: [automatic, test] } }
+        - { name: groupBy, in: query, schema: { type: string, enum: [clinic, user, location, event, recipientGroup], default: clinic } }
+        - { name: attribution, in: query, schema: { type: string, enum: [recipient, actor], default: recipient } }
+        - { name: userId, in: query, schema: { type: string } }
+        - { name: branchId, in: query, schema: { type: string } }
         - { name: cursor, in: query, schema: { type: string } }
         - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100 } }
       responses:
@@ -1597,6 +1601,29 @@ paths:
       parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
       responses:
         "200": { description: Activity page, content: { application/json: { schema: { $ref: "#/components/schemas/PatientActivityPage" } } } }
+  /reports/analytics:
+    get:
+      operationId: getReportAnalytics
+      description: Live report families, full-scope KPIs and equal-length prior-period comparison in one read snapshot. Available denotes a computed live summary, never a completed report job. Export returns every matching aggregate row.
+      parameters:
+        - { $ref: "#/components/parameters/From" }
+        - { $ref: "#/components/parameters/To" }
+        - { $ref: "#/components/parameters/ClinicId" }
+        - { $ref: "#/components/parameters/BranchId" }
+        - { $ref: "#/components/parameters/DoctorId" }
+        - { $ref: "#/components/parameters/SessionId" }
+        - { $ref: "#/components/parameters/StartTime" }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: groupBy, in: query, schema: { type: string, enum: [date, clinic, doctor], default: date } }
+        - { name: reportType, in: query, schema: { type: string, enum: [all, appointments, doctors, noShow, patients, cancellations, activity, reschedules, clinicPerformance, patientActivity], default: all } }
+        - { name: status, in: query, schema: { type: string, enum: [all, available, noData], default: all } }
+        - { name: compare, in: query, schema: { type: boolean, default: false } }
+        - { name: exportAll, in: query, schema: { type: boolean, default: false } }
+        - { name: sort, in: query, schema: { type: string, enum: [date, "-date", label, "-label", clinic, "-clinic", type, "-type", appointments, "-appointments", uniquePatients, "-uniquePatients", completed, "-completed", cancelled, "-cancelled", noShow, "-noShow", consultationMinutes, "-consultationMinutes", reschedules, "-reschedules"], default: "-date" } }
+      responses:
+        "200": { description: Scoped live analytics, content: { application/json: { schema: { $ref: "#/components/schemas/ReportAnalytics" } } } }
   /reports/trends:
     get:
       operationId: getReportTrends
@@ -2412,6 +2439,27 @@ components:
         unattributedCount: { type: number }
         scopeClinicId: { type: ["string", "null"] }
         scopeClinicName: { type: ["string", "null"] }
+        userOptions:
+          type: array
+          description: Staff identities visible through existing staff and doctor reporting scope. Never inferred from historical contacts.
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: { type: string }
+              name: { type: string }
+        breakdowns:
+          type: array
+          items: { $ref: "#/components/schemas/CommunicationUsageBreakdown" }
+    CommunicationUsageBreakdown:
+      type: object
+      required: [key, label, channel, bucket, count]
+      properties:
+        key: { type: ["string", "null"] }
+        label: { type: string }
+        channel: { type: string }
+        bucket: { type: string }
+        count: { type: number }
     NotificationLogTransition:
       type: object
       required: [status, at]
@@ -3807,6 +3855,58 @@ components:
         currentToken: { type: [string, "null"] }
         recentAppointments: { type: array, items: { $ref: "#/components/schemas/Appointment" } }
         recentActivity: { type: array, items: { $ref: "#/components/schemas/AuditLog" } }
+    ReportAnalyticsMetrics:
+      type: object
+      required: [appointments, completed, cancelled, noShow, uniquePatients, registrations, waiting, checkedIn, averageWaitMinutes, averageConsultationMinutes, consultationMinutes, timedConsultations, reschedules, rescheduledAppointments, activity]
+      properties:
+        appointments: { type: integer }
+        completed: { type: integer }
+        cancelled: { type: integer }
+        noShow: { type: integer }
+        uniquePatients: { type: integer }
+        registrations: { type: integer }
+        waiting: { type: integer }
+        checkedIn: { type: integer }
+        averageWaitMinutes: { type: [number, "null"] }
+        averageConsultationMinutes: { type: [number, "null"] }
+        consultationMinutes: { type: [number, "null"] }
+        timedConsultations: { type: integer }
+        reschedules: { type: integer }
+        rescheduledAppointments: { type: integer }
+        activity: { type: integer }
+    ReportAnalyticsRow:
+      type: object
+      required: [id, date, label, group, clinicId, clinic, type, family, status, metrics]
+      properties:
+        id: { type: string }
+        date: { type: string }
+        label: { type: string }
+        group: { type: string }
+        clinicId: { type: string }
+        clinic: { type: string }
+        type: { type: string }
+        family: { type: string }
+        status: { type: string, enum: [available, noData] }
+        metrics: { $ref: "#/components/schemas/ReportAnalyticsMetrics" }
+    ReportAnalytics:
+      type: object
+      required: [from, to, timezone, generatedAt, summary, previous, previousFrom, previousTo, points, previousPoints, rows, total, page, pageSize, notes]
+      properties:
+        from: { type: string }
+        to: { type: string }
+        timezone: { type: string }
+        generatedAt: { type: string, format: date-time }
+        summary: { $ref: "#/components/schemas/ReportAnalyticsMetrics" }
+        previous: { oneOf: [{ $ref: "#/components/schemas/ReportAnalyticsMetrics" }, { type: "null" }] }
+        previousFrom: { type: string }
+        previousTo: { type: string }
+        points: { type: array, items: { $ref: "#/components/schemas/ReportTrendPoint" } }
+        previousPoints: { type: array, items: { $ref: "#/components/schemas/ReportTrendPoint" } }
+        rows: { type: array, items: { $ref: "#/components/schemas/ReportAnalyticsRow" } }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+        notes: { type: array, items: { type: string } }
     ReportRow:
       type: object
       required: [key, label, appointments, completed, cancelled, noShow, registrations, averageWaitMinutes]

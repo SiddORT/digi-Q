@@ -77,6 +77,8 @@ export function useListingLayout(resource: string, userId: string | undefined, r
     },
     canShare: !!remote.data?.canShare,
     viewsError: !!remote.error,
+    viewsLoading: remote.isLoading,
+    refreshViews: () => remote.refetch(),
     setLayout: (next: Partial<ListingLayout>) => set({ ...layout, ...next }),
     saveView: async (input: string | { name: string; share?: boolean }, filters: Record<string, unknown>, columns?: ViewColumns) => {
       const { name, share } = typeof input === "string" ? { name: input, share: false } : input;

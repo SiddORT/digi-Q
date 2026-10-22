@@ -10,6 +10,7 @@ import { localNow } from "../lib/availability";
 import { sql } from "drizzle-orm";
 import { reportListControls, reportOrder } from "../lib/report-order";
 import { queryPage, queryMetrics, sourceSql, filterSql, pageParams, metricSql } from "../lib/list-query";
+import { reportAnalytics } from "../lib/report-analytics";
 export const reportingRouter = Router();
 export { reportListControls } from "../lib/report-order";
 async function authorizeReportContext(user: any, q: any) {
@@ -100,6 +101,24 @@ reportingRouter.get("/reports/trends", async (req, res) => {
     select to_char(d, 'YYYY-MM-DD') as date, coalesce(g.appointments,0) as appointments, coalesce(g.completed,0) as completed, coalesce(g.cancelled,0) as cancelled, coalesce(g."noShow",0) as "noShow", coalesce(g.waiting,0) as waiting
     from generate_series(${q.from}::date, ${q.to}::date, interval '1 day') d left join grouped g on g.date = to_char(d, 'YYYY-MM-DD') order by 1`);
   res.json({ from: q.from, to: q.to, points: result.rows });
+});
+reportingRouter.get("/reports/analytics", async (req, res) => {
+  const user = await requireUser(req); roles(user, ["superAdmin", "clinicAdmin", "doctor", "receptionist"]);
+  const q: any = query(z.GetReportAnalyticsQueryParams, req), config = await getSettings();
+  // Generated coerce.boolean treats the string "false" as truthy. Preserve the
+  // wire contract explicitly rather than enabling comparison or full export.
+  for (const key of ["compare", "exportAll"]) {
+    assert(req.query[key] === undefined || ["true", "false"].includes(String(req.query[key])), 400, `${key} must be true or false`);
+    q[key] = req.query[key] === "true";
+  }
+  for (const key of ["from", "to"]) if (req.query[key] !== undefined)
+    assert(/^\d{4}-\d{2}-\d{2}$/.test(String(req.query[key])) && q[key] === req.query[key], 400, "Use a valid YYYY-MM-DD report date");
+  await authorizeReportContext(user, q);
+  q.from ||= localNow(config.timezone).date; q.to ||= q.from;
+  assert(q.from <= q.to && (Date.parse(q.to) - Date.parse(q.from)) / 86400000 <= 366, 400, "Choose an ordered report range of up to 367 days");
+  q.groupBy ||= "date"; q.reportType ||= "all"; q.status ||= "all";
+  res.setHeader("Cache-Control", "no-store");
+  res.json(await reportAnalytics(user, q, config.timezone));
 });
 reportingRouter.get("/audit-logs", async (req, res) => {
   const user = await requireUser(req); roles(user, ["superAdmin", "clinicAdmin"]);
