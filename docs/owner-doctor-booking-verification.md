@@ -3,7 +3,7 @@
 ## Finding
 
 The authenticated API and real-Preview browser journeys pass without changing
-application permissions, onboarding persistence, doctor projections, or directory
+production authentication policy, application permissions, onboarding persistence, doctor projections, or directory
 selection behavior.
 Both self-registration and Super Admin onboarding persist one self-owned doctor
 on the Clinic Admin account, with explicit consulting location IDs. There is no
@@ -47,6 +47,50 @@ Playwright specification/configuration. Test discovery and a standalone TypeScri
 check succeeded. The authored spec itself was not rerun end-to-end against fresh
 fixtures; the completed browser journeys above were the actual verification.
 
+## Supported-workspace JWT parity (2026-10-22)
+
+The persisted API regression now runs the same consulting-owner suite in both
+`AUTH_SESSION_MODE=native` and `AUTH_SESSION_MODE=jwt`, sequentially with a separate
+freshly migrated, socket-only temporary PostgreSQL cluster per mode. The harness
+generates a disposable signing key inside the test process; it never reads or
+changes a workspace/deployment signing key or connects to the configured app DB.
+Email is simulated, HTTP fetch is restricted to the disposable server's exact
+loopback origin, and no delivery worker is started. Unexpected external fetches
+fail the test. No live network or real account data is needed.
+
+Both self-registration (including simulated email verification) and Super Admin
+invitation acceptance exercise the real handlers. Invitation acceptance follows
+the existing contract: set the password, then log in; it does not itself issue
+a session. Each path finishes an immediate-session identity, scoped active
+doctor discovery, independent patient creation and valid booking journey
+**before** logging in again and repeating that entire journey with a fresh
+session. Each ticket's clinic, doctor, location, patient, token and reference
+are checked against persisted SQL records. The account remains Clinic Admin
+with a same-account, self-owned doctor and exactly its saved consulting locations.
+
+Every issued JWT is signature-verified using only the disposable key, and its
+subject, purpose, fixed twelve-hour expiry and hashed database session binding
+are checked. Native sessions are also checked for persisted identity and opaque
+token format, so accidentally running JWT coverage in native mode cannot pass.
+Both modes retain the unselected-location, foreign-clinic, inactive-profile,
+inactive-account, admin-only and missing-session boundaries.
+
+Additional authenticated-route rejection checks cover:
+
+- Real logout persists session revocation; replaying that cookie receives 401
+  on identity, scoped doctor discovery, patient creation and booking.
+- In JWT mode, a correctly signed token names the other active owner while its
+  hash is bound to the original owner's unrevoked, unexpired SQL session row.
+  Requests for **either** clinic are rejected with 401. The test restores the
+  original hash and confirms the original cookie still resolves its owner.
+- Rejected requests leave patient and appointment row counts unchanged.
+
+The focused run passes **13 persisted integration tests**: six native and seven
+JWT. This is local API evidence for the workspace's supported JWT implementation,
+not a JWT browser run, an adaptation of the earlier native browser evidence, or
+verification of manually modified UAT. No production authentication code,
+signing policy, keys or accounts were changed.
+
 ## Added regression coverage
 
 `artifacts/api-server/src/owner-booking.integration.test.mjs` uses the checked-in
@@ -78,7 +122,8 @@ maintenance correction, not the cause of the reported dropdown failure.
 
 ## Passing focused checks
 
-- Five new persisted API integration tests.
+- Thirteen persisted API integration tests across native and supported JWT modes
+  (the original native-only run contained five).
 - Thirty-seven existing onboarding, SQL directory/authorization, pre-0008
   compatibility and booking-lookup privacy tests (passed in the combined run;
   initial failures in new fixture construction were corrected separately).
@@ -91,6 +136,10 @@ maintenance correction, not the cause of the reported dropdown failure.
 
 ```sh
 pnpm --filter @workspace/api-server test:owner-booking
+# JWT-only persisted parity, using the same suite (native suite is skipped):
+pnpm --filter @workspace/api-server test:owner-booking:jwt
+# Existing signing, claim validation, revocation and mode-boundary unit checks:
+pnpm --filter @workspace/api-server test:jwt
 
 node --test --test-concurrency=1 \
   artifacts/api-server/src/registration-onboarding.integration.test.mjs \
@@ -143,8 +192,8 @@ Do not use real patient information in this fixture.
 Kushan Clinic was not found in the earlier read-only workspace investigation.
 No Kushan, UAT or production records were altered, no app was published, and no
 live notification delivery was attempted. The deployed version and reported
-JWT adaptation may differ from this workspace. A successful local native-session
-journey cannot establish either that deployment's behavior or the cause of its
+JWT adaptation may differ from this workspace. Successful local native-session
+and supported-workspace JWT journeys cannot establish either that deployment's behavior or the cause of its
 historical failure. Any later investigation should compare the saved owner/doctor
 location IDs, the actual authenticated doctor-list request and response, and the
 rendered selection at the first divergence; it must not infer missing consent or

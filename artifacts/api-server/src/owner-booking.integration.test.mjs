@@ -1,11 +1,12 @@
-import { before, after, test } from "node:test";
+import { before, after, describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { createOwnerBookingHarness, ownerSetup, OWNER_PASSWORD } from "./test-support/owner-booking-harness.mjs";
+import { createOwnerBookingHarness, ownerSetup, OWNER_PASSWORD, sessionDigest } from "./test-support/owner-booking-harness.mjs";
 
+for (const sessionMode of ["native", "jwt"]) describe(`${sessionMode} consulting-owner booking`, { concurrency: false }, () => {
 let h, superCookie;
 const owners = [];
 before(async () => {
-  h = await createOwnerBookingHarness();
+  h = await createOwnerBookingHarness({ sessionMode });
   superCookie = await h.login("super@owner.test.invalid");
 });
 after(async () => { await h?.close(); });
@@ -16,7 +17,7 @@ const ok = (response, status = 200) => {
 const tomorrow = () => new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
 for (const path of ["self", "admin"]) {
-  test(`${path}: newly onboarded owner retains admin identity, discovers own doctor and issues a persisted ticket after fresh login`, async () => {
+  test(`${path}: owner retains admin identity, discovers own doctor and persists tickets with immediate and fresh sessions`, async () => {
     const email = `${path}@owner.test.invalid`, input = ownerSetup(path);
     let cookie, saved;
     if (path === "self") {
@@ -35,7 +36,10 @@ for (const path of ["self", "admin"]) {
     const persisted = (await h.pg.query("select user_id,owner_admin_id,data from doctors where id=$1", [doctorId])).rows[0];
     assert.equal(persisted.user_id, persisted.owner_admin_id);
     assert.deepEqual(persisted.data.branchIds, [branchId]);
-    for (const session of [cookie, await h.login(email)]) {
+    for (const label of ["immediate", "fresh"]) {
+      // Finish the immediate journey before a new login can mask stale onboarding state.
+      const session = label === "immediate" ? cookie : await h.login(email);
+      if (label === "fresh") assert.notEqual(session, cookie, "Fresh login issues an independent session");
       const identity = ok(await h.as(session, "GET", "/me"));
       assert.equal(identity.user.role, "clinicAdmin");
       assert.equal(identity.doctorId, doctorId);
@@ -44,26 +48,31 @@ for (const path of ["self", "admin"]) {
       assert.equal(list.total, 1);
       assert.equal(list.items[0].id, doctorId);
       assert.deepEqual(list.items[0].branchIds, [branchId]);
+      const patient = ok(await h.as(session, "POST", "/patients", {
+        fullName: `Fictional ${label} Owner Patient`, clinicId, branchId,
+      }), 201);
+      const savedPatient = (await h.pg.query("select clinic_id,branch_id from patients where id=$1", [patient.id])).rows[0];
+      assert.equal(savedPatient.clinic_id, clinicId);
+      assert.equal(savedPatient.branch_id, branchId);
+      const sessions = ok(await h.as(session, "GET", `/public/availability/sessions?doctorId=${doctorId}&branchId=${branchId}&date=${tomorrow()}`));
+      assert.ok(sessions.length);
+      const booking = ok(await h.as(session, "POST", "/appointments", {
+        clinicId, branchId, doctorId, patientId: patient.id, date: tomorrow(), sessionId: sessions[0].sessionId,
+        source: "phone", consent: true, requestId: crypto.randomUUID(),
+      }), 201);
+      assert.equal(booking.doctorId, doctorId);
+      assert.equal(booking.branchId, branchId);
+      assert.ok(booking.reference);
+      assert.ok(booking.token);
+      const stored = (await h.pg.query("select doctor_id,clinic_id,branch_id,patient_id,data from appointments where id=$1", [booking.id])).rows[0];
+      assert.equal(stored.doctor_id, doctorId);
+      assert.equal(stored.clinic_id, clinicId);
+      assert.equal(stored.branch_id, branchId);
+      assert.equal(stored.patient_id, patient.id);
+      assert.equal(stored.data.reference, booking.reference);
+      assert.equal(stored.data.token, booking.token);
+      if (label === "immediate") owners.push({ cookie, email, clinicId, branchId, doctorId, patientId: patient.id });
     }
-    const patient = ok(await h.as(cookie, "POST", "/patients", {
-      fullName: "Fictional Owner Patient", clinicId, branchId,
-    }), 201);
-    const sessions = ok(await h.as(cookie, "GET", `/public/availability/sessions?doctorId=${doctorId}&branchId=${branchId}&date=${tomorrow()}`));
-    assert.ok(sessions.length);
-    const booking = ok(await h.as(cookie, "POST", "/appointments", {
-      clinicId, branchId, doctorId, patientId: patient.id, date: tomorrow(), sessionId: sessions[0].sessionId,
-      source: "phone", consent: true, requestId: crypto.randomUUID(),
-    }), 201);
-    assert.equal(booking.doctorId, doctorId);
-    assert.equal(booking.branchId, branchId);
-    assert.ok(booking.reference);
-    assert.ok(booking.token);
-    const stored = (await h.pg.query("select doctor_id,branch_id,patient_id,data from appointments where id=$1", [booking.id])).rows[0];
-    assert.equal(stored.doctor_id, doctorId);
-    assert.equal(stored.branch_id, branchId);
-    assert.equal(stored.patient_id, patient.id);
-    assert.equal(stored.data.reference, booking.reference);
-    owners.push({ cookie, email, clinicId, branchId, doctorId, patientId: patient.id });
   });
 }
 
@@ -146,4 +155,53 @@ test("missing sessions do not remove the owner from doctor discovery or prevent 
   assert.ok(patient.id);
   const appointments = (await h.pg.query("select id from appointments where patient_id=$1", [patient.id])).rows;
   assert.deepEqual(appointments, []);
+});
+
+test("revoked sessions cannot discover scoped doctors, create patients or persist bookings", async () => {
+  const owner = owners[1], cookie = await h.login(owner.email);
+  ok(await h.as(cookie, "POST", "/auth/logout"));
+  const row = (await h.pg.query("select revoked_at from auth_sessions where token_hash=$1", [sessionDigest(cookie)])).rows[0];
+  assert.ok(row.revoked_at, "The real logout handler must persist revocation");
+  await assertRejectedSession(cookie, owner);
+});
+
+if (sessionMode === "jwt") test("correctly signed wrong-subject JWT cannot use another owner's saved session or broaden clinic scope", async () => {
+  const owner = owners[0], foreign = owners[1], cookie = await h.login(owner.email);
+  const ownerId = (await h.pg.query("select user_id from doctors where id=$1", [owner.doctorId])).rows[0].user_id;
+  const foreignId = (await h.pg.query("select user_id from doctors where id=$1", [foreign.doctorId])).rows[0].user_id;
+  assert.notEqual(ownerId, foreignId);
+  const wrong = await h.wrongSubjectCookie(cookie, foreignId);
+  await h.pg.query("update auth_sessions set token_hash=$1 where token_hash=$2 and user_id=$3",
+    [sessionDigest(wrong), sessionDigest(cookie), ownerId]);
+  const bound = (await h.pg.query("select user_id,revoked_at,expires_at from auth_sessions where token_hash=$1", [sessionDigest(wrong)])).rows[0];
+  assert.equal(bound.user_id, ownerId);
+  assert.equal(bound.revoked_at, null);
+  assert.ok(bound.expires_at > new Date());
+  try {
+    await assertRejectedSession(wrong, owner);
+    await assertRejectedSession(wrong, foreign);
+  } finally {
+    await h.pg.query("update auth_sessions set token_hash=$1 where token_hash=$2",
+      [sessionDigest(cookie), sessionDigest(wrong)]);
+  }
+  assert.equal(ok(await h.as(cookie, "GET", "/me")).user.id, ownerId);
+});
+
+async function assertRejectedSession(cookie, owner) {
+  const before = (await h.pg.query("select (select count(*) from patients) as patients, (select count(*) from appointments) as appointments")).rows[0];
+  for (const [method, path, body] of [
+    ["GET", "/me"],
+    ["GET", `/doctors?clinicId=${owner.clinicId}&branchId=${owner.branchId}&status=active`],
+    ["POST", "/patients", { fullName: "Fictional Rejected Patient", clinicId: owner.clinicId, branchId: owner.branchId }],
+    ["POST", "/appointments", {
+      clinicId: owner.clinicId, branchId: owner.branchId, doctorId: owner.doctorId, patientId: owner.patientId,
+      date: tomorrow(), source: "phone", consent: true, requestId: crypto.randomUUID(),
+    }],
+  ]) {
+    const result = await h.as(cookie, method, path, body);
+    assert.equal(result.status, 401, `${method} ${path}: ${JSON.stringify(result.data)}`);
+  }
+  const after = (await h.pg.query("select (select count(*) from patients) as patients, (select count(*) from appointments) as appointments")).rows[0];
+  assert.deepEqual(after, before, "Rejected sessions must not leave patient or appointment rows");
+}
 });
