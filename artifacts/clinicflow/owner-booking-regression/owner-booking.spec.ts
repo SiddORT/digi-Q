@@ -15,10 +15,33 @@ type Evidence = {
   mail: Array<{ to: string; subject: string; text: string; html?: string }>;
 };
 
+// Use the browser's same-origin transport, not Playwright's separate HTTP jar:
+// Chromium accepts Secure cookies on loopback while APIRequestContext may not.
+// Never copy session cookies/tokens into test output or fabricate identity.
+async function browserRequest(page: Page, method: string, url: string, data?: unknown) {
+  const result=await page.evaluate(async ({method,url,data})=>{
+    const response=await fetch(url,{
+      method,credentials:"same-origin",cache:"no-store",
+      ...(data===undefined?{}:{headers:{"Content-Type":"application/json"},body:JSON.stringify(data)}),
+    });
+    return {status:response.status,text:await response.text()};
+  },{method,url,data});
+  return {status:()=>result.status,text:async()=>result.text,json:async()=>JSON.parse(result.text)};
+}
+
 async function readEvidence(page: Page): Promise<Evidence> {
-  const response = await page.request.get("/api/__owner-booking-evidence");
+  const response = await browserRequest(page,"GET","/api/__owner-booking-evidence");
   expect(response.status(), "read-only owner evidence endpoint").toBe(200);
   return response.json();
+}
+
+async function latestMail(page: Page, email: string, subject: string) {
+  let mail: Evidence["mail"][number] | undefined;
+  await expect.poll(async()=>{
+    mail=(await readEvidence(page)).mail.findLast(mail=>mail.to===email&&mail.subject.toLowerCase().includes(subject));
+    return !!mail;
+  },{message:"Wait for simulated asynchronous outbox",timeout:15000}).toBe(true);
+  return mail!;
 }
 
 async function signIn(page: Page, email: string, password: string, ownerName?: string) {
@@ -69,6 +92,7 @@ async function fillOwnerWizard(
   await page.getByTestId("registration-next").click();
 
   await page.getByTestId("registration-also-consult").check();
+  await expect(page.getByTestId("registration-also-consult")).toBeChecked();
   await page.getByTestId("registration-link-hours").check();
   await page.getByTestId("registration-session-capacity").fill("20");
   await page.getByRole("button", { name: "Expected Consultation Duration" }).click();
@@ -79,12 +103,17 @@ async function fillOwnerWizard(
   if (options.password && (await page.getByTestId("registration-confirm-password").count())) {
     await page.getByTestId("registration-confirm-password").fill(options.password);
   }
+  await expect(page.getByText("Clinic Admin and doctor in the same account, with a doctor profile at your clinic's locations.", {exact:false})).toBeVisible();
+  const submitted = page.waitForRequest(request =>
+    request.method() === "POST" &&
+    new URL(request.url()).pathname === (options.superAdmin ? "/api/clinic-admin-onboarding" : "/api/clinic-registration"));
   await page.getByTestId("registration-next").click();
+  expect((await submitted).postDataJSON().ownDoctor).toBe(true);
   await expect(page.getByRole("heading", { name: `${options.clinicName} is registered.` })).toBeVisible();
 }
 
 async function ownerFromMe(page: Page) {
-  const response = await page.request.get("/api/me");
+  const response = await browserRequest(page,"GET","/api/me");
   expect(response.status()).toBe(200);
   const me = await response.json();
   const user = me.user || me;
@@ -131,7 +160,7 @@ async function verifyRealOwnerDirectory(
   expect(branchRecord, "the doctor's sole persisted branch belongs to this clinic/location").toBeTruthy();
 
   const query = new URLSearchParams({ clinicId, branchId, status: "active" });
-  const directoryResponse = await page.request.get(`/api/doctors?${query.toString()}`);
+  const directoryResponse = await browserRequest(page,"GET",`/api/doctors?${query.toString()}`);
   expect(directoryResponse.status()).toBe(200);
   const result = await directoryResponse.json();
   expect(result.total).toBe(1);
@@ -148,9 +177,9 @@ async function verifyRealOwnerDirectory(
   expect(directory[0].fullName).toBe(ownerName);
   expect(directory[0].branchIds).toEqual([branchId]);
 
-  await expect(page.getByTestId("text-location-fixed")).toContainText(branchName);
-  await expect(page.getByTestId("text-location-fixed")).toContainText(clinicName);
-  await expect(page.getByTestId("fixed-scope-doctors").getByRole("textbox")).toHaveValue(ownerName);
+  await expect(page.getByTestId("text-booking-location-fixed")).toContainText(branchName);
+  await expect(page.getByTestId("text-booking-location-fixed")).toContainText(clinicName);
+  await expect(page.getByRole("button",{name:`Doctor: ${ownerName}`,exact:true})).toBeVisible();
   if (previousOwnerName) await expect(page.getByText(previousOwnerName, { exact: true })).toHaveCount(0);
   return { clinicId, branchId, doctorId, evidence };
 }
@@ -177,13 +206,16 @@ async function createBooking(
     ownerName: string;
     patientName: string;
     previousOwnerName?: string;
+    superAdmin?: boolean;
   },
 ) {
   const bookingLink = page.getByTestId("link-page-book-appointment");
   await expect(bookingLink, "Open Workspace must finish without a hard-navigation workaround").toBeVisible();
   await bookingLink.click();
   await expect(page).toHaveURL(/\/admin\/book$/);
-  await verifyRealOwnerDirectory(
+  if (options.superAdmin) {
+    await selectConsultingClinic(page, options.clinicName, options.branchName, options.ownerName);
+  } else await verifyRealOwnerDirectory(
     page,
     options.clinicName,
     options.branchName,
@@ -203,7 +235,7 @@ async function createBooking(
       day: "2-digit", month: "short", year: "numeric", timeZone: "UTC",
     }).format(parsedDefault));
   }
-  await expect(page.getByTestId("status-no-doctor-sessions")).toBeVisible();
+  await expect(page.getByTestId("booking-availability-status")).toContainText("No doctor session is listed");
   const monday = nextMondayFromDisplayedDate(await date.inputValue());
   await date.fill(monday);
   await expect(page.getByText(/places remaining/)).toBeVisible();
@@ -252,6 +284,84 @@ async function createBooking(
   return { reference: reference!, appointment, patient };
 }
 
+async function selectConsultingClinic(page: Page, clinicName: string, branchName: string, doctorName?: string) {
+  const clinic = page.getByRole("button", {name:/^Clinic group(?::|$)/i});
+  // Cold route mounts must wait for authenticated controls, not mistake the
+  // initial absent button for a sole/pinned clinic.
+  await expect(clinic).toBeVisible();
+  await clinic.click();
+  await page.getByRole("option", {name:clinicName,exact:true}).click();
+  // The saved consulting location is the only location of this fictional clinic.
+  await expect(page.getByRole("button",{name:`Location: ${branchName}`,exact:true})).toBeVisible();
+  if (doctorName) await expect(page.getByRole("button",{name:`Doctor: ${doctorName}`,exact:true})).toBeVisible();
+  expect((await (await browserRequest(page,"GET","/api/me")).json()).user.role).toBe("superAdmin");
+}
+
+async function verifySuperFreshness(page: Page, clinicName: string, branchName: string, doctorName: string) {
+  await page.goto("/admin/book");
+  const afterPlural=!!process.env.OWNER_BOOKING_CONTINUE_AFTER_PLURAL;
+  await selectConsultingClinic(page,clinicName,branchName,afterPlural?undefined:doctorName);
+  const evidence=await readEvidence(page);
+  const user=evidence.users.find(user=>user.full_name===doctorName);
+  const doctor=evidence.doctors.find(doctor=>doctor.user_id===user.id);
+  const branchId=doctor.data.branchIds[0];
+  const branch=evidence.branches.find(branch=>branch.id===branchId);
+  const params=new URLSearchParams({clinicId:branch.clinic_id,branchId,status:"active",page:"1",pageSize:"20"});
+  const directory=await browserRequest(page,"GET",`/api/doctors?${params}`);
+  expect(directory.status()).toBe(200);
+  const initial=(await directory.json()).items.map((item:any)=>item.id);
+  expect(initial).toContain(doctor.id);
+  if(!afterPlural) expect(initial).toEqual([doctor.id]);
+  if(!afterPlural) for (const status of ["inactive","active"]) {
+    const start=Date.now();
+    expect((await browserRequest(page,"POST","/api/__owner-booking-doctor-status", {doctorId:doctor.id,status})).status()).toBe(200);
+    if(status==="inactive") {
+      await expect(page.getByRole("button",{name:"Doctor",exact:true})).toBeVisible({timeout:80_000});
+      await expect(page.getByText("No active assigned doctors are available", {exact:false})).toBeVisible();
+    } else {
+      await expect(page.getByRole("button",{name:`Doctor: ${doctorName}`,exact:true})).toBeVisible({timeout:80_000});
+    }
+    console.log(`Persisted doctor ${status} rendered after ${Date.now()-start}ms (60s refresh + transport)`);
+  }
+  await page.reload();
+  await selectConsultingClinic(page,clinicName,branchName,afterPlural?undefined:doctorName);
+
+  // A second, distinct fictional clinician makes cardinality genuinely plural.
+  // Use the real write handler with simulated invitations, not a UI mock.
+  const existingUser=afterPlural?evidence.users.find(user=>user.email==="colleague@owner.test.invalid"):undefined;
+  const existing=existingUser?evidence.doctors.find(profile=>profile.user_id===existingUser.id):undefined;
+  let second=existing;
+  if(!second) {
+  const colleague=await browserRequest(page,"POST","/api/doctors",{
+    fullName:"Fictional Colleague",email:"colleague@owner.test.invalid",
+    clinicIds:[branch.clinic_id],branchIds:[branchId],status:"active",
+  });
+  expect(colleague.status(),await colleague.text()).toBe(201);
+  second=await colleague.json();
+  }
+  await page.reload();
+  await selectConsultingClinic(page,clinicName,branchName);
+  const doctorSelect=page.getByRole("button",{name:"Doctor",exact:true});
+  await expect(doctorSelect).toBeVisible();
+  await doctorSelect.click();
+  await expect(page.getByRole("option",{name:doctorName,exact:true})).toBeVisible();
+  await expect(page.getByRole("option",{name:"Fictional Colleague",exact:true})).toBeVisible();
+  await page.getByRole("option",{name:doctorName,exact:true}).click();
+  if(!afterPlural || !evidence.users.some(user=>user.email==="receptionist@owner.test.invalid")) {
+  const receptionist=await browserRequest(page,"POST","/api/users",{
+    fullName:"Fictional Receptionist",email:"receptionist@owner.test.invalid",role:"receptionist",
+    clinicIds:[branch.clinic_id],branchIds:[branchId],status:"active",
+  });
+  expect(receptionist.status(),await receptionist.text()).toBe(201);
+  }
+  await page.goto(`/admin/clinics/${branch.clinic_id}/staff?tab=doctors`);
+  await expect(page.getByTestId(`row-staff-${doctor.id}`)).toContainText(doctorName);
+  await expect(page.getByTestId(`row-staff-${second.id}`)).toContainText("Fictional Colleague");
+  expect((await browserRequest(page,"POST","/api/__owner-booking-doctor-status",{doctorId:second.id,status:"inactive"})).status()).toBe(200);
+  await page.goto("/admin/book");
+  await selectConsultingClinic(page,clinicName,branchName,doctorName);
+}
+
 async function addStandalonePatient(page: Page, name: string) {
   await page.getByTestId("nav-patients").click();
   await page.getByTestId("button-add-patients").click();
@@ -267,37 +377,44 @@ async function addStandalonePatient(page: Page, name: string) {
 
 test("real self-owner and invited Super Admin owner registration, scoped booking, patients, and tickets", async ({ page }, testInfo) => {
   test.skip(!BASE_URL, "Opt-in only: set OWNER_BOOKING_BASE_URL to the real Preview of the isolated disposable harness.");
+  // Refuse all account/booking writes unless this is the disposable fixture.
+  await page.goto("/sign-in");
+  await readEvidence(page);
+  const run=Date.now().toString(36);
   const self = {
     owner: "Browser Self Owner",
-    email: "browser-self@owner.test.invalid",
+    email: process.env.OWNER_BOOKING_EXISTING_SELF_EMAIL || `browser-self-${run}@owner.test.invalid`,
     clinic: "Fictional Browser Self",
     branch: "Fictional Self Main",
     patient: "Self Owner Booking Patient",
   };
   const admin = {
     owner: "Browser Admin Owner",
-    email: "browser-admin@owner.test.invalid",
+    email: `browser-admin-${run}@owner.test.invalid`,
     clinic: "Fictional Browser Admin",
     branch: "Fictional Admin Main",
     patient: "Admin Owner Booking Patient",
   };
 
+  if (!process.env.OWNER_BOOKING_CONTINUE_AFTER_SUPER) {
   // Self-registration is verified with the fake-mail code, then completed in
   // the same tab through the actual six-step wizard.
+  if(process.env.OWNER_BOOKING_EXISTING_SELF_EMAIL) {
+    await signIn(page,self.email,PASSWORD,self.owner);
+  } else {
   await page.goto("/register-clinic");
   await page.getByRole("textbox", { name: "Your Name" }).fill(self.owner);
   await page.getByTestId("input-registration-email").fill(self.email);
   await page.getByRole("textbox", { name: "Password" }).fill(PASSWORD);
   await page.getByRole("button", { name: "Review account details" }).click();
   await page.getByRole("button", { name: "Send verification code" }).click();
-  const selfMail = (await readEvidence(page)).mail.find(
-    (mail) => mail.to === self.email && mail.subject.includes("registration"),
-  );
+  const selfMail = await latestMail(page,self.email,"registration");
   expect(selfMail).toBeTruthy();
   const code = selfMail!.text.match(/\b\d{6}\b/)?.[0];
   expect(code).toBeTruthy();
   await page.getByRole("textbox", { name: "Required email verification code" }).fill(code!);
   await page.getByRole("button", { name: "Verify and continue" }).click();
+  await expect(page.getByTestId("registration-name"),"verified owner must reach clinic setup").toBeVisible();
   await fillOwnerWizard(page, {
     clinicName: self.clinic,
     ownerName: self.owner,
@@ -307,6 +424,7 @@ test("real self-owner and invited Super Admin owner registration, scoped booking
     password: PASSWORD,
   });
   await page.getByTestId("registration-open-workspace").click();
+  }
   await createBooking(page, testInfo, {
     clinicName: self.clinic,
     branchName: self.branch,
@@ -321,7 +439,7 @@ test("real self-owner and invited Super Admin owner registration, scoped booking
   await page.getByTestId("link-page-book-appointment").click();
   await page.reload();
   await verifyRealOwnerDirectory(page, self.clinic, self.branch, self.owner);
-  await expect(page.getByTestId("fixed-scope-doctors").getByRole("textbox")).toHaveValue(self.owner);
+  await expect(page.getByRole("button",{name:`Doctor: ${self.owner}`,exact:true})).toBeVisible();
 
   // The fixture Super Admin creates the second consulting owner through the
   // same UI; the invite is accepted only through its actual /set-password URL.
@@ -335,9 +453,46 @@ test("real self-owner and invited Super Admin owner registration, scoped booking
     clinicEmail: "front-admin@owner.test.invalid",
     superAdmin: true,
   });
-  const invitation = (await readEvidence(page)).mail.find(
-    (mail) => mail.to === admin.email && mail.subject.toLowerCase().includes("password setup"),
-  );
+  await page.goto("/admin/dashboard");
+  await createBooking(page,testInfo,{
+    clinicName:self.clinic,branchName:self.branch,ownerName:self.owner,
+    patientName:"Super Admin Booking Patient",superAdmin:true,
+  });
+  } else {
+    // Narrow continuation after a failed freshness assertion: do not repeat
+    // the already-passed registration or create duplicate clinic fixtures.
+    const evidence=await readEvidence(page);
+    self.email=evidence.users.find(user=>user.full_name===self.owner)?.email;
+    admin.email=evidence.users.find(user=>user.full_name===admin.owner)?.email;
+    expect(self.email).toBeTruthy();
+    expect(admin.email).toBeTruthy();
+    await signIn(page,SUPER_EMAIL,SUPER_PASSWORD,"Fictional Super Admin");
+  }
+  if (!process.env.OWNER_BOOKING_CONTINUE_AFTER_STAFF) {
+    await verifySuperFreshness(page,self.clinic,self.branch,self.owner);
+  } else {
+    const evidence=await readEvidence(page);
+    const colleagueUser=evidence.users.find(user=>user.email==="colleague@owner.test.invalid");
+    const colleague=evidence.doctors.find(doctor=>doctor.user_id===colleagueUser?.id);
+    expect(colleague).toBeTruthy();
+    expect((await browserRequest(page,"POST","/api/__owner-booking-doctor-status",{doctorId:colleague.id,status:"inactive"})).status()).toBe(200);
+  }
+  await signOutToStaffLogin(page);
+  await signIn(page,self.email,PASSWORD,self.owner);
+  const selfIdentity=await ownerFromMe(page);
+  await page.goto(`/admin/clinics/${selfIdentity.clinicId}/staff?tab=doctors`);
+  await expect(page.getByTestId(`row-staff-${selfIdentity.doctorId}`)).toContainText(self.owner);
+  const savedStaff=await readEvidence(page);
+  const colleagueUser=savedStaff.users.find(user=>user.email==="colleague@owner.test.invalid");
+  const colleague=savedStaff.doctors.find(doctor=>doctor.user_id===colleagueUser?.id);
+  await expect(page.getByTestId(`row-staff-${colleague.id}`)).toContainText("Fictional Colleague");
+  await page.goto("/admin/book");
+  await verifyRealOwnerDirectory(page,self.clinic,self.branch,self.owner);
+  await signOutToStaffLogin(page);
+  await signIn(page,SUPER_EMAIL,SUPER_PASSWORD,"Fictional Super Admin");
+  await page.goto("/admin/book");
+  await selectConsultingClinic(page,self.clinic,self.branch,self.owner);
+  const invitation = await latestMail(page,admin.email,"password setup");
   expect(invitation).toBeTruthy();
   const inviteURL = invitation!.text
     .match(/https:\/\/fictional\.test\.invalid\/set-password\?[^\s<>"']+/)?.[0]
@@ -365,5 +520,5 @@ test("real self-owner and invited Super Admin owner registration, scoped booking
   await page.getByTestId("link-page-book-appointment").click();
   await page.reload();
   await verifyRealOwnerDirectory(page, admin.clinic, admin.branch, admin.owner, self.owner);
-  await expect(page.getByTestId("fixed-scope-doctors").getByRole("textbox")).toHaveValue(admin.owner);
+  await expect(page.getByRole("button",{name:`Doctor: ${admin.owner}`,exact:true})).toBeVisible();
 });

@@ -7,9 +7,9 @@ import { useDirectoryCardinality, useDirectoryActor } from "../../lib/use-direct
 
 // Only auto-select an actual sole result from the authorized scope, never the
 // first item of a paginated list. Patients use public authority; QR contexts stay fixed.
-export function useSoleCareDefaults({enabled,publicMode=false,clinicId,branchId,doctorId,setClinic,setBranch,setDoctor}:{enabled:boolean;publicMode?:boolean;clinicId:string;branchId:string;doctorId:string;setClinic:(id:string)=>void;setBranch:(id:string)=>void;setDoctor:(id:string)=>void}) {
+export function useSoleCareDefaults({enabled,publicMode=false,clinicId,branchId,doctorId,parentDoctorId=doctorId,setClinic,setBranch,setDoctor}:{enabled:boolean;publicMode?:boolean;clinicId:string;branchId:string;doctorId:string;parentDoctorId?:string;setClinic:(id:string)=>void;setBranch:(id:string)=>void;setDoctor:(id:string)=>void}) {
   const actor=useDirectoryActor();
-  const cp={status:"active" as const,doctorId:doctorId||undefined};
+  const cp={status:"active" as const,doctorId:parentDoctorId||undefined};
   const staffClinics=useDirectoryCardinality("clinics",cp,enabled&&!publicMode&&!clinicId);
   const bp={...cp,clinicId};
   const staffBranches=useDirectoryCardinality("branches",bp,enabled&&!publicMode&&!!clinicId&&!branchId);

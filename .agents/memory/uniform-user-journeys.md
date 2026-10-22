@@ -27,6 +27,12 @@ Use shared defaults, components and styling throughout these sections; do not du
 
 **How to apply:** Reuse the shared address, booking, patient-entry and schedule controls rather than maintaining parallel implementations.
 
+Normal staff Book Appointment selectors remain dropdowns even with one eligible option. Follow Clinic Group → Location → Doctor: a freely selected doctor must not narrow the parent lists, and changing a parent clears its dependent selections.
+
+**Why:** The user questioned the read-only conversion and doctor-driven parent filtering, then explicitly asked to correct them.
+
+**How to apply:** Scope locations to the selected group and doctors to its selected location, retaining existing permissions. Preserve genuinely fixed doctor-workspace and QR contexts; do not extend this booking-specific presentation change to unrelated modules.
+
 Place equivalent controls in consistent positions across pages. Avoid repeated counts/context and size fields by their content rather than forcing half-width or full-width layouts. Table check-in/check-out actions should fit their column using compact icons with tooltips.
 
 **Why:** The user identified duplicated location counts, overflowing check-out actions, excessive address help text and wasted form space in screenshots.

@@ -23,6 +23,7 @@ import { friendlyError } from "../lib/friendly-error";
 import { notifySuccess } from "../lib/notify";
 import { ActionLabel } from "./ActionLabel";
 import { accountDraftSchema, setupDraftSchema, registrationDraftKey, readRegistrationDraft, writeRegistrationDraft, clearRegistrationDraft } from "../lib/registration-draft";
+import { registrationDoctorIssue, requireRegistrationDoctor } from "../lib/registration-doctor-completion";
 
 export function ClinicRegistration() {
   const { isLoaded, isSignedIn } = useNativeAuth();
@@ -172,13 +173,14 @@ function RegistrationForm({ actorId }: { actorId: string }) {
   const [pending] = useState(() => readRegistrationDraft(draftKey, setupDraftSchema).data);
   const recovery = api.useGetClinicRegistrationCompletion({ requestId: pending?.requestId || "" }, { query: { queryKey: api.getGetClinicRegistrationCompletionQueryKey({ requestId: pending?.requestId || "" }), enabled: !!pending, retry: false, staleTime: 0 } });
   const recovered = recovery.data?.result;
-  useEffect(() => { if (recovered) { clearRegistrationDraft(draftKey); setCompleted(recovered); } }, [recovered, draftKey]);
+  const recoveryIssue = recovered ? registrationDoctorIssue(recovered, pending?.values.alsoConsult === true) : undefined;
+  useEffect(() => { if (recovered && !recoveryIssue) { clearRegistrationDraft(draftKey); setCompleted(recovered); } }, [recovered, recoveryIssue, draftKey]);
   async function finish(values: RegistrationValues, requestId: string) {
     if (locked.current) return;
     locked.current = true;
     try {
       const saved = await api.getClinicRegistrationCompletion({ requestId });
-      if (saved.result) { clearRegistrationDraft(draftKey); setCompleted(saved.result); return; }
+      if (saved.result) { requireRegistrationDoctor(saved.result, values.alsoConsult); clearRegistrationDraft(draftKey); setCompleted(saved.result); return; }
       if (!password) throw new Error("Confirm your account password to finish registration.");
       const result = await registration.mutateAsync({ data: {
         requestId,
@@ -189,6 +191,7 @@ function RegistrationForm({ actorId }: { actorId: string }) {
         ...ownerSchedulePayload(values),
       } });
       setPassword("");
+      requireRegistrationDoctor(result, values.alsoConsult);
       setCompleted(result);
       // Do not invalidate /me here: that would unmount the success confirmation.
        // NativeAuth owns this session snapshot; AuthAccess only observes it.
@@ -197,11 +200,13 @@ function RegistrationForm({ actorId }: { actorId: string }) {
     } catch (caught) {
       const saved = await api.getClinicRegistrationCompletion({ requestId });
       if (!saved.result) throw caught;
+      requireRegistrationDoctor(saved.result, values.alsoConsult);
       clearRegistrationDraft(draftKey); setCompleted(saved.result);
       void client.invalidateQueries({ predicate: q => q.queryKey[0] !== api.getGetMeQueryKey()[0] });
     } finally { setPassword(""); locked.current = false; }
   }
     if (completed) return <ClinicRegistrationComplete result={completed}/>;
+    if (recoveryIssue) return <div className="error-box" role="alert">{recoveryIssue}</div>;
    if (pending && recovery.isLoading) return <div className="page-loading">Checking whether registration already completed…</div>;
    if (pending && recovery.error) return <div className="error-box" role="alert">Could not check saved registration. No new creation will be attempted.<button onClick={() => void recovery.refetch()}>Try Again</button></div>;
    if (me.isLoading) return <div className="page-loading">Loading your account…</div>;

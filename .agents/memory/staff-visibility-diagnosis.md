@@ -30,3 +30,14 @@ that deployed clinic.
 authenticated directory request/response, and rendered selection to the first
 proven divergence. Do not broaden administrator consultation eligibility or
 automatically repair live records merely because the symptom was reported.
+
+Multiple authorized staff roles use the same booking route. Establish the
+authenticated identity and preserve each reported actor as a separate case.
+
+**Why:** Identical routes and clinic/location labels do not establish identical
+identity, authorization or saved IDs. Additional actor evidence does not retract
+an earlier report from another role.
+
+**How to apply:** Compare exact authenticated requests for Super Admin and the
+owning Clinic Admin separately. Do not turn successful fictional native-session
+checks into a claim that UAT's saved data or reported JWT adaptation is fixed.

@@ -7,6 +7,7 @@ import { validateTimes, localNow, minutes, sameTimezone, weeklySessionsOverlap, 
 export { outsideBranchHours, branchDayStatus, OUTSIDE_LOCATION_HOURS_WARNING, LOCATION_CLOSED_REASON } from "./availability";
 import { lockLinkedDoctors, planLinkedSchedules, applyLinkedPlan } from "./linked-schedules";
 import { normalizeClinicMetadata } from "./clinic-metadata";
+import { clinicalBranchIds } from "./clinical-membership";
 
 const reserved = new Set(["api", "admin", "auth", "login", "logout", "register", "signup", "sign-in", "sign-up", "onboarding", "dashboard", "clinics", "branches", "doctors", "patients", "appointments", "queue", "settings", "reports", "users", "masters", "schedules", "availability", "booking", "book", "display", "qr", "public", "guest", "invite", "invitations", "forgot-password", "reset-password", "account", "me", "assets", "favicon", "__mockup", "clinicflow-project-deck"]);
 // Pre-0008 ownership functions permit a self-owned doctor profile, but prohibit
@@ -159,6 +160,11 @@ export async function createOwnedClinic(actor: any, admin: any, input: any, conn
     branches: result.branches.map(b => ({ id: b.id, linkedSchedule: { ...input.ownerSchedule, enabled: true, doctorId: doctor.id } })),
   }, conn) : result;
   if (input.ownerCustomSchedule && doctor) await createOwnerCustomSessions(admin, doctor.id, result.branches, input.ownerCustomSchedule, conn);
+  if (input.ownDoctor) {
+    const clinicalLocations = doctor ? await clinicalBranchIds(doctor.id, conn) : [];
+    assert(doctor && result.branches.every(branch => clinicalLocations.includes(branch.id)),
+      409, "The requested consulting doctor profile could not be saved at all selected locations. Registration was not completed.");
+  }
   return { ...linkedResult, doctorId: doctor?.id || null };
 }
 

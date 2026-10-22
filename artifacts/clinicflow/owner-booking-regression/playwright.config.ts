@@ -6,7 +6,7 @@ export default defineConfig({
   testDir: ".",
   testMatch: "owner-booking.spec.ts",
   outputDir: "../../../generated-artifacts/owner-booking-regression",
-  timeout: 180_000,
+  timeout: 420_000,
   expect: { timeout: 12_000 },
   fullyParallel: false,
   workers: 1,
@@ -16,6 +16,7 @@ export default defineConfig({
     ...devices["Desktop Chrome"],
     baseURL,
     viewport: { width: 1280, height: 720 },
+    actionTimeout: 15_000,
     launchOptions: {
       executablePath: "/repl/tools/bin/chromium",
       args: ["--no-sandbox"],

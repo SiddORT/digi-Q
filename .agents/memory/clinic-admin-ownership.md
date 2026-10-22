@@ -27,6 +27,12 @@ The same-account Clinic Admin + doctor capability is a required release feature,
 
 **How to apply:** Verify single-branch onboarding, bookings and consultations using one identity while retaining full owner administration. Do not call a reduced release without this capability complete.
 
+When the owner selects “I consult as a doctor” during onboarding, completed setup must already include the same-account doctor profile; no second enable step is required. Adding other staff must preserve the owner's doctor visibility.
+
+**Why:** The user explicitly required this onboarding guarantee and asked that subsequent staff creation not hide the consulting owner.
+
+**How to apply:** Treat a missing requested profile as incomplete setup, not a successful registration followed by another enable action. Retain profile-based eligibility: do not make every Clinic Admin a doctor.
+
 Clinic-owned details entered during onboarding must be saved and subsequently changed only by the owning Clinic Admin or Super Admin.
 
 **Why:** The user explicitly required administrator-only changes to onboarding configuration. Earlier doctor permission to rename an existing location is superseded.

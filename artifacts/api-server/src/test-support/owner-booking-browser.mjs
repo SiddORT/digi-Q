@@ -12,6 +12,23 @@ globalThis.fetch = (input, options) => {
 const h = await createOwnerBookingHarness();
 const source = new URL(h.base);
 const proxy = createServer(async (req, res) => {
+  // Fixture-only state transition for real-UI freshness acceptance. Never loaded
+  // by production start; this cluster contains only isolated fictional records.
+  if (req.url === "/api/__owner-booking-doctor-status" && req.method === "POST") {
+    let body = "";
+    for await (const chunk of req) {
+      body += chunk;
+      if (body.length > 1024) { res.writeHead(413); return res.end(); }
+    }
+    let input;
+    try { input = JSON.parse(body); } catch { res.writeHead(400); return res.end(); }
+    if (!["active", "inactive"].includes(input.status) || typeof input.doctorId !== "string") {
+      res.writeHead(400); return res.end();
+    }
+    const result = await h.pg.query("update doctors set status=$1 where id=$2 returning id,status", [input.status,input.doctorId]);
+    res.writeHead(result.rows.length ? 200 : 404, {"Content-Type":"application/json","Cache-Control":"no-store"});
+    return res.end(JSON.stringify(result.rows[0] || {}));
+  }
   // Only exists in this disposable server, never the production router. Allows
   // browser tests to read simulated codes and independently inspect persistence.
   if (req.url === "/api/__owner-booking-evidence" && req.method === "GET") {

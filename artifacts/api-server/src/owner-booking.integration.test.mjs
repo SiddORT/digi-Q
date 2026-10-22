@@ -73,6 +73,13 @@ for (const path of ["self", "admin"]) {
       assert.equal(stored.data.token, booking.token);
       if (label === "immediate") owners.push({ cookie, email, clinicId, branchId, doctorId, patientId: patient.id });
     }
+    for (const session of [superCookie, await h.login("super@owner.test.invalid")]) {
+      assert.equal(ok(await h.as(session, "GET", "/me")).user.role, "superAdmin");
+      const list = ok(await h.as(session, "GET", `/doctors?clinicId=${clinicId}&branchId=${branchId}&status=active&page=1&pageSize=20`));
+      assert.equal(list.total, 1);
+      assert.equal(list.items[0].id, doctorId);
+      assert.equal(list.items[0].fullName, path === "self" ? "Fictional Self Owner" : "Fictional Invited Owner");
+    }
   });
 }
 
@@ -95,6 +102,7 @@ test("administrative ownership never grants unselected/foreign consultation memb
   }
   await h.pg.query("update doctors set status='inactive' where id=$1", [owner.doctorId]);
   assert.equal((await list(owner.clinicId, owner.branchId)).total, 0);
+  assert.equal((await list(owner.clinicId, owner.branchId, superCookie)).total, 0);
   assert.equal(ok(await h.as(owner.cookie, "GET", `/public/doctors?clinicId=${owner.clinicId}&branchId=${owner.branchId}`)).total, 0);
   const inactiveBooking = await h.as(owner.cookie, "POST", "/appointments", {
     clinicId: owner.clinicId, branchId: owner.branchId, doctorId: owner.doctorId, patientId: owner.patientId,
@@ -102,6 +110,8 @@ test("administrative ownership never grants unselected/foreign consultation memb
   });
   assert.equal(inactiveBooking.status, 409, JSON.stringify(inactiveBooking.data));
   await h.pg.query("update doctors set status='active' where id=$1", [owner.doctorId]);
+  assert.equal((await list(owner.clinicId, owner.branchId, superCookie)).total, 1);
+  assert.equal((await list(owner.clinicId, owner.branchId)).total, 1);
   // The actual ownership guard prohibits deactivating a clinic-owning admin;
   // do not disable it just to manufacture an impossible inactive-owner fixture.
   await assert.rejects(h.pg.query("update users set status='inactive' where email=$1", [owner.email]),
@@ -146,6 +156,8 @@ test("missing sessions do not remove the owner from doctor discovery or prevent 
   const directory = ok(await h.as(owner.cookie, "GET",
     `/doctors?clinicId=${owner.clinicId}&branchId=${owner.branchId}&status=active`));
   assert.deepEqual(directory.items.map(item => item.id), [owner.doctorId]);
+  assert.deepEqual(ok(await h.as(superCookie, "GET",
+    `/doctors?clinicId=${owner.clinicId}&branchId=${owner.branchId}&status=active`)).items.map(item=>item.id), [owner.doctorId]);
   const sessions = ok(await h.as(owner.cookie, "GET",
     `/public/availability/sessions?doctorId=${owner.doctorId}&branchId=${owner.branchId}&date=${tomorrow()}`));
   assert.deepEqual(sessions, []);
@@ -204,4 +216,16 @@ async function assertRejectedSession(cookie, owner) {
   const after = (await h.pg.query("select (select count(*) from patients) as patients, (select count(*) from appointments) as appointments")).rows[0];
   assert.deepEqual(after, before, "Rejected sessions must not leave patient or appointment rows");
 }
+test("both roles see true plural cardinality without including an inactive account", async () => {
+  const owner=owners[0];
+  const colleague=ok(await h.as(superCookie,"POST","/doctors",{
+    fullName:"Fictional Colleague",email:"colleague@owner.test.invalid",status:"active",
+    clinicIds:[owner.clinicId],branchIds:[owner.branchId],
+  }),201);
+  for(const cookie of [superCookie,owner.cookie]) {
+    const list=ok(await h.as(cookie,"GET",`/doctors?clinicId=${owner.clinicId}&branchId=${owner.branchId}&status=active&page=1&pageSize=20`));
+    assert.equal(list.total,2);
+    assert.deepEqual(list.items.map(item=>item.id).sort(),[owner.doctorId,colleague.id].sort());
+  }
+});
 });

@@ -22,7 +22,7 @@ test("private getDoctor assignment lists prove cross-clinic validity without lis
 test("inactive doctor is not a bookable dependency", () => {
   assert.equal(bookingDoctorMembership({ ...context, doctor: { clinicIds: ["g1"], branchIds: ["b2"], status: "inactive" } }), "invalid");
 });
-test("booking gates membership/date validity and never eagerly resets doctor on parent selection", () => {
+test("booking gates membership/date validity and preserves fixed doctor identity when clearing dependent choices", () => {
   const source = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");
   const booking = source.slice(source.indexOf("function Booking("), source.indexOf("function Queue("));
   const gate = booking.match(/const canContinue=([^;]+);/)?.[1];

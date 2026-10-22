@@ -8,6 +8,7 @@ import { ClinicRegistrationWizard, ownerSchedulePayload, type RegistrationValues
 import { ClinicRegistrationComplete } from "./ClinicRegistrationComplete";
 import { friendlyError } from "../lib/friendly-error";
 import { registrationDraftKey, readRegistrationDraft, setupDraftSchema, clearRegistrationDraft } from "../lib/registration-draft";
+import { registrationDoctorIssue, requireRegistrationDoctor } from "../lib/registration-doctor-completion";
 
 type SetupProps = { guided?: boolean; draftActor?: string; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void; carry?: Partial<Record<"fullName"|"email"|"mobile", string>>; onSnapshot?: (values: Record<string, unknown>, defaults: Record<string, unknown>) => void };
 export function ClinicAdminOnboarding({ guided = false, ...state }: SetupProps) {
@@ -30,13 +31,14 @@ function GuidedAdminSetup({ draftActor, onDirtyChange, onBusyChange, carry, onSn
   const draftKey = draftActor ? registrationDraftKey("admin", draftActor) : undefined;
   const [pending] = useState(() => draftKey ? readRegistrationDraft(draftKey, setupDraftSchema).data : undefined);
   const recovery = api.useGetClinicAdminSetupCompletion({ requestId: pending?.requestId || "" }, { query: { queryKey: api.getGetClinicAdminSetupCompletionQueryKey({ requestId: pending?.requestId || "" }), enabled: !!pending, retry: false } });
-  useEffect(() => { if (recovery.data?.result) { if (draftKey) clearRegistrationDraft(draftKey); setCompleted(recovery.data.result); } }, [recovery.data, draftKey]);
+  const recoveryIssue = recovery.data?.result ? registrationDoctorIssue(recovery.data.result, pending?.values.alsoConsult === true) : undefined;
+  useEffect(() => { if (recovery.data?.result && !recoveryIssue) { if (draftKey) clearRegistrationDraft(draftKey); setCompleted(recovery.data.result); } }, [recovery.data, recoveryIssue, draftKey]);
   async function finish(values: RegistrationValues, requestId: string) {
     if (locked.current) return;
     locked.current = true;
     try {
       const saved = await api.getClinicAdminSetupCompletion({ requestId });
-      if (saved.result) { if (draftKey) clearRegistrationDraft(draftKey); setCompleted(saved.result); return; }
+      if (saved.result) { requireRegistrationDoctor(saved.result, values.alsoConsult); if (draftKey) clearRegistrationDraft(draftKey); setCompleted(saved.result); return; }
       const result = await setup.mutateAsync({ data: {
         requestId,
         admin: { fullName: values.fullName.trim(), email: values.email.trim(), ...(values.mobile.trim() ? { mobile: values.mobile.trim() } : {}) },
@@ -45,12 +47,14 @@ function GuidedAdminSetup({ draftActor, onDirtyChange, onBusyChange, carry, onSn
         ownDoctor: values.alsoConsult, ...(values.alsoConsult ? { specializationId: values.specializationId || undefined, qualificationIds: values.qualificationIds } : {}),
         ...ownerSchedulePayload(values),
       } });
+      requireRegistrationDoctor(result, values.alsoConsult);
       setCompleted(result);
       onDirtyChange?.(false);
       await client.invalidateQueries();
     } catch (caught) {
       const saved = await api.getClinicAdminSetupCompletion({ requestId });
       if (!saved.result) throw caught;
+      requireRegistrationDoctor(saved.result, values.alsoConsult);
       if (draftKey) clearRegistrationDraft(draftKey);
       setCompleted(saved.result); onDirtyChange?.(false); void client.invalidateQueries();
     } finally { locked.current = false; }
@@ -61,6 +65,7 @@ function GuidedAdminSetup({ draftActor, onDirtyChange, onBusyChange, carry, onSn
        <button type="button" data-testid="button-resend-admin-invitation" disabled={resend.isPending} onClick={()=>resend.mutate()}>{resend.isPending?"Sending…":"Resend Invitation"}</button>
        {resend.error&&<p role="alert">{friendlyError(resend.error,"save")}</p>}
      </div>}</>;
+  if (recoveryIssue) return <div className="error-box" role="alert">{recoveryIssue}</div>;
   if (pending && recovery.isLoading) return <div className="page-loading">Checking saved setup…</div>;
   if (pending && recovery.error) return <div className="error-box" role="alert">Could not check saved setup. No new creation will be attempted.<button onClick={() => void recovery.refetch()}>Try Again</button></div>;
      return <ClinicRegistrationWizard referenceError={references.error ? "Healthcare suggestions could not be loaded. Custom clinic entry remains available." : undefined} referenceLoading={references.isFetching} onRetryReferences={() => void references.refetch()} key={draftKey || "memory"} draftKey={draftKey} adminMode carry={carry} onSnapshot={onSnapshot} onDirtyChange={onDirtyChange} onStepChange={setup.reset} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?friendlyError(setup.error,"save"):undefined}/>;
