@@ -26,3 +26,14 @@ draft from which the owner started recovery.
 **How to apply:** Still clear private data at actor/role boundaries and retain
 doctor-role scope restrictions; a new owner doctor identity is not an
 administrative-location change.
+
+A failed browser test is not a rollback of recovery already performed by that
+test. Reset the disposable recovery fixture before repeating its initial
+missing-profile journey, and always restore ordinary Preview afterward.
+
+**Why:** A selector failure can happen after the repair and eligible schedule
+have committed, so reusing the same fixture confuses test setup with a product
+regression.
+
+**How to apply:** Keep repair persistence and runner verdict separate. Reset only
+the opted-in fictional database, never a real owner's profile.
