@@ -1,11 +1,13 @@
 import { defineConfig, devices } from "@playwright/test";
+import { resolve } from "node:path";
 
 export default defineConfig({
   testDir: "./tests",
   // Independent runs must not delete each other's traces during Playwright startup.
   // The default still discovers every workspace spec; projects only isolate artifacts.
   projects: [
-    { name: "workspace", testIgnore: ["doctor-context.spec.ts", "users-administration.spec.ts"], outputDir: "./test-results/workspace" },
+    { name: "workspace", testIgnore: ["doctor-context.spec.ts", "users-administration.spec.ts", "compact-ui.spec.ts"], outputDir: "./test-results/workspace" },
+    { name: "compact-ui", testMatch: "compact-ui.spec.ts", outputDir: resolve("generated-artifacts/compact-ui/results") },
     { name: "doctor-context", testMatch: "doctor-context.spec.ts", outputDir: "./test-results/doctor-context" },
     { name: "users-administration", testMatch: "users-administration.spec.ts", outputDir: "./test-results/users-administration" },
   ],

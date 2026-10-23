@@ -22,7 +22,7 @@ type ChildProps = {
 };
 
 /** Tooltip rendered in a body portal, positioned against the anchor with flip + viewport clamp. */
-function Bubble({ anchor, text, id }: { anchor: RefObject<HTMLSpanElement | null>; text: string; id?: string }) {
+function Bubble({ anchor, text, id, onEnter, onLeave }: { anchor: RefObject<HTMLSpanElement | null>; text: string; id?: string; onEnter: () => void; onLeave: () => void }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   useLayoutEffect(() => {
@@ -43,6 +43,7 @@ function Bubble({ anchor, text, id }: { anchor: RefObject<HTMLSpanElement | null
   }, [anchor, text]);
   return createPortal(
     <span ref={ref} role="tooltip" id={id} aria-hidden="true" className="helptip-bubble" data-measuring={pos ? undefined : ""}
+      onPointerEnter={onEnter} onPointerLeave={onLeave}
       style={pos ? { transform: `translate(${Math.round(pos.left)}px, ${Math.round(pos.top)}px)` } : undefined}>{text}</span>,
     document.body,
   );
@@ -62,28 +63,31 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
   const id = useId();
   const ref = useRef<HTMLSpanElement>(null);
   const timer = useRef<number | undefined>(undefined);
+  const leaveTimer = useRef<number | undefined>(undefined);
 
-  const close = () => { setOpen(false); setPinned(false); };
-  const show = () => { dismissTooltips(); setOpen(true); };
+  const cancelLeave = () => window.clearTimeout(leaveTimer.current);
+  const close = () => { cancelLeave(); window.clearTimeout(timer.current); setOpen(false); setPinned(false); };
+  const show = () => { cancelLeave(); dismissTooltips(); setOpen(true); };
+  const leave = () => { cancelLeave(); if (!pinned) leaveTimer.current = window.setTimeout(() => setOpen(false), 180); };
   // Menus and popovers broadcast this so a trigger's tooltip never overlaps the opened menu.
-  useEffect(() => { const dismiss = () => { setOpen(false); setPinned(false); }; window.addEventListener(DISMISS_TOOLTIPS, dismiss); return () => window.removeEventListener(DISMISS_TOOLTIPS, dismiss); }, []);
+  useEffect(() => { const dismiss = () => { window.clearTimeout(leaveTimer.current); window.clearTimeout(timer.current); setOpen(false); setPinned(false); }; window.addEventListener(DISMISS_TOOLTIPS, dismiss); return () => window.removeEventListener(DISMISS_TOOLTIPS, dismiss); }, []);
 
   useEffect(() => {
     if (!open) return;
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
-    const down = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) close(); };
+    const down = (e: PointerEvent) => { if (e.target instanceof Element && e.target.closest(".helptip-bubble")) return; if (ref.current && !ref.current.contains(e.target as Node)) close(); };
     window.addEventListener("keydown", key, true);
     document.addEventListener("pointerdown", down);
     return () => { window.removeEventListener("keydown", key, true); document.removeEventListener("pointerdown", down); };
   }, [open]);
-  useEffect(() => () => window.clearTimeout(timer.current), []);
+  useEffect(() => () => { window.clearTimeout(timer.current); window.clearTimeout(leaveTimer.current); }, []);
 
-  const bubble = open ? <Bubble anchor={ref} text={text} /> : null;
+  const bubble = open ? <Bubble anchor={ref} text={text} onEnter={cancelLeave} onLeave={leave} /> : null;
   // Touch browsers may emit compatibility mouseenter after an outside tap. Only
   // real hover pointers may reopen help; keyboard focus and tap toggling stay separate.
   const hoverProps = {
     onPointerEnter: (e: ReactPointerEvent) => { if (e.pointerType !== "touch") show(); },
-    onPointerLeave: (e: ReactPointerEvent) => { if (e.pointerType !== "touch" && !pinned) setOpen(false); },
+    onPointerLeave: (e: ReactPointerEvent) => { if (e.pointerType !== "touch") leave(); },
   };
 
   if (isValidElement(children)) {
@@ -108,7 +112,7 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
     const trigger = cloneElement(child, {
       "aria-describedby": describedBy,
       onPointerEnter: (e: ReactPointerEvent) => { p.onPointerEnter?.(e); if (e.pointerType !== "touch") show(); },
-      onPointerLeave: (e: ReactPointerEvent) => { p.onPointerLeave?.(e); if (e.pointerType !== "touch" && !pinned) setOpen(false); },
+      onPointerLeave: (e: ReactPointerEvent) => { p.onPointerLeave?.(e); if (e.pointerType !== "touch") leave(); },
       onFocus: (e: FocusEvent) => { p.onFocus?.(e); show(); },
       onBlur: (e: FocusEvent) => { p.onBlur?.(e); if (!pinned) setOpen(false); },
       onPointerDown: (e: ReactPointerEvent) => {

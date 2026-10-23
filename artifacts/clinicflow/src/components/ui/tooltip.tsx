@@ -1,10 +1,26 @@
 import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cn } from '@/lib/utils';
+import { DISMISS_TOOLTIPS, dismissTooltips } from '../tooltip-dismiss';
 
 const TooltipProvider = TooltipPrimitive.Provider;
 
-const Tooltip = TooltipPrimitive.Root;
+function Tooltip({ open: controlled, defaultOpen = false, onOpenChange, ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  const [local, setLocal] = React.useState(defaultOpen);
+  const change = React.useCallback((next: boolean) => {
+    setLocal(next);
+    onOpenChange?.(next);
+  }, [onOpenChange]);
+  React.useEffect(() => {
+    const close = () => change(false);
+    window.addEventListener(DISMISS_TOOLTIPS, close);
+    return () => window.removeEventListener(DISMISS_TOOLTIPS, close);
+  }, [change]);
+  return <TooltipPrimitive.Root {...props} open={controlled ?? local} onOpenChange={next => {
+    if (next) dismissTooltips();
+    change(next);
+  }}/>;
+}
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
@@ -16,8 +32,9 @@ const TooltipContent = React.forwardRef<
     <TooltipPrimitive.Content
       ref={ref}
       sideOffset={sideOffset}
+      collisionPadding={8}
       className={cn(
-        'z-50 overflow-hidden rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-tooltip-content-transform-origin]',
+        'dq-tooltip z-50 rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground',
         className,
       )}
       {...props}

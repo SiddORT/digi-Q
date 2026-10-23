@@ -44,7 +44,7 @@ export function OverflowText({ value, children, as = "span", className, lines = 
       <Tag ref={ref as any} className={`ov-text${lines === 2 ? " ov-2" : ""}${className ? ` ${className}` : ""}`} data-testid={testId}
         tabIndex={truncated ? 0 : -1} aria-label={truncated ? text : undefined}
         aria-describedby={open && truncated ? id : undefined}
-        onMouseEnter={show} onMouseLeave={hide} onFocus={() => { if (!touchFocus.current) show(); }} onBlur={hide}
+        onPointerEnter={e => { if (e.pointerType !== "touch") show(); }} onPointerLeave={e => { if (e.pointerType !== "touch") hide(); }} onFocus={() => { if (!touchFocus.current) show(); }} onBlur={hide}
         onPointerDown={e => { if (e.pointerType !== "mouse" && measure()) { e.preventDefault(); touchFocus.current = true; ref.current?.focus(); touchFocus.current = false; toggle(); } }}
         onKeyDown={e => { if (e.key === "Escape") setOpen(false); if ((e.key === "Enter" || e.key === " ") && truncated) { e.preventDefault(); toggle(); } }}>
         {children ?? text}

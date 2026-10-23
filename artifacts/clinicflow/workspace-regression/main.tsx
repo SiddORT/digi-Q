@@ -14,11 +14,14 @@ import { GuestBooking } from "../src/components/GuestBooking";
 import { SchedulingWorkspace } from "../src/components/SchedulingWorkspace";
 import { ListPageTitleContext } from "../src/components/ListingControls";
 import "./workspace.css";
+import "../src/form-standard.css";
+import "../src/compact-ui.css";
 import { SelectorFixture } from "./SelectorFixture";
 import { RegistrationFixture } from "./RegistrationFixture";
 import { RescheduleFixture } from "./RescheduleFixture";
 import App from "../src/App";
 import { DropdownWorkspaceFixture } from "./DropdownWorkspaceFixture";
+import { CompactUiFixture } from "./CompactUiFixture";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -32,6 +35,7 @@ const titleOwner=useRef<string|null>(null);
 const [location]=useLocation();
 const search=useSearch();
 const params = new URLSearchParams(search);
+if (params.get("mode") === "compact-ui") return <CompactUiFixture/>;
 const [dropdownWorkspace] = useState(() => params.get("mode") === "dropdown-workspace");
 if (dropdownWorkspace) return <DropdownWorkspaceFixture/>;
 if (params.get("mode") === "registration") return <RegistrationFixture/>;
@@ -81,7 +85,8 @@ queryClient.setQueryDefaults(["doctor-editor-locations"],{staleTime:60000});
 function FixtureRouter(){
   const [location]=useLocation();
   const search=useSearch();
-  return new URLSearchParams(search).get("mode")==="app"||location.startsWith("/book/")||/^\/(admin|doctor|receptionist|patient)\/book$/.test(location)
+  const [appMode]=useState(()=>new URLSearchParams(window.location.search).get("mode")==="app");
+  return appMode||new URLSearchParams(search).get("mode")==="app"||location.startsWith("/book/")||/^\/(admin|doctor|receptionist|patient)\/book$/.test(location)
     ? <App/> : <FixtureWorkspace/>;
 }
 

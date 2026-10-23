@@ -63,12 +63,12 @@ export function ProfileMenu({ name, roleLabel, role, actualRole, navigation, pag
   const { prefs, toggleFavorite } = useNavigationPreferences(userId, role,role==="admin"&&navigation.includes("clinics")&&!navigation.includes("clinic"));
   useEffect(() => {
     if (!open) return;
-    const outside = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    const outside = (e: PointerEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
     const key = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); trigger.current?.focus(); } };
-    document.addEventListener("mousedown", outside); document.addEventListener("keydown", key);
+    document.addEventListener("pointerdown", outside); document.addEventListener("keydown", key);
     // Move focus into the menu so arrow keys work immediately.
     requestAnimationFrame(() => panel.current?.querySelector<HTMLElement>('[role="menuitem"],[role="menuitemradio"]')?.focus());
-    return () => { document.removeEventListener("mousedown", outside); document.removeEventListener("keydown", key); };
+    return () => { document.removeEventListener("pointerdown", outside); document.removeEventListener("keydown", key); };
   }, [open]);
   useEffect(() => setOpen(false), [page]);
   const initials = name.split(" ").map(n => n[0]).slice(0, 2).join("");

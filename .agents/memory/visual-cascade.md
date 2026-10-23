@@ -127,3 +127,14 @@ baseline harness failure, not evidence the historical screen was broken.
 **How to apply:** Preserve workspace configuration and shared dependency resolution
 in ignored baseline copies; distinguish reconstructed fixture baselines from
 authenticated screenshots captured before editing.
+
+Geometry and feedback assertions must observe settled transitions and anchored
+overlay placement, while retaining exact final geometry and color checks.
+
+**Why:** Immediate switch, invalid-border and modal measurements can capture
+intermediate animation values or an overlay's initial off-screen placement,
+preventing later state checks from running despite correct settled rendering.
+
+**How to apply:** Auto-wait computed styles and poll child/popup bounds. Do not
+weaken the final assertions or use document overflow as a substitute for child
+containment, focus/error visibility or sticky-footer clearance.

@@ -1,0 +1,220 @@
+/*
+ * Final application cascade, shared by production and browser fixtures.
+ * Families, not a universal control height. See docs/ui/compact-ui.md.
+ * No table or ticket/export geometry belongs here.
+ */
+:root {
+  --feedback-error-fg:#8f1f18; --feedback-error-bg:#fdf1f0; --feedback-error-border:#efc3bf;
+  --feedback-warning-fg:#704500; --feedback-warning-bg:#fff8e6; --feedback-warning-border:#e4c779;
+  --feedback-success-fg:#20633f; --feedback-success-bg:#edf8f1; --feedback-success-border:#a8cfb7;
+  --feedback-info-fg:#17467f; --feedback-info-bg:#eef4fc; --feedback-info-border:#bdd0eb;
+  --overlay-ink:#eaf2fb; --overlay-bg:#0d2350;
+  --overlay-shadow:0 10px 24px -12px rgba(13,35,80,.5);
+}
+
+/* Single-line fields: protect the native families from legacy workspace rules.
+ * Exclude hidden, range, color, check/radio, file and multiline selects deliberately. */
+:is(input:not([type]),input:is([type=text],[type=email],[type=password],[type=number],[type=tel],[type=url],[type=search],[type=date],[type=time],[type=datetime-local]),select:not([multiple])) {
+  box-sizing:border-box; min-width:0; max-width:100%;
+  height:var(--control-md); min-height:var(--control-md);
+  padding:6px 12px; margin-top:4px; font-size:var(--type-body); line-height:1.4;
+}
+:is(.workspace,.app-dialog,.auth-card,.registration-card) :is(input:not([type]),input:is([type=text],[type=email],[type=password],[type=number],[type=tel],[type=url],[type=search],[type=date],[type=time],[type=datetime-local]),select:not([multiple])) {
+  --field-height:var(--control-md); height:var(--control-md); min-height:var(--control-md);
+  padding-block:6px; margin-top:4px; line-height:1.4;
+}
+:is(.workspace,.app-dialog,.auth-card,.registration-card) textarea {
+  height:auto; min-height:96px; max-width:100%; padding:8px 12px; line-height:1.5;
+}
+input:is([type=checkbox],[type=radio]) {
+  display:inline-block; width:18px; height:18px; min-height:18px; max-width:18px;
+  padding:0; margin:0; flex:0 0 18px; accent-color:var(--dq-blue); vertical-align:middle;
+}
+input[type=hidden]{display:none}
+:is(.day-open-switch,.status-switch) input{
+  position:absolute;opacity:0;width:1px;height:1px;min-height:1px;max-width:1px;margin:0;
+}
+input[type=file]{height:auto; min-height:var(--control-md); padding:6px; overflow-wrap:anywhere; max-width:100%}
+select[multiple]{height:auto; min-height:108px}
+/* Track geometry stays 36×20 even under generic workspace/dialog button rules.
+ * A separate transparent pseudo target expands touch input without stretching the track. */
+button.dq-switch,.workspace button.dq-switch,.app-dialog button.dq-switch {
+  position:relative; display:inline-flex; align-items:center; justify-content:flex-start;
+  width:36px; min-width:36px; max-width:36px; height:20px; min-height:20px;
+  padding:0; gap:0; border:2px solid transparent; border-radius:999px; flex:0 0 36px;
+}
+button.dq-switch[data-state=checked]{background:var(--dq-blue)}
+button.dq-switch[data-state=unchecked]{background:#738198}
+button.dq-switch>span{width:16px;height:16px;min-width:16px;flex:none;background:#fff;border-radius:50%}
+button.dq-switch[data-state=checked]>span{transform:translateX(16px)}
+button.dq-switch[data-state=unchecked]>span{transform:translateX(0)}
+button.dq-switch::after{content:"";position:absolute;inset:-12px -4px}
+button.dq-switch:focus-visible{outline:2px solid var(--dq-blue);outline-offset:3px}
+button:is(.dq-checkbox,.dq-radio),
+:is(.workspace,.app-dialog) button:is(.dq-checkbox,.dq-radio){
+  position:relative;display:inline-grid;place-content:center;padding:0;gap:0;
+  width:18px;min-width:18px;max-width:18px;height:18px;min-height:18px;line-height:1;flex:0 0 18px;
+}
+button.dq-checkbox{border-radius:4px}
+button.dq-radio{border-radius:50%}
+button:is(.dq-checkbox,.dq-radio)::after{content:"";position:absolute;inset:-13px}
+:is(.workspace,.app-dialog) button.dq-select-trigger,button.dq-select-trigger{
+  min-height:var(--control-md);height:var(--control-md);padding:6px 12px;line-height:1.4;
+}
+/* Picker icon actions must not inherit generic button horizontal padding. */
+:is(.workspace,.app-dialog) button:is(.dtp-trigger,.dtp-nav,.dtp-day){padding:0;gap:0}
+:is(.workspace,.app-dialog) button.dtp-trigger{width:32px;height:32px}
+/* An input group owns its boundary. Its children have no second border/margin
+ * and multiline/block variants continue growing naturally. */
+[data-slot=input-group]{height:auto;min-height:var(--control-md)}
+[data-slot=input-group]>input[data-slot=input-group-control],
+:is(.workspace,.app-dialog) [data-slot=input-group]>input[data-slot=input-group-control]{
+  margin:0;border:0;min-height:calc(var(--control-md) - 2px);height:calc(var(--control-md) - 2px);
+}
+[data-slot=input-group]:has(textarea){height:auto}
+
+/* Compact containers, wrapping labels, compound fields and adjacent actions. */
+:is(.form-field,.field-cell,.form-grid>*,.phone-input,.address-fields){min-width:0}
+:is(.form-field-label,label,.field-hint,.form-field-help,.form-field-error){overflow-wrap:anywhere}
+.form-field>.form-field-label{align-items:baseline;gap:6px;line-height:1.4}
+:is(.form-grid,.registration-fields){row-gap:12px}
+/* Each row shares label/control/message tracks, so a wrapped label cannot move
+ * its input below an adjacent equivalent input. Only shared FormField cells
+ * participate; nested editors and arbitrary page blocks keep their own layout. */
+@supports(grid-template-rows:subgrid){
+  :is(.editor-container,.cf-form) .field-grid:has(>.form-field.field-cell){row-gap:4px}
+  :is(.editor-container,.cf-form) .field-grid>.form-field.field-cell{
+    display:grid;grid-template-rows:subgrid;grid-row:span 4;row-gap:4px;margin-bottom:8px;
+  }
+  .field-grid>.form-field.field-cell>.form-field-label{grid-row:1}
+  .field-grid>.form-field.field-cell>:not(.form-field-label):not(.form-field-error):not(.form-field-help){grid-row:2;align-self:start}
+  .field-grid>.form-field.field-cell>.form-field-error{grid-row:3;margin:0}
+  .field-grid>.form-field.field-cell>.form-field-help{grid-row:4;margin:0}
+}
+.password-input>.password-toggle {height:var(--control-md);min-height:var(--control-md);bottom:0;display:inline-grid;place-items:center}
+:is(.workspace,.app-dialog) .password-input>.password-toggle{padding:0;width:40px;min-width:40px;border-radius:var(--radius-control)}
+:is(.workspace,.app-dialog) .password-input>input{padding-right:44px}
+.phone-input input{min-width:0}
+:is(.workspace,.app-dialog) button.icon-action{
+  padding:0;width:32px;min-width:32px;height:32px;min-height:32px;gap:0;
+}
+.icon-action svg{width:16px;height:16px;flex-shrink:0}
+:is(.workspace,.app-dialog) button.searchable-select-clear{padding:0;gap:0;width:24px;height:24px;min-width:24px}
+:is(.workspace,.app-dialog) button.helptip-trigger{padding:0;width:24px;height:24px;min-height:24px;min-width:24px;border-radius:50%}
+/* Select and date/reveal actions align with the field family, not generic
+ * workspace buttons. Their option lists retain independent row sizing. */
+:is(.workspace,.app-dialog,.auth-card,.registration-card) .searchable-select-control{
+  min-height:var(--control-md);padding-block:6px;line-height:1.4;
+}
+.dq-popover{max-width:calc(100vw - 16px);max-height:var(--radix-popover-content-available-height,80dvh);overflow-y:auto;overscroll-behavior:contain}
+.error-box{flex-wrap:wrap;align-items:center;gap:8px}
+.error-box button{max-width:100%;white-space:normal}
+.form-actions :is(button,a){max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.form-actions :is(button,a.button),.workspace .form-actions :is(button,a.button){min-height:var(--control-md)}
+/* Dense listing tools are their own 32px family on fine pointers. Form editors
+ * keep 40px, and row/context icon actions remain independently sized. */
+@media(min-width:768px) and (pointer:fine){
+  .workspace :is(.list-header,.filter-bar) :is(input:not([type]),input:is([type=text],[type=search],[type=date],[type=time]),select:not([multiple])){
+    height:var(--control-sm);min-height:var(--control-sm);padding-block:4px;
+  }
+  .workspace :is(.list-header,.filter-bar) .searchable-select-control{min-height:var(--control-sm);padding-block:4px}
+}
+:is(.auth-card,.registration-card){padding:20px}
+:is(.workspace .page-heading,.workspace .list-header){margin-bottom:12px}
+.workspace .page-heading{gap:12px;align-items:center}
+.workspace .page-heading>div{min-width:0}
+
+/* Navigation hierarchy: reserved borders ensure hover/active never move labels. */
+:is(.wnav-link,.workspace .wnav-link){min-height:36px;padding:6px 10px;gap:8px;line-height:1.4;border:1px solid transparent}
+:is(.wnav-link,.profile-menu-panel [role^=menuitem],.row-menu-list [role=menuitem])>svg{flex-shrink:0}
+.wnav-label{min-width:0;overflow-wrap:anywhere}
+.wnav-link.child{padding-left:24px}
+.workspace .sidebar .workspace-label{margin:12px 10px 6px}
+.workspace .sidebar .wnav-shortcuts h2{margin:8px 10px 4px}
+:is(.profile-menu-panel,.row-menu-list){max-width:calc(100vw - 16px);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+.profile-menu-panel{max-height:calc(100dvh - 80px);right:0}
+:is(.profile-menu-panel,.row-menu-list) :is([role=menuitem],[role=menuitemradio]){
+  min-height:36px;padding:6px 10px;line-height:1.4;white-space:normal;overflow-wrap:anywhere;
+}
+.pm-head{overflow-wrap:anywhere}
+.public-drawer-nav a{min-height:44px;display:flex;align-items:center}
+
+/* Semantic feedback families. Inline errors do not become cards; summaries do. */
+:is(.form-field-error,.field-error,.confirm-dialog-error),
+:is(.workspace,.app-dialog,.auth-card,.registration-card) :is(.form-field-error,.field-error,.confirm-dialog-error){
+  color:var(--feedback-error-fg);font-size:13px;font-weight:550;line-height:1.5;
+  margin-top:4px;overflow-wrap:anywhere;
+}
+:is(.form-summary,.error-box),
+:is(.workspace,.app-dialog,.auth-card,.registration-card) :is(.form-summary,.error-box){
+  color:var(--feedback-error-fg);background:var(--feedback-error-bg);border:1px solid var(--feedback-error-border);
+  font-size:13px;font-weight:500;line-height:1.5;padding:8px 12px;border-radius:8px;overflow-wrap:anywhere;
+}
+:is(.notice,[data-feedback=info]){--message-fg:var(--feedback-info-fg);--message-bg:var(--feedback-info-bg);--message-border:var(--feedback-info-border)}
+:is(.notice.warning,[data-feedback=warning]){--message-fg:var(--feedback-warning-fg);--message-bg:var(--feedback-warning-bg);--message-border:var(--feedback-warning-border)}
+:is(.notice.cm-gate-warning,.notice.cde-warn,.notice.cu-coverage){--message-fg:var(--feedback-warning-fg);--message-bg:var(--feedback-warning-bg);--message-border:var(--feedback-warning-border)}
+:is(.notice.success,[data-feedback=success]){--message-fg:var(--feedback-success-fg);--message-bg:var(--feedback-success-bg);--message-border:var(--feedback-success-border)}
+:is(.notice.error,[data-feedback=error]){--message-fg:var(--feedback-error-fg);--message-bg:var(--feedback-error-bg);--message-border:var(--feedback-error-border)}
+:is(.notice,[data-feedback]),
+:is(.workspace,.app-dialog,.auth-card,.registration-card) :is(.notice,[data-feedback]){
+  color:var(--message-fg);background:var(--message-bg);border:1px solid var(--message-border);
+  font-size:13px;line-height:1.5;padding:8px 12px;border-radius:8px;overflow-wrap:anywhere;
+}
+:is(.form-summary,.error-box,.notice,[data-feedback]) svg{width:16px;height:16px;flex-shrink:0}
+:is(.workspace,.app-dialog,.form-field) [aria-invalid=true]{border-color:var(--feedback-error-fg)}
+:is(.workspace,.app-dialog,.form-field) [aria-invalid=true]:focus-visible{
+  outline:2px solid var(--dq-blue);outline-offset:2px;border-color:var(--feedback-error-fg);
+}
+.form-field-help{font-size:13px;line-height:1.5;margin-top:4px}
+:is(.et-notice,.cr-notice){color:var(--feedback-success-fg);font-size:13px;font-weight:550;line-height:1.5;overflow-wrap:anywhere}
+.export-status.error{color:var(--feedback-error-fg);font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+[data-feedback][role=alert]>svg{position:static;display:inline-block;vertical-align:middle;margin-right:6px}
+[data-sonner-toast].app-toast{font-size:13px;line-height:1.5;padding:10px 14px;overflow-wrap:anywhere}
+[data-sonner-toast][data-type=error]{color:var(--feedback-error-fg);background:var(--feedback-error-bg);border-color:var(--feedback-error-border)}
+[data-sonner-toast][data-type=warning]{color:var(--feedback-warning-fg);background:var(--feedback-warning-bg);border-color:var(--feedback-warning-border)}
+[data-sonner-toast][data-type=success]{color:var(--feedback-success-fg);background:var(--feedback-success-bg);border-color:var(--feedback-success-border)}
+[data-sonner-toast][data-type=info]{color:var(--feedback-info-fg);background:var(--feedback-info-bg);border-color:var(--feedback-info-border)}
+[data-sonner-toast] [data-icon] svg{width:16px;height:16px}
+
+/* Noninteractive help/reveals share typography; interactive popovers stay light. */
+:is(.helptip-bubble,.ov-pop,.dq-tooltip){
+  z-index:1100;max-width:min(360px,calc(100vw - 16px));max-height:calc(100dvh - 16px);
+  overflow-y:auto;overflow-wrap:anywhere;white-space:normal;padding:8px 12px;
+  font-size:13px;font-weight:500;line-height:1.5;border-radius:8px;
+  background:var(--overlay-bg);color:var(--overlay-ink);box-shadow:var(--overlay-shadow);
+  pointer-events:auto;
+}
+.dq-hover-card{max-width:calc(100vw - 16px);max-height:var(--radix-hover-card-content-available-height,80dvh);overflow:auto;padding:12px;font-size:13px;line-height:1.5}
+
+/* Predictable feedback, with no border-width/weight/size change on hover. */
+:is(a,button,[role=tab],[role=menuitem],[role=menuitemradio]):focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px}
+@media(hover:hover){
+  a:not(.button):not(.wnav-link):not([role^=menuitem]):not([role=tab]):not([aria-current]):hover{text-decoration:underline;text-underline-offset:3px}
+  :is(.text-link,.icon-action,.password-toggle,.helptip-trigger):not(:disabled):hover{color:var(--dq-blue)}
+  :is(.wnav-link,.profile-menu-panel [role^=menuitem],.row-menu-list [role=menuitem]):not(:disabled):not([aria-current=page]):not([aria-checked=true]):hover{background:var(--surface-hover);color:var(--dq-blue)}
+}
+:is(.wnav-link,[role=tab],[role=menuitem],[role=menuitemradio]):not(:disabled):active{box-shadow:inset 0 0 0 1px var(--dq-blue)}
+a.text-link:visited{color:#514185}
+:is(button:disabled,[aria-disabled=true]){cursor:not-allowed}
+
+@media(max-width:767px),(pointer:coarse){
+  :is(.workspace,.app-dialog,.auth-card,.registration-card) :is(input:not([type]),input:is([type=text],[type=email],[type=password],[type=number],[type=tel],[type=url],[type=search],[type=date],[type=time],[type=datetime-local]),select:not([multiple])){
+    height:var(--control-lg);min-height:var(--control-lg);font-size:16px;
+  }
+  :is(.wnav-link,.workspace .wnav-link,.profile-menu-panel [role^=menuitem],.row-menu-list [role=menuitem]){min-height:44px}
+  :is(.workspace,.app-dialog) .password-input>.password-toggle{height:44px;min-height:44px;width:44px}
+  :is(.workspace,.app-dialog,.auth-card,.registration-card) .searchable-select-control{min-height:44px}
+  :is(.workspace,.app-dialog) button.dq-select-trigger,button.dq-select-trigger{min-height:44px;height:44px}
+  :is(.workspace,.app-dialog) button.icon-action{width:44px;min-width:44px;height:44px;min-height:44px}
+  .form-actions :is(button,a.button),.workspace .form-actions :is(button,a.button){min-height:44px}
+  [data-slot=input-group]{min-height:44px}
+  :is(.workspace,.app-dialog) [data-slot=input-group]>input[data-slot=input-group-control]{min-height:42px;height:42px}
+  :is(.auth-card,.registration-card){padding:16px}
+}
+/* A noninteractive touch bubble must not cover the next outside-tap target.
+ * Hover-capable pointers still enter the content and can scroll/select it. */
+@media(hover:none),(pointer:coarse){.helptip-bubble{pointer-events:none}}
+@media(prefers-reduced-motion:reduce){
+  :is(.helptip-bubble,.ov-pop,.dq-tooltip,.dq-hover-card,.dq-popover,.dq-switch,.dq-switch>span){animation:none;transition:none}
+  :is(button,a,[role=tab],[role=menuitem]){transition:none}
+}

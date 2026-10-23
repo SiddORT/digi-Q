@@ -43,6 +43,8 @@ _Describe the high-level user-facing capabilities of this app once they exist._
 
 ## UI restoration constraints
 
+- Every new or modified UI surface must meet [Compact UI acceptance](docs/ui/compact-ui.md), including its component/state and responsive evidence gates. Maintain the [source inventory](docs/ui/surface-inventory.json) and [coverage matrix](docs/ui/compact-ui-coverage.md); record justified sizing exceptions, never infer coverage from shared CSS alone.
+
 - Preserve the established ClinicFlow teal identity and navigation; refine the existing product rather than redesigning it.
 - Use calm surfaces, soft neutral boundaries, readable text, subtle focus states, and consistent compact spacing. The earlier dark-outline contrast treatment was explicitly rejected.
 - Fix shared components and migrate consumers rather than adding page-specific overrides. Search icons, clear actions, relation selectors, filter grids, and pagination must share one visual language.
