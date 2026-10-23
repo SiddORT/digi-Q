@@ -2382,6 +2382,7 @@ export const attachOwnDoctorProfileBodyBranchIdsMax = 30;
 
 export const AttachOwnDoctorProfileBody = zod.object({
   "branchIds": zod.array(zod.string()).max(attachOwnDoctorProfileBodyBranchIdsMax),
+  "recoverMissingOnly": zod.boolean().optional().describe('Explicit booking recovery. Reuse an active same-account profile without changing its locations; reject conflicting scope.'),
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "about": zod.string().optional()

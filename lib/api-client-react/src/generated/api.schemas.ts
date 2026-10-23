@@ -1984,6 +1984,8 @@ export interface ClinicSettingsResult {
 export interface OwnDoctorProfileInput {
   /** @maxItems 30 */
   branchIds: string[];
+  /** Explicit booking recovery. Reuse an active same-account profile without changing its locations; reject conflicting scope. */
+  recoverMissingOnly?: boolean;
   specializationId?: string;
   qualificationIds?: string[];
   about?: string;

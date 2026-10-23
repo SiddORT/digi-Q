@@ -2832,6 +2832,9 @@ components:
       required: [branchIds]
       properties:
         branchIds: { type: array, maxItems: 30, items: { type: string } }
+        recoverMissingOnly:
+          type: boolean
+          description: Explicit booking recovery. Reuse an active same-account profile without changing its locations; reject conflicting scope.
         specializationId: { type: string }
         qualificationIds: { type: array, items: { type: string } }
         about: { type: string }

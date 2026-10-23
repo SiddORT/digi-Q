@@ -1,5 +1,16 @@
 /* DigiQ Doctors — compact-only staff workspace contract. See docs/compact-style-contract.md.
    Scoped under .workspace so patient tickets, print, auth and public pages are untouched. */
+.resource-lookup-field{min-width:0}
+.resource-lookup-field>p{margin:4px 0 0;font-size:var(--type-caption);overflow-wrap:anywhere}
+.workspace .booking-panel .form-grid{margin-top:12px;gap:12px;align-items:start}
+.workspace .booking-panel .availability-box{margin-top:8px;padding:8px 12px}
+.workspace .booking-panel .availability-box strong{margin-left:0}
+.workspace .booking-panel .availability-box p{margin:4px 0}
+.workspace .booking-panel .notice{margin:8px 0;padding:8px 12px}
+.workspace .booking-panel .guest-next-date{margin:8px 0;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.workspace .booking-panel .booking-preselection{margin-top:12px;color:var(--soft)}
+.owner-booking-recovery{display:flex;align-items:center;gap:4px;margin:8px 0}
+.workspace .booking-source input[type=radio]{width:16px;height:16px;min-height:16px;flex:0 0 16px;padding:0;margin:0}
 :root{--cw-gap:var(--space-2);--cw-gap-lg:var(--space-3);--cw-ctl:var(--control-sm);--cw-ctl-sm:var(--control-sm);--cw-pad:var(--space-3);--type-panel:var(--type-card);--type-page-compact:var(--type-page);--cw-line:#dbe4f0;--cw-line-soft:#e8eef6;--cw-blue:var(--dq-blue);--cw-blue-strong:var(--dq-blue-strong);--cw-ink:var(--ink);--cw-soft:var(--soft);--cw-surface:var(--surface-hover)}
 
 /* Workspace shell + section navigation (not tabs) */

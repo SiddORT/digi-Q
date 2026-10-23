@@ -1,6 +1,6 @@
 // Explicitly opted-in Preview fixture, with no normal database or live delivery.
 import { createServer, request } from "node:http";
-import { createOwnerBookingHarness } from "./owner-booking-harness.mjs";
+import { createOwnerBookingHarness, ownerSetup } from "./owner-booking-harness.mjs";
 
 if (process.env.NODE_ENV !== "development") throw new Error("Owner booking fixture is development-only");
 const realFetch = globalThis.fetch;
@@ -10,6 +10,15 @@ globalThis.fetch = (input, options) => {
   return realFetch(input, options);
 };
 const h = await createOwnerBookingHarness();
+// Deliberately reproduce the historical missing self-profile in isolated
+// persisted data. No opt-in means no fixture and no such records at all.
+const superCookie=await h.login("super@owner.test.invalid");
+const recoverySeed=await h.as(superCookie,"POST","/clinic-admin-onboarding",{
+  ...ownerSetup("browser-recovery",false),
+  admin:{email:"recovery@owner.test.invalid",fullName:"Fictional Recovery Owner"},
+});
+if(recoverySeed.status!==201)throw new Error("Could not seed disposable recovery owner");
+await h.acceptInvitation("recovery@owner.test.invalid");
 const source = new URL(h.base);
 const proxy = createServer(async (req, res) => {
   // Fixture-only state transition for real-UI freshness acceptance. Never loaded

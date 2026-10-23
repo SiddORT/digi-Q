@@ -84,6 +84,12 @@ test("booking dropdown survives zero, sole and multiple scoped options",()=>{
     for(const item of items)assert.ok(html.includes(item.fullName));
   }
 });
+test("lookup warnings occupy the same grid item as their doctor control",()=>{
+  const html=render(success,{keepDropdown:true});
+  assert.match(html,/^<div class="resource-lookup-field">/);
+  assert.match(html,/<button[^>]*role="combobox".*<\/button><p role="status">No active assigned doctors at this location\.<\/p><\/div>$/);
+  assert.doesNotMatch(render(success,{keepDropdown:true,disabled:true}),/No active assigned/);
+});
 test("booking loading, failed reads and disabled children do not turn dropdowns into text inputs",()=>{
   for(const state of [
     {...success,isPending:true,isSuccess:false,isFetching:true,data:undefined},

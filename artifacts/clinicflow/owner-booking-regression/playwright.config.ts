@@ -4,7 +4,7 @@ const baseURL = process.env.OWNER_BOOKING_BASE_URL || "http://127.0.0.1";
 
 export default defineConfig({
   testDir: ".",
-  testMatch: "owner-booking.spec.ts",
+  testMatch: ["owner-booking.spec.ts","owner-recovery.spec.ts"],
   outputDir: "../../../generated-artifacts/owner-booking-regression",
   timeout: 420_000,
   expect: { timeout: 12_000 },

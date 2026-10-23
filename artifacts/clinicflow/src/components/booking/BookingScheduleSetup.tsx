@@ -12,7 +12,10 @@ export function BookingScheduleSetup({identity,doctorId,branchId,clinicId,enable
   const access=api.useGetBookingScheduleAccess(params,{query:{queryKey:[...api.getGetBookingScheduleAccessQueryKey(params),identity.userId],enabled:permitted,staleTime:0,refetchInterval:30000,retry:false}});
   const [open,setOpen]=useState(false),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false);
   const [scope,setScope]=useState({doctorId,branchId,clinicId});
-  if(!open&&(!permitted||!access.data?.allowed||access.error||access.isFetching))return <p className="muted">For schedule setup or changes, contact the clinic.</p>;
+   if(!open&&!permitted)return null;
+   if(!open&&access.isFetching)return <p role="status">Checking schedule access…</p>;
+   if(!open&&access.error)return <p role="alert">Unable to verify schedule access. <button type="button" onClick={()=>void access.refetch()}>Retry schedule access</button></p>;
+   if(!open&&!access.data?.allowed)return <p className="muted">Your account cannot manage this schedule.</p>;
   return <><button type="button" className="text-link" disabled={!permitted||!access.data?.allowed||access.isFetching||!!access.error} data-testid="button-booking-manage-schedule" onClick={()=>{setScope({doctorId,branchId,clinicId});setDirty(false);setBusy(false);setOpen(true);}}>Manage this doctor's schedule at this location</button>
     {open&&<AppDialog open size="wide" title="Manage Doctor Schedule" dirty={dirty} busy={busy} onClose={()=>{setOpen(false);}}>
       <DoctorScheduleContext doctor={{id:scope.doctorId}} fixedClinicId={scope.clinicId} fixedBranchId={scope.branchId} onDirtyChange={setDirty} onBusyChange={setBusy}/>

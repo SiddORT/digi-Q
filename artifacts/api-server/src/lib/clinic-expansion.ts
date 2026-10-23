@@ -110,7 +110,7 @@ export async function attachOwnDoctor(actor: any, body: any, conn: any) {
   const account = await one(users, actor.id, conn);
   assert(account.role === "clinicAdmin" && account.status === "active", 403, "Only an active Clinic Admin can consult");
   assert(Array.isArray(body.branchIds) && body.branchIds.length <= 30 && body.branchIds.every((id: any) => typeof id === "string"), 400, "Select valid consultation branches");
-  const selected = [];
+  const selected: any[] = [];
   for (const branchId of [...new Set<string>(body.branchIds)]) {
     const branch = await one(branches, branchId, conn), clinic = await one(clinics, branch.clinicId, conn);
     assert(branch.status === "active" && clinic.status === "active" && clinic.adminId === actor.id, 403, "Choose active branches in your own clinic");
@@ -126,14 +126,29 @@ export async function attachOwnDoctor(actor: any, body: any, conn: any) {
     const q = await one(masters, id, conn);
     assert(q.category === "qualification" && q.status === "active", 400, "Invalid qualification");
   }
-  const prior = (await all(doctors, conn)).find(d => d.userId === actor.id);
+  const profiles = (await all(doctors, conn)).filter(d => d.userId === actor.id);
+  assert(profiles.length <= 1, 409, "Multiple account-linked clinical profiles require administrator review; no profile was changed.");
+  const prior = profiles[0];
   assert(!prior || prior.ownerAdminId === actor.id, 409, "Doctor ownership requires an explicit transfer");
+  assert(!prior || prior.status === "active", 409, "Your clinical profile is inactive. Review its status with platform administration before changing consulting locations.");
+  if (body.recoverMissingOnly) {
+    assert(selected.length === 1, 400, "Booking recovery requires exactly one selected consulting location.");
+    if (prior) {
+      assert(prior.branchIds?.includes(selected[0].id), 409, "An existing clinical profile has different consulting locations. Review Clinic → Locations; no locations were changed.");
+      return enrich("doctors", prior, conn);
+    }
+    // Do not silently replace an unlinked candidate retaining the known scope.
+    const candidates = (await all(doctors, conn)).filter(d =>
+      d.ownerAdminId === actor.id || d.branchIds?.includes(selected[0].id));
+    assert(!candidates.length, 409, "Existing clinical profiles match this owner or location. Ask platform administration to review them before recovery; no new profile was created.");
+  }
   if (prior) await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"schedules:" + prior.id}))`);
   if (prior) for (const branch of await all(branches, conn)) {
     assert(!branch.linkedSchedule?.enabled || branch.linkedSchedule.doctorId !== prior.id || selected.some(b => b.id === branch.id), 409, "Unlink clinic hours before removing this doctor's linked consultation location.");
   }
   const id = prior?.id || uid();
-  const fields = { data: { ...prior, ...body, branchIds: selected.map(b => b.id), code: prior?.code || `DOC-${id.slice(0,8)}` }, ...(body.specializationId ? { specializationId: body.specializationId } : {}) };
+  const { recoverMissingOnly: _recovery, ...profileInput } = body;
+  const fields = { data: { ...prior, ...profileInput, branchIds: selected.map(b => b.id), code: prior?.code || `DOC-${id.slice(0,8)}` }, ...(body.specializationId ? { specializationId: body.specializationId } : {}) };
   const doctor = prior ? await change(doctors, prior.id, fields, conn) : await put(doctors, { id, userId: actor.id, ownerAdminId: actor.id, ...fields }, conn);
   await audit(actor, "attachOwnDoctorProfile", "doctors", doctor, conn);
   return enrich("doctors", doctor, conn);

@@ -1,5 +1,122 @@
 # Consulting-owner booking verification
 
+## Booking recovery implementation and hosted boundary (2026-10-23)
+
+### Code changes
+
+- Booking offers **Restore my consulting profile** to the owning Clinic Admin
+  with no account-linked doctor identity, after verifying the selected active
+  owned clinic/location. This is not triggered by a zero doctor count.
+- The explicit confirmation uses the existing `POST /api/me/doctor-profile`
+  operation, with `recoverMissingOnly=true` and exactly the selected location.
+  No registration, role change, additional account or repeated consent is needed.
+  Rendering, dropdown opening and GET requests never create profiles.
+- The existing owner transaction lock serializes repeated/concurrent submissions.
+  Recovery reuses an active self-owned account-linked profile if it already
+  contains the location, without narrowing its other locations. A different
+  existing scope, inactive profile, multiple account-linked profiles, ownership
+  conflict or other raw profile candidate retaining the owner/location requires
+  review; recovery does not silently replace or reactivate them.
+- Administrative assignments, schedules, other staff and notifications are not
+  modified. Missing sessions remain a separate booking-readiness state.
+- Identity and actor-scoped directories refresh after the mutation. Adding the
+  owner's clinical capability no longer remounts their administrative workspace
+  or changes its branch-query identity, preserving the booking draft.
+- Lookup controls and their warnings/errors share one grid item. Preselection
+  guidance is a short line rather than a padded availability card; repeated
+  location/date context is removed. Optional search details use adjacent help.
+  Schedule-access loading, failure/retry and denial have distinct messages;
+  an unselected doctor does not tell the owner to contact their own clinic.
+
+### Isolated verification
+
+- Persisted PostgreSQL native/JWT suites: 17 tests passed, followed by two
+  additional candidate/inactive-location tests passing in both modes.
+  Recovery includes four concurrent submissions, repeat submission, immediate
+  and fresh identity, both actors' named directory reads, exact selected scope,
+  unchanged administrative assignments, inactive profile rejection and valid
+  existing-profile reuse without narrowing locations.
+- 46 registration-contract, onboarding, SQL-directory, pre-0008 and
+  booking-lookup privacy tests passed.
+- 54 frontend rendered lookup, directory/cache, membership, sole-option,
+  public-directory and session-lifecycle checks passed.
+- Four additional rendered-state checks passed for compact preselection,
+  session loading/failure/eligibility and distinct schedule-access states.
+- OpenAPI generation/shared-library build, changed API/frontend package
+  typechecks and the retained recovery browser specification typecheck passed.
+- The disposable Preview fixture now seeds a fictional missing-profile owner.
+  `owner-recovery.spec.ts` requires its fixture-only evidence endpoint and
+  refuses to run against an ordinary application or UAT. Browser results are
+  recorded separately below, not inferred from these API checks.
+
+### Actual Preview browser acceptance
+
+One real-browser pass used the opted-in, delivery-disabled PostgreSQL fixture,
+not UAT. It verified:
+
+- Missing owner profile, one administrative assignment and zero appointments
+  before explicit confirmation.
+- Exactly one active same-account profile afterward, with only the selected
+  fixture location; unchanged assignments and still zero appointments.
+- Retained location, Phone / advance source and selected visit date.
+- Named doctor discovery immediately, after reload, after fresh owner sign-in
+  and in a separate fresh Super Admin session at the same clinic/location.
+- Empty and recovered/no-session layouts at **1024×640, 1366×768 and 390×844**.
+  No document overflow, doctor warning inside its lookup field, and Continue
+  reachable by scrolling at all sizes. Continue correctly remained disabled
+  without sessions.
+- Schedule-access pending state, reversible browser-only 503 failure with Retry,
+  and successful retry after removing the interception. The intentional 503 was
+  the only reported browser console error.
+
+The browser used the then-current fixed-date specification for the actual
+recovery, and subsequently inspected the recovered state at tomorrow's relative
+date. The retained specification now uses a relative date, but was not executed
+as a standalone Playwright command; the equivalent interactive journey above is
+the actual evidence. A doctor-directory error interception did not match a
+request, so failed-directory browser acceptance was **not** established.
+Eligible-capacity Continue and help focus/Escape/touch were not browser-tested;
+the rendered-state checks do not replace those viewport checks.
+
+Screenshot inspection exposed a repeated no-session notice and oversized native
+booking-source radios. The final small correction omits the empty Session
+selector when there are no sessions, retains the one dated readiness message,
+sizes the radio glyph without reducing its label target, and shows the concise
+cancellation deadline only once a session is selected. These changes passed the
+17 relevant rendered/membership checks and frontend typecheck; no second browser
+pass is claimed. Ordinary Preview is restored after the disposable check.
+
+The first completion validation passed queue contention, appointment movement,
+communication usage and code review, but `pnpm test:tickets` passed 102 of 103:
+the 5,000-location fixture still seeded the established empty doctor-scope cache
+key. Retaining that key for non-doctor roles, rather than introducing a new
+administrative sentinel, preserves both its fixture and unchanged admin scope.
+The targeted location regression then passed (one test), as did frontend
+typecheck. Full configured validation is rerun by task completion.
+
+### Actual hosted evidence and blocker
+
+A fresh anonymous `GET https://uat.digi-q.in/api/me` returned HTTP 401 with
+`Sign in required`. No authenticated UAT owner or Super Admin session, or
+authorized connection to that server's database, is available in this workspace.
+The prior supplied SQL/API results above remain historical, not current proof.
+No workspace/fixture credentials were tried against UAT.
+
+**The Kushan → dombivali hosted recovery has not been performed or verified.**
+No UAT data, consent, assignments, schedules, appointments, notifications,
+credentials or deployment settings were changed. No app was published.
+The existing approval remains limited to the supplied owner account, clinic
+and dombivali location IDs; it does not authorize selecting another location.
+
+After the user-controlled UAT rollout makes this control available, an authorized
+owner session must first reconcile `/api/me` and the exact scoped doctor response,
+inspect any returned candidate, and execute recovery only if still necessary.
+Confirm the doctor by name immediately, after reload and fresh owner sign-in,
+and in the Super Admin's same-location selector, without making a live booking.
+If current saved state differs, stop and reconcile rather than retrying a write.
+Required access is an authorized signed-in UAT inspection/recovery session;
+passwords, session tokens and database credentials must not be posted in chat.
+
 
 ## Current incident boundary (2026-10-22)
 

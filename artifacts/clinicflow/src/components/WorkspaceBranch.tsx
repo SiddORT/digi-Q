@@ -45,7 +45,9 @@ export function WorkspaceBranchProvider({ identity, children }: { identity: api.
   const client = useQueryClient();
   const [, navigate] = useLocation();
   const confirmation = useConfirm();
-  const q = useQuery({ queryKey: ["workspace-branches", userId, identity.user?.role, identity.doctorId || ""], queryFn: () => loadAccessibleBranches(client, identity), enabled, staleTime: DIRECTORY_FRESH_MS, retry: false, refetchOnWindowFocus: false });
+  // Adding an owner's clinical capability does not change their administrative
+  // branch scope or unmount a retained booking draft during identity refresh.
+  const q = useQuery({ queryKey: ["workspace-branches", userId, identity.user?.role, identity.user?.role==="doctor"?identity.doctorId||"":""], queryFn: () => loadAccessibleBranches(client, identity), enabled, staleTime: DIRECTORY_FRESH_MS, retry: false, refetchOnWindowFocus: false });
   const branches = q.data || [];
   const [selected, setSelected] = useState<string>("");
   // Validate the remembered choice against the current authorized, active list on every load.

@@ -60,3 +60,4 @@
 - [Vite server modules](vite-server-module-loading.md) — native Node TypeScript support does not resolve linked packages' bundler-style imports; verify dev and bundled server paths.
 - [Reports product scope](reports-product-scope.md) — live dashboard plus reusable templates; clinic/doctor performance, reschedules and communication usage breakdowns.
 - [Concise information density](concise-information-density.md) — one brief introduction across all pages and links; optional details in adjacent info help, consequential warnings visible.
+- [Owner booking recovery](owner-booking-recovery.md) — explicit same-account, approved-location recovery; preserve administrative drafts and distinguish local checks from hosted repair.

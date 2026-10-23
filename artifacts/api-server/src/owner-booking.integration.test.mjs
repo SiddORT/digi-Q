@@ -149,6 +149,74 @@ test("admin-only onboarding creates no doctor and does not inherit another actor
   assert.equal(foreign.total, 0);
 });
 
+test("missing-profile recovery is explicit, scoped, concurrent-safe and survives fresh identity reads", async () => {
+  const email="recovery@owner.test.invalid";
+  const saved=ok(await h.as(superCookie,"POST","/clinic-admin-onboarding",{
+    ...ownerSetup("recovery",false),admin:{email,fullName:"Fictional Recovery Owner"},
+  }),201);
+  const cookie=await h.acceptInvitation(email);
+  const clinicId=saved.clinic.id,branchId=saved.branches[0].id;
+  const extra=ok(await h.as(cookie,"POST","/branches",{clinicId,name:"Fictional Unselected",address:"Test Road",timezone:"UTC"}),201);
+  const before=(await h.pg.query("select user_id,clinic_id,branch_id from assignments where user_id=$1",[saved.admin.id])).rows;
+  for(const actor of [cookie,superCookie]){
+    assert.equal(ok(await h.as(actor,"GET",`/doctors?clinicId=${clinicId}&branchId=${branchId}&status=active`)).total,0);
+  }
+  assert.equal(ok(await h.as(cookie,"GET","/me")).doctorId,null);
+  assert.equal((await h.pg.query("select id from doctors where user_id=$1",[saved.admin.id])).rows.length,0,"Reads do not repair");
+  const payload={branchIds:[branchId],recoverMissingOnly:true};
+  const responses=await Promise.all(Array.from({length:4},()=>h.as(cookie,"POST","/me/doctor-profile",payload)));
+  const doctors=responses.map(response=>ok(response));
+  const doctorId=doctors[0].id;
+  assert.ok(doctors.every(doctor=>doctor.id===doctorId));
+  assert.equal(ok(await h.as(cookie,"POST","/me/doctor-profile",payload)).id,doctorId);
+  assert.equal((await h.pg.query("select id from doctors where user_id=$1",[saved.admin.id])).rows.length,1);
+  assert.deepEqual((await h.pg.query("select user_id,clinic_id,branch_id from assignments where user_id=$1",[saved.admin.id])).rows,before);
+  for(const actor of [cookie,await h.login(email),superCookie]){
+    const directory=ok(await h.as(actor,"GET",`/doctors?clinicId=${clinicId}&branchId=${branchId}&status=active`));
+    assert.equal(directory.items[0].fullName,"Fictional Recovery Owner");
+    assert.deepEqual(directory.items.map(doctor=>doctor.id),[doctorId]);
+    assert.deepEqual(directory.items[0].branchIds,[branchId]);
+    assert.equal(ok(await h.as(actor,"GET",`/doctors?clinicId=${clinicId}&branchId=${extra.id}&status=active`)).total,0);
+  }
+  const identity=ok(await h.as(cookie,"GET","/me"));
+  assert.equal(identity.user.role,"clinicAdmin");assert.equal(identity.doctorId,doctorId);
+  assert.equal((await h.as(cookie,"GET",`/clinics/${clinicId}/settings`)).status,200);
+  assert.deepEqual(ok(await h.as(cookie,"GET",`/public/availability/sessions?doctorId=${doctorId}&branchId=${branchId}&date=${tomorrow()}`)),[]);
+  assert.equal((await h.as(cookie,"POST","/me/doctor-profile",{branchIds:[extra.id],recoverMissingOnly:true})).status,409);
+  assert.equal((await h.as(cookie,"POST","/me/doctor-profile",{branchIds:[owners[0].branchId],recoverMissingOnly:true})).status,403);
+  assert.equal((await h.as(superCookie,"POST","/me/doctor-profile",payload)).status,403);
+  await h.pg.query("update doctors set status='inactive' where id=$1",[doctorId]);
+  assert.equal((await h.as(cookie,"POST","/me/doctor-profile",payload)).status,409);
+  assert.equal((await h.pg.query("select status from doctors where id=$1",[doctorId])).rows[0].status,"inactive");
+  await h.pg.query("update doctors set status='active' where id=$1",[doctorId]);
+  // A matching valid profile with more locations is reused, never narrowed.
+  ok(await h.as(cookie,"POST","/me/doctor-profile",{branchIds:[branchId,extra.id]}));
+  assert.deepEqual(ok(await h.as(cookie,"POST","/me/doctor-profile",payload)).branchIds.sort(),[branchId,extra.id].sort());
+  const events=(await h.pg.query("select count(*)::int as count from audit_logs where action='attachOwnDoctorProfile' and entity_id=$1",[doctorId])).rows;
+  assert.equal(events[0].count,2,"Concurrent and repeated recovery add no update audits");
+});
+
+test("recovery stops on existing candidates and inactive locations without creating a competing identity", async () => {
+  const email="candidate@owner.test.invalid";
+  const saved=ok(await h.as(superCookie,"POST","/clinic-admin-onboarding",{
+    ...ownerSetup("candidate",false),admin:{email,fullName:"Fictional Candidate Owner"},
+  }),201);
+  const cookie=await h.acceptInvitation(email),clinicId=saved.clinic.id,branchId=saved.branches[0].id;
+  const payload={branchIds:[branchId],recoverMissingOnly:true};
+  await h.pg.query("update branches set status='inactive' where id=$1",[branchId]);
+  assert.equal((await h.as(cookie,"POST","/me/doctor-profile",payload)).status,403);
+  await h.pg.query("update branches set status='active' where id=$1",[branchId]);
+  const candidate=ok(await h.as(superCookie,"POST","/doctors",{
+    fullName:"Fictional Existing Candidate",email:"existing-candidate@owner.test.invalid",
+    clinicIds:[clinicId],branchIds:[branchId],status:"active",
+  }),201);
+  assert.equal((await h.as(cookie,"POST","/me/doctor-profile",payload)).status,409);
+  assert.equal((await h.pg.query("select id from doctors where user_id=$1",[saved.admin.id])).rows.length,0);
+  const retained=ok(await h.as(superCookie,"GET",`/doctors/${candidate.id}`));
+  assert.equal(retained.id,candidate.id);
+  assert.deepEqual(retained.branchIds,[branchId]);
+});
+
 test("missing sessions do not remove the owner from doctor discovery or prevent independent patient registration", async () => {
   const owner = owners[0];
   assert.ok(owner);

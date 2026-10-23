@@ -149,10 +149,10 @@ export function ResourceLookup({ resource, value, onChange, params = {}, onSelec
       <LookupError error={scope.error} retry={() => {void scope.refetch();}}/>
     </div>;
   }
-   return <><SearchableSelect {...props} retainSelectionLabel={false} labelScope={lookup.labelScope} placeholder={placeholder} value={value || emptyOption?.value || ""} onChange={next => onChange(next === emptyOption?.value ? "" : next)} options={emptyOption ? [emptyOption, ...lookup.options] : lookup.options} onSearchChange={lookup.search} loading={lookup.loading} error={props.error||(lookup.selectedQuery.error ? "Unable to load selected names. Your selection has been retained." : lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{if(!props.disabled)void lookup.query.refetch();if(value)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
-     {autoSole && assignmentState === "empty" && <p role="status">No active assigned {lookupName(resource)} are available in this scope. Ask your clinic administrator to review assignments.</p>}
+   return <div className="resource-lookup-field"><SearchableSelect {...props} retainSelectionLabel={false} labelScope={lookup.labelScope} placeholder={placeholder} value={value || emptyOption?.value || ""} onChange={next => onChange(next === emptyOption?.value ? "" : next)} options={emptyOption ? [emptyOption, ...lookup.options] : lookup.options} onSearchChange={lookup.search} loading={lookup.loading} error={props.error||(lookup.selectedQuery.error ? "Unable to load selected names. Your selection has been retained." : lookup.query.error ? "Unable to load options." : undefined)} onRetry={()=>{if(!props.disabled)void lookup.query.refetch();if(value)void lookup.selectedQuery.refetch();}} hasMore={lookup.query.hasNextPage} onLoadMore={() => lookup.query.fetchNextPage()} />
+      {autoSole && !props.disabled && assignmentState === "empty" && <p role="status">No active assigned {lookupName(resource)} at this location.</p>}
     <LookupError error={scope.error} retry={() => {void scope.refetch();}}/>
-    <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></>;
+     <LookupError error={lookup.query.error || lookup.selectedQuery.error} retry={() => { lookup.query.refetch(); lookup.selectedQuery.refetch(); }} /></div>;
 }
 export function ResourceMultiLookup({ resource, value, onChange, params = {}, onRecords, onSelectedRecords, isOptionDisabled, ...props }: MultiProps) {
   const lookup = useOptions(resource, value, params, !props.disabled);
