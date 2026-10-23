@@ -20,7 +20,7 @@
 .et-scope{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
 .et-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;align-items:start}
 @media (max-width:860px){.et-grid{grid-template-columns:1fr}}
-.et-form{display:grid;gap:8px}.et-form textarea{width:100%;font-family:inherit;resize:vertical}
+.et-form{display:grid}.et-form textarea{width:100%;font-family:inherit;resize:vertical}
 .et-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .et-chip{font-size:var(--type-caption);padding:0 8px;border-radius:999px;border:1px solid hsl(var(--border,210 15% 85%));}
 .et-chip.live{border-color:hsl(150 45% 40%);color:hsl(150 45% 28%)}.et-chip.draft{border-color:hsl(38 80% 45%);color:hsl(32 80% 32%)}
@@ -58,7 +58,6 @@
 .event-controls .ec-event{margin-top:18px}
 .event-controls .ec-table{width:100%;border-collapse:collapse}
 .event-controls .ec-table th,.event-controls .ec-table td{text-align:left;padding:8px 10px;vertical-align:top;border-bottom:1px solid var(--border,#e5e7eb)}
-.event-controls .ec-blocked{margin:6px 0 0;padding-left:18px}
 @media (max-width:767px){.event-controls .ec-table thead{display:none}.event-controls .ec-table tr{display:block;padding:8px 0}.event-controls .ec-table td{display:block;border:0;padding:3px 0}}
 
 /* Persistent template editor footer: 40px controls desktop, 44px mobile, 8/16/24 spacing. */

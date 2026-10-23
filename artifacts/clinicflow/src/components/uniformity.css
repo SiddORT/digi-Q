@@ -6,8 +6,8 @@
 .workspace .list-header .lh-row{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2) var(--space-3);width:100%;min-width:0}
 .workspace .list-header .lh-top .lh-title{order:0;flex:0 0 auto;align-self:center;margin:0;white-space:nowrap}
 .workspace .list-header .lh-top .lh-title .listing-count-label{font-family:var(--font-heading);font-size:var(--type-body-lg);font-weight:700;color:var(--ink);display:inline-flex;align-items:center;gap:var(--space-2)}
-.workspace .list-header .lh-top .lh-search{order:1;flex:1 1 360px;display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-start;gap:var(--space-2);min-width:0;max-width:none;margin:0}
-.workspace .list-header .lh-top .lh-search>.workspace-search{flex:1 1 280px;max-width:none;min-width:200px}
+.workspace .list-header .lh-top .lh-search{order:1;display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-start;gap:var(--space-2);min-width:0;max-width:none;margin:0}
+.workspace .list-header .lh-top .lh-search>.workspace-search{max-width:none;min-width:200px}
 .workspace .list-header .lh-top .lh-search>:not(.workspace-search){flex:0 1 auto;min-width:0}
 .workspace .list-header .workspace-search input{min-height:var(--lh-h);height:var(--lh-h);margin:0}
 .workspace .list-header .lh-actions{order:2;display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2);margin-left:auto;flex:0 1 auto;min-width:0}
@@ -536,7 +536,7 @@ ol.booking-steps { list-style: none; margin-left: 0; padding-left: 0; flex-wrap:
 }
 /* Profile/editor tabs: selection = navy underline, error = red text + flag (both visible when an active tab has errors). */
 .editor-tab{min-height:var(--control-md)}
-.editor-tab.is-active{color:var(--navy);border-bottom-color:var(--dq-blue)}
+/* Selected-tab colour/border: form-standard.css owns .editor-tab.is-active. */
 .editor-tab.is-invalid,.editor-tab.is-active.is-invalid{color:hsl(var(--destructive))}
 @media (max-width:767px){.editor-tab{min-height:var(--control-lg)}}
 

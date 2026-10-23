@@ -685,12 +685,9 @@
  .reports-compact .filter-bar-tools>.button{flex:0 0 auto}
  .pagination-current{display:inline;white-space:nowrap;margin:0 4px;font-size:var(--type-caption)}
  .pagination{padding:8px 8px}
- .pagination button,.pagination select{min-height:44px!important}
- .pagination button{min-width:44px}
- .searchable-select-clear{min-width:44px!important;min-height:44px!important}
- .searchable-select-options [cmdk-item]{min-height:44px}
 }
-@media(pointer:coarse){.pagination button,.pagination select{min-height:44px!important}.pagination button{min-width:44px}.searchable-select-clear{min-width:44px!important;min-height:44px!important}.searchable-select-options [cmdk-item]{min-height:44px}}
+/* Single owner for 44px touch targets: narrow viewports and coarse pointers. */
+@media(max-width:767px),(pointer:coarse){.pagination button,.pagination select{min-height:44px!important}.pagination button{min-width:44px}.searchable-select-clear{min-width:44px!important;min-height:44px!important}.searchable-select-options [cmdk-item]{min-height:44px}}
 
 @layer components {
   button:disabled, input:disabled, select:disabled, textarea:disabled { color: var(--text-disabled); }

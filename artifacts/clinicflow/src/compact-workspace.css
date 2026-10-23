@@ -214,11 +214,10 @@
 @media (max-width:1366px){.workspace .topbar .secure-label{display:none}}
 @media (max-width:900px){.workspace .topbar .breadcrumb{font-size:var(--type-caption)}.workspace .topbar .breadcrumb>:not(strong){display:none}}
 /* Compact table toolbars on desktop/laptop: controls share one row and scroll rather than stack. */
-/* Toolbars: one row only when there is room (1280+). Between 901 and 1279 the actions group may drop to a
-   second row instead of pushing the page wider. Nothing in the header may exceed the content width. */
+/* Toolbar wrapping at 901-1279 is owned by components/responsive-action-group.css (nowrap + More
+   disclosure). Nothing in the header may exceed the content width. */
 .workspace .list-header,.workspace .list-header .lh-row{max-width:100%;min-width:0}
 .workspace .list-header .lh-actions{max-width:100%}
-@media (min-width:901px) and (max-width:1279px){.workspace .list-header .lh-top{flex-wrap:wrap}}
 .workspace .topbar .topbar-right>*{min-width:0}
 .workspace .topbar .topbar-right .workspace-search{flex:0 1 280px}
 .workspace-main{min-width:0}

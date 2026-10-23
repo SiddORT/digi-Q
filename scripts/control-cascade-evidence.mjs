@@ -21,7 +21,29 @@ const properties = [
   "font-size", "font-weight", "color", "background-color", "border", "border-radius",
   "outline", "outline-offset", "box-shadow", "opacity", "transform", "overflow",
   "vertical-align", "accent-color", "pointer-events", "cursor",
+  "flex-wrap", "flex-direction", "align-items", "justify-content", "white-space",
+  "scroll-padding-bottom", "grid-row", "text-align", "border-bottom-color",
 ];
+// Ownership-audit probes: markup for the twelve audited selector groups.
+const groupProbes = `
+  <div class="list-header"><div class="lh-top"><div class="lh-page-title"><h1>Title</h1></div>
+    <div class="lh-search"><div class="workspace-search"><input type="search"></div></div>
+    <div class="lh-actions"><div class="rag"><button class="rag-toggle">More</button>
+    <div class="rag-secondary"><button class="button">Export</button></div></div><button class="button">Add</button></div></div></div>
+  <div class="form-field"><div class="form-field-label"><label>Label</label><span class="form-field-required">*</span></div>
+    <input type="text"><p class="form-field-help">Help</p><p class="form-field-error">Error</p></div>
+  <div class="editor-container"><div class="field-grid"><div class="form-field field-cell"><div class="form-field-label"><label>Cell</label></div>
+    <input type="text"><p class="form-field-help">Help</p></div></div></div>
+  <div class="form-field"><div class="password-input"><input type="password"><button class="password-toggle">Show</button></div></div>
+  <div class="app-dialog" style="position:relative;inset:auto;translate:none;transform:none;animation:none"><div class="app-dialog-body">Body</div></div>
+  <div class="appt-bulk"><strong>2</strong><span class="bulk-scope">scope</span><button>Do</button><button class="bulk-clear">Clear</button></div>
+  <div class="event-controls"><button class="cm-event-trigger">Event</button><div class="cm-preview-cell"><ul class="ec-blocked"><li>Blocked</li></ul></div><div class="cm-blocked">b</div></div>
+  <div class="event-controls" data-testid="page-notification-templates"><button class="cm-event-trigger">Event</button><ul class="ec-blocked"><li>Blocked</li></ul><div class="et-actions"><button>Act</button></div></div>
+  <form class="et-form"><input type="text"><textarea></textarea><div class="et-actions"><button class="button">Save</button></div></form>
+  <div class="public-clinic-card">Card</div>
+  <div class="pagination"><button>Prev</button><span class="pagination-current">1</span><select><option>10</option></select><button>Next</button></div>
+  <button class="searchable-select-clear">x</button>
+  <div class="editor-tabs"><button class="editor-tab is-active">A</button><button class="editor-tab is-invalid">B</button><button class="editor-tab is-active is-invalid">C</button><button class="editor-tab">D</button></div>`;
 const contexts = ["", "workspace", "app-dialog", "auth-card", "registration-card",
   "workspace filter-bar", "workspace list-header", "workspace form-grid",
   "workspace editor-container"];
@@ -57,6 +79,7 @@ try {
   for (const [width, height, touch] of [
     [390, 844, false], [768, 900, false], [1024, 640, false],
     [1366, 768, false], [1920, 1080, false], [1024, 640, true],
+    [1100, 800, false], [911, 800, false], [1279, 800, false], [390, 844, true],
   ]) {
     const context = await browser.newContext({
       viewport: { width, height }, hasTouch: touch, reducedMotion: "reduce",
@@ -131,6 +154,17 @@ try {
       document.body.append(host);
     }, { contexts, controls });
     await capture("native", "#cascade-probes");
+    await page.evaluate(html => {
+      const host = document.createElement("section");
+      host.id = "group-probes";
+      const root = document.createElement("section");
+      root.className = "workspace";
+      root.style.cssText = "position:relative;width:100%;max-height:none;overflow:visible";
+      root.innerHTML = html;
+      host.append(root);
+      document.body.append(host);
+    }, groupProbes);
+    await capture("groups", "#group-probes");
     await page.evaluate(() => {
       document.querySelectorAll("#cascade-probes input,#cascade-probes select,#cascade-probes textarea,#cascade-probes button").forEach(el => {
         el.setAttribute("aria-invalid", "true");

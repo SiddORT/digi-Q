@@ -31,10 +31,10 @@
   .app-dialog .appt-detail-cols>.appt-detail-block{min-width:0;margin:0;padding:12px 0}
   .app-dialog .appt-detail-cols>[data-testid="section-detail-booking"]{grid-column:1/-1}
 }
-.workspace .appt-bulk{display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:#eef5fc;color:var(--ink);border:1px solid #cfe0f3;padding:8px 12px;margin:8px 0;border-radius:var(--radius-control);font-size:var(--type-label)}
+.workspace .appt-bulk{display:flex;align-items:center;flex-wrap:wrap;gap:8px;background:#eef5fc;color:var(--ink);border:1px solid #cfe0f3;padding:8px 12px;border-radius:var(--radius-control);font-size:var(--type-label)}
 .workspace .appt-bulk>strong{font-size:var(--type-label);color:var(--ink)}
 .workspace .appt-bulk .bulk-scope{color:var(--soft);font-size:var(--type-caption)}
-.workspace .appt-bulk button{min-height:32px;padding:4px 10px;font-size:var(--type-label)}
+.workspace .appt-bulk button{min-height:32px;font-size:var(--type-label)}
 .workspace .appt-bulk .bulk-clear{margin-left:auto}
 @media(max-width:640px),(pointer:coarse){.workspace .appt-bulk button{min-height:44px}.appt-token-wrap>button.appt-status-dot{min-width:44px!important;min-height:44px!important}}
 .appt-mode{display:inline-flex;border:1px solid #d6e0ee;border-radius:var(--radius-control);overflow:hidden}
