@@ -138,3 +138,17 @@ preventing later state checks from running despite correct settled rendering.
 **How to apply:** Auto-wait computed styles and poll child/popup bounds. Do not
 weaken the final assertions or use document overflow as a substitute for child
 containment, focus/error visibility or sticky-footer clearance.
+
+Evaluate each declaration's actual at-rule ancestry before calling it obsolete.
+
+**Why:** Similar workspace input rules lived in both a components layer and an
+unlayered screen block. Removing the screen padding changed multiline/file
+geometry even though later semantic single-line rules appeared to own sizing.
+
+**How to apply:** Capture rendered baselines before retirement, compare excluded
+native families and pseudo-elements as well as ordinary controls, and retain
+effective screen/print fallbacks instead of forcing parity with new overrides.
+If an existing position assertion fails, reproduce it against untouched source
+before changing either CSS or its tolerance. A bounded subpixel allowance needs
+matching original-source evidence; waiting longer cannot fix a settled baseline
+that already falls outside an outdated strict threshold.

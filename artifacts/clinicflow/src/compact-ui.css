@@ -12,7 +12,11 @@
   --overlay-shadow:0 10px 24px -12px rgba(13,35,80,.5);
 }
 
-/* Single-line fields: protect the native families from legacy workspace rules.
+/* Semantic sizing/state owner. Native chrome and fallback dimensions for excluded
+ * input types stay in index.css / compact-workspace.css; structural form layout
+ * stays in form-standard.css. Do not reintroduce local copies of these families.
+ *
+ * Single-line fields: protect the native families from legacy workspace rules.
  * Exclude hidden, range, color, check/radio, file and multiline selects deliberately. */
 :is(input:not([type]),input:is([type=text],[type=email],[type=password],[type=number],[type=tel],[type=url],[type=search],[type=date],[type=time],[type=datetime-local]),select:not([multiple])) {
   box-sizing:border-box; min-width:0; max-width:100%;

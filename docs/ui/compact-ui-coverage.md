@@ -114,3 +114,57 @@ passed contrast/reduced-motion/upload/zoom case, all eight new compact cases hav
 passed. This is combined targeted evidence, not a claim that the original failed
 run passed. The existing clinic-help touch regression passed separately.
 Five broader fixture expectations remain unresolved as listed above.
+
+## Behavior-preserving legacy control cleanup
+
+Acceptance authority remains `compact-ui.md`. The declaration-by-declaration
+retirement ledger, retained exceptions and reproducible paired-evidence commands
+are in `control-cascade-retirement.md`.
+
+- Captured the original full-cascade baseline before editing the five shared
+  stylesheets. `node scripts/control-cascade-evidence.mjs record`, followed by
+  `node scripts/control-cascade-evidence.mjs compare` against the candidate:
+  **54 viewport/state profiles, 19,410 element samples, zero final differences**
+  in rectangles and 30 computed properties on elements and pseudo-elements.
+  The initial comparison identified active screen-only padding; it was retained,
+  not replaced with an override. The original baseline was preserved.
+- `pnpm run typecheck:libs` and
+  `pnpm --filter @workspace/clinicflow typecheck`: **passed**.
+- `PORT=3000 BASE_PATH=/ pnpm --filter @workspace/clinicflow build`: **passed**
+  on final CSS; existing large-JavaScript-chunk advisory remains.
+- `node scripts/compact-ui-inventory.mjs --check`: **passed**; no JSX, routes or
+  links changed, so the source inventory did not need regeneration.
+- `pnpm exec playwright test --config
+  artifacts/clinicflow/workspace-regression/playwright.config.ts --project
+  compact-ui --project doctor-context`: **28/28 passed** (8 compact family
+  cases, including touch/zoom/focus/feedback, and 20 scoped scheduling cases).
+  Clinic Admin fixed-group and Doctor own-scope fixtures are fictional
+  intercepted identities, not independently authenticated-role evidence.
+- `pnpm exec playwright test --config
+  artifacts/clinicflow/ticket-regression/playwright.config.ts tickets.spec.ts`:
+  **34/34 passed**, including downloaded PDFs, printed documents, QR contents,
+  long Unicode values, bulk all-or-nothing output and per-clinic preferences.
+- Signed-out 390×844 app screenshot inspected. The first capture's API 502s
+  came from the backend workflow not being started; after starting it, the
+  preview auth-status endpoint returned **200** and both services ran cleanly.
+
+Evidence is saved under `generated-artifacts/control-cascade/` and the existing
+suite result directories, all ignored by Git/deployment. No production/UAT
+writes, live notifications, branding/navigation changes or export redesign were
+made. Earlier broader-fixture limitations and untested browser/role/route
+combinations above remain limitations; this cleanup does not mark them passed.
+
+### Completion-check fixture correction
+
+The first full `pnpm test:tickets` completion run passed **102/103** cases.
+The notification-management Superadmin density assertion failed at **240.375px**
+against a strict `<240px` limit. Running that same case on an ignored archive of
+the untouched original frontend reproduced the **same 240.375px** result
+(Clinic Admin also retained its original 240.765625px position). Waiting for
+fonts/viewport alone did not change it. No production spacing was changed.
+
+The fixture now sets the viewport before mounting, waits for fonts and permits
+**0.5 CSS pixel** at the original header-position limit. Its 44–48px header-height,
+switch shape, enabled state and contained-thumb assertions are unchanged.
+This is a fractional-pixel fixture correction supported by original-source
+evidence, not acceptance of a geometry regression.
