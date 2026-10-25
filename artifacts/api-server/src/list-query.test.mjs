@@ -71,6 +71,30 @@ await database.exec(`
   insert into availability_exceptions select 'e'||n,'d'||n,'b'||n,'2030-01-05','active','{}' from generate_series(1,120) n;
   insert into qrs select 'q'||n,'d'||n,'c'||n,'b'||n,'ref'||n,'active',jsonb_build_object('name','QR '||n),now() from generate_series(1,120) n;
 `);
+test("weekly schedule ordering is authoritative across pages, grouped and deterministic",async()=>{
+  await database.exec(`insert into schedules(id,doctor_id,clinic_id,branch_id,day_of_week,data)
+    select 'weekly-'||d||'-'||day||'-'||slot,'d'||d,'c'||d,'b'||d,day,
+      jsonb_build_object('startTime',case when slot=1 then '09:00' else '17:00' end,'endTime',case when slot=1 then '12:00' else '20:00' end)
+    from generate_series(1,2) d cross join generate_series(0,6) day cross join generate_series(1,2) slot;`);
+  const admin={id:"root",role:"superAdmin"};
+  const expected=[1,2].flatMap(d=>[1,2,3,4,5,6,0].flatMap(day=>[1,2].map(slot=>`weekly-${d}-${day}-${slot}`)));
+  const actual=[];
+  const onlyWeekly=sql`r.id like 'weekly-%'`;
+  try {
+  for(let page=1;page<=6;page++){
+    const result=await queryPage(admin,"schedules",{page,pageSize:5},onlyWeekly,conn);
+    assert.equal(result.total,28);
+    actual.push(...result.items.map(row=>row.id));
+  }
+  assert.deepEqual(actual,expected);
+  await database.exec(`insert into schedules(id,doctor_id,clinic_id,branch_id,day_of_week,data)
+    values ('weekly-1-1-0','d1','c1','b1',1,'{"startTime":"09:00","endTime":"12:00"}');`);
+  assert.deepEqual((await queryPage(admin,"schedules",{sort:"weekly",pageSize:2},onlyWeekly,conn)).items.map(row=>row.id),["weekly-1-1-0","weekly-1-1-1"]);
+  const explicit=await queryPage(admin,"schedules",{sort:"-createdAt",pageSize:100},onlyWeekly,conn);
+  assert.deepEqual(explicit.items.map(row=>row.id),[...expected,"weekly-1-1-0"].sort().reverse());
+  await assert.rejects(()=>queryPage(admin,"patients",{sort:"weekly"},undefined,conn),/Unsupported sort/);
+  } finally { await database.exec(`delete from schedules where id like 'weekly-%'`); }
+});
 const admin = { id: "admin1", role: "clinicAdmin", clinicIds: Array.from({ length: 60 }, (_, n) => `c${n+1}`), branchIds: [] };
 const doctor = { id: "u1", role: "doctor", doctorId: "d1", managingAdminId: "admin1", clinicIds: ["c1"], branchIds: ["b1"] };
 after(async () => { delete globalThis.fixtureExecute; delete globalThis.scopeFixtures; await database.close(); await rm(dir, { recursive: true, force: true }); });

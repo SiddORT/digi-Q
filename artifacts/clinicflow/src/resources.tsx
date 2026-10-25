@@ -1,7 +1,7 @@
 import { OWNER_ONLY_FIELDS, canChangeClinicDefaults, ownerOnlyLocked } from "./lib/inherited-defaults";
 import { clinicDetailsHref, clinicWorkspaceHref } from "./lib/clinic-navigation";
 import { EDITOR_TABS, editorTabIndex } from "./lib/form-tabs";
-import { scheduleAdditionalKeys } from "./lib/schedule-facts";
+import { queueModeLabel, scheduleAdditionalKeys } from "./lib/schedule-facts";
 import { scheduleFormErrors, scheduleTimeError } from "./lib/schedule-validation";
 import { FormTabs } from "./components/FormTabs";
 import { RowMenu, type RowMenuItem } from "./components/RowMenu";
@@ -43,6 +43,7 @@ import type { FieldWidth } from "./lib/field-width";
 import { PatientDetailsDrawer } from "./components/PatientDetailsDrawer";
 import { ExactRecordDrawer, RecordFacts, scanScopedPages, useExactRecord, type RecordFact } from "./components/RecordDetails";
 import { AvailabilityScheduleEntry } from "./components/schedule/AvailabilityScheduleEntry";
+import type { ScheduleDisplayContext } from "./components/schedule/DoctorScheduleContext";
 import { ScheduleDayDialog } from "./components/schedule/ScheduleDayDialog";
 import { scheduleSnapshot } from "./components/schedule/week-plan";
 import { ExceptionImpactPreview } from "./components/schedule/ExceptionImpactPreview";
@@ -376,7 +377,7 @@ export function Editor({fields,initial={},onSave,onCancel,busy=false,submitLabel
      const exclusive=resourceName==="exceptions"&&(field.key==="isClosed"||field.key==="isExtra")?(field.key==="isClosed"?"isExtra":"isClosed"):"";
      return <label key={field.key} className="check-label check-row"><input type="checkbox" data-testid={`input-${field.key}`} disabled={field.disabled} {...form.register(field.key,{onChange:event=>{if(exclusive&&event.target.checked&&form.getValues(exclusive))form.setValue(exclusive,false,{shouldDirty:true});}})}/><span>{label}</span>{exclusive&&<HelpTip label={`About ${label}`} text="Day Off and Extra Interval cannot both apply. Choosing one clears the other."/>}</label>;
     }
-    if(field.type==="select")return <Controller key={field.key} name={field.key} control={form.control} rules={{required:field.required}} render={({field:input})=><SearchableSelect id={`input-${field.key}`} label={label} required={field.required} value={selectInputValue(input.value)} onChange={input.onChange} placeholder={`Select ${label.toLowerCase()}…`} error={error} options={(field.options||[]).map(v=>({value:v,label:field.key==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][Number(v)]:title(v)}))}/>}/>;
+    if(field.type==="select")return <Controller key={field.key} name={field.key} control={form.control} rules={{required:field.required}} render={({field:input})=><SearchableSelect id={`input-${field.key}`} label={label} required={field.required} value={selectInputValue(input.value)} onChange={input.onChange} placeholder={`Select ${label.toLowerCase()}…`} error={error} options={(field.options||[]).map(v=>({value:v,label:field.key==="dayOfWeek"?["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][Number(v)]:field.key==="queueMode"?queueModeLabel(v):title(v)}))}/>}/>;
     return <FormField key={field.key} id={`input-${field.key}`} className={field.type==="textarea"||field.wide?"wide":""} label={label} required={field.required} optional={!field.required} error={error} helper={field.key==="slug"?<>Permanent once saved <HelpTip label="About web address" text={initial.slug?"Web address is permanent. Display names can still change.":"Choose a permanent web address: lowercase letters, digits and hyphens."}/></>:undefined}>{field.type==="textarea"?<textarea aria-invalid={!!error} aria-describedby={error?`error-${field.key}`:undefined} data-testid={`input-${field.key}`} {...form.register(field.key,rules)}/>:field.type==="email"?<EmailInput disabled={field.disabled} aria-invalid={!!error} aria-describedby={error?`error-${field.key}`:undefined} data-testid={`input-${field.key}`} {...form.register(field.key,rules)}/>:<input disabled={field.disabled} aria-invalid={!!error} aria-describedby={error?`error-${field.key}`:undefined} max={field.key==="dateOfBirth"?today():undefined} data-testid={`input-${field.key}`} type={field.type==="array"?"text":field.type} {...form.register(field.key,rules)}/>}</FormField>;
    })();const group=grouped?editorGroup(field.key,editorKind):"";if(!cells.has(group)){cells.set(group,{nodes:[],open:false});order.push(group);}const cell=cells.get(group)!;if(!collapsed)cell.open=true;cell.nodes.push(<Fragment key={field.key}>{collapsed?<div hidden className="wide" data-testid={`collapsed-${field.key}`}>{node}</div>:<div className={fieldWidthClass(field)} data-field-width={field.key}>{node}</div>}</Fragment>);});
     if(!grouped)return order.map(group=><Fragment key={group||"fields"}>{cells.get(group)!.nodes}</Fragment>);
@@ -493,20 +494,24 @@ function renderComputed(c:string,row:any,schedule="dayOfWeek" in row&&!('isClose
  if(c==="locality")return <span className="clinic-list-value">{[row.area,row.city,row.state].filter(Boolean).join(" · ")||"Not set"}</span>;
  if(c==="contact")return <div className="clinic-list-value"><span>{row.phone||"Phone not set"}</span><small>{row.email||"Email not set"}</small></div>;
  if(c==="createdAt")return row[c]?formatConfiguredTimestamp(row[c],row.timezone,undefined,row):"—";
+ if(c==="queueMode")return queueModeLabel(row.queueMode);
+ if(c==="timeFormat")return row.timeFormat==="24h"?"24-hour":"12-hour (AM/PM)";
  if(c==="session"){
   if(row.isClosed===true)return <span className="muted">Closed</span>;
   if(!row.startTime&&!row.endTime)return <span className="muted">{"isClosed" in row?"Regular hours":"—"}</span>;
-  return <span>{formatTime(row.startTime,row)}–{formatTime(row.endTime,row)}{!schedule&&row.queueMode&&<span className="cell-sub">{title(row.queueMode)}</span>}</span>;
+  return <span>{formatTime(row.startTime,row)}–{formatTime(row.endTime,row)}{(schedule||row.queueMode)&&<span className="cell-sub">{queueModeLabel(row.queueMode)}</span>}</span>;
  }
  if(c==="date"||c==="dateOfBirth")return formatDate(row[c],row);
  if(c==="break")return row.breakStart&&row.breakEnd?<span>{formatTime(row.breakStart,row)}–{formatTime(row.breakEnd,row)}</span>:<span className="muted">No break</span>;
- if(c==="capacity")return <HelpTip text="Maximum patients (tokens) for this session. Consultation minutes are the expected duration per patient; remaining availability also depends on existing bookings and queue policy."><span tabIndex={0} className="cap-chip">{row.maxTokens??"—"}<small>patients</small>{(row.tokenPrefix||schedule&&row.consultationMinutes)&&<span className="cell-sub">{row.tokenPrefix&&`Prefix ${row.tokenPrefix}`}{row.consultationMinutes?`${row.tokenPrefix?" · ":""}${row.consultationMinutes} min`:""}{schedule&&Number(row.bufferMinutes)>0?` · ${row.bufferMinutes} min buffer`:""}</span>}</span></HelpTip>;
+ if(c==="capacity")return <HelpTip text="Maximum patients (tokens) for this session. Consultation minutes are the expected duration per patient; remaining availability also depends on existing bookings and queue policy."><span tabIndex={0} className="cap-chip"><strong>{row.maxTokens??"—"} patients maximum</strong>{row.tokenPrefix&&<span className="cell-sub">Token prefix: {row.tokenPrefix}</span>}{schedule&&row.consultationMinutes&&<span className="cell-sub">Consultation: {row.consultationMinutes} min</span>}{schedule&&Number(row.bufferMinutes)>0&&<span className="cell-sub">Buffer: {row.bufferMinutes} min</span>}</span></HelpTip>;
  if(c==="isOpen")return <span className={`badge ${row.isOpen?"active":"inactive"}`}>{row.isOpen?"Open":"Closed"}</span>;
  if(c==="isClosed")return <span className={`badge ${row.isClosed?"inactive":"active"}`}>{row.isClosed?"Closed":"Custom hours"}</span>;
  if(c==="maxTokens"&&"isClosed" in row)return row.maxTokens?<span className="cap-chip">{row.maxTokens}<small>tokens</small></span>:<span className="muted">Regular</span>;
  return undefined;
 }
 export function ResourcePage({resource,identity,defaults={},allowCreate=true,onEdit,embedded=false,fixedClinicId}:{resource:string;identity?:api.Identity;defaults?:any;allowCreate?:boolean;onEdit?:(row:any)=>void;embedded?:boolean;fixedClinicId?:string}){
+ const inheritedScheduleDisplay=useDateTimePreferences();
+ const [editorDisplay,setEditorDisplay]=useState<ScheduleDisplayContext|null>(null);
   const scheduleContext=useRef({dirty:false,busy:false,confirming:false});
  const superadminClinics=resource==="clinics"&&identity?.user?.role==="superAdmin";
  const confirmation=useConfirm();
@@ -518,7 +523,8 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   const page=Number.isSafeInteger(pageValue)&&pageValue>0?pageValue:1;
   const sizeValue=Number(urlParams.get("pageSize"));
   const pageSize=(PAGE_SIZE_OPTIONS as readonly number[]).includes(sizeValue)?sizeValue:DEFAULT_PAGE_SIZE;
-  const sort=urlParams.get("sort")||"-createdAt";
+  const defaultSort=resource==="availability"?"weekly":"-createdAt";
+  const sort=urlParams.get("sort")||defaultSort;
   const [editing,setEditing]=useState<any>(null);
  const [qrPreview,setQrPreview]=useState<any>(null);
  const [auditDetail,setAuditDetail]=useState<any>(null);
@@ -542,6 +548,11 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const supportsSearch=true;
   const roleDefaults=useMemo<Record<string,string>>(()=>({...identity?.doctorId&&["doctor","clinicAdmin"].includes(identity.user?.role||"")&&["availability","exceptions"].includes(resource)?{doctorId:identity.doctorId as string}:{},...fixedClinicId?{clinicId:fixedClinicId}:{},...pinDefaults}),[identity,branchPin,resource,fixedClinicId]);
   const filters:Record<string,string>={...roleDefaults,...Object.fromEntries(LIST_FILTER_KEYS.flatMap(key=>urlParams.get(key)?[[key,urlParams.get(key)!]]:[])),...fixedClinicId?{clinicId:fixedClinicId}:{},...pinDefaults};
+  const scheduleLocation=api.useGetBranch(filters.branchId||"",{query:{queryKey:api.getGetBranchQueryKey(filters.branchId||""),enabled:resource==="availability"&&!!filters.branchId}});
+  const scheduleClinicId=scheduleLocation.data?.clinicId||filters.clinicId||"";
+  const scheduleClinic=api.useGetClinic(scheduleClinicId,{query:{queryKey:api.getGetClinicQueryKey(scheduleClinicId),enabled:resource==="availability"&&!!scheduleClinicId}});
+  const editorHasDisplay=resource==="availability"&&!!editorDisplay&&editorDisplay.doctorId===filters.doctorId&&(!filters.branchId||editorDisplay.branchId===filters.branchId);
+  const scheduleDisplay=editorHasDisplay?editorDisplay!:{timezone:scheduleLocation.data?.timezone||settings.data?.timezone,timeFormat:scheduleClinic.data?.timeFormat||inheritedScheduleDisplay.timeFormat};
   // Registration opened from a location-filtered list starts in that exact
   // context. Lookups still validate it; never infer a location from page order.
   if(resource==="patients")defaults={...defaults,...Object.fromEntries(["clinicId","branchId"].filter(key=>filters[key]).map(key=>[key,filters[key]]))};
@@ -552,7 +563,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
     const next=new URLSearchParams(window.location.search);
     for(const [key,value] of Object.entries(changes)){
       if(key==="clinicId"&&fixedClinicId)continue;
-      if(value===""||value===null||value===undefined||key==="page"&&value===1||key==="pageSize"&&value===20||key==="sort"&&value==="-createdAt")next.delete(key);
+      if(value===""||value===null||value===undefined||key==="page"&&value===1||key==="pageSize"&&value===20||key==="sort"&&value===defaultSort)next.delete(key);
       else next.set(key,String(value));
     }
     navigate(`${window.location.pathname}${next.size?`?${next}`:""}`,{replace});
@@ -577,8 +588,8 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const [draft,setDraft]=useState<Record<string,string>>({});
  const draftFilter=(key:string,value:string)=>setDraft(current=>({...current,[key]:value,...(key==="clinicId"?{branchId:"",doctorId:roleDefaults.doctorId||""}:{}),...(key==="branchId"?{doctorId:roleDefaults.doctorId||""}:{}),...(key==="from"&&current.to&&value>current.to?{to:""}:{})}));
  // Every record filter (status, scope, date, category) and the sort are drafted in the drawer and committed together.
- const applyDraft=()=>{if(rangeError(draft.from||"",draft.to||""))return false;changeUrl({...Object.fromEntries(LIST_FILTER_KEYS.map(key=>[key,draft[key]||roleDefaults[key]||""])),sort:draft.sort||"-createdAt",page:1});return true;};
- const active=!!(search||sort!=="-createdAt"||Object.entries(filters).some(([k,v])=>v&&v!==roleDefaults[k]));
+ const applyDraft=()=>{if(rangeError(draft.from||"",draft.to||""))return false;changeUrl({...Object.fromEntries(LIST_FILTER_KEYS.map(key=>[key,draft[key]||roleDefaults[key]||""])),sort:draft.sort||defaultSort,page:1});return true;};
+ const active=!!(search||sort!==defaultSort||Object.entries(filters).some(([k,v])=>v&&v!==roleDefaults[k]));
   const reset=()=>{setDraft({});changeUrl(Object.fromEntries(LIST_URL_KEYS.map(key=>[key,""])));};
  const listParams={...Object.fromEntries(Object.entries(filters).filter(([,value])=>value!=="")),search:term||undefined,page,pageSize,sort};
  const [recoveryId,setRecoveryId]=useState("");
@@ -604,7 +615,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const cellValue=(c:string,row:any):ReactNode=>c==="createdAt"?<CreatedCell value={row[c]} timezone={row.timezone||settings.data?.timezone} preferences={row}/>:renderComputed(c,row)??(c==="status"?title(row[c]||""):c==="dayOfWeek"?DAYS[row[c]]:typeof row[c]==="boolean"?(row[c]?"Yes":"No"):Array.isArray(row[c])?<OverflowText value={row[c].join(", ")}/>:typeof row[c]==="string"?<OverflowText value={row[c]}/>:row[c]??"—");
  /** Meaningful record details: every configured field (relations shown by name, secrets omitted) plus computed columns. */
  const recordFacts=(row:any,exclude?:string[]):RecordFact[]=>{
-  if(resource==="availability")return scheduleAdditionalKeys(row,exclude||[],exclude!==undefined?{doctorId:filters.doctorId,clinicId:filters.clinicId,branchId:filters.branchId}:{}).map(key=>[columnLabel(key),cellValue(key,row)] as RecordFact);
+  if(resource==="availability")return scheduleAdditionalKeys(row,exclude||[],exclude!==undefined?{doctorId:filters.doctorId,clinicId:filters.clinicId,branchId:filters.branchId,...scheduleDisplay}:{}).map(key=>[columnLabel(key),cellValue(key,row)] as RecordFact);
   const seen=new Set<string>(exclude||[]);const out:RecordFact[]=[];
   const push=(key:string,label:string)=>{if(seen.has(key))return;seen.add(key);const v=row[key];const computed=renderComputed(key,row)!==undefined;if(!computed&&(v===undefined||v===null||v===""||(typeof v==="object"&&!Array.isArray(v))))return;out.push([label,cellValue(key,row)]);};
   for(const c of hiddenColumns)push(c,columnLabel(c));
@@ -626,7 +637,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  const displayColumns=arranged.visible;
  const hiddenColumns=arranged.hidden;
  const [expanded,setExpanded]=useState<string|null>(null);
- const currentViewFilters:Record<string,string>={...filters,...(sort!=="-createdAt"?{sort}:{}),...(pageSize!==20?{pageSize:String(pageSize)}:{})};
+ const currentViewFilters:Record<string,string>={...filters,...(sort!==defaultSort?{sort}:{}),...(pageSize!==20?{pageSize:String(pageSize)}:{})};
  // The requested Clinic toolbar explicitly omits the Views trigger. Keep the
  // shared saved-view implementation, stored preferences and backend APIs intact.
  const compactClinicToolbar=["clinics","patients","availability","exceptions"].includes(resource);
@@ -686,7 +697,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   const headingCount=resource==="branches";
   const searchPlaceholder=resource==="doctors"?"Search doctors by name, email or specialization…":resource==="patients"?"Search patients by name, email or mobile…":resource==="audit"?"Search audit events…":`Search ${listName}…`;
    const singularName=resource==="branches"?"location":resource==="availability"?"schedule":resource==="qrs"?"QR code":resource==="masters"?"master value":resource.replace(/s$/,"");
-  const sortOptions=[{value:"-createdAt",label:"Newest First"},{value:"createdAt",label:"Oldest First"},...(["clinics","branches","masters","qrs"].includes(resource)?[{value:"name",label:"Name A–Z"},{value:"-name",label:"Name Z–A"}]:[]),...(["doctors","patients","users"].includes(resource)?[{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"}]:[]),...(resource==="exceptions"?[{value:"date",label:"Earliest Date"},{value:"-date",label:"Latest Date"}]:[]),...(config.fields.some(field=>field.key==="status")?[{value:"status",label:"Status A–Z"},{value:"-status",label:"Status Z–A"}]:[])];
+  const sortOptions=[...(resource==="availability"?[{value:"weekly",label:"Weekday and Session Time"}]:[]),{value:"-createdAt",label:"Newest First"},{value:"createdAt",label:"Oldest First"},...(["clinics","branches","masters","qrs"].includes(resource)?[{value:"name",label:"Name A–Z"},{value:"-name",label:"Name Z–A"}]:[]),...(["doctors","patients","users"].includes(resource)?[{value:"fullName",label:"Name A–Z"},{value:"-fullName",label:"Name Z–A"}]:[]),...(resource==="exceptions"?[{value:"date",label:"Earliest Date"},{value:"-date",label:"Latest Date"}]:[]),...(config.fields.some(field=>field.key==="status")?[{value:"status",label:"Status A–Z"},{value:"-status",label:"Status Z–A"}]:[])];
   const sortableColumns=new Set(["name","fullName","date","status","code","email"]);
   const hasAdvanced=true;
   const hasStatusTabs=config.fields.some(field=>field.key==="status");
@@ -694,7 +705,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   const chips:FilterChip[]=[
     ...(search?[{key:"search",label:`Search: ${search}`,onRemove:()=>setSearch("")}]:[]),
     ...Object.entries(filters).filter(([k,v])=>v&&v!==roleDefaults[k]).map(([k,v])=>({key:`adv:${k}`,label:k.endsWith("Id")?`${FILTER_LABELS[k]||title(k)}: ${filterNames.name(k)}`:chipLabel(k,v),onRemove:()=>filter(k,roleDefaults[k]||"")})),
-    ...(sort!=="-createdAt"?[{key:"adv:sort",label:`Sort: ${sortOptions.find(o=>o.value===sort)?.label||sort}`,onRemove:()=>setSort("-createdAt")}]:[]),
+    ...(sort!==defaultSort?[{key:"adv:sort",label:`Sort: ${sortOptions.find(o=>o.value===sort)?.label||sort}`,onRemove:()=>setSort(defaultSort)}]:[]),
   ];
  // Common filters are exposed beside the search and apply immediately (date range and status are independent);
  // the drawer keeps the full set. Role defaults and fixed/pinned scope are never offered for change.
@@ -712,7 +723,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
   {["availability","exceptions"].includes(resource)&&<>{branchPin?<p className="loc-fixed-note" data-testid="text-filter-location-fixed">Location: {branchPin.name} · change it from the top bar</p>:<ResourceLookup resource="branches" label="Location" params={{clinicId:draft.clinicId||undefined}} value={draft.branchId||""} onChange={value=>draftFilter("branchId",value)}/>}<ResourceLookup resource="doctors" label="Doctor" disabled={!!roleDefaults.doctorId} params={{clinicId:draft.clinicId||undefined,branchId:draft.branchId||undefined}} value={roleDefaults.doctorId||draft.doctorId||""} onChange={value=>draftFilter("doctorId",value)}/></>}
   {resource==="exceptions"&&<label>Date<DateFormatInput data-testid="input-exceptions-date-filter" value={draft.date||""} onChange={value=>draftFilter("date",value)}/></label>}
   {resource==="masters"&&<SearchableSelect label="Category" placeholder="All categories" value={draft.category||""} onChange={value=>draftFilter("category",value)} options={Object.values(api.MasterInputCategory).map(category=>({value:category,label:title(category)}))}/>}
-  <div className="sort-menu" data-testid={`select-sort-${resource}`}><SearchableSelect label={`Sort ${listName}`} value={sortOptions.some(option=>option.value===draft.sort)?draft.sort:"-createdAt"} onChange={value=>draftFilter("sort",value||"-createdAt")} options={sortOptions}/></div>
+  <div className="sort-menu" data-testid={`select-sort-${resource}`}><SearchableSelect label={`Sort ${listName}`} value={sortOptions.some(option=>option.value===draft.sort)?draft.sort:defaultSort} onChange={value=>draftFilter("sort",value||defaultSort)} options={sortOptions}/></div>
   {resource==="clinics"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Clinic Admin" params={{role:"clinicAdmin"}} value={draft.adminId||""} onChange={value=>draftFilter("adminId",value)}/>}
   {resource==="doctors"&&<ResourceLookup resource="masters" label="Specialization" params={{category:"specialization"}} value={draft.specializationId||""} onChange={value=>draftFilter("specializationId",value)}/>}
   {resource==="doctors"&&identity?.user?.role==="superAdmin"&&<ResourceLookup resource="users" label="Managing Admin" params={{role:"clinicAdmin"}} value={draft.managingAdminId||""} onChange={value=>draftFilter("managingAdminId",value)}/>}
@@ -735,8 +746,9 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  </p>}
  {!allowCreate&&resource==="patients"&&<p className="notice">New patient registration is available to receptionists and administrators. Ask your clinic staff to register a new patient.</p>}<ErrorNotice error={remove.error||statusUpdate.error}/>
  <ListingBulk selection={selection} resource={resource} columns={config.columns} identity={identity} context={selectionContext}/>
- {resource==="availability"&&filters.doctorId&&<AvailabilityScheduleEntry key={filters.doctorId} doctorId={filters.doctorId} fixedClinicId={fixedClinicId} canDelete onDirtyChange={dirty=>{scheduleContext.current.dirty=dirty;}} onBusyChange={busy=>{scheduleContext.current.busy=busy;}}/>}
- <section className={`panel table-panel admin-listing-table density-${density}${superadminClinics?" superadmin-clinics-table":""}`}>
+ {resource==="availability"&&filters.doctorId&&<AvailabilityScheduleEntry key={filters.doctorId} doctorId={filters.doctorId} fixedClinicId={fixedClinicId} canDelete onDisplayContextChange={setEditorDisplay} onDirtyChange={dirty=>{scheduleContext.current.dirty=dirty;}} onBusyChange={busy=>{scheduleContext.current.busy=busy;}}/>}
+ <section className={`panel table-panel admin-listing-table density-${density}${superadminClinics?" superadmin-clinics-table":""}${["availability","exceptions"].includes(resource)?" schedule-list-table":""}`}>
+   {resource==="availability"&&!editorHasDisplay&&<p className="schedule-list-context" data-testid="schedule-list-context">Display context{scheduleLocation.data?.name?` · ${scheduleLocation.data.name}`:""}: {scheduleDisplay.timezone||"Timezone not loaded"} · {scheduleDisplay.timeFormat==="24h"?"24-hour":"12-hour (AM/PM)"} <HelpTip label="About schedule display context" text="Timezone and time format come from clinic settings. Different session timezones remain in row details. Each session shows its own queue mode."/></p>}
    {query.isLoading?<div className="skeleton" role="status">Loading {listName}…</div>:query.error?<><div className="error-box" role="alert">{friendlyError(query.error,"load")}</div><button onClick={()=>query.refetch()}>Retry {listName}</button></>:query.data?.items?.length?<div className="table-scroll" inert={query.isPlaceholderData}><table aria-busy={query.isFetching}>
   <colgroup><col className="col-select"/>{displayColumns.map(c=><col key={c} className={compact&&c===config.columns[0]?"col-record":superadminClinics?`col-${c}`:undefined}/>)}{hasActions&&<col className="col-actions"/>}</colgroup>
   <thead><tr><th scope="col" className="col-select">{selection.header}</th>{displayColumns.map(c=><th scope="col" key={c} aria-sort={sortableColumns.has(c)?sort.replace(/^-/,"")===c?sort.startsWith("-")?"descending":"ascending":"none":undefined} className={[compact&&c===config.columns[0]?"col-record":c==="status"?"col-status":"",c===arranged.pinned?"col-pinned":""].filter(Boolean).join(" ")||undefined}>{sortableColumns.has(c)?<button type="button" className="table-sort-header" style={{display:"inline-flex",alignItems:"center",gap:4,border:0,background:"transparent",font:"inherit",color:"inherit",padding:0,cursor:"pointer"}} onClick={()=>setSort(sort===c?`-${c}`:c)} aria-label={`Sort by ${columnLabel(c)} ${sort===c?"descending":"ascending"}`} data-testid={`sort-${resource}-${c}`}>{columnLabel(c)}{sort.replace(/^-/,"")===c?sort.startsWith("-")?<ArrowDown size={14}/>:<ArrowUp size={14}/>:<ArrowUpDown size={13}/>}</button>:columnLabel(c)}</th>)}{hasActions&&<th scope="col" className="col-actions sticky">Actions</th>}</tr></thead>
@@ -746,7 +758,7 @@ export function ResourcePage({resource,identity,defaults={},allowCreate=true,onE
  {hasActions&&<td data-label="Actions" className="col-actions sticky"><div className="row-actions">{resource==="qrs"&&row.status==="active"&&<IconAction label={`View booking QR for ${row.name}`} hint="View booking QR and link" icon={<QrCode size={15} aria-hidden/>} onClick={()=>setQrPreview(row)} testId={`button-view-qr-${row.id}`}/>}{resource==="patients"&&<IconAction label={`Open details for ${row.fullName||"patient"}`} hint="Details: timeline, activity and documents" icon={<PanelRightOpen size={15} aria-hidden/>} onClick={()=>setPatientDetail(row)} testId={`button-patient-details-${row.id}`}/>}{config.update&&!(OWNER_ONLY_FIELDS[resource]&&(identity?.user?.role==="doctor"||identity?.user?.role==="receptionist"||resource==="clinics"&&identity?.user?.role==="clinicAdmin"&&row.adminId!==identity.user.id))&&(resource==="clinics"&&portal==="admin"?<IconAction label={`Configure ${row.name}`} hint="Configure this clinic" icon={<Pencil size={15} aria-hidden/>} href={clinicRecordHref(row.id)} testId={`button-edit-${row.id}`}/>:<IconAction label={`Edit ${row.name||row.fullName||"record"}`} hint="Edit this record" icon={<Pencil size={15} aria-hidden/>} onClick={()=>{if(onEdit)onEdit(row);else{save.reset();setDirty(false);setEditing(row);}}} testId={`button-edit-${row.id}`}/>)}{(()=>{const scheduleLinks:RowMenuItem[]=resource==="doctors"?[{key:"weekly",label:"Weekly Schedule",href:`/${portal}/availability?doctorId=${encodeURIComponent(row.id)}${row.clinicId?`&clinicId=${encodeURIComponent(row.clinicId)}`:""}`,testId:`link-doctor-weekly-${row.id}`},{key:"exceptions",label:"Date Exceptions",href:`/${portal}/exceptions?doctorId=${encodeURIComponent(row.id)}${row.clinicId?`&clinicId=${encodeURIComponent(row.clinicId)}`:""}`,testId:`link-doctor-exceptions-${row.id}`}]:[];const extra:RowMenuItem[]=[...scheduleLinks,...(config.update?[{key:"deactivate",label:"Deactivate",hint:"Deactivate; historical records are preserved",danger:true,disabled:remove.isPending||row.status==="inactive",testId:`action-deactivate-${row.id}`,onSelect:()=>{void (async()=>{if(!remove.isPending&&await confirmation.ask({title:"Deactivate Record?",description:"The record becomes inactive. Historical records are preserved; this is not permanent deletion.",confirmLabel:"Deactivate",tone:"danger"}))remove.mutate(row.id);})();}}]:[])];return ["clinics","branches"].includes(resource)?<LocationActions row={row} resource={resource} portal={portal} extra={extra} viewHref={superadminClinics?clinicRecordHref(row.id):undefined}/>:extra.length?<RowMenu label={`More actions for ${row.name||row.fullName||"record"}`} testId={`menu-${row.id}`} items={extra}/>:null;})()}</div></td>}
   </tr>{expandable&&expanded===row.id&&<tr className="row-expansion" id={`expand-${row.id}`}><td colSpan={displayColumns.length+(hasActions?2:1)}><RecordFacts facts={facts} testId={`expansion-${resource}-${row.id}`}/></td></tr>}</Fragment>;})}</tbody></table></div>:active?<div className="empty"><h3>No matching {listName}</h3><p>Try a different search or clear your filters.</p><button onClick={reset}>Clear Filters</button></div>:<Empty label={listName}/>}
   {query.isFetching&&!query.isLoading&&!query.error&&<span className="admin-listing-refresh" role="status">Updating {listName}…</span>}
-  {!query.error&&<div className="admin-listing-pagination"><Pagination page={page} pageSize={pageSize} total={query.data?.total||0} onPageChange={setPage} onPageSizeChange={setPageSize} resetPageOnSizeChange={false} hideTotal={headingCount}/></div>}</section>
+  {!query.error&&<div className="admin-listing-pagination"><Pagination page={page} pageSize={pageSize} total={query.data?.total||0} onPageChange={setPage} onPageSizeChange={setPageSize} resetPageOnSizeChange={false} hideTotal={headingCount} hideSinglePageNavigation={["availability","exceptions"].includes(resource)}/></div>}</section>
   {resource==="users"&&identity?.user?.role!=="doctor"&&<details className="panel listing-disclosure" data-testid="details-account-recovery"><summary>Account Recovery Assistance</summary><p className="muted">Select a linked staff account to view the secure account recovery steps. This action does not send an email.</p><div className="inline-form"><ResourceLookup resource="users" label="Staff Account" params={{role:"receptionist",linkedOnly:true}} value={recoveryId} onChange={value=>{setRecoveryId(value);recovery.reset();}}/><button disabled={!recoveryId||recovery.isPending} onClick={()=>{if(!recovery.isPending)recovery.mutate({id:recoveryId});}} data-testid="button-password-reset">{recovery.isPending?"Loading…":"Get Recovery Steps"}</button></div><ErrorNotice error={recovery.error}/>{recovery.data&&<div className="notice" data-testid="status-password-recovery"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link" data-testid="link-password-recovery">Open Secure Password Recovery</Link></div>}</details>}
  {resource==="users"&&identity?.user?.role==="superAdmin"&&allowCreate&&<ClinicAdminOnboarding />}
   {resource==="patients"&&patientDetail&&<PatientDetailsDrawer patient={patientDetail} onClose={()=>setPatientDetail(null)}/>}

@@ -10,10 +10,12 @@ import { useConfirm } from "../ConfirmDialog";
 import { formatDate, resolveDateTimePreferences } from "../../lib/date-time";
 import { useDirectoryActor } from "../../lib/use-directory";
 import { scheduleSnapshot } from "./week-plan";
+import { HelpTip } from "../HelpTip";
 
 /** Saved context only: profile drafts never become schedule write targets. */
-export function DoctorScheduleContext({doctor: listed, fixedClinicId, fixedBranchId, canDelete=false, onSaved, onDirtyChange, onBusyChange}: {
-  doctor: any; fixedClinicId?: string; fixedBranchId?:string; canDelete?: boolean; onSaved?: () => void;
+export type ScheduleDisplayContext = {doctorId:string;branchId:string;timezone?:string;timeFormat:string};
+export function DoctorScheduleContext({doctor: listed, fixedClinicId, fixedBranchId, canDelete=false, onSaved, onDirtyChange, onBusyChange, onDisplayContextChange}: {
+  doctor: any; fixedClinicId?: string; fixedBranchId?:string; canDelete?: boolean; onSaved?: () => void; onDisplayContextChange?:(context:ScheduleDisplayContext|null)=>void;
   onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void;
 }) {
   const assignmentDirty=false, profileBusy=false, autoFocus=false;
@@ -97,6 +99,9 @@ export function DoctorScheduleContext({doctor: listed, fixedClinicId, fixedBranc
     save.reset();setChildDirty(false);setChild({kind,row});
   };
   const prefs=resolveDateTimePreferences(clinic.data);
+  useEffect(()=>{
+    onDisplayContextChange?.(branch?{doctorId:doctor.id,branchId:branch.id,timezone:branch.timezone,timeFormat:prefs.timeFormat}:null);
+  },[doctor.id,branch?.id,branch?.timezone,prefs.timeFormat,onDisplayContextChange]);
   const showPicker=inGroup.length>1;
   return <section className="doctor-schedule-context" ref={section} tabIndex={-1} aria-label="Doctor schedule" data-testid="doctor-schedule-context">
     {confirm.dialog}
@@ -107,8 +112,7 @@ export function DoctorScheduleContext({doctor: listed, fixedClinicId, fixedBranc
           groupIds.length>1?<SearchableSelect labelScope={JSON.stringify([actor,doctor.id,"group"])} retainSelectionLabel={false} label="Clinic Group" testId="select-schedule-group" value={group} disabled={busy} onChange={changeGroup} options={groupIds.map(id=>({value:id,label:(groups.data||[]).find(g=>g.id===id)?.name||"Clinic Group"}))}/>:null}
         {inGroup.length===1&&<span className="dsc-chip" data-testid="text-fixed-location">{inGroup[0].name}</span>}
         {showPicker&&<SearchableSelect labelScope={JSON.stringify([actor,doctor.id])} retainSelectionLabel={false} label="Location" value={location} disabled={busy} onChange={changeLocation} options={inGroup.map(b=>({value:b.id,label:b.name}))}/>}
-        {branch&&<><span className="dsc-chip" title="Schedule times use the clinic's configured timezone. Change it in clinic settings." data-testid="indicator-timezone">Timezone: {branch.timezone||"Not set"} (locked)</span>
-        <span className="dsc-chip" title="Time format is set in clinic settings." data-testid="indicator-time-format">Time format: {prefs.timeFormat==="24h"?"24-hour":"12-hour (AM/PM)"} (locked)</span></>}
+        {branch&&<span className="muted dsc-display-context"><span data-testid="indicator-timezone">Timezone: {branch.timezone||"Not set"}</span> · <span data-testid="indicator-time-format">{prefs.timeFormat==="24h"?"24-hour":"12-hour (AM/PM)"}</span> <HelpTip label="About inherited display settings" text="Timezone and time format are inherited from clinic settings. Change them there, not in individual sessions."/></span>}
       </div>
     </div>
     {fresh.isLoading||(!savedDoctor&&!fresh.error)||locations.isLoading||(!!ids.length&&savedLocations===null&&!locations.error)?<div className="skeleton" role="status">Loading saved locations…</div>:
@@ -123,10 +127,14 @@ export function DoctorScheduleContext({doctor: listed, fixedClinicId, fixedBranc
       <fieldset disabled={save.isPending} style={{border:0,padding:0,minWidth:0}}>
         <WeeklyScheduleEditor key={`${doctor.id}:${branch.id}`} doctorId={doctor.id} branchId={branch.id} onDirtyChange={setWeeklyDirty} onBusyChange={setWeeklyBusy} onEdit={row=>openChild("availability",row)} onExceptions={()=>setExceptionsOpen(true)} onSaved={onSaved} canDelete={canDelete} doctorName={doctor.fullName} contextual compact/>
       </fieldset>
-      <div className="dsc-extra"><button type="button" className="button secondary small" disabled={weeklyDirty||busy} title={weeklyDirty?"Save or discard the schedule draft first":undefined} onClick={()=>{setExceptionsOpen(true);openChild("exceptions",{doctorId:doctor.id,branchId:branch.id,isClosed:true,isExtra:false});}}>Add Date Exception</button></div>
-      {exceptionsOpen&&<section aria-label="Date exceptions"><h3>Date Exceptions</h3>
+      <details className="cde-more" onToggle={e=>setExceptionsOpen(e.currentTarget.open)}>
+        <summary>Date exceptions</summary>
+        <button type="button" className="button secondary small" disabled={weeklyDirty||busy} aria-describedby={weeklyDirty?"dsc-exceptions-draft":undefined} onClick={()=>openChild("exceptions",{doctorId:doctor.id,branchId:branch.id,isClosed:true,isExtra:false})}>Add Date Exception</button>
+        {weeklyDirty&&<small id="dsc-exceptions-draft">Save or discard the schedule draft before editing date exceptions.</small>}
+      {exceptionsOpen&&<section aria-label="Saved date exceptions">
         {exceptions.isLoading?<p role="status">Loading date exceptions…</p>:exceptions.error?<><ErrorNotice error={exceptions.error}/><button type="button" onClick={()=>void exceptions.refetch()}>Retry Date Exceptions</button></>:exceptions.data?.items.length?exceptions.data.items.map(row=><div className="notice" key={row.id}><strong>{formatDate(row.date,clinic.data)}</strong> · {row.reason} <button type="button" disabled={weeklyDirty||busy} onClick={()=>openChild("exceptions",row)}>Edit Date Exception</button></div>):<p className="muted">No date exceptions saved at this location.</p>}
       </section>}
+      </details>
       {child&&<AppDialog open size="medium" title={child.kind==="availability"?"Session Details":child.row.id?"Edit Date Exception":"Add Date Exception"} dirty={childDirty} busy={save.isPending} onClose={()=>{setChild(null);setChildDirty(false);}}>
         <p className="doctor-context-value">{doctor.fullName} · {branch.name}</p>
         <ErrorNotice error={save.error}/>

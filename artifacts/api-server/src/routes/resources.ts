@@ -800,6 +800,13 @@ for (const [kind, table, schema, listSchema] of definitions) {
     const user = await requireUser(req), q = query(listSchema, req);
     if (kind === "users") roles(user, ["superAdmin", "clinicAdmin", "doctor"]);
     const result = await queryPage(user, kind, q);
+    if (kind === "schedules") {
+      const parentIds = [...new Set(result.items.map((row: any) => row.clinicId))] as string[];
+      const parentRows = parentIds.length ? (await db.execute(sql`select id, data from clinics where id in (${sql.join(parentIds.map(id => sql`${id}`), sql`,`)})`)).rows : [];
+      const parents = new Map(parentRows.map((row: any) => [row.id, row.data]));
+      // Preserve the session's timezone, but display times using its parent's format.
+      result.items = result.items.map((row: any) => ({ ...row, ...clinicDisplayPreferences(parents.get(row.clinicId)) }));
+    }
     if (kind === "clinics") result.items = result.items.map((row: any) => ({ ...row, ...clinicDisplayPreferences(row) }));
     if (kind === "branches") {
       const parentIds = [...new Set(result.items.map((row: any) => row.clinicId))] as string[];

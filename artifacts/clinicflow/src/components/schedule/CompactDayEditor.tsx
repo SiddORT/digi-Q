@@ -7,6 +7,7 @@ import { TimeFormatInput } from "../DateFormatInput";
 import { SearchableSelect } from "../SearchableSelect";
 import { useConfirm } from "../ConfirmDialog";
 import { formatTime } from "../../lib/date-time";
+import { queueModeLabel } from "../../lib/schedule-facts";
 import { DAYS, SHORT, ORDER, type OpeningHour } from "./WeeklyDraftDays";
 import { addCopiedSlot, copyDay, dayErrors, dayWarnings, draftKey, outsideHours, type DraftDay, type DraftSession, type ScheduleRow, type SessionSettings } from "./week-plan";
 
@@ -71,10 +72,11 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
     <FormTabs idPrefix="cde" wide={false} label="Day of week" tabs={ORDER.map(d => SHORT[d])} active={ORDER.indexOf(selected)} onChange={i => onSelect(ORDER[i])} invalid={ORDER.map(d => errors[d].length > 0)}/>
     <div className="cde-controls" role="tabpanel" id="cde-panel" aria-labelledby={`cde-tab-${ORDER.indexOf(selected)}`}>
       <strong className="cde-day">{DAYS[selected]}</strong>
-      <label className="registration-check"><input type="checkbox" role="switch" checked={day.isOpen} disabled={busy || day.sessions.some(s => s.locked)} title={day.sessions.some(s => s.locked) ? "Clinic-linked slots keep this day working" : undefined} onChange={e => set({ ...day, isOpen: e.target.checked })} data-testid="toggle-working-day"/>Working day</label>
+      <label className="registration-check"><input type="checkbox" role="switch" checked={day.isOpen} disabled={busy || day.sessions.some(s => s.locked)} aria-describedby={day.sessions.some(s=>s.locked)?"cde-locked-reason":undefined} onChange={e => set({ ...day, isOpen: e.target.checked })} data-testid="toggle-working-day"/>Working day</label>
       <SearchableSelect label="Copy from" value={source} disabled={busy} placeholder="Choose day…" testId="select-copy-from" onChange={v => { setSource(v); setSlotKey(""); }} options={ORDER.filter(d => d !== selected).map(d => ({ value: String(d), label: DAYS[d] }))}/>
       <button type="button" className="button secondary small" disabled={busy} onClick={() => { set({ ...day, isOpen: true, sessions: [...day.sessions, { key: draftKey(), startTime: "", endTime: "" }] }); }} data-testid="button-add-time-slot"><Plus size={14} aria-hidden/> Add Time Slot</button>
     </div>
+    {day.sessions.some(s=>s.locked)&&<p className="muted" id="cde-locked-reason">These sessions follow clinic hours. Ask an authorized doctor or administrator to customize this day.</p>}
     {src && <div className="cde-controls cde-copy" role="group" aria-label="Copy options" data-testid="copy-from-panel">
       <SearchableSelect label="Copy" value={mode} onChange={v => setMode(v === "slot" ? "slot" : "day")} options={[{ value: "day", label: "Entire day" }, { value: "slot", label: "One time slot" }]}/>
       {mode === "slot" && <SearchableSelect label="Source slot" value={slotKey} onChange={setSlotKey} placeholder={slotSources.length ? "Choose slot…" : "No slots on that day"} options={slotSources.map(s => ({ value: s.key, label: `${fmt(s.startTime)} – ${fmt(s.endTime)}` }))}/>}
@@ -88,17 +90,17 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
           const rowErrs = errs.filter(e => new RegExp(`(Session ${i + 1}\\b|session ${i + 1}\\b)`).test(e));
           return <div className="cde-row" key={s.key} data-slot-focus={i}>
           <span className="cde-num"><span className="cde-lbl">Slot </span>{i + 1}</span>
-          <div className="cde-cell"><span className="cde-lbl" aria-hidden>Start Time</span><TimeFormatInput required value={s.startTime} preferences={preferences} disabled={busy || s.locked} aria-label={`Slot ${i + 1} start time`} aria-invalid={rowErrs.length > 0} onChange={value => patch(s.key, { startTime: value })}/></div>
-          <div className="cde-cell"><span className="cde-lbl" aria-hidden>End Time</span><TimeFormatInput required value={s.endTime} preferences={preferences} disabled={busy || s.locked} aria-label={`Slot ${i + 1} end time`} aria-invalid={rowErrs.length > 0} onChange={value => patch(s.key, { endTime: value })}/></div>
+           <div className="cde-cell"><span className="cde-lbl" aria-hidden>Start Time</span><TimeFormatInput required value={s.startTime} preferences={preferences} disabled={busy || s.locked} aria-describedby={s.locked?"cde-locked-reason":undefined} aria-label={`Slot ${i + 1} start time`} aria-invalid={rowErrs.length > 0} onChange={value => patch(s.key, { startTime: value })}/></div>
+           <div className="cde-cell"><span className="cde-lbl" aria-hidden>End Time</span><TimeFormatInput required value={s.endTime} preferences={preferences} disabled={busy || s.locked} aria-describedby={s.locked?"cde-locked-reason":undefined} aria-label={`Slot ${i + 1} end time`} aria-invalid={rowErrs.length > 0} onChange={value => patch(s.key, { endTime: value })}/></div>
           <div className="cde-cell"><span className="cde-lbl" id={`cde-dur-${s.key}`}>Consultation Duration<span className="sr-only"> for slot {i + 1}</span></span><SearchableSelect aria-labelledby={`cde-dur-${s.key}`} value={String(s.settings?.consultationMinutes ?? "")} disabled={busy || s.locked} placeholder={DURATIONS.includes(Number(template?.consultationMinutes)) ? `${template?.consultationMinutes} min (default)` : "Select…"} onChange={v => setting(s, "consultationMinutes", Number(v))} options={durationOptions(s)}/></div>
           {s.locked ? <span title="Managed in Clinic settings"><Lock size={14} aria-label="Linked to clinic hours"/></span> : <IconAction label={`Remove slot ${i + 1}`} hint="Remove slot" disabled={busy} icon={<Trash2 size={15} aria-hidden/>} onClick={() => busy ? undefined : set({ ...day, sessions: day.sessions.filter(x => x.key !== s.key) })}/>}
           {rowErrs.length > 0 && <small className="field-error cde-warn" role="alert">{rowErrs.join(" ")}</small>}
           {outsideHours(s, hours, opening !== null) && <small className="cde-warn notice">Outside usual location hours. Allowed.</small>}
-          <details className="cde-adv"><summary>Advanced</summary><div className="form-grid">
+           <details className="cde-adv"><summary><span>Advanced</span>: capacity, breaks and queue settings</summary><div className="form-grid" aria-describedby={s.locked?"cde-locked-reason":undefined}>
             <label>Max tokens<input type="number" min={1} max={1000} step={1} disabled={busy || s.locked} value={String(s.settings?.maxTokens ?? "")} placeholder={template?.maxTokens ? String(template.maxTokens) : ""} onChange={e => setting(s, "maxTokens", e.target.value === "" ? "" : Number(e.target.value))}/></label>
             <label>Token prefix<input maxLength={8} disabled={busy || s.locked} value={String(s.settings?.tokenPrefix ?? "")} placeholder={template?.tokenPrefix ? String(template.tokenPrefix) : ""} onChange={e => setting(s, "tokenPrefix", e.target.value.replace(/[^A-Za-z0-9]/g, ""))}/></label>
             <label>Buffer (min)<input type="number" min={0} max={1440} step={1} disabled={busy || s.locked} value={String(s.settings?.bufferMinutes ?? "")} onChange={e => setting(s, "bufferMinutes", e.target.value === "" ? 0 : Number(e.target.value))}/></label>
-            <SearchableSelect label="Queue mode" value={String(s.settings?.queueMode ?? "")} disabled={busy || s.locked} placeholder={template?.queueMode ? String(template.queueMode) : "Select…"} onChange={v => setting(s, "queueMode", v)} options={QUEUE_MODES.map(([value, label]) => ({ value, label }))}/>
+             <SearchableSelect label="Queue mode" value={String(s.settings?.queueMode ?? "")} disabled={busy || s.locked} placeholder={queueModeLabel(template?.queueMode)} onChange={v => setting(s, "queueMode", v)} options={QUEUE_MODES.map(([value, label]) => ({ value, label }))}/>
             {(["breakStart", "breakEnd", "queueOpenTime", "queueCloseTime"] as const).map(k => <label key={k}>{{ breakStart: "Break start", breakEnd: "Break end", queueOpenTime: "Queue opens", queueCloseTime: "Queue closes" }[k]}<TimeFormatInput value={String(s.settings?.[k] ?? "")} preferences={preferences} disabled={busy || s.locked} onChange={value => setting(s, k, value || null)} onDraftValidityChange={valid=>patch(s.key,current=>({invalidTimes:valid?current.invalidTimes?.filter(key=>key!==k):[...new Set([...current.invalidTimes||[],k])]}))}/></label>)}
           </div></details>
         </div>; })}

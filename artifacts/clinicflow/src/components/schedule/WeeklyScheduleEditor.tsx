@@ -214,7 +214,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
       const v = { ...(template || {}), ...Object.fromEntries(Object.entries(s.settings || {}).filter(([, x]) => x !== undefined && x !== "")) } as Record<string, unknown>;
       const own = s.settings?.consultationMinutes;
       if (![20, 30, 60].includes(Number(own ?? v.consultationMinutes)) || (own === undefined && !template)) return { day: d.dayOfWeek, index, message: `Slot ${index + 1} on ${SHORT[d.dayOfWeek]}: choose a consultation duration of 20, 30 or 60 minutes.` };
-      if (!(Number(v.maxTokens) >= 1) || !String(v.tokenPrefix || "").trim()) return { day: d.dayOfWeek, index, message: `Slot ${index + 1} on ${SHORT[d.dayOfWeek]}: set capacity and token prefix in Advanced.` };
+      if (!(Number(v.maxTokens) >= 1) || !String(v.tokenPrefix || "").trim()) return { day: d.dayOfWeek, index, message: `Slot ${index + 1} on ${SHORT[d.dayOfWeek]}: set capacity and token prefix in Capacity, breaks and queue settings.` };
     }
     return null;
   };
@@ -251,10 +251,11 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
     <p className="muted" data-testid="text-day-source">{dayBaselines[selectedDay]?.following ? "Following clinic hours — edits become custom only after confirmation." : "Custom schedule"} · Clinic: {opening===null?"Hours not configured":hoursFor(selectedDay).map(h=>`${fmt(h.startTime)}–${fmt(h.endTime)}`).join(", ")||"Closed"}</p>
     <CompactDayEditor week={week} setWeek={setWeek} opening={opening} preferences={preferences} busy={busy||linkedBusy} rows={rows} template={template} selected={selectedDay} onSelect={setSelectedDay} focus={focus} onChange={() => setResult("")}/>
     {needsTemplate && !template && <p className="field-error" role="alert">Enter token prefix, max tokens and consultation duration for new sessions.</p>}
-    <details className="cde-more"><summary>Location hours and exceptions</summary>
+    <details className="cde-more"><summary>Location hours: linking and copying</summary>
       <div className="schedule-source" role="group" aria-label="Location hours" data-testid="schedule-source">
       <button type="button" className="button secondary small" disabled={busy || !opening || !opening.length} onClick={copyLocationHours} data-testid="button-copy-opening-hours">Copy Location Hours Once</button>
       <HelpTip label="About copying location hours" text="Copy once fills this draft with today's location hours. Review capacity, then Save Schedule. Edited days that follow clinic hours require confirmation before becoming custom; later clinic-hour changes do not update confirmed custom days."/>
+       {(!opening||!opening.length)&&<small className="muted">Copying needs configured location opening hours. Ask the clinic owner to configure them.</small>}
        {branch.data && <FollowLocationHours branch={branch.data} doctorId={doctorId} dirty={dirty} disabled={busy} onBusyChange={setLinkedBusy} onDirtyChange={setLinkedDirty} defaults={{ maxTokens: (rows[0] as any)?.maxTokens, consultationMinutes: (rows[0] as any)?.consultationMinutes, tokenPrefix: (rows[0] as any)?.tokenPrefix, queueMode: (rows[0] as any)?.queueMode }} />}
        {!contextual&&siblingIds.length > 0 && <details className="schedule-copy-locations" data-testid="details-copy-locations"><summary>Copy to Other Locations</summary><div className="registration-inline">
         {(siblings.data || []).map(b => <label className="registration-check" key={b.id}><input type="checkbox" checked={copyTargets.includes(b.id)} disabled={busy} onChange={e => setCopyTargets(c => e.target.checked ? [...c, b.id] : c.filter(x => x !== b.id))} data-testid={`check-copy-location-${b.id}`}/>{b.name}</label>)}
@@ -262,8 +263,8 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
         {dirty && <small className="muted">Save this week first, then apply it.</small>}
       </div></details>}
       </div>
-      {onExceptions?<button type="button" className="button secondary small" onClick={onExceptions} data-testid="link-week-exceptions">Date Exceptions for This Doctor</button>:<Link className="button secondary small" href={`${path.replace(/availability$/, "exceptions")}?${search}`} data-testid="link-week-exceptions">Date Exceptions for This Doctor</Link>}
     </details>
+    {!contextual&&(onExceptions?<button type="button" className="button secondary small" onClick={onExceptions} data-testid="link-week-exceptions">Date Exceptions for This Doctor</button>:<Link className="button secondary small" href={`${path.replace(/availability$/, "exceptions")}?${search}`} data-testid="link-week-exceptions">Date Exceptions for This Doctor</Link>)}
     <div className="cde-footer"><FormActions wide={false} onCancel={dialogClose ? undefined : ()=>void cancelDraft()} cancelClosesDialog cancelTestId="button-reset-week" busy={busy||linkedBusy} disabled={!dirty} onSubmit={save} submitTestId="button-save-week" submitLabel="Save Schedule" secondary={canDelete && !!rows.some(r => !r.linkedBranchId) ? <button type="button" className="button secondary small" disabled={busy||linkedBusy||dirty} title={dirty?"Save or cancel your changes first":undefined} onClick={() => void deleteSchedule()} data-testid="button-delete-schedule">Delete Schedule</button> : undefined} /></div>
     {result && <p className="notice" role="status" data-testid="status-week-save">{result}</p>}
     {outside && <AppDialog open onClose={() => setOutside(null)} title="Doctor Hours Beyond Clinic Hours">

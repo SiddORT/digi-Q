@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { EDITOR_TABS, editorTabIndex } from "./form-tabs.ts";
-import { scheduleAdditionalKeys } from "./schedule-facts.ts";
+import { queueModeLabel, scheduleAdditionalKeys } from "./schedule-facts.ts";
 import { scheduleFormErrors, scheduleTimeError } from "./schedule-validation.ts";
 
 const visible = ["doctorName", "branchName", "dayOfWeek", "session", "break", "capacity", "isOpen"];
@@ -14,7 +14,19 @@ test("weekly availability has four stable tabs; other tab mappings are unchanged
 });
 test("visible schedule summaries consume endpoints and capacity constituents", () => {
   assert.deepEqual(scheduleAdditionalKeys(row, visible),[]);
-  assert.deepEqual(scheduleAdditionalKeys({...row,timezone:"Asia/Kolkata",queueMode:"mixed",queueOpenTime:"08:00"},visible),["timezone","queueMode","queueOpenTime"]);
+   assert.deepEqual(scheduleAdditionalKeys({...row,timezone:"Asia/Kolkata",queueMode:"mixed",queueOpenTime:"08:00"},visible),["timezone","queueOpenTime"]);
+});
+test("shared context consumes matching values, not session-specific differences",()=>{
+  const context={timezone:"Asia/Kolkata",timeFormat:"24h"};
+  assert.deepEqual(scheduleAdditionalKeys({...row,...context,queueMode:"walkInsOnly"},visible,context),[]);
+  assert.deepEqual(scheduleAdditionalKeys({...row,timezone:"UTC",timeFormat:"12h"},visible,context),["timezone","timeFormat"]);
+  assert.deepEqual(scheduleAdditionalKeys({...row,queueMode:"appointmentsOnly",queueOpenTime:"08:00",queueCloseTime:"11:00"},visible,context),["queueOpenTime","queueCloseTime"]);
+  assert.deepEqual(scheduleAdditionalKeys({...row,queueMode:"appointmentsOnly"},visible.filter(k=>k!=="session"),context),["session"]);
+  assert.deepEqual(scheduleAdditionalKeys({...row,queueMode:"mixed",queueOpenTime:row.startTime,queueCloseTime:row.endTime},visible,context),[]);
+  assert.equal(queueModeLabel("mixed"),"Appointments and walk-ins");
+  assert.equal(queueModeLabel("appointmentsOnly"),"Appointments only");
+  assert.equal(queueModeLabel("walkInsOnly"),"Walk-ins only");
+  assert.equal(queueModeLabel(undefined),"Appointments and walk-ins");
 });
 test("hidden summaries remain reachable, without their separate constituent facts", () => {
   assert.deepEqual(scheduleAdditionalKeys(row, visible.filter(key=>!["session","capacity"].includes(key))),["session","capacity"]);

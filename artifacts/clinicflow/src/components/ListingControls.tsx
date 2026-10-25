@@ -33,6 +33,8 @@ export interface PaginationProps {
   resetPageOnSizeChange?: boolean;
   /** Optional, default false: omit "of {total}" when the list heading already shows the total. Range and page controls stay. */
   hideTotal?: boolean;
+  /** Schedule lists keep range/size but omit navigation when it has no purpose. */
+  hideSinglePageNavigation?: boolean;
 }
 
 export function Pagination({
@@ -43,6 +45,7 @@ export function Pagination({
   onPageSizeChange,
   resetPageOnSizeChange = true,
   hideTotal = false,
+  hideSinglePageNavigation = false,
 }: PaginationProps) {
   const sizeId = React.useId();
   if (total === 0) return null;
@@ -98,7 +101,7 @@ export function Pagination({
         )}
       </div>
 
-      <div className="flex items-center gap-1">
+      {(!hideSinglePageNavigation || totalPages > 1) && <div className="flex items-center gap-1">
         <span className="pagination-current" aria-live="polite">Page {currentPage} of {totalPages}</span>
         <button
           onClick={() => onPageChange(1)}
@@ -164,7 +167,7 @@ export function Pagination({
         >
           <ChevronsRight className="h-4 w-4" />
         </button>
-      </div>
+      </div>}
     </nav>
   );
 }

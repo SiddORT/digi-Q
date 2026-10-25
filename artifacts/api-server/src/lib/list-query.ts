@@ -141,11 +141,17 @@ const statusCountsSql = sql`jsonb_build_object(
     sql`${group}::text, count(*) filter(where ${inList(raw("doc->>'status'"), statuses)})::int`), raw(","))})`;
 export async function queryPage(user: any, kind: string, q: any = {}, extra?: SQL, conn: any = db, withStatusCounts = false) {
   assert(!withStatusCounts || kind === "appointments" && user.role !== "patient", 400, "Status counts require staff appointments");
-  const { page, pageSize } = pageParams(q), sort = q.sort || "-createdAt", key = sort.replace(/^-/, "");
-  assert(["createdAt", "name", "fullName", "date", "status", "code", "tokenNumber", "sortOrder", "email", "waitingAt"].includes(key), 400, "Unsupported sort field");
+  const { page, pageSize } = pageParams(q), sort = q.sort || (kind === "schedules" ? "weekly" : "-createdAt"), key = sort.replace(/^-/, "");
+  assert(["createdAt", "name", "fullName", "date", "status", "code", "tokenNumber", "sortOrder", "email", "waitingAt"].includes(key) || kind === "schedules" && sort === "weekly", 400, "Unsupported sort field");
   const direction = raw(sort.startsWith("-") ? "desc" : "asc");
   const value = key === "waitingAt" ? sql`coalesce(doc->>'waitingAt',doc->>'createdAt')` : ["tokenNumber", "sortOrder"].includes(key) ? sql`nullif(doc->>${key},'')::numeric` : sql`doc->>${key}`;
   const secondary = key === "waitingAt" ? sql`(doc->>'tokenNumber')::int ${direction},` : raw("");
+  // Sort the complete authorized set BEFORE LIMIT/OFFSET; Sunday is last.
+  const ordering = sort === "weekly"
+    ? sql`doc->>'doctorId' asc, doc->>'clinicId' asc, doc->>'branchId' asc,
+      ((doc->>'dayOfWeek')::int + 6) % 7 asc, doc->>'startTime' asc,
+      doc->>'endTime' asc, doc->>'id' asc`
+    : sql`${value} ${direction} nulls last, ${secondary} doc->>'id' ${direction}`;
   // Branches have no doctorId column: resolve the real assignment relationship.
   let effectiveQuery = q;
   if (["branches", "clinics"].includes(kind) && q.doctorId) {
@@ -169,7 +175,7 @@ export async function queryPage(user: any, kind: string, q: any = {}, extra?: SQ
   const matching = withStatusCounts
     ? sql`base_matching as (select doc from visible where ${filterSql({ ...effectiveQuery, status: undefined, statusGroup: undefined })}), matching as (select doc from base_matching where ${filterSql({ status: effectiveQuery.status, statusGroup: effectiveQuery.statusGroup })})`
     : sql`matching as (select doc from visible where ${filter})`;
-  const result = await conn.execute(sql`with visible as (${source}), ${matching}, page_rows as (select doc from matching order by ${value} ${direction} nulls last, ${secondary} doc->>'id' ${direction} limit ${pageSize} offset ${(page - 1) * pageSize}) select (select count(*)::int from matching) as total, coalesce((select jsonb_agg(doc) from page_rows),'[]'::jsonb) as items ${withStatusCounts ? sql`, (select ${statusCountsSql} from base_matching) as "statusCounts"` : raw("")}`);
+  const result = await conn.execute(sql`with visible as (${source}), ${matching}, page_rows as (select doc from matching order by ${ordering} limit ${pageSize} offset ${(page - 1) * pageSize}) select (select count(*)::int from matching) as total, coalesce((select jsonb_agg(doc) from page_rows),'[]'::jsonb) as items ${withStatusCounts ? sql`, (select ${statusCountsSql} from base_matching) as "statusCounts"` : raw("")}`);
   const { items, total, statusCounts } = result.rows[0];
   return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize), ...(withStatusCounts ? { statusCounts } : {}) };
 }

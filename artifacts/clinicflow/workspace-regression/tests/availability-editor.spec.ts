@@ -7,7 +7,7 @@ const doctor={id:"d1",fullName:"Fictional Doctor with a long saved name",status:
 const summary={id:"s1",doctorId:"d1",clinicId:"c1",branchId:"b1",doctorName:doctor.fullName,branchName:clinic.name,dayOfWeek:1,isOpen:true,startTime:"09:00",endTime:"12:00",breakStart:"10:00",breakEnd:"10:15",tokenPrefix:"A",maxTokens:10,consultationMinutes:20,bufferMinutes:5};
 const full={...summary,timezone:"Asia/Kolkata",queueMode:"mixed",queueOpenTime:"08:30",queueCloseTime:"11:30"};
 const list=(items:unknown[])=>({items,total:items.length,page:1,pageSize:20,totalPages:1});
-async function setup(page:Page, role="superAdmin", extra=true, linked=false) {
+async function setup(page:Page, role="superAdmin", extra=true, linked=false, resource="availability") {
   const state={row:{...(extra?full:summary),...(linked?{linkedBranchId:"b1"}:{})} as Record<string,any>,extraRows:[] as Record<string,any>[],clinicHours:[...clinic.openingHours],customDays:new Set<number>(),revision:0,writes:[] as Record<string,any>[],fail:false,failDay:undefined as number|undefined,pause:undefined as Promise<void>|undefined};
   const rows=()=>[state.row,...state.extraRows].filter(r=>r.status!=="inactive");
   const context=()=>({items:rows(),days:Array.from({length:7},(_,dayOfWeek)=>({dayOfWeek,following:linked&&!state.customDays.has(dayOfWeek),custom:state.customDays.has(dayOfWeek),snapshot:`day-${dayOfWeek}-${state.revision}`}))});
@@ -25,7 +25,12 @@ async function setup(page:Page, role="superAdmin", extra=true, linked=false) {
     else if(path==="/api/branches")reply=list([clinic]);
     else if(path==="/api/doctors")reply=list([doctor]);
     else if(path==="/api/schedules/day-context")reply=context();
-    else if(path==="/api/schedules"&&req.method()==="GET")reply=list(rows());
+    else if(path==="/api/schedules"&&req.method()==="GET"){
+      const params=new URL(req.url()).searchParams;
+      const pageNumber=Number(params.get("page")||1),pageSize=Number(params.get("pageSize")||20);
+      reply={...list(rows().slice((pageNumber-1)*pageSize,pageNumber*pageSize)),total:rows().length,page:pageNumber,pageSize,totalPages:Math.ceil(rows().length/pageSize)};
+    }
+    else if(path==="/api/availability-exceptions")reply=list([{...state.row,date:"2030-01-01",isClosed:false,reason:"Holiday hours"}]);
     else if(path.startsWith("/api/schedules")&&["POST","PATCH"].includes(req.method())){
       const body=req.postDataJSON();state.writes.push(body);
       if(state.pause)await state.pause;
@@ -40,8 +45,8 @@ async function setup(page:Page, role="superAdmin", extra=true, linked=false) {
     }
     await route.fulfill({status,contentType:"application/json",body:JSON.stringify(reply)});
   });
-  await page.goto(`/?mode=resource&resource=availability&fixtureRole=${role}`);
-  await expect(page.getByTestId("row-availability-s1")).toBeVisible();
+  await page.goto(`/?mode=resource&resource=${resource}&fixtureRole=${role}`);
+  await expect(page.getByTestId(`row-${resource}-s1`)).toBeVisible();
   return state;
 }
 const tab=(page:Page,name:string)=>page.getByTestId(`tab-editor-${name.toLowerCase().replace(/[^a-z]+/g,"-")}`);
@@ -216,7 +221,9 @@ test("partial linked-day save retries only the failed day with its original base
 test("schedule expansion only exposes genuinely additional settings",async({page})=>{
   await setup(page);await page.getByTestId("button-expand-s1").click();
   const facts=page.getByTestId("expansion-availability-s1");
-  await expect(facts).toContainText("Queue Mode");await expect(facts).toContainText("Timezone");
+  await expect(facts).toContainText("Queue Open Time");await expect(facts).toContainText("Queue Close Time");
+  await expect(facts).not.toContainText("Queue Mode");await expect(facts).not.toContainText("Timezone");
+  await expect(page.getByTestId("row-availability-s1")).toContainText("Appointments and walk-ins");
   for(const label of ["Start Time","End Time","Break Start","Max Tokens","Doctor"])await expect(facts).not.toContainText(label);
 });
 test("redundant-only rows have no chevron; hiding a column restores its useful summary",async({page})=>{
@@ -228,6 +235,100 @@ test("redundant-only rows have no chevron; hiding a column restores its useful s
   await page.getByTestId("button-expand-s1").click();
   await expect(page.getByTestId("expansion-availability-s1")).toContainText("Session");
   await expect(page.getByTestId("expansion-availability-s1")).not.toContainText("Start Time");
+});
+for(const resource of ["availability","exceptions"])for(const width of [1440,1280,1024,768,390]){
+  test(`schedule list control geometry ${resource} ${width}`,async({page})=>{
+    await page.setViewportSize({width,height:900});await setup(page,"superAdmin",true,false,resource);
+    const row=page.getByTestId(`row-${resource}-s1`);
+    const bounds=await row.evaluate(el=>{
+      const lead=el.querySelector(".row-expand-toggle")!.getBoundingClientRect();
+      const cell=el.querySelector(".col-select")!.getBoundingClientRect();
+      const next=el.children[1].getBoundingClientRect();
+      return {leadRight:lead.right,cellRight:cell.right,nextLeft:next.left};
+    });
+    expect(bounds.leadRight).toBeLessThanOrEqual(bounds.cellRight);
+    if(width>640)expect(bounds.leadRight).toBeLessThanOrEqual(bounds.nextLeft);
+    await page.getByTestId("button-expand-s1").focus();await page.keyboard.press("Enter");
+    await expect(page.getByTestId(`expansion-${resource}-s1`)).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId(`expansion-${resource}-s1`)).toHaveCount(0);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+    await expect(page.getByRole("button",{name:"Next page",exact:true})).toHaveCount(0);
+    await expect(page.getByRole("navigation",{name:"Pagination"})).toContainText("of 1");
+    await mkdir("generated-artifacts/schedule-readability",{recursive:true});
+    await page.screenshot({path:`generated-artifacts/schedule-readability/${resource}-${width}.png`});
+  });
+}
+test("schedule navigation remains for multiple pages and URL Back retains list state",async({page})=>{
+  const state=await setup(page);
+  state.extraRows=Array.from({length:24},(_,i)=>({...full,id:`s${i+2}`,dayOfWeek:(i+1)%7}));
+  await page.reload();
+  await expect(page.getByRole("navigation",{name:"Pagination"})).toContainText("of 25");
+  await expect(page.getByRole("button",{name:"Next page",exact:true})).toBeEnabled();
+  await page.getByRole("button",{name:"Next page",exact:true}).click();
+  await expect(page).toHaveURL(/page=2/);
+  await expect(page.locator("tbody>tr[data-testid]")).toHaveCount(5);
+  await page.goBack();
+  await expect(page.locator("tbody>tr[data-testid]")).toHaveCount(20);
+  expect(new URL(page.url()).searchParams.has("sort")).toBe(false);
+});
+test("session queue differences stay visible without redundant disclosures",async({page})=>{
+  const state=await setup(page);
+  state.row={...full,queueOpenTime:"09:00",queueCloseTime:"12:00"};
+  state.extraRows=[{...state.row,id:"s2",startTime:"13:00",endTime:"16:00",queueOpenTime:"13:00",queueCloseTime:"16:00",queueMode:"walkInsOnly"}];
+  await page.reload();
+  await expect(page.getByTestId("row-availability-s1")).toContainText("Appointments and walk-ins");
+  await expect(page.getByTestId("row-availability-s2")).toContainText("Walk-ins only");
+  await expect(page.getByTestId("button-expand-s1")).toHaveCount(0);
+  await expect(page.getByTestId("button-expand-s2")).toHaveCount(0);
+});
+test("custom columns preserve pinned day, selection and actions during internal scrolling",async({page})=>{
+  await setup(page);
+  await page.getByRole("button",{name:/Columns/}).click();
+  await page.getByLabel("Break",{exact:true}).uncheck();
+  await page.getByRole("button",{name:"Pin Day as the one pinned column",exact:true}).click();
+  await page.keyboard.press("Escape");
+  for(const width of [1280,1024,768]){
+    await page.setViewportSize({width,height:900});
+    const table=page.locator(".schedule-list-table .table-scroll");
+    await table.evaluate(el=>{el.scrollLeft=el.scrollWidth;});
+    const overlap=await page.getByTestId("row-availability-s1").evaluate(el=>{
+      const select=el.querySelector(".col-select")!.getBoundingClientRect();
+      const pinned=el.querySelector(".col-pinned")!.getBoundingClientRect();
+      const expansion=el.querySelector(".row-expand-toggle")!.getBoundingClientRect();
+      const action=el.querySelector(".col-actions")!.getBoundingClientRect();
+      const container=el.closest(".table-scroll")!.getBoundingClientRect();
+      return {selectRight:select.right,pinnedLeft:pinned.left,expandRight:expansion.right,actionRight:action.right,containerRight:container.right};
+    });
+    expect(overlap.expandRight).toBeLessThanOrEqual(overlap.selectRight);
+    expect(overlap.pinnedLeft).toBeGreaterThanOrEqual(overlap.selectRight-1);
+    expect(overlap.actionRight).toBeLessThanOrEqual(overlap.containerRight+1);
+    await page.getByTestId("button-expand-s1").click();
+    await expect(page.getByTestId("expansion-availability-s1")).toContainText("Break");
+    await page.getByTestId("button-expand-s1").click();
+  }
+});
+test.describe("200 percent layout zoom",()=>{
+test.use({viewport:{width:720,height:500},deviceScaleFactor:2});
+test("schedule list and editor fit at 200 percent layout zoom",async({page})=>{
+  // Native 200% browser zoom halves the CSS viewport and doubles device pixels.
+  // CSS zoom on <html> is NOT equivalent: it leaves vh-based dialogs twice as tall.
+  await setup(page);
+  const button=page.getByTestId("button-expand-s1");
+  const next=await page.getByTestId("row-availability-s1").locator("td").nth(1).boundingBox();
+  const control=await button.boundingBox();
+  expect(control!.x+control!.width).toBeLessThanOrEqual(next!.x);
+  await button.click();await expect(page.getByTestId("expansion-availability-s1")).toBeVisible();
+  await edit(page);
+  await schedule(page).getByText("Advanced",{exact:true}).click();
+  expect(await schedule(page).evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  const body=schedule(page).locator(".app-dialog-body");
+  await expect(body).toBeVisible();
+  await schedule(page).getByLabel("Max tokens",{exact:true}).focus();
+  await expect(schedule(page).getByLabel("Max tokens",{exact:true})).toBeFocused();
+  await mkdir("generated-artifacts/schedule-readability",{recursive:true});
+  await page.screenshot({path:"generated-artifacts/schedule-readability/zoom-200-editor.png"});
+});
 });
 for(const [role,width] of [["superAdmin",1440],["clinicAdmin",1024],["clinicAdmin",768],["doctor",390]] as const){
   test(`schedule layout ${role} ${width}`,async({page})=>{

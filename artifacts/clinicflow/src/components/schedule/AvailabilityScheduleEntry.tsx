@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
-import { DoctorScheduleContext } from "./DoctorScheduleContext";
+import { DoctorScheduleContext, type ScheduleDisplayContext } from "./DoctorScheduleContext";
 import { ErrorNotice } from "../../resources";
 import { useRegisterUnsaved } from "../WorkspaceBranch";
 import { useDirectoryActor } from "../../lib/use-directory";
 
 /** Doctor/admin entry on the Availability page: the same compact editor, scoped by a freshly fetched doctor, never by URL location ids. */
-export function AvailabilityScheduleEntry({ doctorId, fixedClinicId, canDelete,onDirtyChange,onBusyChange }: { doctorId: string; fixedClinicId?: string; canDelete: boolean; onDirtyChange?:(dirty:boolean)=>void;onBusyChange?:(busy:boolean)=>void }) {
+export function AvailabilityScheduleEntry({ doctorId, fixedClinicId, canDelete,onDirtyChange,onBusyChange,onDisplayContextChange }: { doctorId: string; fixedClinicId?: string; canDelete: boolean; onDirtyChange?:(dirty:boolean)=>void;onBusyChange?:(busy:boolean)=>void;onDisplayContextChange?:(context:ScheduleDisplayContext|null)=>void }) {
   const actor = useDirectoryActor();
   const doctor = useQuery({ queryKey: ["availability-entry-doctor", actor, doctorId], retry: false, gcTime: 0, queryFn: () => api.getDoctor(doctorId) });
   const [dirty, setDirty] = useState(false);
@@ -26,6 +26,6 @@ export function AvailabilityScheduleEntry({ doctorId, fixedClinicId, canDelete,o
   return <section className="panel padded" data-testid="panel-weekly-editor-entry">
     <ErrorNotice error={doctor.error}/>
     {doctor.error&&<button type="button" onClick={()=>void doctor.refetch()}>Retry Saved Doctor</button>}
-    <DoctorScheduleContext key={doctorId} doctor={savedDoctor} fixedClinicId={fixedClinicId} canDelete={canDelete} onDirtyChange={setDirty} onBusyChange={setBusy}/>
+    <DoctorScheduleContext key={doctorId} doctor={savedDoctor} fixedClinicId={fixedClinicId} canDelete={canDelete} onDisplayContextChange={onDisplayContextChange} onDirtyChange={setDirty} onBusyChange={setBusy}/>
   </section>;
 }

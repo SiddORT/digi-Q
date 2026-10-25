@@ -13,7 +13,7 @@ Compact layouts must size compound controls by the whole interaction, not by the
 
 **Why:** Country-plus-phone controls were squeezed by otherwise valid compact grids, and a legacy sticky footer covered mobile inputs even when document overflow was zero.
 
-**How to apply:** Check composite fields at actual container widths, footer overlap, and action rows within their cards. Page-level horizontal-overflow checks alone do not establish readable controls.
+**How to apply:** Check composite fields at actual container widths, footer overlap, and action rows within their cards. Measure the interactive children themselves: a constrained flex wrapper can fit its cell while its button overflows into the next column. Page-level horizontal-overflow checks alone do not establish readable controls.
 
 For narrow export documents, compare text and table internal scroll widths with their client widths, not only the document width.
 

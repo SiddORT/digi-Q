@@ -387,6 +387,30 @@
 .row-lead>.row-expand-toggle svg{transition:transform .15s}
 .row-lead>.row-expand-toggle[aria-expanded="true"] svg{transform:rotate(90deg)}
 .row-lead>:not(.row-expand-toggle){min-width:0}
+/* Both lead controls own one reserved column. Keep col/header/cell constraints
+   identical: a wider td alone loses to the fixed colgroup and legacy max-width. */
+@media (min-width:640px){
+  .workspace .schedule-list-table{--col-select-w:92px}
+  .workspace .schedule-list-table .table-scroll table{table-layout:auto;width:max-content;min-width:100%}
+  .workspace .schedule-list-table col.col-select,
+  .workspace .schedule-list-table .table-scroll :is(th,td).col-select{width:var(--col-select-w);min-width:var(--col-select-w);max-width:var(--col-select-w);padding-inline:12px}
+  .workspace .schedule-list-table .row-lead{width:calc(var(--col-select-w) - 24px);max-width:none;flex-shrink:0;gap:8px}
+  .workspace .schedule-list-table .row-lead input{margin:0;flex:0 0 17px}
+  .workspace .schedule-list-table .table-scroll :is(th,td):not(.col-select):not(.col-actions){min-width:132px;max-width:320px;white-space:normal;overflow-wrap:anywhere}
+  .workspace .schedule-list-table .table-scroll th:not(.col-select):not(.col-actions){white-space:nowrap}
+  .workspace .schedule-list-table .table-scroll :is(th,td).col-actions{min-width:132px}
+  .workspace .schedule-list-table .table-scroll :is(th,td).col-actions.sticky{position:sticky;right:0;z-index:3;background:var(--dq-surface)}
+  .workspace .schedule-list-table .table-scroll :is(th,td).col-pinned{position:sticky;left:var(--col-select-w);z-index:3;background:var(--dq-surface)}
+  .workspace .schedule-list-table .table-scroll :is(th,td).col-select{position:sticky;left:0;z-index:4;background:var(--dq-surface)}
+}
+@media (min-width:640px) and (max-width:767px){
+  /* Narrow-table inputs retain the shared 44px touch targets. */
+  .workspace .schedule-list-table{--col-select-w:124px}
+}
+.schedule-list-context{padding:8px 12px;font-size:var(--type-caption);color:var(--soft);border-bottom:1px solid hsl(var(--border));overflow-wrap:anywhere}
+.workspace .schedule-list-table .cap-chip{white-space:normal;line-height:1.4}
+.workspace .schedule-list-table .cap-chip>strong{display:block}
+.workspace .schedule-list-table .cell-sub{display:block;white-space:normal;font-size:var(--type-caption);color:var(--soft);overflow:visible;-webkit-line-clamp:unset}
 @media (min-width:641px){
   .workspace :is(.table-scroll,.table-wrap) td.col-select:has(.row-expand-toggle){width:76px;min-width:76px}
   .workspace .appt-table :is(th,td).col-actions{width:200px;min-width:200px}
