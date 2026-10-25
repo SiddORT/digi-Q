@@ -148,6 +148,16 @@ geometry even though later semantic single-line rules appeared to own sizing.
 **How to apply:** Capture rendered baselines before retirement, compare excluded
 native families and pseudo-elements as well as ordinary controls, and retain
 effective screen/print fallbacks instead of forcing parity with new overrides.
+ 
+Use the user's Add Staff reference as the layout target: a centred modal with
+Account Details above Work Assignment, paired account fields, role/clinic/locations
+in the assignment row, and Cancel plus a role-specific Add action in the footer.
+
+**Why:** The user explicitly requested this popup arrangement in their supplied image.
+
+**How to apply:** Preserve role permissions and staff-owned contact verification;
+the reference is a presentation requirement, not permission to create staff or send messages.
+
 If an existing position assertion fails, reproduce it against untouched source
 before changing either CSS or its tolerance. A bounded subpixel allowance needs
 matching original-source evidence; waiting longer cannot fix a settled baseline
