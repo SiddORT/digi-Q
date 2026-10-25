@@ -21,9 +21,10 @@ This refines the existing branding; it is not a new design system.
   Staff listing filter. Wrap the inline-labelled scope below the heading when
   needed; never render a second selector or a second page title.
 - Add Staff uses paired equal-width account inputs. Contact verification is
-  associated helper text below the field, not a flex sibling that reduces one
-  input's width. The complete country/number control follows the left account
-  column's edges (full width after one-column reflow).
+  associated status beside the label with reserved space and safe wrapping, not
+  a flex sibling that reduces one input's width. The compound country/number
+  row can use the full account grid; its country code is content-sized.
+  Account Details precedes Work Assignment in both DOM and visual order.
 - Assignment value rows share the existing 40px/44px field family. Long fixed
   names and selected chips may grow vertically; do not hide them to force equal
   heights. Single-value role/country controls must not gain extra height from

@@ -27,13 +27,13 @@ test("snapshots and drafts drop passwords", () => {
   assert.deepEqual(withoutPasswords({ a: 1, password: "x", confirmPassword: "x" }), { a: 1 });
 });
 
-test("creation orders assignments before account fields without reordering edit panels", () => {
+test("creation orders account fields before assignments without reordering edit panels", () => {
   const users = readFileSync(new URL("./Users.tsx", import.meta.url), "utf8");
   const assignments = users.indexOf('<div id="doctor-assignments"');
   assert.ok(users.indexOf("{initial.id&&staffDetails}") < assignments);
-  assert.ok(users.indexOf("{!initial.id&&staffDetails}") > assignments);
-  assert.ok(users.includes('"Role & Locations"') && users.includes('"Staff Details"'));
-  assert.ok(!users.includes('"Work Assignment"') && !users.includes('"Account Details"'));
+  assert.ok(users.indexOf("{!initial.id&&staffDetails}") < assignments);
+  assert.ok(users.includes('"Work Assignment"') && users.includes('"Account Details"'));
+  assert.ok(!users.includes('"Role & Locations"'));
   assert.ok(users.includes('label="About clinic assignment"') && users.includes('label="About location assignment"'));
 });
 

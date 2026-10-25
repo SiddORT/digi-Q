@@ -125,7 +125,8 @@ async function checkAccount(page: Page,width: number) {
   }
   const mobile=await box(".phone-input");
   expect(Math.abs(mobile.x-name.x)).toBeLessThan(2);
-  expect(Math.abs(mobile.width-name.width)).toBeLessThan(2);
+  const account=await box(".staff-account-fields");
+  expect(Math.abs(mobile.width-account.width)).toBeLessThan(2);
   const country=await box(".phone-input .searchable-select-control"),local=await box(".phone-input input");
   expect(Math.abs(country.y-local.y)).toBeLessThan(2);
   expect(Math.abs(country.height-local.height)).toBeLessThan(2);
@@ -134,7 +135,7 @@ async function checkAccount(page: Page,width: number) {
     range.selectNodeContents(el);
     return [...range.getClientRects()].every(text=>text.left>=r.left-1&&text.right<=r.right+1);
   }))).toBe(true);
-  await expect(dialog.getByTestId("input-user-email")).toHaveAttribute("aria-describedby",/help/);
+  await expect(dialog.getByTestId("input-user-email")).toHaveAttribute("aria-describedby",/status/);
   await expect(dialog.getByTestId("status-email-verification")).toContainText("Not verified");
   await expect(dialog.getByTestId("status-mobile-verification")).toContainText("Not verified");
 }
@@ -173,7 +174,7 @@ test("Clinic staff rendered layout and reflow",async({page})=>{
     })).toBe(true);
     await dialog.getByTestId("button-save-staff").click();
     await expect(dialog.getByTestId("input-user-email")).toHaveAttribute("aria-invalid","true");
-    await expect(dialog.getByTestId("input-user-email")).toHaveAttribute("aria-describedby",/error.*help/);
+    await expect(dialog.getByTestId("input-user-email")).toHaveAttribute("aria-describedby",/error.*status/);
     await dialog.getByTestId("button-save-staff").scrollIntoViewIfNeeded();
     await expect(dialog.getByTestId("button-save-staff")).toBeInViewport();
     await dialog.screenshot({path:`generated-artifacts/clinic-staff-layout/errors-chips-${viewport.width}.png`});

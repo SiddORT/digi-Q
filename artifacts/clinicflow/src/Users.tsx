@@ -374,7 +374,7 @@ function UserEditor({ roleField, tab, initial: opened, carry, onClose, isSuperAd
   const statusControl = <Controller name="status" control={form.control} render={({field})=><div className="wide"><StatusSwitch label="Staff Account Active" active={field.value==="active"} disabled={!!initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)} onChange={async active=>{if(!active&&!await confirmAction.ask({title:"Deactivate Staff Member?",description:"They will lose access. Ownership restrictions may prevent this change.",confirmLabel:"Deactivate",tone:"danger"}))return;field.onChange(active?"active":"inactive");}}/>{initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)&&<small className="muted">Your own account cannot be deactivated here.</small>}</div>}/>;
   if(!hydrated)return freshDoctor.error?<><ErrorNotice error={freshDoctor.error}/><button type="button" onClick={()=>void freshDoctor.refetch()}>Retry Doctor Details</button></>:<p role="status">Loading doctor details…</p>;
   const staffDetails = <div className={panel(0)} role={staffTabs ? "tabpanel" : undefined}>
-    <FormSection title={initial.id?"Staff details":"Staff Details"} hint={initial.id?"Name and contact details.":undefined} actions={!initial.id?statusControl:undefined} className={initial.id?undefined:"staff-create-section"}>
+    <FormSection title={initial.id?"Staff details":"Account Details"} hint={initial.id?"Name and contact details.":undefined} actions={!initial.id?statusControl:undefined} className={initial.id?undefined:"staff-create-section"}>
     <StaffAccountFields control={form.control} register={form.register} errors={form.formState.errors} getValues={form.getValues as any} withPassword={!initial.id}/>
     </FormSection>
     {initial.id&&statusControl}
@@ -388,7 +388,8 @@ function UserEditor({ roleField, tab, initial: opened, carry, onClose, isSuperAd
     {initial.id&&professionalDetails}
 
     {tab === "admins" && initial.id && <OwnedClinicInformation key={initial.id} adminId={initial.id}/>}
-    {tab !== "admins" && <div id="doctor-assignments" className={panel(tab === "doctors" ? 2 : 1)} role={staffTabs?"tabpanel":undefined}><FormSection title={initial.id?tab==="doctors"?"Assignments":"Assignment":"Role & Locations"} hint={initial.id?"Which Clinics and locations this person works at.":undefined} className={initial.id?undefined:"staff-create-section staff-assignment-row"}>
+    {!initial.id&&staffDetails}
+    {tab !== "admins" && <div id="doctor-assignments" className={panel(tab === "doctors" ? 2 : 1)} role={staffTabs?"tabpanel":undefined}><FormSection title={initial.id?tab==="doctors"?"Assignments":"Assignment":"Work Assignment"} hint={initial.id?"Which Clinics and locations this person works at.":undefined} className={initial.id?undefined:"staff-create-section staff-assignment-row"}>
        {!initial.id&&roleField&&<div className="staff-role-cell">{roleField}</div>}
        <div className="wide staff-clinic-cell">
        {!initial.id&&<div className="staff-assignment-label"><label id="staff-clinic-label" htmlFor="input-clinicIds">{clinicId?"Clinic (read-only)":"Clinics"} {!clinicId&&<span aria-hidden="true">*</span>}</label><HelpTip label="About clinic assignment" text={clinicId?"This Clinic remains assigned here. Assignments at other clinics are retained; use Staff management to change them.":"Existing assignments are retained while searching."}/></div>}
@@ -413,7 +414,6 @@ function UserEditor({ roleField, tab, initial: opened, carry, onClose, isSuperAd
         {tab === "receptionists" && <small className="muted">Select at least one location for every assigned Clinic.</small>}
       </div>
     </FormSection></div>}
-    {!initial.id&&staffDetails}
     {!initial.id&&professionalDetails}
     <FormActions busy={save.isPending||scheduleBusy} cancelClosesDialog submitLabel={initial.id ? tab==="doctors"?"Save Doctor Details":"Save Changes" : `Add ${tab==="doctors"?"Doctor":tab==="admins"?"Clinic Admin":"Receptionist"}`} busyLabel={initial.id ? "Saving…" : "Adding…"} submitTestId="button-save-staff" cancelTestId="button-cancel-staff" secondary={save.error ? <ErrorNotice error={save.error} /> : undefined} />
     {savedMessage&&<p className="notice wide" role="status">{savedMessage}</p>}

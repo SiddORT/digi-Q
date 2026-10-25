@@ -18,7 +18,10 @@
 /* ---- One label baseline for every field type (FormField, legacy label, address parts) ---- */
 .editor-container .field-grid,.editor-container .editor-group-grid,.profile-compact .field-grid{align-items:start}
 .form-field{display:flex;flex-direction:column;gap:4px;min-width:0}
-.form-field>.form-field-label,.address-fields .field-hint,.editor-container .field-grid label>.field-hint:first-child{display:flex;align-items:center;gap:4px;min-height:24px;margin:0;line-height:1.3;font-size:var(--type-label);font-weight:600;color:hsl(var(--foreground))}
+.form-field>.form-field-label,.form-field>label,.address-fields .field-hint,.editor-container .field-grid label>.field-hint:first-child{display:flex;align-items:center;gap:4px;min-height:24px;margin:0;line-height:1.3;font-size:var(--type-label);font-weight:600;color:hsl(var(--foreground))}
+.form-field>.form-field-label{flex-wrap:wrap}
+.form-field-status{margin-left:auto;display:inline-flex;align-items:center;min-width:0}
+.searchable-select-field>label,.searchable-multi-select-field>label{display:flex;align-items:center;min-height:24px;line-height:1.4;font-size:var(--type-label);margin:0}
 .form-field-optional{font-weight:500;color:hsl(var(--muted-foreground))}
 .form-field-help,.form-field-error{margin:0}
 .form-field-help{color:hsl(var(--muted-foreground))}
@@ -54,7 +57,8 @@
 footer:not([class]),.workspace .content-footer{color:hsl(var(--foreground)/.74)}
 
 /* ---- Shared FormSection / FormDisclosure (Staff, Onboarding, Clinic settings, Integrations) ---- */
-.form-section{grid-column:1/-1;min-width:0;margin:0;padding:12px 16px 16px;border:1px solid hsl(var(--border));border-radius:12px;background:hsl(var(--card))}
+.form-section{grid-column:1/-1;min-width:0;margin:0;padding:12px 16px 16px;border:var(--form-section-border,1px solid hsl(var(--border)));border-radius:var(--form-section-radius,12px);background:hsl(var(--card))}
+.app-dialog:not(.app-dialog-drawer){--form-section-border:0;--form-section-radius:0}
 .form-section+.form-section{margin-top:12px}
 .form-grid>.form-section+.form-section{margin-top:0}
 .form-section-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0 0 12px;padding:0 0 8px;border-bottom:1px solid hsl(var(--border)/.7)}
@@ -63,6 +67,16 @@ footer:not([class]),.workspace .content-footer{color:hsl(var(--foreground)/.74)}
 .form-section-actions{margin-left:auto;display:flex;gap:8px}
 .form-section-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,14rem),1fr));gap:12px 16px;align-items:start}
 .form-section-grid>:is(.wide,.full,.notice,:has(textarea),:has(.phone-input),:has(.address-fields)){grid-column:1/-1}
+/* Equivalent neighbours share label/value tracks even when labels wrap. Error
+ * rows grow independently of the controls and never disappear in hidden tabs. */
+@supports(grid-template-rows:subgrid){
+  .form-section-grid:has(>.form-field){row-gap:4px}
+  .form-section-grid>.form-field{display:grid;grid-template-rows:subgrid;grid-row:span 4;row-gap:4px}
+  .form-section-grid>.form-field>:is(.form-field-label,label){grid-row:1}
+  .form-section-grid>.form-field>:not(label):not(.form-field-label):not(.form-field-error):not(.form-field-help){grid-row:2;align-self:start}
+  .form-section-grid>.form-field>.form-field-error{grid-row:3}
+  .form-section-grid>.form-field>.form-field-help{grid-row:4}
+}
 .form-disclosure>summary{cursor:pointer;list-style:none;margin:0;border-bottom:0;padding:0}
 .form-disclosure>summary::-webkit-details-marker{display:none}
 .form-disclosure>summary h3::before{content:"";display:inline-block;width:8px;height:8px;margin-right:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
@@ -94,6 +108,12 @@ footer:not([class]),.workspace .content-footer{color:hsl(var(--foreground)/.74)}
 .et-form{display:grid;gap:12px}
 .guest-booking .form-grid,.booking-panel .form-grid{gap:12px 16px;align-items:start}
 .auth-card form,.auth-shell form{display:grid;gap:12px}
+.staff-verify-channel{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding-block:8px;min-width:0}
+.staff-verify-channel>div:first-child{flex:1 1 16rem;min-width:0;overflow-wrap:anywhere}
+.staff-verify-channel>form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 12px;flex-basis:100%;min-width:0}
+.staff-verify-channel>form>.form-field{flex:0 1 12rem}
+.staff-verify-channel>.field-error{flex-basis:100%}
+:is(.workspace,.app-dialog,.auth-card,.registration-card) input[autocomplete=one-time-code]{max-width:12ch;font-variant-numeric:tabular-nums}
 
 /* ---- Custom role editor: the Allowed Actions matrix needs a real working width ---- */
 .app-dialog.app-dialog-drawer:has(.cr-matrix){width:min(960px,calc(100vw - 32px));max-width:calc(100vw - 32px)}

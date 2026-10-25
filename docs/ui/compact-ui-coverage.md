@@ -1,5 +1,13 @@
 # Compact UI coverage and evidence
 
+## Current all-form presentation pass
+
+See [Forms and popups: current coverage](form-presentation-coverage.md) for the
+latest approved reference, page/inline/filter/auth/onboarding scope, source
+dispositions, role matrix, actual Chromium zoom, baseline failures and limits.
+This supersedes earlier Add Staff ordering/badge constraints and historical
+counts below; the older sections remain historical evidence, not current totals.
+
 ## How to read this record
 
 For the Clinic heading, Staff toolbar/table and Add Staff alignment checks,
@@ -8,12 +16,12 @@ distinguishes measured local baselines, intercepted rendered/payload checks,
 the pre-existing typecheck failure, and untested browser/deployment paths.
 
 `surface-inventory.json` is the exhaustive **source** ledger: 79 explicit or
-expanded route patterns, 169 TSX files with 1,480 field/action/link/overlay/form
+expanded route patterns, 169 TSX files with 1,556 field/action/link/overlay/form
 occurrences at the time of this pass. Each occurrence has a state profile,
 responsive target profile, source location and attributes. Dynamic hrefs remain
 expressions rather than invented destinations. Regenerate after changing JSX.
 
-This is not a claim that 1,480 independently rendered states were browser-tested.
+This is not a claim that 1,556 independently rendered states were browser-tested.
 The tables below distinguish shared-family evidence, observed scoped fixtures,
 and untested role/route combinations. A route that redirects is not evidence for
 the editor at its destination.

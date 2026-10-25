@@ -1,6 +1,7 @@
 import { HelpTip } from "./HelpTip";
 import { FormSection } from "./FormSection";
 import { FormActions } from "./FormActions";
+import { FormField } from "./FormField";
 import { useEffect, useRef, useState } from "react";
 import { PasswordInput } from "./PasswordInput";
 import { useAppDialogClose } from "./AppDialog";
@@ -52,21 +53,19 @@ export function IntegrationEditor({ provider, settings, onDone, onCancel, onDirt
       <label className="check-label"><input type="radio" name={`${provider}-source`} checked={mode === "environment"} onChange={() => setMode("environment")} /> Use server environment instead</label>
       </div></FormSection>
       <FormSection title={mode === "database" ? "Credentials" : "Server configuration"} grid={false}>
-      {mode === "database" ? <div className="cf-form"><div className="form-grid field-grid">{fields[provider].map(([key, label, type]) => <div key={key} className="form-field field-cell fw-md">
-        <label htmlFor={`integration-${key}`}>{label}</label>
+      {mode === "database" ? <div className="cf-form"><div className="form-grid field-grid">{fields[provider].map(([key, label, type]) => <FormField key={key} id={`integration-${key}`} label={label} className="field-cell fw-md">
         {type === "password" ? <SecretField id={`integration-${key}`} label={label} testId={`secret-${key}`} configured={settings.keys.find(item => item.key === key)?.status === "configured"} value={values[key] ?? ""} onChange={v => setValues(current => ({ ...current, [key]: v }))} /> : <input id={`integration-${key}`} name={key} type={type} autoComplete="off" spellCheck={false} maxLength={2048}
           value={values[key] ?? ""} placeholder={settings.keys.find(item => item.key === key)?.status === "configured" ? "Configured — leave blank to keep" : "Enter a value"}
           onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} />}
-      </div>)}</div></div> : <>
+      </FormField>)}</div></div> : <>
         <p role="note">This removes the saved website configuration. Email or SMS will stop working if the server environment is incomplete. It does not change the server’s .env file.</p>
         <label className="check-label"><input type="checkbox" required checked={confirmed} onChange={event => setConfirmed(event.target.checked)} /> I understand and want to use server configuration.</label>
       </>}
       </FormSection>
-      <FormSection title="Confirm identity" grid={false}><div className="form-field form-field-narrow">
-        <label htmlFor={`confirm-${provider}`}>Confirm your current Super Admin password</label>
+      <FormSection title="Confirm identity" grid={false}><FormField id={`confirm-${provider}`} label="Confirm your current Super Admin password" required className="form-field-narrow">
         <PasswordInput id={`confirm-${provider}`} autoComplete="current-password" required maxLength={1024}
           value={password} onChange={event => setPassword(event.target.value)} />
-      </div></FormSection>
+      </FormField></FormSection>
       <FormActions wide={false} onCancel={() => (guardedClose ? guardedClose() : onCancel())} busy={save.isPending} disabled={mode === "environment" && !confirmed} submitLabel="Save configuration" />
     </fieldset>
     {save.isError && <p role="alert">Configuration was not saved. Check your password, required fields and server encryption key. If another administrator changed settings, cancel, refresh and try again.</p>}

@@ -25,6 +25,7 @@ for(const [width,height] of [[390,844],[768,900],[1024,640],[1366,768],[1920,108
     const expectedHeight=width<768?44:40;
     expect((await text.boundingBox())!.height).toBe(expectedHeight);
     expect((await page.getByTestId("email-field").boundingBox())!.height).toBe(expectedHeight);
+    expect((await page.locator(".searchable-multi-select-control").first().boundingBox())!.height).toBe(expectedHeight);
     if(width>=768)expect(Math.abs((await text.boundingBox())!.y-(await page.getByTestId("email-field").boundingBox())!.y)).toBeLessThanOrEqual(1);
     const control=page.getByTestId("compact-switch");
     await control.scrollIntoViewIfNeeded();
@@ -73,6 +74,23 @@ for(const [width,height] of [[390,844],[768,900],[1024,640],[1366,768],[1920,108
     await page.keyboard.press("Escape");await expect(page.getByTestId("button-profile-menu")).toBeFocused();
   });
 }
+
+test("multi-select keeps long chips readable and keyboard selection/removal intact",async({page})=>{
+  await page.setViewportSize({width:390,height:844});await mount(page);
+  const trigger=page.locator("#compact-multiple").first();
+  await trigger.scrollIntoViewIfNeeded();await trigger.click();
+  await expectPopupBounds(page,".searchable-select-popup");
+  await page.locator(".searchable-select-popup").getByRole("option").first().click();
+  const field=page.locator(".searchable-multi-select-control").first();
+  expect((await field.boundingBox())!.height).toBeGreaterThan(44);
+  await page.keyboard.press("Escape");
+  await expectFormBounds(page);
+  await field.getByRole("button",{name:/Remove/}).click();
+  expect((await field.boundingBox())!.height).toBe(44);
+  await trigger.focus();await page.keyboard.press("Enter");
+  await expect(page.locator(".searchable-select-popup")).toBeVisible();
+  await page.keyboard.press("Escape");await expect(trigger).toBeFocused();
+});
 
 test("help families share dismissal, permit pointer travel and preserve unclipped text",async({page})=>{
   await page.setViewportSize({width:1024,height:640});await mount(page);

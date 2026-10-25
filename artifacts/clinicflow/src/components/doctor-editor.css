@@ -7,14 +7,15 @@
 .doctor-editor .form-section:not(.staff-assignment-row)>.form-section-grid>:is(.wide,.full,.notice,:has(textarea),:has(.address-fields)){grid-column:1/-1}
 .doctor-editor .form-field{min-width:0}
 .doctor-editor .form-field>.form-field-label{min-height:20px}
-.doctor-editor :is(input,select,textarea):not([type=checkbox],[type=radio]){min-height:40px;max-width:100%;box-sizing:border-box}
+.doctor-editor :is(input,select,textarea):not([type=checkbox],[type=radio]){min-height:var(--control-md);max-width:100%;box-sizing:border-box}
+@media(max-width:767px),(pointer:coarse){.doctor-editor :is(input,select):not([type=checkbox],[type=radio],[multiple]){min-height:var(--control-lg)}}
 .doctor-editor .form-field-narrow{max-width:none}
 
 /* Phone fits its container */
 .doctor-editor .phone-input,.doctor-editor .phone-input>*{min-width:0;max-width:100%}
 .doctor-editor .phone-input{display:flex;gap:8px;width:100%}
 .doctor-editor .phone-input input{flex:1 1 0;min-width:0;width:100%}
-.doctor-editor .phone-input>.searchable-select-field{flex:0 0 160px}
+.doctor-editor .phone-input>.searchable-select-field{flex:0 1 9rem;min-width:6.5rem}
 .doctor-editor .phone-input .searchable-select-control>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .doctor-editor .form-section-grid>:has(.phone-input){grid-column:auto}
 

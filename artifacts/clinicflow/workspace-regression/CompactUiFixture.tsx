@@ -4,6 +4,7 @@ import { PhoneInput } from "../src/components/PhoneInput";
 import { AddressFields, type AddressValue } from "../src/components/AddressFields";
 import { DateFormatInput, TimeFormatInput } from "../src/components/DateFormatInput";
 import { SearchableSelect } from "../src/components/SearchableSelect";
+import { SearchableMultiSelect } from "../src/components/SearchableMultiSelect";
 import { Switch } from "../src/components/ui/switch";
 import { HelpTip } from "../src/components/HelpTip";
 import { OverflowText } from "../src/components/OverflowText";
@@ -24,6 +25,7 @@ export function CompactUiFixture(){
   const [address,setAddress]=useState<AddressValue>({country:"IN",state:"Maharashtra",city:"Mumbai",address:"12 Fictional Road",pincode:"400080"});
   const [date,setDate]=useState("2026-10-23"),[time,setTime]=useState("09:30");
   const [selection,setSelection]=useState("long"),[errors,setErrors]=useState(false),[dialog,setDialog]=useState(false);
+  const [multiple,setMultiple]=useState<string[]>([]);
   const [drawer,setDrawer]=useState(false),[collapsed,setCollapsed]=useState(false),[disabled,setDisabled]=useState(false);
   const [readOnly,setReadOnly]=useState(false),[load,setLoad]=useState<"ready"|"loading"|"error">("ready");
   const [visible,setVisible]=useState(false),[busy,setBusy]=useState(false);
@@ -34,6 +36,7 @@ export function CompactUiFixture(){
     <FormField className="field-cell fw-xs" label="Count"><input type="number" defaultValue={20} disabled={disabled} readOnly={readOnly}/></FormField>
     <FormField className="field-cell fw-sm" label="Native select"><select disabled={disabled}><option>Short</option><option>{long}</option></select></FormField>
     <FormField className="field-cell fw-lg" label="Searchable selection"><SearchableSelect options={[{value:"long",label:long},{value:"short",label:"Short"}]} value={selection} onChange={setSelection} disabled={disabled} loading={load==="loading"} error={load==="error"?"Options could not be loaded. Retry safely.":undefined} onRetry={()=>setLoad("ready")}/></FormField>
+    <FormField id="compact-multiple" className="field-cell fw-lg" label="Searchable multiple"><SearchableMultiSelect options={[{value:"long",label:long},{value:"short",label:"Short"}]} value={multiple} onChange={setMultiple} disabled={disabled} loading={load==="loading"} error={load==="error"?"Options could not be loaded. Retry safely.":undefined} onRetry={()=>setLoad("ready")}/></FormField>
     <FormField className="field-cell fw-lg" label="Phone"><PhoneInput value={phone} onChange={setPhone} disabled={disabled} readOnly={readOnly}/></FormField>
     <FormField className="field-cell fw-sm" label="Date"><DateFormatInput value={date} onChange={setDate} disabled={disabled} readOnly={readOnly}/></FormField>
     <FormField className="field-cell fw-sm" label="Time"><TimeFormatInput value={time} onChange={setTime} disabled={disabled} readOnly={readOnly}/></FormField>

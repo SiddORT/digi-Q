@@ -30,6 +30,9 @@
 :is(.workspace,.app-dialog,.auth-card,.registration-card) textarea {
   height:auto; min-height:96px; max-width:100%; padding:8px 12px; line-height:1.5;
 }
+/* Container gap owns spacing for composed controls; bare legacy labels retain
+ * the native margin above. This applies equally inside and outside portals. */
+:is(.workspace,.app-dialog,.auth-card,.registration-card) :is(.form-field,.searchable-select-field,.searchable-multi-select-field,.derived-field,.address-compact,.password-input,.phone-input,.field-cell) :is(input:not([type]),input:is([type=text],[type=email],[type=password],[type=number],[type=tel],[type=url],[type=search],[type=date],[type=time],[type=datetime-local]),select:not([multiple])){margin-top:0}
 input:is([type=checkbox],[type=radio]) {
   display:inline-block; width:18px; height:18px; min-height:18px; max-width:18px;
   padding:0; margin:0; flex:0 0 18px; accent-color:var(--dq-blue); vertical-align:middle;
@@ -95,20 +98,28 @@ button:is(.dq-checkbox,.dq-radio)::after{content:"";position:absolute;inset:-13p
   .field-grid>.form-field.field-cell>.form-field-error{grid-row:3;margin:0}
   .field-grid>.form-field.field-cell>.form-field-help{grid-row:4;margin:0}
 }
+.password-input{display:block}
+.password-input>input{display:block;width:100%}
 .password-input>.password-toggle {height:var(--control-md);min-height:var(--control-md);bottom:0;display:inline-grid;place-items:center}
-:is(.workspace,.app-dialog) .password-input>.password-toggle{padding:0;width:40px;min-width:40px;border-radius:var(--radius-control)}
-:is(.workspace,.app-dialog) .password-input>input{padding-right:44px}
+:is(.workspace,.app-dialog,.auth-card,.registration-card) .password-input>.password-toggle{padding:0;width:40px;min-width:40px;border-radius:var(--radius-control)}
+:is(.workspace,.app-dialog,.auth-card,.registration-card) .password-input>input{padding-right:44px}
 .phone-input input{min-width:0}
 :is(.workspace,.app-dialog) button.icon-action{
   padding:0;width:32px;min-width:32px;height:32px;min-height:32px;gap:0;
 }
 .icon-action svg{width:16px;height:16px;flex-shrink:0}
-:is(.workspace,.app-dialog) button.searchable-select-clear{padding:0;gap:0;width:24px;height:24px;min-width:24px}
+:is(.workspace,.app-dialog,.auth-card,.registration-card) button.searchable-select-clear{position:relative;padding:0;gap:0;width:24px;height:24px;min-width:24px;min-height:24px}
+@media(pointer:coarse){.searchable-select-clear::after{content:"";position:absolute;inset:-10px}}
 :is(.workspace,.app-dialog) button.helptip-trigger{padding:0;width:24px;height:24px;min-height:24px;min-width:24px;border-radius:50%}
 /* Select and date/reveal actions align with the field family, not generic
  * workspace buttons. Their option lists retain independent row sizing. */
+.searchable-select-control,
 :is(.workspace,.app-dialog,.auth-card,.registration-card) .searchable-select-control{
   min-height:var(--control-md);padding-block:6px;line-height:1.4;
+}
+.searchable-multi-select-control,
+:is(.workspace,.app-dialog,.auth-card,.registration-card) .searchable-multi-select-control{
+  min-height:var(--control-md);height:auto;padding-block:4px;line-height:1.4;box-sizing:border-box;max-width:100%;
 }
 .dq-popover{max-width:calc(100vw - 16px);max-height:var(--radix-popover-content-available-height,80dvh);overflow-y:auto;overscroll-behavior:contain}
 .error-box{flex-wrap:wrap;align-items:center;gap:8px}
@@ -206,8 +217,9 @@ a.text-link:visited{color:#514185}
     height:var(--control-lg);min-height:var(--control-lg);font-size:16px;
   }
   :is(.wnav-link,.workspace .wnav-link,.profile-menu-panel [role^=menuitem],.row-menu-list [role=menuitem]){min-height:44px}
-  :is(.workspace,.app-dialog) .password-input>.password-toggle{height:44px;min-height:44px;width:44px}
-  :is(.workspace,.app-dialog,.auth-card,.registration-card) .searchable-select-control{min-height:44px}
+  :is(.workspace,.app-dialog,.auth-card,.registration-card) .password-input>.password-toggle{height:44px;min-height:44px;width:44px}
+  :is(.searchable-select-control,.searchable-multi-select-control),
+  :is(.workspace,.app-dialog,.auth-card,.registration-card) :is(.searchable-select-control,.searchable-multi-select-control){min-height:44px}
   :is(.workspace,.app-dialog) button.dq-select-trigger,button.dq-select-trigger{min-height:44px;height:44px}
   :is(.workspace,.app-dialog) button.icon-action{width:44px;min-width:44px;height:44px;min-height:44px}
   .form-actions :is(button,a.button),.workspace .form-actions :is(button,a.button){min-height:44px}

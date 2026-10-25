@@ -1,7 +1,8 @@
 # Reusable prompt: future popup and form refinement
 
-This is a prompt for a separately approved future pass, not authorization to
-change additional screens as part of the Add Staff refinement.
+The broader consistency pass has been approved: all page-level and inline forms,
+filters, authentication, onboarding and permitted-role popup consumers are in
+scope. This is not permission to redesign unrelated navigation, tables or content.
 
 ---
 
@@ -10,12 +11,17 @@ controls, compact spacing tokens and consolidated CSS conventions. Do not
 introduce a new visual design or broadly override global styles.
 
 Before editing, inventory creation, editing, onboarding, hidden tabs and
-role-specific variants. Agree the exact screens in scope. Preserve their
+role-specific variants, including linked/public entrypoints. Preserve their
 permissions, data-loading contracts, saved-name hydration, validation, passwords,
 dirty/discard guards, save behavior and navigation.
 
-Put prerequisite choices before the details that depend on them, in both DOM
-and keyboard order. Use short, everyday headings. Remove redundant introductions.
+For Add Staff, follow the selected screenshot: Account Details above Work
+Assignment in both DOM and keyboard order, paired name/email and password inputs,
+a compact compound mobile row and bottom-right Cancel plus the role-specific Add
+action. Keep account status and required controls even when absent from the
+reference. This supersedes the earlier assignment-first ordering; the diagnostic
+screenshot does not reverse it. Other workflows retain their purpose-specific
+order. Use short, everyday headings. Remove redundant introductions.
 Align related labels and control/value areas where space permits. Keep read-only
 values clearly identifiable and display real names rather than internal IDs;
 allow long values to wrap.

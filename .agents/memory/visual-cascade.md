@@ -156,10 +156,18 @@ Place the create-time Active/Inactive toggle at the top-right of Account Details
 not in its own row between sections; keep the popup spacing compact.
 
 **Why:** The user explicitly requested this popup arrangement in their supplied image,
-then requested moving the toggle and further reducing the spacing.
+then requested moving the toggle and further reducing the spacing. The later
+diagnostic screenshot does not reverse Account Details-first ordering.
 
 **How to apply:** Preserve role permissions and staff-owned contact verification;
 the reference is a presentation requirement, not permission to create staff or send messages.
+The approved consistency scope includes all page-level and inline form controls,
+filters, authentication, onboarding and permitted-role/linked popup entrypoints,
+not only Clinic Staff or overlays. Preserve workflow-specific fields and order;
+the screenshot's staff ordering is not a universal form sequence. Verification
+statuses may share the label or a reserved field row without narrowing paired
+inputs; neither the old helper-only placement nor half-grid mobile width is an
+acceptance constraint.
 
 Shared controls rendered through a dialog portal need their style owner to cover
 dialog ancestry, not just workspace ancestry.

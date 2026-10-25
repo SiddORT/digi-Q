@@ -877,8 +877,8 @@
   .workspace .topbar { padding-inline:var(--space-4); }
   .workspace .form-grid, .app-dialog .form-grid { grid-template-columns: 1fr; }
 }
-.phone-input{grid-template-columns:minmax(9rem,40%) minmax(0,1fr);align-items:start}
-@media (max-width:480px){.phone-input{grid-template-columns:1fr}}
+.phone-input{grid-template-columns:minmax(6.5rem,9rem) minmax(0,1fr);align-items:start}
+@media (max-width:480px){.phone-input{grid-template-columns:minmax(5.5rem,7rem) minmax(0,1fr)}}
 
 /* Compact workspace bars (schedules, settings scope, hints). Counts/state left, actions right. */
 .section-nav{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 4px;flex:0 1 auto;min-width:0}

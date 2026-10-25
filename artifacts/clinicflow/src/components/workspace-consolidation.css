@@ -24,10 +24,10 @@
 .staff-account-fields{display:contents}
 .staff-account-fields.is-create{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;align-items:start}
 .staff-account-mobile{grid-column:1/-1}
-/* The compound mobile control occupies exactly the left account column. Status
-   lives below each input as associated helper text, never taking input width. */
-.staff-account-mobile>.phone-input{width:calc((100% - 12px)/2);grid-template-columns:9rem minmax(0,1fr);align-items:stretch}
-.staff-verify{display:inline-flex;align-items:center;gap:8px;flex:none;white-space:nowrap}
+/* Full-row compound mobile; associated status reserves label space instead of
+   reducing one of the paired account inputs or creating an empty helper row. */
+.staff-account-mobile>.phone-input{width:100%;grid-template-columns:minmax(6.5rem,8rem) minmax(0,1fr);align-items:stretch}
+.staff-verify{display:inline-flex;align-items:center;gap:6px;flex:none;white-space:nowrap}
 .staff-verify .badge{color:var(--feedback-error-fg);background:var(--feedback-error-bg)}
 .staff-password-help{grid-column:1/-1;margin-top:-4px}
 .staff-create-section .staff-role-picker{max-width:none}
@@ -60,5 +60,17 @@
 @media (max-width:767px),(pointer:coarse){.staff-create{--staff-value-height:44px}}
 @media (max-width:767px){
   .staff-account-fields.is-create,.staff-assignment-row .form-section-grid{grid-template-columns:minmax(0,1fr)}
-  .staff-account-mobile>.phone-input{width:100%}
+  .staff-account-mobile>.phone-input{width:100%;grid-template-columns:minmax(5.5rem,max-content) minmax(0,1fr)}
+}
+
+/* Create account grid: paired fields share label/control/message tracks so a wrapped
+   label or status badge cannot push one input below its neighbour. */
+@supports(grid-template-rows:subgrid){
+  .staff-account-fields.is-create{grid-auto-rows:auto;row-gap:0}
+  .staff-account-fields.is-create>.form-field{display:grid;grid-template-rows:subgrid;grid-row:span 4;row-gap:4px;margin-bottom:8px}
+  .staff-account-fields.is-create>.form-field>.form-field-label{grid-row:1}
+  .staff-account-fields.is-create>.form-field>:not(.form-field-label):not(.form-field-error):not(.form-field-help){grid-row:2;align-self:start}
+  .staff-account-fields.is-create>.form-field>.form-field-error{grid-row:3}
+  .staff-account-fields.is-create>.form-field>.form-field-help{grid-row:4}
+  .staff-account-fields.is-create>.staff-password-help{grid-row:auto}
 }

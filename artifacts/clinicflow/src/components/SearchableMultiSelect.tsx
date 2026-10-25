@@ -133,7 +133,7 @@ export function SearchableMultiSelect({
   };
 
   return (
-    <div className="searchable-multi-select-field flex min-w-0 max-w-full flex-col gap-1.5 w-full">
+    <div className="searchable-multi-select-field flex min-w-0 max-w-full flex-col gap-1 w-full">
       {label && (
         <label htmlFor={controlId} className="text-sm font-semibold text-foreground">
           {label} {required && <span className="text-destructive">*</span>}
@@ -142,7 +142,7 @@ export function SearchableMultiSelect({
       <Popover open={open} onOpenChange={next => { setOpen(next); if (!next) localPages.reset(); }}>
         <div
           className={cn(
-            "searchable-multi-select-control relative flex min-w-0 max-w-full min-h-[43px] w-full items-center justify-between rounded-lg border border-border bg-white px-2 py-1.5 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15",
+            "searchable-multi-select-control relative flex min-w-0 max-w-full min-h-[var(--control-md)] w-full items-center justify-between rounded-lg border border-border bg-white px-2 py-1.5 text-sm shadow-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15",
             disabled && "opacity-50 cursor-not-allowed bg-slate-50",
             error && "border-destructive focus-within:border-destructive focus-within:ring-destructive/15"
           )}

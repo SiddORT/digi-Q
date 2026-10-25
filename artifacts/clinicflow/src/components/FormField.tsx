@@ -18,6 +18,8 @@ export interface FormFieldProps {
   /** Shows "(optional)" after the label. Ignored when required. */
   optional?: boolean;
   helper?: ReactNode;
+  /** Passive status shown beside the label (wraps below on narrow widths); associated with the control. */
+  status?: ReactNode;
   error?: string;
   /** InfoTooltip text shown next to the label. */
   info?: string;
@@ -27,12 +29,13 @@ export interface FormFieldProps {
 }
 
 /** Label above, * / (optional), helper, inline error with aria-invalid + aria-describedby (spec §7.2). */
-export function FormField({ label, id, required, optional, helper, error, info, className, children }: FormFieldProps) {
+export function FormField({ label, id, required, optional, helper, status, error, info, className, children }: FormFieldProps) {
   const auto = useId();
   const controlId = id ?? `field-${auto}`;
   const helpId = helper ? `${controlId}-help` : undefined;
+  const statusId = status ? `${controlId}-status` : undefined;
   const errorId = error ? `${controlId}-error` : undefined;
-  const describedBy = [errorId, helpId].filter(Boolean).join(" ") || undefined;
+  const describedBy = [errorId, statusId, helpId].filter(Boolean).join(" ") || undefined;
   const a11y: FieldA11yProps = {
     id: controlId,
     "aria-labelledby": `${controlId}-label`,
@@ -51,6 +54,7 @@ export function FormField({ label, id, required, optional, helper, error, info, 
           {required ? <span className="form-field-required" aria-hidden="true"> *</span> : optional ? <span className="form-field-optional"> (optional)</span> : null}
         </label>
         {info && <HelpTip text={info} />}
+        {status && <span id={statusId} className="form-field-status">{status}</span>}
       </span>
       {control}
       {error && <p id={errorId} className="form-field-error" role="alert">{error}</p>}

@@ -1,5 +1,16 @@
 # Clinic workspace and Add Staff alignment evidence
 
+## Latest selected-reference update
+
+The current Add Staff layout is Account Details **before** Work Assignment in
+visual and keyboard order, with equal paired controls, a full-row compound
+mobile control and associated status badges beside labels. The previous
+half-grid mobile/helper-only badge assumptions below are historical, not current
+acceptance requirements. See [current all-form evidence](form-presentation-coverage.md)
+for the refreshed inventory, before/after captures, passing role checks, actual
+Chromium 200% zoom and remaining browser/route limits. The earlier Vite peer-type
+failure below did not reproduce in this environment; no dependencies were changed.
+
 ## Scope and limits
 
 Local Chromium checks use fictional intercepted records, never live staff or
