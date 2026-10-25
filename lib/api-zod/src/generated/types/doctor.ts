@@ -23,11 +23,13 @@
 import type { DoctorInput } from './doctorInput';
 import type { DoctorInvitationStatus } from './doctorInvitationStatus';
 import type { SecurityChannelOutcomes } from './securityChannelOutcomes';
+import type { StaffCreationNotice } from './staffCreationNotice';
 
 export type Doctor = DoctorInput & ({
   id: string;
   userId: string;
   code: string;
+  staffCreationNotice?: StaffCreationNotice;
   managingAdminId: string;
   managingAdminName: string;
   invitationStatus: DoctorInvitationStatus;
@@ -40,6 +42,7 @@ export type Doctor = DoctorInput & ({
   id: string;
   userId: string;
   code: string;
+  staffCreationNotice?: StaffCreationNotice;
   managingAdminId: string;
   managingAdminName: string;
   invitationStatus: DoctorInvitationStatus;

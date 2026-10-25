@@ -1,12 +1,14 @@
 import { eventVariables } from "@workspace/api-zod/notification-variable-contract";
 /** Security events are platform-owned and bypass optional operational gates. */
 export const securityEvents = ["clinic_registration_otp", "patient_email_otp", "registration_mobile_otp",
-  "doctor_setup", "staff_setup", "password_setup_complete"] as const;
+  "doctor_setup", "staff_setup", "password_setup_complete", "staff_email_otp", "staff_mobile_otp"] as const;
 export type SecurityEvent = typeof securityEvents[number];
 export const isSecurityEvent = (event: string): event is SecurityEvent =>
   (securityEvents as readonly string[]).includes(event);
 export const requiredEvent = (event: string) => isSecurityEvent(event) || event === "patient_login_otp";
 export const securityTitles: Record<SecurityEvent, string> = {
+  staff_email_otp: "Staff email verification",
+  staff_mobile_otp: "Staff mobile verification",
   clinic_registration_otp: "Clinic Admin registration verification",
   patient_email_otp: "Patient email verification",
   registration_mobile_otp: "Optional registration mobile verification",
@@ -18,6 +20,11 @@ export function securityVariables(event: SecurityEvent) {
   return eventVariables(event);
 }
 export function securityDefault(event: SecurityEvent, sms = false) {
+  if (event === "staff_email_otp" || event === "staff_mobile_otp") return {
+    enabled: true, subject: securityTitles[event],
+    body: "Your Digi-Q verification code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share it.",
+    prefix: "", footer: "", logoUrl: "",
+  };
   const otp = event.endsWith("_otp");
   const body = otp ? `Your DigiQ ${event === "registration_mobile_otp" ? "mobile" : "email"} verification code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share this code.`
     : event === "password_setup_complete" ? "Hello {{recipient_name}}, your DigiQ {{role_name}} password setup is complete. No password is included in this message. If you did not do this, contact your administrator."

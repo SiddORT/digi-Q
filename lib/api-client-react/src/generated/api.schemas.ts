@@ -864,6 +864,10 @@ export const EventTemplateTestInputEvent = {
   doctor_setup: 'doctor_setup',
   staff_setup: 'staff_setup',
   password_setup_complete: 'password_setup_complete',
+  staff_email_otp: 'staff_email_otp',
+  staff_mobile_otp: 'staff_mobile_otp',
+  staff_created_admin: 'staff_created_admin',
+  staff_welcome: 'staff_welcome',
 } as const;
 
 export type EventTemplateTestInputRecipientGroup = typeof EventTemplateTestInputRecipientGroup[keyof typeof EventTemplateTestInputRecipientGroup];
@@ -937,6 +941,10 @@ export const EventControlInputEvent = {
   doctor_setup: 'doctor_setup',
   staff_setup: 'staff_setup',
   password_setup_complete: 'password_setup_complete',
+  staff_email_otp: 'staff_email_otp',
+  staff_mobile_otp: 'staff_mobile_otp',
+  staff_created_admin: 'staff_created_admin',
+  staff_welcome: 'staff_welcome',
 } as const;
 
 export type EventControlInputRecipient = typeof EventControlInputRecipient[keyof typeof EventControlInputRecipient];
@@ -1004,6 +1012,10 @@ export const NotificationTemplateSaveEvent = {
   doctor_setup: 'doctor_setup',
   staff_setup: 'staff_setup',
   password_setup_complete: 'password_setup_complete',
+  staff_email_otp: 'staff_email_otp',
+  staff_mobile_otp: 'staff_mobile_otp',
+  staff_created_admin: 'staff_created_admin',
+  staff_welcome: 'staff_welcome',
 } as const;
 
 export type NotificationTemplateSaveMode = typeof NotificationTemplateSaveMode[keyof typeof NotificationTemplateSaveMode];
@@ -2007,6 +2019,14 @@ export const Role = {
 } as const;
 
 export interface UserInput {
+  requestId?: string;
+  /**
+     * @minLength 8
+     * @maxLength 1024
+     */
+  password?: string;
+  /** @maxLength 1024 */
+  confirmPassword?: string;
   /**
      * ISO-2 or name; new entries default to IN
      * @maxLength 100
@@ -2045,6 +2065,13 @@ export const UserInvitationStatus = {
   notRequired: 'notRequired',
 } as const;
 
+export interface StaffCreationNotice {
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  sms?: string | null;
+}
+
 export type User = UserInput & ({
   id: string;
   /** @nullable */
@@ -2055,6 +2082,7 @@ export type User = UserInput & ({
   setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** Whether this staff record has a local password configured. */
   passwordEnabled?: boolean;
+  staffCreationNotice?: StaffCreationNotice;
   /** @nullable */
   createdAt: string | null;
   /** @nullable */
@@ -2069,6 +2097,7 @@ export type User = UserInput & ({
   setupNotificationOutcomes?: SecurityChannelOutcomes;
   /** Whether this staff record has a local password configured. */
   passwordEnabled?: boolean;
+  staffCreationNotice?: StaffCreationNotice;
   /** @nullable */
   createdAt: string | null;
   /** @nullable */
@@ -2506,7 +2535,67 @@ export interface Identity {
   needsOnboarding: boolean;
 }
 
+export interface StaffContactStatus {
+  email: string;
+  /** @nullable */
+  mobile: string | null;
+  emailVerified: boolean;
+  mobileVerified: boolean;
+  promptRequired: boolean;
+  welcomeEmailStatus?: string;
+  welcomeSmsStatus?: string;
+}
+
+export type StaffContactRequestChannel = typeof StaffContactRequestChannel[keyof typeof StaffContactRequestChannel];
+
+
+export const StaffContactRequestChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export interface StaffContactRequest {
+  channel: StaffContactRequestChannel;
+}
+
+export type StaffContactConfirmationChannel = typeof StaffContactConfirmationChannel[keyof typeof StaffContactConfirmationChannel];
+
+
+export const StaffContactConfirmationChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export interface StaffContactConfirmation {
+  channel: StaffContactConfirmationChannel;
+  /** @maxLength 100 */
+  challengeId: string;
+  /** @pattern ^\d{6}$ */
+  code: string;
+}
+
+export interface StaffContactChallenge {
+  challengeId: string;
+  expiresAt: string;
+  resendAfterSeconds: number;
+}
+
+export interface StaffContactVerified {
+  verified: boolean;
+}
+
+export interface StaffContactDeferred {
+  ok: boolean;
+}
+
 export type ClinicAdminOnboardingInputAdmin = {
+  /**
+     * @minLength 8
+     * @maxLength 1024
+     */
+  password?: string;
+  /** @maxLength 1024 */
+  confirmPassword?: string;
   /** @minLength 1 */
   fullName: string;
   email: string;
@@ -2600,6 +2689,14 @@ export interface OtpResult {
 }
 
 export interface DoctorInput {
+  requestId?: string;
+  /**
+     * @minLength 8
+     * @maxLength 1024
+     */
+  password?: string;
+  /** @maxLength 1024 */
+  confirmPassword?: string;
   /**
      * ISO-2 or name; new entries default to IN
      * @maxLength 100
@@ -2653,6 +2750,7 @@ export type Doctor = DoctorInput & ({
   id: string;
   userId: string;
   code: string;
+  staffCreationNotice?: StaffCreationNotice;
   managingAdminId: string;
   managingAdminName: string;
   invitationStatus: DoctorInvitationStatus;
@@ -2665,6 +2763,7 @@ export type Doctor = DoctorInput & ({
   id: string;
   userId: string;
   code: string;
+  staffCreationNotice?: StaffCreationNotice;
   managingAdminId: string;
   managingAdminName: string;
   invitationStatus: DoctorInvitationStatus;

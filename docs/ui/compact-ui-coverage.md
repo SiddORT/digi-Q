@@ -168,3 +168,39 @@ The fixture now sets the viewport before mounting, waits for fonts and permits
 switch shape, enabled state and contained-thumb assertions are unchanged.
 This is a fractional-pixel fixture correction supported by original-source
 evidence, not acceptance of a geometry regression.
+
+### Staff account unification (task 239, frontend)
+
+Inventory regenerated with `node scripts/compact-ui-inventory.mjs` (source inventory only).
+Run: `node --test src/staff-account.test.mjs src/staff-input.test.mjs src/staff-controls.test.mjs` (19 passing) and `tsc --noEmit`.
+Changed surfaces: Add Staff (create fields, no create tabs/inherited panel), admin onboarding
+password fields, Profile contact verification, first-login prompt.
+Fictional browser fixtures verified doctor/receptionist password mismatch focus,
+blocked invalid writes, valid create payloads with credentials/request identity,
+fixed clinic/location context, password-ready status without setup/resend, and
+password absence from browser storage. Separate explicit email/SMS requests,
+cooldown-disabled resend, confirmations, Verified states, deferral and Profile
+access were exercised; no automatic OTP request occurred.
+
+Two rendered defects were found and corrected: the sidebar-free admin form had
+occupied the public wizard's 240px sidebar column, and uncontrolled password
+inputs did not update their checklist. `node scripts/staff-account-layout-snapshot.mjs`
+confirms the fixes: admin widths 880/880/706.56/366px at viewports
+1366/1024/768/390px, no document overflow, all three password requirements update
+then clear, and no password enters storage. Narrow context includes touch support.
+Screenshots and geometry are generated under `generated-artifacts/staff-accounts/`.
+
+No shared control family was replaced, no retired selector was restored and no
+global override was added. The only registration layout rule is scoped to the
+admin single-page modifier; the public sidebar wizard remains unchanged.
+Clinic Details shell/section structure and Notifications presentation were not
+modified outside the explicitly added staff functionality and event metadata.
+
+**Evidence limits:** browser roles and requests were fictional/intercepted, not
+real staff authentication. The admin empty-draft validation was exercised, while
+its successful account/clinic/consulting-owner save was proved at the real API
+against a disposable database rather than by completing the whole browser form.
+200% zoom, full keyboard/touch traversal, arbitrary long-label permutations and
+an independent rendered comparison of unchanged Clinic Details/Notifications
+were not exhaustively repeated. Existing merged semantic-control acceptance
+checks remain the baseline. No UAT deployment or live delivery is implied.

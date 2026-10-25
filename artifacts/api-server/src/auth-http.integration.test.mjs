@@ -96,6 +96,8 @@ before(async () => {
         export const db = globalThis.nativeAuthDb;
       `, resolveDir: root }));
       b.onResolve({ filter: /^@workspace\/api-zod$/ }, () => ({ path: resolve(root, "../../../lib/api-zod/src/index.ts") }));
+      b.onResolve({ filter: /^@workspace\/api-zod\/(public-page|public-website)$/ }, args => ({ path: resolve(root, `../../../lib/api-zod/src/${args.path.split("/").pop()}.ts`) }));
+      b.onResolve({ filter: /^@workspace\/public-pages$/ }, () => ({ path: resolve(root, "../../../lib/public-pages/src/index.ts") }));
       b.onResolve({ filter: /^nodemailer$/ }, () => ({ path: "mail", namespace: "isolated-mail" }));
       b.onLoad({ filter: /.*/, namespace: "isolated-mail" }, () => ({ contents: `
         export default { createTransport() { return { async sendMail(message) {

@@ -34,8 +34,10 @@ identityRouter.post("/onboarding", async (req, res) => {
 identityRouter.patch("/me", async (req, res) => {
   const user = await requireUser(req), body = parse(z.UpdateMeBody, req.body);
   await db.transaction(async tx => {
-    const [account] = await tx.select().from(users).where(eq(users.id,user.id));
-    await change(users, user.id, { ...(body.fullName ? { fullName: body.fullName } : {}), ...(body.mobile !== undefined ? { mobile: body.mobile } : {}), data: { ...account.data, photoUrl: body.photoUrl ?? user.photoUrl } }, tx);
+    const [account] = await tx.select().from(users).where(eq(users.id,user.id)).for("update");
+    const mobileChanged = body.mobile !== undefined && body.mobile !== account.mobile;
+    if (mobileChanged) await tx.execute(sql`update auth_challenges set consumed_at=now(),data='{}'::jsonb where user_id=${user.id} and purpose='staff-contact:sms'`);
+    await change(users, user.id, { ...(body.fullName ? { fullName: body.fullName } : {}), ...(body.mobile !== undefined ? { mobile: body.mobile } : {}), data: { ...account.data, photoUrl: body.photoUrl ?? user.photoUrl, ...(mobileChanged ? { staffMobileProof: null } : {}) } }, tx);
     if (user.patientId) {
       const [p] = await tx.select().from(patients).where(eq(patients.id, user.patientId));
       await change(patients, p.id, { data: { ...p.data, ...(body.fullName ? { fullName: body.fullName } : {}) }, ...(body.mobile !== undefined ? { mobile: body.mobile, mobileVerified: body.mobile === p.mobile && p.mobileVerified } : {}) }, tx);

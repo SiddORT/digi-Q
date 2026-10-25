@@ -13,18 +13,20 @@ export interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputEl
 
 /** Password field with an accessible Eye/EyeOff visibility toggle (spec §7.1). Autocomplete is preserved. */
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(function PasswordInput(
-  { showChecklist, visibilityLabel = "password", className, value, ...props }, ref,
+  { showChecklist, visibilityLabel = "password", className, value, onChange, ...props }, ref,
 ) {
   const [visible, setVisible] = useState(false);
   const generatedId = useId();
   const inputId = props.id ?? `secret-${generatedId}`;
   useEffect(() => { setVisible(false); }, [props.name]);
   useEffect(() => { if (value === "") setVisible(false); }, [value]);
-  const text = typeof value === "string" ? value : "";
+  // Uncontrolled (react-hook-form register) inputs never pass value; track what the user types.
+  const [typed, setTyped] = useState("");
+  const text = typeof value === "string" ? value : typed;
   return (
     <>
       <div className="password-input">
-        <input ref={ref} {...props} id={inputId} value={value} type={visible ? "text" : "password"} className={className} />
+        <input ref={ref} {...props} onChange={event => { setTyped(event.target.value); onChange?.(event); }} id={inputId} value={value} type={visible ? "text" : "password"} className={className} />
         <button type="button" className="password-toggle" onClick={() => setVisible((v) => !v)}
           onMouseDown={event => event.preventDefault()}
           aria-label={`${visible ? "Hide" : "Show"} ${visibilityLabel}`} aria-pressed={visible}

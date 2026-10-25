@@ -38,4 +38,8 @@ export const NotificationTemplateSaveEvent = {
   doctor_setup: 'doctor_setup',
   staff_setup: 'staff_setup',
   password_setup_complete: 'password_setup_complete',
+  staff_email_otp: 'staff_email_otp',
+  staff_mobile_otp: 'staff_mobile_otp',
+  staff_created_admin: 'staff_created_admin',
+  staff_welcome: 'staff_welcome',
 } as const;

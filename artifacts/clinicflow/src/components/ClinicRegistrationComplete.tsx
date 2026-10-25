@@ -7,17 +7,19 @@ import { Logo } from "../App";
 import { ActionLabel } from "./ActionLabel";
 import { usePublicWebsite, PublicWebsiteStatus, PublicWebsiteLink } from "../lib/public-website";
 import { PageDescription } from "./PageDescription";
+import { noticeLabel } from "../lib/staff-account";
 
-export function ClinicRegistrationComplete({ result, invitationStatus }: { result: Pick<api.ClinicSettingsResult, "clinic" | "doctorId"> & { branches?: api.Branch[] }; invitationStatus?: string }) {
+export function ClinicRegistrationComplete({ result, invitationStatus, notice }: { result: Pick<api.ClinicSettingsResult, "clinic" | "doctorId"> & { branches?: api.Branch[] }; invitationStatus?: string; notice?: { email?: string | null; sms?: string | null } }) {
   const client = useQueryClient();
   const site = usePublicWebsite();
   const linked = (result.branches || []).filter(branch => branch.linkedSchedule?.enabled);
   return <div className="clinic-registration"><Logo/><main className="registration-card">
+    {notice && <p className="muted small" data-testid="status-creation-notice">Your notice: email {noticeLabel(notice.email).toLowerCase()}; SMS {noticeLabel(notice.sms).toLowerCase()}.</p>}
     <span className="eyebrow">CLINIC CREATED · {!result.branches || result.doctorId ? "Review Saved Configuration" : "Doctor Sessions Required"}</span>
     <h1>{result.clinic.name} is registered.</h1>
     <PageDescription text="Review your saved clinic setup before sharing booking links." help="Open clinic configuration to review the timetable. Your doctor profile and Clinic Admin access use the same account; no role switch or extra login is needed." label="About your saved clinic"/>
     <p className="notice">{!result.branches ? "Check the saved timetable and booking readiness." : linked.length ? `Linked doctor sessions saved for ${linked.length} location(s); opening hours are your consultation timetable. Check a future date before sharing the QR; capacity and booking rules still apply.` : result.doctorId ? "Check saved consultation sessions and a future date before sharing the QR; opening hours alone do not make appointments bookable." : "Assign a doctor and configure sessions before patients can book."}</p>
-    {invitationStatus && <p role="status" className={invitationStatus === "failed" ? "error-box" : "notice"}>{invitationStatus === "sent" ? "The provider accepted the account invitation email. Inbox delivery is not confirmed." : invitationStatus === "failed" ? "The clinic was created, but the invitation outcome is unavailable. Check the provider before requesting another link from Staff management." : "No new account invitation was required."}</p>}
+    {invitationStatus && <p role="status" className={invitationStatus === "failed" ? "error-box" : "notice"}>{invitationStatus === "sent" ? "The provider accepted the account invitation email. Inbox delivery is not confirmed." : invitationStatus === "failed" ? "The clinic was created, but the invitation outcome is unavailable. Check the provider before requesting another link from Staff management." : invitationStatus === "notRequired" ? "Saved. The administrator account is active and can sign in with its email and password." : "No new account invitation was required."}</p>}
     <div className="public-clinic-actions registration-complete-actions">
       <Link className="button" href={clinicWorkspaceHref(result.clinic.id)} onClick={() => void client.invalidateQueries()} data-testid="registration-configure-sessions"><ActionLabel>{result.doctorId ? "Review clinic configuration" : "Complete booking setup"}</ActionLabel></Link>
       <Link className="button secondary" href="/admin/dashboard" onClick={() => void client.invalidateQueries()} data-testid="registration-open-workspace"><ActionLabel>Open Workspace</ActionLabel></Link>

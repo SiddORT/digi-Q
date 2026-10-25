@@ -30,7 +30,7 @@
 - [Signed-in directory reuse](signed-in-directory-reuse.md) — share bounded reads; complete catalogs need proven scope, synchronized freshness, and ordinary saved-label fallback.
 - [Dropdown readiness](dropdown-readiness-contract.md) — app-wide permitted first-page loading, including lazy owners; no arbitrary defaults or broader directory downloads.
 - [Selected label boundary](selected-label-boundary.md) — disabled controls still hydrate names; retained text belongs to its exact ID and actor/scope, never selection eligibility.
-- [Staff invitation boundary](staff-invitation-boundary.md) — preflight configuration before creation; post-commit email failure returns the saved profile for explicit resend.
+- [Staff account boundary](staff-invitation-boundary.md) — email/password direct creation is delivery-independent; staff own separate contact proofs; legacy invitations retain recovery.
 - [Public directory sharing](public-directory-reuse.md) — shared observed queries preserve guest cancellation; automatic defaults use only current unsearched first-page authority.
 - [Query observer tests](query-observer-tests.md) — raw observers need result recomputation to model React's optimistic in-flight render state.
 - [Patient profile visibility](patient-profile-visibility.md) — registration grants scoped doctor profile visibility, not clinical records, documents, or create/edit permissions.

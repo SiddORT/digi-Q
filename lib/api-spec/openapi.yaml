@@ -23,6 +23,52 @@ servers:
 security:
   - NativeSession: []
 paths:
+  /staff-verification:
+    get:
+      operationId: getStaffVerification
+      responses:
+        "200":
+          description: Current staff-owned contact verification status.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffContactStatus" }
+  /staff-verification/request:
+    post:
+      operationId: requestStaffContactCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffContactRequest" }
+      responses:
+        "200":
+          description: Code accepted for delivery; inbox receipt is not confirmed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffContactChallenge" }
+  /staff-verification/confirm:
+    post:
+      operationId: confirmStaffContactCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffContactConfirmation" }
+      responses:
+        "200":
+          description: Contact verified.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffContactVerified" }
+  /staff-verification/defer:
+    post:
+      operationId: deferStaffVerification
+      responses:
+        "200":
+          description: Prompt deferred; controls remain available in Profile.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffContactDeferred" }
   /public/website-config:
     get:
       operationId: getPublicWebsiteConfig
@@ -2300,7 +2346,7 @@ components:
       required: [channel, event, recipientGroup, revision, content, values]
       properties:
         channel: { type: string, enum: [email, sms] }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete, staff_email_otp, staff_mobile_otp, staff_created_admin, staff_welcome] }
         recipientGroup: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
         revision: { type: integer, minimum: 0 }
@@ -2322,7 +2368,7 @@ components:
       required: [channel, event, recipient, revision, enabled, confirmed]
       properties:
         channel: { type: string, enum: [email, sms] }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete, staff_email_otp, staff_mobile_otp, staff_created_admin, staff_welcome] }
         recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
         revision: { type: integer, minimum: 0 }
@@ -2359,7 +2405,7 @@ components:
         channel: { type: string, enum: [email, sms] }
         recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete, staff_email_otp, staff_mobile_otp, staff_created_admin, staff_welcome] }
         revision: { type: integer, minimum: 0 }
         mode: { type: string, enum: [draft, publish, reset] }
         content: { $ref: "#/components/schemas/NotificationTemplateContent" }
@@ -3121,10 +3167,58 @@ components:
         doctorId: { type: [string, "null"] }
         patientId: { type: [string, "null"] }
         needsOnboarding: { type: boolean }
+    StaffCreationNotice:
+      type: object
+      properties:
+        email: { type: [string, "null"] }
+        sms: { type: [string, "null"] }
+    StaffContactStatus:
+      type: object
+      required: [email, mobile, emailVerified, mobileVerified, promptRequired]
+      properties:
+        email: { type: string }
+        mobile: { type: [string, "null"] }
+        emailVerified: { type: boolean }
+        mobileVerified: { type: boolean }
+        promptRequired: { type: boolean }
+        welcomeEmailStatus: { type: string }
+        welcomeSmsStatus: { type: string }
+    StaffContactRequest:
+      type: object
+      required: [channel]
+      properties:
+        channel: { type: string, enum: [email, sms] }
+    StaffContactConfirmation:
+      type: object
+      required: [channel, challengeId, code]
+      properties:
+        channel: { type: string, enum: [email, sms] }
+        challengeId: { type: string, maxLength: 100 }
+        code: { type: string, pattern: '^\d{6}$' }
+    StaffContactChallenge:
+      type: object
+      required: [challengeId, expiresAt, resendAfterSeconds]
+      properties:
+        challengeId: { type: string }
+        expiresAt: { type: string, format: date-time }
+        resendAfterSeconds: { type: integer }
+    StaffContactVerified:
+      type: object
+      required: [verified]
+      properties:
+        verified: { type: boolean }
+    StaffContactDeferred:
+      type: object
+      required: [ok]
+      properties:
+        ok: { type: boolean }
     UserInput:
       type: object
       required: [fullName, email, role]
       properties:
+        requestId: { type: string, format: uuid, writeOnly: true }
+        password: { type: string, writeOnly: true, minLength: 8, maxLength: 1024 }
+        confirmPassword: { type: string, writeOnly: true, maxLength: 1024 }
         country: { type: string, maxLength: 100, description: "ISO-2 or name; new entries default to IN" }
         state: { type: string, maxLength: 100 }
         city: { type: string, maxLength: 100 }
@@ -3150,6 +3244,7 @@ components:
             invitationStatus: { type: string, enum: [sent, failed, notRequired] }
             setupNotificationOutcomes: { $ref: "#/components/schemas/SecurityChannelOutcomes" }
             passwordEnabled: { type: boolean, description: Whether this staff record has a local password configured. }
+            staffCreationNotice: { $ref: "#/components/schemas/StaffCreationNotice" }
             createdAt: { type: [string, "null"], format: date-time }
             lastLoginAt: { type: [string, "null"], format: date-time }
     ClinicAdminOnboardingInput:
@@ -3168,6 +3263,8 @@ components:
           type: object
           required: [fullName, email]
           properties:
+            password: { type: string, writeOnly: true, minLength: 8, maxLength: 1024 }
+            confirmPassword: { type: string, writeOnly: true, maxLength: 1024 }
             fullName: { type: string, minLength: 1 }
             email: { type: string, format: email }
             mobile: { type: string }
@@ -3311,6 +3408,9 @@ components:
       type: object
       required: [fullName, email]
       properties:
+        requestId: { type: string, format: uuid, writeOnly: true }
+        password: { type: string, writeOnly: true, minLength: 8, maxLength: 1024 }
+        confirmPassword: { type: string, writeOnly: true, maxLength: 1024 }
         country: { type: string, maxLength: 100, description: "ISO-2 or name; new entries default to IN" }
         state: { type: string, maxLength: 100 }
         city: { type: string, maxLength: 100 }
@@ -3342,6 +3442,7 @@ components:
             id: { type: string }
             userId: { type: string }
             code: { type: string }
+            staffCreationNotice: { $ref: "#/components/schemas/StaffCreationNotice" }
             managingAdminId: { type: string }
             managingAdminName: { type: string }
             invitationStatus: { type: string, enum: [sent, failed, notRequired] }

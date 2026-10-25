@@ -13,6 +13,7 @@
     "test:jwt": "node --test ./src/jwt-session.test.mjs",
     "test:public-metadata": "node --test ./src/public-page-metadata.integration.test.mjs",
     "test:staff-invitations": "node --test ./src/staff-invitation.integration.test.mjs",
+    "test:staff-accounts": "node --test --test-concurrency=1 ./src/staff-accounts.integration.test.mjs ./src/staff-invitation.integration.test.mjs ./src/users-administration.integration.test.mjs ./src/registration-onboarding.integration.test.mjs",
     "test:booking-lookup-privacy": "node --test ./src/booking-lookup-privacy.integration.test.mjs",
     "test:owner-booking": "node --test ./src/owner-booking.integration.test.mjs",
     "test:owner-booking:jwt": "node --test --test-name-pattern=jwt ./src/owner-booking.integration.test.mjs",

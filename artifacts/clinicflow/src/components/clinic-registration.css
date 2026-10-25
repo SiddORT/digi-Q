@@ -36,6 +36,7 @@
 .clinic-registration *,
 .clinic-registration *::before,
 .clinic-registration *::after { box-sizing: border-box; }
+.registration-layout.admin-single{grid-template-columns:minmax(0,1fr);max-width:880px}
 .registration-layout > *,
 .registration-card form,
 .registration-card fieldset,

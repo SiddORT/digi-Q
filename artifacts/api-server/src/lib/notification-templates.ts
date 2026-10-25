@@ -4,14 +4,18 @@ import { appointmentNotificationTarget } from "./appointment-notification-scope"
 import { securityEvents, isSecurityEvent, securityDefault, securityTitles, validSecurityContent } from "./security-template-definitions";
 export { requiredEvent, isSecurityEvent } from "./security-template-definitions";
 
-export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "patient_login_otp", ...securityEvents] as const;
+export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "patient_login_otp", "staff_created_admin", "staff_welcome", ...securityEvents] as const;
 export type TemplateEvent = typeof templateEvents[number];
 export const templateRecipients = ["patient", "clinicAdmin", "doctor", "receptionist", "superAdmin"] as const;
 export type TemplateRecipient = typeof templateRecipients[number];
-export const defaultRecipient = (event: TemplateEvent): TemplateRecipient => event === "onboarding" || event === "clinic_registration_otp" ? "clinicAdmin" : event === "doctor_setup" ? "doctor" : event === "staff_setup" || event === "password_setup_complete" ? "receptionist" : "patient";
+export const defaultRecipient = (event: TemplateEvent): TemplateRecipient => event === "onboarding" || event === "clinic_registration_otp" || event === "staff_created_admin" ? "clinicAdmin" : event === "doctor_setup" ? "doctor" : ["staff_setup", "password_setup_complete", "staff_welcome", "staff_email_otp", "staff_mobile_otp"].includes(event) ? "receptionist" : "patient";
 export const templateVariables = notificationVariables;
 export function validTemplateTarget(event: TemplateEvent, recipient: TemplateRecipient, channel: "email" | "sms") {
+  if (event === "staff_created_admin") return ["superAdmin", "clinicAdmin", "doctor"].includes(recipient);
+  if (event === "staff_welcome") return ["clinicAdmin", "doctor", "receptionist"].includes(recipient);
   if (isSecurityEvent(event)) {
+    if (event === "staff_email_otp" || event === "staff_mobile_otp")
+      return recipient !== "patient" && channel === (event === "staff_email_otp" ? "email" : "sms");
     if (event === "clinic_registration_otp") return recipient === "clinicAdmin" && channel === "email";
     if (event === "patient_email_otp") return recipient === "patient" && channel === "email";
     if (event === "registration_mobile_otp") return ["patient", "clinicAdmin"].includes(recipient) && channel === "sms";
@@ -85,6 +89,8 @@ export const templateSave = z.preprocess(input => {
   z.object({ ...templateSaveFields, channel: z.literal("sms"), content: smsTemplateContent.optional() }).strict(),
 ])).refine(v => v.mode === "reset" || !!v.content, { message: "Template content is required" });
 export const eventTitles: Record<TemplateEvent, string> = {
+  staff_created_admin: "Staff account created",
+  staff_welcome: "Staff welcome",
   ...securityTitles,
   booking: "Booking confirmation", onboarding: "Clinic onboarding", rescheduled: "Appointment rescheduled",
   cancelled: "Appointment cancelled", completed: "Thank you after your visit", reminder: "Appointment reminder",
@@ -100,6 +106,13 @@ const bodies: Partial<Record<TemplateEvent, string>> = {
   patient_login_otp: "Your DigiQ Doctors login code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share this code.",
 };
 export function defaultTemplate(event: TemplateEvent, recipient: TemplateRecipient = defaultRecipient(event)): TemplateContent {
+  if (event === "staff_created_admin" || event === "staff_welcome") return {
+    enabled: true, subject: event === "staff_welcome" ? "Welcome to Digi-Q" : "Digi-Q staff account saved",
+    body: event === "staff_welcome"
+      ? "Hello {{recipient_name}}, your Digi-Q {{role_name}} account is ready. {{clinic_name}} {{location_names}}\nSign in with your email and password: {{sign_in_link}}"
+      : "Hello {{recipient_name}}, {{staff_name}}'s {{role_name}} account is saved. {{clinic_name}} {{location_names}}\nStaff sign-in: {{sign_in_link}}",
+    prefix: "", footer: "", logoUrl: "",
+  };
   if (isSecurityEvent(event)) return securityDefault(event);
   if (event === "patient_login_otp") return { enabled: true, subject: "Patient login OTP", body: bodies[event]!, prefix: "", footer: "", logoUrl: "" };
   if (event === "onboarding" && recipient === "superAdmin") return { enabled: true, subject: "Clinic registered — {{clinic_name}}", body: "Hello {{recipient_name}},\n\nA clinic has completed registration: {{clinic_name}}.\n{{clinic_contact}}", prefix: "", footer: "", logoUrl: "" };

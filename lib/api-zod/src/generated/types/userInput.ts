@@ -24,6 +24,14 @@ import type { RecordStatus } from './recordStatus';
 import type { Role } from './role';
 
 export interface UserInput {
+  requestId?: string;
+  /**
+     * @minLength 8
+     * @maxLength 1024
+     */
+  password?: string;
+  /** @maxLength 1024 */
+  confirmPassword?: string;
   /**
      * ISO-2 or name; new entries default to IN
      * @maxLength 100

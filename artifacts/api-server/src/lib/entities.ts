@@ -7,7 +7,11 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
   row = { ...row };
   if (kind === "clinics") delete row.registrationReceipt;
   if (kind === "doctors" || kind === "users") {
-    if (kind === "users") row.mobile ||= "";
+    if (kind === "users") {
+      row.mobile ||= "";
+      const [credential] = await conn.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, row.id));
+      row.passwordEnabled = !!credential?.passwordHash;
+    }
     const activeClinics = new Set((await all(clinics, conn)).filter(c => c.status === "active").map(c => c.id));
     const activeBranches = new Set((await all(branches, conn)).filter(b => b.status === "active" && activeClinics.has(b.clinicId)).map(b => b.id));
     const links = (await all(assignments, conn)).filter(a => a.userId === (kind === "doctors" ? row.userId : row.id) && activeClinics.has(a.clinicId) && (!a.branchId || activeBranches.has(a.branchId)));
@@ -30,6 +34,7 @@ export async function enrich(kind: string, row: any, conn: any = db): Promise<an
     row.managingAdminId = row.ownerAdminId;
     row.managingAdminName = (await one(users, row.ownerAdminId, conn)).fullName;
     const [credential] = await conn.select({ passwordHash: users.passwordHash }).from(users).where(eq(users.id, account.id));
+    row.passwordEnabled = !!credential?.passwordHash;
     row.invitationStatus = credential?.passwordHash ? "notRequired" : account.invitationStatus;
     row.setupNotificationOutcomes = account.setupNotificationOutcomes;
     if (account.status !== "active") row.status = "inactive";

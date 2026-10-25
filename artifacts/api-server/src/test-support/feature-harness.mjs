@@ -13,7 +13,7 @@ const root = resolve(import.meta.dirname, "../../../..");
 const migrations = resolve(root, "lib/db/drizzle");
 let harnessSequence = 0;
 
-export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false, communicationUsage=false}={}) {
+export async function createFeatureHarness({administration=false, simulatedMail=false, bookingLookups=false, postgres=false, fakeBookingMail=false, registration=false, deletion=false, notificationSettings=false, communicationUsage=false, staffAccounts=false}={}) {
   const cluster=postgres?await createQueueHarness({empty:true}):null;
   const {Pool}=postgres?createRequire(resolve(root,"lib/db/package.json"))("pg"):{};
   const pool=postgres?new Pool({host:cluster.temp,port:5432,user:"queue_test",database:"postgres",password:"",ssl:false,max:8,statement_timeout:10000}):null;
@@ -30,6 +30,8 @@ export async function createFeatureHarness({administration=false, simulatedMail=
   const blobs = new Map();
   globalThis.__featureBlobs = blobs;
   const mail = { fail: false, messages: [] };
+  const sms = { outcome: "provider_accepted", messages: [] };
+  if (staffAccounts) globalThis.__featureStaffSms = sms;
   if (simulatedMail || fakeBookingMail) globalThis.__featureMail = mail;
    // A new database requires a new module URL. Reusing a process-local bundle
    // path returns Node's cached exports, still attached to the closed old DB.
@@ -45,6 +47,10 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       import { workspaceFeaturesRouter } from "./routes/workspace-features";
       import { patientRecordsRouter } from "./routes/patient-records";
       import { reportingRouter } from "./routes/reporting";
+      ${staffAccounts ? `import { staffVerificationRouter } from "./routes/staff-verification";
+      import { db as staffDb } from "@workspace/db";
+      import { processStaffAccountNotifications } from "./lib/staff-account-notifications";
+      export const dispatchStaffNotices = (email, sms) => processStaffAccountNotifications(staffDb, email, sms);` : ""}
       ${communicationUsage ? `import { notificationHistoryRouter } from "./routes/notification-history";
       import { db as historyDb } from "@workspace/db";
       import { cleanupNotificationHistory } from "./lib/notification-history";
@@ -119,6 +125,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         ${!bookingLookups ? `app.use((req, _res, next) => { const id = req.get("x-test-user"); if (id) { req.authUserId = id; req.authSessionHash = "test-session-" + id; } next(); });` : ""}
         app.use(express.json());
         app.use("/api", workspaceFeaturesRouter, patientRecordsRouter, reportingRouter);
+        ${staffAccounts ? `app.use("/api", staffVerificationRouter);` : ""}
         ${communicationUsage ? `app.use("/api", notificationHistoryRouter);` : ""}
         ${notificationSettings ? `app.use("/api", notificationSettingsRouter);
         app.use("/api", notificationTemplatesRouter);` : ""}
@@ -137,6 +144,17 @@ export async function createFeatureHarness({administration=false, simulatedMail=
       ...((bookingLookups || registration) ? ["qrcode", "jspdf", "sharp", "express-rate-limit"] : []),
       ...(bookingLookups && !simulatedMail ? ["nodemailer"] : [])],
     plugins: [{ name: "feature-fixtures", setup(b) {
+      if (staffAccounts) {
+        b.onResolve({filter:/\/notification-sms-transport$/},()=>({path:"staff-sms",namespace:"staff-sms"}));
+        b.onLoad({filter:/.*/,namespace:"staff-sms"},()=>({resolveDir:resolve(root,"artifacts/api-server/src"),contents:`
+          export * from "${resolve(root,"artifacts/api-server/src/lib/notification-sms-transport.ts")}";
+          export async function sendNotificationSms(_env, to, text, content) {
+            const fixture=globalThis.__featureStaffSms;
+            fixture.messages.push({to,text,content});
+            return fixture.outcome;
+          }
+        `}));
+      }
       if (fakeBookingMail) {
         b.onResolve({filter:/\/appointment-confirmation$/},()=>({path:"confirmation",namespace:"booking-confirmation"}));
         b.onLoad({filter:/.*/,namespace:"booking-confirmation"},()=>({resolveDir:resolve(root,"artifacts/api-server/src"),contents:`
@@ -188,7 +206,7 @@ export async function createFeatureHarness({administration=false, simulatedMail=
         export async function removeDocument(_p, key) { globalThis.__featureBlobs.delete(key); }` }));
     } }],
   }).catch(failedSetup);
-   const { createApp, cleanupHistory, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
+   const { createApp, cleanupHistory, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, dispatchStaffNotices, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals } = await import(bundle).catch(failedSetup);
   const server = createApp().listen(0);
   await new Promise(r => server.once("listening", r));
   const base = `http://127.0.0.1:${server.address().port}/api`;
@@ -203,5 +221,5 @@ export async function createFeatureHarness({administration=false, simulatedMail=
     const data = type.includes("json") ? await res.json() : Buffer.from(await res.arrayBuffer());
     return { status: res.status, data, headers: res.headers };
   }
-   return { pg, call, cleanupHistory, blobs, mail, base, pool, errors, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
+   return { pg, call, cleanupHistory, blobs, mail, sms, base, pool, errors, inviteStaffFixture, dispatchOutbox, dispatchSmsOutbox, dispatchStaffNotices, approvedAppointmentSms, listOwnerBookingMailOutcomes, staffDeletionImpact, staffDispatch, receipts, historyProvenance, recordHistory, removalReviews, visitHandoffs, responsibilityHandoffs, mediaImpact, attribution, relationalErasure, removals, beforeTransaction(hook) { globalThis.__featureBeforeTransaction=hook; }, async close() { globalThis.__featureBeforeTransaction=null;delete globalThis.__featureErrors;if(staffAccounts)delete globalThis.__featureStaffSms;if(simulatedMail||fakeBookingMail)delete globalThis.__featureMail;server.close(); await pg.close(); await rm(bundle, { force: true }); } };
 }

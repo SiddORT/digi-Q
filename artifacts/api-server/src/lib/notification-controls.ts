@@ -48,6 +48,8 @@ export async function deliveryControlCatalog(conn:any,clinicId?:string,clinic?:a
     if(!template.content.enabled)reasons.push("Published activation is off");
      items.push({channel,event,recipient,required:requiredEvent(event),revision:template.local.revision,enabled:template.content.enabled,source:template.source,ready:reasons.length===0,blockedReasons:reasons,
        timing:requiredEvent(event)?"Platform security message sent on its authentication action when enabled at System Default. Optional Delivery does not apply. Disabling verification or setup delivery can prevent that action; SMS setup advisories do not replace the emailed link.":
+        event==="staff_created_admin"?"After the staff account commits, only to the creating administrator's matching verified contact. Failed creation sends no notice.":
+        event==="staff_welcome"?"Once per new account and channel, after that contact is verified. Email verification never authorizes SMS, or the reverse. Past skips are not replayed.":
         event==="reminder"?"One hour before the session start in the session timezone; not an exact consultation time":
         event==="onboarding"?(recipient==="superAdmin"?"After clinic registration commits, to active System Admins":"After clinic registration commits, to the owning Clinic Admin"):"After the corresponding visit change commits; current contact and membership rechecked"});
   }

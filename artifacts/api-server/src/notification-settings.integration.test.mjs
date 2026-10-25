@@ -354,7 +354,7 @@ test("acceptance, rejection and uncertain responses never echo provider data",()
   assert.equal(api.classifySmsResponse(mapping,302,"private diagnostic"),"provider_rejected");
 });
 test("appointment SMS defaults on, valid recipients, DLT activation, draft isolation and published policy synchronization",async()=>{
-  const operational = items => items.filter(i=>!i.required);
+  const operational = items => items.filter(i=>!i.required && !["staff_created_admin", "staff_welcome"].includes(i.event));
   assert.equal(operational((await api.templateCatalog(sa,undefined,"patient","sms")).items).length,5);
   assert.equal(operational((await api.templateCatalog(sa,undefined,"clinicAdmin","sms")).items).length,6);
   assert(operational((await api.templateCatalog(sa,undefined,"patient","sms")).items).every(i=>i.content.enabled));
@@ -439,7 +439,7 @@ test("disabled email tests use the existing sender interface, exact sample value
 });
 test("all six lifecycle events enqueue once per channel and eligible recipient; unknown dispatch is never resent",async()=>{
   await h.control.query("delete from settings where id like 'sms-template:%' or id like 'sms-outbox:%' or id like 'mail-outbox:%'");
-  for(const event of api.templateEvents)for(const group of api.templateRecipients){
+  for(const event of api.templateEvents.filter(event=>!["staff_created_admin", "staff_welcome"].includes(event)))for(const group of api.templateRecipients){
     // Patient authentication codes are not lifecycle jobs. Keep this scenario's
     // four visit recipients plus clinic-owner onboarding; Superadmin onboarding
     // and OTP delivery have their own coverage.

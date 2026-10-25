@@ -22,6 +22,13 @@
  */
 
 export type ClinicAdminOnboardingInputAdmin = {
+  /**
+     * @minLength 8
+     * @maxLength 1024
+     */
+  password?: string;
+  /** @maxLength 1024 */
+  confirmPassword?: string;
   /** @minLength 1 */
   fullName: string;
   email: string;

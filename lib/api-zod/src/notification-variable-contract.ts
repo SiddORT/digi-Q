@@ -3,9 +3,12 @@ export const notificationVariables = ["clinic_name", "booking_link", "patient_na
   "appointment_details", "previous_details", "reference", "timezone", "clinic_contact",
   "recipient_name", "appointment_date", "session_start", "session_end", "previous_date",
   "previous_session_start", "previous_session_end", "queue_token", "token_number", "cancel_reason",
-  "otp", "expiry_minutes", "setup_link", "role_name"] as const;
+  "otp", "expiry_minutes", "setup_link", "role_name", "staff_name", "location_names", "sign_in_link"] as const;
 
 export function eventVariables(event: string): readonly string[] {
+  if (event === "staff_created_admin" || event === "staff_welcome")
+    return ["recipient_name", "staff_name", "role_name", "clinic_name", "location_names", "sign_in_link"];
+  if (event === "staff_email_otp" || event === "staff_mobile_otp") return ["otp", "expiry_minutes"];
   if (["patient_login_otp", "clinic_registration_otp", "patient_email_otp", "registration_mobile_otp"].includes(event))
     return ["otp", "expiry_minutes"];
   if (event === "password_setup_complete") return ["recipient_name", "role_name"];

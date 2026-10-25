@@ -13,7 +13,11 @@ function canonical(value: any): any {
   return value;
 }
 export function registrationDigest(body: any) {
-  const { password: _password, requestId: _request, ...fields } = body;
+  const { password: _password, confirmPassword: _confirm, requestId: _request, ...fields } = body;
+  if (fields.admin) {
+    const { password: _adminPassword, confirmPassword: _adminConfirm, ...admin } = fields.admin;
+    fields.admin = admin;
+  }
   return createHash("sha256").update(JSON.stringify(canonical(fields))).digest("hex");
 }
 export async function registrationCompletion(actorId: string, requestId: string, mode: string, conn: any, body?: any) {

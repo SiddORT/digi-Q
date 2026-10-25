@@ -46,6 +46,7 @@ export function classifyStaffSetting(row: { id: string; data: any }, target: Sta
   if (!linked) return { action: "preserve" };
   if (["sending", "delivery_unknown"].includes(data?.state) || ["sending", "delivery_unknown"].includes(data?.status))
     return { action: "resolve", reason: "A dispatch or media operation is active or uncertain" };
+  if (["staff-created", "staff-account-notice", "staff-create-receipt"].includes(family)) return { action: "erase" };
   if (["workspace", "staff-invitation", "staff-recovery", "notification-read", "notification-preferences"].includes(family) && id === `${family}:${target.userId}`)
     return { action: "erase" };
   if (id === "custom-roles") {

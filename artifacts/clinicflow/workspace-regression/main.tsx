@@ -22,6 +22,7 @@ import { RescheduleFixture } from "./RescheduleFixture";
 import App from "../src/App";
 import { DropdownWorkspaceFixture } from "./DropdownWorkspaceFixture";
 import { CompactUiFixture } from "./CompactUiFixture";
+import { StaffVerificationFixture } from "./StaffVerificationFixture";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -40,6 +41,8 @@ const [dropdownWorkspace] = useState(() => params.get("mode") === "dropdown-work
 if (dropdownWorkspace) return <DropdownWorkspaceFixture/>;
 if (params.get("mode") === "registration") return <RegistrationFixture/>;
 if (params.get("mode") === "onboarding") return <OnboardingFixture/>;
+if (params.get("mode") === "staff-verification") return <StaffVerificationFixture/>;
+if (params.get("mode") === "staff-login") return <StaffVerificationFixture login/>;
 if (params.get("mode") === "reschedule") return <RescheduleFixture/>;
 if(params.get("mode")==="booking"){
  const role=params.get("fixtureRole")||"superAdmin";

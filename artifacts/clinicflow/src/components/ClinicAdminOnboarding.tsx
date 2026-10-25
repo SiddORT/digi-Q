@@ -20,13 +20,17 @@ function GuidedAdminSetup({ draftActor, onDirtyChange, onBusyChange, carry, onSn
   const client = useQueryClient();
   const locked = useRef(false);
   const [completed, setCompleted] = useState<api.ClinicAdminOnboardingResult | null>(null);
-  const setup = api.useOnboardClinicAdmin();
+  // Not a react-query mutation: its variables would retain the new password in the mutation cache.
+  const [setupBusy, setSetupBusy] = useState(false);
+  const [setupError, setSetupError] = useState<unknown>(null);
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
   const resend = useMutation({
     mutationFn: () => api.resendUserInvitation(completed!.admin.id),
     onSuccess: (admin) => { setCompleted(previous => previous ? {...previous, admin: {...previous.admin, ...admin}} : previous); },
     onSettled: () => { void client.invalidateQueries(); },
   });
-  useEffect(() => { onBusyChange?.(setup.isPending||resend.isPending); }, [setup.isPending, resend.isPending, onBusyChange]);
+  useEffect(() => { onBusyChange?.(setupBusy||resend.isPending); }, [setupBusy, resend.isPending, onBusyChange]);
   const references = api.useGetRegistrationOptions();
   const draftKey = draftActor ? registrationDraftKey("admin", draftActor) : undefined;
   const [pending] = useState(() => draftKey ? readRegistrationDraft(draftKey, setupDraftSchema).data : undefined);
@@ -39,27 +43,30 @@ function GuidedAdminSetup({ draftActor, onDirtyChange, onBusyChange, carry, onSn
     try {
       const saved = await api.getClinicAdminSetupCompletion({ requestId });
       if (saved.result) { requireRegistrationDoctor(saved.result, values.alsoConsult); if (draftKey) clearRegistrationDraft(draftKey); setCompleted(saved.result); return; }
-      const result = await setup.mutateAsync({ data: {
+      setSetupBusy(true); setSetupError(null);
+      const result = await api.onboardClinicAdmin({
         requestId,
-        admin: { fullName: values.fullName.trim(), email: values.email.trim(), ...(values.mobile.trim() ? { mobile: values.mobile.trim() } : {}) },
+        admin: { fullName: values.fullName.trim(), email: values.email.trim(), ...(values.mobile.trim() ? { mobile: values.mobile.trim() } : {}), ...(values.password ? { password: values.password, confirmPassword: values.confirmPassword } : {}) } as api.ClinicAdminOnboardingInputAdmin,
         clinic: { dateFormat: values.dateFormat, timeFormat: values.timeFormat, name: values.name.trim(), address: values.branches[0].address.trim(), slug: values.slug, email: values.clinicEmail.trim() || undefined, phone: values.phone.trim() || undefined, categoryId: values.categoryId || undefined, customCategory: values.customCategory?.trim() || null, specialityIds: values.specialityIds, customSpecialities: values.customSpecialities.map(text => text.trim()), referralCode: values.referralCode.trim() || null },
         branches: values.branches.map(b => ({ name: b.name.trim(), slug: b.slug, address: b.address.trim(), city: b.city.trim(), state: b.state?.trim() || undefined, pincode: b.pincode?.trim() || undefined, country: b.country?.trim() || undefined, timezone: b.timezone, email: b.email.trim() || null, phone: b.phone.trim() || null, inheritEmail: b.inheritEmail, inheritPhone: b.inheritPhone, openingHours: b.hours.filter(d => d.isOpen).flatMap(d => d.sessions.map(s => ({ dayOfWeek: d.dayOfWeek, ...s }))) })),
         ownDoctor: values.alsoConsult, ...(values.alsoConsult ? { specializationId: values.specializationId || undefined, qualificationIds: values.qualificationIds } : {}),
         ...ownerSchedulePayload(values),
-      } });
+      } as api.ClinicAdminOnboardingInput);
+      values.password = ""; values.confirmPassword = "";
       requireRegistrationDoctor(result, values.alsoConsult);
       setCompleted(result);
       onDirtyChange?.(false);
       await client.invalidateQueries();
     } catch (caught) {
+      if (mounted.current) setSetupError(caught);
       const saved = await api.getClinicAdminSetupCompletion({ requestId });
       if (!saved.result) throw caught;
       requireRegistrationDoctor(saved.result, values.alsoConsult);
       if (draftKey) clearRegistrationDraft(draftKey);
       setCompleted(saved.result); onDirtyChange?.(false); void client.invalidateQueries();
-    } finally { locked.current = false; }
+    } finally { locked.current = false; if (mounted.current) setSetupBusy(false); }
   }
-   if (completed) return <><ClinicRegistrationComplete result={completed} invitationStatus={completed.admin.invitationStatus}/>
+   if (completed) return <><ClinicRegistrationComplete result={completed} invitationStatus={completed.admin.invitationStatus} notice={completed.admin.staffCreationNotice}/>
      {completed.admin.invitationStatus==="failed"&&<div className="notice" role="status">
        <p>The clinic and administrator are saved. Do not repeat setup. Retry the invitation after email service setup is restored.</p>
        <button type="button" data-testid="button-resend-admin-invitation" disabled={resend.isPending} onClick={()=>resend.mutate()}>{resend.isPending?"Sending…":"Resend Invitation"}</button>
@@ -68,5 +75,5 @@ function GuidedAdminSetup({ draftActor, onDirtyChange, onBusyChange, carry, onSn
   if (recoveryIssue) return <div className="error-box" role="alert">{recoveryIssue}</div>;
   if (pending && recovery.isLoading) return <div className="page-loading">Checking saved setup…</div>;
   if (pending && recovery.error) return <div className="error-box" role="alert">Could not check saved setup. No new creation will be attempted.<button onClick={() => void recovery.refetch()}>Try Again</button></div>;
-     return <ClinicRegistrationWizard referenceError={references.error ? "Healthcare suggestions could not be loaded. Custom clinic entry remains available." : undefined} referenceLoading={references.isFetching} onRetryReferences={() => void references.refetch()} key={draftKey || "memory"} draftKey={draftKey} adminMode carry={carry} onSnapshot={onSnapshot} onDirtyChange={onDirtyChange} onStepChange={setup.reset} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setup.isPending} error={setup.error?friendlyError(setup.error,"save"):undefined}/>;
+     return <ClinicRegistrationWizard referenceError={references.error ? "Healthcare suggestions could not be loaded. Custom clinic entry remains available." : undefined} referenceLoading={references.isFetching} onRetryReferences={() => void references.refetch()} key={draftKey || "memory"} draftKey={draftKey} adminMode carry={carry} onSnapshot={onSnapshot} onDirtyChange={onDirtyChange} onStepChange={() => setSetupError(null)} categories={references.data?.categories || []} specialities={references.data?.specialities || []} qualifications={references.data?.qualifications || []} checkSlug={async slug => (await api.checkSlugAvailability({ slug })).available} onSubmit={finish} busy={setupBusy} error={setupError?friendlyError(setupError,"save"):undefined}/>;
 }

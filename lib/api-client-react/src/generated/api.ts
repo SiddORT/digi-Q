@@ -241,6 +241,12 @@ import type {
   SmtpTestInput,
   SmtpTestResult,
   StaffAssignmentOptions,
+  StaffContactChallenge,
+  StaffContactConfirmation,
+  StaffContactDeferred,
+  StaffContactRequest,
+  StaffContactStatus,
+  StaffContactVerified,
   StaffDeletionImpact,
   StaffGuestRequest,
   StaffHandoffApproval,
@@ -291,6 +297,309 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetStaffVerificationUrl = () => {
+
+
+
+
+  return `/api/staff-verification`
+}
+
+export const getStaffVerification = async ( options?: Parameters<typeof customFetch>[1]): Promise<StaffContactStatus> => {
+
+  return customFetch<StaffContactStatus>(getGetStaffVerificationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStaffVerificationQueryKey = () => {
+    return [
+    `/api/staff-verification`
+    ] as const;
+    }
+
+
+export const getGetStaffVerificationQueryOptions = <TData = Awaited<ReturnType<typeof getStaffVerification>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffVerification>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStaffVerificationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStaffVerification>>> = ({ signal }) => getStaffVerification({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStaffVerification>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStaffVerificationQueryResult = NonNullable<Awaited<ReturnType<typeof getStaffVerification>>>
+export type GetStaffVerificationQueryError = ErrorType<unknown>
+
+
+
+export function useGetStaffVerification<TData = Awaited<ReturnType<typeof getStaffVerification>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStaffVerification>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStaffVerificationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestStaffContactCodeUrl = () => {
+
+
+
+
+  return `/api/staff-verification/request`
+}
+
+export const requestStaffContactCode = async (staffContactRequest: StaffContactRequest, options?: Parameters<typeof customFetch>[1]): Promise<StaffContactChallenge> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StaffContactChallenge>(getRequestStaffContactCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(staffContactRequest)
+  }
+);}
+
+
+
+
+
+export const getRequestStaffContactCodeMutationKey = () => ['requestStaffContactCode'] as const;
+
+export const getRequestStaffContactCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestStaffContactCode>>, TError,RequestStaffContactCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestStaffContactCode>>, TError,RequestStaffContactCodeMutationVariables, TContext> => {
+
+const mutationKey = getRequestStaffContactCodeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestStaffContactCode>>, RequestStaffContactCodeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestStaffContactCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestStaffContactCodeMutationResult = NonNullable<Awaited<ReturnType<typeof requestStaffContactCode>>>
+    export type RequestStaffContactCodeMutationBody = BodyType<StaffContactRequest>
+    export type RequestStaffContactCodeMutationError = ErrorType<unknown>
+    export type RequestStaffContactCodeMutationVariables = {data: BodyType<StaffContactRequest>}
+
+    export const useRequestStaffContactCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestStaffContactCode>>, TError,RequestStaffContactCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestStaffContactCode>>,
+        TError,
+        RequestStaffContactCodeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestStaffContactCodeMutationOptions(options));
+    }
+
+export const getConfirmStaffContactCodeUrl = () => {
+
+
+
+
+  return `/api/staff-verification/confirm`
+}
+
+export const confirmStaffContactCode = async (staffContactConfirmation: StaffContactConfirmation, options?: Parameters<typeof customFetch>[1]): Promise<StaffContactVerified> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<StaffContactVerified>(getConfirmStaffContactCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(staffContactConfirmation)
+  }
+);}
+
+
+
+
+
+export const getConfirmStaffContactCodeMutationKey = () => ['confirmStaffContactCode'] as const;
+
+export const getConfirmStaffContactCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmStaffContactCode>>, TError,ConfirmStaffContactCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmStaffContactCode>>, TError,ConfirmStaffContactCodeMutationVariables, TContext> => {
+
+const mutationKey = getConfirmStaffContactCodeMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmStaffContactCode>>, ConfirmStaffContactCodeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmStaffContactCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmStaffContactCodeMutationResult = NonNullable<Awaited<ReturnType<typeof confirmStaffContactCode>>>
+    export type ConfirmStaffContactCodeMutationBody = BodyType<StaffContactConfirmation>
+    export type ConfirmStaffContactCodeMutationError = ErrorType<unknown>
+    export type ConfirmStaffContactCodeMutationVariables = {data: BodyType<StaffContactConfirmation>}
+
+    export const useConfirmStaffContactCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmStaffContactCode>>, TError,ConfirmStaffContactCodeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmStaffContactCode>>,
+        TError,
+        ConfirmStaffContactCodeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getConfirmStaffContactCodeMutationOptions(options));
+    }
+
+export const getDeferStaffVerificationUrl = () => {
+
+
+
+
+  return `/api/staff-verification/defer`
+}
+
+export const deferStaffVerification = async ( options?: Parameters<typeof customFetch>[1]): Promise<StaffContactDeferred> => {
+
+  return customFetch<StaffContactDeferred>(getDeferStaffVerificationUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeferStaffVerificationMutationKey = () => ['deferStaffVerification'] as const;
+
+export const getDeferStaffVerificationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deferStaffVerification>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deferStaffVerification>>, TError,void, TContext> => {
+
+const mutationKey = getDeferStaffVerificationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deferStaffVerification>>, void> = () => {
+
+
+          return  deferStaffVerification(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeferStaffVerificationMutationResult = NonNullable<Awaited<ReturnType<typeof deferStaffVerification>>>
+
+    export type DeferStaffVerificationMutationError = ErrorType<unknown>
+
+
+    export const useDeferStaffVerification = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deferStaffVerification>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deferStaffVerification>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeferStaffVerificationMutationOptions(options));
+    }
 
 export const getGetPublicWebsiteConfigUrl = () => {
 

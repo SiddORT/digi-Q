@@ -23,6 +23,49 @@
 import * as zod from 'zod';
 
 
+export const GetStaffVerificationResponse = zod.object({
+  "email": zod.string(),
+  "mobile": zod.string().nullable(),
+  "emailVerified": zod.boolean(),
+  "mobileVerified": zod.boolean(),
+  "promptRequired": zod.boolean(),
+  "welcomeEmailStatus": zod.string().optional(),
+  "welcomeSmsStatus": zod.string().optional()
+})
+
+
+export const RequestStaffContactCodeBody = zod.object({
+  "channel": zod.enum(['email', 'sms'])
+})
+
+export const RequestStaffContactCodeResponse = zod.object({
+  "challengeId": zod.string(),
+  "expiresAt": zod.coerce.date(),
+  "resendAfterSeconds": zod.number().int()
+})
+
+
+export const confirmStaffContactCodeBodyChallengeIdMax = 100;
+
+export const confirmStaffContactCodeBodyCodeRegExp = new RegExp('^\\d{6}$');
+
+
+export const ConfirmStaffContactCodeBody = zod.object({
+  "channel": zod.enum(['email', 'sms']),
+  "challengeId": zod.string().max(confirmStaffContactCodeBodyChallengeIdMax),
+  "code": zod.string().regex(confirmStaffContactCodeBodyCodeRegExp)
+})
+
+export const ConfirmStaffContactCodeResponse = zod.object({
+  "verified": zod.boolean()
+})
+
+
+export const DeferStaffVerificationResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
 export const GetPublicWebsiteConfigResponse = zod.object({
   "publicOrigin": zod.string().url()
 })
@@ -802,7 +845,7 @@ export const SaveNotificationTemplateBody = zod.object({
   "channel": zod.enum(['email', 'sms']).optional(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']).optional(),
   "clinicId": zod.string().optional(),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "revision": zod.number().int().min(saveNotificationTemplateBodyRevisionMin),
   "mode": zod.enum(['draft', 'publish', 'reset']),
   "content": zod.object({
@@ -917,7 +960,7 @@ export const previewEventTemplateBodyRecipientMax = 254;
 
 export const PreviewEventTemplateBody = zod.object({
   "channel": zod.enum(['email', 'sms']),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
   "revision": zod.number().int().min(previewEventTemplateBodyRevisionMin),
@@ -972,7 +1015,7 @@ export const testEventTemplateBodyRecipientMax = 254;
 
 export const TestEventTemplateBody = zod.object({
   "channel": zod.enum(['email', 'sms']),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
   "revision": zod.number().int().min(testEventTemplateBodyRevisionMin),
@@ -1032,7 +1075,7 @@ export const updateEventControlBodyRevisionMin = 0;
 
 export const UpdateEventControlBody = zod.object({
   "channel": zod.enum(['email', 'sms']),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
   "revision": zod.number().int().min(updateEventControlBodyRevisionMin),
@@ -1824,6 +1867,11 @@ export const getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinked
 export const getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
 
 export const getClinicAdminSetupCompletionResponseResultOneBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const getClinicAdminSetupCompletionResponseResultOneAdminOnePasswordMin = 8;
+export const getClinicAdminSetupCompletionResponseResultOneAdminOnePasswordMax = 1024;
+
+export const getClinicAdminSetupCompletionResponseResultOneAdminOneConfirmPasswordMax = 1024;
+
 export const getClinicAdminSetupCompletionResponseResultOneAdminOneCountryMax = 100;
 
 export const getClinicAdminSetupCompletionResponseResultOneAdminOneStateMax = 100;
@@ -1891,6 +1939,9 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
 }))).optional(),
   "doctorId": zod.string().nullish(),
   "admin": zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(getClinicAdminSetupCompletionResponseResultOneAdminOnePasswordMin).max(getClinicAdminSetupCompletionResponseResultOneAdminOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneConfirmPasswordMax).optional(),
   "country": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneStateMax).optional(),
   "city": zod.string().max(getClinicAdminSetupCompletionResponseResultOneAdminOneCityMax).optional(),
@@ -1920,6 +1971,10 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 })),
@@ -2388,6 +2443,11 @@ export const AttachOwnDoctorProfileBody = zod.object({
   "about": zod.string().optional()
 })
 
+export const attachOwnDoctorProfileResponseOnePasswordMin = 8;
+export const attachOwnDoctorProfileResponseOnePasswordMax = 1024;
+
+export const attachOwnDoctorProfileResponseOneConfirmPasswordMax = 1024;
+
 export const attachOwnDoctorProfileResponseOneCountryMax = 100;
 
 export const attachOwnDoctorProfileResponseOneStateMax = 100;
@@ -2407,6 +2467,9 @@ export const attachOwnDoctorProfileResponseOneConsultationFeeMin = 0;
 
 
 export const AttachOwnDoctorProfileResponse = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(attachOwnDoctorProfileResponseOnePasswordMin).max(attachOwnDoctorProfileResponseOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(attachOwnDoctorProfileResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(attachOwnDoctorProfileResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(attachOwnDoctorProfileResponseOneStateMax).optional(),
   "city": zod.string().max(attachOwnDoctorProfileResponseOneCityMax).optional(),
@@ -2433,6 +2496,10 @@ export const AttachOwnDoctorProfileResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "code": zod.string(),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "managingAdminId": zod.string(),
   "managingAdminName": zod.string(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
@@ -3330,6 +3397,11 @@ export const GetAuthStatusResponse = zod.object({
 /**
  * Returns database identity; user is null before onboarding. Never accepts a role from the client.
  */
+export const getMeResponseUserOneOnePasswordMin = 8;
+export const getMeResponseUserOneOnePasswordMax = 1024;
+
+export const getMeResponseUserOneOneConfirmPasswordMax = 1024;
+
 export const getMeResponseUserOneOneCountryMax = 100;
 
 export const getMeResponseUserOneOneStateMax = 100;
@@ -3347,6 +3419,9 @@ export const getMeResponseUserOneOneAddressMax = 500;
 export const GetMeResponse = zod.object({
   "userId": zod.string(),
   "user": zod.union([zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(getMeResponseUserOneOnePasswordMin).max(getMeResponseUserOneOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(getMeResponseUserOneOneConfirmPasswordMax).optional(),
   "country": zod.string().max(getMeResponseUserOneOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(getMeResponseUserOneOneStateMax).optional(),
   "city": zod.string().max(getMeResponseUserOneOneCityMax).optional(),
@@ -3376,6 +3451,10 @@ export const GetMeResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 })),zod.null()]),
@@ -3394,6 +3473,11 @@ export const UpdateMeBody = zod.object({
   "photoUrl": zod.string().optional()
 })
 
+export const updateMeResponseOnePasswordMin = 8;
+export const updateMeResponseOnePasswordMax = 1024;
+
+export const updateMeResponseOneConfirmPasswordMax = 1024;
+
 export const updateMeResponseOneCountryMax = 100;
 
 export const updateMeResponseOneStateMax = 100;
@@ -3409,6 +3493,9 @@ export const updateMeResponseOneAddressMax = 500;
 
 
 export const UpdateMeResponse = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(updateMeResponseOnePasswordMin).max(updateMeResponseOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(updateMeResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(updateMeResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(updateMeResponseOneStateMax).optional(),
   "city": zod.string().max(updateMeResponseOneCityMax).optional(),
@@ -3438,6 +3525,10 @@ export const UpdateMeResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))
@@ -3456,6 +3547,11 @@ export const OnboardBody = zod.object({
   "termsAccepted": zod.boolean().optional()
 })
 
+export const onboardResponseUserOneOnePasswordMin = 8;
+export const onboardResponseUserOneOnePasswordMax = 1024;
+
+export const onboardResponseUserOneOneConfirmPasswordMax = 1024;
+
 export const onboardResponseUserOneOneCountryMax = 100;
 
 export const onboardResponseUserOneOneStateMax = 100;
@@ -3473,6 +3569,9 @@ export const onboardResponseUserOneOneAddressMax = 500;
 export const OnboardResponse = zod.object({
   "userId": zod.string(),
   "user": zod.union([zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(onboardResponseUserOneOnePasswordMin).max(onboardResponseUserOneOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(onboardResponseUserOneOneConfirmPasswordMax).optional(),
   "country": zod.string().max(onboardResponseUserOneOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(onboardResponseUserOneOneStateMax).optional(),
   "city": zod.string().max(onboardResponseUserOneOneCityMax).optional(),
@@ -3502,6 +3601,10 @@ export const OnboardResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 })),zod.null()]),
@@ -4509,6 +4612,11 @@ export const ListDoctorsQueryParams = zod.object({
 
 export const listDoctorsResponseOneTotalMin = 0;
 
+export const listDoctorsResponseTwoItemsItemOnePasswordMin = 8;
+export const listDoctorsResponseTwoItemsItemOnePasswordMax = 1024;
+
+export const listDoctorsResponseTwoItemsItemOneConfirmPasswordMax = 1024;
+
 export const listDoctorsResponseTwoItemsItemOneCountryMax = 100;
 
 export const listDoctorsResponseTwoItemsItemOneStateMax = 100;
@@ -4534,6 +4642,9 @@ export const ListDoctorsResponse = zod.object({
   "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(listDoctorsResponseTwoItemsItemOnePasswordMin).max(listDoctorsResponseTwoItemsItemOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(listDoctorsResponseTwoItemsItemOneConfirmPasswordMax).optional(),
   "country": zod.string().max(listDoctorsResponseTwoItemsItemOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(listDoctorsResponseTwoItemsItemOneStateMax).optional(),
   "city": zod.string().max(listDoctorsResponseTwoItemsItemOneCityMax).optional(),
@@ -4560,6 +4671,10 @@ export const ListDoctorsResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "code": zod.string(),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "managingAdminId": zod.string(),
   "managingAdminName": zod.string(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
@@ -4583,6 +4698,11 @@ export const ListDoctorsResponse = zod.object({
 /**
  * Authorized administrator creates doctor and identity invitation; never silently promotes an unrelated existing patient.
  */
+export const createDoctorBodyPasswordMin = 8;
+export const createDoctorBodyPasswordMax = 1024;
+
+export const createDoctorBodyConfirmPasswordMax = 1024;
+
 export const createDoctorBodyCountryMax = 100;
 
 export const createDoctorBodyStateMax = 100;
@@ -4602,6 +4722,9 @@ export const createDoctorBodyConsultationFeeMin = 0;
 
 
 export const CreateDoctorBody = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(createDoctorBodyPasswordMin).max(createDoctorBodyPasswordMax).optional(),
+  "confirmPassword": zod.string().max(createDoctorBodyConfirmPasswordMax).optional(),
   "country": zod.string().max(createDoctorBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(createDoctorBodyStateMax).optional(),
   "city": zod.string().max(createDoctorBodyCityMax).optional(),
@@ -4626,6 +4749,11 @@ export const CreateDoctorBody = zod.object({
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
+export const createDoctorResponseOnePasswordMin = 8;
+export const createDoctorResponseOnePasswordMax = 1024;
+
+export const createDoctorResponseOneConfirmPasswordMax = 1024;
+
 export const createDoctorResponseOneCountryMax = 100;
 
 export const createDoctorResponseOneStateMax = 100;
@@ -4645,6 +4773,9 @@ export const createDoctorResponseOneConsultationFeeMin = 0;
 
 
 export const CreateDoctorResponse = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(createDoctorResponseOnePasswordMin).max(createDoctorResponseOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(createDoctorResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(createDoctorResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(createDoctorResponseOneStateMax).optional(),
   "city": zod.string().max(createDoctorResponseOneCityMax).optional(),
@@ -4671,6 +4802,10 @@ export const CreateDoctorResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "code": zod.string(),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "managingAdminId": zod.string(),
   "managingAdminName": zod.string(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
@@ -4694,6 +4829,11 @@ export const GetDoctorParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getDoctorResponseOnePasswordMin = 8;
+export const getDoctorResponseOnePasswordMax = 1024;
+
+export const getDoctorResponseOneConfirmPasswordMax = 1024;
+
 export const getDoctorResponseOneCountryMax = 100;
 
 export const getDoctorResponseOneStateMax = 100;
@@ -4713,6 +4853,9 @@ export const getDoctorResponseOneConsultationFeeMin = 0;
 
 
 export const GetDoctorResponse = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(getDoctorResponseOnePasswordMin).max(getDoctorResponseOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(getDoctorResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(getDoctorResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(getDoctorResponseOneStateMax).optional(),
   "city": zod.string().max(getDoctorResponseOneCityMax).optional(),
@@ -4739,6 +4882,10 @@ export const GetDoctorResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "code": zod.string(),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "managingAdminId": zod.string(),
   "managingAdminName": zod.string(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
@@ -4765,6 +4912,11 @@ export const UpdateDoctorParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const updateDoctorBodyPasswordMin = 8;
+export const updateDoctorBodyPasswordMax = 1024;
+
+export const updateDoctorBodyConfirmPasswordMax = 1024;
+
 export const updateDoctorBodyCountryMax = 100;
 
 export const updateDoctorBodyStateMax = 100;
@@ -4784,6 +4936,9 @@ export const updateDoctorBodyConsultationFeeMin = 0;
 
 
 export const UpdateDoctorBody = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(updateDoctorBodyPasswordMin).max(updateDoctorBodyPasswordMax).optional(),
+  "confirmPassword": zod.string().max(updateDoctorBodyConfirmPasswordMax).optional(),
   "country": zod.string().max(updateDoctorBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(updateDoctorBodyStateMax).optional(),
   "city": zod.string().max(updateDoctorBodyCityMax).optional(),
@@ -4808,6 +4963,11 @@ export const UpdateDoctorBody = zod.object({
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
+export const updateDoctorResponseOnePasswordMin = 8;
+export const updateDoctorResponseOnePasswordMax = 1024;
+
+export const updateDoctorResponseOneConfirmPasswordMax = 1024;
+
 export const updateDoctorResponseOneCountryMax = 100;
 
 export const updateDoctorResponseOneStateMax = 100;
@@ -4827,6 +4987,9 @@ export const updateDoctorResponseOneConsultationFeeMin = 0;
 
 
 export const UpdateDoctorResponse = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(updateDoctorResponseOnePasswordMin).max(updateDoctorResponseOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(updateDoctorResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(updateDoctorResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(updateDoctorResponseOneStateMax).optional(),
   "city": zod.string().max(updateDoctorResponseOneCityMax).optional(),
@@ -4853,6 +5016,10 @@ export const UpdateDoctorResponse = zod.object({
   "id": zod.string(),
   "userId": zod.string(),
   "code": zod.string(),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "managingAdminId": zod.string(),
   "managingAdminName": zod.string(),
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
@@ -4901,6 +5068,11 @@ export const ListUsersQueryParams = zod.object({
 
 export const listUsersResponseOneTotalMin = 0;
 
+export const listUsersResponseTwoItemsItemOnePasswordMin = 8;
+export const listUsersResponseTwoItemsItemOnePasswordMax = 1024;
+
+export const listUsersResponseTwoItemsItemOneConfirmPasswordMax = 1024;
+
 export const listUsersResponseTwoItemsItemOneCountryMax = 100;
 
 export const listUsersResponseTwoItemsItemOneStateMax = 100;
@@ -4922,6 +5094,9 @@ export const ListUsersResponse = zod.object({
   "totalPages": zod.number().int().optional()
 }).and(zod.object({
   "items": zod.array(zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(listUsersResponseTwoItemsItemOnePasswordMin).max(listUsersResponseTwoItemsItemOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(listUsersResponseTwoItemsItemOneConfirmPasswordMax).optional(),
   "country": zod.string().max(listUsersResponseTwoItemsItemOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(listUsersResponseTwoItemsItemOneStateMax).optional(),
   "city": zod.string().max(listUsersResponseTwoItemsItemOneCityMax).optional(),
@@ -4951,6 +5126,10 @@ export const ListUsersResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 })))
@@ -4960,6 +5139,11 @@ export const ListUsersResponse = zod.object({
 /**
  * Admin-only identity invitation and database role assignment; clinic admins cannot grant platform administration.
  */
+export const createUserBodyPasswordMin = 8;
+export const createUserBodyPasswordMax = 1024;
+
+export const createUserBodyConfirmPasswordMax = 1024;
+
 export const createUserBodyCountryMax = 100;
 
 export const createUserBodyStateMax = 100;
@@ -4975,6 +5159,9 @@ export const createUserBodyAddressMax = 500;
 
 
 export const CreateUserBody = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(createUserBodyPasswordMin).max(createUserBodyPasswordMax).optional(),
+  "confirmPassword": zod.string().max(createUserBodyConfirmPasswordMax).optional(),
   "country": zod.string().max(createUserBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(createUserBodyStateMax).optional(),
   "city": zod.string().max(createUserBodyCityMax).optional(),
@@ -4989,6 +5176,11 @@ export const CreateUserBody = zod.object({
   "branchIds": zod.array(zod.string()).optional(),
   "managingAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
 })
+
+export const createUserResponseOnePasswordMin = 8;
+export const createUserResponseOnePasswordMax = 1024;
+
+export const createUserResponseOneConfirmPasswordMax = 1024;
 
 export const createUserResponseOneCountryMax = 100;
 
@@ -5005,6 +5197,9 @@ export const createUserResponseOneAddressMax = 500;
 
 
 export const CreateUserResponse = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(createUserResponseOnePasswordMin).max(createUserResponseOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(createUserResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(createUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(createUserResponseOneStateMax).optional(),
   "city": zod.string().max(createUserResponseOneCityMax).optional(),
@@ -5034,6 +5229,10 @@ export const CreateUserResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))
@@ -5082,6 +5281,11 @@ export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemDayOfWeekMax =
 export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemStartTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const onboardClinicAdminBodyOwnerCustomScheduleSessionsItemEndTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
 export const onboardClinicAdminBodyOwnerCustomScheduleSessionsMax = 500;
+
+export const onboardClinicAdminBodyAdminPasswordMin = 8;
+export const onboardClinicAdminBodyAdminPasswordMax = 1024;
+
+export const onboardClinicAdminBodyAdminConfirmPasswordMax = 1024;
 
 
 export const onboardClinicAdminBodyClinicSlugMin = 3;
@@ -5154,6 +5358,8 @@ export const OnboardClinicAdminBody = zod.object({
   "specializationId": zod.string().optional(),
   "qualificationIds": zod.array(zod.string()).optional(),
   "admin": zod.object({
+  "password": zod.string().min(onboardClinicAdminBodyAdminPasswordMin).max(onboardClinicAdminBodyAdminPasswordMax).optional(),
+  "confirmPassword": zod.string().max(onboardClinicAdminBodyAdminConfirmPasswordMax).optional(),
   "fullName": zod.string().min(1),
   "email": zod.string().email(),
   "mobile": zod.string().optional()
@@ -5194,6 +5400,11 @@ export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleMaxTokensMax
 export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleConsultationMinutesMax = 240;
 
 export const onboardClinicAdminResponseBranchesItemTwoLinkedScheduleTokenPrefixRegExp = new RegExp('^[A-Za-z0-9]{1,8}$');
+export const onboardClinicAdminResponseAdminOnePasswordMin = 8;
+export const onboardClinicAdminResponseAdminOnePasswordMax = 1024;
+
+export const onboardClinicAdminResponseAdminOneConfirmPasswordMax = 1024;
+
 export const onboardClinicAdminResponseAdminOneCountryMax = 100;
 
 export const onboardClinicAdminResponseAdminOneStateMax = 100;
@@ -5260,6 +5471,9 @@ export const OnboardClinicAdminResponse = zod.object({
 }))).optional(),
   "doctorId": zod.string().nullish(),
   "admin": zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(onboardClinicAdminResponseAdminOnePasswordMin).max(onboardClinicAdminResponseAdminOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(onboardClinicAdminResponseAdminOneConfirmPasswordMax).optional(),
   "country": zod.string().max(onboardClinicAdminResponseAdminOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(onboardClinicAdminResponseAdminOneStateMax).optional(),
   "city": zod.string().max(onboardClinicAdminResponseAdminOneCityMax).optional(),
@@ -5289,6 +5503,10 @@ export const OnboardClinicAdminResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 })),
@@ -5331,6 +5549,11 @@ export const GetUserParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getUserResponseOnePasswordMin = 8;
+export const getUserResponseOnePasswordMax = 1024;
+
+export const getUserResponseOneConfirmPasswordMax = 1024;
+
 export const getUserResponseOneCountryMax = 100;
 
 export const getUserResponseOneStateMax = 100;
@@ -5346,6 +5569,9 @@ export const getUserResponseOneAddressMax = 500;
 
 
 export const GetUserResponse = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(getUserResponseOnePasswordMin).max(getUserResponseOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(getUserResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(getUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(getUserResponseOneStateMax).optional(),
   "city": zod.string().max(getUserResponseOneCityMax).optional(),
@@ -5375,6 +5601,10 @@ export const GetUserResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))
@@ -5383,6 +5613,11 @@ export const GetUserResponse = zod.object({
 export const UpdateUserParams = zod.object({
   "id": zod.coerce.string()
 })
+
+export const updateUserBodyPasswordMin = 8;
+export const updateUserBodyPasswordMax = 1024;
+
+export const updateUserBodyConfirmPasswordMax = 1024;
 
 export const updateUserBodyCountryMax = 100;
 
@@ -5399,6 +5634,9 @@ export const updateUserBodyAddressMax = 500;
 
 
 export const UpdateUserBody = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(updateUserBodyPasswordMin).max(updateUserBodyPasswordMax).optional(),
+  "confirmPassword": zod.string().max(updateUserBodyConfirmPasswordMax).optional(),
   "country": zod.string().max(updateUserBodyCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(updateUserBodyStateMax).optional(),
   "city": zod.string().max(updateUserBodyCityMax).optional(),
@@ -5413,6 +5651,11 @@ export const UpdateUserBody = zod.object({
   "branchIds": zod.array(zod.string()).optional(),
   "managingAdminId": zod.string().optional().describe('Backward-compatible only. If supplied it must match the managing admin derived by the server.')
 })
+
+export const updateUserResponseOnePasswordMin = 8;
+export const updateUserResponseOnePasswordMax = 1024;
+
+export const updateUserResponseOneConfirmPasswordMax = 1024;
 
 export const updateUserResponseOneCountryMax = 100;
 
@@ -5429,6 +5672,9 @@ export const updateUserResponseOneAddressMax = 500;
 
 
 export const UpdateUserResponse = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(updateUserResponseOnePasswordMin).max(updateUserResponseOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(updateUserResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(updateUserResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(updateUserResponseOneStateMax).optional(),
   "city": zod.string().max(updateUserResponseOneCityMax).optional(),
@@ -5458,6 +5704,10 @@ export const UpdateUserResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))
@@ -5489,6 +5739,11 @@ export const ResendUserInvitationParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const resendUserInvitationResponseOnePasswordMin = 8;
+export const resendUserInvitationResponseOnePasswordMax = 1024;
+
+export const resendUserInvitationResponseOneConfirmPasswordMax = 1024;
+
 export const resendUserInvitationResponseOneCountryMax = 100;
 
 export const resendUserInvitationResponseOneStateMax = 100;
@@ -5504,6 +5759,9 @@ export const resendUserInvitationResponseOneAddressMax = 500;
 
 
 export const ResendUserInvitationResponse = zod.object({
+  "requestId": zod.string().uuid().optional(),
+  "password": zod.string().min(resendUserInvitationResponseOnePasswordMin).max(resendUserInvitationResponseOnePasswordMax).optional(),
+  "confirmPassword": zod.string().max(resendUserInvitationResponseOneConfirmPasswordMax).optional(),
   "country": zod.string().max(resendUserInvitationResponseOneCountryMax).optional().describe('ISO-2 or name; new entries default to IN'),
   "state": zod.string().max(resendUserInvitationResponseOneStateMax).optional(),
   "city": zod.string().max(resendUserInvitationResponseOneCityMax).optional(),
@@ -5533,6 +5791,10 @@ export const ResendUserInvitationResponse = zod.object({
 }).optional()
 }).optional(),
   "passwordEnabled": zod.boolean().optional().describe('Whether this staff record has a local password configured.'),
+  "staffCreationNotice": zod.object({
+  "email": zod.string().nullish(),
+  "sms": zod.string().nullish()
+}).optional(),
   "createdAt": zod.coerce.date().nullable(),
   "lastLoginAt": zod.coerce.date().nullish()
 }))

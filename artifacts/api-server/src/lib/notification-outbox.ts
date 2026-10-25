@@ -318,8 +318,14 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
 export function startNotificationWorker() {
   // Development never sends automatically. Production follows each clinic's explicit notifications setting.
   if (process.env.NODE_ENV !== "production") return;
-  let busy = false, smsBusy = false;
+  let busy = false, smsBusy = false, staffBusy = false;
   const tick = () => {
+    if (!staffBusy) {
+      staffBusy = true;
+      void import("./staff-account-notifications").then(m => m.processStaffAccountNotifications())
+        .catch(() => logger.warn("Staff account notice worker failed"))
+        .finally(() => { staffBusy = false; });
+    }
     // Separate busy gates: a slow/failed provider must not delay the other channel's
     // next poll. Per-record durable claims still protect multiple server instances.
     if(!busy){busy=true;void processNotifications().catch(()=>logger.warn("Email worker failed; pending work retained")).finally(()=>{busy=false;});}

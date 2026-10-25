@@ -43,9 +43,9 @@ import type { BulkOutcome } from "./lib/bulk-summary";
 import { PhoneInput } from "./components/PhoneInput";
 import { StatusSwitch } from "./components/StatusSwitch";
 import { FormTabs } from "./components/FormTabs";
-import { InheritedClinicSummary } from "./components/InheritedClinicSummary";
+import { StaffAccountFields } from "./components/StaffAccountFields";
+import { createSuccessMessage, withoutPasswords } from "./lib/staff-account";
 import { STAFF_TABS, firstInvalidTab, invalidTabs } from "./lib/form-tabs";
-import { inheritedConfirmationError } from "./lib/inherited-defaults";
 import { DoctorScheduleContext } from "./components/schedule/DoctorScheduleContext";
 import "./components/doctor-editor.css";
 import "./staff-list.css";
@@ -234,7 +234,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
      {statusError&&<div role="alert" className="error-box">{statusError} <button type="button" onClick={()=>setStatusError("")}>Dismiss</button></div>}
     <ErrorNotice error={settings.error} />
     <ListingBulk selection={selection} resource={tab==="doctors"?"doctors":"users"} columns={["fullName","email","mobile","role","clinicNames","branchNames","status"]} identity={identity} context={selectionContext}/>
-    {!!selection.selected.length&&<div className="admin-bulk-bar"><HelpTip text="Replace pending invitations and send new set-password links. This does not deactivate staff or sign them out. Ineligible records are skipped with an explanation."><button type="button" disabled={invitationBusy||selection.selected.every(row=>!!staffInvitationRestriction(row,tab))} onClick={async()=>{
+    {selection.selected.some((row:any)=>!(row.passwordEnabled===true||row.invitationStatus==="notRequired"))&&<div className="admin-bulk-bar"><HelpTip text="Replace pending invitations and send new set-password links. This does not deactivate staff or sign them out. Ineligible records are skipped with an explanation."><button type="button" disabled={invitationBusy||selection.selected.every(row=>!!staffInvitationRestriction(row,tab))} onClick={async()=>{
       const rows=[...selection.selected],staffTab=tab;
       if(!invitationBusy&&await confirmAction.ask({title:`Resend Invitations for ${rows.length} Selected Staff?`,description:"Replace pending set-password invitations and request new emails. This does not deactivate accounts or revoke sessions. Inactive accounts and staff with passwords are skipped. Each eligible account is checked by the server; failures do not undo successful sends.",confirmLabel:"Resend Selected Invitations"}))bulkInvitations.mutate({rows,staffTab});
     }}>{bulkInvitations.isPending?"Sending Invitations…":"Resend Selected Invitations"}</button></HelpTip></div>}
@@ -263,14 +263,14 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
         <button disabled={!recoveryId || recovery.isPending} onClick={() => { if (!recovery.isPending) recovery.mutate({ id: recoveryId }); }} data-testid="button-password-help">{recovery.isPending ? "Loading…" : "Get recovery steps"}</button></div>
       <ErrorNotice error={recovery.error} />{recovery.data && <div className="notice" role="status"><p>{recovery.data.message}</p><Link href="/forgot-password" className="text-link">Open Secure Password Recovery</Link></div>}
     </AppDialog>}
-    
+
     {scheduleDoctor && <AppDialog open size="wide" title="Edit Doctor Schedule" dirty={scheduleDirty} busy={scheduleBusy} onClose={() => setScheduleDoctor(null)}>
       <DoctorScheduleContext doctor={scheduleDoctor} fixedClinicId={clinicId} canDelete onSaved={() => setScheduleDoctor(null)} onDirtyChange={setScheduleDirty} onBusyChange={setScheduleBusy}/>
     </AppDialog>}
-    {editing && <AppDialog open size="medium" onClose={() => setEditing(null)} title={editing.id||createdDoctor ? `Edit ${singular(editTab)}` : "Add Staff"} description={editing.id||createdDoctor ? undefined : "Choose a role, then enter the shared details and assignments."} dirty={dirty} busy={busy}>{roleConfirm.dialog}
+    {editing && <AppDialog open size="medium" onClose={() => setEditing(null)} title={editing.id||createdDoctor ? `Edit ${singular(editTab)}` : "Add Staff"} description={editing.id||createdDoctor ? undefined : "Enter the account details, then the work details."} dirty={dirty} busy={busy}>{roleConfirm.dialog}
        {!editing.id && !createdDoctor && creatable.length > 1 && <div className="staff-role-picker"><SearchableSelect label="Role" required testId="select-add-staff-role" value={editTab} disabled={busy} onChange={value => { const next = creatable.find(item => item.id === value)?.id; if (next) void chooseRole(next); }} options={creatable.map(item => ({ value: item.id, label: singular(item.id) }))}/></div>}
        {!editing.id && !createdDoctor && creatable.length === 1 && <p className="muted staff-role-picker" data-testid="text-add-staff-role">Role: <strong>{singular(editTab)}</strong></p>}
-       {editTab === "admins" && !editing.id ? <ClinicAdminOnboarding guided carry={carry} onSnapshot={(values,defaults)=>{snapshot.current={values,defaults};}} onDirtyChange={setDirty} onBusyChange={setBusy}/> :
+       {editTab === "admins" && !editing.id ? <ClinicAdminOnboarding guided carry={carry} onSnapshot={(values,defaults)=>{snapshot.current={values:withoutPasswords(values),defaults};}} onDirtyChange={setDirty} onBusyChange={setBusy}/> :
        <UserEditor key={`${editTab}:${editing.id||"new"}`} tab={editTab} initial={editing} onFirstSave={()=>{
          // A committed account must be findable even when its invitation fails
          // and the editor remains open. Old role/search/status filters must not
@@ -281,7 +281,7 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
          const q=new URLSearchParams(routeSearch);
          q.delete("search");q.delete("open");q.set("tab",editTab);
          navigateTo(`${window.location.pathname}?${q}`,{replace:true});
-       }} onCreated={(saved:any)=>{setScheduleDirty(false);setScheduleBusy(false);setScheduleDoctor(saved);}} carry={editing.id?undefined:carry} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onSnapshot={(values:Record<string,unknown>,defaults:Record<string,unknown>)=>{snapshot.current={values,defaults};}} onClose={(result:any) => { const wasEdit=!!editing.id;const savedTab=editTab;setEditing(null);if(!wasEdit&&savedTab!==tab){setTab(savedTab);setDraftTab(savedTab);}const message=wasEdit?"Updated successfully":`${singular(savedTab)} added. ${securityChannelSummary(result.setupNotificationOutcomes)}`;if(!wasEdit&&(result.invitationStatus==="failed"||Object.values(result.setupNotificationOutcomes||{}).some((c:any)=>!["provider_accepted","not_requested"].includes(c.status))))notifyWarning(message);else notifySuccess(message); }} />}
+       }} onCreated={(saved:any)=>{setScheduleDirty(false);setScheduleBusy(false);setScheduleDoctor(saved);}} carry={editing.id?undefined:carry} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onSnapshot={(values:Record<string,unknown>,defaults:Record<string,unknown>)=>{snapshot.current={values:withoutPasswords(values),defaults};}} onClose={(result:any) => { const wasEdit=!!editing.id;const savedTab=editTab;setEditing(null);if(!wasEdit&&savedTab!==tab){setTab(savedTab);setDraftTab(savedTab);}const legacySetup=result.invitationStatus&&result.invitationStatus!=="notRequired";const message=wasEdit?"Updated successfully":legacySetup?`${singular(savedTab)} added. ${securityChannelSummary(result.setupNotificationOutcomes)}`:`${singular(savedTab)} ${createSuccessMessage(result.status,result.staffCreationNotice)}`;if(!wasEdit&&legacySetup&&(result.invitationStatus==="failed"||Object.values(result.setupNotificationOutcomes||{}).some((c:any)=>!["provider_accepted","not_requested"].includes(c.status))))notifyWarning(message);else notifySuccess(message); }} />}
     </AppDialog>}
   </>;
 }
@@ -294,8 +294,8 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
   // Include every mounted doctor field in the reset baseline, including the
   // creation-only confirmation. Otherwise retained unmounted fields and empty
   // numeric inputs can report a saved new doctor as still dirty.
-  const doctorValues=(record:any)=>({...record,status:record.status||"active",fullName:record.fullName??"",email:record.email??"",mobile:record.mobile??"",registrationNumber:record.registrationNumber??"",experienceYears:record.experienceYears??undefined,clinicIds:record.clinicIds||[],branchIds:record.branchIds||[],confirmInherited:false});
-  const form = useForm({ defaultValues: { status: "active", ...(tab==="doctors"?doctorValues(initial):initial), ...(clinicId&&!initial.id&&tab!=="admins"?{clinicIds:[clinicId]}:{}) } });
+  const doctorValues=(record:any)=>({...record,status:record.status||"active",fullName:record.fullName??"",email:record.email??"",mobile:record.mobile??"",registrationNumber:record.registrationNumber??"",experienceYears:record.experienceYears??undefined,clinicIds:record.clinicIds||[],branchIds:record.branchIds||[]});
+  const form = useForm({ defaultValues: { status: "active", ...(!initial.id?{password:"",confirmPassword:""}:{}), ...(tab==="doctors"?doctorValues(initial):initial), ...(clinicId&&!initial.id&&tab!=="admins"?{clinicIds:[clinicId]}:{}) } });
   const client = useQueryClient();
   const locked = useRef(false);
   const resendSavedInvitation=useMutation({
@@ -306,7 +306,7 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
     },
     onSettled:()=>{void client.invalidateQueries();},
   });
-  const fixedClinic=api.useGetClinic(clinicId||"",{query:{queryKey:api.getGetClinicQueryKey(clinicId||""),enabled:tab==="doctors"&&!!clinicId}});
+  const fixedClinic=api.useGetClinic(clinicId||"",{query:{queryKey:api.getGetClinicQueryKey(clinicId||""),enabled:tab!=="admins"&&!!clinicId}});
   const [hydrated,setHydrated]=useState(tab!=="doctors"||!opened.id);
   const savedBranchIds:string[]=initial.branchIds||[];
   const savedLocations=useQuery({queryKey:["doctor-editor-locations",initial.id,savedBranchIds.join(",")],enabled:tab==="doctors"&&!!initial.id&&!!savedBranchIds.length,retry:false,queryFn:()=>Promise.all(savedBranchIds.map(id=>api.getBranch(id)))});
@@ -314,6 +314,8 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
   useEffect(()=>{
     if(!hydrated&&freshDoctor.isFetchedAfterMount&&!freshDoctor.isFetching&&freshDoctor.data){setSaved(freshDoctor.data);form.reset(doctorValues(freshDoctor.data));setHydrated(true);}
   },[freshDoctor.data,freshDoctor.isFetchedAfterMount,freshDoctor.isFetching,hydrated]);
+  const credentials = useRef<{password:string;confirmPassword:string}|null>(null);
+  const createRequestId = useRef(crypto.randomUUID());
   const records = useRef(new Map<string, any>());
   const [,setCatalogVersion]=useState(0);
   const remember = (rows: any[]) => { rows.forEach(row => records.current.set(row.id, row)); setCatalogVersion(version=>version+1); };
@@ -323,7 +325,10 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
   const optionsParams = { targetRole: assignmentTargetRole(tab), doctorId: tab === "doctors" ? initial.id : undefined, userId: tab === "receptionists" ? initial.id : undefined };
   const save = useMutation({
     mutationFn: async (data: any) => {
-       const body = clinicScopedStaffInput(tab,data,initial,clinicId,records.current);
+       // Credentials travel in a ref, not mutation variables, so the mutation cache never holds them.
+       const secret = credentials.current; credentials.current = null;
+       const body = { ...clinicScopedStaffInput(tab,{...data,...(secret||{})},initial,clinicId,records.current),
+         ...(!initial.id ? { requestId: createRequestId.current } : {}) };
       return tab === "doctors" ? initial.id ? api.updateDoctor(initial.id, body) : api.createDoctor(body) : initial.id ? api.updateUser(initial.id, body) : api.createUser(body);
     },
     onSuccess: (result) => {
@@ -348,7 +353,7 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
     const sub = form.watch(values => snapshotRef.current?.(values as Record<string, unknown>, defaults));
     return () => sub.unsubscribe();
   }, [form]);
-  const staffTabs = tab==="doctors"?undefined:STAFF_TABS[tab];
+  const staffTabs = tab==="doctors"||!initial.id?undefined:STAFF_TABS[tab];
   const [activeTab, setActiveTab] = useState(0);
   const errorKeys = Object.keys(form.formState.errors);
   const tabInvalid = staffTabs ? invalidTabs(staffTabs, errorKeys) : [];
@@ -359,7 +364,8 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
     if (locked.current || save.isPending || scheduleBusy) return;
     const assignmentChanged=JSON.stringify([selectedClinics,selectedBranches])!==JSON.stringify([initial.clinicIds||[],initial.branchIds||[]]);
     if(assignmentChanged&&scheduleDirty){setSavedMessage("Save or discard the schedule draft before saving assignment changes.");return;}
-    const { confirmInherited: _confirmed, ...rest } = data; data = rest;
+    const { password, confirmPassword, ...rest } = data; data = rest;
+    credentials.current = !initial.id && typeof password==="string" ? { password, confirmPassword } : null;
     // Do not infer invalid assignments from a partial lookup page. The API validates ownership and branch coverage.
     locked.current = true;
     save.mutate({...data,fullName:data.fullName.trim(),email:data.email.trim(),mobile:normalizePhone(data.mobile)});
@@ -368,42 +374,33 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
   return <div className={tab==="doctors"?"doctor-editor":undefined} data-details-dirty={tab==="doctors"?String(form.formState.isDirty):undefined} data-schedule-dirty={tab==="doctors"?String(scheduleDirty):undefined}><Form {...form}>{confirmAction.dialog}<form className="form-grid staff-editor" inert={save.isPending||scheduleBusy?true:undefined} noValidate onSubmit={submitWithNativeChecks(form, onSubmit, onInvalid)}>
     {staffTabs && <FormTabs tabs={staffTabs.map(t => t.label)} active={activeTab} onChange={setActiveTab} invalid={tabInvalid}/>}
     <div className={panel(0)} role={staffTabs ? "tabpanel" : undefined}>
-    <FormSection title="Staff details" hint={tab==="doctors"?"Sign-in identity and professional registration.":"Sign-in identity and invitation email."}>
-    <FormField id="input-fullName" label="Full Name" required error={form.formState.errors.fullName?.message as string}><input {...form.register("fullName", { validate: (v:unknown) => required()(v)||validatePersonName(v)||true })}/></FormField>
-    <FormField label="Email" required error={form.formState.errors.email?.message as string}><EmailInput data-testid="input-user-email" {...form.register("email", { validate: (v:unknown) => required()(v)||validateEmail(v)||true })}/></FormField>
-    <Controller name="mobile" control={form.control} rules={{validate:(v:unknown)=>validatePhone(v)||true}} render={({field})=><FormField label="Mobile" optional error={form.formState.errors.mobile?.message as string}><PhoneInput {...field} value={field.value||""}/></FormField>}/>
-
+    <FormSection title={initial.id?"Staff details":"Account"} hint={initial.id?"Name and contact details.":"Staff sign in with this email and password."}>
+    <StaffAccountFields control={form.control} register={form.register} errors={form.formState.errors} getValues={form.getValues as any} withPassword={!initial.id}/>
     </FormSection>
     <Controller name="status" control={form.control} render={({field})=><div className="wide"><StatusSwitch label="Staff Account Active" active={field.value==="active"} disabled={!!initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)} onChange={async active=>{if(!active&&!await confirmAction.ask({title:"Deactivate Staff Member?",description:"They will lose access. Ownership restrictions may prevent this change.",confirmLabel:"Deactivate",tone:"danger"}))return;field.onChange(active?"active":"inactive");}}/>{initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)&&<small className="muted">Your own account cannot be deactivated here.</small>}</div>}/>
     </div>
     {tab === "doctors" && <div className={panel(1)}><FormSection title="Professional" hint="Registration and experience.">
     <FormField label="Registration Number" optional><input data-testid="input-staff-registration" {...form.register("registrationNumber")} /></FormField><FormField label="Experience Years" optional><input type="number" min="0" data-testid="input-staff-experience" {...form.register("experienceYears", { setValueAs:value=>value===""||value==null?undefined:Number(value) })} /></FormField>
     </FormSection></div>}
-    {tab === "admins" && !initial.id && <p className="wide notice">Admin accounts have no clinic access until clinic ownership is assigned. Use Clinic Admin setup to create an admin and their first clinic together.</p>}
+
     {tab === "admins" && initial.id && <OwnedClinicInformation key={initial.id} adminId={initial.id}/>}
-    {tab !== "admins" && <div id="doctor-assignments" className={panel(tab === "doctors" ? 2 : 1)} role={staffTabs?"tabpanel":undefined}><FormSection title={tab==="doctors"?"Assignments":"Assignment"} hint="Which Clinic Groups and locations this person works at.">
-       <div className="wide"><Controller name="clinicIds" control={form.control} rules={{ validate: v => !!v?.length || "Select at least one Clinic Group." }} render={({ field }) => clinicId&&tab==="doctors"?<><label>Clinic Groups · inherited context</label><div className="doctor-context-value">{fixedClinic.data?.name||records.current.get(clinicId)?.name||(fixedClinic.isLoading?"Loading Clinic Group…":"Current Clinic Group (fixed)")}</div>{fixedClinic.error&&<><ErrorNotice error={fixedClinic.error}/><button type="button" onClick={()=>void fixedClinic.refetch()}>Retry Fixed Clinic Details</button></>}</>:<ResourceMultiLookup id="input-clinicIds" label="Clinic Groups" required error={form.formState.errors.clinicIds?.message as string} resource="assignment:clinics" params={{ ...optionsParams, managingAdminId: isSuperAdmin ? firstOwner : undefined }} value={field.value || []} onRecords={remember} isOptionDisabled={row=>!!firstOwner&&row?.adminId!==firstOwner||!!clinicId&&row?.id!==clinicId&&!selectedClinics.includes(row?.id)} onChange={ids => {
+    {tab !== "admins" && <div id="doctor-assignments" className={panel(tab === "doctors" ? 2 : 1)} role={staffTabs?"tabpanel":undefined}><FormSection title={tab==="doctors"?"Assignments":"Assignment"} hint="Which Clinics and locations this person works at.">
+       <div className="wide"><Controller name="clinicIds" control={form.control} rules={{ validate: v => !!v?.length || "Select at least one Clinic." }} render={({ field }) => clinicId?<><label>Clinic</label><div className="doctor-context-value">{fixedClinic.data?.name||records.current.get(clinicId)?.name||(fixedClinic.isLoading?"Loading clinic…":"Current clinic")}</div>{fixedClinic.error&&<><ErrorNotice error={fixedClinic.error}/><button type="button" onClick={()=>void fixedClinic.refetch()}>Retry Fixed Clinic Details</button></>}</>:<ResourceMultiLookup id="input-clinicIds" label="Clinics" required error={form.formState.errors.clinicIds?.message as string} resource="assignment:clinics" params={{ ...optionsParams, managingAdminId: isSuperAdmin ? firstOwner : undefined }} value={field.value || []} onRecords={remember} isOptionDisabled={row=>!!firstOwner&&row?.adminId!==firstOwner||!!clinicId&&row?.id!==clinicId&&!selectedClinics.includes(row?.id)} onChange={ids => {
          if(clinicId){field.onChange([...new Set([...(initial.clinicIds||[]).filter((id:string)=>id!==clinicId),clinicId])]);return;}
         const removed = selectedClinics.filter(id => !ids.includes(id));
         field.onChange(ids);
         if (removed.length) form.setValue("branchIds", selectedBranches.filter(id => !removed.includes(records.current.get(id)?.clinicId)), { shouldDirty: true });
-       }} />} /><small className="muted">{clinicId?"This Clinic Group remains assigned here. Assignments at other clinics are retained; use Staff management to change them.":"Clinic Groups must belong to the same managing admin. Existing assignments are retained while searching."}</small></div>
+       }} />} /><small className="muted">{clinicId?"This Clinic remains assigned here. Assignments at other clinics are retained; use Staff management to change them.":"Clinics must belong to the same managing admin. Existing assignments are retained while searching."}</small></div>
       {form.formState.errors.clinicIds&&<p className="field-error wide" role="alert">{String(form.formState.errors.clinicIds.message)}</p>}
       <div className="wide">
-         <Controller name="branchIds" control={form.control} rules={{ validate: v => tab !== "receptionists" || !!v?.length || "Select at least one location for each selected Clinic Group." }} render={({ field }) => <ResourceMultiLookup id="input-branchIds" label="Locations" required={tab==="receptionists"} resource="assignment:branches" params={{ ...optionsParams, clinicId:clinicId|| (selectedClinics.length===1?selectedClinics[0]:undefined) }} disabled={!selectedClinics.length||(tab==="doctors"&&!!clinicId&&!!savedBranchIds.length&&(savedLocations.isPending||savedLocations.isError))} value={clinicId&&tab==="doctors"?(field.value||[]).filter((id:string)=>(savedLocations.data?.find(b=>b.id===id)?.clinicId||records.current.get(id)?.clinicId)===clinicId):field.value || []} onRecords={remember} onChange={ids=>field.onChange(clinicId?[...new Set([...(initial.branchIds||[]).filter((id:string)=>(savedLocations.data?.find(b=>b.id===id)?.clinicId||records.current.get(id)?.clinicId)!==clinicId),...ids.filter((id:string)=>records.current.get(id)?.clinicId===clinicId||!records.current.get(id))])]:ids)} />} />
+         <Controller name="branchIds" control={form.control} rules={{ validate: v => tab !== "receptionists" || !!v?.length || "Select at least one location for each selected clinic." }} render={({ field }) => <ResourceMultiLookup id="input-branchIds" label="Locations" required={tab==="receptionists"} resource="assignment:branches" params={{ ...optionsParams, clinicId:clinicId|| (selectedClinics.length===1?selectedClinics[0]:undefined) }} isOptionDisabled={(row:any)=>!!row?.clinicId&&!selectedClinics.includes(row.clinicId)} disabled={!selectedClinics.length||(tab==="doctors"&&!!clinicId&&!!savedBranchIds.length&&(savedLocations.isPending||savedLocations.isError))} value={clinicId&&tab==="doctors"?(field.value||[]).filter((id:string)=>(savedLocations.data?.find(b=>b.id===id)?.clinicId||records.current.get(id)?.clinicId)===clinicId):field.value || []} onRecords={remember} onChange={ids=>field.onChange(clinicId?[...new Set([...(initial.branchIds||[]).filter((id:string)=>(savedLocations.data?.find(b=>b.id===id)?.clinicId||records.current.get(id)?.clinicId)!==clinicId),...ids.filter((id:string)=>records.current.get(id)?.clinicId===clinicId||!records.current.get(id))])]:ids)} />} />
         {tab==="doctors"&&clinicId&&!!savedBranchIds.length&&savedLocations.isPending&&<small role="status">Loading saved location assignments…</small>}
         {tab==="doctors"&&clinicId&&savedLocations.error&&<><ErrorNotice error={savedLocations.error}/><button type="button" onClick={()=>void savedLocations.refetch()}>Retry Saved Assignments</button></>}
         {tab==="doctors"&&clinicId&&savedLocations.data?.some(b=>b.clinicId!==clinicId)&&<div><label>Other saved locations · retained</label><div className="doctor-context-value">{savedLocations.data.filter(b=>b.clinicId!==clinicId).map(b=>b.name).join(", ")}</div><small className="muted">These assignments cannot be removed in this clinic context. Open Staff management to change them.</small></div>}
-        {!selectedClinics.length&&<small className="muted">Choose a Clinic Group first to enable location assignments.</small>}
+        {!selectedClinics.length&&<small className="muted">Choose a Clinic first to enable location assignments.</small>}
         {form.formState.errors.branchIds&&<p className="field-error" role="alert">{String(form.formState.errors.branchIds.message)}</p>}
-        {tab === "receptionists" && <small className="muted">Select at least one location for every assigned Clinic Group.</small>}
+        {tab === "receptionists" && <small className="muted">Select at least one location for every assigned Clinic.</small>}
       </div>
-      {!initial.id && <>
-        <h4 className="wide">Inherited clinic details</h4>
-        <InheritedClinicSummary clinicIds={selectedClinics} branchIds={selectedBranches} user={identity.user} doctor={tab === "doctors"}/>
-        {selectedClinics.length > 0 && <Controller name="confirmInherited" control={form.control} rules={{ validate: v => inheritedConfirmationError(true, form.getValues("clinicIds"), v) || true }} render={({ field }) => <label className="wide checkbox-row"><input type="checkbox" checked={field.value === true} onChange={e => field.onChange(e.target.checked)} data-testid="checkbox-confirm-inherited"/> Use these clinic details for this {tab === "doctors" ? "doctor" : "receptionist"}</label>}/>}
-        {form.formState.errors.confirmInherited && <p className="field-error wide" role="alert">{String(form.formState.errors.confirmInherited.message)}</p>}
-      </>}
     </FormSection></div>}
     <FormActions busy={save.isPending||scheduleBusy} cancelClosesDialog submitLabel={initial.id ? tab==="doctors"?"Save Doctor Details":"Save Changes" : `Add ${tab==="doctors"?"Doctor":tab==="admins"?"Clinic Admin":"Receptionist"}`} busyLabel={initial.id ? "Saving…" : "Adding…"} submitTestId="button-save-staff" cancelTestId="button-cancel-staff" secondary={save.error ? <ErrorNotice error={save.error} /> : undefined} />
     {savedMessage&&<p className="notice wide" role="status">{savedMessage}</p>}

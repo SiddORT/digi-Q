@@ -11,6 +11,8 @@ import { enrich } from "../lib/entities";
 import { queryPage, assignmentCatalogPredicate } from "../lib/list-query";
 import { inviteStaff, requestStaffReset, ensureStaffInvitationConfigured } from "./auth";
 import { consumeRateLimit, revokeUserSessions } from "../lib/native-auth";
+import { takeStaffCredentials, staffCreationReplay, staffReceiptKey, staffRequestDigest } from "../lib/staff-credentials";
+import { captureStaffCreated, staffCreationNotice } from "../lib/staff-account-notifications";
 import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, attachOwnDoctor, clinicDisplayPreferences } from "../lib/clinic-expansion";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus, extraSession } from "../lib/availability";
 import { assertScheduleSnapshot } from "../lib/schedule-snapshot";
@@ -203,6 +205,8 @@ export async function deliverInvitation(userId: string, redirectUrl?: string) {
 }
 export async function createClinicAdminOnboarding(actor: any, body: any, redirectUrl?: string) {
   roles(actor, ["superAdmin"]);
+  const direct = await takeStaffCredentials(body.admin);
+  body = { ...body, admin: direct.body };
   const email = body.admin.email.toLowerCase();
   if (body.clinic.timezone) localNow(body.clinic.timezone);
   const { registrationCompletion, saveRegistrationReceipt } = await import("../lib/registration-completion");
@@ -211,7 +215,7 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
     const completed = await registrationCompletion(actor.id, body.requestId, "admin", db, body);
     if (completed) return completed;
   }
-  await ensureStaffInvitationConfigured("clinicAdmin");
+  if (!direct.credentials) await ensureStaffInvitationConfigured("clinicAdmin");
   const result = await db.transaction(async tx => {
     if (body.requestId) {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"registration:" + actor.id + ":" + body.requestId}))`);
@@ -230,12 +234,15 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
       role: "clinicAdmin",
       status: "active",
       invitationStatus: "failed",
+      ...direct.credentials,
+      ...(direct.credentials ? { data: { staffContactOnboarding: true, staffVerificationPrompt: true } } : {}),
     }, tx);
     const setup = await createOwnedClinic(actor, admin, body, tx);
     await saveRegistrationReceipt(actor.id, "admin", body, setup.clinic.id, tx);
     const clinic = setup.clinic;
     await audit(actor, "create", "users", admin, tx);
     await audit(actor, "create", "clinics", clinic, tx);
+    if (direct.credentials) await captureStaffCreated(tx, actor.id, admin.id, [clinic.id]);
     return {
       branches: setup.branches,
       doctorId: setup.doctorId,
@@ -244,15 +251,26 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
       replayed: false,
     };
   });
-  if (!result.replayed) await deliverInvitation(result.admin.id, redirectUrl);
+  if (!result.replayed && !direct.credentials) await deliverInvitation(result.admin.id, redirectUrl);
   const { replayed: _replayed, ...publicResult } = result;
   return {
     ...publicResult,
-    admin: await enrich("users", await one(users, result.admin.id)),
+    admin: { ...await enrich("users", await one(users, result.admin.id)),
+      ...(direct.credentials ? { staffCreationNotice: await staffCreationNotice(db, actor.id, result.admin.id) } : {}) },
   };
 }
 async function save(kind: string, table: any, user: any, body: any, old?: any, redirectUrl?: string, refreshActor?:()=>Promise<any>) {
   await authorizeWrite(user, kind, body, old);
+  const direct = ["users", "doctors"].includes(kind) ? await takeStaffCredentials(body, !!old) : { body, credentials: undefined };
+  body = direct.body;
+  const requestId = direct.credentials ? body.requestId : undefined;
+  if (["users", "doctors"].includes(kind)) delete body.requestId;
+  const requestDigest = direct.credentials ? staffRequestDigest(body) : "";
+  if (requestId) {
+    const replay = await staffCreationReplay(db, user, kind, requestId, requestDigest);
+    if (replay) return { ...replay, staffCreationNotice: await staffCreationNotice(db, user.id, replay.userId || replay.id) };
+  }
+  if (direct.credentials) assert(kind === "doctors" || body.role === "receptionist", 403, "This role cannot be created here.");
   if (old && ["users", "doctors"].includes(kind) && body.email !== undefined &&
       body.email.toLowerCase() !== old.email.toLowerCase())
     throw new HttpError(409, "Changing a login email requires a separately verified account transfer", "EMAIL_CHANGE_REQUIRES_VERIFICATION");
@@ -260,10 +278,15 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
   if (!old && (kind === "users" || kind === "doctors")) {
     const existing = (await all(users)).find(u => u.email === body.email);
     assert(!existing, 409, "Email already belongs to an existing profile; roles cannot be silently changed");
-    if (kind === "doctors" || ["clinicAdmin", "doctor", "receptionist"].includes(body.role))
+    if (!direct.credentials && (kind === "doctors" || ["clinicAdmin", "doctor", "receptionist"].includes(body.role)))
       await ensureStaffInvitationConfigured(kind === "doctors" ? "doctor" : body.role);
   }
   const saved = await db.transaction(async tx => {
+    if (requestId) {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${staffReceiptKey(user.id, requestId)}))`);
+      const replay = await staffCreationReplay(tx, user, kind, requestId, requestDigest);
+      if (replay) return replay;
+    }
     const proposed = { ...old, ...body };
     if (kind === "users" && old?.id === user.id && body.status === "inactive")
       assert(false, 409, "You cannot deactivate your own account");
@@ -490,6 +513,24 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
       if (body.ownerAdminId !== undefined) assert(body.ownerAdminId === managingAdminId, 409, "Supplied Clinic Admin does not match the owner derived from selected clinics");
       if (body.managingAdminId !== undefined) assert(body.managingAdminId === managingAdminId, 409, "Supplied Clinic Admin does not match the owner derived from selected clinics");
       const uf: any = { fullName: body.fullName, email: body.email, mobile: body.mobile, role, status: fields.status, ...(!old ? { invitationStatus: "failed" } : {}) };
+      if (direct.credentials) {
+        Object.assign(uf, direct.credentials);
+        if (kind === "users") fields.data = { ...fields.data, staffContactOnboarding: true, staffVerificationPrompt: true };
+        else uf.data = { staffContactOnboarding: true, staffVerificationPrompt: true };
+      }
+      if (old) {
+        const [account] = await tx.select().from(users).where(eq(users.id, userId)).for("update");
+        const mobileChanged = account && body.mobile !== undefined && body.mobile !== account.mobile;
+        if (account && kind === "users") {
+          uf.data = { ...account.data, ...fields.data,
+            staffMobileProof: mobileChanged ? null : account.data.staffMobileProof,
+            staffVerificationPrompt: account.data.staffVerificationPrompt,
+            staffContactOnboarding: account.data.staffContactOnboarding };
+        } else if (account && mobileChanged) uf.data = { ...account.data, staffMobileProof: null };
+        if (mobileChanged) {
+          await tx.execute(sql`update auth_challenges set consumed_at=now(),data='{}'::jsonb where user_id=${userId} and purpose='staff-contact:sms'`);
+        }
+      }
       if (kind === "doctors" && old) {
         const account = await one(users, userId, tx);
         if (account.role === "clinicAdmin") {
@@ -549,6 +590,10 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
           : old && (body.clinicIds !== undefined || body.branchIds !== undefined) ? "assignmentChange"
             : old ? "update" : "create",
         kind, row, tx);
+      if (direct.credentials) await captureStaffCreated(tx, user.id, userId, requestedClinics);
+      if (requestId) await tx.insert(tables.settings).values({
+        id: staffReceiptKey(user.id, requestId), data: { kind, entityId: row.id, staffId: userId, digest: requestDigest },
+      });
       return enrich(kind, row, tx);
     }
     const row = old ? await change(table, id, fields, tx) : await put(table, { id, ...fields }, tx);
@@ -564,10 +609,11 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
     if (kind === "doctors" && (await one(users, saved.userId)).status === "inactive")
       await revokeUserSessions(saved.userId);
   }
-  if (!old && (kind === "doctors" || (kind === "users" && ["clinicAdmin", "doctor", "receptionist"].includes(saved.role)))) {
+  if (!direct.credentials && !old && (kind === "doctors" || (kind === "users" && ["clinicAdmin", "doctor", "receptionist"].includes(saved.role)))) {
     await deliverInvitation(kind === "users" ? saved.id : saved.userId, redirectUrl);
     return enrich(kind, await one(table, saved.id));
   }
+  if (direct.credentials) saved.staffCreationNotice = await staffCreationNotice(db, user.id, saved.userId || saved.id);
   return saved;
 }
 /* Historical incoming save implementation intentionally excluded during conflict resolution.

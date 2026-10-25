@@ -1426,7 +1426,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 367,
+          "line": 373,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1435,7 +1435,7 @@
           "type": "\"button\""
         },
         {
-          "line": 368,
+          "line": 374,
           "tag": "Form",
           "family": "forms",
           "stateProfile": "form",
@@ -1443,7 +1443,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 369,
+          "line": 375,
           "tag": "FormTabs",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -1451,7 +1451,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 371,
+          "line": 377,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -1459,48 +1459,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 372,
-          "tag": "FormField",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "id": "\"input-fullName\""
-        },
-        {
-          "line": 372,
-          "tag": "input",
-          "family": "fields",
-          "stateProfile": "field",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 373,
-          "tag": "FormField",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 374,
-          "tag": "FormField",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 374,
-          "tag": "PhoneInput",
-          "family": "fields",
-          "stateProfile": "field",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 379,
+          "line": 382,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -1508,7 +1467,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 380,
+          "line": 383,
           "tag": "FormField",
           "family": "forms",
           "stateProfile": "form",
@@ -1516,7 +1475,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 380,
+          "line": 383,
           "tag": "input",
           "family": "fields",
           "stateProfile": "field",
@@ -1525,7 +1484,7 @@
           "data-testid": "\"input-staff-registration\""
         },
         {
-          "line": 380,
+          "line": 383,
           "tag": "FormField",
           "family": "forms",
           "stateProfile": "form",
@@ -1533,7 +1492,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 380,
+          "line": 383,
           "tag": "input",
           "family": "fields",
           "stateProfile": "field",
@@ -1543,7 +1502,7 @@
           "data-testid": "\"input-staff-experience\""
         },
         {
-          "line": 384,
+          "line": 387,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -1551,7 +1510,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 385,
+          "line": 388,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1560,7 +1519,7 @@
           "type": "\"button\""
         },
         {
-          "line": 395,
+          "line": 398,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1569,17 +1528,7 @@
           "type": "\"button\""
         },
         {
-          "line": 404,
-          "tag": "input",
-          "family": "fields",
-          "stateProfile": "binary",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"checkbox\"",
-          "data-testid": "\"checkbox-confirm-inherited\""
-        },
-        {
-          "line": 408,
+          "line": 405,
           "tag": "FormActions",
           "family": "forms",
           "stateProfile": "form",
@@ -1587,7 +1536,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 411,
+          "line": 408,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1598,7 +1547,7 @@
           "disabled": "{save.isPending}"
         },
         {
-          "line": 413,
+          "line": 410,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2080,7 +2029,7 @@
       "file": "artifacts/clinicflow/src/clinic.tsx",
       "entries": [
         {
-          "line": 132,
+          "line": 133,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2088,7 +2037,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 140,
+          "line": 141,
           "tag": "a",
           "family": "links",
           "stateProfile": "link",
@@ -2098,7 +2047,7 @@
           "href": "{image}"
         },
         {
-          "line": 163,
+          "line": 164,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2108,7 +2057,7 @@
           "className": "\"button\""
         },
         {
-          "line": 169,
+          "line": 170,
           "tag": "Editor",
           "family": "forms",
           "stateProfile": "form",
@@ -2116,7 +2065,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 175,
+          "line": 176,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2124,7 +2073,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 175,
+          "line": 176,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2135,7 +2084,7 @@
           "data-testid": "\"link-account-booking\""
         },
         {
-          "line": 209,
+          "line": 210,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2147,7 +2096,7 @@
           "data-testid": "\"button-close-navigation\""
         },
         {
-          "line": 209,
+          "line": 210,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2160,7 +2109,7 @@
           "data-testid": "\"button-toggle-sidebar-collapse\""
         },
         {
-          "line": 209,
+          "line": 210,
           "tag": "WorkspaceNav",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2169,7 +2118,7 @@
           "role": "{role}"
         },
         {
-          "line": 209,
+          "line": 210,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2179,7 +2128,7 @@
           "data-testid": "\"button-signout\""
         },
         {
-          "line": 209,
+          "line": 210,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2191,7 +2140,7 @@
           "aria-controls": "\"workspace-sidebar\""
         },
         {
-          "line": 209,
+          "line": 210,
           "tag": "Menu",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2199,7 +2148,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 209,
+          "line": 210,
           "tag": "ProfileMenu",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2208,7 +2157,7 @@
           "role": "{role}"
         },
         {
-          "line": 209,
+          "line": 210,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2219,7 +2168,7 @@
           "data-testid": "\"link-page-book-appointment\""
         },
         {
-          "line": 210,
+          "line": 211,
           "tag": "ReportsTabs",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2227,7 +2176,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 252,
+          "line": 253,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2239,7 +2188,7 @@
           "data-testid": "{`tab-${tab.id}`}"
         },
         {
-          "line": 258,
+          "line": 259,
           "tag": "WorkspaceTabs",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2247,7 +2196,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 279,
+          "line": 280,
           "tag": "WorkspaceTabs",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2255,7 +2204,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 289,
+          "line": 290,
           "tag": "WorkspaceTabs",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2263,7 +2212,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 315,
+          "line": 316,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2271,7 +2220,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 317,
+          "line": 318,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -2279,7 +2228,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 318,
+          "line": 319,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2290,7 +2239,7 @@
           "data-testid": "\"link-view-all-today\""
         },
         {
-          "line": 319,
+          "line": 320,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -2298,7 +2247,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 319,
+          "line": 320,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2309,7 +2258,7 @@
           "data-testid": "\"link-activity-view-all\""
         },
         {
-          "line": 319,
+          "line": 320,
           "tag": "OverflowText",
           "family": "overlays",
           "stateProfile": "help",
@@ -2317,7 +2266,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 326,
+          "line": 327,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2325,7 +2274,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 329,
+          "line": 330,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2336,7 +2285,7 @@
           "aria-label": "{`View booking details for ${appointment.doctorName} on ${formatDate(appointment.date,appointment)}`}"
         },
         {
-          "line": 392,
+          "line": 393,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2345,14 +2294,6 @@
           "className": "\"button\"",
           "href": "{`/${role}/book`}",
           "data-testid": "\"link-page-book-appointment\""
-        },
-        {
-          "line": 392,
-          "tag": "SearchableSelect",
-          "family": "fields",
-          "stateProfile": "selection",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
           "line": 393,
@@ -2371,7 +2312,15 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 402,
+          "line": 395,
+          "tag": "SearchableSelect",
+          "family": "fields",
+          "stateProfile": "selection",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 403,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2382,7 +2331,7 @@
           "data-testid": "\"button-mode-list\""
         },
         {
-          "line": 402,
+          "line": 403,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2393,7 +2342,7 @@
           "data-testid": "\"button-mode-calendar\""
         },
         {
-          "line": 402,
+          "line": 403,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -2401,7 +2350,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 404,
+          "line": 405,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2409,7 +2358,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 404,
+          "line": 405,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2417,7 +2366,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 406,
+          "line": 407,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2425,7 +2374,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 406,
+          "line": 407,
           "tag": "Pagination",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2433,7 +2382,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 468,
+          "line": 469,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -2441,7 +2390,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 469,
+          "line": 470,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2451,7 +2400,7 @@
           "href": "{`/${[\"superAdmin\",\"clinicAdmin\"].includes(identity.user!.role)?\"admin\":identity.user!.role}/appointments`}"
         },
         {
-          "line": 471,
+          "line": 472,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2459,7 +2408,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 475,
+          "line": 476,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2467,7 +2416,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 478,
+          "line": 479,
           "tag": "input",
           "family": "fields",
           "stateProfile": "binary",
@@ -2477,7 +2426,7 @@
           "data-testid": "{`radio-booking-source-${value}`}"
         },
         {
-          "line": 480,
+          "line": 481,
           "tag": "DateFormatInput",
           "family": "fields",
           "stateProfile": "field",
@@ -2487,7 +2436,7 @@
           "data-testid": "\"input-booking-date\""
         },
         {
-          "line": 482,
+          "line": 483,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -2495,7 +2444,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 483,
+          "line": 484,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2506,7 +2455,7 @@
           "data-testid": "\"button-reset-booking-context\""
         },
         {
-          "line": 486,
+          "line": 487,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2515,7 +2464,7 @@
           "className": "\"text-link\""
         },
         {
-          "line": 486,
+          "line": 487,
           "tag": "AppDialog",
           "family": "overlays",
           "stateProfile": "overlay",
@@ -2523,7 +2472,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 486,
+          "line": 487,
           "tag": "PatientEditor",
           "family": "forms",
           "stateProfile": "form",
@@ -2531,7 +2480,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 487,
+          "line": 488,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2539,7 +2488,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 488,
+          "line": 489,
           "tag": "PhoneInput",
           "family": "fields",
           "stateProfile": "field",
@@ -2548,7 +2497,7 @@
           "aria-label": "\"Mobile number\""
         },
         {
-          "line": 488,
+          "line": 489,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2557,7 +2506,7 @@
           "disabled": "{otp.isPending||!mobile}"
         },
         {
-          "line": 488,
+          "line": 489,
           "tag": "input",
           "family": "fields",
           "stateProfile": "field",
@@ -2566,7 +2515,7 @@
           "aria-label": "\"Verification code\""
         },
         {
-          "line": 488,
+          "line": 489,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2575,7 +2524,7 @@
           "disabled": "{verify.isPending||!code}"
         },
         {
-          "line": 489,
+          "line": 490,
           "tag": "textarea",
           "family": "fields",
           "stateProfile": "field",
@@ -2583,7 +2532,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 491,
+          "line": 492,
           "tag": "input",
           "family": "fields",
           "stateProfile": "binary",
@@ -2592,7 +2541,7 @@
           "type": "\"checkbox\""
         },
         {
-          "line": 491,
+          "line": 492,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -2600,7 +2549,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 499,
+          "line": 500,
           "tag": "ProfileEditor",
           "family": "forms",
           "stateProfile": "form",
@@ -2608,7 +2557,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 501,
+          "line": 502,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2619,7 +2568,7 @@
           "data-testid": "\"button-my-patient-records\""
         },
         {
-          "line": 502,
+          "line": 503,
           "tag": "PatientDetailsDrawer",
           "family": "overlays",
           "stateProfile": "overlay",
@@ -2627,7 +2576,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 503,
+          "line": 504,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2638,7 +2587,7 @@
           "data-testid": "\"link-profile-consultation\""
         },
         {
-          "line": 503,
+          "line": 504,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2649,7 +2598,7 @@
           "data-testid": "\"link-profile-clinics\""
         },
         {
-          "line": 503,
+          "line": 504,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2659,7 +2608,7 @@
           "className": "\"text-link\""
         },
         {
-          "line": 511,
+          "line": 512,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2669,7 +2618,7 @@
           "disabled": "{mutation.isPending}"
         },
         {
-          "line": 511,
+          "line": 512,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2677,7 +2626,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 511,
+          "line": 512,
           "tag": "Editor",
           "family": "forms",
           "stateProfile": "form",
@@ -2685,7 +2634,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 539,
+          "line": 540,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2693,7 +2642,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 547,
+          "line": 548,
           "tag": "SearchableSelect",
           "family": "fields",
           "stateProfile": "selection",
@@ -2701,7 +2650,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 551,
+          "line": 552,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2712,7 +2661,7 @@
           "aria-label": "{`Sort clinic name ${assignedSort===\"name\"?\"descending\":\"ascending\"}`}"
         },
         {
-          "line": 555,
+          "line": 556,
           "tag": "OverflowText",
           "family": "overlays",
           "stateProfile": "help",
@@ -2720,7 +2669,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 564,
+          "line": 565,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2728,7 +2677,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 565,
+          "line": 566,
           "tag": "Pagination",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2736,7 +2685,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 575,
+          "line": 576,
           "tag": "SearchableSelect",
           "family": "fields",
           "stateProfile": "selection",
@@ -2744,7 +2693,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 579,
+          "line": 580,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2756,7 +2705,7 @@
           "aria-label": "{`Sort network clinic name ${networkSort===\"name\"?\"descending\":\"ascending\"}`}"
         },
         {
-          "line": 583,
+          "line": 584,
           "tag": "OverflowText",
           "family": "overlays",
           "stateProfile": "help",
@@ -2764,7 +2713,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 591,
+          "line": 592,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2772,7 +2721,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 592,
+          "line": 593,
           "tag": "Pagination",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -2780,7 +2729,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 603,
+          "line": 604,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2788,7 +2737,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 603,
+          "line": 604,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -2797,7 +2746,7 @@
           "href": "\"/admin/templates\""
         },
         {
-          "line": 603,
+          "line": 604,
           "tag": "Editor",
           "family": "forms",
           "stateProfile": "form",
@@ -2805,7 +2754,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 619,
+          "line": 620,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2816,18 +2765,10 @@
           "aria-label": "{`Sort ${reportSortLabels[key]} ${sort===key?\"descending\":\"ascending\"}`}"
         },
         {
-          "line": 630,
+          "line": 631,
           "tag": "OverflowText",
           "family": "overlays",
           "stateProfile": "help",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 680,
-          "tag": "SearchableSelect",
-          "family": "fields",
-          "stateProfile": "selection",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
@@ -2840,7 +2781,15 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 686,
+          "line": 682,
+          "tag": "SearchableSelect",
+          "family": "fields",
+          "stateProfile": "selection",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 687,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -2848,7 +2797,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 686,
+          "line": 687,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -2856,7 +2805,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 686,
+          "line": 687,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -2868,14 +2817,6 @@
           "disabled": "{exporting||q.isFetching||q.isPlaceholderData||!!q.error||!total||!from||!to||from>to}"
         },
         {
-          "line": 689,
-          "tag": "button",
-          "family": "actions",
-          "stateProfile": "action",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
           "line": 690,
           "tag": "button",
           "family": "actions",
@@ -2884,7 +2825,15 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 690,
+          "line": 691,
+          "tag": "button",
+          "family": "actions",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 691,
           "tag": "Pagination",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -3452,7 +3401,7 @@
           "data-testid": "\"button-setup-clinic-admin\""
         },
         {
-          "line": 65,
+          "line": 72,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -3463,7 +3412,7 @@
           "disabled": "{resend.isPending}"
         },
         {
-          "line": 70,
+          "line": 77,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -3830,7 +3779,7 @@
       "file": "artifacts/clinicflow/src/components/ClinicRegistrationComplete.tsx",
       "entries": [
         {
-          "line": 22,
+          "line": 24,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -3841,7 +3790,7 @@
           "data-testid": "\"registration-configure-sessions\""
         },
         {
-          "line": 23,
+          "line": 25,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -3852,7 +3801,7 @@
           "data-testid": "\"registration-open-workspace\""
         },
         {
-          "line": 24,
+          "line": 26,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -3862,7 +3811,7 @@
           "href": "{clinicWorkspaceHref(result.clinic.id,\"staff\")}"
         },
         {
-          "line": 25,
+          "line": 27,
           "tag": "a",
           "family": "links",
           "stateProfile": "link",
@@ -3972,7 +3921,7 @@
       "file": "artifacts/clinicflow/src/components/ClinicRegistrationWizard.tsx",
       "entries": [
         {
-          "line": 188,
+          "line": 213,
           "tag": "FormField",
           "family": "forms",
           "stateProfile": "form",
@@ -3980,7 +3929,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 188,
+          "line": 213,
           "tag": "PhoneInput",
           "family": "fields",
           "stateProfile": "field",
@@ -3988,151 +3937,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 188,
-          "tag": "FormField",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 188,
-          "tag": "input",
-          "family": "fields",
-          "stateProfile": "field",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "{type}",
-          "data-testid": "{`registration-${key}`}",
-          "readOnly": "{!adminMode && key === \"email\"}"
-        },
-        {
-          "line": 189,
-          "tag": "Link",
-          "family": "links",
-          "stateProfile": "link",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "href": "{adminMode ? \"/admin/users\" : \"/sign-in\"}",
-          "data-testid": "\"registration-exit\""
-        },
-        {
-          "line": 189,
-          "tag": "button",
-          "family": "actions",
-          "stateProfile": "action",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"button\""
-        },
-        {
-          "line": 192,
-          "tag": "button",
-          "family": "actions",
-          "stateProfile": "action",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"button\"",
-          "className": "\"text-link\"",
-          "data-testid": "\"registration-discard\""
-        },
-        {
-          "line": 195,
-          "tag": "FormSection",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 197,
-          "tag": "FormSection",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 201,
-          "tag": "FormField",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "className": "\"wide\""
-        },
-        {
-          "line": 201,
-          "tag": "input",
-          "family": "fields",
-          "stateProfile": "field",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "data-testid": "\"registration-slug\""
-        },
-        {
-          "line": 205,
-          "tag": "FormField",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 205,
-          "tag": "input",
-          "family": "fields",
-          "stateProfile": "field",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "data-testid": "{`registration-branch-${index}-name`}"
-        },
-        {
-          "line": 206,
-          "tag": "FormField",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 206,
-          "tag": "input",
-          "family": "fields",
-          "stateProfile": "field",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "data-testid": "{`registration-branch-${index}-slug`}"
-        },
-        {
-          "line": 208,
-          "tag": "button",
-          "family": "actions",
-          "stateProfile": "action",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"button\"",
-          "className": "\"text-link\""
-        },
-        {
-          "line": 209,
-          "tag": "AddressFields",
-          "family": "fields",
-          "stateProfile": "field",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 211,
-          "tag": "input",
-          "family": "fields",
-          "stateProfile": "binary",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"checkbox\""
-        },
-        {
-          "line": 212,
+          "line": 213,
           "tag": "FormField",
           "family": "forms",
           "stateProfile": "form",
@@ -4143,13 +3948,53 @@
           "line": 213,
           "tag": "input",
           "family": "fields",
-          "stateProfile": "binary",
+          "stateProfile": "field",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"checkbox\""
+          "type": "{type}",
+          "data-testid": "{`registration-${key}`}",
+          "readOnly": "{!adminMode && key === \"email\"}"
         },
         {
           "line": 214,
+          "tag": "Link",
+          "family": "links",
+          "stateProfile": "link",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "href": "{adminMode ? \"/admin/users\" : \"/sign-in\"}",
+          "data-testid": "\"registration-exit\""
+        },
+        {
+          "line": 214,
+          "tag": "button",
+          "family": "actions",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"button\""
+        },
+        {
+          "line": 217,
+          "tag": "button",
+          "family": "actions",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"button\"",
+          "className": "\"text-link\"",
+          "data-testid": "\"registration-discard\""
+        },
+        {
+          "line": 220,
+          "tag": "FormSection",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 221,
           "tag": "FormField",
           "family": "forms",
           "stateProfile": "form",
@@ -4157,15 +4002,75 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 214,
-          "tag": "PhoneInput",
-          "family": "fields",
-          "stateProfile": "field",
+          "line": 221,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 215,
+          "line": 222,
+          "tag": "FormSection",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 226,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "className": "\"wide\""
+        },
+        {
+          "line": 226,
+          "tag": "input",
+          "family": "fields",
+          "stateProfile": "field",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "data-testid": "\"registration-slug\""
+        },
+        {
+          "line": 231,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 231,
+          "tag": "input",
+          "family": "fields",
+          "stateProfile": "field",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "data-testid": "{`registration-branch-${index}-name`}"
+        },
+        {
+          "line": 232,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 232,
+          "tag": "input",
+          "family": "fields",
+          "stateProfile": "field",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "data-testid": "{`registration-branch-${index}-slug`}"
+        },
+        {
+          "line": 234,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4175,7 +4080,67 @@
           "className": "\"text-link\""
         },
         {
-          "line": 215,
+          "line": 235,
+          "tag": "AddressFields",
+          "family": "fields",
+          "stateProfile": "field",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 237,
+          "tag": "input",
+          "family": "fields",
+          "stateProfile": "binary",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"checkbox\""
+        },
+        {
+          "line": 238,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 239,
+          "tag": "input",
+          "family": "fields",
+          "stateProfile": "binary",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"checkbox\""
+        },
+        {
+          "line": 240,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 240,
+          "tag": "PhoneInput",
+          "family": "fields",
+          "stateProfile": "field",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 241,
+          "tag": "button",
+          "family": "actions",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"button\"",
+          "className": "\"text-link\""
+        },
+        {
+          "line": 241,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4185,7 +4150,7 @@
           "className": "\"button secondary\""
         },
         {
-          "line": 217,
+          "line": 243,
           "tag": "input",
           "family": "fields",
           "stateProfile": "binary",
@@ -4195,7 +4160,7 @@
           "data-testid": "\"registration-also-consult\""
         },
         {
-          "line": 217,
+          "line": 243,
           "tag": "SearchableSelect",
           "family": "fields",
           "stateProfile": "selection",
@@ -4203,7 +4168,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 218,
+          "line": 244,
           "tag": "input",
           "family": "fields",
           "stateProfile": "binary",
@@ -4213,7 +4178,7 @@
           "data-testid": "\"registration-link-hours\""
         },
         {
-          "line": 218,
+          "line": 244,
           "tag": "input",
           "family": "fields",
           "stateProfile": "field",
@@ -4223,7 +4188,7 @@
           "data-testid": "\"registration-session-capacity\""
         },
         {
-          "line": 218,
+          "line": 244,
           "tag": "SearchableSelect",
           "family": "fields",
           "stateProfile": "selection",
@@ -4231,7 +4196,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 219,
+          "line": 245,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -4239,7 +4204,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 227,
+          "line": 253,
           "tag": "FormActions",
           "family": "forms",
           "stateProfile": "form",
@@ -4248,7 +4213,16 @@
           "disabled": "{checking}"
         },
         {
-          "line": 234,
+          "line": 253,
+          "tag": "FormActions",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "disabled": "{checking}"
+        },
+        {
+          "line": 260,
           "tag": "SearchableSelect",
           "family": "fields",
           "stateProfile": "selection",
@@ -4256,10 +4230,18 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 235,
+          "line": 261,
           "tag": "SearchableSelect",
           "family": "fields",
           "stateProfile": "selection",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 262,
+          "tag": "HelpTip",
+          "family": "overlays",
+          "stateProfile": "help",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         }
@@ -8777,7 +8759,7 @@
       "file": "artifacts/clinicflow/src/components/PasswordInput.tsx",
       "entries": [
         {
-          "line": 27,
+          "line": 29,
           "tag": "input",
           "family": "fields",
           "stateProfile": "field",
@@ -8788,7 +8770,7 @@
           "className": "{className}"
         },
         {
-          "line": 28,
+          "line": 30,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -10135,6 +10117,136 @@
           "className": "\"button secondary\"",
           "data-testid": "\"button-confirm-smtp-received\"",
           "disabled": "{disabled || confirmation.isPending || query.isFetching}"
+        }
+      ]
+    },
+    {
+      "file": "artifacts/clinicflow/src/components/StaffAccountFields.tsx",
+      "entries": [
+        {
+          "line": 15,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "id": "\"input-fullName\""
+        },
+        {
+          "line": 15,
+          "tag": "input",
+          "family": "fields",
+          "stateProfile": "field",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 16,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 17,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 17,
+          "tag": "PhoneInput",
+          "family": "fields",
+          "stateProfile": "field",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 19,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 20,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        }
+      ]
+    },
+    {
+      "file": "artifacts/clinicflow/src/components/StaffContactVerification.tsx",
+      "entries": [
+        {
+          "line": 24,
+          "tag": "button",
+          "family": "actions",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"button\"",
+          "className": "\"button secondary small\"",
+          "disabled": "{request.isPending || wait > 0}",
+          "data-testid": "{`button-send-code-${channel}`}"
+        },
+        {
+          "line": 26,
+          "tag": "FormField",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "id": "{id}"
+        },
+        {
+          "line": 26,
+          "tag": "input",
+          "family": "fields",
+          "stateProfile": "field",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "data-testid": "{`input-code-${channel}`}"
+        },
+        {
+          "line": 27,
+          "tag": "button",
+          "family": "actions",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"submit\"",
+          "className": "\"button small\"",
+          "disabled": "{confirm.isPending || code.length !== 6}",
+          "data-testid": "{`button-confirm-code-${channel}`}"
+        },
+        {
+          "line": 37,
+          "tag": "button",
+          "family": "actions",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"button\""
+        },
+        {
+          "line": 58,
+          "tag": "button",
+          "family": "actions",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"button\"",
+          "className": "\"button secondary small\"",
+          "disabled": "{defer.isPending}",
+          "data-testid": "\"button-defer-verification\""
         }
       ]
     },

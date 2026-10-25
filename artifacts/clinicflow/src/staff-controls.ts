@@ -38,7 +38,7 @@ export function clinicScopedStaffInput(
   clinicId?:string,
   branchClinic?:ReadonlyMap<string,{clinicId?:string}>,
 ) {
-  const body=staffInput(tab,values);
+  const body=staffInput(tab,values,{create:!(original as any).id});
   if(clinicId && tab!=="admins") {
   body.clinicIds=[...new Set([...(original.clinicIds||[]).filter(id=>id!==clinicId),clinicId])];
   const selected=Array.isArray(values.branchIds) ? values.branchIds.filter((id):id is string=>typeof id==="string") : [];
