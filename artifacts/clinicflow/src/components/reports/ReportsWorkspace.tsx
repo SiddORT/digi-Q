@@ -6,6 +6,7 @@ import { ReportsDashboard } from "./ReportsDashboard";
 import { ReportTemplates } from "./ReportTemplates";
 import { useListingLayout } from "../../lib/listing-views";
 import { REPORT_TABLE_RESOURCE, REPORT_VIEW_FILTER_KEYS } from "./report-model";
+import { WorkspaceTabs } from "../WorkspaceTabs";
 
 type Tab = "live" | "templates" | "operational" | "usage";
 export function ReportsWorkspace({ userId, role, clinicIds, legacy }: { userId: string; role: string; clinicIds?: string[]; legacy: ReactNode }) {
@@ -23,7 +24,7 @@ export function ReportsWorkspace({ userId, role, clinicIds, legacy }: { userId: 
   const reportType = qs.get("reportType") || "";
   const viewId = qs.get("view") || "";
   const layout = useListingLayout(REPORT_TABLE_RESOURCE, userId, role, REPORT_VIEW_FILTER_KEYS);
-  return <><div className="report-tabs" role="tablist" aria-label="Report sections">{tabs.map(t => <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className={tab === t.id ? "button" : "button secondary"} onClick={() => go(t.id)} data-testid={`tab-report-${t.id}`}>{t.label}</button>)}</div>
+  return <><div className="report-tabs"><WorkspaceTabs tabs={tabs} area={tab} onSelect={next=>go(next as Tab)} label="Report sections" testIdPrefix="tab-report-"/></div>
     {tab === "live" ? <WorkspaceBranchScopeGate page="reports"><ReportsDashboard key={`${reportType}:${viewId}`} role={role} initialReportType={reportType} initialViewId={viewId} layout={layout} /></WorkspaceBranchScopeGate>
       : tab === "templates" ? <ReportTemplates canUsage={canUsage} onOpen={id => go("live", { reportType: id, group: id === "doctors" ? "doctor" : id === "clinicPerformance" ? "clinic" : "date" })} onOpenUsage={() => go("usage")} saved={layout.layout.views} onOpenSaved={id => go("live", { view: id })} onDeleteSaved={layout.deleteView} savedLoading={layout.viewsLoading} savedError={layout.viewsError} onRetry={() => { void layout.refreshViews(); }} />
       : tab === "operational" ? <WorkspaceBranchScopeGate page="reports">{legacy}</WorkspaceBranchScopeGate>

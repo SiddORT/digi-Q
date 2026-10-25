@@ -84,3 +84,7 @@
   .registration-card .form-grid > * { min-width: 0; }
   .registration-day details > button { display: block; max-width: 100%; margin-top:8px; white-space: normal; text-align: left; }
 }
+/* Existing-account state: a short message and one action, not a full-width card with a cramped button. */
+.registration-card.registration-existing{max-width:36rem;margin-inline:auto;display:grid;gap:12px;justify-items:start}
+.registration-card.registration-existing h1{margin:0}
+.registration-card.registration-existing .button{margin-top:4px}

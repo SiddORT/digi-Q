@@ -47,8 +47,8 @@ export function useBookingDiscovery({doctorId,branchId,date,setDate,walkIn=false
   return {context,ready,changeDate,finding,message,find,from,end,candidate};
 }
 
-export function BookingDiscovery({selection,discovery,date,walkIn=false,manage}:{
-  selection:ReturnType<typeof useDailySession>;discovery:ReturnType<typeof useBookingDiscovery>;date:string;walkIn?:boolean;manage?:React.ReactNode;
+export function BookingDiscovery({selection,discovery,date,walkIn=false,manage,showSessionSelector=true}:{
+  selection:ReturnType<typeof useDailySession>;discovery:ReturnType<typeof useBookingDiscovery>;date:string;walkIn?:boolean;manage?:React.ReactNode;showSessionSelector?:boolean;
 }){
   const q=selection.availability,session=q.data;
   const fresh=useFreshWorkspace(q.dataUpdatedAt,!!q.error);
@@ -60,8 +60,8 @@ export function BookingDiscovery({selection,discovery,date,walkIn=false,manage}:
   const weekday=/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date))?new Intl.DateTimeFormat("en",{weekday:"long",timeZone:"UTC"}).format(new Date(`${date}T12:00:00Z`)):"";
    if(!selection.hasContext)return <p role="status" className="booking-preselection" data-testid="booking-discovery">Choose a location, doctor and date to see sessions.</p>;
    return <div data-testid="booking-discovery">
-     {(selection.sessions.length>0||q.isLoading||q.isFetching||q.error)&&<SessionSelector selection={selection}/>}
-    <div className="availability-box" data-testid="booking-availability-status">
+     {showSessionSelector&&(selection.sessions.length>0||q.isLoading||q.isFetching||q.error)&&<SessionSelector selection={selection}/>}
+     <div className={session?"availability-box":"booking-preselection"} data-testid="booking-availability-status">
       {!selection.hasContext?<p>Choose a location, doctor and date to see sessions.</p>:
       !validVisitDate(date)?<p>Choose a valid visit date to see sessions.</p>:
       q.error||discovery.context.error?<p role="alert">Could not check current availability. Your choices are retained; retry before booking.</p>:
@@ -73,11 +73,13 @@ export function BookingDiscovery({selection,discovery,date,walkIn=false,manage}:
       <><strong>{session.available&&session.remainingTokens>0&&!issue?`${session.remainingTokens} places remaining`:"Session unavailable"}</strong><p>{formatSessionHours({...session,...preferences})} · {session.timezone}</p><HoursWarning warning={session.hoursWarning}/>{(issue||session.reason)&&<p>{session.reason||issue}</p>}</>}
     </div>
     <ErrorNotice error={discovery.context.error}/>
+    <div className="booking-availability-actions" data-testid="booking-availability-actions" role="group" aria-label="Availability and schedule actions">
     {selection.hasContext&&<button type="button" className="text-link" data-testid="button-refresh-booking-availability" disabled={q.isFetching||discovery.context.isFetching} onClick={()=>{void q.refetch();void discovery.context.refetch();}}>Refresh Availability</button>}
     {walkIn?<p className="notice">Walk-ins are today-only in the location timezone. Queue opening, break and session-mode restrictions apply; future dates are not suggested.</p>:
      selection.hasContext&&<div className="guest-next-date"><button type="button" className="button secondary" data-testid="button-next-booking-date" disabled={!discovery.ready||discovery.finding||discovery.end<=discovery.from} onClick={()=>void discovery.find()}>{discovery.finding?"Searching…":"Find Next Available Date"}</button>{ctx&&<HelpTip label="About next-date search" text={discovery.end>discovery.from?`Search ${displayDate(nextVisitDate(discovery.from,1))} through ${displayDate(discovery.end)}: up to 14 days after your selected date, limited by the clinic booking window (${displayDate(ctx.lastBookableDate)}).`:`No later dates remain in the booking window (${displayDate(ctx.lastBookableDate)}).`}/>} {discovery.message&&<p role="status">{discovery.message}</p>}</div>}
     {discovery.candidate&&<button type="button" className="button secondary" data-testid="button-use-next-date" onClick={()=>discovery.changeDate(discovery.candidate)}>Review sessions on {displayDate(discovery.candidate)}</button>}
     {manage}
+    </div>
     <p className="notice">Your ticket shows a session range, not an exact consultation time. Availability is checked again when you confirm.</p>
   </div>;
 }

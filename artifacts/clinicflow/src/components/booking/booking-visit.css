@@ -1,0 +1,15 @@
+/* Booking visit details: static context, editable group, availability actions, Continue reason. */
+.booking-context{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;margin:0 0 12px;padding:8px 12px;border:1px solid hsl(var(--border));border-radius:8px;background:hsl(var(--muted)/.4);font-size:var(--type-label)}
+.booking-context p{margin:0}
+.booking-preselection>p{margin:8px 0}
+.booking-scope-fields{margin:0 0 12px}
+.booking-panel .booking-visit-fields{margin:0 0 12px;align-items:start;grid-template-columns:minmax(0,1fr) minmax(10rem,.8fr) minmax(0,1.3fr)}
+.booking-visit-fields .searchable-select-field>label{display:flex;align-items:center;min-height:24px;margin:0;line-height:1.3}
+.booking-visit-fields .guest-session{margin:0;align-self:stretch;padding:8px 12px;background:hsl(var(--muted)/.4);border-radius:8px;overflow-wrap:anywhere}
+.booking-visit-fields .guest-session>strong{display:block;margin-bottom:4px}
+.booking-availability-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:8px 0}
+.booking-availability-actions>.notice,.booking-availability-actions>p{flex:1 1 100%;margin:0}
+.booking-availability-actions .guest-next-date{margin:0}
+.booking-stage-actions{flex-wrap:wrap;align-items:center}
+.booking-blocked-reason{flex:1 1 16rem;margin:0;font-size:var(--type-label);color:hsl(var(--muted-foreground));text-align:right}
+@media(max-width:767px){.booking-panel .booking-visit-fields{grid-template-columns:minmax(0,1fr)}.booking-blocked-reason{text-align:left;flex-basis:100%}}

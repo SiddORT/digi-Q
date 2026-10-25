@@ -20,3 +20,9 @@ A browser job that remains active without new app requests may be stalled; its a
 **Why:** Repeated long waits returned no report while the app remained healthy and the test had stopped generating application requests. Test-created development records survived the stopped job.
 
 **How to apply:** Check observable progress rather than repeatedly waiting on the same timeout. Stop a stalled run, retain previously verified results, and perform ownership-checked fixture cleanup before closing the work. Never promote partial request logs to an acceptance pass.
+
+A delegated worker may not see newly generated ignored evidence that the parent can read.
+
+**Why:** A continuing design worker reported only anonymous captures while the parent had a much larger current role-route screenshot collection. Its incomplete file view was not evidence that the parent had failed to generate the rest.
+
+**How to apply:** Verify the parent's actual evidence paths before accepting a helper's absence claim. Keep visual-inspection claims tied to the exact files that worker could actually open; inspect locally or explicitly transfer evidence rather than claiming an unseen set was reviewed.

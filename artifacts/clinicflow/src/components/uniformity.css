@@ -412,10 +412,16 @@
 .workspace .schedule-list-table .cap-chip>strong{display:block}
 .workspace .schedule-list-table .cell-sub{display:block;white-space:normal;font-size:var(--type-caption);color:var(--soft);overflow:visible;-webkit-line-clamp:unset}
 @media (min-width:641px){
-  .workspace :is(.table-scroll,.table-wrap) td.col-select:has(.row-expand-toggle){width:76px;min-width:76px}
+  /* A checkbox and expansion button cannot share a 40px fixed-layout column.
+     Reserve the same space in colgroup, header and cells, and in pinned offsets. */
+  .workspace .table-scroll:has(.row-lead>.row-expand-toggle){--col-select-w:92px}
+  .workspace .table-scroll:has(.row-lead>.row-expand-toggle) :is(col,th,td).col-select{width:var(--col-select-w);min-width:var(--col-select-w);max-width:var(--col-select-w)}
   .workspace .appt-table :is(th,td).col-actions{width:200px;min-width:200px}
   .appt-table th.col-actions,.appt-table td.col-actions{width:200px}
   .workspace .appt-table :is(th,td).col-serial{width:72px;min-width:72px}
+}
+@media (min-width:641px) and (max-width:767px),(min-width:641px) and (pointer:coarse){
+  .workspace .table-scroll:has(.row-lead>.row-expand-toggle){--col-select-w:124px}
 }
 /* Portal menu: internal scroll when taller than the available space. */
 .row-menu-portal{right:auto;width:max-content;overflow-y:auto;overscroll-behavior:contain;max-width:calc(100vw - 16px)}

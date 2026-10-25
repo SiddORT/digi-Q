@@ -156,7 +156,7 @@ function RegistrationIdentity() {
     if (me.data?.user?.role === "clinicAdmin") return <RegistrationForm key={me.data.user.id} actorId={me.data.user.id}/>;
   if (me.data?.user) {
     const role = me.data.user.role;
-    return <div className="clinic-registration"><Logo/><main className="registration-card"><h1>You already have a {BRAND_NAME} account.</h1><p>Clinic registration is for a new clinic owner. Your existing role and permissions will not change.</p><Link className="button" href={`/${role}/dashboard`} data-testid="registration-existing-workspace">Go to Your Workspace</Link></main></div>;
+    return <div className="clinic-registration"><Logo/><main className="registration-card registration-existing"><h1>You already have a {BRAND_NAME} account.</h1><p>Clinic registration is for a new clinic owner. Your existing role and permissions will not change.</p><Link className="button" href={`/${role}/dashboard`} data-testid="registration-existing-workspace">Go to Your Workspace</Link></main></div>;
   }
    return <div className="error-box" role="alert">Unable to prepare clinic registration for this account. Please sign out and retry.</div>;
 }

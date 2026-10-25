@@ -400,3 +400,17 @@ mtime_ms = 1792961683882
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/1fcd2d01-f485-41bb-847d-361f4021db7d/975624cb-3406-454c-918e-bb49618c60a0"
 storage_version_token = "1792962363995808"
 content_type = "text/html"
+
+[[outputs]]
+id = "SGcerEYqB6t5eTGhhl-8l"
+uri = "file://artifacts/clinicflow/workspace-regression/test-results/workspace/booking-discovery-visit-fi-611c4-ontext-containment-1366x768-workspace/booking-group-1366.png"
+type = "image"
+title = "Booking visit details — corrected local rendering"
+description = "Fictional Clinic Admin fixture at 1366×768. Separate context and editable fields, aligned Doctor/Visit date/Session, compact pending availability, grouped recovery actions and a visible Continue reason. Not hosted UAT evidence."
+logical_id = "805b883c-5370-42f5-8692-42b6a0940705"
+content_hash = "sha256:1cf8687bdb4f1035cdadf35b071d6ed61db3f3a3c047d16ff5405be0f8eff250"
+size = 85442
+mtime_ms = 1792970292738
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/805b883c-5370-42f5-8692-42b6a0940705/c5b1cfdc-f870-40ac-a635-97dace9cb27a"
+storage_version_token = "1792970339301221"
+content_type = "image/png"

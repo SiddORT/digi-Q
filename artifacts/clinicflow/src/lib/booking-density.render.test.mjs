@@ -63,6 +63,7 @@ test("missing sessions remain distinct from a missing doctor and available capac
   const empty=discovery();
   assert.match(empty,/No doctor session is listed/);
   assert.doesNotMatch(empty,/session-selector/);
+  assert.doesNotMatch(empty,/availability-box/);
   const html=discovery({eligible:true});
   assert.match(html,/4 places remaining/);
   assert.match(html,/not an exact consultation time/);

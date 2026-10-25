@@ -332,6 +332,29 @@ for(const width of [1366,768,390]){
  });
 }
 
+for(const [width,height] of [[1024,640],[1366,768],[390,844]]){
+ test(`visit field group and context containment ${width}x${height}`,async({page},info)=>{
+   await page.setViewportSize({width,height});
+   await fixture(page,"clinicAdmin",{multiple:true});
+   const group=page.getByTestId("booking-visit-fields");
+   await expect(group.locator(".session-selector")).toBeVisible();
+   await expect(page.getByTestId("booking-context")).toHaveCount(1);
+   await expect(group.locator(".loc-fixed-note")).toHaveCount(0);
+   const controls=group.locator(".searchable-select-control, [data-testid=input-booking-date]");
+   await expect(controls).toHaveCount(3);
+   await expect.poll(async()=>controls.evaluateAll(nodes=>{
+     const parent=nodes[0].closest("[data-testid=booking-visit-fields]")!.getBoundingClientRect();
+     return nodes.every(n=>{const r=n.getBoundingClientRect();return r.left>=parent.left-1&&r.right<=parent.right+1&&r.left>=0&&r.right<=innerWidth;});
+   })).toBe(true);
+   if(width>=768){
+     const tops=await controls.evaluateAll(nodes=>nodes.map(n=>(n.closest(".dtp-control")||n).getBoundingClientRect().top));
+     expect(Math.max(...tops)-Math.min(...tops)).toBeLessThanOrEqual(2);
+   }
+   await expect(page.getByTestId("text-booking-continue-reason")).toContainText("Select a consulting session");
+   await page.screenshot({path:info.outputPath(`booking-group-${width}.png`),fullPage:true});
+ });
+}
+
 async function expectLocalMobile(page:Page, digits:string) {
   await expect.poll(async()=> (await page.getByTestId("input-booking-mobile").inputValue()).replace(/\D/g,"")).toBe(digits);
 }
