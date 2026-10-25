@@ -1233,6 +1233,32 @@ paths:
       operationId: deleteMaster
       responses:
         "204": { description: Deactivated }
+  /schedules/day-context:
+    get:
+      operationId: getScheduleDayContext
+      parameters:
+        - { name: doctorId, in: query, required: true, schema: { type: string } }
+        - { name: branchId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Frozen day baselines and sessions for authorized schedule authoring
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScheduleDayContext" }
+  /schedules/day-overrides:
+    post:
+      operationId: saveScheduleDayOverride
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduleDayOverrideInput" }
+      responses:
+        "200":
+          description: Saved complete custom day, with write-owned baseline
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScheduleDayContext" }
   /schedules:
     get:
       operationId: listSchedules
@@ -3532,6 +3558,39 @@ components:
           required: [id, status]
           properties:
             id: { type: string }
+    ScheduleDayBaseline:
+      type: object
+      required: [dayOfWeek, following, custom, snapshot]
+      properties:
+        dayOfWeek: { type: integer, minimum: 0, maximum: 6 }
+        following: { type: boolean }
+        custom: { type: boolean }
+        snapshot: { type: string }
+    ScheduleDayContext:
+      type: object
+      required: [items, days]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/Schedule" } }
+        days: { type: array, items: { $ref: "#/components/schemas/ScheduleDayBaseline" } }
+    ScheduleDaySlot:
+      type: object
+      required: [key, session]
+      properties:
+        key: { type: string, maxLength: 100 }
+        id: { type: string }
+        session: { $ref: "#/components/schemas/ScheduleInput" }
+    ScheduleDayOverrideInput:
+      type: object
+      required: [doctorId, branchId, dayOfWeek, isOpen, confirmed, expectedSnapshot, requestId, sessions]
+      properties:
+        doctorId: { type: string }
+        branchId: { type: string }
+        dayOfWeek: { type: integer, minimum: 0, maximum: 6 }
+        isOpen: { type: boolean }
+        confirmed: { type: boolean, enum: [true] }
+        expectedSnapshot: { type: string, maxLength: 200000 }
+        requestId: { type: string, minLength: 10, maxLength: 100 }
+        sessions: { type: array, items: { $ref: "#/components/schemas/ScheduleDaySlot" } }
     ScheduleInput:
       type: object
       required: [doctorId, clinicId, branchId, dayOfWeek, isOpen, startTime, endTime, tokenPrefix, maxTokens, consultationMinutes]
@@ -3560,6 +3619,9 @@ components:
         - type: object
           required: [id]
           properties:
+            status: { type: string }
+            linkedBranchId: { type: [string, "null"] }
+            draftKey: { type: string }
             dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
             timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }
             id: { type: string }

@@ -42,7 +42,7 @@ export function FollowLocationHours({ branch, doctorId, defaults, disabled, dirt
 
   if (clinic.isLoading || doctor.isLoading || me.isLoading) return <span className="muted follow-hours-note">Checking location-hours options…</span>;
   if (!eligibility.canToggle) {
-    if (following) return <p className="muted follow-hours-note" data-testid="text-follow-hours-status">These sessions follow the location's opening hours. Only the clinic owner or a Super Admin can switch them to custom.</p>;
+    if (following) return <p className="muted follow-hours-note" data-testid="text-follow-hours-status">Unchanged days follow clinic hours. Authorized doctors and administrators can customize individual days above. Only the clinic owner or a Super Admin can switch the whole location's link.</p>;
     return null;
   }
   const link: Link = { enabled: true, doctorId, maxTokens: Number(form.maxTokens), consultationMinutes: Number(form.consultationMinutes), tokenPrefix: form.tokenPrefix.trim().toUpperCase(), queueMode: form.queueMode as api.LinkedScheduleQueueMode };
@@ -61,7 +61,7 @@ export function FollowLocationHours({ branch, doctorId, defaults, disabled, dirt
     finally { setBusy(false); }
   };
   const unlink = async () => {
-    if (!await confirmation.ask({ title: "Switch to Custom Sessions?", description: "Linked sessions stay as they are, but become custom: future location-hour changes will no longer update them. Bookings and history are kept.", confirmLabel: "Use Custom Sessions" })) return;
+    if (!await confirmation.ask({ title: "Switch Whole Location to Custom?", description: "All remaining linked days at this location become custom. Existing day overrides, including days off, are kept even if following is enabled again. Future location-hour changes will no longer update these sessions. Bookings and history are kept.", confirmLabel: "Use Custom Sessions" })) return;
     await done({ ...current, enabled: false }, "Sessions are now custom. Edit them below and save the week.");
   };
   const impact = preview?.impacts?.[0] as { create?: number; update?: number; retire?: number } | undefined;
@@ -73,7 +73,7 @@ export function FollowLocationHours({ branch, doctorId, defaults, disabled, dirt
       <button type="button" role="radio" aria-checked={following || choosing} disabled={busy || disabled || (!following && !hasHours)} title={!hasHours ? "Set location opening hours first" : undefined} onClick={() => { if (!following) setChoosing(true); }} data-testid="radio-follow-location-hours">Follow location hours</button>
     </div>
     <HelpTip label="About following location hours" text="Follow keeps this doctor's sessions in step with the location's opening hours; when the owner changes hours, sessions update automatically. Copy once fills custom sessions a single time. Only the clinic owner's own consultations can follow."/>
-    {following && <p className="muted follow-hours-note" data-testid="text-follow-hours-status">Following location hours: {current.maxTokens} tokens, {current.consultationMinutes} min, prefix {current.tokenPrefix}. Linked sessions are locked below.</p>}
+    {following && <p className="muted follow-hours-note" data-testid="text-follow-hours-status">Unchanged days follow location hours: {current.maxTokens} tokens, {current.consultationMinutes} min, prefix {current.tokenPrefix}. Confirmed custom days are preserved, including when following is enabled again.</p>}
     {!following && choosing && <div className="follow-hours-form">
       {dirty && <p className="notice">Save or discard your week edits first; following replaces custom sessions that overlap location hours.</p>}
       <div className="follow-hours-fields">

@@ -31,6 +31,7 @@ export const clinics = pgTable("clinics", {
   }>().notNull().default({}), createdAt: created(),
 }, t => [index("clinic_owner_idx").on(t.ownerId), index("clinic_admin_idx").on(t.adminId), uniqueIndex("clinic_name_unique").on(sql`lower(${t.data}->>'name')`), uniqueIndex("clinic_slug_unique").on(sql`(${t.data}->>'slug')`)]);
 export const branches = pgTable("branches", {
+  // data.scheduleDayOverrides is server-owned doctor/weekday intent, including days with no sessions.
   id: id(), clinicId: text("clinic_id").notNull().references(() => clinics.id), status: text("status").notNull().default("active"), data: data(), createdAt: created(),
 }, t => [
   index("branch_clinic_idx").on(t.clinicId),

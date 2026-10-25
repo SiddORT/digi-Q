@@ -1,5 +1,58 @@
 # Linked solo-owner schedules
 
+## Direct day customization
+
+Authorized Super Admins, in-scope Clinic Admins and doctors editing their own
+assigned schedule can customize individual weekdays in the shared compact editor.
+This does not grant clinic-settings access. Receptionists retain their existing
+ordinary session policy and cannot perform confirmed linked-day overrides.
+
+`GET /schedules/day-context?doctorId=…&branchId=…` returns the complete active
+session set and frozen weekday baselines from one locked transaction. Each day
+reports `following`, `custom` and an opaque snapshot covering its complete
+session set, location timezone/status, clinic hours, link configuration and
+server-owned override decision. Missing hours are not reported as closed.
+
+`POST /schedules/day-overrides` takes doctor/location/weekday, explicit
+`confirmed:true`, `isOpen`, the loaded day snapshot, a stable save `requestId`
+and the complete proposed interval set (`key`, optional existing `id`, validated
+`ScheduleInput`). A day off sends no intervals. Session scope must exactly match
+the selected doctor/location/day; doctors cannot spoof another doctor.
+The server checks the normal create/update/delete policies, current assignments
+and actor after acquiring doctor schedule locks, then the location-hours lock.
+
+Only this confirmed day transition is transactional. It records
+`branches.data.scheduleDayOverrides[doctorId][weekday]` separately from editable
+link configuration, reuses retained session IDs, retires removed sessions and
+validates replacements through the existing schedule service. A transaction-local
+retirement of the old set makes start-time swaps safe under the active-start
+unique index. All writes roll back if any validation fails. Booking history or
+active date exceptions block timing/break changes and interval removal with an
+actionable explanation. Settings-only edits preserve frozen appointment duration.
+No appointments are moved/deleted and no notifications are dispatched.
+
+Custom intent persists even with no sessions: synchronization skips the entire
+custom weekday, not just individual linked markers. Clinic-hour changes continue
+syncing unaffected days. Explicit whole-location unlink retains overrides;
+re-enabling following does **not** reset them. Ordinary overlap protection still
+applies to previously unlinked sessions. No new reset operation is introduced.
+Clinic settings read server-owned day metadata only after the hours lock, so a
+concurrent contact/hours edit cannot restore a stale document over an override.
+Legacy locations with no day metadata preserve their existing behavior.
+
+The confirmation names the doctor, location, changed weekdays, actual clinic
+intervals and proposed sessions/day off, explaining that only those doctor days
+become custom and future synchronization will not overwrite them. Cancellation
+makes no writes and preserves the draft. Each confirmed day has an actor/scoped
+audit event with prior authoring snapshots, proposed intervals and clinic hours.
+Normal unlinked editing retains per-session save and partial-retry semantics.
+Successful day responses rebase only that day's rows and baseline. A lost response
+can be retried with the same actor/request/draft: its original write receipt is
+replayed before checking the old snapshot, without duplicating intervals/audits.
+Changed drafts with a reused identifier are refused. Reopening reads persisted
+custom state, including day off; unrelated unsaved weekdays are never rebased by
+another day's response.
+
 ## Compact schedule verification (2026-10-09)
 
 - Frontend and API server TypeScript checks pass; the workspace TypeScript
@@ -69,6 +122,6 @@ linked sessions, historical appointments and audit history remain.
 - PATCH `/clinics/:id/settings`: branch entries accept `linkedSchedule: { enabled:boolean, doctorId?:string, maxTokens?:number, consultationMinutes?:number, tokenPrefix?:string, queueMode?:string }`. Enabling requires explicit capacity/duration and owner's attached doctor (doctorId may be omitted to derive owner doctor). Disabling retains existing schedules but unlinks them; custom editing becomes possible.
 - GET settings returns branch `linkedSchedule` with persisted doctorId/settings. Existing branch hours edits automatically reconcile linked sessions atomically. Sessions with bookings or date exceptions cannot be removed/changed; return 409 with specific session details, leaving all changes rolled back.
 - POST `/clinics/:id/settings/preview` (`previewClinicSettings`): same input as PATCH; returns `{ allowed:boolean, impacts:[{branchId,create:number,update:number,retire:number,unlink:boolean}], conflicts:string[] }`. Preview is advisory; save rechecks under transaction locks.
-- Linked sessions reject direct generic schedule mutation/deactivation: unlink through clinic settings first. Custom doctors/schedules remain supported; overlapping custom schedules block linking rather than being adopted silently.
+- Linked sessions still reject generic per-session mutation/deactivation. Authorized users use the confirmed complete-day override above instead of unlinking an entire location. Custom doctors/schedules remain supported; overlapping custom schedules block linking rather than being adopted silently.
 - Clinic settings and preview require Super Admin or the actual owning Clinic Admin. Same-account owner doctor retains Clinic Admin identity.
 - Preserve QR URLs, appointment snapshots and schedule IDs for unchanged intervals; retire only unused obsolete linked sessions. Never infer capacity from opening hours.

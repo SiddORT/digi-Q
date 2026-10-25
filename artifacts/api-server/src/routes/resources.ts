@@ -16,6 +16,7 @@ import { captureStaffCreated, staffCreationNotice } from "../lib/staff-account-n
 import { createOwnedClinic, validateSlugWrite, validateOpeningHours, withinBranchHours, provisionBranchQr, validateClinicMetadata, attachOwnDoctor, clinicDisplayPreferences } from "../lib/clinic-expansion";
 import { doctorContext, validateTimes, localNow, sessionsOverlap, weeklySessionsOverlap, datePlus, extraSession } from "../lib/availability";
 import { assertScheduleSnapshot } from "../lib/schedule-snapshot";
+import { applyDayOverride, lockScheduleDays, scheduleDayContext } from "../lib/schedule-day-overrides";
 const ADDRESS_KEYS = ["address", "country", "state", "city", "pincode"] as const;
 /** Address parts live in the JSON `data` column; merge without touching other profile data. */
 async function mergeAddress(table: any, id: string, patch: Record<string, unknown>, tx: any) {
@@ -24,6 +25,30 @@ async function mergeAddress(table: any, id: string, patch: Record<string, unknow
 }
 const { db, users, doctors, patients, clinics, branches, masters, schedules, availabilityExceptions, qrs, authChallenges } = tables;
 export const resourcesRouter = Router();
+resourcesRouter.get("/schedules/day-context", async (req, res) => {
+  const actor = await requireUser(req), input = query(z.GetScheduleDayContextQueryParams, req);
+  res.json(await db.transaction(async tx => {
+    await lockScheduleDays(input.doctorId, input.branchId, tx);
+    const branch = await one(branches, input.branchId, tx);
+    await authorizeWrite(actor, "schedules", { ...input, clinicId: branch.clinicId }, undefined, tx);
+    return scheduleDayContext(input.doctorId, input.branchId, tx);
+  }));
+});
+resourcesRouter.post("/schedules/day-overrides", async (req, res) => {
+  const body = parse(z.SaveScheduleDayOverrideBody, req.body);
+  res.json(await db.transaction(async tx => {
+    await lockScheduleDays(body.doctorId, body.branchId, tx);
+    const actor = await requireUser(req);
+    roles(actor, ["superAdmin", "clinicAdmin", "doctor"]);
+    const branch = await one(branches, body.branchId, tx);
+    await authorizeWrite(actor, "schedules", { doctorId: body.doctorId, branchId: branch.id, clinicId: branch.clinicId }, undefined, tx);
+    const doctor = await enrich("doctors", await one(doctors, body.doctorId, tx), tx);
+    assert(branch.status === "active" && doctor.status === "active" && doctor.branchIds.includes(branch.id) && doctor.clinicIds.includes(branch.clinicId) && !!branch.timezone, 409, "Doctor assignments, location status or timezone changed. Reload the schedule context.");
+    const { enforcePermissionPolicy } = await import("../lib/permission-policy");
+    for (const method of ["POST", "PATCH", "DELETE"]) await enforcePermissionPolicy(actor, { method, path: method === "POST" ? "/schedules" : "/schedules/context" });
+    return applyDayOverride(actor, body, tx, (input, old) => save("schedules", schedules, actor, input, old, undefined, ()=>requireUser(req), tx));
+  }));
+});
 resourcesRouter.get("/booking/schedule-access", async (req, res) => {
   const user = await requireUser(req), q = query(z.GetBookingScheduleAccessQueryParams, req);
   try {
@@ -259,8 +284,8 @@ export async function createClinicAdminOnboarding(actor: any, body: any, redirec
       ...(direct.credentials ? { staffCreationNotice: await staffCreationNotice(db, actor.id, result.admin.id) } : {}) },
   };
 }
-async function save(kind: string, table: any, user: any, body: any, old?: any, redirectUrl?: string, refreshActor?:()=>Promise<any>) {
-  await authorizeWrite(user, kind, body, old);
+async function save(kind: string, table: any, user: any, body: any, old?: any, redirectUrl?: string, refreshActor?:()=>Promise<any>, connection: any = db) {
+  await authorizeWrite(user, kind, body, old, connection);
   const direct = ["users", "doctors"].includes(kind) ? await takeStaffCredentials(body, !!old) : { body, credentials: undefined };
   body = direct.body;
   const requestId = direct.credentials ? body.requestId : undefined;
@@ -281,7 +306,14 @@ async function save(kind: string, table: any, user: any, body: any, old?: any, r
     if (!direct.credentials && (kind === "doctors" || ["clinicAdmin", "doctor", "receptionist"].includes(body.role)))
       await ensureStaffInvitationConfigured(kind === "doctors" ? "doctor" : body.role);
   }
-  const saved = await db.transaction(async tx => {
+  const saved = await connection.transaction(async (tx: any) => {
+    if (kind === "branches" && old) {
+      // Generic contact/address forms also write the location JSON document.
+      // Keep current server-owned day intent, never the caller's pre-lock copy.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"branch-hours:" + old.id}))`);
+      const current = await one(branches, old.id, tx);
+      old = { ...old, scheduleDayOverrides: current.scheduleDayOverrides, linkedSchedule: current.linkedSchedule };
+    }
     if (requestId) {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${staffReceiptKey(user.id, requestId)}))`);
       const replay = await staffCreationReplay(tx, user, kind, requestId, requestDigest);

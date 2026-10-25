@@ -25,6 +25,10 @@ async function fixture(page:Page, opts:{multiple?:boolean;missing?:boolean;empty
     else if(path==="/api/doctors"&&method==="GET")json=listing([opts.stale?{...state.doctor,branchIds:["b2"]}:state.doctor]);
     else if(path==="/api/doctors"&&method==="POST"){Object.assign(state.doctor,request.postDataJSON(),{id:"new-doctor",userId:"new-user"});json=state.doctor;}
     else if(path.startsWith("/api/doctors/")){if(method==="PATCH")Object.assign(state.doctor,request.postDataJSON());json=state.doctor;}
+    else if(path==="/api/schedules/day-context"&&method==="GET"){
+      if(state.failLoad||(state.failReloadAfterWrite&&state.writes.length)){status=503;json={error:"Schedule load failed"};}
+      else json={items:state.schedules.filter(s=>s.branchId===url.searchParams.get("branchId")&&s.status!=="inactive"),days:Array.from({length:7},(_,dayOfWeek)=>({dayOfWeek,following:false,custom:false,snapshot:`day-${dayOfWeek}`}))};
+    }
     else if(path==="/api/schedules"&&method==="GET"){
       if(state.failLoad||(state.failReloadAfterWrite&&state.writes.length)){status=503;json={error:"Schedule load failed"};}
       else json=listing(state.schedules.filter(s=>s.branchId===url.searchParams.get("branchId")));

@@ -11,6 +11,8 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | 
   /** Canonical YYYY-MM-DD bounds (HH:mm for time inputs), never display strings. */
   min?: string; max?: string;
   onValidityChange?: (valid: boolean) => void;
+  /** User typing only; unlike onValidityChange, does not fire on mount or format changes. */
+  onDraftValidityChange?: (valid: boolean) => void;
   /** Minute step for the time picker list only; typing always accepts any exact minute. */
   minuteStep?: number;
 };
@@ -186,7 +188,7 @@ export function PickerPopover({ anchorRef, panelRef, children }: { anchorRef: Re
 }
 
 /** Controlled canonical value with local typed text plus a picker; invalid input never escapes as storage data. */
-function FormattedInput({ value, onChange, preferences, mode, min, max, onValidityChange, minuteStep = 15, ...props }: Props & { mode: "date" | "time" }) {
+function FormattedInput({ value, onChange, preferences, mode, min, max, onValidityChange, onDraftValidityChange, minuteStep = 15, ...props }: Props & { mode: "date" | "time" }) {
   const inherited = useDateTimePreferences(), prefs = { ...inherited, ...preferences } as DateTimePreferences;
   const formatter = mode === "date" ? formatDate : formatTime;
   const parser = mode === "date" ? parseDateInput : parseTimeInput;
@@ -226,6 +228,7 @@ function FormattedInput({ value, onChange, preferences, mode, min, max, onValidi
     // Clear the canonical form value immediately, but retain invalid text for correction.
     pendingEcho.current = canonical;
     onChange(canonical);
+    onDraftValidityChange?.(next ? canonical !== "" : !props.required);
   };
   const triggerRef = useRef<HTMLButtonElement>(null);
   // Escape, Done and selection return focus to the trigger that opened the picker.

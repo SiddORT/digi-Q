@@ -29,13 +29,17 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
   const fmt = (t: string) => formatTime(t, preferences);
   const set = (next: DraftDay) => { onChange?.(); setWeek(w => w.map(d => d.dayOfWeek === next.dayOfWeek ? next : d)); };
   const hours = (opening || []).filter(h => h.dayOfWeek === selected);
-  const patch = (key: string, p: Partial<DraftSession>) => set({ ...day, sessions: day.sessions.map(x => x.key === key ? { ...x, ...p } : x) });
-  const setting = (s: DraftSession, k: keyof SessionSettings, v: string | number | null) => patch(s.key, { settings: { ...s.settings, [k]: v } });
+  const patch = (key: string, p: Partial<DraftSession> | ((s:DraftSession)=>Partial<DraftSession>)) => {
+    onChange?.();
+    setWeek(w=>w.map(d=>d.dayOfWeek!==selected?d:{...d,sessions:d.sessions.map(x=>x.key!==key?x:{...x,...(typeof p==="function"?p(x):p)})}));
+  };
+  const setting = (s: DraftSession, k: keyof SessionSettings, v: string | number | null) => patch(s.key, current=>({ settings: { ...current.settings, [k]: v } }));
   useEffect(() => { setSource(""); setSlotKey(""); }, [selected]);
   useEffect(() => {
     if(!focus||focus.day!==selected)return;
     const frame=requestAnimationFrame(()=>{
       const slot=root.current?.querySelector<HTMLElement>(`[data-slot-focus="${focus.index}"]`);
+      if(slot)slot.querySelectorAll<HTMLDetailsElement>("details").forEach(d=>{d.open=true;});
       (slot?.querySelector<HTMLElement>('input:not(:disabled),button:not(:disabled)')||slot)?.focus();
     });
     return ()=>cancelAnimationFrame(frame);
@@ -95,7 +99,7 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
             <label>Token prefix<input maxLength={8} disabled={busy || s.locked} value={String(s.settings?.tokenPrefix ?? "")} placeholder={template?.tokenPrefix ? String(template.tokenPrefix) : ""} onChange={e => setting(s, "tokenPrefix", e.target.value.replace(/[^A-Za-z0-9]/g, ""))}/></label>
             <label>Buffer (min)<input type="number" min={0} max={1440} step={1} disabled={busy || s.locked} value={String(s.settings?.bufferMinutes ?? "")} onChange={e => setting(s, "bufferMinutes", e.target.value === "" ? 0 : Number(e.target.value))}/></label>
             <SearchableSelect label="Queue mode" value={String(s.settings?.queueMode ?? "")} disabled={busy || s.locked} placeholder={template?.queueMode ? String(template.queueMode) : "Select…"} onChange={v => setting(s, "queueMode", v)} options={QUEUE_MODES.map(([value, label]) => ({ value, label }))}/>
-            {(["breakStart", "breakEnd", "queueOpenTime", "queueCloseTime"] as const).map(k => <label key={k}>{{ breakStart: "Break start", breakEnd: "Break end", queueOpenTime: "Queue opens", queueCloseTime: "Queue closes" }[k]}<TimeFormatInput value={String(s.settings?.[k] ?? "")} preferences={preferences} disabled={busy || s.locked} onChange={value => setting(s, k, value || null)}/></label>)}
+            {(["breakStart", "breakEnd", "queueOpenTime", "queueCloseTime"] as const).map(k => <label key={k}>{{ breakStart: "Break start", breakEnd: "Break end", queueOpenTime: "Queue opens", queueCloseTime: "Queue closes" }[k]}<TimeFormatInput value={String(s.settings?.[k] ?? "")} preferences={preferences} disabled={busy || s.locked} onChange={value => setting(s, k, value || null)} onDraftValidityChange={valid=>patch(s.key,current=>({invalidTimes:valid?current.invalidTimes?.filter(key=>key!==k):[...new Set([...current.invalidTimes||[],k])]}))}/></label>)}
           </div></details>
         </div>; })}
         {!day.sessions.length && <p className="muted">No slots yet. Use Add Time Slot.</p>}

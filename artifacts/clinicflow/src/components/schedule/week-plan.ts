@@ -1,5 +1,5 @@
 export type SessionSettings = Partial<Record<"tokenPrefix"|"maxTokens"|"consultationMinutes"|"bufferMinutes"|"queueMode"|"breakStart"|"breakEnd"|"queueOpenTime"|"queueCloseTime", string|number|null>>;
-export type DraftSession = { key: string; id?: string; startTime: string; endTime: string; locked?: boolean; settings?: SessionSettings };
+export type DraftSession = { key: string; id?: string; startTime: string; endTime: string; locked?: boolean; settings?: SessionSettings; invalidTimes?: string[] };
 export type DraftDay = { dayOfWeek: number; isOpen: boolean; sessions: DraftSession[] };
 export type ScheduleRow = { id: string; dayOfWeek: number; startTime: string; endTime: string; isOpen?: boolean; status?: string; linkedBranchId?: string | null; [k: string]: unknown };
 
@@ -10,7 +10,7 @@ const SETTINGS_KEYS = ["tokenPrefix", "maxTokens", "consultationMinutes", "buffe
 const settingsFrom = (row: Record<string, unknown>): SessionSettings => Object.fromEntries(SETTINGS_KEYS.filter(k=>row[k]!==undefined).map(k=>[k,row[k]]));
 /** The API compares these authoring fields under its doctor lock, not presentation names. */
 export const scheduleSnapshot = (row: Record<string, unknown>) => JSON.stringify(Object.fromEntries([...INPUT_KEYS,"status","linkedBranchId","linkedIntervalKey"].sort().map(k=>[k,row[k]??null])));
-export const draftSignature = (week: DraftDay[]) => JSON.stringify(week.map(d=>[d.isOpen,d.sessions.map(s=>[s.id,s.startTime,s.endTime,s.settings||{}])]));
+export const draftSignature = (week: DraftDay[]) => JSON.stringify(week.map(d=>[d.isOpen,d.sessions.map(s=>[s.id,s.startTime,s.endTime,s.settings||{},s.invalidTimes?.length?s.invalidTimes:undefined])]));
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 /** Proposed soft guidance only; not an approved limit. More sessions are allowed and saved. */
 export const SUGGESTED_SESSIONS_PER_DAY = 4;
@@ -33,6 +33,7 @@ export function dayErrors(day: DraftDay): string[] {
   const errors: string[] = [];
   if (!day.sessions.length) errors.push("Add at least one session or turn the day off.");
   day.sessions.forEach((s, i) => {
+    if(s.invalidTimes?.length) errors.push(`Session ${i+1}: enter valid times for ${s.invalidTimes.map(k=>({breakStart:"break start",breakEnd:"break end",queueOpenTime:"queue opening",queueCloseTime:"queue closing"}[k]||k)).join(", ")}.`);
     if (!TIME.test(s.startTime) || !TIME.test(s.endTime)) errors.push(`Session ${i + 1}: enter both start and end times.`);
     else if (s.startTime >= s.endTime) errors.push(`Session ${i + 1}: end time must be after start time. Overnight sessions are not supported.`);
     const v=s.settings;

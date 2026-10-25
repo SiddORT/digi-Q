@@ -16,7 +16,8 @@ import { notifyBulk } from "../../lib/notify";
 import { useDateTimePreferences } from "../DateTimePreferences";
 import { useRegisterUnsaved } from "../WorkspaceBranch";
 import { Link, useLocation, useSearch } from "wouter";
-import { buildWeek, dayErrors, draftSignature, executePlan, outsideHours, planWeek, scheduleReadiness, reconcileDraft, scheduleSnapshot, weekSummary, prefillFromHours, applyWeekTo, SUGGESTED_SESSIONS_PER_DAY, type DraftDay, type DraftSession, type ScheduleRow } from "./week-plan";
+import { buildWeek as buildSavedWeek, dayErrors, draftSignature, executePlan, outsideHours, planWeek, scheduleReadiness, reconcileDraft, scheduleSnapshot, weekSummary, prefillFromHours, applyWeekTo, SUGGESTED_SESSIONS_PER_DAY, type DraftDay, type DraftSession, type ScheduleRow } from "./week-plan";
+import { dayOverrideSlots } from "./day-overrides";
 
 type Hours = { startTime: string; endTime: string }[];
 
@@ -27,19 +28,25 @@ function adjustToHours(s: DraftSession, hours: Hours): DraftSession {
 }
 
 /** Monday–Sunday editor over the existing one-record-per-session schedule model. Saves are per session, not atomic. */
-export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange, onBusyChange, onExceptions, onSaved, canDelete=false, doctorName, contextual=false }: { doctorId: string; branchId: string; onEdit: (row: any) => void; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void; onExceptions?:()=>void; onSaved?:()=>void; canDelete?:boolean; doctorName?:string; contextual?:boolean; compact?:boolean }) {
+export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange, onBusyChange, onExceptions, onSaved, canDelete=false, doctorName, contextual=false, initialDay=1 }: { doctorId: string; branchId: string; onEdit: (row: any) => void; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void; onExceptions?:()=>void; onSaved?:()=>void; canDelete?:boolean; doctorName?:string; contextual?:boolean; compact?:boolean; initialDay?:number }) {
   const client = useQueryClient();
   const confirmation = useConfirm();
   const inherited = useDateTimePreferences();
+  const identity = api.useGetMe();
+  const mayCustomize = ["superAdmin","clinicAdmin","doctor"].includes(identity.data?.user?.role || "");
+  const buildWeek = (items: ScheduleRow[]) => buildSavedWeek(items).map(d=>({...d,sessions:d.sessions.map(s=>({...s,locked:s.locked&&!mayCustomize}))}));
   const branch = api.useGetBranch(branchId, { query: { queryKey: api.getGetBranchQueryKey(branchId), enabled: !!branchId } });
+  const clinic = api.useGetClinic(branch.data?.clinicId || "", {query:{queryKey:api.getGetClinicQueryKey(branch.data?.clinicId || ""),enabled:!!branch.data?.clinicId}});
   const fetchRows = async (): Promise<ScheduleRow[]> => { const items: any[] = []; for (let page = 1; page < 50; page++) { const res: any = await api.listSchedules({ doctorId, branchId, page, pageSize: 100 } as any); items.push(...res.items); if (items.length >= res.total || !res.items.length) break; } return items; };
   // Loaded once per editor mount: background refetches never rebase the draft or the save snapshots.
-  const q = useQuery<{ items: ScheduleRow[] }>({ queryKey: ["weekly-overview", doctorId, branchId], gcTime: 0, staleTime: Infinity, refetchOnWindowFocus: false, refetchInterval: false, queryFn: async () => ({ items: await fetchRows() }) });
+  const q = useQuery({ queryKey: ["weekly-overview", doctorId, branchId], gcTime: 0, staleTime: Infinity, refetchOnWindowFocus: false, refetchInterval: false, enabled:!!identity.data, queryFn: () => api.getScheduleDayContext({doctorId,branchId}) });
+  const [dayBaselines,setDayBaselines] = useState<api.ScheduleDayBaseline[]>([]);
+  const requests = useRef<Record<number,{signature:string;id:string}>>({});
   const [baseRows, setBaseRows] = useState<ScheduleRow[] | null>(null);
   const rows = useMemo(() => (baseRows || []).filter(r => r.status !== "inactive"), [baseRows]);
   const dialogClose = useAppDialogClose();
   const busyRef = useRef(false);
-  const [selectedDay, setSelectedDay] = useState(1);
+  const [selectedDay, setSelectedDay] = useState(initialDay);
   const [focus, setFocus] = useState<{ day: number; index: number; nonce: number } | null>(null);
   const [week, setWeek] = useState<DraftDay[]>(() => buildWeek([]));
   const [defaults, setDefaults] = useState({ tokenPrefix: "", maxTokens: "", consultationMinutes: "" });
@@ -51,9 +58,9 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
   const [result, setResult] = useState("");
   const [outside, setOutside] = useState<{ day: number; key: string }[] | null>(null);
   const dirtyRef = useRef(onDirtyChange); dirtyRef.current = onDirtyChange;
-  useEffect(() => { if (q.data && baseRows === null) { setBaseRows(q.data.items); setWeek(buildWeek(q.data.items.filter(r => r.status !== "inactive"))); } }, [q.data, baseRows]);
+  useEffect(() => { if (q.data && baseRows === null) { const items=q.data.items.map(r=>({...r})); setBaseRows(items); setDayBaselines(q.data.days); setWeek(buildWeek(items.filter(r => r.status !== "inactive"))); } }, [q.data, baseRows]);
 
-  const preferences = (rows[0] as any) || branch.data || inherited;
+  const preferences = { ...inherited, ...clinic.data, ...branch.data };
   const fmt = (t: string) => formatTime(t, preferences);
   const opening: (Hours[number] & { dayOfWeek: number })[] | null = Array.isArray(branch.data?.openingHours) ? branch.data!.openingHours! : null;
   const hoursFor = (day: number): Hours => (opening || []).filter(h => h.dayOfWeek === day);
@@ -87,7 +94,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
       const items: ScheduleRow[] = []; for (let page = 1; page < 50; page++) { const res: any = await api.listSchedules({ doctorId, branchId: target.id, page, pageSize: 100 } as any); items.push(...res.items); if (items.length >= res.total || !res.items.length) break; }
       const targetRows = items.filter(r => r.status !== "inactive");
       const tpl = { doctorId, branchId: target.id, clinicId: target.clinicId, timezone: target.timezone, tokenPrefix: base.tokenPrefix, maxTokens: base.maxTokens, consultationMinutes: base.consultationMinutes, queueMode: base.queueMode, bufferMinutes: base.bufferMinutes ?? 0, isOpen: true };
-      plans.push({ name: target.name, plan: planWeek(targetRows, applyWeekTo(buildWeek(targetRows), week), (targetRows.find(r => !r.linkedBranchId) as any) || tpl, SHORT) });
+      plans.push({ name: target.name, plan: planWeek(targetRows, applyWeekTo(buildSavedWeek(targetRows), buildSavedWeek(rows)), (targetRows.find(r => !r.linkedBranchId) as any) || tpl, SHORT) });
     }
     const removals = plans.reduce((n, p) => n + p.plan.deactivations.length, 0);
     if (!await confirmation.ask({ title: "Apply to Selected Locations?", description: `This week's own sessions replace the custom sessions at ${plans.map(p => p.name).join(", ")}. Linked sessions there are kept.${removals ? ` ${removals} session${removals > 1 ? "s" : ""} will be deactivated, not deleted.` : ""} Each change is checked by the server.`, confirmLabel: "Apply to Locations" })) return;
@@ -133,16 +140,44 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
     if (busyRef.current) return;
     setBusy(true);
     try {
-      const p = planWeek(rows, week, template, SHORT);
+      let workingRows = rows, workingWeek = week;
+      const changedLinked = dayBaselines.filter(b=>b.following && sig([week[b.dayOfWeek]])!==sig([buildWeek(rows)[b.dayOfWeek]]));
+      if (changedLinked.length) {
+        if (!branch.data || branch.error) { setResult("Load clinic hours before confirming custom days. Your draft is kept."); return; }
+        if (!await confirmation.ask({title:"Confirm Custom Schedule",confirmLabel:"Confirm & Save",description:<>
+          <p><strong>{doctorName || doctor.data?.fullName || "Doctor"}</strong> · {branch.data.name}</p>
+          <ul>{changedLinked.map(b=><li key={b.dayOfWeek}><strong>{SHORT[b.dayOfWeek]}</strong> — clinic: {opening===null?"Hours not configured":hoursFor(b.dayOfWeek).map(h=>`${fmt(h.startTime)}–${fmt(h.endTime)}`).join(", ")||"Closed"}; proposed: {week[b.dayOfWeek].isOpen?week[b.dayOfWeek].sessions.map(s=>`${fmt(s.startTime)}–${fmt(s.endTime)}`).join(", "):"Day off"}</li>)}</ul>
+          <p>Only this doctor's selected weekdays at this location become custom. Clinic hours and other days are unchanged. Future clinic-hour synchronization will not overwrite these custom days, including a day off. Existing appointments are not moved, deleted or notified. Unsafe changes are refused.</p>
+        </>})) return;
+        for (const baseline of changedLinked) {
+          const day = workingWeek[baseline.dayOfWeek];
+          const payload = {doctorId,branchId,dayOfWeek:day.dayOfWeek,isOpen:day.isOpen,confirmed:true as const,expectedSnapshot:baseline.snapshot,sessions:dayOverrideSlots(workingRows,day,template)};
+          const signature = JSON.stringify(payload);
+          if(requests.current[day.dayOfWeek]?.signature!==signature) requests.current[day.dayOfWeek]={signature,id:crypto.randomUUID()};
+          try {
+            const saved = await api.saveScheduleDayOverride({...payload,requestId:requests.current[day.dayOfWeek].id} as api.ScheduleDayOverrideInput);
+            const savedDay = saved.items.filter(r=>r.dayOfWeek===day.dayOfWeek).map(r=>({...r}));
+            workingRows = [...workingRows.filter(r=>r.dayOfWeek!==day.dayOfWeek),...savedDay];
+            workingWeek = workingWeek.map(d=>d.dayOfWeek===day.dayOfWeek?buildWeek(savedDay)[day.dayOfWeek]:d);
+            setBaseRows(workingRows); setWeek(workingWeek);
+            setDayBaselines(old=>old.map(b=>b.dayOfWeek===day.dayOfWeek?saved.days[day.dayOfWeek]:b));
+            setResult(`Saved custom ${SHORT[day.dayOfWeek]}.`);
+          } catch (error) {
+            setResult(`${workingRows!==rows?"Partly saved. ":""}${SHORT[day.dayOfWeek]} was not confirmed saved: ${friendlyError(error,"save")} Your draft is kept; retry uses the same save identifier. Reload and review if the server reports a conflict.`);
+            void client.invalidateQueries(); return;
+          }
+        }
+      }
+      const p = planWeek(workingRows, workingWeek, template, SHORT);
       const total = p.creates.length + p.updates.length + p.deactivations.length;
-      if (!total) { if (p.adopt.length) setWeek(w => reconcileDraft(w, Object.fromEntries(p.adopt.map(x => [x.key, x.id])))); setWeek(buildWeek(rows)); setResult("No changes to save."); onSaved?.(); return; }
+      if (!total) { if (p.adopt.length) setWeek(w => reconcileDraft(w, Object.fromEntries(p.adopt.map(x => [x.key, x.id])))); setWeek(buildWeek(workingRows)); setResult(changedLinked.length?"Custom schedule saved.":"No changes to save."); void client.invalidateQueries(); onSaved?.(); return; }
       const durationChanged = p.updates.filter(u => { const row = rows.find(x => x.id === u.id); return row && u.body.consultationMinutes !== undefined && Number(u.body.consultationMinutes) !== Number(row.consultationMinutes); });
       const notes: string[] = [];
       if (durationChanged.length) notes.push(`Consultation duration changes on ${durationChanged.map(d => d.label).join(", ")} apply to future bookings. Existing visits keep their recorded duration.`);
       if (p.deactivations.length) notes.push(`${p.deactivations.length} session${p.deactivations.length > 1 ? "s" : ""} (${p.deactivations.map(d => d.label).join(", ")}) will be deactivated, not deleted. Past appointments and history stay. Deactivation runs last, only if every other change saved.`);
       if (notes.length && !await confirmation.ask({ title: p.deactivations.length ? "Deactivate Removed Sessions?" : "Change Consultation Duration?", description: `${notes.join(" ")} Each change is checked by the server and may be refused.`, confirmLabel: p.deactivations.length ? "Deactivate and Save" : "Save Schedule", tone: p.deactivations.length ? "danger" : undefined })) return;
       setBusy(true); setResult("");
-      const draftAtSave = week;
+      const draftAtSave = workingWeek;
       const r = await executePlan(p, io);
       notifyBulk(r.outcomes.filter(o => !o.skipped), "saved");
       const full = await finish(p, r, draftAtSave);
@@ -198,7 +233,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
     void execute();
   };
 
-  if (q.isLoading || (q.data && baseRows === null)) return <div className="skeleton" role="status">Loading weekly schedule…</div>;
+  if (q.isLoading || branch.isLoading || clinic.isLoading || (q.data && baseRows === null)) return <div className="skeleton" role="status">Loading weekly schedule…</div>;
   if (q.error && baseRows === null) return <div className="error-box" role="alert">{friendlyError(q.error, "load")} <button type="button" onClick={() => void q.refetch()}>Retry</button></div>;
   const clinicName = branch.data?.name || "the clinic";
 
@@ -213,12 +248,13 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
       <label>Max tokens<span className="required"> *</span><input type="number" min={1} step={1} value={defaults.maxTokens} onChange={e => setDefaults(v => ({ ...v, maxTokens: e.target.value }))} data-testid="input-default-max-tokens"/></label>
       <SearchableSelect label="Expected Consultation Duration" required value={defaults.consultationMinutes} onChange={value => setDefaults(v => ({ ...v, consultationMinutes: value }))} placeholder="Select duration…" options={[20, 30, 60].map(v => ({ value: String(v), label: `${v} minutes` }))}/>
     </div></fieldset>}
+    <p className="muted" data-testid="text-day-source">{dayBaselines[selectedDay]?.following ? "Following clinic hours — edits become custom only after confirmation." : "Custom schedule"} · Clinic: {opening===null?"Hours not configured":hoursFor(selectedDay).map(h=>`${fmt(h.startTime)}–${fmt(h.endTime)}`).join(", ")||"Closed"}</p>
     <CompactDayEditor week={week} setWeek={setWeek} opening={opening} preferences={preferences} busy={busy||linkedBusy} rows={rows} template={template} selected={selectedDay} onSelect={setSelectedDay} focus={focus} onChange={() => setResult("")}/>
     {needsTemplate && !template && <p className="field-error" role="alert">Enter token prefix, max tokens and consultation duration for new sessions.</p>}
     <details className="cde-more"><summary>Location hours and exceptions</summary>
       <div className="schedule-source" role="group" aria-label="Location hours" data-testid="schedule-source">
       <button type="button" className="button secondary small" disabled={busy || !opening || !opening.length} onClick={copyLocationHours} data-testid="button-copy-opening-hours">Copy Location Hours Once</button>
-      <HelpTip label="About copying location hours" text="Copy once fills this draft with today's location hours as custom sessions. Review capacity, then Save Weekly Schedule. Later location-hour changes do not update copied sessions. Linked sessions are kept."/>
+      <HelpTip label="About copying location hours" text="Copy once fills this draft with today's location hours. Review capacity, then Save Schedule. Edited days that follow clinic hours require confirmation before becoming custom; later clinic-hour changes do not update confirmed custom days."/>
        {branch.data && <FollowLocationHours branch={branch.data} doctorId={doctorId} dirty={dirty} disabled={busy} onBusyChange={setLinkedBusy} onDirtyChange={setLinkedDirty} defaults={{ maxTokens: (rows[0] as any)?.maxTokens, consultationMinutes: (rows[0] as any)?.consultationMinutes, tokenPrefix: (rows[0] as any)?.tokenPrefix, queueMode: (rows[0] as any)?.queueMode }} />}
        {!contextual&&siblingIds.length > 0 && <details className="schedule-copy-locations" data-testid="details-copy-locations"><summary>Copy to Other Locations</summary><div className="registration-inline">
         {(siblings.data || []).map(b => <label className="registration-check" key={b.id}><input type="checkbox" checked={copyTargets.includes(b.id)} disabled={busy} onChange={e => setCopyTargets(c => e.target.checked ? [...c, b.id] : c.filter(x => x !== b.id))} data-testid={`check-copy-location-${b.id}`}/>{b.name}</label>)}

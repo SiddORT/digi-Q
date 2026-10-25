@@ -2879,6 +2879,17 @@ export type Master = MasterInput & {
   id: string;
 }, 'status'>>;
 
+export interface ScheduleDayBaseline {
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  dayOfWeek: number;
+  following: boolean;
+  custom: boolean;
+  snapshot: string;
+}
+
 export type ScheduleInputQueueMode = typeof ScheduleInputQueueMode[keyof typeof ScheduleInputQueueMode];
 
 
@@ -2942,14 +2953,50 @@ export interface ScheduleInput {
   queueCloseTime?: string | null;
 }
 
-export type Schedule = ScheduleInput & {
+export type Schedule = ScheduleInput & ({
+  status?: string;
+  /** @nullable */
+  linkedBranchId?: string | null;
+  draftKey?: string;
   dateFormat?: ClinicDateFormat;
   timeFormat?: ClinicTimeFormat;
   id: string;
   doctorName?: string;
   clinicName?: string;
   branchName?: string;
-};
+});
+
+export interface ScheduleDayContext {
+  items: Schedule[];
+  days: ScheduleDayBaseline[];
+}
+
+export interface ScheduleDaySlot {
+  /** @maxLength 100 */
+  key: string;
+  id?: string;
+  session: ScheduleInput;
+}
+
+export interface ScheduleDayOverrideInput {
+  doctorId: string;
+  branchId: string;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  dayOfWeek: number;
+  isOpen: boolean;
+  confirmed: true;
+  /** @maxLength 200000 */
+  expectedSnapshot: string;
+  /**
+     * @minLength 10
+     * @maxLength 100
+     */
+  requestId: string;
+  sessions: ScheduleDaySlot[];
+}
 
 export type PincodeLookupItemsItem = {
   locality: string;
@@ -4215,6 +4262,11 @@ pageSize?: PageSizeParameter;
  * Allowlisted field with optional minus prefix for descending order
  */
 sort?: SortParameter;
+};
+
+export type GetScheduleDayContextParams = {
+doctorId: string;
+branchId: string;
 };
 
 export type ListSchedulesParams = {

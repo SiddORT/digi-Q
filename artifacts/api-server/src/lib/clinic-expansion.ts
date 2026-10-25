@@ -85,6 +85,9 @@ export async function saveClinicSetup(actor: any, clinicId: string, body: any, c
   await validateSlugWrite("clinics", detail, old, conn);
   const clinic = await change(clinics, clinicId, { data: { ...clinicDisplayPreferences(old), ...old, ...detail, policies: { ...old.policies, ...body.policies } } }, conn);
   for (const input of body.branches || []) {
+    // Freeze server-owned day overrides before reading the location document,
+    // including when its whole-location link is currently disabled.
+    if (input.id) await conn.execute(sql`select pg_advisory_xact_lock(hashtext(${"branch-hours:" + input.id}))`);
     const prior = input.id ? await one(branches, input.id, conn) : null;
     assert(!prior || prior.clinicId === clinicId, 403, "Branch belongs to another clinic");
     const next = { ...prior, ...input, clinicId, id: prior?.id || uid() };

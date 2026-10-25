@@ -6358,6 +6358,197 @@ export const DeleteMasterParams = zod.object({
 export const DeleteMasterResponse = zod.void()
 
 
+export const GetScheduleDayContextQueryParams = zod.object({
+  "doctorId": zod.coerce.string(),
+  "branchId": zod.coerce.string()
+})
+
+export const getScheduleDayContextResponseItemsItemOneExpectedSnapshotMax = 20000;
+
+export const getScheduleDayContextResponseItemsItemOneDayOfWeekMin = 0;
+export const getScheduleDayContextResponseItemsItemOneDayOfWeekMax = 6;
+
+export const getScheduleDayContextResponseItemsItemOneStartTimeRegExp = new RegExp('^[0-2][0-9]:[0-5][0-9]$');
+export const getScheduleDayContextResponseItemsItemOneTimezoneDefault = `Asia/Kolkata`;
+export const getScheduleDayContextResponseItemsItemOneTokenPrefixMax = 8;
+
+export const getScheduleDayContextResponseItemsItemOneMaxTokensMax = 1000;
+
+
+export const getScheduleDayContextResponseItemsItemOneBufferMinutesDefault = 0;
+export const getScheduleDayContextResponseItemsItemOneBufferMinutesMin = 0;
+export const getScheduleDayContextResponseItemsItemOneBufferMinutesMax = 1440;
+
+export const getScheduleDayContextResponseItemsItemOneQueueModeDefault = `mixed`;
+export const getScheduleDayContextResponseDaysItemDayOfWeekMin = 0;
+export const getScheduleDayContextResponseDaysItemDayOfWeekMax = 6;
+
+
+
+export const GetScheduleDayContextResponse = zod.object({
+  "items": zod.array(zod.object({
+  "expectedSnapshot": zod.string().max(getScheduleDayContextResponseItemsItemOneExpectedSnapshotMax).optional().describe('Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.'),
+  "doctorId": zod.string(),
+  "clinicId": zod.string(),
+  "branchId": zod.string(),
+  "dayOfWeek": zod.number().int().min(getScheduleDayContextResponseItemsItemOneDayOfWeekMin).max(getScheduleDayContextResponseItemsItemOneDayOfWeekMax).describe('Sunday is 0'),
+  "isOpen": zod.boolean(),
+  "startTime": zod.string().regex(getScheduleDayContextResponseItemsItemOneStartTimeRegExp),
+  "endTime": zod.string(),
+  "breakStart": zod.string().nullish(),
+  "breakEnd": zod.string().nullish(),
+  "timezone": zod.string().default(getScheduleDayContextResponseItemsItemOneTimezoneDefault),
+  "tokenPrefix": zod.string().min(1).max(getScheduleDayContextResponseItemsItemOneTokenPrefixMax),
+  "maxTokens": zod.number().int().min(1).max(getScheduleDayContextResponseItemsItemOneMaxTokensMax),
+  "consultationMinutes": zod.number().int().min(1),
+  "bufferMinutes": zod.number().int().min(getScheduleDayContextResponseItemsItemOneBufferMinutesMin).max(getScheduleDayContextResponseItemsItemOneBufferMinutesMax).default(getScheduleDayContextResponseItemsItemOneBufferMinutesDefault),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(getScheduleDayContextResponseItemsItemOneQueueModeDefault),
+  "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
+  "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
+}).and(zod.object({
+  "status": zod.string().optional(),
+  "linkedBranchId": zod.string().nullish(),
+  "draftKey": zod.string().optional(),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
+  "id": zod.string(),
+  "doctorName": zod.string().optional(),
+  "clinicName": zod.string().optional(),
+  "branchName": zod.string().optional()
+}))),
+  "days": zod.array(zod.object({
+  "dayOfWeek": zod.number().int().min(getScheduleDayContextResponseDaysItemDayOfWeekMin).max(getScheduleDayContextResponseDaysItemDayOfWeekMax),
+  "following": zod.boolean(),
+  "custom": zod.boolean(),
+  "snapshot": zod.string()
+}))
+})
+
+
+export const saveScheduleDayOverrideBodyDayOfWeekMin = 0;
+export const saveScheduleDayOverrideBodyDayOfWeekMax = 6;
+
+export const saveScheduleDayOverrideBodyExpectedSnapshotMax = 200000;
+
+export const saveScheduleDayOverrideBodyRequestIdMin = 10;
+export const saveScheduleDayOverrideBodyRequestIdMax = 100;
+
+export const saveScheduleDayOverrideBodySessionsItemKeyMax = 100;
+
+export const saveScheduleDayOverrideBodySessionsItemSessionExpectedSnapshotMax = 20000;
+
+export const saveScheduleDayOverrideBodySessionsItemSessionDayOfWeekMin = 0;
+export const saveScheduleDayOverrideBodySessionsItemSessionDayOfWeekMax = 6;
+
+export const saveScheduleDayOverrideBodySessionsItemSessionStartTimeRegExp = new RegExp('^[0-2][0-9]:[0-5][0-9]$');
+export const saveScheduleDayOverrideBodySessionsItemSessionTimezoneDefault = `Asia/Kolkata`;
+export const saveScheduleDayOverrideBodySessionsItemSessionTokenPrefixMax = 8;
+
+export const saveScheduleDayOverrideBodySessionsItemSessionMaxTokensMax = 1000;
+
+
+export const saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesDefault = 0;
+export const saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesMin = 0;
+export const saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesMax = 1440;
+
+export const saveScheduleDayOverrideBodySessionsItemSessionQueueModeDefault = `mixed`;
+
+export const SaveScheduleDayOverrideBody = zod.object({
+  "doctorId": zod.string(),
+  "branchId": zod.string(),
+  "dayOfWeek": zod.number().int().min(saveScheduleDayOverrideBodyDayOfWeekMin).max(saveScheduleDayOverrideBodyDayOfWeekMax),
+  "isOpen": zod.boolean(),
+  "confirmed": zod.literal(true),
+  "expectedSnapshot": zod.string().max(saveScheduleDayOverrideBodyExpectedSnapshotMax),
+  "requestId": zod.string().min(saveScheduleDayOverrideBodyRequestIdMin).max(saveScheduleDayOverrideBodyRequestIdMax),
+  "sessions": zod.array(zod.object({
+  "key": zod.string().max(saveScheduleDayOverrideBodySessionsItemKeyMax),
+  "id": zod.string().optional(),
+  "session": zod.object({
+  "expectedSnapshot": zod.string().max(saveScheduleDayOverrideBodySessionsItemSessionExpectedSnapshotMax).optional().describe('Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.'),
+  "doctorId": zod.string(),
+  "clinicId": zod.string(),
+  "branchId": zod.string(),
+  "dayOfWeek": zod.number().int().min(saveScheduleDayOverrideBodySessionsItemSessionDayOfWeekMin).max(saveScheduleDayOverrideBodySessionsItemSessionDayOfWeekMax).describe('Sunday is 0'),
+  "isOpen": zod.boolean(),
+  "startTime": zod.string().regex(saveScheduleDayOverrideBodySessionsItemSessionStartTimeRegExp),
+  "endTime": zod.string(),
+  "breakStart": zod.string().nullish(),
+  "breakEnd": zod.string().nullish(),
+  "timezone": zod.string().default(saveScheduleDayOverrideBodySessionsItemSessionTimezoneDefault),
+  "tokenPrefix": zod.string().min(1).max(saveScheduleDayOverrideBodySessionsItemSessionTokenPrefixMax),
+  "maxTokens": zod.number().int().min(1).max(saveScheduleDayOverrideBodySessionsItemSessionMaxTokensMax),
+  "consultationMinutes": zod.number().int().min(1),
+  "bufferMinutes": zod.number().int().min(saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesMin).max(saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesMax).default(saveScheduleDayOverrideBodySessionsItemSessionBufferMinutesDefault),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(saveScheduleDayOverrideBodySessionsItemSessionQueueModeDefault),
+  "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
+  "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
+})
+}))
+})
+
+export const saveScheduleDayOverrideResponseItemsItemOneExpectedSnapshotMax = 20000;
+
+export const saveScheduleDayOverrideResponseItemsItemOneDayOfWeekMin = 0;
+export const saveScheduleDayOverrideResponseItemsItemOneDayOfWeekMax = 6;
+
+export const saveScheduleDayOverrideResponseItemsItemOneStartTimeRegExp = new RegExp('^[0-2][0-9]:[0-5][0-9]$');
+export const saveScheduleDayOverrideResponseItemsItemOneTimezoneDefault = `Asia/Kolkata`;
+export const saveScheduleDayOverrideResponseItemsItemOneTokenPrefixMax = 8;
+
+export const saveScheduleDayOverrideResponseItemsItemOneMaxTokensMax = 1000;
+
+
+export const saveScheduleDayOverrideResponseItemsItemOneBufferMinutesDefault = 0;
+export const saveScheduleDayOverrideResponseItemsItemOneBufferMinutesMin = 0;
+export const saveScheduleDayOverrideResponseItemsItemOneBufferMinutesMax = 1440;
+
+export const saveScheduleDayOverrideResponseItemsItemOneQueueModeDefault = `mixed`;
+export const saveScheduleDayOverrideResponseDaysItemDayOfWeekMin = 0;
+export const saveScheduleDayOverrideResponseDaysItemDayOfWeekMax = 6;
+
+
+
+export const SaveScheduleDayOverrideResponse = zod.object({
+  "items": zod.array(zod.object({
+  "expectedSnapshot": zod.string().max(saveScheduleDayOverrideResponseItemsItemOneExpectedSnapshotMax).optional().describe('Optional loaded authoring snapshot for updates. Compared under the schedule locks; mismatch returns 409 without writes. Not stored. Older clients may omit it.'),
+  "doctorId": zod.string(),
+  "clinicId": zod.string(),
+  "branchId": zod.string(),
+  "dayOfWeek": zod.number().int().min(saveScheduleDayOverrideResponseItemsItemOneDayOfWeekMin).max(saveScheduleDayOverrideResponseItemsItemOneDayOfWeekMax).describe('Sunday is 0'),
+  "isOpen": zod.boolean(),
+  "startTime": zod.string().regex(saveScheduleDayOverrideResponseItemsItemOneStartTimeRegExp),
+  "endTime": zod.string(),
+  "breakStart": zod.string().nullish(),
+  "breakEnd": zod.string().nullish(),
+  "timezone": zod.string().default(saveScheduleDayOverrideResponseItemsItemOneTimezoneDefault),
+  "tokenPrefix": zod.string().min(1).max(saveScheduleDayOverrideResponseItemsItemOneTokenPrefixMax),
+  "maxTokens": zod.number().int().min(1).max(saveScheduleDayOverrideResponseItemsItemOneMaxTokensMax),
+  "consultationMinutes": zod.number().int().min(1),
+  "bufferMinutes": zod.number().int().min(saveScheduleDayOverrideResponseItemsItemOneBufferMinutesMin).max(saveScheduleDayOverrideResponseItemsItemOneBufferMinutesMax).default(saveScheduleDayOverrideResponseItemsItemOneBufferMinutesDefault),
+  "queueMode": zod.enum(['mixed', 'appointmentsOnly', 'walkInsOnly']).default(saveScheduleDayOverrideResponseItemsItemOneQueueModeDefault),
+  "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
+  "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
+}).and(zod.object({
+  "status": zod.string().optional(),
+  "linkedBranchId": zod.string().nullish(),
+  "draftKey": zod.string().optional(),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
+  "id": zod.string(),
+  "doctorName": zod.string().optional(),
+  "clinicName": zod.string().optional(),
+  "branchName": zod.string().optional()
+}))),
+  "days": zod.array(zod.object({
+  "dayOfWeek": zod.number().int().min(saveScheduleDayOverrideResponseDaysItemDayOfWeekMin).max(saveScheduleDayOverrideResponseDaysItemDayOfWeekMax),
+  "following": zod.boolean(),
+  "custom": zod.boolean(),
+  "snapshot": zod.string()
+}))
+})
+
+
 export const listSchedulesQueryDayOfWeekMin = 0;
 export const listSchedulesQueryDayOfWeekMax = 6;
 
@@ -6429,6 +6620,9 @@ export const ListSchedulesResponse = zod.object({
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
 }).and(zod.object({
+  "status": zod.string().optional(),
+  "linkedBranchId": zod.string().nullish(),
+  "draftKey": zod.string().optional(),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
@@ -6516,6 +6710,9 @@ export const CreateScheduleResponse = zod.object({
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
 }).and(zod.object({
+  "status": zod.string().optional(),
+  "linkedBranchId": zod.string().nullish(),
+  "draftKey": zod.string().optional(),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),
@@ -6606,6 +6803,9 @@ export const UpdateScheduleResponse = zod.object({
   "queueOpenTime": zod.string().nullish().describe('Null clears an optional queue opening override.'),
   "queueCloseTime": zod.string().nullish().describe('Null clears an optional queue closing override.')
 }).and(zod.object({
+  "status": zod.string().optional(),
+  "linkedBranchId": zod.string().nullish(),
+  "draftKey": zod.string().optional(),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
   "id": zod.string(),

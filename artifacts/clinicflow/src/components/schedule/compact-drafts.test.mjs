@@ -4,6 +4,13 @@ import { buildWeek, copyDay, addCopiedSlot, draftSignature, planWeek, dayErrors,
 const labels=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const base={doctorId:"d",clinicId:"c",branchId:"b",timezone:"UTC",isOpen:true,status:"active",tokenPrefix:"A",maxTokens:12,consultationMinutes:15,bufferMinutes:2,queueMode:"mixed"};
 const rows=[{...base,id:"a",dayOfWeek:1,startTime:"09:00",endTime:"12:00",breakStart:"10:00",breakEnd:"10:15"},{...base,id:"b",dayOfWeek:2,startTime:"14:00",endTime:"17:00",tokenPrefix:"B"},{...base,id:"link",dayOfWeek:2,startTime:"18:00",endTime:"19:00",linkedBranchId:"b"}];
+test("invalid optional time input remains a complete-draft error even with an empty canonical value",()=>{
+  const week=buildWeek(rows);
+  week[1].sessions[0].settings.queueCloseTime=null;
+  week[1].sessions[0].invalidTimes=["queueCloseTime"];
+  assert.ok(dayErrors(week[1]).some(e=>e.includes("queue closing")));
+  assert.notEqual(draftSignature(week),draftSignature(buildWeek(rows)));
+});
 test("settings participate in dirty tracking and update payloads; legacy durations stay",()=>{
   const w=buildWeek(rows),sig=draftSignature(w);
   assert.equal(w[1].sessions[0].settings.consultationMinutes,15);

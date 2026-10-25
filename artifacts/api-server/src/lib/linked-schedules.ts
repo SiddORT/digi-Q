@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { all, change, put, uid, audit } from "./store";
 import { assert } from "./http";
 import { sameTimezone, weeklySessionsOverlap, validateTimes } from "./availability";
+import { customDay } from "./schedule-day-overrides";
 
 export async function lockLinkedDoctors(clinic: any, branchInputs: any[], existingBranches: any[], conn: any) {
   const owner = (await all(doctors, conn)).find(d => d.userId === clinic.adminId);
@@ -43,6 +44,7 @@ export async function planLinkedSchedules(clinic: any, branch: any, prior: any, 
   const locations = await all(branches, conn);
   const taken = new Set<string>();
   for (const hour of branch.openingHours) {
+    if (customDay(prior || branch, doctor.id, hour.dayOfWeek)) continue;
     const next = { ...hour, doctorId: doctor.id, clinicId: clinic.id, branchId: branch.id, timezone: branch.timezone || "Asia/Kolkata", isOpen: true, maxTokens: link.maxTokens, consultationMinutes: link.consultationMinutes, tokenPrefix: link.tokenPrefix.toUpperCase(), queueMode: link.queueMode, bufferMinutes: 0, linkedBranchId: branch.id };
     validateTimes(next);
     const old = linked.find(s => s.doctorId === doctor.id && s.dayOfWeek === hour.dayOfWeek && s.startTime === hour.startTime && s.endTime === hour.endTime);
@@ -55,7 +57,7 @@ export async function planLinkedSchedules(clinic: any, branch: any, prior: any, 
     if (!old) { impact.create++; writes.push({ next }); }
     else if (changed) { impact.update++; writes.push({ old, next }); }
   }
-  for (const old of linked.filter(s => !taken.has(s.id))) { impact.retire++; writes.push({ old, retire: true }); }
+  for (const old of linked.filter(s => !taken.has(s.id) && !customDay(prior || branch, s.doctorId, s.dayOfWeek))) { impact.retire++; writes.push({ old, retire: true }); }
   const bookings = await all(appointments, conn), exceptions = await all(availabilityExceptions, conn);
   if (impact.create && exceptions.some(e => e.status === "active" && e.doctorId === doctor.id)) {
     conflicts.push("This doctor has active date exceptions. Review and deactivate or resolve exceptions before adding linked sessions, so a date override cannot introduce overlapping consultations.");
@@ -71,7 +73,10 @@ export async function planLinkedSchedules(clinic: any, branch: any, prior: any, 
 
 export async function applyLinkedPlan(actor: any, plan: Awaited<ReturnType<typeof planLinkedSchedules>>, conn: any) {
   assert(!plan.conflicts.length, 409, plan.conflicts.join(" "));
-  for (const write of plan.writes) {
+  // The full plan has passed booking/history guards. Retire obsolete intervals
+  // first inside the caller's transaction so a same-start replacement does not
+  // violate the active-start unique index. Any later failure rolls everything back.
+  for (const write of [...plan.writes].sort((a,b)=>Number(!!b.retire)-Number(!!a.retire))) {
     const row = write.old
       ? await change(schedules, write.old.id, write.retire ? { status: "inactive" } : { data: { ...write.old, ...write.next, ...(write.unlink ? { linkedBranchId: null } : {}) } }, conn)
       : await put(schedules, { id: uid(), doctorId: write.next.doctorId, branchId: write.next.branchId, clinicId: write.next.clinicId, dayOfWeek: write.next.dayOfWeek, data: write.next }, conn);

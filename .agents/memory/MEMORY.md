@@ -26,6 +26,7 @@
 - [Operational assignment context](operational-assignment-context.md) — reuse verified saved scope; do not infer permission from filters or rebuild unchanged projected mappings.
 - [Saved schedule context](saved-schedule-context.md) — cached profiles do not confirm current assignments; opening contextual scheduling needs fresh scope without overwriting drafts.
 - [Schedule write baselines](schedule-write-baselines.md) — additive stale checks preserve per-session services; partial retries use own write responses, not newer background snapshots.
+- [Day schedule customization](day-schedule-customization.md) — complete doctor/location weekdays, including days off; whole-location relinking must not silently erase custom intent.
 - [Tabbed schedule validation](tabbed-schedule-validation.md) — keeping controls mounted does not prove hidden constraints run; validate the complete draft before writing.
 - [Signed-in directory reuse](signed-in-directory-reuse.md) — share bounded reads; complete catalogs need proven scope, synchronized freshness, and ordinary saved-label fallback.
 - [Dropdown readiness](dropdown-readiness-contract.md) — app-wide permitted first-page loading, including lazy owners; no arbitrary defaults or broader directory downloads.

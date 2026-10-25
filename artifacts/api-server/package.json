@@ -18,7 +18,7 @@
     "test:owner-booking": "node --test ./src/owner-booking.integration.test.mjs",
     "test:owner-booking:jwt": "node --test --test-name-pattern=jwt ./src/owner-booking.integration.test.mjs",
     "test:queue-contention": "node --test ./src/queue-contention.test.mjs",
-    "test:schedules": "node --test ./src/schedule-contention.test.mjs",
+    "test:schedules": "node --test --test-concurrency=1 ./src/schedule-contention.test.mjs ./src/schedule-day-overrides.test.mjs",
     "test:features": "node --test ./src/feature-policy.test.mjs ./src/functional-features.integration.test.mjs"
   },
   "dependencies": {
