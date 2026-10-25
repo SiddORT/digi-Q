@@ -74,5 +74,6 @@ test("time picker focus: lands after portal positioning, Tab stays in panel, clo
 test("weekly editor never prints an undefined timezone", () => {
   const src = read("./schedule/WeeklyScheduleEditor.tsx");
   assert.doesNotMatch(src, /Clinic timezone: \$\{branch\.data\.timezone\}`/);
-  assert.match(src, /\|\| "Not set"\}`/);
+  assert.match(src, /<ScheduleContextHeader /);
+  assert.match(read("./schedule/ScheduleContextHeader.tsx"), /timezone \|\| "Not set"/);
 });

@@ -23,7 +23,9 @@ Default new country selections to India and use compact country codes rather tha
 
 Use shared defaults, components and styling throughout these sections; do not duplicate features or UI for different entry points.
 
-**Why:** The user explicitly reinforced seamless uniformity when authorizing all remaining sections.
+For weekly/day scheduling, one implementation must serve Schedule, doctor context and Edit Schedule. Wrappers supply permitted scope, context and callbacks only; validation, copying, settings and styling must not fork by role or entry point.
+
+**Why:** The user explicitly reinforced seamless uniformity and required one implementation, not cloned schedule editors, when approving the reference-layout refinement.
 
 **How to apply:** Reuse the shared address, booking, patient-entry and schedule controls rather than maintaining parallel implementations.
 

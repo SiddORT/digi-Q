@@ -15,7 +15,8 @@ import { friendlyError } from "../../lib/friendly-error";
 import { notifyBulk } from "../../lib/notify";
 import { useDateTimePreferences } from "../DateTimePreferences";
 import { useRegisterUnsaved } from "../WorkspaceBranch";
-import { Link, useLocation, useSearch } from "wouter";
+import { ScheduleContextHeader } from "./ScheduleContextHeader";
+import { ScheduleExceptions } from "./ScheduleExceptions";
 import { buildWeek as buildSavedWeek, dayErrors, draftSignature, executePlan, outsideHours, planWeek, scheduleReadiness, reconcileDraft, scheduleSnapshot, weekSummary, prefillFromHours, applyWeekTo, SUGGESTED_SESSIONS_PER_DAY, type DraftDay, type DraftSession, type ScheduleRow } from "./week-plan";
 import { dayOverrideSlots } from "./day-overrides";
 
@@ -28,7 +29,7 @@ function adjustToHours(s: DraftSession, hours: Hours): DraftSession {
 }
 
 /** Monday–Sunday editor over the existing one-record-per-session schedule model. Saves are per session, not atomic. */
-export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange, onBusyChange, onExceptions, onSaved, canDelete=false, doctorName, contextual=false, initialDay=1 }: { doctorId: string; branchId: string; onEdit: (row: any) => void; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void; onExceptions?:()=>void; onSaved?:()=>void; canDelete?:boolean; doctorName?:string; contextual?:boolean; compact?:boolean; initialDay?:number }) {
+export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusyChange, onSaved, canDelete=false, doctorName, contextual=false, showContext=true, initialDay=1 }: { doctorId: string; branchId: string; onDirtyChange?: (dirty: boolean) => void; onBusyChange?: (busy: boolean) => void; onSaved?:()=>void; canDelete?:boolean; doctorName?:string; contextual?:boolean; showContext?:boolean; initialDay?:number }) {
   const client = useQueryClient();
   const confirmation = useConfirm();
   const inherited = useDateTimePreferences();
@@ -54,7 +55,9 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
   const setBusy = (v: boolean) => { busyRef.current = v; setBusyState(v); };
   const [linkedBusy, setLinkedBusy] = useState(false);
   const [linkedDirty, setLinkedDirty] = useState(false);
-  useEffect(()=>{onBusyChange?.(busy||linkedBusy);},[busy,linkedBusy,onBusyChange]);
+  const [exceptionDirty, setExceptionDirty] = useState(false);
+  const [exceptionBusy, setExceptionBusy] = useState(false);
+  useEffect(()=>{onBusyChange?.(busy||linkedBusy||exceptionBusy);},[busy,linkedBusy,exceptionBusy,onBusyChange]);
   const [result, setResult] = useState("");
   const [outside, setOutside] = useState<{ day: number; key: string }[] | null>(null);
   const dirtyRef = useRef(onDirtyChange); dirtyRef.current = onDirtyChange;
@@ -67,11 +70,10 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
   const sig = (w: DraftDay[]) => draftSignature(w.map(d => d.isOpen ? d : { ...d, sessions: [] }));
   const baseline = useMemo(() => sig(buildWeek(rows)), [rows]);
   const dirty = baseRows !== null && sig(week) !== baseline;
-  useEffect(() => { dirtyRef.current?.(dirty||linkedDirty||!!defaults.tokenPrefix||!!defaults.maxTokens||!!defaults.consultationMinutes); }, [dirty,linkedDirty,defaults]);
+  useEffect(() => { dirtyRef.current?.(dirty||linkedDirty||exceptionDirty||!!defaults.tokenPrefix||!!defaults.maxTokens||!!defaults.consultationMinutes); }, [dirty,linkedDirty,exceptionDirty,defaults]);
   useRegisterUnsaved(dirty);
 
   const template = rows[0] ? (rows[0] as Record<string, unknown>) : branch.data && defaults.tokenPrefix.trim() && Number(defaults.maxTokens) >= 1 && Number(defaults.consultationMinutes) >= 1 ? { doctorId, branchId, clinicId: branch.data.clinicId, timezone: branch.data.timezone, tokenPrefix: defaults.tokenPrefix.trim(), maxTokens: Number(defaults.maxTokens), consultationMinutes: Number(defaults.consultationMinutes), queueMode: "mixed" } : undefined;
-  const [path] = useLocation(); const search = useSearch();
   const copyLocationHours = () => { if (!opening) return; setResult(""); setWeek(w => prefillFromHours(w, opening)); };
   const readiness = scheduleReadiness(rows, branch.data ? opening : undefined);
   const errors = week.map(dayErrors);
@@ -239,6 +241,7 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
 
   return <section className={contextual?"cde-section":"panel padded"} data-testid="panel-weekly-editor" aria-busy={busy}>
     {confirmation.dialog}
+    {showContext && <ScheduleContextHeader doctor={doctorName || doctor.data?.fullName || "Doctor"} clinic={clinic.data?.name} location={branch.data?.name} timezone={preferences.timezone} timeFormat={preferences.timeFormat}/>}
     {q.error && baseRows !== null && <p className="notice" role="alert" data-testid="text-reload-warning">Saved schedule could not be refreshed. Your draft and saved changes are kept. <button type="button" onClick={() => void q.refetch()}>Retry</button></p>}
     {branch.error && <p role="alert">Clinic hours could not be loaded. <button type="button" onClick={() => void branch.refetch()}>Retry Clinic Hours</button></p>}
     {q.data && branch.data && !readiness.ready && <ul className="notice" data-testid="schedule-readiness">{readiness.missing.map(m => <li key={m}>{m}</li>)}</ul>}
@@ -264,8 +267,10 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onEdit, onDirtyChange
       </div></details>}
       </div>
     </details>
-    {!contextual&&(onExceptions?<button type="button" className="button secondary small" onClick={onExceptions} data-testid="link-week-exceptions">Date Exceptions for This Doctor</button>:<Link className="button secondary small" href={`${path.replace(/availability$/, "exceptions")}?${search}`} data-testid="link-week-exceptions">Date Exceptions for This Doctor</Link>)}
-    <div className="cde-footer"><FormActions wide={false} onCancel={dialogClose ? undefined : ()=>void cancelDraft()} cancelClosesDialog cancelTestId="button-reset-week" busy={busy||linkedBusy} disabled={!dirty} onSubmit={save} submitTestId="button-save-week" submitLabel="Save Schedule" secondary={canDelete && !!rows.some(r => !r.linkedBranchId) ? <button type="button" className="button secondary small" disabled={busy||linkedBusy||dirty} title={dirty?"Save or cancel your changes first":undefined} onClick={() => void deleteSchedule()} data-testid="button-delete-schedule">Delete Schedule</button> : undefined} /></div>
+    <div className="cde-footer"><FormActions wide={false} onCancel={dialogClose ? undefined : ()=>void cancelDraft()} cancelClosesDialog cancelTestId="button-reset-week" busy={busy||linkedBusy||exceptionBusy} disabled={!dirty} onSubmit={save} submitTestId="button-save-week" submitLabel="Save Schedule" secondary={<>
+      {canDelete && !!rows.some(r => !r.linkedBranchId) && <button type="button" className="button secondary small" disabled={busy||linkedBusy||dirty} title={dirty?"Save or cancel your changes first":undefined} onClick={() => void deleteSchedule()} data-testid="button-delete-schedule">Delete Schedule</button>}
+      {["superAdmin","clinicAdmin","doctor"].includes(identity.data?.user?.role || "") && <ScheduleExceptions doctorId={doctorId} branchId={branchId} doctorName={doctorName || doctor.data?.fullName} branchName={branch.data?.name} preferences={preferences} disabled={busy||linkedBusy} draftDirty={dirty||linkedDirty||Object.values(defaults).some(Boolean)} onDirtyChange={setExceptionDirty} onBusyChange={setExceptionBusy}/>}
+    </>} /></div>
     {result && <p className="notice" role="status" data-testid="status-week-save">{result}</p>}
     {outside && <AppDialog open onClose={() => setOutside(null)} title="Doctor Hours Beyond Clinic Hours">
       <p>{outside.length} session{outside.length > 1 ? "s are" : " is"} outside {clinicName}'s hours: {outside.map(o => { const s = week[o.day].sessions.find(x => x.key === o.key); return s ? `${SHORT[o.day]} ${fmt(s.startTime)} – ${fmt(s.endTime)} (clinic ${hoursFor(o.day).map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ") || "usually closed"})` : ""; }).join("; ")}.</p>

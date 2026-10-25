@@ -7,16 +7,18 @@ const doctor={id:"d1",fullName:"Fictional Doctor with a long saved name",status:
 const summary={id:"s1",doctorId:"d1",clinicId:"c1",branchId:"b1",doctorName:doctor.fullName,branchName:clinic.name,dayOfWeek:1,isOpen:true,startTime:"09:00",endTime:"12:00",breakStart:"10:00",breakEnd:"10:15",tokenPrefix:"A",maxTokens:10,consultationMinutes:20,bufferMinutes:5};
 const full={...summary,timezone:"Asia/Kolkata",queueMode:"mixed",queueOpenTime:"08:30",queueCloseTime:"11:30"};
 const list=(items:unknown[])=>({items,total:items.length,page:1,pageSize:20,totalPages:1});
-async function setup(page:Page, role="superAdmin", extra=true, linked=false, resource="availability") {
-  const state={row:{...(extra?full:summary),...(linked?{linkedBranchId:"b1"}:{})} as Record<string,any>,extraRows:[] as Record<string,any>[],clinicHours:[...clinic.openingHours],customDays:new Set<number>(),revision:0,writes:[] as Record<string,any>[],fail:false,failDay:undefined as number|undefined,pause:undefined as Promise<void>|undefined};
+async function setup(page:Page, role="superAdmin", extra=true, linked=false, resource="availability", apiRole=role) {
+  const state={row:{...(extra?full:summary),...(linked?{linkedBranchId:"b1"}:{})} as Record<string,any>,extraRows:[] as Record<string,any>[],clinicHours:[...clinic.openingHours],customDays:new Set<number>(),revision:0,writes:[] as Record<string,any>[],consoleErrors:[] as string[],pageErrors:[] as string[],fail:false,failDay:undefined as number|undefined,pause:undefined as Promise<void>|undefined};
   const rows=()=>[state.row,...state.extraRows].filter(r=>r.status!=="inactive");
   const context=()=>({items:rows(),days:Array.from({length:7},(_,dayOfWeek)=>({dayOfWeek,following:linked&&!state.customDays.has(dayOfWeek),custom:state.customDays.has(dayOfWeek),snapshot:`day-${dayOfWeek}-${state.revision}`}))});
   await page.route(/https:\/\/fonts\./,r=>r.abort());
+  page.on("console",msg=>{if(msg.type()==="error")state.consoleErrors.push(msg.text());});
+  page.on("pageerror",error=>state.pageErrors.push(error.message));
   await page.route("**/api/**",async route=>{
     const req=route.request(),path=new URL(req.url()).pathname;
     let reply:any=list([]),status=200;
     if(path==="/api/auth/csrf")reply={csrfToken:"fixture-csrf-token"};
-    else if(path==="/api/me")reply={userId:"fixture-admin",user:{id:"fixture-admin",role,fullName:"Fictional Actor",clinicIds:["c1"],branchIds:["b1"]},...(role==="doctor"?{doctorId:"d1"}:{}),needsOnboarding:false};
+    else if(path==="/api/me")reply={userId:"fixture-admin",user:{id:"fixture-admin",role:apiRole,fullName:"Fictional Actor",clinicIds:["c1"],branchIds:["b1"]},...(apiRole==="doctor"?{doctorId:"d1"}:{}),needsOnboarding:false};
     else if(path==="/api/settings")reply={timezone:"Asia/Kolkata",timeFormat:"24h",dateFormat:"YYYY-MM-DD"};
     else if(path==="/api/clinics/c1")reply=group;
     else if(path==="/api/branches/b1")reply={...clinic,openingHours:state.clinicHours,...(linked?{linkedSchedule:{enabled:true,doctorId:"d1",maxTokens:10,consultationMinutes:20,tokenPrefix:"A",queueMode:"mixed"}}:{})};
@@ -66,7 +68,7 @@ for(const role of ["superAdmin","clinicAdmin","doctor"] as const) test(`days ret
   await schedule(page).getByRole("tab",{name:"Mon",exact:true}).focus();await page.keyboard.press("ArrowRight");
   await expect(schedule(page).getByRole("tab",{name:"Tue",exact:true})).toBeFocused();
   await schedule(page).getByRole("tab",{name:"Mon",exact:true}).click();
-  await schedule(page).getByText("Advanced",{exact:true}).click();
+  await schedule(page).getByText("Capacity, breaks and queue settings",{exact:true}).click();
   await schedule(page).getByLabel("Max tokens",{exact:true}).fill("14");
   await schedule(page).getByLabel("Queue closes",{exact:true}).fill("11:45");
   await schedule(page).getByRole("tab",{name:"Tue",exact:true}).click();
@@ -76,13 +78,13 @@ for(const role of ["superAdmin","clinicAdmin","doctor"] as const) test(`days ret
   await expect(schedule(page).getByTestId("status-week-save")).toContainText("Saved");
   expect(state.writes[0]).toMatchObject({maxTokens:14,queueCloseTime:"11:45",breakStart:"10:00",consultationMinutes:20});
   await schedule(page).getByTestId("button-dialog-close").click();await edit(page);
-  await schedule(page).getByText("Advanced",{exact:true}).click();
+  await schedule(page).getByText("Capacity, breaks and queue settings",{exact:true}).click();
   await expect(schedule(page).getByLabel("Max tokens",{exact:true})).toHaveValue("14");
   await expect(schedule(page).getByLabel("Queue closes",{exact:true})).toHaveValue("11:45");
 });
 test("save reveals invalid settings on hidden days and makes no writes",async({page})=>{
   const state=await setup(page);await edit(page);
-  await schedule(page).getByText("Advanced",{exact:true}).click();
+  await schedule(page).getByText("Capacity, breaks and queue settings",{exact:true}).click();
   for(const [field,value,reset] of [["Max tokens","0","10"],["Break end","","10:15"],["Queue closes","13:00","11:30"],["Queue closes","25:90","11:30"]]){
     await schedule(page).getByLabel(field,{exact:true}).fill(value);
     await schedule(page).getByRole("tab",{name:"Tue",exact:true}).click();
@@ -95,7 +97,7 @@ test("save reveals invalid settings on hidden days and makes no writes",async({p
 });
 test("failed save retains the draft; Cancel and Escape share one discard prompt",async({page})=>{
   const state=await setup(page);state.fail=true;await edit(page);
-  await schedule(page).getByText("Advanced",{exact:true}).click();await schedule(page).getByLabel("Max tokens",{exact:true}).fill("15");
+  await schedule(page).getByText("Capacity, breaks and queue settings",{exact:true}).click();await schedule(page).getByLabel("Max tokens",{exact:true}).fill("15");
   await schedule(page).getByTestId("button-save-week").click();
   await expect(schedule(page).getByTestId("status-week-save")).toContainText("Partly saved");
   await expect(schedule(page).getByLabel("Max tokens",{exact:true})).toHaveValue("15");
@@ -111,7 +113,7 @@ test("failed save retains the draft; Cancel and Escape share one discard prompt"
 test("saving blocks repeated submission and all dismissal paths",async({page})=>{
   const state=await setup(page);await edit(page);
   let release!:()=>void;state.pause=new Promise(resolve=>{release=resolve;});
-  await schedule(page).getByText("Advanced",{exact:true}).click();await schedule(page).getByLabel("Max tokens",{exact:true}).fill("12");
+  await schedule(page).getByText("Capacity, breaks and queue settings",{exact:true}).click();await schedule(page).getByLabel("Max tokens",{exact:true}).fill("12");
   await schedule(page).getByTestId("button-save-week").click();
   await expect.poll(()=>state.writes.length).toBe(1);
   await expect(schedule(page).getByTestId("button-save-week")).toBeDisabled();
@@ -320,7 +322,7 @@ test("schedule list and editor fit at 200 percent layout zoom",async({page})=>{
   expect(control!.x+control!.width).toBeLessThanOrEqual(next!.x);
   await button.click();await expect(page.getByTestId("expansion-availability-s1")).toBeVisible();
   await edit(page);
-  await schedule(page).getByText("Advanced",{exact:true}).click();
+  await schedule(page).getByText("Capacity, breaks and queue settings",{exact:true}).click();
   expect(await schedule(page).evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
   const body=schedule(page).locator(".app-dialog-body");
   await expect(body).toBeVisible();
@@ -345,3 +347,136 @@ for(const [role,width] of [["superAdmin",1440],["clinicAdmin",1024],["clinicAdmi
     }
   });
 }
+
+// All entry points mount the production context/editor, with HTTP-only fictional data.
+async function openEntry(page:Page, entry:"page"|"doctor"|"dialog", role:string) {
+  const state=await setup(page,role);
+  state.extraRows.push({...full,id:"s2",startTime:"14:00",endTime:"16:00",breakStart:null,breakEnd:null,maxTokens:23,tokenPrefix:"B",queueMode:"walkInsOnly",queueOpenTime:"13:30",queueCloseTime:"15:30"});
+  if(entry==="dialog")await edit(page);
+  else if(entry==="page")await page.goto(`/?mode=schedule&resource=availability&doctorId=d1&fixtureRole=${role}`);
+  else if(role==="doctor")await page.goto("/doctor/availability?fixtureRole=doctor&clinicId=c1");
+  else {
+    await page.goto(`/?mode=staff&tab=doctors&fixtureRole=${role}`);
+    await page.getByTestId("button-manage-schedule-d1").click();
+  }
+  const editor=entry==="dialog"
+    ? page.getByRole("dialog",{name:"Edit Schedule",exact:true}).getByTestId("panel-weekly-editor")
+    : page.getByTestId("panel-weekly-editor");
+  // Dialog and its doctor context expose the same production fields in nested scopes.
+  await expect(editor.getByLabel("Slot 2 start time").first()).toBeVisible();
+  return {state,editor};
+}
+for(const role of ["superAdmin","clinicAdmin","doctor"])for(const entry of ["page","doctor","dialog"] as const) {
+  test(`shared editor context and session ownership ${entry} ${role}`,async({page})=>{
+    const {state,editor}=await openEntry(page,entry,role);
+    const contextScope=entry==="dialog"?page.getByRole("dialog",{name:"Edit Schedule",exact:true})
+      :entry==="doctor"&&role!=="doctor"?page.getByRole("dialog",{name:"Edit Doctor Schedule",exact:true})
+      :page.getByRole("region",{name:"Doctor schedule"});
+    await expect(contextScope.getByTestId("schedule-header")).toHaveCount(1);
+    await expect(contextScope.getByTestId("schedule-header")).toContainText(group.name);
+    await expect(contextScope.getByTestId("indicator-time-format")).toHaveCount(1);
+    await expect(contextScope.getByTestId("indicator-time-format")).toContainText("24-hour");
+    await expect(editor.getByTestId("button-add-time-slot")).toHaveCount(1);
+    await expect(editor.getByTestId("link-week-exceptions")).toHaveCount(1);
+    await expect(editor.getByTestId("button-save-week")).toBeDisabled();
+    const slots=editor.locator(".cde-row:not(.cde-head)");
+    for(const [i,capacity] of [10,23].entries()){
+      await slots.nth(i).locator("summary").click();
+      await expect(slots.nth(i).getByLabel("Max tokens",{exact:true})).toHaveValue(String(capacity));
+      await expect(slots.nth(i).locator("summary")).toContainText(`Slot ${i+1}`);
+    }
+    await slots.nth(1).getByLabel("Max tokens",{exact:true}).fill("24");
+    await expect(slots.nth(0).getByLabel("Max tokens",{exact:true})).toHaveValue("10");
+    await expect(editor.getByTestId("link-week-exceptions")).toBeDisabled();
+    await editor.getByRole("tab",{name:"Tue",exact:true}).click();
+    await editor.getByTestId("button-save-week").click();
+    await expect.poll(()=>state.writes.length).toBe(1);
+    expect(state.writes[0]).toMatchObject({maxTokens:24,tokenPrefix:"B",queueMode:"walkInsOnly",queueCloseTime:"15:30"});
+  });
+}
+for(const entry of ["page","doctor","dialog"] as const)for(const width of [1440,1280,1024,768,390]){
+  test(`shared editor bounds and keyboard ${entry} ${width}`,async({page})=>{
+    await page.setViewportSize({width,height:900});
+    const {editor}=await openEntry(page,entry,"superAdmin");
+    await editor.locator(".cde-adv summary").first().click();
+    const bad=await editor.evaluate(root=>{
+      const b=root.getBoundingClientRect();
+      return [...root.querySelectorAll("input,button,summary")].filter(el=>el.getClientRects().length).filter(el=>{
+        const r=el.getBoundingClientRect();return r.width>0&&(r.left<b.left-1||r.right>b.right+1);
+      }).map(el=>el.outerHTML.slice(0,100));
+    });
+    expect(bad).toEqual([]);
+    const capacity=editor.getByLabel("Max tokens",{exact:true}).first();
+    await capacity.focus();await expect(capacity).toBeFocused();
+    expect(await editor.locator(".cde-footer").evaluate(el=>getComputedStyle(el).position)).toBe("static");
+    await mkdir("generated-artifacts/shared-schedule",{recursive:true});
+    await page.screenshot({path:`generated-artifacts/shared-schedule/${entry}-${width}.png`});
+  });
+}
+for(const entry of ["page","doctor","dialog"] as const)test(`shared editor effective 200 percent viewport ${entry}`,async({page})=>{
+  // A 720px CSS viewport models the 1440px layout at native 200% browser zoom.
+  await page.setViewportSize({width:720,height:500});
+  const {editor,state}=await openEntry(page,entry,"superAdmin");
+  await editor.locator(".cde-adv summary").first().click();
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);
+  expect(overflow).toBe(false);
+  const capacity=editor.getByLabel("Max tokens",{exact:true}).first();
+  await capacity.focus();await expect(capacity).toBeFocused();
+  await mkdir("generated-artifacts/shared-schedule",{recursive:true});
+  await page.screenshot({path:`generated-artifacts/shared-schedule/${entry}-zoom-200.png`});
+  console.log(`${entry} console errors`,state.consoleErrors,state.pageErrors);
+});
+test("inherited clinic slot remains locked in shared editor",async({page})=>{
+  const state=await setup(page,"superAdmin",true,true,"availability","receptionist");await edit(page);
+  const editor=page.getByTestId("panel-weekly-editor");
+  await expect(editor.getByTestId("text-day-source")).toContainText("Following clinic hours");
+  await expect(editor.getByLabel("Slot 1 start time",{exact:true})).toBeDisabled();
+  await expect(editor.getByLabel("Slot 1 end time",{exact:true})).toBeDisabled();
+  await expect(editor.getByTestId("toggle-working-day")).toBeDisabled();
+  await expect(editor.getByText("These sessions follow clinic hours.",{exact:false})).toBeVisible();
+  expect(state.writes).toHaveLength(0);
+  console.log("inherited-slot console errors",state.consoleErrors,state.pageErrors);
+});
+test("empty schedule has blank defaults and a clear off-day state",async({page})=>{
+  const state=await setup(page);
+  state.row.status="inactive";state.extraRows=[];
+  await page.goto("/?mode=schedule&resource=availability&doctorId=d1&fixtureRole=superAdmin");
+  const editor=page.getByTestId("panel-weekly-editor");
+  await editor.getByRole("tab",{name:"Tue",exact:true}).click();
+  await expect(editor.getByTestId("toggle-working-day")).not.toBeChecked();
+  await expect(editor.getByTestId("text-day-off")).toContainText("Not a working day");
+  await expect(editor.getByTestId("fieldset-session-defaults")).toHaveCount(0);
+  await expect(editor.locator(".cde-row:not(.cde-head)")).toHaveCount(0);
+  await editor.getByTestId("button-add-time-slot").click();
+  await expect(editor.getByTestId("fieldset-session-defaults")).toBeVisible();
+  await expect(editor.getByTestId("input-default-token-prefix")).toHaveValue("");
+  await expect(editor.getByTestId("input-default-max-tokens")).toHaveValue("");
+  expect(state.writes).toHaveLength(0);
+  console.log("empty-schedule console errors",state.consoleErrors,state.pageErrors);
+});
+for(const entry of ["page","doctor","dialog"] as const)test(`shared date exception flow ${entry}`,async({page})=>{
+  const {editor,state}=await openEntry(page,entry,"superAdmin");
+  const opener=editor.getByTestId("link-week-exceptions");
+  await opener.focus();await opener.click();
+  const list=page.getByRole("dialog",{name:"Date Exceptions",exact:true});
+  await expect(list.getByText("Holiday hours")).toBeVisible();
+  await list.getByRole("button",{name:"Add Date Exception",exact:true}).click();
+  const form=page.getByRole("dialog",{name:"Add Date Exception",exact:true});
+  await expect(form).toBeVisible();
+  await form.getByLabel("Reason",{exact:false}).fill("Fictional closure");
+  await form.getByTestId("button-dialog-close").click();
+  const confirm=page.getByTestId("discard-confirm");
+  await expect(confirm).toHaveCount(1);
+  await expect(page.getByTestId("button-keep-editing")).toBeFocused();
+  await page.getByTestId("button-keep-editing").click();
+  await expect(form.getByLabel("Reason",{exact:false})).toHaveValue("Fictional closure");
+  await expect(form.getByTestId("button-dialog-close")).toBeFocused();
+  await form.getByTestId("button-dialog-close").click();
+  await expect(confirm).toHaveCount(1);
+  await page.getByTestId("button-discard-changes").click();
+  await expect(form).toHaveCount(0);
+  await expect(list).toBeVisible();
+  await expect(list.getByRole("button",{name:"Add Date Exception",exact:true})).toBeFocused();
+  expect(state.writes).toHaveLength(0);
+  console.log(`exception ${entry} console errors`,state.consoleErrors,state.pageErrors);
+});
