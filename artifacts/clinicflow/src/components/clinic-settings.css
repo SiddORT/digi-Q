@@ -69,6 +69,19 @@
 .clinic-settings .cs-copy svg{width:14px;height:14px;flex:none}
 .clinic-workspace-tabs-layout,.clinic-settings .settings-scope{min-width:0;max-width:100%}
 .clinic-settings .settings-scope-lookup{min-width:0;max-width:100%}
+.workspace .clinic-settings .clinic-workspace-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;margin:0}
+.clinic-workspace-heading h1{margin:0}
+.clinic-settings .clinic-workspace-heading .settings-scope{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px 12px;margin:0;min-width:0;max-width:100%}
+.clinic-settings .clinic-workspace-heading .settings-scope-lookup{flex:0 1 auto;width:auto}
+.clinic-workspace-heading .settings-scope-lookup .searchable-select-field{display:flex;flex-direction:row;align-items:center;gap:8px;max-width:100%}
+.clinic-workspace-heading .settings-scope-lookup .searchable-select-field>label{margin:0;flex:none}
+.clinic-workspace-heading .settings-scope-lookup .searchable-select-control{width:240px;min-width:0;flex:0 1 240px}
+@media(max-width:640px){
+ .clinic-settings .clinic-workspace-heading .settings-scope{flex:1 1 100%;justify-content:flex-start}
+ .clinic-settings .clinic-workspace-heading .settings-scope-lookup{flex:1 1 100%;width:100%}
+ .clinic-workspace-heading .settings-scope-lookup .searchable-select-field{flex-wrap:wrap}
+ .clinic-workspace-heading .settings-scope-lookup .searchable-select-control{flex:1 1 180px;width:auto}
+}
 .clinic-settings .workspace-tabs{max-width:100%;overflow-x:auto;flex-wrap:nowrap}
 .clinic-settings .workspace-tabs button{white-space:nowrap;flex:none}
 .cs-readiness{overflow-wrap:anywhere}

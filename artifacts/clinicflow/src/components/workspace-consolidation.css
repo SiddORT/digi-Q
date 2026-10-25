@@ -24,9 +24,9 @@
 .staff-account-fields{display:contents}
 .staff-account-fields.is-create{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;align-items:start}
 .staff-account-mobile{grid-column:1/-1}
-.staff-account-mobile>.staff-verify-row{max-width:32rem}
-.staff-verify-row{display:flex;align-items:center;gap:8px;min-width:0}
-.staff-verify-row>:first-child{flex:1 1 auto;min-width:0}
+/* The compound mobile control occupies exactly the left account column. Status
+   lives below each input as associated helper text, never taking input width. */
+.staff-account-mobile>.phone-input{width:calc((100% - 12px)/2);grid-template-columns:9rem minmax(0,1fr);align-items:stretch}
 .staff-verify{display:inline-flex;align-items:center;gap:8px;flex:none;white-space:nowrap}
 .staff-verify .badge{color:var(--feedback-error-fg);background:var(--feedback-error-bg)}
 .staff-password-help{grid-column:1/-1;margin-top:-4px}
@@ -40,7 +40,16 @@
 .staff-create .staff-role-cell .staff-role-picker{margin:0}
 .staff-create .staff-role-cell .searchable-select-field{gap:4px}
 .staff-create .staff-role-cell .searchable-select-field>label{display:flex;align-items:center;gap:4px;min-height:24px}
-.staff-create .doctor-context-value{display:flex;align-items:center;min-height:40px;padding:8px 12px;border:1px solid hsl(var(--border));border-radius:var(--radius-control);background:hsl(var(--muted)/.6);line-height:1.4;overflow-wrap:anywhere;font-weight:600}
+.staff-create .doctor-context-value{display:flex;align-items:center;min-height:var(--staff-value-height,40px);padding:6px 12px;border:1px solid hsl(var(--border));border-radius:var(--radius-control);background:hsl(var(--muted)/.6);line-height:1.4;overflow-wrap:anywhere;font-weight:600}
+.staff-create{--staff-value-height:40px}
+.staff-create .staff-assignment-row :is(.searchable-select-control,.searchable-multi-select-control){min-height:var(--staff-value-height);height:auto;padding-block:6px}
+.staff-create .staff-assignment-row .searchable-select-field{gap:4px}
+.staff-create .staff-assignment-row .searchable-select-control>span{overflow-wrap:anywhere}
+/* Keep the 44px clear hit target from adding its own height + vertical padding
+   on touch layouts. These single-value controls never contain multiline chips. */
+.staff-create :is(.staff-account-mobile,.staff-role-cell) .searchable-select-control{min-height:var(--staff-value-height);height:var(--staff-value-height);padding-block:0}
+.staff-create .staff-account-mobile .phone-input input{margin-top:0}
+.staff-create .staff-account-mobile .searchable-select-control>span{white-space:nowrap}
 /* Create-only density; shared control sizes, edit layouts and error text stay intact. */
 .app-dialog .staff-create{gap:8px 12px}
 .staff-create .form-section{padding:8px 12px}
@@ -48,7 +57,8 @@
 .staff-create .form-section-actions .status-switch{min-height:24px}
 .staff-create .form-section-actions>.wide{display:flex;align-items:center}
 .staff-create .form-section-grid{gap:8px 12px}
+@media (max-width:767px),(pointer:coarse){.staff-create{--staff-value-height:44px}}
 @media (max-width:767px){
   .staff-account-fields.is-create,.staff-assignment-row .form-section-grid{grid-template-columns:minmax(0,1fr)}
-  .staff-verify-row{flex-wrap:wrap}
+  .staff-account-mobile>.phone-input{width:100%}
 }

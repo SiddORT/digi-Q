@@ -140,14 +140,16 @@ test("Add Staff shows Role & Locations before Staff Details with paired rows, ho
   expect(Math.abs(role.y-clinic.y)).toBeLessThan(2);
   expect(Math.abs(role.y-locations.y)).toBeLessThan(2);
   expect(clinic.x).toBeGreaterThan(role.x+role.width-1);
-  const domOrder=await dialog.evaluate(el=>[...el.querySelectorAll("button,input,[role=textbox]")].map(e=>e.id||e.getAttribute("data-testid")).filter(Boolean));
-  expect(domOrder.indexOf("input-clinicIds")).toBeLessThan(domOrder.indexOf("input-user-email"));
-  expect(domOrder.indexOf("input-branchIds")).toBeLessThan(domOrder.indexOf("input-user-email"));
+  // FormField owns generated a11y IDs. Compare nodes, not a test ID mistaken
+  // for the input's DOM ID (the old assertion also failed on untouched source).
+  for(const id of ["input-clinicIds","input-branchIds"]){
+    expect(await dialog.evaluate((el,id)=>!!(el.querySelector(`#${id}`)!.compareDocumentPosition(el.querySelector("[data-testid=input-user-email]")!)&Node.DOCUMENT_POSITION_FOLLOWING),id)).toBe(true);
+  }
   await expect(dialog.getByTestId("button-cancel-staff")).toBeVisible();
   await expect(dialog.getByTestId("button-save-staff")).toContainText(/^Add (Doctor|Receptionist)$/);
   await expect(dialog.locator(".status-switch-track")).toBeVisible();
   await expect(dialog.getByRole("switch",{name:"Staff Account Active"})).toBeChecked();
-  const account=dialog.locator(".staff-create-section").filter({has:dialog.getByRole("heading",{name:"Staff Details"})});
+  const account=dialog.locator(".staff-create-section").filter({has:page.getByRole("heading",{name:"Staff Details",exact:true})});
   await expect(account.locator(".form-section-head").getByRole("switch",{name:"Staff Account Active"})).toHaveCount(1);
   await expect(account.locator(".form-section-head")).toHaveCSS("margin-bottom","8px");
   await expect(dialog.locator(".staff-account-fields")).toHaveCSS("row-gap","8px");
@@ -176,7 +178,7 @@ for(const tab of ["doctors","receptionists"])test(`Add ${tab} layout stays conta
       const root=el.getBoundingClientRect();
       return root.left>=-1&&root.right<=innerWidth+1&&root.top>=-1&&root.bottom<=innerHeight+1;
     })).toBe(true);
-    const accountHeader=dialog.locator(".staff-create-section").filter({has:dialog.getByRole("heading",{name:"Staff Details"})}).locator(".form-section-head");
+    const accountHeader=dialog.locator(".staff-create-section").filter({has:page.getByRole("heading",{name:"Staff Details",exact:true})}).locator(".form-section-head");
     await expect.poll(async()=>{
       const heading=(await accountHeader.getByRole("heading").boundingBox())!;
       const toggle=(await accountHeader.locator(".status-switch").boundingBox())!;

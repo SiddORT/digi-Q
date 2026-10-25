@@ -4281,7 +4281,7 @@
           "data-testid": "{`button-copy-${label.toLowerCase().replace(/\\W+/g,\"-\")}`}"
         },
         {
-          "line": 129,
+          "line": 133,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4292,7 +4292,7 @@
           "data-testid": "\"link-all-clinic-groups\""
         },
         {
-          "line": 130,
+          "line": 134,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4301,7 +4301,7 @@
           "type": "\"button\""
         },
         {
-          "line": 138,
+          "line": 142,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4313,7 +4313,7 @@
           "data-testid": "\"button-edit-clinic\""
         },
         {
-          "line": 139,
+          "line": 143,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4325,7 +4325,7 @@
           "data-testid": "\"button-edit-date-time\""
         },
         {
-          "line": 140,
+          "line": 144,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -4333,7 +4333,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 144,
+          "line": 148,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4345,7 +4345,7 @@
           "data-testid": "\"button-linked-locations\""
         },
         {
-          "line": 145,
+          "line": 149,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4356,7 +4356,7 @@
           "data-testid": "\"link-booking-readiness\""
         },
         {
-          "line": 148,
+          "line": 152,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4371,7 +4371,7 @@
           "data-testid": "{`tab-clinic-${key}`}"
         },
         {
-          "line": 152,
+          "line": 156,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4383,7 +4383,7 @@
           "data-testid": "\"button-edit-basic\""
         },
         {
-          "line": 157,
+          "line": 161,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4392,7 +4392,7 @@
           "href": "{`/${clinic.slug}`}"
         },
         {
-          "line": 159,
+          "line": 163,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -4400,7 +4400,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 161,
+          "line": 165,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4412,7 +4412,7 @@
           "data-testid": "\"button-edit-contact\""
         },
         {
-          "line": 167,
+          "line": 171,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4424,7 +4424,7 @@
           "data-testid": "\"button-manage-linked-hours\""
         },
         {
-          "line": 168,
+          "line": 172,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -4432,7 +4432,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 170,
+          "line": 174,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4442,7 +4442,7 @@
           "href": "{`/admin/availability?clinicId=${encodeURIComponent(clinicId)}`}"
         },
         {
-          "line": 172,
+          "line": 176,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -4450,7 +4450,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 172,
+          "line": 176,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4461,7 +4461,7 @@
           "disabled": "{locked}"
         },
         {
-          "line": 173,
+          "line": 177,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4470,7 +4470,7 @@
           "href": "\"/admin/settings?area=audit\""
         },
         {
-          "line": 175,
+          "line": 179,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -4478,7 +4478,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 175,
+          "line": 179,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4489,7 +4489,7 @@
           "data-testid": "\"link-location-schedule\""
         },
         {
-          "line": 175,
+          "line": 179,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4500,7 +4500,7 @@
           "data-testid": "\"link-location-exceptions\""
         },
         {
-          "line": 175,
+          "line": 179,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4510,7 +4510,7 @@
           "href": "{`/${clinic.slug}`}"
         },
         {
-          "line": 177,
+          "line": 181,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4520,7 +4520,7 @@
           "data-testid": "\"link-global-staff\""
         },
         {
-          "line": 178,
+          "line": 182,
           "tag": "AppDialog",
           "family": "overlays",
           "stateProfile": "overlay",
@@ -4528,7 +4528,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 178,
+          "line": 182,
           "tag": "Editor",
           "family": "forms",
           "stateProfile": "form",
@@ -4536,7 +4536,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 179,
+          "line": 183,
           "tag": "AppDialog",
           "family": "overlays",
           "stateProfile": "overlay",
@@ -4544,7 +4544,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 181,
+          "line": 185,
           "tag": "AppDialog",
           "family": "overlays",
           "stateProfile": "overlay",
@@ -4552,7 +4552,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 182,
+          "line": 186,
           "tag": "FormActions",
           "family": "forms",
           "stateProfile": "form",
@@ -4560,7 +4560,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 182,
+          "line": 186,
           "tag": "ConfirmDialog",
           "family": "overlays",
           "stateProfile": "overlay",
@@ -4568,7 +4568,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 208,
+          "line": 212,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -4576,7 +4576,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 208,
+          "line": 212,
           "tag": "Link",
           "family": "links",
           "stateProfile": "link",
@@ -4585,7 +4585,7 @@
           "href": "{`/admin/queue?doctor=${encodeURIComponent(identity.doctorId||\"\")}`}"
         },
         {
-          "line": 210,
+          "line": 214,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4594,7 +4594,7 @@
           "type": "\"button\""
         },
         {
-          "line": 212,
+          "line": 216,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4604,7 +4604,7 @@
           "disabled": "{doctor.isLoading||!!doctor.error}"
         },
         {
-          "line": 213,
+          "line": 217,
           "tag": "AppDialog",
           "family": "overlays",
           "stateProfile": "overlay",
@@ -4612,7 +4612,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 215,
+          "line": 219,
           "tag": "input",
           "family": "fields",
           "stateProfile": "binary",
@@ -4621,7 +4621,7 @@
           "type": "\"checkbox\""
         },
         {
-          "line": 216,
+          "line": 220,
           "tag": "input",
           "family": "fields",
           "stateProfile": "binary",
@@ -4630,7 +4630,7 @@
           "type": "\"checkbox\""
         },
         {
-          "line": 216,
+          "line": 220,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4639,7 +4639,7 @@
           "type": "\"button\""
         },
         {
-          "line": 218,
+          "line": 222,
           "tag": "FormActions",
           "family": "forms",
           "stateProfile": "form",
@@ -4648,7 +4648,7 @@
           "disabled": "{!choice.canSave}"
         },
         {
-          "line": 251,
+          "line": 255,
           "tag": "SearchableSelect",
           "family": "fields",
           "stateProfile": "selection",
@@ -4657,7 +4657,7 @@
           "disabled": "{sources.isFetching||!!sources.error}"
         },
         {
-          "line": 253,
+          "line": 257,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4666,7 +4666,7 @@
           "type": "\"button\""
         },
         {
-          "line": 254,
+          "line": 258,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -4676,7 +4676,7 @@
           "disabled": "{!copySource||sources.isFetching||!!sources.error}"
         },
         {
-          "line": 263,
+          "line": 267,
           "tag": "Editor",
           "family": "forms",
           "stateProfile": "form",
@@ -4684,7 +4684,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 264,
+          "line": 268,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -4692,7 +4692,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 264,
+          "line": 268,
           "tag": "OpeningHoursEditor",
           "family": "forms",
           "stateProfile": "form",
@@ -4700,7 +4700,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 265,
+          "line": 269,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -4708,7 +4708,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 274,
+          "line": 278,
           "tag": "HelpTip",
           "family": "overlays",
           "stateProfile": "help",
@@ -4716,7 +4716,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 274,
+          "line": 278,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",

@@ -174,3 +174,15 @@ If an existing position assertion fails, reproduce it against untouched source
 before changing either CSS or its tolerance. A bounded subpixel allowance needs
 matching original-source evidence; waiting longer cannot fix a settled baseline
 that already falls outside an outdated strict threshold.
+
+Before interpreting a rendered-test timeout as geometry evidence, verify the
+locator itself against a matching node. In Playwright `filter({has: ...})`,
+the inner locator is relative to the candidate; including its outer dialog
+ancestor can make an otherwise present heading impossible to match.
+
+**Why:** Invalid relative selectors and mistaking a generated accessibility ID
+for a test ID produced failures on untouched source, resembling layout failures.
+
+**How to apply:** Use relative child queries inside filters and compare actual
+DOM node order when generated IDs are owned by shared form components. Preserve
+the geometry assertions rather than changing tolerances to hide locator errors.

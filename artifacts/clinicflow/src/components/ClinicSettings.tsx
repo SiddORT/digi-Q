@@ -125,7 +125,11 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
  const clinic=data?.clinic;
  const active=clinic?.status==="active";
  return <DateTimePreferencesProvider value={data?.clinic}><section className="clinic-settings">
-  <div className="settings-scope" data-testid="settings-scope">{scopeSwitch}<div className="settings-scope-lookup"><ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Clinic Group":"Your Clinic Group"} value={clinicId} onChange={id=>{if(id!==clinicId)void guarded(()=>setClinic(id));}}/></div></div>
+   {/* The shell delegates this heading to the workspace so scope and guarded navigation keep one owner. */}
+   <header className="page-heading clinic-workspace-heading">
+    <h1>Clinic</h1>
+    <div className="settings-scope" data-testid="settings-scope">{scopeSwitch}<div className="settings-scope-lookup"><ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Clinic Group":"Your Clinic Group"} value={clinicId} onChange={id=>{if(id!==clinicId)void guarded(()=>setClinic(id));}}/></div></div>
+   </header>
   {identity.user?.role==="superAdmin"&&<Link className="cs-back" href={clinicsReturnHref(search)} data-testid="link-all-clinic-groups">&larr; Back to Clinics</Link>}
   <ErrorNotice error={query.error||clinics.error}/>{query.error&&<button type="button" onClick={()=>query.refetch()}>Retry Clinic Settings</button>}
   {!clinicId?<p className="empty">Select a clinic to manage.</p>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&clinic&&!query.error&&<>

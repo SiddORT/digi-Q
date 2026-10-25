@@ -71,7 +71,7 @@ return (
       <div className="workspace-main">
         <header className="topbar"><div className="breadcrumb">Workspace · {mode === "settings" ? "Settings" : mode === "staff" ? "Staff" : resource}</div></header>
         <main className="content">
-          {["settings","users","schedule"].includes(mode||"")&&<div className="page-heading"><h1>{mode === "settings" ? "Clinic settings" : mode === "users" ? "Users" : "Schedule"}</h1></div>}
+          {["users","schedule"].includes(mode||"")&&<div className="page-heading"><h1>{mode === "users" ? "Users" : "Schedule"}</h1></div>}
           <ListPageTitleContext.Provider value={["resource","staff","appointments"].includes(mode||"")?{title:mode==="staff"?"Staff":mode==="appointments"?"Appointments":resource==="clinics"?"Clinic":resource,owner:titleOwner}:null}>
             {redirect?<Redirect to={redirect}/>:mode === "appointments" ? <Appointments role={navigationRole}/> : mode === "schedule" ? <SchedulingWorkspace identity={fixtureIdentity} page={resource==="exceptions"?"exceptions":"availability"} clinicId={fixedClinicId}/> : mode === "users" ? <UsersWorkspace identity={fixtureIdentity}/> : mode === "settings" ? <ClinicSettings identity={fixtureIdentity}/> : mode === "staff" ? <Users identity={fixtureIdentity} clinicId={fixedClinicId} embedded={!!fixedClinicId}/> : <ResourcePage resource={resource} identity={fixtureIdentity} allowCreate={!(fixtureRole==="doctor"&&resource==="patients")} embedded={!!fixedClinicId} fixedClinicId={fixedClinicId}/>}
           </ListPageTitleContext.Provider>

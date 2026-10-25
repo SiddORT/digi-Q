@@ -17,6 +17,21 @@ This refines the existing branding; it is not a new design system.
 - Existing size families: 32px compact toolbar/action; 40px ordinary single-line
   field/action; 44px touch; 48px deliberate command/search emphasis.
   Equivalent adjacent controls align, not every field in the app.
+- Clinic workspace scope belongs beside its single page heading, outside the
+  Staff listing filter. Wrap the inline-labelled scope below the heading when
+  needed; never render a second selector or a second page title.
+- Add Staff uses paired equal-width account inputs. Contact verification is
+  associated helper text below the field, not a flex sibling that reduces one
+  input's width. The complete country/number control follows the left account
+  column's edges (full width after one-column reflow).
+- Assignment value rows share the existing 40px/44px field family. Long fixed
+  names and selected chips may grow vertically; do not hide them to force equal
+  heights. Single-value role/country controls must not gain extra height from
+  touch clear-button padding.
+- Staff Type has an inline accessible label and aligns the actual control with
+  the compact search/actions family. Its toolbar wraps rather than shrinking
+  search to an unusable width. Staff-table status has an intrinsic column floor;
+  Actions scrolls with this table instead of covering neighbouring status text.
 - Switch track remains 36×20px with a 16px thumb in both positions. Its transparent
   44px target must not collide with neighboring actions. Check/radio remain 18px
   with associated labels. Textareas, multiline selects and chip controls grow.
