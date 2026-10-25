@@ -152,8 +152,11 @@ effective screen/print fallbacks instead of forcing parity with new overrides.
 Use the user's Add Staff reference as the layout target: a centred modal with
 Account Details above Work Assignment, paired account fields, role/clinic/locations
 in the assignment row, and Cancel plus a role-specific Add action in the footer.
+Place the create-time Active/Inactive toggle at the top-right of Account Details,
+not in its own row between sections; keep the popup spacing compact.
 
-**Why:** The user explicitly requested this popup arrangement in their supplied image.
+**Why:** The user explicitly requested this popup arrangement in their supplied image,
+then requested moving the toggle and further reducing the spacing.
 
 **How to apply:** Preserve role permissions and staff-owned contact verification;
 the reference is a presentation requirement, not permission to create staff or send messages.

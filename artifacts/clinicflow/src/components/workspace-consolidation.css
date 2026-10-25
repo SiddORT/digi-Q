@@ -22,7 +22,7 @@
 
 /* Add Staff (create only): paired rows, passive verification, role/clinic/locations row. Edit layout is untouched. */
 .staff-account-fields{display:contents}
-.staff-account-fields.is-create{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;align-items:start}
+.staff-account-fields.is-create{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;align-items:start}
 .staff-account-mobile{grid-column:1/-1}
 .staff-account-mobile>.staff-verify-row{max-width:32rem}
 .staff-verify-row{display:flex;align-items:center;gap:8px;min-width:0}
@@ -33,6 +33,12 @@
 .staff-create-section .staff-role-picker{max-width:none}
 .staff-assignment-row .form-section-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .staff-assignment-row .form-section-grid>.wide,.staff-assignment-row .form-section-grid>.staff-role-cell{grid-column:auto;min-width:0}
+/* Create-only density; shared control sizes, edit layouts and error text stay intact. */
+.app-dialog .staff-create{gap:8px 12px}
+.staff-create .form-section{padding:8px 12px}
+.staff-create .form-section-head{align-items:center;margin-bottom:8px;padding-bottom:4px}
+.staff-create .form-section-actions .status-switch{min-height:24px}
+.staff-create .form-section-grid{gap:8px 12px}
 @media (max-width:767px){
   .staff-account-fields.is-create,.staff-assignment-row .form-section-grid{grid-template-columns:minmax(0,1fr)}
   .staff-verify-row{flex-wrap:wrap}

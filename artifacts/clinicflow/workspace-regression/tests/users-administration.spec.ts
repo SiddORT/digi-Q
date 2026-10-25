@@ -140,9 +140,17 @@ test("Add Staff shows Account Details above Work Assignment with paired rows, ho
   await expect(dialog.getByTestId("button-save-staff")).toContainText(/^Add (Doctor|Receptionist)$/);
   await expect(dialog.locator(".status-switch-track")).toBeVisible();
   await expect(dialog.getByRole("switch",{name:"Staff Account Active"})).toBeChecked();
+  const account=dialog.locator(".staff-create-section").first();
+  await expect(account.locator(".form-section-head").getByRole("switch",{name:"Staff Account Active"})).toHaveCount(1);
+  await expect(account.locator(".form-section-head")).toHaveCSS("margin-bottom","8px");
+  await expect(dialog.locator(".staff-account-fields")).toHaveCSS("row-gap","8px");
   expect(state.writes).toHaveLength(0);
   await mkdir("generated-artifacts/staff-popup",{recursive:true});
   await dialog.screenshot({path:"generated-artifacts/staff-popup/receptionist-desktop.png"});
+  await account.locator(".status-switch").click();
+  await expect(page.getByTestId("confirm-dialog-confirm")).toBeVisible();
+  await page.getByRole("dialog",{name:"Deactivate Staff Member?"}).getByRole("button",{name:"Cancel",exact:true}).click();
+  await expect(dialog.getByRole("switch",{name:"Staff Account Active"})).toBeChecked();
   await dialog.getByTestId("button-save-staff").click();
   await expect(dialog.getByTestId("input-user-email")).toHaveAttribute("aria-invalid","true");
   await expect(dialog.getByTestId("input-user-email")).toHaveAttribute("aria-describedby",/.+-error/);
@@ -161,6 +169,12 @@ for(const tab of ["doctors","receptionists"])test(`Add ${tab} layout stays conta
       const root=el.getBoundingClientRect();
       return root.left>=-1&&root.right<=innerWidth+1&&root.top>=-1&&root.bottom<=innerHeight+1;
     })).toBe(true);
+    const accountHeader=dialog.locator(".staff-create-section").first().locator(".form-section-head");
+    await expect.poll(async()=>{
+      const heading=(await accountHeader.getByRole("heading").boundingBox())!;
+      const toggle=(await accountHeader.locator(".status-switch").boundingBox())!;
+      return toggle.x>=heading.x+heading.width&&Math.abs((toggle.y+toggle.height/2)-(heading.y+heading.height/2))<4;
+    }).toBe(true);
     await expect.poll(async()=>dialog.locator("input:not([type=hidden]),.staff-verify,.searchable-select-control").evaluateAll(nodes=>nodes.every(el=>{
       const rect=el.getBoundingClientRect(),root=el.closest('[role="dialog"]')!.getBoundingClientRect();
       return rect.width===0||(rect.left>=root.left-1&&rect.right<=root.right+1);

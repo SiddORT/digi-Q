@@ -232,3 +232,14 @@ Verification:
 These are fictional/intercepted role checks, not authentication as the supplied
 clinic administrator. No real staff creation, provider delivery, UAT verification,
 200% zoom or exhaustive keyboard/touch traversal is claimed.
+
+### Staff popup density refinement
+
+The create-time status control now uses the existing Account Details section's
+header actions slot, with the same single controller and confirmation behavior.
+Create-only row/section spacing is reduced; shared field heights and edit layouts
+are unchanged. Header/toggle alignment and containment passed at 390, 768, 1024
+and 1366px for doctor and receptionist forms. Empty validation and cancelling
+deactivation passed in the focused popup fixture. Frontend typecheck, production
+build and inventory freshness passed. Updated fictional screenshots remain in
+`generated-artifacts/staff-popup/`; no real-account save or UAT verification.

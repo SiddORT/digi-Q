@@ -1426,7 +1426,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 374,
+          "line": 375,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1435,7 +1435,7 @@
           "type": "\"button\""
         },
         {
-          "line": 375,
+          "line": 376,
           "tag": "Form",
           "family": "forms",
           "stateProfile": "form",
@@ -1443,7 +1443,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 376,
+          "line": 377,
           "tag": "FormTabs",
           "family": "navigation",
           "stateProfile": "navigation",
@@ -1451,7 +1451,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 378,
+          "line": 379,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -1460,7 +1460,7 @@
           "className": "{initial.id?undefined:\"staff-create-section\"}"
         },
         {
-          "line": 383,
+          "line": 384,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -1468,7 +1468,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 384,
+          "line": 385,
           "tag": "FormField",
           "family": "forms",
           "stateProfile": "form",
@@ -1476,7 +1476,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 384,
+          "line": 385,
           "tag": "input",
           "family": "fields",
           "stateProfile": "field",
@@ -1485,7 +1485,7 @@
           "data-testid": "\"input-staff-registration\""
         },
         {
-          "line": 384,
+          "line": 385,
           "tag": "FormField",
           "family": "forms",
           "stateProfile": "form",
@@ -1493,7 +1493,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 384,
+          "line": 385,
           "tag": "input",
           "family": "fields",
           "stateProfile": "field",
@@ -1503,7 +1503,7 @@
           "data-testid": "\"input-staff-experience\""
         },
         {
-          "line": 388,
+          "line": 389,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -1512,7 +1512,7 @@
           "className": "{initial.id?undefined:\"staff-create-section staff-assignment-row\"}"
         },
         {
-          "line": 390,
+          "line": 391,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1521,7 +1521,7 @@
           "type": "\"button\""
         },
         {
-          "line": 400,
+          "line": 401,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1530,7 +1530,7 @@
           "type": "\"button\""
         },
         {
-          "line": 407,
+          "line": 408,
           "tag": "FormActions",
           "family": "forms",
           "stateProfile": "form",
@@ -1538,7 +1538,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 410,
+          "line": 411,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1549,7 +1549,7 @@
           "disabled": "{save.isPending}"
         },
         {
-          "line": 412,
+          "line": 413,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
