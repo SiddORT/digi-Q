@@ -204,3 +204,31 @@ against a disposable database rather than by completing the whole browser form.
 an independent rendered comparison of unchanged Clinic Details/Notifications
 were not exhaustively repeated. Existing merged semantic-control acceptance
 checks remain the baseline. No UAT deployment or live delivery is implied.
+
+## Add Staff reference layout
+
+New doctor/receptionist forms reuse the existing account fields, sections,
+assignment lookups, dialog and footer. Account Details and Work Assignment remain
+visible together; the role control belongs to assignments. Clinic-admin
+onboarding and existing-record editing retain their distinct requirements.
+Verification badges are passive create-time indicators, not delivery actions.
+
+Verification:
+- Shared-library and frontend typechecks passed.
+- Production build passed with the configured artifact port/base path; existing
+  large-chunk advisory remains.
+- Users administration plus staff toolbar fixture suites: 11 passed. After
+  correcting the portalled activation switch's shared CSS scope, the three
+  changed popup cases passed again.
+- Five staff role-switch checks passed; outdated source assertions now reflect
+  the existing password-redacted snapshots, lookup primitives and save callbacks.
+- Responsive create forms checked at 390, 768, 1024 and 1366px, including paired
+  fields, horizontal control containment and reachable submit buttons.
+- Empty-submit email accessibility/error associations and visible activation
+  switch checked. Inventory freshness passed.
+- Popup screenshots: `generated-artifacts/staff-popup/`. The restarted actual
+  Preview sign-in page rendered without browser errors.
+
+These are fictional/intercepted role checks, not authentication as the supplied
+clinic administrator. No real staff creation, provider delivery, UAT verification,
+200% zoom or exhaustive keyboard/touch traversal is claimed.

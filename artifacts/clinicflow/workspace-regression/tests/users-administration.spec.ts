@@ -115,3 +115,66 @@ for(const width of [1440,768,390])test(`role and account actions remain accessib
   await page.getByTestId("button-status-desk").click();await expect(page.getByTestId("confirm-dialog-confirm")).toBeInViewport();
   await page.screenshot({path:`screenshots/users-administration-confirm-${width}.png`});
 });
+test("Add Staff shows Account Details above Work Assignment with paired rows, honest verification and role-specific footer",async({page})=>{
+  const state=await fixture(page);await page.setViewportSize({width:1440,height:900});await page.goto("/?mode=staff&tab=receptionists");
+  await page.getByTestId("button-add-staff").click();
+  const dialog=page.getByRole("dialog");
+  await expect(dialog.getByRole("heading",{name:"Account Details"})).toBeVisible();
+  await expect(dialog.getByRole("heading",{name:"Work Assignment"})).toBeVisible();
+  await expect(dialog.getByRole("tab")).toHaveCount(0);
+  const box=async(l:ReturnType<Page["locator"]>)=>(await l.first().boundingBox())!;
+  const name=await box(dialog.getByLabel("Full Name")),email=await box(dialog.getByTestId("input-user-email"));
+  expect(Math.abs(name.y-email.y)).toBeLessThan(4);expect(email.x).toBeGreaterThan(name.x+name.width-1);
+  const pw=await box(dialog.getByTestId("input-staff-password")),cpw=await box(dialog.getByTestId("input-staff-confirm-password"));
+  expect(Math.abs(pw.y-cpw.y)).toBeLessThan(4);
+  await expect(dialog.getByTestId("text-password-policy")).toBeVisible();
+  await expect(dialog.getByTestId("status-email-verification")).toContainText("Not verified");
+  await expect(dialog.getByTestId("status-mobile-verification")).toContainText("Not verified");
+  const assignment=dialog.locator(".staff-assignment-row");
+  await expect(assignment.getByTestId("select-add-staff-role")).toBeVisible();
+  await expect(dialog.locator(".staff-account-fields").getByTestId("select-add-staff-role")).toHaveCount(0);
+  const role=await box(assignment.getByTestId("select-add-staff-role"));
+  const clinic=await box(assignment.locator("#input-clinicIds"));
+  expect(Math.abs(role.y-clinic.y)).toBeLessThan(40);expect(clinic.x).toBeGreaterThan(role.x+role.width-1);
+  await expect(dialog.getByTestId("button-cancel-staff")).toBeVisible();
+  await expect(dialog.getByTestId("button-save-staff")).toContainText(/^Add (Doctor|Receptionist)$/);
+  await expect(dialog.locator(".status-switch-track")).toBeVisible();
+  await expect(dialog.getByRole("switch",{name:"Staff Account Active"})).toBeChecked();
+  expect(state.writes).toHaveLength(0);
+  await mkdir("generated-artifacts/staff-popup",{recursive:true});
+  await dialog.screenshot({path:"generated-artifacts/staff-popup/receptionist-desktop.png"});
+  await dialog.getByTestId("button-save-staff").click();
+  await expect(dialog.getByTestId("input-user-email")).toHaveAttribute("aria-invalid","true");
+  await expect(dialog.getByTestId("input-user-email")).toHaveAttribute("aria-describedby",/.+-error/);
+  expect(state.writes).toHaveLength(0);
+});
+
+for(const tab of ["doctors","receptionists"])test(`Add ${tab} layout stays contained on phone, tablet and laptop`,async({page})=>{
+  const state=await fixture(page);
+  await page.goto(`/?mode=staff&tab=${tab}&fixtureRole=clinicAdmin`);
+  await page.getByTestId("button-add-staff").click();
+  const dialog=page.getByRole("dialog");
+  await expect(dialog.getByRole("heading",{name:"Work Assignment"})).toBeVisible();
+  for(const width of [390,768,1024,1366]){
+    await page.setViewportSize({width,height:768});
+    await expect.poll(async()=>dialog.evaluate(el=>{
+      const root=el.getBoundingClientRect();
+      return root.left>=-1&&root.right<=innerWidth+1&&root.top>=-1&&root.bottom<=innerHeight+1;
+    })).toBe(true);
+    await expect.poll(async()=>dialog.locator("input:not([type=hidden]),.staff-verify,.searchable-select-control").evaluateAll(nodes=>nodes.every(el=>{
+      const rect=el.getBoundingClientRect(),root=el.closest('[role="dialog"]')!.getBoundingClientRect();
+      return rect.width===0||(rect.left>=root.left-1&&rect.right<=root.right+1);
+    }))).toBe(true);
+    const password=dialog.getByTestId("input-staff-password"),confirm=dialog.getByTestId("input-staff-confirm-password");
+    await expect.poll(async()=>{
+      const a=(await password.boundingBox())!,b=(await confirm.boundingBox())!;
+      return width<768?b.y>a.y:Math.abs(a.y-b.y)<4;
+    }).toBe(true);
+    await dialog.getByTestId("button-save-staff").scrollIntoViewIfNeeded();
+    await expect(dialog.getByTestId("button-save-staff")).toBeInViewport();
+    await expect(dialog.getByTestId("button-save-staff")).toHaveText(tab==="doctors"?"Add Doctor":"Add Receptionist");
+    await mkdir("generated-artifacts/staff-popup",{recursive:true});
+    await dialog.screenshot({path:`generated-artifacts/staff-popup/${tab}-${width}.png`});
+  }
+  expect(state.writes).toHaveLength(0);
+});

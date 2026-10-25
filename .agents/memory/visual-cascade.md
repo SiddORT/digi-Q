@@ -158,6 +158,15 @@ in the assignment row, and Cancel plus a role-specific Add action in the footer.
 **How to apply:** Preserve role permissions and staff-owned contact verification;
 the reference is a presentation requirement, not permission to create staff or send messages.
 
+Shared controls rendered through a dialog portal need their style owner to cover
+dialog ancestry, not just workspace ancestry.
+
+**Why:** A native activation switch remained operable but its visible track
+disappeared in a portal because only the workspace supplied its track styling.
+
+**How to apply:** Inspect the visible control in the actual overlay tree; extend
+its existing style owner rather than copying switch markup or adding local overrides.
+
 If an existing position assertion fails, reproduce it against untouched source
 before changing either CSS or its tolerance. A bounded subpixel allowance needs
 matching original-source evidence; waiting longer cannot fix a settled baseline

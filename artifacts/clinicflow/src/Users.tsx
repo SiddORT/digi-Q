@@ -267,11 +267,12 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
     {scheduleDoctor && <AppDialog open size="wide" title="Edit Doctor Schedule" dirty={scheduleDirty} busy={scheduleBusy} onClose={() => setScheduleDoctor(null)}>
       <DoctorScheduleContext doctor={scheduleDoctor} fixedClinicId={clinicId} canDelete onSaved={() => setScheduleDoctor(null)} onDirtyChange={setScheduleDirty} onBusyChange={setScheduleBusy}/>
     </AppDialog>}
-    {editing && <AppDialog open size="medium" onClose={() => setEditing(null)} title={editing.id||createdDoctor ? `Edit ${singular(editTab)}` : "Add Staff"} description={editing.id||createdDoctor ? undefined : "Enter the account details, then the work details."} dirty={dirty} busy={busy}>{roleConfirm.dialog}
-       {!editing.id && !createdDoctor && creatable.length > 1 && <div className="staff-role-picker"><SearchableSelect label="Role" required testId="select-add-staff-role" value={editTab} disabled={busy} onChange={value => { const next = creatable.find(item => item.id === value)?.id; if (next) void chooseRole(next); }} options={creatable.map(item => ({ value: item.id, label: singular(item.id) }))}/></div>}
-       {!editing.id && !createdDoctor && creatable.length === 1 && <p className="muted staff-role-picker" data-testid="text-add-staff-role">Role: <strong>{singular(editTab)}</strong></p>}
-       {editTab === "admins" && !editing.id ? <ClinicAdminOnboarding guided carry={carry} onSnapshot={(values,defaults)=>{snapshot.current={values:withoutPasswords(values),defaults};}} onDirtyChange={setDirty} onBusyChange={setBusy}/> :
-       <UserEditor key={`${editTab}:${editing.id||"new"}`} tab={editTab} initial={editing} onFirstSave={()=>{
+    {editing && (()=>{const isNew=!editing.id&&!createdDoctor;
+     // One role control for new staff: a selector when several roles are creatable, else a fixed label.
+     const roleField=!isNew?null:creatable.length>1?<div className="staff-role-picker"><SearchableSelect label="Role" required testId="select-add-staff-role" value={editTab} disabled={busy} onChange={value => { const next = creatable.find(item => item.id === value)?.id; if (next) void chooseRole(next); }} options={creatable.map(item => ({ value: item.id, label: singular(item.id) }))}/></div>:<p className="muted staff-role-picker" data-testid="text-add-staff-role">Role: <strong>{singular(editTab)}</strong></p>;
+     return <AppDialog open size="medium" onClose={() => setEditing(null)} title={editing.id||createdDoctor ? `Edit ${singular(editTab)}` : "Add Staff"} description={editing.id||createdDoctor ? undefined : "Enter staff details and assign their role, clinic and locations."} dirty={dirty} busy={busy}>{roleConfirm.dialog}
+       {editTab === "admins" && !editing.id ? <>{roleField}<ClinicAdminOnboarding guided carry={carry} onSnapshot={(values,defaults)=>{snapshot.current={values:withoutPasswords(values),defaults};}} onDirtyChange={setDirty} onBusyChange={setBusy}/></> :
+       <UserEditor key={`${editTab}:${editing.id||"new"}`} roleField={roleField} tab={editTab} initial={editing} onFirstSave={()=>{
          // A committed account must be findable even when its invitation fails
          // and the editor remains open. Old role/search/status filters must not
          // hide it when the administrator closes that saved-record dialog.
@@ -282,11 +283,11 @@ export function Users({ identity, clinicId, embedded=false }: { identity: api.Id
          q.delete("search");q.delete("open");q.set("tab",editTab);
          navigateTo(`${window.location.pathname}?${q}`,{replace:true});
        }} onCreated={(saved:any)=>{setScheduleDirty(false);setScheduleBusy(false);setScheduleDoctor(saved);}} carry={editing.id?undefined:carry} isSuperAdmin={isSuperAdmin} clinicId={clinicId} identity={identity} onDirtyChange={setDirty} onBusyChange={setBusy} onSnapshot={(values:Record<string,unknown>,defaults:Record<string,unknown>)=>{snapshot.current={values:withoutPasswords(values),defaults};}} onClose={(result:any) => { const wasEdit=!!editing.id;const savedTab=editTab;setEditing(null);if(!wasEdit&&savedTab!==tab){setTab(savedTab);setDraftTab(savedTab);}const legacySetup=result.invitationStatus&&result.invitationStatus!=="notRequired";const message=wasEdit?"Updated successfully":legacySetup?`${singular(savedTab)} added. ${securityChannelSummary(result.setupNotificationOutcomes)}`:`${singular(savedTab)} ${createSuccessMessage(result.status,result.staffCreationNotice)}`;if(!wasEdit&&legacySetup&&(result.invitationStatus==="failed"||Object.values(result.setupNotificationOutcomes||{}).some((c:any)=>!["provider_accepted","not_requested"].includes(c.status))))notifyWarning(message);else notifySuccess(message); }} />}
-    </AppDialog>}
+    </AppDialog>;})()}
   </>;
 }
 
-function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirtyChange, onBusyChange, onSnapshot, clinicId, identity, onCreated, onFirstSave }: any) {
+function UserEditor({ roleField, tab, initial: opened, carry, onClose, isSuperAdmin, onDirtyChange, onBusyChange, onSnapshot, clinicId, identity, onCreated, onFirstSave }: any) {
   const [initial, setSaved] = useState(opened);
   const scheduleDirty = false, scheduleBusy = false;
   const [savedMessage, setSavedMessage] = useState("");
@@ -374,7 +375,7 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
   return <div className={tab==="doctors"?"doctor-editor":undefined} data-details-dirty={tab==="doctors"?String(form.formState.isDirty):undefined} data-schedule-dirty={tab==="doctors"?String(scheduleDirty):undefined}><Form {...form}>{confirmAction.dialog}<form className="form-grid staff-editor" inert={save.isPending||scheduleBusy?true:undefined} noValidate onSubmit={submitWithNativeChecks(form, onSubmit, onInvalid)}>
     {staffTabs && <FormTabs tabs={staffTabs.map(t => t.label)} active={activeTab} onChange={setActiveTab} invalid={tabInvalid}/>}
     <div className={panel(0)} role={staffTabs ? "tabpanel" : undefined}>
-    <FormSection title={initial.id?"Staff details":"Account"} hint={initial.id?"Name and contact details.":"Staff sign in with this email and password."}>
+    <FormSection title={initial.id?"Staff details":"Account Details"} hint={initial.id?"Name and contact details.":undefined} className={initial.id?undefined:"staff-create-section"}>
     <StaffAccountFields control={form.control} register={form.register} errors={form.formState.errors} getValues={form.getValues as any} withPassword={!initial.id}/>
     </FormSection>
     <Controller name="status" control={form.control} render={({field})=><div className="wide"><StatusSwitch label="Staff Account Active" active={field.value==="active"} disabled={!!initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)} onChange={async active=>{if(!active&&!await confirmAction.ask({title:"Deactivate Staff Member?",description:"They will lose access. Ownership restrictions may prevent this change.",confirmLabel:"Deactivate",tone:"danger"}))return;field.onChange(active?"active":"inactive");}}/>{initial.id&&(initial.id===identity.user?.id||initial.userId===identity.user?.id)&&<small className="muted">Your own account cannot be deactivated here.</small>}</div>}/>
@@ -384,7 +385,8 @@ function UserEditor({ tab, initial: opened, carry, onClose, isSuperAdmin, onDirt
     </FormSection></div>}
 
     {tab === "admins" && initial.id && <OwnedClinicInformation key={initial.id} adminId={initial.id}/>}
-    {tab !== "admins" && <div id="doctor-assignments" className={panel(tab === "doctors" ? 2 : 1)} role={staffTabs?"tabpanel":undefined}><FormSection title={tab==="doctors"?"Assignments":"Assignment"} hint="Which Clinics and locations this person works at.">
+    {tab !== "admins" && <div id="doctor-assignments" className={panel(tab === "doctors" ? 2 : 1)} role={staffTabs?"tabpanel":undefined}><FormSection title={initial.id?tab==="doctors"?"Assignments":"Assignment":"Work Assignment"} hint={initial.id?"Which Clinics and locations this person works at.":"Select the role and assign the clinic and locations for this staff member."} className={initial.id?undefined:"staff-create-section staff-assignment-row"}>
+       {!initial.id&&roleField&&<div className="staff-role-cell">{roleField}</div>}
        <div className="wide"><Controller name="clinicIds" control={form.control} rules={{ validate: v => !!v?.length || "Select at least one Clinic." }} render={({ field }) => clinicId?<><label>Clinic</label><div className="doctor-context-value">{fixedClinic.data?.name||records.current.get(clinicId)?.name||(fixedClinic.isLoading?"Loading clinic…":"Current clinic")}</div>{fixedClinic.error&&<><ErrorNotice error={fixedClinic.error}/><button type="button" onClick={()=>void fixedClinic.refetch()}>Retry Fixed Clinic Details</button></>}</>:<ResourceMultiLookup id="input-clinicIds" label="Clinics" required error={form.formState.errors.clinicIds?.message as string} resource="assignment:clinics" params={{ ...optionsParams, managingAdminId: isSuperAdmin ? firstOwner : undefined }} value={field.value || []} onRecords={remember} isOptionDisabled={row=>!!firstOwner&&row?.adminId!==firstOwner||!!clinicId&&row?.id!==clinicId&&!selectedClinics.includes(row?.id)} onChange={ids => {
          if(clinicId){field.onChange([...new Set([...(initial.clinicIds||[]).filter((id:string)=>id!==clinicId),clinicId])]);return;}
         const removed = selectedClinics.filter(id => !ids.includes(id));

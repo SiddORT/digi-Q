@@ -27,18 +27,19 @@ test("Add Staff wires confirmation, carry-over with dirty protection, and indepe
   assert.match(users, /planRoleSwitch\(snapshot\.current\.values,snapshot\.current\.defaults\)/);
   assert.match(users, /await roleConfirm\.ask\(\{title:`Switch to \$\{singular\(next\)\}\?`/);
   assert.match(users, /setValue\(key as any,value,\{shouldDirty:true\}\)/);
-  assert.match(users, /<UserEditor key=\{`\$\{editTab\}:\$\{editing\.id\|\|"new"\}`\} tab=\{editTab\}/);
+  assert.match(users, /<UserEditor key=\{`\$\{editTab\}:\$\{editing\.id\|\|"new"\}`\} roleField=\{roleField\} tab=\{editTab\}/);
   assert.match(users, /tab === "doctors" \? initial\.id \? api\.updateDoctor\(initial\.id, body\) : api\.createDoctor\(body\) : initial\.id \? api\.updateUser\(initial\.id, body\) : api\.createUser\(body\)/);
-  assert.match(users, /onSuccess: \(result\) => \{ client\.invalidateQueries\(\); onClose\(result\); \}/);
+  assert.match(users, /onSuccess: \(result\) => \{\s+if\(!initial\.id\)onFirstSave\(\);\s+void client\.invalidateQueries\(\);/);
+  assert.match(users, /if\(tab!=="doctors"&&result\.invitationStatus!=="failed"\)\{onClose\(result\);return;\}/);
   assert.match(users, /if\(!wasEdit&&savedTab!==tab\)\{setTab\(savedTab\);setDraftTab\(savedTab\);\}/);
-  assert.match(users, /<label>Clinic Groups <span className="required">\*<\/span><\/label>/);
-  assert.match(users, /<label>Locations \{tab === "receptionists"/);
+  assert.match(users, /<ResourceMultiLookup id="input-clinicIds" label="Clinics" required/);
+  assert.match(users, /<ResourceMultiLookup id="input-branchIds" label="Locations" required=\{tab==="receptionists"\}/);
   assert.match(users, /size="medium"/);
   // Clinic Admin setup wizard participates in the same carry-over contract (both directions).
   assert.match(users, /<ClinicAdminOnboarding guided carry=\{carry\} onSnapshot=/);
   const wizard = readFileSync(new URL("../components/ClinicRegistrationWizard.tsx", import.meta.url), "utf8");
   assert.match(wizard, /form\.setValue\(key as "fullName", value, \{ shouldDirty: true \}\)/);
-  assert.match(wizard, /snapshotRef\.current\?\.\(next as Record<string, unknown>, defaults\)/);
+  assert.match(wizard, /snapshotRef\.current\?\.\(withoutPasswords\(next as Record<string, unknown>\), defaults\)/);
 });
 
 test("wizard snapshot: untouched defaults are not discardable; clinic input is", async () => {
