@@ -18,7 +18,7 @@ const rejects = (operation, pattern = /changed|started|ended|called|scope|later|
 const doctor = () => ({ id: "du", role: "doctor", doctorId: "d", clinicIds: ["c"], branchIds: ["b"] });
 async function guest(secret = "a".repeat(64)) {
   await h.api.put(h.t.qrs, { id: "guest-qr-row", clinicId: "c", branchId: "b", publicReference: "guest-qr" });
-  const receipt = await h.api.createGuestRequest({ qrReference: "guest-qr", fullName: "Private Guest",
+  const receipt = await h.api.createGuestRequest({ qrReference: "guest-qr", fullName: "Private Guest", mobile: "+14155552671",
     branchId: "b", doctorId: "d", date: h.today, requestId: "12345678-1234-4234-8234-123456789012", receiptSecret: secret });
   return { receipt, secret };
 }

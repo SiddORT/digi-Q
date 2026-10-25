@@ -2192,7 +2192,7 @@ export interface PublicBookingContext {
   timezone: string;
   today: string;
   lastBookableDate: string;
-  /** Applies to account-linked patient booking */
+  /** Applies to account-linked patient verification. Guest bookings require mobile contact without claiming account verification. */
   requireMobileVerification?: boolean;
   /** @minimum 0 */
   cancellationCutoffMinutes?: number;
@@ -2289,10 +2289,9 @@ export interface GuestRequestInput {
   email?: string | null;
   /**
      * @maxLength 16
-     * @nullable
      * @pattern ^\+[1-9][0-9]{7,14}$
      */
-  mobile?: string | null;
+  mobile: string;
   /**
      * @minLength 1
      * @maxLength 100
@@ -3041,7 +3040,7 @@ export type AvailabilityException = AvailabilityExceptionInput & {
   id: string;
 };
 
-export interface AppointmentInput {
+export interface AppointmentBookingFields {
   sessionId?: string;
   startTime?: string;
   patientId: string;
@@ -3059,6 +3058,28 @@ export interface AppointmentInput {
   /** @maxLength 1000 */
   notes?: string;
 }
+
+export type AppointmentInput = AppointmentBookingFields & {
+  /**
+     * Required visit contact. Does not change patient or account contacts, verification or notification recipients.
+     * @maxLength 16
+     * @pattern ^\+[1-9][0-9]{7,14}$
+     */
+  bookingMobile: string;
+};
+
+/**
+ * Server-derived submitter provenance, not contact ownership or verification.
+ * @nullable
+ */
+export type AppointmentBookingContactSource = typeof AppointmentBookingContactSource[keyof typeof AppointmentBookingContactSource] | null;
+
+
+export const AppointmentBookingContactSource = {
+  staff: 'staff',
+  patient: 'patient',
+  guest: 'guest',
+} as const;
 
 export type AppointmentActionType = typeof AppointmentActionType[keyof typeof AppointmentActionType];
 
@@ -3093,7 +3114,17 @@ export interface StatusEvent {
   to?: AppointmentSessionHistory;
 }
 
-export type Appointment = AppointmentInput & ({
+export type Appointment = AppointmentBookingFields & ({
+  /**
+     * Submitted visit contact; may be absent on historical bookings.
+     * @nullable
+     */
+  bookingMobile?: string | null;
+  /**
+     * Server-derived submitter provenance, not contact ownership or verification.
+     * @nullable
+     */
+  bookingContactSource?: AppointmentBookingContactSource;
   confirmationEmail?: ConfirmationEmailOutcome;
   dateFormat?: ClinicDateFormat;
   timeFormat?: ClinicTimeFormat;

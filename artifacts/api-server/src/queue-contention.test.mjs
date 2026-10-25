@@ -55,7 +55,7 @@ test("separate PostgreSQL guest contenders serialize last token and same-key rep
   const date = h.tomorrow;
   const schedule = await h.api.one(h.t.schedules, "d" + new Date(date).getUTCDay());
   await h.api.change(h.t.schedules, schedule.id, { data: { ...schedule, maxTokens: 1 } });
-  const input = (suffix) => ({ qrReference: "guest-qr", fullName: "Guest " + suffix, branchId: "b", doctorId: "d", date,
+  const input = (suffix) => ({ qrReference: "guest-qr", fullName: "Guest " + suffix, mobile: "+14155552671", branchId: "b", doctorId: "d", date,
     requestId: `12345678-1234-4234-8234-1234567890${suffix}`, receiptSecret: suffix[0].repeat(64) });
   const a = input("12"), b = { ...input("34"), qrReference: "guest-qr-2" };
   // Distinct guest keys race for the same schedule lock on distinct backends.
@@ -447,7 +447,7 @@ for (const bookingFirst of [true, false]) {
     const branch = setup.branches[0];
     const session = (await h.api.all(h.t.schedules)).find(s => s.branchId === branch.id && s.status === "active");
     const qr = (await h.api.all(h.t.qrs)).find(q => q.branchId === branch.id);
-    const request = { qrReference: qr.publicReference, fullName: "Isolated race patient", branchId: branch.id, doctorId: setup.doctorId, date: h.tomorrow, sessionId: session.id,
+    const request = { qrReference: qr.publicReference, fullName: "Isolated race patient", mobile: "+14155552671", branchId: branch.id, doctorId: setup.doctorId, date: h.tomorrow, sessionId: session.id,
       requestId: "76543210-1234-4234-8234-123456789012", receiptSecret: "a".repeat(64) };
     const patientsBefore = (await h.api.all(h.t.patients)).length;
     const reserve = tx => h.api.createGuestRequest(request, tx);

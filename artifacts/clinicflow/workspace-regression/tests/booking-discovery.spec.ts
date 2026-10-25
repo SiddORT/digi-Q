@@ -1,12 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 // Rendered real components; deterministic HTTP fixtures, NOT real persistence or identity evidence.
-async function fixture(page:Page,role="superAdmin",opts:{empty?:boolean;multiple?:boolean;fail?:boolean;timezone?:string;bare?:boolean;qr?:"clinic"|"location";denied?:boolean}={}){
+async function fixture(page:Page,role="superAdmin",opts:{empty?:boolean;multiple?:boolean;fail?:boolean;timezone?:string;bare?:boolean;qr?:"clinic"|"location";denied?:boolean;actorMobile?:string;source?:string;queue?:boolean}={}){
  const today="2026-10-09",next="2026-10-10";
  const clinic={id:"c1",name:"Fictional Booking Clinic",adminId:"clinicAdmin",status:"active",timezone:"UTC",dateFormat:"YYYY-MM-DD",timeFormat:"24h"};
  const branch={id:"b1",clinicId:"c1",name:"Fictional Booking Location",timezone:opts.timezone||"UTC",status:"active",openingHours:Array.from({length:7},(_,dayOfWeek)=>({dayOfWeek,startTime:"08:00",endTime:"20:00"}))};
  const doctor={id:"d1",userId:"doctor",fullName:"Fictional Booking Doctor",clinicIds:["c1"],branchIds:["b1"],status:"active"};
  const session={doctorId:"d1",branchId:"b1",date:today,sessionId:"s1",available:true,remainingTokens:8,maxTokens:8,startTime:"09:00",endTime:"12:00",timezone:branch.timezone,queueMode:"mixed"};
-  const state={fail:!!opts.fail,empty:!!opts.empty,multiple:!!opts.multiple,hold:false,noResults:false,writes:[] as any[],reads:[] as string[],requests:[] as string[],branchReads:0,mode:"mixed",full:false,range:"09:00",emailOutcome:"no_recipient",appointment:null as any};
+  const state={actorMobile:opts.actorMobile||"",actorId:role,actorRole:role,fail:!!opts.fail,empty:!!opts.empty,multiple:!!opts.multiple,hold:false,noResults:false,writes:[] as any[],reads:[] as string[],requests:[] as string[],branchReads:0,mode:"mixed",full:false,range:"09:00",emailOutcome:"no_recipient",appointment:null as any};
  const list=(items:any[])=>({items,total:items.length,page:1,pageSize:20});
  await page.route("**/api/**",async route=>{
    const req=route.request(),url=new URL(req.url()),p=url.pathname,m=req.method();
@@ -14,9 +14,10 @@ async function fixture(page:Page,role="superAdmin",opts:{empty?:boolean;multiple
    let json:any=list([]),status=200;
    if(m!=="GET")state.writes.push({path:p,body:req.postDataJSON()});
     if(p==="/api/auth/status")json={authenticated:role!=="guest",role:role==="guest"?null:role,staffPasswordVerified:true};
-   else if(p==="/api/me")json={userId:role,user:{id:role,role,fullName:"Fictional Booker",clinicIds:["c1"],branchIds:["b1"]},doctorId:role==="doctor"?"d1":null,patientId:role==="patient"?"p1":null,needsOnboarding:false};
+   else if(p==="/api/me")json={userId:state.actorId,user:{id:state.actorId,role:state.actorRole,mobile:state.actorMobile,fullName:"Fictional Booker",clinicIds:["c1"],branchIds:["b1"]},doctorId:state.actorRole==="doctor"?"d1":null,patientId:state.actorRole==="patient"?"p1":null,needsOnboarding:false};
    else if(p==="/api/auth/csrf")json={csrfToken:"fixture"};
    else if(p==="/api/settings")json={timezone:"UTC",bookingHorizonDays:30,cancellationCutoffMinutes:30,requireMobileVerification:false};
+   else if(p==="/api/queue")json={entries:[],entriesTotal:0,total:0,waiting:0,updatedAt:new Date().toISOString()};
    else if(p==="/api/public/availability/context")json={timezone:branch.timezone,today,lastBookableDate:"2026-10-20"};
     else if(p==="/api/booking/schedule-access")json={allowed:!opts.denied&&["superAdmin","clinicAdmin","doctor","receptionist"].includes(role)};
     else if(p.startsWith("/api/public/qr/"))json={reference:"fixture-booking",clinicId:"c1",clinicName:clinic.name,...(opts.qr==="clinic"?{}:{branchId:"b1",branchName:branch.name,branchTimezone:branch.timezone}),dateFormat:"YYYY-MM-DD",timeFormat:"24h"};
@@ -25,10 +26,13 @@ async function fixture(page:Page,role="superAdmin",opts:{empty?:boolean;multiple
      if(state.hold)await new Promise(r=>setTimeout(r,750));
      if(state.fail){status=503;json={error:"Fixture availability lookup failed"};}
      else json=state.noResults?[]:date===next?[{...session,date}]:state.empty?[]:state.multiple?[{...session,startTime:state.range,remainingTokens:state.full?0:8,queueMode:state.mode},{...session,sessionId:"s2",startTime:"14:00",endTime:"17:00",queueMode:state.mode}]:[{...session,startTime:state.range,remainingTokens:state.full?0:8,queueMode:state.mode}];
-   }else if(p.endsWith("/clinics/c1"))json=clinic;
-   else if(p.endsWith("/branches/b1")){state.branchReads++;json=branch;}
-   else if(p.endsWith("/doctors/d1"))json=doctor;
-   else if(p.endsWith("/patients/p1"))json={id:"p1",fullName:"Fictional Patient",clinicId:"c1",branchId:"b1",status:"active"};
+    }else if(p==="/api/clinics/c1/settings")json={clinic,branches:[branch]};
+    else if(p.endsWith("/clinics/c1"))json=clinic;
+    else if(p.endsWith("/branches/b1")){state.branchReads++;json=branch;}
+    else if(p==="/api/schedules/day-context")json={items:[],days:Array.from({length:7},(_,dayOfWeek)=>({dayOfWeek,following:false,custom:false,snapshot:`fixture-${dayOfWeek}`}))};
+    else if(p==="/api/session-contexts")json=[{...session,clinicId:"c1",snapshotOnly:false}];
+    else if(p.endsWith("/doctors/d1"))json=doctor;
+   else if(p.endsWith("/patients/p1"))json={id:"p1",fullName:"Fictional Patient",mobile:"+14155552671",clinicId:"c1",branchId:"b1",status:"active"};
    else if(p.endsWith("/clinics"))json=list([clinic]);
    else if(p.endsWith("/branches"))json=list([branch]);
    else if(p.endsWith("/doctors"))json=list([doctor]);
@@ -47,8 +51,8 @@ async function fixture(page:Page,role="superAdmin",opts:{empty?:boolean;multiple
    else if(p==="/api/public/guest-requests"){status=201;json={id:"g1",status:"approved",fullName:"Fictional Guest",clinicName:clinic.name,branchName:branch.name,doctorName:doctor.fullName,date:next,startTime:"09:00",endTime:"12:00",timezone:"UTC",token:"D-1",reference:"FICTIONAL-TICKET",checkInUrl:"/check-in/FICTIONAL-TICKET",appointmentStatus:"booked",revision:1,confirmationEmail:state.emailOutcome};}
    await route.fulfill({status,json});
  });
-  await page.goto(opts.qr?`/book/fixture-booking?date=${today}`:`/?mode=booking&fixtureRole=${role}${opts.bare?"":"&clinic=c1&branch=b1&doctor=d1"}&date=${today}`);
- await expect(page.getByTestId("booking-discovery")).toBeVisible();
+  await page.goto(opts.qr?`/book/fixture-booking?date=${today}`:`/?mode=booking&fixtureRole=${role}${opts.bare?"":"&clinic=c1&branch=b1&doctor=d1"}&date=${today}&source=${opts.source||"phone"}&fixtureQueue=${opts.queue?"1":"0"}`);
+ if(!opts.queue)await expect(page.getByTestId("booking-discovery")).toBeVisible();
   if(opts.qr&&role==="patient")await selectQrPatientVisit(page,opts.qr==="clinic");
  return state;
 }
@@ -63,7 +67,7 @@ async function selectQrPatientVisit(page:Page,clinicQr=false){
 for(const role of ["superAdmin","clinicAdmin","doctor","receptionist","patient","guest"]){
  test(`${role}: truthful empty date, explicit bounded search and review preserve fixed context`,async({page})=>{
    const state=await fixture(page,role,{empty:true});
-   await expect(page.getByTestId("booking-availability-status")).toContainText("Other weekdays or dates may have sessions");
+   await expect(page.getByTestId("booking-availability-status")).toContainText("Other dates may have sessions");
    await expect(page.getByTestId("button-next-booking-date")).toBeEnabled();
    await page.getByTestId("button-next-booking-date").click();
    await expect(page.getByTestId("button-use-next-date")).toContainText("2026-10-10");
@@ -92,11 +96,11 @@ for(const role of ["guest","patient","doctor","clinicAdmin","receptionist","supe
       await page.setViewportSize({width,height:900});
       const s=await fixture(page,role,{qr:"location",empty:true});
       await expect(page.getByTestId("text-booking-location")).toContainText("Fictional Booking Location");
-      await expect(page.getByTestId("booking-availability-status")).toContainText("Other weekdays or dates");
+      await expect(page.getByTestId("booking-availability-status")).toContainText("Other dates may have sessions");
       await expectPatientFacing(page);
       await page.reload();
       if(role==="patient")await selectQrPatientVisit(page);
-      await expect(page.getByTestId("booking-availability-status")).toContainText("Other weekdays or dates");
+      await expect(page.getByTestId("booking-availability-status")).toContainText("Other dates may have sessions");
       await page.getByTestId("button-refresh-booking-availability").click();
       await page.getByTestId("button-next-booking-date").click();
       await page.getByTestId("button-use-next-date").click();
@@ -106,6 +110,7 @@ for(const role of ["guest","patient","doctor","clinicAdmin","receptionist","supe
       await page.getByTestId(role==="guest"?"button-guest-continue-visit":"button-booking-continue-visit").click();
       if(role==="guest"){
         await page.getByTestId("input-guest-name").fill("Fictional Guest");
+        await page.getByTestId("input-guest-mobile").fill("+14155552671");
         await page.getByTestId("input-guest-permission").check();
         await page.getByTestId("button-guest-continue-patient").click();
       }else{
@@ -141,7 +146,7 @@ for(const role of ["doctor","clinicAdmin","receptionist","superAdmin"]){
     await page.clock.install({time:new Date("2026-10-09T07:00:00Z")});
     const s=await fixture(page,role,{qr:"location"});
     const root=["superAdmin","clinicAdmin"].includes(role)?"admin":role;
-    const go=async(path:string)=>page.evaluate(path=>window.history.pushState(null,"",path),path);
+    const go=async(path:string)=>page.evaluate(path=>{window.history.pushState(null,"",path);window.dispatchEvent(new PopStateEvent("popstate"));},path);
     await go(`/${root}/book?clinic=c1&branch=b1&doctor=d1&date=2026-10-09`);
     await page.getByTestId("button-booking-manage-schedule").click();
     await expect(page.getByTestId("doctor-schedule-context")).toBeVisible();
@@ -163,7 +168,7 @@ for(const role of ["doctor","clinicAdmin","receptionist","superAdmin"]){
 }
 test("workspace management still requires allowed server capability",async({page})=>{
   const s=await fixture(page,"clinicAdmin",{denied:true});
-  await expect(page.getByTestId("booking-discovery")).toContainText("contact the clinic");
+  await expect(page.getByTestId("booking-discovery")).toContainText("Your account cannot manage this schedule");
   await expect.poll(()=>s.requests.filter(p=>p==="/api/booking/schedule-access").length).toBeGreaterThan(0);
   await expectPatientFacing(page);
 });
@@ -196,10 +201,11 @@ test("changing date cancels a pending search without overwriting the deliberate 
  await expect(page.getByTestId("input-booking-date")).toHaveValue("2026-10-12");
  await expect(page.getByTestId("button-use-next-date")).toHaveCount(0);
 });
-test("guest optional contact flow confirms only at review and immediately displays ticket",async({page})=>{
+test("guest required contact flow confirms only at review and immediately displays ticket",async({page})=>{
  const s=await fixture(page,"guest");
  await page.getByTestId("button-guest-continue-visit").click();
  await page.getByTestId("input-guest-name").fill("Fictional Guest");
+ await page.getByTestId("input-guest-mobile").fill("+14155552671");
  await page.getByTestId("input-guest-permission").check();
  await page.getByTestId("button-guest-continue-patient").click();
  assertNoWrite(s.writes);
@@ -272,7 +278,7 @@ test("stale explicit session is rejected and full sessions stay visible but unse
  await expect(page.getByTestId("button-booking-continue-visit")).toBeEnabled();
  assertNoWrite(s.writes);
 });
-test("guest inline errors are linked; optional contacts remain optional and confirmation is disabled after range changes",async({page})=>{
+test("guest inline errors are linked; mobile is required and confirmation is disabled after range changes",async({page})=>{
  const s=await fixture(page,"guest");
  await page.getByTestId("button-guest-continue-visit").click();
  await page.getByTestId("button-guest-continue-patient").click();
@@ -283,6 +289,9 @@ test("guest inline errors are linked; optional contacts remain optional and conf
  await expect(name).toHaveAttribute("placeholder","Enter the patient's full name");
  await name.fill("Fictional Guest");
  await page.getByTestId("input-guest-permission").check();
+ await page.getByTestId("button-guest-continue-patient").click();
+ await expect(page.getByTestId("input-guest-mobile")).toHaveAttribute("aria-invalid","true");
+ await page.getByTestId("input-guest-mobile").fill("+14155552671");
  await page.getByTestId("button-guest-continue-patient").click();
  s.range="10:00";
  // Hidden visit controls stay mounted, so refresh without changing the review stage.
@@ -319,6 +328,88 @@ for(const width of [1366,768,390]){
    await expect(page.getByRole("textbox",{name:/Patient's name/})).toBeVisible();
    await expect(page.getByRole("textbox",{name:/Patient's name/})).toHaveAttribute("aria-required","true");
    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
-   await page.screenshot({path:`screenshots/booking-unification/guest-${width}.png`,fullPage:true});
+   await page.screenshot({path:`generated-artifacts/booking-unification/guest-${width}.png`,fullPage:true});
  });
 }
+
+async function expectLocalMobile(page:Page, digits:string) {
+  await expect.poll(async()=> (await page.getByTestId("input-booking-mobile").inputValue()).replace(/\D/g,"")).toBe(digits);
+}
+for(const role of ["superAdmin","clinicAdmin","receptionist","doctor"]) {
+  for(const entry of ["direct","switch","queue"]) {
+    test(`required mobile ${role} ${entry}: actor prefill, replacement, clearing, review and submission`,async({page})=>{
+      await page.clock.install({time:new Date("2026-10-09T10:00:00Z")});
+      const s=await fixture(page,role,{actorMobile:"+919876543210",source:entry==="direct"?"walkIn":"phone",queue:entry==="queue"});
+      if(entry==="queue"){
+        const link=page.getByRole("link",{name:"Register Walk-In"});
+        await expect(link).toHaveAttribute("href",/source=walkIn/);
+        await link.click();
+      }else if(entry==="switch")await page.getByTestId("radio-booking-source-walkIn").check();
+      await expect(page.getByTestId("button-booking-continue-visit")).toBeEnabled();
+      await page.getByTestId("button-booking-continue-visit").click();
+      await expectLocalMobile(page,"9876543210");
+      const input=page.getByTestId("input-booking-mobile");
+      await input.fill("");
+      await selectPatient(page);
+      await expect(input).toHaveValue("");
+      await expect(page.getByTestId("button-booking-continue-patient")).toBeDisabled();
+      await input.fill("123");
+      await expect(page.getByTestId("button-booking-continue-patient")).toBeDisabled();
+      await input.fill("+14155552671");
+      await page.getByTestId("button-booking-continue-patient").click();
+      await expect(page.getByTestId("booking-summary")).toContainText("+14155552671");
+      await page.getByTestId("button-booking-back").filter({visible:true}).click();
+      await expectLocalMobile(page,"4155552671");
+      if(role==="doctor")await expect(page.getByRole("button",{name:"Register a New Patient"})).toHaveCount(0);
+      else {
+        await page.getByRole("button",{name:"Register a New Patient"}).click();
+        const dialog=page.getByRole("dialog",{name:"Register a New Patient"});
+        await expect(dialog.getByTestId("input-mobile")).toHaveCount(0);
+        await dialog.getByTestId("button-dialog-close").click();
+        const discard=page.getByRole("button",{name:/discard/i});
+        if(await discard.isVisible())await discard.click();
+      }
+      await page.getByTestId("button-booking-continue-patient").click();
+      await page.getByRole("checkbox",{name:/I consent/}).check();
+      await page.getByTestId("button-confirm-booking").click();
+      await expect(page.getByTestId("appointment-ticket")).toBeVisible();
+      expect(s.writes.filter(w=>w.path==="/api/appointments")).toHaveLength(1);
+      expect(s.writes.find(w=>w.path==="/api/appointments").body).toMatchObject({source:"walkIn",bookingMobile:"+14155552671"});
+      expect(s.writes.filter(w=>/^\/api\/(patients|users)(\/|$)/.test(w.path))).toEqual([]);
+    });
+  }
+}
+test("required mobile drafts survive late identity hydration, explicit clearing and mode changes but reset on actor or role change",async({page})=>{
+  await page.clock.install({time:new Date("2026-10-09T10:00:00Z")});
+  const s=await fixture(page,"superAdmin",{source:"walkIn"});
+  await page.getByTestId("button-booking-continue-visit").click();
+  const input=page.getByTestId("input-booking-mobile");
+  await expect(input).toHaveValue("");
+  s.actorMobile="+919876543210";
+  await page.getByTestId("refresh-fixture-identity").click();
+  await expectLocalMobile(page,"9876543210");
+  await input.fill("");
+  s.actorMobile="+919876543211";
+  await page.getByTestId("refresh-fixture-identity").click();
+  await expect(input).toHaveValue("");
+  await input.fill("+14155552671");
+  await selectPatient(page);
+  s.actorMobile="+919876543212";
+  await page.getByTestId("refresh-fixture-identity").click();
+  await expectLocalMobile(page,"4155552671");
+  await page.getByTestId("button-booking-back").filter({visible:true}).click();
+  await page.getByTestId("radio-booking-source-phone").check();
+  await page.getByTestId("radio-booking-source-walkIn").check();
+  await page.getByTestId("button-booking-continue-visit").click();
+  await expectLocalMobile(page,"4155552671");
+  s.actorId="different-actor";s.actorMobile="+919876543213";
+  await page.getByTestId("refresh-fixture-identity").click();
+  await page.getByTestId("button-booking-continue-visit").click();
+  await expectLocalMobile(page,"9876543213");
+  await input.fill("");
+  s.actorRole="doctor";s.actorMobile="+919876543214";
+  await page.getByTestId("refresh-fixture-identity").click();
+  await page.getByTestId("button-booking-continue-visit").click();
+  await expectLocalMobile(page,"9876543214");
+  assertNoWrite(s.writes);
+});

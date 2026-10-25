@@ -19,6 +19,7 @@ import { appointmentMovement } from "../lib/appointment-movement";
 import { transition } from "../lib/appointments";
 import { reschedule } from "../lib/reschedule";
 import { enforcePermissionPolicy } from "../lib/permission-policy";
+import { bookingMobile } from "../lib/booking-contact";
 
 export const guestRequestsRouter = Router();
 export const guestListControls = schema.object({
@@ -60,7 +61,7 @@ const receiptLimit = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: "
 export async function createGuestRequest(body: any, conn: any = db) {
   // Refuse writes when tickets cannot be signed, not after committing a booking.
   createAppointmentQrPayload("guest-signing-preflight");
-  body = { ...body, fullName: body.fullName.trim(), email: body.email?.trim() || null, mobile: body.mobile?.trim() || null };
+   body = { ...body, fullName: body.fullName.trim(), email: body.email?.trim() || null, mobile: bookingMobile(body.mobile) };
   assert(body.fullName.length > 0, 400, "Name is required");
   const { receiptSecret, ...input } = body;
   const receiptHash = guestHash(receiptSecret), inputHash = guestHash(JSON.stringify(input));
@@ -91,7 +92,7 @@ export async function createGuestRequest(body: any, conn: any = db) {
     const appointment = await bookAppointment({ id: clinic.adminId, role: "guest" },
       { patientId, clinicId: context.clinicId, branchId: body.branchId, doctorId: body.doctorId,
         date: body.date, sessionId: available.sessionId, startTime: available.startTime,
-        source: "qr", qrReference: body.qrReference, requestId: `guest:${id}` }, tx, true);
+         source: "qr", bookingMobile: body.mobile, qrReference: body.qrReference, requestId: `guest:${id}` }, tx, true);
     return put(guestRequests, { id, requestId: body.requestId, receiptHash, inputHash,
       clinicId: context.clinicId, branchId: body.branchId, doctorId: body.doctorId, date: body.date,
        status: "confirmed", appointmentId: appointment.id,
@@ -116,7 +117,7 @@ export async function decideGuestRequest(user: any, id: string, body: any, conn:
       await put(patients, { id: patientId, clinicId: row.clinicId, branchId: row.branchId, mobile: row.mobile,
         data: { fullName: row.fullName, email: row.email, code: `PAT-${patientId.slice(0, 8)}` } }, tx);
       const appointment = await bookAppointment(user, { patientId, clinicId: row.clinicId, branchId: row.branchId,
-        doctorId: row.doctorId, date: row.date, sessionId: row.sessionId, startTime: row.startTime, source: "qr", qrReference: row.qrReference, requestId: `guest:${row.id}` }, tx);
+         doctorId: row.doctorId, date: row.date, sessionId: row.sessionId, startTime: row.startTime, source: "qr", bookingMobile: row.mobile, qrReference: row.qrReference, requestId: `guest:${row.id}` }, tx);
       appointmentId = appointment.id; token = appointment.token;
     }
     row = await change(guestRequests, id, { status, appointmentId, decidedBy: user.id,

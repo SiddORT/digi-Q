@@ -23,6 +23,7 @@ import App from "../src/App";
 import { DropdownWorkspaceFixture } from "./DropdownWorkspaceFixture";
 import { CompactUiFixture } from "./CompactUiFixture";
 import { StaffVerificationFixture } from "./StaffVerificationFixture";
+import { BookingFixture } from "./BookingFixture";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -46,7 +47,7 @@ if (params.get("mode") === "staff-login") return <StaffVerificationFixture login
 if (params.get("mode") === "reschedule") return <RescheduleFixture/>;
 if(params.get("mode")==="booking"){
  const role=params.get("fixtureRole")||"superAdmin";
- return <main className="content">{role==="guest"?<GuestBooking reference="fixture-booking" context={{reference:"fixture-booking",clinicId:"c1",branchId:"b1",doctorId:"d1",clinicName:"Fictional Booking Clinic",branchName:"Fictional Booking Location",doctorName:"Fictional Booking Doctor",branchTimezone:"UTC",dateFormat:"YYYY-MM-DD",timeFormat:"24h"}}/>:<Booking entryPoint="staff-workspace" identity={{userId:role,user:{id:role,role,fullName:"Fictional Booker",clinicIds:["c1"],branchIds:["b1"]},...(role==="doctor"?{doctorId:"d1"}:{}),...(role==="patient"?{patientId:"p1"}:{}),needsOnboarding:false} as any}/>}</main>;
+ return <main className="content"><BookingFixture guest={role==="guest"} queue={params.get("fixtureQueue")==="1"}/></main>;
 }
 if (["selectors", "queue"].includes(params.get("mode") || "")) return <SelectorFixture queue={params.get("mode")==="queue"} pinned={params.get("pinned")==="1"} role={params.get("fixtureRole")||"doctor"}/>;
 const browsing=location.startsWith("/admin/");

@@ -41,10 +41,9 @@ export interface GuestRequestInput {
   email?: string | null;
   /**
      * @maxLength 16
-     * @nullable
      * @pattern ^\+[1-9][0-9]{7,14}$
      */
-  mobile?: string | null;
+  mobile: string;
   /**
      * @minLength 1
      * @maxLength 100

@@ -46,7 +46,7 @@ async function patient(id,email){
   await h.pg.query("insert into patients(id,clinic_id,branch_id,mobile,data) values($1,'c1','b1','+919876543210',$2)",[id,{fullName:"Fictional Unified Patient",email}]);
   return id;
 }
-const payload=patientId=>({clinicId:"c1",branchId:"b1",doctorId:"d1",patientId,date,sessionId,source:"phone",termsAccepted:true,requestId:randomUUID(),notes:"PRIVATE-NOTE-NEVER-EMAIL"});
+const payload=patientId=>({clinicId:"c1",branchId:"b1",doctorId:"d1",patientId,date,sessionId,source:"phone",bookingMobile:"+919876543219",termsAccepted:true,requestId:randomUUID(),notes:"PRIVATE-NOTE-NEVER-EMAIL"});
 async function assertNotice(appointmentId){
   const result=await call("adm","GET","/notifications");
   const notices=result.data.items.filter(n=>n.appointmentId===appointmentId);

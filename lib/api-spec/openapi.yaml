@@ -2981,7 +2981,7 @@ components:
         timezone: { type: string }
         today: { type: string, format: date }
         lastBookableDate: { type: string, format: date }
-        requireMobileVerification: { type: boolean, description: Applies to account-linked patient booking, not optional guest contacts }
+        requireMobileVerification: { type: boolean, description: "Applies to account-linked patient verification. Guest bookings require mobile contact without claiming account verification." }
         cancellationCutoffMinutes: { type: integer, minimum: 0 }
     PublicBranchSummary:
       type: object
@@ -3012,14 +3012,14 @@ components:
         doctors: { type: array, items: { $ref: "#/components/schemas/PublicDoctor" } }
     GuestRequestInput:
       type: object
-      required: [qrReference, fullName, branchId, doctorId, date, requestId, receiptSecret]
+      required: [qrReference, fullName, mobile, branchId, doctorId, date, requestId, receiptSecret]
       properties:
         sessionId: { type: string }
         startTime: { type: string }
         qrReference: { type: string, minLength: 1, maxLength: 200 }
         fullName: { type: string, minLength: 1, maxLength: 150 }
         email: { type: ["string", "null"], format: email, maxLength: 254 }
-        mobile: { type: ["string", "null"], pattern: '^\+[1-9][0-9]{7,14}$', maxLength: 16 }
+        mobile: { type: string, pattern: '^\+[1-9][0-9]{7,14}$', maxLength: 16 }
         branchId: { type: string, minLength: 1, maxLength: 100 }
         doctorId: { type: string, minLength: 1, maxLength: 100 }
         date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
@@ -3695,6 +3695,13 @@ components:
         queueOpenTime: { type: string }
         queueCloseTime: { type: string }
     AppointmentInput:
+      allOf:
+        - { $ref: "#/components/schemas/AppointmentBookingFields" }
+        - type: object
+          required: [bookingMobile]
+          properties:
+            bookingMobile: { type: string, pattern: '^\+[1-9][0-9]{7,14}$', maxLength: 16, description: "Required visit contact. Does not change patient or account contacts, verification or notification recipients." }
+    AppointmentBookingFields:
       type: object
       required: [patientId, doctorId, clinicId, branchId, date, source]
       properties:
@@ -3718,10 +3725,12 @@ components:
       description: Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.
     Appointment:
       allOf:
-        - { $ref: "#/components/schemas/AppointmentInput" }
+        - { $ref: "#/components/schemas/AppointmentBookingFields" }
         - type: object
           required: [id, reference, token, status, createdAt, patientName, doctorName, clinicName, branchName, allowedActions]
           properties:
+            bookingMobile: { type: ["string", "null"], description: "Submitted visit contact; may be absent on historical bookings." }
+            bookingContactSource: { type: ["string", "null"], enum: [staff, patient, guest, null], description: "Server-derived submitter provenance, not contact ownership or verification." }
             confirmationEmail: { $ref: "#/components/schemas/ConfirmationEmailOutcome" }
             dateFormat: { $ref: "#/components/schemas/ClinicDateFormat" }
             timeFormat: { $ref: "#/components/schemas/ClinicTimeFormat" }

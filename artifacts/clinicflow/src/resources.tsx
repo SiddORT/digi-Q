@@ -110,9 +110,9 @@ export const resources:Record<string,Resource>={
  * Clinic/location come from the surrounding context when booking; callers keep their own permissions.
  */
 /** Section E: one wording for contact vs notification vs sign-in, used wherever a patient is registered. */
-export const PATIENT_CONTACT_RULE="Name is required. Mobile and email are optional booking contacts. Notifications are sent only when the clinic enables them and a matching contact exists; adding a contact never creates a sign-in account.";
-export function PatientEditor({initial={},onSave,busy=false,submitLabel="Save Patient",withContext=false}:{initial?:any;onSave:(data:any)=>void;busy?:boolean;submitLabel?:string;withContext?:boolean}){
- return <Editor resourceName="patients" fields={resources.patients.fields.filter(field=>withContext||!!initial.clinicId||!["clinicId","branchId"].includes(field.key))} initial={!withContext&&initial.clinicId?{...initial,verifiedBookingContext:true}:initial} onSave={onSave} busy={busy} submitLabel={submitLabel}/>;
+export const PATIENT_CONTACT_RULE="Name is required. Profile mobile and email are optional; new bookings require a separate mobile contact. Notifications follow clinic settings and existing recipient rules; adding a contact never creates a sign-in account.";
+export function PatientEditor({initial={},onSave,busy=false,submitLabel="Save Patient",withContext=false,booking=false}:{initial?:any;onSave:(data:any)=>void;busy?:boolean;submitLabel?:string;withContext?:boolean;booking?:boolean}){
+  return <Editor resourceName="patients" fields={resources.patients.fields.filter(field=>(!booking||field.key!=="mobile")&&(withContext||!!initial.clinicId||!["clinicId","branchId"].includes(field.key)))} initial={!withContext&&initial.clinicId?{...initial,verifiedBookingContext:true}:initial} onSave={onSave} busy={busy} submitLabel={submitLabel}/>;
 }
 /** Free-text field with optional suggestions from the clinic's curated masters (e.g. Area). Address parts use AddressFields. */
 function MasterTextInput({field,control}:any){

@@ -21,14 +21,25 @@
  * OpenAPI spec version: 1.0.0
  */
 import type { AppointmentActionType } from './appointmentActionType';
-import type { AppointmentInput } from './appointmentInput';
+import type { AppointmentBookingContactSource } from './appointmentBookingContactSource';
+import type { AppointmentBookingFields } from './appointmentBookingFields';
 import type { AppointmentStatus } from './appointmentStatus';
 import type { ClinicDateFormat } from './clinicDateFormat';
 import type { ClinicTimeFormat } from './clinicTimeFormat';
 import type { ConfirmationEmailOutcome } from './confirmationEmailOutcome';
 import type { StatusEvent } from './statusEvent';
 
-export type Appointment = AppointmentInput & ({
+export type Appointment = AppointmentBookingFields & ({
+  /**
+     * Submitted visit contact; may be absent on historical bookings.
+     * @nullable
+     */
+  bookingMobile?: string | null;
+  /**
+     * Server-derived submitter provenance, not contact ownership or verification.
+     * @nullable
+     */
+  bookingContactSource?: AppointmentBookingContactSource;
   confirmationEmail?: ConfirmationEmailOutcome;
   dateFormat?: ClinicDateFormat;
   timeFormat?: ClinicTimeFormat;

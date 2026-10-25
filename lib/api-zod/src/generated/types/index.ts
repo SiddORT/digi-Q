@@ -25,6 +25,8 @@ export * from './apiError';
 export * from './appointment';
 export * from './appointmentAction';
 export * from './appointmentActionType';
+export * from './appointmentBookingContactSource';
+export * from './appointmentBookingFields';
 export * from './appointmentCalendar';
 export * from './appointmentCalendarDay';
 export * from './appointmentCalendarDayByStatus';

@@ -474,6 +474,7 @@ test("guest immediate creation commits recoverable receipt without account", asy
     const request = route.request().postDataJSON();
     expect(request.receiptSecret).toMatch(/^[a-f0-9]{64}$/);
     expect(request.fullName).toBe("Walk-in Guest");
+    expect(request.mobile).toBe("+14155552671");
     f.calls.push("POST /api/public/guest-requests");
     await route.fulfill({ json: { ...guest, fullName: "Walk-in Guest" } });
   });
@@ -490,6 +491,7 @@ test("guest immediate creation commits recoverable receipt without account", asy
   await expect(page.getByTestId("input-guest-date")).not.toHaveAttribute("aria-invalid", "true");
   await page.getByTestId("button-guest-continue-visit").click();
   await page.getByTestId("input-guest-name").fill("Walk-in Guest");
+  await page.getByTestId("input-guest-mobile").fill("+14155552671");
   await page.getByTestId("input-guest-permission").check();
   await page.getByTestId("button-guest-continue-patient").click();
   await expect(page.getByTestId("button-submit-guest")).toBeEnabled();

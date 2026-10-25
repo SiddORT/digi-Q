@@ -20,23 +20,13 @@
  *
  * OpenAPI spec version: 1.0.0
  */
-import type { BookingSource } from './bookingSource';
+import type { AppointmentBookingFields } from './appointmentBookingFields';
 
-export interface AppointmentInput {
-  sessionId?: string;
-  startTime?: string;
-  patientId: string;
-  doctorId: string;
-  clinicId: string;
-  branchId: string;
-  date: Date;
-  source: BookingSource;
-  appointmentTypeId?: string;
-  consultationTypeId?: string;
-  qrReference?: string;
-  /** Client-generated idempotency key */
-  requestId?: string;
-  termsAccepted?: boolean;
-  /** @maxLength 1000 */
-  notes?: string;
-}
+export type AppointmentInput = AppointmentBookingFields & {
+  /**
+     * Required visit contact. Does not change patient or account contacts, verification or notification recipients.
+     * @maxLength 16
+     * @pattern ^\+[1-9][0-9]{7,14}$
+     */
+  bookingMobile: string;
+};

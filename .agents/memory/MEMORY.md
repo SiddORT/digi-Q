@@ -9,7 +9,7 @@
 - [Visual cascade verification](visual-cascade.md) — rendered checks catch legacy CSS precedence and breakpoint regressions that typechecks cannot.
 - [Publishing database guards](publish-database-guards.md) — schema diffs can omit custom guard functions or propagate development constraint drift; verify both before rollout.
 - [Published demo boundary](published-demo-auth-boundary.md) — same-app fictional demo has a dedicated password path; ordinary staff verification must remain unchanged.
-- [Patient booking contract](patient-booking-contract.md) — Book Now immediately issues a private ticket; guest contact is optional and queue operations stay staff-facing.
+- [Patient booking contract](patient-booking-contract.md) — immediate private tickets; all new bookings require visit mobile, distinct from profile/verification; queues stay staff-facing.
 - [Booking readiness](booking-readiness.md) — opening hours are not sessions; empty dates do not prove weekly absence; bounded-search results require review.
 - [DigiQ standardization](digiq-standardization-decisions.md) — prompt is the approved reference; surface conflicts, inherit parent display formats, and use in-app warnings.
 - [Notification safety](notification-delivery-safety.md) — retry only known pre-dispatch failures; reminders refer to sessions, not promised consultation times.

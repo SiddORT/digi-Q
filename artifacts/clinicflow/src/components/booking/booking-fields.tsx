@@ -11,7 +11,7 @@ export const bookingFields = {
   patient: { label: "Patient", required: true },
   fullName: { label: "Patient's name", required: true, placeholder: "Enter the patient's full name" },
   email: { label: "Email", optional: true, placeholder: "name@example.com" },
-  mobile: { label: "Mobile", optional: true },
+  mobile: { label: "Mobile", required: true },
   notes: { label: "Notes for your visit", optional: true, placeholder: "Add information for the clinic about this visit (optional)" },
   reason: { label: "Reason", optional: true, placeholder: "Explain the change to this visit (optional)" },
 } as const;
@@ -24,5 +24,5 @@ export function BookingField({ name, ...props }: Omit<FormFieldProps, "label"> &
 export const bookingValidation = {
   fullName: (value: string) => value.trim() ? validatePersonName(value) || true : "Enter the patient's name.",
   email: (value: unknown) => validateEmail(value) || true,
-  mobile: (value: string) => !value?.trim() || validatePhone(value) || true,
+  mobile: (value: string) => !value?.trim() ? "Enter a mobile number for this booking." : validatePhone(value) || true,
 };

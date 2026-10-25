@@ -3,8 +3,9 @@ import { db, appointments, patients, doctors, clinics, branches, appointmentHist
 import * as z from "@workspace/api-zod";
 import { requireUser, scoped, canRead, scope } from "../lib/auth";
 import { assert, parse, query } from "../lib/http";
-/** Staff roles that may book an in-clinic (unlinked) patient record without a verified mobile. Linked patient accounts and self-booking keep the mobile/verification prerequisite; doctors stay limited to patients in their assigned scope (canRead below). */
-export const STAFF_CONTACT_OPTIONAL_ROLES = ["superAdmin", "clinicAdmin", "receptionist", "doctor"];
+import { bookingMobile } from "../lib/booking-contact";
+/** Existing verification exemptions do not exempt any new booking from contact entry. */
+const STAFF_VERIFICATION_EXEMPT_ROLES = ["superAdmin", "clinicAdmin", "receptionist", "doctor"];
 import { all, one, put, uid, audit, getSettings, filtered, paginate, change } from "../lib/store";
 import { availability, localNow, minutes } from "../lib/availability";
 import { enrich } from "../lib/entities";
@@ -52,6 +53,7 @@ appointmentsRouter.post("/appointments", async (req, res) => {
   res.status(201).json(await appointmentViewWithBranch({ ...row, confirmationEmail }, user));
 });
 export async function bookAppointment(user: any, body: any, tx: any, guestPolicy = false) {
+     body = { ...body, bookingMobile: bookingMobile(body.bookingMobile) };
     // The anonymous QR flow is an explicit booking policy, not a fabricated
     // receptionist identity. Its patient must be an unlinked record created in
     // the same transaction, scoped to the selected clinic and branch.
@@ -60,7 +62,7 @@ export async function bookAppointment(user: any, body: any, tx: any, guestPolicy
     const existing = await all(appointments, tx);
     if (body.requestId) {
       const original = existing.find(a => a.requestId === body.requestId && a.actorId === user.id);
-      if (original) { assert(original.patientId === body.patientId && original.doctorId === body.doctorId && original.clinicId === body.clinicId && original.branchId === body.branchId && original.date === body.date && (!body.startTime || original.startTime === body.startTime) && (!body.sessionId || original.sessionId === body.sessionId) && original.source === body.source, 409, "Idempotency key already used for another booking"); return original; }
+       if (original) { assert(original.bookingMobile === body.bookingMobile && original.patientId === body.patientId && original.doctorId === body.doctorId && original.clinicId === body.clinicId && original.branchId === body.branchId && original.date === body.date && (!body.startTime || original.startTime === body.startTime) && (!body.sessionId || original.sessionId === body.sessionId) && original.source === body.source, 409, "Idempotency key already used for another booking"); return original; }
     }
     const available = await availability(body.doctorId, body.branchId, body.date, tx, body);
     body = { ...body, sessionId: available.sessionId, startTime: available.startTime };
@@ -69,8 +71,8 @@ export async function bookAppointment(user: any, body: any, tx: any, guestPolicy
     assert(patient.status === "active", 409, "Patient is inactive");
     const guestPatient = guestPolicy && !patient.userId && patient.clinicId === body.clinicId && patient.branchId === body.branchId;
     assert(!guestPolicy || guestPatient, 403, "Guest patient outside booking scope");
-    const contactOptional = !patient.userId && STAFF_CONTACT_OPTIONAL_ROLES.includes(user.role) || guestPatient;
-    if (!contactOptional) assert(/^\+[1-9][0-9]{7,14}$/.test(patient.mobile), 400, "Complete the patient's international mobile number before booking");
+     const verificationExempt = !patient.userId && STAFF_VERIFICATION_EXEMPT_ROLES.includes(user.role) || guestPatient;
+     body = { ...body, bookingContactSource: guestPolicy ? "guest" : user.role === "patient" ? "patient" : "staff" };
     assert(guestPatient || user.role === "patient" || await canRead(user, "patients", patient, tx), 403, "Patient outside assigned scope");
     assert(available.clinicId === body.clinicId, 400, "Clinic/branch mismatch");
     assert(available.available, 409, available.reason || "Session unavailable");
@@ -87,7 +89,7 @@ export async function bookAppointment(user: any, body: any, tx: any, guestPolicy
     }
     const config = await getSettings(tx, body.clinicId);
     const confirmationEmail = await initialConfirmationEmail(patient,config.notificationsEnabled,tx);
-    assert(contactOptional || !config.requireMobileVerification || patient.mobileVerified, 403, "Patient mobile verification is required");
+     assert(verificationExempt || !config.requireMobileVerification || patient.mobileVerified, 403, "Patient mobile verification is required");
     if (user.role === "patient") assert(body.termsAccepted, 400, "Terms and privacy consent is required");
     if (body.source === "qr") {
       assert(body.qrReference, 400, "QR reference required");

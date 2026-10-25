@@ -106,12 +106,12 @@ test("pre-0008 clinical membership is selected-branch-only across public, availa
   const date = new Date().toISOString().slice(0, 10);
   const staff = { ...admin, clinicIds: ["c"], branchIds: [], doctorId: own.id };
   const reserve = patientId => db.transaction(tx => api.bookAppointment(staff, {
-    doctorId: own.id, patientId, clinicId: "c", branchId: "b", date, source: "walkIn",
+    doctorId: own.id, patientId, clinicId: "c", branchId: "b", date, source: "walkIn", bookingMobile: "+14155552671",
   }, tx));
   const first = await reserve("p1"), second = await reserve("p2");
   await assert.rejects(reserve("p3"), /Session capacity reached/);
   await assert.rejects(db.transaction(tx => api.bookAppointment(staff, {
-    doctorId: own.id, patientId: "p3", clinicId: "c", branchId: "b2", date, source: "walkIn",
+    doctorId: own.id, patientId: "p3", clinicId: "c", branchId: "b2", date, source: "walkIn", bookingMobile: "+14155552671",
   }, tx)), /not assigned/);
   const called = await h.route(api.queueRouter, "post", "/queue/call-next", staff, {
     doctorId: own.id, branchId: "b", date,

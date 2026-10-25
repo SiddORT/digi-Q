@@ -2816,7 +2816,7 @@ export const GetPublicBookingContextResponse = zod.object({
   "timezone": zod.string(),
   "today": zod.coerce.date(),
   "lastBookableDate": zod.coerce.date(),
-  "requireMobileVerification": zod.boolean().optional().describe('Applies to account-linked patient booking'),
+  "requireMobileVerification": zod.boolean().optional().describe('Applies to account-linked patient verification. Guest bookings require mobile contact without claiming account verification.'),
   "cancellationCutoffMinutes": zod.number().int().min(getPublicBookingContextResponseCancellationCutoffMinutesMin).optional()
 })
 
@@ -2879,7 +2879,7 @@ export const CreateGuestRequestBody = zod.object({
   "qrReference": zod.string().min(1).max(createGuestRequestBodyQrReferenceMax),
   "fullName": zod.string().min(1).max(createGuestRequestBodyFullNameMax),
   "email": zod.string().email().max(createGuestRequestBodyEmailMax).nullish(),
-  "mobile": zod.string().max(createGuestRequestBodyMobileMax).regex(createGuestRequestBodyMobileRegExp).nullish(),
+  "mobile": zod.string().max(createGuestRequestBodyMobileMax).regex(createGuestRequestBodyMobileRegExp),
   "branchId": zod.string().min(1).max(createGuestRequestBodyBranchIdMax),
   "doctorId": zod.string().min(1).max(createGuestRequestBodyDoctorIdMax),
   "date": zod.string().regex(createGuestRequestBodyDateRegExp),
@@ -7035,6 +7035,8 @@ export const ListAppointmentsResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(listAppointmentsResponseTwoItemsItemOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -7091,8 +7093,12 @@ export const ListAppointmentsResponse = zod.object({
 /**
  * Atomically checks assignment, computed availability, OTP policy and capacity, allocates reference/token. Patients can book only self; staff may create walk-in and phone bookings. Duplicate requestId returns original booking.
  */
-export const createAppointmentBodyNotesMax = 1000;
+export const createAppointmentBodyOneNotesMax = 1000;
 
+export const createAppointmentBodyTwoBookingMobileMax = 16;
+
+
+export const createAppointmentBodyTwoBookingMobileRegExp = new RegExp('^\\+[1-9][0-9]{7,14}$');
 
 
 export const CreateAppointmentBody = zod.object({
@@ -7109,8 +7115,10 @@ export const CreateAppointmentBody = zod.object({
   "qrReference": zod.string().optional(),
   "requestId": zod.string().optional().describe('Client-generated idempotency key'),
   "termsAccepted": zod.boolean().optional(),
-  "notes": zod.string().max(createAppointmentBodyNotesMax).optional()
-})
+  "notes": zod.string().max(createAppointmentBodyOneNotesMax).optional()
+}).and(zod.object({
+  "bookingMobile": zod.string().max(createAppointmentBodyTwoBookingMobileMax).regex(createAppointmentBodyTwoBookingMobileRegExp).describe('Required visit contact. Does not change patient or account contacts, verification or notification recipients.')
+}))
 
 export const createAppointmentResponseOneNotesMax = 1000;
 
@@ -7132,6 +7140,8 @@ export const CreateAppointmentResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(createAppointmentResponseOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -7253,6 +7263,8 @@ export const GetAppointmentResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(getAppointmentResponseOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -7350,6 +7362,8 @@ export const ResolveAppointmentQrResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(resolveAppointmentQrResponseAppointmentOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -7437,6 +7451,8 @@ export const CheckInAppointmentQrResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(checkInAppointmentQrResponseAppointmentOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -7553,6 +7569,8 @@ export const GetAppointmentMovementResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(getAppointmentMovementResponseAppointmentOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -7663,6 +7681,8 @@ export const ManageGuestReceiptResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(manageGuestReceiptResponseAppointmentOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -7759,6 +7779,8 @@ export const RescheduleAppointmentResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(rescheduleAppointmentResponseOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -7864,6 +7886,8 @@ export const TransitionAppointmentResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(transitionAppointmentResponseOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -8005,6 +8029,8 @@ export const GetQueueResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(getQueueResponseEntriesItemOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -8100,6 +8126,8 @@ export const CallNextResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(callNextResponseAppointmentOneOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
@@ -8331,6 +8359,8 @@ export const GetDashboardResponse = zod.object({
   "termsAccepted": zod.boolean().optional(),
   "notes": zod.string().max(getDashboardResponseRecentAppointmentsItemOneNotesMax).optional()
 }).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
   "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
   "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
   "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),

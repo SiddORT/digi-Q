@@ -203,7 +203,7 @@ export async function createQueueHarness({ empty = false, pre0008 = false } = {}
       act: (id, body, actor = staff) => db.transaction(tx => api.transition(actor, id, body, tx)),
       book: (patientId = "p1", date = today, extra = {}, { actor = staff, tx } = {}) =>
         route(api.appointmentsRouter, "post", "/appointments", actor,
-          { patientId, doctorId: "d", branchId: "b", clinicId: "c", date, source: "phone", ...extra },
+          { patientId, doctorId: "d", branchId: "b", clinicId: "c", date, source: "phone", bookingMobile: "+14155552671", ...extra },
           {}, {}, tx),
     };
   } catch (error) {

@@ -6,7 +6,8 @@ description: Product distinction between simple patient booking and internal sta
 Patients follow Visit details → Patient details → Confirmation → Ticket. The explicit confirmation immediately issues a ticket with a personal QR,
 waiting number, clinic, location/address, doctor, date and session time range.
 Do not relabel this action “Join queue” or introduce reception approval.
-“Guest” means that email and phone are optional, not that confirmation is delayed.
+Guest booking requires no account and confirmation is not delayed. Every new
+booking now requires a valid mobile; email remains optional.
 The session range is not a promised exact consultation time.
 
 **Why:** The owner explicitly corrected the original guest-request design and
@@ -29,3 +30,20 @@ not establish inbox delivery.
 **How to apply:** Present booking success independently of the email result.
 Do not silently add automatic resending or guaranteed-delivery claims; those
 require a separate retry/delivery design.
+
+All new bookings require a visit contact, including walk-ins, staff advance,
+patient self-booking and anonymous guest bookings. Staff walk-ins initially use
+the actual authenticated booking actor's saved mobile, allow replacement or
+clearing, but cannot be confirmed without a valid number. Manual changes and
+explicit clearing must survive patient selection, identity hydration and step
+or mode changes.
+
+**Why:** The owner explicitly superseded the earlier optional guest and
+unlinked-walk-in contact policy. A staff member's submitted contact does not
+establish ownership of the patient's permanent contact.
+
+**How to apply:** Keep the submitted visit number separate from existing
+patient/account contact and verification. New contact entry does not authorize
+new notification routing, bypass consent or channel gates, or expand doctor
+registration/public walk-in permissions. Historical contactless tickets remain
+usable; standalone patient registration contacts remain optional.

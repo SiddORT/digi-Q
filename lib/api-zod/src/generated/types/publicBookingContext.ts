@@ -25,7 +25,7 @@ export interface PublicBookingContext {
   timezone: string;
   today: Date;
   lastBookableDate: Date;
-  /** Applies to account-linked patient booking */
+  /** Applies to account-linked patient verification. Guest bookings require mobile contact without claiming account verification. */
   requireMobileVerification?: boolean;
   /** @minimum 0 */
   cancellationCutoffMinutes?: number;

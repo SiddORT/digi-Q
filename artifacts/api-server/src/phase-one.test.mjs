@@ -67,22 +67,22 @@ async function route(router, method, path, actor, body = {}, params = {}, query 
   return result;
 }
 async function book(patientId = "p1", date = today, extra = {}) {
-  return route(api.appointmentsRouter, "post", "/appointments", staff, { patientId, doctorId: "d", branchId: "b", clinicId: "c", date, source: "phone", ...extra });
+  return route(api.appointmentsRouter, "post", "/appointments", staff, { patientId, doctorId: "d", branchId: "b", clinicId: "c", date, source: "phone", bookingMobile: "+14155552671", ...extra });
 }
 async function act(id, body, actor = staff) {
   return globalThis.phaseDb.transaction(tx => api.transition(actor, id, body, tx));
 }
 async function guest(extra = {}) {
   await globalThis.phaseDb.insert(t.qrs).values({ id: "guestqr", clinicId: "c", branchId: "b", publicReference: "guest-qr" }).onConflictDoNothing();
-  return api.createGuestRequest({ qrReference: "guest-qr", fullName: "Name Only", branchId: "b", doctorId: "d", date: today,
+  return api.createGuestRequest({ qrReference: "guest-qr", fullName: "Name Only", mobile: "+14155552671", branchId: "b", doctorId: "d", date: today,
     requestId: "12345678-1234-4234-8234-123456789012", receiptSecret: "a".repeat(64), ...extra });
 }
-test("anonymous guest immediately reserves a waiting token without contact; replay preserves private ticket", async () => {
+test("anonymous guest immediately reserves a waiting token with mandatory contact; replay preserves private ticket", async () => {
   await seed();
   const row = await guest();
   assert.equal(row.status, "confirmed");
   assert.equal((await api.all(t.appointments)).length, 1);
-  assert.equal(row.mobile, null);
+  assert.equal(row.mobile, "+14155552671");
   assert.equal(row.receiptHash, api.guestHash("a".repeat(64)));
   assert.equal(JSON.stringify(row).includes("a".repeat(64)), false);
   const ticket = await route(api.guestRequestsRouter, "post", "/public/guest-receipt", null, { receiptSecret: "a".repeat(64) });
@@ -95,7 +95,7 @@ test("anonymous guest immediately reserves a waiting token without contact; repl
   assert.ok(ticket.reference && ticket.checkInUrl.startsWith("/check-in?payload=v1."));
   assert.equal(api.readAppointmentQrPayload(new URL(ticket.checkInUrl, "http://localhost").searchParams.get("payload")), ticket.reference);
   assert.deepEqual(await route(api.guestRequestsRouter, "post", "/public/guest-requests", null, {
-    qrReference: "guest-qr", fullName: "Name Only", branchId: "b", doctorId: "d", date: today,
+    qrReference: "guest-qr", fullName: "Name Only", mobile: "+14155552671", branchId: "b", doctorId: "d", date: today,
     requestId: "12345678-1234-4234-8234-123456789012", receiptSecret: "a".repeat(64),
   }), ticket);
   await assert.rejects(() => route(api.guestRequestsRouter, "post", "/public/guest-receipt", null, { receiptSecret: "b".repeat(64) }), /Receipt not found/);
@@ -108,7 +108,7 @@ test("anonymous guest immediately reserves a waiting token without contact; repl
   assert.equal(appointments[0].status, "waiting");
   assert.equal(appointments[0].bookingOrigin, "anonymousGuest");
   const p = await api.one(t.patients, appointments[0].patientId);
-  assert.equal(p.userId, null); assert.equal(p.mobile, null); assert.equal(p.fullName, "Name Only");
+  assert.equal(p.userId, null); assert.equal(p.mobile, "+14155552671"); assert.equal(p.fullName, "Name Only");
   const receipt = api.guestReceipt(row);
   assert.ok(receipt.token);
   for (const key of ["receiptHash", "inputHash", "email", "mobile", "history"]) assert.equal(key in receipt, false);
@@ -179,12 +179,12 @@ test("guest QR scope and revocation are enforced at request", async () => {
   await assert.rejects(() => guest(), /revoked/);
   assert.equal((await api.all(t.guestRequests)).length, 0);
 });
-test("guest optional contact is persisted without claiming verified mobile; invalid clinic and session cannot book", async () => {
+test("guest required contact is persisted without claiming verified mobile; invalid clinic and session cannot book", async () => {
   await seed();
-  const booked = await guest({ email: "visitor@example.invalid", mobile: "+15555550123", date: tomorrow });
+  const booked = await guest({ email: "visitor@example.invalid", mobile: "+14155552671", date: tomorrow });
   const appointment = await api.one(t.appointments, booked.appointmentId);
   const p = await api.one(t.patients, appointment.patientId);
-  assert.equal(p.mobile, "+15555550123"); assert.equal(p.email, "visitor@example.invalid");
+  assert.equal(p.mobile, "+14155552671"); assert.equal(p.email, "visitor@example.invalid");
   assert.equal(p.mobileVerified, false);
   await assert.rejects(() => guest({ requestId: "22345678-1234-4234-8234-123456789012", receiptSecret: "b".repeat(64), sessionId: "d2" }), /Session not found/);
   await api.change(t.branches, "b2", { clinicId: "other" });
@@ -225,7 +225,7 @@ test("guest staff list SQL restricts clinic and branch before pagination", async
   await seed();
   await guest();
   const list = await route(api.guestRequestsRouter, "get", "/guest-requests", staff, {}, {}, { status: "confirmed" });
-  assert.equal(list.total, 1); assert.equal(list.items[0].mobile, null);
+  assert.equal(list.total, 1); assert.equal(list.items[0].mobile, "+14155552671");
   assert.equal("receiptHash" in list.items[0], false);
   const outside = await route(api.guestRequestsRouter, "get", "/guest-requests", { ...staff, branchIds: ["b2"] }, {}, {}, { status: "confirmed" });
   assert.equal(outside.total, 0);
@@ -1088,11 +1088,11 @@ test("linked owner onboarding atomically creates bookable sessions and keeps the
   assert.equal(sessions[0].available, true);
   assert.equal(sessions[0].remainingTokens, 2);
   const qr = (await api.all(t.qrs)).find(q => q.branchId === branch.id);
-  const ticket = await api.createGuestRequest({ qrReference: qr.publicReference, fullName: "Linked patient", branchId: branch.id, doctorId: result.doctorId, date: tomorrow, sessionId: session.id, requestId: "87654321-1234-4234-8234-123456789012", receiptSecret: "f".repeat(64) });
+  const ticket = await api.createGuestRequest({ qrReference: qr.publicReference, fullName: "Linked patient", mobile: "+14155552671", branchId: branch.id, doctorId: result.doctorId, date: tomorrow, sessionId: session.id, requestId: "87654321-1234-4234-8234-123456789012", receiptSecret: "f".repeat(64) });
   assert.ok(ticket.appointmentId);
   assert.equal((await api.availabilitySessions(result.doctorId, branch.id, tomorrow))[0].remainingTokens, 1);
   assert.equal((await api.one(t.qrs, qr.id)).publicReference, qr.publicReference);
-  const booking = { qrReference: qr.publicReference, fullName: "Second linked patient", branchId: branch.id, doctorId: result.doctorId, date: tomorrow, sessionId: session.id, requestId: "87654321-1234-4234-8234-123456789013", receiptSecret: "d".repeat(64) };
+  const booking = { qrReference: qr.publicReference, fullName: "Second linked patient", mobile: "+14155552671", branchId: branch.id, doctorId: result.doctorId, date: tomorrow, sessionId: session.id, requestId: "87654321-1234-4234-8234-123456789013", receiptSecret: "d".repeat(64) };
   await api.createGuestRequest(booking);
   assert.equal((await api.availabilitySessions(result.doctorId, branch.id, tomorrow))[0].remainingTokens, 0);
   await assert.rejects(api.createGuestRequest({ ...booking, fullName: "Over capacity", requestId: "87654321-1234-4234-8234-123456789014", receiptSecret: "c".repeat(64) }), /capacity|available/i);
@@ -1125,7 +1125,7 @@ test("linked hours preview is read-only and saves are idempotent, support multip
 test("linked session changes preserve booked session IDs/history and roll back clinic/hour edits on conflict", async () => {
   const { result, branch, session, owner, save } = await linkedFixture();
   const qr = (await api.all(t.qrs)).find(q => q.branchId === branch.id);
-  const ticket = await api.createGuestRequest({ qrReference: qr.publicReference, fullName: "Protected patient", branchId: branch.id, doctorId: result.doctorId, date: tomorrow, sessionId: session.id, requestId: "97654321-1234-4234-8234-123456789012", receiptSecret: "e".repeat(64) });
+  const ticket = await api.createGuestRequest({ qrReference: qr.publicReference, fullName: "Protected patient", mobile: "+14155552671", branchId: branch.id, doctorId: result.doctorId, date: tomorrow, sessionId: session.id, requestId: "97654321-1234-4234-8234-123456789012", receiptSecret: "e".repeat(64) });
   const original = await api.one(t.appointments, ticket.appointmentId);
   const input = { id: branch.id, name: branch.name, address: branch.address, openingHours: [{ ...branch.openingHours[0], startTime: "10:00" }] };
   const p = await api.previewClinicSetup(owner, result.clinic.id, { branches: [input] });
@@ -1280,7 +1280,7 @@ test("public and admin onboarding retain every clinic, location, contact, format
   assert.deepEqual(await counts(), before);
 });
 
-test("booking contact policy is the same for every staff role: unlinked in-clinic patients book without mobile; linked accounts keep verification", async () => {
+test("booking contact policy is the same for every staff role: unlinked profiles need visit mobile but not verification; linked accounts keep verification", async () => {
   await seed();
   await database.exec(`update settings set data = data || '{"requireMobileVerification":true}'::jsonb where id = 'platform'`);
   for (const id of ["walkin", "walkin2", "stranger"]) await api.put(t.patients, { id, userId: null, clinicId: "c", branchId: "b", data: { fullName: "Desk " + id }, mobile: null });
@@ -1289,13 +1289,15 @@ test("booking contact policy is the same for every staff role: unlinked in-clini
   for (const [id, patientId, tokenNumber] of [["prior1", "walkin", 90], ["prior2", "walkin2", 91], ["prior3", "p2", 92]]) await api.put(t.appointments, { id, patientId, doctorId: "d", clinicId: "c", branchId: "b", date: past, tokenNumber, status: "completed", actorId: "r", data: {} });
   const doctor = { id: "du", role: "doctor", doctorId: "d", clinicIds: ["c"], branchIds: ["b"] };
   const admin = { id: "admin", role: "clinicAdmin", clinicIds: ["c"], branchIds: ["b", "b2"] };
-  const post = (actor, patientId, date = today) => route(api.appointmentsRouter, "post", "/appointments", actor, { patientId, doctorId: "d", branchId: "b", clinicId: "c", date, source: "phone" });
-  assert.ok((await post(doctor, "walkin"))?.id, "doctor books an unlinked patient without a mobile (same as desk staff)");
+  const post = (actor, patientId, date = today) => route(api.appointmentsRouter, "post", "/appointments", actor, { patientId, doctorId: "d", branchId: "b", clinicId: "c", date, source: "phone", bookingMobile: "+14155552671" });
+  assert.ok((await post(doctor, "walkin"))?.id, "doctor books an unlinked profile with a separate visit mobile (same as desk staff)");
   assert.ok((await post(staff, "walkin2"))?.id, "receptionist: same rule");
   assert.ok((await post(admin, "stranger", tomorrow))?.id, "clinic admin: same rule");
-  // Doctor scope is unchanged: no prior visit with this doctor means no booking for that patient.
+  // Registered profiles in an assigned clinic are visible without a prior visit.
   await database.exec(`delete from appointments where patient_id = 'stranger'`);
-  await assert.rejects(post(doctor, "stranger"), e => e.status === 403 && /outside assigned scope/i.test(e.message), "doctor patient scope unchanged");
+  assert.ok((await post(doctor, "stranger"))?.id, "registered profile visibility remains available to the assigned doctor");
+  const unassignedDoctor = { ...doctor, clinicIds: [], branchIds: [] };
+  await assert.rejects(post(unassignedDoctor, "walkin"), e => e.status === 403 && /outside assigned scope/i.test(e.message), "doctor assignment scope unchanged");
   // Linked patient account with an unverified mobile: every staff role, doctor included, is still blocked.
   for (const actor of [doctor, staff, admin]) await assert.rejects(post(actor, "p2"), e => e.status === 403 && /verification/i.test(e.message), actor.role);
 });
