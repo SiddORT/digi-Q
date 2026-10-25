@@ -1435,23 +1435,7 @@
           "type": "\"button\""
         },
         {
-          "line": 376,
-          "tag": "Form",
-          "family": "forms",
-          "stateProfile": "form",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
           "line": 377,
-          "tag": "FormTabs",
-          "family": "navigation",
-          "stateProfile": "navigation",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 379,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -1460,7 +1444,7 @@
           "className": "{initial.id?undefined:\"staff-create-section\"}"
         },
         {
-          "line": 384,
+          "line": 382,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -1468,7 +1452,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 385,
+          "line": 383,
           "tag": "FormField",
           "family": "forms",
           "stateProfile": "form",
@@ -1476,7 +1460,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 385,
+          "line": 383,
           "tag": "input",
           "family": "fields",
           "stateProfile": "field",
@@ -1485,7 +1469,7 @@
           "data-testid": "\"input-staff-registration\""
         },
         {
-          "line": 385,
+          "line": 383,
           "tag": "FormField",
           "family": "forms",
           "stateProfile": "form",
@@ -1493,7 +1477,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 385,
+          "line": 383,
           "tag": "input",
           "family": "fields",
           "stateProfile": "field",
@@ -1503,7 +1487,23 @@
           "data-testid": "\"input-staff-experience\""
         },
         {
-          "line": 389,
+          "line": 385,
+          "tag": "Form",
+          "family": "forms",
+          "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 386,
+          "tag": "FormTabs",
+          "family": "navigation",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 391,
           "tag": "FormSection",
           "family": "forms",
           "stateProfile": "form",
@@ -1512,7 +1512,15 @@
           "className": "{initial.id?undefined:\"staff-create-section staff-assignment-row\"}"
         },
         {
-          "line": 391,
+          "line": 394,
+          "tag": "HelpTip",
+          "family": "overlays",
+          "stateProfile": "help",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 395,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1521,7 +1529,15 @@
           "type": "\"button\""
         },
         {
-          "line": 401,
+          "line": 406,
+          "tag": "HelpTip",
+          "family": "overlays",
+          "stateProfile": "help",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 409,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1530,7 +1546,7 @@
           "type": "\"button\""
         },
         {
-          "line": 408,
+          "line": 418,
           "tag": "FormActions",
           "family": "forms",
           "stateProfile": "form",
@@ -1538,7 +1554,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 411,
+          "line": 421,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",
@@ -1549,7 +1565,7 @@
           "disabled": "{save.isPending}"
         },
         {
-          "line": 413,
+          "line": 423,
           "tag": "button",
           "family": "actions",
           "stateProfile": "action",

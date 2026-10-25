@@ -33,11 +33,20 @@
 .staff-create-section .staff-role-picker{max-width:none}
 .staff-assignment-row .form-section-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .staff-assignment-row .form-section-grid>.wide,.staff-assignment-row .form-section-grid>.staff-role-cell{grid-column:auto;min-width:0}
+.staff-create .staff-assignment-label{display:flex;align-items:center;gap:4px;min-height:24px;margin-bottom:4px}
+.staff-create .staff-assignment-label label{margin:0}
+.staff-create .staff-assignment-label label>span{color:var(--feedback-error-fg)}
+.staff-create .staff-assignment-row .form-section-grid{align-items:start}
+.staff-create .staff-role-cell .staff-role-picker{margin:0}
+.staff-create .staff-role-cell .searchable-select-field{gap:4px}
+.staff-create .staff-role-cell .searchable-select-field>label{display:flex;align-items:center;gap:4px;min-height:24px}
+.staff-create .doctor-context-value{display:flex;align-items:center;min-height:40px;padding:8px 12px;border:1px solid hsl(var(--border));border-radius:var(--radius-control);background:hsl(var(--muted)/.6);line-height:1.4;overflow-wrap:anywhere;font-weight:600}
 /* Create-only density; shared control sizes, edit layouts and error text stay intact. */
 .app-dialog .staff-create{gap:8px 12px}
 .staff-create .form-section{padding:8px 12px}
 .staff-create .form-section-head{align-items:center;margin-bottom:8px;padding-bottom:4px}
 .staff-create .form-section-actions .status-switch{min-height:24px}
+.staff-create .form-section-actions>.wide{display:flex;align-items:center}
 .staff-create .form-section-grid{gap:8px 12px}
 @media (max-width:767px){
   .staff-account-fields.is-create,.staff-assignment-row .form-section-grid{grid-template-columns:minmax(0,1fr)}

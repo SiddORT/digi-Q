@@ -358,3 +358,17 @@ mtime_ms = 1792652719532
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/08ffd4a0-4935-437e-889f-c9b524c8c466/806f266c-bec7-41de-afd0-1184ceab033b"
 storage_version_token = "1792652868505477"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "B_nYkMkOLju7tPekgUeUv"
+uri = "file://docs/ui/popup-form-refinement-prompt.md"
+type = "text"
+title = "Reusable popup and form refinement prompt"
+description = "A separate prompt for a future approved styling pass; no app-wide redesign was performed."
+logical_id = "f00dc993-3b83-4994-8221-a9dfc663352c"
+content_hash = "sha256:111ca52b19cc12c30cc91db85785fb64b06f9adb6143e5ff8b791e963c0780fc"
+size = 2094
+mtime_ms = 1792944025387
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/f00dc993-3b83-4994-8221-a9dfc663352c/0f548110-f5fa-464e-81c2-ef90f00944f1"
+storage_version_token = "1792944423693709"
+content_type = "text/markdown"

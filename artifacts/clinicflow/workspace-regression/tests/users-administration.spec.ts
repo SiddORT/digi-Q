@@ -115,12 +115,13 @@ for(const width of [1440,768,390])test(`role and account actions remain accessib
   await page.getByTestId("button-status-desk").click();await expect(page.getByTestId("confirm-dialog-confirm")).toBeInViewport();
   await page.screenshot({path:`screenshots/users-administration-confirm-${width}.png`});
 });
-test("Add Staff shows Account Details above Work Assignment with paired rows, honest verification and role-specific footer",async({page})=>{
+test("Add Staff shows Role & Locations before Staff Details with paired rows, honest verification and role-specific footer",async({page})=>{
   const state=await fixture(page);await page.setViewportSize({width:1440,height:900});await page.goto("/?mode=staff&tab=receptionists");
   await page.getByTestId("button-add-staff").click();
   const dialog=page.getByRole("dialog");
-  await expect(dialog.getByRole("heading",{name:"Account Details"})).toBeVisible();
-  await expect(dialog.getByRole("heading",{name:"Work Assignment"})).toBeVisible();
+  await expect(dialog.getByRole("heading",{name:"Staff Details"})).toBeVisible();
+  await expect(dialog.getByRole("heading",{name:"Role & Locations"})).toBeVisible();
+  expect(await dialog.locator(".form-section h3").allTextContents()).toEqual(["Role & Locations","Staff Details"]);
   await expect(dialog.getByRole("tab")).toHaveCount(0);
   const box=async(l:ReturnType<Page["locator"]>)=>(await l.first().boundingBox())!;
   const name=await box(dialog.getByLabel("Full Name")),email=await box(dialog.getByTestId("input-user-email"));
@@ -135,12 +136,18 @@ test("Add Staff shows Account Details above Work Assignment with paired rows, ho
   await expect(dialog.locator(".staff-account-fields").getByTestId("select-add-staff-role")).toHaveCount(0);
   const role=await box(assignment.getByTestId("select-add-staff-role"));
   const clinic=await box(assignment.locator("#input-clinicIds"));
-  expect(Math.abs(role.y-clinic.y)).toBeLessThan(40);expect(clinic.x).toBeGreaterThan(role.x+role.width-1);
+  const locations=await box(assignment.locator("#input-branchIds"));
+  expect(Math.abs(role.y-clinic.y)).toBeLessThan(2);
+  expect(Math.abs(role.y-locations.y)).toBeLessThan(2);
+  expect(clinic.x).toBeGreaterThan(role.x+role.width-1);
+  const domOrder=await dialog.evaluate(el=>[...el.querySelectorAll("button,input,[role=textbox]")].map(e=>e.id||e.getAttribute("data-testid")).filter(Boolean));
+  expect(domOrder.indexOf("input-clinicIds")).toBeLessThan(domOrder.indexOf("input-user-email"));
+  expect(domOrder.indexOf("input-branchIds")).toBeLessThan(domOrder.indexOf("input-user-email"));
   await expect(dialog.getByTestId("button-cancel-staff")).toBeVisible();
   await expect(dialog.getByTestId("button-save-staff")).toContainText(/^Add (Doctor|Receptionist)$/);
   await expect(dialog.locator(".status-switch-track")).toBeVisible();
   await expect(dialog.getByRole("switch",{name:"Staff Account Active"})).toBeChecked();
-  const account=dialog.locator(".staff-create-section").first();
+  const account=dialog.locator(".staff-create-section").filter({has:dialog.getByRole("heading",{name:"Staff Details"})});
   await expect(account.locator(".form-section-head").getByRole("switch",{name:"Staff Account Active"})).toHaveCount(1);
   await expect(account.locator(".form-section-head")).toHaveCSS("margin-bottom","8px");
   await expect(dialog.locator(".staff-account-fields")).toHaveCSS("row-gap","8px");
@@ -162,14 +169,14 @@ for(const tab of ["doctors","receptionists"])test(`Add ${tab} layout stays conta
   await page.goto(`/?mode=staff&tab=${tab}&fixtureRole=clinicAdmin`);
   await page.getByTestId("button-add-staff").click();
   const dialog=page.getByRole("dialog");
-  await expect(dialog.getByRole("heading",{name:"Work Assignment"})).toBeVisible();
+  await expect(dialog.getByRole("heading",{name:"Role & Locations"})).toBeVisible();
   for(const width of [390,768,1024,1366]){
-    await page.setViewportSize({width,height:768});
+    await page.setViewportSize({width,height:width===1024?640:768});
     await expect.poll(async()=>dialog.evaluate(el=>{
       const root=el.getBoundingClientRect();
       return root.left>=-1&&root.right<=innerWidth+1&&root.top>=-1&&root.bottom<=innerHeight+1;
     })).toBe(true);
-    const accountHeader=dialog.locator(".staff-create-section").first().locator(".form-section-head");
+    const accountHeader=dialog.locator(".staff-create-section").filter({has:dialog.getByRole("heading",{name:"Staff Details"})}).locator(".form-section-head");
     await expect.poll(async()=>{
       const heading=(await accountHeader.getByRole("heading").boundingBox())!;
       const toggle=(await accountHeader.locator(".status-switch").boundingBox())!;
@@ -191,4 +198,54 @@ for(const tab of ["doctors","receptionists"])test(`Add ${tab} layout stays conta
     await dialog.screenshot({path:`generated-artifacts/staff-popup/${tab}-${width}.png`});
   }
   expect(state.writes).toHaveLength(0);
+});
+
+test("Add Staff fixed long clinic, help dismissal and 200 percent reflow",async({browser})=>{
+  const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
+  const page=await context.newPage();
+  const state=await fixture(page);
+  const clinicName="Fictional Clinic for Comprehensive Family Medicine and Community Health — "+ "LongClinicName".repeat(8);
+  await page.route("**/api/clinics/c1",route=>route.fulfill({json:{id:"c1",name:clinicName,status:"active"}}));
+  await page.goto("/?mode=staff&tab=receptionists&fixtureRole=doctor&fixedClinicId=c1");
+  await page.getByTestId("button-add-staff").click();
+  const dialog=page.getByRole("dialog");
+  await expect(dialog.getByRole("textbox",{name:"Clinic (read-only)"})).toHaveText(clinicName);
+  const clinicHelp=dialog.getByRole("button",{name:"About clinic assignment"});
+  const locationHelp=dialog.getByRole("button",{name:"About location assignment"});
+  await clinicHelp.tap();
+  await expect(page.locator(".helptip-bubble")).toHaveCount(1);
+  await locationHelp.tap();
+  await expect(page.locator(".helptip-bubble")).toHaveCount(1);
+  await expect(page.locator(".helptip-bubble")).toContainText("Search and select");
+  await locationHelp.tap();
+  await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+  await clinicHelp.focus();
+  await expect(page.locator(".helptip-bubble")).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeVisible();
+  await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+  await page.waitForTimeout(350);
+  await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+  await clinicHelp.blur();
+  await clinicHelp.hover();
+  await expect(page.locator(".helptip-bubble")).toHaveCount(1);
+  await dialog.getByRole("heading",{name:"Role & Locations"}).tap();
+  await page.waitForTimeout(350);
+  await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+  await dialog.getByTestId("button-save-staff").click();
+  await expect(dialog.locator(".field-error").first()).toBeVisible();
+  // 200% browser reflow equivalent: a 1024x640 display has a 512x320 CSS viewport.
+  for(const viewport of [{width:390,height:844},{width:768,height:768},{width:1024,height:640},{width:1366,height:768},{width:512,height:320}]){
+    await page.setViewportSize(viewport);
+    await expect.poll(()=>dialog.evaluate(el=>{
+      const root=el.getBoundingClientRect();
+      const value=el.querySelector("#input-clinicIds")!.getBoundingClientRect();
+      return root.left>=-1&&root.right<=innerWidth+1&&value.left>=root.left&&value.right<=root.right+1&&el.scrollWidth<=el.clientWidth+1;
+    })).toBe(true);
+    await dialog.getByTestId("button-save-staff").scrollIntoViewIfNeeded();
+    await expect(dialog.getByTestId("button-save-staff")).toBeInViewport();
+    await dialog.screenshot({path:`generated-artifacts/staff-popup/fixed-long-${viewport.width}.png`});
+  }
+  expect(state.writes).toHaveLength(0);
+  await context.close();
 });

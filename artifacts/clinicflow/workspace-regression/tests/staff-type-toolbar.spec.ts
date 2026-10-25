@@ -118,7 +118,8 @@ test("embedded Staff Type toolbar, role-scoped reset, and mobile picker", async 
   await doctorPage.goto("/?mode=staff&fixtureRole=doctor&fixtureUserId=fixture-doctor&fixedClinicId=c1", { waitUntil: "domcontentloaded" });
   await expect(doctorPage.getByTestId("select-staff-type")).toHaveCount(0);
   await doctorPage.getByTestId("button-add-staff").click();
-  await expect(doctorPage.getByTestId("text-add-staff-role")).toHaveText("Role: Receptionist");
+  await expect(doctorPage.getByTestId("text-add-staff-role").locator(".staff-assignment-label")).toHaveText("Role");
+  await expect(doctorPage.getByTestId("text-add-staff-role").locator(".doctor-context-value")).toHaveText("Receptionist");
   await expect(doctorPage.getByTestId("select-add-staff-role")).toHaveCount(0);
   await expect(doctorPage.getByText("Clinic Admins", { exact: true })).toHaveCount(0);
 

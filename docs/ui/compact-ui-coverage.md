@@ -243,3 +243,65 @@ and 1366px for doctor and receptionist forms. Empty validation and cancelling
 deactivation passed in the focused popup fixture. Frontend typecheck, production
 build and inventory freshness passed. Updated fictional screenshots remain in
 `generated-artifacts/staff-popup/`; no real-account save or UAT verification.
+
+### Add Staff creation hierarchy and assignment help
+
+This supersedes the earlier creation-only Account Details / Work Assignment
+ordering above. Doctor and receptionist creation now displays **Role & Locations**
+before **Staff Details** in DOM and visual order. Existing edit panels retain their
+ordering, tabs and status control; separate Clinic Admin onboarding is unchanged.
+The fixed clinic shows its full saved name in a wrapping read-only value.
+Optional clinic/location explanations use adjacent shared information help.
+Same-admin restrictions, location prerequisites, required-location instructions,
+errors and load/retry states remain visible.
+
+Verification:
+
+- `pnpm run typecheck:libs` and
+  `pnpm --filter @workspace/clinicflow typecheck`: passed.
+- `node --test artifacts/clinicflow/src/staff-account.test.mjs
+  artifacts/clinicflow/src/staff-input.test.mjs
+  artifacts/clinicflow/src/staff-controls.test.mjs
+  artifacts/clinicflow/src/lib/staff-role-switch.test.mjs`: **25/25 passed**.
+  The first run exposed two obsolete literal-label source assertions; these now
+  check the conditional edit labels and adjacent creation-label wiring.
+- `PORT=3000 BASE_PATH=/ pnpm --filter @workspace/clinicflow build`: passed on
+  final CSS, with the existing large-chunk advisory.
+- `node scripts/compact-ui-inventory.mjs` and its `--check` freshness gate: passed.
+- Fictional browser pass:
+  `pnpm exec playwright test users-administration.spec.ts
+  staff-type-toolbar.spec.ts --config
+  artifacts/clinicflow/workspace-regression/playwright.config.ts
+  --project users-administration --project workspace`: **9/12 passed initially**.
+  The fixed long-clinic/help/reflow case and existing role switching, dirty/edit
+  guards and staff toolbar cases passed. Three popup cases stopped at alignment
+  assertions: role/clinic control offset and heading/Active-switch centering.
+  These failures are not recorded as suite passes.
+- After correcting only creation-scoped label tracks and the status wrapper's
+  inline line-box gap, focused rendered measurements passed for both creation
+  roles at 390×768, 768×768, 1024×640, 1366×768 and 512×320. At desktop widths,
+  all three assignment controls had identical top coordinates. Heading/switch
+  center difference was **0.008px**; no dialog horizontal overflow was measured.
+  Footer access and screenshots were checked in each profile. The full browser
+  suite was not repeated after these straightforward CSS corrections.
+- Actual keyboard Tab traversal in the fixed-clinic creation dialog reached Role,
+  clinic/location help and Locations before Active, Full Name and Email. Evidence:
+  `generated-artifacts/staff-popup/keyboard-order.json`.
+- Shared help passed hover, focus, Escape without closing the dialog, touch
+  toggle, replacement by another help trigger and settled outside dismissal.
+  Long unbroken clinic names, required-field errors and footer visibility were
+  checked. Final popup screenshots and measurements:
+  `generated-artifacts/staff-popup/final-*.png` and `final-geometry.json`.
+  The actual signed-out Preview also rendered cleanly after workflow restart.
+
+Limits: these are fictional/intercepted roles, not authenticated staff evidence.
+512×320 is the 200% browser-reflow equivalent of 1024×640, not an actual
+browser-menu zoom check. Screen readers, Safari/Firefox, real device keyboards,
+all load-error/retry permutations and a successful real-account save were not
+independently exercised. Backend/authorization, password handling, save behavior,
+shared HelpTip, exports and Clinic Admin onboarding were not changed.
+No real accounts, live messages, UAT or production deployment were involved.
+
+The separately reusable future-pass prompt is
+[`popup-form-refinement-prompt.md`](popup-form-refinement-prompt.md). It does not
+authorize an app-wide redesign.

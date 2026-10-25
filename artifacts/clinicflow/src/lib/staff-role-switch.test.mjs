@@ -32,8 +32,8 @@ test("Add Staff wires confirmation, carry-over with dirty protection, and indepe
   assert.match(users, /onSuccess: \(result\) => \{\s+if\(!initial\.id\)onFirstSave\(\);\s+void client\.invalidateQueries\(\);/);
   assert.match(users, /if\(tab!=="doctors"&&result\.invitationStatus!=="failed"\)\{onClose\(result\);return;\}/);
   assert.match(users, /if\(!wasEdit&&savedTab!==tab\)\{setTab\(savedTab\);setDraftTab\(savedTab\);\}/);
-  assert.match(users, /<ResourceMultiLookup id="input-clinicIds" label="Clinics" required/);
-  assert.match(users, /<ResourceMultiLookup id="input-branchIds" label="Locations" required=\{tab==="receptionists"\}/);
+  assert.match(users, /<ResourceMultiLookup id="input-clinicIds" label=\{initial.id\?"Clinics":undefined\}.*?required/);
+  assert.match(users, /<ResourceMultiLookup id="input-branchIds" label=\{initial.id\?"Locations":undefined\}.*?required=\{tab==="receptionists"\}/);
   assert.match(users, /size="medium"/);
   // Clinic Admin setup wizard participates in the same carry-over contract (both directions).
   assert.match(users, /<ClinicAdminOnboarding guided carry=\{carry\} onSnapshot=/);
