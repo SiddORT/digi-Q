@@ -372,3 +372,31 @@ mtime_ms = 1792944025387
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/f00dc993-3b83-4994-8221-a9dfc663352c/0f548110-f5fa-464e-81c2-ef90f00944f1"
 storage_version_token = "1792944423693709"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "D0tMo9BU6DsyGQMbY4MO-"
+uri = "file://reports/user-message-audit/review.html"
+type = "html"
+title = "ClinicFlow user-message approval inventory"
+description = "118 source-linked review records, organized by role and page, with all-route coverage, proposed wording, retained safeguards and testing limitations. No application changes made."
+logical_id = "740f05c6-cf66-4324-a0a3-b6ec5339eb4a"
+content_hash = "sha256:cc5b2e9e16ec7f02c3886fc74ef01391b53826f63851e9836722604dc0154b90"
+size = 310084
+mtime_ms = 1792962341289
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/740f05c6-cf66-4324-a0a3-b6ec5339eb4a/f5eb88e8-2f91-4397-b33b-547281e7ebc4"
+storage_version_token = "1792962362443601"
+content_type = "text/html"
+
+[[outputs]]
+id = "KdGUcv_q5ycUKmoBGeVmG"
+uri = "file://reports/user-message-audit/source-index.html"
+type = "html"
+title = "ClinicFlow message source evidence"
+description = "Expandable companion source index. Includes candidate fragments and clearly distinguishes source extraction from confirmed visible messages."
+logical_id = "1fcd2d01-f485-41bb-847d-361f4021db7d"
+content_hash = "sha256:2d565d5770fe7e9e98ded4974201d93a813f5a039e01ffedf1241fe529e8933f"
+size = 771503
+mtime_ms = 1792961683882
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/1fcd2d01-f485-41bb-847d-361f4021db7d/975624cb-3406-454c-918e-bb49618c60a0"
+storage_version_token = "1792962363995808"
+content_type = "text/html"

@@ -1,0 +1,1044 @@
+{
+  "routes": [
+    {
+      "role": "Superadmin",
+      "url": "/admin",
+      "target": "Redirect → /admin/dashboard",
+      "states": "Signed-out and wrong-role Guard redirects; auth/session loading and retry states shared",
+      "findings": "MSG-021, MSG-022, MSG-027",
+      "status": "S — alias, no independent page"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/dashboard",
+      "target": "clinic.tsx → Dashboard / PatientBookingNotices",
+      "states": "Overview loading/error/stale with last available data; appointment rows and expanded ticket; activity empty/feed; average-wait help; patient confirmation list",
+      "findings": "MSG-036, MSG-037, MSG-047, MSG-027",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/clinic",
+      "target": "components/ClinicSettings.tsx",
+      "states": "Details; Locations; Staff; Policies; Activity History; clinic/contact/format edit dialogs; location hours copy and linked-session impact review; clinical profile/locations activation; QR and schedule links",
+      "findings": "MSG-064, MSG-065, MSG-066, MSG-067, MSG-075, MSG-035",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/clinics",
+      "target": "resources.tsx → ResourcePage(clinics); clinic.tsx → DoctorClinics for doctor",
+      "states": "Search/filter/empty/loading/error; linked locations; status/ownership restrictions; add Clinic Admin wizard; bulk status/QR results; view details and edit path",
+      "findings": "MSG-012, MSG-015, MSG-016, MSG-030, MSG-060, MSG-075, MSG-115",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/branches",
+      "target": "Redirect → Clinic Locations (+ saved clinic/query context)",
+      "states": "Details; Locations; Staff; Policies; Activity History; clinic/contact/format edit dialogs; location hours copy and linked-session impact review; clinical profile/locations activation; QR and schedule links",
+      "findings": "MSG-064, MSG-065, MSG-066, MSG-067, MSG-075, MSG-035",
+      "status": "S — alias"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/users",
+      "target": "UsersWorkspace → Roles / Permissions / System users",
+      "states": "Role editor/assignments; permission matrix/effective policy; System users and deletion review; unsaved cross-tab drafts; staff area query normalized to roles. This is NOT the staff list.",
+      "findings": "MSG-095, MSG-096, MSG-097, MSG-098, MSG-034",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/staff",
+      "target": "Users.tsx",
+      "states": "Superadmin-only staff tabs/counts, search and filters; Add Staff; doctor edit + weekly schedule; invitation/recovery outcomes; status confirmation and partial bulk outcomes",
+      "findings": "MSG-060, MSG-061, MSG-063, MSG-068, MSG-115",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/patients",
+      "target": "resources.tsx → ResourcePage(patients)",
+      "states": "List and filters; new/edit profile per role; registration-success notice; read-only doctor create restriction; drawer visits/activity/documents, permission/loading/empty/errors; complete/cancelled export",
+      "findings": "MSG-040, MSG-073, MSG-074, MSG-027, MSG-028",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/masters",
+      "target": "Redirect → /admin/settings?area=masters",
+      "states": "Reference category selector and parent lookup; create/edit/status; required/unique errors; bulk status results; no new technical-copy issue beyond shared controls",
+      "findings": "MSG-027, MSG-028, MSG-030, MSG-115",
+      "status": "S — alias"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/appointments",
+      "target": "clinic.tsx → Appointments; components/appointments/*",
+      "states": "Upcoming/past/all; list/calendar; calendar day panel; advanced filters; expanded rows, details/ticket; cancel, absent, check-in/out, shift, re-enter and reschedule; bulk selection/results; CSV/PDF/print/email; stale/permission/empty/error states",
+      "findings": "MSG-038, MSG-047, MSG-048, MSG-049, MSG-050, MSG-051, MSG-052, MSG-053, MSG-054, MSG-117",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/queue",
+      "target": "components/queue/SessionQueue.tsx",
+      "states": "Staff/patient branches; selected doctor/date/session; snapshot-only sessions; pending call preview, paused/absent/present; blocked first reservation; individual check-in/out; duration editor; legacy requests; status/search/sort; disconnected/stale/empty/failed",
+      "findings": "MSG-055, MSG-056, MSG-057, MSG-058, MSG-059, MSG-051",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/reports",
+      "target": "components/reports/ReportsWorkspace.tsx; clinic.tsx → LegacyReports",
+      "states": "Live report families/KPIs/trends/comparison; templates and saved views; filters; row detail; all-results exports; operational detail; Communication Usage totals/breakdowns, empty/error and record drawer (SA/CA only)",
+      "findings": "MSG-076, MSG-077, MSG-078, MSG-079, MSG-031",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/settings",
+      "target": "clinic.tsx → WorkspaceSettings / PlatformSettings",
+      "states": "Platform booking/security defaults; expanded integration/session note; save/error/stale; Integrations services/storage/Twilio/email-link; Reference data; Audit log; Demo clinic",
+      "findings": "MSG-091, MSG-092, MSG-094, MSG-099, MSG-027",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/audit",
+      "target": "Redirect → /admin/settings?area=audit",
+      "states": "Audit search, actor/clinic/date filters, row expansions; loading/empty/error; humanized summaries; no additional rewrite recommendation for factual audit data",
+      "findings": "MSG-027, MSG-030",
+      "status": "S — alias"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/qrs",
+      "target": "resources.tsx → ResourcePage(qrs), BookingQrCard",
+      "states": "QR cards, public link origin, readiness check; copy/download/display; regenerate confirmation/result; image failed/retry; schedule and capacity help",
+      "findings": "MSG-075, MSG-107, MSG-045",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/book",
+      "target": "clinic.tsx → Booking; components/booking/*",
+      "states": "Staff advance/walk-in and patient branches; visit/patient/review stages; current scope and membership checks; required mobile proof; new-patient dialog where allowed; next-date search; owner profile recovery; session editor; issued-ticket completion",
+      "findings": "MSG-039, MSG-040, MSG-041, MSG-042, MSG-043, MSG-044, MSG-045, MSG-046, MSG-114, MSG-100",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/availability",
+      "target": "components/SchedulingWorkspace.tsx; resources.tsx; components/schedule/*",
+      "states": "Weekly list and add/edit; compact days/slots; capacity/break/queue tabs; copy, link/unlink, customize weekday/off; multi-location replace; save/partial/uncertain result; whole-schedule deactivate; stale context; read-only role variants",
+      "findings": "MSG-068, MSG-069, MSG-070, MSG-071, MSG-109, MSG-034",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/exceptions",
+      "target": "components/SchedulingWorkspace.tsx; resources.tsx; components/schedule/ScheduleExceptions.tsx",
+      "states": "Date exception list/add/edit; doctor/location/date context; day off/extra interval; impact preview and conflict validation; timing/breaks; legacy contradictory values; deactivate/partial result",
+      "findings": "MSG-072, MSG-028, MSG-034, MSG-068",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/profile",
+      "target": "clinic.tsx → Profile / ProfileEditor",
+      "states": "Own person fields; staff contact verification and password change; owner clinical-profile inactive/reactivate; owned clinic facts; doctor clinic/schedule links; patient My Records drawer, documents and history; save success/error",
+      "findings": "MSG-062, MSG-073, MSG-074, MSG-027, MSG-028",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/demo",
+      "target": "Redirect → /admin/settings?area=demo",
+      "states": "Fictional demo setup/status, enable/disable, password rotation and one-time sharing; QR generation and public-sharing message; scope error; no credentials opened",
+      "findings": "MSG-099, MSG-075, MSG-107",
+      "status": "S — alias"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/templates",
+      "target": "components/NotificationTemplatesPage.tsx; EmailTemplates.tsx",
+      "states": "System-default vs clinic scope; event accordions and activation detail; email/SMS recipient branches (CA email only); filtered group toggles; edit/draft/publish/reset; logo/variables/DLT validation; test dialog real-send vs preview; conflict/discard; owner booking mail outcomes for CA",
+      "findings": "MSG-080, MSG-081, MSG-082, MSG-083, MSG-084, MSG-085, MSG-003, MSG-114",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/communication",
+      "target": "components/CommunicationSettings.tsx",
+      "states": "SMS Settings inline → SmsProviderPanel (Keep in Touch/Twilio/custom modes); Email Settings/EmailDiagnostics/test receipt; Notification Logs and attempt drawer; saved vs unsaved configs; editing locks, read-only checks, explicit live-send confirmations",
+      "findings": "MSG-086, MSG-087, MSG-088, MSG-090, MSG-093, MSG-112, MSG-118",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/permissions",
+      "target": "Redirect → /admin/users?area=permissions (or roles)",
+      "states": "Built-in/custom selected role; permissions matrix, optional tooltip, revision, changed draft, unknown role; conflict and confirm save; read-only Superadmin",
+      "findings": "MSG-095, MSG-034, MSG-027",
+      "status": "S — alias"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/integrations",
+      "target": "Redirect → /admin/settings?area=integrations",
+      "states": "Service chooser; Storage local/object panel; Twilio readiness/credentials drawer; email moved link; saved-config connection checks/results; clear configuration confirmation; locked configuration",
+      "findings": "MSG-087, MSG-091, MSG-092, MSG-086",
+      "status": "S — alias"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/system-users",
+      "target": "Redirect → /admin/users?area=system",
+      "states": "User counts, filters, effective permissions drawer; activation/deactivation and protected-owner restrictions; permanent staff deletion impact/handoffs/receipt lookup/cleanup; original-proof history reconciliation; unknown dependency blockers",
+      "findings": "MSG-095, MSG-097, MSG-098, MSG-034",
+      "status": "S — alias"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin",
+      "target": "Redirect → /admin/dashboard",
+      "states": "Signed-out and wrong-role Guard redirects; auth/session loading and retry states shared",
+      "findings": "MSG-021, MSG-022, MSG-027",
+      "status": "S — alias, no independent page"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/dashboard",
+      "target": "clinic.tsx → Dashboard / PatientBookingNotices",
+      "states": "Overview loading/error/stale with last available data; appointment rows and expanded ticket; activity empty/feed; average-wait help; patient confirmation list",
+      "findings": "MSG-036, MSG-037, MSG-047, MSG-027",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/clinic",
+      "target": "components/ClinicSettings.tsx",
+      "states": "Details; Locations; Staff; Policies; Activity History; clinic/contact/format edit dialogs; location hours copy and linked-session impact review; clinical profile/locations activation; QR and schedule links",
+      "findings": "MSG-064, MSG-065, MSG-066, MSG-067, MSG-075, MSG-035",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/clinics",
+      "target": "resources.tsx → ResourcePage(clinics); clinic.tsx → DoctorClinics for doctor",
+      "states": "Search/filter/empty/loading/error; linked locations; status/ownership restrictions; add Clinic Admin wizard; bulk status/QR results; view details and edit path",
+      "findings": "MSG-012, MSG-015, MSG-016, MSG-030, MSG-060, MSG-075, MSG-115",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/branches",
+      "target": "Redirect → /admin/clinic?section=locations (+ saved clinic/query context)",
+      "states": "Details; Locations; Staff; Policies; Activity History; clinic/contact/format edit dialogs; location hours copy and linked-session impact review; clinical profile/locations activation; QR and schedule links",
+      "findings": "MSG-064, MSG-065, MSG-066, MSG-067, MSG-075, MSG-035",
+      "status": "S — alias"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/users",
+      "target": "Redirect → /admin/clinic?section=staff (+ saved clinic/query context)",
+      "states": "Details; Locations; Staff; Policies; Activity History; clinic/contact/format edit dialogs; location hours copy and linked-session impact review; clinical profile/locations activation; QR and schedule links",
+      "findings": "MSG-064, MSG-065, MSG-066, MSG-067, MSG-075, MSG-035",
+      "status": "S — alias"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/staff",
+      "target": "Guard → /admin/dashboard",
+      "states": "Restricted before Portal renders; do not attribute Superadmin diagnostics to Clinic Admin",
+      "findings": "Reviewed — no page copy rendered; shared auth errors only",
+      "status": "S — denied-route redirect, no runtime access attempt"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/patients",
+      "target": "resources.tsx → ResourcePage(patients)",
+      "states": "List and filters; new/edit profile per role; registration-success notice; read-only doctor create restriction; drawer visits/activity/documents, permission/loading/empty/errors; complete/cancelled export",
+      "findings": "MSG-040, MSG-073, MSG-074, MSG-027, MSG-028",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/masters",
+      "target": "Guard → /admin/dashboard",
+      "states": "Restricted before Portal renders; do not attribute Superadmin diagnostics to Clinic Admin",
+      "findings": "Reviewed — no page copy rendered; shared auth errors only",
+      "status": "S — denied-route redirect, no runtime access attempt"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/appointments",
+      "target": "clinic.tsx → Appointments; components/appointments/*",
+      "states": "Upcoming/past/all; list/calendar; calendar day panel; advanced filters; expanded rows, details/ticket; cancel, absent, check-in/out, shift, re-enter and reschedule; bulk selection/results; CSV/PDF/print/email; stale/permission/empty/error states",
+      "findings": "MSG-038, MSG-047, MSG-048, MSG-049, MSG-050, MSG-051, MSG-052, MSG-053, MSG-054, MSG-117",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/queue",
+      "target": "components/queue/SessionQueue.tsx",
+      "states": "Staff/patient branches; selected doctor/date/session; snapshot-only sessions; pending call preview, paused/absent/present; blocked first reservation; individual check-in/out; duration editor; legacy requests; status/search/sort; disconnected/stale/empty/failed",
+      "findings": "MSG-055, MSG-056, MSG-057, MSG-058, MSG-059, MSG-051",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/reports",
+      "target": "components/reports/ReportsWorkspace.tsx; clinic.tsx → LegacyReports",
+      "states": "Live report families/KPIs/trends/comparison; templates and saved views; filters; row detail; all-results exports; operational detail; Communication Usage totals/breakdowns, empty/error and record drawer (SA/CA only)",
+      "findings": "MSG-076, MSG-077, MSG-078, MSG-079, MSG-031",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/settings",
+      "target": "/admin/clinic",
+      "states": "Retired settings redirects. CA legacy area=templates/events/notifications → Notifications. Doctor/receptionist/patient use Profile; not a second settings editor",
+      "findings": "MSG-062, MSG-027",
+      "status": "S — alias"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/audit",
+      "target": "Guard → /admin/dashboard",
+      "states": "Restricted before Portal renders; do not attribute Superadmin diagnostics to Clinic Admin",
+      "findings": "Reviewed — no page copy rendered; shared auth errors only",
+      "status": "S — denied-route redirect, no runtime access attempt"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/qrs",
+      "target": "resources.tsx → ResourcePage(qrs), BookingQrCard",
+      "states": "QR cards, public link origin, readiness check; copy/download/display; regenerate confirmation/result; image failed/retry; schedule and capacity help",
+      "findings": "MSG-075, MSG-107, MSG-045",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/book",
+      "target": "clinic.tsx → Booking; components/booking/*",
+      "states": "Staff advance/walk-in and patient branches; visit/patient/review stages; current scope and membership checks; required mobile proof; new-patient dialog where allowed; next-date search; owner profile recovery; session editor; issued-ticket completion",
+      "findings": "MSG-039, MSG-040, MSG-041, MSG-042, MSG-043, MSG-044, MSG-045, MSG-046, MSG-114, MSG-100",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/availability",
+      "target": "components/SchedulingWorkspace.tsx; resources.tsx; components/schedule/*",
+      "states": "Weekly list and add/edit; compact days/slots; capacity/break/queue tabs; copy, link/unlink, customize weekday/off; multi-location replace; save/partial/uncertain result; whole-schedule deactivate; stale context; read-only role variants",
+      "findings": "MSG-068, MSG-069, MSG-070, MSG-071, MSG-109, MSG-034",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/exceptions",
+      "target": "components/SchedulingWorkspace.tsx; resources.tsx; components/schedule/ScheduleExceptions.tsx",
+      "states": "Date exception list/add/edit; doctor/location/date context; day off/extra interval; impact preview and conflict validation; timing/breaks; legacy contradictory values; deactivate/partial result",
+      "findings": "MSG-072, MSG-028, MSG-034, MSG-068",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/profile",
+      "target": "clinic.tsx → Profile / ProfileEditor",
+      "states": "Own person fields; staff contact verification and password change; owner clinical-profile inactive/reactivate; owned clinic facts; doctor clinic/schedule links; patient My Records drawer, documents and history; save success/error",
+      "findings": "MSG-062, MSG-073, MSG-074, MSG-027, MSG-028",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/demo",
+      "target": "Guard → /admin/dashboard",
+      "states": "Restricted before Portal renders; do not attribute Superadmin diagnostics to Clinic Admin",
+      "findings": "Reviewed — no page copy rendered; shared auth errors only",
+      "status": "S — denied-route redirect, no runtime access attempt"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/templates",
+      "target": "components/NotificationTemplatesPage.tsx; EmailTemplates.tsx",
+      "states": "System-default vs clinic scope; event accordions and activation detail; email/SMS recipient branches (CA email only); filtered group toggles; edit/draft/publish/reset; logo/variables/DLT validation; test dialog real-send vs preview; conflict/discard; owner booking mail outcomes for CA",
+      "findings": "MSG-080, MSG-081, MSG-082, MSG-083, MSG-084, MSG-085, MSG-003, MSG-114",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/communication",
+      "target": "Guard → /admin/dashboard",
+      "states": "Restricted before Portal renders; do not attribute Superadmin diagnostics to Clinic Admin",
+      "findings": "Reviewed — no page copy rendered; shared auth errors only",
+      "status": "S — denied-route redirect, no runtime access attempt"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/permissions",
+      "target": "Guard → /admin/dashboard",
+      "states": "Restricted before Portal renders; do not attribute Superadmin diagnostics to Clinic Admin",
+      "findings": "Reviewed — no page copy rendered; shared auth errors only",
+      "status": "S — denied-route redirect, no runtime access attempt"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/integrations",
+      "target": "Guard → /admin/dashboard",
+      "states": "Restricted before Portal renders; do not attribute Superadmin diagnostics to Clinic Admin",
+      "findings": "Reviewed — no page copy rendered; shared auth errors only",
+      "status": "S — denied-route redirect, no runtime access attempt"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/system-users",
+      "target": "Guard → /admin/dashboard",
+      "states": "Restricted before Portal renders; do not attribute Superadmin diagnostics to Clinic Admin",
+      "findings": "Reviewed — no page copy rendered; shared auth errors only",
+      "status": "S — denied-route redirect, no runtime access attempt"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor",
+      "target": "Redirect → /doctor/dashboard",
+      "states": "Signed-out and wrong-role Guard redirects; auth/session loading and retry states shared",
+      "findings": "MSG-021, MSG-022, MSG-027",
+      "status": "S — alias, no independent page"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/dashboard",
+      "target": "clinic.tsx → Dashboard / PatientBookingNotices",
+      "states": "Overview loading/error/stale with last available data; appointment rows and expanded ticket; activity empty/feed; average-wait help; patient confirmation list",
+      "findings": "MSG-036, MSG-037, MSG-047, MSG-027",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/profile",
+      "target": "clinic.tsx → Profile / ProfileEditor",
+      "states": "Own person fields; staff contact verification and password change; owner clinical-profile inactive/reactivate; owned clinic facts; doctor clinic/schedule links; patient My Records drawer, documents and history; save success/error",
+      "findings": "MSG-062, MSG-073, MSG-074, MSG-027, MSG-028",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/clinics",
+      "target": "DoctorClinicWorkspace → Clinics / Staff / Booking QR",
+      "states": "Assigned clinics listing, public link facts and QR readiness; Staff tab doctor-only creation/assignment limits; Booking QR tab; loading/no-clinics/error; status and scoped records",
+      "findings": "MSG-040, MSG-060, MSG-061, MSG-068, MSG-075",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/branches",
+      "target": "resources.tsx → ResourcePage(branches)",
+      "states": "Assigned location listing; owner-only editor restrictions; inherited contacts; status and details; public URL/QR readiness; pagination and row expansions",
+      "findings": "MSG-030, MSG-035, MSG-075, MSG-109",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/availability",
+      "target": "components/SchedulingWorkspace.tsx; resources.tsx; components/schedule/*",
+      "states": "Weekly list and add/edit; compact days/slots; capacity/break/queue tabs; copy, link/unlink, customize weekday/off; multi-location replace; save/partial/uncertain result; whole-schedule deactivate; stale context; read-only role variants",
+      "findings": "MSG-068, MSG-069, MSG-070, MSG-071, MSG-109, MSG-034",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/exceptions",
+      "target": "components/SchedulingWorkspace.tsx; resources.tsx; components/schedule/ScheduleExceptions.tsx",
+      "states": "Date exception list/add/edit; doctor/location/date context; day off/extra interval; impact preview and conflict validation; timing/breaks; legacy contradictory values; deactivate/partial result",
+      "findings": "MSG-072, MSG-028, MSG-034, MSG-068",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/appointments",
+      "target": "clinic.tsx → Appointments; components/appointments/*",
+      "states": "Upcoming/past/all; list/calendar; calendar day panel; advanced filters; expanded rows, details/ticket; cancel, absent, check-in/out, shift, re-enter and reschedule; bulk selection/results; CSV/PDF/print/email; stale/permission/empty/error states",
+      "findings": "MSG-038, MSG-047, MSG-048, MSG-049, MSG-050, MSG-051, MSG-052, MSG-053, MSG-054, MSG-117",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/queue",
+      "target": "components/queue/SessionQueue.tsx",
+      "states": "Staff/patient branches; selected doctor/date/session; snapshot-only sessions; pending call preview, paused/absent/present; blocked first reservation; individual check-in/out; duration editor; legacy requests; status/search/sort; disconnected/stale/empty/failed",
+      "findings": "MSG-055, MSG-056, MSG-057, MSG-058, MSG-059, MSG-051",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/patients",
+      "target": "resources.tsx → ResourcePage(patients)",
+      "states": "List and filters; new/edit profile per role; registration-success notice; read-only doctor create restriction; drawer visits/activity/documents, permission/loading/empty/errors; complete/cancelled export",
+      "findings": "MSG-040, MSG-073, MSG-074, MSG-027, MSG-028",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/qrs",
+      "target": "resources.tsx → ResourcePage(qrs), BookingQrCard",
+      "states": "QR cards, public link origin, readiness check; copy/download/display; regenerate confirmation/result; image failed/retry; schedule and capacity help",
+      "findings": "MSG-075, MSG-107, MSG-045",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/book",
+      "target": "clinic.tsx → Booking; components/booking/*",
+      "states": "Staff advance/walk-in and patient branches; visit/patient/review stages; current scope and membership checks; required mobile proof; new-patient dialog where allowed; next-date search; owner profile recovery; session editor; issued-ticket completion",
+      "findings": "MSG-039, MSG-040, MSG-041, MSG-042, MSG-043, MSG-044, MSG-045, MSG-046, MSG-114, MSG-100",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/users",
+      "target": "Redirect → /doctor/clinics?area=staff",
+      "states": "Doctor/receptionist/admin tabs according to actual role; direct creation credentials, role/clinic/location assignments; edit doctor schedule tab; bulk invitations/status; account recovery drawer; invitation outcomes",
+      "findings": "MSG-060, MSG-061, MSG-063, MSG-068, MSG-115, MSG-116",
+      "status": "S — alias"
+    },
+    {
+      "role": "Doctor",
+      "url": "/doctor/settings",
+      "target": "/doctor/profile",
+      "states": "Retired settings redirects. CA legacy area=templates/events/notifications → Notifications. Doctor/receptionist/patient use Profile; not a second settings editor",
+      "findings": "MSG-062, MSG-027",
+      "status": "S — alias"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist",
+      "target": "Redirect → /receptionist/dashboard",
+      "states": "Signed-out and wrong-role Guard redirects; auth/session loading and retry states shared",
+      "findings": "MSG-021, MSG-022, MSG-027",
+      "status": "S — alias, no independent page"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/dashboard",
+      "target": "clinic.tsx → Dashboard / PatientBookingNotices",
+      "states": "Overview loading/error/stale with last available data; appointment rows and expanded ticket; activity empty/feed; average-wait help; patient confirmation list",
+      "findings": "MSG-036, MSG-037, MSG-047, MSG-027",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/appointments",
+      "target": "clinic.tsx → Appointments; components/appointments/*",
+      "states": "Upcoming/past/all; list/calendar; calendar day panel; advanced filters; expanded rows, details/ticket; cancel, absent, check-in/out, shift, re-enter and reschedule; bulk selection/results; CSV/PDF/print/email; stale/permission/empty/error states",
+      "findings": "MSG-038, MSG-047, MSG-048, MSG-049, MSG-050, MSG-051, MSG-052, MSG-053, MSG-054, MSG-117",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/queue",
+      "target": "components/queue/SessionQueue.tsx",
+      "states": "Staff/patient branches; selected doctor/date/session; snapshot-only sessions; pending call preview, paused/absent/present; blocked first reservation; individual check-in/out; duration editor; legacy requests; status/search/sort; disconnected/stale/empty/failed",
+      "findings": "MSG-055, MSG-056, MSG-057, MSG-058, MSG-059, MSG-051",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/patients",
+      "target": "resources.tsx → ResourcePage(patients)",
+      "states": "List and filters; new/edit profile per role; registration-success notice; read-only doctor create restriction; drawer visits/activity/documents, permission/loading/empty/errors; complete/cancelled export",
+      "findings": "MSG-040, MSG-073, MSG-074, MSG-027, MSG-028",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/book",
+      "target": "clinic.tsx → Booking; components/booking/*",
+      "states": "Staff advance/walk-in and patient branches; visit/patient/review stages; current scope and membership checks; required mobile proof; new-patient dialog where allowed; next-date search; owner profile recovery; session editor; issued-ticket completion",
+      "findings": "MSG-039, MSG-040, MSG-041, MSG-042, MSG-043, MSG-044, MSG-045, MSG-046, MSG-114, MSG-100",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/qrs",
+      "target": "resources.tsx → ResourcePage(qrs), BookingQrCard",
+      "states": "QR cards, public link origin, readiness check; copy/download/display; regenerate confirmation/result; image failed/retry; schedule and capacity help",
+      "findings": "MSG-075, MSG-107, MSG-045",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/availability",
+      "target": "components/SchedulingWorkspace.tsx; resources.tsx; components/schedule/*",
+      "states": "Weekly list and add/edit; compact days/slots; capacity/break/queue tabs; copy, link/unlink, customize weekday/off; multi-location replace; save/partial/uncertain result; whole-schedule deactivate; stale context; read-only role variants",
+      "findings": "MSG-068, MSG-069, MSG-070, MSG-071, MSG-109, MSG-034",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/exceptions",
+      "target": "components/SchedulingWorkspace.tsx; resources.tsx; components/schedule/ScheduleExceptions.tsx",
+      "states": "Date exception list/add/edit; doctor/location/date context; day off/extra interval; impact preview and conflict validation; timing/breaks; legacy contradictory values; deactivate/partial result",
+      "findings": "MSG-072, MSG-028, MSG-034, MSG-068",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/profile",
+      "target": "clinic.tsx → Profile / ProfileEditor",
+      "states": "Own person fields; staff contact verification and password change; owner clinical-profile inactive/reactivate; owned clinic facts; doctor clinic/schedule links; patient My Records drawer, documents and history; save success/error",
+      "findings": "MSG-062, MSG-073, MSG-074, MSG-027, MSG-028",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Receptionist",
+      "url": "/receptionist/settings",
+      "target": "/receptionist/profile",
+      "states": "Retired settings redirects. CA legacy area=templates/events/notifications → Notifications. Doctor/receptionist/patient use Profile; not a second settings editor",
+      "findings": "MSG-062, MSG-027",
+      "status": "S — alias"
+    },
+    {
+      "role": "Patient",
+      "url": "/patient",
+      "target": "Redirect → /patient/dashboard",
+      "states": "Signed-out and wrong-role Guard redirects; auth/session loading and retry states shared",
+      "findings": "MSG-021, MSG-022, MSG-027",
+      "status": "S — alias, no independent page"
+    },
+    {
+      "role": "Patient",
+      "url": "/patient/dashboard",
+      "target": "clinic.tsx → Dashboard / PatientBookingNotices",
+      "states": "Overview loading/error/stale with last available data; appointment rows and expanded ticket; activity empty/feed; average-wait help; patient confirmation list",
+      "findings": "MSG-036, MSG-037, MSG-047, MSG-027",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Patient",
+      "url": "/patient/book",
+      "target": "clinic.tsx → Booking; components/booking/*",
+      "states": "Staff advance/walk-in and patient branches; visit/patient/review stages; current scope and membership checks; required mobile proof; new-patient dialog where allowed; next-date search; owner profile recovery; session editor; issued-ticket completion",
+      "findings": "MSG-039, MSG-040, MSG-041, MSG-042, MSG-043, MSG-044, MSG-045, MSG-046, MSG-114, MSG-100",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Patient",
+      "url": "/patient/appointments",
+      "target": "clinic.tsx → Appointments; components/appointments/*",
+      "states": "Upcoming/past/all; list/calendar; calendar day panel; advanced filters; expanded rows, details/ticket; cancel, absent, check-in/out, shift, re-enter and reschedule; bulk selection/results; CSV/PDF/print/email; stale/permission/empty/error states",
+      "findings": "MSG-038, MSG-047, MSG-048, MSG-049, MSG-050, MSG-051, MSG-052, MSG-053, MSG-054, MSG-117",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Patient",
+      "url": "/patient/queue",
+      "target": "components/queue/SessionQueue.tsx",
+      "states": "Staff/patient branches; selected doctor/date/session; snapshot-only sessions; pending call preview, paused/absent/present; blocked first reservation; individual check-in/out; duration editor; legacy requests; status/search/sort; disconnected/stale/empty/failed",
+      "findings": "MSG-055, MSG-056, MSG-057, MSG-058, MSG-059, MSG-051",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Patient",
+      "url": "/patient/profile",
+      "target": "clinic.tsx → Profile / ProfileEditor",
+      "states": "Own person fields; staff contact verification and password change; owner clinical-profile inactive/reactivate; owned clinic facts; doctor clinic/schedule links; patient My Records drawer, documents and history; save success/error",
+      "findings": "MSG-062, MSG-073, MSG-074, MSG-027, MSG-028",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Patient",
+      "url": "/patient/settings",
+      "target": "/patient/profile",
+      "states": "Retired settings redirects. CA legacy area=templates/events/notifications → Notifications. Doctor/receptionist/patient use Profile; not a second settings editor",
+      "findings": "MSG-062, MSG-027",
+      "status": "S — alias"
+    },
+    {
+      "role": "Superadmin",
+      "url": "/admin/clinics/:clinicId/:section?",
+      "target": "ClinicSettings → Details / Locations / Staff / Policies / Activity History; qrs/sessions→locations, history→activity-history",
+      "states": "Details; Locations; Staff; Policies; Activity History; clinic/contact/format edit dialogs; location hours copy and linked-session impact review; clinical profile/locations activation; QR and schedule links",
+      "findings": "MSG-064, MSG-065, MSG-066, MSG-067, MSG-075, MSG-035",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "Clinic Admin",
+      "url": "/admin/clinics/:clinicId/:section?",
+      "target": "ClinicSettings → Details / Locations / Staff / Policies / Activity History; qrs/sessions→locations, history→activity-history",
+      "states": "Details; Locations; Staff; Policies; Activity History; clinic/contact/format edit dialogs; location hours copy and linked-session impact review; clinical profile/locations activation; QR and schedule links",
+      "findings": "MSG-064, MSG-065, MSG-066, MSG-067, MSG-075, MSG-035",
+      "status": "S — source reviewed; runtime not exercised"
+    },
+    {
+      "role": "All public visitors",
+      "url": "/",
+      "target": "App.tsx route → named component in states",
+      "states": "Home: landing description, booking help, provider banner and marketing sections; signed-in visitor redirects through Onboarding",
+      "findings": "Reviewed — no technical/status rewrite finding. Marketing prose is not a provider diagnostic.",
+      "status": "S + B — fresh signed-out first-viewport screenshot only; no interaction"
+    },
+    {
+      "role": "Superadmin / Clinic Admin / doctor / receptionist / invited staff",
+      "url": "/sign-in/*?",
+      "target": "App.tsx route → named component in states",
+      "states": "StaffLogin: empty validation; credentials error; busy; passwordSet/passwordReset query notices; registration and patient links",
+      "findings": "MSG-027, MSG-028",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Guest / new Clinic Admin / Superadmin; other signed-in roles",
+      "url": "/register-clinic/*?",
+      "target": "App.tsx route → named component in states",
+      "states": "RegistrationAccount details/review/verify; optional mobile proof; RegistrationIdentity role guards; full ClinicRegistrationWizard; completion; draft/resume/uncertain-create branches",
+      "findings": "MSG-001, MSG-002, MSG-003, MSG-004, MSG-005, MSG-006, MSG-007, MSG-008, MSG-009, MSG-010, MSG-011, MSG-012, MSG-013, MSG-014, MSG-015, MSG-016, MSG-017",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Patient / guest",
+      "url": "/patient-login",
+      "target": "App.tsx route → named component in states",
+      "states": "Email/SMS request, eligible-account message, code error/resend cooldown, optional registration mobile proof, guest booking links",
+      "findings": "MSG-018, MSG-002, MSG-003, MSG-008",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Fictional demo staff / guest",
+      "url": "/demo-login",
+      "target": "App.tsx route → named component in states",
+      "states": "Demo password entry, loading/failed sign-in and fictional-data disclaimer; designated-account-only warning",
+      "findings": "MSG-099",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Guest / public visitor",
+      "url": "/scan-qr",
+      "target": "App.tsx route → named component in states",
+      "states": "PatientScanner camera/upload; unsupported permission and wrong-site/type messages; no QR / invalid image; guest alternative",
+      "findings": "MSG-106",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Guest / public visitor",
+      "url": "/guest-booking",
+      "target": "App.tsx route → named component in states",
+      "states": "GuestClinicFinder clinics/locations/doctor/session stages; online access failure; optional contacts and consent; issued ticket, safe retry, receipt recovery, legacy pending request",
+      "findings": "MSG-044, MSG-100, MSG-101, MSG-102, MSG-114",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Staff",
+      "url": "/forgot-password",
+      "target": "App.tsx route → named component in states",
+      "states": "ForgotPassword form/validation/requested result/error; anti-enumeration response",
+      "findings": "MSG-020, MSG-027, MSG-028",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Invited staff / staff reset",
+      "url": "/set-password",
+      "target": "App.tsx route → named component in states",
+      "states": "SetPassword with or without token; reset flow; error; validated password checklist; saved completion and channel notices",
+      "findings": "MSG-019, MSG-001, MSG-003, MSG-028",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Healthcare provider / guest",
+      "url": "/register-doctor",
+      "target": "App.tsx route → named component in states",
+      "states": "Provider account invitation instruction and sign-in link",
+      "findings": "MSG-113",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Signed-in unonboarded patient / doctor intent / unassigned Clinic Admin",
+      "url": "/onboarding",
+      "target": "App.tsx route → named component in states",
+      "states": "Patient profile editor and consent; provider invitation branch; existing owner redirection; loading/account creation failure",
+      "findings": "MSG-113, MSG-027, MSG-028",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Clinic staff only; other roles guarded",
+      "url": "/check-in",
+      "target": "App.tsx route → named component in states",
+      "states": "Staff access verification; camera/upload/paste; QR invalid/stale/revoked; already checked in, cannot check in; explicit check-in/unknown-result retry; success",
+      "findings": "MSG-106, MSG-051",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Public reception display",
+      "url": "/display/:reference",
+      "target": "App.tsx route → named component in states",
+      "states": "ClinicDisplay invalid/revoked branch QR; queue disconnect hides details; public booking QR fallback; no current sessions; current/next token",
+      "findings": "MSG-105, MSG-107",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Guest and every signed-in role using patient-facing QR entry",
+      "url": "/book/:reference",
+      "target": "App.tsx route → named component in states",
+      "states": "QR resolution loading/failure; guest booking or signed-in patient-facing Booking (no workspace management tools); fictional demo branch; account/profile loading",
+      "findings": "MSG-103, MSG-100, MSG-101, MSG-102, MSG-041, MSG-043, MSG-044, MSG-045, MSG-046, MSG-114",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Public visitor / any role",
+      "url": "/:clinicSlug/:branchSlug",
+      "target": "App.tsx route → named component in states",
+      "states": "PublicClinicPage location resolution; booking/display mode; doctor lists and actual/planned averages; opening hours; public live sessions; no online access; factual/demo notices",
+      "findings": "MSG-104, MSG-105, MSG-099, MSG-107",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Public visitor / any role",
+      "url": "/:clinicSlug",
+      "target": "App.tsx route → named component in states",
+      "states": "Same page at Clinic Group level; location chooser, public identity/doctor averages/opening hours; clinic not available/error/empty; booking/display links",
+      "findings": "MSG-104, MSG-099, MSG-107",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "Any visitor",
+      "url": "unmatched route (fallback)",
+      "target": "App.tsx route → named component in states",
+      "states": "Page Not Found / This page is unavailable / Return Home; one- and two-segment unknown routes are consumed first by public clinic routes",
+      "findings": "Reviewed — no change finding; concise actionable fallback.",
+      "status": "S — source reviewed; no interactive browser exercise"
+    },
+    {
+      "role": "As permitted at target",
+      "url": "/sign-up/*?",
+      "target": "Redirect → With ticket → /set-password?token=…; otherwise /patient-login",
+      "states": "Alias has no independent message UI; target auth/permission/loading/error branches apply",
+      "findings": "Reviewed — alias only; findings belong to destination",
+      "status": "S — alias"
+    },
+    {
+      "role": "As permitted at target",
+      "url": "/reset-password",
+      "target": "Redirect → With token → /set-password?flow=reset&token=…; otherwise /forgot-password",
+      "states": "Alias has no independent message UI; target auth/permission/loading/error branches apply",
+      "findings": "Reviewed — alias only; findings belong to destination",
+      "status": "S — alias"
+    },
+    {
+      "role": "As permitted at target",
+      "url": "/login",
+      "target": "Redirect → /sign-in",
+      "states": "Alias has no independent message UI; target auth/permission/loading/error branches apply",
+      "findings": "Reviewed — alias only; findings belong to destination",
+      "status": "S — alias"
+    },
+    {
+      "role": "As permitted at target",
+      "url": "/register",
+      "target": "Redirect → /patient-login",
+      "states": "Alias has no independent message UI; target auth/permission/loading/error branches apply",
+      "findings": "Reviewed — alias only; findings belong to destination",
+      "status": "S — alias"
+    },
+    {
+      "role": "As permitted at target",
+      "url": "/admin/doctors",
+      "target": "Redirect → /admin/staff?tab=doctors",
+      "states": "Alias has no independent message UI; target auth/permission/loading/error branches apply",
+      "findings": "Reviewed — alias only; findings belong to destination",
+      "status": "S — alias"
+    }
+  ],
+  "nested": [
+    [
+      "All roles",
+      "Auth access / role guards",
+      "Loading secure access, missing session, password-required gate, unauthorized redirects, status retry; signed-in direct public booking stays patient-facing",
+      "S",
+      "MSG-021, MSG-022, MSG-027"
+    ],
+    [
+      "Superadmin vs Clinic Admin",
+      "Shared /admin prefix",
+      "Guard denies SA-only destinations to CA; Clinic Admin templates email-only and owner history; CA’s doctor profile does not make it a Superadmin; demo flags not assumed unrestricted",
+      "S",
+      "MSG-080, MSG-082, MSG-095, MSG-099"
+    ],
+    [
+      "All workspace roles",
+      "Responsive shell / menus",
+      "Mobile sidebar and scrim, collapsed desktop navigation, profile menu, shortcuts, location menu and record search; HelpTip hover/focus/Escape/touch and OverflowText clipping branch examined in source only",
+      "S; no viewport, keyboard, touch or assistive-tech exercise",
+      "MSG-024, MSG-025, MSG-026, MSG-030, MSG-031, MSG-032, MSG-033, MSG-034, MSG-035"
+    ],
+    [
+      "All forms",
+      "Field and tabbed validation",
+      "FormField error/helper; native validity adapter; FormTabs errors on hidden tabs; email/phone/date/range/PIN and password checklist; unknown lookup names and partial options",
+      "S; no interactive validation submissions",
+      "MSG-028, MSG-030, MSG-109, MSG-110"
+    ],
+    [
+      "All dialogs",
+      "Dialog/drawer discard and pending states",
+      "AppDialog dirty/pending, ConfirmDialog danger, workspace leave/history guards; secret-field blank/preserve descriptions; draft-storage unavailable vs saved; unknown writes and receipt reconciliation",
+      "S; no mutations",
+      "MSG-006, MSG-015, MSG-034, MSG-097, MSG-100"
+    ],
+    [
+      "Staff + patient appointment owners",
+      "Expanded appointment / calendar day drawer",
+      "Details with factual reference/session/duration, notes, history; ticket renderer screen/HTML/PDF; clipboard/export errors; email recipients/results; privacy-hidden revoked appointment",
+      "S; ticket fixtures not opened in live app",
+      "MSG-048, MSG-049, MSG-051, MSG-053, MSG-054, MSG-117"
+    ],
+    [
+      "Staff + permitted patient/guest",
+      "Action-specific dialogs",
+      "Cancel/reason, absent, shift one place later, re-enter, reschedule new token, explicit call release; no-show/called/in-progress/complete restrictions and stale snapshot",
+      "S; no live transitions",
+      "MSG-050, MSG-051, MSG-055"
+    ],
+    [
+      "Staff + exports users",
+      "Bulk and partial completion",
+      "Page-only selection; partial status/invitation/cancel outcomes; six-failure toast cap + detail; all-or-nothing tickets; full filtered CSV cancellation/change verification",
+      "S + T (isolated export and bulk-summary helpers)",
+      "MSG-052, MSG-053, MSG-068, MSG-115, MSG-117"
+    ],
+    [
+      "Staff schedules",
+      "Weekly schedule nested editors",
+      "Doctor/location context refreshed before edit; weekly/day/slot; capacity/break/queue tabs; follow/copy/custom day/off; outside hours; preview/deactivate/partial and uncertain saves",
+      "S; no create/save/copy/link operations",
+      "MSG-068, MSG-069, MSG-070, MSG-071, MSG-072, MSG-109"
+    ],
+    [
+      "Clinic Admin / Superadmin",
+      "Registration completion variants",
+      "No doctor vs doctor custom sessions vs linked owner hours; missing branches; invitation sent/failed/notRequired; notice props; public-origin readiness",
+      "S; no registration or dispatch",
+      "MSG-015, MSG-016, MSG-017, MSG-061"
+    ],
+    [
+      "Staff / patient scope",
+      "Patient drawer nested tabs",
+      "Visits, activity, document empty/error/restricted branches; scoped counts vs no records; private file validation and upload/download failure; patient My Records; doctor registration restriction",
+      "S; no patient records or files read",
+      "MSG-040, MSG-073, MSG-074"
+    ],
+    [
+      "Superadmin / Clinic Admin",
+      "Notifications nested states",
+      "System default/clinic overrides; optional/security off; read-only activation; event group hidden-filter scope; status details; draft/published/reset/conflict/unknown variables; real-message confirm vs preview-only security; BookingMailOutcomes rows",
+      "S + T fictional channel/mail rendering (see test limitations)",
+      "MSG-001, MSG-003, MSG-080, MSG-081, MSG-082, MSG-083, MSG-084, MSG-085"
+    ],
+    [
+      "Superadmin",
+      "Provider diagnostics",
+      "SMS Keep in Touch protocol and plus-convention help; Twilio separate security credentials; encrypted storage warning; SMTP saved configuration/test/receipt; check results passed/failed/not_verified/source/time; partial/legacy logs",
+      "S; no connectivity checks, credential access or live tests",
+      "MSG-086, MSG-087, MSG-088, MSG-090, MSG-091, MSG-092, MSG-093, MSG-112, MSG-118"
+    ],
+    [
+      "Superadmin",
+      "User removal nested drawers",
+      "Impact fetch/blocked/unknown role; visit/clinic handoff previews and commit; lost response/receipt status; pending erasure cleanup; legacy signed-proof/unresolved ownership; all retained as safety-relevant",
+      "S; not opened on live users",
+      "MSG-097, MSG-098"
+    ],
+    [
+      "Superadmin / Clinic Admin",
+      "Report nested variants",
+      "Family filters; compare; zero vs unavailable; row details; charts empty/stale/error; saved report absent; usage record timestamp/reason/http metadata; best-effort history; CSV filters changed during export",
+      "S; no private report API requested",
+      "MSG-076, MSG-077, MSG-078, MSG-079"
+    ],
+    [
+      "Guest",
+      "Receipt completion and management",
+      "Immediate ticket vs earlier pending request; optional contact; no storage, uncertain save, failed refresh; safe retry, shifted/re-entered/cancelled/rescheduled receipt; session not promised exact time",
+      "S; no bookings created or receipt secrets read",
+      "MSG-100, MSG-101, MSG-102, MSG-043, MSG-050, MSG-114"
+    ],
+    [
+      "Public visitor",
+      "Website server response",
+      "lib/public-pages server error send() reviewed; startup errors/log-only exceptions excluded; route metadata not mistaken for visible content; no published URL lookup or production request",
+      "S",
+      "MSG-108"
+    ]
+  ],
+  "backend": [
+    [
+      "auth/SecurityChannelNotice.tsx + Users securityChannelSummary",
+      "registration/start/resend/mobile and invitation/password completion → structured channels → copy map",
+      "authRequest returns parsed response; channel outcome enum/destination becomes UI text. Server logs and raw transport responses are not a message inventory by themselves.",
+      "MSG-001, MSG-002, MSG-003, MSG-017, MSG-019, MSG-061"
+    ],
+    [
+      "lib/auth-request.ts → auth/errors.ts / friendlyError.ts",
+      "safe AuthRequestError data/status/code → authErrorMessage or component error string",
+      "RegistrationMobileProof renders Error.message directly, but ordinary auth requests have already translated server errors. Do not equate this with raw provider exposure.",
+      "MSG-004, MSG-027, MSG-110"
+    ],
+    [
+      "lib/api.ts → shared generated API client customFetch → resources ErrorNotice",
+      "api-server/src/lib/http.ts errors() → 4xx body or generic 5xx → friendlyError",
+      "Safe short human field validation/conflict text survives; JSON/HTTP/SQL/stack/long strings may be replaced. Exact invalid-input wording depends on validation issue paths and runtime input.",
+      "MSG-027, MSG-110, MSG-111"
+    ],
+    [
+      "Users.tsx recovery.data.message / resources.tsx recovery.data.message",
+      "POST /users/:id/password-reset at api-server/src/routes/resources.ts:934 → requestStaffReset → 202 message",
+      "Backend response is “Password recovery email requested.” The frontend promise “without sending email” conflicts with this source trace. Request action was not executed.",
+      "MSG-063, MSG-116"
+    ],
+    [
+      "IntegrationConnectionCheck checks.map(c → c.message)",
+      "api-server/src/lib/integration-checks.ts + routes/integrations.ts saved configuration check",
+      "Every passed/failed/not_verified safe result is actually rendered in the diagnostic drawer. Source/time are useful operator evidence, not inbox proof.",
+      "MSG-086, MSG-087, MSG-088, MSG-091"
+    ],
+    [
+      "EmailProviderPanel / SmsProviderPanel test result; EventTemplateTest result",
+      "routes/integrations.ts → safe provider_accepted/rejected/unknown/not_dispatched category/message",
+      "Only explicit test actions send; not exercised. These visible operator diagnostics differ from ordinary registration copy.",
+      "MSG-085, MSG-088, MSG-093, MSG-112"
+    ],
+    [
+      "AppointmentTicket and GuestBooking → confirmationEmailMessage",
+      "appointment response confirmationEmail enum → local five-outcome mapper",
+      "Independent booking success plus accepted, unavailable, not_attempted/uncertain, disabled or no_recipient email state; server-only strings not indiscriminately inventoried.",
+      "MSG-114, MSG-100"
+    ],
+    [
+      "BookingMailOutcomes STATUS_COPY[item.status]",
+      "management booking-mail-outcomes read → local status label/detail map",
+      "Confirmed mount is CA EmailTemplates booking event. Fictional test renders cover pending/sending/accepted/unknown/configuration and other states.",
+      "MSG-082, MSG-083"
+    ],
+    [
+      "SessionSelector / queue / weekly schedule and linked impact panels",
+      "API reason / structured session outcome / failed-label message rendered in local row or HelpTip",
+      "Human domain reasons are intentionally visible. Not all dynamic reasons can be enumerated without input; pattern, sink and trigger are recorded in source index. No raw live reason was fetched.",
+      "MSG-030, MSG-044, MSG-055, MSG-068, MSG-072"
+    ],
+    [
+      "CommunicationUsage Detail / NotificationLogs Drawer",
+      "observed metadata reason, status, httpStatus, attribution and retained details → drawer fields",
+      "HTTP status and IDs really are UI fields here, unlike logged exceptions. CA sees usage schema, SA also sees provider logs; not public or ordinary clinical staff.",
+      "MSG-078, MSG-118"
+    ]
+  ],
+  "validation": [
+    "Ran one isolated Node test batch (no browser, database, credentials or live provider calls): node --test artifacts/clinicflow/src/lib/friendly-error.test.mjs artifacts/clinicflow/src/auth/security-notifications.render.test.mjs artifacts/clinicflow/src/components/booking-mail-outcomes.test.mjs artifacts/clinicflow/src/components/appointments/filtered-export.test.mjs artifacts/clinicflow/src/components/permissions-logo.test.mjs.",
+    "Result: 27 tests, 24 passed, 3 failed. Passing checks include fictional accepted/unknown/unavailable channel feedback; optional mobile separate from email proof; every booking-mail status and error/empty states; actionable auth/network/rate-limit errors; bulk summary and complete/partial/cancelled export helper semantics. These are unit/static-render confirmations, not browser or live delivery evidence.",
+    "FAILED: “required event rules keep booking optional and security controls non-optional” — source assertion expected r.row.required && group.optional.length > 0 in NotificationTemplatesPage. It does not match current source. No permission behavior or delivery was exercised by that assertion.",
+    "FAILED: “queue clear-all resets optional list filters, not required session or page size” — source assertion in filtered-export.test.mjs expected chips={filterChips}, which does not match current source. This failure does not itself prove clear-all behavior is wrong. No queue state was mutated.",
+    "FAILED: “explains restriction-only semantics and Super Admin lockout protection” — source assertion expected filter(r => r !== SUPER_ADMIN) in AccessRules. Current editor instead displays a read-only Superadmin branch. No claim of full permission acceptance is made.",
+    "No existing tests or application code were changed to make these checks pass. Source-only and unexercised branches remain labelled. No workflow restart is needed for report-only files; no production/UAT requests, provider checks, notifications, auth/account edits, registrations, bookings or file uploads were performed.",
+    "A fresh signed-out screenshot of / confirmed the public landing’s first viewport rendered, with no browser errors reported. This is the only B observation; it did not interact with controls or exercise any signed-in, delivery, failure or nested-dialog state."
+  ]
+}

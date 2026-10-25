@@ -1,0 +1,1350 @@
+[
+  {
+    "file": "artifacts/api-server/src/lib/http.ts",
+    "sha256": "01176efd73ea13e904ca24f4e161dd66fbb9a76c714e284413b72346eb5210b3"
+  },
+  {
+    "file": "artifacts/api-server/src/lib/integration-checks.ts",
+    "sha256": "540ef67e3e2ab969934c7563b12084eb17ca7bc4d74eebc3d348eb20a1e2c1ae"
+  },
+  {
+    "file": "artifacts/api-server/src/routes/auth.ts",
+    "sha256": "e4360f1aeca7d3751fda62faadeaaca81ef61ce3a66b2d2c82fe5df4f6a72ee8"
+  },
+  {
+    "file": "artifacts/api-server/src/routes/integrations.ts",
+    "sha256": "e9d75861796198455a8c3b71f1fdc1e99bf02b2617e5c2b38ed756a3231dd32e"
+  },
+  {
+    "file": "artifacts/api-server/src/routes/resources.ts",
+    "sha256": "07650c79a460146e16c4f1eb8bf8b2eb1e270910539bcef81c8412b439b41a0b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/App.tsx",
+    "sha256": "2bf755ec1b0f40ea551f891372139c5b489cc7895644adb4c1033316adc99951"
+  },
+  {
+    "file": "artifacts/clinicflow/src/CheckIn.tsx",
+    "sha256": "b028631a947a484154ca5f1c67412500016706fd1a6ce8c3979b7b42e7ecece7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/Users.tsx",
+    "sha256": "a89e6d19b718d15869e154e6d3f1de888153543b5924a775092a1ad8fe894fc7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/AuthAccess.tsx",
+    "sha256": "265b07a9fa5f3d9494b09adf261b2d9d79d757c389578869ed81199273eedc8c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/AuthShell.tsx",
+    "sha256": "5bfb1ce2585748f3aef7f1e0822cb8f2efadf7d62db1340375fca7e775b5a34a"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/DemoLogin.tsx",
+    "sha256": "fa4d5692d2d9b6c9d97c2a007bde2c838aef8883036822e1814371c6b613e126"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/PasswordFlows.tsx",
+    "sha256": "b5b08d0149b94e8e85a170e4974581556879eeb6115f135b7b5c8e603a690125"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/PatientLogin.tsx",
+    "sha256": "82f7a834bbce5110839cfc73dbde2d724f089bfeeb69fd96900d15d17e335c19"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/RegistrationMobileProof.tsx",
+    "sha256": "b9b8d090ead02b9772963936ab2a3e6692feb95e9dcd28e500501c3cd306d618"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/SecurityChannelNotice.tsx",
+    "sha256": "9f6c9f7e659fa70aeb8000a739778fdb55c2dec00d71ec40b3ab8c40e1b07d82"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/StaffLogin.tsx",
+    "sha256": "5c8aba9936c9f9e720c6f832763670e36a5c3aafd567a4d2e28d91d9a71f9b6b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/errors.ts",
+    "sha256": "960e2ef22b1c5e5268a055fc32367d5779d51387cb1c1f1e69d06b23f35b7581"
+  },
+  {
+    "file": "artifacts/clinicflow/src/auth/native-auth.tsx",
+    "sha256": "4e1322cf059d53b96aba0f91a1975bc437e97ee5d4c0d1ed1016f2ec64eaf435"
+  },
+  {
+    "file": "artifacts/clinicflow/src/branding.ts",
+    "sha256": "3f1678ecf3d1e12c2bf0a56046a19cb97653dab421280411c2d469804b88098b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/clinic.tsx",
+    "sha256": "c746b6f2063ffea15b0a540e70169cc73f96cfdc54684d31b748b27945efba9f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/AccessRules.tsx",
+    "sha256": "b66c999c5ef0c60139e4974a3e8a6e9b5692bfc538be4359e19df078af7af76e"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ActionLabel.tsx",
+    "sha256": "aba6ffdd5769e59cb5c673828d41df1e9c4212361a7178f5a452907bfa44ea82"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/AddressFields.tsx",
+    "sha256": "ae5ff6cc9447023280b18b136ec80460ed4a299325846bea329e223a5293941b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/AdminListing.tsx",
+    "sha256": "000d06d4274ee7e013609da4df808afa80cab7759b1187eb830ec35fef5f4857"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/AppDialog.tsx",
+    "sha256": "7cbe23e13a670b656508f9c8bbad9f5be26db32eab1a53ec33aaf7a759d027bf"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/AssignmentSummary.tsx",
+    "sha256": "1672d8ac0a684e65f88b7b1e4c1125087ab8d4faca54ff83b2f515dfa4aabc13"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/BookingMailOutcomes.tsx",
+    "sha256": "a69f8cd116e5ec23a56755ae19f1148669e30bc9ebd9eee2efc18a6b57c87439"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/BookingSteps.tsx",
+    "sha256": "ec4aad69d82b4d81f9f246fd668755f29c7d85c2fd9eb7ffa44430b65818bd68"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/BrandLogo.tsx",
+    "sha256": "909c86db46780437920cc97fe647f000a3e61cc9bf00d1e6d33909679ed62898"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/CapabilityState.tsx",
+    "sha256": "3a2dfb7ccde62e9c8a08b85808b9227a0d6cad0d07fc0decaaf5802417860280"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/CareLookup.tsx",
+    "sha256": "d5f39987ba1f7f0621dc9b0b73fbd57d00a6295dc87eb27197f32408d6bedae4"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ClinicAdminOnboarding.tsx",
+    "sha256": "a4d667788ab4d77e3b39b7ffb64e112e9f42d4d789df49ce80bfc5ceb602d2d3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ClinicDisplay.tsx",
+    "sha256": "6a36b677d3251dea749646b2dbcb6c0ef14b6f169f5994a2038feca2f27e1aee"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ClinicMetadataFields.tsx",
+    "sha256": "e795e557110faac8dbe266c06285570ccf93beb1e80b22a78169c05a952b0b56"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ClinicRegistration.tsx",
+    "sha256": "e22730edc3ebf52b35f72cc495a8257d64a86349a29a269e5d3a1e6bac4118ea"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ClinicRegistrationComplete.tsx",
+    "sha256": "b2074cd69bd23635e9451165b813b4b884c568ba06586b3444ceeae1f901e186"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ClinicRegistrationHours.tsx",
+    "sha256": "0e1987d436e4867c48b994ce2d00b863b7156f71444971b0ddf8c5042985e464"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ClinicRegistrationWizard.tsx",
+    "sha256": "78902e30a036626fa61c97cd06570b082a034d467347901db5a9e8684d27c3b7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ClinicSettings.tsx",
+    "sha256": "f3650d415be1ce89fc69827b489686bb00123a121548844cf066642abde9671d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/CommunicationSettings.tsx",
+    "sha256": "7760fe55160585680821090435ffc3f61e5bf1310e17920703c1d6d77d7c2350"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/CommunicationUsage.tsx",
+    "sha256": "42f2e40366f31d165fe4e01af663bc361c0e71044cce2b05652f57155d75db2b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ConfirmDialog.tsx",
+    "sha256": "91a1ff4d691f7118d9eb7574fda868059ce7a8dd35c8f702248678132c78f10d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/CustomRolePermissions.tsx",
+    "sha256": "09d9c9381d729aabf53404f7c07c516262eca2e3fcf4ef9e9f367b7da9f02dfb"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/CustomRoles.tsx",
+    "sha256": "0d32f2a38afe6dc2d692646d8a077ddf4e7c129106189dbed5bb23cb9fbe879b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/DateFormatInput.tsx",
+    "sha256": "9133cc0a79df40fd0bb9e316b6ed091b376159b17cd1b7f1645a4d172c1ca65f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/DateRangeInput.tsx",
+    "sha256": "1535b82d73bcbcd4caaec921ede6aa1feb59877d7ba98fca0be96f83f66f6542"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/DateTimePreferences.tsx",
+    "sha256": "cbc040de195b601a303033d3c91624ab6fc86c0417476f8de375bae85b74113d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/DemoClinicManagement.tsx",
+    "sha256": "67d3c270281506dd68f4a799933e0aa4016523c7c0173abe01d7bf939406da92"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/DocumentClinicLookup.tsx",
+    "sha256": "66721ed845116fdfb944ecf6c3249ed1183419ab4b73cae2ec905c37d7af5d3d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/EmailDiagnostics.tsx",
+    "sha256": "ba52ceb52aa12701011488c7bac3431efa1c10a9b8c03dd5603b8a22a140070e"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/EmailInput.tsx",
+    "sha256": "4c040702f286a9e4d7b997d79c1b54a8410f00e5992aa63a248059d0c797e968"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/EmailProviderPanel.tsx",
+    "sha256": "5aac9dfa5f059f11d03da2d20bcefed95ecb1f915df9a6a210004ad3e67160b4"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/EmailTemplates.tsx",
+    "sha256": "6e7ac88c8b236de56b4314dbd45a051119e06b7b9962be65acbb5ca57e8f703c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/EmptyState.tsx",
+    "sha256": "32f5da25fb9db7daf70ff55f52d9a11eb413770bd287f46aece7701129c3586d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/EventControls.tsx",
+    "sha256": "2b210024a7dca1aee6759003e427bb7230f9f9b14ed6c188742289e5ee1de39b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/EventTemplateTest.tsx",
+    "sha256": "43bb0d52e50f30f70bd51006cd6ca9599903e3bc7882a454de06115047db8375"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/FilterNames.tsx",
+    "sha256": "f6b481ef2fe3dbc7319aecee852ba345bd68ddfc25f5c5c9c38259b9b25f66ad"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/FormActions.tsx",
+    "sha256": "d63c07b226a1e2426a125e99bd225bf61123ef8791bf8722d6e828eb71730857"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/FormField.tsx",
+    "sha256": "1af830378c162af7d18646db87431ef9aa9cbf6c1c8a3afaae149815e61cce3b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/FormSection.tsx",
+    "sha256": "1aedff135df6dd5eecfe4467d151b8b1082214e5dd00a8f8eada0b32cf3d5c72"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/FormTabs.tsx",
+    "sha256": "c7602b5aa71d27abf2972ac24bcbb6072eca3e69685ea1097dfca1f3ef1b1d1f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/GuestBooking.tsx",
+    "sha256": "1804ef2e0fcbe1a40823870234fa97c9325371cf12672b7f77b0434a0236c9a2"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/GuestClinicFinder.tsx",
+    "sha256": "c1ad5f8193c0977a1ce72f63f7e73f4aef2cb582e7370210338ea213415942cf"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/HelpTip.tsx",
+    "sha256": "26bca0de5041cd553cf86a88c8146973443dd7e4a49f5c6fce3b4a3f3a000857"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/HistoryReconciliationReview.tsx",
+    "sha256": "2f9b86ba26981b62f09463dbcad77a3ae1075422c858c57835da12467d9aa8ea"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/HoursWarning.tsx",
+    "sha256": "438d4d1a07363d949fa8807da2dd75b012f165abb7423201fac5c8c9a9266fd2"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/IconAction.tsx",
+    "sha256": "2d0342c2f2ac9951d1f99d54bfa0216e0159e5bae80e89b6c045e43c812cc871"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/InheritedClinicSummary.tsx",
+    "sha256": "db3807bd9ffc048d8ed21c5b086a93ba9d936f2bc62f5f2046a1bb5bd2af79fb"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/IntegrationConnectionCheck.tsx",
+    "sha256": "cf5354b7d8ab4b099b7ce954c8436fef94637c64bea0ae9177cf02eab6891122"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/IntegrationEditor.tsx",
+    "sha256": "1125f90d6c1bff66dbf66da0c061f1ad640c4ed7cbce8aaa995154f7c6a976b1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/IntegrationSettings.tsx",
+    "sha256": "151a75107abe23d327c7b9902bd7cc5e84bbee504a00a44d16b507f69e66bbba"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/LinkedScheduleControls.tsx",
+    "sha256": "bfe9c14ceb4acde88488c6802defeb688e917aaaf2b6cfd92b1760f7516476b0"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ListingControls.tsx",
+    "sha256": "23cbc9efd1869b9a2601e728325b19883eddab14dd5476e6fd871eb9ae19d30a"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ListingViewControls.tsx",
+    "sha256": "24c9bdd810cf53ff21009e21394b2338823a0d03273bc0e1b09629982bc0a79a"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/LiveSearchInput.tsx",
+    "sha256": "7cec57af0fd861f0769903cd42668d96a3a95df322f6641e96a8f65d8355dfe2"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/LoadingButton.tsx",
+    "sha256": "5bd52f60a5568ec6558ae45a4ed72ed04a1097d67bd7e5f8eb2de2e69ccc6cec"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/LocalOptionPages.tsx",
+    "sha256": "694c92a9ae12143b00e9bd623ff3a73fbe4499277cafd2f4e1fee93d613c314b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/LocationMenu.tsx",
+    "sha256": "dc19b3b515baf2977525e7088f700ee2708b37fdfaf66c9256d5e34b4f8f328e"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/LookupReadiness.tsx",
+    "sha256": "06daea5265ae7634bfb66e711e89bb379c1441475601e97dc53aa8b5f7a56c43"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/NotificationEventAccordion.tsx",
+    "sha256": "03b54a270381b3bd5fe1373a68846d8e324afd3b5757ebb9942ec8f703b546df"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/NotificationInfo.tsx",
+    "sha256": "0321f9b437fecc1d17f513df544efbdde34a7476dadd210d59b86b474b363c3a"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/NotificationLogs.tsx",
+    "sha256": "bd91e46369950a1d4671eedb6a4e454ede0c4b505a684f6cd6f50c7216184e0a"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/NotificationSmsSettings.tsx",
+    "sha256": "5276b569ec1d6a2eb13cbe9089cf571c1c977938e609f53158e02a6830dcb1b7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/NotificationTemplatesPage.tsx",
+    "sha256": "a2753eb10ad8147801574efd96606f29c0724f1dd2fad520d03a3514a9135ae8"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/NotificationsPanel.tsx",
+    "sha256": "2e9eaff621d58453aa279606ecd890a601f5b9ce26cd5686a37d2f7772d2d529"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/OverflowText.tsx",
+    "sha256": "c8efe55c069e3cd0b8dd8e56e6e60397c8d699fc692e0117eac21e88b1e9d2f6"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/OwnedClinicInformation.tsx",
+    "sha256": "2a0f29352bfb3d99bf2d0b3b5c4515dacd252beb8bf21bac9cd8184b50f56a85"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PageDescription.tsx",
+    "sha256": "51588c845261d2dee9fe776228880fe259fe0a3b7dbf0d84f07fd1ace5aea066"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PasswordInput.tsx",
+    "sha256": "8a2f9d317083ece268a092b22ffec57041d27ac5204c82da2abe0a76f8e367ae"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PatientActivity.tsx",
+    "sha256": "17da8c0faf1b8cfc048cdb8dba8c2428711b76c58c0c77cdee21d3ce46ede4cd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PatientDetailsDrawer.tsx",
+    "sha256": "8ce88615325d734d078a304bc1a6fad8159bcd39dcc7b81675bec39126b41e97"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PatientDocuments.tsx",
+    "sha256": "08d7f9bff91c102716b66debbc01b996ff141dc5dc74f4773ae819155a28576d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PatientScanner.tsx",
+    "sha256": "7e2a65c922fec20ccdebb693f690c57febc668c72569d9030edc56363a571655"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PendingRemovalReceipts.tsx",
+    "sha256": "a3daa7615989aeca539e279f84e993dbe5151d1803f2076e095ad8f5a7fb4b2d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PhoneInput.tsx",
+    "sha256": "94e96f5bdb11a6a8f2e226ecf8f4e97d4a3bbf65764ce9157891e85b64c9825b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PinLocalities.tsx",
+    "sha256": "b79f18db9ab3a3103db3bd2abe9c53ac939f2e48cf26989f2bd32de06bb4089d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PublicClinicBookingQr.tsx",
+    "sha256": "640eb0ed7ac6bf24249b8f9451df7960db8a3b32650fe06e1129799ca8908fee"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PublicClinicLive.tsx",
+    "sha256": "011802e5667d045943b9a14a5eb8d5c7a5c206d7d9c3d08269f8a0c0094289cf"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PublicClinicPage.tsx",
+    "sha256": "ad7a48ec76badd7dd09bf92fa6a32fe071dbc67f3e56ff0218bf8eeedc4386cf"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/PublicHeader.tsx",
+    "sha256": "20bfd3ac94245b08f84c8c8b767042042901c3fa81b83c8d8ec9b39bd0b9f82f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/RecordDetails.tsx",
+    "sha256": "220aa016772b3dbf07f69b4e8e5f0e3e5a11b9565f1135390ee81e4bf28e353f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ReportChart.tsx",
+    "sha256": "589dd3dcf0cb3dd34b9f6a70ef7a0ca5a974bace06a22da43734ba285fd74384"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ReportTrends.tsx",
+    "sha256": "722ab7fe14ecc9f2fee61089332e8f753f2f076254dfc71088a636e65a3dfe4f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ResourceLookup.tsx",
+    "sha256": "d81f3261922e224784f84b0a6be58140dec54f15e9179ce4bfb415b5f44c51ba"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ResourceRecord.tsx",
+    "sha256": "4bda33f4dbb48b163ce152154efe09538b137a9fb0e2065b65aa7b3fe43f15c7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ResponsiveActionGroup.tsx",
+    "sha256": "2e3d8cf62e92d46859cae7b4b3f55d2369a10c22eedcc1591dab2abe5d000123"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/RowMenu.tsx",
+    "sha256": "96f6a7810bdf1f6910ce81d0d523f47bd36d776c4a6ee7aa9e1e1a952dfe9a2c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/SchedulingWorkspace.tsx",
+    "sha256": "56ccdc8884c26af21abbfa784a6529872133321a4bba2a5c5e1818dcce92ec71"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/SearchableMultiSelect.tsx",
+    "sha256": "1a2fa14fa20f80db595df85c1cbcaa347d47dc0f7b1e0ae88ca034a1557dc781"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/SearchableSelect.tsx",
+    "sha256": "3e028d3dc54983d9432a7d64a5739f5e752a1f2d5d03c70e1fb5b3ef956dcfef"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/SecretField.tsx",
+    "sha256": "94bddb4afe2a97a58054e5e20b0a1b6e9484875fd08b6c47e4f74e3472a07cb5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/SmsProviderPanel.tsx",
+    "sha256": "40e79a87cea61d61579360da3b237de29a9e36823aec1545904ada4927540565"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/SmtpTestReceipt.tsx",
+    "sha256": "c95d118e26e9695832ebb51ecfdddb16be0742e392e62a4224e97700e3cdc988"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/StaffAccountFields.tsx",
+    "sha256": "9db54f9e19a932d3d6bcf4ff5af20a209db6e833ff9755b4323fc2339c79053c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/StaffContactVerification.tsx",
+    "sha256": "4bd6499b2221ea014eaa213be48371818b8dbbe980f47f921c3c653e488333be"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/StaffDeletionReview.tsx",
+    "sha256": "b1108ab2991c2c43c6c789f3383da5a1830a369aa0ce2fd362c670eb52cf86b3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/StatusSwitch.tsx",
+    "sha256": "f5cefb4f2f0c14eb7516ef04df45f405b420f89246d0635f4a99b154b467d569"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/SuggestionInput.tsx",
+    "sha256": "01b5db077e919f16d6d0c6b51628b6026343901ec5c12149253c62446518fbe3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/SystemUsers.tsx",
+    "sha256": "0e1089a61f95231ff971c975c1db904e00cf0f59556a090d05826e3601a56e5d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/TableColumns.tsx",
+    "sha256": "99f162e62795e0ff92c3d70ec6224d97a6ec6f712415f37112bc6875a062dbdd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/TemplateDrawerFields.tsx",
+    "sha256": "05498f6acdfe375d9b01d5a55ccc5054ff2aeecdc1d115215379b6a9d09a27b5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/TimezoneSelect.tsx",
+    "sha256": "847fac7adcf6ebd9ee94fc56d2c9b110ba4a3fe9158ab382ff01bafcb878dbea"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ToastHost.tsx",
+    "sha256": "89c584c39bae77011202c4ab4a77f32b4391d936e644fe041658b4d8e94e6f35"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/WorkspaceBranch.tsx",
+    "sha256": "3190bcbaddbf61199b0598e67c021bda80b04e79cdbcb8de8983262ca73795b7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/WorkspaceNav.tsx",
+    "sha256": "9150a8e01cee8261df7cce2e4ec28c11159455c3c1b467319fe6c4be1df35bf3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/WorkspaceSearch.tsx",
+    "sha256": "d7af9c2c3b6359600e6d19fb4861cb4b1cbba9269b6e94e728b043eba33099b7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/WorkspaceShell.tsx",
+    "sha256": "b35b4df45887b6b67e9c6e983f01a874650a86c46b20ed02b29543a22c91a824"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/admin-listing-data.ts",
+    "sha256": "19926adfba136bf60389c93dab0959e02b86d2914f6d0599cc5bd448d6379dc8"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/app-dialog-close.ts",
+    "sha256": "5a84c27ff53894b1f03a0d245acae3653e2dcff01e8db8311d77f39b06f31398"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/AppointmentCalendar.tsx",
+    "sha256": "39ce2af8bb4dcad4307059ec5025d0c9a82737ea09b875e736c658b313987003"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/AppointmentDetails.tsx",
+    "sha256": "ff9cd104cda66798bb16ba52ded3ef533d952c60a1d6d38e00d84db5d7b8f863"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/AppointmentRows.tsx",
+    "sha256": "774a57d7b6d37c83637c89997c7ae10f86cdeed7c3c3dfc39646d559f073efb3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/AppointmentTicket.tsx",
+    "sha256": "eaf53b45fcd605481cb44b624d76f1fac8d7aadc2788f0eea9dbd83471f8df23"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/BulkAppointments.tsx",
+    "sha256": "d659f4ec845c10850074db957bc25a1cd2f33eeb1a33b7a6056b4ce4f15ea0c3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/CalendarDayPanel.tsx",
+    "sha256": "7e8756284b9ebfac9d03522785ffeb3b10db16b276b5a845241ba8adf121a1f2"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/FilteredAppointmentExport.tsx",
+    "sha256": "a2ba4bf1a93f108e891275a51508a8b4c541aad222664f22093f0ebbcf12ed35"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/MovementForm.tsx",
+    "sha256": "177907e340b6ebfd1460a5cd89e1a181bb29c73aeca4b34314c0a8b9810721d3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/ReceiptManagement.tsx",
+    "sha256": "e3897ea59eac6bfb8f18f72d776173c501e225d5ee999d850b009ac388d7a0fc"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/RescheduleAppointment.tsx",
+    "sha256": "093a0cc7931bfd4fbc0652988d950220b179725f4d350df3ade22bf61b11aef6"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/TicketEmailDialog.tsx",
+    "sha256": "870d51a5f1488a28a74521b3f6841d0658fb3438f42d73088d76562c1a861525"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/VisitRangePicker.tsx",
+    "sha256": "f2073b3ff2c0746ebf74a649b15b81fb63f8139c9b94124e355d2c985fdab1a5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/confirmation-email.ts",
+    "sha256": "6b7298eaf41bb9fec4ee747bfa8a3c31627536ddcdd3ef9d07c487ec86b992b5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/filtered-export.ts",
+    "sha256": "784e0c7772c5e88a4a4e3ff6bf6b70f7f86005445b2f8ad61179ebdc510dbc69"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/presentation.ts",
+    "sha256": "5ef9250bd27bc574e29778c2d5a76a497a6c77e865b1168a6cca70c47cd5c8db"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/refresh.ts",
+    "sha256": "d27044bcbab9bb33dd49dce07ef5ca29a16619574635f248311e6e77c68caaad"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/appointments/ticket-export.ts",
+    "sha256": "9852f0ef46e99a41158167db22ad079fee99481a79b26dfbe766e43f46c968ed"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/booking/BookingDiscovery.tsx",
+    "sha256": "c77311479d4002e631aac21975d9933f7f77581782b3d779b0285d61b8e024b5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/booking/BookingScheduleSetup.tsx",
+    "sha256": "cafb12ce82fe24a4527ab7b23c84e7f4f46d91772b1c5133c271c24b2b8b5bc5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/booking/BookingVisitSummary.tsx",
+    "sha256": "f76a2d1dce47834a6cb981c26448e5a7a642a32c42891324d86aec30e5b34d2c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/booking/OwnerBookingRecovery.tsx",
+    "sha256": "9a30680321729a38b68e5b17f4c567abdaa98472c1f5426b4b05ede1f069b1d2"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/booking/StagedBooking.tsx",
+    "sha256": "364213e7c196a4a703edb8061ced100836f58e0cf4d6422576fbfc976cba7533"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/booking/booking-fields.tsx",
+    "sha256": "f7f2b0621f825d8610bd1183f8fa783d0ccdd86591bb3fce09a28e45a6d017db"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/booking/session-selection.ts",
+    "sha256": "a168b21762c3cb1a1dd2993f6700a9b200a56bce381d371cac3103de9b275f32"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/clinical-branches.ts",
+    "sha256": "3773683a72c2e03366479d63d89eedbdf4c6eb061930672c7ae80d497c6eb5dc"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/custom-roles.ts",
+    "sha256": "0c1af05cb0a9fc45c8a735042eb64ee57d4e0bf64ac470ba3a9f10f4d3b19ec5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/editor-submission.ts",
+    "sha256": "37af32ca903dd92fccb4eaf63df6b95700b3205994322e33744893d155dfea00"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/error-boundary.tsx",
+    "sha256": "6489f39a2143853d470010440013097c5b01a7cc186bfdce2eb380761993d701"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/guest-booking-date.ts",
+    "sha256": "f0216a48cdf3efc807df9891fd6b36bf19cb884ad6cf413065e54cbd2a22ce30"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/live-search-state.ts",
+    "sha256": "5590f65daaca96a617bec068a8c101b03454573523abc5cb899e3a862972582c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/logo-upload.ts",
+    "sha256": "6a52dfe65cbf11978a3e5b6a2557b73f3961928774bdb54330389ad06f7905e2"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/native-validity.ts",
+    "sha256": "346bd773083830446b2f8f9bd900b9611cd98cb15712a4e8a8a80a9920330635"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/patient-export.ts",
+    "sha256": "5fa38d3a07c1620d47f0ce690385d4ce9cb4dc0ae527b991980505a1b3176d3b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/patient-qr.ts",
+    "sha256": "0e262731272b96ebdec142e06e9846af13d1182da0aa331db10eebc97d8f4d5b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/permission-matrix.ts",
+    "sha256": "3c7d228df340996a155c20c2dfd3319b66888cda15b6602ab19a6089287557cf"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/queue/DurationEditor.tsx",
+    "sha256": "afff4cb2f40ff22c3cf936414105dcb9fa5c852dd3faef7ed8ba3e2a2db302ec"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/queue/GuestRequests.tsx",
+    "sha256": "6fee3e998fa467822fa83a763b3e96973a14f4908e8a0f9ab464c18ee412fe12"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/queue/SessionQueue.tsx",
+    "sha256": "05de9d0ebb2ea861fbd497196313982df055540f8984aeca9f7c89478439c214"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/queue/SessionSelector.tsx",
+    "sha256": "622e10c82ae8c2b0f0223c92e20e8099427707d5d6c05cd3f6d844e0db0a5c6d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/queue/StatusTabs.tsx",
+    "sha256": "4ee3aaccfc1fc037870e79fdd898fd488b6da55f06440348517e0fc7ef35c52f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/queue/session-scope.ts",
+    "sha256": "18da8e9490436874bcd861e8b297565bcb44f0be8a86294a175384a85fb58dc1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/queue/useFreshWorkspace.ts",
+    "sha256": "0e53c848473b2ce3a6803973bd465ed2e1c8c08736492b3cfa2047e9d4e6133b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/queue/useSoleCareDefaults.ts",
+    "sha256": "82c4df3aedbba3af566a600a883e96d3c51bcdc13af7e37c940afeb72e521a81"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/relation-validity.ts",
+    "sha256": "39aaf6d516b9dd72f89341d8cfefda0b60fbc8e68e82474cb73b30ec3f1e41bb"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/reports/ReportKpis.tsx",
+    "sha256": "d0e227f00e6014a2a1444d1380dc552aa3cb6d3d75fd7491ef14aedbefbfbd89"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/reports/ReportTemplates.tsx",
+    "sha256": "21d438b380f93c67938513e9e57514c5b65f164c51aa6509dcb785160edbf60c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/reports/ReportTrendPanel.tsx",
+    "sha256": "ffab7b5e9433593d44a8b241f6c3402f461342e916dac0cacabcea1b21a9a738"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/reports/ReportsDashboard.tsx",
+    "sha256": "792a05cedccc39a6fa4f7a5c3a8e59442ab6715863067d9802a0ed267f8d58fa"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/reports/ReportsWorkspace.tsx",
+    "sha256": "26b5470596e366481d57efae49a1931f52a87ba15c7641f039b2ac5a54c7a607"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/reports/report-model.ts",
+    "sha256": "7ac1f734c8f06b4bf4b2c05e90a22a3bb6fc7d7a83728394cf04d6f65f549b84"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/reports/scope.ts",
+    "sha256": "491d0d5c317503a8a17cf4f426d5a3e5f688f8c86c8dfb73b1835e6bab53fcc9"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/role-selection.ts",
+    "sha256": "053e193c2660f11d5098a546f2958096a0412ad3a3024aacfe744b1aa5678407"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/row-menu-position.ts",
+    "sha256": "f1330b6c17217424e6779fb0ae1d43134c364aec7845b4323dfb1ea38f72eea6"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/AvailabilityScheduleEntry.tsx",
+    "sha256": "77b5b3fa70ca68f16298299e85902dc689a5bbf22273ba298d596385cb9c9830"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/CompactDayEditor.tsx",
+    "sha256": "27f6566709b0090793b958c2d5fea434febdb940eabc57e2e8f780a03b6e90e1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/DoctorScheduleContext.tsx",
+    "sha256": "f0ddcf4c318093bec3fecff294b918f253e663f5c0c1339c59e218f0ebb84923"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/ExceptionImpactPreview.tsx",
+    "sha256": "3610109ac961628b1badb7590cd86a8835c0b76122d32915cdd95a5cc0d17349"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/FollowLocationHours.tsx",
+    "sha256": "9a3e80ff64f75fe71091c56510895d37e5d9f27e37bc67038277671af844ff34"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/OwnerWeeklySessions.tsx",
+    "sha256": "4030816e52a15bcffa2e8771932e29fce628e65319ee5781a477500f199017b0"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/ScheduleContextHeader.tsx",
+    "sha256": "21d47ce812cefa547095d4456d7b193adfce2475fd00c0e33fdd545f6dfbb30e"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/ScheduleDayDialog.tsx",
+    "sha256": "51dccdad28aea0e1dbca60bad7278b15c6dddf13f6db369ba0a07e946d638d98"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/ScheduleExceptions.tsx",
+    "sha256": "741a26735650dd617853f50551cdb1251cf46c7683a4aa47695bacce0c024b0c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/WeeklyDraftDays.tsx",
+    "sha256": "35f7e223089d46f7bc14879964ddeeb20dd8189f5bbb77644406b86db3ad14fd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/WeeklyOverview.tsx",
+    "sha256": "ea8653fab8e69143190d8f4f29a489f1664ec5666f3c853b8da621d7e39e5912"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/WeeklyScheduleEditor.tsx",
+    "sha256": "9e99598a501335189650effec1f9909df6c922b7038caa5b85fc12b1c2dfced8"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/copy-plan.ts",
+    "sha256": "024f13ea78ba59b638009fa1f8ef1babec87400eab634705a79c4a1b151beff1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/day-overrides.ts",
+    "sha256": "d948f6cf5c4e5b8268dbc1281d0a3ac44b96eaff654e46f2b49449ea30a1b3c3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/exception-impact.ts",
+    "sha256": "2484e8d5258aa1be3aa8a75beb3bcb27a2c05f5878d3a31c820d27c7f3c77adf"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/schedule/week-plan.ts",
+    "sha256": "748d528ed8a224f511f3dbbd1ed842e8a6956ebb7a9a691856a75164d5550d19"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/sms-mapping.ts",
+    "sha256": "834116c93884edaaddd2feb4fc46fecf2f3c4babf6d65806487cb1a9196fa80a"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/tickets/VisitTicket.tsx",
+    "sha256": "e945070e85a3d50b3d1ed742c40d12ef302ae2a19d8d7e533593b90cb9fa8e4c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/tickets/ticket-model.ts",
+    "sha256": "2dd8b80b9479a3dfba3ed803ff6acaa63c8d1f434951c6f3960143df2ce17513"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/tickets/ticket-pdf.ts",
+    "sha256": "38d8c0afdba4088b033482a86be4e5155fc4234e8869ebdcb541be763e5014d5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/tooltip-dismiss.ts",
+    "sha256": "096f1bd3379cf56511b4549898930f54c993fdc88f843ef98c57f62036fda660"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/accordion.tsx",
+    "sha256": "8e4230a3e6d38bfab7b02f00f9e948c8c4038432c5b1bf2d0ea44dc8b5ce09cc"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/alert-dialog.tsx",
+    "sha256": "d76901a06e6881e94aa3847fde2602ee6f6ddc9f4cace9fa238627a5572bd24e"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/alert.tsx",
+    "sha256": "aac6d46bde1764c7962999b927f02424be56f7ddef8366d9b231e24c7044e97e"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/aspect-ratio.tsx",
+    "sha256": "2f5b0ed3cbcf84e526caad0c6b88d4457f8745a365c86cc74d924a1b6e013a36"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/avatar.tsx",
+    "sha256": "429f5e82fc3dcf265625650176f16ff9b35e55826183e1f1b2d4dc2a338f9b15"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/badge.tsx",
+    "sha256": "ba6f51e428a520f54e600fded4ea030a8099fa6a9a7b7110af8dca34795415d1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/breadcrumb.tsx",
+    "sha256": "44b4de47f806eec0e3de5130f0399e83700eaf0bc8deb47af5ffda2bb11eb3f1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/button-group.tsx",
+    "sha256": "b89025c11d08652597cb46b097d3e04658ad2c383bf81ed445c8182c0ed1b260"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/button.tsx",
+    "sha256": "9c20a340ca0c948d0164158eff44fca2e26343c8ee387ffc22f9cd677c59d27d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/calendar.tsx",
+    "sha256": "1cdd1e62797356fe62f61f5521fcf0da8e3570b1120868ccca2b48370157fe46"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/card.tsx",
+    "sha256": "9fed39a53303c12fa6ac6f5f8813c1683e2198df9ee067cffbdfe69044cf3e4f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/carousel.tsx",
+    "sha256": "4ae2f69bc2c1ce33c60b23ddc5382f4b93882dac07c2d18cce32fb148ff52c48"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/chart.tsx",
+    "sha256": "ac747c83483d742e207426a193ba5e2cf639fa18cd819c1f12d12329520c6c12"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/checkbox.tsx",
+    "sha256": "04e9eb80038f8177855f2c2277322a76b88b12f4ca74e0137e79bd249d9c1487"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/collapsible.tsx",
+    "sha256": "aedcd10b62404b39d8d5544c01fee90aa7b66e7280bb80a215601ad198a1b8fd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/command.tsx",
+    "sha256": "a82d30c770c8b351bbd24fcd401965d3d699eb0e6e9558c3f0d64c524c375918"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/context-menu.tsx",
+    "sha256": "bdff38b45a6010e3db808c099c799bd61e6aca619378074e7b14b63c1291e4c9"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/dialog.tsx",
+    "sha256": "e0d3fa53f4cb7d8011ab09f2d198c24234062d24638fabf5142f5fbce57d2ba5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/drawer.tsx",
+    "sha256": "152bc340ad982e84f851e3bc1a6b8e7ffd0151a7445c6ecf1b1e3e13cbc19210"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/dropdown-menu.tsx",
+    "sha256": "a79d5419ee174de35880340aef44d67847cee54846c058e02ac4a846b603c60f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/empty.tsx",
+    "sha256": "48824b1b37bd406fa74f48db726a4f1d70cf88db5b3432f7b1d59f584f1c5dad"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/field.tsx",
+    "sha256": "c3787ffb045354e9f18e70d94890627caea94939a226e49c1e6cedee84a1e9e1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/form.tsx",
+    "sha256": "1960463b09152760fdd99ca3eb16187408d064c7599ed66384b42d1613d3a3a3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/hover-card.tsx",
+    "sha256": "87ca4b68ec64540c2cbd6f4cff3fcb2e369867b94ee2e761d9c19633bd042d10"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/input-group.tsx",
+    "sha256": "f4befbf9bf8ebd755b267c4db2b396be296adb95acca5c3fba54f6495bdedebd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/input-otp.tsx",
+    "sha256": "b4891335e70920518cfbdef2aeb399f61477fbc4b3ffe3b8a2938f19074164cc"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/input.tsx",
+    "sha256": "03ac1648171bd5ad90dbc03e9ebff9a9cc77708bcc53bdac914b80eeebfe3032"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/item.tsx",
+    "sha256": "4a84cda22d692ee176f5128517a4003a63d11f907df445e7586ef034c88e8772"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/kbd.tsx",
+    "sha256": "4348a7a06a715e9e9673602cbb9ed89a6a4c6cbdd457d4c03db0f23a139d19eb"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/label.tsx",
+    "sha256": "937853103d45e4a19dffe7ab8b81c1b80c226cb69b3f7881d11adeb8ace416dd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/menubar.tsx",
+    "sha256": "26dbbf36e4ffd87aab74e61dd1e3613f0c640988479679d53bacd8dbd15cc891"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/navigation-menu.tsx",
+    "sha256": "222020e1ac703ce01700d6e8822c6263932bc71c481d724b8ef53ccaae8ad63f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/pagination.tsx",
+    "sha256": "dd65d2e59226a3f384014b596ae701aef50f130cb3061f4657e81c588587b8da"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/popover.tsx",
+    "sha256": "6463d766ef157fe5f0f5783c3047da6326142e195bf8ed3113b3e60cafb84476"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/progress.tsx",
+    "sha256": "74223bcccf7ca2ed026d197476abbe3d48fbc531c40f4252445f56954a270c75"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/radio-group.tsx",
+    "sha256": "746c62101f1fb6aa194b4c8cc21c10d767c67e7a0a6d62fa9fdce4b4b613a1c1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/resizable.tsx",
+    "sha256": "8e73dfb8b582944364d73b64ed03378016f20f7251f15f880dcf0fb140e1ad41"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/scroll-area.tsx",
+    "sha256": "73f5dedda781e5285092ea269f747378dbad8d95631eab638e15b3c31595dc59"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/select.tsx",
+    "sha256": "0dd371f4d6bfbdfa16f79174eddc0cf467cca3f2afab3981078b1727aff834d5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/separator.tsx",
+    "sha256": "2b129347f918742bf006099f7f56a9be373250de2ecc3ad201297563e3d1f807"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/sheet.tsx",
+    "sha256": "ef2ae35ccab1252c4eee56e67e9f1b2499b5bbfb3ae39037d8d4be39915c272f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/sidebar.tsx",
+    "sha256": "de7566e708ba8bf34cb4a78fc018c784315c9d7a16d70e66255f8c72caf9d1db"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/skeleton.tsx",
+    "sha256": "d78130b2e311a750e7bb524e66e3af4c04e2ab02b04fd68539c1afd0bbb47152"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/slider.tsx",
+    "sha256": "ecac74b8f3a044ba7a9e4eb0bdbfdf48be92483a32d2c414c5078c9f38e1f369"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/sonner.tsx",
+    "sha256": "de5a5d9ae404545fcb0f21123530ffcf89d24a47812c70b3ca1376591e28dbdd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/spinner.tsx",
+    "sha256": "4458ea392b32f439cd4c64b9593846f339370fa1295c04f9003f05c1f3386689"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/switch.tsx",
+    "sha256": "a15d06e353e3bf84ed730a4ae634ff0cb6a96263a8b50817e612b78a3c425b26"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/table.tsx",
+    "sha256": "dd29f5ef260af67ed09c84505495e3fddbad14009e3b3ce689d0c354ffaf55d3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/tabs.tsx",
+    "sha256": "320609101fbaa6cccda0b899154cb510fa322926cfdbaf07e33b79c00c83fcd6"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/textarea.tsx",
+    "sha256": "63fb699771afe60c5073ed50e1a042d7d7f21eefd12d15bcb750cf3230985011"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/toast.tsx",
+    "sha256": "04d4ef720079342e2f4380c22683f1544bd8e93a581fb55e447458f04a6127d5"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/toaster.tsx",
+    "sha256": "d34c7cd51482ddd5703a13378d9ac69b3459a304581e42f56ac2c696e53163ac"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/toggle-group.tsx",
+    "sha256": "6d7aca86245edf5d0a8f6f3ed73bd19316f4865425891eabccd6f3e37e59519e"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/toggle.tsx",
+    "sha256": "5800d2099224ef90892e8c1d972d2a0964391c33cd43d7f5c6abf5cd42e023e1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/ui/tooltip.tsx",
+    "sha256": "859a41b38c23b80fef5bc76c3a6f9a22518faf1328f5903a1e7adc17d2b2a5f6"
+  },
+  {
+    "file": "artifacts/clinicflow/src/components/useNotificationManagement.ts",
+    "sha256": "66a0c9c69ad7ed33346ba72132dfe4fd75eff428b7b087296a8ccac43c7ca18a"
+  },
+  {
+    "file": "artifacts/clinicflow/src/editor-input.ts",
+    "sha256": "e230cbed0ff287f2046ad91917ecc3ec3a898ac42407df1e60e06723c6c8d0d7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/guest-receipt.ts",
+    "sha256": "3be860a9d9e0d9701a019c9c47fd7a3ecf6d2cd534b2d44c091561d9dd5bc827"
+  },
+  {
+    "file": "artifacts/clinicflow/src/hooks/use-api-auth.ts",
+    "sha256": "8c04a2915e407206d5161f1be5c9521be442a5dace46db0bea22d8593fb0fe31"
+  },
+  {
+    "file": "artifacts/clinicflow/src/hooks/use-debounced-value.ts",
+    "sha256": "530db66e81a50ecab27baeae1c301f5835fde7804360e8c4c5b3a69e5f8602bc"
+  },
+  {
+    "file": "artifacts/clinicflow/src/hooks/use-form-validation.ts",
+    "sha256": "d2f01dd376e441f69a7363120961ab638203ef530e0e6fce095da78f7d420ea0"
+  },
+  {
+    "file": "artifacts/clinicflow/src/hooks/use-lookup-search.ts",
+    "sha256": "a7436d6a25f469ba33cce469517024cbfb76ab576bda72c0777f9b41c9b6bf8f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/hooks/use-mobile.tsx",
+    "sha256": "82bff42ff087bd5dc90a5d17609cc428b8688de92d1333073a839af5ad3c9cbd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/hooks/use-toast.ts",
+    "sha256": "862a0a2d8bb2aae32237cc904045ba04b77cbca45cbcc91779c40f5a573e3b4b"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/address.ts",
+    "sha256": "bf356139c60d974dddeaf7acaa55c85d821b749a87bf7727e0081a16bc807bcc"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/api.ts",
+    "sha256": "b504cd757163ee063ea6f911b7a8e4482e4338b326ffa1bae45f8d05d3579bcf"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/assignment-display.ts",
+    "sha256": "54fb4aa9c2292ddaa7bc58b1ebeb34159b3f0f33964412424600a704655f2147"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/auth-request.ts",
+    "sha256": "9723b85f08792e8612b164f258fcf7025a0cfb2b649ef77cd4b85b4ce2681500"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/booking-care-scope.ts",
+    "sha256": "420d029b0131cee3149e71ab420d4041a0dd2c8574c6b90fb60ed34317e946a8"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/booking-doctor-membership.ts",
+    "sha256": "818ead6a6441c1ef8a8e770f450a3cc2250f2d8f22ea47fdcede77a5fc100ac9"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/bulk-summary.ts",
+    "sha256": "54b14022752a86df9d297c6eeac5d129232a2b33abea25ea653b453771d91679"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/check-in-policy.ts",
+    "sha256": "8f29041986b3ac85c8c0cc58dd231f742c4ed4fb5495a7b9c391bfc3d219d230"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/clinic-address.ts",
+    "sha256": "8314bfda1eaebc5f489398d712a20e63452762c8666569df5b1575f567acbec1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/clinic-navigation.ts",
+    "sha256": "4496641e80e491357cb84c3444d5fd5115f987a41949014307b5dbebc2c25a16"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/clinic-report-outcomes.ts",
+    "sha256": "60a60985d5256a2bef451e158f2a26b8ab54352588f07d4829304e1617c5fc3a"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/communication-routes.ts",
+    "sha256": "3f2f611e6915b07fdb104d2ac2cb33e94c40ee5d4897049cf9aa412cdf059643"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/context-refresh.ts",
+    "sha256": "e1ce806fa6c6b6570b07748f3652368139ff88d2cbac397a17e80d712f80e44c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/csrf.ts",
+    "sha256": "8f880b23590ad1acd8a0010d2795b28ba68df2397e82100b447c2a86c4afbf02"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/date-picker-logic.ts",
+    "sha256": "fb9ef1e4115a3b69e51b8d1c4a90c000defa7b9106528eb23d4287da16530c6a"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/date-time.ts",
+    "sha256": "92e5a65d882ce939aa5ed639a27c867a9af255772e59d465a190b56550727cf6"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/directory-cache.ts",
+    "sha256": "acce54c397e424ea547833ca8e75813db9f0d3dff6a5a9c54826603f139e3e21"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/field-width.ts",
+    "sha256": "cc9d10d1cc8d3fa92aa332c609d08876953e5db84c73f90c601d3774332d939d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/form-tabs.ts",
+    "sha256": "faccd1ed1e2d695d5572f0e07ee2e44237e943df7d1e78f066fa6d0426b0fdc3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/friendly-error.ts",
+    "sha256": "2f9bcc23b106b8e5744a889998f946dd46d06c4ae5fd96f79c84d18dc266eb14"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/inherited-defaults.ts",
+    "sha256": "daf4a115903d384fc6958213330d56541643942e99ad6cee40e0ddc3ae678335"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/listing-views.ts",
+    "sha256": "61eb31a49aab763e0a0ddbca251838588875dd305cb16442c8a8cbef9ef43ead"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/locality-selection.ts",
+    "sha256": "6a1e8788f0bfbfbd2e68f0b70b36d7013415376fb6e58818b66957fd093b2018"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/notification-groups.ts",
+    "sha256": "e25558bc4cf55863a0f8657c0ecedad67d494d97c5f9af717cffb3febeece184"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/notification-log-format.ts",
+    "sha256": "2f7f2d37794cfaee9c30ec4f76f51d1af7b608184cd069c7863b20cd94447033"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/notification-management.ts",
+    "sha256": "2386040fae5a6a0f90f03c338680b36a0b2608f635b005d6dded3b3c8a9c4fe3"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/notification-presentation.ts",
+    "sha256": "ae9750eaadb1b28f821679245d45d70a8a3d001038b18e185fd4122063f2b1b2"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/notification-template-input.ts",
+    "sha256": "ff9979b7226bbce7c81dce7a549365506f1ecba287f85f5ffe1cac5d0016f5d6"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/notify.tsx",
+    "sha256": "12189d65e32bd7b63efd1f0eed5e72f5da2e698e3bb87f9a13e7195dcfe6b470"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/page-metadata.tsx",
+    "sha256": "274b74a6b9fbfa0734dc6cad464d0c618559d4e1274ed970c2a7e7e9546c2233"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/patient-booking-notice.ts",
+    "sha256": "f667a80ef00fa3084ac072d57d22a188ead2df11d95d6abfeffc99248917be21"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/patient-details.ts",
+    "sha256": "fe56f222058cbe2022b11154d1b074446135cac7f319933108e9be0970815d99"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/phone.ts",
+    "sha256": "55bf39cc90d7fef8b021ad09f082695c0ce0ce244395c0cc9e30c42c017d1443"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/public-website.tsx",
+    "sha256": "a6079957416f95509bc3cef871b6b8b7518903f9911fbfdea26ca0cbdca7a94e"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/qr-inline.ts",
+    "sha256": "69d709d84eec8eca06fc17064e28d37040ca36edc908de2d89c1f52973f9f169"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/registration-doctor-completion.ts",
+    "sha256": "c4420c39f8678940fad4ad2575edb3e40c13187ecc0abd2b4252222f077bbd45"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/registration-draft.ts",
+    "sha256": "749abbe685c3fd0580fcd85e497db229f8f8e17d975ff16fe602e4a0e669b05c"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/schedule-facts.ts",
+    "sha256": "3ccd162e47daa2099d1d9f11491a22b5539b4a23f65d2e58e039be69ea796939"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/schedule-validation.ts",
+    "sha256": "a7ecc5255a3cd4fe959d74fbbb5087b422f36ddde45f75718ef4e915dd357421"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/search-categories.ts",
+    "sha256": "9eef8dac887ee997bc01c674fd7e6da9a039a5751faf7f64ca3b941ff6cad68d"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/search-links.ts",
+    "sha256": "76c7d4ea2b0501229985d98707a13f204b7fb34ca7d4ef59530e0051a60d4c46"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/security-template-events.ts",
+    "sha256": "bcbbd5218c4e95987aac114013b34f47a97a462d90682c93feaead25942c1e15"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/selection-label.ts",
+    "sha256": "e98dced67cf5e18f33f33bc38b9687c5aca30974ff20138c031e275dce0ea7d8"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/settings-access.ts",
+    "sha256": "b6861a1f2fe840bb7bccaaf65c7793ed20a46cbfc2d46e4654b645c6078b0614"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/settings-navigation.ts",
+    "sha256": "94fb2e255462946d6ab939f245d208c6c8024766788a6c31f36343eb5c7e05c0"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/sole-option.ts",
+    "sha256": "9c3973481a86d6cd3906041ddf02eeb32e983901bd6b9265cd365be8b450fcf4"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/staff-account.ts",
+    "sha256": "d0b8e408ff0d713df325fd0012b5e687f538e62e60a02aba07cfac09cfd0b1c4"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/staff-qr.ts",
+    "sha256": "f72fe629a113ff469f763911fd53ff84563bc18ef7753c7c14f3cff145015f6f"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/staff-removal-receipts.ts",
+    "sha256": "4d0b5c6051f7a51b36000725636efaa132be80eff73fba9ccb5ccb4ebdf19ed1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/staff-role-switch.ts",
+    "sha256": "6c5520d7b6a7febfc725f7046aec901c1d9a9f0c37eec4fb0e6c62276e1940b0"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/staff-verification.ts",
+    "sha256": "b5c479831ffa8a8387c9615091a4cbf74ed5a3ccd126711c610df4bc1efafad8"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/tabs-a11y.ts",
+    "sha256": "d2abb1dbcbbf6f0be0614471eaf85264fe499f812cadc9e499c693f231cc2620"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/template-preview.ts",
+    "sha256": "bf28a85421acbed972f6563537a6c848b9ebfe74db6a494ffb8a62981df90d67"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/template-test-recovery.ts",
+    "sha256": "4103f084b749cae47ccc14f744508d33e4755800512aa363fa837546666182cd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/template-test-request-error.ts",
+    "sha256": "8f4b0e71f75a5a69db6a2b484ebf502a9178461eb947567c6adc5169e19ac1dd"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/title-case.ts",
+    "sha256": "e5ce0ee0ee2860b16f3ca0652a8d0194f9cc1786543ff58620e1df15c67158db"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/ui-glossary.ts",
+    "sha256": "cdba7d1e61d13d2e533822a9867f60909fbc72bbef6599db0f8064ee88891b97"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/use-directory.ts",
+    "sha256": "51a86773ff579c26eb182aaf933d5033a270b2bc37d91e383ec1ea03ad441076"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/use-workspace-leave-guard.ts",
+    "sha256": "8937aca12f5549f653da8283d2f02bd1b2e65372518e20a6d884b530cd9577e2"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/utils.ts",
+    "sha256": "afc0e1dc0e142d6b81f688d91087f81a4b2db4240cf70f55b6e5e4dcc199ebf1"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/validators.ts",
+    "sha256": "6cbd7ae1ef8e7ce9a431b56235026f7f82285d9120c0eaf6a6b762537ed34e98"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/visit-range.ts",
+    "sha256": "3f221972df0dc62e67b8f68cb53b71fea8f076daa00d05013e42aa85674b3736"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/workspace-branch.ts",
+    "sha256": "819868cfb91865d5bbe832b993e19004b083ab8ec8469611a4ea47808bc77447"
+  },
+  {
+    "file": "artifacts/clinicflow/src/lib/workspace-preferences.ts",
+    "sha256": "5a968ad83f24b155ca89554d745685709637f82b78459c8560e7fefa23242f05"
+  },
+  {
+    "file": "artifacts/clinicflow/src/main.tsx",
+    "sha256": "6272a50b515e72eccb89af68e524bad3e1d6672c1e9da1b9f36435b617e2a5a7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/pages/not-found.tsx",
+    "sha256": "6aaea7a7125024440020566f3a14fde4f65149b1fd21f68c6a437b193e88c642"
+  },
+  {
+    "file": "artifacts/clinicflow/src/resources.tsx",
+    "sha256": "bd26e2482cd86f39ca577f927170b2242cafc1ab825156054d77d9eac627e9e7"
+  },
+  {
+    "file": "artifacts/clinicflow/src/staff-controls.ts",
+    "sha256": "9fe65c66510ae280be390f6db0d734ca1a88b9ae8e4b0459be192efa13bf8ed2"
+  },
+  {
+    "file": "artifacts/clinicflow/src/staff-input.ts",
+    "sha256": "0334df247b0452af0f51d986d0f0682fb312f5094e2ffdab14043ddc047b14bb"
+  },
+  {
+    "file": "lib/public-pages/src/server.ts",
+    "sha256": "c37abe3cf3e63107b6152ad2fdb299a6706d1062de7b879848afdfa677b88b91"
+  }
+]
