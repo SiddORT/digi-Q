@@ -59,6 +59,7 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails }: { app
           <dl className="appt-detail-grid">
             <div><dt>Reference</dt><dd className="appt-detail-ref"><code data-testid="text-detail-reference">{a.reference}</code><button type="button" onClick={copyReference} aria-label={`Copy reference ${a.reference}`} data-testid="button-copy-reference">{copied === "done" ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}{copied === "done" ? "Copied" : "Copy"}</button>{copied === "failed" && <small role="alert">Copy unavailable. Select the reference to copy it.</small>}</dd></div>
             <div><dt>Booked at</dt><dd data-testid="text-detail-booked">{timestamp(a.createdAt)}<small>When the booking was created, not the visit time.</small></dd></div>
+            <div className="span-2"><dt>Visit contact mobile</dt><dd data-testid="text-detail-booking-mobile">{a.bookingMobile?.trim() || "Not recorded for this visit."}<small>Saved for this visit only; separate from profile/login contact. Does not determine notification recipients.</small></dd></div>
             <div className="span-2"><dt>{bookingFields.notes.label}</dt><dd><p className={`appt-detail-notes${a.notes?.trim() ? "" : " appt-detail-empty"}`} data-testid="text-detail-notes">{a.notes?.trim() || "No notes recorded."}</p></dd></div>
           </dl>
         </div>
