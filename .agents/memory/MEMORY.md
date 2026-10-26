@@ -62,3 +62,4 @@
 - [Reports product scope](reports-product-scope.md) — live dashboard plus reusable templates; clinic/doctor performance, reschedules and communication usage breakdowns.
 - [Concise information density](concise-information-density.md) — one brief introduction across all pages and links; optional details in adjacent info help, consequential warnings visible.
 - [Owner booking recovery](owner-booking-recovery.md) — explicit same-account, approved-location recovery; preserve administrative drafts and distinguish local checks from hosted repair.
+- [Browser fixture identity](browser-fixture-module-identity.md) — live Vite component fixtures must share dependency identities and isolate query-state scenarios.

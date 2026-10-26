@@ -428,3 +428,17 @@ mtime_ms = 1792980677354
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/8788c26b-df53-424f-9937-05d6875d2a29/5e505ecd-609c-4234-8dee-753e63450173"
 storage_version_token = "1792980701425541"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "qC-NJmJhf3ME0uzxKdfP3"
+uri = "file://generated-artifacts/message-audit/digiq-messages-and-dropdowns-audit.html"
+type = "html"
+title = "DigiQ — Messages and Dropdowns Audit"
+description = "29 prioritized findings, exact booking and notification-bell proposals, coverage gaps, protected warnings and an approval checklist. Includes fictional rendered examples. Recommendations only; no app changes applied."
+logical_id = "73c3bca7-2109-4f8d-9356-4c4562f7a573"
+content_hash = "sha256:5db02b8475e2d274d81d31e6a2faeff863d85a206eaa2c1504b3beffe3a7791c"
+size = 208937
+mtime_ms = 1792985963126
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/73c3bca7-2109-4f8d-9356-4c4562f7a573/28a325b5-2a68-4c13-82a9-d46aa24229d4"
+storage_version_token = "1792985982824511"
+content_type = "text/html"
