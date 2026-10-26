@@ -89,7 +89,7 @@ export async function prepareTemplateTest(user:any,input:unknown) {
    // Security previews/tests use only fictional values, never caller-provided credentials.
    const sample = {otp:"123456",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-preview-only",recipient_name:"Example Recipient",role_name:accountRoleLabel(body.recipientGroup)};
    const values = requiredEvent(body.event) ? sample : body.values;
-   const rendered=body.channel==="sms"?{subject:"",text:substitute(content.body,values)}:renderNotification(content,values);
+    const rendered=body.channel==="sms"?{subject:"",text:substitute(content.body,values)}:renderNotification(content,values,{event:body.event});
   assert(rendered.text.length<=(body.channel==="sms"?1600:24000),400,"Rendered message is too long");
   return {body,content,rendered};
 }

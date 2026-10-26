@@ -4,10 +4,12 @@ import "./notification-fixture.css";
 
 // Browser regression only. Tests intercept every API request before navigation.
 export default function SmsEditorFixture() {
-  const event = new URLSearchParams(location.search).get("event") || "booking";
-  const recipient = event === "staff_mobile_otp" ? "receptionist" : "patient";
+  const params = new URLSearchParams(location.search);
+  const event = params.get("event") || "booking";
+  const channel = params.get("channel") === "email" ? "email" : "sms";
+  const recipient = event === "clinic_registration_otp" ? "clinicAdmin" : ["staff_mobile_otp", "staff_email_otp"].includes(event) ? "receptionist" : "patient";
   const identity = { user: { id: "template-fixture", role: "superAdmin" } } as Identity;
   return <main className="content workspace" style={{padding:16}}>
-    <EmailTemplates identity={identity} notificationPage channel="sms" fixed={{clinicId:"",event,recipient}} />
+    <EmailTemplates identity={identity} notificationPage channel={channel} fixed={{clinicId:"",event,recipient}} />
   </main>;
 }

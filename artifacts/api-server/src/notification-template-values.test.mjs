@@ -173,8 +173,14 @@ test("published placeholders reach all four eligible SMS/email recipient groups 
   await api.processSmsNotifications(h.db,async(env,to,message,meta)=>{
     smsCalls.push({to,message,meta});return "provider_accepted";
   });
-  await api.processNotifications(h.db,async(to,subject,text)=>{emailCalls.push({to,subject,text});});
+  await api.processNotifications(h.db,async(to,subject,text,_transport,rendered)=>{emailCalls.push({to,subject,text,html:rendered.html});});
   assert.equal(smsCalls.length,4);assert.equal(emailCalls.length,4);
+  for (const message of emailCalls) {
+    assert.match(message.html, /Care\. Plan\. Care Together\./);
+    assert.match(message.html, /background:#f2f5f9/);
+    assert.match(message.html, /09:00/);
+    assert.match(message.html, /14:00/);
+  }
   for(const name of ["Patient Person","Owner Person","Doctor Person","Reception Person"]){
     for(const calls of [smsCalls,emailCalls]){
       const message=calls.map(c=>c.message||c.text).find(m=>m.startsWith(`Hello ${name};`));
@@ -397,4 +403,33 @@ test("security invitation and completion map exact account roles and reject miss
   for(const values of [{otp:"",expiry_minutes:"10"},{otp:"123456",expiry_minutes:""},{otp:"123456",expiry_minutes:"0"},{otp:"not-code",expiry_minutes:"10"}])
     assert.equal((await api.securityEmail("patient_email_otp","patient","fictional@example.invalid",values,async()=>{throw Error("must not dispatch");},h.db)).status,"pre_dispatch_failed");
   assert.equal(api.accountRoleLabel("unknown"),"");
+});
+
+test("email previews use sending HTML and fictional security values without dispatch or publication; SMS stays text-only", async () => {
+  for (const event of ["patient_email_otp", "clinic_registration_otp", "staff_email_otp", "doctor_setup"]) {
+    const recipientGroup = event === "doctor_setup" ? "doctor" : event === "clinic_registration_otp" ? "clinicAdmin" : event === "staff_email_otp" ? "receptionist" : "patient";
+    const effective = await api.resolvedTemplate(event, undefined, h.db, recipientGroup, "email");
+    const content = effective.content;
+    const names = [...new Set([content.subject, content.body, content.prefix, content.footer].flatMap(text =>
+      [...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(m => m[1])))];
+    const prepared = await api.prepareTemplateTest(sa, { channel: "email", event, recipientGroup,
+      revision: effective.local.revision, content, values: Object.fromEntries(names.map(name => [name, "caller-value-never-rendered"])) });
+    assert.equal(prepared.rendered.html, api.renderNotification(content, {
+      otp:"123456",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-preview-only",
+      recipient_name:"Example Recipient",role_name:api.accountRoleLabel(recipientGroup),
+    }, {event}).html);
+    assert.doesNotMatch(prepared.rendered.html, /caller-value-never-rendered/);
+    await assert.rejects(api.testTemplate(sa, prepared, () => assert.fail("No SMS"), () => assert.fail("No email")),
+      /fictional previews only/);
+    assert.equal((await api.resolvedTemplate(event, undefined, h.db, recipientGroup, "email")).local.revision, effective.local.revision);
+  }
+  const event = "booking", recipientGroup = "patient";
+  for (const channel of ["email", "sms"]) {
+    const effective = await api.resolvedTemplate(event, "c", h.db, recipientGroup, channel);
+    const content = channel === "sms" ? {...effective.content,body:"Saved {{clinic_name}}",prefix:"",footer:"",logoUrl:""} : {...effective.content,body:"Saved {{clinic_name}}",subject:"Saved notice",prefix:"",footer:""};
+    const prepared = await api.prepareTemplateTest(sa, {channel,event,recipientGroup,clinicId:"c",revision:effective.local.revision,content,values:{clinic_name:"Fictional & {{otp}} Clinic"}});
+    assert.equal(prepared.rendered.text,"Saved Fictional & {{otp}} Clinic");
+    assert.equal("html" in prepared.rendered, channel === "email");
+    if (channel === "email") assert.match(prepared.rendered.html, /Fictional &amp; \{\{otp\}\} Clinic/);
+  }
 });

@@ -12,6 +12,8 @@ import { lockQueue } from "./appointments";
 import { resolvedTemplate } from "./notification-template-store";
 import { renderNotification, validEventContent } from "./notification-templates";
 import { lockNotificationPreferences, recipientPreference } from "./notification-preferences";
+import { emailShell, visitEmailCard, type EmailVisit } from "./email-presentation";
+import { systemEmailTemplate } from "./email-template";
 
 export type ConfirmationEmail = "provider_accepted" | "unavailable" | "disabled" | "no_recipient" | "not_attempted";
 type Sender = (to: string, subject: string, text: string) => Promise<unknown>;
@@ -53,6 +55,22 @@ export function confirmationText(row: any, clinic: any) {
   const { date, start, end } = formatTemplateSession(row, clinic);
   // No medical notes, receipt secret, QR bearer payload or account tokens.
   return `Your appointment is confirmed.\n\n${row.clinicName} · ${row.branchName}\nDoctor: ${row.doctorName}\nDate: ${date}\nSession: ${start || "Not recorded"}–${end || "Not recorded"} (${row.timezone || "timezone unavailable"})\nReference: ${row.reference}\nToken: ${row.token}\nClinic contact: ${[clinic.email, clinic.phone].filter(Boolean).join(" · ") || "Contact reception at the clinic"}\n\nKeep your appointment ticket. A session is a time range, not an exact consultation time. Check in with reception when you arrive.`;
+}
+
+/** Authoritative summary fields; never extract a doctor or date from editable prose. */
+export function confirmationPresentation(row: any, clinic: any, introduction = "Your appointment is confirmed."): EmailVisit {
+  const { date, start, end } = formatTemplateSession(row, clinic);
+  return { introduction, clinic: row.clinicName, location: row.branchName, doctor: row.doctorName,
+    date, start: start || "Not recorded", end: end || "Not recorded", timezone: row.timezone || "timezone unavailable",
+    reference: row.reference, token: row.token,
+    contact: [clinic.email, clinic.phone].filter(Boolean).join(" · ") || "Contact reception at the clinic",
+    closing: "Keep your appointment ticket. A session is a time range, not an exact consultation time. Check in with reception when you arrive." };
+}
+
+export function defaultConfirmationEmail(row: any, clinic: any) {
+  const subject = "DigiQ Doctors — Appointment confirmation";
+  const rendered = systemEmailTemplate(subject, confirmationText(row, clinic));
+  return { subject, ...rendered, html: emailShell(subject, visitEmailCard(confirmationPresentation(row, clinic), ""), { label: "Booking confirmation" }) };
 }
 
 async function saveOutcome(conn: any, id: string, outcome: ConfirmationEmail, dispatchOutcome?: "provider_accepted" | "provider_rejected" | "pre_dispatch_failed" | "delivery_unknown") {
@@ -145,9 +163,9 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
       }
       // Published wording cannot remove the committed ticket. Keep custom wording
       // intact and append a non-editable factual ticket block when not using details.
-      const rendered = template.source === "default" ? undefined : renderNotification({
+      const rendered = template.source === "default" ? defaultConfirmationEmail(row, clinic) : renderNotification({
         ...template.content,body:template.content.body + (/\{\{\s*appointment_details\s*\}\}/.test(template.content.body) ? "" : "\n\n{{appointment_details}}")
-      }, values);
+       }, values, { event: "booking", visit: confirmationPresentation(row, clinic) });
       let cfg;
       try{cfg=smtpConfig(env);}catch{
         await log("configuration_failed");

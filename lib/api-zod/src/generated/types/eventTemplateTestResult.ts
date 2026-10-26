@@ -27,4 +27,6 @@ export interface EventTemplateTestResult {
   message: string;
   subject: string;
   body: string;
+  /** Email-only sending HTML with internal logo CIDs resolved for the isolated preview. Not included for SMS or real test-send results. */
+  html?: string;
 }

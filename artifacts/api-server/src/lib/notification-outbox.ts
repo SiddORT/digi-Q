@@ -5,7 +5,7 @@ import { templateRecipients, defaultRecipient, renderNotification, requiredEvent
 import { isClinicalMember } from "./clinical-membership";
 import { resolvedTemplate } from "./notification-template-store";
 import { sendAuthEmail } from "./auth-email";
-import { confirmationText } from "./appointment-confirmation";
+import { confirmationText, confirmationPresentation } from "./appointment-confirmation";
 import { validEmailAddress, emailNotificationsEnabled, smtpConfig } from "./integration-config";
 import { recordNotification, recordDecision, claimNotificationOccurrence, notificationEntry, templateSnapshot } from "./notification-history";
 import { logger } from "./logger";
@@ -274,7 +274,8 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       if(missing.length){
         await update({state:"preparation_failed",preparationReason:`Missing required template values: ${missing.join(", ")}`});return null;
       }
-      const rendered = renderNotification(template.content, values);
+       const rendered = renderNotification(template.content, values, { event: data.event,
+         visit: current && appointmentSnapshotComplete(row) ? confirmationPresentation(row, clinic, "Visit details:") : undefined });
       const env=(await resolvedIntegration("smtp",tx)).env;
       let cfg;
       try{cfg=smtpConfig(env);}catch{await update({state:"configuration_failed"});return null;}

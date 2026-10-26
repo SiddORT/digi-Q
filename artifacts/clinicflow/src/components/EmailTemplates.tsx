@@ -16,6 +16,7 @@ import "./email-templates.css";
 import { previewText } from "../lib/template-preview";
 import { BookingMailOutcomes } from "./BookingMailOutcomes";
 import { EventTemplateTest } from "./EventTemplateTest";
+import { EmailHtmlPreview } from "./EmailHtmlPreview";
 import { isRealSuperAdmin } from "../lib/settings-access";
 import { templateSaveError } from "../lib/communication-routes";
 import { templateContentForSave } from "../lib/notification-template-input";
@@ -319,13 +320,14 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
           {!sms && form.logoUrl && isValidLogo(form.logoUrl) && ((showLogo || isInternalLogo(form.logoUrl))
             ? <img src={logoPreviewSrc(form.logoUrl)} alt="Logo preview" className="et-logo" referrerPolicy="no-referrer" data-testid="img-logo" />
             : <button type="button" className="button secondary" onClick={() => setShowLogo(true)} data-testid="button-load-logo">Load Logo Preview (Contacts the Image Host)</button>)}
+          {!sms && !dirty && item.previewHtml && <EmailHtmlPreview html={item.previewHtml} />}
           <div className="et-mail">
             {!sms && <div className="et-subject" data-testid="text-preview-subject">{preview!.subject}</div>}
             <div className="et-body" data-testid="text-preview-body">{preview!.body}</div>
             {preview!.footer && <div className="et-footer">{preview!.footer}</div>}
           </div>
           {!dirty && <button type="button" className="button secondary small et-server-open" aria-haspopup="dialog" onClick={() => setServerOpen(true)} data-testid="button-server-rendering">Server Rendering</button>}
-          {serverOpen && <AppDialog open variant="drawer" onClose={() => setServerOpen(false)} title="Server Rendering"><div className="et-server"><div>{item.previewSubject}</div><pre>{item.previewBody}</pre></div></AppDialog>}
+          {serverOpen && <AppDialog open variant="drawer" onClose={() => setServerOpen(false)} title="Server Rendering"><div className="et-server"><div>{item.previewSubject}</div>{sms ? <pre>{item.previewBody}</pre> : <>{item.previewHtml && <EmailHtmlPreview html={item.previewHtml} />}<details><summary>Plain-text view</summary><pre>{item.previewBody}</pre></details></>}</div></AppDialog>}
         </aside>
         {isRealSuperAdmin(identity.user) && <EventTemplateTest key={`${channel}|${clinicId}|${event}|${recipient}`} channel={channel} event={event} recipient={recipient} clinicId={clinicId} revision={editBase.current?.revision ?? item.revision} content={templateContentForSave(form, channel, item.title)} />}
       </div>}

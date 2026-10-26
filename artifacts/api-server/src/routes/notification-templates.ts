@@ -11,6 +11,7 @@ import { roles } from "../lib/auth";
 import { ipKeyGenerator } from "express-rate-limit";
 import { eventControls,eventControlInput,prepareTemplateTest,testTemplate } from "../lib/notification-controls";
 import { changeActivation } from "../lib/notification-template-store";
+import { emailPreviewHtml } from "../lib/email-preview";
 export const notificationTemplatesRouter = Router();
 notificationTemplatesRouter.get("/management/templates", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
@@ -45,7 +46,8 @@ notificationTemplatesRouter.post("/management/templates/preview",async(req,res)=
   const user=await requireUser(req);roles(user,["superAdmin"]);
   await consumeRateLimit(`template-preview:${user.id}`,60,900000);
   const prepared=await prepareTemplateTest(user,req.body);
-  res.json({status:"preview",message:"Preview only. Nothing sent or activated.",subject:prepared.rendered.subject,body:prepared.rendered.text});
+  const html = "html" in prepared.rendered ? await emailPreviewHtml(prepared.rendered) : undefined;
+  res.json({status:"preview",message:"Preview only. Nothing sent or activated.",subject:prepared.rendered.subject,body:prepared.rendered.text,...(html ? {html} : {})});
 });
 notificationTemplatesRouter.post("/management/templates/test",async(req,res)=>{
   res.setHeader("Cache-Control","no-store");

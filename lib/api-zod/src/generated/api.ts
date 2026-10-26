@@ -815,6 +815,7 @@ export const GetNotificationTemplatesResponse = zod.object({
 }).optional().describe('SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.'),
   "previewSubject": zod.string(),
   "previewBody": zod.string(),
+  "previewHtml": zod.string().optional().describe('Email-only HTML rendered with fictional sample values, for a sandboxed preview.'),
   "delivery": zod.string(),
   "required": zod.boolean().optional()
 }))
@@ -928,6 +929,7 @@ export const SaveNotificationTemplateResponse = zod.object({
 }).optional().describe('SMS uses body and sender/DLT metadata; email branding fields retain their existing semantics.'),
   "previewSubject": zod.string(),
   "previewBody": zod.string(),
+  "previewHtml": zod.string().optional().describe('Email-only HTML rendered with fictional sample values, for a sandboxed preview.'),
   "delivery": zod.string(),
   "required": zod.boolean().optional()
 }))
@@ -985,7 +987,8 @@ export const PreviewEventTemplateResponse = zod.object({
   "status": zod.enum(['preview', 'provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown']),
   "message": zod.string(),
   "subject": zod.string(),
-  "body": zod.string()
+  "body": zod.string(),
+  "html": zod.string().optional().describe('Email-only sending HTML with internal logo CIDs resolved for the isolated preview. Not included for SMS or real test-send results.')
 })
 
 
@@ -1040,7 +1043,8 @@ export const TestEventTemplateResponse = zod.object({
   "status": zod.enum(['preview', 'provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown']),
   "message": zod.string(),
   "subject": zod.string(),
-  "body": zod.string()
+  "body": zod.string(),
+  "html": zod.string().optional().describe('Email-only sending HTML with internal logo CIDs resolved for the isolated preview. Not included for SMS or real test-send results.')
 })
 
 

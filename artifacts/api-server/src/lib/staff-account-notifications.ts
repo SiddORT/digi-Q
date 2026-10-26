@@ -102,7 +102,7 @@ export async function processStaffAccountNotifications(conn: any = db, email = s
           location_names: mappings.map((m: any) => m.name?.name || "").filter(Boolean).join(", "),
           sign_in_link: publicUrl("/sign-in") };
         if (!validEventContent(claim.data.event, ready.template.content)) return "pre_dispatch_failed";
-        const rendered = renderNotification(ready.template.content, values);
+        const rendered = renderNotification(ready.template.content, values, {event: claim.data.event});
         if (claim.data.channel === "email") {
           try {
             await email(ready.contact, rendered.subject, rendered.text, undefined, rendered, [], undefined,

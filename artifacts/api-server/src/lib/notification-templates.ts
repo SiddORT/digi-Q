@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { notificationEmailHtml } from "./notification-email-presentation";
+import type { EmailContext } from "./email-presentation";
 import { notificationVariables, eventVariables } from "@workspace/api-zod/notification-variable-contract";
 import { appointmentNotificationTarget } from "./appointment-notification-scope";
 import { securityEvents, isSecurityEvent, securityDefault, securityTitles, validSecurityContent } from "./security-template-definitions";
@@ -122,11 +124,10 @@ export function substitute(text: string, values: Record<string, string>): string
   // A single replacement pass: patient-supplied braces can never become another variable.
   return text.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (_, key) => values[key] ?? `[${key.replaceAll("_", " ")}]`);
 }
-export function renderNotification(content: TemplateContent, values: Record<string, string>) {
+export function renderNotification(content: TemplateContent, values: Record<string, string>, context: EmailContext = {}) {
   const subject = [substitute(content.prefix, values), substitute(content.subject, values)].filter(Boolean).join(" ").replace(/[\r\n]+/g, " ");
   const body = substitute(content.body, values), footer = substitute(content.footer, values);
-  const escape = (v: string) => v.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
   const logoPath = content.logoUrl.startsWith("/api/branding/logos/") ? content.logoUrl : undefined;
   return { subject, logoPath, text: [body, footer].filter(Boolean).join("\n\n"),
-    html: `<!doctype html><html><body style="font:16px/1.6 Arial,sans-serif;color:#17243b"><main style="max-width:600px;margin:auto;padding:24px">${content.logoUrl ? `<img src="${escape(logoPath ? "cid:clinic-logo" : content.logoUrl)}" alt="${escape(values.clinic_name || "Clinic")} logo" style="max-width:180px;max-height:80px">` : ""}<h1 style="font-size:22px">${escape(subject)}</h1><div style="white-space:pre-wrap">${escape(body)}</div><p style="font-size:12px;color:#53647b;white-space:pre-wrap">${escape(footer)}</p></main></body></html>` };
+    html: notificationEmailHtml(content, subject, values, context) };
 }

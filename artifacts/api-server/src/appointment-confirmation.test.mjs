@@ -40,17 +40,17 @@ await build({
     };`};
     if(a.path==="@workspace/db")return {contents:'export {conn as db} from "fixture"; export const appointments={id:"id",data:"data"},settings={id:"id"},patients="patients",clinics="clinics",users="users";'};
    if(a.path==="drizzle-orm")return {contents:'export const sql=(strings,...values)=>({strings,values});export const eq=(_,id)=>({id});'};
-   if(a.path.endsWith("/notification-template-store"))return {contents:'import {state} from "fixture"; export const resolvedTemplate=async()=>state.template||({source:"default",content:{enabled:true}});'};
+   if(a.path.endsWith("/notification-template-store"))return {contents:'import {state} from "fixture"; export const resolvedTemplate=async()=>state.template||({source:"default",content:{enabled:true,subject:"Booking confirmation",body:"{{appointment_details}}",prefix:"",footer:"",logoUrl:""}});'};
    if(a.path.endsWith("/auth-email"))return {contents:'export const sendAuthEmail=()=>{throw Error("Real SMTP forbidden in tests")};'};
    if(a.path==="./appointments")return {contents:'export const lockQueue=async()=>{};'};
    return {contents:'import {state} from "fixture"; export const one=async(table,id)=>state.rows[typeof table==="string"?table:"appointments"].find(r=>r.id===id);export const getSettings=async()=>({notificationsEnabled:state.enabled});'};
   });
  }}],
 });
-const {state,conn,confirmAppointmentEmail,confirmationText,initialConfirmationEmail}=await import(join(dir,"test.mjs"));
+const {state,conn,confirmAppointmentEmail,confirmationText,initialConfirmationEmail,defaultConfirmationEmail}=await import(join(dir,"test.mjs"));
 function seed(){
  state.enabled=true;state.failClaim=false;state.failOutcome=false;
- state.rows={appointments:[{id:"a",patientId:"p",clinicId:"c",status:"waiting",date:"2030-01-07",startTime:"14:05",endTime:"15:05",timezone:"Asia/Kolkata",clinicName:"Clinic",branchName:"Location",doctorName:"Doctor",reference:"REF",token:"A-01",notes:"private clinical notes"}],
+ state.rows={appointments:[{id:"a",patientId:"p",patientName:"Example Patient",clinicId:"c",status:"waiting",date:"2030-01-07",startTime:"14:05",endTime:"15:05",timezone:"Asia/Kolkata",clinicName:"Clinic",branchName:"Location",doctorName:"Doctor",reference:"REF",token:"A-01",notes:"private clinical notes"}],
   patients:[{id:"p",email:"patient@example.invalid",status:"active"}],clinics:[{id:"c",dateFormat:"DD/MM/YYYY",timeFormat:"24h"}],users:[]};
 }
 test("enabled confirmation uses parent display settings and excludes clinical notes",async()=>{
@@ -59,6 +59,15 @@ test("enabled confirmation uses parent display settings and excludes clinical no
  assert.equal(calls.length,1);assert.match(calls[0][2],/07\/01\/2030/);assert.match(calls[0][2],/14:05–15:05 \(Asia\/Kolkata\)/);
  assert.doesNotMatch(calls[0][2],/private clinical notes/);
  assert.match(confirmationText(state.rows.appointments[0],{dateFormat:"MM/DD/YYYY",timeFormat:"12h"}),/01\/07\/2030[\s\S]*2:05 PM/);
+});
+test("default bypass uses shared structured HTML without changing subject or wrapped plain text",()=>{
+ seed();
+ const row=state.rows.appointments[0],clinic=state.rows.clinics[0],message=defaultConfirmationEmail(row,clinic);
+ assert.equal(message.subject,"DigiQ Doctors — Appointment confirmation");
+ assert.equal(message.text,`DigiQ Doctors\n\n${message.subject}\n\n${confirmationText(row,clinic)}\n\nThis is an automated message from DigiQ Doctors. Please do not reply to this email.`);
+ for(const value of [row.reference,row.doctorName,row.branchName,row.token,row.timezone,"07/01/2030"])assert.ok(message.html.includes(value));
+ assert.match(message.html,/>Doctor<\/td><td[^>]*>Doctor<\/td>/);
+ assert.doesNotMatch(message.html,/private clinical notes/);
 });
 test("initial booking outcome captures known skips without claiming eligible SMTP work",async()=>{
  seed();

@@ -54,7 +54,7 @@ export async function securityEmail(event: SecurityEvent, recipient: TemplateRec
       assert(/\{\{\s*setup_link\s*\}\}/.test(template.content.body),503,"Setup link is required");
     assert(!missingVisitVariables([template.content.subject, template.content.body, template.content.prefix, template.content.footer], values).length,
       503,"Required security template values are missing");
-    const rendered = renderNotification(template.content,values);
+    const rendered = renderNotification(template.content,values,{event});
     await requireSecurityDelivery(event,recipient,"email",conn);
     prepared = true;
     await send(to,rendered.subject,rendered.text,undefined,rendered,[],undefined,

@@ -17,15 +17,16 @@ const bundle = await build({
     name: "isolated-email",
     setup(builder) {
       builder.onResolve({ filter: /logo-bytes$/ }, () => ({ path: "logo", namespace: "logo-fixture" }));
-      builder.onLoad({ filter: /.*/, namespace: "logo-fixture" }, () => ({ contents: 'export const loadLogoBytes=async()=>{throw Error("No real storage access in email tests")};' }));
+      builder.onLoad({ filter: /.*/, namespace: "logo-fixture" }, () => ({ contents: 'export const loadLogoBytes=async path=>{if(path.endsWith("/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))return Buffer.from("fictional-logo");throw Error("No real storage access in email tests")};' }));
       builder.onResolve({ filter: /integration-vault$/ }, () => ({ path: "vault", namespace: "vault-fixture" }));
       builder.onLoad({ filter: /.*/, namespace: "vault-fixture" }, () => ({ contents: "export const resolvedIntegration=async()=>({env:{}});" }));
       builder.onResolve({ filter: /integration-config$/ }, () => ({ path: "config", namespace: "fixture" }));
       builder.onResolve({ filter: /^\.\/http$/ }, () => ({ path: "http", namespace: "fixture" }));
       builder.onResolve({ filter: /^nodemailer$/ }, () => ({ path: "mail", namespace: "fixture" }));
       builder.onLoad({ filter: /.*/, namespace: "fixture" }, ({ path }) => ({
+        resolveDir: import.meta.dirname,
         contents: path === "config"
-          ? `export function smtpConfig(){return ${JSON.stringify(fixtureConfig)}}`
+          ? `export {smtpTransportOptions} from ${JSON.stringify(`${import.meta.dirname}/lib/integration-config.ts`)}; export function smtpConfig(){return ${JSON.stringify(fixtureConfig)}}`
           : path === "http"
             ? 'export class HttpError extends Error { constructor(status,message,code){super(message);this.status=status;this.code=code;} }'
             : `export default {createTransport(options){
@@ -61,7 +62,7 @@ test("codes, token URLs, already-formatted dates and line endings are not interp
   const body = "Code: 001234\r\nhttps://example.invalid/reset?token=Ab_C-9.012&next=%2Fhome\nDate: 03/04/2026 09:05 PM +05:30";
   const result = systemEmailTemplate("Account access", body);
   assert.ok(result.text.includes(body));
-  assert.ok(result.html.includes(body.replace("&", "&amp;")));
+  assert.ok(result.html.includes(body.replace("&", "&amp;").replace(/\r?\n/g, "<br>")));
   assert.doesNotMatch(result.html, /href=|src=/);
 });
 
@@ -86,6 +87,27 @@ test("injected legacy void transport receives safe branded multipart content", a
   assert.equal(message.disableFileAccess, true);
   assert.equal(message.disableUrlAccess, true);
 });
+test("HTML rendering never changes caller attachments or clinic-logo preparation semantics", async () => {
+  const file = { filename: "visit-ticket.pdf", content: Buffer.from("fictional-pdf"), contentType: "application/pdf" };
+  let received;
+  const rendered = systemEmailTemplate("Your visit ticket", "Your private visit ticket is attached.");
+  await sendAuthEmail("recipient@example.invalid", "Your visit ticket", rendered.text,
+    {async sendMail(message) {received=message;}}, rendered, [file]);
+  assert.deepEqual(received.attachments,[file]);
+  assert.equal(received.html,rendered.html);
+  assert.equal(received.text,rendered.text);
+  await sendAuthEmail("recipient@example.invalid", "Your visit ticket", rendered.text,
+    {async sendMail(message) {received=message;}},
+    {...rendered,logoPath:"/api/branding/logos/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}, [file]);
+  assert.equal(received.attachments[0],file);
+  assert.equal(received.attachments[1].cid,"clinic-logo");
+  assert.equal(received.attachments[1].content.toString(),"fictional-logo");
+  let dispatched=false;
+  await assert.rejects(sendAuthEmail("recipient@example.invalid","Subject","Body",{async sendMail(){dispatched=true;}},
+    {...rendered,logoPath:"/api/branding/logos/bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee"},[file]),
+    {code:"EMAIL_PRE_DISPATCH_FAILED"});
+  assert.equal(dispatched,false);
+});
 
 test("provider rejection and transport diagnostics become generic delivery errors", async () => {
   for (const result of [
@@ -96,11 +118,11 @@ test("provider rejection and transport diagnostics become generic delivery error
   ]) {
     await assert.rejects(sendAuthEmail("recipient@example.invalid", "Subject", "Body", {
       async sendMail() { return result; },
-    }), { status: 503, code: "EMAIL_DELIVERY_FAILED", message: "Email delivery unavailable" });
+    }), { status: 503, code: "EMAIL_REJECTED", message: "Email provider rejected the recipient" });
   }
   await assert.rejects(sendAuthEmail("recipient@example.invalid", "Subject", "Body", {
     async sendMail() { throw new Error("private SMTP fixture diagnostics"); },
-  }), { status: 503, code: "EMAIL_DELIVERY_FAILED", message: "Email delivery unavailable" });
+  }), { status: 503, code: "EMAIL_DELIVERY_FAILED", message: "Email delivery outcome is uncertain" });
   await sendAuthEmail("recipient@example.invalid", "Subject", "Body", {
     async sendMail() { return { accepted: ["recipient@example.invalid"], rejected: [] }; },
   });

@@ -64,3 +64,4 @@
 - [Owner booking recovery](owner-booking-recovery.md) — explicit same-account, approved-location recovery; preserve administrative drafts and distinguish local checks from hosted repair.
 - [Browser fixture identity](browser-fixture-module-identity.md) — live Vite component fixtures must share dependency identities and isolate query-state scenarios.
 - [Template publication boundary](template-publication-test-boundary.md) — unfinished optional tests must not block wording publication or weaken shared input validation.
+- [Email visual references](email-reference-boundary.md) — booking/OTP images guide appearance, not event variables, security links, message meaning or delivery authorization.

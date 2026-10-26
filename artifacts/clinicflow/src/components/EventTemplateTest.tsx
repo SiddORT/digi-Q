@@ -15,6 +15,7 @@ import { DateFormatInput, TimeFormatInput } from "./DateFormatInput";
 import { useDateTimePreferences } from "./DateTimePreferences";
 import { resolveDateTimePreferences } from "../lib/date-time";
 import { templateTestValue } from "../lib/template-test-fields";
+import { EmailHtmlPreview } from "./EmailHtmlPreview";
 
 type Content = api.NotificationTemplateContent;
 const PH = /\{\{\s*([a-z0-9_]+)\s*\}\}/gi;
@@ -142,7 +143,9 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     {result && <div role={failed ? "alert" : "status"} className={`et-test-result ${failed ? "error-box" : "et-notice"}`} data-testid="status-test-result"><strong>{OUTCOME[result.status] ?? result.status}</strong> {result.message}
       {canStartNewTemplateTest(test.data?.status) && <p>After resolving the issue, start a new test and confirm again.
         <button type="button" className="button secondary small" disabled={test.isPending} onClick={startNewTest} data-testid="button-start-new-test">Start New Test</button></p>}
-      {channel === "email" && <div data-testid="text-test-subject">{result.subject}</div>}<pre data-testid="text-test-body">{result.body}</pre></div>}
+      {channel === "email" && <div data-testid="text-test-subject">{result.subject}</div>}
+      {channel === "email" && preview.data?.html && <EmailHtmlPreview html={preview.data.html} />}
+      {channel === "email" ? <details><summary>Plain-text view</summary><pre data-testid="text-test-body">{result.body}</pre></details> : <pre data-testid="text-test-body">{result.body}</pre>}</div>}
   </section>;
 }
 export default EventTemplateTest;

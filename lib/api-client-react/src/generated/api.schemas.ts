@@ -914,6 +914,8 @@ export interface EventTemplateTestResult {
   message: string;
   subject: string;
   body: string;
+  /** Email-only sending HTML with internal logo CIDs resolved for the isolated preview. Not included for SMS or real test-send results. */
+  html?: string;
 }
 
 export type EventControlInputChannel = typeof EventControlInputChannel[keyof typeof EventControlInputChannel];
@@ -1059,6 +1061,8 @@ export type NotificationTemplateCatalogItemsItem = {
   draft?: NotificationTemplateContent;
   previewSubject: string;
   previewBody: string;
+  /** Email-only HTML rendered with fictional sample values, for a sandboxed preview. */
+  previewHtml?: string;
   delivery: string;
   required?: boolean;
 };

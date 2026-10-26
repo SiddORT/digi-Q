@@ -2389,6 +2389,9 @@ components:
         message: { type: string }
         subject: { type: string }
         body: { type: string }
+        html:
+          type: string
+          description: Email-only sending HTML with internal logo CIDs resolved for the isolated preview. Not included for SMS or real test-send results.
     EventControlInput:
       type: object
       required: [channel, event, recipient, revision, enabled, confirmed]
@@ -2456,6 +2459,9 @@ components:
               draft: { $ref: "#/components/schemas/NotificationTemplateContent" }
               previewSubject: { type: string }
               previewBody: { type: string }
+              previewHtml:
+                type: string
+                description: Email-only HTML rendered with fictional sample values, for a sandboxed preview.
               delivery: { type: string }
               required: { type: boolean }
     IntegrationKeyStatus:

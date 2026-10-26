@@ -33,6 +33,8 @@ export type NotificationTemplateCatalogItemsItem = {
   draft?: NotificationTemplateContent;
   previewSubject: string;
   previewBody: string;
+  /** Email-only HTML rendered with fictional sample values, for a sandboxed preview. */
+  previewHtml?: string;
   delivery: string;
   required?: boolean;
 };

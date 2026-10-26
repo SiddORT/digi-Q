@@ -12,6 +12,7 @@ import { validTemplateTarget, validEventContent } from "./notification-templates
 import { requiredEvent, isSecurityEvent, securityDefault } from "./security-template-definitions";
 import { appointmentActivationId, appointmentNotificationTarget } from "./appointment-notification-scope";
 import { accountRoleLabel } from "@workspace/api-zod/notification-variable-contract";
+import { emailPreviewHtml } from "./email-preview";
 
 export type Channel = "email" | "sms";
 const key = (event: TemplateEvent, clinicId?: string, recipient = defaultRecipient(event), channel:Channel="email") => `${channel==="sms"?"sms":"notification"}-template:${clinicId || "platform"}:${event}${recipient === defaultRecipient(event) ? "" : `:${recipient}`}`;
@@ -61,10 +62,11 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
      if (!validTemplateTarget(event, recipient || defaultRecipient(event), channel) || requiredEvent(event) && clinicId) continue;
      const { content, local, source } = await resolvedTemplate(event, clinicId, conn, recipient || defaultRecipient(event),channel);
      const candidate=local.draft || content;
-     const preview = validEventContent(event,candidate) ? renderNotification(candidate, previewValues) :
+     const preview = validEventContent(event,candidate) ? renderNotification(candidate, previewValues, {event}) :
        {subject:"Template preparation unavailable",text:"This saved template uses variables incompatible with this event. Edit it explicitly or reset; saved wording has not been changed."};
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,
+      previewHtml: channel === "email" && "html" in preview ? await emailPreviewHtml(preview) : undefined,
        required: requiredEvent(event),
        delivery: requiredEvent(event) ? "Platform security message controlled at System Default. Own activation applies; Optional Delivery and operational provider switches do not. SMS requires approved published wording and sender/DLT configuration. Provider acceptance is not delivery. Real codes and links never enter notification history." : event === "onboarding" ? "Clinic onboarding retains its own activation and recipient policy. Communication Settings and eligible recipient contact apply. Development never sends automatically." : "Appointment Email and SMS default on for patient, owning Clinic Admin and assigned Doctor. Published overrides and personal opt-outs still apply. Active membership and valid unique contact are rechecked. SMS uses existing provider-specific sender/DLT metadata. Reminders are one hour before session start in its timezone, not a consultation-time promise. Development never sends automatically; provider acceptance is not delivery." });
   }

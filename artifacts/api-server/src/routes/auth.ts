@@ -7,6 +7,7 @@ import { HttpError, assert } from "../lib/http";
 import { uid, put, audit } from "../lib/store";
 import { isStaffRole, requireUser } from "../lib/auth";
 import { sendAuthEmail, smtpConfig } from "../lib/auth-email";
+import { systemEmailTemplate } from "../lib/email-template";
 import { resolvedIntegration } from "../lib/integration-vault";
 import { patientLoginPhone, startPatientSmsLogin, verifyPatientSmsLogin } from "../lib/patient-login-sms";
 import { securityEmail, securitySms, requireSecurityDelivery, eligibleStaffMobile, type SecurityOutcomes } from "../lib/security-notifications";
@@ -84,7 +85,9 @@ async function mailLink(req: any, address: string, userId: string, purpose: stri
     if (email.status !== "provider_accepted") await db.update(authChallenges).set({consumedAt:new Date(),data:{}}).where(eq(authChallenges.id,id));
     return {email,sms};
   }
-  await sendAuthEmail(address, "DigiQ Doctors account access", `Use this link within 30 minutes: ${url}`);
+  const subject = "DigiQ Doctors account access", text = `Use this link within 30 minutes: ${url}`;
+  await sendAuthEmail(address, subject, text, undefined,
+    systemEmailTemplate(subject, text, { url: url.toString(), label: "Access your account" }));
   return undefined;
   }, db, outcomes => outcomes?.email.status === "delivery_unknown" || outcomes?.sms.status === "delivery_unknown");
 }

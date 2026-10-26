@@ -442,3 +442,31 @@ mtime_ms = 1792985963126
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/73c3bca7-2109-4f8d-9356-4c4562f7a573/28a325b5-2a68-4c13-82a9-d46aa24229d4"
 storage_version_token = "1792985982824511"
 content_type = "text/html"
+
+[[outputs]]
+id = "2TAL4oVofO8tuBVtaMi3i"
+uri = "file://generated-artifacts/email-theme/booking.html"
+type = "html"
+title = "Themed booking email example"
+description = "Fictional sample using the shared sending renderer. No message was sent."
+logical_id = "e7bffd92-bc28-4e1f-859d-4d17b8275815"
+content_hash = "sha256:7d8d7afb52c032f2f06652f16230907ca7153f4820a3d703b87998d8b5df1690"
+size = 4337
+mtime_ms = 1792996279022
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/e7bffd92-bc28-4e1f-859d-4d17b8275815/3754687c-67a2-4479-9797-f821f3267bdf"
+storage_version_token = "1792996363837173"
+content_type = "text/html"
+
+[[outputs]]
+id = "UcWFxHaTCQNYEjtfEfPLy"
+uri = "file://generated-artifacts/email-theme/otp.html"
+type = "html"
+title = "Themed OTP email example"
+description = "Fictional clinic-registration sample with an intact leading-zero code and seven-minute expiry. Browser rendering only."
+logical_id = "6ace9d11-9549-4793-b34e-f0076179ab57"
+content_hash = "sha256:09800db51afdfb24901c6731f415e126cdbed67b54aba745c2d7e854e0e8663d"
+size = 4759
+mtime_ms = 1792996279022
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/6ace9d11-9549-4793-b34e-f0076179ab57/0ea705e9-8030-45b0-b8d3-81c983ca478f"
+storage_version_token = "1792996365146745"
+content_type = "text/html"
