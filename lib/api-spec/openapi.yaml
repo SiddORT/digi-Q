@@ -819,7 +819,7 @@ paths:
     post:
       operationId: startPatientEmail
       security: []
-      description: Requests email login (including new patients) or SMS login for existing active patient accounts. SMS uses the platform patient-login template, bypasses optional notification gates and never returns the code.
+      description: Requests email login (including new patients) or SMS login for existing active patient accounts. Email outcome is always not_reported to protect eligibility. Optional registration SMS proves only the supplied phone, independently of email eligibility, and returns its safe channel outcome. SMS login uses the platform patient-login template, bypasses optional notification gates and never returns the code.
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PatientLoginStartInput" } } } }
       responses:
         "200": { description: Patient challenge, content: { application/json: { schema: { $ref: "#/components/schemas/AuthChallenge" } } } }
@@ -3109,7 +3109,7 @@ components:
       type: object
       required: [status]
       properties:
-        status: { type: string, enum: [provider_accepted, provider_rejected, pre_dispatch_failed, delivery_unknown, unavailable, not_requested] }
+        status: { type: string, enum: [provider_accepted, provider_rejected, pre_dispatch_failed, delivery_unknown, unavailable, disabled, not_requested, not_reported] }
         destination: { type: string, description: "Masked destination only. Acceptance is not receipt." }
     SecurityChannelOutcomes:
       type: object
@@ -3184,12 +3184,12 @@ components:
         photoUrl: { type: string }
     OnboardingInput:
       type: object
-      required: [fullName]
+      required: [fullName, termsAccepted]
       properties:
         intent: { type: string, enum: [patient], default: patient }
         fullName: { type: string, minLength: 1 }
-        mobile: { type: string }
-        termsAccepted: { type: boolean }
+        mobile: { type: string, description: "Cannot introduce or replace a phone. Only the already-saved signup phone is retained; omit this field or leave it empty to preserve that phone." }
+        termsAccepted: { type: boolean, description: "Must be true to consent to appointment management and complete the patient profile." }
     Identity:
       type: object
       required: [userId, user, needsOnboarding]

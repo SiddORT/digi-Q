@@ -14,6 +14,7 @@ identityRouter.get("/me", async (req, res) => {
 });
 identityRouter.post("/onboarding", async (req, res) => {
   const userId = requireIdentity(req), body = parse(z.OnboardBody, req.body);
+  assert(body.termsAccepted === true, 400, "Consent is required to complete your patient profile");
   const existingUser = await findUser(userId);
   if (isStaffRole(existingUser?.role)) await requireStaffSessionProof(req);
   const [identity] = await db.select().from(users).where(eq(users.id, userId));
@@ -24,8 +25,16 @@ identityRouter.post("/onboarding", async (req, res) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
     const [before] = await tx.select().from(patients).where(eq(patients.userId, userId));
     assert(!before, 409, "Profile already exists");
-    const user = await change(users, userId, { fullName: body.fullName, mobile: body.mobile }, tx);
-    await put(patients, { id: uid(), userId, mobile: body.mobile || "", data: { fullName: body.fullName, email: user.email, code: `PAT-${userId.slice(0,8)}` } }, tx);
+    const [account] = await tx.select().from(users).where(eq(users.id,userId)).for("update");
+    // Onboarding must not erase a registration-verified phone with an empty
+    // form default, or transfer its proof to a replacement number.
+    assert(!body.mobile || body.mobile === account.mobile, 400,
+      "Verify your phone during signup before saving it. You can complete your profile without a phone.");
+    const mobile = account.mobile || "";
+    const mobileVerified = !!mobile && mobile === account.mobile && account.data?.mobileVerified === true;
+    const user = await change(users, userId, { fullName: body.fullName, mobile,
+      data:{...account.data,mobileVerified} }, tx);
+    await put(patients, { id: uid(), userId, mobile, mobileVerified, data: { fullName: body.fullName, email: user.email, code: `PAT-${userId.slice(0,8)}` } }, tx);
     await audit(user, "onboard", "users", user, tx);
   });
   const user = await findUser(userId);

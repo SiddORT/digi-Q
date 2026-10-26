@@ -6202,7 +6202,7 @@ export const getStartPatientEmailUrl = () => {
 }
 
 /**
- * Requests email login (including new patients) or SMS login for existing active patient accounts. SMS uses the platform patient-login template, bypasses optional notification gates and never returns the code.
+ * Requests email login (including new patients) or SMS login for existing active patient accounts. Email outcome is always not_reported to protect eligibility. Optional registration SMS proves only the supplied phone, independently of email eligibility, and returns its safe channel outcome. SMS login uses the platform patient-login template, bypasses optional notification gates and never returns the code.
  */
 export const startPatientEmail = async (patientLoginStartInput: PatientLoginStartInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthChallenge> => {
 

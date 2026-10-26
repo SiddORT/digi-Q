@@ -26,6 +26,8 @@ export interface OnboardingInput {
   intent?: OnboardingInputIntent;
   /** @minLength 1 */
   fullName: string;
+  /** Cannot introduce or replace a phone. Only the already-saved signup phone is retained; omit this field or leave it empty to preserve that phone. */
   mobile?: string;
-  termsAccepted?: boolean;
+  /** Must be true to consent to appointment management and complete the patient profile. */
+  termsAccepted: boolean;
 }

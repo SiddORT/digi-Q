@@ -347,7 +347,7 @@ test("verified registration and patient email create separate roles with origina
   const register = await route("/auth/register/start", { email: "clinic@example.test",
     fullName: "Clinic Admin", password: "disposable clinic passphrase 123" });
   const registrationMail = globalThis.nativeAuthMail.pop();
-  assert.equal(registrationMail.subject, "Verify your DigiQ clinic registration");
+  assert.equal(registrationMail.subject, api.defaultTemplate("clinic_registration_otp").subject);
   assert.match(registrationMail.text, /clinic administrator registration/);
   const registerCode = /code is (\d{6})/.exec(registrationMail.text)[1];
   const confirmed = await route("/auth/register/verify",
@@ -725,7 +725,7 @@ test("patient optional phone proves only its new email intent; shared phones nev
   await publishSecuritySms("registration_mobile_otp","patient");
   await h.control.query("insert into users(id,email,full_name,role,mobile) values('original','original@example.invalid','Original','patient','+919876543210')");
   const started = await route("/auth/patient/start",{email:"new-patient@example.invalid",mobile:"+919876543210"});
-  assert.deepEqual(Object.keys(started.res.body),["challengeId"],"enumeration-resistant response");
+  assert.equal(started.res.body.channels.email.status,"not_reported","email eligibility and transport outcome remain private");
   const challengeId = started.res.body.challengeId, emailCode = lastEmailCode();
   await route("/auth/registration/mobile/verify",{challengeId,code:lastMobileCode()});
   await route("/auth/patient/verify",{challengeId,code:emailCode});
@@ -747,7 +747,7 @@ test("patient email resend retains verified phone, original expiry and attempts 
   await h.control.query("update auth_challenges set created_at=now()-interval '2 minutes',attempts=1 where id=$1",[challengeId]);
   const original=(await h.control.query("select * from auth_challenges where id=$1",[challengeId])).rows[0];
   const resent=await route("/auth/patient/resend",{challengeId});
-  assert.deepEqual(resent.res.body,{challengeId});
+  assert.deepEqual(resent.res.body,{challengeId,channels:{email:{status:"not_reported"}}});
   const latest=lastEmailCode();
   assert.notEqual(latest,originalCode);
   const parent=(await h.control.query("select * from auth_challenges where id=$1",[challengeId])).rows[0];
@@ -757,7 +757,7 @@ test("patient email resend retains verified phone, original expiry and attempts 
   await route("/auth/patient/verify",{challengeId,code:latest});
   assert.equal((await h.control.query("select data from users where email='resend-patient@example.invalid'")).rows[0].data.mobileVerified,true);
   const unmatched="a".repeat(24);
-  assert.deepEqual((await route("/auth/patient/resend",{challengeId:unmatched})).res.body,{challengeId:unmatched});
+  assert.deepEqual((await route("/auth/patient/resend",{challengeId:unmatched})).res.body,{challengeId:unmatched,channels:{email:{status:"not_reported"}}});
 });
 test("unverified duplicate registration phone cannot deny an existing patient's SMS login",async()=>{
   await setupSmsPatient();
@@ -908,4 +908,52 @@ test("security email rechecks activation at SMTP dispatch after asynchronous pre
   assert.equal(result.status,"disabled");
   assert.equal(calls,0);
   assert.equal(globalThis.nativeAuthMail.length,0);
+});
+
+test("patient signup surfaces optional SMS outcomes without blocking required email or saving unproved phones",async()=>{
+  for (const status of ["provider_accepted","provider_rejected","delivery_unknown","pre_dispatch_failed","unavailable","disabled"]) {
+    await h.control.query("truncate auth_rate_limits");
+    await h.control.query("delete from settings where id like '%registration_mobile_otp%'");
+    if (!["unavailable","disabled"].includes(status)) await publishSecuritySms("registration_mobile_otp","patient");
+    if (status==="disabled") {
+      const current=await api.resolvedTemplate("registration_mobile_otp",undefined,h.db,"patient","sms");
+      await api.changeActivation({id:"fixture-admin",role:"superAdmin"},{event:"registration_mobile_otp",recipient:"patient",channel:"sms",revision:current.local.revision,enabled:false});
+    }
+    globalThis.nativeAuthSmsOutcome=status;
+    const started=(await route("/auth/patient/start",{email:`optional-${status}@example.invalid`,mobile:"+919876543210"})).res.body;
+    assert.equal(started.channels.email.status,"not_reported");
+    assert.equal(started.channels.sms.status,status);
+    const emailCode=lastEmailCode();
+    const parent=(await h.control.query("select * from auth_challenges where id=$1",[started.challengeId])).rows[0];
+    assert.equal(parent.data.mobileVerified,false);
+    assert.equal((await h.control.query("select count(*)::int n from users")).rows[0].n,
+      ["provider_accepted","provider_rejected","delivery_unknown","pre_dispatch_failed","unavailable","disabled"].indexOf(status));
+    await route("/auth/patient/verify",{challengeId:started.challengeId,code:emailCode});
+    const user=(await h.control.query("select * from users where email=$1",[`optional-${status}@example.invalid`])).rows[0];
+    assert(!user.mobile,"even accepted SMS is not phone proof");
+    assert(user.email_verified_at);
+    await assert.rejects(route("/auth/patient/verify",{challengeId:started.challengeId,code:emailCode}),"single-use email");
+  }
+});
+
+test("private email outcomes and independent phone proof do not reveal or authenticate ineligible email accounts",async()=>{
+  await publishSecuritySms("registration_mobile_otp","patient");
+  await h.control.query("insert into users(id,email,full_name,role,mobile) values('staff-email','staff-email@example.invalid','Staff','doctor','+919999999999')");
+  const eligible=(await route("/auth/patient/start",{email:"new-email@example.invalid",mobile:"+919876543210"})).res.body;
+  const sent=globalThis.nativeAuthMail.length;
+  const denied=(await route("/auth/patient/start",{email:"staff-email@example.invalid",mobile:"+919876543210"})).res.body;
+  assert.deepEqual(denied.channels,eligible.channels,"transport feedback cannot identify the email role");
+  assert.equal(globalThis.nativeAuthMail.length,sent,"ineligible email receives no OTP");
+  const smsCode=lastMobileCode();
+  await route("/auth/registration/mobile/verify",{challengeId:denied.challengeId,code:smsCode});
+  await assert.rejects(route("/auth/patient/verify",{challengeId:denied.challengeId,code:smsCode}));
+  await assert.rejects(route("/auth/patient/verify",{challengeId:denied.challengeId,code:smsCode,channel:"sms"}));
+  assert.equal((await h.control.query("select count(*)::int n from auth_sessions")).rows[0].n,0);
+  const unchanged=(await h.control.query("select * from users where id='staff-email'")).rows[0];
+  assert.equal(unchanged.mobile,"+919999999999");
+  assert.equal(unchanged.email_verified_at,null);
+  const resend=(await route("/auth/patient/resend",{challengeId:denied.challengeId})).res.body;
+  assert.equal(resend.channels.email.status,"not_reported");
+  const unknown=(await route("/auth/patient/resend",{challengeId:"XXXXXXXXXXXXXXXXXXXXXXXX"})).res.body;
+  assert.deepEqual(resend.channels,unknown.channels);
 });

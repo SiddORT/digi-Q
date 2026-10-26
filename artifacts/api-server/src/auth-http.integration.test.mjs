@@ -289,3 +289,70 @@ test("disabled verification is a distinct safe frontend error with no false sent
   assert((await authRequest("patient/start",{email:"enabled@example.test"})).challengeId);
   assert.equal(globalThis.nativeAuthMail.length,1);
 });
+
+test("email signup plus separate SMS proof survives complete profile onboarding over HTTPS",async()=>{
+  Object.assign(process.env,{NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits",
+    NOTIFICATION_SMS_KEY:"fixture-key",NOTIFICATION_SMS_BEARER_TOKEN:"fixture-token",
+    NOTIFICATION_SMS_CLIENT_ID:"fixture-client",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_ENABLED:"false"});
+  const current=await backend.resolvedTemplate("registration_mobile_otp",undefined,harness.db,"patient","sms");
+  await backend.saveTemplate({id:"fixture-admin",role:"superAdmin"},{channel:"sms",event:"registration_mobile_otp",recipient:"patient",
+    revision:current.local.revision,mode:"publish",content:{...backend.defaultTemplate("registration_mobile_otp"),senderId:"",dltEntityId:"",dltTemplateId:"FIXTURE_REGISTER"}});
+  const started=await authRequest("patient/start",{email:"onboard-phone@example.test",mobile:"+919876543210"});
+  assert.equal(started.channels.email.status,"not_reported");
+  assert.equal(started.channels.sms.status,"provider_accepted");
+  const emailCode=mailCode(), smsCode=/\b(\d{6})\b/.exec(globalThis.nativeAuthSms.at(-1))?.[1];
+  assert(smsCode);
+  await authRequest("registration/mobile/verify",{challengeId:started.challengeId,code:smsCode});
+  assert.equal((await harness.control.query("select count(*)::int n from users")).rows[0].n,0,"SMS proof alone creates nothing");
+  await authRequest("patient/verify",{challengeId:started.challengeId,code:emailCode});
+  const me=await (await browserFetch("/api/me")).json();
+  assert.equal(me.needsOnboarding,true);
+  assert.equal(me.user.mobile,"+919876543210");
+  const csrf=(await (await browserFetch("/api/auth/csrf")).json()).csrfToken;
+  for (const consent of [false,undefined]) {
+    const denied=await browserFetch("/api/onboarding",{method:"POST",credentials:"include",
+      headers:{"content-type":"application/json","x-csrf-token":csrf},
+      body:JSON.stringify({fullName:"Fictional Patient",intent:"patient",termsAccepted:consent})});
+    assert.equal(denied.status,400,"consent is required before any patient profile is saved");
+    assert.equal((await harness.control.query("select count(*)::int n from patients")).rows[0].n,0);
+  }
+  const response=await browserFetch("/api/onboarding",{method:"POST",credentials:"include",
+    headers:{"content-type":"application/json","x-csrf-token":csrf},
+    body:JSON.stringify({fullName:"Fictional Patient",mobile:"",intent:"patient",termsAccepted:true})});
+  assert.equal(response.status,201,JSON.stringify(await response.clone().json()));
+  const profile=await response.json();
+  assert.equal(profile.needsOnboarding,false);
+  assert.equal(profile.user.mobile,"+919876543210","empty onboarding default cannot erase verified phone");
+  const patient=(await harness.control.query("select * from patients where user_id=$1",[me.user.id])).rows[0];
+  assert.equal(patient.mobile,"+919876543210");
+  assert.equal(patient.mobile_verified,true);
+});
+
+test("email-only signup cannot introduce an unproved SMS-login phone through onboarding",async()=>{
+  const mobile="+919876543210";
+  const started=await authRequest("patient/start",{email:"email-only-onboarding@example.test"});
+  await authRequest("patient/verify",{challengeId:started.challengeId,code:mailCode()});
+  const me=await (await browserFetch("/api/me")).json();
+  assert.equal(me.needsOnboarding,true);
+  assert(!me.user.mobile);
+  const csrf=(await (await browserFetch("/api/auth/csrf")).json()).csrfToken;
+  const onboard=body=>browserFetch("/api/onboarding",{method:"POST",credentials:"include",
+    headers:{"content-type":"application/json","x-csrf-token":csrf},
+    body:JSON.stringify({fullName:"Fictional Email Only",intent:"patient",termsAccepted:true,...body})});
+  const denied=await onboard({mobile});
+  assert.equal(denied.status,400,"unproved phone is rejected, not bound to the new account");
+  assert.match(JSON.stringify(await denied.json()),/Verify your phone during signup/);
+  assert.equal((await harness.control.query("select count(*)::int n from patients where user_id=$1",[me.user.id])).rows[0].n,0);
+  assert(!(await harness.control.query("select mobile from users where id=$1",[me.user.id])).rows[0].mobile);
+  const completed=await onboard({});
+  assert.equal(completed.status,201,JSON.stringify(await completed.clone().json()));
+  const profile=await completed.json();
+  assert.equal(profile.needsOnboarding,false);
+  assert(!profile.user.mobile);
+  assert.equal((await harness.control.query("select mobile from patients where user_id=$1",[me.user.id])).rows[0].mobile,"");
+  await authRequest("logout");
+  await assert.rejects(authRequest("patient/start",{channel:"sms",mobile}),
+    error=>error.code==="PATIENT_SMS_NOT_REGISTERED");
+  assert.equal((await (await browserFetch("/api/auth/status")).json()).role,null);
+  assert.equal(globalThis.nativeAuthSms.length,0,"no SMS sent for an unproved onboarding number");
+});

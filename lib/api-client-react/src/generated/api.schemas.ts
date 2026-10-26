@@ -1503,7 +1503,9 @@ export const SecurityChannelOutcomeStatus = {
   pre_dispatch_failed: 'pre_dispatch_failed',
   delivery_unknown: 'delivery_unknown',
   unavailable: 'unavailable',
+  disabled: 'disabled',
   not_requested: 'not_requested',
+  not_reported: 'not_reported',
 } as const;
 
 export interface SecurityChannelOutcome {
@@ -2524,8 +2526,10 @@ export interface OnboardingInput {
   intent?: OnboardingInputIntent;
   /** @minLength 1 */
   fullName: string;
+  /** Cannot introduce or replace a phone. Only the already-saved signup phone is retained; omit this field or leave it empty to preserve that phone. */
   mobile?: string;
-  termsAccepted?: boolean;
+  /** Must be true to consent to appointment management and complete the patient profile. */
+  termsAccepted: boolean;
 }
 
 export interface Identity {

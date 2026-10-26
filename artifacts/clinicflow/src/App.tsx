@@ -11,6 +11,7 @@ import { Portal, Onboarding, PublicBooking } from "./clinic";
 import { CheckInScanner } from "./CheckIn";
 import { StaffLogin } from "./auth/StaffLogin";
 import { PatientLogin } from "./auth/PatientLogin";
+import { patientSignupDestination } from "./auth/patient-access-links";
 import { ForgotPassword, SetPassword } from "./auth/PasswordFlows";
 import { AuthAccess } from "./auth/AuthAccess";
 import { ClinicDisplay } from "./components/ClinicDisplay";
@@ -39,7 +40,7 @@ function Home() {
   return <div className="landing">
     <PublicHeader/>
     <main>
-      <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="dot"/> Better Care. Less Waiting.</span><h1>A Healthier Way to Manage <em>Your Next Visit.</em></h1><PageDescription text="Find a clinic, book a visit and follow your queue." help="Scan a clinic QR or choose Guest Booking to request a visit without signing in." label="About booking a visit"/><div className="hero-actions"><Link className="button public-primary" href="/scan-qr" data-testid="landing-scan-qr"><QrCode size={19} aria-hidden/> Scan QR Code</Link><Link className="button secondary" href="/guest-booking" data-testid="landing-book-guest">Guest Booking <ArrowUpRight size={19}/></Link><Link className="text-link" href="/register-doctor">I'm a Healthcare Provider <ChevronRight size={17}/></Link></div><div className="trust"><ShieldCheck size={17}/> No login needed to request a visit <span/> Real-Time Queue Updates</div></div>
+      <section className="hero"><div className="hero-copy"><span className="eyebrow"><span className="dot"/> Better Care. Less Waiting.</span><h1>A Healthier Way to Manage <em>Your Next Visit.</em></h1><PageDescription text="Find a clinic, book a visit and follow your queue." help="Scan a clinic QR or choose Guest Booking to request a visit without signing in." label="About booking a visit"/><div className="hero-actions"><Link className="button public-primary" href="/scan-qr" data-testid="landing-scan-qr"><QrCode size={19} aria-hidden/> Scan QR Code</Link><Link className="button secondary" href="/guest-booking" data-testid="landing-book-guest">Guest Booking <ArrowUpRight size={19}/></Link></div><div className="hero-actions" aria-label="Patient account access"><Link className="text-link" href="/patient-login?mode=signup">Patient Sign Up <ChevronRight size={17}/></Link><Link className="text-link" href="/patient-login">Patient Login <ChevronRight size={17}/></Link></div><div className="hero-actions"><Link className="text-link" href="/register-doctor">I'm a Healthcare Provider <ChevronRight size={17}/></Link></div><div className="trust"><ShieldCheck size={17}/> No login needed to request a visit <span/> Real-Time Queue Updates</div></div>
       <div className="hero-art"><div className="art-grid"/><div className="art-heading"><span className="mini-mark"><Activity/></span><span>Connected Care<br/><strong>From Booking to Better</strong></span></div><div className="care-orbit orbit-one"/><div className="care-orbit orbit-two"/><div className="care-center"><Stethoscope size={78} strokeWidth={1.25}/></div><div className="float-card card-a"><span className="icon-box"><CalendarDays/></span><div><strong>Your Visit, Simplified</strong><p>Appointments That Fit Your Day</p></div></div><div className="float-card card-b"><span className="live-dot"/><div><strong>Stay in the Know</strong><p>Follow Your Queue, Wherever You Are</p></div></div><div className="art-footer">Thoughtfully Designed Around You <ShieldCheck size={18}/></div></div></section>
       <section id="how-it-works" className="journey"><div><span className="eyebrow">Care Without the Complications</span><h2>Less Admin. More Living.</h2></div><div className="journey-grid">{[[Building2,"01","Find Your Care","Choose a clinic, location and doctor that work for you."],[CalendarDays,"02","Plan Your Visit","See actual availability and reserve your appointment."],[Clock3,"03","Skip the Uncertainty","Check your token and live queue before you arrive."]].map(([Icon,n,title,body]: any)=><article key={n}><div className="journey-top"><Icon size={25}/><span>{n}</span></div><h3>{title}</h3><p>{body}</p></article>)}</div></section>
       <section id="for-clinics" className="provider-banner"><div><span className="eyebrow">For People Who Care for People</span><h2>Your Practice. Working Together.</h2><p>One workspace for your clinics, appointments, schedules and patient flow.</p></div><Link href="/register-clinic" className="button light" data-testid="landing-register-clinic-banner">Register a Clinic <ArrowUpRight size={18}/></Link></section>
@@ -48,7 +49,7 @@ function Home() {
 }
 function SignUpRoute() {
   const ticket = new URLSearchParams(window.location.search).get("ticket");
-  return <Redirect to={ticket ? `/set-password?token=${encodeURIComponent(ticket)}` : "/patient-login"} />;
+  return <Redirect to={patientSignupDestination(ticket)} />;
 }
 function ResetPasswordRoute() {
   const token = new URLSearchParams(window.location.search).get("token");
@@ -103,7 +104,7 @@ function Providers(){
      <Route path="/reset-password" component={ResetPasswordRoute}/>
     <Route path="/set-password" component={SetPassword}/>
     <Route path="/login"><Redirect to="/sign-in"/></Route>
-    <Route path="/register"><Redirect to="/patient-login"/></Route>
+    <Route path="/register"><Redirect to="/patient-login?mode=signup"/></Route>
     <Route path="/register-doctor" component={RegisterDoctor}/>
     <Route path="/onboarding"><AuthAccess><Onboarding/></AuthAccess></Route>
     <Route path="/check-in" component={CheckInScanner}/>

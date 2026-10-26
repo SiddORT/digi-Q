@@ -229,7 +229,7 @@ authRouter.post("/auth/patient/start", async (req, res) => {
     const mobile=patientLoginPhone(req.body.mobile);
     await limit(req,mobile,"patient-sms-login");
     const challengeId=await startPatientSmsLogin(mobile);
-    res.set("Cache-Control","no-store").json({challengeId});
+    res.set("Cache-Control","no-store").json({challengeId,channels:{sms:{status:"provider_accepted"}}});
     return;
   }
   const address = email(req.body?.email);
@@ -238,11 +238,27 @@ authRouter.post("/auth/patient/start", async (req, res) => {
   smtpConfig((await resolvedIntegration("smtp")).env);
   const user = await localUser(address);
    const mobile = optionalRegistrationMobile(req.body?.mobile);
-   const result = user && (user.status !== "active" || user.role !== "patient")
-     ? {challengeId:randomBytes(18).toString("base64url")}
-     : await mailCode(address, "patient", user?.id, mobile ? {mobile,mobileVerified:false} : undefined);
-   // All email-login starts use the same generic response; no account existence or delivery claim.
-   res.set("Cache-Control", "no-store").json({challengeId:result.challengeId});
+    const data = mobile ? {mobile,mobileVerified:false} : undefined;
+    let result;
+    if (user && (user.status !== "active" || user.role !== "patient")) {
+      // An ineligible email gets an unguessable, undisclosed secret, never an
+      // email OTP. Optional phone proof behaves identically for every email,
+      // so its transport outcomes cannot reveal email-account eligibility.
+      const challengeId = await createChallenge({email:address,purpose:"patient",
+        secret:randomBytes(32).toString("base64url"),ttlMs:CODE_AGE,data});
+      let sms: SecurityOutcomes["sms"] = {status:"not_requested"};
+      if (mobile) {
+        try { sms = await requestRegistrationMobile(challengeId); }
+        catch { sms = {status:"unavailable"}; }
+      }
+      result = {challengeId,channels:{sms}};
+    } else {
+      result = await mailCode(address, "patient", user?.id, data);
+    }
+    // Email delivery/eligibility is deliberately private. SMS is an independent
+    // proof of the supplied phone and never proves or authenticates this email.
+    res.set("Cache-Control", "no-store").json({challengeId:result.challengeId,
+      channels:{email:{status:"not_reported"},sms:result.channels.sms}});
 });
 authRouter.post("/auth/patient/verify", async (req, res) => {
   await consumeRateLimit(`patient-verify:${req.ip || "unknown"}`, 25);
@@ -288,7 +304,7 @@ authRouter.post("/auth/patient/resend",async(req,res)=>{
   } catch(error) {
     if(!(error instanceof HttpError) || !["INVALID_VERIFICATION","REGISTRATION_RESEND_COOLDOWN","EMAIL_DELIVERY_FAILED"].includes(error.code!))throw error;
   }
-  res.set("Cache-Control","no-store").json({challengeId:body.challengeId});
+  res.set("Cache-Control","no-store").json({challengeId:body.challengeId,channels:{email:{status:"not_reported"}}});
 });
 authRouter.post("/auth/register/start", async (req, res) => {
   await requireSecurityDelivery("clinic_registration_otp","clinicAdmin","email");

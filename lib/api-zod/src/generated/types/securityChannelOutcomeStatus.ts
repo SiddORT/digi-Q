@@ -30,5 +30,7 @@ export const SecurityChannelOutcomeStatus = {
   pre_dispatch_failed: 'pre_dispatch_failed',
   delivery_unknown: 'delivery_unknown',
   unavailable: 'unavailable',
+  disabled: 'disabled',
   not_requested: 'not_requested',
+  not_reported: 'not_reported',
 } as const;

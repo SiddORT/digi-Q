@@ -1364,11 +1364,11 @@ export const DemoLoginResponse = zod.object({
   "authenticated": zod.boolean(),
   "channels": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional()
@@ -1966,11 +1966,11 @@ export const GetClinicAdminSetupCompletionResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -2509,11 +2509,11 @@ export const AttachOwnDoctorProfileResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -3111,7 +3111,7 @@ export const VerifyStaffDeviceResponse = zod.void()
 
 
 /**
- * Requests email login (including new patients) or SMS login for existing active patient accounts. SMS uses the platform patient-login template, bypasses optional notification gates and never returns the code.
+ * Requests email login (including new patients) or SMS login for existing active patient accounts. Email outcome is always not_reported to protect eligibility. Optional registration SMS proves only the supplied phone, independently of email eligibility, and returns its safe channel outcome. SMS login uses the platform patient-login template, bypasses optional notification gates and never returns the code.
  */
 export const startPatientEmailBodyOneMobileRegExp = new RegExp('^\\+[1-9][0-9]{6,14}$');
 export const startPatientEmailBodyTwoMobileRegExp = new RegExp('^\\+[1-9][0-9]{6,14}$');
@@ -3131,11 +3131,11 @@ export const StartPatientEmailResponse = zod.object({
   "requiresVerification": zod.boolean().optional(),
   "channels": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional()
@@ -3154,11 +3154,11 @@ export const ResendPatientEmailCodeResponse = zod.object({
   "requiresVerification": zod.boolean().optional(),
   "channels": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional()
@@ -3180,11 +3180,11 @@ export const VerifyPatientEmailResponse = zod.object({
   "authenticated": zod.boolean(),
   "channels": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional()
@@ -3200,7 +3200,7 @@ export const RequestRegistrationMobileCodeBody = zod.object({
 
 export const RequestRegistrationMobileCodeResponse = zod.object({
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 })
 })
@@ -3246,11 +3246,11 @@ export const StartClinicRegistrationResponse = zod.object({
   "requiresVerification": zod.boolean().optional(),
   "channels": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional()
@@ -3297,11 +3297,11 @@ export const VerifyClinicRegistrationResponse = zod.object({
   "authenticated": zod.boolean(),
   "channels": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional()
@@ -3354,11 +3354,11 @@ export const AcceptStaffInvitationResponse = zod.object({
   "authenticated": zod.boolean(),
   "channels": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional()
@@ -3446,11 +3446,11 @@ export const GetMeResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -3520,11 +3520,11 @@ export const UpdateMeResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -3547,8 +3547,8 @@ export const onboardBodyIntentDefault = `patient`;
 export const OnboardBody = zod.object({
   "intent": zod.enum(['patient']).default(onboardBodyIntentDefault),
   "fullName": zod.string().min(1),
-  "mobile": zod.string().optional(),
-  "termsAccepted": zod.boolean().optional()
+  "mobile": zod.string().optional().describe('Cannot introduce or replace a phone. Only the already-saved signup phone is retained; omit this field or leave it empty to preserve that phone.'),
+  "termsAccepted": zod.boolean().describe('Must be true to consent to appointment management and complete the patient profile.')
 })
 
 export const onboardResponseUserOneOnePasswordMin = 8;
@@ -3596,11 +3596,11 @@ export const OnboardResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -4684,11 +4684,11 @@ export const ListDoctorsResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -4815,11 +4815,11 @@ export const CreateDoctorResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -4895,11 +4895,11 @@ export const GetDoctorResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -5029,11 +5029,11 @@ export const UpdateDoctorResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -5121,11 +5121,11 @@ export const ListUsersResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -5224,11 +5224,11 @@ export const CreateUserResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -5498,11 +5498,11 @@ export const OnboardClinicAdminResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -5596,11 +5596,11 @@ export const GetUserResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -5699,11 +5699,11 @@ export const UpdateUserResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),
@@ -5786,11 +5786,11 @@ export const ResendUserInvitationResponse = zod.object({
   "invitationStatus": zod.enum(['sent', 'failed', 'notRequired']),
   "setupNotificationOutcomes": zod.object({
   "email": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional(),
   "sms": zod.object({
-  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'not_requested']),
+  "status": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'unavailable', 'disabled', 'not_requested', 'not_reported']),
   "destination": zod.string().optional().describe('Masked destination only. Acceptance is not receipt.')
 }).optional()
 }).optional(),

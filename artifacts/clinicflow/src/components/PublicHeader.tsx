@@ -19,7 +19,7 @@ export function PublicHeader() {
     <a href="#for-clinics" onClick={() => setOpen(false)}>For Clinics</a>
     <Link href="/register-clinic" onClick={() => setOpen(false)} data-testid="landing-register-clinic">Register a Clinic</Link>
     <Link href="/guest-booking" onClick={() => setOpen(false)} data-testid="landing-guest-booking">Guest Booking</Link>
-    <Link href="/patient-login" onClick={() => setOpen(false)}>Patient Login</Link>
+    <Link href="/patient-login?mode=access" onClick={() => setOpen(false)}>Patient Access / Sign Up</Link>
     <Link className="button public-primary" href="/sign-in" onClick={() => setOpen(false)}>Staff Login <ArrowUpRight size={19} aria-hidden/></Link>
   </>;
   return <header className="public-header unified-public-header">

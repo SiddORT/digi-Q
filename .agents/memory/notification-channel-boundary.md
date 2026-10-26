@@ -116,6 +116,9 @@ matcher that intentionally accepts existing saved numbers.
 **How to apply:** Keep pending numbers in the expiring registration intent and
 save them only after mobile proof. Preserve existing-account phone-login policy
 and regress both successful-send-without-proof and failed-send registration.
+Apply this rule through profile completion too: email-only onboarding must not
+introduce an unproved authentication phone, even if the initial signup handler
+correctly withheld it. Retain an already-saved phone without allowing replacement.
 
 System Admin clinic-onboarding notices use the existing active Superadmin role.
 
@@ -171,3 +174,16 @@ or an HTML-authoring feature.
 **How to apply:** Keep optional branding, sender overrides and secondary actions under
 collapsed Advanced controls. Preserve DigiQ branding, supported double-brace variables,
 plain-text email escaping, scope/revision checks and save/discard confirmation.
+
+Patient email request feedback must remain private even when optional registration
+SMS outcomes are shown. Phone proof is independent of email-account eligibility;
+it cannot authenticate email, create an account alone, or replace an existing phone.
+
+**Why:** Returning real SMS outcomes only for eligible emails would reveal account
+eligibility indirectly, despite generic email wording. A supplied phone is not
+evidence that the requester owns the accompanying email.
+
+**How to apply:** Keep public email outcomes generic and make optional phone-proof
+behavior independent of whether the email is new, active, inactive or staff-owned.
+Any future outcome or resend changes must preserve that distinction. Never claim
+receipt from provider acceptance or infer phone proof from a successful send.

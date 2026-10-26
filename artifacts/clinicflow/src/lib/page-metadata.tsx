@@ -33,7 +33,10 @@ export function RouteMetadataBoundary() {
   useLayoutEffect(() => {
     const metadata = path === "/" && !search ? homeMetadata(site.origin) : PRIVATE_PAGE_METADATA;
     setMeta("name", "robots", metadata.robots);
-    setPageMetadata(metadata.title, metadata.description, metadata.canonical);
+    const patientMode = new URLSearchParams(search).get("mode");
+    const patientTitle = patientMode === "signup" ? "Patient Sign Up" : patientMode === "access" ? "Patient Access" : "Patient Login";
+    setPageMetadata(path === "/patient-login" ? `${patientTitle} | DigiQ` : metadata.title,
+      path === "/patient-login" ? "Book as a guest, register with email, or log in to your patient account." : metadata.description, metadata.canonical);
   }, [path, search, site.origin]);
   return null;
 }
