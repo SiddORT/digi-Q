@@ -43,7 +43,7 @@ async function book(mode,label=mode,day=date) {
     await h.pg.query("insert into patients(id,clinic_id,branch_id,mobile,data) values($1,'c1','b1','+919876543210',$2)",[label,{fullName:`Patient ${label}`,email:`${label}@test.invalid`}]);
   const body=mode==="guest"?{qrReference:"sms-qr",doctorId:"d1",branchId:"b1",date:day,fullName:"Guest Patient",
     mobile:"+919876543210",email:"guest@test.invalid",requestId:randomUUID(),receiptSecret:randomUUID().replaceAll("-","").repeat(2)}:
-    {clinicId:"c1",branchId:"b1",doctorId:"d1",patientId:mode==="patu"?"p1":label,date:day,startTime:"00:00",source:mode==="patu"?"online":"phone",termsAccepted:true,requestId:randomUUID()};
+    {clinicId:"c1",branchId:"b1",doctorId:"d1",patientId:mode==="patu"?"p1":label,bookingMobile:"+919876543210",date:day,startTime:"00:00",source:mode==="patu"?"online":"phone",termsAccepted:true,requestId:randomUUID()};
   const result=expectOk(await call(mode==="guest"?null:mode,"POST",mode==="guest"?"/public/guest-requests":"/appointments",body));
   return snapshot(result.appointmentId||result.id);
 }
@@ -73,7 +73,7 @@ before(async()=>{
   for(const doctorId of ["d1","d2"])for(const day of [date,tomorrow])
     expectOk(await call("adm","POST","/schedules",{doctorId,branchId:"b1",clinicId:"c1",dayOfWeek:new Date(`${day}T12:00:00Z`).getUTCDay(),
       startTime:doctorId==="d1"?"00:00":"13:00",endTime:"23:59",timezone:"UTC",isOpen:true,maxTokens:100,tokenPrefix:doctorId==="d1"?"DR":"NS",consultationMinutes:5,queueMode:"mixed"}));
-  for(const approved of h.approvedAppointmentSms)for(const recipient of approved.recipients){
+  for(const approved of h.approvedAppointmentSms)for(const recipient of approved.recipients.filter(r=>r!=="receptionist")){
     const key=`sms-template:platform:${approved.event}${recipient==="patient"?"":`:${recipient}`}`;
     await h.pg.query("insert into settings(id,data) values($1,$2)",[key,{revision:1,published:{enabled:true,subject:"Approved appointment SMS",
       body:approved.body,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:approved.dltTemplateId}}]);
@@ -81,10 +81,18 @@ before(async()=>{
 });
 after(async()=>await h?.close());
 
-test("approved registrations and fixed content remain byte-for-byte unchanged",async()=>{
-  const source=await readFile(new URL("./lib/approved-appointment-sms.ts",import.meta.url));
-  assert.equal(createHash("sha256").update(source).digest("hex"),"0db17698beb642cba9b5f0bc2e058019fc85116b83f4d2f39b8694269dd3b3ba");
-  assert.equal(h.approvedAppointmentSms.reduce((n,r)=>n+r.recipients.length,0),11);
+test("all eight appointment registrations preserve supplied fixed wording and IDs; receptionist metadata does not activate it",async()=>{
+  const source=await readFile(new URL("../../../attached_assets/Pasted-Sender-ID-DIGIQU-Product-Digi-Q-Company-ORTSPL-Status-D_1792978334807.txt",import.meta.url),"utf8");
+  for(const r of h.approvedAppointmentSms){
+    const literal=r.body.replace(/\{\{[a-z_]+\}\}/g,"{#var#}");
+    assert(source.includes(`${literal}\n${r.dltTemplateId}`)||source.includes(`${literal}\nRecipients: Clinic Admin, Doctor and Receptionist.\n${r.dltTemplateId}`));
+  }
+  assert.equal(h.approvedAppointmentSms.length,8);
+  assert.equal(h.approvedAppointmentSms.reduce((n,r)=>n+r.recipients.filter(r=>r!=="receptionist").length,0),11);
+  for(const event of ["booking","cancelled","completed"]){
+    assert(registration(event,"receptionist"));
+    assert.equal((await rows("select id from settings where id=$1",[`sms-template:platform:${event}:receptionist`])).length,0);
+  }
 });
 test("patient, staff and guest real bookings render distinct identities, then cancellation and completion reach all approved recipients",async()=>{
   for(const mode of ["patu","rec","guest"]){
@@ -127,7 +135,7 @@ test("profile edits do not change event labels, recipient contact stays current,
   assert(state.every(r=>r.data.snapshot.patientName==="Patient snapshot"&&r.data.snapshot.doctorName==="Meera Rao"&&r.data.snapshot.clinicName==="Lakeview Clinic"));
   await h.pg.exec(`update users set full_name='Same Name' where id='docu';`);
   await h.pg.query("insert into patients(id,clinic_id,branch_id,mobile,data) values('equal','c1','b1','+919876543210','{\"fullName\":\"Same Name\"}')");
-  const equal=expectOk(await call("rec","POST","/appointments",{clinicId:"c1",branchId:"b1",doctorId:"d1",patientId:"equal",date,startTime:"00:00",source:"phone"}));
+  const equal=expectOk(await call("rec","POST","/appointments",{clinicId:"c1",branchId:"b1",doctorId:"d1",patientId:"equal",bookingMobile:"+919876543210",date,startTime:"00:00",source:"phone"}));
   row=await snapshot(equal.id);assert.equal(row.patientName,row.doctorName);assert.notEqual(row.patientId,row.doctorId);
   await dispatchExpected("booking",row,["patient","clinicAdmin","doctor"]);
 });
@@ -167,4 +175,63 @@ test("composite details use the same snapshot labels while recipient, optional c
   assert(owner.includes("https://booking.example.invalid/lakeview"));
   assert(!owner.includes("/foreign")&&!owner.includes("Changed doctor again")&&!owner.includes("Changed clinic again")&&!owner.includes("Changed patient again"));
   assert(owner.endsWith(" | "),"optional clinic contact may be empty");
+});
+
+test("Superadmin, owning admin and doctor bookings keep the acting identity out of patient and doctor values",async()=>{
+  await h.pg.query("delete from settings where id='sms-template:c1:booking:clinicAdmin'");
+  for(const role of ["sa","adm","docu"]){
+    const row=await book(role,`actor-${role}`);
+    await dispatchExpected("booking",row,["patient","clinicAdmin","doctor"]);
+  }
+});
+
+test("receptionist registration supports explicit saved opt-in only; scope, contact deduplication, opt-out and revocation are rechecked",async()=>{
+  await h.pg.exec(`update users set mobile='+919876543213' where id='rec';
+    insert into users(id,email,full_name,role,mobile,managing_admin_id) values('foreign-rec','foreign-rec@test.invalid','Unrelated Desk','receptionist','+919876543214','adm');
+    insert into assignments(id,user_id,clinic_id,branch_id) values('other-desk','foreign-rec','c2','b2');`);
+  const approved=registration("booking","receptionist");
+  const publish=async(enabled=true)=>h.pg.query(`insert into settings(id,data) values('sms-template:c1:booking:receptionist',$1)
+    on conflict(id) do update set data=excluded.data`,[{revision:1,published:{enabled,subject:"Fixture team registration",body:approved.body,
+    prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:approved.dltTemplateId}}]);
+  const dispatch=async row=>{
+    const n=captures.length;await h.dispatchSmsOutbox(sms);
+    const sent=captures.slice(n);
+    assert(!sent.some(m=>m.to==="+919876543214"),"unrelated desk is never eligible");
+    return sent;
+  };
+  try {
+    // An additional assignment cannot produce a duplicate recipient.
+    await h.pg.exec("insert into assignments(id,user_id,clinic_id) values('rec-clinic-wide','rec','c1')");
+    await publish(false);
+    assert.equal((await dispatch(await book("adm","desk-off"))).length,3);
+    await publish();
+    const row=await book("adm","desk-on");
+    const sent=await dispatch(row);
+    assert.equal(sent.length,4);
+    const desk=sent.find(m=>m.to==="+919876543213");
+    assert.equal(desk.message,rendered(approved.body,values(row)));
+    assert.equal(desk.content.dltTemplateId,approved.dltTemplateId);
+    await h.pg.query("insert into settings(id,data) values('notification-preferences:rec',$1)",[{revision:1,choices:{"sms:booking":false},epochs:{}}]);
+    assert.equal((await dispatch(await book("adm","desk-optout"))).length,3);
+    await h.pg.exec("delete from settings where id='notification-preferences:rec'");
+    await h.pg.exec("update users set mobile='+919876543211' where id='rec'");
+    assert.equal((await dispatch(await book("adm","desk-shared"))).length,3,"shared owner/desk contact receives one message");
+    await h.pg.exec("update users set mobile='+919876543213' where id='rec'");
+    const revoked=await book("adm","desk-revoked");
+    await h.pg.exec("delete from assignments where user_id='rec' and clinic_id='c1'");
+    assert.equal((await dispatch(revoked)).length,3,"revoked membership blocks an already captured desk job");
+  } finally {
+    await h.pg.exec("delete from settings where id in ('sms-template:c1:booking:receptionist','notification-preferences:rec')");
+  }
+});
+
+test("uncertain automatic SMS is durably non-retryable, independently of other recipient outcomes",async()=>{
+  const row=await book("adm","uncertain");
+  let calls=0;
+  await h.dispatchSmsOutbox(async()=>{calls++;throw new Error("Fictional timeout after dispatch");});
+  assert.equal(calls,3);
+  const jobs=await rows("select data from settings where id like 'sms-outbox:%' and data->>'appointmentId'=$1",[row.id]);
+  assert(jobs.every(j=>j.data.state==="delivery_unknown"));
+  await h.dispatchSmsOutbox(async()=>{calls++;return "provider_accepted";});
+  assert.equal(calls,3);
 });

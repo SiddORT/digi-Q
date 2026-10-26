@@ -3,7 +3,7 @@ export const notificationVariables = ["clinic_name", "booking_link", "patient_na
   "appointment_details", "previous_details", "reference", "timezone", "clinic_contact",
   "recipient_name", "appointment_date", "session_start", "session_end", "previous_date",
   "previous_session_start", "previous_session_end", "queue_token", "token_number", "cancel_reason",
-  "otp", "expiry_minutes", "setup_link", "role_name", "staff_name", "location_names", "sign_in_link"] as const;
+  "otp", "expiry_minutes", "setup_link", "role_name", "staff_name", "location_names", "sign_in_link", "clinic_admin_name"] as const;
 
 export function eventVariables(event: string): readonly string[] {
   if (event === "staff_created_admin" || event === "staff_welcome")
@@ -14,7 +14,7 @@ export function eventVariables(event: string): readonly string[] {
   if (event === "password_setup_complete") return ["recipient_name", "role_name"];
   if (["doctor_setup", "staff_setup"].includes(event)) return ["recipient_name", "role_name", "setup_link", "expiry_minutes"];
   const clinic = ["clinic_name", "clinic_contact", "booking_link", "recipient_name"];
-  if (event === "onboarding") return clinic;
+  if (event === "onboarding") return [...clinic, "clinic_admin_name"];
   if (!["booking", "rescheduled", "cancelled", "completed", "reminder"].includes(event)) return [];
   return [...clinic, "patient_name", "doctor_name", "appointment_details", "reference", "timezone",
     "appointment_date", "session_start", "session_end", "queue_token", "token_number",

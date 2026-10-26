@@ -69,6 +69,29 @@ before(async()=>{
     }}]});
   api=await import(bundle);
 });
+test("every security template including patient login refuses real editor test sends before transport",async()=>{
+ let calls=0;
+ for(const event of ["patient_login_otp","staff_email_otp","staff_mobile_otp","registration_mobile_otp","staff_setup"]){
+  await assert.rejects(api.testTemplate(sa,{body:{event},content:{},rendered:{subject:"",text:"Fictional"}},async()=>{calls++;},async()=>{calls++;}),{status:400});
+ }
+ assert.equal(calls,0);
+});
+test("onboarding primary owner is active and identity-bound at capture and dispatch; active platform observers remain independent",async()=>{
+ const clinic={id:"c",clinicId:"c",adminId:"ca",name:"Registered Clinic",clinicAdminName:"New Owner"};
+ await h.control.query("update users set status='inactive' where id='ca'");
+ await api.enqueueEvent(h.db,"onboarding",{...clinic,id:"onboard-inactive"});
+ assert.equal((await h.control.query("select id from settings where id='mail-outbox:onboarding:onboard-inactive:0'")).rows.length,0);
+ await h.control.query("update users set status='active' where id='ca'");
+ await api.enqueueEvent(h.db,"onboarding",{...clinic,id:"onboard-active"});
+ const primary=(await h.control.query("select data from settings where id='mail-outbox:onboarding:onboard-active:0'")).rows[0].data;
+ assert.equal(primary.recipientUserId,"ca");
+ await h.control.query("update users set status='inactive' where id='ca'");
+ const sent=[];
+ await api.processNotifications(h.db,async(to)=>{sent.push(to);});
+ assert(!sent.includes("owner@example.invalid"));
+ assert(sent.includes("sa@example.invalid"),"an inactive owner must not suppress a separate active platform recipient");
+ await h.control.query("update users set status='active' where id='ca'");
+});
 test("SMTP receipt binds a completed provider test to its actor and configuration without resending",async()=>{
  const input={channel:"email",event:"provider_test",recipientGroup:"explicit",recipient:"receipt@example.invalid",
   subject:"Fictional test",message:"Fictional message",confirmed:true,requestId:randomUUID()};

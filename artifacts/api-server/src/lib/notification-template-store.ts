@@ -53,7 +53,7 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
   const values = { ...visitTemplateValues({date:"2030-01-15",startTime:"09:00",endTime:"12:00",token:"Q-007",tokenNumber:7},
       clinic,"[Recipient name]",{date:"2030-01-14",startTime:"14:00",endTime:"17:00"}),
     clinic_name: clinic?.name || "Example clinic", clinic_contact: [clinic?.email, clinic?.phone].filter(Boolean).join(" · "),
-    patient_name: "[Patient name]", doctor_name: "[Doctor name]", appointment_details: "[Clinic-formatted visit details]", previous_details: "[Previous visit details]", reference: "[Booking reference]", timezone: "[Clinic location timezone]" };
+     patient_name: "[Patient name]", doctor_name: "[Doctor name]", clinic_admin_name: "[Onboarded Clinic Admin name]", appointment_details: "[Clinic-formatted visit details]", previous_details: "[Previous visit details]", reference: "[Booking reference]", timezone: "[Clinic location timezone]" };
   values.cancel_reason = "[Cancellation reason]";
    const previewValues = { ...values, booking_link: clinic ? values.booking_link || "[Clinic booking link unavailable]" : "https://example.invalid/example-clinic", otp: "123456", expiry_minutes: "10", setup_link: "https://example.invalid/set-password?token=fictional-preview-only", role_name: accountRoleLabel(recipient || "receptionist") };
   const items = [];

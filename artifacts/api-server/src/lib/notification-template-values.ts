@@ -80,6 +80,20 @@ export function visitTemplateValues(row: any, clinic: any, recipientName: string
   };
 }
 
+/** The onboarded owner is not the notice recipient (which may be a Superadmin).
+ * Legacy snapshots without an owner label must fail preparation if it is used. */
+export function onboardingTemplateValues(snapshot: any, clinic: any, recipientName: string) {
+  const sameClinic = snapshot?.clinicId === clinic?.id;
+  const bound = sameClinic && snapshot?.adminId === clinic?.adminId;
+  return {
+    ...visitTemplateValues(null, clinic, recipientName),
+    // Older occurrences never captured a label; retain their existing same-clinic
+    // display fallback, but never infer the new owner-name placeholder.
+    clinic_name: sameClinic ? snapshot.name || clinic.name || "" : "",
+    clinic_admin_name: bound ? snapshot.clinicAdminName || "" : "",
+  };
+}
+
 /** Newly supported fields must never silently disappear from a dispatched message.
  * Older queued jobs have no structured previous session; do not guess it from prose. */
 export function missingVisitVariables(texts: string[], values: Record<string, string>) {

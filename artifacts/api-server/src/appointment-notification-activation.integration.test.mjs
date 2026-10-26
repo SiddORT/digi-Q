@@ -132,7 +132,8 @@ test("supplied registrations retain exact approved text, IDs and variable orderi
     ["1777179180927080590","Dear {#var#}, your appointment with Dr. {#var#} has been rescheduled to {#var#} at {#var#}. Queue No: {#var#}. Please arrive 10 minutes before your appointment time. - Digi-Q"],
   ];
   assert.equal(api.approvedAppointmentSms.length,8);
-  assert.equal(api.approvedAppointmentSms.reduce((n,r)=>n+r.recipients.length,0),11);
+  assert.equal(api.approvedAppointmentSms.reduce((n,r)=>n+r.recipients.filter(r=>r!=="receptionist").length,0),11);
+  assert.equal(api.approvedAppointmentSms.filter(r=>r.recipients.includes("receptionist")).length,3);
   for(const [id,text] of sources) {
     const entry=api.approvedAppointmentSms.find(r=>r.dltTemplateId===id);
     assert.ok(entry);
@@ -140,7 +141,7 @@ test("supplied registrations retain exact approved text, IDs and variable orderi
     assert.equal(api.validEventContent(entry.event,{subject:"Approved SMS",prefix:"",footer:"",body:entry.body}),true);
     assert.match(entry.body,/\{\{appointment_date\}\}/);
     assert.match(entry.body,/\{\{session_start\}\}/);
-    assert.equal(entry.recipients.includes("receptionist"),false);
+    assert.equal(entry.recipients.includes("receptionist"),["booking","cancelled","completed"].includes(entry.event)&&entry.recipients.includes("clinicAdmin"));
   }
 });
 

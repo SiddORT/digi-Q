@@ -98,7 +98,7 @@ export async function prepareTemplateTest(user:any,input:unknown) {
 export async function testTemplate(user:any,prepared:Awaited<ReturnType<typeof prepareTemplateTest>>,
   smsSend=sendNotificationSms,emailSend=sendAuthEmail) {
   const {body,content,rendered}=prepared;
-  assert(!isSecurityEvent(body.event),400,"Security templates support fictional previews only. Verify real authentication delivery only with separate authorization.");
+   assert(!requiredEvent(body.event),400,"Security templates support fictional previews only. Verify real authentication delivery only with separate authorization.");
   assert(body.confirmed===true&&body.requestId,400,"Confirm one real test send and provide a request ID");
   assert(body.recipient && (body.channel==="sms"?/^\+[1-9]\d{6,14}$/.test(body.recipient):validEmailAddress(body.recipient)),400,"Enter one valid explicit recipient");
   let diagnostic: SmsDiagnostic | undefined;

@@ -9,7 +9,7 @@ import { PhoneInput } from "./PhoneInput";
 import { LoadingButton } from "./LoadingButton";
 import { canStartNewTemplateTest } from "../lib/template-test-recovery";
 import { templateTestRequestError } from "../lib/template-test-request-error";
-import { SECURITY_EVENTS } from "../lib/security-template-events";
+import { requiredSecurityEvent } from "../lib/security-template-events";
 import { accountRoleLabel } from "@workspace/api-zod/notification-variable-contract";
 
 type Content = api.NotificationTemplateContent;
@@ -47,7 +47,7 @@ const OUTCOME: Record<string, string> = {
 export function EventTemplateTest({ channel, event, recipient: group, clinicId, revision, content }: {
   channel: "email" | "sms"; event: string; recipient: string; clinicId: string; revision: number; content: Content;
 }) {
-  const securityPreview = (SECURITY_EVENTS as readonly string[]).includes(event);
+  const securityPreview = requiredSecurityEvent(event);
   const used = useMemo(() => usedPlaceholders(content, channel), [content, channel]);
   const [values, setValues] = useState<Record<string, string>>({});
   const [to, setTo] = useState("");

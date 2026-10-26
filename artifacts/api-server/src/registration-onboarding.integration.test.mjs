@@ -29,6 +29,32 @@ const body = (name, requestId) => ({
     inheritEmail: true, inheritPhone: true, openingHours: [{ dayOfWeek: 1, startTime: "09:00", endTime: "12:00" }, { dayOfWeek: 1, startTime: "13:00", endTime: "18:00" }] }],
   ownDoctor: true, ownerSchedule: { maxTokens: 8, consultationMinutes: 20, tokenPrefix: "A", queueMode: "mixed" },
 });
+test("onboarding capture observes final saved setup policies and inherited gate; lost-response retries never recapture", async () => {
+  const oldEnv = process.env.NODE_ENV;
+  process.env.NODE_ENV = "test";
+  try {
+    for (const enabled of [true, false]) {
+      await h.pg.query("insert into settings(id,data) values('platform',$1) on conflict(id) do update set data=excluded.data", [{notificationsEnabled:enabled}]);
+      const input = body(`policy-${enabled}`, crypto.randomUUID());
+      input.ownDoctor = false; delete input.ownerSchedule;
+      input.policies = { bookingHorizonDays: 45 };
+      const response = await h.call("sa", "POST", "/clinic-admin-onboarding", input);
+      assert.equal(response.status, 201, JSON.stringify(response.data));
+      const id = response.data.clinic.id;
+      const captured = async () => (await h.pg.query(
+        "select id,data from settings where id like 'mail-outbox:onboarding:%' and data->>'clinicId'=$1 order by id", [id])).rows;
+      const before = await captured();
+      assert.equal(before.length, enabled ? 2 : 0, "owning admin and active Superadmin respect the inherited gate");
+      if (enabled) assert(before.every(r => r.data.snapshot.policies.bookingHorizonDays === 45));
+      const retry = await h.call("sa", "POST", "/clinic-admin-onboarding", input);
+      assert.equal(retry.data.clinic.id, id);
+      assert.deepEqual(await captured(), before);
+    }
+  } finally {
+    await h.pg.exec("delete from settings where id='platform'");
+    if (oldEnv === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = oldEnv;
+  }
+});
 test("creation-only effective contact checks reject missing inherited values, independently", async () => {
   const input = body("missing-contacts", crypto.randomUUID());
   for (const field of ["email", "phone"]) {

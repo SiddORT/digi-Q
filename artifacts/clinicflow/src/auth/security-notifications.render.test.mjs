@@ -40,6 +40,15 @@ test("security events stay outside Optional Delivery and retain platform-owned a
   assert(!policy.securityTemplateTarget("clinic_registration_otp","clinicAdmin","sms"));
   assert(policy.securityTemplateTarget("registration_mobile_otp","patient","sms"));
   assert(policy.securityTemplateTarget("staff_setup","superAdmin","email"));
+  for(const role of ["superAdmin","clinicAdmin","doctor","receptionist"]) {
+    assert(policy.requiredSecurityEvent("staff_email_otp"));
+    assert(policy.requiredSecurityEvent("staff_mobile_otp"));
+    assert(policy.securityTemplateTarget("staff_email_otp",role,"email"));
+    assert(policy.securityTemplateTarget("staff_mobile_otp",role,"sms"));
+    assert(!policy.securityTemplateTarget("staff_mobile_otp",role,"email"));
+  }
+  assert(policy.requiredSecurityEvent("patient_login_otp"));
+  assert(!policy.securityTemplateTarget("staff_mobile_otp","patient","sms"));
   const root=new URL("../",import.meta.url);
   const templates=readFileSync(new URL("components/EmailTemplates.tsx",root),"utf8");
   const controls=readFileSync(new URL("components/NotificationTemplatesPage.tsx",root),"utf8");

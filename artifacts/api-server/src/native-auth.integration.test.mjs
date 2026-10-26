@@ -719,7 +719,7 @@ test("doctor and staff setup notices bypass optional gates, contain no SMS beare
     await api.inviteStaff(null,{id:role,email:`${role}@example.invalid`});
     const invitation = globalThis.nativeAuthMail.at(-1);
     const token = new URL(/https:\/\/\S+/.exec(invitation.text)[0]).searchParams.get("token");
-    assert.match(invitation.text,role==="doctor"?/doctor/:/staff member/);
+    assert.match(invitation.text,role==="doctor"?/Doctor/:/Receptionist/);
     assert(!smsCalls.at(-1).includes(token));
     assert(!smsCalls.at(-1).includes("https:"));
     globalThis.nativeAuthMailFailure="ETIMEDOUT";

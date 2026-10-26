@@ -169,8 +169,6 @@ export async function createOwnedClinic(actor: any, admin: any, input: any, conn
   const clinic = await put(clinics, { id, ownerId: actor.id, adminId: admin.id, data: { ...clinicDisplayPreferences(clinicInput), ...clinicInput, code: clinicInput.code || `CLN-${id.slice(0,8)}`, timezone: clinicInput.timezone || "Asia/Kolkata" } }, conn);
   await conn.insert(assignments).values({ id: uid(), userId: admin.id, clinicId: id }).onConflictDoNothing();
   await audit(actor, "create", "clinics", clinic, conn);
-  const { enqueueEvent } = await import("./notification-outbox");
-  await enqueueEvent(conn, "onboarding", { ...clinic, clinicId: clinic.id });
   const result = await saveClinicSetup({ ...admin, role: "clinicAdmin" }, id, { branches: input.branches || [], policies: input.policies }, conn);
   const priorDoctor = input.ownDoctor ? (await all(doctors, conn)).find(d => d.userId === admin.id) : null;
   const doctor = input.ownDoctor ? await attachOwnDoctor(admin, { branchIds: [...new Set([...(priorDoctor?.branchIds || []), ...result.branches.map(b => b.id)])], specializationId: input.specializationId, qualificationIds: input.qualificationIds }, conn) : null;
@@ -178,6 +176,11 @@ export async function createOwnedClinic(actor: any, admin: any, input: any, conn
     branches: result.branches.map(b => ({ id: b.id, linkedSchedule: { ...input.ownerSchedule, enabled: true, doctorId: doctor.id } })),
   }, conn) : result;
   if (input.ownerCustomSchedule && doctor) await createOwnerCustomSessions(admin, doctor.id, result.branches, input.ownerCustomSchedule, conn);
+  // Capture only after all submitted setup/policy writes. This remains inside the
+  // creation transaction: failed setup cannot leave a welcome occurrence behind.
+  const { enqueueEvent } = await import("./notification-outbox");
+  const savedClinic = await one(clinics, id, conn);
+  await enqueueEvent(conn, "onboarding", { ...savedClinic, clinicId: id, clinicAdminName: admin.fullName });
   if (input.ownDoctor) {
     const clinicalLocations = doctor ? await clinicalBranchIds(doctor.id, conn) : [];
     assert(doctor && result.branches.every(branch => clinicalLocations.includes(branch.id)),

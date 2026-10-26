@@ -30,6 +30,7 @@ before(async()=>{
     export * from "./lib/notification-templates";
     export * from "./lib/notification-outbox";
     export * from "./lib/notification-sms-outbox";
+    export * from "./lib/notification-sms-transport";
     export * from "./lib/appointment-confirmation";
     export * from "./lib/notification-controls";
     export * from "./lib/notification-history";
@@ -55,6 +56,38 @@ before(async()=>{
 });
 after(async()=>{if(h)await h.close();await rm(bundle,{force:true});delete globalThis.notificationValuesDb;});
 
+test("onboarding subject identity is distinct from recipient identity and absent legacy labels fail closed",()=>{
+  const clinic={id:"c",adminId:"ca",name:"Renamed clinic",slug:"fictional-clinic"};
+  const event={clinicId:"c",adminId:"ca",name:"Registered Clinic",clinicAdminName:"New Owner"};
+  const values=api.onboardingTemplateValues(event,clinic,"Platform Observer");
+  assert.equal(values.clinic_admin_name,"New Owner");
+  assert.equal(values.recipient_name,"Platform Observer");
+  assert.equal(values.clinic_name,"Registered Clinic");
+  assert.equal(api.onboardingTemplateValues(event,{...clinic,adminId:"another"},"Other").clinic_admin_name,"");
+  assert.deepEqual(api.missingVisitVariables(["{{clinic_admin_name}}"],api.onboardingTemplateValues({...event,clinicAdminName:undefined},clinic,"Observer")),["clinic_admin_name"]);
+  assert(api.validEventContent("onboarding",{...api.defaultTemplate("onboarding"),body:"A Clinic Admin, {{clinic_admin_name}}, has been successfully onboarded on Digi-Q for {{clinic_name}}."}));
+  assert(!api.validEventContent("booking",{...api.defaultTemplate("booking"),body:"{{clinic_admin_name}}"}));
+});
+test("supplied onboarding wording renders the registered owner, separate observer and clinic-scoped public link through fake dispatch",async()=>{
+  await h.control.query(`insert into users(id,role,email,full_name,mobile) values('bound-observer','superAdmin','observer@example.invalid','Observer Person','+919876543219');
+    insert into clinics(id,admin_id,data) values('bound-clinic','ca','{"name":"Original Clinic","slug":"original-clinic","policies":{"notificationsEnabled":true}}');`);
+  const bodies={
+    clinicAdmin:{id:"1777179180913265071",body:"Welcome to Digi-Q, {{recipient_name}}! Complete your clinic opening hours, doctor sessions and staff assignments before sharing your booking link. Your booking link: {{booking_link}}."},
+    superAdmin:{id:"1777179180324816576",body:"A Clinic Admin, {{clinic_admin_name}}, has been successfully onboarded on Digi-Q for {{clinic_name}}."},
+  };
+  for(const [recipient,r] of Object.entries(bodies))await api.saveTemplate(sa,{channel:"sms",event:"onboarding",recipient,clinicId:"bound-clinic",mode:"publish",revision:0,
+    content:{...api.defaultTemplate("onboarding",recipient),enabled:true,body:r.body,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:r.id}},h.db);
+  await api.enqueueEvent(h.db,"onboarding",{id:"bound-clinic",clinicId:"bound-clinic",adminId:"ca",name:"Original Clinic",clinicAdminName:"Onboarded Owner"});
+  await h.control.query(`update clinics set data=data||'{"name":"Renamed Clinic"}' where id='bound-clinic'`);
+  const sent=[];
+  await api.processSmsNotifications(h.db,async(env,to,message,content)=>{sent.push({to,message,content,payload:api.smsPayload(api.notificationSmsConfig(env),to,message,content)});return "provider_accepted";});
+  assert.equal(sent.find(m=>m.to==="+919876543219").message,"A Clinic Admin, Onboarded Owner, has been successfully onboarded on Digi-Q for Original Clinic.");
+  assert.equal(sent.find(m=>m.to==="+919876543210").message,"Welcome to Digi-Q, Owner Person! Complete your clinic opening hours, doctor sessions and staff assignments before sharing your booking link. Your booking link: https://booking.example.invalid/original-clinic.");
+  assert.equal(sent.find(m=>m.to==="+919876543219").content.dltTemplateId,bodies.superAdmin.id);
+  assert.equal(sent.find(m=>m.to==="+919876543210").content.dltTemplateId,bodies.clinicAdmin.id);
+  await h.control.query("delete from settings where (id like 'mail-outbox:%' or id like 'sms-outbox:%') and data->>'clinicId'='bound-clinic'");
+  await h.control.query("update users set status='inactive' where id='bound-observer'");
+});
 test("clinic date formats, midnight/noon, 24-hour clocks and invalid fields are handled without timezone conversion",()=>{
   const row={date:"2030-01-15",startTime:"00:05",endTime:"12:00"};
   for(const [dateFormat,date] of [["DD MMM YYYY","15 Jan 2030"],["DD/MM/YYYY","15/01/2030"],["MM/DD/YYYY","01/15/2030"],["YYYY-MM-DD","2030-01-15"]]){
@@ -288,8 +321,8 @@ test("the separate patient booking email path substitutes the same fields and do
   }
 });
 
-test("one event contract restricts all 23 variables in authoring without changing reset or activation-only operations",async()=>{
-  assert.equal(new Set(api.notificationVariables).size,23);
+test("one event contract restricts all declared variables in authoring without changing reset or activation-only operations",async()=>{
+  assert.equal(new Set(api.notificationVariables).size,api.notificationVariables.length);
   const prior=["previous_date","previous_session_start","previous_session_end","previous_details"];
   for(const event of api.templateEvents){
     assert.deepEqual(api.variablesForTemplate(event),api.eventVariables(event));

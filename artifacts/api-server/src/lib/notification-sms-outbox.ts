@@ -12,7 +12,7 @@ import { recordNotification, recordDecision, claimNotificationOccurrence, notifi
 import { logger } from "./logger";
 import { confirmationText } from "./appointment-confirmation";
 import { reminderDispatchEligible } from "./notification-outbox";
-import { visitTemplateValues, missingVisitVariables, snapshotIdentityMatches, appointmentSnapshotComplete } from "./notification-template-values";
+import { visitTemplateValues, onboardingTemplateValues, missingVisitVariables, snapshotIdentityMatches, appointmentSnapshotComplete } from "./notification-template-values";
 import { validTemplateTarget, validEventContent } from "./notification-templates";
 import { withStaffDispatch } from "./staff-dispatch-barrier";
 import { notificationStaffSubjects } from "./notification-staff-subjects";
@@ -129,7 +129,8 @@ export async function processSmsNotifications(conn:any=db,send=sendNotificationS
          if(current && !snapshotIdentityMatches(snapshot,current,clinic)){
            await update("preparation_failed","Booking snapshot identity does not match this event");return null;
          }
-        const values={...visitTemplateValues(data.appointmentId?snapshot:null,clinic,target.fullName||"",data.previousSession),
+         const values={...(data.event==="onboarding" ? onboardingTemplateValues(snapshot,clinic,target.fullName||"") :
+            visitTemplateValues(data.appointmentId?snapshot:null,clinic,target.fullName||"",data.previousSession)),
            appointment_details:current&&appointmentSnapshotComplete(snapshot)?confirmationText(snapshot,clinic).replace("Your appointment is confirmed.","Visit details:"):"",
            previous_details:data.previousSession?.detailsAvailable?data.previousDetails||"":"",reference:snapshot.reference||"",timezone:snapshot.timezone||"",
           clinic_contact:[clinic.email,clinic.phone].filter(Boolean).join(" · ")};

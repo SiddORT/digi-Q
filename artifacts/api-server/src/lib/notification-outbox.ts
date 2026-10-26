@@ -12,7 +12,7 @@ import { logger } from "./logger";
 import { resolvedIntegration } from "./integration-vault";
 import { createHash } from "node:crypto";
 import { assert } from "./http";
-import { previousSessionSnapshot, visitTemplateValues, missingVisitVariables, snapshotIdentityMatches, appointmentSnapshotComplete } from "./notification-template-values";
+import { previousSessionSnapshot, visitTemplateValues, onboardingTemplateValues, missingVisitVariables, snapshotIdentityMatches, appointmentSnapshotComplete } from "./notification-template-values";
 import { validEventContent } from "./notification-templates";
 import { validTemplateTarget } from "./notification-templates";
 import { withStaffDispatch } from "./staff-dispatch-barrier";
@@ -138,6 +138,7 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
       const owner=await one(users,(await one(clinics,row.clinicId,conn)).adminId,conn);
       preferenceUserId=owner.id;
       email=String(owner.email||"").trim().toLowerCase();
+      active=owner.status==="active"&&owner.role==="clinicAdmin";
     }
   }
   const preference=await recipientPreference(conn,preferenceUserId,"email",event);
@@ -154,8 +155,8 @@ async function enqueueEmailEvent(conn:any,event:TemplateEvent,row:any,previousDe
   await conn.insert(settings).values({ id: primary ? id : `${id}:recipient:${emailKey(target.email)}`, data: {
     historyKey:decision,
     preferenceUserId,preferenceEpoch:preference.epoch,
-    recipientGroup: group, recipientUserId: target?.id,
-    recipientEmailKey: target ? emailKey(target.email) : undefined,
+    recipientGroup: group, recipientUserId: target?.id || (event==="onboarding"&&primary ? preferenceUserId : undefined),
+    recipientEmailKey: target ? emailKey(target.email) : event==="onboarding"&&primary ? emailKey(email) : undefined,
     event, appointmentId: event === "onboarding" ? undefined : row.id, clinicId: row.clinicId,
     previousDetails, previousSession, snapshot: row, state: "pending", attempts: 0, dueAt: createdAt, createdAt,
   } }).onConflictDoNothing();
@@ -233,6 +234,7 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
         recipientName = patient.fullName || account?.fullName || "";
       } else {
         const account = await one(users, clinic.adminId, tx);
+        if(!data.recipientUserId&&(account.status!=="active"||account.role!=="clinicAdmin")){await update({state:"no_recipient"});return null;}
         recipient = account.email || "";
         recipientName = account.fullName || "";
       }
@@ -261,7 +263,8 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
       if(current && !snapshotIdentityMatches(row,current,clinic)){
         await update({state:"preparation_failed",preparationReason:"Booking snapshot identity does not match this event"});return null;
       }
-      const values = { ...visitTemplateValues(current?row:null,clinic,recipientName,data.previousSession),
+      const values = { ...(data.event==="onboarding" ? onboardingTemplateValues(row,clinic,recipientName) :
+        visitTemplateValues(current?row:null,clinic,recipientName,data.previousSession)),
         appointment_details: current && appointmentSnapshotComplete(row) ? confirmationText(row, clinic).replace("Your appointment is confirmed.", "Visit details:") : "",
         previous_details: data.previousSession?.detailsAvailable ? data.previousDetails || "" : "", reference: row.reference || "", timezone: row.timezone || "", clinic_contact: [clinic.email, clinic.phone].filter(Boolean).join(" · ") };
       if(!validEventContent(data.event,template.content)){

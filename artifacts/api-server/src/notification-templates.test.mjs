@@ -34,7 +34,7 @@ test("only Super Admin has platform access; clinic ownership is enforced", async
   await assert.rejects(api.templateCatalog(ca, "foreign"), { status: 403 });
   const result = await api.templateCatalog(ca, "c");
   assert.equal(result.scopeName, "Actual Clinic");
-  assert.equal(result.items.length, 6);
+  assert.equal(result.items.length, 8);
   assert.match(result.items[0].previewSubject, /Actual Clinic/);
 });
 test("strict content validation rejects unknown variables, header injection and unsafe logo URLs", () => {
