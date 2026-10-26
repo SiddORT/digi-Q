@@ -6,13 +6,14 @@ import { appointmentNotificationTarget } from "./appointment-notification-scope"
 import { securityEvents, isSecurityEvent, securityDefault, securityTitles, validSecurityContent } from "./security-template-definitions";
 export { requiredEvent, isSecurityEvent } from "./security-template-definitions";
 
-export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "patient_login_otp", "staff_created_admin", "staff_welcome", ...securityEvents] as const;
+export const templateEvents = ["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "booking_status_link", "patient_login_otp", "staff_created_admin", "staff_welcome", ...securityEvents] as const;
 export type TemplateEvent = typeof templateEvents[number];
 export const templateRecipients = ["patient", "clinicAdmin", "doctor", "receptionist", "superAdmin"] as const;
 export type TemplateRecipient = typeof templateRecipients[number];
 export const defaultRecipient = (event: TemplateEvent): TemplateRecipient => event === "onboarding" || event === "clinic_registration_otp" || event === "staff_created_admin" ? "clinicAdmin" : event === "doctor_setup" ? "doctor" : ["staff_setup", "password_setup_complete", "staff_welcome", "staff_email_otp", "staff_mobile_otp"].includes(event) ? "receptionist" : "patient";
 export const templateVariables = notificationVariables;
 export function validTemplateTarget(event: TemplateEvent, recipient: TemplateRecipient, channel: "email" | "sms") {
+  if (event === "booking_status_link") return recipient === "patient" && channel === "sms";
   if (event === "staff_created_admin") return ["superAdmin", "clinicAdmin", "doctor"].includes(recipient);
   if (event === "staff_welcome") return ["clinicAdmin", "doctor", "receptionist"].includes(recipient);
   if (isSecurityEvent(event)) {
@@ -36,6 +37,7 @@ export function validEventContent(event: TemplateEvent, content: { subject: stri
   const used = [content.subject, content.body, content.prefix, content.footer].flatMap(text =>
     [...text.matchAll(/\{\{\s*([a-z_]+)\s*\}\}/g)].map(match => match[1]));
   return used.every(variable => allowed.includes(variable)) &&
+    (event !== "booking_status_link" || /\{\{\s*booking_status_link\s*\}\}/.test(content.body)) &&
     (!isSecurityEvent(event) || validSecurityContent(event, content)) &&
     (event !== "patient_login_otp" || /\{\{\s*otp\s*\}\}/.test(content.body));
 }
@@ -91,6 +93,7 @@ export const templateSave = z.preprocess(input => {
   z.object({ ...templateSaveFields, channel: z.literal("sms"), content: smsTemplateContent.optional() }).strict(),
 ])).refine(v => v.mode === "reset" || !!v.content, { message: "Template content is required" });
 export const eventTitles: Record<TemplateEvent, string> = {
+  booking_status_link: "Manual booking-status link (approved registration required)",
   staff_created_admin: "Staff account created",
   staff_welcome: "Staff welcome",
   ...securityTitles,
@@ -109,6 +112,9 @@ const bodies: Partial<Record<TemplateEvent, string>> = {
   patient_login_otp: "Your Digi-Q login code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share this code.",
 };
 export function defaultTemplate(event: TemplateEvent, recipient: TemplateRecipient = defaultRecipient(event)): TemplateContent {
+  // An authoring placeholder, NOT approved wording or an active registration.
+  if (event === "booking_status_link") return { enabled: false, subject: eventTitles[event],
+    body: "{{booking_status_link}}", prefix: "", footer: "", logoUrl: "" };
   if (event === "staff_created_admin" || event === "staff_welcome") return {
     enabled: true, subject: event === "staff_welcome" ? "Welcome to Digi-Q" : "Digi-Q staff account saved",
     body: event === "staff_welcome"

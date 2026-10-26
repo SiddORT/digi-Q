@@ -591,3 +591,7 @@ ol.booking-steps { list-style: none; margin-left: 0; padding-left: 0; flex-wrap:
 .workspace tr.row-expansion .appt-detail dd{margin:0;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;min-width:0}
 @media (max-width:520px){.workspace tr.row-expansion .appt-detail dl{grid-template-columns:1fr}}
 @media (min-width:641px){.workspace tr.row-expansion .appt-detail{position:sticky;left:0;box-sizing:border-box;width:min(100%,calc(100cqw - 24px))}}
+.appt-detail-context{margin:6px 0 0;font-size:var(--type-label);color:var(--soft);overflow-wrap:anywhere}
+.appt-detail-status .mono{font-size:var(--type-label)}
+.vt-compact .vt-body{grid-template-columns:minmax(0,1fr)}
+.vt-compact .vt-head{flex-wrap:wrap}

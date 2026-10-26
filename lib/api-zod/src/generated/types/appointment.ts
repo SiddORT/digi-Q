@@ -80,6 +80,13 @@ export type Appointment = AppointmentBookingFields & ({
   completedAt?: Date | null;
   allowedActions: AppointmentActionType[];
   canReschedule?: boolean;
+  /** Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save. */
+  canEditBooking?: boolean;
+  /**
+     * Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.
+     * @minimum 0
+     */
+  bookingDetailsRevision?: number;
   /** @nullable */
   movementReason?: string | null;
   history?: StatusEvent[];

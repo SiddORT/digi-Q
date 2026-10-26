@@ -1321,6 +1321,29 @@ paths:
       responses:
         "201": { description: Booking confirmation, content: { application/json: { schema: { $ref: "#/components/schemas/Appointment" } } } }
         "409": { $ref: "#/components/responses/Error" }
+  /appointments/{id}/booking:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    patch:
+      operationId: updateAppointmentBooking
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/BookingDetailsUpdate" } } } }
+      responses:
+        "200": { description: Updated visit contact and notes only, content: { application/json: { schema: { $ref: "#/components/schemas/Appointment" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+  /appointments/{id}/sms-status-link:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      operationId: getBookingStatusSmsPreview
+      responses:
+        "200": { description: Server-resolved recipient and approved message or a safe blocked reason, content: { application/json: { schema: { $ref: "#/components/schemas/BookingStatusSmsPreview" } } } }
+    post:
+      operationId: sendBookingStatusSms
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/BookingStatusSmsInput" } } } }
+      responses:
+        "200": { description: Durable manual dispatch outcome, content: { application/json: { schema: { $ref: "#/components/schemas/BookingStatusSmsResult" } } } }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
   /appointments/{id}/email-ticket:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     get:
@@ -1914,6 +1937,37 @@ components:
       properties:
         items: { type: array, items: { type: string } }
         compatible: { type: boolean, description: "Whether the given city belongs to the given state; true when the directory cannot judge" }
+    BookingDetailsUpdate:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, expectedBookingDetailsRevision, bookingMobile, notes]
+      properties:
+        expectedRevision: { type: integer, minimum: 0 }
+        expectedBookingDetailsRevision: { type: integer, minimum: 0 }
+        bookingMobile: { type: string, maxLength: 16 }
+        notes: { type: string, maxLength: 1000 }
+    BookingStatusSmsPreview:
+      type: object
+      required: [eligible, reason, recipient, message, previewToken]
+      properties:
+        eligible: { type: boolean }
+        reason: { type: string }
+        recipient: { type: string }
+        message: { type: string }
+        previewToken: { type: string }
+    BookingStatusSmsInput:
+      type: object
+      additionalProperties: false
+      required: [requestId, previewToken]
+      properties:
+        requestId: { type: string, format: uuid }
+        previewToken: { type: string, minLength: 64, maxLength: 64 }
+    BookingStatusSmsResult:
+      type: object
+      required: [state]
+      properties:
+        state: { type: string, enum: [provider_accepted, provider_rejected, pre_dispatch_failed, delivery_unknown, blocked] }
+        reason: { type: string }
     TicketEmailInput:
       type: object
       required: [requestId, recipient]
@@ -2372,7 +2426,7 @@ components:
       required: [channel, event, recipientGroup, revision, content, values]
       properties:
         channel: { type: string, enum: [email, sms] }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete, staff_email_otp, staff_mobile_otp, staff_created_admin, staff_welcome] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, booking_status_link, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete, staff_email_otp, staff_mobile_otp, staff_created_admin, staff_welcome] }
         recipientGroup: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
         revision: { type: integer, minimum: 0 }
@@ -2397,7 +2451,7 @@ components:
       required: [channel, event, recipient, revision, enabled, confirmed]
       properties:
         channel: { type: string, enum: [email, sms] }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete, staff_email_otp, staff_mobile_otp, staff_created_admin, staff_welcome] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, booking_status_link, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete, staff_email_otp, staff_mobile_otp, staff_created_admin, staff_welcome] }
         recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
         revision: { type: integer, minimum: 0 }
@@ -2434,7 +2488,7 @@ components:
         channel: { type: string, enum: [email, sms] }
         recipient: { type: string, enum: [patient, clinicAdmin, doctor, receptionist, superAdmin] }
         clinicId: { type: string }
-        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete, staff_email_otp, staff_mobile_otp, staff_created_admin, staff_welcome] }
+        event: { type: string, enum: [booking, onboarding, rescheduled, cancelled, completed, reminder, booking_status_link, patient_login_otp, clinic_registration_otp, patient_email_otp, registration_mobile_otp, doctor_setup, staff_setup, password_setup_complete, staff_email_otp, staff_mobile_otp, staff_created_admin, staff_welcome] }
         revision: { type: integer, minimum: 0 }
         mode: { type: string, enum: [draft, publish, reset] }
         content: { $ref: "#/components/schemas/NotificationTemplateContent" }
@@ -2553,7 +2607,7 @@ components:
         channel: { type: string, enum: [email, sms] }
         event: { type: string }
         status: { type: string }
-        source: { type: string, enum: [automatic, test] }
+        source: { type: string, enum: [automatic, test, manual] }
         occurrence: { type: ["string", "null"] }
         clinicId: { type: ["string", "null"] }
         reference: { type: ["string", "null"] }
@@ -3764,6 +3818,8 @@ components:
             completedAt: { type: [string, "null"], format: date-time }
             allowedActions: { type: array, items: { $ref: "#/components/schemas/AppointmentActionType" } }
             canReschedule: { type: boolean }
+            canEditBooking: { type: boolean, description: "Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save." }
+            bookingDetailsRevision: { type: integer, minimum: 0, description: "Visit-contact/notes concurrency revision, independent of lifecycle notification revisions." }
             movementReason: { type: ["string", "null"] }
             history: { type: array, items: { $ref: "#/components/schemas/StatusEvent" } }
     AppointmentQr:

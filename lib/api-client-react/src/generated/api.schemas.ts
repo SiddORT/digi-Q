@@ -285,6 +285,50 @@ export interface GeographySuggestions {
   compatible?: boolean;
 }
 
+export interface BookingDetailsUpdate {
+  /** @minimum 0 */
+  expectedRevision: number;
+  /** @minimum 0 */
+  expectedBookingDetailsRevision: number;
+  /** @maxLength 16 */
+  bookingMobile: string;
+  /** @maxLength 1000 */
+  notes: string;
+}
+
+export interface BookingStatusSmsPreview {
+  eligible: boolean;
+  reason: string;
+  recipient: string;
+  message: string;
+  previewToken: string;
+}
+
+export interface BookingStatusSmsInput {
+  requestId: string;
+  /**
+     * @minLength 64
+     * @maxLength 64
+     */
+  previewToken: string;
+}
+
+export type BookingStatusSmsResultState = typeof BookingStatusSmsResultState[keyof typeof BookingStatusSmsResultState];
+
+
+export const BookingStatusSmsResultState = {
+  provider_accepted: 'provider_accepted',
+  provider_rejected: 'provider_rejected',
+  pre_dispatch_failed: 'pre_dispatch_failed',
+  delivery_unknown: 'delivery_unknown',
+  blocked: 'blocked',
+} as const;
+
+export interface BookingStatusSmsResult {
+  state: BookingStatusSmsResultState;
+  reason?: string;
+}
+
 export interface TicketEmailInput {
   requestId: string;
   recipient: string;
@@ -857,6 +901,7 @@ export const EventTemplateTestInputEvent = {
   cancelled: 'cancelled',
   completed: 'completed',
   reminder: 'reminder',
+  booking_status_link: 'booking_status_link',
   patient_login_otp: 'patient_login_otp',
   clinic_registration_otp: 'clinic_registration_otp',
   patient_email_otp: 'patient_email_otp',
@@ -936,6 +981,7 @@ export const EventControlInputEvent = {
   cancelled: 'cancelled',
   completed: 'completed',
   reminder: 'reminder',
+  booking_status_link: 'booking_status_link',
   patient_login_otp: 'patient_login_otp',
   clinic_registration_otp: 'clinic_registration_otp',
   patient_email_otp: 'patient_email_otp',
@@ -1007,6 +1053,7 @@ export const NotificationTemplateSaveEvent = {
   cancelled: 'cancelled',
   completed: 'completed',
   reminder: 'reminder',
+  booking_status_link: 'booking_status_link',
   patient_login_otp: 'patient_login_otp',
   clinic_registration_otp: 'clinic_registration_otp',
   patient_email_otp: 'patient_email_otp',
@@ -1181,6 +1228,7 @@ export type NotificationLogSource = typeof NotificationLogSource[keyof typeof No
 export const NotificationLogSource = {
   automatic: 'automatic',
   test: 'test',
+  manual: 'manual',
 } as const;
 
 export interface NotificationLog {
@@ -3173,6 +3221,13 @@ export type Appointment = AppointmentBookingFields & ({
   completedAt?: string | null;
   allowedActions: AppointmentActionType[];
   canReschedule?: boolean;
+  /** Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save. */
+  canEditBooking?: boolean;
+  /**
+     * Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.
+     * @minimum 0
+     */
+  bookingDetailsRevision?: number;
   /** @nullable */
   movementReason?: string | null;
   history?: StatusEvent[];

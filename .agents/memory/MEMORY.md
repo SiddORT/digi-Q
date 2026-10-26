@@ -65,3 +65,5 @@
 - [Browser fixture identity](browser-fixture-module-identity.md) — live Vite component fixtures must share dependency identities and isolate query-state scenarios.
 - [Template publication boundary](template-publication-test-boundary.md) — unfinished optional tests must not block wording publication or weaken shared input validation.
 - [Email visual references](email-reference-boundary.md) — booking/OTP images guide appearance, not event variables, security links, message meaning or delivery authorization.
+- [Booking edit revisions](booking-edit-revisions.md) — contact/notes concurrency must not advance lifecycle notification eligibility or recapture automatic messages.
+- [Account notification authority](account-notification-authority.md) — manual SMS requires the account's valid saved mobile; separate patient/visit numbers cannot substitute.

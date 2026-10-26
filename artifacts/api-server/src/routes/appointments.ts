@@ -20,6 +20,23 @@ import { confirmAppointmentEmail, initialConfirmationEmail } from "../lib/appoin
 export const appointmentsRouter = Router();
 import { ticketEmailPreview, emailTicket } from "../lib/ticket-email";
 import { z as validator } from "zod";
+import { bookingDetailsUpdate, updateBookingDetails } from "../lib/appointment-booking-edit";
+import { bookingStatusSmsPreview, sendBookingStatusSms } from "../lib/booking-status-sms";
+appointmentsRouter.patch("/appointments/:id/booking", async (req, res) => {
+  const user = await requireUser(req);
+  const body = parse(z.UpdateAppointmentBookingBody, bookingDetailsUpdate.parse(req.body));
+  res.setHeader("Cache-Control", "no-store");
+  res.json(await appointmentViewWithBranch(await db.transaction(tx => updateBookingDetails(user, req.params.id as string, body, tx)), user));
+});
+appointmentsRouter.get("/appointments/:id/sms-status-link", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json(await bookingStatusSmsPreview(await requireUser(req), req.params.id as string));
+});
+appointmentsRouter.post("/appointments/:id/sms-status-link", async (req, res) => {
+  const body = parse(z.SendBookingStatusSmsBody, req.body);
+  res.setHeader("Cache-Control", "no-store");
+  res.json(await sendBookingStatusSms(await requireUser(req), req.params.id as string, body));
+});
 appointmentsRouter.get("/appointments/:id/email-ticket", async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   res.json(await ticketEmailPreview(await requireUser(req), req.params.id as string));

@@ -52,6 +52,7 @@ export async function listOwnerBookingMailOutcomes(user: any, clinicId: string, 
 
 // Existing PostgreSQL JSON settings store provides durable rows without a production migration.
 export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, previousDetails: any = "") {
+  if (event === "booking_status_link") return; // Manual preview/confirm is the only dispatch authority.
   if(requiredEvent(event))return; // Authentication never enters operational outbox/history.
   await lockNotificationPreferences(conn);
   if(event==="booking"){

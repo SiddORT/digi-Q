@@ -846,7 +846,7 @@ export const SaveNotificationTemplateBody = zod.object({
   "channel": zod.enum(['email', 'sms']).optional(),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']).optional(),
   "clinicId": zod.string().optional(),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'booking_status_link', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "revision": zod.number().int().min(saveNotificationTemplateBodyRevisionMin),
   "mode": zod.enum(['draft', 'publish', 'reset']),
   "content": zod.object({
@@ -962,7 +962,7 @@ export const previewEventTemplateBodyRecipientMax = 254;
 
 export const PreviewEventTemplateBody = zod.object({
   "channel": zod.enum(['email', 'sms']),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'booking_status_link', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
   "revision": zod.number().int().min(previewEventTemplateBodyRevisionMin),
@@ -1018,7 +1018,7 @@ export const testEventTemplateBodyRecipientMax = 254;
 
 export const TestEventTemplateBody = zod.object({
   "channel": zod.enum(['email', 'sms']),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'booking_status_link', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "recipientGroup": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
   "revision": zod.number().int().min(testEventTemplateBodyRevisionMin),
@@ -1079,7 +1079,7 @@ export const updateEventControlBodyRevisionMin = 0;
 
 export const UpdateEventControlBody = zod.object({
   "channel": zod.enum(['email', 'sms']),
-  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
+  "event": zod.enum(['booking', 'onboarding', 'rescheduled', 'cancelled', 'completed', 'reminder', 'booking_status_link', 'patient_login_otp', 'clinic_registration_otp', 'patient_email_otp', 'registration_mobile_otp', 'doctor_setup', 'staff_setup', 'password_setup_complete', 'staff_email_otp', 'staff_mobile_otp', 'staff_created_admin', 'staff_welcome']),
   "recipient": zod.enum(['patient', 'clinicAdmin', 'doctor', 'receptionist', 'superAdmin']),
   "clinicId": zod.string().optional(),
   "revision": zod.number().int().min(updateEventControlBodyRevisionMin),
@@ -7007,6 +7007,8 @@ export const listAppointmentsResponseOneTotalMin = 0;
 
 export const listAppointmentsResponseTwoItemsItemOneNotesMax = 1000;
 
+export const listAppointmentsResponseTwoItemsItemTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const ListAppointmentsResponse = zod.object({
@@ -7068,6 +7070,8 @@ export const ListAppointmentsResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(listAppointmentsResponseTwoItemsItemTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7126,6 +7130,8 @@ export const CreateAppointmentBody = zod.object({
 
 export const createAppointmentResponseOneNotesMax = 1000;
 
+export const createAppointmentResponseTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const CreateAppointmentResponse = zod.object({
@@ -7173,6 +7179,8 @@ export const CreateAppointmentResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(createAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7196,6 +7204,138 @@ export const CreateAppointmentResponse = zod.object({
 }).optional()
 })).optional()
 }))
+
+
+export const UpdateAppointmentBookingParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateAppointmentBookingBodyExpectedRevisionMin = 0;
+
+export const updateAppointmentBookingBodyExpectedBookingDetailsRevisionMin = 0;
+
+export const updateAppointmentBookingBodyBookingMobileMax = 16;
+
+export const updateAppointmentBookingBodyNotesMax = 1000;
+
+
+
+export const UpdateAppointmentBookingBody = zod.object({
+  "expectedRevision": zod.number().int().min(updateAppointmentBookingBodyExpectedRevisionMin),
+  "expectedBookingDetailsRevision": zod.number().int().min(updateAppointmentBookingBodyExpectedBookingDetailsRevisionMin),
+  "bookingMobile": zod.string().max(updateAppointmentBookingBodyBookingMobileMax),
+  "notes": zod.string().max(updateAppointmentBookingBodyNotesMax)
+})
+
+export const updateAppointmentBookingResponseOneNotesMax = 1000;
+
+export const updateAppointmentBookingResponseTwoBookingDetailsRevisionMin = 0;
+
+
+
+export const UpdateAppointmentBookingResponse = zod.object({
+  "sessionId": zod.string().optional(),
+  "startTime": zod.string().optional(),
+  "patientId": zod.string(),
+  "doctorId": zod.string(),
+  "clinicId": zod.string(),
+  "branchId": zod.string(),
+  "date": zod.coerce.date(),
+  "source": zod.enum(['online', 'walkIn', 'phone', 'qr']),
+  "appointmentTypeId": zod.string().optional(),
+  "consultationTypeId": zod.string().optional(),
+  "qrReference": zod.string().optional(),
+  "requestId": zod.string().optional().describe('Client-generated idempotency key'),
+  "termsAccepted": zod.boolean().optional(),
+  "notes": zod.string().max(updateAppointmentBookingResponseOneNotesMax).optional()
+}).and(zod.object({
+  "bookingMobile": zod.string().nullish().describe('Submitted visit contact; may be absent on historical bookings.'),
+  "bookingContactSource": zod.union([zod.literal('staff'),zod.literal('patient'),zod.literal('guest'),zod.literal(null)]).nullish().describe('Server-derived submitter provenance, not contact ownership or verification.'),
+  "confirmationEmail": zod.enum(['provider_accepted', 'unavailable', 'disabled', 'no_recipient', 'not_attempted']).optional().describe('Booking confirmation email attempt outcome. Provider acceptance is not proof of inbox delivery.'),
+  "dateFormat": zod.enum(['DD MMM YYYY', 'DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default DD MMM YYYY.'),
+  "timeFormat": zod.enum(['12h', '24h']).optional().describe('Parent Clinic Group display preference; locations inherit it. Default 12h.'),
+  "id": zod.string(),
+  "reference": zod.string(),
+  "token": zod.string(),
+  "tokenNumber": zod.number().int().optional(),
+  "queueRank": zod.number().optional(),
+  "revision": zod.number().int().optional(),
+  "expectedDurationMinutes": zod.number().int().nullish(),
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
+  "patientName": zod.string(),
+  "patientCode": zod.string().optional(),
+  "doctorName": zod.string(),
+  "clinicName": zod.string(),
+  "branchName": zod.string(),
+  "branchAddress": zod.string().nullish().describe('Booking branch address snapshot; for legacy bookings the current branch address is resolved.'),
+  "timezone": zod.string().nullish().describe('Time zone for the consulting session range.'),
+  "startTime": zod.string().optional(),
+  "endTime": zod.string().optional(),
+  "createdAt": zod.coerce.date(),
+  "checkedInAt": zod.coerce.date().nullish(),
+  "calledAt": zod.coerce.date().nullish(),
+  "consultationStartedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
+  "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(updateAppointmentBookingResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
+  "movementReason": zod.string().nullish(),
+  "history": zod.array(zod.object({
+  "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
+  "occurredAt": zod.coerce.date(),
+  "reason": zod.string().optional(),
+  "action": zod.string().optional(),
+  "position": zod.number().int().optional(),
+  "from": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional(),
+  "to": zod.object({
+  "doctorId": zod.string().optional(),
+  "branchId": zod.string().optional(),
+  "date": zod.coerce.date().optional(),
+  "token": zod.string().optional(),
+  "tokenNumber": zod.number().int().optional()
+}).optional()
+})).optional()
+}))
+
+
+export const GetBookingStatusSmsPreviewParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetBookingStatusSmsPreviewResponse = zod.object({
+  "eligible": zod.boolean(),
+  "reason": zod.string(),
+  "recipient": zod.string(),
+  "message": zod.string(),
+  "previewToken": zod.string()
+})
+
+
+export const SendBookingStatusSmsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const sendBookingStatusSmsBodyPreviewTokenMin = 64;
+export const sendBookingStatusSmsBodyPreviewTokenMax = 64;
+
+
+
+export const SendBookingStatusSmsBody = zod.object({
+  "requestId": zod.string().uuid(),
+  "previewToken": zod.string().min(sendBookingStatusSmsBodyPreviewTokenMin).max(sendBookingStatusSmsBodyPreviewTokenMax)
+})
+
+export const SendBookingStatusSmsResponse = zod.object({
+  "state": zod.enum(['provider_accepted', 'provider_rejected', 'pre_dispatch_failed', 'delivery_unknown', 'blocked']),
+  "reason": zod.string().optional()
+})
 
 
 export const GetTicketEmailPreviewParams = zod.object({
@@ -7249,6 +7389,8 @@ export const GetAppointmentParams = zod.object({
 
 export const getAppointmentResponseOneNotesMax = 1000;
 
+export const getAppointmentResponseTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const GetAppointmentResponse = zod.object({
@@ -7296,6 +7438,8 @@ export const GetAppointmentResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(getAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7347,6 +7491,8 @@ export const ResolveAppointmentQrBody = zod.object({
 
 export const resolveAppointmentQrResponseAppointmentOneNotesMax = 1000;
 
+export const resolveAppointmentQrResponseAppointmentTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const ResolveAppointmentQrResponse = zod.object({
@@ -7395,6 +7541,8 @@ export const ResolveAppointmentQrResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(resolveAppointmentQrResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7435,6 +7583,8 @@ export const CheckInAppointmentQrBody = zod.object({
 })
 
 export const checkInAppointmentQrResponseAppointmentOneNotesMax = 1000;
+
+export const checkInAppointmentQrResponseAppointmentTwoBookingDetailsRevisionMin = 0;
 
 
 
@@ -7484,6 +7634,8 @@ export const CheckInAppointmentQrResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(checkInAppointmentQrResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7554,6 +7706,8 @@ export const GetAppointmentMovementParams = zod.object({
 
 export const getAppointmentMovementResponseAppointmentOneNotesMax = 1000;
 
+export const getAppointmentMovementResponseAppointmentTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const GetAppointmentMovementResponse = zod.object({
@@ -7602,6 +7756,8 @@ export const GetAppointmentMovementResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(getAppointmentMovementResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7666,6 +7822,8 @@ export const ManageGuestReceiptBody = zod.object({
 
 export const manageGuestReceiptResponseAppointmentOneNotesMax = 1000;
 
+export const manageGuestReceiptResponseAppointmentTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const ManageGuestReceiptResponse = zod.object({
@@ -7714,6 +7872,8 @@ export const ManageGuestReceiptResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(manageGuestReceiptResponseAppointmentTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7765,6 +7925,8 @@ export const RescheduleAppointmentBody = zod.object({
 
 export const rescheduleAppointmentResponseOneNotesMax = 1000;
 
+export const rescheduleAppointmentResponseTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const RescheduleAppointmentResponse = zod.object({
@@ -7812,6 +7974,8 @@ export const RescheduleAppointmentResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(rescheduleAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7872,6 +8036,8 @@ export const TransitionAppointmentBody = zod.object({
 
 export const transitionAppointmentResponseOneNotesMax = 1000;
 
+export const transitionAppointmentResponseTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const TransitionAppointmentResponse = zod.object({
@@ -7919,6 +8085,8 @@ export const TransitionAppointmentResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(transitionAppointmentResponseTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -7970,6 +8138,8 @@ export const GetQueueQueryParams = zod.object({
 })
 
 export const getQueueResponseEntriesItemOneNotesMax = 1000;
+
+export const getQueueResponseEntriesItemTwoBookingDetailsRevisionMin = 0;
 
 
 
@@ -8062,6 +8232,8 @@ export const GetQueueResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(getQueueResponseEntriesItemTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -8111,6 +8283,8 @@ export const CallNextBody = zod.object({
 
 export const callNextResponseAppointmentOneOneNotesMax = 1000;
 
+export const callNextResponseAppointmentOneTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const CallNextResponse = zod.object({
@@ -8159,6 +8333,8 @@ export const CallNextResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(callNextResponseAppointmentOneTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -8331,6 +8507,8 @@ export const GetDashboardQueryParams = zod.object({
 
 export const getDashboardResponseRecentAppointmentsItemOneNotesMax = 1000;
 
+export const getDashboardResponseRecentAppointmentsItemTwoBookingDetailsRevisionMin = 0;
+
 
 
 export const GetDashboardResponse = zod.object({
@@ -8392,6 +8570,8 @@ export const GetDashboardResponse = zod.object({
   "completedAt": zod.coerce.date().nullish(),
   "allowedActions": zod.array(zod.enum(['checkIn', 'enqueue', 'call', 'start', 'complete', 'noShow', 'requeue', 'cancel', 'shift'])),
   "canReschedule": zod.boolean().optional(),
+  "canEditBooking": zod.boolean().optional().describe('Staff role and current appointment state allow visit-only mobile and notes edits; write permissions are rechecked on save.'),
+  "bookingDetailsRevision": zod.number().int().min(getDashboardResponseRecentAppointmentsItemTwoBookingDetailsRevisionMin).optional().describe('Visit-contact/notes concurrency revision, independent of lifecycle notification revisions.'),
   "movementReason": zod.string().nullish(),
   "history": zod.array(zod.object({
   "status": zod.enum(['booked', 'checkedIn', 'waiting', 'called', 'inConsultation', 'completed', 'noShow', 'cancelled']),
@@ -8784,7 +8964,7 @@ export const ListNotificationLogsResponse = zod.object({
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "status": zod.string(),
-  "source": zod.enum(['automatic', 'test']),
+  "source": zod.enum(['automatic', 'test', 'manual']),
   "occurrence": zod.string().nullish(),
   "clinicId": zod.string().nullish(),
   "reference": zod.string().nullish(),
@@ -8832,7 +9012,7 @@ export const GetNotificationLogResponse = zod.object({
   "channel": zod.enum(['email', 'sms']),
   "event": zod.string(),
   "status": zod.string(),
-  "source": zod.enum(['automatic', 'test']),
+  "source": zod.enum(['automatic', 'test', 'manual']),
   "occurrence": zod.string().nullish(),
   "clinicId": zod.string().nullish(),
   "reference": zod.string().nullish(),

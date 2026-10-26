@@ -38,6 +38,8 @@ export async function deliveryControlCatalog(conn:any,clinicId?:string,clinic?:a
      if(!validTemplateTarget(event,recipient,channel)||requiredEvent(event)&&clinicId)continue;
     const template=await resolvedTemplate(event,clinicId,conn,recipient,channel);
     const reasons:string[]=[];
+    if (event === "booking_status_link" && (!template.wordingPublished || !(template.content as SmsTemplateContent).dltTemplateId))
+      reasons.push("Publish the approved manual booking-status link wording and its own registration before use");
     if(!(channel==="sms"?readiness.notificationSms:readiness.smtp).ready)reasons.push(`Configure ${channel==="sms"?"SMS API":"SMTP"} on the ${channel==="sms"?"SMS":"Email"} page`);
      if(channel==="sms"&&!requiredEvent(event)&&readiness.notificationSms.notificationsEnabled===false)reasons.push("SMS notifications are disabled in Communication Settings");
      if(channel==="email"&&!requiredEvent(event)&&readiness.smtp.notificationsEnabled===false)reasons.push("Email notifications are disabled in Communication Settings");
@@ -47,7 +49,8 @@ export async function deliveryControlCatalog(conn:any,clinicId?:string,clinic?:a
      if(gate===false&&!requiredEvent(event))reasons.push(clinicId?"Clinic notification gate is off":"Platform default notification gate is off; clinics may have explicit overrides");
     if(!template.content.enabled)reasons.push("Published activation is off");
      items.push({channel,event,recipient,required:requiredEvent(event),revision:template.local.revision,enabled:template.content.enabled,source:template.source,ready:reasons.length===0,blockedReasons:reasons,
-       timing:requiredEvent(event)?"Platform security message sent on its authentication action when enabled at System Default. Optional Delivery does not apply. Disabling verification or setup delivery can prevent that action; SMS setup advisories do not replace the emailed link.":
+       timing:event==="booking_status_link"?"Manual only, after staff previews the eligible patient recipient and approved message and explicitly confirms. Never sent by automatic booking events.":
+        requiredEvent(event)?"Platform security message sent on its authentication action when enabled at System Default. Optional Delivery does not apply. Disabling verification or setup delivery can prevent that action; SMS setup advisories do not replace the emailed link.":
         event==="staff_created_admin"?"After the staff account commits, only to the creating administrator's matching verified contact. Failed creation sends no notice.":
         event==="staff_welcome"?"Once per new account and channel, after that contact is verified. Email verification never authorizes SMS, or the reverse. Past skips are not replayed.":
         event==="reminder"?"One hour before the session start in the session timezone; not an exact consultation time":

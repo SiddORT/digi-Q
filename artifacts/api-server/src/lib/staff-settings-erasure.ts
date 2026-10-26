@@ -59,7 +59,7 @@ export function classifyStaffSetting(row: { id: string; data: any }, target: Sta
     if (media.sharedLogoIds.includes(id)) { const next = { ...data, ownerId: null, deletedOwner: true }; return { action: "anonymize", data: next }; }
     return { action: "resolve", reason: "Unclassified staff media" };
   }
-  if (["notification-test", "staff-dispatch"].includes(family)) {
+  if (["notification-test", "staff-dispatch", "manual-status-sms"].includes(family)) {
     // Keep the occurrence key, never release deduplication claims for retry.
     return { action: "anonymize", data: erasedHistoryMarker() };
   }

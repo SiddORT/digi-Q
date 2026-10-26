@@ -16,7 +16,7 @@ export const historyId = (key: string) => prefix + createHash("sha256").update(k
 const states = ["pending", "sending", "provider_accepted", "provider_rejected", "pre_dispatch_failed", "delivery_unknown", "configuration_failed", "preparation_failed", "disabled", "obsolete", "no_recipient", "not_attempted"] as const;
 type State = typeof states[number];
 type Snapshot = { sender?: string; recipient?: string; subject?: string; message?: string; templateId?: string; templateRevision?: number; templateScope?: string; dltTemplateId?: string; provider?: string };
-type Entry = { channel: "email" | "sms"; event: string; source?: "automatic" | "test"; clinicId?: string; reference?: string; recipientGroup: string; occurrence?: string; createdAt?: number; dueAt?: number; _sourceInput?: any; preparationReason?: string };
+type Entry = { channel: "email" | "sms"; event: string; source?: "automatic" | "test" | "manual"; clinicId?: string; reference?: string; recipientGroup: string; occurrence?: string; createdAt?: number; dueAt?: number; _sourceInput?: any; preparationReason?: string };
 function key() {
   const raw = process.env.INTEGRATIONS_ENCRYPTION_KEY;
   if (!raw || !/^[a-f0-9]{64}$/i.test(raw)) throw new Error("History encryption unavailable");
@@ -152,10 +152,10 @@ export function templateSnapshot(template: any, event: string, group: string, ch
 }
 const querySchema = z.object({
   from: z.string().datetime({ offset: true }).optional(), to: z.string().datetime({ offset: true }).optional(),
-  channel: z.enum(["email", "sms"]).optional(), event: z.enum(["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "provider_test"]).optional(),
+  channel: z.enum(["email", "sms"]).optional(), event: z.enum(["booking", "onboarding", "rescheduled", "cancelled", "completed", "reminder", "booking_status_link", "provider_test"]).optional(),
   status: z.enum(states).optional(), clinicId: z.string().min(1).max(100).optional(),
   recipientGroup: z.enum(["patient", "clinicAdmin", "doctor", "receptionist", "explicit"]).optional(),
-  source: z.enum(["automatic", "test"]).optional(), sender: z.string().min(1).max(254).optional(), recipient: z.string().min(1).max(254).optional(),
+  source: z.enum(["automatic", "test", "manual"]).optional(), sender: z.string().min(1).max(254).optional(), recipient: z.string().min(1).max(254).optional(),
   reference: z.string().min(1).max(100).optional(), cursor: z.string().max(1000).optional(), pageSize: z.coerce.number().int().min(1).max(100).default(20),
 }).strict();
 export function authorizeNotificationHistory(user: any) {
@@ -178,7 +178,7 @@ export function projection(row: any, now: number) {
 // Legacy outboxes expose only data they actually recorded. No rendered content,
 // contact or current configuration is substituted for unknown historical fields.
 const legacyIdPattern=/^legacy:(mail|sms)-outbox:[A-Za-z0-9:_-]{1,170}$/;
-type HistorySelection = { id?: string; clinicId?: string; source?: "automatic" | "test"; ownerId?: string };
+type HistorySelection = { id?: string; clinicId?: string; source?: "automatic" | "test" | "manual"; ownerId?: string };
 export const historyRecords = (metadataOnly = false, selection: HistorySelection = {}) => sql`
   select id, ${metadataOnly ? sql`jsonb_build_object(
     'channel',data->'channel','event',data->'event','status',data->'status','source',data->'source',

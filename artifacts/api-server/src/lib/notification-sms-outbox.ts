@@ -51,6 +51,7 @@ async function targetAccounts(conn:any,group:TemplateRecipient,row:any,clinic:an
   return targets;
 }
 export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previousDetails:string="",previousSession?:any) {
+  if (event === "booking_status_link") return; // Never capture manual link sharing as a lifecycle event.
   if(requiredEvent(event))return; // Authentication codes never enter notification history/outbox.
   await lockNotificationPreferences(conn);
   if(!await claimNotificationOccurrence(conn,"sms",event,row))return;

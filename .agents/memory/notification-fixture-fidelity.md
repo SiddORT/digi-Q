@@ -37,3 +37,14 @@ transport. Fictional credentials are not a substitute for preventing network dis
 **How to apply:** Use an explicitly injected sender or a transport-module double in
 authentication/notification fixtures. Keep real configuration and payload validation
 where possible, but prove the test cannot reach provider endpoints before running it.
+
+Patient-recipient notification tests must retain the real staff dispatch/removal
+barrier and its subject resolver.
+
+**Why:** Replacing that barrier hid a production failure when a patient account was
+passed to a guard that intentionally accepts only staff. Recipients and staff
+represented in a message/history are different identity sets.
+
+**How to apply:** Resolve staff subjects using the shared notification subject rules,
+include the initiating staff actor, and keep patient eligibility checks separate.
+Use a fake sender, then assert dispatch and durable replay with the real barrier.

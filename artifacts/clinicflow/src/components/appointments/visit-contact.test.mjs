@@ -22,8 +22,9 @@ const compiled = await build({
     setup(b) {
       b.onResolve({ filter: /^@workspace\/api-client-react$/ }, () => ({ path: "api", namespace: "fixture" }));
       b.onResolve({ filter: /\/resources$/ }, () => ({ path: "resources", namespace: "fixture" }));
+      b.onResolve({ filter: /^\.\/(AppointmentBookingTab|booking-draft-guard)$/ }, a => ({ path: a.path.slice(2), namespace: "fixture" }));
       b.onResolve({ filter: /^\.\/AppointmentTicket$/ }, () => ({ path: "ticket", namespace: "fixture" }));
-      b.onLoad({ filter: /.*/, namespace: "fixture" }, ({ path }) => ({
+      b.onLoad({ filter: /.*/, namespace: "fixture" }, ({ path }) => ({ resolveDir: import.meta.dirname,
         contents: path === "api" ? `
           let authorized = {};
           export const setAuthorized = value => { authorized = value; };
@@ -32,7 +33,12 @@ const compiled = await build({
         ` : path === "resources" ? `
           export const title = value => value;
           export const ErrorNotice = () => "Details unavailable";
-        ` : "export const AppointmentTicket = () => null;",
+        ` : path === "AppointmentBookingTab" ? `
+          import { jsx } from "react/jsx-runtime";
+          export const CopyReference = ({ reference }) => jsx("code", { "data-testid": "text-detail-reference", children: reference });
+          export const AppointmentBookingTab = ({ appointment: a }) => jsx("div", { children: [jsx("dt", { children: "Visit contact mobile" }), jsx("dd", { "data-testid": "text-detail-booking-mobile", children: (a.bookingMobile || "").trim() || "Not recorded for this visit." }), jsx("small", { children: "Saved for this visit only; separate from profile/login contact. Does not determine notification recipients." })] });
+        ` : path === "booking-draft-guard" ? "export const useBookingDraftGuard = () => {};"
+        : "export const AppointmentTicket = () => null;",
       }));
     },
   }],

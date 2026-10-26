@@ -1,0 +1,42 @@
+.appt-booking{display:grid;gap:var(--space-3);min-width:0}
+.appt-booking-cards{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:var(--space-4);align-items:start;min-width:0}
+.appt-booking-card{min-width:0;margin:0}
+.appt-card-head{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-2)}
+.appt-card-head h4{margin:0}
+.appt-edit-button{display:inline-flex;align-items:center;gap:6px;min-height:var(--control-sm,32px)}
+.appt-draft-note{flex-basis:100%;color:var(--soft)}
+.appt-booking-grid{grid-template-columns:minmax(0,1fr)}
+.appt-detail-notes{white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.sr-only-heading{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.appt-booking-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3) var(--space-4);padding:var(--space-3) var(--space-4);border:1px solid hsl(var(--border));border-radius:var(--radius-card);background:#f6f9fe;min-width:0}
+.appt-booking-strip>*{min-width:0;overflow-wrap:anywhere}
+.appt-booking-strip p{margin:0}
+.appt-booking-strip small{display:block;margin-top:2px;color:var(--soft)}
+.strip-label{display:block;font-size:var(--type-caption);font-weight:650;color:var(--soft);margin-bottom:2px}
+.strip-wide{grid-column:1/-1}
+.sms-preview{margin:8px 0;padding:8px 12px;border-left:3px solid var(--dq-blue);background:#f1f5fb;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:1023px){.appt-booking-cards{grid-template-columns:minmax(0,1fr)}.appt-booking-strip{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+@media(max-width:600px){.appt-booking-strip{grid-template-columns:minmax(0,1fr)}.appt-detail-summary{grid-template-columns:minmax(0,1fr)}}
+/* Reference alignment: summary = identity left, three context cells right; equal-width tabs; QR left of number; strip with dividers. */
+.appt-detail .appt-detail-summary{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);background:hsl(var(--card,0 0% 100%))}
+.appt-detail .appt-sum-id,.appt-detail .appt-sum-name{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.appt-sum-id h3{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.appt-sum-refs{display:flex;flex-wrap:wrap;gap:4px 16px;margin:6px 0 0;font-size:var(--type-label);color:var(--soft);overflow-wrap:anywhere}
+.appt-sum-context{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0}
+.workspace tr.row-expansion .appt-detail dl.appt-sum-context{grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+.appt-sum-context>div{min-width:0;padding:0 var(--space-3);border-left:1px solid hsl(var(--border))}
+.appt-sum-context dt{font-size:var(--type-caption);color:var(--soft)}
+.appt-sum-context dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.appt-sum-context small{display:block;font-weight:400;color:var(--soft)}
+.appt-tabs-list{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))}
+.vt-compact .vt-body{display:grid;grid-template-columns:minmax(110px,160px) minmax(0,1fr);gap:var(--space-3);align-items:center}
+.vt-compact .vt-body>.vt-qr{grid-column:1;grid-row:1;min-width:0}
+.vt-compact .vt-body>.vt-info{grid-column:2;grid-row:1;min-width:0}
+.vt-compact .vt-qr img,.vt-compact .vt-qr-slot{width:100%;height:auto;aspect-ratio:1;max-width:160px}
+.vt-compact .vt-number{font-size:clamp(1.6rem,4vw,3rem);overflow-wrap:anywhere}
+.vt-compact .vt-foot:empty{display:none}
+@media(max-width:480px){.vt-compact .vt-body{grid-template-columns:minmax(95px,130px) minmax(0,1fr)}.appt-booking .vt-icon-action{min-width:44px;min-height:44px}}
+.appt-booking-strip>div+div{border-left:1px solid hsl(var(--border));padding-left:var(--space-4)}
+@media(max-width:1023px){.appt-detail .appt-detail-summary{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.appt-sum-context{grid-template-columns:minmax(0,1fr);gap:8px}.appt-sum-context>div{border-left:0;padding:0}.appt-booking-strip>div+div{border-left:0;padding-left:0}.appt-tabs-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.workspace tr.row-expansion .appt-detail dl.appt-sum-context{grid-template-columns:minmax(0,1fr);gap:8px}}

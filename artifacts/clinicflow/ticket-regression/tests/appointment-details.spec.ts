@@ -101,7 +101,7 @@ for (const surface of ["rows", "linked", "calendar"]) {
     } else {
       await page.getByTestId("calendar-day-visit-appointment-1").locator("summary").click();
     }
-    await expect(page.getByTestId("text-detail-patient")).toHaveText(first.patientName);
+    await expect(page.getByTestId("text-detail-patient")).toContainText(first.patientName);
     await expect(page.getByAltText("Personal visit QR")).toBeVisible();
     state.failAppointment = true; state.failStatus = 403;
     await page.getByRole("button", { name: "Refresh fixture" }).click();
@@ -160,10 +160,10 @@ test("Booking default, keyboard sections, all fields, history and fresh refresh 
   await expect(tab(page, "Details")).toBeFocused();
   await expect(tab(page, "Details")).toHaveAttribute("aria-selected", "true");
   for (const [id, text] of [["text-detail-patient-code", first.patientCode], ["text-detail-location", first.branchName], ["text-detail-clinic", first.clinicName], ["text-detail-doctor", first.doctorName]]) await expect(page.getByTestId(id)).toContainText(text);
-  await expect(page.getByTestId("text-detail-reference")).not.toBeVisible();
+  await expect(page.getByTestId("text-detail-reference")).toHaveText(first.reference);
   state.appointment.patientName = "Updated Fictional Name";
   await page.getByRole("button", { name: "Refresh fixture" }).click();
-  await expect(page.getByTestId("text-detail-patient")).toHaveText("Updated Fictional Name");
+  await expect(page.getByTestId("text-detail-patient")).toContainText("Updated Fictional Name");
   await expect(tab(page, "Details")).toHaveAttribute("aria-selected", "true");
   await tab(page, "Details").focus();
   await page.keyboard.press("ArrowRight");
@@ -264,12 +264,11 @@ test("loading, QR and queue retry states remain accessible; detail refresh error
 
 test("QR, status URLs, print/download and switching tabs cannot bypass fresh export checks", async ({ page }) => {
   const state = await mount(page);
-  const download = page.getByTestId("button-download-ticket");
+  const download = page.getByTestId("button-ticket-download");
   await expect(download).toBeEnabled();
   const image = page.getByAltText("Personal visit QR");
   await expect(image).toBeVisible();
   expect(await page.evaluate(uri => window.decodeTicketQr(uri!), await image.getAttribute("src"))).toBe(qrUrl);
-  await expect(page.getByTestId("link-ticket-open-status")).toHaveAttribute("href", "/admin/queue?appointment=appointment-1");
   await expect(page.getByTestId("link-ticket-patient-live")).toHaveAttribute("href", /\/patient\/queue\?appointment=appointment-1$/);
   const downloaded = page.waitForEvent("download");
   await download.click();
@@ -278,7 +277,7 @@ test("QR, status URLs, print/download and switching tabs cannot bypass fresh exp
   // Printing uses a popup; install its print stub before document generation.
   await page.context().addInitScript(() => { window.print = () => {}; });
   const popupPromise = page.waitForEvent("popup");
-  await page.getByTestId("button-print-ticket").click();
+  await page.getByTestId("button-ticket-print").click();
   const popup = await popupPromise;
   await popup.waitForLoadState("domcontentloaded");
   await expect(popup.locator("body")).toContainText(first.patientName);
@@ -300,7 +299,7 @@ for (const width of [1366, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await mount(page, "rows");
     await page.getByTestId("button-expand-appointment-appointment-1").click();
-    await expect(page.getByTestId("button-download-ticket")).toBeEnabled();
+    await expect(page.getByTestId("button-ticket-download")).toBeEnabled();
     for (const name of ["Booking", "Details", "Consultation", "History"]) {
       await tab(page, name).click();
       await expect(details(page).getByRole("tabpanel")).toBeVisible();

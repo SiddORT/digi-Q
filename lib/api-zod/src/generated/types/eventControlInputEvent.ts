@@ -31,6 +31,7 @@ export const EventControlInputEvent = {
   cancelled: 'cancelled',
   completed: 'completed',
   reminder: 'reminder',
+  booking_status_link: 'booking_status_link',
   patient_login_otp: 'patient_login_otp',
   clinic_registration_otp: 'clinic_registration_otp',
   patient_email_otp: 'patient_email_otp',

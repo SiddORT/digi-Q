@@ -26,7 +26,8 @@ export async function ticketEmailPreview(user: any, id: string) {
   const account = patient.userId ? await one(users, patient.userId) : null;
   const recipient = String(account?.email || patient.email || "").trim();
   let reason = "";
-  if (process.env.NODE_ENV !== "production") reason = "Email delivery is disabled in development.";
+  if (row.status === "completed") reason = "Completed visits do not need a ticket.";
+  else if (process.env.NODE_ENV !== "production") reason = "Email delivery is disabled in development.";
   else if (!(await getSettings(db, row.clinicId)).notificationsEnabled) reason = "Email notifications are disabled for this clinic.";
   else if (!validEmailAddress(recipient)) reason = "No valid email address is recorded. Update the patient record first.";
   else {
@@ -60,7 +61,10 @@ async function ticketAttachment(user: any, id: string) {
   }
   if (y > 205) { pdf.addPage(); y = 15; }
   pdf.addImage(await QRCode.toDataURL(ticketUrl, { width: 500, margin: 2 }), "PNG", 15, y + 5, 60, 60);
-  return Buffer.from(pdf.output("arraybuffer"));
+  const confirmed = await one(appointments, id);
+  assert(await canRead(user, "appointments", confirmed) && confirmed.status !== "completed", 409, "Ticket is no longer available. Refresh the booking.");
+  assert((confirmed.revision || 0) === (row.revision || 0) && confirmed.status === row.status, 409, "Appointment changed while preparing the ticket. Review again.");
+  return { content: Buffer.from(pdf.output("arraybuffer")), revision: confirmed.revision || 0 };
 }
 
 export async function emailTicket(user: any, id: string, requestId: string, recipient: string) {
@@ -85,8 +89,9 @@ export async function emailTicket(user: any, id: string, requestId: string, reci
     await consumeRateLimit(`ticket-email-appointment:${id}`, 3);
     const current = await ticketEmailPreview(user, id);
     assert(current.eligible && current.recipient === recipient, 409, "Recipient or delivery settings changed. Review again.");
+     assert(((await one(appointments, id)).revision || 0) === attachment.revision, 409, "Appointment changed. Review the ticket again.");
     await sendAuthEmail(preview.recipient, "Your visit ticket", "Your private visit ticket is attached. The session is a time range, not an exact consultation time.", undefined, undefined,
-      [{ filename: "visit-ticket.pdf", content: attachment, contentType: "application/pdf" }]);
+       [{ filename: "visit-ticket.pdf", content: attachment.content, contentType: "application/pdf" }]);
     await db.update(settings).set({ data: { state: "provider_accepted", appointmentId: id, at: Date.now() } }).where(eq(settings.id, key));
     await audit(user, "email-ticket", "appointments", { id }).catch(() => { logger.error("Ticket email audit could not be recorded"); });
     return { state: "provider_accepted" };

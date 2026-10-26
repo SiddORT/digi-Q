@@ -7,7 +7,7 @@ import { BRAND_LOGO_URL, BRAND_NAME } from "../../branding";
 import "./visit-ticket.css";
 import { downloadTicketPdf } from "./ticket-pdf";
 import { ticketCssVarString, ticketCssVars, ticketModel } from "./ticket-model";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { formatDate, formatTime, type DateTimePreferences } from "../../lib/date-time";
 
 export type TicketData = Partial<DateTimePreferences> & {
@@ -99,7 +99,7 @@ async function qrImage(url?:string|null){
  * prepareExport must revalidate with the server and resolve fresh ticket data (or throw).
  * Exports never proceed without a QR.
  */
-export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExport, exportDisabled }: { ticket: TicketData; testId?: string; note?: string; prepareExport?: () => Promise<TicketData>; exportDisabled?: boolean }) {
+export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExport, exportDisabled, actions, compact }: { ticket: TicketData; testId?: string; note?: string; prepareExport?: () => Promise<TicketData>; exportDisabled?: boolean; actions?: ReactNode; compact?: boolean }) {
   const site = usePublicWebsite();
   const [qr, setQr] = useState<string | null>(null);
   const [qrError, setQrError] = useState("");
@@ -138,15 +138,15 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
   const disabled = !!busy || exportDisabled || !qr || !site.origin;
   const m = modelFor(ticket);
   const why = busy ? "Checking the latest ticket first." : !qr ? "Personal QR is still loading." : "Reconnect and refresh the ticket first.";
-  return <article className="vt" data-testid={testId} aria-label="Visit ticket" style={ticketCssVars() as CSSProperties}>
-    <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>{m.title}</h2></div>
+  return <article className={compact ? "vt vt-compact" : "vt"} data-testid={testId} aria-label="Visit ticket" style={ticketCssVars() as CSSProperties}>
+    <header className="vt-head"><div className="vt-head-brand"><img src={BRAND_LOGO_URL} alt="DigiQ Doctors logo"/><h2>{compact ? "Ticket & QR" : m.title}</h2></div>
       <div className="vt-head-tools">
-        <span className="vt-badge" data-testid="ticket-status" aria-label={`Booking Status: ${m.status}`}>{m.status}</span>
-        <div className="vt-actions" role="group" aria-label="Ticket Actions">
+        {!compact && <span className="vt-badge" data-testid="ticket-status" aria-label={`Booking Status: ${m.status}`}>{m.status}</span>}
+        {actions ?? <div className="vt-actions" role="group" aria-label="Ticket Actions">
           <IconAction className="vt-icon-action" testId="button-download-ticket" label={busy==="download"?"Preparing PDF…":"Download Ticket PDF"} hint="Download Ticket PDF — ticket-sized, for phones and sharing" icon={<Download size={16} aria-hidden/>} onClick={() => void run("download")} disabled={disabled} disabledReason={why}/>
           <IconAction className="vt-icon-action" testId="button-download-ticket-a4" label={busy==="a4"?"Preparing A4 PDF…":"Download A4 PDF"} hint="Download A4 PDF — ticket centred on an A4 page for office printing" icon={<FileText size={16} aria-hidden/>} onClick={() => void run("a4")} disabled={disabled} disabledReason={why}/>
           <IconAction className="vt-icon-action" testId="button-print-ticket" label={busy==="print"?"Checking Ticket…":"Print Ticket"} hint="Print Ticket — prints on A4 with the ticket centred" icon={<Printer size={16} aria-hidden/>} onClick={() => void run("print")} disabled={disabled} disabledReason={why}/>
-        </div>
+        </div>}
       </div>
     </header>
     <div className="vt-body">
@@ -154,19 +154,19 @@ export function VisitTicket({ ticket, testId = "visit-ticket", note, prepareExpo
         <div className="vt-main">
           <p className="vt-number-label">{m.numberLabel}</p>
           <p className="vt-number" data-testid="ticket-waiting-number">{m.number}</p>
-          {ticket.reference && <p className="vt-ref" data-testid="ticket-reference">{m.reference}</p>}
-          <p className="vt-name" data-testid="ticket-patient-name">{m.patient}</p>
+          {!compact && ticket.reference && <p className="vt-ref" data-testid="ticket-reference">{m.reference}</p>}
+          {!compact && <p className="vt-name" data-testid="ticket-patient-name">{m.patient}</p>}
         </div>
-        <div className="vt-facts">
+        {!compact && <div className="vt-facts">
           <div className="vt-visit"><small>{m.visitLabel}</small><strong>{m.visitPrimary}</strong><span>{m.visitSecondary}</span></div>
           <dl className="vt-dl">{m.facts.map(([k, v]) => <div key={k} style={{ display: "contents" }}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
-        </div>
+        </div>}
       </div>
-      <div className="vt-qr">{qr ? <img src={qr} alt={m.qrAlt}/> : qrError ? <div role="alert" className="vt-qr-slot"><p style={{margin:"0 0 8px"}}>{qrError}</p><button type="button" className="button secondary" data-testid="button-retry-ticket-qr" onClick={() => setQrTry(n => n + 1)}>Retry QR</button></div> : <div className="vt-qr-slot vt-qr-loading" role="status" aria-label="Loading QR"/>}<small>{m.qrCaption}</small></div>
+      <div className="vt-qr">{qr ? <img src={qr} alt={m.qrAlt}/> : qrError ? <div role="alert" className="vt-qr-slot"><p style={{margin:"0 0 8px"}}>{qrError}</p><button type="button" className="button secondary" data-testid="button-retry-ticket-qr" onClick={() => setQrTry(n => n + 1)}>Retry QR</button></div> : <div className="vt-qr-slot vt-qr-loading" role="status" aria-label="Loading QR"/>}<small>{compact ? "For reception" : m.qrCaption}</small></div>
     </div>
     <footer className="vt-foot">
       <PublicWebsiteStatus/>
-      <p>{note || m.footer}</p>
+      {!compact && <p>{note || m.footer}</p>}
       {err && <p role="alert" data-testid="ticket-export-error">{err}</p>}
     </footer>
   </article>;

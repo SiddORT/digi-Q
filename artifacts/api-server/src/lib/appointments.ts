@@ -9,6 +9,7 @@ import { isDoctorAvailable } from "./presence";
 import { snapshotDuration } from "./session-duration";
 import { clinicDisplayPreferences } from "./display-preferences";
 import { movementReason, sourceSessionReason, assertSourceSessionOpen } from "./appointment-eligibility";
+import { canEditBooking, bookingEditPermission } from "./appointment-booking-edit";
 export const transitions: Record<string, { from: string[], to: string, stamp?: string }> = {
   checkIn: { from: ["booked", "checkedIn", "waiting", "called"], to: "inConsultation", stamp: "checkedInAt" },
   enqueue: { from: ["booked", "checkedIn"], to: "waiting", stamp: "waitingAt" },
@@ -31,20 +32,25 @@ export function appointmentView(row: any, user: any) {
     (user.role !== "patient" || ["cancel", "shift"].includes(action)) &&
     (!["requeue", "noShow"].includes(action) || !sourceSessionReason(row, true) && !row.checkedInAt && !row.consultationStartedAt)).map(([a]) => a);
   const { actorId, requestId, ...view } = row;
-  return { ...view, canReschedule: !reason, movementReason: reason, ...(user.role === "patient" && row.history ? { history: row.history.map(({ actorId: _actor, beforeOrder: _before, afterOrder: _after, ...event }: any) => event) } : {}), queueRank: rank(row), revision: row.revision || 0, expectedDurationMinutes: row.expectedDurationMinutes ?? null, allowedActions };
+  return { ...view, canEditBooking: canEditBooking(user, row), canReschedule: !reason, movementReason: reason, ...(user.role === "patient" && row.history ? { history: row.history.map(({ actorId: _actor, beforeOrder: _before, afterOrder: _after, ...event }: any) => event) } : {}), queueRank: rank(row), revision: row.revision || 0, expectedDurationMinutes: row.expectedDurationMinutes ?? null, allowedActions };
 }
 export async function appointmentViewWithBranch(row: any, user: any, conn: any = db) {
   const clinic = await one(clinics, row.clinicId, conn);
   const branch = row.branchAddress == null ? await one(branches, row.branchId, conn) : null;
-  return appointmentView({ ...row, ...clinicDisplayPreferences(clinic), branchAddress: row.branchAddress ?? branch?.address ?? null }, user);
+  const view = appointmentView({ ...row, ...clinicDisplayPreferences(clinic), branchAddress: row.branchAddress ?? branch?.address ?? null }, user);
+  return { ...view, canEditBooking: view.canEditBooking && (await bookingEditPermission(user, conn))(row) };
 }
 /** One map per relation for list responses, never one clinic query per appointment. */
 export async function appointmentViews(rows: any[], user: any, conn: any = db) {
   if (!rows.length) return [];
   const clinicMap = new Map((await all(clinics, conn)).map(c => [c.id, c]));
   const branchMap = new Map((rows.some(r => r.branchAddress == null) ? await all(branches, conn) : []).map(b => [b.id, b]));
-  return rows.map(row => appointmentView({ ...row, ...clinicDisplayPreferences(clinicMap.get(row.clinicId)),
-    branchAddress: row.branchAddress ?? branchMap.get(row.branchId)?.address ?? null }, user));
+  const permitted = await bookingEditPermission(user, conn);
+  return rows.map(row => {
+    const view = appointmentView({ ...row, ...clinicDisplayPreferences(clinicMap.get(row.clinicId)),
+      branchAddress: row.branchAddress ?? branchMap.get(row.branchId)?.address ?? null }, user);
+    return { ...view, canEditBooking: view.canEditBooking && permitted(row) };
+  });
 }
 export async function transition(user: any, id: string, body: any, conn: any = db, locked = false) {
   let row = await one(appointments, id, conn);

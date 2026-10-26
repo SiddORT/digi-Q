@@ -49,9 +49,9 @@ test("row actions: no duplicate Details action (row expands inline), clinical Ch
   assert.match(s, /<span className="row-lead"><button type="button" className="row-expand-toggle" aria-expanded=\{expandedId===a\.id\}/);
 });
 test("booking details own the complete ticket and QR section", () => {
-  const d = r("./AppointmentDetails.tsx");
+  const d = r("./AppointmentDetails.tsx") + r("./AppointmentBookingTab.tsx");
   for (const id of ["section-detail-patient", "section-detail-visit", "section-detail-provider", "section-detail-booking", "section-detail-ticket"]) assert.ok(d.includes(id), id);
-  assert.match(d, /<AppointmentTicket id=\{a\.id\} showHistory=\{false\} \/>/);
+  assert.match(d, /<VisitTicket compact/);
   assert.match(d, /Ticket &amp; QR/);
   assert.match(r("../../clinic.tsx"), /<AppointmentTicket/, "immediate booking confirmation still shows the ticket");
 });

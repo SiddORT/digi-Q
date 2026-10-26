@@ -1,11 +1,12 @@
 /** Shared authoring/dispatch contract. No template wording or registration metadata. */
-export const notificationVariables = ["clinic_name", "booking_link", "patient_name", "doctor_name",
+export const notificationVariables = ["clinic_name", "booking_link", "booking_status_link", "patient_name", "doctor_name",
   "appointment_details", "previous_details", "reference", "timezone", "clinic_contact",
   "recipient_name", "appointment_date", "session_start", "session_end", "previous_date",
   "previous_session_start", "previous_session_end", "queue_token", "token_number", "cancel_reason",
   "otp", "expiry_minutes", "setup_link", "role_name", "staff_name", "location_names", "sign_in_link", "clinic_admin_name"] as const;
 
 export function eventVariables(event: string): readonly string[] {
+  if (event === "booking_status_link") return ["booking_status_link"];
   if (event === "staff_created_admin" || event === "staff_welcome")
     return ["recipient_name", "staff_name", "role_name", "clinic_name", "location_names", "sign_in_link"];
   if (event === "staff_email_otp" || event === "staff_mobile_otp") return ["otp", "expiry_minutes"];

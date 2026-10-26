@@ -27,4 +27,5 @@ export type NotificationLogSource = typeof NotificationLogSource[keyof typeof No
 export const NotificationLogSource = {
   automatic: 'automatic',
   test: 'test',
+  manual: 'manual',
 } as const;

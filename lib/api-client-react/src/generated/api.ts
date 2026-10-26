@@ -58,8 +58,12 @@ import type {
   AvailabilityException,
   AvailabilityExceptionInput,
   AvailabilityExceptionList,
+  BookingDetailsUpdate,
   BookingMailOutcomeList,
   BookingScheduleAccess,
+  BookingStatusSmsInput,
+  BookingStatusSmsPreview,
+  BookingStatusSmsResult,
   Branch,
   BranchInput,
   BranchList,
@@ -11851,6 +11855,243 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateAppointmentMutationOptions(options));
+    }
+
+export const getUpdateAppointmentBookingUrl = (id: string,) => {
+
+
+
+
+  return `/api/appointments/${id}/booking`
+}
+
+export const updateAppointmentBooking = async (id: string,
+    bookingDetailsUpdate: BookingDetailsUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Appointment> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Appointment>(getUpdateAppointmentBookingUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(bookingDetailsUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAppointmentBookingMutationKey = () => ['updateAppointmentBooking'] as const;
+
+export const getUpdateAppointmentBookingMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAppointmentBooking>>, TError,UpdateAppointmentBookingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAppointmentBooking>>, TError,UpdateAppointmentBookingMutationVariables, TContext> => {
+
+const mutationKey = getUpdateAppointmentBookingMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAppointmentBooking>>, UpdateAppointmentBookingMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateAppointmentBooking(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAppointmentBookingMutationResult = NonNullable<Awaited<ReturnType<typeof updateAppointmentBooking>>>
+    export type UpdateAppointmentBookingMutationBody = BodyType<BookingDetailsUpdate>
+    export type UpdateAppointmentBookingMutationError = ErrorType<ErrorResponse>
+    export type UpdateAppointmentBookingMutationVariables = {id: string;data: BodyType<BookingDetailsUpdate>}
+
+    export const useUpdateAppointmentBooking = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAppointmentBooking>>, TError,UpdateAppointmentBookingMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAppointmentBooking>>,
+        TError,
+        UpdateAppointmentBookingMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateAppointmentBookingMutationOptions(options));
+    }
+
+export const getGetBookingStatusSmsPreviewUrl = (id: string,) => {
+
+
+
+
+  return `/api/appointments/${id}/sms-status-link`
+}
+
+export const getBookingStatusSmsPreview = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<BookingStatusSmsPreview> => {
+
+  return customFetch<BookingStatusSmsPreview>(getGetBookingStatusSmsPreviewUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBookingStatusSmsPreviewQueryKey = (id: string,) => {
+    return [
+    `/api/appointments/${id}/sms-status-link`
+    ] as const;
+    }
+
+
+export const getGetBookingStatusSmsPreviewQueryOptions = <TData = Awaited<ReturnType<typeof getBookingStatusSmsPreview>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBookingStatusSmsPreview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBookingStatusSmsPreviewQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBookingStatusSmsPreview>>> = ({ signal }) => getBookingStatusSmsPreview(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBookingStatusSmsPreview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBookingStatusSmsPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof getBookingStatusSmsPreview>>>
+export type GetBookingStatusSmsPreviewQueryError = ErrorType<unknown>
+
+
+
+export function useGetBookingStatusSmsPreview<TData = Awaited<ReturnType<typeof getBookingStatusSmsPreview>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBookingStatusSmsPreview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBookingStatusSmsPreviewQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendBookingStatusSmsUrl = (id: string,) => {
+
+
+
+
+  return `/api/appointments/${id}/sms-status-link`
+}
+
+export const sendBookingStatusSms = async (id: string,
+    bookingStatusSmsInput: BookingStatusSmsInput, options?: Parameters<typeof customFetch>[1]): Promise<BookingStatusSmsResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<BookingStatusSmsResult>(getSendBookingStatusSmsUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(bookingStatusSmsInput)
+  }
+);}
+
+
+
+
+
+export const getSendBookingStatusSmsMutationKey = () => ['sendBookingStatusSms'] as const;
+
+export const getSendBookingStatusSmsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendBookingStatusSms>>, TError,SendBookingStatusSmsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendBookingStatusSms>>, TError,SendBookingStatusSmsMutationVariables, TContext> => {
+
+const mutationKey = getSendBookingStatusSmsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendBookingStatusSms>>, SendBookingStatusSmsMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  sendBookingStatusSms(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendBookingStatusSmsMutationResult = NonNullable<Awaited<ReturnType<typeof sendBookingStatusSms>>>
+    export type SendBookingStatusSmsMutationBody = BodyType<BookingStatusSmsInput>
+    export type SendBookingStatusSmsMutationError = ErrorType<ErrorResponse>
+    export type SendBookingStatusSmsMutationVariables = {id: string;data: BodyType<BookingStatusSmsInput>}
+
+    export const useSendBookingStatusSms = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendBookingStatusSms>>, TError,SendBookingStatusSmsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendBookingStatusSms>>,
+        TError,
+        SendBookingStatusSmsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSendBookingStatusSmsMutationOptions(options));
     }
 
 export const getGetTicketEmailPreviewUrl = (id: string,) => {

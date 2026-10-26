@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import type { Appointment } from "@workspace/api-client-react";
 import { useGetAppointment, getGetAppointmentQueryKey } from "@workspace/api-client-react";
-import { Copy, Check } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { formatConfiguredTimestamp, formatDate, formatTime } from "../../lib/date-time";
 import { ErrorNotice, title } from "../../resources";
 import { bookingFields } from "../booking/booking-fields";
-import { AppointmentTicket } from "./AppointmentTicket";
-import { canShowAppointmentTicket, isPrivateAppointmentUnavailable } from "./presentation";
+import { AppointmentBookingTab, CopyReference } from "./AppointmentBookingTab";
+import { isPrivateAppointmentUnavailable } from "./presentation";
+import { clearBookingDraft } from "./booking-drafts";
+import { useBookingDraftGuard } from "./booking-draft-guard";
 
 const statusText = (status: string) => status === "called" ? "Called next" : title(status);
 
@@ -18,7 +19,11 @@ export function AppointmentDetails(props: { appointment: Appointment; supplement
   const authorized = useGetAppointment(props.appointment.id, { query: {
     queryKey: getGetAppointmentQueryKey(props.appointment.id), refetchInterval: 30000, retry: false,
   } });
-  if (isPrivateAppointmentUnavailable(authorized.error)) return <div>
+  useBookingDraftGuard();
+  const lost = isPrivateAppointmentUnavailable(authorized.error);
+  // Authorization loss hides every private draft and dialog along with the record.
+  useEffect(() => { if (lost) clearBookingDraft(props.appointment.id); }, [lost, props.appointment.id]);
+  if (lost) return <div>
     <ErrorNotice error={authorized.error} />
     <button type="button" onClick={() => void authorized.refetch()}>Retry Details</button>
   </div>;
@@ -27,24 +32,18 @@ export function AppointmentDetails(props: { appointment: Appointment; supplement
 
 function AppointmentDetailsInner({ appointment: a, supplementaryDetails }: { appointment: Appointment; supplementaryDetails?: ReactNode }) {
   const timestamp = (value: string) => formatConfiguredTimestamp(value, a.timezone || undefined, {}, a);
-  const [copied, setCopied] = useState<"" | "done" | "failed">("");
-  const copyToken = useRef(0);
-  useEffect(() => { copyToken.current += 1; setCopied(""); }, [a.reference]);
-  useEffect(() => () => { copyToken.current += 1; }, []);
-  const copyReference = () => {
-    const mine = ++copyToken.current;
-    const set = (v: "done" | "failed") => { if (copyToken.current === mine) setCopied(v); };
-    if (!navigator.clipboard) { set("failed"); return; }
-    try { navigator.clipboard.writeText(a.reference).then(() => set("done"), () => set("failed")); } catch { set("failed"); }
-  };
   const session = `${a.startTime ? formatTime(a.startTime, a) : "—"}–${a.endTime ? formatTime(a.endTime, a) : "—"}`;
   return <section aria-label="Appointment details" className="appt-detail" data-testid="appointment-details">
-    <header className="appt-detail-summary">
-      <div>
-        <h3 data-testid="text-detail-patient">{a.patientName}</h3>
-        <div className="appt-detail-status"><span>Current status</span><span className={`badge ${a.status}`} data-testid="text-detail-status">{statusText(a.status)}</span></div>
+    <header className="appt-detail-summary" data-testid="appointment-summary">
+      <div className="appt-sum-id">
+        <h3 data-testid="text-detail-patient"><span className="appt-sum-name">{a.patientName}</span> <span className={`badge ${a.status}`} data-testid="text-detail-status">{statusText(a.status)}</span></h3>
+        <p className="appt-sum-refs"><span data-testid="text-detail-token">Token: <strong>{a.token || "Not assigned"}</strong></span><span>Ref: <CopyReference reference={a.reference} /></span></p>
       </div>
-      <div className="appt-detail-token" data-testid="text-detail-token"><small>Token</small><strong>{a.token || "Not assigned"}</strong></div>
+      <dl className="appt-sum-context" data-testid="text-detail-context">
+        <div><dt>Visit</dt><dd>{formatDate(a.date, a)}<small>{session}</small></dd></div>
+        <div><dt>Clinic / location</dt><dd>{a.clinicName}<small>{a.branchName}</small></dd></div>
+        <div><dt>Doctor</dt><dd>{a.doctorName}</dd></div>
+      </dl>
     </header>
     <Tabs defaultValue="booking" className="appt-tabs">
       <TabsList className="appt-tabs-list" aria-label="Appointment detail sections">
@@ -54,21 +53,7 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails }: { app
         <TabsTrigger value="history" className="appt-tab" data-testid="tab-detail-history">History</TabsTrigger>
       </TabsList>
       <TabsContent value="booking" className="appt-tab-panel">
-        <div className="appt-detail-block" data-testid="section-detail-booking">
-          <h4>Booking</h4>
-          <dl className="appt-detail-grid">
-            <div><dt>Reference</dt><dd className="appt-detail-ref"><code data-testid="text-detail-reference">{a.reference}</code><button type="button" onClick={copyReference} aria-label={`Copy reference ${a.reference}`} data-testid="button-copy-reference">{copied === "done" ? <Check size={13} aria-hidden /> : <Copy size={13} aria-hidden />}{copied === "done" ? "Copied" : "Copy"}</button>{copied === "failed" && <small role="alert">Copy unavailable. Select the reference to copy it.</small>}</dd></div>
-            <div><dt>Booked at</dt><dd data-testid="text-detail-booked">{timestamp(a.createdAt)}<small>When the booking was created, not the visit time.</small></dd></div>
-            <div className="span-2"><dt>Visit contact mobile</dt><dd data-testid="text-detail-booking-mobile">{a.bookingMobile?.trim() || "Not recorded for this visit."}<small>Saved for this visit only; separate from profile/login contact. Does not determine notification recipients.</small></dd></div>
-            <div className="span-2"><dt>{bookingFields.notes.label}</dt><dd><p className={`appt-detail-notes${a.notes?.trim() ? "" : " appt-detail-empty"}`} data-testid="text-detail-notes">{a.notes?.trim() || "No notes recorded."}</p></dd></div>
-          </dl>
-        </div>
-        <div className="appt-detail-block appt-detail-ticket" id={`appt-ticket-${a.id}`} data-testid="section-detail-ticket">
-          <h4>Ticket &amp; QR</h4>
-          {canShowAppointmentTicket(a)
-            ? <AppointmentTicket id={a.id} showHistory={false} />
-            : <p className="appt-detail-empty" data-testid="text-detail-ticket-unavailable">Completed visits do not need a ticket. The booking reference above remains available for records.</p>}
-        </div>
+        <AppointmentBookingTab appointment={a} />
       </TabsContent>
       <TabsContent value="details" className="appt-tab-panel">
         <div className="appt-detail-cols">
