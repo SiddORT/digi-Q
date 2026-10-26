@@ -1,13 +1,25 @@
 // Converts fresh Playwright evidence into a conservative, repeatable ledger.
 // It never upgrades source presence or an initial screenshot to interaction acceptance.
 import {readFileSync,writeFileSync,existsSync,mkdirSync} from "node:fs";
-const reportPaths=process.argv.slice(2);
-if(!reportPaths.length)throw Error("Usage: node scripts/app-wide-ui-ledger.mjs <playwright-json> [narrower-retest-json]");
+import { applyFreshness, captureFingerprint, compareFingerprint, reportDigest, workspaceRoot } from "./ui-evidence-freshness.mjs";
+process.chdir(workspaceRoot);
+const args=process.argv.slice(2);
+const ledgerPath="docs/ui/app-wide-ui-ledger.json";
+if(args.includes("--check")||args.includes("--refresh")){
+  const output=applyFreshness(JSON.parse(readFileSync(ledgerPath,"utf8")));
+  if(args.includes("--refresh"))writeLedger(output);
+  console.log(JSON.stringify(output.freshness,null,2));
+  if(args.includes("--check")&&output.freshness.status!=="current")process.exitCode=1;
+}else{
+const reportPaths=args;
+if(!reportPaths.length)throw Error("Usage: node scripts/app-wide-ui-ledger.mjs <playwright-json> [narrower-retest-json] | --check | --refresh");
 const reports=reportPaths.map(p=>JSON.parse(readFileSync(p,"utf8")));
 const report=reports[0];
 const inventory=JSON.parse(readFileSync("docs/ui/surface-inventory.json","utf8"));
+if(compareFingerprint(inventory.sourceFingerprint,captureFingerprint()).status!=="current")
+  throw Error("Source inventory is stale. Run node scripts/compact-ui-inventory.mjs first; this does not refresh browser evidence.");
 const tests=[];
-function visit(suites){
+function visit(suites,evidenceRun){
   for(const suite of suites){
     for(const spec of suite.specs||[])for(const test of spec.tests)for(const run of test.results){
       const attachment=run.attachments?.find(a=>a.name==="route-result");
@@ -16,12 +28,12 @@ function visit(suites){
         if(attachment.path&&existsSync(attachment.path))route=JSON.parse(readFileSync(attachment.path,"utf8"));
         else if(attachment.body)route=JSON.parse(Buffer.from(attachment.body,"base64"));
       }
-      tests.push({name:spec.title,status:run.status,errors:(run.errors||[]).map(e=>e.message.replace(/\u001b\[[0-9;]*m/g,"")),route,evidence:(run.attachments||[]).filter(a=>a.path).map(a=>a.path.replace(`${process.cwd()}/`,""))});
+      tests.push({name:spec.title,status:run.status,evidenceRun,errors:(run.errors||[]).map(e=>e.message.replace(/\u001b\[[0-9;]*m/g,"")),route,evidence:(run.attachments||[]).filter(a=>a.path).map(a=>a.path.replace(`${process.cwd()}/`,""))});
     }
-    visit(suite.suites||[]);
+    visit(suite.suites||[],evidenceRun);
   }
 }
-for(const report of reports)visit(report.suites);
+reports.forEach((report,index)=>visit(report.suites,index));
 const latest=[...new Map(tests.map(t=>[t.name,t])).values()];
 const routes=latest.filter(t=>t.name.startsWith("app-wide ")).map(t=>({
   role:t.route?.role||t.name.split(" ")[1],path:t.route?.path||t.name.split(" ").slice(2).join(" "),
@@ -75,10 +87,15 @@ const functionalRequirements=[...functional.matchAll(/^\| (\d+) \| ([^|]+) \|/gm
   return {number:+id,title:title.trim(),destinations,disposition:"local UI evidence only; no historical completion imported",limitation:"See named tests and route records. Backend correctness, private files, policy, live delivery and unexercised conditional states are not certified by this pass."};
 });
 mkdirSync("docs/ui",{recursive:true});
-const output={generatedAt:new Date().toISOString(),notice:"Local fictional-fixture evidence, not hosted UAT, authorization, real delivery, full cross-browser or exhaustive nested-state acceptance.",runs:reports.map((r,i)=>({input:reportPaths[i],stats:r.stats})),routePatterns,routes,tests:latest.filter(t=>!t.name.startsWith("app-wide ")),numberedRequirements:numbered,functionalRequirements,stateProfiles:inventory.stateProfiles,reasonCodes:{"conditional-owner":"Source enumeration identifies this conditional consumer; route screenshots and shared-family tests do not prove every state at this particular owner. State criteria reference stateProfiles. See executed named tests for narrower evidence."},surfaces:surfaceStates};
-writeFileSync("docs/ui/app-wide-ui-ledger.json",`${JSON.stringify(output,null,2)}\n`);
+const output={generatedAt:new Date().toISOString(),notice:"Local fictional-fixture evidence, not hosted UAT, authorization, real delivery, full cross-browser or exhaustive nested-state acceptance.",runs:reports.map((r,i)=>({input:reportPaths[i],sha256:reportDigest(reportPaths[i]),stats:r.stats,fingerprints:r.config?.metadata?.uiEvidence||null})),routePatterns,routes,tests:latest.filter(t=>!t.name.startsWith("app-wide ")),numberedRequirements:numbered,functionalRequirements,stateProfiles:inventory.stateProfiles,reasonCodes:{"conditional-owner":"Source enumeration identifies this conditional consumer; route screenshots and shared-family tests do not prove every state at this particular owner. State criteria reference stateProfiles. See executed named tests for narrower evidence."},surfaces:surfaceStates};
+writeLedger(applyFreshness(output));
+console.log(JSON.stringify({routeRecords:routes.length,numberedRequirements:numbered.length,conditionalConsumers:surfaceStates.length,stats:report.stats,freshness:output.freshness.status}));
+}
+function writeLedger(output){
+writeFileSync(ledgerPath,`${JSON.stringify(output,null,2)}\n`);
 const safe=s=>String(s).replaceAll("|","\\|").replaceAll("\n"," ");
+const routes=output.routes,numbered=output.numberedRequirements;
 const rows=routes.map(r=>`| ${safe(r.role)} | \`${safe(r.path)}\` | ${r.disposition} | ${r.route?.results.map(v=>`${v.viewport.width}×${v.viewport.height}`).join(", ")||"No completed geometry record"} | ${r.route?.missingContracts.join(", ")||r.errors[0]?.split("\n")[0]||"Initial-state evidence only"} |`);
-const table=["# Current app-wide route evidence","","Generated from the named current run; older completion labels are not used.","","Every passing row below means **initial rendered geometry only**, not all actions/states accepted. Exact errors, screenshots, identity fixtures and per-viewport measurements are in `app-wide-ui-ledger.json`. Conditional source consumers are individually marked unverified there.","","| Role fixture | Destination requested | Disposition | Completed viewports | Limit / blocker |","|---|---|---|---|---|",...rows,"","## Executed named interactions","","| Check | Result |","|---|---|",...output.tests.map(t=>`| ${safe(t.name)} | ${t.status} |`),"","## Numbered requirements","","Each original item is mapped, including Q/P and authentication-policy exclusions. These are not copied historical acceptance statuses.","","| # | Screen families | Observable criterion / boundary | Disposition |","|---|---|---|---|",...numbered.map(r=>`| ${r.number} | ${r.routes.map(p=>`\`${p}\``).join(", ")} | ${safe(r.criterion)} | ${r.disposition} |`),""].join("\n");
+const table=["# Current app-wide route evidence","",`**Evidence freshness: ${output.freshness.status.toUpperCase()}.** Historical observations are retained in JSON; stale results are not current acceptance. Run \`node scripts/app-wide-ui-ledger.mjs --check\` before relying on this table.`,"","Generated from the named run; older completion labels are not used.","","A current passing row means **initial rendered geometry only**, not all actions/states accepted. Exact errors, screenshots, identity fixtures and per-viewport measurements are in `app-wide-ui-ledger.json`. Conditional source consumers remain individually unverified. Intentional redirect and browser/access limitations are preserved, including on stale rows.","","| Role fixture | Destination requested | Disposition | Completed viewports | Limit / blocker |","|---|---|---|---|---|",...rows,"","## Executed named interactions","","| Check | Result |","|---|---|",...output.tests.map(t=>`| ${safe(t.name)} | ${t.status} |`),"","## Numbered requirements","","Each original item is mapped, including Q/P and authentication-policy exclusions. These are not copied historical acceptance statuses.","","| # | Screen families | Observable criterion / boundary | Disposition |","|---|---|---|---|",...numbered.map(r=>`| ${r.number} | ${r.routes.map(p=>`\`${p}\``).join(", ")} | ${safe(r.criterion)} | ${r.disposition} |`),""].join("\n");
 writeFileSync("docs/ui/app-wide-route-evidence.md",table);
-console.log(JSON.stringify({routeRecords:routes.length,numberedRequirements:numbered.length,conditionalConsumers:surfaceStates.length,stats:report.stats}));
+}

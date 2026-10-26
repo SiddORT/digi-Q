@@ -21,7 +21,7 @@ const variants=[
   ...["email","sms","logs"].map(tab=>({role:"superAdmin",path:`/admin/communication?tab=${tab}`})),
 ];
 
-for(const {role,path} of variants) test(`app-wide ${role} ${path}`,async({page},info)=>{
+for(const {role,path} of variants) test(`app-wide ${role} ${path}`,async({page,browserName},info)=>{
   const state=await appWideFixture(page,role);
   const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
   const target=`${path}${path.includes("?")?"&":"?"}mode=app`;
@@ -58,7 +58,7 @@ for(const {role,path} of variants) test(`app-wide ${role} ${path}`,async({page},
     expect.soft(geometry.clipped,`${size.width}: readable controls`).toEqual([]);
   }
   const resultPath=info.outputPath("route-result.json");
-  writeFileSync(resultPath,JSON.stringify({role,path,identity:state.user,results,missingContracts:[...new Set(state.missing)],writes:state.writes,errors},null,2));
+  writeFileSync(resultPath,JSON.stringify({role,path,project:info.project.name,browserName,sourceFingerprintDigest:info.config.metadata.uiEvidence?.start?.digest,identity:state.user,results,missingContracts:[...new Set(state.missing)],writes:state.writes,errors},null,2));
   await info.attach("route-result",{path:resultPath,contentType:"application/json"});
   expect(state.missing,"Fixture gaps are blockers, not accepted screens").toEqual([]);
   expect(state.writes).toEqual([]);

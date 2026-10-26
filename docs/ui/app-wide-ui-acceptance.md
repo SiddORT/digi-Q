@@ -9,6 +9,16 @@ This is a **local, fictional-data UI correction record**, not hosted UAT repair 
 - [Fresh source inventory](surface-inventory.json): state criteria, role routes, forms, dialog placements, fields, actions and linked destinations. **Source enumeration is not rendered acceptance.**
 - Reproduction: `scripts/app-wide-ui-ledger.mjs` consumes a broad Playwright JSON run followed by narrower correction-retest JSON runs. Later evidence replaces only the same named check, never unrelated failures. `scripts/app-wide-ui-contact-sheets.mjs` creates an offline index, not a new browser acceptance pass.
 
+### Evidence freshness
+
+- Before relying on checked-in results, run `node scripts/app-wide-ui-ledger.mjs --check`. A nonzero exit means stale evidence, **not** an application failure. `--refresh` updates the JSON and route table's stale labels without running a browser or refreshing acceptance.
+- Older reports without run-time fingerprints are stale by design. Never attach today's hashes to an old run to make it appear current. Historical pass/failure and permitted-redirect observations remain in `historicalStatus` / `historicalDisposition`; conditional owners remain `unverified-per-instance`.
+- Future workspace-regression runs record SHA-256 input maps in Playwright JSON `config.metadata.uiEvidence` before workers start and after they finish. Retain the JSON report under `generated-artifacts/`; screenshots/traces remain in ignored test output directories, never new Git evidence. Route attachments reference the run's starting digest and identify the browser project.
+- To build a ledger from authorized local fictional-fixture runs: regenerate the source inventory with `node scripts/compact-ui-inventory.mjs`, then pass the JSON reports in chronological order to `node scripts/app-wide-ui-ledger.mjs <broad.json> [narrower.json ...]`. The inventory command refreshes source enumeration only. Each result remains bound to its own run; a newer narrow retest cannot make older unrelated results current.
+- The dependency set is deliberately conservative: production UI/shared client source, public assets, all workspace fixtures/tests/geometry criteria, styles (including imports), routing owners, lockfile, package/TypeScript/Vite/Playwright configuration and ledger/inventory criteria. Byte-content hashes and relative filenames are reproducible across checkout locations; additions/deletions count as changes. A shared dependency change invalidates the whole affected run rather than guessing which conditional owners were rendered. Generated output and environment/secret values are excluded.
+- A run whose inputs changed before completion is stale. Matching hashes establish **input freshness only**: they do not establish acceptance of nested states, authorization, UAT, real browser zoom or Safari/Firefox Add Staff behavior. Existing browser/access restrictions still apply. This guard never runs bookings, delivery, production writes or automatic browser refreshes.
+- Guard regression checks: `node --test scripts/ui-evidence-freshness.test.mjs`.
+
 ## Requirements reconciled
 
 Read alongside, not superseded wholesale:

@@ -1,232 +1,234 @@
 # Current app-wide route evidence
 
-Generated from the named current run; older completion labels are not used.
+**Evidence freshness: STALE.** Historical observations are retained in JSON; stale results are not current acceptance. Run `node scripts/app-wide-ui-ledger.mjs --check` before relying on this table.
 
-Every passing row below means **initial rendered geometry only**, not all actions/states accepted. Exact errors, screenshots, identity fixtures and per-viewport measurements are in `app-wide-ui-ledger.json`. Conditional source consumers are individually marked unverified there.
+Generated from the named run; older completion labels are not used.
+
+A current passing row means **initial rendered geometry only**, not all actions/states accepted. Exact errors, screenshots, identity fixtures and per-viewport measurements are in `app-wide-ui-ledger.json`. Conditional source consumers remain individually unverified. Intentional redirect and browser/access limitations are preserved, including on stale rows.
 
 | Role fixture | Destination requested | Disposition | Completed viewports | Limit / blocker |
 |---|---|---|---|---|
-| anonymous | `/` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/sign-in` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/login` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/patient-login` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/demo-login` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/forgot-password` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/reset-password` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/set-password?token=fictional-only` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/register-clinic` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/sign-up` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/register` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/register-doctor` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/scan-qr` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/check-in` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/guest-booking` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/book/fictional-qr` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/fictional-clinic` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/fictional-clinic/central` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/display/fictional-qr` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| anonymous | `/not/a/valid/route` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/dashboard` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/clinic` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/clinics` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/branches` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/users` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/staff` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/patients` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/masters` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/appointments` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/queue` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/reports` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/settings` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/audit` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/qrs` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/book` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/availability` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/exceptions` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/profile` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/demo` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/templates` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/communication` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/permissions` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/integrations` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/system-users` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/dashboard` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/clinic` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/clinics` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/branches` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/users` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/staff` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/patients` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/masters` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/appointments` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/queue` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/reports` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/settings` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/audit` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/qrs` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/book` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/availability` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/exceptions` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/profile` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/demo` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/templates` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/communication` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/permissions` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/integrations` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/system-users` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/dashboard` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/profile` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/clinics` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/branches` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/availability` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/exceptions` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/appointments` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/queue` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/patients` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/qrs` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/book` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/users` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/settings` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/dashboard` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/appointments` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/queue` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/patients` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/book` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/qrs` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/availability` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/exceptions` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/profile` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| receptionist | `/receptionist/settings` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| patient | `/patient/dashboard` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| patient | `/patient/book` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| patient | `/patient/appointments` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| patient | `/patient/queue` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| patient | `/patient/profile` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| patient | `/patient/settings` | rendered-permitted-redirect | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/clinics/c1/details` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/clinics/c1/details` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/clinics/c1/locations` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/clinics/c1/locations` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/clinics/c1/staff` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/clinics/c1/staff` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/clinics/c1/policies` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/clinics/c1/policies` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/clinics/c1/activity-history` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/clinics/c1/activity-history` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/reports?area=live` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/reports?area=live` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/reports?area=templates` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/reports?area=templates` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/reports?area=operational` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/reports?area=operational` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/reports?area=communication-usage` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| clinicAdmin | `/admin/reports?area=communication-usage` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/settings?area=platform` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/settings?area=integrations` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/settings?area=masters` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/settings?area=audit` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/settings?area=demo` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/users?area=roles` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/users?area=permissions` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/users?area=system` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/clinics?area=clinics` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/clinics?area=staff` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/doctor/clinics?area=qrs` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/communication?tab=email` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/communication?tab=sms` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| superAdmin | `/admin/communication?tab=logs` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
-| doctor | `/register-clinic` | rendered-initial-state | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/sign-in` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/login` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/patient-login` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/demo-login` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/forgot-password` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/reset-password` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/set-password?token=fictional-only` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/register-clinic` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/sign-up` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/register` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/register-doctor` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/scan-qr` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/check-in` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/guest-booking` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/book/fictional-qr` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/fictional-clinic` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/fictional-clinic/central` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/display/fictional-qr` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| anonymous | `/not/a/valid/route` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/dashboard` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/clinic` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/clinics` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/branches` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/users` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/staff` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/patients` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/masters` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/appointments` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/queue` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/reports` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/settings` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/audit` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/qrs` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/book` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/availability` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/exceptions` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/profile` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/demo` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/templates` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/communication` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/permissions` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/integrations` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/system-users` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/dashboard` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/clinic` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/clinics` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/branches` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/users` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/staff` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/patients` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/masters` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/appointments` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/queue` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/reports` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/settings` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/audit` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/qrs` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/book` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/availability` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/exceptions` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/profile` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/demo` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/templates` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/communication` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/permissions` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/integrations` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/system-users` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/dashboard` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/profile` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/clinics` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/branches` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/availability` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/exceptions` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/appointments` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/queue` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/patients` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/qrs` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/book` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/users` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/settings` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/dashboard` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/appointments` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/queue` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/patients` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/book` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/qrs` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/availability` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/exceptions` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/profile` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| receptionist | `/receptionist/settings` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| patient | `/patient/dashboard` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| patient | `/patient/book` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| patient | `/patient/appointments` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| patient | `/patient/queue` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| patient | `/patient/profile` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| patient | `/patient/settings` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/clinics/c1/details` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/clinics/c1/details` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/clinics/c1/locations` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/clinics/c1/locations` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/clinics/c1/staff` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/clinics/c1/staff` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/clinics/c1/policies` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/clinics/c1/policies` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/clinics/c1/activity-history` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/clinics/c1/activity-history` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/reports?area=live` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/reports?area=live` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/reports?area=templates` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/reports?area=templates` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/reports?area=operational` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/reports?area=operational` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/reports?area=communication-usage` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| clinicAdmin | `/admin/reports?area=communication-usage` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/settings?area=platform` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/settings?area=integrations` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/settings?area=masters` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/settings?area=audit` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/settings?area=demo` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/users?area=roles` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/users?area=permissions` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/users?area=system` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/clinics?area=clinics` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/clinics?area=staff` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/doctor/clinics?area=qrs` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/communication?tab=email` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/communication?tab=sms` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| superAdmin | `/admin/communication?tab=logs` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
+| doctor | `/register-clinic` | stale-evidence | 1024×640, 1366×768, 390×844 | Initial-state evidence only |
 
 ## Executed named interactions
 
 | Check | Result |
 |---|---|
-| workspace tabs keyboard focus follows the selected section /admin/settings | passed |
-| workspace tabs keyboard focus follows the selected section /admin/users | passed |
-| workspace tabs keyboard focus follows the selected section /admin/reports | passed |
-| workspace tabs keyboard focus follows the selected section /doctor/clinics | passed |
-| resource lead controls do not obscure record text 768 | passed |
-| resource lead controls do not obscure record text 1024 | passed |
-| resource lead controls do not obscure record text 1366 | passed |
-| patient editor and filter actions remain reachable 390 | passed |
-| patient editor and filter actions remain reachable 1024 | passed |
-| patient editor and filter actions remain reachable 1366 | passed |
-| superAdmin: truthful empty date, explicit bounded search and review preserve fixed context | passed |
-| clinicAdmin: truthful empty date, explicit bounded search and review preserve fixed context | passed |
-| doctor: truthful empty date, explicit bounded search and review preserve fixed context | passed |
-| receptionist: truthful empty date, explicit bounded search and review preserve fixed context | passed |
-| patient: truthful empty date, explicit bounded search and review preserve fixed context | passed |
-| guest: truthful empty date, explicit bounded search and review preserve fixed context | passed |
-| location QR guest 390: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| location QR guest 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| clinic QR guest: location and doctor selection remain booking-only | passed |
-| location QR patient 390: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| location QR patient 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| clinic QR patient: location and doctor selection remain booking-only | passed |
-| location QR doctor 390: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| location QR doctor 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| clinic QR doctor: location and doctor selection remain booking-only | passed |
-| location QR clinicAdmin 390: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| location QR clinicAdmin 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| clinic QR clinicAdmin: location and doctor selection remain booking-only | passed |
-| location QR receptionist 390: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| location QR receptionist 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| clinic QR receptionist: location and doctor selection remain booking-only | passed |
-| location QR superAdmin 390: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| location QR superAdmin 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | passed |
-| clinic QR superAdmin: location and doctor selection remain booking-only | passed |
-| doctor: workspace dialog unmounts on client navigation to QR and reopens only in workspace | passed |
-| clinicAdmin: workspace dialog unmounts on client navigation to QR and reopens only in workspace | passed |
-| receptionist: workspace dialog unmounts on client navigation to QR and reopens only in workspace | passed |
-| superAdmin: workspace dialog unmounts on client navigation to QR and reopens only in workspace | passed |
-| workspace management still requires allowed server capability | passed |
-| failed lookup is not empty schedule; refresh recovers without navigation | passed |
-| multiple sessions require selection; walk-ins remain today-only and have no future action | passed |
-| changing date cancels a pending search without overwriting the deliberate date | passed |
-| guest required contact flow confirms only at review and immediately displays ticket | passed |
-| no search result states only the searched range and respects the booking horizon | passed |
-| contextual schedule reopen waits for verified locations rather than showing a false empty scope | passed |
-| superAdmin: shared sole context, stored patient, explicit confirmation and issued ticket | passed |
-| clinicAdmin: shared sole context, stored patient, explicit confirmation and issued ticket | passed |
-| doctor: shared sole context, stored patient, explicit confirmation and issued ticket | passed |
-| receptionist: shared sole context, stored patient, explicit confirmation and issued ticket | passed |
-| patient: shared sole context, stored patient, explicit confirmation and issued ticket | passed |
-| stale explicit session is rejected and full sessions stay visible but unselectable | passed |
-| guest inline errors are linked; mobile is required and confirmation is disabled after range changes | passed |
-| saved booking reopens and reschedules to the same record without losing reference or notes | passed |
-| booking controls at 1366px remain accessible without horizontal overflow | passed |
-| booking controls at 768px remain accessible without horizontal overflow | passed |
-| booking controls at 390px remain accessible without horizontal overflow | passed |
-| visit field group and context containment 1024x640 | passed |
-| visit field group and context containment 1366x768 | passed |
-| visit field group and context containment 390x844 | passed |
-| required mobile superAdmin direct: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile superAdmin switch: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile superAdmin queue: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile clinicAdmin direct: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile clinicAdmin switch: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile clinicAdmin queue: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile receptionist direct: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile receptionist switch: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile receptionist queue: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile doctor direct: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile doctor switch: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile doctor queue: actor prefill, replacement, clearing, review and submission | passed |
-| required mobile drafts survive late identity hydration, explicit clearing and mode changes but reset on actor or role change | passed |
-| real profile form route: superAdmin | passed |
-| real profile form route: clinicAdmin | passed |
-| real profile form route: doctor | passed |
-| real profile form route: receptionist | passed |
-| real profile form route: patient | passed |
-| real profile form route: custom receptionist | passed |
-| public standalone form /sign-in | passed |
-| public standalone form /patient-login | passed |
-| public standalone form /forgot-password | passed |
-| public standalone form /set-password?token=fictional-layout-only | passed |
-| communication usage expanded filters contain long selected values 390 | passed |
-| communication usage expanded filters contain long selected values 1024 | passed |
-| communication usage expanded filters contain long selected values 1366 | passed |
-| contrast, reduced motion, uploading and 200% reflow | passed |
+| workspace tabs keyboard focus follows the selected section /admin/settings | stale-evidence |
+| workspace tabs keyboard focus follows the selected section /admin/users | stale-evidence |
+| workspace tabs keyboard focus follows the selected section /admin/reports | stale-evidence |
+| workspace tabs keyboard focus follows the selected section /doctor/clinics | stale-evidence |
+| resource lead controls do not obscure record text 768 | stale-evidence |
+| resource lead controls do not obscure record text 1024 | stale-evidence |
+| resource lead controls do not obscure record text 1366 | stale-evidence |
+| patient editor and filter actions remain reachable 390 | stale-evidence |
+| patient editor and filter actions remain reachable 1024 | stale-evidence |
+| patient editor and filter actions remain reachable 1366 | stale-evidence |
+| superAdmin: truthful empty date, explicit bounded search and review preserve fixed context | stale-evidence |
+| clinicAdmin: truthful empty date, explicit bounded search and review preserve fixed context | stale-evidence |
+| doctor: truthful empty date, explicit bounded search and review preserve fixed context | stale-evidence |
+| receptionist: truthful empty date, explicit bounded search and review preserve fixed context | stale-evidence |
+| patient: truthful empty date, explicit bounded search and review preserve fixed context | stale-evidence |
+| guest: truthful empty date, explicit bounded search and review preserve fixed context | stale-evidence |
+| location QR guest 390: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| location QR guest 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| clinic QR guest: location and doctor selection remain booking-only | stale-evidence |
+| location QR patient 390: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| location QR patient 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| clinic QR patient: location and doctor selection remain booking-only | stale-evidence |
+| location QR doctor 390: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| location QR doctor 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| clinic QR doctor: location and doctor selection remain booking-only | stale-evidence |
+| location QR clinicAdmin 390: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| location QR clinicAdmin 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| clinic QR clinicAdmin: location and doctor selection remain booking-only | stale-evidence |
+| location QR receptionist 390: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| location QR receptionist 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| clinic QR receptionist: location and doctor selection remain booking-only | stale-evidence |
+| location QR superAdmin 390: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| location QR superAdmin 1366: allowed staff capability cannot expose management; refreshed search issues a ticket | stale-evidence |
+| clinic QR superAdmin: location and doctor selection remain booking-only | stale-evidence |
+| doctor: workspace dialog unmounts on client navigation to QR and reopens only in workspace | stale-evidence |
+| clinicAdmin: workspace dialog unmounts on client navigation to QR and reopens only in workspace | stale-evidence |
+| receptionist: workspace dialog unmounts on client navigation to QR and reopens only in workspace | stale-evidence |
+| superAdmin: workspace dialog unmounts on client navigation to QR and reopens only in workspace | stale-evidence |
+| workspace management still requires allowed server capability | stale-evidence |
+| failed lookup is not empty schedule; refresh recovers without navigation | stale-evidence |
+| multiple sessions require selection; walk-ins remain today-only and have no future action | stale-evidence |
+| changing date cancels a pending search without overwriting the deliberate date | stale-evidence |
+| guest required contact flow confirms only at review and immediately displays ticket | stale-evidence |
+| no search result states only the searched range and respects the booking horizon | stale-evidence |
+| contextual schedule reopen waits for verified locations rather than showing a false empty scope | stale-evidence |
+| superAdmin: shared sole context, stored patient, explicit confirmation and issued ticket | stale-evidence |
+| clinicAdmin: shared sole context, stored patient, explicit confirmation and issued ticket | stale-evidence |
+| doctor: shared sole context, stored patient, explicit confirmation and issued ticket | stale-evidence |
+| receptionist: shared sole context, stored patient, explicit confirmation and issued ticket | stale-evidence |
+| patient: shared sole context, stored patient, explicit confirmation and issued ticket | stale-evidence |
+| stale explicit session is rejected and full sessions stay visible but unselectable | stale-evidence |
+| guest inline errors are linked; mobile is required and confirmation is disabled after range changes | stale-evidence |
+| saved booking reopens and reschedules to the same record without losing reference or notes | stale-evidence |
+| booking controls at 1366px remain accessible without horizontal overflow | stale-evidence |
+| booking controls at 768px remain accessible without horizontal overflow | stale-evidence |
+| booking controls at 390px remain accessible without horizontal overflow | stale-evidence |
+| visit field group and context containment 1024x640 | stale-evidence |
+| visit field group and context containment 1366x768 | stale-evidence |
+| visit field group and context containment 390x844 | stale-evidence |
+| required mobile superAdmin direct: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile superAdmin switch: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile superAdmin queue: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile clinicAdmin direct: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile clinicAdmin switch: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile clinicAdmin queue: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile receptionist direct: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile receptionist switch: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile receptionist queue: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile doctor direct: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile doctor switch: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile doctor queue: actor prefill, replacement, clearing, review and submission | stale-evidence |
+| required mobile drafts survive late identity hydration, explicit clearing and mode changes but reset on actor or role change | stale-evidence |
+| real profile form route: superAdmin | stale-evidence |
+| real profile form route: clinicAdmin | stale-evidence |
+| real profile form route: doctor | stale-evidence |
+| real profile form route: receptionist | stale-evidence |
+| real profile form route: patient | stale-evidence |
+| real profile form route: custom receptionist | stale-evidence |
+| public standalone form /sign-in | stale-evidence |
+| public standalone form /patient-login | stale-evidence |
+| public standalone form /forgot-password | stale-evidence |
+| public standalone form /set-password?token=fictional-layout-only | stale-evidence |
+| communication usage expanded filters contain long selected values 390 | stale-evidence |
+| communication usage expanded filters contain long selected values 1024 | stale-evidence |
+| communication usage expanded filters contain long selected values 1366 | stale-evidence |
+| contrast, reduced motion, uploading and 200% reflow | stale-evidence |
 
 ## Numbered requirements
 

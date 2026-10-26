@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 export default defineConfig({
   testDir: "./tests",
+  globalSetup: "./evidence-setup.mjs",
   // Independent runs must not delete each other's traces during Playwright startup.
   // The default still discovers every workspace spec; projects only isolate artifacts.
   projects: [

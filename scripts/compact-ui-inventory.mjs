@@ -6,6 +6,7 @@ import ts from "typescript";
 import { readFileSync, readdirSync, mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { relative, join, dirname, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { captureFingerprint } from "./ui-evidence-freshness.mjs";
 process.chdir(fileURLToPath(new URL("..",import.meta.url)));
 const root = "artifacts/clinicflow/src";
 const output = "docs/ui/surface-inventory.json";
@@ -126,6 +127,7 @@ const totals = surfaces.flatMap(surface=>surface.entries).reduce((counts,entry)=
   return counts;
 },{});
 const inventory={schemaVersion:3,notice:"Source enumeration only. Includes definitions and callers, not deduplicated runtime instances. See compact-ui-coverage.md for observed browser evidence and limitations. Source presence never establishes role authorization or state coverage.",totals,stateProfiles:profiles,viewportProfiles:{responsive:["390x844","768px tablet","1024x640","1366x768","1920x1080","512x320 (200% reflow, not actual browser zoom)"]},routes:[...explicit,...roleRoutes],surfaces};
+inventory.sourceFingerprint=captureFingerprint();
 const data=JSON.stringify(inventory,null,2)+"\n";
 if(process.argv.includes("--check")){
   if(readFileSync(output,"utf8")!==data)throw Error("UI inventory is stale. Run node scripts/compact-ui-inventory.mjs and update the coverage matrix.");
