@@ -13,3 +13,9 @@ Isolated browser fixtures need separate dependency-optimizer caches from the run
 **Why:** The app and fixture servers can invalidate each other's Vite optimized dependencies, causing 504 responses before rendering. Concurrent Playwright runs also delete each other's trace files and produce misleading missing-file failures.
 
 **How to apply:** Keep fixture optimizer caches separate. Do not launch a focused browser run into the same report/output directory while a configured browser validation is running. Before completion validation, stop any duplicate browser-test workflow using the same fixed fixture port; otherwise the validation can fail with “already used” before any assertions run.
+
+Reusing another test run's fixture server does not transfer its lifetime to the new run.
+
+**Why:** The owning run can finish and stop the server while the second run is still testing, producing connection refusals unrelated to application behavior.
+
+**How to apply:** Let the owning run finish before starting focused checks, or use independently owned ports and output directories. Do not treat `reuseExistingServer` as isolation.

@@ -75,6 +75,128 @@ async function mount(page: Page, surface = "", linked = false, initial: Partial<
 const details = (page: Page) => page.getByTestId("appointment-details");
 const tab = (page: Page, name: string) => details(page).getByRole("tab", { name, exact: true });
 
+// Measure the shared cell, not a tab's own padding: every state must end at
+// the same boundary, including failures that never mount AppointmentDetails.
+async function expectExpansionBoundary(page: Page, id: string, final = false) {
+  const expansion = page.getByTestId(`expansion-appointment-${id}`);
+  const geometry = await expansion.locator(":scope > td").evaluate(cell => {
+    const box = cell.getBoundingClientRect();
+    const style = getComputedStyle(cell);
+    const children = [...cell.children].filter(el => el.getClientRects().length);
+    const contentBottom = Math.max(...children.map(el => el.getBoundingClientRect().bottom));
+    const following = cell.parentElement!.nextElementSibling;
+    return {
+      clearance: box.bottom - contentBottom - parseFloat(style.borderBottomWidth),
+      padding: parseFloat(style.paddingBottom),
+      expectedPadding: parseFloat(style.getPropertyValue("--space-6")),
+      border: style.borderBottomWidth,
+      borderStyle: style.borderBottomStyle,
+      borderColor: style.borderBottomColor,
+      following: following?.classList.contains("appt-row") ?? false,
+      overlap: following ? box.bottom - following.getBoundingClientRect().top : 0,
+      last: cell.parentElement === cell.closest("tbody")!.lastElementChild,
+    };
+  });
+  expect(geometry.padding).toBe(geometry.expectedPadding);
+  expect(geometry.clearance).toBeGreaterThanOrEqual(geometry.expectedPadding - 1);
+  expect(geometry.clearance).toBeLessThanOrEqual(geometry.expectedPadding + 1);
+  expect(geometry.border).toBe("1px");
+  expect(geometry.borderStyle).toBe("solid");
+  expect(geometry.borderColor).not.toBe("rgba(0, 0, 0, 0)");
+  expect(geometry.following).toBe(!final);
+  expect(geometry.last).toBe(final);
+  expect(geometry.overlap).toBeLessThanOrEqual(1);
+  // The expansion remains a single spanning cell, never a spacer row.
+  await expect(expansion.locator(":scope > td")).toHaveCount(1);
+  await expect(page.locator(".appt-table > table > tbody > tr")).toHaveCount(3);
+}
+
+for (const surface of ["rows", "today"]) {
+  for (const [size, width, scale] of [
+    ["desktop", 1366, 1], ["tablet", 768, 1], ["phone", 390, 1],
+    // 1280 physical pixels at 200% browser zoom = 640 CSS pixels.
+    ["200%-equivalent", 640, 2],
+  ] as const) {
+    test.describe(`${surface} ${size} expansion boundary`, () => {
+      test.use({ viewport: { width, height: 900 }, deviceScaleFactor: scale });
+      test("all tabs, short/empty final content, loading and errors share a finished edge", async ({ page }) => {
+        const state = await mount(page, surface);
+        const following = page.getByTestId("appointment-appointment-2");
+        const compactHeight = (await following.boundingBox())!.height;
+        const expand = page.getByTestId("button-expand-appointment-appointment-1");
+        await expand.focus();
+        await expect(expand).toBeFocused();
+        expect(await expand.evaluate(el => getComputedStyle(el).outlineStyle)).not.toBe("none");
+        state.delay = 800;
+        await page.keyboard.press("Enter");
+        await expect(page.getByRole("status", { name: "Loading details" })).toBeVisible();
+        await expectExpansionBoundary(page, "appointment-1");
+        await expect(tab(page, "Booking")).toBeVisible();
+        state.delay = 0;
+        for (const name of ["Booking", "Details", "History"]) {
+          await tab(page, name).focus();
+          await page.keyboard.press("Enter");
+          await expect(tab(page, name)).toBeFocused();
+          await expect(tab(page, name)).toHaveAttribute("aria-selected", "true");
+          expect(await tab(page, name).evaluate(el => getComputedStyle(el).outlineStyle)).not.toBe("none");
+          await expectExpansionBoundary(page, "appointment-1");
+        }
+        await expect(page.getByRole("table", { name: "Appointment history" }).locator("tbody tr")).toHaveCount(24);
+        // Match the reported tight ending with a single short history event,
+        // as well as the long history above.
+        state.appointment.history = [{ action: "book", status: "booked", occurredAt: "2030-06-01T10:00:00Z", reason: "" }];
+        await page.getByRole("button", { name: "Refresh fixture" }).click();
+        await expect(page.getByRole("table", { name: "Appointment history" }).locator("tbody tr")).toHaveCount(1);
+        await expectExpansionBoundary(page, "appointment-1");
+        await page.screenshot({ path: `generated-artifacts/appointment-boundary/${surface}-${size}-history.png`, fullPage: true });
+        state.failAppointment = true;
+        await page.getByRole("button", { name: "Refresh fixture" }).click();
+        await expect(page.getByRole("button", { name: "Retry History" })).toBeVisible();
+        await expectExpansionBoundary(page, "appointment-1");
+        await expand.focus();
+        await page.keyboard.press("Space");
+        await expect(page.locator(".appt-expansion")).toHaveCount(0);
+        await expect(page.locator(".appt-table > table > tbody > tr")).toHaveCount(2);
+        // Clear the cached authorized record to exercise an initial failure,
+        // rather than only the cached-data refresh failure above.
+        await page.reload();
+        await expand.click();
+        await expect(page.getByRole("button", { name: "Retry Details", exact: true })).toBeVisible();
+        await expectExpansionBoundary(page, "appointment-1");
+        state.failAppointment = false;
+        await page.getByRole("button", { name: "Retry Details", exact: true }).click();
+        await tab(page, "Booking").click();
+        await page.getByTestId("button-copy-reference").click();
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(first.reference);
+        expect((await following.boundingBox())!.height).toBe(compactHeight);
+        if (width > 640) {
+          const alignment = await page.locator(".appt-table").evaluate(scroll => {
+            const headers = [...scroll.querySelectorAll(":scope > table > thead > tr > th")];
+            const cells = [...scroll.querySelectorAll(":scope > table > tbody > tr.appt-row:first-child > td")];
+            const aligned = headers.every((head, index) => Math.abs(head.getBoundingClientRect().left - cells[index].getBoundingClientRect().left) < 1);
+            scroll.scrollLeft = scroll.scrollWidth;
+            return { aligned, scrollable: scroll.scrollWidth > scroll.clientWidth, scrolled: scroll.scrollLeft > 0 };
+          });
+          expect(alignment.aligned).toBe(true);
+          if (alignment.scrollable) expect(alignment.scrolled).toBe(true);
+          await page.locator(".appt-table").evaluate(el => { el.scrollLeft = 0; });
+        }
+        // Completed appointments intentionally have no ticket actions.
+        await page.getByTestId("menu-appointment-1").click();
+        await expect(page.getByRole("menu")).toBeVisible();
+        await page.keyboard.press("Escape");
+        await page.getByTestId("button-expand-appointment-appointment-2").click();
+        for (const name of ["Booking", "Details", "History"]) {
+          await tab(page, name).click();
+          await expectExpansionBoundary(page, "appointment-2", true);
+        }
+        await expect(details(page)).toContainText("Nothing to show.");
+        await page.screenshot({ path: `generated-artifacts/appointment-boundary/${surface}-${size}-final.png`, fullPage: true });
+      });
+    });
+  }
+}
+
 test("history waits for the authorized record rather than treating a list projection as empty", async ({ page }) => {
   await mount(page, "projection", false, { delay: 1800 });
   await tab(page, "History").click();

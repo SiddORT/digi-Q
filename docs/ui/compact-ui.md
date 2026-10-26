@@ -45,6 +45,8 @@ This refines the existing branding; it is not a new design system.
 - Use 4/8/12/16/24px spacing tokens; compact headers/cards/actions should not add
   redundant blank rows. Preserve critical warnings. Filters overlay or use the
   existing drawer, never push a listing down.
+- Appointment table expansions end with 24px bottom clearance and the existing
+  border token, including loading/error and final rows; collapsed rows stay compact.
 - Check 390×844, 768px tablet, 1024×640, 1366×768, wide desktop and 200% zoom.
   Assert child/text bounds, not just page overflow. Check sticky footer overlap,
   popup edges, long labels, keyboard scrolling and short-height dialogs.
