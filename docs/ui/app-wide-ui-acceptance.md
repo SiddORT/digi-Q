@@ -19,6 +19,15 @@ This is a **local, fictional-data UI correction record**, not hosted UAT repair 
 - A run whose inputs changed before completion is stale. Matching hashes establish **input freshness only**: they do not establish acceptance of nested states, authorization, UAT, real browser zoom or Safari/Firefox Add Staff behavior. Existing browser/access restrictions still apply. This guard never runs bookings, delivery, production writes or automatic browser refreshes.
 - Guard regression checks: `node --test scripts/ui-evidence-freshness.test.mjs`.
 
+### Offline contact-sheet freshness
+
+- `node scripts/app-wide-ui-contact-sheets.mjs [local-capture-directory]` reads existing local `app-wide-ui-*` route captures only. The default is the workspace regression output directory. It does not navigate to the application, rerun fixtures, access databases, or refresh booking, delivery or production data.
+- All generated sheets, the self-contained `index.html` and the provenance manifest `index.json` stay in ignored `generated-artifacts/app-wide-ui/contact-sheets/`. Regeneration removes obsolete numbered sheets so a smaller run cannot leave old pages mixed in.
+- Every sheet and capture displays its originating run input SHA-256, report SHA-256 when available, and CURRENT / STALE / UNKNOWN input freshness. Exact route attachments must match ledger run provenance; a newer narrow retest cannot relabel an older capture. Both run endpoints are checked against the same conservative source/config fingerprint used by the ledger. Legacy, missing or invalid provenance remains UNKNOWN; changed inputs are STALE. Empty/incomplete capture sets are explicitly warned about, not accepted.
+- These are **frozen snapshots**, not self-updating status screens. Their banners state when they were checked and warn that later changes require another offline generation or `node scripts/app-wide-ui-contact-sheets.mjs --check`. The read-only check exits nonzero for STALE/UNKNOWN evidence, changed/replaced captures or missing inputs; it does not rewrite the index or request new screenshots.
+- Even CURRENT means input freshness at generation only. Contact-sheet inspection is not acceptance of initial geometry, interactions, nested states, authorization, hosted UAT, delivery or cross-browser behavior.
+- Offline regressions (including synthetic-image rendering without an application server): `node --test scripts/app-wide-ui-contact-sheets.test.mjs`.
+
 ## Requirements reconciled
 
 Read alongside, not superseded wholesale:
