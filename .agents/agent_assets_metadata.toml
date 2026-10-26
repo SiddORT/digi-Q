@@ -470,3 +470,17 @@ mtime_ms = 1792996279022
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/6ace9d11-9549-4793-b34e-f0076179ab57/0ea705e9-8030-45b0-b8d3-81c983ca478f"
 storage_version_token = "1792996365146745"
 content_type = "text/html"
+
+[[outputs]]
+id = "McqdZniNfQpVc8DYQN064"
+uri = "file://generated-artifacts/booking-reference/booking-reference-evidence.html"
+type = "html"
+title = "Booking layout — before/after and verification"
+description = "Self-contained rendered evidence, role/route/state matrix and test results. Local fictional fixtures only; hosted UAT was not changed."
+logical_id = "3ddced13-1ab6-47e0-afa9-d9b1a146dee4"
+content_hash = "sha256:08d5a7531acf8d20c275b2503921f2dc51ec93601c154aa28100deb7dd200d35"
+size = 976471
+mtime_ms = 1792999538993
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/3ddced13-1ab6-47e0-afa9-d9b1a146dee4/60b32ee6-a42d-47fd-8431-1106c0a3a7d9"
+storage_version_token = "1792999559081084"
+content_type = "text/html"

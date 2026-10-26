@@ -7,6 +7,7 @@ import { formatTime, type DateTimePreferences } from "../../lib/date-time";
 import { resolveBookingSession } from "../booking/session-selection";
 import { bookingFields } from "../booking/booking-fields";
 import { useDateTimePreferences } from "../DateTimePreferences";
+import { HelpTip } from "../HelpTip";
 export const formatSessionHours=(item:Partial<DateTimePreferences>&{startTime?:string|null;endTime?:string|null})=>`${item.startTime?formatTime(item.startTime,item):"—"}–${item.endTime?formatTime(item.endTime,item):"—"}`;
 
 export function useDailySession({doctorId,branchId,date,initialSessionId,bookingMode,today,time}:{doctorId:string;branchId:string;date:string;initialSessionId?:string|null;bookingMode?:"advance"|"walkIn";today?:string;time?:string}){
@@ -20,24 +21,24 @@ export function useDailySession({doctorId,branchId,date,initialSessionId,booking
     return {scope,sessionId:resolved.sessionId,selectionIssue:resolved.selectionIssue,sessionIssue:resolved.issue,bookingMode,setSessionId:(id:string)=>setSelection({scope,id}),sessions,hasContext:!!doctorId&&!!branchId&&!!date,availability:{...query,data:resolved.session}};
 }
 
-export function SessionSelector({selection}:{selection:ReturnType<typeof useDailySession>}){
+export function SessionSelector({selection,compact=false}:{selection:ReturnType<typeof useDailySession>;compact?:boolean}){
  const preferences=useDateTimePreferences();
  const hours=(item:typeof selection.sessions[number])=>formatSessionHours({...item,...preferences});
  const mode=(item:typeof selection.sessions[number])=>item.queueMode==="walkInsOnly"?"Walk-ins only":item.queueMode==="appointmentsOnly"?"Advance appointments only":"Advance appointments and walk-ins";
  const sole=selection.sessions.length===1?selection.sessions[0]:undefined;
  if(sole&&!selection.availability.error&&!selection.availability.isFetching){
    const issue=selection.sessionIssue(sole);
-   return <p className="guest-session"><strong>{bookingFields.session.label}</strong> {hours(sole)} · {mode(sole)}
+    return <div className={compact?"booking-fixed-session":"guest-session"}><strong>{bookingFields.session.label}</strong><div className={compact?"booking-session-value":undefined}>{hours(sole)} {compact?<span className="booking-session-help"><HelpTip label="About this session" text={mode(sole)}/></span>:<> · {mode(sole)}</>}
      {issue&&<span role="alert"> · {sole.reason||issue}</span>}
      {selection.selectionIssue&&selection.selectionIssue!==issue&&<span role="alert">{selection.selectionIssue}</span>}
      {selection.selectionIssue&&!issue&&<button type="button" className="text-link" data-testid="button-select-sole-session" onClick={()=>selection.setSessionId(sole.sessionId||"")}>Select this session</button>}
-   </p>;
+    </div></div>;
  }
- return <div className="session-selector"><SearchableSelect labelScope={selection.scope} retainSelectionLabel={false} required={!!selection.bookingMode}
+  return <div className="session-selector"><SearchableSelect compactLabel={compact} labelScope={selection.scope} retainSelectionLabel={false} required={!!selection.bookingMode}
    loading={selection.availability.isFetching} error={selection.availability.error?"Unable to load sessions.":selection.selectionIssue||undefined}
    onRetry={()=>void selection.availability.refetch()} label={bookingFields.session.label} value={selection.sessionId}
    onChange={selection.setSessionId} placeholder="Select a session…"
-   options={selection.sessions.map(item=>({value:item.sessionId||"",disabled:!!selection.sessionIssue(item),label:`${hours(item)} · ${item.remainingTokens} places remaining · ${mode(item)}${selection.sessionIssue(item)?` · ${item.reason||selection.sessionIssue(item)}`:""}`}))}/>
+    options={selection.sessions.map(item=>({value:item.sessionId||"",selectedLabel:compact?hours(item):undefined,disabled:!!selection.sessionIssue(item),label:`${hours(item)} · ${item.remainingTokens} places remaining · ${mode(item)}${selection.sessionIssue(item)?` · ${item.reason||selection.sessionIssue(item)}`:""}`}))}/>
    {selection.hasContext&&!selection.availability.isLoading&&!selection.availability.isFetching&&!selection.availability.error&&selection.sessions.length===0&&<p className="notice" role="status" data-testid="status-no-doctor-sessions">No doctor session is listed for this location and date. Other weekdays or dates may have sessions.</p>}
    <ErrorNotice error={selection.availability.error}/>
    {selection.availability.error&&<button type="button" onClick={()=>selection.availability.refetch()}>Retry Sessions</button>}

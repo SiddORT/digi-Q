@@ -32,17 +32,17 @@ export function useSelectedCare(kind: "clinics" | "branches" | "doctors" | "pati
 }
 type CareLookupProps = {
   kind: Kind; label: string; value: string; onChange: (value: string, record?: RecordValue) => void;
-   params?: Record<string, unknown>; publicAccess?: boolean; disabled?: boolean; selectedLabel?: string; fixed?: boolean; required?: boolean; keepDropdown?: boolean;
+   params?: Record<string, unknown>; publicAccess?: boolean; disabled?: boolean; selectedLabel?: string; fixed?: boolean; required?: boolean; keepDropdown?: boolean; compactLabel?: boolean;
 };
 export function CareLookup(props: CareLookupProps) {
-   if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookup resource={props.kind} label={props.label} required={props.required} value={props.value} onChange={props.onChange} params={{ ...props.params, status: "active" }} disabled={props.disabled} fixed={props.fixed} keepDropdown={props.keepDropdown} autoSole={["clinics","branches","doctors"].includes(props.kind)}/>;
+   if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookup resource={props.kind} label={props.label} required={props.required} value={props.value} onChange={props.onChange} params={{ ...props.params, status: "active" }} disabled={props.disabled} fixed={props.fixed} keepDropdown={props.keepDropdown} compactLabel={props.compactLabel} autoSole={["clinics","branches","doctors"].includes(props.kind)}/>;
   return <PublicCareLookup {...props}/>;
 }
 export function CareLookupReadiness(props: CareLookupProps) {
   if (!props.publicAccess && props.kind !== "appointments") return <ResourceLookupReadiness resource={props.kind} value={props.value} params={{ ...props.params, status: "active" }} disabled={props.disabled} fixed={props.fixed} autoSole={["clinics","branches","doctors"].includes(props.kind)}/>;
   return <PublicCareLookup {...props} readinessOnly/>;
 }
-function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAccess = false, disabled = false, selectedLabel, required, readinessOnly = false }: CareLookupProps & { readinessOnly?: boolean }) {
+function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAccess = false, disabled = false, selectedLabel, required, compactLabel, readinessOnly = false }: CareLookupProps & { readinessOnly?: boolean }) {
   const actor = useDirectoryActor();
   const client = useQueryClient();
   const labelScope = JSON.stringify([actor, kind, publicAccess, params]);
@@ -97,7 +97,7 @@ function PublicCareLookup({ kind, label, value, onChange, params = {}, publicAcc
    const prerequisite = disabled && !value && kind === "branches" && !params.clinicId ? "Choose a clinic group first."
      : disabled && !value && kind === "doctors" && !params.branchId ? "Choose a location first." : undefined;
    if (readinessOnly) return null;
-   return <><SearchableSelect retainSelectionLabel={false} required={required} labelScope={labelScope} label={label} value={value} options={options} onChange={id => {
+   return <><SearchableSelect compactLabel={compactLabel} retainSelectionLabel={false} required={required} labelScope={labelScope} label={label} value={value} options={options} onChange={id => {
      const record = records.find(item=>item.id===id);
      if (record && publicAccess && kind in publicLoaders && !query.isError) {
        retainPublicSelectedCare(client, actor, kind, params, record, query.dataUpdatedAt);

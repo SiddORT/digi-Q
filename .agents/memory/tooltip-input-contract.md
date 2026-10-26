@@ -19,3 +19,14 @@ handler worked. Real hover pointer events and touch toggling must stay separate.
 **How to apply:** When investigating dismissal, trace both the close and any later
 reopen event. Recheck keyboard focus, mouse hover and second-tap toggle after a
 touch-related fix; do not replace the shared tooltip infrastructure.
+
+Full-value reveal affordances belong to selected content, not empty picker
+placeholders. Preserve an unobstructed way to open the picker.
+
+**Why:** At tablet widths, a clipped placeholder became an interactive reveal
+above the actual Session trigger and intercepted the click intended to open the
+list. A passing desktop render did not expose the failure.
+
+**How to apply:** Include narrow empty-state picker interaction when opting a
+form into compact full-value help; retain complete selected names and detailed
+options without making placeholders competing interactive controls.

@@ -30,7 +30,7 @@ before(async()=>{
           export const formatSessionHours=()=>"09:00–12:00";
           export const HoursWarning=()=>null;
           export const ErrorNotice=()=>null;
-          export const HelpTip=props=>React.createElement("button",{"aria-label":props.label},"Info");
+          export const HelpTip=props=>React.createElement("button",{"aria-label":props.label},React.createElement("span",null,props.text));
           export const AppDialog=()=>null;
           export const DoctorScheduleContext=()=>null;
         `}));

@@ -61,7 +61,8 @@ export function BookingDiscovery({selection,discovery,date,walkIn=false,manage,s
    if(!selection.hasContext)return <p role="status" className="booking-preselection" data-testid="booking-discovery">Choose a location, doctor and date to see sessions.</p>;
    return <div data-testid="booking-discovery">
      {showSessionSelector&&(selection.sessions.length>0||q.isLoading||q.isFetching||q.error)&&<SessionSelector selection={selection}/>}
-     <div className={session?"availability-box":"booking-preselection"} data-testid="booking-availability-status">
+      <div className={`booking-availability-strip ${session?"availability-box":"booking-preselection"}`} data-testid="booking-availability-status">
+      <div className="booking-availability-content">
       {!selection.hasContext?<p>Choose a location, doctor and date to see sessions.</p>:
       !validVisitDate(date)?<p>Choose a valid visit date to see sessions.</p>:
       q.error||discovery.context.error?<p role="alert">Could not check current availability. Your choices are retained; retry before booking.</p>:
@@ -70,16 +71,17 @@ export function BookingDiscovery({selection,discovery,date,walkIn=false,manage,s
       date>(ctx?.lastBookableDate||date)?<p>This date is outside the booking window. Choose a date through {ctx&&displayDate(ctx.lastBookableDate)}.</p>:
        !selection.sessions.length?<p>No doctor session is listed for {weekday}, {displayDate(date)}. Try another date. <HelpTip label="About missing sessions" text="Other dates may have sessions. Location opening hours alone do not create doctor sessions."/></p>:
       !session?<p>Select a consulting session to continue.</p>:
-      <><strong>{session.available&&session.remainingTokens>0&&!issue?`${session.remainingTokens} places remaining`:"Session unavailable"}</strong><p>{formatSessionHours({...session,...preferences})} · {session.timezone}</p><HoursWarning warning={session.hoursWarning}/>{(issue||session.reason)&&<p>{session.reason||issue}</p>}</>}
+       <><strong>{session.available&&session.remainingTokens>0&&!issue?`${session.remainingTokens} places remaining`:"Session unavailable"}</strong><span>{formatSessionHours({...session,...preferences})}</span><span>{session.timezone}</span><HoursWarning warning={session.hoursWarning}/>{(issue||session.reason)&&<p role="alert">{session.reason||issue}</p>}</>}
+      </div>
+      <button type="button" className="button secondary" data-testid="button-refresh-booking-availability" disabled={q.isFetching||discovery.context.isFetching} onClick={()=>{void q.refetch();void discovery.context.refetch();}}>Refresh</button>
     </div>
     <ErrorNotice error={discovery.context.error}/>
     <div className="booking-availability-actions" data-testid="booking-availability-actions" role="group" aria-label="Availability and schedule actions">
-    {selection.hasContext&&<button type="button" className="text-link" data-testid="button-refresh-booking-availability" disabled={q.isFetching||discovery.context.isFetching} onClick={()=>{void q.refetch();void discovery.context.refetch();}}>Refresh Availability</button>}
-    {walkIn?<p className="notice">Walk-ins are today-only in the location timezone. Queue opening, break and session-mode restrictions apply; future dates are not suggested.</p>:
+     {walkIn?<p className="booking-guidance">Walk-ins are today-only. Availability is rechecked at confirmation. <HelpTip label="About walk-in restrictions" text="Walk-ins are today-only in the location timezone. Queue opening, break and session-mode restrictions apply; future dates are not suggested. Your ticket shows a session range, not an exact consultation time."/></p>:
      selection.hasContext&&<div className="guest-next-date"><button type="button" className="button secondary" data-testid="button-next-booking-date" disabled={!discovery.ready||discovery.finding||discovery.end<=discovery.from} onClick={()=>void discovery.find()}>{discovery.finding?"Searching…":"Find Next Available Date"}</button>{ctx&&<HelpTip label="About next-date search" text={discovery.end>discovery.from?`Search ${displayDate(nextVisitDate(discovery.from,1))} through ${displayDate(discovery.end)}: up to 14 days after your selected date, limited by the clinic booking window (${displayDate(ctx.lastBookableDate)}).`:`No later dates remain in the booking window (${displayDate(ctx.lastBookableDate)}).`}/>} {discovery.message&&<p role="status">{discovery.message}</p>}</div>}
     {discovery.candidate&&<button type="button" className="button secondary" data-testid="button-use-next-date" onClick={()=>discovery.changeDate(discovery.candidate)}>Review sessions on {displayDate(discovery.candidate)}</button>}
     {manage}
     </div>
-    <p className="notice">Your ticket shows a session range, not an exact consultation time. Availability is checked again when you confirm.</p>
+     {!walkIn&&<p className="booking-guidance">Availability is rechecked at confirmation. <HelpTip label="About your visit ticket" text="Your ticket shows a session range, not an exact consultation time. Availability is checked again when you confirm."/></p>}
   </div>;
 }

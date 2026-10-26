@@ -1,10 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 // Rendered real components; deterministic HTTP fixtures, NOT real persistence or identity evidence.
-async function fixture(page:Page,role="superAdmin",opts:{empty?:boolean;multiple?:boolean;fail?:boolean;timezone?:string;bare?:boolean;qr?:"clinic"|"location";denied?:boolean;actorMobile?:string;source?:string;queue?:boolean}={}){
+async function fixture(page:Page,role="superAdmin",opts:{empty?:boolean;multiple?:boolean;fail?:boolean;timezone?:string;bare?:boolean;qr?:"clinic"|"location";denied?:boolean;actorMobile?:string;source?:string;queue?:boolean;app?:boolean;longNames?:boolean}={}){
  const today="2026-10-09",next="2026-10-10";
  const clinic={id:"c1",name:"Fictional Booking Clinic",adminId:"clinicAdmin",status:"active",timezone:"UTC",dateFormat:"YYYY-MM-DD",timeFormat:"24h"};
  const branch={id:"b1",clinicId:"c1",name:"Fictional Booking Location",timezone:opts.timezone||"UTC",status:"active",openingHours:Array.from({length:7},(_,dayOfWeek)=>({dayOfWeek,startTime:"08:00",endTime:"20:00"}))};
  const doctor={id:"d1",userId:"doctor",fullName:"Fictional Booking Doctor",clinicIds:["c1"],branchIds:["b1"],status:"active"};
+ if(opts.longNames){clinic.name+=" — Multispeciality and Family Healthcare Centre";branch.name+=" — North District Extended Consultation Unit";doctor.fullName+=" — Consultant in General and Family Medicine";}
  const session={doctorId:"d1",branchId:"b1",date:today,sessionId:"s1",available:true,remainingTokens:8,maxTokens:8,startTime:"09:00",endTime:"12:00",timezone:branch.timezone,queueMode:"mixed"};
   const state={actorMobile:opts.actorMobile||"",actorId:role,actorRole:role,fail:!!opts.fail,empty:!!opts.empty,multiple:!!opts.multiple,hold:false,noResults:false,writes:[] as any[],reads:[] as string[],requests:[] as string[],branchReads:0,mode:"mixed",full:false,range:"09:00",emailOutcome:"no_recipient",appointment:null as any};
  const list=(items:any[])=>({items,total:items.length,page:1,pageSize:20});
@@ -51,7 +52,8 @@ async function fixture(page:Page,role="superAdmin",opts:{empty?:boolean;multiple
    else if(p==="/api/public/guest-requests"){status=201;json={id:"g1",status:"approved",fullName:"Fictional Guest",clinicName:clinic.name,branchName:branch.name,doctorName:doctor.fullName,date:next,startTime:"09:00",endTime:"12:00",timezone:"UTC",token:"D-1",reference:"FICTIONAL-TICKET",checkInUrl:"/check-in/FICTIONAL-TICKET",appointmentStatus:"booked",revision:1,confirmationEmail:state.emailOutcome};}
    await route.fulfill({status,json});
  });
-  await page.goto(opts.qr?`/book/fixture-booking?date=${today}`:`/?mode=booking&fixtureRole=${role}${opts.bare?"":"&clinic=c1&branch=b1&doctor=d1"}&date=${today}&source=${opts.source||"phone"}&fixtureQueue=${opts.queue?"1":"0"}`);
+  const root=["superAdmin","clinicAdmin"].includes(role)?"admin":role;
+  await page.goto(opts.qr?`/book/fixture-booking?date=${today}`:opts.app?`/${root}/book?clinic=c1&branch=b1&doctor=d1&date=${today}&source=${opts.source||"phone"}`:`/?mode=booking&fixtureRole=${role}${opts.bare?"":"&clinic=c1&branch=b1&doctor=d1"}&date=${today}&source=${opts.source||"phone"}&fixtureQueue=${opts.queue?"1":"0"}`);
  if(!opts.queue)await expect(page.getByTestId("booking-discovery")).toBeVisible();
   if(opts.qr&&role==="patient")await selectQrPatientVisit(page,opts.qr==="clinic");
  return state;
@@ -168,7 +170,7 @@ for(const role of ["doctor","clinicAdmin","receptionist","superAdmin"]){
 }
 test("workspace management still requires allowed server capability",async({page})=>{
   const s=await fixture(page,"clinicAdmin",{denied:true});
-  await expect(page.getByTestId("booking-discovery")).toContainText("Your account cannot manage this schedule");
+  await expect(page.getByTestId("booking-context")).toContainText("Your account cannot manage this schedule");
   await expect.poll(()=>s.requests.filter(p=>p==="/api/booking/schedule-access").length).toBeGreaterThan(0);
   await expectPatientFacing(page);
 });
@@ -248,9 +250,11 @@ for(const role of ["superAdmin","clinicAdmin","doctor","receptionist","patient"]
    if(role!=="patient")await selectPatient(page);
    await expect(page.getByPlaceholder("Add information for the clinic about this visit (optional)")).toBeVisible();
    await page.getByPlaceholder("Add information for the clinic about this visit (optional)").fill("Fictional visit note");
+   await page.screenshot({path:`generated-artifacts/booking-reference/after/${role}-patient.png`,fullPage:true});
    await page.getByTestId("button-booking-continue-patient").click();
    await expect(page.getByTestId("booking-summary")).toContainText("Fictional Patient");
    await expect(page.getByTestId("booking-summary")).toContainText("09:00–12:00");
+   await page.screenshot({path:`generated-artifacts/booking-reference/after/${role}-confirmation.png`,fullPage:true});
    await page.getByTestId("button-booking-back").filter({visible:true}).click();
    await expect(page.getByPlaceholder("Add information for the clinic about this visit (optional)")).toHaveValue("Fictional visit note");
    await page.getByTestId("button-booking-continue-patient").click();
@@ -259,6 +263,7 @@ for(const role of ["superAdmin","clinicAdmin","doctor","receptionist","patient"]
    await page.getByTestId("button-confirm-booking").click();
    await expect(page.getByTestId("appointment-ticket")).toContainText("FICTIONAL-TICKET");
    await expect(page.getByTestId("text-ticket-delivery")).toContainText("No email recipient");
+   await page.screenshot({path:`generated-artifacts/booking-reference/after/${role}-ticket.png`,fullPage:true});
    expect(s.writes.filter(w=>w.path==="/api/appointments")).toHaveLength(1);
    expect(s.writes.find(w=>w.path==="/api/appointments").body).toMatchObject({clinicId:"c1",branchId:"b1",doctorId:"d1",patientId:"p1",sessionId:"s1",notes:"Fictional visit note"});
    expect(s.writes.filter(w=>w.path==="/api/patients")).toHaveLength(0);
@@ -336,22 +341,23 @@ for(const [width,height] of [[1024,640],[1366,768],[390,844]]){
  test(`visit field group and context containment ${width}x${height}`,async({page},info)=>{
    await page.setViewportSize({width,height});
    await fixture(page,"clinicAdmin",{multiple:true});
-   const group=page.getByTestId("booking-visit-fields");
+   const group=page.getByTestId("booking-field-row");
    await expect(group.locator(".session-selector")).toBeVisible();
    await expect(page.getByTestId("booking-context")).toHaveCount(1);
    await expect(group.locator(".loc-fixed-note")).toHaveCount(0);
    const controls=group.locator(".searchable-select-control, [data-testid=input-booking-date]");
-   await expect(controls).toHaveCount(3);
+   await expect(controls).toHaveCount(5);
    await expect.poll(async()=>controls.evaluateAll(nodes=>{
-     const parent=nodes[0].closest("[data-testid=booking-visit-fields]")!.getBoundingClientRect();
+     const parent=nodes[0].closest("[data-testid=booking-field-row]")!.getBoundingClientRect();
      return nodes.every(n=>{const r=n.getBoundingClientRect();return r.left>=parent.left-1&&r.right<=parent.right+1&&r.left>=0&&r.right<=innerWidth;});
    })).toBe(true);
-   if(width>=768){
+   if(width>=1200){
      const tops=await controls.evaluateAll(nodes=>nodes.map(n=>(n.closest(".dtp-control")||n).getBoundingClientRect().top));
      expect(Math.max(...tops)-Math.min(...tops)).toBeLessThanOrEqual(2);
    }
    await expect(page.getByTestId("text-booking-continue-reason")).toContainText("Select a consulting session");
    await page.screenshot({path:info.outputPath(`booking-group-${width}.png`),fullPage:true});
+   await page.screenshot({path:`generated-artifacts/booking-reference/after/matched-visit-${width}.png`,fullPage:true});
  });
 }
 
@@ -435,4 +441,169 @@ test("required mobile drafts survive late identity hydration, explicit clearing 
   await page.getByTestId("button-booking-continue-visit").click();
   await expectLocalMobile(page,"9876543214");
   assertNoWrite(s.writes);
+});
+
+// Reference acceptance: real components and full production CSS, with every API
+// intercepted. These are not hosted identities, persisted bookings or delivery proof.
+for(const role of ["superAdmin","clinicAdmin","doctor","receptionist","patient","guest"]){
+ for(const [width,height] of [[1366,768],[1024,640],[768,1024],[390,844]]){
+  test(`reference matrix ${role} ${width}x${height}: single and multi session`,async({page})=>{
+   await page.setViewportSize({width,height});
+   const state=await fixture(page,role,{app:role!=="guest",longNames:true});
+   const fields=page.getByTestId("booking-field-row");
+   await expect(fields).toBeVisible();
+   await expect(fields.locator(".booking-fixed-session")).toBeVisible();
+   const status=page.getByTestId("booking-availability-status");
+   await expect(status).toContainText("8 places remaining");
+   await expect(status.getByTestId("button-refresh-booking-availability")).toBeVisible();
+   if(["patient","guest"].includes(role))await expectPatientFacing(page);
+   else await expect(page.getByTestId("booking-context").getByTestId("button-booking-manage-schedule")).toBeVisible();
+   const assertBounds=async()=>{
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+    const controls=page.locator('[data-testid="stage-visit"] .searchable-select-control, [data-testid="stage-visit"] .dtp-control, [data-testid="stage-visit"] .booking-session-value');
+    expect(await controls.evaluateAll(nodes=>nodes.every(n=>{const r=n.getBoundingClientRect();return r.width>0&&r.left>=0&&r.right<=innerWidth+1;}))).toBe(true);
+   };
+   await assertBounds();
+   await page.screenshot({path:`generated-artifacts/booking-reference/after/${role}-${width}-single.png`,fullPage:true});
+   state.multiple=true;
+   await page.getByTestId("button-refresh-booking-availability").click();
+   await expect(page.getByTestId(role==="guest"?"button-guest-continue-visit":"button-booking-continue-visit")).toBeDisabled();
+   const trigger=page.getByRole("button",{name:/^Session/});
+   await trigger.click();
+   const options=page.getByRole("option");
+   await expect(options).toHaveCount(2);
+   const popup=page.getByRole("listbox");
+   const box=await popup.boundingBox();
+   expect(box).not.toBeNull();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(width+1);
+   await page.keyboard.press("Escape");
+   await expect(popup).toBeHidden();
+   await expect(trigger).toBeFocused();
+   await trigger.click();
+   await options.filter({hasText:"09:00–12:00"}).click();
+   await assertBounds();
+   await page.screenshot({path:`generated-artifacts/booking-reference/after/${role}-${width}-multiple.png`,fullPage:true});
+   assertNoWrite(state.writes);
+  });
+ }
+}
+
+test("reference five-field alignment, help keyboard/touch and enlarged text",async({page})=>{
+ await page.setViewportSize({width:1366,height:768});
+ const state=await fixture(page,"superAdmin",{multiple:true,longNames:true});
+ const controls=page.getByTestId("booking-field-row").locator(".searchable-select-control, .dtp-control");
+ await expect(controls).toHaveCount(5);
+ const tops=await controls.evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().top));
+ expect(Math.max(...tops)-Math.min(...tops)).toBeLessThanOrEqual(3);
+ const help=page.getByRole("button",{name:"About your visit ticket"});
+ await help.focus();
+ await expect(page.locator(".helptip-bubble")).toBeVisible();
+ await page.keyboard.press("Escape");
+ await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+ await help.dispatchEvent("pointerdown",{pointerType:"touch"});
+ await help.click();
+ await expect(help).toHaveAttribute("aria-expanded","true");
+ await page.keyboard.press("Escape");
+ await page.addStyleTag({content:"html{font-size:200% !important}"});
+ await page.setViewportSize({width:390,height:844});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await page.screenshot({path:"generated-artifacts/booking-reference/after/enlarged-text-390.png",fullPage:true});
+ assertNoWrite(state.writes);
+});
+
+test("reference stage evidence: required mobile, retained draft, consent and private ticket",async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ const state=await fixture(page,"guest");
+ await page.getByTestId("button-guest-continue-visit").click();
+ await page.getByTestId("input-guest-name").fill("Fictional Reference Guest");
+ await page.getByTestId("input-guest-permission").check();
+ await page.getByTestId("button-guest-continue-patient").click();
+ await expect(page.getByTestId("input-guest-mobile")).toHaveAttribute("aria-invalid","true");
+ await page.getByTestId("input-guest-mobile").fill("+14155552671");
+ await page.screenshot({path:"generated-artifacts/booking-reference/after/guest-patient-390.png",fullPage:true});
+ await page.getByTestId("button-guest-continue-patient").click();
+ await page.screenshot({path:"generated-artifacts/booking-reference/after/guest-confirmation-390.png",fullPage:true});
+ await page.getByTestId("button-booking-back").filter({visible:true}).click();
+ await expect(page.getByTestId("input-guest-name")).toHaveValue("Fictional Reference Guest");
+ await page.getByTestId("button-guest-continue-patient").click();
+ assertNoWrite(state.writes);
+ await page.getByTestId("button-submit-guest").click();
+ await expect(page.getByTestId("guest-ticket")).toContainText("FICTIONAL-TICKET");
+ await page.screenshot({path:"generated-artifacts/booking-reference/after/guest-ticket-390.png",fullPage:true});
+ expect(state.writes.filter(w=>w.path==="/api/public/guest-requests")).toHaveLength(1);
+});
+
+test.describe("reference compact-label followup",()=>{
+ test.use({hasTouch:true});
+ test("clipped selected names reveal full text on keyboard and real touch without competing help",async({page})=>{
+  const state=await fixture(page,"superAdmin",{longNames:true});
+  const label=page.getByTestId("booking-field-row").locator(".ov-text").first();
+  await expect(label).toHaveAttribute("tabindex","0");
+  await label.focus();
+  const bubble=page.locator(".ov-pop");
+  await expect(bubble).toContainText("Multispeciality and Family Healthcare Centre");
+  await page.keyboard.press("Escape");
+  await expect(bubble).toBeHidden();
+  await page.setViewportSize({width:390,height:844});
+  await label.tap();
+  await expect(bubble).toBeVisible();
+  const box=await bubble.boundingBox();
+  expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(391);
+  await page.getByRole("heading",{name:"Where would you like to visit?"}).tap();
+  await expect(bubble).toBeHidden();
+  const help=page.getByRole("button",{name:"About your visit ticket"});
+  await help.tap();
+  await expect(page.locator(".helptip-bubble")).toBeVisible();
+  await page.getByRole("heading",{name:"Where would you like to visit?"}).tap();
+  await expect(page.locator(".helptip-bubble")).toBeHidden();
+  assertNoWrite(state.writes);
+ });
+ test("offline restriction and freshness recover without losing the current visit",async({page})=>{
+  const state=await fixture(page,"clinicAdmin");
+  const next=page.getByTestId("button-booking-continue-visit");
+  await expect(next).toBeEnabled();
+  await page.evaluate(()=>{Object.defineProperty(navigator,"onLine",{configurable:true,get:()=>false});window.dispatchEvent(new Event("offline"));});
+  await expect(page.getByRole("alert").filter({hasText:"You are offline"})).toBeVisible();
+  await expect(next).toBeDisabled();
+  await expect(page.getByTestId("booking-availability-status")).toContainText("Availability is not current");
+  await page.evaluate(()=>{Object.defineProperty(navigator,"onLine",{configurable:true,get:()=>true});window.dispatchEvent(new Event("online"));});
+  await page.getByTestId("button-refresh-booking-availability").click();
+  await expect(next).toBeEnabled();
+  await expect(page.getByTestId("input-booking-date")).toHaveValue("2026-10-09");
+  assertNoWrite(state.writes);
+ });
+ test("staff patient and confirmation fields remain clear of their action footer at all reference sizes",async({page})=>{
+  const state=await fixture(page,"clinicAdmin",{app:true});
+  await page.getByTestId("button-booking-continue-visit").click();
+  await selectPatient(page);
+  const mobile=page.getByTestId("input-booking-mobile");
+  await mobile.fill("+14155552671");
+  for(const [width,height] of [[1366,768],[1024,640],[768,1024],[390,844]]){
+   await page.setViewportSize({width,height});
+   await mobile.scrollIntoViewIfNeeded();
+   const field=await mobile.boundingBox();
+   const phone=await mobile.locator("..").boundingBox();
+   expect(field!.x).toBeGreaterThanOrEqual(0);expect(phone!.x+phone!.width).toBeLessThanOrEqual(width+1);
+   const footer=await page.getByTestId("stage-patient").locator(".booking-stage-actions").boundingBox();
+   expect(footer!.y).toBeGreaterThanOrEqual(field!.y+field!.height);
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+   await page.screenshot({path:`generated-artifacts/booking-reference/after/clinicAdmin-patient-${width}.png`,fullPage:true});
+  }
+  await page.getByTestId("button-booking-continue-patient").click();
+  await expect(page.getByTestId("button-confirm-booking")).toBeDisabled();
+  await expect(page.getByTestId("booking-summary")).toContainText("+14155552671");
+  assertNoWrite(state.writes);
+ });
+});
+
+test("reference approved walk-in composition preserves visible restrictions",async({page})=>{
+ await page.clock.install({time:new Date("2026-10-09T10:00:00Z")});
+ await page.setViewportSize({width:1366,height:768});
+ const state=await fixture(page,"superAdmin",{app:true,source:"walkIn"});
+ await expect(page.getByTestId("button-booking-continue-visit")).toBeEnabled();
+ await expect(page.getByTestId("radio-booking-source-walkIn")).toBeChecked();
+ await expect(page.getByTestId("input-booking-date")).toBeDisabled();
+ await expect(page.getByTestId("booking-discovery")).toContainText("Walk-ins are today-only");
+ await expect(page.getByTestId("stage-visit")).toContainText("Cancellation closes 30 minutes");
+ await page.screenshot({path:"generated-artifacts/booking-reference/after/approved-walk-in-1366.png",fullPage:true});
+ assertNoWrite(state.writes);
 });

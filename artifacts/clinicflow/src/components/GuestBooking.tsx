@@ -12,7 +12,7 @@ import { CareLookup, useSelectedCare } from "./CareLookup";
 import { ErrorNotice, today } from "../resources";
 import { useFreshWorkspace } from "./queue/useFreshWorkspace";
 import { canPollGuestReceipt } from "../guest-receipt";
-import { useDailySession } from "./queue/SessionSelector";
+import { SessionSelector, useDailySession } from "./queue/SessionSelector";
 import { VisitTicket, bookingStatusLabel, type TicketData } from "./tickets/VisitTicket";
 import { BookingDiscovery, useBookingDiscovery } from "./booking/BookingDiscovery";
 import "./guest-booking.css";
@@ -27,6 +27,8 @@ import { DateTimePreferencesProvider } from "./DateTimePreferences";
 import { ReceiptManagement } from "./appointments/ReceiptManagement";
 import { refreshAppointmentObservers } from "./appointments/refresh";
 import { normalizePhone } from "../lib/validators";
+import { HelpTip } from "./HelpTip";
+import "./booking/booking-visit.css";
 
 const toTicket=(r:api.GuestReceipt):TicketData=>({dateFormat:r.dateFormat,timeFormat:r.timeFormat,patientName:r.fullName,clinicName:r.clinicName,branchName:r.branchName,address:r.branchAddress,doctorName:r.doctorName,date:r.date,startTime:r.startTime,endTime:r.endTime,timezone:r.timezone,waitingNumber:r.token,reference:r.reference,statusLabel:bookingStatusLabel(r.appointmentStatus),qrUrl:r.checkInUrl});
 
@@ -124,7 +126,7 @@ function GuestBookingForm({reference,context}:{reference:string;context:api.QrCo
  const issued=r&&r.status!=="pending"&&r.status!=="rejected";
  const currentTitle=r?.appointmentStatus==="cancelled"?"Booking Cancelled":r?.appointmentStatus==="completed"?"Visit Completed":r?.appointmentStatus==="noShow"?"Patient Marked Absent":"You're Booked";
  const showConfirmationEmail=!!r&&!["cancelled","completed","noShow"].includes(r.appointmentStatus||"");
- if(attempt)return <section aria-label="Your visit ticket" data-testid="guest-receipt"><BookingSteps step={issued?4:3}/>
+  if(attempt)return <section className="booking-ticket-stage" aria-label="Your visit ticket" data-testid="guest-receipt"><BookingSteps step={issued?4:3}/>
   <h2>{issued?currentTitle:r?.status==="rejected"?"Booking Not Available":r?"Booking Received":"Issuing Your Ticket"}</h2>
   {!r&&<p role="status">{attempt.fullName} · {attempt.date}. Keep this page open; do not book again.</p>}
   {issued&&r&&<>{showConfirmationEmail&&confirmationEmailMessage(r.confirmationEmail)&&<p role="status">{confirmationEmailMessage(r.confirmationEmail)}</p>}<VisitTicket testId="guest-ticket" ticket={toTicket(r)} prepareExport={prepareExport} exportDisabled={!committed||status.isPending}/>{committed&&attempt&&<ReceiptManagement receiptSecret={attempt.receiptSecret} onRefresh={()=>pollRef.current()}/>}</>}
@@ -141,16 +143,16 @@ function GuestBookingForm({reference,context}:{reference:string;context:api.QrCo
  const values=form.watch();
   const canContinueVisit=dateValid&&discovery.ready&&!!branchId&&!!doctorId&&!!discovery.context.data&&date>=discovery.context.data.today&&date<=discovery.context.data.lastBookableDate&&!(fresh.stale||availability.isFetching||!available?.available||available.remainingTokens<=0||available.queueMode==="walkInsOnly");
   async function continuePatient(){if(canContinueVisit&&await form.trigger(["fullName","email","mobile","permission"])){setReviewedVisit(currentVisit);setStep(3);}}
-   return <section className="guest-booking"><h2>Book a Visit</h2><p className="guest-intro">Choose a visit, add the patient's name and a mobile number, then review and confirm. No account is required.</p>
-  <div className="guest-context" role="group" aria-label="Booking location and doctor"><strong>{context.clinicName}</strong>{(context.branchName||context.doctorName)&&<span>{[context.branchName,context.doctorName].filter(Boolean).join(" · ")}</span>}</div>
+   return <section className="guest-booking booking-reference"><h2>Book a Visit <HelpTip label="About guest booking" text="Choose a visit, add the patient's name and a mobile number, then review and confirm. No account is required."/></h2>
  <Form {...form}><form noValidate onSubmit={form.handleSubmit(submit)}>
- <StagedBooking testId="guest-staged-booking" step={step} visit={<><div className="form-grid cf-auto">
-   {!context.branchId&&<CareLookup publicAccess kind="branches" {...bookingFields.location} value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId||undefined,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}} selectedLabel={branchOptions.data?.items.find(b=>b.id===branchId)?.name}/>}
-   {!context.doctorId&&<CareLookup publicAccess kind="doctors" {...bookingFields.doctor} value={doctorId} disabled={!branchId} params={{clinicId:context.clinicId,branchId,status:"active"}} onChange={setDoctor} selectedLabel={doctorOptions.data?.items.find(d=>d.id===doctorId)?.fullName}/>}
+  <StagedBooking testId="guest-staged-booking" step={step} visit={<><div className="booking-step-head"><h2>Where would you like to visit?</h2></div><div className="booking-context" data-testid="booking-context" role="group" aria-label="Booking location and doctor"><strong>{context.clinicName}</strong>{(context.branchName||context.doctorName)&&<span>{[context.branchName,context.doctorName].filter(Boolean).join(" · ")}</span>}<span>{discovery.context.data?.timezone||context.branchTimezone}</span></div><div className="booking-field-row" data-testid="booking-field-row"><div className="form-grid cf-auto">
+    {!context.branchId&&<CareLookup compactLabel publicAccess kind="branches" {...bookingFields.location} value={branchId} params={{clinicId:context.clinicId,doctorId:context.doctorId||undefined,status:"active"}} onChange={v=>{setBranch(v);setDoctor(context.doctorId||"");}} selectedLabel={branchOptions.data?.items.find(b=>b.id===branchId)?.name}/>}
+    {!context.doctorId&&<CareLookup compactLabel publicAccess kind="doctors" {...bookingFields.doctor} value={doctorId} disabled={!branchId} params={{clinicId:context.clinicId,branchId,status:"active"}} onChange={setDoctor} selectedLabel={doctorOptions.data?.items.find(d=>d.id===doctorId)?.fullName}/>}
     <BookingField name="date"><DateFormatInput data-testid="input-guest-date" required min={discovery.context.data?.today} max={discovery.context.data?.lastBookableDate} preferences={context} value={date} onChange={discovery.changeDate} onValidityChange={setDateValid}/></BookingField>
- </div>
-   <BookingDiscovery selection={selection} discovery={discovery} date={date}/>
- <BookingStageActions primaryLabel="Continue to Patient Details" primaryDisabled={!canContinueVisit} onPrimary={()=>setStep(2)} primaryTestId="button-guest-continue-visit"/></>} patient={<><div className="form-grid cf-auto">
+  {selection.hasContext&&(selection.sessions.length>0||availability.isLoading||availability.isFetching||availability.error)&&<SessionSelector compact selection={selection}/>}
+  </div></div>
+    <BookingDiscovery selection={selection} discovery={discovery} date={date} showSessionSelector={false}/>
+  <BookingStageActions primaryLabel="Continue to Patient Details" primaryDisabled={!canContinueVisit} blockedReason={!canContinueVisit?"Choose a valid visit and an eligible, current session before continuing.":undefined} onPrimary={()=>setStep(2)} primaryTestId="button-guest-continue-visit"/></>} patient={<><div className="booking-section-head"><h2>Who is this visit for?</h2></div><div className="form-grid cf-auto">
   <BookingField name="fullName" error={form.formState.errors.fullName?.message}><input data-testid="input-guest-name" autoComplete="name" placeholder={bookingFields.fullName.placeholder} maxLength={100} {...form.register("fullName",{validate:bookingValidation.fullName})}/></BookingField>
  </div>
   <div className="form-grid cf-auto">
@@ -161,7 +163,7 @@ function GuestBookingForm({reference,context}:{reference:string;context:api.QrCo
    <p className="muted guest-note">A mobile number is required. A family member's contact requires their permission and does not link this visit to their account. Notifications still follow clinic settings and existing recipient rules.</p>
  <label className="check-label"><input data-testid="input-guest-permission" type="checkbox" {...form.register("permission",{required:true})}/> I have permission to book this visit and share any contact details provided.</label>
   {form.formState.errors.permission&&<p role="alert">Please confirm permission to continue.</p>}
-    <BookingStageActions onBack={()=>setStep(1)} primaryLabel="Review and Confirm" onPrimary={()=>void continuePatient()} primaryTestId="button-guest-continue-patient"/></>} confirmation={<><BookingVisitSummary clinicName={context.clinicName} branchName={context.branchName||selectedBranch.data?.name||(selectedBranch.isFetching?"Loading selected name…":"Location name unavailable")} doctorName={context.doctorName||selectedDoctor.data?.fullName||(selectedDoctor.isFetching?"Loading selected name…":"Doctor name unavailable")} date={date} session={available} preferences={context} patientName={values.fullName.trim()} contacts={[[bookingFields.email.label,values.email.trim()],[bookingFields.mobile.label,normalizePhone(values.mobile)]]}/>
+     <BookingStageActions onBack={()=>setStep(1)} primaryLabel="Review and Confirm" onPrimary={()=>void continuePatient()} primaryTestId="button-guest-continue-patient"/></>} confirmation={<><div className="booking-section-head"><h2>Everything look right?</h2></div><BookingVisitSummary clinicName={context.clinicName} branchName={context.branchName||selectedBranch.data?.name||(selectedBranch.isFetching?"Loading selected name…":"Location name unavailable")} doctorName={context.doctorName||selectedDoctor.data?.fullName||(selectedDoctor.isFetching?"Loading selected name…":"Doctor name unavailable")} date={date} session={available} preferences={context} patientName={values.fullName.trim()} contacts={[[bookingFields.email.label,values.email.trim()],[bookingFields.mobile.label,normalizePhone(values.mobile)]]}/>
  <p className="notice">Nothing is booked until you press Confirm Booking. Availability is checked again at that moment; your ticket shows a session range, not an exact time.</p>
   {!reviewCurrent&&<p role="alert">The selected visit changed. Choose Change Visit and review the current session before confirming.</p>}
  <ErrorNotice error={create.error}/>

@@ -163,7 +163,7 @@ export function SearchableSelect({
               !value ? "text-muted-foreground" : "text-foreground font-medium"
             )}
           >
-            {compactLabel ? <OverflowText value={value ? displayLabel : placeholder} /> : value ? displayLabel : placeholder}
+            {compactLabel && value ? <OverflowText value={displayLabel} /> : value ? displayLabel : placeholder}
           </span>
 
           <div className={cn("relative z-20 flex items-center gap-1 shrink-0 px-1", !clearable && "pointer-events-none")}>
