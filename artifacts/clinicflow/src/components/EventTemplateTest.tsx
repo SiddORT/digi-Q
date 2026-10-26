@@ -112,10 +112,13 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     {used.length === 0 ? <p className="muted">This template uses no placeholders.</p> : <div className="et-test-values">
       {used.map(k => <FormField key={k} label={notificationVariableField(k).label} required={k !== "clinic_contact"}>
         {(a) => {
-          const props = { ...a, required: k !== "clinic_contact", value: values[k] ?? "", onChange: (value: string) => setValues(v => ({ ...v, [k]: value })), "data-testid": `input-test-value-${k}` };
+          // An empty form owner detaches optional test controls from an enclosing
+          // wording form, including when Advanced is collapsed. Keep their native
+          // validity and the preview/send completeness + consent gates unchanged.
+          const props = { ...a, form: "", required: k !== "clinic_contact", value: values[k] ?? "", onChange: (value: string) => setValues(v => ({ ...v, [k]: value })), "data-testid": `input-test-value-${k}` };
           return !securityPreview && notificationVariableField(k).kind === "date" ? <DateFormatInput {...props} preferences={preferences} disabled={!formatsReady} />
             : !securityPreview && notificationVariableField(k).kind === "time" ? <TimeFormatInput {...props} preferences={preferences} disabled={!formatsReady} />
-            : <input {...a} type="text" maxLength={500} readOnly={securityPreview} value={securityPreview ? exact[k] : values[k] ?? ""} onChange={e => props.onChange(e.target.value)} data-testid={`input-test-value-${k}`} />;
+            : <input {...a} form="" type="text" maxLength={500} readOnly={securityPreview} value={securityPreview ? exact[k] : values[k] ?? ""} onChange={e => props.onChange(e.target.value)} data-testid={`input-test-value-${k}`} />;
         }}
       </FormField>)}
     </div>}
@@ -124,10 +127,10 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
     </div>
     {!securityPreview && <><FormField label={`Test ${label}`} required helper="One explicit recipient. Never taken from a real patient or staff record.">
       {(a) => channel === "sms"
-        ? <PhoneInput {...a} value={to} onChange={setTo} autoComplete="off" data-testid="input-test-recipient" />
-        : <EmailInput {...a} value={to} onChange={e => setTo(e.target.value)} autoComplete="off" data-testid="input-test-recipient" />}
+        ? <PhoneInput {...a} form="" value={to} onChange={setTo} autoComplete="off" data-testid="input-test-recipient" />
+        : <EmailInput {...a} form="" value={to} onChange={e => setTo(e.target.value)} autoComplete="off" data-testid="input-test-recipient" />}
     </FormField>
-    <label className="check-label"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} data-testid="checkbox-confirm-test" /> Yes, send one real {channel === "sms" ? "SMS" : "email"} to this recipient</label>
+    <label className="check-label"><input form="" type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} data-testid="checkbox-confirm-test" /> Yes, send one real {channel === "sms" ? "SMS" : "email"} to this recipient</label>
     <div className="et-actions">
       <LoadingButton type="button" className="button" loading={test.isPending} loadingText="Sending…" disabled={!confirmed || !complete || !to.trim() || !readiness.ready || test.isSuccess || test.isError} onClick={send} data-testid="button-send-test">Send Test</LoadingButton>
     </div></>}

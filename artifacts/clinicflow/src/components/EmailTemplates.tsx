@@ -112,6 +112,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
   const queryKey = getGetNotificationTemplatesQueryKey(params);
   const catalog = useGetNotificationTemplates(params, { query: { enabled, queryKey, staleTime: 15000 } });
   const save = useSaveNotificationTemplate();
+  const saveInFlight = useRef(false);
   const item = catalog.data?.items.find(i => i.event === event && (i.recipient ?? "patient") === recipient);
   const base = item ? (item.draft ?? item.content) : undefined;
   const key = `${clinicId}|${event}|${recipient}|${item?.revision ?? ""}`;
@@ -152,7 +153,9 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
   const resetLocal = () => { uploadAbort.current?.abort(); setUpload({ state: "idle", pct: 0, msg: "" }); loadedFor.current = ""; editBase.current = null; save.reset(); setConflict(false); setNotice(""); setForm(null); };
 
   function run(mode: Mode) {
-    if (!item || !form) return;
+    if (!item || !form || saveInFlight.current || busyNow || conflict || (mode !== "reset" && invalid)) return;
+    saveInFlight.current = true;
+    setNotice("");
     save.mutate({ data: { channel, clinicId: clinicId || undefined, event: event as api.NotificationTemplateSaveEvent, recipient, revision: editBase.current?.revision ?? item.revision, mode, content: mode === "reset" ? undefined : templateContentForSave({...form,enabled:item.content.enabled}, channel, item.title) } }, {
       onSuccess: next => {
         queryClient.setQueryData(queryKey, next);
@@ -168,6 +171,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
         setNotice(mode === "draft" ? "Draft saved." : mode === "publish" ? "Template published." : "Template reset to default.");
       },
       onError: e => { setConfirm(null); if (status(e) === 409) setConflict(true); },
+      onSettled: () => { saveInFlight.current = false; },
     });
   }
 

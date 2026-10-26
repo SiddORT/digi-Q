@@ -63,3 +63,4 @@
 - [Concise information density](concise-information-density.md) — one brief introduction across all pages and links; optional details in adjacent info help, consequential warnings visible.
 - [Owner booking recovery](owner-booking-recovery.md) — explicit same-account, approved-location recovery; preserve administrative drafts and distinguish local checks from hosted repair.
 - [Browser fixture identity](browser-fixture-module-identity.md) — live Vite component fixtures must share dependency identities and isolate query-state scenarios.
+- [Template publication boundary](template-publication-test-boundary.md) — unfinished optional tests must not block wording publication or weaken shared input validation.
