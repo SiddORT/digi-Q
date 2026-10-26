@@ -1,4 +1,5 @@
 import { FormActions } from "./FormActions";
+import { UrlInput } from "./UrlInput";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { titleCase } from "../lib/title-case";
@@ -209,7 +210,7 @@ export function EmailTemplates({ identity, channel = "email", onDirtyChange, onB
             {(a) => k === "body" || k === "footer"
               ? <textarea {...a} rows={k === "body" ? (sms ? 5 : 10) : 3} maxLength={max} value={form[k] ?? ""} onChange={e => set(k, e.target.value)} data-testid={`input-${k}`} />
               : k === "logoUrl" ? <div className="et-logo-field">
-                <input {...a} type="text" inputMode="url" maxLength={max} value={form[k]} onChange={e => { set(k, e.target.value); setShowLogo(false); }} placeholder="https://… or upload below" data-testid="input-logoUrl" spellCheck={false} disabled={uploading} />
+                <UrlInput {...a} validationMessage={errors.logoUrl} maxLength={max} value={form[k]} onChange={e => { set(k, e.target.value); setShowLogo(false); }} placeholder="https://… or upload below" data-testid="input-logoUrl" disabled={uploading} />
                 <div className="et-actions">
                   <label className="button secondary" data-testid="label-logo-file">{uploading ? "Uploading…" : "Choose Image File"}
                     <input type="file" hidden accept={LOGO_TYPES.join(",")} disabled={uploading} onChange={e => { void onLogoFile(e.target.files?.[0]); e.target.value = ""; }} data-testid="input-logo-file" /></label>

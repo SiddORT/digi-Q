@@ -10,7 +10,11 @@ import { LoadingButton } from "./LoadingButton";
 import { canStartNewTemplateTest } from "../lib/template-test-recovery";
 import { templateTestRequestError } from "../lib/template-test-request-error";
 import { requiredSecurityEvent } from "../lib/security-template-events";
-import { accountRoleLabel } from "@workspace/api-zod/notification-variable-contract";
+import { accountRoleLabel, notificationVariableField } from "@workspace/api-zod/notification-variable-contract";
+import { DateFormatInput, TimeFormatInput } from "./DateFormatInput";
+import { useDateTimePreferences } from "./DateTimePreferences";
+import { resolveDateTimePreferences } from "../lib/date-time";
+import { templateTestValue } from "../lib/template-test-fields";
 
 type Content = api.NotificationTemplateContent;
 const PH = /\{\{\s*([a-z0-9_]+)\s*\}\}/gi;
@@ -50,6 +54,11 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
   const securityPreview = requiredSecurityEvent(event);
   const used = useMemo(() => usedPlaceholders(content, channel), [content, channel]);
   const [values, setValues] = useState<Record<string, string>>({});
+  const inheritedPreferences = useDateTimePreferences();
+  const needsFormats = used.some(k => notificationVariableField(k).kind !== "text");
+  const clinic = api.useGetClinicSettings(clinicId, { query: { queryKey: api.getGetClinicSettingsQueryKey(clinicId), enabled: !!clinicId && !securityPreview && needsFormats, staleTime: 30000 } });
+  const preferences = clinicId ? resolveDateTimePreferences(clinic.data?.clinic) : inheritedPreferences;
+  const formatsReady = !needsFormats || !clinicId || securityPreview || (!!clinic.data && !clinic.isError && !clinic.isLoading);
   const [to, setTo] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const requestId = useRef(newRequestId());
@@ -59,8 +68,10 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
   const test = useTestEventTemplate({ mutation: { retry: false } });
   const readiness = useChannelReadiness(channel);
   const fictional:Record<string,string> = {otp:"123456",expiry_minutes:"10",setup_link:"https://example.invalid/set-password?token=fictional-preview-only",recipient_name:"Example Recipient",role_name:accountRoleLabel(group)};
-  const exact = Object.fromEntries(used.map(k => [k, securityPreview ? fictional[k] || "[Example value]" : values[k] ?? ""]));
-  const complete = securityPreview || used.every(k => k === "clinic_contact" || (values[k] ?? "").trim() !== "");
+  const exact = Object.fromEntries(used.map(k => {
+    return [k, securityPreview ? fictional[k] || "[Example value]" : templateTestValue(k, values[k] ?? "", preferences)];
+  }));
+  const complete = formatsReady && (securityPreview || used.every(k => k === "clinic_contact" || exact[k].trim() !== ""));
   const sig = testSignature({ channel, event, group, clinicId, revision, content, values: exact });
   const rsig = `${sig}|${to}`;
   const first = useRef(true);
@@ -97,9 +108,15 @@ export function EventTemplateTest({ channel, event, recipient: group, clinicId, 
   return <section className="panel padded et-test" aria-label="Test this template" data-testid="panel-template-test">
     <h3>{securityPreview ? "Preview security template" : "Test This Template"} <HelpTip text={securityPreview ? "Fictional preview only. No real codes, links or security bodies enter history. Delivery verification requires separate authorization." : "Uses your current edits, including drafts and disabled templates, without publishing or enabling anything. No appointment is created and nothing is queued. Sends one real message to the recipient you enter."} /></h3>
     {!readiness.ready && <p role="note" className="error-box" data-testid="status-test-not-ready">{readiness.reason} <Link href={`/admin/settings?area=${channel === "sms" ? "sms" : "email"}`} className="text-link" data-testid="link-test-configure">Open {channel === "sms" ? "SMS" : "Email"} settings</Link>{!readiness.loading && <> <button type="button" onClick={readiness.retry} data-testid="button-test-recheck">Check Again</button></>}</p>}
+    {!formatsReady && <p role="status">Clinic display formats {clinic.isError ? "could not be loaded." : "are loading…"} {clinic.isError && <button type="button" onClick={() => void clinic.refetch()}>Retry Clinic Formats</button>}</p>}
     {used.length === 0 ? <p className="muted">This template uses no placeholders.</p> : <div className="et-test-values">
-      {used.map(k => <FormField key={k} label={k.replace(/_/g, " ")} required={k !== "clinic_contact"}>
-        {(a) => <input {...a} type="text" maxLength={500} readOnly={securityPreview} value={securityPreview ? exact[k] : values[k] ?? ""} onChange={e => setValues(v => ({ ...v, [k]: e.target.value }))} data-testid={`input-test-value-${k}`} />}
+      {used.map(k => <FormField key={k} label={notificationVariableField(k).label} required={k !== "clinic_contact"}>
+        {(a) => {
+          const props = { ...a, required: k !== "clinic_contact", value: values[k] ?? "", onChange: (value: string) => setValues(v => ({ ...v, [k]: value })), "data-testid": `input-test-value-${k}` };
+          return !securityPreview && notificationVariableField(k).kind === "date" ? <DateFormatInput {...props} preferences={preferences} disabled={!formatsReady} />
+            : !securityPreview && notificationVariableField(k).kind === "time" ? <TimeFormatInput {...props} preferences={preferences} disabled={!formatsReady} />
+            : <input {...a} type="text" maxLength={500} readOnly={securityPreview} value={securityPreview ? exact[k] : values[k] ?? ""} onChange={e => props.onChange(e.target.value)} data-testid={`input-test-value-${k}`} />;
+        }}
       </FormField>)}
     </div>}
     <div className="et-actions">

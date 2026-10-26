@@ -56,6 +56,10 @@ before(async()=>{
   plugins:[{name:"fx",setup(b){
    b.onResolve({filter:/^@workspace\/api-client-react$/},()=>({path:"api",namespace:"fixture"}));
    b.onResolve({filter:/\/AppDialog$/},()=>({path:"dlg",namespace:"fixture"}));
+   b.onResolve({filter:/\/ListingControls$/},()=>({path:"filters",namespace:"fixture"}));
+   b.onResolve({filter:/\/ResourceLookup$/},()=>({path:"lookup",namespace:"fixture"}));
+   b.onLoad({filter:/^filters$/,namespace:"fixture"},()=>({contents:`import {createElement as h} from "react"; export const FilterBar=p=>h("section",{"data-testid":"fixture-filter-drawer"},p.advanced);`}));
+   b.onLoad({filter:/^lookup$/,namespace:"fixture"},()=>({contents:`export const ResourceLookup=()=>null;`}));
    b.onLoad({filter:/^api$/,namespace:"fixture"},()=>({contents:`
     export const getListNotificationLogsQueryKey=p=>["l",p]; export const getGetNotificationLogQueryKey=i=>["g",i];
     export const useListNotificationLogs=()=>({refetch(){},...globalThis.__logState.list});
@@ -65,15 +69,18 @@ before(async()=>{
  const m={exports:{}}; new Function("require","module","exports",r.outputFiles[0].text)(require,m,m.exports); Logs=m.exports.NotificationLogs;
 });
 const html=()=>renderToStaticMarkup(createElement(QueryClientProvider,{client:new QueryClient()},createElement(Logs)));
-test("filters start collapsed, preserve mounted controls and keep refresh outside the panel",()=>{
+test("production caller uses the shared draft drawer and keeps refresh outside it",()=>{
   state.list={data:{items:[],timezone:"Asia/Kolkata"}};
   const h=html();
-  assert.match(h,/<details class="nl-filter-panel" data-testid="panel-log-filters">/);
-  assert.match(h,/<summary data-testid="toggle-log-filters">Filters<\/summary>/);
-  assert.match(h,/button-apply-log-filters/);
-  assert(h.indexOf('data-testid="button-refresh-logs"')<h.indexOf('<details'));
+  assert.match(h,/fixture-filter-drawer/);
+  assert.match(h,/input-log-from-picker/);
+  assert.match(h,/input-log-from-time-picker/);
+  assert(h.indexOf('data-testid="button-refresh-logs"')<h.indexOf('fixture-filter-drawer'));
   const source=rd("./NotificationLogs.tsx");
   assert.match(source,/Object\.values\(applied\)\.filter\(Boolean\)\.length/);
+  assert.match(source, /onOpen=\{\(\) => setDraft\(applied\)\}/);
+  assert.match(source, /onCancel=\{\(\) => setDraft\(applied\)\}/);
+  assert.match(source, /onResetDraft=\{\(\) => setDraft\(EMPTY_FILTERS\)\}/);
 });
 test("rendered states",()=>{
  state.list={isLoading:true}; assert.match(html(),/loading-logs/);

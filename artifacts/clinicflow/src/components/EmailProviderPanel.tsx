@@ -4,6 +4,8 @@ import { CheckCircle2, Mail, Save, Send } from "lucide-react";
 import { getGetIntegrationSettingsQueryKey, useGetIntegrationSettings, useSendSmtpTestEmail, useUpdateIntegrationSettings, type IntegrationReadiness } from "@workspace/api-client-react";
 import { AppDialog } from "./AppDialog";
 import { PasswordInput } from "./PasswordInput";
+import { EmailInput } from "./EmailInput";
+import { StatusSwitch } from "./StatusSwitch";
 import { useConfirm } from "./ConfirmDialog";
 import { EmailDiagnostics } from "./EmailDiagnostics";
 import { SmtpTestReceipt } from "./SmtpTestReceipt";
@@ -68,7 +70,7 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
   const portN = Number(f.port);
   const err = !f.tls && !f.ssl ? "Select TLS (STARTTLS) or SSL. Plain SMTP is not allowed."
     : !f.host.trim() ? "SMTP host is required." : !Number.isInteger(portN) || portN < 1 || portN > 65535 ? "Port must be 1 to 65535."
-    : !f.from.trim() ? "From email is required." : null;
+    : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.from.trim()) ? "Enter a valid From Email address." : null;
   const blocked = !editable || !dirty || (mode === "database" ? !!err : !envOk);
   const values = () => {
     const v: Record<string, string> = {};
@@ -115,12 +117,12 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
     {!editable && <p role="note" className="notice">Editing is locked until the server encryption key is configured. Test email remains available when configuration is ready.</p>}
     {msg && <p role="status" className="notice" data-testid="status-smtp-saved">{msg}</p>}
     <fieldset disabled={!editable || busy} className="sms-ref-fields">
-      <label className="sms-ref-enable"><input type="checkbox" checked={f.enabled} onChange={e => set({ enabled: e.target.checked })} data-testid="checkbox-email-enabled" /> Enable Email Notifications</label>
+      <StatusSwitch label="Enable Email Notifications" active={f.enabled} onChange={enabled => set({ enabled })} testId="checkbox-email-enabled">Enable Email Notifications</StatusSwitch>
       <p className="muted field-hint em-note">Optional notifications only. Sign-in codes, invitations and recovery are unaffected.</p>
       <div className="sms-ref-grid">
         <div className="form-field"><label htmlFor="em-host">SMTP Host</label><input id="em-host" value={f.host} maxLength={255} spellCheck={false} onChange={e => set({ host: e.target.value })} data-testid="input-smtp-host" /></div>
         <div className="form-field"><label htmlFor="em-port">SMTP Port</label><input id="em-port" type="number" inputMode="numeric" min={1} max={65535} value={f.port} onChange={e => set({ port: e.target.value })} data-testid="input-smtp-port" /></div>
-        <div className="form-field"><label htmlFor="em-from">From Email</label><input id="em-from" type="email" maxLength={254} value={f.from} onChange={e => set({ from: e.target.value })} data-testid="input-smtp-from" /></div>
+        <div className="form-field"><label htmlFor="em-from">From Email</label><EmailInput id="em-from" aria-invalid={!!f.from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.from.trim())} aria-describedby={f.from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.from.trim()) ? "smtp-from-email-error" : undefined} value={f.from} onChange={e => set({ from: e.target.value })} data-testid="input-smtp-from" />{f.from && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.from.trim()) && <span id="smtp-from-email-error" className="field-error" role="alert">Enter a valid email address.</span>}</div>
         <div className="form-field"><label htmlFor="em-name">From Name</label><input id="em-name" maxLength={100} value={f.name} onChange={e => set({ name: e.target.value })} data-testid="input-smtp-from-name" /></div>
       </div>
       <div className="em-checks">
@@ -146,10 +148,11 @@ function EmailForm({ r, editable, onDirty, onBusy }: { r: IntegrationReadiness; 
     <div className="sms-ref-footer">
       <button type="button" className="button em-btn" disabled={blocked || busy} onClick={() => { setMsg(null); save.reset(); setAskPw(true); }} data-testid="button-save-smtp-settings"><Save size={16} aria-hidden /> {save.isPending ? "Saving…" : "Save Email Settings"}</button>
       <div className="sms-ref-testbar">
-        <input type="email" aria-label="Test email address" placeholder="test@example.com" maxLength={254} value={to} onChange={e => { test.reset(); setTo(e.target.value); }} data-testid="input-smtp-test-recipient" />
+        <EmailInput aria-label="Test email address" aria-invalid={!!to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim())} aria-describedby={to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) ? "smtp-test-email-error" : undefined} placeholder="test@example.com" value={to} onChange={e => { test.reset(); setTo(e.target.value); }} data-testid="input-smtp-test-recipient" />
         <button type="button" className="button secondary em-btn" disabled={!canTest} onClick={() => void runTest()} data-testid="button-send-smtp-test"><Send size={16} aria-hidden /> {test.isPending ? "Sending…" : "Test Email"}</button>
       </div>
     </div>
+    {to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to.trim()) && <p id="smtp-test-email-error" className="field-error" role="alert">Enter a valid Test Email address.</p>}
     <SmtpTestReceipt disabled={busy} />
     {askPw && <AppDialog open onClose={() => { if (!save.isPending) { setAskPw(false); setPw(""); } }} dirty={false} busy={save.isPending} title="Confirm your password" description={mode === "database" && base.notificationsEnabled && !f.enabled ? "Turning off cancels pending optional email notifications. Sign-in, invitation and recovery emails continue. Saving does not send a message." : "Saving does not send a message."}>
       <form className="cf-form" autoComplete="off" onSubmit={e => { e.preventDefault(); doSave(); }}>

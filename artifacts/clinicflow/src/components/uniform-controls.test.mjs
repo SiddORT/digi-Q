@@ -10,8 +10,26 @@ test("status edit uses shared StatusSwitch in Users and generic editor", async (
   assert.doesNotMatch(users + res, /type="checkbox" role="switch"/);
 });
 test("no native date inputs remain in migrated clinic screens", async () => {
-  for (const p of ["../resources.tsx", "./queue/SessionQueue.tsx", "./appointments/RescheduleAppointment.tsx", "./GuestBooking.tsx"])
-    assert.doesNotMatch(await read(p), /type="date"/, p);
+  for (const p of ["../resources.tsx", "./queue/SessionQueue.tsx", "./appointments/RescheduleAppointment.tsx", "./GuestBooking.tsx", "./NotificationLogs.tsx", "./CommunicationUsage.tsx", "./StaffDeletionReview.tsx", "./EventTemplateTest.tsx"])
+    assert.doesNotMatch(await read(p), /type=["'](?:date|time|datetime-local)["']/, p);
+});
+test("dynamic semantic fields and uncommon callers adopt the shared controls", async () => {
+  const template = await read("./EventTemplateTest.tsx");
+  assert.match(template, /notificationVariableField\(k\)\.kind === "date" \? <DateFormatInput/);
+  assert.match(template, /notificationVariableField\(k\)\.kind === "time" \? <TimeFormatInput/);
+  assert.match(template, /templateTestValue\(k/);
+  for (const path of ["./StaffContactVerification.tsx", "./ClinicRegistration.tsx", "../auth/PatientLogin.tsx", "../auth/RegistrationMobileProof.tsx", "../clinic.tsx"])
+    assert.match(await read(path), /<VerificationCodeInput/, path);
+  for (const path of ["./SmsProviderPanel.tsx", "./EmailProviderPanel.tsx"])
+    assert.match(await read(path), /<StatusSwitch/, path);
+  for (const path of ["./EmailTemplates.tsx", "./SmsProviderPanel.tsx"])
+    assert.match(await read(path), /<UrlInput/, path);
+  const handoff = await read("./StaffDeletionReview.tsx");
+  assert.equal((handoff.match(/<SearchableSelect/g) || []).length, 3);
+  assert.match(handoff, /options=\{doctors\.map/);
+  assert.match(handoff, /options=\{doctor\.branches\.map/);
+  assert.match(handoff, /options=\{opts\.data\.admins\.map/);
+  assert.match(await read("./LinkedScheduleControls.tsx"), /saved legacy value/);
 });
 test("PhoneInput has a single implementation using the shared phone library", async () => {
   const src = await read("./PhoneInput.tsx");

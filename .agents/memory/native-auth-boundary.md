@@ -74,3 +74,9 @@ The user requested keeping the preview recovery password in workspace Secrets an
 **Why:** The user explicitly changed the recovery cleanup requirement and requested automatic first-deployment provisioning.
 
 **How to apply:** Do not remove the retained preview recovery secret as routine cleanup. Keep deployment bootstrap credentials separate from preview recovery, and ensure automatic seeding never rotates an existing administrator's password or promotes another user's account.
+
+Independently submitted optional contact proof must not participate in the primary authentication form's validation or implicit submission.
+
+**Why:** Sharing stricter code entry can accidentally let a half-entered optional mobile code block completion of the required email proof, despite unchanged backend rules.
+
+**How to apply:** Keep the two submission/validation boundaries independent when composing registration controls. Test unfinished optional proof alongside valid primary proof; numeric keyboard and digit-length normalization must not make optional verification mandatory.

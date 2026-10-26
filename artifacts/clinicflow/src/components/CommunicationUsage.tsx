@@ -3,6 +3,9 @@ import { getGetCommunicationUsageQueryKey, getGetCommunicationUsageDetailQueryKe
 import { AppDialog } from "./AppDialog";
 import { SearchableSelect } from "./SearchableSelect";
 import { ResourceLookup } from "./ResourceLookup";
+import { FilterBar } from "./ListingControls";
+import { DateTimeFilterInput } from "./DateTimeFilterInput";
+import { dateTimeRangeError } from "../lib/notification-log-format";
 import { csvCell } from "./admin-listing-data";
 import "./communication-usage.css";
 
@@ -25,7 +28,10 @@ export function usageRange(f: UsageFilters, now = Date.now()): { from?: string; 
   if (f.preset === "today") return { from: istIso(t.y, t.m, t.d, false), to: istIso(t.y, t.m, t.d, true) };
   if (f.preset === "last7" || f.preset === "last30") { const s = istParts(now - (f.preset === "last7" ? 6 : 29) * 86400000); return { from: istIso(s.y, s.m, s.d, false), to: istIso(t.y, t.m, t.d, true) }; }
   if (f.preset === "currentMonth") return { from: istIso(t.y, t.m, 1, false), to: istIso(t.y, t.m, t.d, true) };
-  if (f.preset === "custom") { const c = (v: string) => (v ? `${v.length === 16 ? `${v}:00` : v}+05:30` : undefined); return { from: c(f.from), to: c(f.to) }; }
+  if (f.preset === "custom") {
+    const error = dateTimeRangeError(f.from, f.to); if (error) throw new Error(error);
+    const c = (v: string) => (v && v !== "T" ? `${v.length === 16 ? `${v}:00` : v}+05:30` : undefined); return { from: c(f.from), to: c(f.to) };
+  }
   return {};
 }
 export function buildUsageParams(f: UsageFilters, role: string, cursor?: string, now?: number): GetCommunicationUsageParams {
@@ -104,7 +110,7 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) { setExportError(e instanceof Error ? e.message : "Unable to export usage."); }
   };
-  const customBad = draft.preset === "custom" && draft.from && draft.to && draft.from > draft.to;
+   const customBad = draft.preset === "custom" ? dateTimeRangeError(draft.from, draft.to) : undefined;
   const showCounts = !!d && !q.isError;
   const num = (n: number) => showCounts ? n.toLocaleString("en-IN") : "—";
   const filterCount = [f.preset !== "all", f.channel, f.event, f.status, f.clinicId, f.source].filter(Boolean).length;
@@ -116,11 +122,13 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
       <p>History is best effort. Purged or never-captured records cannot be recovered, security messages may be incomplete, and legacy records are partial. Times are in {tz}.</p>
       {showCounts && <p data-testid="text-usage-earliest">{d.earliestAvailableAt == null ? "No recorded occurrence timestamp is available in this scope; missing timestamps do not prove there are no records." : `Earliest available record in this scope: ${fmt(d.earliestAvailableAt, tz)}.`} {d.legacyCount > 0 && `${d.legacyCount.toLocaleString("en-IN")} legacy record(s) have partial details. `}{d.unattributedCount > 0 && `${d.unattributedCount.toLocaleString("en-IN")} record(s) are unattributed / platform activity and are not assigned to clinics by guessing.`}</p>}
     </div>
-    <div className="cu-presets" role="group" aria-label="Date range">{PRESETS.map(p => <button key={p} type="button" aria-pressed={f.preset === p} className={f.preset === p ? "cu-pill on" : "cu-pill"} data-testid={`button-usage-preset-${p}`} onClick={() => p === "custom" ? (setDraft({ ...draft, preset: "custom" }), setF({ ...f, preset: "custom" }), setCursors([])) : apply({ ...f, preset: p, from: "", to: "" })}>{PRESET_LABEL[p]}</button>)}</div>
-    <details className="nl-filter-panel" open={f.preset === "custom" || undefined}><summary>Filters{filterCount ? ` (${filterCount} applied)` : ""}</summary>
-      <form className="nl-filters" onSubmit={e => { e.preventDefault(); if (!customBad) apply({ ...draft, preset: draft.from || draft.to ? "custom" : draft.preset }); }}>
-        <div className="form-field"><label htmlFor="cu-from">From (IST, optional)</label><input id="cu-from" type="datetime-local" value={draft.from} onChange={e => setDraft({ ...draft, from: e.target.value, preset: "custom" })} data-testid="input-usage-from" /></div>
-        <div className="form-field"><label htmlFor="cu-to">To (IST, optional)</label><input id="cu-to" type="datetime-local" value={draft.to} onChange={e => setDraft({ ...draft, to: e.target.value, preset: "custom" })} data-testid="input-usage-to" /></div>
+    <FilterBar active={filterCount > 0} activeCount={filterCount} onOpen={() => setDraft(f)} onCancel={() => setDraft(f)} onReset={() => apply(EMPTY_USAGE)} onResetDraft={() => setDraft(EMPTY_USAGE)}
+      onApply={() => { if (customBad) return false; apply(draft); return true; }} advanced={<div className="nl-filters">
+        <div className="cu-presets" role="group" aria-label="Date Range">{PRESETS.map(p => <button key={p} type="button" aria-pressed={draft.preset === p} className={draft.preset === p ? "cu-pill on" : "cu-pill"} data-testid={`button-usage-preset-${p}`} onClick={() => { if (p !== draft.preset) setDraft({ ...draft, preset: p, from: "", to: "" }); }}>{PRESET_LABEL[p]}</button>)}</div>
+        {draft.preset === "custom" && <>
+        <DateTimeFilterInput label="From (IST, Optional)" value={draft.from} onChange={v => setDraft({ ...draft, from: v })} testId="input-usage-from" />
+        <DateTimeFilterInput label="To (IST, Optional)" value={draft.to} onChange={v => setDraft({ ...draft, to: v })} testId="input-usage-to" />
+        </>}
         <div className="form-field"><label htmlFor="cu-channel">Channel</label><select id="cu-channel" value={draft.channel} onChange={e=>setDraft({...draft,channel:e.target.value})}><option value="">All channels</option>{CHANNELS.map(c=><option key={c} value={c}>{c==="sms"?"SMS":"Email"}</option>)}</select></div>
         <div className="form-field"><label htmlFor="cu-status">Outcome</label><select id="cu-status" value={draft.status} onChange={e=>setDraft({...draft,status:e.target.value})}><option value="">All outcomes</option>{BUCKETS.map(b=><option key={b} value={b}>{BUCKET_COPY[b]}</option>)}</select></div>
         <div className="form-field"><label htmlFor="cu-event">Event</label><select id="cu-event" value={draft.event} onChange={e => setDraft({ ...draft, event: e.target.value })} data-testid="input-usage-event"><option value="">All events</option>{["booking","onboarding","rescheduled","cancelled","completed","reminder",...(sa?["provider_test"]:[])].map(event=><option key={event} value={event}>{label(event)}</option>)}</select></div>
@@ -130,10 +138,8 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
         <label>Group By<select value={draft.groupBy || "clinic"} onChange={e => setDraft({ ...draft, groupBy: e.target.value as UsageFilters["groupBy"] })} data-testid="select-usage-group"><option value="clinic">Clinic</option><option value="user">Staff User</option><option value="location">Location</option><option value="event">Message Purpose</option><option value="recipientGroup">Recipient Role</option></select></label>
         <label>User Attribution<select value={draft.attribution || "recipient"} onChange={e => setDraft({ ...draft, attribution: e.target.value as UsageFilters["attribution"] })}><option value="recipient">Staff Recipient</option><option value="actor">Staff Actor Who Triggered the Event</option></select></label>
         <SearchableSelect label="Staff User" clearable labelScope={`communication-report-users:${userId}:${role}:${clinicScope}`} value={draft.userId || ""} onChange={v => setDraft({ ...draft, userId: v })} options={(q.data?.userOptions || []).map(u => ({ value: u.id, label: u.name }))} loading={q.isFetching} error={q.error ? "Staff reporting identities could not be loaded." : undefined} onRetry={() => void q.refetch()} />
-        {customBad && <p className="error-box" role="alert">From must not be after To.</p>}
-        <div className="et-actions"><button type="submit" className="button" disabled={!!customBad} data-testid="button-apply-usage">Apply filters</button>
-          <button type="button" className="button secondary" onClick={() => apply(EMPTY_USAGE)} data-testid="button-reset-usage">Reset</button></div>
-      </form></details>
+        {customBad && <p className="error-box" role="alert">{customBad}</p>}
+      </div>} />
     {q.isLoading ? <div className="cu-skel" role="status" data-testid="loading-usage">Loading communication usage…</div>
       : q.isError || !d ? <div className="error-box" role="alert" data-testid="error-usage">Usage could not be loaded, so no totals are shown. This is not a count of zero. <button type="button" onClick={() => void q.refetch()} data-testid="button-retry-usage">Retry</button></div>
       : <>

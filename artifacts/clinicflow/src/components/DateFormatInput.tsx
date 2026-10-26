@@ -245,7 +245,7 @@ function FormattedInput({ value, onChange, preferences, mode, min, max, onValidi
       <input {...props} type="text" inputMode={mode === "date" && prefs.dateFormat !== "DD MMM YYYY" ? "numeric" : "text"} autoComplete="off"
         value={text} placeholder={props.placeholder ?? example} aria-invalid={invalid || props["aria-invalid"]}
         aria-describedby={[props["aria-describedby"], invalid ? errorId : ""].filter(Boolean).join(" ") || undefined}
-        onKeyDown={e => { if (e.altKey && e.key === "ArrowDown") { e.preventDefault(); setOpen(true); } else if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); setOpen(false); } props.onKeyDown?.(e); }}
+        onKeyDown={e => { if (e.altKey && e.key === "ArrowDown" && !props.disabled && !props.readOnly) { e.preventDefault(); setOpen(true); } else if (e.key === "Escape" && open) { e.preventDefault(); e.stopPropagation(); close(); } props.onKeyDown?.(e); }}
         onChange={event => commit(event.target.value)}
         ref={element => { inputRef.current = element; element?.setCustomValidity(invalid ? error : ""); }} />
       <button type="button" ref={triggerRef} className="dtp-trigger" disabled={props.disabled || props.readOnly} aria-haspopup="dialog" aria-expanded={open}

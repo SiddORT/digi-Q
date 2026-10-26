@@ -40,6 +40,8 @@ before(async()=>{
     plugins:[{name:"usage-fixtures",setup(b){
       b.onResolve({filter:/^@workspace\/api-client-react$/},()=>({path:"api",namespace:"fixture"}));
       b.onResolve({filter:/\/(AppDialog|ResourceLookup)$/},()=>({path:"ui",namespace:"fixture"}));
+      b.onResolve({filter:/\/ListingControls$/},()=>({path:"filters",namespace:"fixture"}));
+      b.onLoad({filter:/^filters$/,namespace:"fixture"},()=>({contents:`import {createElement as h} from "react"; export const FilterBar=p=>h("section",null,p.advanced);`}));
       b.onLoad({filter:/api/,namespace:"fixture"},()=>({contents:`
         export const getGetCommunicationUsageQueryKey=p=>["usage",p];
         export const getGetCommunicationUsageDetailQueryKey=id=>["detail",id];

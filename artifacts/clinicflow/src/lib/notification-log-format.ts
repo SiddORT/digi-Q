@@ -1,4 +1,5 @@
 import type { ListNotificationLogsParams } from "@workspace/api-client-react";
+import { isCanonicalDate, isCanonicalTime } from "./date-time.ts";
 export const LOG_TIMEZONE = "Asia/Kolkata";
 export const UNAVAILABLE = "Unavailable";
 export function smsProviderErrorHelp(log: { channel: string; httpStatus?: number | null }): string | null {
@@ -34,11 +35,12 @@ export function formatLogTime(ms: number | null | undefined, tz: string = LOG_TI
 /** Local datetime-local value interpreted as Asia/Kolkata (UTC+05:30, no DST) to ISO. */
 export function kolkataToIso(local: string): string | undefined {
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
-  if (!m) return undefined;
+  if (!m || !isCanonicalDate(local.slice(0, 10)) || !isCanonicalTime(local.slice(11))) return undefined;
   const t = Date.parse(`${local}:00+05:30`);
   return Number.isNaN(t) ? undefined : new Date(t).toISOString();
 }
 export function buildLogParams(f: LogFilters, cursor?: string, pageSize = 25): ListNotificationLogsParams {
+  if (dateTimeRangeError(f.from, f.to)) throw new Error(dateTimeRangeError(f.from, f.to)!);
   const p: Record<string, unknown> = { pageSize };
   for (const k of ["channel", "event", "status", "clinicId", "recipientGroup", "source"] as const) if (f[k].trim()) p[k] = f[k].trim();
   for (const k of ["sender", "recipient", "reference"] as const) if (f[k].trim()) p[k] = f[k].trim();
@@ -46,6 +48,12 @@ export function buildLogParams(f: LogFilters, cursor?: string, pageSize = 25): L
   if (from) p.from = from; if (to) p.to = to;
   if (cursor) p.cursor = cursor;
   return p as ListNotificationLogsParams;
+}
+export function dateTimeRangeError(from: string, to: string): string | undefined {
+  const empty = (v: string) => !v || v === "T";
+  if ((!empty(from) && !kolkataToIso(from)) || (!empty(to) && !kolkataToIso(to))) return "Enter a complete valid date and time, or clear both parts of a bound.";
+  if (!empty(from) && !empty(to) && from > to) return "From must not be after To.";
+  return undefined;
 }
 export function statusLabel(s: string) { return s.replace(/_/g, " "); }
 

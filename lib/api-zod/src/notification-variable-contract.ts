@@ -25,3 +25,12 @@ export function eventVariables(event: string): readonly string[] {
 export function accountRoleLabel(role: string): string {
   return ({doctor: "Doctor", clinicAdmin: "Clinic Admin", receptionist: "Receptionist", superAdmin: "Superadmin"} as Record<string, string>)[role] || "";
 }
+
+/** Authoring control metadata, independent of template wording and identifiers. */
+export function notificationVariableField(name: string): { label: string; kind: "date" | "time" | "text" } {
+  return {
+    label: name.split("_").map(part => ["otp", "id", "url", "sms", "dlt", "api"].includes(part) ? part.toUpperCase() : part.charAt(0).toUpperCase() + part.slice(1)).join(" "),
+    kind: ["appointment_date", "previous_date"].includes(name) ? "date"
+      : ["session_start", "session_end", "previous_session_start", "previous_session_end"].includes(name) ? "time" : "text",
+  };
+}

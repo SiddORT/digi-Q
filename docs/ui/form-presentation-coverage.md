@@ -1,3 +1,7 @@
+# Bounded Control Adoption
+
+The approved dynamic-field, filter-drawer, handoff, provider, status and verification-code caller matrix is recorded in [Form Control Uniformity](form-control-uniformity.md). It distinguishes semantic exceptions from missing adoption and describes the fictional-only evidence boundary.
+
 # Forms and popups: current presentation coverage
 
 This record supersedes the older assignment-first Add Staff and helper-only

@@ -1,6 +1,10 @@
 import { Fragment, useState } from "react";
 import { getListNotificationLogsQueryKey, getGetNotificationLogQueryKey, useGetNotificationLog, useListNotificationLogs, type ListNotificationLogsParams, type NotificationLog } from "@workspace/api-client-react";
 import { AppDialog } from "./AppDialog";
+import { FilterBar } from "./ListingControls";
+import { ResourceLookup } from "./ResourceLookup";
+import { DateTimeFilterInput } from "./DateTimeFilterInput";
+import { dateTimeRangeError } from "../lib/notification-log-format";
 import { EVENT_OPTIONS, STATUS_OPTIONS, GROUP_OPTIONS, LOG_TIMEZONE, STATUS_COPY, LEGACY_NOTE, EMPTY_FILTERS, show, formatLogTime, buildLogParams, statusLabel, smsProviderErrorHelp, type LogFilters } from "../lib/notification-log-format";
 
 const fields: [keyof LogFilters, string][] = [["channel", "Channel"], ["source", "Source"], ["event", "Event"], ["status", "Status"], ["recipientGroup", "Recipient group"], ["clinicId", "Clinic ID"], ["sender", "Sender"], ["recipient", "Recipient"], ["reference", "Reference"]];
@@ -36,7 +40,7 @@ export function NotificationLogs() {
   const q = useListNotificationLogs(params, { query: { queryKey: getListNotificationLogsQueryKey(params), gcTime: 0, staleTime: 0, refetchOnMount: "always", retry: false } });
   const tz = q.data?.timezone || LOG_TIMEZONE;
   const set = (k: keyof LogFilters) => (v: string) => setDraft(d => ({ ...d, [k]: v }));
-  const apply = () => { setCursors([]); setApplied(draft); };
+  const apply = () => { if (dateTimeRangeError(draft.from, draft.to)) return false; setCursors([]); setApplied(draft); return true; };
   const reset = () => { setDraft(EMPTY_FILTERS); setApplied(EMPTY_FILTERS); setCursors([]); };
   const filterCount = Object.values(applied).filter(Boolean).length;
   return <section aria-labelledby="nl-heading" data-testid="notification-logs">
@@ -46,20 +50,18 @@ export function NotificationLogs() {
     </div>
     <p className="muted">Read-only. Times are shown in {tz}. "Provider accepted" means the provider took the request, not that the recipient received it. Legacy records are incomplete and unknown values show as unavailable. A message stuck in sending is reported as delivery unknown by the server.</p>
     <p className="muted" data-testid="note-log-exact">All retained history, with optional open-ended dates. Previously deleted or never captured records cannot be recovered. Clinic ID, sender and recipient filters are exact matches, not partial searches.</p>
-    <details className="nl-filter-panel" data-testid="panel-log-filters">
-      <summary data-testid="toggle-log-filters">Filters{filterCount > 0 ? ` (${filterCount} applied)` : ""}</summary>
-    <form className="nl-filters" onSubmit={e => { e.preventDefault(); apply(); }}>
-      <div className="form-field"><label htmlFor="nl-from">From (IST)</label><input id="nl-from" type="datetime-local" value={draft.from} onChange={e => set("from")(e.target.value)} data-testid="input-log-from" /></div>
-      <div className="form-field"><label htmlFor="nl-to">To (IST)</label><input id="nl-to" type="datetime-local" value={draft.to} onChange={e => set("to")(e.target.value)} data-testid="input-log-to" /></div>
+    <FilterBar active={filterCount > 0} activeCount={filterCount} onOpen={() => setDraft(applied)} onCancel={() => setDraft(applied)} onApply={apply} onReset={reset} onResetDraft={() => setDraft(EMPTY_FILTERS)} advanced={<div className="nl-filters">
+      <DateTimeFilterInput label="From (IST)" value={draft.from} onChange={set("from")} testId="input-log-from" />
+      <DateTimeFilterInput label="To (IST)" value={draft.to} onChange={set("to")} testId="input-log-to" />
+      <ResourceLookup resource="clinics" label="Clinic Name" value={draft.clinicId} onChange={set("clinicId")} clearable />
       {fields.map(([k, label]) => <div className="form-field" key={k}><label htmlFor={`nl-${k}`}>{label}</label>
         {k === "channel" ? <select id="nl-channel" value={draft.channel} onChange={e => set("channel")(e.target.value)} data-testid="select-log-channel"><option value="">All</option><option value="sms">SMS</option><option value="email">Email</option></select>
           : k === "source" ? <select id="nl-source" value={draft.source} onChange={e => set("source")(e.target.value)} data-testid="select-log-source"><option value="">All</option><option value="automatic">Automatic</option><option value="test">Test</option></select>
           : k === "event" || k === "status" || k === "recipientGroup" ? <select id={`nl-${k}`} value={draft[k]} onChange={e => set(k)(e.target.value)} data-testid={`select-log-${k}`}><option value="">All</option>{(k === "event" ? EVENT_OPTIONS : k === "status" ? STATUS_OPTIONS : GROUP_OPTIONS).map(o => <option key={o} value={o}>{statusLabel(o)}</option>)}</select>
           : <input id={`nl-${k}`} maxLength={k === "reference" ? 100 : 254} value={draft[k]} onChange={e => set(k)(e.target.value)} data-testid={`input-log-${k}`} />}</div>)}
-      <div className="et-actions"><button type="submit" className="button" data-testid="button-apply-log-filters">Apply filters</button>
-        <button type="button" className="button secondary" onClick={reset} data-testid="button-reset-log-filters">Reset</button></div>
-    </form>
-    </details>
+      {dateTimeRangeError(draft.from, draft.to) && <p role="alert" className="field-error">{dateTimeRangeError(draft.from, draft.to)}</p>}
+      <p className="muted">Clinic Name searches authorized clinics. Use Clinic ID for an exact historical or deleted clinic; an unavailable name does not clear the ID.</p>
+    </div>} />
     {q.isLoading ? <div role="status" data-testid="loading-logs">Loading delivery logs…</div>
       : q.isError || !q.data ? <div className="error-box" role="alert" data-testid="error-logs">Delivery logs could not be loaded. <button type="button" onClick={() => void q.refetch()}>Retry</button></div>
       : !q.data.items.length ? <p data-testid="empty-logs">No log entries match these filters{cursors.length ? " on this page" : ""}. An empty list is not proof that nothing was sent.</p>

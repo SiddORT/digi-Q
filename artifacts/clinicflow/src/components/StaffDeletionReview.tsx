@@ -7,6 +7,8 @@ import { AppDialog } from "./AppDialog";
 import { saveRemoval } from "../lib/staff-removal-receipts";
 import { HistoryReconciliationReview } from "./HistoryReconciliationReview";
 import { SessionSelector, useDailySession } from "./queue/SessionSelector";
+import { DateFormatInput } from "./DateFormatInput";
+import { SearchableSelect } from "./SearchableSelect";
 
 export interface StaffDeletionTargetRef { /** Sign-in user id (never the doctor profile id). */ userId: string; name: string }
 export interface StaffDeletionReviewProps {
@@ -52,7 +54,7 @@ function VisitMove({ visit, doctors, onMove }: { visit: HVisit; doctors: HDoctor
   const doctor = doctors.find(d => d.id === doctorId);
   const selection = useDailySession({ doctorId, branchId, date, bookingMode: "advance" });
   const a = selection.availability.data;
-  const ready = !!doctor && !!branchId && /^\d{4}-\d{2}-\d{2}$/.test(date) && !!selection.sessionId && !!a && a.available && !selection.availability.isFetching && !selection.selectionIssue;
+  const ready = !!doctor && doctor.branches.some(b => b.id === branchId) && /^\d{4}-\d{2}-\d{2}$/.test(date) && !!selection.sessionId && !!a && a.available && !selection.availability.isFetching && !selection.selectionIssue;
   const cb = useRef(onMove); cb.current = onMove;
   const key = ready ? JSON.stringify([doctorId, branchId, date, selection.sessionId, a?.startTime, reason]) : "";
   useEffect(() => {
@@ -63,10 +65,10 @@ function VisitMove({ visit, doctors, onMove }: { visit: HVisit; doctors: HDoctor
   const idp = `mv-${visit.id}`;
   return <div style={{ display: "grid", gap: 8, padding: 10, border: "1px solid hsl(var(--border))", borderRadius: 8 }} data-testid={`handoff-visit-${visit.id}`}>
     <div><label htmlFor={`${idp}-d`}>New doctor</label>
-      <select id={`${idp}-d`} value={doctorId} onChange={e => { setDoctorId(e.target.value); setBranchId(""); }}><option value="">Select a doctor…</option>{doctors.map(d => <option key={d.id} value={d.id}>{d.fullName}</option>)}</select></div>
+      <SearchableSelect id={`${idp}-d`} value={doctorId} onChange={v => { setDoctorId(v); setBranchId(""); }} options={doctors.map(d => ({ value: d.id, label: d.fullName }))} /></div>
     {doctor && <div><label htmlFor={`${idp}-b`}>Location</label>
-      <select id={`${idp}-b`} value={branchId} onChange={e => setBranchId(e.target.value)}><option value="">Select a location…</option>{doctor.branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>}
-    <div><label htmlFor={`${idp}-t`}>Date</label><input id={`${idp}-t`} type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+      <SearchableSelect id={`${idp}-b`} value={branchId} onChange={setBranchId} options={doctor.branches.map(b => ({ value: b.id, label: b.name }))} /></div>}
+    <div><label htmlFor={`${idp}-t`}>Date</label><DateFormatInput id={`${idp}-t`} value={date} onChange={setDate} /></div>
     {doctorId && branchId && date && <SessionSelector selection={selection} />}
     <div><label htmlFor={`${idp}-r`}>Reason (optional)</label><input id={`${idp}-r`} maxLength={200} value={reason} onChange={e => setReason(e.target.value)} /></div>
     <p className="muted" role="status">{ready ? "Session chosen. This visit is included in the review." : "Choose a doctor, location, date and an available session to include this visit."}</p>
@@ -105,7 +107,7 @@ function Handoff({ userId, kind, version, onCommitted, onClose, disabled, onBusy
     } catch (e) { setError(msgOf(e)); if (mode === "commit") setProposal(null); }
     finally { lock.current = false; setBusy(""); }
   };
-  const canReview = !disabled && !busy && (kind === "visits" ? chosen.length > 0 && chosen.length === selected.length : !!replacement);
+  const canReview = !disabled && !busy && !opts.isError && (kind === "visits" ? chosen.length > 0 && chosen.length === selected.length : !!opts.data?.admins.some(a => a.id === replacement));
   return <section aria-labelledby={`handoff-h-${kind}`} data-testid={`staff-handoff-${kind}`}>
     <h3 id={`handoff-h-${kind}`}>{kind === "visits" ? "Move future visits" : "Hand over clinic responsibilities"}</h3>
     <p className="muted">{kind === "visits" ? "Select each future visit and choose its new doctor, location, date and session yourself. Nothing moves automatically. Checked-in or in-progress work, overdue visits and pending guest requests must be resolved in the queue and requests screens." : "Choose an existing Clinic Admin to take over, or create one first through the normal staff form. Nothing is transferred automatically."}</p>
@@ -114,7 +116,7 @@ function Handoff({ userId, kind, version, onCommitted, onClose, disabled, onBusy
     {opts.error && <div className="error-box" role="alert">Handoff options could not be loaded. <button type="button" onClick={() => void opts.refetch()}>Retry</button></div>}
     {opts.data && kind === "clinic-responsibilities" && <div>
       <label htmlFor={`handoff-admin-${userId}`}>Replacement Clinic Admin</label>
-      <select id={`handoff-admin-${userId}`} value={replacement} disabled={!!busy} onChange={e => setReplacement(e.target.value)}><option value="">Select an administrator…</option>{opts.data.admins.map(a => <option key={a.id} value={a.id}>{a.fullName} · {a.email}</option>)}</select>
+      <SearchableSelect id={`handoff-admin-${userId}`} value={replacement} disabled={!!busy} onChange={setReplacement} options={opts.data.admins.map(a => ({ value: a.id, label: `${a.fullName} · ${a.email}` }))} />
       {!opts.data.admins.length && <p className="muted">No other Clinic Admin is listed. Create one first.</p>}
     </div>}
     {opts.data && kind === "visits" && (visits.length ? <div style={{ display: "grid", gap: 10 }}>

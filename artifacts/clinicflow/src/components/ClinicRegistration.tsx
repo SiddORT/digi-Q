@@ -1,4 +1,5 @@
 import { PageDescription } from "./PageDescription";
+import { VerificationCodeInput } from "./VerificationCodeInput";
 import { EmailInput } from "@/components/EmailInput";
 import { PhoneInput } from "./PhoneInput";
 import { RegistrationMobileProof } from "../auth/RegistrationMobileProof";
@@ -133,7 +134,7 @@ function RegistrationAccount() {
             <dt>Password</dt><dd>Entered securely. Not displayed in this summary.</dd>
           </dl>
           <button className="text-link" type="button" disabled={busy} onClick={() => { setError(""); setFieldErrors({}); setStep("details"); }}><ActionLabel>Edit Account Details</ActionLabel></button>
-        </section> : <FormField label="Required email verification code" required id="registration-account-code"><input type="text" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)}/></FormField>}
+        </section> : <FormField label="Required email verification code" required id="registration-account-code"><VerificationCodeInput required value={code} onChange={setCode}/></FormField>}
         {step === "details" && <FormField label="Optional mobile" helper="Include country code. A separate mobile code never replaces the required email code."><PhoneInput value={mobile} onChange={setMobile}/></FormField>}
         {step === "review" && mobile && <p>Optional mobile: ***{mobile.slice(-4)}</p>}
         {step === "verify" && <><SecurityChannelNotice channels={channels}/>{(mobile || mobilePending) && <RegistrationMobileProof key={challengeId} challengeId={challengeId}/>}</>}

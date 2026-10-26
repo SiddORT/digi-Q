@@ -275,6 +275,7 @@ export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel,
   };
   const formRef = useRef<HTMLFormElement>(null);
   const [invalidMessage, setInvalidMessage] = useState("");
+  const [draftResetKey, setDraftResetKey] = useState(0);
   /** Apply is gated on the drawer form's constraint validity (DateFormatInput sets custom validity for
    *  malformed, out-of-range or inverted dates) and on the caller's own validation result. */
   const apply = () => {
@@ -323,9 +324,10 @@ export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel,
                   <form id={panelId} ref={formRef} className="filter-drawer-content" noValidate data-testid="form-filter-drawer"
                     onSubmit={e => e.preventDefault()}>
                     {invalidMessage && <p role="alert" className="field-error filter-drawer-error" data-testid="text-filter-drawer-error">{invalidMessage}</p>}
-                    <div className="filter-panel-fields">{advanced}</div>
+                    <div className="filter-panel-fields" key={draftResetKey}>{advanced}</div>
                     <div className="filter-panel-foot">
-                      {onReset && <button type="button" className="filter-clear" onClick={() => { if (onResetDraft) onResetDraft(); else { onReset(); closeFilters(false); } setInvalidMessage(""); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
+                      {onReset && <button type="button" className="filter-clear" onClick={() => { if (onResetDraft) onResetDraft(); else { onReset(); closeFilters(false); } setDraftResetKey(v => v + 1); setInvalidMessage(""); }} disabled={!active && !onApply} data-testid="button-clear-filters-panel">Reset</button>}
+                      {onCancel && <button type="button" className="filter-clear" onClick={() => closeFilters()} data-testid="button-cancel-filters">Cancel</button>}
                       <button type="button" className="filter-done" onClick={apply} data-testid="button-close-filters">{onApply ? "Apply filters" : "Done"}</button>
                     </div>
                   </form>

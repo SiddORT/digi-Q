@@ -1,4 +1,5 @@
 import { EmailInput } from "@/components/EmailInput";
+import { VerificationCodeInput } from "../components/VerificationCodeInput";
 import { FormField } from "../components/FormField";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -77,7 +78,7 @@ export function PatientLogin() {
         {error && <div className="error-box" role="alert" data-testid="status-patient-login-error">{error}</div>}
         <button className="button auth-submit" data-testid="button-send-patient-code" type="submit" disabled={busy}>{busy ? "Sending…" : "Send login code"}</button>
       </form> : <form onSubmit={verifyCode}>
-        <FormField id="patient-login-code" label="One-time code" required><input data-testid="input-patient-code" inputMode="numeric" autoComplete="one-time-code" required value={code} onChange={event => setCode(event.target.value)} /></FormField>
+        <FormField id="patient-login-code" label="One-time code" required><VerificationCodeInput data-testid="input-patient-code" required value={code} onChange={setCode} /></FormField>
         {channel === "email" && mobile && <RegistrationMobileProof key={challengeId} challengeId={challengeId}/>}
         {error && <div className="error-box" role="alert" data-testid="status-patient-code-error">{error}</div>}
         <button className="button auth-submit" data-testid="button-verify-patient-code" type="submit" disabled={busy}>{busy ? "Verifying…" : "Verify and continue"}</button>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { VerificationCodeInput } from "./VerificationCodeInput";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BadgeCheck } from "lucide-react";
 import { FormField } from "./FormField";
@@ -23,7 +24,7 @@ function Channel({ channel, label, value, verified }: { channel: VerificationCha
     {verified ? <span className="badge" role="status"><BadgeCheck size={14} aria-hidden /> Verified</span> : !value ? <small className="muted">Add a {label.toLowerCase()} in your details to verify it.</small> : <>
       <button type="button" className="button secondary small" disabled={request.isPending || wait > 0} onClick={() => request.mutate()} data-testid={`button-send-code-${channel}`}>{request.isPending ? "Sending…" : challenge ? wait > 0 ? `Resend in ${wait}s` : "Resend Code" : "Send Code"}</button>
       {challenge && <form noValidate onSubmit={e => { e.preventDefault(); if (code.length === 6 && !confirm.isPending) confirm.mutate(); }}>
-        <FormField id={id} label="Confirm Code" required><input inputMode="numeric" pattern="[0-9]{6}" autoComplete="one-time-code" maxLength={6} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} data-testid={`input-code-${channel}`} /></FormField>
+        <FormField id={id} label="Confirm Code" required><VerificationCodeInput required value={code} onChange={setCode} data-testid={`input-code-${channel}`} /></FormField>
         <button type="submit" className="button small" disabled={confirm.isPending || code.length !== 6} data-testid={`button-confirm-code-${channel}`}>{confirm.isPending ? "Verifying…" : "Confirm Code"}</button>
       </form>}
       {(request.error || confirm.error) && <p className="field-error" role="alert">{friendlyError(confirm.error || request.error, "save")}</p>}

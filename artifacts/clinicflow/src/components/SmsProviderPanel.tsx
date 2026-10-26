@@ -1,4 +1,6 @@
 import { PageDescription } from "./PageDescription";
+import { StatusSwitch } from "./StatusSwitch";
+import { UrlInput } from "./UrlInput";
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetIntegrationSettingsQueryKey, type IntegrationReadiness, useSendNotificationSmsTestMessage, useUpdateIntegrationSettings } from "@workspace/api-client-react";
@@ -105,7 +107,7 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
     {!r.ready && <p role="note" className="notice">Configuration required. {r.keys.filter(k => k.status === "missing" || k.status === "invalid").map(k => `${k.key}: ${k.status}`).join("; ")}. Credentials are write-only; blank fields preserve saved values.</p>}
     {msg && <p role="status" className="notice" data-testid="status-sms-saved">{msg}</p>}
     <fieldset disabled={!editable || save.isPending} className="sms-ref-fields">
-      <label className="sms-ref-enable"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} data-testid="checkbox-sms-enabled" /> Enable SMS Notifications</label>
+      <StatusSwitch label="Enable SMS Notifications" active={enabled} onChange={setEnabled} testId="checkbox-sms-enabled">Enable SMS Notifications</StatusSwitch>
       <p className="muted field-hint">Applies to optional notifications only. Account security codes are unaffected.</p>
       <div className="form-field"><label htmlFor="sms-provider">SMS Provider</label>
         <select id="sms-provider" value={provider} onChange={e => setProvider(e.target.value as typeof provider)} data-testid="select-sms-provider"><option value="generic">Custom API</option><option value="keepInTouch">Keep in Touch</option></select></div>
@@ -128,8 +130,8 @@ export function SmsProviderPanel({ r, editable, onDirtyChange, onBusyChange, onS
       {mode === "database" && <>
         <div className="sms-ref-grid">
           <div className="form-field"><label htmlFor="sms-url">API Base URL</label>
-            <input id="sms-url" inputMode="url" spellCheck={false} maxLength={2048} value={kit ? kitUrl : url} placeholder="https://" onChange={e => kit ? setKitUrl(e.target.value) : setUrl(e.target.value)} data-testid="input-sms-url" />
-            {urlErr && <p role="alert" className="field-error" data-testid="error-sms-url">{urlErr}</p>}</div>
+            <UrlInput id="sms-url" validationMessage={urlErr} aria-describedby={urlErr ? "sms-url-error" : undefined} maxLength={2048} value={kit ? kitUrl : url} placeholder="https://" onChange={e => kit ? setKitUrl(e.target.value) : setUrl(e.target.value)} data-testid="input-sms-url" />
+            {urlErr && <p id="sms-url-error" role="alert" className="field-error" data-testid="error-sms-url">{urlErr}</p>}</div>
           {sec("sms-key", kit ? "API Key (required)" : "API Key", "key", "NOTIFICATION_SMS_KEY")}
           {sec("sms-client", kit ? "Client ID (required)" : "Client ID", "client", "NOTIFICATION_SMS_CLIENT_ID")}
           {sec("sms-bearer", "Bearer Token (required)", "bearer", "NOTIFICATION_SMS_BEARER_TOKEN")}

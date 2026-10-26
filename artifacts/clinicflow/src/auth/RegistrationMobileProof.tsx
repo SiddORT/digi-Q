@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { VerificationCodeInput } from "../components/VerificationCodeInput";
 import { authRequest } from "./native-auth";
 import { FormField } from "../components/FormField";
 import { SecurityChannelNotice, type SecurityChannels } from "./SecurityChannelNotice";
@@ -16,7 +17,7 @@ export function RegistrationMobileProof({challengeId}:{challengeId:string}) {
     return ()=>window.clearTimeout(timer);
   },[cooldown]);
   async function act(verify:boolean) {
-    if (busy) return;
+    if (busy || (verify && !/^\d{6}$/.test(code))) return;
     setBusy(true);setError("");
     try {
       if (verify) {
@@ -34,8 +35,9 @@ export function RegistrationMobileProof({challengeId}:{challengeId:string}) {
     <legend>Optional mobile verification</legend>
     <p>Email verification is still required. You may continue without verifying a mobile. Only a verified mobile is saved for a new account. Existing accounts keep their saved mobile.</p>
     {verified ? <p role="status">Mobile verified for this registration intent.</p> : <>
-      <FormField label="Separate SMS code"><input inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e=>setCode(e.target.value)}/></FormField>
-      <button className="button secondary" type="button" disabled={!code || busy} onClick={()=>void act(true)}>Verify mobile only</button>
+      {/* This separately submitted optional proof must not validate or implicitly submit the enclosing email-login form. */}
+      <FormField label="Separate SMS code"><VerificationCodeInput form="registration-mobile-proof-code" value={code} onChange={setCode}/></FormField>
+      <button className="button secondary" type="button" disabled={code.length !== 6 || busy} onClick={()=>void act(true)}>Verify mobile only</button>
       <button className="text-link" type="button" disabled={busy || cooldown>0} onClick={()=>void act(false)}>{cooldown>0 ? `Request SMS again in ${cooldown}s` : "Request SMS again"}</button>
     </>}
     <SecurityChannelNotice channels={channels}/>
