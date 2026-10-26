@@ -43,6 +43,17 @@ test("strict content validation rejects unknown variables, header injection and 
     assert.equal(api.templateContent.safeParse({ ...base, ...patch }).success, false);
   assert.equal(api.templateSave.safeParse({ event: "booking", revision: 0, mode: "publish", extra: "bad", content: base }).success, false);
 });
+
+test("email-only corrections leave default SMS wording and SMS catalog plain text unchanged", async () => {
+  const sms = await api.resolvedTemplate("patient_login_otp", undefined, h.db, "patient", "sms");
+  assert.equal(sms.content.body, "Your DigiQ Doctors login code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share this code.");
+  const catalog = await api.templateCatalog(sa, undefined, "patient", "sms", h.db);
+  const preview = catalog.items.find(item => item.event === "patient_login_otp");
+  assert.equal(preview.previewBody, "Your DigiQ Doctors login code is 123456. It expires in 10 minutes. Do not share this code.");
+  assert.equal(preview.previewHtml, undefined);
+  const setup = await api.resolvedTemplate("doctor_setup", undefined, h.db, "doctor", "sms");
+  assert.equal(setup.content.body, "Hello {{recipient_name}}, your DigiQ {{role_name}} account is ready for setup. Use the secure link emailed to you. It expires in {{expiry_minutes}} minutes. No password is sent by SMS.");
+});
 test("drafts never affect effective sending, clinic overrides stay scoped, stale writes fail and reset revision prevents ABA", async () => {
   const global = { ...api.defaultTemplate("booking"), subject: "Platform {{clinic_name}}" };
   await api.saveTemplate(sa, { event: "booking", revision: 0, mode: "publish", content: global });

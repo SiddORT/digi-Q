@@ -68,7 +68,7 @@ export function confirmationPresentation(row: any, clinic: any, introduction = "
 }
 
 export function defaultConfirmationEmail(row: any, clinic: any) {
-  const subject = "DigiQ Doctors — Appointment confirmation";
+  const subject = "Digi-Q — Appointment confirmation";
   const rendered = systemEmailTemplate(subject, confirmationText(row, clinic));
   return { subject, ...rendered, html: emailShell(subject, visitEmailCard(confirmationPresentation(row, clinic), ""), { label: "Booking confirmation" }) };
 }
@@ -173,7 +173,7 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
         return {outcome:"unavailable"};
       }
       if(entry)await recordNotification(tx,`patient-booking:${id}`,entry,"sending",{
-        sender:cfg.from,recipient,subject:rendered?.subject||"DigiQ Doctors — Appointment confirmation",
+        sender:cfg.from,recipient,subject:rendered?.subject||"Digi-Q — Appointment confirmation",
         message:rendered?.text||confirmationText(row,clinic),provider:"smtp",
         ...templateSnapshot(template,"booking","patient","email"),
       },[cfg.password]);
@@ -194,8 +194,8 @@ export async function confirmAppointmentEmail(id: string, conn: any = db, send?:
     return await withStaffDispatch(subjectIds, "booking", async () => {
   try {
     if (sender === sendAuthEmail)
-      await sendAuthEmail(recipient, claimed.rendered?.subject||"DigiQ Doctors — Appointment confirmation", claimed.rendered?.text||text, undefined, claimed.rendered, [], claimed.env);
-    else await sender(recipient,claimed.rendered?.subject || "DigiQ Doctors — Appointment confirmation",claimed.rendered?.text || text);
+      await sendAuthEmail(recipient, claimed.rendered?.subject||"Digi-Q — Appointment confirmation", claimed.rendered?.text||text, undefined, claimed.rendered, [], claimed.env);
+    else await sender(recipient,claimed.rendered?.subject || "Digi-Q — Appointment confirmation",claimed.rendered?.text || text);
   }
   catch(error:any) {
     outcome = "unavailable";

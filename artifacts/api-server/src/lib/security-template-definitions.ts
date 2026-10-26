@@ -30,8 +30,10 @@ export function securityDefault(event: SecurityEvent, sms = false) {
     : event === "password_setup_complete" ? "Hello {{recipient_name}}, your DigiQ {{role_name}} password setup is complete. No password is included in this message. If you did not do this, contact your administrator."
     : sms ? "Hello {{recipient_name}}, your DigiQ {{role_name}} account is ready for setup. Use the secure link emailed to you. It expires in {{expiry_minutes}} minutes. No password is sent by SMS."
     : "Hello {{recipient_name}},\n\nSet up your DigiQ {{role_name}} password using this secure, single-use link:\n{{setup_link}}\n\nThis link expires in {{expiry_minutes}} minutes. We never send passwords. If you did not expect this invitation, contact your administrator.";
-  return { enabled: true, subject: event === "clinic_registration_otp" ? "Verify your DigiQ clinic registration" : securityTitles[event],
-    body:event === "clinic_registration_otp" ? "Your clinic administrator registration code is {{otp}}. It expires in {{expiry_minutes}} minutes. Verify your email to continue setting up your clinic. This is not a doctor invitation. If you did not start this registration, ignore this email." : body, prefix: "", footer: "", logoUrl: "" };
+  const defaultBody = event === "clinic_registration_otp" ? "Your clinic administrator registration code is {{otp}}. It expires in {{expiry_minutes}} minutes. Verify your email to continue setting up your clinic. This is not a doctor invitation. If you did not start this registration, ignore this email." : body;
+  const subject = event === "clinic_registration_otp" ? "Verify your DigiQ clinic registration" : securityTitles[event];
+  return { enabled: true, subject: sms ? subject : subject.replaceAll("DigiQ", "Digi-Q"),
+    body: sms ? defaultBody : defaultBody.replaceAll("DigiQ", "Digi-Q"), prefix: "", footer: "", logoUrl: "" };
 }
 export function validSecurityContent(event: SecurityEvent, content: {subject:string;body:string;prefix:string;footer:string;enabled?:boolean}) {
   const body = content.body;

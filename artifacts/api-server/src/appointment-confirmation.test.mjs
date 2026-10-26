@@ -63,8 +63,8 @@ test("enabled confirmation uses parent display settings and excludes clinical no
 test("default bypass uses shared structured HTML without changing subject or wrapped plain text",()=>{
  seed();
  const row=state.rows.appointments[0],clinic=state.rows.clinics[0],message=defaultConfirmationEmail(row,clinic);
- assert.equal(message.subject,"DigiQ Doctors — Appointment confirmation");
- assert.equal(message.text,`DigiQ Doctors\n\n${message.subject}\n\n${confirmationText(row,clinic)}\n\nThis is an automated message from DigiQ Doctors. Please do not reply to this email.`);
+ assert.equal(message.subject,"Digi-Q — Appointment confirmation");
+ assert.equal(message.text,`Digi-Q\n\n${message.subject}\n\n${confirmationText(row,clinic)}\n\nNeed help?\nGet support: mailto:no-reply@digi-q.in\nno-reply@digi-q.in\n\nThis is an automated message from Digi-Q. Please do not reply to this email.`);
  for(const value of [row.reference,row.doctorName,row.branchName,row.token,row.timezone,"07/01/2030"])assert.ok(message.html.includes(value));
  assert.match(message.html,/>Doctor<\/td><td[^>]*>Doctor<\/td>/);
  assert.doesNotMatch(message.html,/private clinical notes/);

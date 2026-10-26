@@ -1,6 +1,10 @@
 /** Email-only presentation. Callers retain ownership of wording, values and delivery. */
-export const emailBrand = "DigiQ Doctors";
-export const automatedFooter = "This is an automated message from DigiQ Doctors. Please do not reply to this email.";
+export const emailBrand = "Digi-Q";
+export const automatedFooter = "This is an automated message from Digi-Q. Please do not reply to this email.";
+// Presentation-owned, not an authorable variable or a relaxation of safeEmailUrl.
+export const emailSupportAddress = "no-reply@digi-q.in";
+export const emailSupportText = `Need help?\nGet support: mailto:${emailSupportAddress}\n${emailSupportAddress}`;
+const supportAction = `<div style="display:inline-block;vertical-align:top;width:200px;max-width:100%;margin-top:8px"><a href="mailto:${emailSupportAddress}" style="display:inline-block;padding:12px 22px;border:1px solid #0969da;border-radius:7px;color:#0969da;background:#ffffff;font-weight:bold;text-decoration:none">Get support <span aria-hidden="true">&#8594;</span></a><div style="margin-top:10px;font-size:13px">Email: <a href="mailto:${emailSupportAddress}" style="color:#0969da;overflow-wrap:anywhere">${emailSupportAddress}</a></div></div>`;
 export const escapeEmailHtml = (value: string) => value.replace(/[&<>"']/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const ink = "#101d42";
@@ -46,7 +50,7 @@ export function otpEmailPanel(code: string, expiry?: string, punctuation = "") {
 }
 
 export function emailShell(subject: string, bodyHtml: string, options: {
-  label?: string; logoUrl?: string; logoAlt?: string; footerHtml?: string; helpHtml?: string; security?: boolean;
+  label?: string; logoUrl?: string; logoAlt?: string; footerHtml?: string; helpHtml?: string; security?: boolean; greeting?: string;
 } = {}) {
   const logo = options.logoUrl && (options.logoUrl === "cid:clinic-logo" || safeEmailUrl(options.logoUrl));
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeEmailHtml(subject)}</title></head>
@@ -57,10 +61,10 @@ export function emailShell(subject: string, bodyHtml: string, options: {
 ${logo ? `<img src="${escapeEmailHtml(options.logoUrl!)}" alt="${escapeEmailHtml(options.logoAlt || "Clinic logo")}" width="160" style="max-width:100%;height:auto;max-height:80px;object-fit:contain"><br>` : ""}
 <div style="font-size:25px;font-weight:bold;color:#0c173d">${emailBrand}</div><div style="font-size:12px;color:#596780;margin-top:5px">Care. Plan. Care Together.</div>
 ${options.label ? `<div style="margin-top:16px;font-size:11px;font-weight:bold;letter-spacing:1.5px;color:#596780;text-transform:uppercase">${escapeEmailHtml(options.label)}</div>` : ""}</td></tr>
-<tr><td style="padding:26px 22px;overflow-wrap:anywhere;word-break:break-word"><h1 style="margin:0 0 20px;font-size:26px;line-height:1.3;color:${ink}">${escapeEmailHtml(subject)}</h1>
+<tr><td style="padding:26px 22px;overflow-wrap:anywhere;word-break:break-word">${options.greeting ? `<div style="margin-bottom:14px;font-size:15px">${emailText(options.greeting)}</div>` : ""}<h1 style="margin:0 0 20px;font-size:26px;line-height:1.3;color:${ink}">${escapeEmailHtml(subject)}</h1>
 <div style="font-size:15px;line-height:1.75;overflow-wrap:anywhere;word-break:break-word">${bodyHtml}</div>
-${options.security ? `<div style="margin-top:22px;padding:16px;background:#f7faff;border-radius:8px"><span aria-hidden="true" style="display:inline-block;border:2px solid #0969da;border-radius:8px 8px 14px 14px;padding:2px 8px;color:#0969da">&#10003;</span> <strong style="font-size:14px">For your security</strong><div style="margin-top:8px;font-size:13px;color:#53647b">Do not share this code.</div></div>` : ""}
-${options.helpHtml ? `<div style="margin-top:24px;padding-top:20px;border-top:1px solid #dfe7f1;font-size:13px"><strong>Need help?</strong><div style="margin-top:6px">${options.helpHtml}</div></div>` : ""}
+${options.security ? `<div style="margin-top:22px;padding:16px;background:#f7faff;border-radius:8px"><span aria-hidden="true" style="display:inline-block;border:2px solid #0969da;border-radius:8px 8px 14px 14px;padding:2px 8px;color:#0969da">&#10003;</span> <strong style="font-size:14px">For your security</strong><div style="margin-top:8px;font-size:13px;color:#53647b">Do not share this code with anyone. If you did not request this OTP, you can safely ignore this email.</div></div>` : ""}
+<div style="margin-top:24px;padding-top:20px;border-top:1px solid #dfe7f1;font-size:13px"><div style="display:inline-block;vertical-align:top;width:330px;max-width:100%;margin:8px 0 12px"><strong>Need help?</strong><div style="margin-top:6px">${options.helpHtml ?? "Reach out to our support team."}</div></div>${supportAction}</div>
 </td></tr>
 <tr><td style="padding:20px 22px;background:#f4f6fb;border-top:1px solid #e4e9f0;color:#596780;font-size:12px;line-height:1.7;overflow-wrap:anywhere;word-break:break-word"><strong style="color:${ink};font-size:16px">${emailBrand}</strong><br>Care. Plan. Care Together.<br><br>${options.footerHtml ?? automatedFooter}</td></tr>
 </table></td></tr></table></body></html>`;

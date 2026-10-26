@@ -452,7 +452,8 @@ test("disabled email tests use the existing sender interface, exact sample value
   const before=await h.control.query("select count(*)::int n from settings where id like '%outbox:%'");
   for(const [code,expected] of [[null,"provider_accepted"],["EMAIL_REJECTED","provider_rejected"],["EMAIL_PRE_DISPATCH_FAILED","pre_dispatch_failed"],["EMAIL_DELIVERY_FAILED","delivery_unknown"]]){
     const result=await api.testTemplate(sa,await api.prepareTemplateTest(sa,{...base,requestId:randomUUID()}),undefined,async(to,subject,text,_env,rendered)=>{
-      assert.equal(to,base.recipient);assert.equal(subject,"Hello Fictional <Doctor>");assert.equal(text,"Clinic Test clinic");
+      assert.equal(to,base.recipient);assert.equal(subject,"Hello Fictional <Doctor>");
+      assert.equal(text,"Clinic Test clinic\n\nNeed help?\nGet support: mailto:no-reply@digi-q.in\nno-reply@digi-q.in\n\nThis is an automated message from Digi-Q. Please do not reply to this email.");
       assert(rendered.html.includes("&lt;Doctor&gt;"));
       if(code)throw Object.assign(Error("Secret provider response must be hidden"),{code});
     });

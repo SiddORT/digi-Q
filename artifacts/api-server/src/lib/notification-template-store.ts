@@ -3,7 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { audit, one } from "./store";
 import { assert } from "./http";
 import { defaultTemplate, eventTitles, renderNotification, templateContent, smsTemplateContent, templateEvents, templateSave, templateVariables, type TemplateContent, type SmsTemplateContent, type TemplateEvent } from "./notification-templates";
-import { defaultRecipient, type TemplateRecipient } from "./notification-templates";
+import { defaultRecipient, patientLoginSmsBody, substitute, type TemplateRecipient } from "./notification-templates";
 import { resolvedIntegration } from "./integration-vault";
 import { notificationSmsConfig, smsMetadataReady } from "./notification-sms-transport";
 import { DEMO_FIXTURE } from "./demo-policy";
@@ -34,7 +34,7 @@ export async function resolvedTemplate(event: TemplateEvent, clinicId?: string, 
   const platform = await stored(event, undefined, conn, recipient,channel);
   const local = clinicId ? await stored(event, clinicId, conn, recipient,channel) : platform;
   const fallback = defaultTemplate(event, recipient);
-   const content = local.published || platform.published || (channel === "sms" ? {...(isSecurityEvent(event) ? securityDefault(event,true) : fallback), enabled:requiredEvent(event)||appointmentNotificationTarget(event,recipient),body:isSecurityEvent(event)?securityDefault(event,true).body:event==="patient_login_otp"?fallback.body:`${eventTitles[event]}: {{clinic_name}}\n${fallback.body}`,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""} : fallback);
+   const content = local.published || platform.published || (channel === "sms" ? {...(isSecurityEvent(event) ? securityDefault(event,true) : fallback), enabled:requiredEvent(event)||appointmentNotificationTarget(event,recipient),body:isSecurityEvent(event)?securityDefault(event,true).body:event==="patient_login_otp"?patientLoginSmsBody:`${eventTitles[event]}: {{clinic_name}}\n${fallback.body}`,prefix:"",footer:"",logoUrl:"",senderId:"",dltEntityId:"",dltTemplateId:""} : fallback);
    const [activation] = appointmentNotificationTarget(event, recipient)
      ? await conn.select().from(settings).where(eq(settings.id, appointmentActivationId)) : [];
   // Corrupt configuration fails explicitly, rather than silently sending a different template.
@@ -62,7 +62,9 @@ export async function templateCatalog(user: any, clinicId?: string, recipient?: 
      if (!validTemplateTarget(event, recipient || defaultRecipient(event), channel) || requiredEvent(event) && clinicId) continue;
      const { content, local, source } = await resolvedTemplate(event, clinicId, conn, recipient || defaultRecipient(event),channel);
      const candidate=local.draft || content;
-     const preview = validEventContent(event,candidate) ? renderNotification(candidate, previewValues, {event}) :
+     const preview = validEventContent(event,candidate) ? (channel === "sms"
+       ? { subject: substitute(candidate.subject, previewValues), text: substitute(candidate.body, previewValues) }
+       : renderNotification(candidate, previewValues, {event})) :
        {subject:"Template preparation unavailable",text:"This saved template uses variables incompatible with this event. Edit it explicitly or reset; saved wording has not been changed."};
     items.push({ event, recipient: recipient || defaultRecipient(event), title: eventTitles[event], revision: local.revision, source, content, draft: local.draft,
       previewSubject: preview.subject, previewBody: preview.text,

@@ -85,7 +85,7 @@ async function mailLink(req: any, address: string, userId: string, purpose: stri
     if (email.status !== "provider_accepted") await db.update(authChallenges).set({consumedAt:new Date(),data:{}}).where(eq(authChallenges.id,id));
     return {email,sms};
   }
-  const subject = "DigiQ Doctors account access", text = `Use this link within 30 minutes: ${url}`;
+  const subject = "Digi-Q account access", text = `Use this link within 30 minutes: ${url}`;
   await sendAuthEmail(address, subject, text, undefined,
     systemEmailTemplate(subject, text, { url: url.toString(), label: "Access your account" }));
   return undefined;

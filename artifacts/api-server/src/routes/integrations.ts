@@ -104,8 +104,8 @@ integrationsRouter.post(`${path}/smtp/test-email`, async (req, res) => {
   const status=await dispatchNotificationTest(res.locals.integrationActor,{
     channel:"email",event:"provider_test",recipientGroup:"explicit",recipient:parsed.data.recipient,
     confirmed:parsed.data.confirmed,requestId:parsed.data.requestId,
-    subject:"DigiQ Doctors — SMTP configuration test",
-    message:"This is a test email requested by a DigiQ Doctors Super Admin to check SMTP configuration. No patient or account information is included.",
+    subject:"Digi-Q — SMTP configuration test",
+    message:"This is a test email requested by a Digi-Q Super Admin to check SMTP configuration. No patient or account information is included.",
   });
   const messages={
     provider_accepted:"The SMTP provider accepted the test message. Inbox delivery is not confirmed.",

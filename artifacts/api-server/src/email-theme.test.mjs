@@ -6,7 +6,8 @@ import { resolve } from "node:path";
 
 const bundle = await build({
   stdin: { contents: `export * from "./lib/notification-templates";
-    export * from "./lib/email-presentation"; export * from "./lib/email-preview";`,
+    export * from "./lib/email-presentation"; export * from "./lib/email-preview";
+    export * from "./lib/security-template-definitions";`,
     resolveDir: import.meta.dirname, loader: "ts" },
   write: false, bundle: true, platform: "node", format: "esm",
   plugins: [{ name: "no-storage", setup(b) {
@@ -27,7 +28,7 @@ test("structured booking preserves wording/order with one complete detail card, 
   const source = content("Hello {{patient_name}},\n\nYour booking at {{clinic_name}} is confirmed.\n{{appointment_details}}\nReference: {{reference}}\n{{clinic_contact}}");
   const result = api.renderNotification(source, values, { event: "booking", visit });
   assert.equal(result.subject, "Clinic Your visit & details");
-  assert.equal(result.text, "Hello Example Patient,\n\nYour booking at Example & Partners is confirmed.\n" + values.appointment_details + "\nReference: EX-0042\nreception@example.invalid\n\nSaved footer Example & Partners");
+    assert.equal(result.text, "Hello Example Patient,\n\nYour booking at Example & Partners is confirmed.\n" + values.appointment_details + "\nReference: EX-0042\nreception@example.invalid\n\n" + api.emailSupportText + "\n\nSaved footer Example & Partners");
   assert.match(result.html, />Doctor<\/td><td[^>]*>Dr Example<\/td>/);
   for (const value of [visit.location, visit.date, visit.timezone, visit.token, visit.closing]) assert.ok(result.html.includes(value), value);
   assert.equal((result.html.match(/EX-0042/g) || []).length, 1);
@@ -47,17 +48,26 @@ test("legacy and previous summaries remain complete and distinguishable; substit
   assert.ok(result.html.indexOf("Old location") < result.html.indexOf("New details:"));
 });
 
-test("each OTP event has intact accessible leading-zero codes, real expiry, event language and no fabricated greeting or links", () => {
+const assertSupportOnly = html => {
+  const links = [...html.matchAll(/href="([^"]*)"/g)].map(m => m[1]);
+  assert.deepEqual(links, ["mailto:no-reply@digi-q.in", "mailto:no-reply@digi-q.in"]);
+  assert.match(html, />Get support /);
+  assert.match(html, />no-reply@digi-q.in<\/a>/);
+};
+test("each OTP event has real code/expiry and only the fixed support action, with no fabricated names", () => {
   for (const event of ["patient_login_otp", "clinic_registration_otp", "patient_email_otp", "staff_email_otp", "registration_mobile_otp", "staff_mobile_otp"]) {
     const source = api.defaultTemplate(event);
     const result = api.renderNotification(source, { otp: "004281", expiry_minutes: "7", patient_name: "Forbidden fabricated patient" }, { event });
-    assert.equal(result.text, api.substitute(source.body, { otp: "004281", expiry_minutes: "7" }));
+    assert.equal(result.text, [api.substitute(source.body, { otp: "004281", expiry_minutes: "7" }), api.emailSupportText, api.automatedFooter].join("\n\n"));
     assert.match(result.html, /aria-label="Verification code 004281"/);
     assert.match(result.html, /Valid for <strong>7 minutes<\/strong>/);
     assert.match(result.html, /Care\. Plan\. Care Together/);
     assert.match(result.html, /For your security/);
     assert.match(result.html, /Need help/);
-    assert.doesNotMatch(result.html, /123456|10 minutes|Forbidden fabricated patient|appointment booking|href=/);
+    assert.doesNotMatch(result.html, /123456|10 minutes|Forbidden fabricated patient|appointment booking|DigiQ Doctors/);
+    assertSupportOnly(result.html);
+    assert.match(result.html, /Hello,/);
+    assert.match(result.html, /If you did not request this OTP/);
     const code = result.html.match(/user-select:all">([\s\S]*?)<\/div>/)[1].replace(/<[^>]*>/g, "");
     assert.equal(code, "004281");
     assert.equal((result.html.match(/aria-hidden="true" style="display:inline-block;box-sizing/g) || []).length, 6);
@@ -75,7 +85,8 @@ test("supported HTTPS links become descriptive buttons and fallback links; unsaf
     assert.ok(result.text.includes(url));
     for (const invalid of ["javascript:alert(1)", "data:text/html,<script>x</script>", "https://user:password@example.invalid", "//example.invalid", "http://example.invalid"]) {
       const html = api.renderNotification(content(`{{${key}}}`), { [key]: invalid }).html;
-      assert.doesNotMatch(html, /href=|<script/);
+      assertSupportOnly(html);
+      assert.doesNotMatch(html, /<script/);
     }
   }
 });
@@ -103,6 +114,50 @@ test("clinic logo uses CID in sends; preview embeds only selected logo bytes and
   assert.match(missing, /Clinic logo unavailable in preview/);
   assert.doesNotMatch(missing, /private\/path|cid:/);
   assert.match(api.renderNotification({ ...content("message"), logoUrl: "https://example.invalid/logo.png" }, values).html, /src="https:\/\/example.invalid\/logo.png"/);
+});
+
+test("fixed support is identical in sends and previews, outside immutable authored content", async () => {
+  const source = { ...api.defaultTemplate("patient_email_otp"), body: "Saved DigiQ Doctors wording: {{otp}} — {{expiry_minutes}} minutes.", footer: "Authored footer" };
+  const snapshot = structuredClone(source);
+  const rendered = api.renderNotification(source, { otp: "000001", expiry_minutes: "3", support_link: "https://evil.invalid", clinic_contact: "evil@example.invalid" }, { event: "patient_email_otp" });
+  assert.equal(await api.emailPreviewHtml(rendered), rendered.html);
+  assert.deepEqual(source, snapshot);
+  assert.match(rendered.html, /Saved DigiQ Doctors wording/);
+  assert.match(rendered.html, /Authored footer/);
+  assertSupportOnly(rendered.html);
+  assert.doesNotMatch(rendered.html, /evil/);
+  assert.equal((rendered.html.match(/Need help\?/g) || []).length, 1);
+  assert.ok(rendered.text.includes("000001"));
+});
+
+test("security authoring still rejects every literal destination, including the fixed presentation address", () => {
+  for (const event of api.securityEvents) {
+    const source = api.defaultTemplate(event);
+    assert.equal(api.validEventContent(event, source), true);
+    for (const destination of ["https://evil.invalid", "www.evil.invalid", "evil@example.invalid",
+      "mailto:evil@example.invalid", "no-reply@digi-q.in", "mailto:no-reply@digi-q.in", '<a href="https://evil.invalid">Support</a>']) {
+      for (const field of ["subject", "body", "prefix", "footer"]) {
+        assert.equal(api.validEventContent(event, { ...source, [field]: `${source[field]} ${destination}` }), false, `${event}/${field}/${destination}`);
+      }
+    }
+    assert.equal(api.validEventContent(event, { ...source, body: `${source.body} {{support_link}}` }), false);
+  }
+  assert.equal(api.safeEmailUrl("mailto:no-reply@digi-q.in"), undefined);
+});
+
+test("optional names are not inferred; supported account names and actions remain escaped and ordered", () => {
+  const source = api.defaultTemplate("doctor_setup");
+  const rendered = api.renderNotification(source, { recipient_name: '<Example & Co>', role_name: "Doctor",
+    setup_link: "https://example.invalid/setup?token=fictional", expiry_minutes: "23" }, { event: "doctor_setup" });
+  assert.match(rendered.html, /&lt;Example &amp; Co&gt;/);
+  assert.match(rendered.html, /Set up your password/);
+  assert.match(rendered.text, /23 minutes/);
+  assert.doesNotMatch(rendered.html, /YOUR OTP|Hello,<\/div>/);
+  assert.ok(rendered.html.indexOf("Hello ") < rendered.html.indexOf("Set up your password"));
+  for (const expiry of ["", "0", "<invalid>"]) {
+    const html = api.otpEmailPanel("000001", expiry);
+    assert.doesNotMatch(html, /Valid for|10 minutes|<invalid>/);
+  }
 });
 
 // Reproducible browser examples, generated only on explicit request and ignored by Git.

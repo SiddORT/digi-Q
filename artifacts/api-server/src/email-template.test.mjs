@@ -48,12 +48,14 @@ test("branded HTML escapes subject and body; plaintext preserves the original co
   const subject = '<img src=x onerror="alert(1)"> & \'Subject\'';
   const body = '<script>alert("unsafe")</script>\n<a href="file:///private">link</a> & \'quote\'';
   const result = systemEmailTemplate(subject, body);
-  assert.match(result.html, /DigiQ Doctors/);
+   assert.match(result.html, /Digi-Q/);
   assert.match(result.html, /Please do not reply/);
   assert.ok(result.html.includes("&lt;img src=x onerror=&quot;alert(1)&quot;&gt; &amp; &#39;Subject&#39;"));
   assert.ok(result.html.includes("&lt;script&gt;alert(&quot;unsafe&quot;)&lt;/script&gt;"));
   assert.ok(result.html.includes("&lt;a href=&quot;file:///private&quot;&gt;link&lt;/a&gt; &amp; &#39;quote&#39;"));
-  assert.doesNotMatch(result.html, /<script|<img|<a /);
+   assert.doesNotMatch(result.html, /<script|<img/);
+   assert.deepEqual([...result.html.matchAll(/href="([^"]*)"/g)].map(m => m[1]), ["mailto:no-reply@digi-q.in", "mailto:no-reply@digi-q.in"]);
+   assert.match(result.text, /Get support: mailto:no-reply@digi-q.in/);
   assert.ok(result.text.includes(subject));
   assert.ok(result.text.includes(body));
 });
@@ -63,7 +65,7 @@ test("codes, token URLs, already-formatted dates and line endings are not interp
   const result = systemEmailTemplate("Account access", body);
   assert.ok(result.text.includes(body));
   assert.ok(result.html.includes(body.replace("&", "&amp;").replace(/\r?\n/g, "<br>")));
-  assert.doesNotMatch(result.html, /href=|src=/);
+   assert.doesNotMatch(result.html, /href="(?!mailto:no-reply@digi-q.in")|src=/);
 });
 
 test("empty and Unicode bodies remain valid branded messages", () => {
@@ -83,7 +85,7 @@ test("injected legacy void transport receives safe branded multipart content", a
   assert.equal(message.to, "recipient@example.invalid");
   assert.equal(message.subject, "Account access");
   assert.match(message.text, /Code: 001234/);
-  assert.match(message.html, /DigiQ Doctors/);
+   assert.match(message.html, /Digi-Q/);
   assert.equal(message.disableFileAccess, true);
   assert.equal(message.disableUrlAccess, true);
 });
@@ -118,7 +120,7 @@ test("provider rejection and transport diagnostics become generic delivery error
   ]) {
     await assert.rejects(sendAuthEmail("recipient@example.invalid", "Subject", "Body", {
       async sendMail() { return result; },
-    }), { status: 503, code: "EMAIL_REJECTED", message: "Email provider rejected the recipient" });
+    }), { status: 503, code: "EMAIL_REJECTED", message: "Email provider rejected the message" });
   }
   await assert.rejects(sendAuthEmail("recipient@example.invalid", "Subject", "Body", {
     async sendMail() { throw new Error("private SMTP fixture diagnostics"); },

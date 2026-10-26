@@ -1,4 +1,4 @@
-import { emailAction, emailCard, emailShell, emailText, escapeEmailHtml, otpEmailPanel, visitEmailCard, type EmailContext } from "./email-presentation";
+import { emailAction, emailCard, emailShell, emailText, otpEmailPanel, visitEmailCard, type EmailContext } from "./email-presentation";
 
 const actions: Record<string, string> = { setup_link: "Set up your password", sign_in_link: "Sign in", booking_link: "Open clinic booking" };
 const labels: Record<string, string> = {
@@ -35,7 +35,7 @@ export function notificationEmailHtml(content: { body: string; footer: string; l
       } else if (actions[key]) {
         parts.push(emailAction(value, actions[key]));
       } else if (key === "clinic_contact") {
-        parts.push(value.trim() ? `<div style="margin-top:22px;padding-top:18px;border-top:1px solid #dfe7f1;color:#53647b;font-size:13px"><strong style="color:#101d42">Need help?</strong><div style="margin-top:6px">${emailText(value)}</div></div>` : "");
+        parts.push(value.trim() ? `<div style="margin-top:22px;color:#53647b;font-size:13px"><strong style="color:#101d42">Clinic contact</strong><div style="margin-top:6px">${emailText(value)}</div></div>` : "");
       } else {
         parts.push(`<strong style="color:#101d42">${emailText(value)}</strong>`);
       }
@@ -50,10 +50,9 @@ export function notificationEmailHtml(content: { body: string; footer: string; l
     logoUrl: content.logoUrl.startsWith("/api/branding/logos/") ? "cid:clinic-logo" : content.logoUrl,
     logoAlt: `${values.clinic_name || "Clinic"} logo`,
     footerHtml: footer || undefined, security: otpShown,
-    // Security events do not allow contact variables or arbitrary support links.
-    // Keep their help area informational and destination-free.
-    helpHtml: otpShown ? escapeEmailHtml("Please do not reply to this automated email.")
-      : /\{\{\s*clinic_contact\s*\}\}/.test(content.body) ? undefined
+    greeting: otpShown && !/^\s*(?:hello|hi|dear)\b/i.test(content.body) ? "Hello," : undefined,
+    // The shell owns the fixed support destination; no editable security URL.
+    helpHtml: otpShown || /\{\{\s*clinic_contact\s*\}\}/.test(content.body) ? undefined
       : values.clinic_contact?.trim() ? emailText(values.clinic_contact) : undefined,
   });
 }

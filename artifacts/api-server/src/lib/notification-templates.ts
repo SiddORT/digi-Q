@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { notificationEmailHtml } from "./notification-email-presentation";
-import type { EmailContext } from "./email-presentation";
+import { automatedFooter, emailSupportText, type EmailContext } from "./email-presentation";
 import { notificationVariables, eventVariables } from "@workspace/api-zod/notification-variable-contract";
 import { appointmentNotificationTarget } from "./appointment-notification-scope";
 import { securityEvents, isSecurityEvent, securityDefault, securityTitles, validSecurityContent } from "./security-template-definitions";
@@ -98,6 +98,7 @@ export const eventTitles: Record<TemplateEvent, string> = {
   cancelled: "Appointment cancelled", completed: "Thank you after your visit", reminder: "Appointment reminder",
   patient_login_otp: "Patient login OTP",
 };
+export const patientLoginSmsBody = "Your DigiQ Doctors login code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share this code.";
 const bodies: Partial<Record<TemplateEvent, string>> = {
   booking: "Hello {{patient_name}},\n\nYour booking at {{clinic_name}} is confirmed.\n{{appointment_details}}\nReference: {{reference}}\n\n{{clinic_contact}}",
   onboarding: "Welcome to {{clinic_name}}.\n\nComplete your clinic opening hours, doctor sessions and staff assignments before sharing your booking link.\n\n{{clinic_contact}}",
@@ -105,7 +106,7 @@ const bodies: Partial<Record<TemplateEvent, string>> = {
   cancelled: "Hello {{patient_name}},\n\nYour booking at {{clinic_name}} has been cancelled.\n{{appointment_details}}\nReference: {{reference}}\nContact the clinic if you need to book another visit.\n{{clinic_contact}}",
   completed: "Hello {{patient_name}},\n\nThank you for visiting {{clinic_name}}. Your visit is now complete.\nFor further assistance, contact your clinic.\n{{clinic_contact}}",
   reminder: "Hello {{patient_name}},\n\nA reminder of your upcoming session at {{clinic_name}}.\n{{appointment_details}}\nReference: {{reference}}\nQueue-based visits do not guarantee an exact consultation time.",
-  patient_login_otp: "Your DigiQ Doctors login code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share this code.",
+  patient_login_otp: "Your Digi-Q login code is {{otp}}. It expires in {{expiry_minutes}} minutes. Do not share this code.",
 };
 export function defaultTemplate(event: TemplateEvent, recipient: TemplateRecipient = defaultRecipient(event)): TemplateContent {
   if (event === "staff_created_admin" || event === "staff_welcome") return {
@@ -128,6 +129,6 @@ export function renderNotification(content: TemplateContent, values: Record<stri
   const subject = [substitute(content.prefix, values), substitute(content.subject, values)].filter(Boolean).join(" ").replace(/[\r\n]+/g, " ");
   const body = substitute(content.body, values), footer = substitute(content.footer, values);
   const logoPath = content.logoUrl.startsWith("/api/branding/logos/") ? content.logoUrl : undefined;
-  return { subject, logoPath, text: [body, footer].filter(Boolean).join("\n\n"),
+  return { subject, logoPath, text: [body, emailSupportText, footer || automatedFooter].filter(Boolean).join("\n\n"),
     html: notificationEmailHtml(content, subject, values, context) };
 }

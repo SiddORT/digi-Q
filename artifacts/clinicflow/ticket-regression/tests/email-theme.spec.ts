@@ -48,6 +48,7 @@ for (const width of [1280, 390]) test(`email HTML preview and independent Publis
   const preview = page.getByTestId("panel-template-test").frameLocator('iframe[title="Rendered email preview"]');
   await expect(preview.locator("body")).toContainText("Example <Patient> {{otp}}");
   await expect(preview.locator("body")).toContainText("Dr Example");
+  await expect(preview.getByRole("link", { name: "Get support" })).toHaveAttribute("href", "mailto:no-reply@digi-q.in");
   await expect(preview.locator("script")).toHaveCount(0);
   const iframe = page.getByTestId("panel-template-test").getByTestId("email-html-preview");
   await expect(iframe).toHaveAttribute("sandbox", "");
@@ -88,12 +89,15 @@ test("rendered desktop/mobile examples and image-blocked branding remain readabl
     for (const name of ["booking", "otp", "rescheduled", "onboarding", "long-image-blocked"]) {
       await page.route("https://example.invalid/**", route => route.abort());
       await page.setContent(examples[name]);
-      await expect(page.locator("body")).toContainText("DigiQ Doctors");
+      await expect(page.locator("body")).toContainText("Digi-Q");
+      await expect(page.getByRole("link", { name: "Get support" })).toHaveAttribute("href", "mailto:no-reply@digi-q.in");
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       if (name === "otp") {
         await expect(page.locator('[role="text"]')).toHaveAttribute("aria-label", "Verification code 004281");
         expect(await page.locator('[role="text"]').textContent()).toBe("004281");
         await expect(page.locator("body")).toContainText("7 minutes");
+        await expect(page.locator("a")).toHaveCount(2);
+        await expect(page.locator("a").nth(1)).toHaveAttribute("href", "mailto:no-reply@digi-q.in");
       }
       await page.screenshot({ path: testInfo.outputPath(`${name}-${width}.png`), fullPage: true });
     }
