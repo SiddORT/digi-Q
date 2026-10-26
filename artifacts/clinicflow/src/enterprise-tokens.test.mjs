@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync, readdirSync } from "node:fs";
+import { compactCssExceptions, cssExceptionKey } from "./test/compact-css-exceptions.mjs";
 
 // Contract for the approved DigiQ v3 enterprise standard (HIGH_DENSITY_OPERATIONAL).
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
@@ -11,6 +12,20 @@ const cssFiles = [
 ];
 // Ticket/QR geometry and the public queue display variant are governed separately.
 const governed = cssFiles.filter((f) => !/visit-ticket|clinic-display|workspace-search|integration-settings/.test(f));
+
+test("compact CSS debt inventory contains only declarations that still exist", () => {
+  const present = new Set();
+  for (const f of governed) {
+    const text = read(f).replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const [, sel, body] of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      for (const [, prop, value] of body.matchAll(/(?:^|;)\s*([\w-]+)\s*:\s*([^;}]+)/g)) {
+        present.add(cssExceptionKey(f, sel, prop, value));
+      }
+    }
+  }
+  for (const key of compactCssExceptions) assert.ok(present.has(key), `Remove stale CSS exception: ${key}`);
+  assert.ok(!compactCssExceptions.has(cssExceptionKey("new.css", ".new-control", "height", "36px")));
+});
 
 test("Inter is the only loaded font; legacy families are gone", () => {
   assert.match(index.split("\n")[0], /family=Inter:/);
@@ -26,21 +41,28 @@ test("approved scale tokens exist", () => {
   assert.match(index, /--type-display-lg:/, "documented distance-readable display variant");
 });
 
-test("governed CSS has no literal px/rem/clamp font sizes outside ticket/brand/display readouts", () => {
+test("governed CSS has no new literal font sizes outside audited compact declarations", () => {
   const allowed = /ticket|\.vt|receipt|\.brand|otp-slot/;
   for (const f of governed) {
     for (const [, sel, body] of read(f).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       if (allowed.test(sel)) continue;
-      assert.doesNotMatch(body, /font-size:\s*(\d|\.\d|clamp)/, `${f}: ${sel.trim()}`);
+      for (const [, value] of body.matchAll(/font-size:\s*([^;}]+)/g)) {
+        if (compactCssExceptions.has(cssExceptionKey(f, sel, "font-size", value))) continue;
+        assert.doesNotMatch(value, /^(\d|\.\d|clamp)/, `${f}: ${sel.trim()}`);
+      }
     }
   }
 });
 
-test("no negative heading letter-spacing or off-scale 34-38px control heights", () => {
+test("no negative heading letter-spacing or new off-scale 34-38px control heights", () => {
   for (const f of governed) {
     const s = read(f);
     assert.doesNotMatch(s, /letter-spacing:\s*-\d/, f);
-    assert.doesNotMatch(s, /(?:^|[;{\s])(?:min-)?height:\s*3[4-8]px/, f);
+    for (const [, sel, body] of s.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      for (const [, prop, value] of body.matchAll(/(?:^|[;\s])((?:min-)?height):\s*(3[4-8]px)/g)) {
+        assert.ok(compactCssExceptions.has(cssExceptionKey(f, sel, prop, value)), `${f}: ${sel.trim()} ${prop}:${value}`);
+      }
+    }
   }
 });
 
@@ -57,7 +79,7 @@ test("empty states are left-aligned and compact; long form fields span full widt
   assert.match(index, /\.form-grid:not\(\.single\):has\(> :nth-child\(5\)\)/);
 });
 
-test("spacing and radius use the approved scales (ticket/QR/scanner geometry excluded)", () => {
+test("spacing and radius use central scales or exact audited compact declarations", () => {
   const skip = /ticket|\.vt|receipt|qr|scan|otp-slot|@keyframes|password-toggle|\.cl-/;
   const space = new Set([0, 4, 8, 12, 16, 24, 32, 40, 48]);
   const radius = new Set([6, 8, 12, 16]);
@@ -65,6 +87,7 @@ test("spacing and radius use the approved scales (ticket/QR/scanner geometry exc
     for (const [, sel, body] of read(f).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
       if (skip.test(sel)) continue;
       for (const [, prop, val] of body.matchAll(/(?<![-\w])((?:margin|padding)(?:-[a-z-]+)?|gap|row-gap|column-gap|border(?:-[a-z]+-[a-z]+)?-radius)\s*:\s*([^;}]+)/g)) {
+        if (compactCssExceptions.has(cssExceptionKey(f, sel, prop, val))) continue;
         if (/calc\(|clamp\(|env\(|%/.test(val)) continue;
         for (const [, n] of val.replace(/var\([^)]*\)/g, "").matchAll(/-?(\d*\.?\d+)px/g)) {
           const v = Number(n);

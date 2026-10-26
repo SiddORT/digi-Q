@@ -102,7 +102,7 @@ test("queue clear-all resets optional list filters, not required session or page
   const calls = [];
   runInNewContext(compile(`(${clear})`), Object.fromEntries(["setSearch", "setStatus", "setSort", "setPage"].map(key => [key, value => calls.push([key, value])])) )();
   assert.deepEqual(calls, [["setSearch", ""], ["setStatus", ""], ["setSort", "queueRank"], ["setPage", 1]]);
-  assert.match(source, /chips=\{filterChips\}/);
+  assert.match(source, /onClick=\{clearListFilters\}/, "visible Clear All uses the tested reset handler");
   assert.match(source, /button-clear-empty-queue-search/);
 });
 

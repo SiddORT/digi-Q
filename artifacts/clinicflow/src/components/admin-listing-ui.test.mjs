@@ -46,8 +46,10 @@ test("booking explains missing sessions instead of asking to reselect doctor", (
   const selector = read("./queue/SessionSelector.tsx");
   const booking = read("./GuestBooking.tsx");
   assert.match(selector, /selection\.sessions\.length===0/);
-  assert.match(selector, /Opening hours alone do not create bookable sessions/);
-  assert.match(selector, /item\.reason\|\|"unavailable"/);
-  assert.match(booking, /status-no-doctor-sessions|selection\.sessions\.length>1/);
-  assert.match(booking, /ask the clinic to configure its Weekly schedule/);
+  const discovery = read("./booking/BookingDiscovery.tsx");
+  assert.match(discovery, /Location opening hours alone do not create doctor sessions/);
+  assert.match(discovery, /session\.reason\|\|issue/);
+  assert.match(booking, /<BookingDiscovery selection=\{selection\} discovery=\{discovery\}/);
+  assert.match(discovery, /No doctor session is listed/);
+  assert.match(discovery, /Other dates may have sessions/);
 });

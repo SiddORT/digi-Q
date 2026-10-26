@@ -17,7 +17,7 @@ test("sort is drafted in the filter drawer, column headers expose direction", ()
   // Approved direction: sort and every record filter live in the right drawer and apply together.
   assert.match(resource, /advanced=\{hasAdvanced\?<>[^]*?<div className="sort-menu"[^>]*><SearchableSelect label=\{`Sort \$\{listName\}`\} value=\{[^}]*draft\.sort/);
   assert.doesNotMatch(resource, / meta=\{<>/, "no inline record filters remain in the listing header");
-  assert.match(resource, /sort:draft\.sort\|\|"-createdAt",page:1/);
+  assert.match(resource, /sort:draft\.sort\|\|defaultSort,page:1/);
   assert.doesNotMatch(resource, /<SearchableSelect label="Sort"/);
 });
 

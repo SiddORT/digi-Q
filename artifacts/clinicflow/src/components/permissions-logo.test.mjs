@@ -17,7 +17,8 @@ test("permission editor uses generated hooks, revision and conflict retention", 
 test("explains restriction-only semantics and Super Admin lockout protection", () => {
   assert.ok(rules.includes("never grants more than the built-in rules"));
   assert.ok(rules.includes("Super Admin cannot be restricted"));
-  assert.match(rules, /filter\(r => r !== SUPER_ADMIN\)/);
+  assert.match(rules, /role===SUPER_ADMIN \|\| save\.isPending \|\| conflict/, "Super Admin is visible but read-only");
+  assert.match(rules, /data-testid="super-admin-unrestricted"/);
   assert.match(matrix, /role === SUPER_ADMIN \|\|/);
   assert.match(matrix, /startsWith\(`\$\{SUPER_ADMIN\}:`\)\) return next/);
   assert.match(matrix, /`\$\{role\}:\$\{module\}:\$\{action\}`/);

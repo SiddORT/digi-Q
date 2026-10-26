@@ -10,6 +10,7 @@ const postcss = viteRequire("postcss");
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const index = postcss.parse(read("./index.css"));
 const compact = postcss.parse(read("./compact-workspace.css"));
+const semantic = postcss.parse(read("./compact-ui.css"));
 const finalStandards = index.nodes.find((node) =>
   node.type === "atrule" && node.name === "media" && node.params === "screen");
 assert.ok(finalStandards, "explicit standards must remain screen-only");
@@ -63,8 +64,6 @@ test("workspace typography overrides legacy layers and dashboard selectors", () 
     [".workspace .page-heading p", "--type-body"],
     [".workspace .panel-heading p", "--type-body"],
     [".workspace .form-field-label", "--type-label"],
-    [".workspace .form-field-help", "--type-label"],
-    [".workspace .form-field-error", "--type-label"],
     [".workspace td", "--type-table"], [".workspace td strong", "--type-table"],
     [".workspace td small", "--type-table"], [".workspace th", "--type-table-heading"],
     [".workspace td::before", "--type-table-heading"],
@@ -72,6 +71,8 @@ test("workspace typography overrides legacy layers and dashboard selectors", () 
     [".app-dialog .app-dialog-desc", "--type-body"],
     [".searchable-select-options [cmdk-item]", "--type-body"],
   ]) final(selector, "font-size", `var(${name})`);
+  assert.equal(declaration(semantic, ".form-field-help", "font-size"), token("--type-label"));
+  assert.equal(declaration(semantic, ":is(.form-field-error,.field-error,.confirm-dialog-error)", "font-size"), token("--type-label"));
   compact.walkDecls("font-size", (decl) =>
     assert.match(decl.value, /^var\(--type-[\w-]+\)$/, "compact typography must use the central scale"));
 });
@@ -90,9 +91,8 @@ test("workspace dimensions, approved spacing and role-specific radii are consume
     [".workspace .modal", "border-radius", "var(--radius-dialog)"],
     [".searchable-select-popup", "border-radius", "var(--radius-control)"],
     [".app-dialog.app-dialog", "border-radius", "var(--radius-dialog)"],
-    [".workspace .password-input > input", "padding-right", "var(--space-9)"],
-    [".app-dialog .password-input > input", "padding-right", "var(--space-9)"],
   ]) final(selector, prop, value);
+  assert.equal(declaration(semantic, ":is(.workspace,.app-dialog,.auth-card,.registration-card) .password-input>input", "padding-right"), "44px");
   const theme = index.nodes.find((node) => node.type === "atrule" && node.name === "theme");
   const values = Object.fromEntries(theme.nodes.filter((n) => n.type === "decl").map((n) => [n.prop, n.value]));
   assert.equal(values["--color-primary"], "var(--dq-blue)");
@@ -124,8 +124,8 @@ test("explicit standards do not target ticket/QR geometry, auth or brand images"
   });
   assert.equal(declaration(index, ".qr-card.compact img", "width"), "160px");
   assert.ok(read("./index.css").includes(".qr-card img{width:180px;max-width:100%}"));
-  assert.equal(declaration(compact, ".workspace .status-switch-track", "width"), "32px");
-  assert.equal(declaration(compact, ".workspace .status-switch-track", "height"), "18px");
+  assert.equal(declaration(compact, ":is(.workspace,.app-dialog) .status-switch-track", "width"), "32px");
+  assert.equal(declaration(compact, ":is(.workspace,.app-dialog) .status-switch-track", "height"), "18px");
   assert.ok(read("./compact-workspace.css").includes("(pointer:coarse)"));
 });
 

@@ -83,7 +83,7 @@ test("listing pages put the real page h1 on row 1 beside search and actions; cou
   assert.match(src, /pageTitle \? <div className="lh-page-title">[^]*?<h1 data-testid="text-page-title">\{pageTitle\.title\}<\/h1>/);
   assert.match(src, /countInSub && <div className="filter-bar-title lh-count"/);
   const clinic = read("../clinic.tsx");
-  assert.match(clinic, /\{!listingPage&&<div className="page-heading">/);
+  assert.match(clinic, /\{!listingPage&&page!=="queue"&&[^{}]*<div className="page-heading">/);
   assert.match(clinic, /<ListPageTitleContext\.Provider value=\{listingPage\?\{title:navLabel\(page,role\)/);
   const css = read("./uniformity.css");
   assert.match(css, /\.lh-top\{flex-wrap:nowrap\}/);

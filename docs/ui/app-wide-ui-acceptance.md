@@ -101,6 +101,11 @@ All 21 sheets indexing 126 available 1366px initial captures were structurally i
 3. **Onboarding/records/provider/clinical mutations:** identity verification, all onboarding steps/recovery, private document operations, security/provider configuration and populated queue mutations have not been newly accepted end to end here. No real data or live messages were authorized.
 4. **Devices/browsers:** local Chromium only. The selected compact-control check covers reduced motion and 200% CSS reflow; it is not native browser zoom or real mobile/Safari/Firefox acceptance. The already assigned Safari/Firefox Add Staff work remains separate and unresolved; it is not duplicated or marked passed here.
 5. **Hosted environment:** no publish, live database repair, UAT account modification or hosted build/access verification occurred.
-6. **Full source suite:** remains red as recorded above. Passing targeted tests/typecheck/build do not erase it.
+6. **Full source suite:** the historical red run above is retained as evidence.
+   The subsequent generated-contract repair now passes the canonical
+   `pnpm test:frontend` command: **719 passed, 0 failed, 0 skipped**, across 131
+   source test files. See [whole-frontend checks](frontend-source-checks.md) for
+   failure classification, loader/fixture corrections and the exact compact-CSS
+   debt boundary. This does not close the other acceptance blockers above.
 
 No new unrelated product feature, permission, backend service, scheduling rule, booking allocation, authentication migration, staff ownership policy or notification policy was introduced.

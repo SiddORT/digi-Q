@@ -47,7 +47,7 @@ test("workspace wiring: selector beside notifications, gate, provider, explicit 
   assert.match(clinic, /getGetDashboardQueryKey\(dashboardParams\)/);
   assert.equal((clinic.match(/usePinnedCare\(/g) || []).length, 3, "appointments, booking, reports");
   assert.match(read("./queue/SessionQueue.tsx"), /usePinnedCare\(clinicId,branchId,setClinic,setBranch\)/);
-  assert.match(read("./SchedulingWorkspace.tsx"), /const schedulePin=fixedClinicId\?null:pin/);
+  assert.match(read("./SchedulingWorkspace.tsx"), /const schedulePin=requestedClinicId\?null:pin/);
   assert.match(read("../resources.tsx"), /branchPin=workspacePin&&!fixedClinicId&&\["patients","availability","exceptions"\]/);
   // failure never falls back to unscoped data; switching confirms unsaved changes
   assert.match(ctx, /status === "error"\) return <div className="error-box"/);
@@ -61,6 +61,6 @@ test("workspace wiring: selector beside notifications, gate, provider, explicit 
 
 test("doctors can discover the allowed Users page", () => {
   const clinic = read("../clinic.tsx");
-  assert.match(clinic, / doctor:\["dashboard","appointments","queue","patients","clinics","availability","profile"\]/);
+  assert.match(clinic, / doctor:\["dashboard","appointments","queue","patients","clinics","availability","profile","settings"\]/);
   assert.match(read("../App.tsx"), /doctor:\[[^\]]*"users"/);
 });

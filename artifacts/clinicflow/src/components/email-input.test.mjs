@@ -1,7 +1,7 @@
 import test from "node:test"; import assert from "node:assert/strict"; import { readFile } from "node:fs/promises";
 const read = p => readFile(new URL(p, import.meta.url), "utf8");
 test("form email fields use shared EmailInput", async () => {
-  for (const p of ["../Users.tsx","./GuestBooking.tsx","./IntegrationSettings.tsx","./ClinicRegistration.tsx","./ClinicRegistrationWizard.tsx"]) {
+  for (const p of ["./StaffAccountFields.tsx","./GuestBooking.tsx","./ClinicRegistration.tsx","./ClinicRegistrationWizard.tsx"]) {
     const s = await read(p); assert.match(s, /<EmailInput/, p); assert.doesNotMatch(s, /type="email"/, p);
   }
 });
@@ -10,7 +10,14 @@ test("EmailInput trims only, preserving case", async () => {
   assert.match(s, /\.trim\(\)/); assert.doesNotMatch(s, /toLowerCase/); assert.match(s, /maxLength = 254/);
 });
 test("guest email is validated and surfaced", async () => {
-  const s = await read("./GuestBooking.tsx"); assert.match(s, /validateEmail\(v\)/); assert.match(s, /error-guest-email/);
+  const s = await read("./GuestBooking.tsx");
+  assert.match(s, /validate:\s*bookingValidation\.email/);
+  assert.match(s, /name="email" error=\{form\.formState\.errors\.email\?\.message\}/);
+  const { loadModule } = await import("../test/load-module.mjs");
+  const { bookingValidation } = await loadModule(new URL("./booking/booking-fields.tsx", import.meta.url));
+  assert.equal(bookingValidation.email(""), true, "email remains optional");
+  assert.equal(bookingValidation.email("patient@example.invalid"), true);
+  assert.equal(typeof bookingValidation.email("not-an-email"), "string");
 });
 test("auth email fields use EmailInput without trimming", async () => {
   for (const p of ["../auth/StaffLogin.tsx","../auth/PatientLogin.tsx","../auth/PasswordFlows.tsx"]) {

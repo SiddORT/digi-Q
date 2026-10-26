@@ -39,3 +39,15 @@ schema import can fail an isolated bundle before any test executes.
 
 **How to apply:** Explicitly bundle the workspace schema entry in isolated tests
 instead of treating all workspace packages as Node-executable external modules.
+
+Code generation and module loading are separate prerequisites; do not diagnose an
+extensionless-import error as a missing generated fixture solely from Node's
+“module not found” message.
+
+**Why:** Native TypeScript loading can reject an extensionless path even when
+generation produced the target. Excluding its importing test would hide a harness
+failure and change the measured suite.
+
+**How to apply:** Verify generation first, then bundle the real TypeScript import
+graph while keeping shared React/provider runtimes external. Execute transient
+render bundles in memory so their CSS side outputs cannot pollute source folders.

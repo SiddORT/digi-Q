@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { formatConfiguredTimestamp, formatTimestampParts } from "../lib/date-time.ts";
+import { createElement as h } from "react";
+import { renderFilterBar } from "./listing-controls-render.mjs";
 
 const read = (p) => readFileSync(new URL(p, import.meta.url), "utf8");
 const css = read("./compact-listing.css");
@@ -16,9 +18,11 @@ test("toolbar puts title left and status/search/filter/add on one wrapping row",
   assert.match(controls, /filter-bar-title/);
   assert.match(controls, /filter-bar-status/);
   const clinic = read("../clinic.tsx");
-  assert.match(clinic, /<FilterBar activeCount=[^]*?advanced=\{<><SearchableSelect label="Status"/, "appointment count lives only in pagination (Section A)");
+  assert.match(clinic, /<FilterBar[^]*?advanced=\{<><SearchableSelect label="Status"/);
+  assert.doesNotMatch(clinic, /listing-count">\{q\.data\.total\}/, "appointment total stays in pagination");
   assert.doesNotMatch(clinic, /status=\{<StatusTabs/, "appointment status is a drawer filter");
-  assert.doesNotMatch(clinic, /<h2>Appointments<\/h2>/, "page h1 is the only Appointments heading");
+  const toolbar = renderFilterBar({compactToolbar:true,title:h("h2",null,"Appointments")}, true);
+  assert.equal((toolbar.match(/<h[12]\b/g)||[]).length, 1, "workspace page title replaces the fallback toolbar title");
   // Section A5: the report total appears once, in pagination, not again in the toolbar.
   assert.match(clinic, /<FilterBar label="Report Filters"/);
   assert.doesNotMatch(clinic, /<h2>Report<\/h2>/);

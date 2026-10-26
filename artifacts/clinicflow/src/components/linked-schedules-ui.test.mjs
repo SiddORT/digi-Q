@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { clinicWorkspaceHref, clinicLandingDestination, clinicSection, parseClinicWorkspace } from "../lib/clinic-navigation.ts";
+import { communicationRedirect, retiredSettingsDestination } from "../lib/communication-routes.ts";
 const source = name => readFileSync(new URL(name, import.meta.url), "utf8");
 
 test("both onboarding callers include explicit linked settings in the atomic request", () => {
@@ -30,22 +32,25 @@ test("copy location hours uses authorized source groups and only edits the desti
   assert.match(text,/label="Source Clinic Group"/);
   assert.match(text,/useGetClinicSettings\(sourceClinicId/);
   assert.match(text,/source\.openingHours\.map\(hour=>\(\{\.\.\.hour\}\)\)/);
-  assert.match(text,/setHoursChanged\(true\);changed\(\)/);
+  assert.match(text,/setHoursChanged\(true\);extraChanged\(\)/);
   assert.match(text,/Times use the destination timezone/);
 });
 test("all clinic configuration sections have retained-clinic navigation", () => {
   const text = source("ClinicSettings.tsx");
   for (const label of ["Details", "Locations", "Staff", "Policies"]) assert.ok(text.includes(`"${label}"`));
   // Legacy section links open the tab that now contains their content.
-  assert.match(text, /value==="qrs"\|\|value==="sessions" \? "locations" : value==="history" \? "general"/);
-  assert.match(text, /searchParams\.set\("clinicId",clinicId\)/);
+  assert.equal(clinicSection("qrs"), "locations");
+  assert.equal(clinicSection("sessions"), "locations");
+  assert.equal(clinicSection("history"), "activity-history");
+  assert.deepEqual(parseClinicWorkspace(clinicWorkspaceHref("c1", "staff"), ""), {clinicId:"c1", section:"staff"});
+  assert.match(text, /clinicWorkspaceHref\(clinicId/);
   assert.match(text, /window.history.replaceState/);
 });
 test("clinic workspace embeds real scoped management instead of link-only sections", () => {
   const text = source("ClinicSettings.tsx");
   for (const name of ["branches","qrs","audit"]) assert.match(text, new RegExp(`resource="${name}"[^\\n]*fixedClinicId=\\{clinicId\\}`));
   assert.match(text, /<Users[^>]*clinicId=\{clinicId\}[^>]*embedded/);
-  assert.match(text, /onEdit=\{row=>\{const item=data\.branches\.find/);
+  assert.match(text, /onEdit=\{row=>\{if\(locked\)return;const item=data\.branches\.find/);
   assert.match(text, /className="workspace-tabs" role="tablist" aria-label="Clinic sections"/);
   assert.doesNotMatch(text, /clinic-settings-tabs/);
   assert.doesNotMatch(text, /Open staff management|Open booking QR codes/);
@@ -66,12 +71,12 @@ test("legacy routes remain, while navigation consolidates clinic, staff and sche
   assert.doesNotMatch(navigation, /profile & consultation/i);
   // Consolidated admin navigation: one destination per workspace; legacy pages redirect into tabs.
   assert.match(text, /admin:\["dashboard","appointments","queue","patients","clinic","users","availability","reports","communication","templates","settings","profile"\]/);
-  assert.match(text, /receptionist:\["dashboard","appointments","queue","patients","availability","profile"\]/);
+  assert.match(text, /receptionist:\["dashboard","appointments","queue","patients","availability","profile","settings"\]/);
 });
 test("appointment and report filters apply drafts, with status-only tabs and column sorting", () => {
   const text = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");
   const appointments=text.slice(text.indexOf("function Appointments("),text.indexOf("function Booking("));
-  const reports=text.slice(text.indexOf("function Reports(){"));
+  const reports=text.slice(text.indexOf("function LegacyReports("));
   for(const source of [appointments,reports]){
     assert.match(source, /onOpen=\{openFilters\} onApply=\{applyFilters\}/);
     assert.match(source, /const \[draft,setDraft\]=useState/);
@@ -89,8 +94,8 @@ test("appointment and report filters apply drafts, with status-only tabs and col
 test("old branch list edit opens the authorised clinic hours editor instead of generic CRUD", () => {
   const portal = readFileSync(new URL("../clinic.tsx", import.meta.url), "utf8");
   const settings = source("ClinicSettings.tsx");
-  assert.match(portal, /page==="branches"&&role==="admin"\?row=>navigate\(`\/admin\/settings\?clinicId=/);
-  assert.match(settings, /data\.branches\.find\(branch=>branch\.id===target\)/);
+  assert.match(portal, /page==="branches"&&role==="admin"\?row=>navigate\(clinicWorkspaceHref\(row\.clinicId,"locations",`branchId=/);
+  assert.match(settings, /data\.branches\.find\(b=>b\.id===target\)/);
   assert.match(settings, /setBranch\(item\);setMissingBranch\(false\)/);
   assert.match(settings, /const closeBranch=\(\)=>\{setBranch\(null\)/);
   assert.match(settings, /This location is not available in the selected clinic/);
@@ -99,7 +104,7 @@ test("copy-once and follow controls live inside the one weekly editor, no separa
   const settings=source("ClinicSettings.tsx");
   const scheduling=source("SchedulingWorkspace.tsx");
   // Doctor sessions live in the Schedule workspace; the clinic Locations tab links there.
-  assert.match(settings, /href="\/admin\/availability" data-testid="link-location-schedule"/);
+  assert.match(settings, /href=\{`\/admin\/availability\?clinicId=\$\{encodeURIComponent\(clinicId\)\}`\} data-testid="link-location-schedule"/);
   assert.doesNotMatch(scheduling, /onLinkOwner/);
   assert.doesNotMatch(settings, /<ClinicSessionSetup/);
   assert.doesNotMatch(scheduling, /ClinicSessionSetup|AppDialog|button-copy-opening-hours/);
@@ -132,17 +137,17 @@ test("legacy clinic links keep branch selection through the redirect", () => {
   const start = text.indexOf("export function legacyDestination");
   const body = text.slice(start, text.indexOf("\ntype WorkspaceTab", start));
   const js = body.replace("export function legacyDestination(page:string,userRole:string,search:string):string|null", "function legacyDestination(page,userRole,search)").replace(/\(base:string,area:string\)/, "(base,area)");
-  const fn = new Function(`${js}; return legacyDestination;`)();
+  const fn = new Function("communicationRedirect", "retiredSettingsDestination", "clinicLandingDestination", "clinicWorkspaceHref", `${js}; return legacyDestination;`)(communicationRedirect, retiredSettingsDestination, clinicLandingDestination, clinicWorkspaceHref);
   const out = new URL(fn("settings", "clinicAdmin", "?clinicId=c1&section=qrs&branchId=b9"), "http://x");
-  assert.equal(out.pathname, "/admin/clinic");
+  assert.equal(out.pathname, "/admin/clinics/c1/locations");
   assert.equal(out.searchParams.get("branchId"), "b9");
-  assert.equal(out.searchParams.get("clinicId"), "c1");
+  assert.equal(parseClinicWorkspace(out.pathname, out.search).clinicId, "c1");
   const branches = new URL(fn("branches", "superAdmin", "?branchId=b2&clinicId=c2"), "http://x");
-  assert.equal(branches.searchParams.get("section"), "locations");
+  assert.equal(parseClinicWorkspace(branches.pathname, branches.search).section, "locations");
   assert.equal(branches.searchParams.get("branchId"), "b2");
   assert.equal(new URL(fn("users", "clinicAdmin", "?tab=doctors"), "http://x").searchParams.get("section"), "staff");
   assert.equal(fn("users", "superAdmin", ""), null);
   const settings = readFileSync(new URL("./ClinicSettings.tsx", import.meta.url), "utf8");
-  assert.match(settings, /value==="qrs"\|\|value==="sessions" \? "locations"/);
+  assert.match(settings, /parseClinicWorkspace/);
   assert.match(settings, /if\(!data\|\|view!=="locations"\)return/);
 });

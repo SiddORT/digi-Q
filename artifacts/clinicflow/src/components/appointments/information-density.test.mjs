@@ -12,7 +12,7 @@ test("default appointment rows omit technical references and duplicate waiting e
 test("operational tokens remain prominent in session queues, not repeated session prose", () => {
   assert.match(table, /<strong className="appt-token"[^>]*>\{a\.token\}<\/strong>/);
   assert.doesNotMatch(table, /<small>\{sessionScoped/);
-  assert.match(table, /Token and booking reference are available in Details and Ticket/);
+  assert.match(table, /Booking reference \$\{a\.reference\}\. Copy it from the expanded visit/);
 });
 test("appointment metadata omitted from the list stays available in authorized Details", () => {
   const details = readFileSync(new URL("./AppointmentDetails.tsx", import.meta.url), "utf8");

@@ -30,5 +30,5 @@ test("recipient-aware: onboarding only for clinic admin, recipient sent on save"
   assert.ok(src.includes('event === "onboarding" && current !== "superAdmin" ? "clinicAdmin" : current'));
   assert.match(src, /NotificationTemplateSaveEvent, recipient, revision/);
   assert.match(src, /useState<Recipient>\(fixed\?\.recipient \?\? "patient"\)/);
-  assert.ok(src.includes("adds real emails"));
+  assert.ok(src.includes("ActivationNote"), "activation/delivery consequences remain adjacent to the event");
 });

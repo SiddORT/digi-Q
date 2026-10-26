@@ -37,11 +37,13 @@ test("saved Keep in Touch settings render provider, exact endpoint, independent 
  const html=render();
  assert.match(html,/value="keepInTouch" selected/);
  assert.match(html,/api\.keepintouch\.life\/kitversion01\/api\/DripMaster\/SendSMS/);
- assert.match(html,/Body API Key \(apiKey\)/);assert.match(html,/Bearer token/);
+ assert.match(html,/API Key \(required\)/);assert.match(html,/Bearer Token \(required\)/);
  for(const id of ["sms-key","sms-bearer","sms-client","sms-sender"])assert.match(html,new RegExp(`data-testid="${id}-configured"`));
  assert.match(html,/value="digits" selected/);assert.match(html,/Plus-prefixed/);
  assert.match(html,/does not verify/);assert.match(html,/never tries both/);
- assert.match(html,/success:true/);assert.match(html,/Entity ID is neither required nor sent/);
+ // Request shape and provider response semantics live in adjacent help (not SSR text).
+ assert.match(html,/About the Keep in Touch request/);
+ assert.match(html,/Provider acceptance is not proof of delivery/);
  assert.doesNotMatch(html,/id="sms-entity"/);
  assert.doesNotMatch(html,/data-testid="select-sms-auth"/);
  assert.doesNotMatch(html,/data-testid="checkbox-sms-enabled" checked/);
@@ -55,6 +57,6 @@ test("incomplete Keep in Touch settings show protected missing keys, blank-prese
 });
 test("Custom API settings still render existing authentication mapping and entity controls without Bearer-body preset",()=>{
  const html=render({r:{...props.r,smsProvider:"generic",apiUrl:"https://provider.example.invalid/send",keys:[]}});
- assert.match(html,/data-testid="select-sms-auth"/);assert.match(html,/id="sms-entity"/);
- assert.doesNotMatch(html,/id="sms-bearer"/);
+ assert.match(html,/data-testid="select-sms-auth"/);assert.match(html,/id="sms-f-dltEntityId"/);
+ assert.match(html,/id="sms-bearer"/, "generic Bearer auth retains its separate protected value");
 });

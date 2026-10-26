@@ -25,15 +25,25 @@ test("schedule capacity row: four equal intentional widths with short labels", (
 });
 
 test("dedicated forms use the shared FormSection", () => {
-  assert.match(read("../Users.tsx"), /<FormSection title="Staff details"/);
-  assert.match(read("../Users.tsx"), /<FormSection title="Assignment"/);
+  assert.match(read("../Users.tsx"), /<FormSection title=\{initial\.id\?"Staff details":"Account Details"\}/);
+  assert.match(read("../Users.tsx"), /<FormSection title=\{initial\.id\?tab==="doctors"\?"Assignments":"Assignment":"Work Assignment"\}/);
   assert.match(read("./ClinicRegistrationWizard.tsx"), /<FormSection title="Administrator"/);
   assert.match(read("./IntegrationEditor.tsx"), /<FormSection title="Confirm identity"/);
   assert.match(read("./ClinicSettings.tsx"), /<FormDisclosure title="Copy Opening Hours From Another Location"/);
-  for (const f of ["../auth/DemoLogin.tsx", "../auth/PatientLogin.tsx", "./GuestBooking.tsx"]) assert.match(read(f), /<FormField /, f);
+  for (const f of ["../auth/DemoLogin.tsx", "../auth/PatientLogin.tsx"]) assert.match(read(f), /<FormField /, f);
+  assert.match(read("./GuestBooking.tsx"), /<BookingField /);
+  assert.match(read("./booking/booking-fields.tsx"), /return <FormField /);
 });
 
 test("reschedule prompts only when something changed", () => {
   assert.match(read("./appointments/AppointmentRows.tsx"), /dirty=\{rescheduleDirty\}/);
-  assert.match(read("./appointments/RescheduleAppointment.tsx"), /const dirty=branchId!==a\.branchId\|\|doctorId!==a\.doctorId\|\|date!==a\.date\|\|!!reason\.trim\(\);/);
+  const expression = read("./appointments/RescheduleAppointment.tsx").match(/const dirty=([^;\n]+);/)?.[1];
+  assert.ok(expression, "reschedule exposes its draft comparison");
+  const compare = new Function("a", "branchId", "doctorId", "date", "selection", "reason", `return (${expression})`);
+  const original = {branchId:"b1",doctorId:"d1",date:"2026-10-25",sessionId:"s1"};
+  const changed = (patch={}) => compare(original, patch.branchId??original.branchId, patch.doctorId??original.doctorId, patch.date??original.date, {sessionId:patch.sessionId??original.sessionId}, patch.reason??"");
+  assert.equal(changed(), false);
+  assert.equal(changed({reason:"   "}), false);
+  for (const patch of [{branchId:"b2"},{doctorId:"d2"},{date:"2026-10-26"},{sessionId:"s2"},{reason:"Patient requested"}]) assert.equal(changed(patch), true);
+  assert.equal(compare({...original,sessionId:null},"b1","d1",original.date,{sessionId:""},""), false);
 });

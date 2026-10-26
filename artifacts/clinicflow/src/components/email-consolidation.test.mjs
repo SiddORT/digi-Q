@@ -51,7 +51,8 @@ test("real email panel renders one editor/test flow and manual saved-setting dia
   assert.match(html, /SMTP_PASSWORD<\/code>: configured/);
   assert.match(html, /Password is configured/);
   assert.match(html, /Username is configured/);
-  assert.match(html, /not unsaved edits/);
+  assert.match(html, /Check the saved email connection without sending mail/);
+  assert.match(html, /aria-label="About email connection checks"/, "secondary explanation remains reachable");
   assert.match(html, /does not confirm sender permission or inbox delivery/);
   assert.doesNotMatch(html, /input-smtp-password|input-smtp-user|list-check-smtp/);
   // The saved optional gate remains off; rendering must not turn it on.

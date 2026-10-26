@@ -15,7 +15,7 @@ test("measures before interaction so keyboard users can reach truncated values",
   assert.doesNotMatch(src, /MutationObserver/);
 });
 test("full value opens on focus, hover, tap and keys; Escape closes", () => {
-  for (const s of ["onFocus={show}", "onMouseEnter={show}", "onPointerDown", 'e.key === "Escape"', 'e.key === "Enter"', 'role="tooltip"', "aria-label={truncated ? text : undefined}"]) assert.ok(src.includes(s), s);
+  for (const s of ["onFocus={() => { if (!touchFocus.current) show(); }}", 'e.pointerType !== "touch") show()', "onPointerDown", 'e.key === "Escape"', 'e.key === "Enter"', 'role="tooltip"', "aria-label={truncated ? text : undefined}"]) assert.ok(src.includes(s), s);
 });
 test("display only: value is not recased and no casing CSS is applied", () => {
   assert.doesNotMatch(src, /titleCase|toUpperCase|toLowerCase/);

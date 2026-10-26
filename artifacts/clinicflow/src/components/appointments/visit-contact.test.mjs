@@ -1,13 +1,9 @@
 import assert from "node:assert/strict";
-import { after, test } from "node:test";
+import { test } from "node:test";
 import { build } from "esbuild";
-import { rm } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { join } from "node:path";
 
-const bundle = join(import.meta.dirname, `.visit-contact-${process.pid}.test-bundle.cjs`);
-after(() => rm(bundle, { force: true }));
-await build({
+const compiled = await build({
   stdin: {
     contents: `
       import { createElement } from "react";
@@ -18,7 +14,8 @@ await build({
     `,
     resolveDir: import.meta.dirname,
   },
-  outfile: bundle, platform: "node", format: "cjs", bundle: true,
+  write: false, platform: "node", format: "cjs", bundle: true,
+  loader: { ".css": "empty" },
   packages: "external", jsx: "automatic",
   plugins: [{
     name: "private-detail-dependencies",
@@ -40,7 +37,9 @@ await build({
     },
   }],
 });
-const { render, setAuthorized } = createRequire(import.meta.url)(bundle);
+const testModule = { exports: {} };
+new Function("require", "module", "exports", compiled.outputFiles[0].text)(createRequire(import.meta.url), testModule, testModule.exports);
+const { render, setAuthorized } = testModule.exports;
 const appointment = {
   id: "visit", patientName: "Patient", reference: "REF", status: "waiting",
   createdAt: "2030-01-07T12:00:00Z",

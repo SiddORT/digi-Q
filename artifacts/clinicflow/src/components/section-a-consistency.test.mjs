@@ -57,7 +57,8 @@ test("shared FormActions adopted by other form surfaces", () => {
 });
 test("remaining Editor guidance is HelpTip; validation stays inline", () => {
   const r = read("../resources.tsx");
-  for (const l of ["About session time", "About session scope", "About age", "About account protection", "About web address"]) assert.match(r, new RegExp(`label="${l}"`));
+  for (const l of ["About session scope", "About age", "About account protection", "About web address"]) assert.match(r, new RegExp(`label="${l}"`));
+  assert.match(read("./booking/BookingDiscovery.tsx"), /Your ticket shows a session range, not an exact consultation time/, "booking time guidance is shared");
   assert.match(r, /info=\{helper\}/);
   // Age is derived display text (an <output>), not an editable-looking input.
   assert.match(r, /className="derived-field" data-testid="text-derived-age"/);
@@ -67,7 +68,7 @@ test("remaining Editor guidance is HelpTip; validation stays inline", () => {
 });
 
 test("custom form surfaces use the shared action footer", () => {
-  const files = ["./EmailTemplates.tsx", "./CustomRoles.tsx", "./appointments/AppointmentRows.tsx", "./IntegrationSettings.tsx", "./IntegrationEditor.tsx", "./ClinicRegistrationWizard.tsx", "./ClinicSettings.tsx", "./schedule/WeeklyScheduleEditor.tsx"];
+  const files = ["./EmailTemplates.tsx", "./CustomRoles.tsx", "./appointments/AppointmentRows.tsx", "./IntegrationEditor.tsx", "./ClinicRegistrationWizard.tsx", "./ClinicSettings.tsx", "./schedule/WeeklyScheduleEditor.tsx"];
   for (const f of files) { const s = read(f); assert.match(s, /<FormActions /, f); assert.doesNotMatch(s, /<div className="form-footer">/, f); }
   assert.doesNotMatch(read("./ClinicRegistrationWizard.tsx"), /registration-footer/);
   for (const id of ["button-publish", "button-save-draft", "button-cancel", "button-reset", "button-confirm-save", "button-discard", "button-keep-editing"]) assert.match(read("./EmailTemplates.tsx"), new RegExp(id));
@@ -122,7 +123,9 @@ test("closure: action cells never clip/crowd; empty state offers real recovery; 
   assert.match(u, /appt-table :is\(th,td\)\.col-actions\{width:236px\}/);
   const c = read("../clinic.tsx");
   assert.doesNotMatch(c, /Try All visits/);
-  assert.match(c, /data-testid="button-show-all-visits" onClick=\{\(\)=>\{setView\("all"\);setPage\(1\);\}\}>Show All Visits/);
+  assert.match(c, /No appointments found/);
+  assert.match(c, /search&&<button onClick=\{\(\)=>setSearch\(""\)\}>Clear Search/, "empty search results offer recovery");
+  assert.match(c, /<FilterBar[^]*?onReset=\{/, "the listing also exposes reset for advanced filters");
   assert.doesNotMatch(c, /listing-count">\{total\}/);
   for (const f of ["../clinic.tsx", "../resources.tsx", "../Users.tsx", "./SystemUsers.tsx"]) assert.doesNotMatch(read(f), /className="form-footer"/, f);
 });

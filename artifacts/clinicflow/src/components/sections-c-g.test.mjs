@@ -8,7 +8,7 @@ test("C: phone defaults to IN, closed control shows compact code, names stay sea
   assert.match(phone,/splitPhone\(value, DEFAULT_PHONE_COUNTRY\)/);
   assert.doesNotMatch(phone,/suggestedCountry\(\)/);
   assert.match(phone,/label: `\$\{item\.name\} \$\{item\.code\}`, selectedLabel: `\$\{item\.code\} \$\{item\.country\}`/);
-  assert.match(select,/option\.selectedLabel \|\| option\.label/);
+  assert.match(select,/readableLabel\(option\?\.selectedLabel \|\| option\?\.label, value\)/);
 });
 test("C: state/city suggestions scoped by parent, incompatible child cleared only after user parent change, PIN validated, manual entry kept",()=>{
   const a=read("./AddressFields.tsx");
@@ -31,14 +31,17 @@ test("D: Check In/Out are compact distinct icon actions with accessible name and
   assert.match(read("./uniformity.css"),/row-primary-out\{/);
 });
 test("E: selects never expose raw IDs while labels load",()=>{
-  assert.match(select,/selectedLabel \|\| \(loading \? "Loading…" : error \? "Selected item unavailable" : value\)/);
+  assert.doesNotMatch(select,/Selected item unavailable" : value/, "raw IDs must never be the loading/error fallback");
+  assert.match(select,/selectedLabel/);
+  assert.match(select,/Selected item unavailable/);
 });
 test("F: outside-hours is a save warning (not 'on hold') and a shared downstream booking warning",()=>{
   const editor=read("./schedule/WeeklyScheduleEditor.tsx");
   assert.doesNotMatch(editor,/still on hold/);
   assert.match(editor,/Save With Extended Hours/);
-  assert.match(read("./GuestBooking.tsx"),/<HoursWarning warning=\{available\.hoursWarning\}\/>/);
-  assert.match(read("../clinic.tsx"),/<HoursWarning warning=\{availability\.data\.hoursWarning\}\/>/);
+  assert.match(read("./GuestBooking.tsx"),/<BookingDiscovery[^>]*discovery=\{discovery\}/);
+  assert.match(read("../clinic.tsx"),/<BookingDiscovery[^>]*discovery=\{discovery\}/);
+  assert.match(read("./booking/BookingDiscovery.tsx"),/hoursWarning/);
 });
 test("G: in-app QR validation dialog with Close; public booking only via explicit labelled new tab; no auto navigation",()=>{
   const queue=read("./queue/SessionQueue.tsx"), checkIn=read("../CheckIn.tsx");
@@ -72,7 +75,7 @@ test("section E: one booking progression and one patient editor that returns the
   assert.match(src("./BookingSteps.tsx"), /"Visit details", "Patient details", "Confirmation", "Ticket"/);
   assert.match(c, /<StagedBooking testId="staff-staged-booking" step=\{step as 1\|2\|3\} visit=\{/); assert.match(c, /<BookingSteps step=\{4\}\/>/);
   assert.match(src("./GuestBooking.tsx"), /<BookingSteps step=/);
-  assert.match(c, /<PatientEditor initial=/);
+  assert.match(c, /<PatientEditor booking initial=/);
   assert.match(c, /onSuccess:p=>\{setPatient\(p\.id\)/);
   assert.match(src("../resources.tsx"), /PATIENT_CONTACT_RULE/);
 });
@@ -92,7 +95,7 @@ test("section C: PIN directory state is never auto-filled; user must press an ex
 test("section E: guest booking is staged and only the Confirmation stage can create a booking", () => {
   const g = src("./GuestBooking.tsx"), staged = src("./booking/StagedBooking.tsx");
   assert.match(g, /<StagedBooking testId="guest-staged-booking" step=\{step\}/);
-  assert.match(g, /if\(lock\.current\|\|step!==3\)return;/);
+  assert.match(g, /if\(lock\.current\|\|step!==3\|\|!canContinueVisit\|\|!reviewCurrent\)return;/);
   assert.match(g, /form\.trigger\(\["fullName","email","mobile","permission"\]\)/);
   assert.match(staged, /hidden=\{step !== 1\}/); // stages stay mounted, Back preserves input
   assert.equal((src("../clinic.tsx").match(/<BookingStageActions /g) || []).length, 3);

@@ -39,7 +39,8 @@ test("6 appt-bulk spacing owned by compact-workspace", () => {
 });
 test("7 notification trigger / blocked list have no shadowed duplicates", () => {
   const trig = declares("components/communication.css", /^\.event-controls \.cm-event-trigger$/, "padding");
-  assert.equal(trig.length, 1);
+  assert.deepEqual(trig.map(r => r.body.match(/(?:^|;)padding:([^;]+)/)?.[1]), ["8px 12px", "8px"]);
+  assert.match(css("components/communication.css"), /@media[^{]*max-width[^{}]*\{[^]*?\.event-controls \.cm-event-trigger\{padding:8px/, "second declaration is a mobile override");
   assert.equal(declares("components/email-templates.css", /ec-blocked$/, "margin").length, 0);
   assert.equal(declares("components/email-templates.css", /ec-blocked$/, "padding-left").length, 0);
   assert.equal(declares("components/notification-page.css", /^\.event-controls \.cm-event-trigger$/, "width").length, 0);
@@ -49,7 +50,9 @@ test("8 listing search flex declared once per selector", () => {
   const f = "components/uniformity.css";
   assert.equal(declares(f, /^\.workspace \.list-header \.lh-top \.lh-search$/, "flex").length, 2);
   const src = css(f);
-  assert.ok(!src.includes("flex:1 1 360px") && !src.includes("flex:1 1 280px"));
+  for (const rule of declares(f, /^\.workspace \.list-header \.lh-top \.lh-search$/, "flex")) {
+    assert.doesNotMatch(rule.body, /flex:1 1 (360|280)px/, "unrelated section heads are not listing search controls");
+  }
 });
 test("9 et-form gap owned by form-standard", () => {
   assert.equal(declares("components/email-templates.css", /^\.et-form$/, "gap").length, 0);

@@ -92,7 +92,7 @@ test("generated addresses survive the existing actor-scoped draft without changi
   // Use the complete schema's field types to ensure this is a real persisted setup, not a partial mock.
   const values = { dateFormat: "DD MMM YYYY", timeFormat: "12h", fullName: "Fictional Owner", email: "owner@test.invalid",
     mobile: "", name: "医院", slug: await resolveClinicAddress("医院", "", async () => true),
-    categoryId: "", specialityIds: [], referralCode: "", clinicEmail: "", phone: "",
+    categoryId: "", specialityIds: [], customCategory: null, customSpecialities: [], referralCode: "", clinicEmail: "", phone: "",
     branches: resolveLocationAddresses(Array.from({ length: 2 }, () => ({ name: "Location", slug: "", address: "Fictional Way", city: "", timezone: "UTC", email: "", phone: "", inheritEmail: true, inheritPhone: true,
       hours: Array.from({ length: 7 }, (_, dayOfWeek) => ({ dayOfWeek, isOpen: false, sessions: [] })) }))),
     alsoConsult: false, specializationId: "", qualificationIds: [], linkConsultationHours: true, sessionCapacity: "", consultationMinutes: "" };

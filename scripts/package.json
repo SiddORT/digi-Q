@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "test:frontend": "node ./src/frontend-source-tests.mjs",
     "bootstrap-admin": "tsx ./src/bootstrap-admin.ts",
     "preflight-native-auth": "tsx ./src/preflight-native-auth.ts",
     "seed-system": "tsx ./src/seed-system.ts",

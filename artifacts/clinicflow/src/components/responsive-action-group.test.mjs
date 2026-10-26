@@ -18,11 +18,11 @@ test("wide desktop inline, all widths below 1280 behind More, no second action r
 });
 test("FilterBar routes secondary through the group and keeps primary actions visible", () => {
   assert.match(bar, /<ResponsiveActionGroup>\{actions\}<\/ResponsiveActionGroup>/);
-  assert.match(bar, /<div className="lh-table-tools" data-testid="list-header-table-tools"><ResponsiveActionGroup secondary=\{secondary\} label="Table Tools" \/><\/div>/);
+  assert.match(bar, /compactToolbar \? secondary : <ResponsiveActionGroup secondary=\{secondary\} label="Table Tools" \/>/);
   const clinic = read("../clinic.tsx"), users = read("../Users.tsx"), res = read("../resources.tsx"), sys = read("./SystemUsers.tsx");
-  assert.match(clinic, /secondary=\{<><FilteredAppointmentExport[^]*?\{appointmentViews\}<\/>\} actions=\{<><Link className="button" href=\{`\/\$\{role\}\/book`\}/);
+  assert.match(clinic, /secondary=\{<><FilteredAppointmentExport[^]*?data-testid="slot-appointment-columns"\/><\/>\} actions=\{<><Link className="button" href=\{`\/\$\{role\}\/book`\}/);
   assert.match(clinic, /secondary=\{<><HelpTip text=[^]*?<button className="button secondary small report-export" aria-label="Export all report results as CSV"[^]*?\{reportCols\.settings\}\{reportViews\}<\/>\}/);
-  assert.match(users, /secondary=\{<>[^]*?Recovery<\/button>\}\{cols\.settings\}\{staffViews\}<\/>\} actions=/);
+  assert.match(users, /secondary=\{<>[^]*?Recovery<\/button>\}\{cols\.settings\}<\/>\} actions=/);
   assert.match(res, /secondary=\{<>\{resource==="patients"&&<PatientFilteredExport[^]*?\{viewControls\}<\/>\} actions=/);
-  assert.match(sys, /secondary=\{<><Link[^>]*>Roles &amp; Permissions<\/Link>\{cols\.settings\}\{systemViews\}<\/>\}/);
+  assert.match(sys, /secondary=\{cols\.settings\}/, "system accounts keep column controls in the shared secondary slot");
 });

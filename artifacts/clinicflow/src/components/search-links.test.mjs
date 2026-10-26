@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { queueRecordHref, reportSearchHref, reportSearchRange, parseReportParams } from "../lib/search-links.ts";
+import { loadModule } from "../test/load-module.mjs";
+const { queueRecordHref, reportSearchHref, reportSearchRange, parseReportParams } = await loadModule(new URL("../lib/search-links.ts", import.meta.url));
 const read = f => readFileSync(new URL(f, import.meta.url), "utf8");
 const rec = { id: "a1", reference: "REF-A1", today: true, clinicId: "c1", branchId: "b1", doctorId: "d1", date: "2026-10-05", startTime: "09:00", sessionId: "s1" };
 
@@ -55,7 +56,7 @@ test("legacy device views stay local and import only on explicit action", () => 
   for (const f of ["../clinic.tsx", "../resources.tsx", "../Users.tsx", "./SystemUsers.tsx"]) assert.match(read(f), /onImport=\{\w+\.importLegacyView\}/, f);
 });
 
-import { permittedCategories, countLabel, canLoadMore, recordHref, appointmentHref } from "../lib/search-categories.ts";
+const { permittedCategories, countLabel, canLoadMore, recordHref, appointmentHref } = await loadModule(new URL("../lib/search-categories.ts", import.meta.url));
 test("search categories: permissions, honest counts, exact-record links", () => {
   assert.deepEqual(permittedCategories("patient", ["appointments", "book"]), ["appointments"]);
   assert.deepEqual(permittedCategories("receptionist", ["patients", "appointments", "queue"]), ["patients", "appointments"], "queue never adds a duplicate appointments group");
@@ -68,7 +69,7 @@ test("search categories: permissions, honest counts, exact-record links", () => 
 });
 
 test("search sources: distinct record types, exact summed totals, cap hands off to the full listing", async () => {
-  const m = await import("../lib/search-categories.ts");
+  const m = await loadModule(new URL("../lib/search-categories.ts", import.meta.url));
   assert.deepEqual(m.categorySources("staff", "admin"), ["receptionists", "clinicAdmins", "doctors"]);
   assert.deepEqual(m.categorySources("staff", "clinic"), ["receptionists"]);
   assert.equal(m.categoryTotal([3, 0, 12]), 15);
@@ -87,7 +88,8 @@ test("search sources: distinct record types, exact summed totals, cap hands off 
 test("exact links fetch the target by id, not only when on the current page", () => {
   const res = read("../resources.tsx"), users = read("../Users.tsx"), rows = read("./appointments/AppointmentRows.tsx");
   for (const s of ["api.getPatient(openId)", "api.getClinic(openId)", "api.getBranch(openId)", "api.getDoctor(openId)", "api.getUser(openId)", "scanScopedPages(openId"]) assert.ok(res.includes(s), s);
-  assert.match(res, /<RecordFacts facts=\{recordFacts\(row,/);
+  assert.match(res, /const facts=recordFacts\(row,/);
+  assert.match(res, /<RecordFacts facts=\{facts\}/);
   assert.match(users, /api\.getDoctor\(linkedId\) : api\.getUser\(linkedId\)/);
   assert.match(rows, /useGetAppointment\(linkedId,\{query:\{queryKey:api\.getGetAppointmentQueryKey\(linkedId\),enabled:offPageLinked/);
   assert.match(read("../clinic.tsx"), /from=\$\{today\(timezone\)\}&to=\$\{today\(timezone\)\}/);

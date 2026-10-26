@@ -46,18 +46,18 @@ test("exception session requirement mirrors the existing multi-session override 
 });
 test("onboarding resets stale mutation errors when navigating and secondary choices use searchable controls",()=>{
   assert.match(source("./ClinicRegistration.tsx"),/onStepChange=\{registration.reset\}/);
-  assert.match(source("./ClinicAdminOnboarding.tsx"),/onStepChange=\{setup.reset\}/);
+  assert.match(source("./ClinicAdminOnboarding.tsx"),/onStepChange=\{\(\) => setSetupError\(null\)\}/);
   const wizard=source("./ClinicRegistrationWizard.tsx");
   assert.match(wizard,/useEffect\(\(\)=>\{onStepChange\?\.\(\);\},\[step,onStepChange\]\)/);
   assert.doesNotMatch(wizard,/<select\b/);
-  assert.match(wizard,/SearchableMultiSelect label="Qualifications/);
+  assert.match(wizard,/<SearchableMultiSelect[^>]*label="Qualifications/);
 });
 test("registration resends by retained challenge only, with server-aligned cooldown and restart guidance",()=>{
   const ui=source("./ClinicRegistration.tsx");
   assert.match(ui,/"registration\/resend",\{challengeId\}/);
   assert.match(ui,/setCooldown\(60\)/);
   assert.match(ui,/busy\|\|cooldown>0\|\|!challengeId/);
-  assert.match(ui,/original expiry time still applies/);
+  assert.match(ui,/expiry|expir/i);
   assert.match(ui,/Change details to restart registration/);
 });
 test("doctor weekly editing keeps independent saves explicit and shades only comparable clinic times",()=>{

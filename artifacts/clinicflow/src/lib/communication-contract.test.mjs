@@ -120,7 +120,7 @@ test("removed preference UI has no rendering or obsolete direct links; inbox sta
 test("email diagnostics compose saved readiness, safe statuses and manual no-send checks", () => {
   const e = src("EmailProviderPanel.tsx"), d = src("EmailDiagnostics.tsx"), c = src("IntegrationConnectionCheck.tsx");
   assert.match(e, /<EmailDiagnostics r=\{data\.smtp\}/);
-  for (const token of ["r.ready", "r.source", "r.keys.map", "r.revision", 'key={savedConfiguration}', "not unsaved edits", "does not confirm", "Refresh status"]) assert.ok(d.includes(token), token);
+  for (const token of ["r.ready", "r.source", "r.keys.map", "r.revision", 'key={savedConfiguration}', "saved settings rather than unsaved edits", "does not confirm", "Refresh status"]) assert.ok(d.includes(token), token);
   assert.match(c, /onClick=\{\(\) => check\.mutate/);
   assert.doesNotMatch(c, /useEffect|useSend/);
 });

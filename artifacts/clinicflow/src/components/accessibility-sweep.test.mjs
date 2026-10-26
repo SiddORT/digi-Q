@@ -59,9 +59,10 @@ test("discard confirmation makes both underlying header and body inert", () => {
 
 test("resetting advanced filters restores keyboard focus", () => {
   const source = read("./ListingControls.tsx");
-  assert.match(source, /onReset\(\); setInvalidMessage\(""\); closeFilters\(\)/);
+  assert.match(source, /onReset\(\); closeFilters\(false\)/);
+  assert.match(source, /onResetDraft\) onResetDraft\(\)/);
   assert.match(source, /requestAnimationFrame\(\(\) => toggleRef\.current\?\.focus\(\)\)/);
-  assert.match(source, /<AppDialog open=\{open\} onClose=\{closeFilters\} title=\{label\} variant="drawer"/);
+  assert.match(source, /<AppDialog open=\{open\} onClose=\{\(\) => closeFilters\(\)\} title=\{label\} variant="drawer"/);
 });
 
 test("public account copy does not imply mandatory login and rescheduling explanation does not change eligibility", () => {
@@ -69,7 +70,7 @@ test("public account copy does not imply mandatory login and rescheduling explan
   assert.ok(clinic.includes("Sign In to Your Account"));
   assert.ok(clinic.includes("<GuestBooking key={reference}"));
   const rows = read("./appointments/AppointmentRows.tsx");
-  assert.ok(rows.includes('const canReschedule=["booked","waiting","called"].includes(a.status)&&!a.checkedInAt&&a.allowedActions.includes("cancel")'));
+  assert.ok(rows.includes('const canReschedule=a.canReschedule===true'), "server owns eligibility, including called-visit rules");
   assert.ok(rows.includes('!canReschedule&&["called","inConsultation"].includes(a.status)'));
   assert.ok(rows.includes("Rescheduling is unavailable"));
 });

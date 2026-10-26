@@ -37,7 +37,7 @@ before(async () => {
       window.invalidations = 0;
       const invalidate = client.invalidateQueries.bind(client);
       client.invalidateQueries = (...args) => { window.invalidations++; return invalidate(...args); };
-      const initial = { fullName: "Fictional Owner", email: "owner@test.invalid", name: "Fictional Care",
+      const initial = { fullName: "Fictional Owner", email: "owner@test.invalid", mobile: "+919876543210", name: "Fictional Care",
         clinicEmail: "front@test.invalid", phone: "+919876543210",
          branches: [0,1,2].map(index => ({ name: "Fictional Location", slug: index === 2 ? "fictional-location" : "", address: "Fictional Way", city: "",
           timezone: "Asia/Kolkata", email: "", phone: "", inheritEmail: true, inheritPhone: true,
@@ -138,8 +138,14 @@ test("confirmation actions retain button styles, destinations, visible labels an
       }
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       if (!noSlug) await page.screenshot({ path: resolve(evidence, `${role}-${width}.png`), fullPage: true });
-      for (const [index, [, href]] of expected.entries()) {
+      // The page also has a keyboard-accessible help control. Tab through it
+      // instead of assuming the first Tab must land on the first action.
+      for (let tries = 0; tries < 20; tries++) {
         await page.keyboard.press("Tab");
+        if (await actions.first().evaluate(el => el === document.activeElement)) break;
+      }
+      for (const [index, [, href]] of expected.entries()) {
+        if (index) await page.keyboard.press("Tab");
         assert.equal(await actions.nth(index).evaluate(el => el === document.activeElement && el.matches(":focus-visible")), true);
         assert.equal(await actions.nth(index).evaluate(el => getComputedStyle(el).outlineStyle !== "none"), true, "keyboard focus is visible");
         // The canonical domain is intentionally fictional; do not navigate to DNS.
@@ -152,7 +158,53 @@ test("confirmation actions retain button styles, destinations, visible labels an
   }
 });
 
-for (const mode of ["admin", "self"]) test(`${mode}: blank native-valid entry advances, persists, reviews and creates with the selected address`, async () => {
+test("admin: single-page setup validates credentials and addresses, never auto-retries, and preserves request identity", async () => {
+  const context = await browser.newContext(), page = await context.newPage();
+  try {
+    await page.goto(`${origin}/?mode=admin`);
+    await page.getByTestId("registration-slug").waitFor();
+    await page.getByTestId("registration-next").click();
+    assert.equal(await page.evaluate(() => window.submissions.length), 0, "credentials are required");
+    await page.getByTestId("registration-password").fill("Fictional-Setup-456!");
+    await page.getByTestId("registration-confirmPassword").fill("Fictional-Setup-456!");
+    await page.evaluate(() => { window.lookupFailure = true; });
+    await page.getByTestId("registration-next").click();
+    await page.getByTestId("registration-error").filter({hasText:"Address lookup failed"}).waitFor();
+    assert.equal(await page.getByTestId("registration-slug").inputValue(), "");
+    assert.equal(await page.evaluate(() => window.submissions.length), 0);
+    await page.evaluate(() => { window.lookupFailure = false; });
+    const slug = page.getByTestId("registration-branch-0-slug");
+    for (const [value, message] of [["ab","3–63"],["admin","reserved"],["fictional-location","different Location URL name"]]) {
+      await slug.fill(value);
+      await page.getByTestId("registration-next").click();
+      await page.getByTestId("registration-error").filter({hasText:message}).waitFor();
+      assert.equal(await slug.inputValue(), value);
+      assert.equal(await page.evaluate(() => window.submissions.length), 0);
+    }
+    await slug.fill("  ");
+    await page.getByTestId("registration-slug").fill("  ");
+    await page.evaluate(() => { window.conflict = true; });
+    await page.getByTestId("registration-next").click();
+    await page.getByTestId("registration-error").filter({hasText:"taken before saving"}).waitFor();
+    assert.equal(await page.evaluate(() => window.submissions.length), 1);
+    const draft = await page.evaluate(() => JSON.parse(sessionStorage.getItem("render-admin")));
+    assert.ok(draft);
+    assert.equal(JSON.stringify(draft).includes("Fictional-Setup-456!"), false, "passwords are never persisted");
+    await page.evaluate(() => { window.conflict = false; });
+    assert.equal(await page.evaluate(() => window.submissions.length), 1, "no automatic retry after conflict");
+    await page.getByTestId("registration-slug").fill("corrected-clinic");
+    await page.getByTestId("registration-next").click();
+    await page.getByRole("heading", {name:"Fictional Care is registered."}).waitFor();
+    const submissions = await page.evaluate(() => window.submissions);
+    assert.equal(submissions[0].values.slug, "fictional-care-2");
+    assert.deepEqual(submissions[0].values.branches.map(b => b.slug), ["fictional-location-2","fictional-location-3","fictional-location"]);
+    assert.equal(submissions[1].values.slug, "corrected-clinic");
+    assert.equal(submissions[1].requestId, submissions[0].requestId);
+    assert.equal(await page.evaluate(() => sessionStorage.getItem("render-admin")), null);
+  } finally { await context.close(); }
+});
+
+for (const mode of ["self"]) test(`${mode}: blank native-valid entry advances, persists, reviews and creates with the selected address`, async () => {
   const context = await browser.newContext(), page = await context.newPage();
   try {
     await page.goto(`${origin}/?mode=${mode}`);
@@ -219,7 +271,7 @@ for (const mode of ["admin", "self"]) test(`${mode}: blank native-valid entry ad
 test("rendered lookup failure stays on identity and leaves input blank; custom input is not replaced", async () => {
   const context = await browser.newContext(), page = await context.newPage();
   try {
-    await page.goto(`${origin}/?mode=admin`);
+    await page.goto(`${origin}/?mode=self`);
     await page.getByTestId("registration-slug").waitFor();
     await page.evaluate(() => { window.lookupFailure = true; });
     await page.getByTestId("registration-next").click();
@@ -237,7 +289,7 @@ test("rendered lookup failure stays on identity and leaves input blank; custom i
   } finally { await context.close(); }
 });
 
-for (const mode of ["admin", "self"]) test(`${mode}: whitespace resolves, invalid custom location names do not, and an unresolved restored review cannot create`, async () => {
+for (const mode of ["self"]) test(`${mode}: whitespace resolves, invalid custom location names do not, and an unresolved restored review cannot create`, async () => {
   const context = await browser.newContext(), page = await context.newPage();
   try {
     await page.goto(`${origin}/?mode=${mode}`);

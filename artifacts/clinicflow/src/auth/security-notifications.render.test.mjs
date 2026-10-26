@@ -33,7 +33,7 @@ test("channel feedback renders independent outcomes, masked destinations and no 
   assert.match(summary({sms:{status:"unavailable"}}),/SMS: Unavailable/);
   for(const status of ["provider_rejected","pre_dispatch_failed","not_requested"])assert(!summary({email:{status}}).includes("undefined"));
 });
-test("required event rules keep booking optional and security controls non-optional",()=>{
+test("security events stay outside Optional Delivery and retain platform-owned activation",()=>{
   for(const event of policy.SECURITY_EVENTS)assert(policy.requiredSecurityEvent(event));
   assert(!policy.requiredSecurityEvent("booking"));
   assert(policy.securityTemplateTarget("clinic_registration_otp","clinicAdmin","email"));
@@ -44,9 +44,9 @@ test("required event rules keep booking optional and security controls non-optio
   const templates=readFileSync(new URL("components/EmailTemplates.tsx",root),"utf8");
   const controls=readFileSync(new URL("components/NotificationTemplatesPage.tsx",root),"utf8");
   assert.match(templates,/<ActivationNote on=\{isOn\} required=\{requiredSecurityEvent\(event\)\}/);
-  assert.match(controls,/r\.row\.required && group\.optional\.length > 0/);
-  assert.match(controls,/!r\.row\.required && <Switch/);
-  assert.match(controls,/These security messages cannot be disabled and ignore Optional Delivery/);
+  assert.match(controls,/const rowCan = r\.row\.canActivate \?\? gateCan/);
+  assert.match(controls,/disabled=\{!rowCan \|\| unavailable \|\| !!editing\}/);
+  assert.match(controls,/Platform security delivery; ignores Optional Delivery and operational opt-outs/);
 });
 test("email registration collects optional phone but separate proof cannot replace required email code",()=>{
   const root=new URL("../",import.meta.url);

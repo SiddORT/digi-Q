@@ -10,10 +10,12 @@ test("save updates the provider baseline without forcibly clearing the parent di
   assert.match(inline, /onDirtyChange=\{setDirty\}/);
 });
 test("panel binds write-only secrets, public urls and enabled flag; test stays usable when editing is locked", () => {
-  for (const k of ["NOTIFICATION_SMS_URL","NOTIFICATION_SMS_STATUS_URL","NOTIFICATION_SMS_KEY","NOTIFICATION_SMS_CLIENT_ID","NOTIFICATION_SMS_SENDER_ID","NOTIFICATION_SMS_ENTITY_ID","NOTIFICATION_SMS_ENABLED"]) assert.ok(pn.includes(k), k);
+  for (const k of ["NOTIFICATION_SMS_URL","NOTIFICATION_SMS_KEY","NOTIFICATION_SMS_BEARER_TOKEN","NOTIFICATION_SMS_CLIENT_ID","NOTIFICATION_SMS_SENDER_ID","NOTIFICATION_SMS_ENABLED","NOTIFICATION_SMS_MAPPING"]) assert.ok(pn.includes(k), k);
+  assert.match(pn, /"dltEntityId"/);
+  assert.match(pn, /optional status URL is not polled and does not confirm delivery/);
   assert.ok(pn.includes('provider: "notificationSms"') && pn.includes("SecretField") && pn.includes("PasswordInput"));
-  assert.ok(!/as never|: any|localStorage|sessionStorage/.test(pn));
-  assert.ok(pn.includes('url !== initUrl') && pn.includes("statusUrl !== initStatus"));
+  assert.doesNotMatch(pn, /as never|localStorage|sessionStorage/);
+  assert.ok(pn.includes('url !== initUrl') && pn.includes("mapTouched"), "URL and advanced mapping changes mark the draft dirty");
   const testBox = pn.slice(pn.indexOf('data-testid="panel-sms-test"'), pn.indexOf("</fieldset>", pn.indexOf('data-testid="panel-sms-test"')));
   assert.ok(!pn.slice(0, pn.indexOf("</fieldset>")).includes("panel-sms-test"), "test box outside the editable fieldset");
   assert.ok(testBox.length > 0 && pn.includes("canSendSmsTest({ ready: r.ready"));
@@ -66,10 +68,10 @@ test("only real superadmin; demo excluded", () => {
 test("template test: superadmin-only, semantic reset, immutable retry, shared controls", () => {
   assert.ok(et.includes("isRealSuperAdmin(identity.user) && <EventTemplateTest"));
   assert.ok(tt.includes("JSON.stringify") && tt.includes("submitted.current") && tt.includes("sending.current") && tt.includes("useChannelReadiness") && tt.includes("PhoneInput") && tt.includes("EmailInput") && tt.includes("LoadingButton"));
-  assert.ok(et.includes("StatusSwitch") && ev.includes("StatusSwitch"));
+  assert.ok(rd("./NotificationTemplatesPage.tsx").includes("<Switch"), "activation belongs to the consolidated notification page");
 });
 test("sms drawer busy blocks close; mapping collapsed; anchors guarded", () => {
   assert.ok(pn.includes("busy={save.isPending}") && pn.includes("<details") && pn.includes("Advanced"));
-  assert.ok(rd("../lib/use-workspace-leave-guard.ts").includes("internalHref") && cl.includes("useWorkspaceLeaveGuard") && rd("../lib/use-workspace-leave-guard.ts").includes("Leave this page?"));
-  assert.ok(ev.includes("getGetNotificationTemplatesQueryKey") && et.includes("getGetEventControlsQueryKey"));
+  assert.ok(rd("../lib/use-workspace-leave-guard.ts").includes("internalHref") && rd("./CommunicationSettings.tsx").includes("useWorkspaceLeaveGuard") && rd("../lib/use-workspace-leave-guard.ts").includes("Leave this page?"));
+  assert.ok(et.includes("getGetNotificationTemplatesQueryKey") && ev.includes("getGetEventControlsQueryKey"), "both template and activation owners retain their query invalidations");
 });

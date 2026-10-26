@@ -20,7 +20,7 @@ test("PhoneInput has a single implementation using the shared phone library", as
 });
 test("remaining raw phone and timestamp callers use shared controls", async () => {
   const guest = await read("./GuestBooking.tsx"), clinic = await read("../clinic.tsx"), display = await read("./ClinicDisplay.tsx");
-  assert.match(guest, /<DateFormatInput data-testid="input-guest-date"[^>]*preferences=\{\{[^}]*context\.dateFormat/);
+  assert.match(guest, /<DateFormatInput data-testid="input-guest-date"[^>]*preferences=\{context\}/);
   assert.match(guest, /<PhoneInput \{\.\.\.field\}[^>]*input-guest-mobile/);
   assert.match(clinic, /<PhoneInput aria-label="Mobile number" value=\{mobile\} onChange=\{setMobile\}\/>/);
   for (const src of [guest, clinic]) assert.doesNotMatch(src, /type="tel"/);

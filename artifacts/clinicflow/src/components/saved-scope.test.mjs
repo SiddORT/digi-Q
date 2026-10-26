@@ -44,7 +44,7 @@ test("live profile refresh keeps unsaved fields; a successful response makes sub
   assert.match(editor,/const dirtyFields=form\.formState\.dirtyFields/);
   assert.match(editor,/keepDirtyValues:keepDraft,keepErrors:keepDraft,keepTouched:keepDraft/);
   assert.match(editor,/const keepDraft=synchronized\.current\.revision===savedRevision/);
-  assert.match(profile,/const liveEditorProps=\{refreshInitial:true,savedRevision\}/);
+  assert.match(profile,/const liveEditorProps=\{refreshInitial:true,savedRevision,mobileVerificationHelp:true\}/);
   assert.match(profile,/<Editor \{\.\.\.liveEditorProps\}/);
   assert.match(profile,/client\.setQueryData\(api\.getGetDoctorQueryKey\(identity\.doctorId\),saved\)/);
 });

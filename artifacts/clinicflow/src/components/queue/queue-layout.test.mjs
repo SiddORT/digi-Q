@@ -5,7 +5,8 @@ const read = name => readFileSync(new URL(name,import.meta.url),"utf8");
 const queue=read("./SessionQueue.tsx"), shell=read("../../clinic.tsx"), selector=read("./SessionSelector.tsx"), tabs=read("./StatusTabs.tsx"), css=read("./queue-workspace.css");
 
 test("Queue owns its only heading and four staff entry points",()=>{
- assert.match(shell,/page!=="queue"&&<div className="page-heading"/);
+ assert.match(shell,/\{!listingPage&&page!=="queue"&&[^{}]*<div className="page-heading"/);
+ assert.match(shell,/page==="queue"/);
  assert.match(queue,/<header className="sq-page-header">[^]*Booking QR[^]*Quick Switch[^]*Validate QR[^]*Register Walk-In/);
  assert.match(queue,/sessionSelection\.snapshotOnly\?<span className="badge">Historical session · no new bookings<\/span>:enabled&&<Link/);
  assert.match(queue,/!isDoctor&&branchId&&<button/);
