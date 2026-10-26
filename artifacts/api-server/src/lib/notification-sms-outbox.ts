@@ -92,8 +92,12 @@ export async function enqueueSmsEvent(conn:any,event:TemplateEvent,row:any,previ
 }
 /** Claims and outcomes share the durable settings outbox with email but never the email dedup key.
  * No automatic resend after dispatch, including a worker crash or a timed-out provider response. */
-export async function processSmsNotifications(conn:any=db,send=sendNotificationSms,now=Date.now()) {
-  const candidates=await conn.select().from(settings).where(sql`${settings.id} like 'sms-outbox:%' and ${settings.data}->>'state' = 'pending' and (${settings.data}->>'dueAt')::bigint <= ${now}`).limit(100);
+export async function processSmsNotifications(conn:any=db,send=sendNotificationSms,now=Date.now(),previewStartedAt?:number) {
+  // Preview dispatches only newly captured appointment SMS. Production retains
+  // its existing outbox selection, including onboarding and durable pending jobs.
+  const candidates=await conn.select().from(settings).where(sql`${settings.id} like 'sms-outbox:%' and ${settings.data}->>'state' = 'pending' and (${settings.data}->>'dueAt')::bigint <= ${now}
+    ${previewStartedAt===undefined?sql``:sql`and (${settings.data}->>'createdAt')::bigint >= ${previewStartedAt}
+      and ${settings.data}->>'event' in ('booking','rescheduled','cancelled','completed','reminder')`}`).limit(100);
   for(const record of candidates) {
     try {
       const claim=await conn.transaction(async(tx:any)=>{

@@ -24,14 +24,20 @@ must never replay historical skipped or cancelled occurrences.
 **How to apply:** Preserve explicit unknown outcomes during retries, operator tooling
 and provider changes. Never report SMTP acceptance as confirmed inbox delivery.
 
-Queue reminders refer to session start, not a promised consultation time. Automated
-development delivery must remain off unless an isolated test supplies a fake transport.
+Queue reminders refer to session start, not a promised consultation time. Automatic
+operational appointment SMS in development Preview is explicitly authorized;
+Preview email and unrelated staff/security workers must remain unchanged.
 
-**Why:** The user authorized implementation and testing, not messages to real recipients;
-queue-based care does not promise exact consultation times.
+**Why:** The user explicitly lifted the Preview SMS no-send boundary to diagnose
+real provider outcomes from fresh guest bookings, without authorizing agent-created
+bookings or test SMS.
+Queue-based care does not promise exact consultation times.
 
-**How to apply:** Preserve the development safety boundary and recheck visit eligibility
-at dispatch rather than trusting an earlier reminder snapshot.
+**How to apply:** Keep existing published-template, clinic and recipient policies
+authoritative. Do not replay skipped events or drain pre-enable pending jobs.
+Preserve the persisted Preview SMS cutoff across restarts, including for reminder
+capture, and recheck visit eligibility at dispatch rather than trusting a snapshot.
+Provider acceptance is not confirmed handset receipt.
 
 The user authorized Email and SMS defaults and existing-clinic activation for booking,
 rescheduled, cancelled, completed and reminder events, to patient, owning Clinic Admin

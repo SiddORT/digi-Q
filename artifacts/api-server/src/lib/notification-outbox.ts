@@ -19,6 +19,7 @@ import { withStaffDispatch } from "./staff-dispatch-barrier";
 import { notificationStaffSubjects } from "./notification-staff-subjects";
 import { lockNotificationPreferences, recipientPreference, pendingPreferenceAllowed } from "./notification-preferences";
 import { appointmentCaptureAfterCutover } from "./appointment-notification-cutover";
+import { appointmentNotificationEvents } from "./appointment-notification-scope";
 const emailKey = (email: string) => createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 
 /** Explicit safe projection only: never return an outbox payload or recipient identifiers. */
@@ -59,13 +60,15 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
   }
   if(process.env.NODE_ENV==="development"){
     for(const channel of ["email","sms"] as const){
+      // Preview permits appointment SMS only; email and onboarding stay suppressed.
+      if(channel==="sms"&&(appointmentNotificationEvents as readonly string[]).includes(event))continue;
       if(!await claimNotificationOccurrence(conn,channel,event,row))continue;
       for(const group of templateRecipients){
       if(!validTemplateTarget(event,group,channel)||(channel==="email"&&event==="booking"&&group==="patient"))continue;
       await recordDecision(conn,`${channel}-decision:${event}:${row.id}:${row.revision||0}:${group}:development`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},channel),"not_attempted");
       }
     }
-    return;
+    if(!(appointmentNotificationEvents as readonly string[]).includes(event))return;
   }
   const previousSession = previousSessionSnapshot(previousDetails);
   if (previousSession) previousDetails = confirmationText(previousDetails, await one(clinics, row.clinicId, conn)).replace("Your appointment is confirmed.", "Previous visit details:");
@@ -80,6 +83,7 @@ export async function enqueueEvent(conn: any, event: TemplateEvent, row: any, pr
     for(const group of templateRecipients) if(validTemplateTarget(event,group,"sms"))
       await recordDecision(conn,`sms-decision:${event}:${row.id}:${row.revision||0}:${group}:preparation`,notificationEntry({event,clinicId:row.clinicId,snapshot:row,recipientGroup:group},"sms"),"preparation_failed");
   }
+  if(process.env.NODE_ENV==="development")return; // Never enqueue Preview email.
   try {
     await conn.transaction((tx:any)=>enqueueEmailEvent(tx,event,row,previousDetails,previousSession));
   } catch {
@@ -183,13 +187,15 @@ export function reminderDispatchEligible(row:any,now=Date.now()){
   for(let delay=0;delay<=5;delay++)if(reminderDue(row,now-delay*60000))return true;
   return false;
 }
-export async function processNotifications(conn: any = db, send: typeof sendAuthEmail = sendAuthEmail, now = Date.now()) {
+async function captureReminderNotifications(conn: any, now: number, previewStartedAt?: number) {
   // One PostgreSQL scheduler per deployment, including when several web replicas run.
-  const acquired = await conn.transaction(async (tx: any) => {
-    const lock = await tx.execute(sql`select pg_try_advisory_xact_lock(hashtext('notification-scheduler')) as acquired`);
+  return conn.transaction(async (tx: any) => {
+    const scheduler = previewStartedAt === undefined ? "notification-scheduler" : "notification-scheduler:preview-sms";
+    const lock = await tx.execute(sql`select pg_try_advisory_xact_lock(hashtext(${scheduler})) as acquired`);
     if (!lock.rows[0]?.acquired) return false;
     const from = new Date(now - 86400000).toISOString().slice(0, 10), to = new Date(now + 172800000).toISOString().slice(0, 10);
-    const rows = await tx.select().from(appointments).where(sql`${appointments.status} in ('waiting','booked') and ${appointments.date} between ${from} and ${to}`);
+    const rows = await tx.select().from(appointments).where(sql`${appointments.status} in ('waiting','booked') and ${appointments.date} between ${from} and ${to}
+      ${previewStartedAt === undefined ? sql`` : sql`and ${appointments.createdAt} >= ${new Date(previewStartedAt).toISOString()}::timestamptz`}`);
     for (const raw of rows) {
       const row = { ...raw.data, ...raw };
       let due = false;
@@ -198,6 +204,9 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
     }
     return true;
   });
+}
+export async function processNotifications(conn: any = db, send: typeof sendAuthEmail = sendAuthEmail, now = Date.now()) {
+  const acquired = await captureReminderNotifications(conn, now);
   if (!acquired) return;
   const candidates = await conn.select().from(settings).where(sql`${settings.id} like 'mail-outbox:%' and ${settings.data}->>'state' = 'pending' and (${settings.data}->>'dueAt')::bigint <= ${now}`).limit(100);
   for (const record of candidates) {
@@ -320,11 +329,14 @@ export async function processNotifications(conn: any = db, send: typeof sendAuth
   }
 }
 export function startNotificationWorker() {
-  // Development never sends automatically. Production follows each clinic's explicit notifications setting.
-  if (process.env.NODE_ENV !== "production") return;
+  const production = process.env.NODE_ENV === "production";
+  const preview = process.env.NODE_ENV === "development";
+  if (!production && !preview) return;
+  const startedAt = Date.now();
+  let previewStartedAt: number | undefined;
   let busy = false, smsBusy = false, staffBusy = false;
   const tick = () => {
-    if (!staffBusy) {
+    if (production && !staffBusy) {
       staffBusy = true;
       void import("./staff-account-notifications").then(m => m.processStaffAccountNotifications())
         .catch(() => logger.warn("Staff account notice worker failed"))
@@ -332,10 +344,28 @@ export function startNotificationWorker() {
     }
     // Separate busy gates: a slow/failed provider must not delay the other channel's
     // next poll. Per-record durable claims still protect multiple server instances.
-    if(!busy){busy=true;void processNotifications().catch(()=>logger.warn("Email worker failed; pending work retained")).finally(()=>{busy=false;});}
+    if(production&&!busy){busy=true;void processNotifications().catch(()=>logger.warn("Email worker failed; pending work retained")).finally(()=>{busy=false;});}
     if(!smsBusy){
       smsBusy=true;
-      void import("./notification-sms-outbox").then(m=>m.processSmsNotifications())
+      void (async()=>{
+        if(preview){
+          // Persist once across restarts. Never drain pre-enable jobs or capture
+          // reminders for old bookings when enabling the Preview worker.
+          if(previewStartedAt===undefined){
+            const id="notification-preview-sms-start";
+            await db.insert(settings).values({id,data:{startedAt}}).onConflictDoNothing();
+            const [record]=await db.select().from(settings).where(eq(settings.id,id));
+            const cutoff=record?.data.startedAt;
+            if(typeof cutoff!=="number"||!Number.isSafeInteger(cutoff)||cutoff<=0)
+              throw new Error("Preview SMS start boundary unavailable");
+            previewStartedAt=cutoff;
+          }
+          await captureReminderNotifications(db,Date.now(),previewStartedAt)
+            .catch(()=>logger.warn("Preview SMS reminder scheduling failed; existing SMS jobs retained"));
+        }
+        const {processSmsNotifications}=await import("./notification-sms-outbox");
+        await processSmsNotifications(db,undefined,Date.now(),previewStartedAt);
+      })()
         .catch(()=>logger.warn("SMS worker failed; pending work retained")).finally(()=>{smsBusy=false;});
     }
   };
