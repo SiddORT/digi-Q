@@ -3,7 +3,8 @@ import { VerificationCodeInput } from "./VerificationCodeInput";
 import { EmailInput } from "@/components/EmailInput";
 import { PhoneInput } from "./PhoneInput";
 import { RegistrationMobileProof } from "../auth/RegistrationMobileProof";
-import { SecurityChannelNotice, type SecurityChannels } from "../auth/SecurityChannelNotice";
+import { type SecurityChannels } from "../auth/SecurityChannelNotice";
+import { RegistrationEmailNotice } from "../auth/RegistrationEmailNotice";
 import { useEffect, useRef, useState } from "react";
 import { useNativeAuth, authRequest } from "../auth/native-auth";
 import { Link } from "wouter";
@@ -70,7 +71,7 @@ function RegistrationAccount() {
   useEffect(()=>{if(cooldown<=0)return;const timer=window.setTimeout(()=>setCooldown(value=>Math.max(0,value-1)),1000);return()=>window.clearTimeout(timer);},[cooldown]);
   async function resendCode(){
     if(busy||cooldown>0||!challengeId)return;
-    setBusy(true);setError("");setResendNotice("");
+    setBusy(true);setError("");setResendNotice("");setCooldown(60);
     try{
       const result=await authRequest<{challengeId:string;channels?:SecurityChannels}>("registration/resend",{challengeId});
       setChannels(result.channels);
@@ -137,7 +138,7 @@ function RegistrationAccount() {
         </section> : <FormField label="Required email verification code" required id="registration-account-code"><VerificationCodeInput required value={code} onChange={setCode}/></FormField>}
         {step === "details" && <FormField label="Optional mobile" helper="Include country code. A separate mobile code never replaces the required email code."><PhoneInput value={mobile} onChange={setMobile}/></FormField>}
         {step === "review" && mobile && <p>Optional mobile: ***{mobile.slice(-4)}</p>}
-        {step === "verify" && <><SecurityChannelNotice channels={channels}/>{(mobile || mobilePending) && <RegistrationMobileProof key={challengeId} challengeId={challengeId}/>}</>}
+        {step === "verify" && <><RegistrationEmailNotice channels={channels}/>{(mobile || mobilePending) && (channels?.sms?.status === "provider_accepted" || !channels && mobilePending) && <RegistrationMobileProof key={challengeId} challengeId={challengeId}/>}</>}
         {error && <div className="error-box" role="alert">{error}</div>}
         {step==="verify"&&resendNotice&&<p role="status">{resendNotice}</p>}
         <button className="button auth-submit" type="submit" disabled={busy}><ActionLabel>{busy ? "Please wait…" : step === "details" ? "Review account details" : step === "review" ? "Send verification code" : "Verify and continue"}</ActionLabel></button>

@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { sendAuthEmail } from "./auth-email";
+import { sendAuthEmail, EmailRejectionError } from "./auth-email";
 import { resolvedIntegration } from "./integration-vault";
 import { resolvedTemplate } from "./notification-template-store";
 import { renderNotification, substitute, validEventContent, smsTemplateContent, type TemplateRecipient } from "./notification-templates";
@@ -8,6 +8,7 @@ import { type SecurityEvent } from "./security-template-definitions";
 import { assert, HttpError } from "./http";
 import { parsePhoneNumberFromString } from "libphonenumber-js";
 import { missingVisitVariables } from "./notification-template-values";
+import { logger } from "./logger";
 
 export type ChannelOutcome = { status: SmsOutcome | "disabled" | "unavailable" | "not_requested"; destination?: string };
 export type SecurityOutcomes = { email?: ChannelOutcome; sms?: ChannelOutcome };
@@ -22,6 +23,16 @@ export function maskedDestination(value: string) {
 export function emailFailure(error: any): SmsOutcome {
   return ["EMAIL_UNCONFIGURED","EMAIL_PRE_DISPATCH_FAILED"].includes(error?.code) ? "pre_dispatch_failed" :
     error?.code === "EMAIL_REJECTED" ? "provider_rejected" : "delivery_unknown";
+}
+export function securityEmailDiagnostic(error: any, prepared: boolean) {
+  if(error?.code === "SECURITY_DELIVERY_DISABLED") return "disabled";
+  if(!prepared) return "preparation_failed";
+  if(error instanceof EmailRejectionError) return error.diagnostic;
+  const categories: Record<string,string> = {
+    EMAIL_REJECTED:"provider_rejected",
+    EMAIL_UNCONFIGURED:"configuration_unavailable", EMAIL_PRE_DISPATCH_FAILED:"pre_dispatch_failed",
+  };
+  return categories[error?.code] || "delivery_unknown";
 }
 /** Classification/ownership stays independent of activation and operational gates. */
 export async function requireSecurityDelivery(event: SecurityEvent | "patient_login_otp", recipient: TemplateRecipient,
@@ -49,7 +60,10 @@ export async function securityEmail(event: SecurityEvent, recipient: TemplateRec
     await send(to,rendered.subject,rendered.text,undefined,rendered,[],undefined,
       async () => { await requireSecurityDelivery(event,recipient,"email",conn); });
     return {status:"provider_accepted",destination};
-  } catch(error: any) { return {status:error?.code === "SECURITY_DELIVERY_DISABLED" ? "disabled" : prepared ? emailFailure(error) : "pre_dispatch_failed",destination}; }
+  } catch(error: any) {
+    logger.warn({event,channel:"email",category:securityEmailDiagnostic(error,prepared)},"Security email unsuccessful");
+    return {status:error?.code === "SECURITY_DELIVERY_DISABLED" ? "disabled" : prepared ? emailFailure(error) : "pre_dispatch_failed",destination};
+  }
 }
 /** No notification history: security bodies, codes, links and destinations are never recorded there. */
 export async function securitySms(event: SecurityEvent, recipient: TemplateRecipient, mobile: string | undefined,

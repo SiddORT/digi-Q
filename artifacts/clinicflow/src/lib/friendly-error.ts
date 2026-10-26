@@ -74,6 +74,10 @@ export function friendlyError(error: unknown, context: ErrorContext = "generic",
       return "Email recovery or verification is not configured. Contact your clinic administrator. Staff password sign-in is still available.";
     if (code === "EMAIL_DELIVERY_FAILED")
       return "We could not confirm email delivery. Check your inbox and spam folder before requesting another message.";
+    if (code === "REGISTRATION_EMAIL_REJECTED")
+      return "The email provider rejected the message. Contact the System Admin to check email settings, then resend after the timer. Your previous code and registration details are retained; email verification is still required.";
+    if (code === "REGISTRATION_EMAIL_NOT_SENT")
+      return "The verification email was not sent. Contact the System Admin to check email preparation and settings. Your previous code and registration details are retained; email verification is still required.";
   }
   const fb = fallback ?? contextFallback(context);
   if (status === 401) return context === "auth" ? serverMessage(error) ?? FRIENDLY.sessionExpired : FRIENDLY.sessionExpired;

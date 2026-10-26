@@ -1,6 +1,6 @@
 import { db, users, authChallenges } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
-import { randomBytes, randomInt } from "node:crypto";
+import { randomInt } from "node:crypto";
 import { assert, HttpError } from "./http";
 import { createChallenge, consumeChallenge, lockCredentials, insertSession } from "./native-auth";
 import { resolvedIntegration } from "./integration-vault";
@@ -39,13 +39,17 @@ export async function sendPatientLoginSms(mobile: string, otp: string, expirySec
 }
 
 export async function startPatientSmsLogin(mobile: string, conn: any = db, deliver = sendPatientLoginSms) {
+  // The route throttles before this lookup. Explicit eligibility feedback is
+  // intentional; ambiguous numbers get the same response without identity hints.
+  const matches = await patientAccountsForPhone(mobile,conn);
+  if(matches.length!==1) throw new HttpError(400,
+    "No patient account eligible for SMS login was found for this mobile. Choose Email OTP to sign in or register, or check the mobile saved on your patient account.",
+    "PATIENT_SMS_NOT_REGISTERED");
   await requireSecurityDelivery("patient_login_otp","patient","sms",conn);
   const cfg=notificationSmsConfig((await resolvedIntegration("notificationSms",conn)).env);
   const template=await resolvedTemplate("patient_login_otp",undefined,conn,"patient","sms");
   assert(validEventContent("patient_login_otp",template.content),503,"Patient login SMS template is not configured");
   smsPayload(cfg,mobile,substitute(template.content.body,{otp:"000000",expiry_minutes:"10"}),smsTemplateContent.parse(template.content));
-  const matches = await patientAccountsForPhone(mobile,conn);
-  if(matches.length!==1) return randomBytes(18).toString("base64url");
   const account=matches[0], otp=String(randomInt(100000,1000000));
   const challengeId=await createChallenge({userId:account.id,email:account.email,purpose:"patient-sms",
     secret:otp,ttlMs:10*60_000,data:{mobile}});

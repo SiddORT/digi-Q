@@ -34,6 +34,26 @@ its OTP in the transmitted body and approved sender/DLT metadata, and preserve
 single-use, expiry and bounded attempts independently of notification opt-outs.
 Only examples may appear in template previews; never persist real login messages.
 
+Patient SMS login may explicitly reject an unregistered-mobile request rather than
+returning a fake challenge. Non-unique matches must share that public error without
+revealing names, identities, counts or shared-account details.
+
+**Why:** The user explicitly requested actionable unregistered-mobile feedback,
+accepting this limited account-existence disclosure while retaining throttling.
+
+**How to apply:** Do not restore blanket generic success responses for this case;
+keep bounded account/IP request limits and require a unique active patient for
+real single-use OTP delivery.
+
+Absent clinic-registration SMS is not itself a defect and must not block required
+registration email.
+
+**Why:** The user clarified that SMS was not configured or expected for the
+reported clinic-registration trigger; email delivery must work independently.
+
+**How to apply:** Do not enable or repair registration SMS merely to diagnose an
+email failure. Optional phone proof never replaces required email verification.
+
 Existing patient SMS login wording may contain only the OTP placeholder; the
 challenge still enforces expiry server-side.
 

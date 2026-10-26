@@ -56,7 +56,12 @@ async function mailCode(address: string, purpose: string, userId?: string, data?
     throw new HttpError(503,"Verification email delivery is unavailable. Verification is still required.",
       "SECURITY_DELIVERY_DISABLED");
   }
-  const smsOutcome = data?.mobile ? await requestRegistrationMobile(challengeId) : {status:"not_requested" as const};
+   // Optional phone preparation must not strand a required email challenge.
+   let smsOutcome: SecurityOutcomes["sms"] = {status:"not_requested"};
+   if(data?.mobile) {
+     try { smsOutcome = await requestRegistrationMobile(challengeId); }
+     catch { smsOutcome = {status:"unavailable"}; }
+   }
   return {challengeId,channels:{email:emailOutcome,sms:smsOutcome}};
 }
 async function mailLink(req: any, address: string, userId: string, purpose: string, route: string) {
@@ -275,7 +280,7 @@ authRouter.post("/auth/patient/resend",async(req,res)=>{
       const outcome = await securityEmail("patient_email_otp","patient",address,
         {otp:secret,expiry_minutes:String(Math.max(1,Math.ceil((expiresAt.getTime()-Date.now())/60_000)))});
       if(outcome.status!=="provider_accepted")throw new HttpError(503,"Email outcome unavailable",
-        outcome.status === "disabled" ? "SECURITY_DELIVERY_DISABLED" : "EMAIL_DELIVERY_FAILED");
+         outcome.status === "disabled" ? "SECURITY_DELIVERY_DISABLED" : "EMAIL_DELIVERY_FAILED");
     },"patient");
   } catch(error) {
     if(!(error instanceof HttpError) || !["INVALID_VERIFICATION","REGISTRATION_RESEND_COOLDOWN","EMAIL_DELIVERY_FAILED"].includes(error.code!))throw error;
@@ -319,7 +324,9 @@ authRouter.post("/auth/registration/resend", async (req, res) => {
          {otp:secret,expiry_minutes:String(Math.max(1,Math.ceil((expiresAt.getTime()-Date.now())/60_000)))});
        if (outcome.status !== "provider_accepted") throw new HttpError(503, outcome.status === "delivery_unknown" ?
          "Email outcome uncertain. The previous code remains valid; wait before retrying." : "Email was not accepted. The previous code remains valid.",
-         outcome.status === "disabled" ? "SECURITY_DELIVERY_DISABLED" : "EMAIL_DELIVERY_FAILED");
+          outcome.status === "disabled" ? "SECURITY_DELIVERY_DISABLED" :
+          outcome.status === "provider_rejected" ? "REGISTRATION_EMAIL_REJECTED" :
+          outcome.status === "pre_dispatch_failed" ? "REGISTRATION_EMAIL_NOT_SENT" : "EMAIL_DELIVERY_FAILED");
      });
      res.json({ challengeId,channels:{email:{status:"provider_accepted"}} });
   } catch (error) {

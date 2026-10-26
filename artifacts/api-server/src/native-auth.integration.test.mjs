@@ -20,6 +20,7 @@ Object.assign(process.env, { SMTP_HOST: "localhost", SMTP_PORT: "587", SMTP_USER
   DIGI_SMTP_HOST: "ignored.example.invalid", DIGI_SMTP_PORT: "465", DIGI_SMTP_USER: "ignored",
   DIGI_SMTP_PASSWORD: "ignored-fixture", DIGI_SMTP_FROM: "ignored@example.invalid" });
 globalThis.nativeAuthMail = [];
+globalThis.nativeAuthDiagnostics = [];
 Object.assign(process.env, { NOTIFICATION_SMS_PROVIDER:"keepInTouch",NOTIFICATION_SMS_COUNTRY_CODE_FORMAT:"digits",
   NOTIFICATION_SMS_KEY:"fictional-key",NOTIFICATION_SMS_BEARER_TOKEN:"fictional-token",
   NOTIFICATION_SMS_CLIENT_ID:"fictional-client",NOTIFICATION_SMS_SENDER_ID:"DIGIQ",NOTIFICATION_SMS_ENABLED:"false" });
@@ -39,6 +40,10 @@ before(async () => {
       resolveDir: root },
     outfile: bundle, bundle: true, platform: "node", format: "esm", packages: "external",
     plugins: [{ name: "isolated-auth", setup(b) {
+      b.onResolve({filter:/\/logger$/},()=>({path:"logger",namespace:"isolated-logger"}));
+      b.onLoad({filter:/.*/,namespace:"isolated-logger"},()=>({contents:`
+        export const logger={warn(fields){globalThis.nativeAuthDiagnostics.push(fields);}};
+      `}));
       b.onResolve({filter:/^@workspace\/api-zod$/},()=>({path:resolve(root,"../../../lib/api-zod/src/generated/api.ts")}));
       b.onResolve({filter:/notification-sms-transport$/},()=>({path:"sms-transport",namespace:"isolated-sms"}));
       b.onLoad({filter:/.*/,namespace:"isolated-sms"},()=>({contents:`
@@ -56,7 +61,8 @@ before(async () => {
       b.onLoad({ filter: /.*/, namespace: "isolated-mail" }, () => ({ contents: `
         export default { createTransport() { return { async sendMail(message) {
           globalThis.nativeAuthMail.push(message);
-          if(globalThis.nativeAuthMailFailure) throw Object.assign(new Error("fictional transport failure"),{code:globalThis.nativeAuthMailFailure});
+          if(globalThis.nativeAuthMailFailure) throw Object.assign(new Error("fictional transport failure"),
+            typeof globalThis.nativeAuthMailFailure === "string" ? {code:globalThis.nativeAuthMailFailure} : globalThis.nativeAuthMailFailure);
         } }; } };
       ` }));
     } }],
@@ -67,6 +73,7 @@ beforeEach(async () => {
   await h.control.query("truncate auth_sessions, auth_challenges, auth_rate_limits, users cascade");
   globalThis.nativeAuthMail.length = 0;
   smsCalls.length=0;
+  globalThis.nativeAuthDiagnostics.length=0;
   delete globalThis.nativeAuthSmsOutcome;
   delete globalThis.nativeAuthMailFailure;
   await h.control.query("delete from settings where id ~ '(clinic_registration_otp|patient_email_otp|registration_mobile_otp|doctor_setup|staff_setup|password_setup_complete)'");
@@ -416,13 +423,61 @@ test("SMS login rejects expiry, changed phone/status and shared numbers without 
   await assert.rejects(route("/auth/patient/verify",{channel:"sms",challengeId:second.res.body.challengeId,code:otp}));
   await h.control.query("update users set mobile='+919876543210',status='inactive' where id='sms-patient'");
   smsCalls.length=0;
-  await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
+  await assert.rejects(route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"}),{code:"PATIENT_SMS_NOT_REGISTERED"});
   assert.equal(smsCalls.length,0);
   await h.control.query("update users set status='active' where id='sms-patient'; insert into users(id,email,full_name,role,mobile) values('shared','shared@example.test','Shared','patient','+919876543210')");
-  await route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"});
-  await route("/auth/patient/start",{channel:"sms",mobile:"+919876543212"});
+  await assert.rejects(route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"}),{code:"PATIENT_SMS_NOT_REGISTERED"});
+  await assert.rejects(route("/auth/patient/start",{channel:"sms",mobile:"+919876543212"}),{code:"PATIENT_SMS_NOT_REGISTERED"});
   assert.equal(smsCalls.length,0);
   assert.equal((await h.control.query("select count(*)::int as n from auth_sessions")).rows[0].n,0);
+});
+test("unregistered and ambiguous SMS eligibility errors are identical, throttled, and independent of transport readiness",async()=>{
+  await setupSmsPatient();
+  const absent="+919876543212";
+  let missing;
+  const host = process.env.NOTIFICATION_SMS_KEY;
+  delete process.env.NOTIFICATION_SMS_KEY;
+  try {
+    for(let i=0;i<5;i++) await assert.rejects(route("/auth/patient/start",{channel:"sms",mobile:absent}),error=>{
+      missing=error;
+      return error.code==="PATIENT_SMS_NOT_REGISTERED" && /Email OTP.*register/.test(error.message);
+    });
+    await assert.rejects(route("/auth/patient/start",{channel:"sms",mobile:absent}),{code:"RATE_LIMITED"});
+    await h.control.query("insert into users(id,email,full_name,role,mobile) values('ambiguous','ambiguous@example.test','Private Name','patient','+919876543210')");
+    await assert.rejects(route("/auth/patient/start",{channel:"sms",mobile:"+919876543210"}),error=>
+      error.code===missing.code && error.message===missing.message);
+    assert.equal((await h.control.query("select count(*)::int as n from auth_challenges")).rows[0].n,0);
+    assert.equal(smsCalls.length,0);
+  } finally { if(host!==undefined)process.env.NOTIFICATION_SMS_KEY=host; }
+});
+
+test("SMTP rejections retain safe authentication/sender/recipient categories, never raw transport data",async()=>{
+  for(const [metadata,category] of [
+    [{code:"EAUTH",responseCode:535,command:"AUTH PLAIN"},"authentication_rejected"],
+    [{code:"EENVELOPE",responseCode:550,command:"MAIL FROM"},"sender_rejected"],
+    [{code:"EENVELOPE",responseCode:550,command:"RCPT TO"},"recipient_rejected"],
+    [{code:"EENVELOPE"},"provider_rejected"],
+    [{code:"EDNS"},"pre_dispatch_failed"],
+    [{code:"ETIMEDOUT",command:"DATA"},"delivery_unknown"],
+  ]) {
+    let failure;
+    await assert.rejects(api.sendAuthEmail("fixture@example.test","Fixture","Body",{
+      sendMail:async()=>{throw Object.assign(new Error("private-transport-sentinel"),metadata,{response:"private-transport-sentinel"});}
+    }),error=>{failure=error;return !JSON.stringify(error).includes("private-transport-sentinel") && !error.message.includes("private-transport-sentinel");});
+    assert.equal(api.securityEmailDiagnostic(failure,true),category);
+    const outcome=await api.securityEmail("clinic_registration_otp","clinicAdmin","fixture@example.test",
+      {otp:"123456",expiry_minutes:"10"},async()=>{throw failure;});
+    assert.equal(outcome.status,category==="delivery_unknown"?"delivery_unknown":category==="pre_dispatch_failed"?"pre_dispatch_failed":"provider_rejected");
+    assert.deepEqual(globalThis.nativeAuthDiagnostics.at(-1),{event:"clinic_registration_otp",channel:"email",category});
+  }
+  await assert.rejects(api.sendAuthEmail("fixture@example.test","Fixture","Body",{sendMail:async()=>({accepted:[],rejected:["private-transport-sentinel"]})}),
+    error=>error.code==="EMAIL_REJECTED" && error.diagnostic==="recipient_rejected" && !JSON.stringify(error).includes("private-transport-sentinel"));
+  let calls=0;
+  await assert.rejects(api.sendAuthEmail("fixture@example.test","Fixture","Body",{sendMail:async()=>{calls++;}},undefined,[],undefined,
+    async()=>{throw new Error("private-preparation-sentinel");}),
+    error=>error.code==="EMAIL_PRE_DISPATCH_FAILED" && !JSON.stringify(error).includes("private-preparation-sentinel"));
+  assert.equal(calls,0);
+  assert.equal(api.securityEmailDiagnostic(new Error("private-transport-sentinel"),false),"preparation_failed");
 });
 test("resending SMS invalidates the previous challenge and uncertain or rejected dispatch is never retried",async()=>{
   await setupSmsPatient();
@@ -589,6 +644,65 @@ test("registration email failure preserves successful SMS and resend uses the pu
   assert(parent.data.mobileVerified);
   await assert.rejects(route("/auth/register/verify",{challengeId,code:previousCode}));
   await route("/auth/register/verify",{challengeId,code:emailCode});
+});
+
+test("required registration email works with SMS unconfigured, including optional mobile preparation failure",async()=>{
+  const keys = ["NOTIFICATION_SMS_KEY","NOTIFICATION_SMS_BEARER_TOKEN","NOTIFICATION_SMS_CLIENT_ID"];
+  const saved = Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+  keys.forEach(key=>delete process.env[key]);
+  try {
+    for(const mobile of [undefined,"+919876543210"]) {
+      const started=await route("/auth/register/start",newAdmin(mobile?"sms-absent":"email-only",mobile));
+      const {challengeId,channels}=started.res.body;
+      assert.equal(channels.email.status,"provider_accepted");
+      assert.equal(channels.sms.status,mobile?"unavailable":"not_requested");
+      assert(started.res.cookies.digiq_registration);
+      assert.equal(smsCalls.length,0);
+      assert.equal((await route("/auth/register/verify",{challengeId,code:lastEmailCode()})).res.body.authenticated,true);
+    }
+    await h.control.query(`create function fixture_optional_sms_failure() returns trigger language plpgsql as $$
+      begin if new.purpose='registration-mobile' then raise exception 'fictional optional preparation failure'; end if; return new; end $$;
+      create trigger fixture_optional_sms_failure before insert on auth_challenges for each row execute function fixture_optional_sms_failure()`);
+    try {
+      const started=await route("/auth/register/start",newAdmin("optional-preparation-failed","+919876543210"));
+      assert.equal(started.res.body.channels.email.status,"provider_accepted");
+      assert.equal(started.res.body.channels.sms.status,"unavailable");
+      assert(started.res.cookies.digiq_registration);
+      assert.equal((await route("/auth/register/verify",{challengeId:started.res.body.challengeId,code:lastEmailCode()})).res.body.authenticated,true);
+      assert.equal(smsCalls.length,0);
+    } finally {
+      await h.control.query("drop trigger fixture_optional_sms_failure on auth_challenges; drop function fixture_optional_sms_failure()");
+    }
+  } finally {
+    for(const key of keys) if(saved[key]===undefined)delete process.env[key];else process.env[key]=saved[key];
+  }
+});
+
+test("registration resend rejection and uncertainty retain prior proof, expiry and attempts without automatic retries",async()=>{
+  for(const [index,metadata] of [
+    {code:"EAUTH",responseCode:535,command:"AUTH PLAIN"},
+    {code:"EENVELOPE",responseCode:550,command:"MAIL FROM"},
+    {code:"EENVELOPE",responseCode:550,command:"RCPT TO"},
+    {code:"EDNS"},
+    {code:"ETIMEDOUT",command:"DATA"},
+  ].entries()) {
+    delete globalThis.nativeAuthMailFailure;
+    await h.control.query("truncate auth_rate_limits");
+    const started=await route("/auth/register/start",newAdmin(`resend-${index}`));
+    const challengeId=started.res.body.challengeId, previousCode=lastEmailCode();
+    await h.control.query("update auth_challenges set created_at=now()-interval '2 minutes',attempts=2 where id=$1",[challengeId]);
+    const before=(await h.control.query("select token_hash,expires_at,attempts,data from auth_challenges where id=$1",[challengeId])).rows[0];
+    globalThis.nativeAuthMailFailure=metadata;
+    const calls=globalThis.nativeAuthMail.length;
+    await assert.rejects(route("/auth/registration/resend",{challengeId}),{
+      code:metadata.code==="ETIMEDOUT"?"EMAIL_DELIVERY_FAILED":metadata.code==="EDNS"?"REGISTRATION_EMAIL_NOT_SENT":"REGISTRATION_EMAIL_REJECTED"
+    });
+    assert.equal(globalThis.nativeAuthMail.length,calls+1);
+    const after=(await h.control.query("select token_hash,expires_at,attempts,data from auth_challenges where id=$1",[challengeId])).rows[0];
+    assert.deepEqual(after,before);
+    assert.equal((await h.control.query("select count(*)::int as n from auth_sessions")).rows[0].n,index);
+    assert.equal((await route("/auth/register/verify",{challengeId,code:previousCode})).res.body.authenticated,true);
+  }
 });
 
 test("optional SMS rejection/uncertainty/unavailable never blocks required email proof or marks a number verified",async()=>{

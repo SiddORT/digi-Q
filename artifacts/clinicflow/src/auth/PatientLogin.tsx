@@ -41,7 +41,12 @@ export function PatientLogin() {
       setStep("code");
       setCooldown(60);
       setCode("");
-    } catch (caught) { setError(authErrorMessage(caught, "Unable to send a login code.")); }
+    } catch (caught) {
+      if ((caught as {data?:{code?:string}})?.data?.code === "PATIENT_SMS_NOT_REGISTERED") {
+        setStep("email"); setChallengeId(""); setCode(""); setCooldown(0);
+      }
+      setError(authErrorMessage(caught, "Unable to send a login code."));
+    }
     finally { setBusy(false); }
   }
 

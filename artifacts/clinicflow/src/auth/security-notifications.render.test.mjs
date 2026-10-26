@@ -4,15 +4,18 @@ import { createRequire } from "node:module";
 import { readFileSync } from "node:fs";
 const require = createRequire(import.meta.url);
 const {build} = createRequire(import.meta.resolve("vite"))("esbuild");
-let render, summary, policy;
+let render, renderRegistration, summary, friendly, policy;
 before(async()=>{
   const result=await build({
     stdin:{resolveDir:import.meta.dirname,contents:`
       import {createElement} from "react";
       import {renderToStaticMarkup} from "react-dom/server";
       import {SecurityChannelNotice,securityChannelSummary} from "./SecurityChannelNotice";
+      import {RegistrationEmailNotice} from "./RegistrationEmailNotice";
+      export {friendlyError as friendly} from "../lib/friendly-error";
       export * from "../lib/security-template-events";
       export const render=channels=>renderToStaticMarkup(createElement(SecurityChannelNotice,{channels}));
+      export const renderRegistration=channels=>renderToStaticMarkup(createElement(RegistrationEmailNotice,{channels}));
       export const summary=securityChannelSummary;
     `},
     bundle:true,platform:"node",format:"cjs",write:false,jsx:"automatic",
@@ -20,7 +23,29 @@ before(async()=>{
   });
   const module={exports:{}};
   new Function("module","exports","require",result.outputFiles[0].text)(module,module.exports,require);
-  ({render,summary,...policy}=module.exports);
+  ({render,renderRegistration,summary,friendly,...policy}=module.exports);
+});
+test("required registration email errors are prominent, actionable and independent of expected absent SMS",()=>{
+  for(const status of ["provider_rejected","pre_dispatch_failed","delivery_unknown","disabled"]) {
+    const html=renderRegistration({email:{status},sms:{status:"unavailable"}});
+    assert.match(html,/role="alert"/);
+    assert.match(html,/email verification is not complete/);
+    assert.match(html,/registration details are retained/);
+    assert.match(html,/optional SMS cannot replace/);
+    assert.doesNotMatch(html,/SMS:|Approved template and provider configuration/);
+    if(status==="delivery_unknown")assert.match(html,/Wait and check/);
+    if(status==="provider_rejected")assert.match(html,/System Admin.*Resend code/);
+  }
+  const accepted=renderRegistration({email:{status:"provider_accepted"},sms:{status:"unavailable"}});
+  assert.match(accepted,/delivery is not confirmed/);
+  assert.doesNotMatch(accepted,/role="alert"|SMS:/);
+  assert.match(renderRegistration(undefined),/Email verification is still required/);
+  for(const code of ["REGISTRATION_EMAIL_REJECTED","REGISTRATION_EMAIL_NOT_SENT"]) {
+    const message=friendly({status:503,data:{code,error:"unsafe-response"}},"auth");
+    assert.match(message,/System Admin/);
+    assert.match(message,/previous code and registration details are retained/);
+    assert.doesNotMatch(message,/unsafe-response/);
+  }
 });
 test("channel feedback renders independent outcomes, masked destinations and no delivery claim",()=>{
   const html=render({email:{status:"provider_accepted",destination:"e***@example.invalid"},sms:{status:"delivery_unknown",destination:"***3210"}});
