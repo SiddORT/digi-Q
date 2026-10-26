@@ -7,7 +7,7 @@ import { CompactDayEditor } from "./CompactDayEditor";
 import { SHORT } from "./WeeklyDraftDays";
 import { FollowLocationHours } from "./FollowLocationHours";
 import { SearchableSelect } from "../SearchableSelect";
-import { AppDialog, useAppDialogClose } from "../AppDialog";
+import { AppDialog, AppDialogActions, useAppDialogClose } from "../AppDialog";
 import { HelpTip } from "../HelpTip";
 import { useConfirm } from "../ConfirmDialog";
 import { formatTime } from "../../lib/date-time";
@@ -245,14 +245,17 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
     {q.error && baseRows !== null && <p className="notice" role="alert" data-testid="text-reload-warning">Saved schedule could not be refreshed. Your draft and saved changes are kept. <button type="button" onClick={() => void q.refetch()}>Retry</button></p>}
     {branch.error && <p role="alert">Clinic hours could not be loaded. <button type="button" onClick={() => void branch.refetch()}>Retry Clinic Hours</button></p>}
     {q.data && branch.data && !readiness.ready && <ul className="notice" data-testid="schedule-readiness">{readiness.missing.map(m => <li key={m}>{m}</li>)}</ul>}
-    <p className="muted" data-testid="text-week-summary">{weekSummary(week, SHORT, fmt)}</p>
+    <p className="muted cde-week-summary" data-testid="text-week-summary">{weekSummary(week, SHORT, fmt)}</p>
     {needsTemplate && <fieldset className="registration-day" data-testid="fieldset-session-defaults"><legend>Settings for New Sessions</legend><div className="form-grid">
       <label>Token prefix<span className="required"> *</span><input maxLength={8} value={defaults.tokenPrefix} onChange={e => setDefaults(v => ({ ...v, tokenPrefix: e.target.value.replace(/[^A-Za-z0-9]/g, "") }))} data-testid="input-default-token-prefix"/></label>
       <label>Max tokens<span className="required"> *</span><input type="number" min={1} step={1} value={defaults.maxTokens} onChange={e => setDefaults(v => ({ ...v, maxTokens: e.target.value }))} data-testid="input-default-max-tokens"/></label>
       <SearchableSelect label="Expected Consultation Duration" required value={defaults.consultationMinutes} onChange={value => setDefaults(v => ({ ...v, consultationMinutes: value }))} placeholder="Select duration…" options={[20, 30, 60].map(v => ({ value: String(v), label: `${v} minutes` }))}/>
     </div></fieldset>}
-    <p className="muted" data-testid="text-day-source">{dayBaselines[selectedDay]?.following ? "Following clinic hours — edits become custom only after confirmation." : "Custom schedule"} · Clinic: {opening===null?"Hours not configured":hoursFor(selectedDay).map(h=>`${fmt(h.startTime)}–${fmt(h.endTime)}`).join(", ")||"Closed"}</p>
-    <CompactDayEditor week={week} setWeek={setWeek} opening={opening} preferences={preferences} busy={busy||linkedBusy} rows={rows} template={template} selected={selectedDay} onSelect={setSelectedDay} focus={focus} onChange={() => setResult("")}/>
+    <CompactDayEditor week={week} setWeek={setWeek} opening={opening} preferences={preferences} busy={busy||linkedBusy} rows={rows} template={template} selected={selectedDay} onSelect={setSelectedDay} focus={focus} onChange={() => setResult("")} dayStatus={<div className="cde-day-status muted" data-testid="text-day-source">
+      <span>{dayBaselines[selectedDay]?.following ? "Following clinic hours" : "Custom schedule"}</span>
+      <HelpTip label="About custom day schedules" text="Edits to days following clinic hours become custom only after confirmation. Only this doctor's selected weekdays at this location change; clinic hours and other days are unchanged."/>
+      <span>Clinic: {opening===null?"Hours not configured":hoursFor(selectedDay).map(h=>`${fmt(h.startTime)}–${fmt(h.endTime)}`).join(", ")||"Closed"}</span>
+    </div>}/>
     {needsTemplate && !template && <p className="field-error" role="alert">Enter token prefix, max tokens and consultation duration for new sessions.</p>}
     <details className="cde-more"><summary>Location hours: linking and copying</summary>
       <div className="schedule-source" role="group" aria-label="Location hours" data-testid="schedule-source">
@@ -267,11 +270,11 @@ export function WeeklyScheduleEditor({ doctorId, branchId, onDirtyChange, onBusy
       </div></details>}
       </div>
     </details>
-    <div className="cde-footer"><FormActions wide={false} onCancel={dialogClose ? undefined : ()=>void cancelDraft()} cancelClosesDialog cancelTestId="button-reset-week" busy={busy||linkedBusy||exceptionBusy} disabled={!dirty} onSubmit={save} submitTestId="button-save-week" submitLabel="Save Schedule" secondary={<>
+    {result && <p className="notice" role="status" data-testid="status-week-save">{result}</p>}
+    <AppDialogActions><div className="cde-footer"><FormActions wide={false} groupPrimary onCancel={dialogClose ? undefined : ()=>void cancelDraft()} cancelClosesDialog cancelTestId="button-reset-week" busy={busy||linkedBusy||exceptionBusy} disabled={!dirty} onSubmit={save} submitTestId="button-save-week" submitLabel="Save Schedule" secondary={<>
       {canDelete && !!rows.some(r => !r.linkedBranchId) && <button type="button" className="button secondary small" disabled={busy||linkedBusy||dirty} title={dirty?"Save or cancel your changes first":undefined} onClick={() => void deleteSchedule()} data-testid="button-delete-schedule">Delete Schedule</button>}
       {["superAdmin","clinicAdmin","doctor"].includes(identity.data?.user?.role || "") && <ScheduleExceptions doctorId={doctorId} branchId={branchId} doctorName={doctorName || doctor.data?.fullName} branchName={branch.data?.name} preferences={preferences} disabled={busy||linkedBusy} draftDirty={dirty||linkedDirty||Object.values(defaults).some(Boolean)} onDirtyChange={setExceptionDirty} onBusyChange={setExceptionBusy}/>}
-    </>} /></div>
-    {result && <p className="notice" role="status" data-testid="status-week-save">{result}</p>}
+    </>} /></div></AppDialogActions>
     {outside && <AppDialog open onClose={() => setOutside(null)} title="Doctor Hours Beyond Clinic Hours">
       <p>{outside.length} session{outside.length > 1 ? "s are" : " is"} outside {clinicName}'s hours: {outside.map(o => { const s = week[o.day].sessions.find(x => x.key === o.key); return s ? `${SHORT[o.day]} ${fmt(s.startTime)} – ${fmt(s.endTime)} (clinic ${hoursFor(o.day).map(h => `${fmt(h.startTime)} – ${fmt(h.endTime)}`).join(", ") || "usually closed"})` : ""; }).join("; ")}.</p>
       <p className="muted" data-testid="text-outside-hours-warning">This is allowed: clinics may extend hours for a doctor. Patients can book these times, and booking screens show the same warning. Days when the clinic is closed, overlapping sessions and date exceptions are still protected.</p>

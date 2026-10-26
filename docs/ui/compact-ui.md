@@ -38,6 +38,10 @@ This refines the existing branding; it is not a new design system.
   with associated labels. Textareas, multiline selects and chip controls grow.
 - Give number/time/OTP controls content-appropriate width; phone country+number
   is one compound field. Long selections, labels, helpers and errors must wrap.
+- Shared schedule sessions use equal content-width time columns, with their
+  settings disclosure under Start Time. Copy/Add visible borders align in the
+  ordinary 40px family (`field-action`), retaining 44px touch targets. Schedule
+  dialog actions occupy a separate track; page/embedded actions stay in flow.
 - Use 4/8/12/16/24px spacing tokens; compact headers/cards/actions should not add
   redundant blank rows. Preserve critical warnings. Filters overlay or use the
   existing drawer, never push a listing down.

@@ -6,7 +6,7 @@
     "links": 112,
     "actions": 582,
     "fields": 325,
-    "overlays": 297,
+    "overlays": 300,
     "forms": 150,
     "nativeForms": 29,
     "dialogPlacements": 62,
@@ -4123,7 +4123,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 107,
+          "line": 115,
           "tag": "Dialog",
           "family": "overlays",
           "definition": "AppDialog",
@@ -4134,7 +4134,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 113,
+          "line": 121,
           "tag": "DialogContent",
           "family": "overlays",
           "definition": "AppDialog",
@@ -4149,7 +4149,7 @@
           "aria-busy": "{busy || undefined}"
         },
         {
-          "line": 147,
+          "line": 155,
           "tag": "DialogHeader",
           "family": "overlays",
           "definition": "AppDialog",
@@ -4161,7 +4161,7 @@
           "className": "\"app-dialog-header bg-slate-50/50 space-y-0\""
         },
         {
-          "line": 148,
+          "line": 156,
           "tag": "DialogTitle",
           "family": "overlays",
           "definition": "AppDialog",
@@ -4173,7 +4173,7 @@
           "className": "\"app-dialog-title text-foreground\""
         },
         {
-          "line": 150,
+          "line": 158,
           "tag": "DialogDescription",
           "family": "overlays",
           "definition": "AppDialog",
@@ -4185,7 +4185,7 @@
           "className": "\"app-dialog-desc text-muted-foreground\""
         },
         {
-          "line": 158,
+          "line": 166,
           "tag": "button",
           "family": "actions",
           "definition": "AppDialog",
@@ -4201,7 +4201,18 @@
           "disabled": "{busy}"
         },
         {
-          "line": 174,
+          "line": 182,
+          "tag": "AppDialogActionsContext.Provider",
+          "family": "overlays",
+          "definition": "AppDialog",
+          "disposition": "AppDialog/app-dialog.css: shared modal/drawer shell and confirmation actions",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "overlay",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 182,
           "tag": "AppDialogDiscardContext.Provider",
           "family": "overlays",
           "definition": "AppDialog",
@@ -4212,7 +4223,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 174,
+          "line": 182,
           "tag": "AppDialogCloseContext.Provider",
           "family": "overlays",
           "definition": "AppDialog",
@@ -4223,7 +4234,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 179,
+          "line": 188,
           "tag": "div",
           "family": "overlays",
           "definition": "AppDialog",
@@ -4239,7 +4250,7 @@
           "className": "\"app-discard-panel\""
         },
         {
-          "line": 193,
+          "line": 202,
           "tag": "button",
           "family": "actions",
           "definition": "AppDialog",
@@ -4253,7 +4264,7 @@
           "data-testid": "\"button-keep-editing\""
         },
         {
-          "line": 202,
+          "line": 211,
           "tag": "button",
           "family": "actions",
           "definition": "AppDialog",
@@ -9006,10 +9017,10 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 37,
+          "line": 38,
           "tag": "button",
           "family": "actions",
-          "definition": "FormActions",
+          "definition": "FormActions / primary",
           "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
           "runtimeReachability": "conditional source; not independently established by enumeration",
           "stateProfile": "action",
@@ -9020,10 +9031,10 @@
           "data-testid": "{cancelTestId}"
         },
         {
-          "line": 39,
+          "line": 40,
           "tag": "button",
           "family": "actions",
-          "definition": "FormActions",
+          "definition": "FormActions / primary",
           "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
           "runtimeReachability": "conditional source; not independently established by enumeration",
           "stateProfile": "action",
@@ -18047,7 +18058,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 72,
+          "line": 75,
           "tag": "FormTabs",
           "family": "navigation",
           "definition": "CompactDayEditor",
@@ -18058,7 +18069,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 75,
+          "line": 80,
           "tag": "input",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18074,7 +18085,7 @@
           "data-testid": "\"toggle-working-day\""
         },
         {
-          "line": 76,
+          "line": 83,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18083,10 +18094,11 @@
           "stateProfile": "selection",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "aria-labelledby": "{copyLabelId}",
           "disabled": "{busy}"
         },
         {
-          "line": 77,
+          "line": 84,
           "tag": "button",
           "family": "actions",
           "definition": "CompactDayEditor",
@@ -18096,12 +18108,12 @@
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
           "type": "\"button\"",
-          "className": "\"button secondary small\"",
+          "className": "\"button secondary field-action\"",
           "disabled": "{busy}",
           "data-testid": "\"button-add-time-slot\""
         },
         {
-          "line": 81,
+          "line": 89,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18112,7 +18124,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 82,
+          "line": 90,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18123,7 +18135,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 83,
+          "line": 91,
           "tag": "button",
           "family": "actions",
           "definition": "CompactDayEditor",
@@ -18138,7 +18150,7 @@
           "data-testid": "\"button-copy-from-apply\""
         },
         {
-          "line": 84,
+          "line": 92,
           "tag": "button",
           "family": "actions",
           "definition": "CompactDayEditor",
@@ -18151,7 +18163,7 @@
           "className": "\"button secondary small\""
         },
         {
-          "line": 93,
+          "line": 101,
           "tag": "TimeFormatInput",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18166,7 +18178,7 @@
           "aria-invalid": "{rowErrs.length > 0}"
         },
         {
-          "line": 94,
+          "line": 102,
           "tag": "TimeFormatInput",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18181,7 +18193,7 @@
           "aria-invalid": "{rowErrs.length > 0}"
         },
         {
-          "line": 95,
+          "line": 103,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18194,7 +18206,7 @@
           "disabled": "{busy || s.locked}"
         },
         {
-          "line": 100,
+          "line": 107,
           "tag": "input",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18207,7 +18219,7 @@
           "disabled": "{busy || s.locked}"
         },
         {
-          "line": 101,
+          "line": 108,
           "tag": "input",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18219,7 +18231,7 @@
           "disabled": "{busy || s.locked}"
         },
         {
-          "line": 102,
+          "line": 109,
           "tag": "input",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18232,7 +18244,7 @@
           "disabled": "{busy || s.locked}"
         },
         {
-          "line": 103,
+          "line": 110,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -18244,7 +18256,7 @@
           "disabled": "{busy || s.locked}"
         },
         {
-          "line": 104,
+          "line": 111,
           "tag": "TimeFormatInput",
           "family": "fields",
           "definition": "CompactDayEditor",
@@ -19077,7 +19089,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 255,
+          "line": 254,
           "tag": "CompactDayEditor",
           "family": "forms",
           "definition": "WeeklyScheduleEditor",
@@ -19088,7 +19100,18 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 259,
+          "line": 256,
+          "tag": "HelpTip",
+          "family": "overlays",
+          "definition": "WeeklyScheduleEditor",
+          "disposition": "compact-ui.css: accessible bounded help; not a form modal",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "help",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 262,
           "tag": "button",
           "family": "actions",
           "definition": "WeeklyScheduleEditor",
@@ -19103,7 +19126,7 @@
           "data-testid": "\"button-copy-opening-hours\""
         },
         {
-          "line": 260,
+          "line": 263,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "WeeklyScheduleEditor",
@@ -19114,7 +19137,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 264,
+          "line": 267,
           "tag": "input",
           "family": "fields",
           "definition": "WeeklyScheduleEditor",
@@ -19128,7 +19151,7 @@
           "data-testid": "{`check-copy-location-${b.id}`}"
         },
         {
-          "line": 265,
+          "line": 268,
           "tag": "button",
           "family": "actions",
           "definition": "WeeklyScheduleEditor",
@@ -19143,7 +19166,18 @@
           "data-testid": "\"button-apply-locations\""
         },
         {
-          "line": 270,
+          "line": 274,
+          "tag": "AppDialogActions",
+          "family": "overlays",
+          "definition": "WeeklyScheduleEditor",
+          "disposition": "AppDialog/app-dialog.css: shared modal/drawer shell and confirmation actions",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "overlay",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 274,
           "tag": "FormActions",
           "family": "forms",
           "definition": "WeeklyScheduleEditor",
@@ -19155,7 +19189,7 @@
           "disabled": "{!dirty}"
         },
         {
-          "line": 271,
+          "line": 275,
           "tag": "button",
           "family": "actions",
           "definition": "WeeklyScheduleEditor",
@@ -19170,7 +19204,7 @@
           "data-testid": "\"button-delete-schedule\""
         },
         {
-          "line": 275,
+          "line": 278,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "WeeklyScheduleEditor",
@@ -19181,7 +19215,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 278,
+          "line": 281,
           "tag": "FormActions",
           "family": "forms",
           "definition": "WeeklyScheduleEditor",
@@ -19192,7 +19226,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 279,
+          "line": 282,
           "tag": "button",
           "family": "actions",
           "definition": "WeeklyScheduleEditor",
@@ -21795,7 +21829,7 @@
     "schemaVersion": 1,
     "algorithm": "sha256",
     "scope": "conservative-shared-ui",
-    "digest": "e23cfbf7435a726d66309815c69abeaca3c8e02735f2e55f76e89c624792cdaa",
+    "digest": "cc63b6f2d58722c2776b2902d7b2807bf1ef39d9d8c65141d53939fe47f80946",
     "files": {
       "artifacts/clinicflow/index.html": "07814e785c1a97e225d3e37490489c196fa43509111f81ee68400ef99b21edc6",
       "artifacts/clinicflow/package.json": "3d1d50c6ef9a6aa2788e0503d8b9984061af7710e2fa4d6fecafb4789c9cb388",
@@ -21815,17 +21849,17 @@
       "artifacts/clinicflow/src/auth/auth-retirement.test.mjs": "39b380e20f4cc7d2c174d7f4c24398b39e1dddd0d8cf9bf0ba3418202bbafaae",
       "artifacts/clinicflow/src/auth/errors.ts": "960e2ef22b1c5e5268a055fc32367d5779d51387cb1c1f1e69d06b23f35b7581",
       "artifacts/clinicflow/src/auth/native-auth.tsx": "4e1322cf059d53b96aba0f91a1975bc437e97ee5d4c0d1ed1016f2ec64eaf435",
-      "artifacts/clinicflow/src/auth/security-notifications.render.test.mjs": "f69260496023a1794b5db098f2eec122fc6e7e2fee1b68a16e911f2f1f181129",
+      "artifacts/clinicflow/src/auth/security-notifications.render.test.mjs": "279aa1c68ad3ac4b420dc1e733b0331cab2a60745e158fcec09982cf863f899a",
       "artifacts/clinicflow/src/auth/session-lifecycle.test.mjs": "6578340f326eecdbd9da0942825412b5fa11d8a9210e5e7093064aac023c85ae",
       "artifacts/clinicflow/src/branding.ts": "3f1678ecf3d1e12c2bf0a56046a19cb97653dab421280411c2d469804b88098b",
       "artifacts/clinicflow/src/clinic.tsx": "b4a3ef89da684353c57ec4ea51c773de18ba257cc183af243785e002a601aa7b",
-      "artifacts/clinicflow/src/compact-ui.css": "d799bfb12dbc5f764203b3b53192bdc69a7f27b3cfefda14200ba9c75d1bd849",
-      "artifacts/clinicflow/src/compact-workspace.css": "0145370d8b4362a412f6502aa203a8521724dbead59dad64055bb1da0f339c70",
+      "artifacts/clinicflow/src/compact-ui.css": "bebbec430e4c3c32ace45d7c7be3547194673e6a7fa1368a58fa119dabff3ef8",
+      "artifacts/clinicflow/src/compact-workspace.css": "8003d41f6c5a554721c885a6b92247ec152b610da2ceca9c66e6a031be6b6ce0",
       "artifacts/clinicflow/src/components/AccessRules.tsx": "b66c999c5ef0c60139e4974a3e8a6e9b5692bfc538be4359e19df078af7af76e",
       "artifacts/clinicflow/src/components/ActionLabel.tsx": "aba6ffdd5769e59cb5c673828d41df1e9c4212361a7178f5a452907bfa44ea82",
       "artifacts/clinicflow/src/components/AddressFields.tsx": "ae5ff6cc9447023280b18b136ec80460ed4a299325846bea329e223a5293941b",
       "artifacts/clinicflow/src/components/AdminListing.tsx": "000d06d4274ee7e013609da4df808afa80cab7759b1187eb830ec35fef5f4857",
-      "artifacts/clinicflow/src/components/AppDialog.tsx": "7cbe23e13a670b656508f9c8bbad9f5be26db32eab1a53ec33aaf7a759d027bf",
+      "artifacts/clinicflow/src/components/AppDialog.tsx": "607280b32f20bc20e9e4c52f445e7899a9e5e001ffc052d2a41795e3cbe2b8d6",
       "artifacts/clinicflow/src/components/AssignmentSummary.tsx": "1672d8ac0a684e65f88b7b1e4c1125087ab8d4faca54ff83b2f515dfa4aabc13",
       "artifacts/clinicflow/src/components/BookingMailOutcomes.tsx": "a69f8cd116e5ec23a56755ae19f1148669e30bc9ebd9eee2efc18a6b57c87439",
       "artifacts/clinicflow/src/components/BookingSteps.tsx": "ec4aad69d82b4d81f9f246fd668755f29c7d85c2fd9eb7ffa44430b65818bd68",
@@ -21858,9 +21892,9 @@
       "artifacts/clinicflow/src/components/EmailTemplates.tsx": "6e7ac88c8b236de56b4314dbd45a051119e06b7b9962be65acbb5ca57e8f703c",
       "artifacts/clinicflow/src/components/EmptyState.tsx": "32f5da25fb9db7daf70ff55f52d9a11eb413770bd287f46aece7701129c3586d",
       "artifacts/clinicflow/src/components/EventControls.tsx": "2b210024a7dca1aee6759003e427bb7230f9f9b14ed6c188742289e5ee1de39b",
-      "artifacts/clinicflow/src/components/EventTemplateTest.tsx": "43bb0d52e50f30f70bd51006cd6ca9599903e3bc7882a454de06115047db8375",
+      "artifacts/clinicflow/src/components/EventTemplateTest.tsx": "37649f7e33ab435bea6d1ab5909b80b0aaf6f6f647f3043c676f37943ef3f7b7",
       "artifacts/clinicflow/src/components/FilterNames.tsx": "f6b481ef2fe3dbc7319aecee852ba345bd68ddfc25f5c5c9c38259b9b25f66ad",
-      "artifacts/clinicflow/src/components/FormActions.tsx": "d63c07b226a1e2426a125e99bd225bf61123ef8791bf8722d6e828eb71730857",
+      "artifacts/clinicflow/src/components/FormActions.tsx": "b2566f307b7d658bbe4270c78f3e3d2fb557890f79043dfd578237a57d08552f",
       "artifacts/clinicflow/src/components/FormField.tsx": "1af830378c162af7d18646db87431ef9aa9cbf6c1c8a3afaae149815e61cce3b",
       "artifacts/clinicflow/src/components/FormSection.tsx": "1aedff135df6dd5eecfe4467d151b8b1082214e5dd00a8f8eada0b32cf3d5c72",
       "artifacts/clinicflow/src/components/FormTabs.tsx": "c7602b5aa71d27abf2972ac24bcbb6072eca3e69685ea1097dfca1f3ef1b1d1f",
@@ -21931,14 +21965,14 @@
       "artifacts/clinicflow/src/components/WorkspaceSearch.tsx": "d7af9c2c3b6359600e6d19fb4861cb4b1cbba9269b6e94e728b043eba33099b7",
       "artifacts/clinicflow/src/components/WorkspaceShell.tsx": "b35b4df45887b6b67e9c6e983f01a874650a86c46b20ed02b29543a22c91a824",
       "artifacts/clinicflow/src/components/WorkspaceTabs.tsx": "4237d8436d7bb3f8ed3f9d4358a11134d69ef079b88abd5c14fef972cd2d43ed",
-      "artifacts/clinicflow/src/components/accessibility-sweep.test.mjs": "f936a20d5e1c1b0b3d2636f432736e20dc4a9aa928a074db85b5d48322118f0b",
+      "artifacts/clinicflow/src/components/accessibility-sweep.test.mjs": "280fba9e2fb05a618686235b6852257709429671667e0dac503f07ba4985f81c",
       "artifacts/clinicflow/src/components/admin-listing-data.test.mjs": "2c630596d86e5cff1c13ac06d613d7b04da0b7df4c09d29bbd3cfb958e9d9064",
       "artifacts/clinicflow/src/components/admin-listing-data.ts": "19926adfba136bf60389c93dab0959e02b86d2914f6d0599cc5bd448d6379dc8",
-      "artifacts/clinicflow/src/components/admin-listing-ui.test.mjs": "9122291c957d7146da96bae9bfea5a29fc672e9c31a06231dc70de5cc85154d6",
+      "artifacts/clinicflow/src/components/admin-listing-ui.test.mjs": "8d4b9c39b3ed87b514d513084da3deb5b09ac565739d9b22d997159fdb681e64",
       "artifacts/clinicflow/src/components/admin-listing.css": "e04165ab74d1cd83694daba7edcc2bd46c39a83605c65faf3b7a94629336240d",
       "artifacts/clinicflow/src/components/app-dialog-close.test.mjs": "6c08bb441ca3541c99047ef19c6d41ff77725fc9b3039f730f0a4446425c6cde",
       "artifacts/clinicflow/src/components/app-dialog-close.ts": "5a84c27ff53894b1f03a0d245acae3653e2dcff01e8db8311d77f39b06f31398",
-      "artifacts/clinicflow/src/components/app-dialog.css": "17c58cc874820cdc9eaa1be80cfc1244d025c230fe79dfa2a368f206330111d6",
+      "artifacts/clinicflow/src/components/app-dialog.css": "613269cc2e6f2cc2a1288a273187efb2f689e6db6adf4f793d279f77cf952104",
       "artifacts/clinicflow/src/components/appointments/.appointment-details-3952.test-bundle.mjs": "0586006bea43c6b42cad67fa57861f101560e197a76e05cdb6a3f08f87ee4e4b",
       "artifacts/clinicflow/src/components/appointments/.visit-contact-2159.test-bundle.css": "09aacc9d0f08b3e17ea75caa8303a9bcb047f32e6cf58c826b9e01ecd49d1069",
       "artifacts/clinicflow/src/components/appointments/AppointmentCalendar.tsx": "39ce2af8bb4dcad4307059ec5025d0c9a82737ea09b875e736c658b313987003",
@@ -21954,15 +21988,15 @@
       "artifacts/clinicflow/src/components/appointments/TicketEmailDialog.tsx": "870d51a5f1488a28a74521b3f6841d0658fb3438f42d73088d76562c1a861525",
       "artifacts/clinicflow/src/components/appointments/VisitRangePicker.tsx": "f2073b3ff2c0746ebf74a649b15b81fb63f8139c9b94124e355d2c985fdab1a5",
       "artifacts/clinicflow/src/components/appointments/confirmation-email.ts": "6b7298eaf41bb9fec4ee747bfa8a3c31627536ddcdd3ef9d07c487ec86b992b5",
-      "artifacts/clinicflow/src/components/appointments/filtered-export.test.mjs": "687878a872f37a8a430fb745bffd24e4e158d7a594a614e2667d4ce633efa5c9",
+      "artifacts/clinicflow/src/components/appointments/filtered-export.test.mjs": "bb8b22cfb0638ea322bf50b7a5c625ec886d492c5c273950ed47298f973f0ade",
       "artifacts/clinicflow/src/components/appointments/filtered-export.ts": "784e0c7772c5e88a4a4e3ff6bf6b70f7f86005445b2f8ad61179ebdc510dbc69",
-      "artifacts/clinicflow/src/components/appointments/information-density.test.mjs": "8638eeca9cad2ecb16a718c8b793967c8ac0366cd8aad8bb15845455794844ac",
+      "artifacts/clinicflow/src/components/appointments/information-density.test.mjs": "b391d3b40b01b76e6f4f8a6ca9b00597cbd4aef508912e138356eec0c5a7bbb7",
       "artifacts/clinicflow/src/components/appointments/presentation.ts": "5ef9250bd27bc574e29778c2d5a76a497a6c77e865b1168a6cca70c47cd5c8db",
       "artifacts/clinicflow/src/components/appointments/refinement.test.mjs": "0a5e2d2e6ddd33ffdc9dcf98a19f5a9b86abd85c6a0615f405981dc07fbbbd76",
       "artifacts/clinicflow/src/components/appointments/refresh.ts": "d27044bcbab9bb33dd49dce07ef5ca29a16619574635f248311e6e77c68caaad",
       "artifacts/clinicflow/src/components/appointments/ticket-export.ts": "9852f0ef46e99a41158167db22ad079fee99481a79b26dfbe766e43f46c968ed",
       "artifacts/clinicflow/src/components/appointments/uniform-layout.test.mjs": "9edab0bfa046e458a0f9b4102968b9fc81d8dc5f32ad7416d52396115fd9adef",
-      "artifacts/clinicflow/src/components/appointments/visit-contact.test.mjs": "9df018ba4af107f6df97f2e0332273e4b5328181efd1a8c47a4d0fc1eac5b499",
+      "artifacts/clinicflow/src/components/appointments/visit-contact.test.mjs": "ceb260a4719ccab669a7411d82b4c234ec5ba192225244962eaf6f62b0b96223",
       "artifacts/clinicflow/src/components/appointments/visit-range.css": "ca9dd19f63c402b0910afcc71f92cbad58c0d11f36d7deb6d9dc60de2f8fc1ca",
       "artifacts/clinicflow/src/components/booking-mail-outcomes.test.mjs": "52536d65ec7bb87f53e2287d9c6a62d0038246997dbb08aea34769047c3eda3b",
       "artifacts/clinicflow/src/components/booking/BookingDiscovery.tsx": "1a1b18e541c921b341bda3de4cf5483305d4bf4b80c5026e2399c00d96edc99e",
@@ -21993,9 +22027,10 @@
       "artifacts/clinicflow/src/components/communication-usage.test.mjs": "dc23aafee4ac1ba1e8639847e1fef0885993a37758c66979e91dd17e3cc1b78e",
       "artifacts/clinicflow/src/components/communication.css": "65e9bc1f1e548d7dca1db77e04c5ac8ed6938ff14f14bc8115cb06b0bc394609",
       "artifacts/clinicflow/src/components/compact-listing.css": "9b1a00d724980dd9fad240ab5edfc870979b706fd687ecb830b8cfc28d5a2ad9",
-      "artifacts/clinicflow/src/components/compact-listing.test.mjs": "b8e9975c637655c9cba8d8a562f09b4a30833b3fc6c55a80c892834a71a6e035",
+      "artifacts/clinicflow/src/components/compact-listing.test.mjs": "0f2d0ca97c1009fbe1ca8f23d57d0779c467fd40da0ef5b4f7115388c22b7d8b",
       "artifacts/clinicflow/src/components/concise-descriptions.test.mjs": "ed88aac5de9069c0d3913bbbd416bc92664acd276535c9ddda13b6cd6f640f73",
       "artifacts/clinicflow/src/components/copy-closed-day.test.mjs": "26cb29b9eaed0ea26fcdb171ed9872b004619a4f2256cfe4472315c277fb3b5a",
+      "artifacts/clinicflow/src/components/current-form-composition.render.test.mjs": "75743ebdb236b103dff6485924e1bb876eb554d02a601e2fbb4391cbdf5361f1",
       "artifacts/clinicflow/src/components/custom-roles.test.mjs": "23b368a66debbe4016b46219d297fd0c9c38d61afb949a7a22701688095d0a68",
       "artifacts/clinicflow/src/components/custom-roles.ts": "0c1af05cb0a9fc45c8a735042eb64ee57d4e0bf64ac470ba3a9f10f4d3b19ec5",
       "artifacts/clinicflow/src/components/date-schedule-reference.test.mjs": "56dbed4e8fa424f2666ae4d31c733974a9068eb2f1222de98cde159f74323b61",
@@ -22006,14 +22041,14 @@
       "artifacts/clinicflow/src/components/dropdown-regression.test.mjs": "219dbab1dc8e1e1f7a3270b1ceb559706ac8eb14c127ffb36a94755a43c2acac",
       "artifacts/clinicflow/src/components/editor-submission.test.mjs": "de1d904a7b3945659fda48ff404f9a31dc0586b7f12122c8f7712936b767f848",
       "artifacts/clinicflow/src/components/editor-submission.ts": "37af32ca903dd92fccb4eaf63df6b95700b3205994322e33744893d155dfea00",
-      "artifacts/clinicflow/src/components/email-consolidation.test.mjs": "c86574f9da38e68e7f5aaef6d5035f27f56f67c486e870c7f6343c9c3e21ccf7",
-      "artifacts/clinicflow/src/components/email-input.test.mjs": "ab3affbd4f8abf409c670939c3946cff91058218cc9624598b96743b17a76615",
+      "artifacts/clinicflow/src/components/email-consolidation.test.mjs": "1464c22bb4073707f20edbb617ce28575b89c11ec60c9c38cad84d3a811ac99c",
+      "artifacts/clinicflow/src/components/email-input.test.mjs": "876fe1fe1b5b71285af7743328b74a9514fdfd1ade5b0904bb0e04097c8e5c06",
       "artifacts/clinicflow/src/components/email-templates.css": "1c36518f6be241baeb304484813e4698647c9b88bb2ff36364e38fa3a6519c49",
-      "artifacts/clinicflow/src/components/email-templates.test.mjs": "5deeb91066b9871ee22ee358a5a338ea967bf8d89126676689174e637be138d1",
-      "artifacts/clinicflow/src/components/enterprise-interactions.test.mjs": "c71ee3d36a8772732589afdaf323e4b1892deb8618b3ead0bb6d78fabf73463c",
+      "artifacts/clinicflow/src/components/email-templates.test.mjs": "0cacab13bff159ec7a77ab13f726768bd2df0498c98c754a4db8f566cbcc1b8f",
+      "artifacts/clinicflow/src/components/enterprise-interactions.test.mjs": "f5261354ec9260cecfe81e11943b0be8537aaf1ba5d337a546c65648c6e2cff0",
       "artifacts/clinicflow/src/components/error-boundary.tsx": "6489f39a2143853d470010440013097c5b01a7cc186bfdce2eb380761993d701",
       "artifacts/clinicflow/src/components/filter-drawer.test.mjs": "cda90d30835826b7161e5a0e7c07d625e68e2ee3d9376a488c2cdbc278bcf5f5",
-      "artifacts/clinicflow/src/components/form-standard.test.mjs": "7b2a274b10471d44832b7a44a5532a009e9f5db1cec3fc5d8697b92d0bcba371",
+      "artifacts/clinicflow/src/components/form-standard.test.mjs": "954cf1ccd0c4224d3280516d0ad63a576c87e70130ab7db9554ec7b5b4193e74",
       "artifacts/clinicflow/src/components/functional-transfer.test.mjs": "0c6b184def44ab22b987f5e6e2915335c3740ab6ddd8bcb695b7a63fde9efdfa",
       "artifacts/clinicflow/src/components/guest-booking-date.test.mjs": "54d472f2483776e6487c7d266f691e10807713196baa1b9aaccb969efab925e8",
       "artifacts/clinicflow/src/components/guest-booking-date.ts": "f0216a48cdf3efc807df9891fd6b36bf19cb884ad6cf413065e54cbd2a22ce30",
@@ -22022,9 +22057,9 @@
       "artifacts/clinicflow/src/components/information-density-pages.test.mjs": "425732fa98b2b60d829b7d91c26b6c035e11d1f0490a55adf17a81a22f8b6588",
       "artifacts/clinicflow/src/components/integration-settings.css": "3b5a18a0d1eec8c419a1d4946154576fd38d5cd1319a70e14dac27873cc8635c",
       "artifacts/clinicflow/src/components/integration-settings.test.mjs": "b546a1baef34a85c63bc85feb58e33e5d17802f22a4dfb8e10092cde9b2c2de3",
-      "artifacts/clinicflow/src/components/keep-in-touch-settings.test.mjs": "36590f1335eeae50a7f30fd987a0a28726c04496837f280e19b90d8b3b57d1bb",
-      "artifacts/clinicflow/src/components/linked-schedules-ui.test.mjs": "f7cc3632650157d21518b0e780985f00bfa5d342da0fd255457e9afdb71fd8de",
-      "artifacts/clinicflow/src/components/listing-controls-render.mjs": "de94282e1bbcf40e8e8bf315c1adf1d36952830b40784e536c438015b6f5ad80",
+      "artifacts/clinicflow/src/components/keep-in-touch-settings.test.mjs": "bb82b43e06ef4684eedb9badcd4ed8dc6b4156fcef38d5e96505247dbf8ab3c5",
+      "artifacts/clinicflow/src/components/linked-schedules-ui.test.mjs": "8562e23ba59d71d74d961a25dad36c4a23bb8944675ff47677de076bfe4b04fc",
+      "artifacts/clinicflow/src/components/listing-controls-render.mjs": "44296c3491e51ce10020492c3d8bf4d1a4875ded381c43a2e99b5c9d7faaea33",
       "artifacts/clinicflow/src/components/listing-view-controls.css": "460c4f71463af44c51fb604088c14ad614493d77e93a72e73eaa5fb669eb1f34",
       "artifacts/clinicflow/src/components/live-search-state.test.mjs": "de0c9d4a71a3beaa8918ae14893b21ebbe2f083a2b372403034e03f9ae64b0d3",
       "artifacts/clinicflow/src/components/live-search-state.ts": "5590f65daaca96a617bec068a8c101b03454573523abc5cb899e3a862972582c",
@@ -22036,16 +22071,16 @@
       "artifacts/clinicflow/src/components/notification-logs.test.mjs": "83d8d15e797166b04afe33bec73c314352673f458f680f12d6d054fc3594038a",
       "artifacts/clinicflow/src/components/notification-page.css": "7f20bd0bf00d89d716d2fb59621714b21a090dad06f49f995993efc0f70a5366",
       "artifacts/clinicflow/src/components/notification-settings.css": "791671156bd373e5d669b9235f271d5b7f4612b00a6d0bd29279f06eeae751f5",
-      "artifacts/clinicflow/src/components/onboarding-resource.test.mjs": "ce7fff71a598df9ab2b9c1d86deac039adc080b5b3ebc4dfc8c9a4d65ae58240",
+      "artifacts/clinicflow/src/components/onboarding-resource.test.mjs": "179f15ff611879886d2b3fbe91616db41f0cf819f0d9f142f387a1f02bc03387",
       "artifacts/clinicflow/src/components/overflow-text.css": "7dc5b5eff02437a03f6038a0acba0d9e70429f5e83d3fc0891c591eceabdf2fb",
-      "artifacts/clinicflow/src/components/overflow-text.test.mjs": "b927bbad442a78ecd0e7e145e85752e7abf88bbd6503a0bf70f08ce70f52a582",
+      "artifacts/clinicflow/src/components/overflow-text.test.mjs": "bcf77351907156e50f9357d68384605a53b65651684692150375ef2a2c8565c2",
       "artifacts/clinicflow/src/components/page-description.css": "6b68a9b32612c395c40f04c5fccb217b449c9a1ee9d6cd8f26898bb7f4f15275",
       "artifacts/clinicflow/src/components/patient-export.test.mjs": "7398cdbed70f9ed9df9e15f915b854cc0147f19019d409e659b3153e0977ecf7",
       "artifacts/clinicflow/src/components/patient-export.ts": "5fa38d3a07c1620d47f0ce690385d4ce9cb4dc0ae527b991980505a1b3176d3b",
       "artifacts/clinicflow/src/components/patient-qr.test.mjs": "f2a1857a206b26aabc93006f5b3674ecfccae256406b496fd3945256f4a26b43",
       "artifacts/clinicflow/src/components/patient-qr.ts": "0e262731272b96ebdec142e06e9846af13d1182da0aa331db10eebc97d8f4d5b",
       "artifacts/clinicflow/src/components/permission-matrix.ts": "3c7d228df340996a155c20c2dfd3319b66888cda15b6602ab19a6089287557cf",
-      "artifacts/clinicflow/src/components/permissions-logo.test.mjs": "9e9ba0041beb568b896eb5f8b4d706a6959d34804e20ce2f97662ac1b30908a5",
+      "artifacts/clinicflow/src/components/permissions-logo.test.mjs": "bcda00222244e1b261abd663d7e537501e35bb24718c5fc0e4c1fe7da2e4da2f",
       "artifacts/clinicflow/src/components/public-directory-navigation.test.mjs": "2b6ec379eb7e446a81c779558845d98ed28f5c32d266a2428d0c84917c77c110",
       "artifacts/clinicflow/src/components/public-header.css": "da727bfb51415142ac7ee93399a62a0f3db3f869394b4d32ccc6f7ae78dedfc7",
       "artifacts/clinicflow/src/components/queue/DurationEditor.tsx": "afff4cb2f40ff22c3cf936414105dcb9fa5c852dd3faef7ed8ba3e2a2db302ec",
@@ -22053,13 +22088,13 @@
       "artifacts/clinicflow/src/components/queue/SessionQueue.tsx": "05de9d0ebb2ea861fbd497196313982df055540f8984aeca9f7c89478439c214",
       "artifacts/clinicflow/src/components/queue/SessionSelector.tsx": "622e10c82ae8c2b0f0223c92e20e8099427707d5d6c05cd3f6d844e0db0a5c6d",
       "artifacts/clinicflow/src/components/queue/StatusTabs.tsx": "4ee3aaccfc1fc037870e79fdd898fd488b6da55f06440348517e0fc7ef35c52f",
-      "artifacts/clinicflow/src/components/queue/queue-layout.test.mjs": "608eb50d54d127a9f5c59259c1b69c29220e380b5bb1c996e3b94fcda314bf54",
+      "artifacts/clinicflow/src/components/queue/queue-layout.test.mjs": "ede39e820837946bf7e80c3b0caff807e360816885767a50bc8beb85513dc7ad",
       "artifacts/clinicflow/src/components/queue/queue-workspace.css": "cf1ac9bd0e6808da7f3c92469e2e5dd8e9463ae8c40abc891fd3b8b5696d652c",
       "artifacts/clinicflow/src/components/queue/session-scope.test.mjs": "411d6d2c7fd6ed5d9a02293b1078e7a80d2b4664303b3557b0f5bef94ff7e508",
       "artifacts/clinicflow/src/components/queue/session-scope.ts": "18da8e9490436874bcd861e8b297565bcb44f0be8a86294a175384a85fb58dc1",
       "artifacts/clinicflow/src/components/queue/useFreshWorkspace.ts": "0e53c848473b2ce3a6803973bd465ed2e1c8c08736492b3cfa2047e9d4e6133b",
       "artifacts/clinicflow/src/components/queue/useSoleCareDefaults.ts": "82c4df3aedbba3af566a600a883e96d3c51bcdc13af7e37c940afeb72e521a81",
-      "artifacts/clinicflow/src/components/registration-address.render.test.mjs": "494e6b0c90546cdfff1a533c9ec3f828822d6deb5717d9a1e476b13f180ef910",
+      "artifacts/clinicflow/src/components/registration-address.render.test.mjs": "5c6c3df4988d331c858345220364e388ca37cee9379ae09e8125b40121cf19d4",
       "artifacts/clinicflow/src/components/registration-review.test.mjs": "4412b2b8ff62b16637b545d44daf66c943d8b5d91a6ec1a620c5dfff7c1986f5",
       "artifacts/clinicflow/src/components/relation-validity.ts": "39aaf6d516b9dd72f89341d8cfefda0b60fbc8e68e82474cb73b30ec3f1e41bb",
       "artifacts/clinicflow/src/components/reports/ReportKpis.tsx": "d0e227f00e6014a2a1444d1380dc552aa3cb6d3d75fd7491ef14aedbefbfbd89",
@@ -22071,16 +22106,16 @@
       "artifacts/clinicflow/src/components/reports/reports.css": "4d641255e83bb6899532934eb6d5a5106a4ede9ca51c52ad6e74ffb20cc93eb6",
       "artifacts/clinicflow/src/components/reports/reports.test.mjs": "4af38eb904284312d1419b6160ba823f6472c92935d785ced2b1647e0fedcc30",
       "artifacts/clinicflow/src/components/reports/scope.ts": "491d0d5c317503a8a17cf4f426d5a3e5f688f8c86c8dfb73b1835e6bab53fcc9",
-      "artifacts/clinicflow/src/components/resource-controls.test.mjs": "5c1cebe44e0906c0d5c32b850ba69ea61ee461a8621f7781c1ce134b77c0137b",
+      "artifacts/clinicflow/src/components/resource-controls.test.mjs": "d34d2a7ff4ddc7bac6f7966b54b9c83a94a6714a485272f2346303e7898a70db",
       "artifacts/clinicflow/src/components/responsive-action-group.css": "bb19305c9395183131b89a8cdeb857ece69c323baedf282ef34727b838489734",
-      "artifacts/clinicflow/src/components/responsive-action-group.test.mjs": "236b1afdf413f8c9d718179b41973e86e12c0e402f2f2f35db749bcff070dafc",
+      "artifacts/clinicflow/src/components/responsive-action-group.test.mjs": "42751b2d4d077833d4f1bcf68952b86c687c150e7610e366292d9043266e660a",
       "artifacts/clinicflow/src/components/role-selection.test.mjs": "94d354023b8008eade2201ae06be5ef0eafd1b5b4a66991be4b046b99ebb2092",
       "artifacts/clinicflow/src/components/role-selection.ts": "053e193c2660f11d5098a546f2958096a0412ad3a3024aacfe744b1aa5678407",
       "artifacts/clinicflow/src/components/row-menu-position.test.mjs": "635fa69a2bb75c168ed1228f73028f7866aebce78266ffba27fb7e120c2046fb",
       "artifacts/clinicflow/src/components/row-menu-position.ts": "f1330b6c17217424e6779fb0ae1d43134c364aec7845b4323dfb1ea38f72eea6",
-      "artifacts/clinicflow/src/components/saved-scope.test.mjs": "b982c504a326725e9d61909a655fa89266ddc05a0e3bab7032ea20b6e3bdd962",
+      "artifacts/clinicflow/src/components/saved-scope.test.mjs": "acbb006cafe195888e3124c9faf47f43f08b0ac13711548d47161b2bef51a3e3",
       "artifacts/clinicflow/src/components/schedule/AvailabilityScheduleEntry.tsx": "77b5b3fa70ca68f16298299e85902dc689a5bbf22273ba298d596385cb9c9830",
-      "artifacts/clinicflow/src/components/schedule/CompactDayEditor.tsx": "27f6566709b0090793b958c2d5fea434febdb940eabc57e2e8f780a03b6e90e1",
+      "artifacts/clinicflow/src/components/schedule/CompactDayEditor.tsx": "37aebfaac744923b3794cc12734890c49483179469ae8858b917a038c91b11d3",
       "artifacts/clinicflow/src/components/schedule/DoctorScheduleContext.tsx": "f0ddcf4c318093bec3fecff294b918f253e663f5c0c1339c59e218f0ebb84923",
       "artifacts/clinicflow/src/components/schedule/ExceptionImpactPreview.tsx": "3610109ac961628b1badb7590cd86a8835c0b76122d32915cdd95a5cc0d17349",
       "artifacts/clinicflow/src/components/schedule/FollowLocationHours.tsx": "9a3e80ff64f75fe71091c56510895d37e5d9f27e37bc67038277671af844ff34",
@@ -22090,8 +22125,8 @@
       "artifacts/clinicflow/src/components/schedule/ScheduleExceptions.tsx": "741a26735650dd617853f50551cdb1251cf46c7683a4aa47695bacce0c024b0c",
       "artifacts/clinicflow/src/components/schedule/WeeklyDraftDays.tsx": "35f7e223089d46f7bc14879964ddeeb20dd8189f5bbb77644406b86db3ad14fd",
       "artifacts/clinicflow/src/components/schedule/WeeklyOverview.tsx": "ea8653fab8e69143190d8f4f29a489f1664ec5666f3c853b8da621d7e39e5912",
-      "artifacts/clinicflow/src/components/schedule/WeeklyScheduleEditor.tsx": "9e99598a501335189650effec1f9909df6c922b7038caa5b85fc12b1c2dfced8",
-      "artifacts/clinicflow/src/components/schedule/compact-day.css": "ea19725ef4acef222d2cb63a082801fd7d3c06017a65c6b2b5680f6c63c82eae",
+      "artifacts/clinicflow/src/components/schedule/WeeklyScheduleEditor.tsx": "7a7448ef0c2b8bef066a0fcaac214c22d5ce0cda867f2ff8fb68e30e304c0bbe",
+      "artifacts/clinicflow/src/components/schedule/compact-day.css": "824f431e36816fd0207a1506bf34b85f69fcf14f16f382068c20504109f46186",
       "artifacts/clinicflow/src/components/schedule/compact-drafts.test.mjs": "84195a7295b74738b22631a41cfec9cce73aa222f529a8d6c14366052086e9a6",
       "artifacts/clinicflow/src/components/schedule/copy-plan.test.mjs": "160ac5f3e08cadf05614715d8d2ac50f5f946dfee43b0fb4720dcb0485d25717",
       "artifacts/clinicflow/src/components/schedule/copy-plan.ts": "024f13ea78ba59b638009fa1f8ef1babec87400eab634705a79c4a1b151beff1",
@@ -22101,18 +22136,18 @@
       "artifacts/clinicflow/src/components/schedule/week-plan.test.mjs": "504cb02e5bd057472d9175432c0a34392657a257ae0050cd71102078f2455351",
       "artifacts/clinicflow/src/components/schedule/week-plan.ts": "748d528ed8a224f511f3dbbd1ed842e8a6956ebb7a9a691856a75164d5550d19",
       "artifacts/clinicflow/src/components/scope-completion.test.mjs": "6bcd9b2ea9941783493d14f7a48a39813ed44c16d103ed6f311c29e9e44e0584",
-      "artifacts/clinicflow/src/components/search-links.test.mjs": "9be120d97d0bcd533126b7e1f0ccd36761f41ee410d53afdf54c56d2bfe5f824",
+      "artifacts/clinicflow/src/components/search-links.test.mjs": "6fd2fbee8b539a82e58e549efcc616427fae515412130b2fe331fda50972423a",
       "artifacts/clinicflow/src/components/searchable-select-callers.test.mjs": "add6500e2bfd7d37317eb54bee7044761354651d94e9e8787354d02fc5d815ca",
-      "artifacts/clinicflow/src/components/section-a-consistency.test.mjs": "5ed49136ea3e01c05d6d03f46c9bcea3de4963f72e95cbf5d027952225b3282f",
-      "artifacts/clinicflow/src/components/section-b-locations.test.mjs": "86f11573bfcbd31f3f0a0d09060c82facbd66f93f13c8cd1d5ad4b46c624175f",
-      "artifacts/clinicflow/src/components/sections-c-g.test.mjs": "eddef7b80defe0bf137106d54906b20f73b31928628e9e3b3e8e6da5cb8b6af8",
+      "artifacts/clinicflow/src/components/section-a-consistency.test.mjs": "86024841f6a32655ad76c1072651c02ca33cc748a27aff35708981a5e97512d7",
+      "artifacts/clinicflow/src/components/section-b-locations.test.mjs": "6cda3b38c79830f30cfd58312e236540f2a39d029a94a62e52627c53fe0957b8",
+      "artifacts/clinicflow/src/components/sections-c-g.test.mjs": "d84135379948720a2d693d6a9194013f43ec3e9b9854c193151f179eaed2cc19",
       "artifacts/clinicflow/src/components/shared-feedback.css": "c6348ab0898ffb740c13b39586d33ac387ee28ae9e453e120b925bde22b7077e",
       "artifacts/clinicflow/src/components/shared-foundation.test.mjs": "d3bfa5738ba263869c1c12f928c1658cb030cd243a74f37cc7aef7af0fb91eda",
       "artifacts/clinicflow/src/components/sizing-regression.test.mjs": "16a6a47ca03766fc31225f55ba575ea5593469ca867e87151773e644ea85be1b",
       "artifacts/clinicflow/src/components/sms-mapping.ts": "834116c93884edaaddd2feb4fc46fecf2f3c4babf6d65806487cb1a9196fa80a",
-      "artifacts/clinicflow/src/components/sms-settings.test.mjs": "32cd434be28e93ca1da83100d9bc79bef798a0d439b2fe07485580edf981e6a8",
+      "artifacts/clinicflow/src/components/sms-settings.test.mjs": "8dced9237a36541139c27cc6da1a69779cb27247d08aaefd5ca78ccdd6dd01e6",
       "artifacts/clinicflow/src/components/smtp-test-receipt.test.mjs": "2da9171b4b450829f880364ba5da5f36a2dac3ca242e15e2a1d28fc0b3f5ae8a",
-      "artifacts/clinicflow/src/components/style-ownership.test.mjs": "4986edddefe7e8ce8fca435257146f9f60071619c723432401b09da29fb2f0a3",
+      "artifacts/clinicflow/src/components/style-ownership.test.mjs": "df3f39a574b4ea51bda20db1a44506470ff5f220f752ed782e8cee9282e9cd3e",
       "artifacts/clinicflow/src/components/suggestion-input.test.mjs": "1003039dd192a68abb9b189e9d74b9b21e92702408c8fd911c0538c850bc09f1",
       "artifacts/clinicflow/src/components/system-standard.test.mjs": "964aba095924b079cf0f60b9b99e223b22c19fb4aeff1a48f6c32377712ab70e",
       "artifacts/clinicflow/src/components/system-users.test.mjs": "ffaa6722a6c28a31120727f9a5ebc5c333595595ae44ade202120f155465f15e",
@@ -22180,20 +22215,20 @@
       "artifacts/clinicflow/src/components/ui/toggle-group.tsx": "6d7aca86245edf5d0a8f6f3ed73bd19316f4865425891eabccd6f3e37e59519e",
       "artifacts/clinicflow/src/components/ui/toggle.tsx": "5800d2099224ef90892e8c1d972d2a0964391c33cd43d7f5c6abf5cd42e023e1",
       "artifacts/clinicflow/src/components/ui/tooltip.tsx": "859a41b38c23b80fef5bc76c3a6f9a22518faf1328f5903a1e7adc17d2b2a5f6",
-      "artifacts/clinicflow/src/components/uniform-controls.test.mjs": "132d124bd17bf560de542d8e141cd78590bb8c6098d643aa2ecd97efa71bc141",
+      "artifacts/clinicflow/src/components/uniform-controls.test.mjs": "24d80b883a9fd8f7deaa22be0bad380b012622bdab6fc3f17f62226a30a799a2",
       "artifacts/clinicflow/src/components/uniformity.css": "040897977014a51d890b08c17c0d893b64a4ae95d9d1fc6bd32958ef0f1b9922",
-      "artifacts/clinicflow/src/components/uniformity.test.mjs": "1c86729920cda439af974f2abc9ea6e211362d4c1ebce2c61c6b462a27e58f6e",
+      "artifacts/clinicflow/src/components/uniformity.test.mjs": "3a01d2eb7729d6917ff0c9aeeb3163956b5864f292f8a4faac5ed8a504325b39",
       "artifacts/clinicflow/src/components/useNotificationManagement.ts": "66a0c9c69ad7ed33346ba72132dfe4fd75eff428b7b087296a8ccac43c7ca18a",
       "artifacts/clinicflow/src/components/weekly-day-rows.css": "c30e9b2e74e0900dc9be77993fd8c85ed306b0e866d09cf514fc884eb8136a4d",
       "artifacts/clinicflow/src/components/workspace-branch.css": "389a4c7e6fdef8560ff15215aeeae02e44c78177e94498c358557483474d79ef",
-      "artifacts/clinicflow/src/components/workspace-branch.test.mjs": "df7502251bc43e531c48650da61a2c111d5441f7f4b044bdaa3fa962a4ef3cd2",
+      "artifacts/clinicflow/src/components/workspace-branch.test.mjs": "6cb79dfcd487efc4f18be36a9b615d485a1d2426b9d218b0f40825be23138144",
       "artifacts/clinicflow/src/components/workspace-consolidation.css": "f8306b87c5e5748bf70f67dfabe17db3849323e76bfe8138592e5b955ba906c9",
       "artifacts/clinicflow/src/components/workspace-search.css": "934f0fd2f0d040b37df29ad1ec245c498a6c76a824b87d1c97f9897684b618b1",
       "artifacts/clinicflow/src/components/workspace-surfaces.css": "b268904d460bd632b230248f8cca0716f686fb6ffe8c397e5da280bfddac0920",
       "artifacts/clinicflow/src/components/workspace-surfaces.test.mjs": "66f3fd435279cb915bece8853597fafb04e7b75e0e4b9f54f63998127ced190c",
       "artifacts/clinicflow/src/editor-input.test.mjs": "0fdf1695c1b61a6219b278738bf46aa866d99d0c315aee4913caa362e3f7f57b",
       "artifacts/clinicflow/src/editor-input.ts": "e230cbed0ff287f2046ad91917ecc3ec3a898ac42407df1e60e06723c6c8d0d7",
-      "artifacts/clinicflow/src/enterprise-tokens.test.mjs": "81e86fb2e91de86642072d2f26b7a90564a5576040e618bef817ab283c6de841",
+      "artifacts/clinicflow/src/enterprise-tokens.test.mjs": "642b0d312ae20f243d453126f6657464f4ddad753fdab9f2c8bd418ac5ac450c",
       "artifacts/clinicflow/src/form-standard.css": "eee34e5c9aca0ca31d7212ae0c641e0753a74d22f6e4d0453c496ef3a85c9b4c",
       "artifacts/clinicflow/src/guest-receipt.test.mjs": "208127f5583306deb8911a242be01ae0ea5b33437ca1e3f1595e6fc677b1ef46",
       "artifacts/clinicflow/src/guest-receipt.ts": "3be860a9d9e0d9701a019c9c47fd7a3ecf6d2cd534b2d44c091561d9dd5bc827",
@@ -22218,12 +22253,12 @@
       "artifacts/clinicflow/src/lib/booking-doctor-membership.ts": "818ead6a6441c1ef8a8e770f450a3cc2250f2d8f22ea47fdcede77a5fc100ac9",
       "artifacts/clinicflow/src/lib/bulk-summary.ts": "54b14022752a86df9d297c6eeac5d129232a2b33abea25ea653b453771d91679",
       "artifacts/clinicflow/src/lib/check-in-policy.ts": "8f29041986b3ac85c8c0cc58dd231f742c4ed4fb5495a7b9c391bfc3d219d230",
-      "artifacts/clinicflow/src/lib/clinic-address.test.mjs": "ce5f13c6bca949ad34a8dc013d269eaa84b78c359124c8b69972a5f80dc03491",
+      "artifacts/clinicflow/src/lib/clinic-address.test.mjs": "d9296f89f8cae160d07baf3c8bcb69da49b042bde14df22909e7d6e2615b5585",
       "artifacts/clinicflow/src/lib/clinic-address.ts": "8314bfda1eaebc5f489398d712a20e63452762c8666569df5b1575f567acbec1",
       "artifacts/clinicflow/src/lib/clinic-navigation.ts": "4496641e80e491357cb84c3444d5fd5115f987a41949014307b5dbebc2c25a16",
       "artifacts/clinicflow/src/lib/clinic-report-outcomes.test.mjs": "c4ff8b0c99fa2375cf7d877de24c617a91591ee7be1f6e740dc4e1a457f28439",
       "artifacts/clinicflow/src/lib/clinic-report-outcomes.ts": "60a60985d5256a2bef451e158f2a26b8ab54352588f07d4829304e1617c5fc3a",
-      "artifacts/clinicflow/src/lib/communication-contract.test.mjs": "205872fb7654d5874d28dd3c815028e04803756fbd307ed9a5b49e927455afab",
+      "artifacts/clinicflow/src/lib/communication-contract.test.mjs": "c66685808cb511779d36bee2742b94e0a57ed9a11969bb24d77aa04889934c8d",
       "artifacts/clinicflow/src/lib/communication-routes.test.mjs": "9fa06332349ebfc89ad9927ded4fb91b9d38eae662bcf99c725163c468a88258",
       "artifacts/clinicflow/src/lib/communication-routes.ts": "3f2f611e6915b07fdb104d2ac2cb33e94c40ee5d4897049cf9aa412cdf059643",
       "artifacts/clinicflow/src/lib/context-refresh.ts": "e1ce806fa6c6b6570b07748f3652368139ff88d2cbac397a17e80d712f80e44c",
@@ -22270,7 +22305,7 @@
       "artifacts/clinicflow/src/lib/schedule-validation.ts": "a7ecc5255a3cd4fe959d74fbbb5087b422f36ddde45f75718ef4e915dd357421",
       "artifacts/clinicflow/src/lib/search-categories.ts": "9eef8dac887ee997bc01c674fd7e6da9a039a5751faf7f64ca3b941ff6cad68d",
       "artifacts/clinicflow/src/lib/search-links.ts": "76c7d4ea2b0501229985d98707a13f204b7fb34ca7d4ef59530e0051a60d4c46",
-      "artifacts/clinicflow/src/lib/security-template-events.ts": "bcbbd5218c4e95987aac114013b34f47a97a462d90682c93feaead25942c1e15",
+      "artifacts/clinicflow/src/lib/security-template-events.ts": "eded6d707a22300ff4d66c530e38fd5043919127847509f4aaa4db9bf2dd039c",
       "artifacts/clinicflow/src/lib/selection-label.test.mjs": "a183352117045f306433adf8069717ca40edfc146d35657f78524736f5b7e524",
       "artifacts/clinicflow/src/lib/selection-label.ts": "e98dced67cf5e18f33f33bc38b9687c5aca30974ff20138c031e275dce0ea7d8",
       "artifacts/clinicflow/src/lib/settings-access.ts": "b6861a1f2fe840bb7bccaaf65c7793ed20a46cbfc2d46e4654b645c6078b0614",
@@ -22311,7 +22346,9 @@
       "artifacts/clinicflow/src/staff-input.test.mjs": "739ce07e704b9fcb9bc1522b6e71b79099c727c89b154dd7202ce98b6c661bd8",
       "artifacts/clinicflow/src/staff-input.ts": "0334df247b0452af0f51d986d0f0682fb312f5094e2ffdab14043ddc047b14bb",
       "artifacts/clinicflow/src/staff-list.css": "46cb2a7c10df8c69ebd91c0f5a4cc43fd950123c6886478966408c6376a5f753",
-      "artifacts/clinicflow/src/workspace-style-tokens.test.mjs": "05bbd8c145bed504f730747dfb7e99b973c1197438db34ba94d4ad2fedff507b",
+      "artifacts/clinicflow/src/test/compact-css-exceptions.mjs": "260becb6b631f6065e7b1891b3af421f18110848b799ff127e5a899b53885352",
+      "artifacts/clinicflow/src/test/load-module.mjs": "0bbe7bdf795382fc3e3dcc83cda1bf7bb97e9ca4a946a3a2a31835ff9f5e82e3",
+      "artifacts/clinicflow/src/workspace-style-tokens.test.mjs": "c8f1d98f7039e00460fe346ab323f938cc56b5ba1a2b39fbdf6b089e7651bc64",
       "artifacts/clinicflow/tsconfig.json": "2fc2895ec1dcb3adda642b383c768fda1e4657f0e14872fab5955ef5d0acd8a1",
       "artifacts/clinicflow/vite.config.ts": "525f7e3b3809a9f697b9215b3de155a94d71b871839c366fe6c4bcae7ab528ae",
       "artifacts/clinicflow/workspace-regression/BookingFixture.tsx": "d3e9ba43af7e7130e496eadc1711288d658203f8caa6de6ea69d3a48a088bc07",
@@ -22332,7 +22369,7 @@
       "artifacts/clinicflow/workspace-regression/tests/app-wide-fixture.ts": "43349e38d64d693a226194a18793ff696ecdc3b7169f9a23edfa9eccbde08f25",
       "artifacts/clinicflow/workspace-regression/tests/app-wide-interactions.spec.ts": "c6efa4c187de11751156288a84957eb99966e8272a45ebaec0f5dcc36393fed1",
       "artifacts/clinicflow/workspace-regression/tests/app-wide-ui.spec.ts": "e70015cbdc528ce52b698dfe4a5dee6babbe6141207ed4f7db97b7d08dee9591",
-      "artifacts/clinicflow/workspace-regression/tests/availability-editor.spec.ts": "4962641d43eb1d59912a69272e02fa6070fcf7df4a2395f2945217b3eadb489a",
+      "artifacts/clinicflow/workspace-regression/tests/availability-editor.spec.ts": "2ac720bbffe9ec27e85a7e76abbcb072726431cf7363223f67dd449fe78db6c4",
       "artifacts/clinicflow/workspace-regression/tests/booking-discovery.spec.ts": "6b564f37f0918e1ad0d342712f18ab0f19b90228e55b6e59679e6cb55eba6d60",
       "artifacts/clinicflow/workspace-regression/tests/clinic-staff-layout.spec.ts": "c3a1dfa8cbea80f898742798666897d1b744d26a57cfc33faf95ca9f5df9ae78",
       "artifacts/clinicflow/workspace-regression/tests/compact-geometry.ts": "558af5f0ffe2cc6dbe967a68522163ca7b4f5a4b3572faf115e7b6692d66ad9b",
@@ -22799,7 +22836,7 @@
       "lib/api-zod/src/generated/types/workspaceOption.ts": "a36d40075ecb36a8cdd3de6ead57e173c908554816232b129b64e2a3360409e2",
       "lib/api-zod/src/generated/types/workspaceSelect.ts": "35a4647b523526699e08c8f365af7a92abbe955a60790c3555f693727a26fab2",
       "lib/api-zod/src/index.ts": "759db5cd66a51788f381ccf6329e5a3a78629f849645e4a5271a84a1a68fcd58",
-      "lib/api-zod/src/notification-variable-contract.ts": "04c67a41521e99c26f6eadae765a3b049b8835087ff5d9f0b0d1e6b86ecb1b1d",
+      "lib/api-zod/src/notification-variable-contract.ts": "f7b5467517488db0d4f8bbedb3194a53618341481554f2d87b5dc9e979ef265a",
       "lib/api-zod/src/public-page.ts": "7ebf69ce60f6d87a442654f38618134739c4f67d61e62974802df2602acb5786",
       "lib/api-zod/src/public-website.ts": "c870239b7319e357dc1a55766432885bcc882159b8ce84acc1dc9458920d731e",
       "lib/api-zod/tsconfig.json": "fc5855171d6c0423ae2d28f33c3355dc0fd9bd253764eca930293f6eecc20f36",
@@ -22808,7 +22845,7 @@
       "lib/public-pages/src/render.ts": "c7acbb5d22eeb9fe228ad92145688ac864cb28027446eecbf1c58481baa97a3a",
       "lib/public-pages/src/server.ts": "c37abe3cf3e63107b6152ad2fdb299a6706d1062de7b879848afdfa677b88b91",
       "lib/public-pages/tsconfig.json": "fa0269015875e682db53e48eccc277fb63d71143931bc52432a1d4fca94a8e45",
-      "package.json": "39e6564dcaaf1f734213402f947bac02186f6700693e2a5c934c58e6ea2b66e4",
+      "package.json": "d622eafa6cbaece5ff15d9e0e31b03b78afae858fdce27b93d82289e2b9e160d",
       "pnpm-lock.yaml": "a1d64efe183274b0f4419bfbad79e3c0d4e697f9738705ecda2d793b14c75302",
       "pnpm-workspace.yaml": "af95a83cbd0b798367e2d5ea967391ea2d9195e076709e626d1dbe7bfa819aad",
       "reports/digiq-master-checklist-137.md": "27b531a40562eebbf88ce8f6eb54e7094aaa5cb756467c1b032d151c5856d50f",

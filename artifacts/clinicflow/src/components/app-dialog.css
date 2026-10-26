@@ -4,6 +4,11 @@
 .app-dialog-desc{margin-top:4px;font-size:var(--type-label);line-height:1.45}
 .app-dialog-body{min-height:0;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain;padding:16px 16px 0}
 .app-dialog-body>:last-child{margin-bottom:16px}
+.app-dialog-actions-host:empty{display:none}
+/* Opt-in footers occupy their own flex track, never overlaying errors or focused fields. */
+.app-dialog-actions-host{flex:none;min-width:0;max-height:50dvh;overflow:auto;padding:8px 16px max(8px,env(safe-area-inset-bottom));border-top:1px solid hsl(var(--border));background:var(--dq-surface)}
+.app-dialog-actions-host .cde-footer{border:0;padding:0;margin:0}
+.app-dialog-actions-host .form-footer.form-actions{position:static;margin:0;padding:0;border:0;box-shadow:none}
 /* Footer: form-footer or trailing primary button stays visible while long forms scroll */
 .app-dialog-body .form-footer,.app-dialog-body>.button:last-child,.app-dialog-footer{position:sticky;bottom:0;z-index:2;background:var(--dq-surface);margin:12px -16px 0;padding:12px 16px;border-top:1px solid hsl(var(--border));display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
 .app-dialog-body>.button:last-child{margin-left:auto;display:flex;width:auto}

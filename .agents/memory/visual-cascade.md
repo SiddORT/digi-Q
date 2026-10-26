@@ -194,3 +194,15 @@ for a test ID produced failures on untouched source, resembling layout failures.
 **How to apply:** Use relative child queries inside filters and compare actual
 DOM node order when generated IDs are owned by shared form components. Preserve
 the geometry assertions rather than changing tolerances to hide locator errors.
+
+When an action footer is moved outside a scrolling body, re-evaluate the old
+sticky-footer scroll exclusion at actual native browser zoom.
+
+**Why:** An obsolete large scroll-padding exclusion can consume most of a
+short-height dialog body, leaving a focused field clipped above it even when
+the footer itself is correctly visible.
+
+**How to apply:** Measure both top and bottom focused-field clearance. For
+Chromium native tab-zoom evidence, use physical-surface capture if CSS-viewport
+screenshots are blank; inspect the resulting image rather than trusting a
+successful screenshot call.

@@ -1,5 +1,9 @@
 # Schedule readability verification
 
+For the subsequent shared-editor spacing and footer refinement, see
+[compact schedule layout evidence](schedule-compact-layout.md). It preserves
+the table/readability scope and scheduling contracts documented below.
+
 ## Scope
 
 Weekly schedules, date-exception tables and the existing shared day editor.

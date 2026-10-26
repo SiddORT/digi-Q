@@ -1,11 +1,48 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 
 const group={id:"c1",name:"Fictional Clinic Group with a long saved name for schedule editing",status:"active",timezone:"Asia/Kolkata",timeFormat:"24h"};
 const clinic={id:"b1",clinicId:"c1",name:"Fictional Clinic with a long saved location name",status:"active",timezone:"Asia/Kolkata",openingHours:[{dayOfWeek:1,startTime:"09:00",endTime:"17:00"}]};
 const doctor={id:"d1",fullName:"Fictional Doctor with a long saved name",status:"active",clinicIds:["c1"],branchIds:["b1"]};
 const summary={id:"s1",doctorId:"d1",clinicId:"c1",branchId:"b1",doctorName:doctor.fullName,branchName:clinic.name,dayOfWeek:1,isOpen:true,startTime:"09:00",endTime:"12:00",breakStart:"10:00",breakEnd:"10:15",tokenPrefix:"A",maxTokens:10,consultationMinutes:20,bufferMinutes:5};
 const full={...summary,timezone:"Asia/Kolkata",queueMode:"mixed",queueOpenTime:"08:30",queueCloseTime:"11:30"};
+// Paired real-cascade evidence, with fictional data only. Record before changing editor CSS.
+for (const viewport of [{width:1024,height:640},{width:1366,height:768}]) test(`compact layout paired evidence ${viewport.width}`,async({page})=>{
+  await page.setViewportSize(viewport);
+  const state=await setup(page,"clinicAdmin",true,true);
+  state.row={...full,dayOfWeek:0,startTime:"09:00",endTime:"13:00",breakStart:null,breakEnd:null,queueOpenTime:null,queueCloseTime:null,linkedBranchId:"b1"};
+  state.extraRows=[{...state.row,id:"s2",startTime:"19:00",endTime:"22:00"}];
+  state.clinicHours=[];
+  await edit(page);
+  await schedule(page).getByRole("tab",{name:"Sun",exact:true}).click();
+  await expect(schedule(page).getByLabel("Slot 2 end time",{exact:true})).toBeVisible();
+  await page.evaluate(()=>document.fonts.ready);
+  await page.waitForTimeout(250);
+  const geometry=await schedule(page).evaluate(dialog=>{
+    const rect=(el:Element|null)=>{const r=el!.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,bottom:r.bottom};};
+    const body=dialog.querySelector(".app-dialog-body")!;
+    const footer=dialog.querySelector(".cde-footer")!;
+    const actionTrack=dialog.querySelector(".app-dialog-actions-host");
+    return {dialog:rect(dialog),body:rect(body),contentHeight:body.scrollHeight,combinedFlowHeight:body.scrollHeight+(actionTrack?.childElementCount?actionTrack.getBoundingClientRect().height:0),editorHeight:dialog.querySelector('[data-testid="panel-weekly-editor"]')!.getBoundingClientRect().height+(body.contains(footer)?0:footer.getBoundingClientRect().height),
+      footer:rect(dialog.querySelector(".cde-footer")),fields:[...dialog.querySelectorAll('.cde-cell input')].map(rect)};
+  });
+  const dir="generated-artifacts/schedule-compact";
+  await mkdir(dir,{recursive:true});
+  const phase=process.env.SCHEDULE_BASELINE==="1"?"before":"after";
+  await page.screenshot({path:`${dir}/${phase}-${viewport.width}.png`});
+  await writeFile(`${dir}/${phase}-${viewport.width}.json`,JSON.stringify(geometry,null,2));
+  if(phase==="after"){
+    // Measured untouched-source baseline, same fictional names/data, scale and CSS viewport.
+    // Raw JSON and paired images are in generated-artifacts/schedule-compact.
+    expect(geometry.editorHeight).toBeLessThan(787.5625);
+    expect(geometry.combinedFlowHeight).toBeLessThan(812);
+    expect(geometry.footer.y).toBeGreaterThanOrEqual(geometry.body.bottom);
+    expect(geometry.footer.bottom).toBeLessThanOrEqual(geometry.dialog.bottom);
+    await expect(schedule(page).getByTestId("button-save-week")).toBeInViewport();
+    await expect(schedule(page).getByTestId("selected-day-outside-hours")).toContainText("Slots 1, 2");
+  }
+});
 const list=(items:unknown[])=>({items,total:items.length,page:1,pageSize:20,totalPages:1});
 async function setup(page:Page, role="superAdmin", extra=true, linked=false, resource="availability", apiRole=role) {
   const state={row:{...(extra?full:summary),...(linked?{linkedBranchId:"b1"}:{})} as Record<string,any>,extraRows:[] as Record<string,any>[],clinicHours:[...clinic.openingHours],customDays:new Set<number>(),revision:0,writes:[] as Record<string,any>[],consoleErrors:[] as string[],pageErrors:[] as string[],fail:false,failDay:undefined as number|undefined,pause:undefined as Promise<void>|undefined};
@@ -53,6 +90,10 @@ async function setup(page:Page, role="superAdmin", extra=true, linked=false, res
 }
 const tab=(page:Page,name:string)=>page.getByTestId(`tab-editor-${name.toLowerCase().replace(/[^a-z]+/g,"-")}`);
 const schedule=(page:Page)=>page.getByRole("dialog",{name:"Edit Schedule",exact:true});
+async function actionsFor(editor:ReturnType<Page["getByTestId"]>){
+  const dialog=editor.locator('xpath=ancestor::*[@role="dialog"][1]');
+  return await dialog.count()?dialog.locator(".cde-footer"):editor.locator(".cde-footer");
+}
 async function edit(page:Page){
   await page.getByTestId("button-edit-s1").click();
   await expect(page.getByRole("dialog",{name:"Edit Schedule",exact:true})).toBeVisible();
@@ -369,6 +410,7 @@ async function openEntry(page:Page, entry:"page"|"doctor"|"dialog", role:string)
 for(const role of ["superAdmin","clinicAdmin","doctor"])for(const entry of ["page","doctor","dialog"] as const) {
   test(`shared editor context and session ownership ${entry} ${role}`,async({page})=>{
     const {state,editor}=await openEntry(page,entry,role);
+    const actions=await actionsFor(editor);
     const contextScope=entry==="dialog"?page.getByRole("dialog",{name:"Edit Schedule",exact:true})
       :entry==="doctor"&&role!=="doctor"?page.getByRole("dialog",{name:"Edit Doctor Schedule",exact:true})
       :page.getByRole("region",{name:"Doctor schedule"});
@@ -377,8 +419,8 @@ for(const role of ["superAdmin","clinicAdmin","doctor"])for(const entry of ["pag
     await expect(contextScope.getByTestId("indicator-time-format")).toHaveCount(1);
     await expect(contextScope.getByTestId("indicator-time-format")).toContainText("24-hour");
     await expect(editor.getByTestId("button-add-time-slot")).toHaveCount(1);
-    await expect(editor.getByTestId("link-week-exceptions")).toHaveCount(1);
-    await expect(editor.getByTestId("button-save-week")).toBeDisabled();
+    await expect(actions.getByTestId("link-week-exceptions")).toHaveCount(1);
+    await expect(actions.getByTestId("button-save-week")).toBeDisabled();
     const slots=editor.locator(".cde-row:not(.cde-head)");
     for(const [i,capacity] of [10,23].entries()){
       await slots.nth(i).locator("summary").click();
@@ -387,17 +429,34 @@ for(const role of ["superAdmin","clinicAdmin","doctor"])for(const entry of ["pag
     }
     await slots.nth(1).getByLabel("Max tokens",{exact:true}).fill("24");
     await expect(slots.nth(0).getByLabel("Max tokens",{exact:true})).toHaveValue("10");
-    await expect(editor.getByTestId("link-week-exceptions")).toBeDisabled();
+    await expect(actions.getByTestId("link-week-exceptions")).toBeDisabled();
     await editor.getByRole("tab",{name:"Tue",exact:true}).click();
-    await editor.getByTestId("button-save-week").click();
+    await actions.getByTestId("button-save-week").click();
     await expect.poll(()=>state.writes.length).toBe(1);
     expect(state.writes[0]).toMatchObject({maxTokens:24,tokenPrefix:"B",queueMode:"walkInsOnly",queueCloseTime:"15:30"});
   });
 }
-for(const entry of ["page","doctor","dialog"] as const)for(const width of [1440,1280,1024,768,390]){
+for(const entry of ["page","doctor","dialog"] as const)for(const [width,height] of [[390,844],[768,900],[1024,640],[1366,768],[1920,1080],[512,320]]){
   test(`shared editor bounds and keyboard ${entry} ${width}`,async({page})=>{
-    await page.setViewportSize({width,height:900});
+    await page.setViewportSize({width,height});
     const {editor}=await openEntry(page,entry,"superAdmin");
+    await page.evaluate(()=>document.fonts.ready);
+    const controls=await editor.locator(".cde-day-actions").evaluate(root=>{
+      const copy=root.querySelector('.searchable-select-control')!.getBoundingClientRect();
+      const add=root.querySelector('[data-testid="button-add-time-slot"]')!.getBoundingClientRect();
+      return {copy:{top:copy.top,bottom:copy.bottom},add:{top:add.top,bottom:add.bottom}};
+    });
+    if(width>=768){
+      expect(Math.abs(controls.copy.top-controls.add.top)).toBeLessThanOrEqual(1);
+      expect(Math.abs(controls.copy.bottom-controls.add.bottom)).toBeLessThanOrEqual(1);
+    }
+    await editor.getByTestId("select-copy-from").click();
+    const menu=page.getByRole("listbox");
+    await expect(menu).toBeVisible();
+    const popup=await menu.boundingBox();
+    expect(popup!.x).toBeGreaterThanOrEqual(0);
+    expect(popup!.x+popup!.width).toBeLessThanOrEqual(width);
+    await page.keyboard.press("Escape");
     await editor.locator(".cde-adv summary").first().click();
     const bad=await editor.evaluate(root=>{
       const b=root.getBoundingClientRect();
@@ -406,10 +465,63 @@ for(const entry of ["page","doctor","dialog"] as const)for(const width of [1440,
       }).map(el=>el.outerHTML.slice(0,100));
     });
     expect(bad).toEqual([]);
+    const textOverflow=await editor.evaluate(root=>{
+      const bounds=root.getBoundingClientRect();
+      const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+      const bad:string[]=[];
+      let node:Node|null;
+      while((node=walker.nextNode())){
+        const parent=node.parentElement!;
+        if(!node.textContent?.trim()||parent.closest('.sr-only,.sr-only-helptip,[hidden],details:not([open]) .form-grid')||!parent.getClientRects().length)continue;
+        const range=document.createRange();range.selectNodeContents(node);
+        for(const r of range.getClientRects())if(r.width&&(r.left<bounds.left-1||r.right>bounds.right+1))bad.push(node.textContent!.trim());
+      }
+      return bad;
+    });
+    expect(textOverflow).toEqual([]);
+    const session=await editor.locator(".cde-row:not(.cde-head)").first().evaluate(row=>{
+      const start=row.querySelector('input')!.getBoundingClientRect();
+      const end=row.querySelectorAll('input')[1].getBoundingClientRect();
+      const summary=row.querySelector('summary')!.getBoundingClientRect();
+      return {start:{x:start.x,width:start.width,height:start.height},end:{width:end.width},summaryX:summary.x,container:row.closest(".cde")!.clientWidth};
+    });
+    if(session.container>640){
+      expect(session.start.width).toBe(session.end.width);
+      expect(session.start.width).toBeLessThanOrEqual(160);
+      expect(Math.abs(session.start.x-session.summaryX)).toBeLessThanOrEqual(1);
+    }
+    expect(session.start.height).toBeGreaterThanOrEqual(width<640?44:40);
     const capacity=editor.getByLabel("Max tokens",{exact:true}).first();
     await capacity.focus();await expect(capacity).toBeFocused();
-    expect(await editor.locator(".cde-footer").evaluate(el=>getComputedStyle(el).position)).toBe("static");
+    const actions=await actionsFor(editor);
+    const actionBoxes=await actions.evaluate(root=>[...root.querySelectorAll('button')].map(button=>{
+      const r=button.getBoundingClientRect();return {text:button.textContent,width:r.width,height:r.height};
+    }));
+    // Read actual action/text geometry: a page can have no overflow while Cancel collapses vertically.
+    for(const box of actionBoxes){
+      expect(box.width,`${box.text} action width`).toBeGreaterThanOrEqual(80);
+      expect(box.height,`${box.text} action height`).toBeLessThanOrEqual(64);
+    }
+    expect(await page.locator(".cde-footer").evaluate(el=>getComputedStyle(el).position)).toBe("static");
+    const dialog=page.getByRole("dialog").first();
+    if(await dialog.count()){
+      const footer=page.locator(".cde-footer");
+      await expect(page.getByTestId("button-save-week")).toBeInViewport();
+      const bodyBox=await dialog.locator(".app-dialog-body").first().boundingBox();
+      const footerBox=await footer.boundingBox();
+      expect(bodyBox!.y+bodyBox!.height).toBeLessThanOrEqual(footerBox!.y);
+      await editor.locator(".cde-adv").last().evaluate((el:HTMLDetailsElement)=>{el.open=true;});
+      const lastInput=editor.locator(".cde-adv").last().locator("input").last();
+      await lastInput.focus();
+      await expect(lastInput).toBeFocused();
+      const fieldBox=await lastInput.boundingBox();
+      expect(fieldBox!.y+fieldBox!.height).toBeLessThanOrEqual(footerBox!.y);
+      expect(fieldBox!.y).toBeGreaterThanOrEqual(bodyBox!.y);
+    } else {
+      expect(await page.locator(".cde-footer").evaluate(el=>!!el.closest(".app-dialog-actions-host"))).toBe(false);
+    }
     await mkdir("generated-artifacts/shared-schedule",{recursive:true});
+    await writeFile(`generated-artifacts/shared-schedule/${entry}-${width}.json`,JSON.stringify({viewport:{width,height},controls,session,textOverflow,actionBoxes},null,2));
     await page.screenshot({path:`generated-artifacts/shared-schedule/${entry}-${width}.png`});
   });
 }
@@ -425,6 +537,25 @@ for(const entry of ["page","doctor","dialog"] as const)test(`shared editor effec
   await mkdir("generated-artifacts/shared-schedule",{recursive:true});
   await page.screenshot({path:`generated-artifacts/shared-schedule/${entry}-zoom-200.png`});
   console.log(`${entry} console errors`,state.consoleErrors,state.pageErrors);
+});
+test("selected-day outside-hours warning follows slot numbers without hiding different warnings",async({page})=>{
+  const state=await setup(page);
+  state.row={...full,startTime:"08:00",endTime:"08:30",breakStart:null,breakEnd:null,queueOpenTime:null,queueCloseTime:null};
+  state.extraRows=Array.from({length:4},(_,i)=>({...state.row,id:`extra-${i}`,startTime:`${18+i}:00`,endTime:`${18+i}:30`}));
+  await edit(page);
+  const warning=page.getByTestId("selected-day-outside-hours");
+  await expect(warning).toHaveCount(1);
+  await expect(warning).toContainText("Slots 1, 2, 3, 4, 5:");
+  // The unrelated session-count warning stays visible and separate.
+  await expect(page.locator(".cde>.notice:not([data-testid='selected-day-outside-hours'])")).toBeVisible();
+  await page.getByRole("button",{name:"Remove slot 1",exact:true}).click();
+  await expect(warning).toContainText("Slots 1, 2, 3, 4:");
+  await page.getByLabel("Slot 1 start time",{exact:true}).fill("09:00");
+  await page.getByLabel("Slot 1 end time",{exact:true}).fill("10:00");
+  await expect(warning).toContainText("Slots 2, 3, 4:");
+  await page.getByRole("tab",{name:"Tue",exact:true}).click();
+  await expect(warning).toHaveCount(0);
+  expect(state.writes).toHaveLength(0);
 });
 test("inherited clinic slot remains locked in shared editor",async({page})=>{
   const state=await setup(page,"superAdmin",true,true,"availability","receptionist");await edit(page);
@@ -454,9 +585,28 @@ test("empty schedule has blank defaults and a clear off-day state",async({page})
   expect(state.writes).toHaveLength(0);
   console.log("empty-schedule console errors",state.consoleErrors,state.pageErrors);
 });
+test("long unbroken context and unconfigured hours wrap without losing actions",async({page})=>{
+  await page.setViewportSize({width:768,height:640});
+  await setup(page);
+  await page.route("**/api/clinics/c1",route=>route.fulfill({json:{...group,name:"FictionalClinic".repeat(12)}}));
+  await page.route("**/api/branches/b1",route=>route.fulfill({json:{...clinic,name:"FictionalLocation".repeat(12),openingHours:null}}));
+  await page.route("**/api/doctors/d1",route=>route.fulfill({json:{...doctor,fullName:"FictionalDoctor".repeat(12)}}));
+  await page.reload();await edit(page);
+  await expect(schedule(page).getByTestId("text-day-source")).toContainText("Hours not configured");
+  await expect(schedule(page).getByTestId("selected-day-outside-hours")).toHaveCount(0);
+  const bad=await schedule(page).getByTestId("schedule-header").evaluate(header=>{
+    const b=header.getBoundingClientRect();
+    return [...header.querySelectorAll(".dsc-id strong,.dsc-context strong")].filter(el=>{
+      const range=document.createRange();range.selectNodeContents(el);
+      return [...range.getClientRects()].some(r=>r.left<b.left-1||r.right>b.right+1);
+    }).map(el=>el.textContent);
+  });
+  expect(bad).toEqual([]);
+  await expect(schedule(page).getByTestId("button-save-week")).toBeInViewport();
+});
 for(const entry of ["page","doctor","dialog"] as const)test(`shared date exception flow ${entry}`,async({page})=>{
   const {editor,state}=await openEntry(page,entry,"superAdmin");
-  const opener=editor.getByTestId("link-week-exceptions");
+  const opener=(await actionsFor(editor)).getByTestId("link-week-exceptions");
   await opener.focus();await opener.click();
   const list=page.getByRole("dialog",{name:"Date Exceptions",exact:true});
   await expect(list.getByText("Holiday hours")).toBeVisible();

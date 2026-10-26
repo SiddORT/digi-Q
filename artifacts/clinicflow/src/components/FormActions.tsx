@@ -27,15 +27,20 @@ export interface FormActionsProps {
   submitClassName?: string;
   /** Inside an AppDialog with no onCancel: Cancel uses the dialog's guarded close (asks before discarding dirty input). */
   cancelClosesDialog?: boolean;
+  /** Keep Cancel and Save in one wrapping group when secondary actions occupy a separate row. */
+  groupPrimary?: boolean;
 }
 
-export function FormActions({ onCancel, onSubmit, busy = false, disabled = false, cancelDisabled = false, submitLabel = "Save Changes", busyLabel = "Saving…", cancelLabel = "Cancel", secondary, submitTestId = "button-save", cancelTestId = "button-cancel", wide = true, extra, submitClassName, cancelClosesDialog = false }: FormActionsProps) {
+export function FormActions({ onCancel, onSubmit, busy = false, disabled = false, cancelDisabled = false, submitLabel = "Save Changes", busyLabel = "Saving…", cancelLabel = "Cancel", secondary, submitTestId = "button-save", cancelTestId = "button-cancel", wide = true, extra, submitClassName, cancelClosesDialog = false, groupPrimary = false }: FormActionsProps) {
   const dialogClose = useAppDialogClose();
   const cancel = onCancel ?? (cancelClosesDialog ? dialogClose ?? undefined : undefined);
-  return <div className={`${wide ? "wide " : ""}form-footer form-actions`} data-testid="form-actions">
-    {secondary && <div className="form-actions-secondary">{secondary}</div>}
+  const primary=<>
     {cancel && <button type="button" onClick={cancel} disabled={busy || cancelDisabled} data-testid={cancelTestId}><ActionLabel>{cancelLabel}</ActionLabel></button>}
     {extra}
     <button type={onSubmit ? "button" : "submit"} onClick={onSubmit} className={`button${submitClassName ? ` ${submitClassName}` : ""}`} disabled={busy || disabled} aria-busy={busy || undefined} data-testid={submitTestId}><ActionLabel>{busy ? busyLabel : submitLabel}</ActionLabel></button>
+  </>;
+  return <div className={`${wide ? "wide " : ""}form-footer form-actions`} data-testid="form-actions">
+    {secondary && <div className="form-actions-secondary">{secondary}</div>}
+    {groupPrimary?<div className="form-actions-primary">{primary}</div>:primary}
   </div>;
 }

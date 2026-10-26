@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Plus, Trash2, Lock } from "lucide-react";
 import "./compact-day.css";
 import { FormTabs } from "../FormTabs";
@@ -15,12 +15,14 @@ const DURATIONS = [20, 30, 60];
 const QUEUE_MODES = [["mixed", "Appointments and walk-ins"], ["appointmentsOnly", "Appointments only"], ["walkInsOnly", "Walk-ins only"]];
 
 /** One-panel Mon-Sun editor. Pure draft; never saves. */
-export function CompactDayEditor({ week, setWeek, opening, preferences, busy = false, rows = [], template, onChange, selected, onSelect, focus }: {
+export function CompactDayEditor({ week, setWeek, opening, preferences, busy = false, rows = [], template, onChange, selected, onSelect, focus, dayStatus }: {
   week: DraftDay[]; setWeek: (update: (week: DraftDay[]) => DraftDay[]) => void; opening: OpeningHour[] | null; preferences: any;
   busy?: boolean; rows?: ScheduleRow[]; template?: Record<string, unknown>; onChange?: () => void; selected: number; onSelect: (day: number) => void;
   focus?: { day: number; index: number; nonce: number } | null;
+  dayStatus?: ReactNode;
 }) {
   const confirm = useConfirm();
+  const copyLabelId=useId();
   const root=useRef<HTMLDivElement>(null);
   const [source, setSource] = useState("");
   const [mode, setMode] = useState<"day" | "slot">("day");
@@ -67,14 +69,20 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
   };
   const errs = errors[selected];
   const slotSources = src?.sessions.filter(s => s.startTime && s.endTime) || [];
+  const outsideSlots = day.isOpen ? day.sessions.flatMap((s,i)=>outsideHours(s,hours,opening!==null)?[i+1]:[]) : [];
   return <div ref={root} className="cde" data-testid="compact-day-editor">
     {confirm.dialog}
     <FormTabs idPrefix="cde" wide={false} label="Day of week" tabs={ORDER.map(d => SHORT[d])} active={ORDER.indexOf(selected)} onChange={i => onSelect(ORDER[i])} invalid={ORDER.map(d => errors[d].length > 0)}/>
+    {dayStatus}
     <div className="cde-controls" role="tabpanel" id="cde-panel" aria-labelledby={`cde-tab-${ORDER.indexOf(selected)}`}>
+      <div className="cde-day-controls">
       <strong className="cde-day">{DAYS[selected]}</strong>
       <label className="registration-check"><input type="checkbox" role="switch" checked={day.isOpen} disabled={busy || day.sessions.some(s => s.locked)} aria-describedby={day.sessions.some(s=>s.locked)?"cde-locked-reason":undefined} onChange={e => set({ ...day, isOpen: e.target.checked })} data-testid="toggle-working-day"/>Working day</label>
-      <SearchableSelect label="Copy from" value={source} disabled={busy} placeholder="Choose day…" testId="select-copy-from" onChange={v => { setSource(v); setSlotKey(""); }} options={ORDER.filter(d => d !== selected).map(d => ({ value: String(d), label: DAYS[d] }))}/>
-      <button type="button" className="button secondary small" disabled={busy} onClick={() => { set({ ...day, isOpen: true, sessions: [...day.sessions, { key: draftKey(), startTime: "", endTime: "" }] }); }} data-testid="button-add-time-slot"><Plus size={14} aria-hidden/> Add Time Slot</button>
+      </div>
+      <div className="cde-day-actions">
+      <div className="cde-copy-from"><span id={copyLabelId}>Copy from</span><SearchableSelect aria-labelledby={copyLabelId} value={source} disabled={busy} placeholder="Choose day…" testId="select-copy-from" onChange={v => { setSource(v); setSlotKey(""); }} options={ORDER.filter(d => d !== selected).map(d => ({ value: String(d), label: DAYS[d] }))}/></div>
+      <button type="button" className="button secondary field-action" disabled={busy} onClick={() => { set({ ...day, isOpen: true, sessions: [...day.sessions, { key: draftKey(), startTime: "", endTime: "" }] }); }} data-testid="button-add-time-slot"><Plus size={14} aria-hidden/> Add Time Slot</button>
+      </div>
     </div>
     {day.sessions.some(s=>s.locked)&&<p className="muted" id="cde-locked-reason">These sessions follow clinic hours. Ask an authorized doctor or administrator to customize this day.</p>}
     {src && <div className="cde-controls cde-copy" role="group" aria-label="Copy options" data-testid="copy-from-panel">
@@ -95,7 +103,6 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
           <div className="cde-cell"><span className="cde-lbl" id={`cde-dur-${s.key}`}>Consultation Duration<span className="sr-only"> for slot {i + 1}</span></span><SearchableSelect aria-labelledby={`cde-dur-${s.key}`} value={String(s.settings?.consultationMinutes ?? "")} disabled={busy || s.locked} placeholder={DURATIONS.includes(Number(template?.consultationMinutes)) ? `${template?.consultationMinutes} min (default)` : "Select…"} onChange={v => setting(s, "consultationMinutes", Number(v))} options={durationOptions(s)}/></div>
           {s.locked ? <span title="Managed in Clinic settings"><Lock size={14} aria-label="Linked to clinic hours"/></span> : <IconAction label={`Remove slot ${i + 1}`} hint="Remove slot" disabled={busy} icon={<Trash2 size={15} aria-hidden/>} onClick={() => busy ? undefined : set({ ...day, sessions: day.sessions.filter(x => x.key !== s.key) })}/>}
           {rowErrs.length > 0 && <small className="field-error cde-warn" role="alert">{rowErrs.join(" ")}</small>}
-          {outsideHours(s, hours, opening !== null) && <small className="cde-warn notice">Outside usual location hours. Allowed.</small>}
            <details className="cde-adv" aria-label={`Slot ${i + 1} capacity, breaks and queue settings`}><summary><span className="cde-adv-title">Capacity, breaks and queue settings</span><span className="cde-slot-tag">Slot {i + 1}</span></summary><div className="form-grid" aria-describedby={s.locked?"cde-locked-reason":undefined}>
             <label>Max tokens<input type="number" min={1} max={1000} step={1} disabled={busy || s.locked} value={String(s.settings?.maxTokens ?? "")} placeholder={template?.maxTokens ? String(template.maxTokens) : ""} onChange={e => setting(s, "maxTokens", e.target.value === "" ? "" : Number(e.target.value))}/></label>
             <label>Token prefix<input maxLength={8} disabled={busy || s.locked} value={String(s.settings?.tokenPrefix ?? "")} placeholder={template?.tokenPrefix ? String(template.tokenPrefix) : ""} onChange={e => setting(s, "tokenPrefix", e.target.value.replace(/[^A-Za-z0-9]/g, ""))}/></label>
@@ -106,6 +113,7 @@ export function CompactDayEditor({ week, setWeek, opening, preferences, busy = f
         </div>; })}
         {!day.sessions.length && <p className="muted">No slots yet. Use Add Time Slot.</p>}
       </div>}
+    {!!outsideSlots.length && <p className="cde-warn notice" data-testid="selected-day-outside-hours" role="status">{outsideSlots.length===1?"Slot":"Slots"} {outsideSlots.join(", ")}: Outside usual location hours. Allowed.</p>}
     {dayWarnings(day).map(w => <p key={w} className="notice">{w}</p>)}
     {errs.filter(e => !/ession \d/.test(e)).length > 0 && <p className="field-error" role="alert">{errs.filter(e => !/ession \d/.test(e)).join(" ")}</p>}
     {errors.some((e, d) => d !== selected && e.length) && <p className="field-error" role="alert">Fix errors on: {ORDER.filter(d => d !== selected && errors[d].length).map(d => SHORT[d]).join(", ")}.</p>}

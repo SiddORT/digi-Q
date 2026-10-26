@@ -1,5 +1,14 @@
 # Compact UI coverage and evidence
 
+## Shared schedule editor density
+
+See [compact schedule layout evidence](../verification/schedule-compact-layout.md)
+for paired two-slot desktop/short-height measurements, shared page/doctor/dialog
+coverage, fictional role boundaries, native Chromium tab zoom versus reflow,
+footer and focused-field clearance, commands/results and explicit limitations.
+The source inventory was regenerated; it remains a source ledger, not a claim
+of independent browser coverage for every role and route.
+
 ## Current all-form presentation pass
 
 See [Forms and popups: current coverage](form-presentation-coverage.md) for the

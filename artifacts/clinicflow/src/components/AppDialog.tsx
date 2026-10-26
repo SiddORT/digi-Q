@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import {
   Dialog,
@@ -12,6 +13,12 @@ import "./app-dialog.css";
 
 const AppDialogCloseContext = createContext<(() => void) | null>(null);
 const AppDialogDiscardContext = createContext<((action:()=>void)=>void) | null>(null);
+const AppDialogActionsContext = createContext<HTMLElement | null>(null);
+/** Opt-in actions outside the dialog scroll area. Page/embedded consumers stay in flow. */
+export function AppDialogActions({children}:{children:React.ReactNode}) {
+  const host=useContext(AppDialogActionsContext);
+  return host ? createPortal(children,host) : <>{children}</>;
+}
 /** Inside an AppDialog: returns its guarded close (honours dirty/busy, asks before discarding). Outside: null. */
 export function useAppDialogClose() { return useContext(AppDialogCloseContext); }
 /** Context switches share the dialog's single busy/dirty confirmation, not a stacked prompt. */
@@ -43,6 +50,7 @@ export function AppDialog({
   variant = "modal",
 }: AppDialogProps) {
   const [confirming, setConfirming] = useState(false);
+  const [actionsHost,setActionsHost]=useState<HTMLDivElement|null>(null);
   const keepRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -171,8 +179,9 @@ export function AppDialog({
         {/* Single internal scroll area for the content. Kept mounted during
             discard confirmation so form values are preserved. */}
         <div className="app-dialog-body bg-white" aria-hidden={confirming || undefined} inert={confirming ? true : undefined}>
-          <AppDialogDiscardContext.Provider value={requestTransition}><AppDialogCloseContext.Provider value={requestClose}>{children}</AppDialogCloseContext.Provider></AppDialogDiscardContext.Provider>
+          <AppDialogActionsContext.Provider value={actionsHost}><AppDialogDiscardContext.Provider value={requestTransition}><AppDialogCloseContext.Provider value={requestClose}>{children}</AppDialogCloseContext.Provider></AppDialogDiscardContext.Provider></AppDialogActionsContext.Provider>
         </div>
+        <div ref={setActionsHost} className="app-dialog-actions-host" inert={confirming ? true : undefined} aria-hidden={confirming || undefined}/>
 
         {confirming && (
           <div className="app-discard-scrim" data-testid="discard-confirm">

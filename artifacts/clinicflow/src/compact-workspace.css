@@ -227,6 +227,9 @@
 /* Section A: shared form actions and content-sized fields */
 .form-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:var(--space-2,8px)}
 .form-actions-secondary{margin-right:auto;display:flex;gap:var(--space-2,8px);flex-wrap:wrap}
+.form-actions-primary{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:var(--space-2,8px);margin-left:auto;min-width:0}
+.form-actions-primary>button{flex:1 0 auto}
+@media(max-width:640px){.form-actions:has(>.form-actions-primary)>.form-actions-secondary{flex-basis:100%}.form-actions-primary{width:100%}}
 .form-context,.field-hint{display:flex;align-items:center;gap:4px;margin:0}
 @media(max-width:640px){.form-actions{justify-content:stretch}.form-actions>button{flex:1}.form-grid input:is([type=number],[type=time],[type=tel],[inputmode=numeric]){max-width:none}}
 
@@ -273,6 +276,9 @@
 .form-footer.form-actions{position:static}
 .app-dialog-body .form-footer.form-actions{position:sticky;bottom:0}
 .app-dialog-body{scroll-padding-bottom:88px}
+/* Opt-in action tracks are outside the scroll area: the legacy sticky-footer
+   exclusion would consume almost the entire body at short-height/200% zoom. */
+.app-dialog:has(>.app-dialog-actions-host:not(:empty))>.app-dialog-body{scroll-padding-block:8px}
 
 /* Integration status actions must wrap within their card rather than inherit table nowrap. */
 .workspace .int-settings .int-status-row{min-width:0}

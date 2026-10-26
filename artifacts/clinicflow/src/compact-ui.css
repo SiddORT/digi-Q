@@ -125,7 +125,8 @@ button:is(.dq-checkbox,.dq-radio)::after{content:"";position:absolute;inset:-13p
 .error-box{flex-wrap:wrap;align-items:center;gap:8px}
 .error-box button{max-width:100%;white-space:normal}
 .form-actions :is(button,a){max-width:100%;white-space:normal;overflow-wrap:anywhere}
-.form-actions :is(button,a.button),.workspace .form-actions :is(button,a.button){min-height:var(--control-md)}
+.form-actions :is(button,a.button),.workspace .form-actions :is(button,a.button),
+:is(.workspace,.app-dialog) button.field-action{min-height:var(--control-md)}
 /* Dense listing tools are their own 32px family on fine pointers. Form editors
  * keep 40px, and row/context icon actions remain independently sized. */
 @media(min-width:768px) and (pointer:fine){
@@ -222,7 +223,8 @@ a.text-link:visited{color:#514185}
   :is(.workspace,.app-dialog,.auth-card,.registration-card) :is(.searchable-select-control,.searchable-multi-select-control){min-height:44px}
   :is(.workspace,.app-dialog) button.dq-select-trigger,button.dq-select-trigger{min-height:44px;height:44px}
   :is(.workspace,.app-dialog) button.icon-action{width:44px;min-width:44px;height:44px;min-height:44px}
-  .form-actions :is(button,a.button),.workspace .form-actions :is(button,a.button){min-height:44px}
+  .form-actions :is(button,a.button),.workspace .form-actions :is(button,a.button),
+  :is(.workspace,.app-dialog) button.field-action{min-height:44px}
   [data-slot=input-group]{min-height:44px}
   :is(.workspace,.app-dialog) [data-slot=input-group]>input[data-slot=input-group-control]{min-height:42px;height:42px}
   :is(.auth-card,.registration-card){padding:16px}
