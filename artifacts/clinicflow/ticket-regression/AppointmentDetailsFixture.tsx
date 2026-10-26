@@ -18,14 +18,15 @@ export function AppointmentDetailsFixture() {
   const [id, setId] = useState("appointment-1");
   const surface = new URLSearchParams(location.search).get("surface");
   const q = api.useGetAppointment(id, { query: { queryKey: api.getGetAppointmentQueryKey(id), enabled: !surface, retry: false } });
-  const list = api.useListAppointments(undefined, { query: { queryKey: api.getListAppointmentsQueryKey(), enabled: surface === "rows" || surface === "today", retry: false } });
+   const list = api.useListAppointments(undefined, { query: { queryKey: api.getListAppointmentsQueryKey(), enabled: ["rows", "today", "projection"].includes(surface || ""), retry: false } });
   return <main className="workspace" style={{ display: "block", padding: 16 }}>
     <nav aria-label="Fixture controls" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
       <button onClick={() => void client.invalidateQueries()}>Refresh fixture</button>
       <button onClick={() => setId("appointment-1")}>First appointment</button>
       <button onClick={() => setId("appointment-2")}>Second appointment</button>
     </nav>
-    {surface === "rows" ? <AppointmentRows appointments={list.data?.items || []} />
+    {surface === "projection" ? list.data?.items[0] && <AppointmentDetails appointment={list.data.items[0]} />
+      : surface === "rows" ? <AppointmentRows appointments={list.data?.items || []} />
       : surface === "today" ? <AppointmentRows sessionScoped appointments={list.data?.items || []} />
       : surface === "calendar" ? <CalendarDayPanel date="2030-06-14" today="2030-06-14" root="admin" filters={{}} canBook={false} onClose={() => {}} onOpenList={() => {}} />
       : q.data ? <AppointmentDetails appointment={q.data} />

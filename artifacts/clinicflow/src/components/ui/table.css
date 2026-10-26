@@ -1,0 +1,9 @@
+/* Preserve the shared table's semantic layout inside legacy mobile listings.
+   Visual tokens, typography and cell spacing remain owned by the app standards. */
+.workspace table.standard-table{display:table}
+.workspace .standard-table>thead{display:table-header-group}
+.workspace .standard-table>tbody{display:table-row-group}
+.workspace .standard-table>tfoot{display:table-footer-group}
+.workspace .standard-table>:is(thead,tbody,tfoot)>tr{display:table-row;position:static;margin:0;border-radius:0;box-shadow:none;background:transparent;overflow:visible}
+.workspace .standard-table>:is(thead,tbody,tfoot)>tr>:is(th,td){display:table-cell;position:static}
+.workspace .standard-table td::before{content:none;display:none}

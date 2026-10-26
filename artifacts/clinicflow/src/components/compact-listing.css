@@ -77,7 +77,7 @@
 @media screen and (min-width:640px) and (max-width:1024px){
   .workspace .table-scroll{overflow-x:auto;max-width:100%;padding:0;border:0}
   .workspace .table-panel .table-scroll{padding:0}
-  .workspace .table-scroll table{display:table;width:100%;min-width:760px}
+  .workspace .table-scroll>table{display:table;width:100%;min-width:760px}
   .workspace .table-scroll thead{display:table-header-group}
   .workspace .table-scroll tbody{display:table-row-group}
   .workspace .table-scroll thead tr{position:static;top:auto;left:auto}

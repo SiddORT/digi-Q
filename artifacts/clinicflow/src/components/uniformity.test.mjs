@@ -54,7 +54,10 @@ test("appointments header carries Export beside a full-size Book appointment; fr
 
 test("appointment details keep every field, empty state and explanation in grouped structure", () => {
   const d = read("./appointments/AppointmentDetails.tsx");
-  for (const s of ["a.patientName", "a.status", "a.token", "Not assigned", "a.doctorName", "a.clinicName", "a.branchName", "formatDate(a.date", "a.startTime", "a.endTime", "a.timezone", "a.reference", "navigator.clipboard.writeText(a.reference)", "No notes recorded.", "a.checkedInAt", "a.completedAt", "Not recorded", "not arrival at the clinic", "Status and Reason History", "No history recorded.", "event.reason", "Session window, not a promised consultation time."]) assert.ok(d.includes(s), s);
+  for (const s of ["a.patientName", "a.status", "a.token", "Not assigned", "a.doctorName", "a.clinicName", "a.branchName", "formatDate(a.date", "a.startTime", "a.endTime", "a.timezone", "a.reference", "a.checkedInAt", "a.completedAt", "Not recorded", "not arrival at the clinic", "Nothing to show.", "event.reason", "Session window, not a promised consultation time."]) assert.ok(d.includes(s), s);
+  const booking = read("./appointments/AppointmentBookingTab.tsx");
+  assert.match(booking, /navigator.clipboard.writeText\(reference\)/);
+  assert.match(booking, /No notes recorded\./);
   assert.match(d, /className="appt-detail-grid"/);
   assert.match(read("./appointments/AppointmentRows.tsx"), /id=\{`appt-expand-\$\{a\.id\}`\}/);
 });

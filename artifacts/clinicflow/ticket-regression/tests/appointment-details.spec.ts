@@ -41,8 +41,8 @@ for (const mode of ["shift", "requeue"] as const) {
     expect(submitted).toMatchObject({action:mode,expectedRevision:1,expectedQueueVersion:"reviewed-queue",position:2,reason:"Fictional reviewed movement"});
   });
 }
-async function mount(page: Page, surface = "", linked = false) {
-  const state: State = { appointment: structuredClone(first), reads: 0 };
+async function mount(page: Page, surface = "", linked = false, initial: Partial<State> = {}) {
+  const state: State = { appointment: structuredClone(first), reads: 0, ...initial };
   await page.addInitScript(() => {
     let copied = "";
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (value: string) => { copied = value; }, readText: async () => copied } });
@@ -75,6 +75,67 @@ async function mount(page: Page, surface = "", linked = false) {
 const details = (page: Page) => page.getByTestId("appointment-details");
 const tab = (page: Page, name: string) => details(page).getByRole("tab", { name, exact: true });
 
+test("history waits for the authorized record rather than treating a list projection as empty", async ({ page }) => {
+  await mount(page, "projection", false, { delay: 1800 });
+  await tab(page, "History").click();
+  await expect(details(page)).toContainText("Loading history…");
+  await expect(details(page)).not.toContainText("Nothing to show.");
+  await expect(page.getByRole("table", { name: "Appointment history" })).toBeVisible();
+});
+
+test("missing private history is unavailable, not empty; a real initial waiting event is retained and formatted", async ({ page }) => {
+  const state = await mount(page);
+  Object.assign(state.appointment, { history: undefined });
+  await page.getByRole("button", { name: "Refresh fixture" }).click();
+  await tab(page, "History").click();
+  await expect(details(page)).toContainText("History unavailable.");
+  await expect(details(page)).not.toContainText("Nothing to show.");
+  Object.assign(state.appointment, { dateFormat: "DD/MM/YYYY", timeFormat: "24h", status: "completed", history: [{ status: "waiting", occurredAt: "2030-06-01T10:00:00Z" }] });
+  await page.getByRole("button", { name: "Retry History" }).click();
+  const row = page.getByRole("table", { name: "Appointment history" }).locator("tbody tr");
+  await expect(row).toHaveCount(1);
+  await expect(row.getByRole("cell")).toHaveText(["01/06/2030, 10:00", "Status recorded", "Waiting", "—"]);
+  await expect(details(page)).not.toContainText("Nothing to show.");
+});
+
+for (const surface of ["rows", "today"]) {
+  test(`${surface}: hidden row values stay in Details without duplicating Booking metadata`, async ({ page }) => {
+    const table = surface === "today" ? "appointments-session" : "appointments";
+    await page.addInitScript(table => localStorage.setItem(`digiq-columns:fixture-admin:clinicAdmin:${table}`, JSON.stringify({
+      order: [], hidden: ["patient", "token", "date", "location", "doctor", "reference", "createdAt"], pinned: null, touched: true,
+    })), table);
+    await mount(page, surface);
+    await page.getByTestId("button-expand-appointment-appointment-1").click();
+    await expect(page.getByTestId("appointment-summary")).toHaveCount(0);
+    await expect(page.getByTestId("text-detail-booked")).toBeVisible();
+    await expect(page.getByTestId("button-copy-reference")).toBeVisible();
+    await tab(page, "Details").click();
+    const extra = page.locator('dl[aria-label="Hidden columns"]');
+    for (const value of [first.patientName, first.patientCode, first.token, first.clinicName, first.branchName, first.doctorName]) await expect(extra).toContainText(value);
+    await expect(extra).not.toContainText(first.reference);
+    await expect(extra).not.toContainText("Booked At");
+    await expect(page.getByTestId("section-detail-consultation")).toBeVisible();
+  });
+}
+
+test("history reasons wrap unbroken text while statuses come from each recorded event", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const state = await mount(page, "rows");
+  state.appointment.history = [{ action: "cancel", status: "cancelled", occurredAt: "2030-06-01T10:00:00Z", reason: "Unbroken".repeat(80) }];
+  await page.getByTestId("button-expand-appointment-appointment-1").click();
+  await tab(page, "History").click();
+  const table = page.getByRole("table", { name: "Appointment history" });
+  await expect(table.getByRole("columnheader")).toHaveText(["Date & time", "Event", "Status", "Reason"]);
+  await expect(table.locator("tbody tr")).toContainText("Cancelled");
+  await expect(table.locator("tbody tr")).not.toContainText("Booked");
+  const bounds = await table.evaluate(el => {
+    const reason = el.querySelector("tbody td:last-child")!;
+    return { width: el.getBoundingClientRect().width, viewport: innerWidth, scroll: reason.scrollWidth, cell: reason.clientWidth };
+  });
+  expect(bounds.width).toBeLessThan(bounds.viewport);
+  expect(bounds.scroll).toBeLessThanOrEqual(bounds.cell + 1);
+});
+
 for (const width of [1280, 820, 390]) {
   test(`visit date has no repeated context help; token and action guidance remain at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -101,7 +162,8 @@ for (const surface of ["rows", "linked", "calendar"]) {
     } else {
       await page.getByTestId("calendar-day-visit-appointment-1").locator("summary").click();
     }
-    await expect(page.getByTestId("text-detail-patient")).toContainText(first.patientName);
+    await expect(page.getByTestId("text-detail-reference")).toHaveText(first.reference);
+    if (surface === "rows") await expect(page.getByTestId("text-patient-appointment-1")).toHaveText(first.patientName);
     await expect(page.getByAltText("Personal visit QR")).toBeVisible();
     state.failAppointment = true; state.failStatus = 403;
     await page.getByRole("button", { name: "Refresh fixture" }).click();
@@ -148,7 +210,7 @@ test("Booking default, keyboard sections, all fields, history and fresh refresh 
   const state = await mount(page);
   await expect(tab(page, "Booking")).toHaveAttribute("aria-selected", "true");
   await expect(details(page).getByRole("tabpanel", { name: "Booking", exact: true })).toBeVisible();
-  await expect(page.getByTestId("section-detail-patient")).not.toBeVisible();
+  await expect(page.getByTestId("section-detail-additional")).not.toBeVisible();
   await expect(page.getByTestId("section-detail-history")).not.toBeVisible();
   await expect(page.getByText("Appointment History", { exact: true })).toHaveCount(0);
   await expect(page.getByTestId("text-ticket-estimate")).toContainText("2 patients ahead");
@@ -159,20 +221,24 @@ test("Booking default, keyboard sections, all fields, history and fresh refresh 
   await page.keyboard.press("ArrowRight");
   await expect(tab(page, "Details")).toBeFocused();
   await expect(tab(page, "Details")).toHaveAttribute("aria-selected", "true");
-  for (const [id, text] of [["text-detail-patient-code", first.patientCode], ["text-detail-location", first.branchName], ["text-detail-clinic", first.clinicName], ["text-detail-doctor", first.doctorName]]) await expect(page.getByTestId(id)).toContainText(text);
+  await expect(page.getByTestId("text-detail-patient-code")).toContainText(first.patientCode);
+  for (const text of [first.branchName, first.clinicName, first.doctorName]) await expect(page.getByTestId("appointment-summary")).toContainText(text);
+  await expect(page.getByTestId("section-detail-additional")).not.toContainText(first.patientName);
+  await expect(page.getByTestId("section-detail-additional")).not.toContainText(first.doctorName);
   await expect(page.getByTestId("text-detail-reference")).toHaveText(first.reference);
   state.appointment.patientName = "Updated Fictional Name";
   await page.getByRole("button", { name: "Refresh fixture" }).click();
   await expect(page.getByTestId("text-detail-patient")).toContainText("Updated Fictional Name");
   await expect(tab(page, "Details")).toHaveAttribute("aria-selected", "true");
-  await tab(page, "Details").focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(tab(page, "Consultation")).toHaveAttribute("aria-selected", "true");
   await expect(page.getByTestId("text-detail-checked-in")).toHaveText("Not recorded");
   await expect(details(page)).toContainText("not arrival at the clinic");
+  await tab(page, "Details").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(tab(page, "History")).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press("End");
   await expect(tab(page, "History")).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByTestId("section-detail-history").locator("li")).toHaveCount(24);
+  await expect(page.getByRole("table", { name: "Appointment history" }).locator("tbody tr")).toHaveCount(24);
+  await expect(page.getByRole("table", { name: "Appointment history" }).getByRole("columnheader")).toHaveText(["Date & time", "Event", "Status", "Reason"]);
   await expect(page.getByTestId("section-detail-history")).toContainText("Event 23:");
   await page.keyboard.press("Home");
   await expect(tab(page, "Booking")).toHaveAttribute("aria-selected", "true");
@@ -190,8 +256,10 @@ test("different appointment resets tabs and copy feedback; completed record and 
   await expect(page.getByTestId("text-detail-ticket-unavailable")).toContainText("booking reference");
   await expect(page.getByTestId("appointment-ticket")).toHaveCount(0);
   await tab(page, "History").click();
-  await expect(details(page)).toContainText("No history recorded.");
-  await tab(page, "Consultation").click();
+  await expect(details(page).getByRole("heading", { name: "Nothing to show.", exact: true })).toBeVisible();
+  await expect(details(page).getByRole("table")).toHaveCount(0);
+  await expect(details(page).getByRole("columnheader")).toHaveCount(0);
+  await tab(page, "Details").click();
   await expect(page.getByTestId("text-detail-checked-in")).not.toHaveText("Not recorded");
   await expect(page.getByTestId("text-detail-completed")).not.toHaveText("Not recorded");
   await page.getByRole("button", { name: "First appointment" }).click();
@@ -215,7 +283,11 @@ test("row, off-page link and calendar share tabs; hidden columns live only in De
   await expect(page.locator('dl[aria-label="Hidden columns"]')).not.toBeVisible();
   await tab(page, "Details").click();
   await expect(page.getByRole("list", { name: "Hidden columns" })).toHaveCount(0);
-  await expect(page.locator('dl[aria-label="Hidden columns"]')).toContainText(first.reference);
+  await expect(page.locator('dl[aria-label="Hidden columns"]')).toHaveCount(0);
+  await expect(page.getByTestId("button-copy-reference")).toBeVisible();
+  await expect(page.getByTestId("section-detail-additional")).not.toContainText(first.reference);
+  await expect(page.getByTestId("section-detail-additional")).not.toContainText(first.patientName);
+  await expect(page.getByTestId("appointment-summary")).toHaveCount(0);
   await page.getByRole("button", { name: "Refresh fixture" }).click();
   await expect(tab(page, "Details")).toHaveAttribute("aria-selected", "true");
   await page.getByTestId("button-expand-appointment-appointment-1").click();
@@ -227,12 +299,13 @@ test("row, off-page link and calendar share tabs; hidden columns live only in De
   await expect(page.getByTestId("linked-visit")).toBeVisible();
   await expect(tab(page, "Booking")).toHaveAttribute("aria-selected", "true");
   await tab(page, "History").click();
-  await expect(details(page)).toContainText("No history recorded.");
+  await expect(details(page)).toContainText("Nothing to show.");
+  await expect(page.getByTestId("appointment-summary")).toContainText(second.patientName);
   await mount(page, "calendar");
   await page.getByTestId("calendar-day-visit-appointment-1").locator("summary").click();
-  await tab(page, "Consultation").click();
+  await tab(page, "Details").click();
   await page.getByRole("button", { name: "Refresh fixture" }).click();
-  await expect(tab(page, "Consultation")).toHaveAttribute("aria-selected", "true");
+  await expect(tab(page, "Details")).toHaveAttribute("aria-selected", "true");
   await page.getByTestId("calendar-day-visit-appointment-1").locator("summary").click();
   await page.getByTestId("calendar-day-visit-appointment-1").locator("summary").click();
   await expect(tab(page, "Booking")).toHaveAttribute("aria-selected", "true");
@@ -249,6 +322,9 @@ test("loading, QR and queue retry states remain accessible; detail refresh error
   await page.getByRole("button", { name: "Refresh fixture" }).click();
   await expect(page.getByRole("button", { name: "Retry Details" })).toBeVisible();
   await expect(tab(page, "History")).toHaveAttribute("aria-selected", "true");
+  await expect(details(page)).not.toContainText("Nothing to show.");
+  await expect(details(page).getByRole("table", { name: "Appointment history" })).toHaveCount(0);
+  await expect(details(page).getByRole("button", { name: "Retry History" })).toBeVisible();
   state.failAppointment = false; state.failQr = true; state.failQueue = true; state.delay = 0;
   await page.getByRole("button", { name: "Retry Details" }).click();
   await tab(page, "Booking").click();
@@ -294,19 +370,19 @@ test("QR, status URLs, print/download and switching tabs cannot bypass fresh exp
   await expect(details(page).getByRole("alert")).toContainText("Completed visits");
 });
 
-for (const width of [1366, 1024, 768, 390]) {
+for (const width of [1920, 1366, 1024, 768, 390]) {
   test(`tabs and long content/control bounds fit ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 });
+    await page.setViewportSize({ width, height: width === 1024 ? 640 : 844 });
     await mount(page, "rows");
     await page.getByTestId("button-expand-appointment-appointment-1").click();
     await expect(page.getByTestId("button-ticket-download")).toBeEnabled();
-    for (const name of ["Booking", "Details", "Consultation", "History"]) {
+    for (const name of ["Booking", "Details", "History"]) {
       await tab(page, name).click();
       await expect(details(page).getByRole("tabpanel")).toBeVisible();
       const failures = await details(page).evaluate(root => {
         const bounds = root.getBoundingClientRect();
         const failures: string[] = [];
-        for (const node of root.querySelectorAll<HTMLElement>('[role="tab"],button,a,code,h3,dd,li')) {
+        for (const node of root.querySelectorAll<HTMLElement>('[role="tab"],button,a,code,h3,dd,th,td')) {
           if (!node.getClientRects().length) continue;
           const box = node.getBoundingClientRect();
           if (box.left < bounds.left - 1 || box.right > bounds.right + 1) failures.push(`${node.tagName}: outside detail bounds`);

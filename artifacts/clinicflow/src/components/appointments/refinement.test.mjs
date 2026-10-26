@@ -52,7 +52,7 @@ test("1200px acceptance: status follows token, Booking is default, hidden values
   const det = readFileSync(new URL("./AppointmentDetails.tsx", import.meta.url), "utf8");
   assert.match(det, /Tabs defaultValue="booking"/);
   assert.match(det, /<TabsContent value="details"[\s\S]*supplementaryDetails/);
-  assert.match(rows, /supplementaryDetails=\{hiddenCols/);
+   assert.match(rows, /supplementaryDetails=\{detailColumns/);
   assert.doesNotMatch(det + rows, /ticketFirst/);
   const clinic = readFileSync(new URL("../../clinic.tsx", import.meta.url), "utf8");
   assert.match(clinic, /CareLookup kind="clinics" publicAccess=\{isPatient\}/);

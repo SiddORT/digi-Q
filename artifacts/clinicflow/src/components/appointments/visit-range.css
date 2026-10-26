@@ -119,9 +119,9 @@ button.appt-status-dot:hover{background:#8a9bb5}
 /* Phones: appointments render as cards (no sideways scroll for core data): patient + token + status + visit + actions. */
 @media (max-width:767px){
   .appt-table{overflow:visible}
-  .appt-table table{min-width:0;width:100%}
-  .appt-table thead{display:none}
-  .appt-table tbody,.appt-table tr.appt-row{display:block}
+  .appt-table>table{min-width:0;width:100%}
+  .appt-table>table>thead{display:none}
+  .appt-table>table>tbody,.appt-table tr.appt-row{display:block}
   .appt-table tr.appt-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--space-1) var(--space-3);padding:var(--space-3);margin:0 0 var(--space-2);border:1px solid hsl(var(--border));border-radius:var(--radius-card);background:var(--dq-surface)}
   .appt-table tr.appt-row>td{display:block;border:0;padding:0;min-width:0;white-space:normal;position:static}
   .appt-table tr.appt-row>td::before{content:attr(data-label);display:block;font-size:var(--type-caption);color:var(--soft)}

@@ -48,7 +48,7 @@ for (const surface of ["rows", "today"]) for (const [name, width] of [["desktop"
     await page.setViewportSize({ width, height: 900 });
     await mount(page, surface);
     const d = page.getByTestId("appointment-details");
-    await expect(d.getByRole("tab")).toHaveText(["Booking", "Details", "Consultation", "History"]);
+    await expect(d.getByRole("tab")).toHaveText(["Booking", "Details", "History"]);
     await expect(d.getByRole("tab", { name: "Booking" })).toHaveAttribute("aria-selected", "true");
     const bk = await page.getByTestId("section-detail-booking").boundingBox(), tk = await page.getByTestId("section-detail-ticket").boundingBox();
     if (width >= 1024) { expect(Math.abs(bk!.y - tk!.y)).toBeLessThan(4); expect(tk!.x).toBeGreaterThan(bk!.x); } else expect(tk!.y).toBeGreaterThan(bk!.y + bk!.height - 2);
@@ -127,10 +127,11 @@ test("draft is kept across tab and row switches and the mobile is required", asy
   await expect(page.getByTestId("input-booking-notes")).toHaveValue("Draft kept");
 });
 
-test("reference appears once, in the summary", async ({ page }) => {
+test("reference copy remains available without a repeated row summary", async ({ page }) => {
   await mount(page, "rows");
   await expect(page.getByTestId("text-detail-reference")).toHaveCount(1);
-  await expect(page.getByTestId("appointment-summary").getByTestId("button-copy-reference")).toBeVisible();
+  await expect(page.getByTestId("appointment-summary")).toHaveCount(0);
+  await expect(page.getByTestId("button-copy-reference")).toBeVisible();
 });
 
 test("non-editable bookings show no Edit control", async ({ page }) => {
@@ -176,10 +177,13 @@ test("SMS blocked by missing approved template shows the safe reason and no prev
 
 test("output actions: download is a PDF, print opens a popup, email opens recipient preview", async ({ page }) => {
   await mount(page, "rows");
-  await page.addInitScript(() => { window.print = () => {}; });
+  await page.context().addInitScript(() => { window.print = () => {}; });
   const popup = page.waitForEvent("popup");
   await page.getByTestId("button-ticket-print").click();
-  const p = await popup; await expect(p.locator("body")).toBeAttached(); await p.close();
+  const p = await popup;
+  await expect(p.locator("body")).toContainText(base.patientName);
+  await expect(page.getByTestId("button-ticket-download")).toBeEnabled();
+  await p.close();
   const dl = page.waitForEvent("download");
   await page.getByTestId("button-ticket-download").click();
   expect((await dl).suggestedFilename()).toMatch(/\.pdf$/);

@@ -43,14 +43,14 @@ test("row actions: no duplicate Details action (row expands inline), clinical Ch
   const s = r("./AppointmentRows.tsx");
   assert.doesNotMatch(s, /className="row-details"/);
   assert.match(s, /onClick=\{event=>\{if\(!isInteractiveTarget\(event\.target\)\)toggleRow\(a\.id\);\}\}/);
-  assert.match(s, /<AppointmentDetails key=\{a\.id\} appointment=\{detail\.data\} supplementaryDetails=/);
+  assert.match(s, /<AppointmentDetails key=\{a\.id\} appointment=\{detail\.data\} rowContext supplementaryDetails=/);
   assert.match(s, /icon=\{primary==="complete"\?<LogOut size=\{16\} aria-hidden\/>:<LogIn size=\{16\} aria-hidden\/>\}/);
   assert.doesNotMatch(s, /row-ticket|setTicket|<AppointmentTicket/);
   assert.match(s, /<span className="row-lead"><button type="button" className="row-expand-toggle" aria-expanded=\{expandedId===a\.id\}/);
 });
 test("booking details own the complete ticket and QR section", () => {
   const d = r("./AppointmentDetails.tsx") + r("./AppointmentBookingTab.tsx");
-  for (const id of ["section-detail-patient", "section-detail-visit", "section-detail-provider", "section-detail-booking", "section-detail-ticket"]) assert.ok(d.includes(id), id);
+  for (const id of ["section-detail-additional", "section-detail-consultation", "section-detail-booking", "section-detail-ticket"]) assert.ok(d.includes(id), id);
   assert.match(d, /<VisitTicket compact/);
   assert.match(d, /Ticket &amp; QR/);
   assert.match(r("../../clinic.tsx"), /<AppointmentTicket/, "immediate booking confirmation still shows the ticket");

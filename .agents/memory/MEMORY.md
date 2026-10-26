@@ -67,3 +67,4 @@
 - [Email visual references](email-reference-boundary.md) — booking/OTP images guide appearance, not event variables, security links, message meaning or delivery authorization.
 - [Booking edit revisions](booking-edit-revisions.md) — contact/notes concurrency must not advance lifecycle notification eligibility or recapture automatic messages.
 - [Account notification authority](account-notification-authority.md) — manual SMS requires the account's valid saved mobile; separate patient/visit numbers cannot substitute.
+- [Appointment presentation boundary](appointment-presentation-boundary.md) — preserve approved Booking; deduplicate row context without losing standalone context or real History events.

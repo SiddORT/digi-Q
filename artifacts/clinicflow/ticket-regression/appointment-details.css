@@ -1,3 +1,5 @@
 @import "../src/index.css";
+@import "../src/form-standard.css";
+@import "../src/compact-ui.css";
 /* Include the real component tree despite this fixture's separate Vite root. */
 @source "../src";

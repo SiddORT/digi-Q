@@ -262,7 +262,7 @@
 /* Stable, bounded table columns on tablet and desktop (641px+); narrower containers scroll horizontally instead of squeezing. */
 @media (min-width: 641px){
   /* Fixed layout only where every truncating cell renders through OverflowText (full value on hover/focus/tap). */
-  .appt-table table{table-layout:fixed;min-width:1180px}
+  .appt-table>table{table-layout:fixed;min-width:1180px}
   .workspace :is(.table-scroll,.table-wrap) th.col-select,.workspace :is(.table-scroll,.table-wrap) td.col-select{width:44px}
   /* Other listings: bounded but never silently cut; the container scrolls horizontally instead. */
   .workspace :is(.table-scroll,.table-wrap) td:not(.col-actions):not(.col-select){max-width:320px}
@@ -292,7 +292,7 @@
 .row-menu-portal button.danger:hover:not(:disabled){background:#fbf0ed}
 .row-menu-sep{border:0;border-top:1px solid var(--color-border);margin:4px 0}
 /* Expanded row details align to the table grid rather than floating. */
-.workspace .table-scroll tr.row-expansion td,.workspace .table-scroll .col-expansion{white-space:normal;padding:8px 12px 12px;background:#f8fafd}
+.workspace .table-scroll tr.row-expansion>td,.workspace .table-scroll .col-expansion{white-space:normal;padding:8px 12px 12px;background:#f8fafd}
 /* Uniform section header: title left, controls right, one row. */
 .panel-heading.section-head{padding:12px 16px;min-height:52px}
 .panel-heading.section-head h2{font-size:var(--type-card)}
@@ -331,17 +331,17 @@
 .app-dialog .form-footer{display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:12px;border-top:1px solid var(--color-border)}
 .app-dialog .app-dialog-body>form>label,.app-dialog .app-dialog-body>form>.notice{margin-bottom:12px}
 @media (min-width: 641px){
-  .appt-table th,.appt-table td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+  .appt-table>table>thead>tr>th,.appt-table>table>tbody>tr>td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
   .appt-table th.col-actions,.appt-table td.col-actions{overflow:visible}
-  .appt-table th{height:44px}
-  .appt-table td{height:56px;padding:8px 12px}
+  .appt-table>table>thead>tr>th{height:44px}
+  .appt-table>table>tbody>tr>td{height:56px;padding:8px 12px}
   .appt-table .table-sort{white-space:nowrap;display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:4px 8px}
   .appt-table td .appt-stack>*,.appt-table td .appt-patient>*{overflow:hidden;text-overflow:ellipsis}
   .workspace .row-actions .row-expand-toggle{width:32px;min-width:32px;height:32px;min-height:32px;padding:0;flex:0 0 auto}
 }
 .workspace .row-actions>*{flex:0 0 auto}
 .workspace .row-actions{justify-content:flex-end}
-@media (min-width:641px){.appt-table table{min-width:1260px}}
+@media (min-width:641px){.appt-table>table{min-width:1260px}}
 /* Actions cell never shrinks below its content on tablet/desktop. */
 @media (min-width:641px){
   .workspace td.col-actions .row-actions{width:max-content;margin-left:auto}
@@ -352,7 +352,7 @@
 /* Enforce intrinsic column floors; fixed table layout can proportionally shrink
    explicit widths when saved views or legacy percentage rules change the sum. */
 @media (min-width:641px){
-  .workspace .appt-table table{table-layout:auto;width:max-content;min-width:100%}
+  .workspace .appt-table>table{table-layout:auto;width:max-content;min-width:100%}
   .workspace .appt-table :is(th,td).col-date{width:150px;min-width:150px}
   .workspace .appt-table :is(th,td).col-patient{width:200px;min-width:200px;max-width:240px}
   .workspace .appt-table :is(th,td).col-location{min-width:170px;max-width:240px}
@@ -361,11 +361,11 @@
   .workspace .appt-table :is(th,td).col-actions{width:340px;min-width:340px}
 }
 @media (max-width:640px){
-  .workspace .appt-table table,.workspace .appt-table tbody{display:block;width:100%;min-width:0}
-  .workspace .appt-table thead{display:none}
-  .workspace .appt-table tbody>tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
-  .workspace .appt-table tbody>tr>td{display:block;position:static;width:auto!important;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:left}
-  .workspace .appt-table tbody>tr>td.col-actions{grid-column:1/-1;box-shadow:none;padding:8px}
+  .workspace .appt-table>table,.workspace .appt-table>table>tbody{display:block;width:100%;min-width:0}
+  .workspace .appt-table>table>thead{display:none}
+  .workspace .appt-table>table>tbody>tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .workspace .appt-table>table>tbody>tr>td{display:block;position:static;width:auto!important;min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:left}
+  .workspace .appt-table>table>tbody>tr>td.col-actions{grid-column:1/-1;box-shadow:none;padding:8px}
   .workspace .appt-table .row-actions{display:flex;justify-content:flex-start;flex-wrap:nowrap;width:100%;max-width:100%;overflow-x:auto;padding-bottom:4px;gap:4px}
   .workspace .appt-table .row-actions>*{width:auto;min-width:44px;min-height:44px;flex:0 0 auto}
   .workspace .appt-table tr.row-expansion>td{grid-column:1/-1}
@@ -455,7 +455,7 @@
 /* Desktop default appointment table fits the content width at 1280 (no min-width floor).
    Optional Status / Booking Reference columns restore a floor and scroll horizontally. */
 @media (min-width:641px){
-  .workspace .table-scroll.appt-table table{table-layout:fixed;width:100%;min-width:0}
+  .workspace .table-scroll.appt-table>table{table-layout:fixed;width:100%;min-width:0}
   .workspace .table-scroll.appt-table :is(th,td){min-width:0;max-width:none}
   .workspace .table-scroll.appt-table :is(th,td).col-select{width:40px}
   .workspace .table-scroll.appt-table :is(th,td).col-serial{width:40px}
@@ -469,7 +469,7 @@
   .workspace .table-scroll.appt-table :is(th,td).col-reference{width:140px}
   .workspace .table-scroll.appt-table :is(th,td).col-actions{width:196px;min-width:0}
   .workspace .table-scroll.appt-table td.col-actions .row-actions{width:auto;justify-content:flex-end;gap:4px}
-  .workspace .table-scroll.appt-table table:has(:is(th.col-status,th.col-reference)){min-width:1140px}
+  .workspace .table-scroll.appt-table>table:has(:is(th.col-status,th.col-reference)){min-width:1140px}
 }
 @media (min-width:641px){
   .workspace .table-scroll.appt-table :is(th,td).col-serial{width:64px}
@@ -494,7 +494,7 @@
 }
 @media (min-width:640px) and (max-width:1199px){
   .workspace .admin-listing-table :is(th,td).col-actions{position:sticky;right:0;z-index:2;background:var(--dq-surface)}
-  .workspace .table-scroll.appt-table table{min-width:980px}
+  .workspace .table-scroll.appt-table>table{min-width:980px}
   .workspace .table-scroll.appt-table :is(th,td).col-actions{width:236px}
   .workspace .table-scroll.appt-table td.col-actions{overflow:hidden;position:sticky;right:0;z-index:2;background:var(--dq-surface)}
   .workspace .table-scroll.appt-table td.col-actions .row-actions{flex-wrap:nowrap;justify-content:flex-end;gap:4px}
@@ -572,7 +572,7 @@ ol.booking-steps { list-style: none; margin-left: 0; padding-left: 0; flex-wrap:
 
 /* ---------- Tabbed appointment details ---------- */
 .appt-detail .appt-tabs{min-width:0}
-.appt-detail .appt-tabs-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;width:100%;height:auto;padding:4px;border-radius:var(--radius-control);background:#eef3fb;border-bottom:0}
+.appt-detail .appt-tabs-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:100%;height:auto;padding:4px;border-radius:var(--radius-control);background:#eef3fb;border-bottom:0}
 .appt-detail .appt-tab{min-height:36px;height:auto;padding:6px 8px;white-space:normal;text-align:center;font-family:var(--font-body);font-size:var(--type-label);font-weight:600;color:var(--soft);border-radius:var(--radius-control);line-height:1.2}
 .appt-detail .appt-tab[data-state=active]{background:var(--dq-surface);color:var(--dq-blue);box-shadow:0 1px 2px rgba(30,60,110,.15)}
 .appt-detail .appt-tab:focus-visible,.appt-detail .appt-tab-panel:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px;box-shadow:none}
@@ -583,7 +583,7 @@ ol.booking-steps { list-style: none; margin-left: 0; padding-left: 0; flex-wrap:
 .appt-detail .appt-detail-ticket,.appt-detail .appt-ticket{min-width:0;max-width:100%;overflow:visible}
 .appt-detail .appt-detail-hstatus{color:var(--soft)}
 @media (max-width:640px){.appt-detail .appt-tab{min-height:44px;padding:6px 8px}.appt-detail .appt-detail-cols{grid-template-columns:1fr}}
-@media (max-width:480px){.appt-detail .appt-tabs-list{grid-template-columns:repeat(2,minmax(0,1fr))}.appt-detail .appt-tab{white-space:nowrap}}
+@media (max-width:480px){.appt-detail .appt-tab{white-space:nowrap}}
 /* Use the actual scroll viewport, not guessed sidebar dimensions, for wide tables. */
 .workspace .appt-table{container-type:inline-size}
 .workspace tr.row-expansion .appt-detail dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3) var(--space-4)}

@@ -1,5 +1,13 @@
 # Compact UI coverage and evidence
 
+## Appointment accordion
+
+See [appointment accordion acceptance](appointment-accordion.md) for the shared
+three-tab layout, deduplicated row/standalone context contract, truthful History
+states, approved Booking boundary, focused checks and rendered evidence. This
+uses fictional intercepted data; it does not claim live authenticated role or
+production/UAT verification.
+
 ## Shared schedule editor density
 
 See [compact schedule layout evidence](../verification/schedule-compact-layout.md)
