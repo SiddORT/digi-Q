@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import { formatConfiguredTimestamp, formatDate, formatTime } from "../../lib/date-time";
 import { ErrorNotice, title } from "../../resources";
 import { EmptyState } from "../EmptyState";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../ui/table";
+import { Table, TableBody, TableRow, TableCell } from "../ui/table";
 import { AppointmentBookingTab, CopyReference } from "./AppointmentBookingTab";
 import { isPrivateAppointmentUnavailable } from "./presentation";
 import { clearBookingDraft } from "./booking-drafts";
@@ -43,10 +43,10 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails, rowCont
   const timestamp = (value: string) => formatConfiguredTimestamp(value, a.timezone || undefined, {}, a);
   const session = `${a.startTime ? formatTime(a.startTime, a) : "—"}–${a.endTime ? formatTime(a.endTime, a) : "—"}`;
   return <section aria-label="Appointment details" className="appt-detail" data-testid="appointment-details">
-    {rowContext ? <div className="appt-sum-refs" aria-label="Booking reference"><CopyReference reference={a.reference} /></div> : <header className="appt-detail-summary" data-testid="appointment-summary">
+    {!rowContext && <header className="appt-detail-summary" data-testid="appointment-summary">
       <div className="appt-sum-id">
         <h3 data-testid="text-detail-patient"><span className="appt-sum-name">{a.patientName}</span> <span className={`badge ${a.status}`} data-testid="text-detail-status">{statusText(a.status)}</span></h3>
-        <p className="appt-sum-refs"><span data-testid="text-detail-token">Token: <strong>{a.token || "Not assigned"}</strong></span><span>Ref: <CopyReference reference={a.reference} /></span></p>
+        <p className="appt-sum-refs"><span data-testid="text-detail-token">Token: <strong>{a.token || "Not assigned"}</strong></span><span>Ref: <code className="mono">{a.reference}</code></span></p>
       </div>
       <dl className="appt-sum-context" data-testid="text-detail-context">
         <div><dt>Visit</dt><dd>{formatDate(a.date, a)}<small>{session}</small></dd></div>
@@ -54,11 +54,11 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails, rowCont
         <div><dt>Doctor</dt><dd>{a.doctorName}</dd></div>
       </dl>
     </header>}
-    <Tabs defaultValue="booking" className="appt-tabs">
-      <TabsList className="appt-tabs-list" aria-label="Appointment detail sections">
-        <TabsTrigger value="booking" className="appt-tab" data-testid="tab-detail-booking"><TabIcon name="booking"/>Booking</TabsTrigger>
-        <TabsTrigger value="details" className="appt-tab" data-testid="tab-detail-details"><TabIcon name="details"/>Details</TabsTrigger>
-        <TabsTrigger value="history" className="appt-tab" data-testid="tab-detail-history"><TabIcon name="history"/>History</TabsTrigger>
+    <Tabs defaultValue="booking">
+      <TabsList aria-label="Appointment detail sections">
+        <TabsTrigger value="booking" data-testid="tab-detail-booking"><TabIcon name="booking"/>Booking</TabsTrigger>
+        <TabsTrigger value="details" data-testid="tab-detail-details"><TabIcon name="details"/>Details</TabsTrigger>
+        <TabsTrigger value="history" data-testid="tab-detail-history"><TabIcon name="history"/>History</TabsTrigger>
       </TabsList>
       <TabsContent value="booking" className="appt-tab-panel">
         <AppointmentBookingTab appointment={a} />
@@ -70,6 +70,7 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails, rowCont
             <dl className="appt-detail-grid">
               {!rowContext && <div><dt>Patient ID</dt><dd className="mono" data-testid="text-detail-patient-code">{a.patientCode || "Not recorded"}</dd></div>}
               {a.branchAddress && <div><dt>Location address</dt><dd>{a.branchAddress}</dd></div>}
+              <div><dt>Booking reference</dt><dd data-testid="text-detail-booking-reference"><CopyReference reference={a.reference} /></dd></div>
               <div><dt>Timezone</dt><dd>{a.timezone || "Not recorded"}</dd></div>
             </dl>
             <p className="muted">Session window, not a promised consultation time.</p>
@@ -91,8 +92,9 @@ function AppointmentDetailsInner({ appointment: a, supplementaryDetails, rowCont
             : historyLoading ? <p role="status">Loading history…</p>
             : !history ? <p role="status">History unavailable. <button type="button" onClick={retryHistory}>Retry History</button></p>
             : history.length === 0 ? <EmptyState icon={<History className="h-5 w-5" />} title="Nothing to show." />
-            : <Table className="table-fixed" aria-label="Appointment history">
-              <TableHeader><TableRow><TableHead scope="col">Date &amp; time</TableHead><TableHead scope="col">Event</TableHead><TableHead scope="col">Status</TableHead><TableHead scope="col">Reason</TableHead></TableRow></TableHeader>
+            : <Table className="table-fixed appt-history-table" aria-label="Appointment history">
+              {/* Plain header cells inherit the main appointment table heading cascade (no utility overrides). */}
+              <thead><tr><th scope="col">Date &amp; time</th><th scope="col">Event</th><th scope="col">Status</th><th scope="col">Reason</th></tr></thead>
               <TableBody>{history.map((event, index) => <TableRow key={`${event.occurredAt}-${index}`}>
                 <TableCell className="whitespace-normal break-words">{timestamp(event.occurredAt)}</TableCell>
                 <TableCell className="whitespace-normal break-words">{event.action ? title(event.action) : "Status recorded"}</TableCell>

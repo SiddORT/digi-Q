@@ -3,6 +3,12 @@ name: ClinicFlow visual cascade verification
 description: Why shared UI fixes need rendered checks against legacy CSS
 ---
 
+Wait for state transitions to settle before comparing computed colours between equivalent controls.
+
+**Why:** Immediately measuring sequential tab clicks can compare different intermediate animation frames and falsely report inconsistent styling.
+
+**How to apply:** Await the expected selected and inactive CSS values before taking a full computed-style snapshot; keep focus-state checks separate from pointer activation.
+
 When changing ClinicFlow controls, verify computed styles and rendered layout rather than trusting utility class names or a passing typecheck.
 
 **Why:** An earlier restoration added correct-looking padding utilities but legacy unlayered input rules still won the cascade. A later responsive flex override also stacked full-width filter children at desktop sizes despite a correct tablet grid.

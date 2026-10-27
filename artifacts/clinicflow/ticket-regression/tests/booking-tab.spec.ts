@@ -54,6 +54,12 @@ for (const surface of ["rows", "today"]) for (const [name, width] of [["desktop"
     const bk = await page.getByTestId("section-detail-booking").boundingBox(), tk = await page.getByTestId("section-detail-ticket").boundingBox();
     if (width >= 1024) { expect(Math.abs(bk!.y - tk!.y)).toBeLessThan(4); expect(tk!.x).toBeGreaterThan(bk!.x); } else expect(tk!.y).toBeGreaterThan(bk!.y + bk!.height - 2);
     await expect(page.getByTestId("ticket-information")).toBeVisible();
+    const info = (await page.getByTestId("ticket-information").boundingBox())!;
+    expect(Math.abs(info.x - tk!.x)).toBeLessThan(1);
+    expect(Math.abs(info.width - tk!.width)).toBeLessThan(1);
+    expect(info.y - (tk!.y + tk!.height)).toBeGreaterThanOrEqual(0);
+    expect(info.y - (tk!.y + tk!.height)).toBeLessThanOrEqual(16);
+    await expect(page.getByTestId("section-detail-ticket-column").getByTestId("ticket-information")).toBeVisible();
     await expect(page.getByTestId("text-ticket-doctor-status")).toContainText("Available");
     await expect(page.getByTestId("text-ticket-estimate")).toContainText("20 minutes");
     await noOverflow(page);
@@ -66,6 +72,33 @@ for (const surface of ["rows", "today"]) for (const [name, width] of [["desktop"
     expect(items.join()).not.toMatch(/A4/);
   });
 }
+
+test("live information stays next to the ticket with very tall notes, offline and stale warnings", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 900 });
+  const s = await mount(page, "rows");
+  s.a.notes = Array.from({ length: 60 }, (_, i) => `Line ${i}: note`).join("\n");
+  await page.evaluate(() => window.dispatchEvent(new Event("fixture-refresh")));
+  await expect(page.getByTestId("text-detail-notes")).toContainText("Line 59");
+  const booking = (await page.getByTestId("section-detail-booking").boundingBox())!;
+  const info = (await page.getByTestId("ticket-information").boundingBox())!;
+  expect(info.y + info.height).toBeLessThan(booking.y + booking.height);
+  await page.context().setOffline(true);
+  const side = page.getByTestId("section-detail-ticket-column");
+  await expect(side.getByRole("alert")).toContainText("offline or stale");
+  await expect(side.getByRole("button", { name: "Refresh Ticket", exact: true })).toBeDisabled();
+  await expect(page.getByTestId("button-ticket-print")).toBeDisabled();
+  await expect(page.getByTestId("button-ticket-download")).toBeDisabled();
+  await expect(side.getByTestId("text-ticket-qr-warning")).toContainText("Printed tickets do not update");
+  await page.context().setOffline(false);
+  // Reconnection can make the still-recent record fresh without a manual refresh.
+  await expect(page.getByTestId("button-ticket-print")).toBeEnabled();
+  // A failed record refresh is also stale, even when the browser is online.
+  await page.route("**/api/appointments/appointment-1", route => route.fulfill({ status: 503, json: { message: "Fictional refresh failure" } }));
+  await page.evaluate(() => window.dispatchEvent(new Event("fixture-refresh")));
+  await expect(side.getByRole("alert")).toContainText("offline or stale");
+  await expect(side.getByRole("button", { name: "Refresh Ticket", exact: true })).toBeEnabled();
+  await expect(page.getByTestId("button-ticket-download")).toBeDisabled();
+});
 
 test("edit: validation, keyboard, save payload uses start revision, persisted in details and row", async ({ page }) => {
   const s = await mount(page, "rows");
@@ -130,8 +163,12 @@ test("draft is kept across tab and row switches and the mobile is required", asy
 
 test("reference copy remains available without a repeated row summary", async ({ page }) => {
   await mount(page, "rows");
-  await expect(page.getByTestId("text-detail-reference")).toHaveCount(1);
+  await expect(page.getByTestId("text-detail-reference")).toHaveCount(0);
   await expect(page.getByTestId("appointment-summary")).toHaveCount(0);
+  expect(await page.getByTestId("appointment-details").evaluate(el => el.firstElementChild?.querySelector('[role="tablist"]') !== null)).toBe(true);
+  await page.getByTestId("tab-detail-details").click();
+  await expect(page.getByTestId("section-detail-additional")).toContainText("Booking reference");
+  await expect(page.getByTestId("text-detail-reference")).toHaveCount(1);
   await expect(page.getByTestId("button-copy-reference")).toBeVisible();
 });
 

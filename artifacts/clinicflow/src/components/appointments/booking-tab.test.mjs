@@ -25,7 +25,7 @@ test("history distinguishes authorized loading, failure, missing data, genuine e
   assert.match(details, /history=\{authorized\.data\?\.history\}/);
   assert.match(details, /historyError \?[\s\S]*historyLoading \?[\s\S]*!history \?[\s\S]*history\.length === 0 \?/);
   assert.match(details, /<EmptyState icon=\{<History[^]*?title="Nothing to show\."/);
-  for (const heading of ["Date &amp; time", "Event", "Status", "Reason"]) assert.ok(details.includes(`>${heading}</TableHead>`), heading);
+  for (const heading of ["Date &amp; time", "Event", "Status", "Reason"]) assert.ok(details.includes(`>${heading}</th>`), heading);
   assert.match(details, /history\.map\(\(event, index\)/);
   assert.match(details, /timestamp\(event\.occurredAt\)/);
   assert.match(details, /statusText\(event\.status\)/);
@@ -33,7 +33,10 @@ test("history distinguishes authorized loading, failure, missing data, genuine e
 });
 
 test("row context removes only surrounding repetition and preserves hidden and standalone information", () => {
-  assert.match(details, /rowContext \?[^]*?<CopyReference reference=\{a\.reference\}[^]*?: <header/);
+  assert.match(details, /!rowContext && <header/);
+  assert.match(details, /section-detail-additional[^]*?<dt>Booking reference<\/dt>[^]*?<CopyReference reference=\{a\.reference\}/);
+  assert.doesNotMatch(details, /rowContext \? <div className="appt-sum-refs"/);
+  assert.doesNotMatch(details, /className="appt-tab"|className="appt-tabs-list"/);
   assert.match(rows, /rowContext supplementaryDetails/);
   assert.match(rows, /hiddenCols\.filter\(k=>!\["reference","createdAt"\]\.includes\(k\)\)/);
   assert.match(rows, /sessionScoped\?\["date","location","doctor"\]/);

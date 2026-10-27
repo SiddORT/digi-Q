@@ -53,7 +53,8 @@ async function mount(page: Page, surface = "", linked = false, initial: Partial<
     let status = 200;
     if (path === "/api/public/website-config") body = { publicOrigin: "https://tickets.example.invalid" };
     else if (path === "/api/auth/csrf") body = {csrfToken:"fictional-browser-csrf"};
-    else if (path === "/api/me") body = { user: { id: "fixture-admin", role: "clinicAdmin" }, needsOnboarding: false };
+    else if (path === "/api/auth/status") body = { authenticated: true, role: "superAdmin" };
+    else if (path === "/api/me") body = { user: { id: "fixture-admin", fullName: "Fictional Administrator", email: "fixture@example.invalid", role: surface === "application" ? "superAdmin" : "clinicAdmin", timezone: "UTC" }, needsOnboarding: false };
     else if (path === "/api/appointments") body = { items: [state.appointment, second], total: 2, page: 1, pageSize: 100 };
     else if (path === "/api/appointments/appointment-1" || path === "/api/appointments/appointment-2") {
       state.reads++;
@@ -68,14 +69,105 @@ async function mount(page: Page, surface = "", linked = false, initial: Partial<
     } else if (path === "/api/queue") {
       status = state.failQueue ? 503 : 200;
       body = state.failQueue ? { message: "Fixture status unavailable" } : { entries: [], presence: { status: "onBreak" }, ownEntry: { patientsAhead: 2, estimatedWaitMinutes: null, estimate:{state:"paused",basis:"remainingQueue",asOf:new Date().toISOString(),patientsAhead:2,waitMinutes:null,suggestedArrival:null,beyondSessionEnd:false,guidance:"Doctor is on break. Arrival guidance resumes when availability is confirmed."} } };
-    } else { status = 501; body = { message: `Unmocked fixture request ${path}` }; }
+    } else if (surface === "application" && path === "/api/settings") body = { timezone: "UTC" };
+    else if (surface === "application" && /\/(directory|clinics|branches|doctors|permissions|verification)/.test(path)) body = { items: [], total: 0, hasMore: false };
+    else { status = 501; body = { message: `Unmocked fixture request ${path}` }; }
     await route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });
   });
-  await page.goto(`/?mode=details${surface ? `&surface=${surface}` : ""}${linked ? "&appointment=appointment-2" : ""}`);
+  await page.goto(surface === "application" ? "/application.html" : `/?mode=details${surface ? `&surface=${surface}` : ""}${linked ? "&appointment=appointment-2" : ""}`);
   return state;
 }
 const details = (page: Page) => page.getByTestId("appointment-details");
 const tab = (page: Page, name: string) => details(page).getByRole("tab", { name, exact: true });
+
+for (const width of [1366, 820, 390]) {
+  test(`actual application tree retains appointment composition at ${width}px`, async ({ page }) => {
+    test.setTimeout(30000);
+    await page.setViewportSize({ width, height: 900 });
+    await mount(page, "application");
+    await page.getByTestId("button-expand-appointment-appointment-1").click();
+    await expect(tab(page, "Booking")).toBeVisible();
+    await expect(page.getByTestId("button-copy-reference")).toHaveCount(0);
+    const ticket = (await page.getByTestId("section-detail-ticket").boundingBox())!;
+    const info = (await page.getByTestId("ticket-information").boundingBox())!;
+    expect(Math.abs(ticket.x - info.x)).toBeLessThan(1);
+    expect(info.y - ticket.y - ticket.height).toBeLessThanOrEqual(16);
+    await tab(page, "Details").click();
+    await page.getByTestId("button-copy-reference").click();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(first.reference);
+    await tab(page, "History").click();
+    await expect(page.getByRole("table", { name: "Appointment history" }).locator("tbody tr")).toHaveCount(24);
+    await page.screenshot({ path: `generated-artifacts/appointment-tabs/application-${width}-history.png`, fullPage: true });
+  });
+}
+
+for (const width of [1366, 820, 390]) {
+  test(`shared tab styles and heading treatment remain standard at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await mount(page, "rows");
+    await page.getByTestId("button-expand-appointment-appointment-1").click();
+    const styleOf = (node: Element) => {
+      const s = getComputedStyle(node);
+      return Object.fromEntries(["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "color", "backgroundColor", "padding", "borderRadius", "minHeight", "gap", "outlineStyle", "outlineWidth", "outlineColor"].map(key => [key, s[key as keyof CSSStyleDeclaration]]));
+    };
+    for (const name of ["Booking", "Details", "History"]) {
+      const shared = page.getByTestId("standard-tabs").getByRole("tab", { name, exact: true });
+      const actual = tab(page, name);
+      // Compare active, inactive, keyboard focus and icon geometry in the real cascade.
+      await shared.click();
+      await actual.click();
+      await actual.evaluate(el => (el as HTMLElement).blur());
+      await expect(actual).toHaveCSS("background-color", "rgb(233, 241, 255)");
+      await expect(shared).toHaveCSS("background-color", "rgb(233, 241, 255)");
+      expect(await actual.evaluate(styleOf)).toEqual(await shared.evaluate(styleOf));
+      const inactiveName = name === "Booking" ? "Details" : "Booking";
+      await expect(tab(page, inactiveName)).toHaveCSS("color", "rgb(86, 101, 125)");
+      expect(await tab(page, inactiveName).evaluate(styleOf)).toEqual(await page.getByTestId("standard-tabs").getByRole("tab", { name: inactiveName, exact: true }).evaluate(styleOf));
+      await page.keyboard.press("Tab");
+      await actual.focus();
+      const actualFocus = await actual.evaluate(styleOf);
+      await shared.focus();
+      expect(actualFocus).toEqual(await shared.evaluate(styleOf));
+      expect(await actual.locator("svg").evaluate(el => el.getBoundingClientRect().width)).toBe(18);
+    }
+    await tab(page, "History").click();
+    const head = page.getByRole("table", { name: "Appointment history" }).getByRole("columnheader").first();
+    if (width > 1024) {
+      const main = page.locator(".appt-table > table > thead > tr > th").first();
+      expect(await head.evaluate(styleOf)).toEqual(await main.evaluate(styleOf));
+    }
+    await expect(head).toBeVisible();
+    expect(await head.evaluate(el => getComputedStyle(el).position)).toBe("static");
+    const geometry = await head.evaluate(el => ({ width: el.getBoundingClientRect().width, height: el.getBoundingClientRect().height }));
+    expect(geometry.width).toBeGreaterThan(50);
+    expect(geometry.height).toBeGreaterThan(20);
+  });
+}
+
+test("Details reference failure feedback stays usable without a ticket", async ({ page }) => {
+  await mount(page, "rows");
+  await page.getByTestId("button-expand-appointment-appointment-2").click();
+  await expect(page.getByTestId("appointment-details").getByTestId("button-copy-reference")).toHaveCount(0);
+  await tab(page, "Details").click();
+  await page.evaluate(() => Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => Promise.reject(new Error("Denied")) } }));
+  await page.getByTestId("button-copy-reference").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByTestId("section-detail-additional").getByRole("alert")).toContainText("Select the reference");
+  await expect(page.getByTestId("text-detail-reference")).toHaveText(second.reference);
+});
+
+test.describe("touch reference access", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  test("token explains Details copying and Details is accessible without hover", async ({ page }) => {
+    await mount(page, "rows");
+    await page.getByTestId("text-token-appointment-1").tap();
+    await expect(page.locator(".helptip-bubble")).toContainText("Details");
+    if (!await details(page).isVisible()) await page.getByTestId("button-expand-appointment-appointment-1").tap();
+    await tab(page, "Details").tap();
+    await page.getByTestId("button-copy-reference").tap();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(first.reference);
+  });
+});
 
 // Measure the shared cell, not a tab's own padding: every state must end at
 // the same boundary, including failures that never mount AppointmentDetails.
@@ -168,6 +260,8 @@ for (const surface of ["rows", "today"]) {
         state.failAppointment = false;
         await page.getByRole("button", { name: "Retry Details", exact: true }).click();
         await tab(page, "Booking").click();
+        await expect(page.getByTestId("button-copy-reference")).toHaveCount(0);
+        await tab(page, "Details").click();
         await page.getByTestId("button-copy-reference").click();
         expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(first.reference);
         expect((await following.boundingBox())!.height).toBe(compactHeight);
@@ -232,8 +326,10 @@ for (const surface of ["rows", "today"]) {
     await page.getByTestId("button-expand-appointment-appointment-1").click();
     await expect(page.getByTestId("appointment-summary")).toHaveCount(0);
     await expect(page.getByTestId("text-detail-booked")).toBeVisible();
-    await expect(page.getByTestId("button-copy-reference")).toBeVisible();
+    await expect(page.getByTestId("button-copy-reference")).toHaveCount(0);
     await tab(page, "Details").click();
+    await expect(page.getByTestId("section-detail-additional")).toContainText("Booking reference");
+    await expect(page.getByTestId("button-copy-reference")).toBeVisible();
     const extra = page.locator('dl[aria-label="Hidden columns"]');
     for (const value of [first.patientName, first.patientCode, first.token, first.clinicName, first.branchName, first.doctorName]) await expect(extra).toContainText(value);
     await expect(extra).not.toContainText(first.reference);
@@ -270,6 +366,7 @@ for (const width of [1280, 820, 390]) {
     await expect(page.getByTestId("text-token-appointment-1")).toBeVisible();
     await page.getByTestId("text-token-appointment-1").focus();
     await expect(page.locator(".helptip-bubble")).toContainText("Booking reference");
+    await expect(page.locator(".helptip-bubble")).toContainText("Details");
     await page.keyboard.press("Escape");
     await expect(page.locator(".helptip-bubble")).toHaveCount(0);
   });
@@ -286,7 +383,9 @@ for (const surface of ["rows", "linked", "calendar"]) {
     } else {
       await page.getByTestId("calendar-day-visit-appointment-1").locator("summary").click();
     }
+    await tab(page, "Details").click();
     await expect(page.getByTestId("text-detail-reference")).toHaveText(first.reference);
+    await tab(page, "Booking").click();
     if (surface === "rows") await expect(page.getByTestId("text-patient-appointment-1")).toHaveText(first.patientName);
     await expect(page.getByAltText("Personal visit QR")).toBeVisible();
     state.failAppointment = true; state.failStatus = 403;
@@ -339,13 +438,13 @@ test("Booking default, keyboard sections, all fields, history and fresh refresh 
   await expect(page.getByText("Appointment History", { exact: true })).toHaveCount(0);
   await expect(page.getByTestId("text-ticket-estimate")).toContainText("Patients ahead");
   await expect(page.getByTestId("text-ticket-estimate")).toContainText("Doctor is on break");
-  await page.getByTestId("button-copy-reference").click();
-  await expect(page.getByTestId("button-copy-reference")).toHaveText("Copied");
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(first.reference);
   await tab(page, "Booking").focus();
   await page.keyboard.press("ArrowRight");
   await expect(tab(page, "Details")).toBeFocused();
   await expect(tab(page, "Details")).toHaveAttribute("aria-selected", "true");
+  await page.getByTestId("button-copy-reference").click();
+  await expect(page.getByTestId("button-copy-reference")).toHaveText("Copied");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(first.reference);
   await expect(page.getByTestId("text-detail-patient-code")).toContainText(first.patientCode);
   for (const text of [first.branchName, first.clinicName, first.doctorName]) await expect(page.getByTestId("appointment-summary")).toContainText(text);
   await expect(page.getByTestId("section-detail-additional")).not.toContainText(first.patientName);
@@ -371,15 +470,19 @@ test("Booking default, keyboard sections, all fields, history and fresh refresh 
 
 test("different appointment resets tabs and copy feedback; completed record and empty history remain usable", async ({ page }) => {
   await mount(page);
+  await tab(page, "Details").click();
   await page.getByTestId("button-copy-reference").click();
   await expect(page.getByTestId("button-copy-reference")).toHaveText("Copied");
   await tab(page, "History").click();
   await page.getByRole("button", { name: "Second appointment" }).click();
   await expect(tab(page, "Booking")).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByTestId("text-detail-reference")).toHaveText(second.reference);
-  await expect(page.getByTestId("button-copy-reference")).toHaveText("Copy");
   await expect(page.getByTestId("text-detail-ticket-unavailable")).toContainText("booking reference");
   await expect(page.getByTestId("appointment-ticket")).toHaveCount(0);
+  await tab(page, "Details").click();
+  await expect(page.getByTestId("text-detail-reference")).toHaveText(second.reference);
+  await expect(page.getByTestId("button-copy-reference")).toHaveText("Copy");
+  await page.getByTestId("button-copy-reference").click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(second.reference);
   await tab(page, "History").click();
   await expect(details(page).getByRole("heading", { name: "Nothing to show.", exact: true })).toBeVisible();
   await expect(details(page).getByRole("table")).toHaveCount(0);
@@ -388,6 +491,7 @@ test("different appointment resets tabs and copy feedback; completed record and 
   await expect(page.getByTestId("text-detail-checked-in")).not.toHaveText("Not recorded");
   await expect(page.getByTestId("text-detail-completed")).not.toHaveText("Not recorded");
   await page.getByRole("button", { name: "First appointment" }).click();
+  await tab(page, "Details").click();
   await expect(page.getByTestId("text-detail-reference")).toHaveText(first.reference);
   await page.evaluate(() => {
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => new Promise<void>(resolve => {
@@ -396,6 +500,7 @@ test("different appointment resets tabs and copy feedback; completed record and 
   });
   await page.getByTestId("button-copy-reference").click();
   await page.getByRole("button", { name: "Second appointment" }).click();
+  await tab(page, "Details").click();
   await expect(page.getByTestId("text-detail-reference")).toHaveText(second.reference);
   await page.evaluate(() => (window as unknown as { finishCopy: () => void }).finishCopy());
   await expect(page.getByTestId("button-copy-reference")).toHaveText("Copy");
@@ -410,7 +515,7 @@ test("row, off-page link and calendar share tabs; hidden columns live only in De
   await expect(page.getByRole("list", { name: "Hidden columns" })).toHaveCount(0);
   await expect(page.locator('dl[aria-label="Hidden columns"]')).toHaveCount(0);
   await expect(page.getByTestId("button-copy-reference")).toBeVisible();
-  await expect(page.getByTestId("section-detail-additional")).not.toContainText(first.reference);
+  await expect(page.getByTestId("section-detail-additional")).toContainText(first.reference);
   await expect(page.getByTestId("section-detail-additional")).not.toContainText(first.patientName);
   await expect(page.getByTestId("appointment-summary")).toHaveCount(0);
   await page.getByRole("button", { name: "Refresh fixture" }).click();

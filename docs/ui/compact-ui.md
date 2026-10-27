@@ -47,6 +47,11 @@ This refines the existing branding; it is not a new design system.
   existing drawer, never push a listing down.
 - Appointment table expansions end with 24px bottom clearance and the existing
   border token, including loading/error and final rows; collapsed rows stay compact.
+- Appointment expansions open directly on the shared tab strip (no
+  appointment-specific tab overrides). The copyable Booking reference lives only in
+  Details > Additional information for every status; the standalone summary shows
+  it as plain text. History headings use plain `th` so they match the main table.
+  Booking tab: Ticket & QR and the live ticket strip share the right column.
 - Existing genuine tabs use the approved icon-and-label strip reference in
   `attached_assets/image_1793026842063.png`; `tab-inventory.json` records owners,
   callers and exclusions. This supersedes older status-only tab guidance, not

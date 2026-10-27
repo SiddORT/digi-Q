@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AppointmentDetails } from "../src/components/appointments/AppointmentDetails";
 import { AppointmentRows } from "../src/components/appointments/AppointmentRows";
 import { CalendarDayPanel } from "../src/components/appointments/CalendarDayPanel";
+import { Tabs, TabsList, TabsTrigger } from "../src/components/ui/tabs";
+import { TabIcon } from "../src/components/TabIcon";
 import "./appointment-details.css";
 import "../src/components/workspace-consolidation.css";
 
@@ -25,6 +27,13 @@ export function AppointmentDetailsFixture() {
       <button onClick={() => setId("appointment-1")}>First appointment</button>
       <button onClick={() => setId("appointment-2")}>Second appointment</button>
     </nav>
+    <Tabs defaultValue="booking" data-testid="standard-tabs">
+      <TabsList aria-label="Standard tab comparison">
+        <TabsTrigger value="booking"><TabIcon name="booking"/>Booking</TabsTrigger>
+        <TabsTrigger value="details"><TabIcon name="details"/>Details</TabsTrigger>
+        <TabsTrigger value="history"><TabIcon name="history"/>History</TabsTrigger>
+      </TabsList>
+    </Tabs>
     {surface === "projection" ? list.data?.items[0] && <AppointmentDetails appointment={list.data.items[0]} />
       : surface === "rows" ? <AppointmentRows appointments={list.data?.items || []} />
       : surface === "today" ? <AppointmentRows sessionScoped appointments={list.data?.items || []} />

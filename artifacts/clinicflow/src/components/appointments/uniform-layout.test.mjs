@@ -55,6 +55,19 @@ test("booking details own the complete ticket and QR section", () => {
   assert.match(d, /Ticket &amp; QR/);
   assert.match(r("../../clinic.tsx"), /<AppointmentTicket/, "immediate booking confirmation still shows the ticket");
 });
+test("appointment presentation reuses standard tabs and groups ticket status in its own column", () => {
+  const details = r("./AppointmentDetails.tsx");
+  const booking = r("./AppointmentBookingTab.tsx");
+  const css = r("./booking-tab.css");
+  assert.doesNotMatch(details, /className="appt-tab"|className="appt-tabs-list"/);
+  assert.doesNotMatch(css, /\.appt-tabs-list/);
+  assert.match(details, /className="table-fixed appt-history-table"/);
+  assert.match(css, /\.appt-detail \.appt-history-table>thead>tr>th\{[^}]*white-space:normal/);
+  const column = booking.slice(booking.indexOf('className="appt-booking-side"'), booking.indexOf("{ctl.dialogs}"));
+  assert.ok(column.indexOf('data-testid="section-detail-ticket"') < column.indexOf('data-testid="ticket-information"'));
+  assert.match(column, /text-ticket-qr-warning/);
+  assert.match(column, /Refresh Ticket/);
+});
 test("shared IconAction keeps label as accessible name and tooltip, with disabled reasons", () => {
   const i = r("../IconAction.tsx");
   assert.match(i, /aria-label=\{label\}/);

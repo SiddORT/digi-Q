@@ -19,7 +19,7 @@ import { refreshAppointmentObservers } from "./refresh";
 import "./booking-tab.css";
 import { ArrivalGuidance, LiveTicketAction } from "../tickets/ArrivalGuidance";
 
-/** Booking tab: Booking Details and Ticket & QR side by side, then one status strip. Polling reuses the shared
+/** Booking tab: Booking Details left; Ticket & QR with its live strip directly beneath in the right column. Polling reuses the shared
  *  appointment query key, so this layout adds only the queue/QR reads the old stacked ticket already made. */
 export function AppointmentBookingTab({ appointment: a }: { appointment: api.Appointment }) {
   const site = usePublicWebsite();
@@ -45,6 +45,7 @@ export function AppointmentBookingTab({ appointment: a }: { appointment: api.App
           <div className="span-2"><dt>{bookingFields.notes.label}</dt><dd><p className={`appt-detail-notes${a.notes?.trim() ? "" : " appt-detail-empty"}`} data-testid="text-detail-notes">{a.notes?.trim() || "No notes recorded."}</p></dd></div>
         </dl>
       </section>
+      <div className="appt-booking-side" data-testid="section-detail-ticket-column">
       <section className="appt-detail-block appt-booking-card appt-detail-ticket" id={`appt-ticket-${a.id}`} data-testid="section-detail-ticket" aria-labelledby={`tk-h-${a.id}`}>
         <h4 id={`tk-h-${a.id}`} className="sr-only-heading">Ticket &amp; QR</h4>
         {ticketVisible ? <>
@@ -54,13 +55,14 @@ export function AppointmentBookingTab({ appointment: a }: { appointment: api.App
           {qr.error && <p role="alert">Personal QR unavailable. <button type="button" onClick={() => void qr.refetch()} data-testid="button-retry-appointment-qr">Retry QR</button></p>}
         </> : <p className="appt-detail-empty" data-testid="text-detail-ticket-unavailable">Completed visits do not need a ticket. The booking reference remains available for records.</p>}
       </section>
-    </div>
-    {ticketVisible && <div className="appt-booking-strip" data-testid="ticket-information">
+      {ticketVisible && <div className="appt-booking-strip" data-testid="ticket-information">
       <div data-testid="text-ticket-booking-status"><span className="strip-label">Live ticket</span><LiveTicketAction appointmentId={a.id}/><small>Read-only status. Personal details require the booking owner's account.</small></div>
       <div data-testid="text-ticket-doctor-status"><span className="strip-label">Doctor status</span>{!queue.error && online && presence ? <p>{presence.status === "onBreak" ? "On break" : presence.status === "away" ? "Away" : "Available"}{presence.status !== "available" && <small>Calling is paused; the booking is kept.</small>}</p> : <p className="muted">Unavailable</p>}</div>
       {freshness.stale && <p role="alert" className="strip-wide">Ticket is offline or stale. Reconnect and refresh before printing. <button type="button" disabled={!online} onClick={() => void live.refetch()}>Refresh Ticket</button></p>}
       <p className="strip-wide muted" data-testid="text-ticket-qr-warning">QR is for authorized staff validation, not public access to patient details. Printed tickets do not update; status refreshes every 30 seconds while connected.</p>
     </div>}
+      </div>
+    </div>
     {ctl.dialogs}
   </div>;
 }
@@ -130,7 +132,7 @@ function BookingFormActions({ close, blocked, dirty, busy, problem }: { close: (
   return <FormActions wide={false} onCancel={guarded || close} cancelLabel="Cancel" busy={busy} busyLabel="Saving…" submitLabel="Save" submitTestId="button-save-booking" cancelTestId="button-cancel-booking" disabled={!dirty || problem || blocked || !navigator.onLine} />;
 }
 
-/** Reference with copy, shown once in the appointment summary. */
+/** Reference with copy, shown in Details > Additional information. */
 export function CopyReference({ reference }: { reference: string }) {
   const [copied, setCopied] = useState<"" | "done" | "failed">("");
   const token = useRef(0);
