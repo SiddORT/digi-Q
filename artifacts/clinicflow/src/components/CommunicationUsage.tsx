@@ -3,7 +3,7 @@ import { getGetCommunicationUsageQueryKey, getGetCommunicationUsageDetailQueryKe
 import { AppDialog } from "./AppDialog";
 import { SearchableSelect } from "./SearchableSelect";
 import { ResourceLookup } from "./ResourceLookup";
-import { FilterBar } from "./ListingControls";
+import { FilterBar, ListingRegion } from "./ListingControls";
 import { DateTimeFilterInput } from "./DateTimeFilterInput";
 import { dateTimeRangeError } from "../lib/notification-log-format";
 import { csvCell } from "./admin-listing-data";
@@ -115,14 +115,13 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
   const num = (n: number) => showCounts ? n.toLocaleString("en-IN") : "—";
   const filterCount = [f.preset !== "all", f.channel, f.event, f.status, f.clinicId, f.source].filter(Boolean).length;
   return <section className="cu" aria-labelledby="cu-h" data-testid="communication-usage">
-    <div className="nl-toolbar"><h2 id="cu-h" className="sms-ref-title">Communication Usage{d?.scopeClinicName ? ` · ${d.scopeClinicName}` : ""}</h2>
-      <button type="button" className="button secondary" disabled={q.isFetching} onClick={() => void q.refetch()} data-testid="button-refresh-usage">{q.isFetching && !q.isLoading ? "Refreshing…" : "Refresh"}</button></div>
     <div className="cu-coverage notice" role="note" data-testid="note-usage-coverage">
       <p><strong>What these counts are.</strong> Each count is one observed notification per channel and recipient occurrence, dated when first recorded (not its latest status transition). Provider accepted means the provider took the request, not confirmed delivery. This is not billing, SMS segments or a provider balance.</p>
       <p>History is best effort. Purged or never-captured records cannot be recovered, security messages may be incomplete, and legacy records are partial. Times are in {tz}.</p>
       {showCounts && <p data-testid="text-usage-earliest">{d.earliestAvailableAt == null ? "No recorded occurrence timestamp is available in this scope; missing timestamps do not prove there are no records." : `Earliest available record in this scope: ${fmt(d.earliestAvailableAt, tz)}.`} {d.legacyCount > 0 && `${d.legacyCount.toLocaleString("en-IN")} legacy record(s) have partial details. `}{d.unattributedCount > 0 && `${d.unattributedCount.toLocaleString("en-IN")} record(s) are unattributed / platform activity and are not assigned to clinics by guessing.`}</p>}
     </div>
-    <FilterBar active={filterCount > 0} activeCount={filterCount} onOpen={() => setDraft(f)} onCancel={() => setDraft(f)} onReset={() => apply(EMPTY_USAGE)} onResetDraft={() => setDraft(EMPTY_USAGE)}
+    <FilterBar title={<h2 id="cu-h">Communication Usage{d?.scopeClinicName ? ` · ${d.scopeClinicName}` : ""}</h2>} actions={<button type="button" className="button secondary" disabled={q.isFetching} onClick={() => void q.refetch()} data-testid="button-refresh-usage">{q.isFetching && !q.isLoading ? "Refreshing…" : "Refresh"}</button>}
+      active={filterCount > 0} activeCount={filterCount} onOpen={() => setDraft(f)} onCancel={() => setDraft(f)} onReset={() => apply(EMPTY_USAGE)} onResetDraft={() => setDraft(EMPTY_USAGE)}
       onApply={() => { if (customBad) return false; apply(draft); return true; }} advanced={<div className="nl-filters">
         <div className="cu-presets" role="group" aria-label="Date Range">{PRESETS.map(p => <button key={p} type="button" aria-pressed={draft.preset === p} className={draft.preset === p ? "cu-pill on" : "cu-pill"} data-testid={`button-usage-preset-${p}`} onClick={() => { if (p !== draft.preset) setDraft({ ...draft, preset: p, from: "", to: "" }); }}>{PRESET_LABEL[p]}</button>)}</div>
         {draft.preset === "custom" && <>
@@ -140,6 +139,7 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
         <SearchableSelect label="Staff User" clearable labelScope={`communication-report-users:${userId}:${role}:${clinicScope}`} value={draft.userId || ""} onChange={v => setDraft({ ...draft, userId: v })} options={(q.data?.userOptions || []).map(u => ({ value: u.id, label: u.name }))} loading={q.isFetching} error={q.error ? "Staff reporting identities could not be loaded." : undefined} onRetry={() => void q.refetch()} />
         {customBad && <p className="error-box" role="alert">{customBad}</p>}
       </div>} />
+    <ListingRegion>
     {q.isLoading ? <div className="cu-skel" role="status" data-testid="loading-usage">Loading communication usage…</div>
       : q.isError || !d ? <div className="error-box" role="alert" data-testid="error-usage">Usage could not be loaded, so no totals are shown. This is not a count of zero. <button type="button" onClick={() => void q.refetch()} data-testid="button-retry-usage">Retry</button></div>
       : <>
@@ -159,11 +159,12 @@ export function CommunicationUsage({ userId, role, clinicScope = "own" }: { user
           : <div className="nl-wrap"><table className="nl-table" data-testid="table-usage"><thead><tr><th>Time</th><th>Channel</th><th>Event</th><th>Outcome</th><th>Recipient</th><th /></tr></thead>
             <tbody>{d.items.map(r => <tr key={r.id} data-testid={`row-usage-${r.id}`}><td>{fmt(r.createdAt, tz)}</td><td>{r.channel}</td><td>{label(r.event)}</td><td><span className="et-chip">{BUCKET_COPY[r.bucket] ?? r.bucket}</span>{r.legacy ? " legacy" : ""}</td><td>{r.recipient ?? "Unavailable"}</td><td><button type="button" onClick={() => setOpen(r.id)} data-testid={`button-open-usage-${r.id}`}>Details</button></td></tr>)}</tbody></table></div>}
       </>}
-    <div className="et-actions" aria-label="Usage pages">
-      <button type="button" disabled={!cursors.length || q.isFetching} onClick={() => setCursors(c => c.slice(0, -1))} data-testid="button-usage-prev">Previous</button>
-      <span>Page {cursors.length + 1}{q.isFetching && !q.isLoading ? " · updating…" : ""}</span>
+    <div className="et-actions listing-footer" aria-label="Usage pages">
+      <button type="button" disabled={!cursors.length || q.isFetching || q.isError} onClick={() => setCursors(c => c.slice(0, -1))} data-testid="button-usage-prev">Previous</button>
+      <span>{q.isLoading?"Loading results…":q.isError?"Results unavailable":`Page ${cursors.length + 1}`}{q.isFetching && !q.isLoading ? " · updating…" : ""}</span>
       <button type="button" disabled={!d?.nextCursor || q.isFetching || q.isError} onClick={() => { const n = d?.nextCursor; if (n) setCursors(c => [...c, n]); }} data-testid="button-usage-next">Next</button>
     </div>
+    </ListingRegion>
     {open && <Detail id={open} tz={tz} scope={scope} onClose={() => setOpen(null)} />}
   </section>;
 }

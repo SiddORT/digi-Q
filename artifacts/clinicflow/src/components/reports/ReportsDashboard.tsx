@@ -9,7 +9,7 @@ import { friendlyError } from "../../lib/friendly-error";
 import { rangeError } from "../../lib/date-picker-logic";
 import type { useListingLayout } from "../../lib/listing-views";
 import { AppDialog } from "../AppDialog";
-import { FilterBar, Pagination, SearchInput, listingSuggestions, useDebouncedValue } from "../ListingControls";
+import { FilterBar, Pagination, SearchInput, ListingRegion, listingSuggestions, useDebouncedValue } from "../ListingControls";
 import { SavedViews } from "../ListingViewControls";
 import { useTableColumns, readTableColumns, writeTableColumns } from "../TableColumns";
 import { DateRangeInput } from "../DateRangeInput";
@@ -204,13 +204,13 @@ export function ReportsDashboard({ role, initialReportType, initialViewId, layou
     <ReportKpis summary={data?.summary} previous={data?.previous} compare={applied.compare} loading={isReportLoading} stale={stale} />
     <ReportTrendPanel points={data?.points} previousPoints={data?.previousPoints} compare={applied.compare} loading={isReportLoading} error={!!q.error || viewUnavailable} onRetry={() => void q.refetch()} preferences={preferences} />
     {data?.notes?.length ? <details className="muted" data-testid="report-notes"><summary>Report Definitions &amp; Data Coverage</summary><ul>{data.notes.map(n => <li key={n}>{n}</li>)}</ul></details> : null}
-    <section className="panel table-panel" aria-busy={stale} data-testid="report-results">
+    <section aria-busy={stale} data-testid="report-results"><ListingRegion className="panel table-panel">
       <div className="rp-results-head"><h2>Report Results</h2><span className="rp-count" data-testid="text-report-count">{q.isLoading ? "Loading…" : `${total.toLocaleString()} ${total === 1 ? "result" : "results"}`}</span></div>
       {isReportLoading ? <div className="skeleton">Loading report…</div> : data?.rows.length ? <div className="table-scroll"><table><thead><tr><th>#</th>{cols.visible.map(k => header[k]?.())}{cols.hidden.length > 0 && <th className="col-actions sticky"><span className="sr-only">Hidden columns</span></th>}<th>Actions</th></tr></thead>
         <tbody>{data.rows.map((r, i) => <Fragment key={r.id}><tr><td data-label="#">{(page - 1) * applied.pageSize + i + 1}</td>{cols.visible.map(k => <td key={k} data-label={cols.label(k)} className={cols.cls(k)}>{cell(k, r)}</td>)}{cols.hidden.length > 0 && <td className="col-actions sticky">{cols.toggle(r.id, r.label)}</td>}<td data-label="Actions">{rowActions(r)}</td></tr>{cols.expansion(r.id, cols.visible.length + 3, k => cell(k, r))}</Fragment>)}</tbody></table></div>
         : q.error ? null : <div className="empty" data-testid="report-empty"><p>No {applied.reportType === "all" ? "report results" : reportTypeLabel(applied.reportType).toLowerCase()} for this period and scope.</p><div className="rp-actions">{search && <button onClick={() => setSearch("")}>Clear Search</button>}{applied.preset !== "30d" && <button onClick={() => choosePreset("30d")}>Try Last 30 Days</button>}{dirty && <button onClick={clearAll}>Clear All</button>}</div></div>}
-      <Pagination page={page} pageSize={applied.pageSize} total={total} onPageChange={setPage} onPageSizeChange={n => patch({ pageSize: n })} />
-    </section>
+      <Pagination state={isReportLoading?"loading":q.error||viewUnavailable?"error":"ready"} page={page} pageSize={applied.pageSize} total={total} onPageChange={setPage} onPageSizeChange={n => patch({ pageSize: n })} />
+    </ListingRegion></section>
     <AppDialog open={!!detail} onClose={() => setDetail(null)} title={detail?.label || "Report details"} description={detail ? `${reportTypeLabel(detail.family)} · ${detail.clinic || "All clinics"} · ${formatDate(detail.date, preferences)}` : undefined}>
       {detail && <div data-testid="report-row-details"><dl className="rp-detail">{METRIC_LABELS.map(m => <Fragment key={m.key}><dt>{m.label}</dt><dd data-testid={`detail-${m.key}`}>{metricText(detail.metrics[m.key], m.unit)}</dd></Fragment>)}</dl>
         <div className="rp-actions"><button type="button" className="button small" disabled={!canExport} onClick={() => { if (canExport) downloadRow(detail); }} data-testid="button-report-row-csv"><Download size={15} aria-hidden /> Download Row CSV</button></div></div>}

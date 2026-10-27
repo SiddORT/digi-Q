@@ -3,14 +3,10 @@
   flex-shrink: 0;
 }
 /* Align the controls, not a stacked label/control group, with the search row. */
-.workspace .staff-list .list-header.list-header--compact{--lh-h:var(--control-sm)}
-.workspace .staff-list .list-header.list-header--compact .lh-search-row{flex-wrap:wrap}
 .staff-list .staff-type-selector>.searchable-select-field{display:flex;flex-direction:row;align-items:center;gap:8px}
 .staff-list .staff-type-selector .searchable-select-field>label{margin:0;white-space:nowrap}
 .workspace .staff-list .list-header .staff-type-selector .searchable-select-control{width:10.5rem;min-height:var(--lh-h);height:var(--lh-h);padding-block:4px}
 .workspace .staff-list .list-header .lh-table-tools>.button{height:var(--lh-h);min-height:var(--lh-h);padding-block:0}
-.workspace .staff-list .list-header .lh-actions .button{height:var(--lh-h);min-height:var(--lh-h)}
-@media(max-width:767px),(pointer:coarse){.workspace .staff-list .list-header.list-header--compact{--lh-h:44px}}
 /* Local measurements: the legacy 110px status column was smaller than its
    nowrap heading + padding. Sticky Actions then painted over adjacent cells.
    Staff uses ordinary internal horizontal scrolling, with no covering column. */

@@ -1,4 +1,5 @@
 import { FormActions } from "./FormActions";
+import { PageHeader } from "./PageHeader";
 import { RowMenu } from "./RowMenu";
 import { IconAction } from "./IconAction";
 import { HelpTip } from "./HelpTip";
@@ -74,10 +75,7 @@ export function CustomRoles({onPermissions,onDirtyChange}:{onPermissions?:(role:
   </div>;
 
   return <section className="panel padded custom-roles" data-testid="custom-roles" aria-labelledby="custom-roles-title">
-    <div className="cr-head section-head">
-      <div><h2 id="custom-roles-title">Custom Roles <HelpTip text="Named variations of a base role for specific staff. A custom role starts from its base role and can only remove actions; it never grants access beyond the base role and never crosses clinic ownership. Assign it to staff who already have that base role. Leave the clinic empty to apply it in all of that person's clinics. When several rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen." /></h2></div>
-      {draft && <button type="button" className="button small" onClick={() => setEditing({ id: newRoleId(draft.roles), name: "", baseRole: "receptionist", denied: [] })} data-testid="button-add-custom-role"><Plus size={16} aria-hidden /> New Custom Role</button>}
-    </div>
+    <PageHeader level={2} id="custom-roles-title" title={<>Custom Roles <HelpTip text="Named variations of a base role for specific staff. A custom role starts from its base role and can only remove actions; it never grants access beyond the base role and never crosses clinic ownership. Assign it to staff who already have that base role. Leave the clinic empty to apply it in all of that person's clinics. When several rules apply, the most restrictive wins, and a restricted action whose clinic is unclear requires a clinic to be chosen." /></>} actions={draft && <button type="button" className="button small" onClick={() => setEditing({ id: newRoleId(draft.roles), name: "", baseRole: "receptionist", denied: [] })} data-testid="button-add-custom-role"><Plus size={16} aria-hidden /> New Custom Role</button>}/>
     {query.isLoading || policy.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-custom-roles-loading"><span /><span /><span /></div>
       : query.isError || policy.isError || !draft ? <div role="alert" className="error-box">Custom roles could not be loaded. <button type="button" onClick={() => { void query.refetch(); void policy.refetch(); }}>Retry</button></div>
        : <>

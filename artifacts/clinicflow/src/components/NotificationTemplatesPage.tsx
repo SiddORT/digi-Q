@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type MutableRefOb
 import { useQueries } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
 import { useConfirm } from "./ConfirmDialog";
+import { FilterBar, ListingRegion } from "./ListingControls";
 import { useWorkspaceLeaveGuard } from "../lib/use-workspace-leave-guard";
 import { AppDialog } from "./AppDialog";
 import { EmailTemplates, RECIPIENTS } from "./EmailTemplates";
@@ -92,9 +93,12 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
   return <section className="panel padded event-controls" data-testid="page-notification-templates">
     {confirm.dialog}
     {management.dialog}
-    <header className="cm-notification-toolbar">
-      <div className="ns-heading"><h1>Notifications</h1><p>Configure delivery and wording for appointment, security and onboarding messages.</p></div>
-      <div className="ns-controls">
+    <FilterBar title={<h1>Notifications</h1>} secondary={<div className="listing-selects">
+      {sel("channel", f.channel, [["email", "Email"], ["sms", "SMS"]], "Channel")}
+      {sel("recipient", f.recipient, RECIPIENTS.filter(r => superAdmin || r.value !== "superAdmin").map(r => [r.value, r.label]), "Recipient")}
+      {sel("status", f.status, [["on", "On and Ready"], ["blocked", "On, Blocked"], ["off", "Off"]], "Status")}
+      {filtered && <button type="button" className="button secondary small" onClick={() => setF({ q: "", channel: "", recipient: "", status: "" })} data-testid="button-clear-filters">Clear Filters</button>}
+    </div>} actions={<div className="ns-controls">
         {scopeControl}
         <div className="ns-gate"><Switch className="cm-switch" id="notification-delivery-gate" checked={controls.data?.notificationsEnabled ?? false} disabled={!enabled || !gateCan || unavailable || !!editing} onCheckedChange={() => void management.change()} data-testid="checkbox-clinic-gate" /><label htmlFor="notification-delivery-gate">Optional Delivery</label>
         <NotificationInfo label="About Optional Delivery">
@@ -102,8 +106,10 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
           {controls.data && <> Current gate: {controls.data.notificationsEnabled ? "On" : "Off"}. {controls.data.inherited ? clinicId ? "Inherited system value." : "Default system value." : clinicId ? "Saved clinic value." : "Saved system value."}</>}
         </NotificationInfo>
         </div>
-      </div>
-    </header>
+      </div>}>
+      <div className="ns-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Search Events" placeholder="Search events or wording" value={f.q} onChange={e => setF(x => ({ ...x, q: e.target.value }))} data-testid="input-search-events" /></div>
+    </FilterBar>
+    <p>Configure delivery and wording for appointment, security and onboarding messages.</p>
     {enabled && !controls.isError && controls.data && <>
       {!controls.data.notificationsEnabled && <p className="notice cm-gate-warning" data-testid="text-gate-off">{clinicId ? "Optional delivery is off for this clinic, including enabled operational options." : "Optional delivery is off for System Default. Clinics with explicit overrides may differ."} Platform security messages are controlled separately by their own switches.</p>}
       {!gateCan && <p id="notification-activation-permission" className="muted">Activation is read-only for your account. You can still manage the wording you are allowed to edit.</p>}
@@ -111,15 +117,9 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
     {management.pending && <p role="status">Waiting for confirmation or saving. Scope and other delivery actions are locked.</p>}
     {management.error && <p className="error-box" role="alert" data-testid="status-management-error">{management.error}</p>}
     {management.notice && <p className="et-notice" role="status" data-testid="status-management-save">{management.notice}</p>}
-    <div className="cm-filters cm-inline-filters" role="search" aria-label="Filter Notification Events">
-      <div className="ns-search"><Search size={16} aria-hidden="true" /><input type="search" aria-label="Search Events" placeholder="Search events or wording" value={f.q} onChange={e => setF(x => ({ ...x, q: e.target.value }))} data-testid="input-search-events" /></div>
-      {sel("channel", f.channel, [["email", "Email"], ["sms", "SMS"]], "Channel")}
-      {sel("recipient", f.recipient, RECIPIENTS.filter(r => superAdmin || r.value !== "superAdmin").map(r => [r.value, r.label]), "Recipient")}
-      {sel("status", f.status, [["on", "On and Ready"], ["blocked", "On, Blocked"], ["off", "Off"]], "Status")}
-      {filtered && <button type="button" className="button secondary small" onClick={() => setF({ q: "", channel: "", recipient: "", status: "" })} data-testid="button-clear-filters">Clear Filters</button>}
-    </div>
     <p className="muted cm-group-guidance" id="notification-group-guidance">Group switches change all authorized options for that event, including filtered-out rows. From Mixed, switch on to enable all; from All Enabled, switch off to disable all. Optional Delivery is unchanged; enabling does not confirm delivery readiness. Future eligible events only; no replay.</p>
     {catalogs.some(c => c.isError) && <p className="error-box" role="alert">Some message previews could not be loaded. Activation settings are separate. <button type="button" onClick={() => catalogs.forEach(c => { if (c.isError) void c.refetch(); })}>Retry Previews</button></p>}
+    <ListingRegion>
     {!enabled ? <div className="et-empty" data-testid="state-select-clinic">Select a clinic group to view its notification templates.</div>
       : controls.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
       : controls.isError ? <div role="alert" className="error-box" data-testid="state-error">Events could not be loaded. <button type="button" onClick={() => controls.refetch()} data-testid="button-retry">Retry</button></div>
@@ -184,6 +184,7 @@ function EventTemplates({ identity, clinicId, onDirty, onPending, scopeControl, 
             {canEdit && <button type="button" className="button secondary small cm-edit" aria-label={`Edit ${title} ${ch} to ${label(r.recipient)}`} disabled={unavailable || !!editing} onClick={() => { if (!management.locked()) setEditing({ channel: r.channel, event, recipient: r.recipient }); }} data-testid={`button-edit-${r.channel}-${event}-${r.recipient}`}>Edit</button>}
           </div></li>; })}</ul></>}</AccordionContent>
         </AccordionItem>; })}</NotificationEventAccordion>}
+    </ListingRegion>
     {editing && <AppDialog open variant="drawer" onClose={requestClose} dirty={false} title="Edit Template" description={`${titleCase(editing.event.replaceAll("_", " "))} · ${editing.channel === "sms" ? "SMS" : "Email"} · ${label(editing.recipient)}`}>
       <EmailTemplates key={`${editing.channel}|${editing.event}|${editing.recipient}|${clinicId}`} notificationPage identity={identity} channel={editing.channel} fixed={{ clinicId, event: editing.event, recipient: editing.recipient as any }} onDirtyChange={setDirty} onBusyChange={setBusy} />
     </AppDialog>}

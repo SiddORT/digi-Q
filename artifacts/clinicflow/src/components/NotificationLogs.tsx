@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { getListNotificationLogsQueryKey, getGetNotificationLogQueryKey, useGetNotificationLog, useListNotificationLogs, type ListNotificationLogsParams, type NotificationLog } from "@workspace/api-client-react";
 import { AppDialog } from "./AppDialog";
-import { FilterBar } from "./ListingControls";
+import { FilterBar, ListingRegion } from "./ListingControls";
 import { ResourceLookup } from "./ResourceLookup";
 import { DateTimeFilterInput } from "./DateTimeFilterInput";
 import { dateTimeRangeError } from "../lib/notification-log-format";
@@ -44,13 +44,8 @@ export function NotificationLogs() {
   const reset = () => { setDraft(EMPTY_FILTERS); setApplied(EMPTY_FILTERS); setCursors([]); };
   const filterCount = Object.values(applied).filter(Boolean).length;
   return <section aria-labelledby="nl-heading" data-testid="notification-logs">
-    <div className="nl-toolbar">
-      <h2 id="nl-heading" className="sms-ref-title">Notification Logs</h2>
-      <button type="button" className="button secondary" disabled={q.isFetching} onClick={() => void q.refetch()} data-testid="button-refresh-logs">Refresh</button>
-    </div>
-    <p className="muted">Read-only. Times are shown in {tz}. "Provider accepted" means the provider took the request, not that the recipient received it. Legacy records are incomplete and unknown values show as unavailable. A message stuck in sending is reported as delivery unknown by the server.</p>
-    <p className="muted" data-testid="note-log-exact">All retained history, with optional open-ended dates. Previously deleted or never captured records cannot be recovered. Clinic ID, sender and recipient filters are exact matches, not partial searches.</p>
-    <FilterBar active={filterCount > 0} activeCount={filterCount} onOpen={() => setDraft(applied)} onCancel={() => setDraft(applied)} onApply={apply} onReset={reset} onResetDraft={() => setDraft(EMPTY_FILTERS)} advanced={<div className="nl-filters">
+    <FilterBar title={<h2 id="nl-heading">Notification Logs</h2>} actions={<button type="button" className="button secondary" disabled={q.isFetching} onClick={() => void q.refetch()} data-testid="button-refresh-logs">Refresh</button>}
+      active={filterCount > 0} activeCount={filterCount} onOpen={() => setDraft(applied)} onCancel={() => setDraft(applied)} onApply={apply} onReset={reset} onResetDraft={() => setDraft(EMPTY_FILTERS)} advanced={<div className="nl-filters">
       <DateTimeFilterInput label="From (IST)" value={draft.from} onChange={set("from")} testId="input-log-from" />
       <DateTimeFilterInput label="To (IST)" value={draft.to} onChange={set("to")} testId="input-log-to" />
       <ResourceLookup resource="clinics" label="Clinic Name" value={draft.clinicId} onChange={set("clinicId")} clearable />
@@ -62,6 +57,9 @@ export function NotificationLogs() {
       {dateTimeRangeError(draft.from, draft.to) && <p role="alert" className="field-error">{dateTimeRangeError(draft.from, draft.to)}</p>}
       <p className="muted">Clinic Name searches authorized clinics. Use Clinic ID for an exact historical or deleted clinic; an unavailable name does not clear the ID.</p>
     </div>} />
+    <p className="muted">Read-only. Times are shown in {tz}. "Provider accepted" means the provider took the request, not that the recipient received it. Legacy records are incomplete and unknown values show as unavailable. A message stuck in sending is reported as delivery unknown by the server.</p>
+    <p className="muted" data-testid="note-log-exact">All retained history, with optional open-ended dates. Previously deleted or never captured records cannot be recovered. Clinic ID, sender and recipient filters are exact matches, not partial searches.</p>
+    <ListingRegion>
     {q.isLoading ? <div role="status" data-testid="loading-logs">Loading delivery logs…</div>
       : q.isError || !q.data ? <div className="error-box" role="alert" data-testid="error-logs">Delivery logs could not be loaded. <button type="button" onClick={() => void q.refetch()}>Retry</button></div>
       : !q.data.items.length ? <p data-testid="empty-logs">No log entries match these filters{cursors.length ? " on this page" : ""}. An empty list is not proof that nothing was sent.</p>
@@ -70,11 +68,12 @@ export function NotificationLogs() {
           <td>{formatLogTime(l.createdAt, tz)}</td><td>{l.channel}</td><td>{l.event}{l.source === "test" ? " (test)" : ""}</td>
           <td><span className="et-chip">{statusLabel(l.status)}</span>{l.legacy ? " legacy" : ""}</td><td>{show(l.recipient)}</td><td>{show(l.reference)}</td>
           <td><button type="button" onClick={() => setOpen(l.id)} data-testid={`button-open-log-${l.id}`}>Details</button></td></tr>)}</tbody></table></div>}
-    <div className="et-actions" aria-label="Log pages">
-      <button type="button" disabled={!cursors.length || q.isFetching} onClick={() => setCursors(c => c.slice(0, -1))} data-testid="button-logs-prev">Previous</button>
-      <span>Page {cursors.length + 1}</span>
-      <button type="button" disabled={!q.data?.nextCursor || q.isFetching} onClick={() => { const n = q.data?.nextCursor; if (n) setCursors(c => [...c, n]); }} data-testid="button-logs-next">Next</button>
+    <div className="et-actions listing-footer" aria-label="Log pages">
+      <button type="button" disabled={!cursors.length || q.isFetching || q.isError} onClick={() => setCursors(c => c.slice(0, -1))} data-testid="button-logs-prev">Previous</button>
+      <span>{q.isLoading?"Loading results…":q.isError?"Results unavailable":`Page ${cursors.length + 1}`}</span>
+      <button type="button" disabled={!q.data?.nextCursor || q.isFetching || q.isError} onClick={() => { const n = q.data?.nextCursor; if (n) setCursors(c => [...c, n]); }} data-testid="button-logs-next">Next</button>
     </div>
+    </ListingRegion>
     {open && <Drawer id={open} tz={tz} onClose={() => setOpen(null)} />}
   </section>;
 }

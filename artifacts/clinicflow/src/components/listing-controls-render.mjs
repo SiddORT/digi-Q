@@ -13,3 +13,8 @@ export function renderFilterBar(props = {}, pageTitle = false) {
     }, header)
     : header);
 }
+export function renderPagination(props = {}) {
+  return renderToStaticMarkup(createElement(controls.Pagination, {
+    page: 1, pageSize: 20, total: 0, onPageChange() {}, ...props,
+  }));
+}

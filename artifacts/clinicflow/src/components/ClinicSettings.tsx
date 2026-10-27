@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { HelpTip } from "./HelpTip";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearch } from "wouter";
+import { PageHeader } from "./PageHeader";
 import { Building2, Phone, Copy, Check, ExternalLink, Info, ChevronRight, MapPin, Settings2, CalendarDays, Pencil } from "lucide-react";
 import { clinicsReturnHref, clinicWorkspaceHref, parseClinicWorkspace } from "../lib/clinic-navigation";
 import { useWorkspaceLeaveGuard } from "../lib/use-workspace-leave-guard";
@@ -130,10 +131,7 @@ export function ClinicSettings({identity,scopeSwitch}:{identity:api.Identity;sco
  const active=clinic?.status==="active";
  return <DateTimePreferencesProvider value={data?.clinic}><section className="clinic-settings">
    {/* The shell delegates this heading to the workspace so scope and guarded navigation keep one owner. */}
-   <header className="page-heading clinic-workspace-heading">
-    <h1>Clinic</h1>
-    <div className="settings-scope" data-testid="settings-scope">{scopeSwitch}<div className="settings-scope-lookup"><ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Clinic Group":"Your Clinic Group"} value={clinicId} onChange={id=>{if(id!==clinicId)void guarded(()=>setClinic(id));}}/></div></div>
-   </header>
+   <PageHeader title="Clinic" actions={<div className="settings-scope" data-testid="settings-scope">{scopeSwitch}<div className="settings-scope-lookup"><ResourceLookup resource="clinics" label={identity.user?.role==="superAdmin"?"Clinic Group":"Your Clinic Group"} value={clinicId} onChange={id=>{if(id!==clinicId)void guarded(()=>setClinic(id));}}/></div></div>}/>
   {identity.user?.role==="superAdmin"&&<Link className="cs-back" href={clinicsReturnHref(search)} data-testid="link-all-clinic-groups">&larr; Back to Clinics</Link>}
   <ErrorNotice error={query.error||clinics.error}/>{query.error&&<button type="button" onClick={()=>query.refetch()}>Retry Clinic Settings</button>}
   {!clinicId?<p className="empty">Select a clinic to manage.</p>:query.isLoading?<p role="status">Loading clinic settings…</p>:data&&clinic&&!query.error&&<>

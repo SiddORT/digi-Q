@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from "react";
+import { PageHeader } from "./PageHeader";
 
 /**
  * Shared titled form group (same visual rules as grouped Editor sections): card, compact heading,
@@ -8,7 +9,7 @@ import { useId, type ReactNode } from "react";
 export function FormSection({ title, hint, children, className, grid = true, actions, testId }: { title: ReactNode; hint?: ReactNode; children: ReactNode; className?: string; grid?: boolean; actions?: ReactNode; testId?: string }) {
   const id = useId();
   return <section className={["form-section", "wide", className].filter(Boolean).join(" ")} aria-labelledby={id} data-testid={testId}>
-    <header className="form-section-head"><h3 id={id}>{title}</h3>{hint && <p className="form-section-hint">{hint}</p>}{actions && <div className="form-section-actions">{actions}</div>}</header>
+    <PageHeader level={3} id={id} title={title} description={hint && <p className="form-section-hint">{hint}</p>} actions={actions}/>
     {grid ? <div className="form-section-grid">{children}</div> : children}
   </section>;
 }

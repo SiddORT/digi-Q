@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, createContext, useContext } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, X, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -8,6 +8,11 @@ import { ResponsiveActionGroup } from "./ResponsiveActionGroup";
 import { HelpTip } from "./HelpTip";
 import { LookupReadiness } from "./LookupReadiness";
 import "./clinic-listing-toolbar.css";
+import { usePageTitleOwnership } from "./PageTitleContext";
+export { ListPageTitleContext } from "./PageTitleContext";
+export type { ListPageTitle } from "./PageTitleContext";
+export { ListingRegion } from "./ListingRegion";
+export { PageHeader } from "./PageHeader";
 
 // Export useDebouncedValue directly from here for convenience as requested
 export { useDebouncedValue };
@@ -35,6 +40,7 @@ export interface PaginationProps {
   hideTotal?: boolean;
   /** Schedule lists keep range/size but omit navigation when it has no purpose. */
   hideSinglePageNavigation?: boolean;
+  state?: "ready" | "loading" | "error";
 }
 
 export function Pagination({
@@ -46,15 +52,17 @@ export function Pagination({
   resetPageOnSizeChange = true,
   hideTotal = false,
   hideSinglePageNavigation = false,
+  state = "ready",
 }: PaginationProps) {
   const sizeId = React.useId();
-  if (total === 0) return null;
+  const unavailable = state !== "ready";
+  total = unavailable ? 0 : Math.max(0, total);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const currentPage = Math.max(1, Math.min(page, totalPages));
 
   // Determine the range of items being shown
-  const startRecord = (currentPage - 1) * pageSize + 1;
+  const startRecord = total ? (currentPage - 1) * pageSize + 1 : 0;
   const endRecord = Math.min(currentPage * pageSize, total);
 
   const getPageNumbers = () => {
@@ -78,14 +86,14 @@ export function Pagination({
   };
 
   return (
-    <nav aria-label="Pagination" className="pagination flex flex-wrap items-center justify-between gap-2 py-2 px-3 text-xs text-muted-foreground border-t border-border">
+    <nav aria-label="Pagination" aria-busy={state === "loading"} className="pagination flex flex-wrap items-center justify-between gap-2 py-2 px-3 text-xs text-muted-foreground border-t border-border">
       <div className="flex flex-wrap items-center gap-2">
         <span>
-          Showing <strong className="text-foreground font-medium">{startRecord}–{endRecord}</strong>{!hideTotal && <> of{" "}
-          <strong className="text-foreground font-medium">{total}</strong></>}
+          {unavailable ? state === "loading" ? "Loading results…" : "Results unavailable" : <>Showing <strong className="text-foreground font-medium">{startRecord}–{endRecord}</strong>{!hideTotal && <> of{" "}
+          <strong className="text-foreground font-medium">{total}</strong></>}</>}
         </span>
         {onPageSizeChange && (
-          <div className="flex items-center gap-2">
+          <fieldset disabled={unavailable} className="pagination-size flex items-center gap-2">
             <SearchableSelect
               id={sizeId}
                label="Rows per Page"
@@ -97,15 +105,15 @@ export function Pagination({
               }}
                options={pageSizeOptions(pageSize).map((size) => ({ value: String(size), label: String(size) }))}
              />
-          </div>
+          </fieldset>
         )}
       </div>
 
       {(!hideSinglePageNavigation || totalPages > 1) && <div className="flex items-center gap-1">
-        <span className="pagination-current" aria-live="polite">Page {currentPage} of {totalPages}</span>
+        <span className="pagination-current" aria-live="polite">{unavailable ? "Page unavailable" : `Page ${total ? currentPage : 0} of ${total ? totalPages : 0}`}</span>
         <button
           onClick={() => onPageChange(1)}
-          disabled={currentPage === 1}
+          disabled={unavailable || !total || currentPage === 1}
           className="h-8 w-8 p-0 flex items-center justify-center rounded-md border border-border bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors"
           aria-label="First page"
           style={{ minHeight: "auto", margin: 0 }}
@@ -114,7 +122,7 @@ export function Pagination({
         </button>
         <button
           onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          disabled={unavailable || !total || currentPage === 1}
           className="h-8 px-2 flex items-center justify-center gap-1 rounded-md border border-border bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors font-medium"
           aria-label="Previous page"
           style={{ minHeight: "auto", margin: 0 }}
@@ -132,6 +140,7 @@ export function Pagination({
             ) : (
               <button
                 key={p}
+                disabled={unavailable || !total}
                 onClick={() => onPageChange(p as number)}
                 aria-current={currentPage === p ? "page" : undefined}
                 className={cn(
@@ -150,7 +159,7 @@ export function Pagination({
 
         <button
           onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={unavailable || !total || currentPage === totalPages}
           className="h-8 px-2 flex items-center justify-center gap-1 rounded-md border border-border bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors font-medium"
           aria-label="Next page"
           style={{ minHeight: "auto", margin: 0 }}
@@ -160,7 +169,7 @@ export function Pagination({
         </button>
         <button
           onClick={() => onPageChange(totalPages)}
-          disabled={currentPage === totalPages}
+          disabled={unavailable || !total || currentPage === totalPages}
           className="h-8 w-8 p-0 flex items-center justify-center rounded-md border border-border bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors"
           aria-label="Last page"
           style={{ minHeight: "auto", margin: 0 }}
@@ -194,16 +203,6 @@ export function listingSuggestions<T>(rows: readonly T[] | undefined | null, map
 // --- Page title ownership ---
 /** The workspace shell provides the page title; the first mounted list header renders it as the page <h1>
  *  on row 1 (beside search and actions) so listing pages do not repeat a separate heading row. */
-export interface ListPageTitle { title: React.ReactNode; eyebrow?: React.ReactNode; subtitle?: React.ReactNode; owner: React.MutableRefObject<string | null> }
-export const ListPageTitleContext = createContext<ListPageTitle | null>(null);
-function usePageTitleOwnership() {
-  const ctx = useContext(ListPageTitleContext);
-  const id = React.useId();
-  if (ctx && !ctx.owner.current) ctx.owner.current = id;
-  const owns = !!ctx && ctx.owner.current === id;
-  useEffect(() => () => { if (ctx && ctx.owner.current === id) ctx.owner.current = null; }, [ctx, id]);
-  return owns ? ctx : null;
-}
 
 // --- FilterBar ---
 
@@ -220,7 +219,7 @@ export interface FilterChip {
 }
 
 export interface FilterBarProps {
-  /** Opt-in Clinic presentation: one desktop row, with persistent icon tools. */
+  /** @deprecated All headers use the same horizontal composition. Ignored. */
   compactToolbar?: boolean;
   /** Primary controls (search first). Rendered on the header's first row beside the title. Never hidden. */
   children?: React.ReactNode;
@@ -232,9 +231,9 @@ export interface FilterBarProps {
   chips?: FilterChip[];
   /** Kept for API compatibility; the panel never auto-opens on state changes. */
   defaultAdvancedOpen?: boolean;
-  /** Header actions on the first row, right side: Export / secondary actions then the primary Add/Book action. */
+  /** Right side of the shared header: primary Add/Book action. */
   actions?: React.ReactNode;
-  /** Secondary actions (Export, Columns, Saved Views, Recovery). Inline at 1280px+, behind "More" from 901px to 1279px. */
+  /** Existing Export, Columns, Saved Views and Recovery controls, beside primary actions. */
   secondary?: React.ReactNode;
   label?: string;
   onOpen?: () => void;
@@ -247,7 +246,7 @@ export interface FilterBarProps {
   title?: React.ReactNode;
   /** Status tabs on the second row. */
   status?: React.ReactNode;
-  /** Second-row scope/range, sort, last-updated and help controls, aligned with Filters. */
+  /** Inline scope/range, sort, last-updated and help controls, aligned with Filters. */
   meta?: React.ReactNode;
   /** Explicit drawer active-filter count when chips do not use the "adv:" key prefix. */
   activeCount?: number;
@@ -255,15 +254,15 @@ export interface FilterBarProps {
   filters?: React.ReactNode;
 }
 
-/** Shared list header. Row 1: title, wide search, actions. Row 2 (only when needed): status tabs, scope/meta, Filters/Clear.
- *  Row 1 is always rendered first and in the same position so the search input never remounts while typing. */
+/** Shared list header. Title, search, tools/export and primary actions always
+ * share one flex composition. Optional quick filters/status and chips follow. */
 function useCompactFilters() {
   const query = "(max-width: 767px)";
   const [match, setMatch] = useState(() => typeof window !== "undefined" && !!window.matchMedia?.(query).matches);
   useEffect(() => { const m = window.matchMedia?.(query); if (!m) return; const on = () => setMatch(m.matches); on(); m.addEventListener("change", on); return () => m.removeEventListener("change", on); }, []);
   return match;
 }
-export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters, compactToolbar = false }: FilterBarProps) {
+export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel, active, chips = [], defaultAdvancedOpen, actions, secondary, label = "Filters", onOpen, onApply, title, status, meta, activeCount, filters }: FilterBarProps) {
   const advancedActiveCount = activeCount ?? chips.filter(c => c.key.startsWith("adv:")).length;
   const [open, setOpen] = useState(!!defaultAdvancedOpen);
   const panelId = React.useId();
@@ -296,22 +295,21 @@ export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel,
   const filtersId = React.useId();
   const showClear = !!(onReset && active && chips.length === 0);
   // With a page title on row 1, the record count becomes secondary row-2 metadata (no duplicate heading).
-  const countInSub = !!(pageTitle && title);
   // Filters/Clear never sit alone on an otherwise empty second row: without status tabs or a
   // secondary count they join the search row.
-   const toolsInline = compactToolbar || (!status && !countInSub);
-  const hasSubRow = !toolsInline && !!(status || meta || advanced || showClear || countInSub);
+   const hasSubRow = !!(status || filters);
 
-   const filterTrigger = <button type="button" ref={toggleRef} className={cn("filter-toggle", compactToolbar && "listing-icon-trigger", advancedActiveCount > 0 && "has-active")}
+   const filterTrigger = <button type="button" ref={toggleRef} className={cn("filter-toggle", "listing-icon-trigger", advancedActiveCount > 0 && "has-active")}
      aria-expanded={open} aria-controls={panelId} aria-haspopup="dialog"
      aria-label={`${label}${advancedActiveCount ? `, ${advancedActiveCount} active` : ""}`}
      onClick={() => { if (!open) { onOpen?.(); setInvalidMessage(""); } setOpen(v => !v); }} data-testid="button-toggle-advanced-filters">
      <Filter aria-hidden className="h-4 w-4" />
-     {!compactToolbar && <span className="filter-toggle-text">Filters</span>}
      {advancedActiveCount > 0 && <span className="filter-count" aria-hidden>{advancedActiveCount}</span>}
    </button>;
-   const subtitle = pageTitle?.subtitle || (pageTitle?.title === "Reports" ? "Review visits and outcomes for the selected period." : null);
-   const heading = pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 data-testid="text-page-title">{pageTitle.title}</h1>{subtitle && <p className="muted">{subtitle}</p>}</div>
+   const subtitle = pageTitle?.subtitle;
+   const titledHeading = React.isValidElement<{children?:React.ReactNode}>(title) && typeof title.type === "string" && /^h[1-6]$/.test(title.type) ? title.props.children : null;
+   const titleId = React.isValidElement<{id?:string}>(title) ? title.props.id : undefined;
+   const heading = pageTitle ? <div className="lh-page-title">{pageTitle.eyebrow && <span className="eyebrow">{pageTitle.eyebrow}</span>}<h1 id={titleId} data-testid="text-page-title">{titledHeading || pageTitle.title}</h1>{subtitle && <p className="muted">{subtitle}</p>}</div>
      : title && <div className="filter-bar-title lh-title" data-testid="text-listing-title">{title}</div>;
    const primaryActions = actions && <div className="lh-actions" data-testid="list-header-actions"><ResponsiveActionGroup>{actions}</ResponsiveActionGroup></div>;
    const tools = (
@@ -319,7 +317,7 @@ export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel,
             {meta && <div className="lh-meta">{meta}</div>}
             {advanced && (
               <div className="filter-pop">
-                  {compactToolbar ? <HelpTip text={`${label}. Open the drawer to choose and apply filters${advancedActiveCount ? `; ${advancedActiveCount} active` : ""}.`}>{filterTrigger}</HelpTip> : filterTrigger}
+                  <HelpTip text={`${label}. Open the drawer to choose and apply filters${advancedActiveCount ? `; ${advancedActiveCount} active` : ""}.`}>{filterTrigger}</HelpTip>
                   <AppDialog open={open} onClose={() => closeFilters()} title={label} variant="drawer">
                   <form id={panelId} ref={formRef} className="filter-drawer-content" noValidate data-testid="form-filter-drawer"
                     onSubmit={e => e.preventDefault()}>
@@ -341,29 +339,23 @@ export function FilterBar({ children, advanced, onReset, onResetDraft, onCancel,
             )}
           </div>
   );
-  // Layout order: 1) header (title + primary action), 2) wide search + filter/table tools, 3) exposed common filters
-  // and status tabs, 4) active filter chips with one Clear All. The search row never remounts while typing.
+  // One shared header: title, search, tools/export and primary actions. Existing
+  // quick filters/status and active chips remain optional secondary controls.
   return (
-     <section className={cn("filter-bar list-header", compactToolbar && "list-header--compact")} aria-label={label} data-testid="list-header">
+      <section className="filter-bar list-header list-header--compact" aria-label={label} data-testid="list-header">
        {!open && advanced && <LookupReadiness>{advanced}</LookupReadiness>}
-       {!compactToolbar && (pageTitle || title || actions) && <div className={cn("filter-bar-row lh-row lh-top lh-head", (title || status) && "has-title")}>
-         {heading}
-         {primaryActions}
-      </div>}
       <div className="filter-bar-row lh-row lh-top lh-search-row" data-testid="list-header-search-row">
-         {compactToolbar && heading}
+          {heading}
         {children && <div className="filter-bar-primary lh-search">{children}</div>}
-        {toolsInline && !!(meta || advanced || showClear) && tools}
-         {secondary && <div className="lh-table-tools" data-testid="list-header-table-tools">{compactToolbar ? secondary : <ResponsiveActionGroup secondary={secondary} label="Table Tools" />}</div>}
-         {compactToolbar && primaryActions}
+         {!!(meta || advanced || showClear) && tools}
+          {secondary && <div className="lh-table-tools" data-testid="list-header-table-tools">{secondary}</div>}
+          {primaryActions}
       </div>
-       {!compactToolbar && (hasSubRow || filters) && (
+        {hasSubRow && (
         <div className="lh-row lh-sub" data-testid="list-header-subrow">
-          {countInSub && <div className="filter-bar-title lh-count" data-testid="text-listing-title">{title}</div>}
           {filters && compactFilters && <button type="button" className="lh-filters-summary" aria-expanded={filtersOpen} aria-controls={filtersId} onClick={() => setFiltersOpen(v => !v)} data-testid="button-toggle-quick-filters"><Filter aria-hidden className="h-4 w-4" /><span>Quick filters</span>{advancedActiveCount > 0 && <span className="filter-count" aria-label={`${advancedActiveCount} active`}>{advancedActiveCount}</span>}<span className="lh-filters-summary-hint">{filtersOpen ? "Hide" : "Show"}</span></button>}
           {filters && <div id={filtersId} className="lh-filters" role="group" aria-label="Common filters" data-testid="list-header-filters" hidden={compactFilters && !filtersOpen}>{filters}</div>}
           {status && <div className="filter-bar-status lh-status">{status}</div>}
-          {hasSubRow && tools}
         </div>
       )}
       {chips.length > 0 && (

@@ -1,4 +1,5 @@
 import { HelpTip } from "./HelpTip";
+import { PageHeader } from "./PageHeader";
 import { SearchableSelect } from "./SearchableSelect";
 import { Link, useSearch, useLocation } from "wouter";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -89,7 +90,7 @@ export function AccessRules({onRoleChange,onDirtyChange}:{onRoleChange?:(role:st
 
   return <section className="panel padded" data-testid="access-rules">
     {confirmNavigation.dialog}
-    <div className="panel-heading compact-heading section-head"><div><h2>Access Rules <span data-testid="text-permission-limits"><HelpTip text="A checked box keeps the action allowed; clearing it denies it. Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out." /></span></h2></div></div>
+    <PageHeader level={2} title={<>Access Rules <span data-testid="text-permission-limits"><HelpTip text="A checked box keeps the action allowed; clearing it denies it. Enabling an action never grants more than the built-in rules: clinic ownership, assignments, record ownership and workflow state are still checked by the API on every operation. Super Admin cannot be restricted, so the platform can never be locked out." /></span></>}/>
      {policy.isLoading || custom.isLoading ? <div className="et-skeleton" aria-busy="true" data-testid="state-loading"><span /><span /><span /></div>
        : policy.isError || custom.isError || !data || !config ? <div role="alert" className="error-box" data-testid="state-error">The permission policy could not be loaded. <button type="button" onClick={() => {void policy.refetch();void custom.refetch();}} data-testid="button-retry">Retry</button></div>
       : <>

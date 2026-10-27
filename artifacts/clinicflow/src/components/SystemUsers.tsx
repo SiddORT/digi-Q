@@ -10,7 +10,7 @@ import { PendingRemovalReceipts } from "./PendingRemovalReceipts";
 import { IconAction } from "./IconAction";
 import { Link } from "wouter";
 import { useGetSystemUsers, getSystemUsers, getUser, updateUser, getGetSystemUsersQueryKey, useGetPermissionPolicy, getGetPermissionPolicyQueryKey, useGetCustomRoles, getGetCustomRolesQueryKey } from "@workspace/api-client-react";
-import { FilterBar, Pagination, SearchInput, useDebouncedValue, listingSuggestions } from "./ListingControls";
+import { FilterBar, Pagination, SearchInput, ListingRegion, useDebouncedValue, listingSuggestions } from "./ListingControls";
 import { AppDialog } from "./AppDialog";
 import { SearchableSelect } from "./SearchableSelect";
 import { ResourceLookup } from "./ResourceLookup";
@@ -147,15 +147,16 @@ export function SystemUsers() {
        secondary={cols.settings}>
       <SearchInput value={search} onChange={setSearch} placeholder="Search name or email…" suggestions={q.error||q.isPlaceholderData?[]:listingSuggestions(data?.data,u=>({id:u.id,label:u.fullName,description:u.email,value:u.fullName}))} loading={q.isFetching} error={q.error?"Accounts could not be loaded.":null} onRetry={()=>void q.refetch()} total={data?.total} settledQuery={debounced} scopeKey={JSON.stringify({role,status,clinicId})} />
     </FilterBar>
-    <section className="panel table-panel admin-listing-table" aria-busy={q.isFetching} data-testid="system-users">
+    <div aria-busy={q.isFetching} data-testid="system-users"><ListingRegion className="panel table-panel admin-listing-table">
       {q.isLoading ? <div className="skeleton" role="status">Loading accounts…</div>
         : q.error ? <div className="error-box" role="alert">Accounts could not be loaded. <button type="button" onClick={() => void q.refetch()}>Retry</button></div>
          : data?.data.length ? <><div className="table-wrap"><table><thead><tr>{cols.visible.map(k => <th key={k} className={cols.cls(k)}>{cols.label(k)}</th>)}<th className="col-actions sticky"><span className="sr-only">Actions</span></th></tr></thead><tbody>
           {data.data.map(u => <Fragment key={u.id}><tr data-testid={`row-system-user-${u.id}`}>{cols.visible.map((k, ci) => <td key={k} data-label={cols.label(k)} className={cols.cls(k)}>{ci === 0 && cols.hidden.length ? <span className="row-lead">{cols.toggle(u.id, u.fullName)}{sysCell(k, u)}</span> : sysCell(k, u)}</td>)}
              <td data-label="Actions" className="col-actions sticky"><div className="row-actions"><IconAction label={`View effective permissions for ${u.fullName}`} hint="Effective permissions" icon={<ShieldCheck size={15} aria-hidden />} onClick={() => setExpanded(u.id)} testId={`button-effective-${u.id}`} /><IconAction label={`${u.status==="active"?"Deactivate":"Activate"} ${u.fullName}`} hint={statusUpdate.isPending&&statusUpdate.variables?.user.id===u.id?"Updating account…":u.status==="active"?"Deactivate account":"Activate account"} icon={u.status==="active"?<UserX size={15}/>:<UserCheck size={15}/>} tone={u.status==="active"?"danger":undefined} disabled={statusUpdate.isPending||!!statusReason(u)||q.isPlaceholderData||q.isFetching} disabledReason={statusReason(u)} onClick={()=>void changeStatus(u)} testId={`button-status-${u.id}`}/>{viewer?.role==="superAdmin"&&<IconAction label={`Review permanent removal of ${u.fullName}`} hint="Review permanent removal" icon={<Trash2 size={15} aria-hidden />} tone="danger" disabled={u.id===viewer.id} disabledReason={u.id===viewer.id?"You cannot remove your own account.":undefined} onClick={()=>setDeletion({userId:u.id,name:u.fullName})} testId={`button-review-removal-${u.id}`}/>}</div></td></tr>{cols.expansion(u.id, cols.visible.length + 1, k => sysCell(k, u))}</Fragment>)}
-        </tbody></table></div><Pagination page={data.page} pageSize={data.pageSize} total={data.total} onPageChange={setPage} /></>
+        </tbody></table></div></>
         : <div className="empty" data-testid="status-empty"><h3>{active ? "No matching accounts" : "No accounts yet"}</h3>{active && <button type="button" onClick={reset}>Clear Filters</button>}</div>}
-    </section>
+      <Pagination state={q.isLoading||q.isPlaceholderData?"loading":q.error?"error":"ready"} page={page} pageSize={data?.pageSize??20} total={data?.total??0} onPageChange={setPage} />
+    </ListingRegion></div>
     {(() => { const u = data?.data.find(x => x.id === expanded); return u ? <AppDialog open variant="drawer" onClose={() => setExpanded("")} title={`Effective Permissions · ${u.fullName}`} description={`${label(u.role)} · ${u.email}`}><EffectivePanel user={u} /></AppDialog> : null; })()}
   </>;
 }

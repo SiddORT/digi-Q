@@ -11,6 +11,18 @@ Wait for state transitions to settle before comparing computed colours between e
 
 When changing ClinicFlow controls, verify computed styles and rendered layout rather than trusting utility class names or a passing typecheck.
 
+Horizontal page headers are an application-wide requirement across roles and
+tabs, not a resource opt-in. Stable listing footers belong to their own panel;
+forms, dashboards, public pages and operational detail surfaces use only their
+actual controls, without artificial search or pagination.
+
+**Why:** The user explicitly rejected selective consistency and asked to preserve
+approved booking/ticket structures and operational scope.
+
+**How to apply:** Inventory all routes and header owners when changing shared
+layout. Treat non-list structure as a constraint to preserve, not an exemption
+from heading/action alignment.
+
 **Why:** An earlier restoration added correct-looking padding utilities but legacy unlayered input rules still won the cascade. A later responsive flex override also stacked full-width filter children at desktop sizes despite a correct tablet grid.
 
 **How to apply:** Keep legacy base styles, component styles, and utility precedence deliberate. Check search padding, semantic button hover colors, and filter layout at both tablet and desktop widths after shared style changes. Avoid blanket `!important` fixes.

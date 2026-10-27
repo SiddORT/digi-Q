@@ -1,0 +1,8 @@
+/* Opted in by semantic containers, never inferred from table contents. */
+.listing-region{display:flex;flex-direction:column;min-width:0;min-block-size:var(--listing-space);position:relative}
+.listing-region>.pagination,.listing-region>.admin-listing-pagination,.listing-region>.listing-footer{margin-block-start:auto;flex:0 0 auto;position:static}
+.listing-region>:is(.table-scroll,.table-wrap,.nl-wrap){flex:0 0 auto;min-width:0;max-width:100%}
+.listing-region>.listing-body{min-width:0}
+.pagination-size{border:0;padding:0;margin:0;min-width:0}
+.pagination{flex-shrink:0}
+@media print{.listing-region{min-block-size:0}}

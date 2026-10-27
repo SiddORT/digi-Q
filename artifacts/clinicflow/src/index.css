@@ -328,7 +328,9 @@
   .admin-record small, .cell-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
   /* Dense, readable tables: ~10+ rows visible on desktop, sticky headings */
-  .table-panel .table-scroll { max-height: min(72vh, 760px); overflow: auto; }
+  /* ListingRegion owns vertical geometry; retain horizontal table scrolling
+     without cutting expanded details off at a separate legacy height cap. */
+  .table-panel .table-scroll { overflow: auto; }
   th { padding:8px 16px; font-size:var(--type-caption); }
   td { padding:8px 16px; font-size:var(--type-label); line-height: 1.45; }
   td small, td .muted { font-size:var(--type-caption); }
@@ -381,7 +383,6 @@
   .session-queue details > summary { cursor: pointer; padding:8px 12px; font-size:var(--type-caption); font-weight: 650; color: var(--teal); min-height: var(--control-md); display: flex; align-items: center; }
   .session-queue details[open] > summary { border-bottom: 1px solid #eef1ec; }
   .session-queue details.sq-duration > :not(summary), .session-queue details.sq-switch > :not(summary) { padding:8px 12px; }
-  .session-queue .sq-table .table-scroll { max-height: max(480px, calc(100dvh - 300px)); }
 
   .appt-table td { padding:8px 12px; }
   .appt-table td small { display: inline; margin:0 0 0 8px; }

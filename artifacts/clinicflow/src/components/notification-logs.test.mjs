@@ -58,7 +58,7 @@ before(async()=>{
    b.onResolve({filter:/\/AppDialog$/},()=>({path:"dlg",namespace:"fixture"}));
    b.onResolve({filter:/\/ListingControls$/},()=>({path:"filters",namespace:"fixture"}));
    b.onResolve({filter:/\/ResourceLookup$/},()=>({path:"lookup",namespace:"fixture"}));
-   b.onLoad({filter:/^filters$/,namespace:"fixture"},()=>({contents:`import {createElement as h} from "react"; export const FilterBar=p=>h("section",{"data-testid":"fixture-filter-drawer"},p.advanced);`}));
+   b.onLoad({filter:/^filters$/,namespace:"fixture"},()=>({contents:`import {createElement as h} from "react"; export const FilterBar=p=>h("section",null,p.title,p.children,p.secondary,p.actions,h("div",{"data-testid":"fixture-filter-drawer"},p.advanced)); export const ListingRegion=p=>h("section",{className:"listing-region"},p.children);`}));
    b.onLoad({filter:/^lookup$/,namespace:"fixture"},()=>({contents:`export const ResourceLookup=()=>null;`}));
    b.onLoad({filter:/^api$/,namespace:"fixture"},()=>({contents:`
     export const getListNotificationLogsQueryKey=p=>["l",p]; export const getGetNotificationLogQueryKey=i=>["g",i];

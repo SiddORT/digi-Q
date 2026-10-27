@@ -1,28 +1,50 @@
-/* Opt-in listing headers; specificity intentionally overrides legacy breakpoints. */
-.workspace .list-header.list-header--compact .lh-search-row{flex-wrap:nowrap;align-items:center;gap:var(--space-2)}
-.workspace .list-header.list-header--compact .lh-search-row>.lh-title,
-.workspace .list-header.list-header--compact .lh-search-row>.lh-page-title{order:0;flex:0 0 auto;min-width:0;margin:0}
-.workspace .list-header.list-header--compact .lh-search-row>.lh-search{order:1;flex:1 1 220px;min-width:160px}
-.workspace .list-header.list-header--compact .lh-search-row>.lh-search>.workspace-search{flex:1 1 auto;width:100%;min-width:0}
-.workspace .list-header.list-header--compact .lh-search-row>.lh-tools{order:2;flex:0 0 auto;width:auto;margin:0}
-.workspace .list-header.list-header--compact .lh-search-row>.lh-table-tools{order:3;flex:0 0 auto;margin:0}
-.workspace .list-header.list-header--compact .lh-search-row>.lh-actions{order:4;flex:0 0 auto;margin:0}
+/* One header composition for all consumers, inside and outside the workspace.
+ * Component selectors deliberately outrank legacy resource-specific styling. */
+.list-header.list-header--compact{--lh-h:var(--control-md,38px);display:flex;flex-direction:column;gap:8px;margin:0 0 12px;min-width:0}
+.list-header.list-header--compact .lh-row.lh-search-row,
+.workspace .list-header.list-header--compact .lh-row.lh-search-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%;min-width:0}
+.list-header.list-header--compact .lh-search-row>:is(.lh-title,.lh-page-title),
+.workspace .list-header.list-header--compact .lh-search-row>:is(.lh-title,.lh-page-title){order:0;flex:0 1 auto;min-width:0;max-width:100%;margin:0;align-self:center}
+.list-header.list-header--compact :is(h1,h2){margin:0;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+.workspace .list-header.list-header--compact :is(h1,h2){white-space:normal;overflow:visible;text-overflow:clip}
+.list-header.list-header--compact .lh-search-row>.lh-search,
+.workspace .list-header.list-header--compact .lh-search-row>.lh-search{order:1;display:flex;flex:1 1 200px;align-items:center;gap:8px;min-width:160px;max-width:none;margin:0;align-self:center}
+.list-header.list-header--compact .lh-search-row>.lh-search>.workspace-search,
+.workspace .list-header.list-header--compact .lh-search-row>.lh-search>.workspace-search{flex:1 1 auto;width:100%;min-width:0;max-width:none;margin:0;gap:0}
+.list-header.list-header--compact .workspace-search>label{position:absolute;width:1px;height:1px;padding:0;margin:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.list-header.list-header--compact .workspace-search input{height:var(--lh-h);min-height:var(--lh-h)}
+.list-header.list-header--compact .lh-search-row>.lh-tools,
+.workspace .list-header.list-header--compact .lh-search-row>.lh-tools{order:2;display:flex;align-items:center;flex:0 1 auto;flex-wrap:wrap;gap:8px;width:auto;min-width:0;margin:0}
+.list-header.list-header--compact .lh-search-row>.lh-table-tools,
+.workspace .list-header.list-header--compact .lh-search-row>.lh-table-tools{order:3;display:flex;align-items:center;flex:0 1 auto;flex-wrap:wrap;gap:8px;min-width:0;max-width:100%;margin:0}
+.list-header.list-header--compact .lh-search-row>.lh-actions,
+.workspace .list-header.list-header--compact .lh-search-row>.lh-actions{order:4;display:flex;align-items:center;flex:0 1 auto;flex-wrap:wrap;gap:8px;min-width:0;max-width:100%;margin:0 0 0 auto}
+.list-header.list-header--compact :is(.lh-table-tools,.lh-actions) :is(button.button,a.button),
+.workspace .list-header.list-header--compact :is(.lh-table-tools,.lh-actions) :is(button.button,a.button){min-height:var(--lh-h);height:auto;padding:8px 12px;width:auto;white-space:normal;overflow-wrap:anywhere}
+.list-header.list-header--compact .listing-icon-trigger,
 .workspace .list-header.list-header--compact .listing-icon-trigger{position:relative;display:inline-flex;align-items:center;justify-content:center;width:var(--lh-h);height:var(--lh-h);min-width:var(--lh-h);min-height:var(--lh-h);padding:0;gap:0;border-radius:var(--radius-control)}
-.workspace .list-header.list-header--compact .listing-icon-trigger .filter-count{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;margin:0;padding:0 3px;font-size:10px;line-height:16px;border-radius:8px;background:var(--dq-blue);color:#fff}
-.workspace .list-header.list-header--compact .listing-icon-trigger.has-active{border-color:var(--dq-blue)}
-.workspace .list-header.list-header--compact .listing-icon-trigger:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px}
-.workspace .list-header.list-header--compact .lh-table-tools{display:flex;align-items:center;gap:var(--space-2);max-width:100%;flex-wrap:wrap}
-.workspace .list-header.list-header--compact .lh-table-tools>.button{width:auto;flex:0 0 auto;white-space:nowrap}
-.workspace .appointment-display-navigation{display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2);flex-wrap:wrap}
-@media(min-width:768px) and (max-width:900px){
-  .workspace .list-header.list-header--compact .lh-search-row{flex-wrap:wrap}
-}
+.list-header.list-header--compact .listing-icon-trigger .filter-count{position:absolute;top:-5px;right:-5px;min-width:16px;height:16px;margin:0;padding:0 3px;font-size:10px;line-height:16px;border-radius:8px;background:var(--dq-blue);color:#fff}
+.list-header.list-header--compact .listing-icon-trigger.has-active{border-color:var(--dq-blue)}
+.list-header.list-header--compact .listing-icon-trigger:focus-visible{outline:2px solid var(--dq-blue);outline-offset:2px}
+.list-header.list-header--compact .lh-sub{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0}
+.list-header.list-header--compact .lh-filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0;max-width:100%}
+.list-header.list-header--compact .lh-filters[hidden]{display:none}
+.list-header.list-header--compact .listing-selects{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}
+.list-header.list-header--compact .listing-selects>select{width:auto;min-width:0;max-width:100%;min-height:var(--lh-h);margin:0}
+.list-header.list-header--compact .lh-search-row .searchable-select-field{display:flex;flex-direction:row;align-items:center;gap:8px;min-width:0;max-width:100%}
+.list-header.list-header--compact .lh-search-row .searchable-select-field>label{margin:0;white-space:normal}
+.list-header.list-header--compact .lh-search-row .searchable-select-control{min-height:var(--lh-h)}
+.standard-page-header,.workspace .standard-page-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 12px;margin:0 0 12px;min-width:0}
+.standard-page-header>div:first-child{min-width:0;flex:1 1 auto}
+.standard-page-header :is(h1,h2,h3){margin:0;overflow-wrap:anywhere}
+.standard-header-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0}
+.standard-page-header .button{min-height:var(--control-md,38px)}
+.workspace .appointment-display-navigation{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
 @media(max-width:767px){
-  .workspace .list-header.list-header--compact{--lh-h:44px}
-  .workspace .list-header.list-header--compact .lh-actions .button{min-height:44px}
-  .workspace .list-header.list-header--compact .lh-search-row{flex-wrap:wrap}
-  .workspace .list-header.list-header--compact .lh-search-row>.lh-title,
-  .workspace .list-header.list-header--compact .lh-search-row>.lh-page-title{flex:1 1 auto}
-  .workspace .list-header.list-header--compact .lh-search-row>.lh-actions{order:0}
-  .workspace .list-header.list-header--compact .lh-search-row>.lh-search{flex:1 1 calc(100% - 112px);min-width:120px}
+  .list-header.list-header--compact,.workspace .list-header.list-header--compact{--lh-h:44px}
+  .list-header.list-header--compact .lh-search-row>.lh-search,
+  .workspace .list-header.list-header--compact .lh-search-row>.lh-search{flex:1 1 100%;min-width:0}
+  .list-header.list-header--compact .lh-search-row>.lh-actions,
+  .workspace .list-header.list-header--compact .lh-search-row>.lh-actions{flex:0 1 auto;justify-content:flex-start}
+  .standard-page-header .button{min-height:44px}
 }

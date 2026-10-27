@@ -22,9 +22,9 @@ test("resource listing accepts every approved page size including 25", async () 
   const src = readFileSync(new URL("./resources.tsx", import.meta.url), "utf8");
   assert.match(src, /PAGE_SIZE_OPTIONS as readonly number\[\]\)\.includes\(sizeValue\)/);
 });
-test("compact toolbar is opt-in and never mounts common filters or quick expanders",()=>{
-  assert.match(r("./components/ListingControls.tsx"),/!compactToolbar && \(hasSubRow \|\| filters\)/);
-  assert.match(r("./resources.tsx"),/compactClinicToolbar=\["clinics","patients","availability","exceptions"\]\.includes\(resource\)/);
+test("horizontal toolbar is universal and preserves existing filter controls",()=>{
+  assert.match(r("./components/ListingControls.tsx"),/className="filter-bar list-header list-header--compact"/);
+  assert.doesNotMatch(r("./components/ListingControls.tsx"),/!compactToolbar/);
   assert.match(r("./Users.tsx"),/<FilterBar compactToolbar/);
   assert.match(r("./components/SystemUsers.tsx"),/<FilterBar compactToolbar/);
   const appointments=r("./clinic.tsx").split("export function Appointments")[1].split("function Booking")[0];

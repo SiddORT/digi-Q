@@ -26,6 +26,7 @@ import { StaffVerificationFixture } from "./StaffVerificationFixture";
 import { BookingFixture } from "./BookingFixture";
 import { FormControlFixture } from "./FormControlFixture";
 import { TabPresentationFixture } from "./TabPresentationFixture";
+import { HeaderPaginationFixture } from "./HeaderPaginationFixture";
 
 // No Clerk provider, real account, live API, test bypass or production data is used.
 // Browser tests intercept *all* /api/ requests before opening this page.
@@ -94,6 +95,7 @@ function FixtureRouter(){
   const [location]=useLocation();
   const search=useSearch();
   const [appMode]=useState(()=>new URLSearchParams(window.location.search).get("mode")==="app");
+  if(new URLSearchParams(search).get("mode")==="header-pagination")return <HeaderPaginationFixture/>;
   return appMode||new URLSearchParams(search).get("mode")==="app"||location.startsWith("/book/")||/^\/(admin|doctor|receptionist|patient)\/book$/.test(location)
     ? <App/> : <FixtureWorkspace/>;
 }
