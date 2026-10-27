@@ -2,11 +2,11 @@
   "schemaVersion": 3,
   "notice": "Source enumeration only. Includes definitions and callers, not deduplicated runtime instances. See compact-ui-coverage.md for observed browser evidence and limitations. Source presence never establishes role authorization or state coverage.",
   "totals": {
-    "navigation": 100,
+    "navigation": 110,
     "links": 119,
     "actions": 588,
-    "fields": 321,
-    "overlays": 309,
+    "fields": 320,
+    "overlays": 311,
     "forms": 153,
     "nativeForms": 28,
     "dialogPlacements": 64,
@@ -1313,7 +1313,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 200,
+          "line": 201,
           "tag": "button",
           "family": "actions",
           "definition": "Users / sortable",
@@ -1327,7 +1327,7 @@
           "aria-label": "{`Sort ${label} ${context.sort===key?\"descending\":\"ascending\"}`}"
         },
         {
-          "line": 210,
+          "line": 211,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "Users / userCell",
@@ -1338,7 +1338,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 210,
+          "line": 211,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "Users / userCell",
@@ -1349,7 +1349,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 210,
+          "line": 211,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "Users / userCell",
@@ -1360,7 +1360,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 213,
+          "line": 214,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1372,7 +1372,7 @@
           "type": "\"button\""
         },
         {
-          "line": 214,
+          "line": 215,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Users",
@@ -1383,7 +1383,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 214,
+          "line": 215,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1398,7 +1398,7 @@
           "data-testid": "\"button-open-account-recovery\""
         },
         {
-          "line": 214,
+          "line": 215,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1413,18 +1413,7 @@
           "data-testid": "\"button-add-staff\""
         },
         {
-          "line": 223,
-          "tag": "SearchableSelect",
-          "family": "fields",
-          "definition": "Users",
-          "disposition": "compact-ui.css: semantic control family; compound structure retained",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "selection",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 228,
+          "line": 224,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Users",
@@ -1436,6 +1425,17 @@
         },
         {
           "line": 229,
+          "tag": "SearchableSelect",
+          "family": "fields",
+          "definition": "Users",
+          "disposition": "compact-ui.css: semantic control family; compound structure retained",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "selection",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 230,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Users",
@@ -1446,7 +1446,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 234,
+          "line": 235,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1458,7 +1458,7 @@
           "type": "\"button\""
         },
         {
-          "line": 237,
+          "line": 238,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Users",
@@ -1469,7 +1469,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 237,
+          "line": 238,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1482,7 +1482,7 @@
           "disabled": "{invitationBusy||selection.selected.every(row=>!!staffInvitationRestriction(row,tab))}"
         },
         {
-          "line": 243,
+          "line": 244,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1493,7 +1493,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 253,
+          "line": 254,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1507,7 +1507,7 @@
           "data-testid": "{`button-manage-schedule-${row.id}`}"
         },
         {
-          "line": 254,
+          "line": 255,
           "tag": "RowMenu",
           "family": "overlays",
           "definition": "Users",
@@ -1518,7 +1518,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 257,
+          "line": 258,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1529,7 +1529,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 258,
+          "line": 259,
           "tag": "Pagination",
           "family": "navigation",
           "definition": "Users",
@@ -1540,7 +1540,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 260,
+          "line": 261,
           "tag": "ExactRecordDrawer",
           "family": "overlays",
           "definition": "Users",
@@ -1551,7 +1551,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 260,
+          "line": 261,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1565,7 +1565,7 @@
           "data-testid": "\"button-exact-staff-edit\""
         },
         {
-          "line": 261,
+          "line": 262,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "Users",
@@ -1576,7 +1576,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 263,
+          "line": 264,
           "tag": "button",
           "family": "actions",
           "definition": "Users",
@@ -1589,7 +1589,7 @@
           "data-testid": "\"button-password-help\""
         },
         {
-          "line": 264,
+          "line": 265,
           "tag": "Link",
           "family": "links",
           "definition": "Users",
@@ -1602,7 +1602,7 @@
           "className": "\"text-link\""
         },
         {
-          "line": 267,
+          "line": 268,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "Users",
@@ -1613,7 +1613,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 272,
+          "line": 273,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Users / roleField",
@@ -1625,7 +1625,7 @@
           "disabled": "{busy}"
         },
         {
-          "line": 273,
+          "line": 274,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "Users",
@@ -1636,7 +1636,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 275,
+          "line": 276,
           "tag": "UserEditor",
           "family": "forms",
           "definition": "Users",
@@ -1647,7 +1647,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 375,
+          "line": 376,
           "tag": "button",
           "family": "actions",
           "definition": "UserEditor",
@@ -1659,7 +1659,7 @@
           "type": "\"button\""
         },
         {
-          "line": 377,
+          "line": 378,
           "tag": "FormSection",
           "family": "forms",
           "definition": "UserEditor / staffDetails",
@@ -1671,7 +1671,7 @@
           "className": "{initial.id?undefined:\"staff-create-section\"}"
         },
         {
-          "line": 382,
+          "line": 383,
           "tag": "FormSection",
           "family": "forms",
           "definition": "UserEditor / professionalDetails",
@@ -1682,7 +1682,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 383,
+          "line": 384,
           "tag": "FormField",
           "family": "forms",
           "definition": "UserEditor / professionalDetails",
@@ -1693,7 +1693,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 383,
+          "line": 384,
           "tag": "input",
           "family": "fields",
           "definition": "UserEditor / professionalDetails",
@@ -1705,7 +1705,7 @@
           "data-testid": "\"input-staff-registration\""
         },
         {
-          "line": 383,
+          "line": 384,
           "tag": "FormField",
           "family": "forms",
           "definition": "UserEditor / professionalDetails",
@@ -1716,7 +1716,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 383,
+          "line": 384,
           "tag": "input",
           "family": "fields",
           "definition": "UserEditor / professionalDetails",
@@ -1729,7 +1729,7 @@
           "data-testid": "\"input-staff-experience\""
         },
         {
-          "line": 385,
+          "line": 386,
           "tag": "Form",
           "family": "forms",
           "definition": "UserEditor",
@@ -1740,7 +1740,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 385,
+          "line": 386,
           "tag": "form",
           "family": "forms",
           "definition": "UserEditor",
@@ -1752,7 +1752,7 @@
           "className": "{`form-grid staff-editor${initial.id?\"\":\" staff-create\"}`}"
         },
         {
-          "line": 386,
+          "line": 387,
           "tag": "FormTabs",
           "family": "navigation",
           "definition": "UserEditor",
@@ -1763,7 +1763,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 392,
+          "line": 393,
           "tag": "FormSection",
           "family": "forms",
           "definition": "UserEditor",
@@ -1775,7 +1775,7 @@
           "className": "{initial.id?undefined:\"staff-create-section staff-assignment-row\"}"
         },
         {
-          "line": 395,
+          "line": 396,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "UserEditor",
@@ -1786,7 +1786,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 396,
+          "line": 397,
           "tag": "div",
           "family": "fields",
           "definition": "UserEditor",
@@ -1803,7 +1803,7 @@
           "className": "\"doctor-context-value\""
         },
         {
-          "line": 396,
+          "line": 397,
           "tag": "button",
           "family": "actions",
           "definition": "UserEditor",
@@ -1815,7 +1815,7 @@
           "type": "\"button\""
         },
         {
-          "line": 407,
+          "line": 408,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "UserEditor",
@@ -1826,7 +1826,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 410,
+          "line": 411,
           "tag": "button",
           "family": "actions",
           "definition": "UserEditor",
@@ -1838,7 +1838,7 @@
           "type": "\"button\""
         },
         {
-          "line": 418,
+          "line": 419,
           "tag": "FormActions",
           "family": "forms",
           "definition": "UserEditor",
@@ -1849,7 +1849,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 421,
+          "line": 422,
           "tag": "button",
           "family": "actions",
           "definition": "UserEditor",
@@ -1863,7 +1863,7 @@
           "disabled": "{save.isPending}"
         },
         {
-          "line": 423,
+          "line": 424,
           "tag": "button",
           "family": "actions",
           "definition": "UserEditor",
@@ -1946,7 +1946,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 21,
+          "line": 22,
           "tag": "Link",
           "family": "links",
           "definition": "AuthShell",
@@ -1958,6 +1958,17 @@
           "href": "\"/\"",
           "className": "\"back-link\"",
           "data-testid": "\"link-auth-home\""
+        },
+        {
+          "line": 32,
+          "tag": "PageHeader",
+          "family": "navigation",
+          "definition": "AuthCard",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         }
       ]
     },
@@ -2640,7 +2651,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 140,
+          "line": 141,
           "tag": "button",
           "family": "actions",
           "definition": "AppointmentQr",
@@ -2651,7 +2662,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 148,
+          "line": 149,
           "tag": "a",
           "family": "links",
           "definition": "AppointmentQr",
@@ -2664,7 +2675,7 @@
           "href": "{image}"
         },
         {
-          "line": 175,
+          "line": 176,
           "tag": "Link",
           "family": "links",
           "definition": "Onboarding",
@@ -2677,7 +2688,7 @@
           "className": "\"button\""
         },
         {
-          "line": 181,
+          "line": 182,
           "tag": "Editor",
           "family": "forms",
           "definition": "Onboarding",
@@ -2688,7 +2699,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 187,
+          "line": 188,
           "tag": "button",
           "family": "actions",
           "definition": "PublicBooking",
@@ -2699,7 +2710,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 187,
+          "line": 188,
           "tag": "Link",
           "family": "links",
           "definition": "PublicBooking",
@@ -2713,7 +2724,7 @@
           "data-testid": "\"link-signup-booking\""
         },
         {
-          "line": 187,
+          "line": 188,
           "tag": "Link",
           "family": "links",
           "definition": "PublicBooking",
@@ -2727,7 +2738,7 @@
           "data-testid": "\"link-account-booking\""
         },
         {
-          "line": 221,
+          "line": 224,
           "tag": "button",
           "family": "actions",
           "definition": "PortalWorkspace",
@@ -2742,7 +2753,7 @@
           "data-testid": "\"button-close-navigation\""
         },
         {
-          "line": 221,
+          "line": 224,
           "tag": "button",
           "family": "actions",
           "definition": "PortalWorkspace",
@@ -2758,7 +2769,7 @@
           "data-testid": "\"button-toggle-sidebar-collapse\""
         },
         {
-          "line": 221,
+          "line": 224,
           "tag": "WorkspaceNav",
           "family": "navigation",
           "definition": "PortalWorkspace",
@@ -2770,7 +2781,7 @@
           "role": "{role}"
         },
         {
-          "line": 221,
+          "line": 224,
           "tag": "button",
           "family": "actions",
           "definition": "PortalWorkspace",
@@ -2783,7 +2794,7 @@
           "data-testid": "\"button-signout\""
         },
         {
-          "line": 221,
+          "line": 224,
           "tag": "button",
           "family": "actions",
           "definition": "PortalWorkspace",
@@ -2798,7 +2809,7 @@
           "aria-controls": "\"workspace-sidebar\""
         },
         {
-          "line": 221,
+          "line": 224,
           "tag": "Menu",
           "family": "navigation",
           "definition": "PortalWorkspace",
@@ -2809,7 +2820,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 221,
+          "line": 224,
           "tag": "ProfileMenu",
           "family": "navigation",
           "definition": "PortalWorkspace",
@@ -2821,7 +2832,7 @@
           "role": "{role}"
         },
         {
-          "line": 221,
+          "line": 224,
           "tag": "Link",
           "family": "links",
           "definition": "PortalWorkspace",
@@ -2835,7 +2846,7 @@
           "data-testid": "\"link-page-book-appointment\""
         },
         {
-          "line": 222,
+          "line": 225,
           "tag": "ReportsTabs",
           "family": "navigation",
           "definition": "PortalWorkspace",
@@ -2846,7 +2857,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 267,
+          "line": 270,
           "tag": "WorkspaceTabs",
           "family": "navigation",
           "definition": "DoctorClinicWorkspace",
@@ -2857,7 +2868,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 288,
+          "line": 292,
           "tag": "WorkspaceTabs",
           "family": "navigation",
           "definition": "UsersWorkspace",
@@ -2868,7 +2879,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 298,
+          "line": 302,
           "tag": "WorkspaceTabs",
           "family": "navigation",
           "definition": "WorkspaceSettings",
@@ -2879,7 +2890,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 324,
+          "line": 328,
           "tag": "button",
           "family": "actions",
           "definition": "Dashboard",
@@ -2890,7 +2901,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 326,
+          "line": 330,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Dashboard",
@@ -2901,7 +2912,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 327,
+          "line": 331,
           "tag": "Link",
           "family": "links",
           "definition": "Dashboard",
@@ -2915,7 +2926,7 @@
           "data-testid": "\"link-view-all-today\""
         },
         {
-          "line": 328,
+          "line": 332,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Dashboard",
@@ -2926,7 +2937,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 328,
+          "line": 332,
           "tag": "Link",
           "family": "links",
           "definition": "Dashboard",
@@ -2940,7 +2951,7 @@
           "data-testid": "\"link-activity-view-all\""
         },
         {
-          "line": 328,
+          "line": 332,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "Dashboard",
@@ -2951,7 +2962,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 335,
+          "line": 339,
           "tag": "button",
           "family": "actions",
           "definition": "PatientBookingNotices",
@@ -2962,7 +2973,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 338,
+          "line": 342,
           "tag": "Link",
           "family": "links",
           "definition": "PatientBookingNotices",
@@ -2976,7 +2987,7 @@
           "aria-label": "{`View booking details for ${appointment.doctorName} on ${formatDate(appointment.date,appointment)}`}"
         },
         {
-          "line": 401,
+          "line": 405,
           "tag": "Link",
           "family": "links",
           "definition": "Appointments",
@@ -2990,7 +3001,7 @@
           "data-testid": "\"link-page-book-appointment\""
         },
         {
-          "line": 401,
+          "line": 405,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Appointments",
@@ -3001,7 +3012,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 402,
+          "line": 406,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Appointments",
@@ -3012,7 +3023,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 403,
+          "line": 407,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Appointments",
@@ -3023,35 +3034,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 411,
-          "tag": "button",
-          "family": "actions",
-          "definition": "Appointments",
-          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "action",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"button\"",
-          "aria-pressed": "{mode===\"list\"}",
-          "data-testid": "\"button-mode-list\""
-        },
-        {
-          "line": 411,
-          "tag": "button",
-          "family": "actions",
-          "definition": "Appointments",
-          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "action",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"button\"",
-          "aria-pressed": "{mode===\"calendar\"}",
-          "data-testid": "\"button-mode-calendar\""
-        },
-        {
-          "line": 411,
+          "line": 415,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Appointments",
@@ -3062,7 +3045,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 413,
+          "line": 417,
           "tag": "button",
           "family": "actions",
           "definition": "Appointments",
@@ -3073,7 +3056,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 413,
+          "line": 417,
           "tag": "button",
           "family": "actions",
           "definition": "Appointments",
@@ -3084,7 +3067,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 415,
+          "line": 419,
           "tag": "button",
           "family": "actions",
           "definition": "Appointments",
@@ -3095,7 +3078,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 415,
+          "line": 419,
           "tag": "Pagination",
           "family": "navigation",
           "definition": "Appointments",
@@ -3106,7 +3089,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 419,
+          "line": 423,
           "tag": "BookingForm",
           "family": "forms",
           "definition": "Booking",
@@ -3117,7 +3100,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 482,
+          "line": 486,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "BookingForm / cutoffNotice",
@@ -3128,7 +3111,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 483,
+          "line": 487,
           "tag": "Link",
           "family": "links",
           "definition": "BookingForm",
@@ -3139,17 +3122,6 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
           "className": "\"text-link\"",
           "href": "{`/${[\"superAdmin\",\"clinicAdmin\"].includes(identity.user!.role)?\"admin\":identity.user!.role}/appointments`}"
-        },
-        {
-          "line": 485,
-          "tag": "button",
-          "family": "actions",
-          "definition": "BookingForm",
-          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "action",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
           "line": 489,
@@ -3163,7 +3135,18 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 492,
+          "line": 493,
+          "tag": "button",
+          "family": "actions",
+          "definition": "BookingForm",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 496,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "BookingForm",
@@ -3174,7 +3157,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 492,
+          "line": 496,
           "tag": "input",
           "family": "fields",
           "definition": "BookingForm",
@@ -3187,7 +3170,7 @@
           "data-testid": "{`radio-booking-source-${value}`}"
         },
         {
-          "line": 493,
+          "line": 497,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "BookingForm",
@@ -3198,7 +3181,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 501,
+          "line": 505,
           "tag": "DateFormatInput",
           "family": "fields",
           "definition": "BookingForm",
@@ -3211,7 +3194,7 @@
           "data-testid": "\"input-booking-date\""
         },
         {
-          "line": 506,
+          "line": 510,
           "tag": "button",
           "family": "actions",
           "definition": "BookingForm",
@@ -3225,7 +3208,7 @@
           "data-testid": "\"button-reset-booking-context\""
         },
         {
-          "line": 509,
+          "line": 513,
           "tag": "button",
           "family": "actions",
           "definition": "BookingForm",
@@ -3237,7 +3220,7 @@
           "className": "\"text-link\""
         },
         {
-          "line": 509,
+          "line": 513,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "BookingForm",
@@ -3248,7 +3231,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 509,
+          "line": 513,
           "tag": "PatientEditor",
           "family": "forms",
           "definition": "BookingForm",
@@ -3259,7 +3242,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 510,
+          "line": 514,
           "tag": "PhoneInput",
           "family": "fields",
           "definition": "BookingForm",
@@ -3272,7 +3255,7 @@
           "data-testid": "\"input-booking-mobile\""
         },
         {
-          "line": 512,
+          "line": 516,
           "tag": "button",
           "family": "actions",
           "definition": "BookingForm",
@@ -3283,7 +3266,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 513,
+          "line": 517,
           "tag": "PhoneInput",
           "family": "fields",
           "definition": "BookingForm",
@@ -3295,7 +3278,7 @@
           "aria-label": "\"Mobile number\""
         },
         {
-          "line": 513,
+          "line": 517,
           "tag": "button",
           "family": "actions",
           "definition": "BookingForm",
@@ -3307,7 +3290,7 @@
           "disabled": "{otp.isPending||!mobile}"
         },
         {
-          "line": 513,
+          "line": 517,
           "tag": "button",
           "family": "actions",
           "definition": "BookingForm",
@@ -3319,7 +3302,7 @@
           "disabled": "{verify.isPending||code.length!==6}"
         },
         {
-          "line": 514,
+          "line": 518,
           "tag": "textarea",
           "family": "fields",
           "definition": "BookingForm",
@@ -3330,7 +3313,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 516,
+          "line": 520,
           "tag": "input",
           "family": "fields",
           "definition": "BookingForm",
@@ -3342,7 +3325,7 @@
           "type": "\"checkbox\""
         },
         {
-          "line": 516,
+          "line": 520,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "BookingForm",
@@ -3353,7 +3336,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 524,
+          "line": 528,
           "tag": "ProfileEditor",
           "family": "forms",
           "definition": "Profile",
@@ -3364,7 +3347,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 526,
+          "line": 530,
           "tag": "button",
           "family": "actions",
           "definition": "Profile",
@@ -3378,7 +3361,7 @@
           "data-testid": "\"button-my-patient-records\""
         },
         {
-          "line": 527,
+          "line": 531,
           "tag": "PatientDetailsDrawer",
           "family": "overlays",
           "definition": "Profile",
@@ -3389,7 +3372,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 528,
+          "line": 532,
           "tag": "Link",
           "family": "links",
           "definition": "Profile",
@@ -3403,7 +3386,7 @@
           "data-testid": "\"link-profile-consultation\""
         },
         {
-          "line": 528,
+          "line": 532,
           "tag": "Link",
           "family": "links",
           "definition": "Profile",
@@ -3417,7 +3400,7 @@
           "data-testid": "\"link-profile-clinics\""
         },
         {
-          "line": 528,
+          "line": 532,
           "tag": "Link",
           "family": "links",
           "definition": "Profile",
@@ -3430,7 +3413,7 @@
           "className": "\"text-link\""
         },
         {
-          "line": 536,
+          "line": 540,
           "tag": "button",
           "family": "actions",
           "definition": "ProfileEditor",
@@ -3443,7 +3426,7 @@
           "disabled": "{mutation.isPending}"
         },
         {
-          "line": 536,
+          "line": 540,
           "tag": "button",
           "family": "actions",
           "definition": "ProfileEditor",
@@ -3454,7 +3437,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 536,
+          "line": 540,
           "tag": "Editor",
           "family": "forms",
           "definition": "ProfileEditor",
@@ -3465,7 +3448,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 564,
+          "line": 568,
           "tag": "button",
           "family": "actions",
           "definition": "DoctorClinics",
@@ -3476,7 +3459,18 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 572,
+          "line": 571,
+          "tag": "HelpTip",
+          "family": "overlays",
+          "definition": "DoctorClinics",
+          "disposition": "compact-ui.css: accessible bounded help; not a form modal",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "help",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 571,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "DoctorClinics",
@@ -3487,7 +3481,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 576,
+          "line": 575,
           "tag": "button",
           "family": "actions",
           "definition": "DoctorClinics",
@@ -3501,7 +3495,7 @@
           "aria-label": "{`Sort clinic name ${assignedSort===\"name\"?\"descending\":\"ascending\"}`}"
         },
         {
-          "line": 580,
+          "line": 579,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "DoctorClinics",
@@ -3512,7 +3506,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 589,
+          "line": 588,
           "tag": "button",
           "family": "actions",
           "definition": "DoctorClinics",
@@ -3534,7 +3528,18 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 600,
+          "line": 595,
+          "tag": "HelpTip",
+          "family": "overlays",
+          "definition": "DoctorClinics",
+          "disposition": "compact-ui.css: accessible bounded help; not a form modal",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "help",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 595,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "DoctorClinics",
@@ -3545,7 +3550,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 604,
+          "line": 599,
           "tag": "button",
           "family": "actions",
           "definition": "DoctorClinics",
@@ -3560,7 +3565,7 @@
           "aria-label": "{`Sort network clinic name ${networkSort===\"name\"?\"descending\":\"ascending\"}`}"
         },
         {
-          "line": 608,
+          "line": 603,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "DoctorClinics",
@@ -3571,7 +3576,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 616,
+          "line": 611,
           "tag": "button",
           "family": "actions",
           "definition": "DoctorClinics",
@@ -3582,7 +3587,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 617,
+          "line": 613,
           "tag": "Pagination",
           "family": "navigation",
           "definition": "DoctorClinics",
@@ -3593,7 +3598,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 628,
+          "line": 624,
           "tag": "button",
           "family": "actions",
           "definition": "PlatformPreferences",
@@ -3604,7 +3609,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 628,
+          "line": 624,
           "tag": "Link",
           "family": "links",
           "definition": "PlatformPreferences",
@@ -3616,7 +3621,7 @@
           "href": "\"/admin/templates\""
         },
         {
-          "line": 628,
+          "line": 624,
           "tag": "Editor",
           "family": "forms",
           "definition": "PlatformPreferences",
@@ -3627,7 +3632,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 644,
+          "line": 640,
           "tag": "button",
           "family": "actions",
           "definition": "LegacyReports / reportHeader",
@@ -3641,7 +3646,7 @@
           "aria-label": "{`Sort ${reportSortLabels[key]} ${sort===key?\"descending\":\"ascending\"}`}"
         },
         {
-          "line": 655,
+          "line": 651,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "LegacyReports / reportCell",
@@ -3652,7 +3657,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 705,
+          "line": 701,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "LegacyReports",
@@ -3663,7 +3668,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 706,
+          "line": 702,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "LegacyReports",
@@ -3674,7 +3679,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 711,
+          "line": 707,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "LegacyReports",
@@ -3685,7 +3690,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 711,
+          "line": 707,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "LegacyReports",
@@ -3696,7 +3701,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 711,
+          "line": 707,
           "tag": "button",
           "family": "actions",
           "definition": "LegacyReports",
@@ -3711,7 +3716,7 @@
           "disabled": "{exporting||q.isFetching||q.isPlaceholderData||!!q.error||!total||!from||!to||from>to}"
         },
         {
-          "line": 714,
+          "line": 710,
           "tag": "button",
           "family": "actions",
           "definition": "LegacyReports",
@@ -3722,7 +3727,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 715,
+          "line": 711,
           "tag": "button",
           "family": "actions",
           "definition": "LegacyReports",
@@ -3733,7 +3738,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 715,
+          "line": 711,
           "tag": "Pagination",
           "family": "navigation",
           "definition": "LegacyReports",
@@ -3750,7 +3755,18 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 92,
+          "line": 93,
+          "tag": "PageHeader",
+          "family": "navigation",
+          "definition": "AccessRules",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 93,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "AccessRules",
@@ -3761,7 +3777,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 94,
+          "line": 95,
           "tag": "button",
           "family": "actions",
           "definition": "AccessRules",
@@ -3772,17 +3788,6 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
           "type": "\"button\"",
           "data-testid": "\"button-retry\""
-        },
-        {
-          "line": 97,
-          "tag": "SearchableSelect",
-          "family": "fields",
-          "definition": "AccessRules",
-          "disposition": "compact-ui.css: semantic control family; compound structure retained",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "selection",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
           "line": 98,
@@ -3797,6 +3802,17 @@
         },
         {
           "line": 99,
+          "tag": "SearchableSelect",
+          "family": "fields",
+          "definition": "AccessRules",
+          "disposition": "compact-ui.css: semantic control family; compound structure retained",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "selection",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 100,
           "tag": "Link",
           "family": "links",
           "definition": "AccessRules",
@@ -3809,7 +3825,7 @@
           "href": "\"/admin/users\""
         },
         {
-          "line": 110,
+          "line": 111,
           "tag": "input",
           "family": "fields",
           "definition": "AccessRules",
@@ -3824,7 +3840,7 @@
           "data-testid": "{`checkbox-${k}`}"
         },
         {
-          "line": 111,
+          "line": 112,
           "tag": "button",
           "family": "actions",
           "definition": "AccessRules",
@@ -3839,7 +3855,7 @@
           "data-testid": "{`button-allow-row-${m}`}"
         },
         {
-          "line": 111,
+          "line": 112,
           "tag": "button",
           "family": "actions",
           "definition": "AccessRules",
@@ -3854,7 +3870,7 @@
           "data-testid": "{`button-deny-row-${m}`}"
         },
         {
-          "line": 113,
+          "line": 114,
           "tag": "button",
           "family": "actions",
           "definition": "AccessRules",
@@ -3867,7 +3883,7 @@
           "data-testid": "\"button-reload\""
         },
         {
-          "line": 118,
+          "line": 119,
           "tag": "button",
           "family": "actions",
           "definition": "AccessRules",
@@ -3882,7 +3898,7 @@
           "data-testid": "\"button-reset-local\""
         },
         {
-          "line": 122,
+          "line": 123,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "AccessRules",
@@ -3893,7 +3909,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 126,
+          "line": 127,
           "tag": "button",
           "family": "actions",
           "definition": "AccessRules",
@@ -5712,7 +5728,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 46,
+          "line": 47,
           "tag": "button",
           "family": "actions",
           "definition": "CopyValue",
@@ -5727,7 +5743,18 @@
           "data-testid": "{`button-copy-${label.toLowerCase().replace(/\\W+/g,\"-\")}`}"
         },
         {
-          "line": 137,
+          "line": 134,
+          "tag": "PageHeader",
+          "family": "navigation",
+          "definition": "ClinicSettings",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 135,
           "tag": "Link",
           "family": "links",
           "definition": "ClinicSettings",
@@ -5741,7 +5768,7 @@
           "data-testid": "\"link-all-clinic-groups\""
         },
         {
-          "line": 138,
+          "line": 136,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicSettings",
@@ -5753,7 +5780,7 @@
           "type": "\"button\""
         },
         {
-          "line": 146,
+          "line": 144,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicSettings",
@@ -5768,7 +5795,7 @@
           "data-testid": "\"button-edit-clinic\""
         },
         {
-          "line": 147,
+          "line": 145,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicSettings",
@@ -5783,7 +5810,7 @@
           "data-testid": "\"button-edit-date-time\""
         },
         {
-          "line": 148,
+          "line": 146,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ClinicSettings",
@@ -5794,7 +5821,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 152,
+          "line": 150,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicSettings",
@@ -5809,7 +5836,7 @@
           "data-testid": "\"button-linked-locations\""
         },
         {
-          "line": 153,
+          "line": 151,
           "tag": "Link",
           "family": "links",
           "definition": "ClinicSettings",
@@ -5823,7 +5850,7 @@
           "data-testid": "\"link-booking-readiness\""
         },
         {
-          "line": 156,
+          "line": 154,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicSettings",
@@ -5842,7 +5869,7 @@
           "data-testid": "{`tab-clinic-${key}`}"
         },
         {
-          "line": 160,
+          "line": 158,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicSettings",
@@ -5857,7 +5884,7 @@
           "data-testid": "\"button-edit-basic\""
         },
         {
-          "line": 165,
+          "line": 163,
           "tag": "Link",
           "family": "links",
           "definition": "ClinicSettings",
@@ -5869,7 +5896,7 @@
           "href": "{`/${clinic.slug}`}"
         },
         {
-          "line": 167,
+          "line": 165,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ClinicSettings",
@@ -5880,7 +5907,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 169,
+          "line": 167,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicSettings",
@@ -5895,7 +5922,7 @@
           "data-testid": "\"button-edit-contact\""
         },
         {
-          "line": 175,
+          "line": 173,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicSettings",
@@ -5910,7 +5937,7 @@
           "data-testid": "\"button-manage-linked-hours\""
         },
         {
-          "line": 176,
+          "line": 174,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ClinicSettings",
@@ -5921,7 +5948,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 178,
+          "line": 176,
           "tag": "Link",
           "family": "links",
           "definition": "ClinicSettings",
@@ -5934,7 +5961,7 @@
           "href": "{`/admin/availability?clinicId=${encodeURIComponent(clinicId)}`}"
         },
         {
-          "line": 180,
+          "line": 178,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ClinicSettings",
@@ -5945,7 +5972,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 180,
+          "line": 178,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicSettings",
@@ -5959,7 +5986,7 @@
           "disabled": "{locked}"
         },
         {
-          "line": 181,
+          "line": 179,
           "tag": "Link",
           "family": "links",
           "definition": "ClinicSettings",
@@ -5971,7 +5998,7 @@
           "href": "\"/admin/settings?area=audit\""
         },
         {
-          "line": 183,
+          "line": 181,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ClinicSettings",
@@ -5982,7 +6009,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 183,
+          "line": 181,
           "tag": "Link",
           "family": "links",
           "definition": "ClinicSettings",
@@ -5996,7 +6023,7 @@
           "data-testid": "\"link-location-schedule\""
         },
         {
-          "line": 183,
+          "line": 181,
           "tag": "Link",
           "family": "links",
           "definition": "ClinicSettings",
@@ -6010,7 +6037,7 @@
           "data-testid": "\"link-location-exceptions\""
         },
         {
-          "line": 183,
+          "line": 181,
           "tag": "Link",
           "family": "links",
           "definition": "ClinicSettings",
@@ -6023,7 +6050,7 @@
           "href": "{`/${clinic.slug}`}"
         },
         {
-          "line": 185,
+          "line": 183,
           "tag": "Link",
           "family": "links",
           "definition": "ClinicSettings",
@@ -6036,7 +6063,7 @@
           "data-testid": "\"link-global-staff\""
         },
         {
-          "line": 186,
+          "line": 184,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "ClinicSettings",
@@ -6047,13 +6074,24 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 186,
+          "line": 184,
           "tag": "Editor",
           "family": "forms",
           "definition": "ClinicSettings",
           "disposition": "form-standard.css: shared field/section/action layout; purpose-specific workflow retained",
           "runtimeReachability": "conditional source; not independently established by enumeration",
           "stateProfile": "form",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 185,
+          "tag": "AppDialog",
+          "family": "overlays",
+          "definition": "ClinicSettings",
+          "disposition": "AppDialog/app-dialog.css: shared modal/drawer shell and confirmation actions",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "overlay",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
@@ -6069,18 +6107,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 189,
-          "tag": "AppDialog",
-          "family": "overlays",
-          "definition": "ClinicSettings",
-          "disposition": "AppDialog/app-dialog.css: shared modal/drawer shell and confirmation actions",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "overlay",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 190,
+          "line": 188,
           "tag": "FormActions",
           "family": "forms",
           "definition": "ClinicSettings",
@@ -6091,7 +6118,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 190,
+          "line": 188,
           "tag": "ConfirmDialog",
           "family": "overlays",
           "definition": "ClinicSettings",
@@ -6102,7 +6129,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 216,
+          "line": 214,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ConsultationManagement",
@@ -6113,7 +6140,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 216,
+          "line": 214,
           "tag": "Link",
           "family": "links",
           "definition": "ConsultationManagement",
@@ -6125,7 +6152,7 @@
           "href": "{`/admin/queue?doctor=${encodeURIComponent(identity.doctorId||\"\")}`}"
         },
         {
-          "line": 218,
+          "line": 216,
           "tag": "button",
           "family": "actions",
           "definition": "ConsultationManagement",
@@ -6137,7 +6164,7 @@
           "type": "\"button\""
         },
         {
-          "line": 220,
+          "line": 218,
           "tag": "button",
           "family": "actions",
           "definition": "ConsultationManagement",
@@ -6150,7 +6177,7 @@
           "disabled": "{doctor.isLoading||!!doctor.error}"
         },
         {
-          "line": 221,
+          "line": 219,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "ConsultationManagement",
@@ -6161,7 +6188,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 222,
+          "line": 220,
           "tag": "form",
           "family": "forms",
           "definition": "ConsultationManagement",
@@ -6172,7 +6199,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 223,
+          "line": 221,
           "tag": "input",
           "family": "fields",
           "definition": "ConsultationManagement",
@@ -6184,7 +6211,7 @@
           "type": "\"checkbox\""
         },
         {
-          "line": 224,
+          "line": 222,
           "tag": "input",
           "family": "fields",
           "definition": "ConsultationManagement",
@@ -6196,7 +6223,7 @@
           "type": "\"checkbox\""
         },
         {
-          "line": 224,
+          "line": 222,
           "tag": "button",
           "family": "actions",
           "definition": "ConsultationManagement",
@@ -6208,7 +6235,7 @@
           "type": "\"button\""
         },
         {
-          "line": 226,
+          "line": 224,
           "tag": "FormActions",
           "family": "forms",
           "definition": "ConsultationManagement",
@@ -6220,7 +6247,7 @@
           "disabled": "{!choice.canSave}"
         },
         {
-          "line": 256,
+          "line": 254,
           "tag": "FormDisclosure",
           "family": "forms",
           "definition": "BranchSettings",
@@ -6231,7 +6258,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 259,
+          "line": 257,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "BranchSettings",
@@ -6243,7 +6270,7 @@
           "disabled": "{sources.isFetching||!!sources.error}"
         },
         {
-          "line": 261,
+          "line": 259,
           "tag": "button",
           "family": "actions",
           "definition": "BranchSettings",
@@ -6255,7 +6282,7 @@
           "type": "\"button\""
         },
         {
-          "line": 262,
+          "line": 260,
           "tag": "button",
           "family": "actions",
           "definition": "BranchSettings",
@@ -6268,7 +6295,7 @@
           "disabled": "{!copySource||sources.isFetching||!!sources.error}"
         },
         {
-          "line": 271,
+          "line": 269,
           "tag": "Editor",
           "family": "forms",
           "definition": "BranchSettings",
@@ -6279,7 +6306,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 272,
+          "line": 270,
           "tag": "FormSection",
           "family": "forms",
           "definition": "BranchSettings",
@@ -6290,7 +6317,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 272,
+          "line": 270,
           "tag": "OpeningHoursEditor",
           "family": "forms",
           "definition": "BranchSettings",
@@ -6301,7 +6328,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 273,
+          "line": 271,
           "tag": "FormSection",
           "family": "forms",
           "definition": "BranchSettings",
@@ -6312,7 +6339,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 282,
+          "line": 280,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "OpeningHoursEditor",
@@ -6323,7 +6350,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 282,
+          "line": 280,
           "tag": "button",
           "family": "actions",
           "definition": "OpeningHoursEditor",
@@ -6381,7 +6408,7 @@
           "type": "\"button\""
         },
         {
-          "line": 119,
+          "line": 123,
           "tag": "button",
           "family": "actions",
           "definition": "CommunicationUsage",
@@ -6396,7 +6423,7 @@
           "data-testid": "\"button-refresh-usage\""
         },
         {
-          "line": 127,
+          "line": 126,
           "tag": "button",
           "family": "actions",
           "definition": "CommunicationUsage",
@@ -6411,7 +6438,7 @@
           "data-testid": "{`button-usage-preset-${p}`}"
         },
         {
-          "line": 132,
+          "line": 131,
           "tag": "select",
           "family": "fields",
           "definition": "CommunicationUsage",
@@ -6423,7 +6450,7 @@
           "id": "\"cu-channel\""
         },
         {
-          "line": 133,
+          "line": 132,
           "tag": "select",
           "family": "fields",
           "definition": "CommunicationUsage",
@@ -6435,7 +6462,7 @@
           "id": "\"cu-status\""
         },
         {
-          "line": 134,
+          "line": 133,
           "tag": "select",
           "family": "fields",
           "definition": "CommunicationUsage",
@@ -6448,7 +6475,7 @@
           "data-testid": "\"input-usage-event\""
         },
         {
-          "line": 135,
+          "line": 134,
           "tag": "select",
           "family": "fields",
           "definition": "CommunicationUsage",
@@ -6461,7 +6488,7 @@
           "data-testid": "\"select-usage-source\""
         },
         {
-          "line": 137,
+          "line": 136,
           "tag": "input",
           "family": "fields",
           "definition": "CommunicationUsage",
@@ -6474,7 +6501,7 @@
           "data-testid": "\"check-usage-unattributed\""
         },
         {
-          "line": 138,
+          "line": 137,
           "tag": "select",
           "family": "fields",
           "definition": "CommunicationUsage",
@@ -6486,7 +6513,7 @@
           "data-testid": "\"select-usage-group\""
         },
         {
-          "line": 139,
+          "line": 138,
           "tag": "select",
           "family": "fields",
           "definition": "CommunicationUsage",
@@ -6497,7 +6524,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 140,
+          "line": 139,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "CommunicationUsage",
@@ -6615,7 +6642,7 @@
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
           "type": "\"button\"",
-          "disabled": "{!cursors.length || q.isFetching}",
+          "disabled": "{!cursors.length || q.isFetching || q.isError}",
           "data-testid": "\"button-usage-prev\""
         },
         {
@@ -6774,7 +6801,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 67,
+          "line": 68,
           "tag": "button",
           "family": "actions",
           "definition": "CustomRoles / saveBar",
@@ -6786,7 +6813,7 @@
           "type": "\"button\""
         },
         {
-          "line": 71,
+          "line": 72,
           "tag": "button",
           "family": "actions",
           "definition": "CustomRoles / saveBar",
@@ -6801,7 +6828,7 @@
           "data-testid": "\"button-discard-custom-roles\""
         },
         {
-          "line": 72,
+          "line": 73,
           "tag": "button",
           "family": "actions",
           "definition": "CustomRoles / saveBar",
@@ -6817,6 +6844,18 @@
         },
         {
           "line": 78,
+          "tag": "PageHeader",
+          "family": "navigation",
+          "definition": "CustomRoles",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "id": "\"custom-roles-title\""
+        },
+        {
+          "line": 78,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "CustomRoles",
@@ -6827,7 +6866,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 79,
+          "line": 78,
           "tag": "button",
           "family": "actions",
           "definition": "CustomRoles",
@@ -6841,7 +6880,7 @@
           "data-testid": "\"button-add-custom-role\""
         },
         {
-          "line": 82,
+          "line": 80,
           "tag": "button",
           "family": "actions",
           "definition": "CustomRoles",
@@ -6853,7 +6892,7 @@
           "type": "\"button\""
         },
         {
-          "line": 92,
+          "line": 90,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "CustomRoles",
@@ -6864,7 +6903,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 93,
+          "line": 91,
           "tag": "RoleEditor",
           "family": "forms",
           "definition": "CustomRoles",
@@ -6876,7 +6915,7 @@
           "role": "{editing}"
         },
         {
-          "line": 97,
+          "line": 95,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "CustomRoles",
@@ -6887,7 +6926,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 99,
+          "line": 97,
           "tag": "FormActions",
           "family": "forms",
           "definition": "CustomRoles",
@@ -6898,7 +6937,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 101,
+          "line": 99,
           "tag": "DeleteRoleDialog",
           "family": "overlays",
           "definition": "CustomRoles",
@@ -6910,7 +6949,7 @@
           "role": "{deleting}"
         },
         {
-          "line": 111,
+          "line": 109,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "DeleteRoleDialog",
@@ -6921,7 +6960,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 113,
+          "line": 111,
           "tag": "input",
           "family": "fields",
           "definition": "DeleteRoleDialog",
@@ -6934,7 +6973,7 @@
           "data-testid": "\"checkbox-remove-bindings\""
         },
         {
-          "line": 115,
+          "line": 113,
           "tag": "FormActions",
           "family": "forms",
           "definition": "DeleteRoleDialog",
@@ -6946,7 +6985,7 @@
           "disabled": "{!!count && !ack}"
         },
         {
-          "line": 125,
+          "line": 123,
           "tag": "RowMenu",
           "family": "overlays",
           "definition": "RoleList",
@@ -6957,7 +6996,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 150,
+          "line": 148,
           "tag": "button",
           "family": "actions",
           "definition": "RoleEditor",
@@ -6970,7 +7009,7 @@
           "data-testid": "\"button-back-custom-roles\""
         },
         {
-          "line": 152,
+          "line": 150,
           "tag": "input",
           "family": "fields",
           "definition": "RoleEditor",
@@ -6983,7 +7022,7 @@
           "data-testid": "\"input-custom-role-name\""
         },
         {
-          "line": 153,
+          "line": 151,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "RoleEditor",
@@ -6994,7 +7033,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 154,
+          "line": 152,
           "tag": "button",
           "family": "actions",
           "definition": "RoleEditor",
@@ -7009,7 +7048,7 @@
           "data-testid": "\"button-apply-role\""
         },
         {
-          "line": 158,
+          "line": 156,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "RoleEditor",
@@ -7020,7 +7059,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 161,
+          "line": 159,
           "tag": "input",
           "family": "fields",
           "definition": "RoleEditor",
@@ -7034,7 +7073,7 @@
           "data-testid": "{`cap-${m}-${a}`}"
         },
         {
-          "line": 162,
+          "line": 160,
           "tag": "button",
           "family": "actions",
           "definition": "RoleEditor",
@@ -7046,7 +7085,7 @@
           "type": "\"button\""
         },
         {
-          "line": 195,
+          "line": 193,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Bindings",
@@ -7057,7 +7096,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 197,
+          "line": 195,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Bindings",
@@ -7069,7 +7108,7 @@
           "disabled": "{!selected}"
         },
         {
-          "line": 199,
+          "line": 197,
           "tag": "button",
           "family": "actions",
           "definition": "Bindings",
@@ -7084,7 +7123,7 @@
           "data-testid": "\"button-add-binding\""
         },
         {
-          "line": 204,
+          "line": 202,
           "tag": "button",
           "family": "actions",
           "definition": "Bindings",
@@ -9087,6 +9126,24 @@
       ]
     },
     {
+      "file": "artifacts/clinicflow/src/components/FormSection.tsx",
+      "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
+      "entries": [
+        {
+          "line": 12,
+          "tag": "PageHeader",
+          "family": "navigation",
+          "definition": "FormSection",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "id": "{id}"
+        }
+      ]
+    },
+    {
       "file": "artifacts/clinicflow/src/components/FormTabs.tsx",
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
@@ -10086,7 +10143,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 89,
+          "line": 97,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Pagination",
@@ -10098,7 +10155,7 @@
           "id": "{sizeId}"
         },
         {
-          "line": 106,
+          "line": 114,
           "tag": "button",
           "family": "actions",
           "definition": "Pagination",
@@ -10107,12 +10164,12 @@
           "stateProfile": "action",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "disabled": "{currentPage === 1}",
+          "disabled": "{unavailable || !total || currentPage === 1}",
           "className": "\"h-8 w-8 p-0 flex items-center justify-center rounded-md border border-border bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors\"",
           "aria-label": "\"First page\""
         },
         {
-          "line": 115,
+          "line": 123,
           "tag": "button",
           "family": "actions",
           "definition": "Pagination",
@@ -10121,12 +10178,12 @@
           "stateProfile": "action",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "disabled": "{currentPage === 1}",
+          "disabled": "{unavailable || !total || currentPage === 1}",
           "className": "\"h-8 px-2 flex items-center justify-center gap-1 rounded-md border border-border bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors font-medium\"",
           "aria-label": "\"Previous page\""
         },
         {
-          "line": 133,
+          "line": 141,
           "tag": "button",
           "family": "actions",
           "definition": "Pagination",
@@ -10135,11 +10192,12 @@
           "stateProfile": "action",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "disabled": "{unavailable || !total}",
           "aria-current": "{currentPage === p ? \"page\" : undefined}",
           "className": "{cn(\n                  \"h-8 min-w-[32px] px-2 rounded-md text-sm font-medium transition-colors border-none\",\n                  currentPage === p\n                    ? \"bg-primary text-primary-foreground shadow-sm\"\n                    : \"bg-transparent text-foreground hover:bg-slate-100\"\n                )}"
         },
         {
-          "line": 151,
+          "line": 160,
           "tag": "button",
           "family": "actions",
           "definition": "Pagination",
@@ -10148,12 +10206,12 @@
           "stateProfile": "action",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "disabled": "{currentPage === totalPages}",
+          "disabled": "{unavailable || !total || currentPage === totalPages}",
           "className": "\"h-8 px-2 flex items-center justify-center gap-1 rounded-md border border-border bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors font-medium\"",
           "aria-label": "\"Next page\""
         },
         {
-          "line": 161,
+          "line": 170,
           "tag": "button",
           "family": "actions",
           "definition": "Pagination",
@@ -10162,12 +10220,12 @@
           "stateProfile": "action",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "disabled": "{currentPage === totalPages}",
+          "disabled": "{unavailable || !total || currentPage === totalPages}",
           "className": "\"h-8 w-8 p-0 flex items-center justify-center rounded-md border border-border bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-foreground transition-colors\"",
           "aria-label": "\"Last page\""
         },
         {
-          "line": 305,
+          "line": 302,
           "tag": "button",
           "family": "actions",
           "definition": "FilterBar / filterTrigger",
@@ -10177,7 +10235,7 @@
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
           "type": "\"button\"",
-          "className": "{cn(\"filter-toggle\", compactToolbar && \"listing-icon-trigger\", advancedActiveCount > 0 && \"has-active\")}",
+          "className": "{cn(\"filter-toggle\", \"listing-icon-trigger\", advancedActiveCount > 0 && \"has-active\")}",
           "aria-expanded": "{open}",
           "aria-controls": "{panelId}",
           "aria-haspopup": "\"dialog\"",
@@ -10185,7 +10243,7 @@
           "data-testid": "\"button-toggle-advanced-filters\""
         },
         {
-          "line": 322,
+          "line": 320,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "FilterBar / tools",
@@ -10196,7 +10254,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 323,
+          "line": 321,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "FilterBar / tools",
@@ -10207,7 +10265,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 324,
+          "line": 322,
           "tag": "form",
           "family": "forms",
           "definition": "FilterBar / tools",
@@ -10221,7 +10279,7 @@
           "data-testid": "\"form-filter-drawer\""
         },
         {
-          "line": 329,
+          "line": 327,
           "tag": "button",
           "family": "actions",
           "definition": "FilterBar / tools",
@@ -10236,7 +10294,7 @@
           "data-testid": "\"button-clear-filters-panel\""
         },
         {
-          "line": 330,
+          "line": 328,
           "tag": "button",
           "family": "actions",
           "definition": "FilterBar / tools",
@@ -10250,7 +10308,7 @@
           "data-testid": "\"button-cancel-filters\""
         },
         {
-          "line": 331,
+          "line": 329,
           "tag": "button",
           "family": "actions",
           "definition": "FilterBar / tools",
@@ -10264,7 +10322,7 @@
           "data-testid": "\"button-close-filters\""
         },
         {
-          "line": 338,
+          "line": 336,
           "tag": "button",
           "family": "actions",
           "definition": "FilterBar / tools",
@@ -10278,7 +10336,7 @@
           "data-testid": "\"button-clear-filters\""
         },
         {
-          "line": 363,
+          "line": 356,
           "tag": "button",
           "family": "actions",
           "definition": "FilterBar",
@@ -10294,7 +10352,7 @@
           "data-testid": "\"button-toggle-quick-filters\""
         },
         {
-          "line": 376,
+          "line": 368,
           "tag": "button",
           "family": "actions",
           "definition": "FilterBar",
@@ -10308,7 +10366,7 @@
           "data-testid": "{`chip-remove-${chip.key}`}"
         },
         {
-          "line": 383,
+          "line": 375,
           "tag": "button",
           "family": "actions",
           "definition": "FilterBar",
@@ -10894,7 +10952,7 @@
           "type": "\"button\""
         },
         {
-          "line": 49,
+          "line": 47,
           "tag": "button",
           "family": "actions",
           "definition": "NotificationLogs",
@@ -10909,7 +10967,7 @@
           "data-testid": "\"button-refresh-logs\""
         },
         {
-          "line": 58,
+          "line": 53,
           "tag": "select",
           "family": "fields",
           "definition": "NotificationLogs",
@@ -10922,7 +10980,7 @@
           "data-testid": "\"select-log-channel\""
         },
         {
-          "line": 59,
+          "line": 54,
           "tag": "select",
           "family": "fields",
           "definition": "NotificationLogs",
@@ -10935,7 +10993,7 @@
           "data-testid": "\"select-log-source\""
         },
         {
-          "line": 60,
+          "line": 55,
           "tag": "select",
           "family": "fields",
           "definition": "NotificationLogs",
@@ -10948,7 +11006,7 @@
           "data-testid": "{`select-log-${k}`}"
         },
         {
-          "line": 61,
+          "line": 56,
           "tag": "input",
           "family": "fields",
           "definition": "NotificationLogs",
@@ -10961,7 +11019,7 @@
           "data-testid": "{`input-log-${k}`}"
         },
         {
-          "line": 66,
+          "line": 64,
           "tag": "button",
           "family": "actions",
           "definition": "NotificationLogs",
@@ -10973,7 +11031,7 @@
           "type": "\"button\""
         },
         {
-          "line": 72,
+          "line": 70,
           "tag": "button",
           "family": "actions",
           "definition": "NotificationLogs",
@@ -10986,6 +11044,20 @@
           "data-testid": "{`button-open-log-${l.id}`}"
         },
         {
+          "line": 72,
+          "tag": "button",
+          "family": "actions",
+          "definition": "NotificationLogs",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"button\"",
+          "disabled": "{!cursors.length || q.isFetching || q.isError}",
+          "data-testid": "\"button-logs-prev\""
+        },
+        {
           "line": 74,
           "tag": "button",
           "family": "actions",
@@ -10996,25 +11068,11 @@
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
           "type": "\"button\"",
-          "disabled": "{!cursors.length || q.isFetching}",
-          "data-testid": "\"button-logs-prev\""
-        },
-        {
-          "line": 76,
-          "tag": "button",
-          "family": "actions",
-          "definition": "NotificationLogs",
-          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "action",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"button\"",
-          "disabled": "{!q.data?.nextCursor || q.isFetching}",
+          "disabled": "{!q.data?.nextCursor || q.isFetching || q.isError}",
           "data-testid": "\"button-logs-next\""
         },
         {
-          "line": 78,
+          "line": 77,
           "tag": "Drawer",
           "family": "overlays",
           "definition": "NotificationLogs",
@@ -11383,7 +11441,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 90,
+          "line": 91,
           "tag": "select",
           "family": "fields",
           "definition": "EventTemplates / sel",
@@ -11396,7 +11454,21 @@
           "data-testid": "{`select-filter-${k}`}"
         },
         {
-          "line": 99,
+          "line": 100,
+          "tag": "button",
+          "family": "actions",
+          "definition": "EventTemplates",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "type": "\"button\"",
+          "className": "\"button secondary small\"",
+          "data-testid": "\"button-clear-filters\""
+        },
+        {
+          "line": 103,
           "tag": "Switch",
           "family": "fields",
           "definition": "EventTemplates",
@@ -11411,7 +11483,7 @@
           "data-testid": "\"checkbox-clinic-gate\""
         },
         {
-          "line": 115,
+          "line": 110,
           "tag": "input",
           "family": "fields",
           "definition": "EventTemplates",
@@ -11425,21 +11497,7 @@
           "data-testid": "\"input-search-events\""
         },
         {
-          "line": 119,
-          "tag": "button",
-          "family": "actions",
-          "definition": "EventTemplates",
-          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "action",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "type": "\"button\"",
-          "className": "\"button secondary small\"",
-          "data-testid": "\"button-clear-filters\""
-        },
-        {
-          "line": 122,
+          "line": 121,
           "tag": "button",
           "family": "actions",
           "definition": "EventTemplates",
@@ -11539,7 +11597,7 @@
           "data-testid": "{`button-edit-${r.channel}-${event}-${r.recipient}`}"
         },
         {
-          "line": 187,
+          "line": 188,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "EventTemplates",
@@ -11550,7 +11608,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 190,
+          "line": 191,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "EventTemplates",
@@ -11561,7 +11619,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 192,
+          "line": 193,
           "tag": "FormActions",
           "family": "forms",
           "definition": "EventTemplates",
@@ -11572,7 +11630,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 199,
+          "line": 200,
           "tag": "button",
           "family": "actions",
           "definition": "ClinicAdminTemplates",
@@ -11585,7 +11643,7 @@
           "data-testid": "\"button-retry\""
         },
         {
-          "line": 236,
+          "line": 237,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "NotificationScope",
@@ -11596,7 +11654,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 237,
+          "line": 238,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "NotificationScope",
@@ -12317,7 +12375,18 @@
           "href": "\"/\""
         },
         {
-          "line": 74,
+          "line": 73,
+          "tag": "PageHeader",
+          "family": "navigation",
+          "definition": "PublicClinicResolved",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 73,
           "tag": "button",
           "family": "actions",
           "definition": "PublicClinicResolved",
@@ -12331,7 +12400,7 @@
           "data-testid": "\"public-clinic-retry\""
         },
         {
-          "line": 74,
+          "line": 73,
           "tag": "Link",
           "family": "links",
           "definition": "PublicClinicResolved",
@@ -12343,7 +12412,29 @@
           "href": "\"/\""
         },
         {
-          "line": 89,
+          "line": 73,
+          "tag": "Pagination",
+          "family": "navigation",
+          "definition": "PublicClinicResolved",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 86,
+          "tag": "HelpTip",
+          "family": "overlays",
+          "definition": "PublicClinicResolved / directoryControls",
+          "disposition": "compact-ui.css: accessible bounded help; not a form modal",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "help",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 88,
           "tag": "button",
           "family": "actions",
           "definition": "PublicClinicResolved / directoryControls",
@@ -12357,7 +12448,7 @@
           "data-testid": "\"public-directory-clear-all\""
         },
         {
-          "line": 91,
+          "line": 90,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "PublicClinicResolved / directoryControls",
@@ -12368,18 +12459,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 95,
-          "tag": "SearchableSelect",
-          "family": "fields",
-          "definition": "PublicClinicResolved / directoryPagination",
-          "disposition": "compact-ui.css: semantic control family; compound structure retained",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "selection",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 98,
+          "line": 93,
           "tag": "Pagination",
           "family": "navigation",
           "definition": "PublicClinicResolved / directoryPagination",
@@ -12390,7 +12470,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 101,
+          "line": 96,
           "tag": "button",
           "family": "actions",
           "definition": "PublicClinicResolved / emptyDirectory",
@@ -12404,7 +12484,7 @@
           "data-testid": "\"public-directory-clear-search\""
         },
         {
-          "line": 102,
+          "line": 97,
           "tag": "Link",
           "family": "links",
           "definition": "PublicClinicResolved",
@@ -12417,33 +12497,18 @@
           "data-testid": "\"public-clinic-staff\""
         },
         {
-          "line": 108,
-          "tag": "a",
-          "family": "links",
+          "line": 100,
+          "tag": "PageHeader",
+          "family": "navigation",
           "definition": "PublicClinicResolved",
           "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
           "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "link",
+          "stateProfile": "navigation",
           "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "href": "{`mailto:${email}`}",
-          "data-testid": "\"public-clinic-email\""
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 108,
-          "tag": "a",
-          "family": "links",
-          "definition": "PublicClinicResolved",
-          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "link",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "href": "{`tel:${phone}`}",
-          "data-testid": "\"public-clinic-phone\""
-        },
-        {
-          "line": 110,
+          "line": 100,
           "tag": "Link",
           "family": "links",
           "definition": "PublicClinicResolved",
@@ -12457,7 +12522,7 @@
           "data-testid": "\"public-book-visit\""
         },
         {
-          "line": 110,
+          "line": 100,
           "tag": "Link",
           "family": "links",
           "definition": "PublicClinicResolved",
@@ -12471,7 +12536,33 @@
           "data-testid": "\"public-reception-display\""
         },
         {
-          "line": 111,
+          "line": 102,
+          "tag": "a",
+          "family": "links",
+          "definition": "PublicClinicResolved",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "link",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "href": "{`mailto:${email}`}",
+          "data-testid": "\"public-clinic-email\""
+        },
+        {
+          "line": 102,
+          "tag": "a",
+          "family": "links",
+          "definition": "PublicClinicResolved",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "link",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "href": "{`tel:${phone}`}",
+          "data-testid": "\"public-clinic-phone\""
+        },
+        {
+          "line": 105,
           "tag": "Link",
           "family": "links",
           "definition": "PublicClinicResolved",
@@ -12485,7 +12576,7 @@
           "data-testid": "\"public-change-branch\""
         },
         {
-          "line": 114,
+          "line": 108,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "PublicClinicResolved",
@@ -12496,7 +12587,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 114,
+          "line": 108,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "PublicClinicResolved",
@@ -12507,7 +12598,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 114,
+          "line": 108,
           "tag": "Link",
           "family": "links",
           "definition": "PublicClinicResolved",
@@ -12521,18 +12612,7 @@
           "data-testid": "{`public-select-branch-${b.id}`}"
         },
         {
-          "line": 116,
-          "tag": "HelpTip",
-          "family": "overlays",
-          "definition": "PublicClinicResolved",
-          "disposition": "compact-ui.css: accessible bounded help; not a form modal",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "help",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 119,
+          "line": 113,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "PublicClinicResolved",
@@ -14405,17 +14485,6 @@
           "type": "\"button\""
         },
         {
-          "line": 156,
-          "tag": "Pagination",
-          "family": "navigation",
-          "definition": "SystemUsers",
-          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "navigation",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
           "line": 157,
           "tag": "button",
           "family": "actions",
@@ -14428,7 +14497,18 @@
           "type": "\"button\""
         },
         {
-          "line": 159,
+          "line": 158,
+          "tag": "Pagination",
+          "family": "navigation",
+          "definition": "SystemUsers",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 160,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "SystemUsers",
@@ -15187,7 +15267,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 54,
+          "line": 55,
           "tag": "button",
           "family": "actions",
           "definition": "AppointmentBookingTab",
@@ -15213,7 +15293,7 @@
           "disabled": "{!online}"
         },
         {
-          "line": 112,
+          "line": 114,
           "tag": "button",
           "family": "actions",
           "definition": "BookingEditor",
@@ -15229,7 +15309,7 @@
           "aria-label": "{`Edit booking details for ${a.patientName}`}"
         },
         {
-          "line": 114,
+          "line": 116,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "BookingEditor",
@@ -15240,7 +15320,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 115,
+          "line": 117,
           "tag": "form",
           "family": "forms",
           "definition": "BookingEditor",
@@ -15252,7 +15332,7 @@
           "data-testid": "\"form-edit-booking\""
         },
         {
-          "line": 117,
+          "line": 119,
           "tag": "PhoneInput",
           "family": "fields",
           "definition": "BookingEditor",
@@ -15265,7 +15345,7 @@
           "aria-invalid": "{!!mobileProblem}"
         },
         {
-          "line": 119,
+          "line": 121,
           "tag": "textarea",
           "family": "fields",
           "definition": "BookingEditor",
@@ -15277,7 +15357,7 @@
           "data-testid": "\"input-booking-notes\""
         },
         {
-          "line": 121,
+          "line": 123,
           "tag": "BookingFormActions",
           "family": "forms",
           "definition": "BookingEditor",
@@ -15288,7 +15368,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 130,
+          "line": 132,
           "tag": "FormActions",
           "family": "forms",
           "definition": "BookingFormActions",
@@ -15300,7 +15380,7 @@
           "disabled": "{!dirty || problem || blocked || !navigator.onLine}"
         },
         {
-          "line": 143,
+          "line": 145,
           "tag": "button",
           "family": "actions",
           "definition": "CopyReference",
@@ -15419,8 +15499,7 @@
           "runtimeReachability": "conditional source; not independently established by enumeration",
           "stateProfile": "navigation",
           "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "className": "\"appt-tabs\""
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
           "line": 58,
@@ -15432,7 +15511,6 @@
           "stateProfile": "navigation",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "className": "\"appt-tabs-list\"",
           "aria-label": "\"Appointment detail sections\""
         },
         {
@@ -15445,7 +15523,6 @@
           "stateProfile": "navigation",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "className": "\"appt-tab\"",
           "data-testid": "\"tab-detail-booking\""
         },
         {
@@ -15458,7 +15535,6 @@
           "stateProfile": "navigation",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "className": "\"appt-tab\"",
           "data-testid": "\"tab-detail-details\""
         },
         {
@@ -15471,7 +15547,6 @@
           "stateProfile": "navigation",
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
-          "className": "\"appt-tab\"",
           "data-testid": "\"tab-detail-history\""
         },
         {
@@ -15499,7 +15574,7 @@
           "className": "\"appt-tab-panel\""
         },
         {
-          "line": 88,
+          "line": 89,
           "tag": "TabsContent",
           "family": "navigation",
           "definition": "AppointmentDetailsInner",
@@ -15511,7 +15586,7 @@
           "className": "\"appt-tab-panel\""
         },
         {
-          "line": 90,
+          "line": 91,
           "tag": "button",
           "family": "actions",
           "definition": "AppointmentDetailsInner",
@@ -15524,7 +15599,7 @@
           "className": "\"button secondary\""
         },
         {
-          "line": 92,
+          "line": 93,
           "tag": "button",
           "family": "actions",
           "definition": "AppointmentDetailsInner",
@@ -15534,17 +15609,6 @@
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
           "type": "\"button\""
-        },
-        {
-          "line": 95,
-          "tag": "TableHeader",
-          "family": "navigation",
-          "definition": "AppointmentDetailsInner",
-          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "navigation",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         }
       ]
     },
@@ -15895,11 +15959,47 @@
       ]
     },
     {
+      "file": "artifacts/clinicflow/src/components/appointments/AppointmentViewSelector.tsx",
+      "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
+      "entries": [
+        {
+          "line": 10,
+          "tag": "button",
+          "family": "actions",
+          "definition": "AppointmentViewSelector",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "className": "\"dq-tab\"",
+          "type": "\"button\"",
+          "aria-pressed": "{mode === \"list\"}",
+          "data-testid": "\"button-mode-list\""
+        },
+        {
+          "line": 11,
+          "tag": "button",
+          "family": "actions",
+          "definition": "AppointmentViewSelector",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "action",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
+          "className": "\"dq-tab\"",
+          "type": "\"button\"",
+          "aria-pressed": "{mode === \"calendar\"}",
+          "data-testid": "\"button-mode-calendar\""
+        }
+      ]
+    },
+    {
       "file": "artifacts/clinicflow/src/components/appointments/BulkAppointments.tsx",
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 83,
+          "line": 87,
           "tag": "button",
           "family": "actions",
           "definition": "BulkAppointments",
@@ -15912,7 +16012,7 @@
           "data-testid": "\"button-bulk-csv\""
         },
         {
-          "line": 83,
+          "line": 87,
           "tag": "button",
           "family": "actions",
           "definition": "BulkAppointments",
@@ -15925,7 +16025,7 @@
           "data-testid": "\"button-bulk-print\""
         },
         {
-          "line": 83,
+          "line": 87,
           "tag": "RowMenu",
           "family": "overlays",
           "definition": "BulkAppointments",
@@ -15936,7 +16036,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 83,
+          "line": 87,
           "tag": "button",
           "family": "actions",
           "definition": "BulkAppointments",
@@ -15949,7 +16049,7 @@
           "data-testid": "\"button-bulk-clear\""
         },
         {
-          "line": 83,
+          "line": 87,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "BulkAppointments",
@@ -15960,7 +16060,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 83,
+          "line": 87,
           "tag": "TicketEmailDialog",
           "family": "overlays",
           "definition": "BulkAppointments",
@@ -15971,7 +16071,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 83,
+          "line": 87,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "BulkAppointments",
@@ -15982,7 +16082,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 83,
+          "line": 87,
           "tag": "textarea",
           "family": "fields",
           "definition": "BulkAppointments",
@@ -15993,7 +16093,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 83,
+          "line": 87,
           "tag": "button",
           "family": "actions",
           "definition": "BulkAppointments",
@@ -17227,7 +17327,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 39,
+          "line": 42,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "GuestRequests",
@@ -17238,7 +17338,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 43,
+          "line": 42,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "GuestRequests",
@@ -17392,6 +17492,17 @@
         },
         {
           "line": 82,
+          "tag": "PageHeader",
+          "family": "navigation",
+          "definition": "SessionQueue",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 82,
           "tag": "Link",
           "family": "links",
           "definition": "SessionQueue",
@@ -17520,7 +17631,18 @@
           "type": "\"button\""
         },
         {
-          "line": 104,
+          "line": 105,
+          "tag": "Pagination",
+          "family": "navigation",
+          "definition": "SessionQueue",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 108,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "SessionQueue",
@@ -17531,7 +17653,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 106,
+          "line": 110,
           "tag": "button",
           "family": "actions",
           "definition": "SessionQueue",
@@ -17545,7 +17667,7 @@
           "disabled": "{freshness.stale||q.presence?.status!==\"available\"||next.isPending||queue.isFetching||!!q.currentToken||!q.nextToken||q.blockedByAbsentReservation}"
         },
         {
-          "line": 110,
+          "line": 114,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "SessionQueue",
@@ -17556,7 +17678,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 111,
+          "line": 115,
           "tag": "DurationEditor",
           "family": "forms",
           "definition": "SessionQueue",
@@ -17567,7 +17689,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 111,
+          "line": 115,
           "tag": "button",
           "family": "actions",
           "definition": "SessionQueue",
@@ -17580,7 +17702,7 @@
           "data-testid": "\"button-clear-empty-queue-search\""
         },
         {
-          "line": 111,
+          "line": 115,
           "tag": "Pagination",
           "family": "navigation",
           "definition": "SessionQueue",
@@ -17591,7 +17713,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 121,
+          "line": 125,
           "tag": "button",
           "family": "actions",
           "definition": "DoctorPresence",
@@ -17605,7 +17727,7 @@
           "disabled": "{stale||update.isPending}"
         },
         {
-          "line": 128,
+          "line": 132,
           "tag": "button",
           "family": "actions",
           "definition": "DoctorSummary",
@@ -17726,6 +17848,17 @@
       "entries": [
         {
           "line": 12,
+          "tag": "PageHeader",
+          "family": "navigation",
+          "definition": "ReportTemplates",
+          "disposition": "existing action/navigation presentation; unrelated navigation and table layout excluded",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "navigation",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 13,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ReportTemplates",
@@ -17736,7 +17869,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 13,
+          "line": 14,
           "tag": "button",
           "family": "actions",
           "definition": "ReportTemplates",
@@ -17749,7 +17882,7 @@
           "className": "\"button secondary small\""
         },
         {
-          "line": 14,
+          "line": 15,
           "tag": "button",
           "family": "actions",
           "definition": "ReportTemplates",
@@ -17763,7 +17896,7 @@
           "data-testid": "{`button-open-config-${v.id}`}"
         },
         {
-          "line": 14,
+          "line": 15,
           "tag": "button",
           "family": "actions",
           "definition": "ReportTemplates",
@@ -17778,7 +17911,7 @@
           "data-testid": "{`button-delete-config-${v.id}`}"
         },
         {
-          "line": 18,
+          "line": 19,
           "tag": "button",
           "family": "actions",
           "definition": "ReportTemplates",
@@ -17792,7 +17925,7 @@
           "data-testid": "{`button-template-${t.id}`}"
         },
         {
-          "line": 19,
+          "line": 20,
           "tag": "button",
           "family": "actions",
           "definition": "ReportTemplates",
@@ -20962,7 +21095,7 @@
       "moduleDisposition": "statically reached from production entry; conditional consumers still need runtime evidence",
       "entries": [
         {
-          "line": 91,
+          "line": 92,
           "tag": "AddressFields",
           "family": "fields",
           "definition": "EditorAddress",
@@ -20973,7 +21106,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 115,
+          "line": 116,
           "tag": "Editor",
           "family": "forms",
           "definition": "PatientEditor",
@@ -20984,7 +21117,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 124,
+          "line": 125,
           "tag": "SuggestionInput",
           "family": "fields",
           "definition": "MasterTextInput",
@@ -20996,7 +21129,7 @@
           "id": "{`input-${field.key}`}"
         },
         {
-          "line": 124,
+          "line": 125,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "MasterTextInput",
@@ -21007,7 +21140,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 139,
+          "line": 140,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "ExceptionSessionInput",
@@ -21018,7 +21151,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 139,
+          "line": 140,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ExceptionSessionInput",
@@ -21029,7 +21162,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 213,
+          "line": 214,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "GROUP_HINTS",
@@ -21040,7 +21173,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 306,
+          "line": 307,
           "tag": "button",
           "family": "actions",
           "definition": "Editor / scheduleTiming",
@@ -21052,7 +21185,7 @@
           "type": "\"button\""
         },
         {
-          "line": 309,
+          "line": 310,
           "tag": "Form",
           "family": "forms",
           "definition": "Editor",
@@ -21063,7 +21196,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 309,
+          "line": 310,
           "tag": "form",
           "family": "forms",
           "definition": "Editor",
@@ -21076,7 +21209,7 @@
           "data-testid": "{locationEditor?\"location-editor\":undefined}"
         },
         {
-          "line": 339,
+          "line": 340,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Editor",
@@ -21087,7 +21220,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 342,
+          "line": 343,
           "tag": "FormTabs",
           "family": "navigation",
           "definition": "Editor",
@@ -21098,7 +21231,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 343,
+          "line": 344,
           "tag": "button",
           "family": "actions",
           "definition": "Editor",
@@ -21111,7 +21244,7 @@
           "className": "\"text-link\""
         },
         {
-          "line": 351,
+          "line": 352,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Editor / node",
@@ -21122,7 +21255,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 351,
+          "line": 352,
           "tag": "output",
           "family": "fields",
           "definition": "Editor / node",
@@ -21135,7 +21268,7 @@
           "aria-live": "\"polite\""
         },
         {
-          "line": 358,
+          "line": 359,
           "tag": "FormField",
           "family": "forms",
           "definition": "Editor / node",
@@ -21146,7 +21279,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 358,
+          "line": 359,
           "tag": "input",
           "family": "fields",
           "definition": "Editor / node",
@@ -21158,7 +21291,7 @@
           "type": "{boundedSessionField?\"text\":\"number\"}"
         },
         {
-          "line": 360,
+          "line": 361,
           "tag": "FormField",
           "family": "forms",
           "definition": "Editor / node",
@@ -21169,7 +21302,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 360,
+          "line": 361,
           "tag": "PhoneInput",
           "family": "fields",
           "definition": "Editor / node",
@@ -21181,7 +21314,7 @@
           "disabled": "{field.disabled}"
         },
         {
-          "line": 361,
+          "line": 362,
           "tag": "FormField",
           "family": "forms",
           "definition": "Editor / node",
@@ -21193,7 +21326,7 @@
           "id": "{`input-${field.key}`}"
         },
         {
-          "line": 361,
+          "line": 362,
           "tag": "output",
           "family": "fields",
           "definition": "Editor / node",
@@ -21205,7 +21338,7 @@
           "aria-label": "\"Age (read only)\""
         },
         {
-          "line": 361,
+          "line": 362,
           "tag": "DateFormatInput",
           "family": "fields",
           "definition": "Editor / node",
@@ -21216,7 +21349,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 361,
+          "line": 362,
           "tag": "TimeFormatInput",
           "family": "fields",
           "definition": "Editor / node",
@@ -21227,7 +21360,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 365,
+          "line": 366,
           "tag": "EditorAddress",
           "family": "forms",
           "definition": "Editor / node",
@@ -21238,7 +21371,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 371,
+          "line": 372,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Editor / node",
@@ -21250,7 +21383,7 @@
           "id": "{`input-${field.key}`}"
         },
         {
-          "line": 371,
+          "line": 372,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Editor / node",
@@ -21261,7 +21394,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 373,
+          "line": 374,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Editor / node",
@@ -21272,7 +21405,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 379,
+          "line": 380,
           "tag": "input",
           "family": "fields",
           "definition": "Editor / node",
@@ -21287,7 +21420,7 @@
           "aria-invalid": "{!!error}"
         },
         {
-          "line": 379,
+          "line": 380,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Editor / node",
@@ -21298,7 +21431,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 381,
+          "line": 382,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "Editor / node",
@@ -21310,7 +21443,7 @@
           "id": "{`input-${field.key}`}"
         },
         {
-          "line": 382,
+          "line": 383,
           "tag": "FormField",
           "family": "forms",
           "definition": "Editor / node",
@@ -21323,7 +21456,7 @@
           "className": "{field.type===\"textarea\"||field.wide?\"wide\":\"\"}"
         },
         {
-          "line": 382,
+          "line": 383,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "Editor / node",
@@ -21334,7 +21467,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 382,
+          "line": 383,
           "tag": "textarea",
           "family": "fields",
           "definition": "Editor / node",
@@ -21348,7 +21481,7 @@
           "data-testid": "{`input-${field.key}`}"
         },
         {
-          "line": 382,
+          "line": 383,
           "tag": "EmailInput",
           "family": "fields",
           "definition": "Editor / node",
@@ -21363,7 +21496,7 @@
           "data-testid": "{`input-${field.key}`}"
         },
         {
-          "line": 382,
+          "line": 383,
           "tag": "input",
           "family": "fields",
           "definition": "Editor / node",
@@ -21379,7 +21512,7 @@
           "type": "{field.type===\"array\"?\"text\":field.type}"
         },
         {
-          "line": 389,
+          "line": 390,
           "tag": "button",
           "family": "actions",
           "definition": "Editor / toggle",
@@ -21394,7 +21527,7 @@
           "data-testid": "\"button-patient-more-details\""
         },
         {
-          "line": 399,
+          "line": 400,
           "tag": "FormActions",
           "family": "forms",
           "definition": "Editor",
@@ -21406,7 +21539,7 @@
           "disabled": "{overlaps}"
         },
         {
-          "line": 418,
+          "line": 419,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "PatientFilteredExport",
@@ -21417,7 +21550,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 418,
+          "line": 419,
           "tag": "button",
           "family": "actions",
           "definition": "PatientFilteredExport",
@@ -21432,7 +21565,7 @@
           "data-testid": "\"button-export-filtered-patients\""
         },
         {
-          "line": 418,
+          "line": 419,
           "tag": "button",
           "family": "actions",
           "definition": "PatientFilteredExport",
@@ -21446,7 +21579,7 @@
           "data-testid": "\"button-cancel-patient-export\""
         },
         {
-          "line": 446,
+          "line": 447,
           "tag": "a",
           "family": "links",
           "definition": "QrCard",
@@ -21458,7 +21591,7 @@
           "href": "{url}"
         },
         {
-          "line": 446,
+          "line": 447,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "QrCard",
@@ -21469,7 +21602,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 446,
+          "line": 447,
           "tag": "button",
           "family": "actions",
           "definition": "QrCard",
@@ -21482,7 +21615,7 @@
           "aria-label": "{`Copy booking link for ${row.name}`}"
         },
         {
-          "line": 446,
+          "line": 447,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "QrCard",
@@ -21493,7 +21626,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 446,
+          "line": 447,
           "tag": "a",
           "family": "links",
           "definition": "QrCard",
@@ -21507,7 +21640,7 @@
           "href": "{image}"
         },
         {
-          "line": 446,
+          "line": 447,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "QrCard",
@@ -21518,7 +21651,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 446,
+          "line": 447,
           "tag": "a",
           "family": "links",
           "definition": "QrCard",
@@ -21532,7 +21665,7 @@
           "href": "{site.url(publicQrPath(row.reference,true))}"
         },
         {
-          "line": 446,
+          "line": 447,
           "tag": "button",
           "family": "actions",
           "definition": "QrCard",
@@ -21544,7 +21677,7 @@
           "disabled": "{regenerate.isPending}"
         },
         {
-          "line": 446,
+          "line": 447,
           "tag": "button",
           "family": "actions",
           "definition": "QrCard",
@@ -21557,7 +21690,7 @@
           "data-testid": "{`button-retry-qr-${row.id}`}"
         },
         {
-          "line": 465,
+          "line": 466,
           "tag": "RowMenu",
           "family": "overlays",
           "definition": "LocationActions",
@@ -21568,7 +21701,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 472,
+          "line": 473,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "LocationActions",
@@ -21579,7 +21712,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 474,
+          "line": 475,
           "tag": "Link",
           "family": "links",
           "definition": "LocationActions",
@@ -21591,7 +21724,7 @@
           "href": "{clinicWorkspaceHref(clinicId)}"
         },
         {
-          "line": 476,
+          "line": 477,
           "tag": "Link",
           "family": "links",
           "definition": "LocationActions",
@@ -21603,7 +21736,7 @@
           "href": "{clinicWorkspaceHref(clinicId)}"
         },
         {
-          "line": 478,
+          "line": 479,
           "tag": "a",
           "family": "links",
           "definition": "LocationActions",
@@ -21617,7 +21750,7 @@
           "data-testid": "\"link-open-public-new-tab\""
         },
         {
-          "line": 479,
+          "line": 480,
           "tag": "button",
           "family": "actions",
           "definition": "LocationActions",
@@ -21631,7 +21764,7 @@
           "data-testid": "\"button-public-open-close\""
         },
         {
-          "line": 507,
+          "line": 508,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "renderComputed",
@@ -21642,7 +21775,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 616,
+          "line": 617,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "ResourcePage / cellValue",
@@ -21653,7 +21786,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 616,
+          "line": 617,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "ResourcePage / cellValue",
@@ -21664,18 +21797,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 715,
-          "tag": "SearchableSelect",
-          "family": "fields",
-          "definition": "ResourcePage / primaryFilters",
-          "disposition": "compact-ui.css: semantic control family; compound structure retained",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "selection",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 717,
+          "line": 716,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "ResourcePage / primaryFilters",
@@ -21697,7 +21819,18 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 721,
+          "line": 719,
+          "tag": "SearchableSelect",
+          "family": "fields",
+          "definition": "ResourcePage / primaryFilters",
+          "disposition": "compact-ui.css: semantic control family; compound structure retained",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "selection",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 722,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -21710,7 +21843,7 @@
           "data-testid": "{`button-add-${resource}`}"
         },
         {
-          "line": 722,
+          "line": 723,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "ResourcePage",
@@ -21721,7 +21854,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 725,
+          "line": 726,
           "tag": "DateFormatInput",
           "family": "fields",
           "definition": "ResourcePage",
@@ -21731,17 +21864,6 @@
           "viewportProfile": "responsive",
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
           "data-testid": "\"input-exceptions-date-filter\""
-        },
-        {
-          "line": 726,
-          "tag": "SearchableSelect",
-          "family": "fields",
-          "definition": "ResourcePage",
-          "disposition": "compact-ui.css: semantic control family; compound structure retained",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "selection",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
           "line": 727,
@@ -21755,7 +21877,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 735,
+          "line": 728,
           "tag": "SearchableSelect",
           "family": "fields",
           "definition": "ResourcePage",
@@ -21777,7 +21899,18 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 742,
+          "line": 737,
+          "tag": "SearchableSelect",
+          "family": "fields",
+          "definition": "ResourcePage",
+          "disposition": "compact-ui.css: semantic control family; compound structure retained",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "selection",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 743,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ResourcePage",
@@ -21788,7 +21921,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 742,
+          "line": 743,
           "tag": "Link",
           "family": "links",
           "definition": "ResourcePage",
@@ -21801,7 +21934,7 @@
           "data-testid": "\"link-location-opening-hours\""
         },
         {
-          "line": 743,
+          "line": 744,
           "tag": "Link",
           "family": "links",
           "definition": "ResourcePage",
@@ -21814,7 +21947,7 @@
           "data-testid": "\"link-qr-sessions\""
         },
         {
-          "line": 743,
+          "line": 744,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ResourcePage",
@@ -21825,7 +21958,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 746,
+          "line": 747,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -21839,7 +21972,7 @@
           "data-testid": "\"button-open-registered-patient\""
         },
         {
-          "line": 752,
+          "line": 753,
           "tag": "HelpTip",
           "family": "overlays",
           "definition": "ResourcePage",
@@ -21850,7 +21983,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 753,
+          "line": 754,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -21861,7 +21994,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 755,
+          "line": 756,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -21876,7 +22009,7 @@
           "data-testid": "{`sort-${resource}-${c}`}"
         },
         {
-          "line": 757,
+          "line": 758,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -21893,7 +22026,7 @@
           "data-testid": "{`button-expand-${row.id}`}"
         },
         {
-          "line": 758,
+          "line": 759,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "ResourcePage",
@@ -21904,7 +22037,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 758,
+          "line": 759,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -21919,18 +22052,7 @@
           "data-testid": "{`button-audit-details-${row.id}`}"
         },
         {
-          "line": 758,
-          "tag": "OverflowText",
-          "family": "overlays",
-          "definition": "ResourcePage",
-          "disposition": "compact-ui.css: accessible bounded help; not a form modal",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "help",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 758,
+          "line": 759,
           "tag": "OverflowText",
           "family": "overlays",
           "definition": "ResourcePage",
@@ -21942,6 +22064,17 @@
         },
         {
           "line": 759,
+          "tag": "OverflowText",
+          "family": "overlays",
+          "definition": "ResourcePage",
+          "disposition": "compact-ui.css: accessible bounded help; not a form modal",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "help",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 760,
           "tag": "RowMenu",
           "family": "overlays",
           "definition": "ResourcePage",
@@ -21952,7 +22085,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 760,
+          "line": 761,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -21963,7 +22096,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 762,
+          "line": 763,
           "tag": "Pagination",
           "family": "navigation",
           "definition": "ResourcePage",
@@ -21974,7 +22107,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 763,
+          "line": 764,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -21987,7 +22120,7 @@
           "data-testid": "\"button-password-reset\""
         },
         {
-          "line": 763,
+          "line": 764,
           "tag": "Link",
           "family": "links",
           "definition": "ResourcePage",
@@ -22001,17 +22134,6 @@
           "data-testid": "\"link-password-recovery\""
         },
         {
-          "line": 765,
-          "tag": "PatientDetailsDrawer",
-          "family": "overlays",
-          "definition": "ResourcePage",
-          "disposition": "overlay definition/caller: shared compact typography and bounds; preserve modal versus anchored-panel geometry",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "overlay",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
           "line": 766,
           "tag": "PatientDetailsDrawer",
           "family": "overlays",
@@ -22023,7 +22145,18 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 766,
+          "line": 767,
+          "tag": "PatientDetailsDrawer",
+          "family": "overlays",
+          "definition": "ResourcePage",
+          "disposition": "overlay definition/caller: shared compact typography and bounds; preserve modal versus anchored-panel geometry",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "overlay",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 767,
           "tag": "ExactRecordDrawer",
           "family": "overlays",
           "definition": "ResourcePage",
@@ -22034,7 +22167,7 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 766,
+          "line": 767,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -22048,7 +22181,7 @@
           "data-testid": "\"button-exact-edit\""
         },
         {
-          "line": 766,
+          "line": 767,
           "tag": "Link",
           "family": "links",
           "definition": "ResourcePage",
@@ -22059,17 +22192,6 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md",
           "href": "{clinicWorkspaceHref(record.id)}",
           "className": "\"button secondary\""
-        },
-        {
-          "line": 766,
-          "tag": "AppDialog",
-          "family": "overlays",
-          "definition": "ResourcePage",
-          "disposition": "AppDialog/app-dialog.css: shared modal/drawer shell and confirmation actions",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "overlay",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
           "line": 767,
@@ -22084,17 +22206,6 @@
         },
         {
           "line": 768,
-          "tag": "ScheduleDayDialog",
-          "family": "overlays",
-          "definition": "ResourcePage",
-          "disposition": "overlay definition/caller: shared compact typography and bounds; preserve modal versus anchored-panel geometry",
-          "runtimeReachability": "conditional source; not independently established by enumeration",
-          "stateProfile": "overlay",
-          "viewportProfile": "responsive",
-          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
-        },
-        {
-          "line": 768,
           "tag": "AppDialog",
           "family": "overlays",
           "definition": "ResourcePage",
@@ -22105,7 +22216,29 @@
           "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
         },
         {
-          "line": 768,
+          "line": 769,
+          "tag": "ScheduleDayDialog",
+          "family": "overlays",
+          "definition": "ResourcePage",
+          "disposition": "overlay definition/caller: shared compact typography and bounds; preserve modal versus anchored-panel geometry",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "overlay",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 769,
+          "tag": "AppDialog",
+          "family": "overlays",
+          "definition": "ResourcePage",
+          "disposition": "AppDialog/app-dialog.css: shared modal/drawer shell and confirmation actions",
+          "runtimeReachability": "conditional source; not independently established by enumeration",
+          "stateProfile": "overlay",
+          "viewportProfile": "responsive",
+          "coverage": "source-accounted; browser evidence is family-level unless explicitly listed in compact-ui-coverage.md"
+        },
+        {
+          "line": 769,
           "tag": "button",
           "family": "actions",
           "definition": "ResourcePage",
@@ -22119,7 +22252,7 @@
           "data-testid": "\"button-owner-only-close\""
         },
         {
-          "line": 768,
+          "line": 769,
           "tag": "Editor",
           "family": "forms",
           "definition": "ResourcePage",
@@ -22137,7 +22270,7 @@
     "schemaVersion": 1,
     "algorithm": "sha256",
     "scope": "conservative-shared-ui",
-    "digest": "e803dd41eaa3f2d6042a250f449d78155039035491bdbe8710d5c8929f0a188a",
+    "digest": "340920936dfb82e259b721e84694531d5ccec1c5870ab99baf9a75e2cb1dc8b6",
     "files": {
       "artifacts/clinicflow/index.html": "07814e785c1a97e225d3e37490489c196fa43509111f81ee68400ef99b21edc6",
       "artifacts/clinicflow/package.json": "3d1d50c6ef9a6aa2788e0503d8b9984061af7710e2fa4d6fecafb4789c9cb388",
@@ -22145,9 +22278,9 @@
       "artifacts/clinicflow/public/robots.txt": "95a1f07f68555921d76fd9f731458b9d3c26e4a9c23a7a3e69642c691250dd65",
       "artifacts/clinicflow/src/App.tsx": "cee0c5fe05895f32c50eed4522695afc65ee22886638b882a6185c7074b4f12c",
       "artifacts/clinicflow/src/CheckIn.tsx": "b028631a947a484154ca5f1c67412500016706fd1a6ce8c3979b7b42e7ecece7",
-      "artifacts/clinicflow/src/Users.tsx": "be370c2f0ac63cdf167eee79f95f781fdbe5105ae79e44018a4ad97453b8e098",
+      "artifacts/clinicflow/src/Users.tsx": "d988fbf1fffb983f1dfaa71dae5c736d546142370e29ea1726733fa2421b927e",
       "artifacts/clinicflow/src/auth/AuthAccess.tsx": "265b07a9fa5f3d9494b09adf261b2d9d79d757c389578869ed81199273eedc8c",
-      "artifacts/clinicflow/src/auth/AuthShell.tsx": "5bfb1ce2585748f3aef7f1e0822cb8f2efadf7d62db1340375fca7e775b5a34a",
+      "artifacts/clinicflow/src/auth/AuthShell.tsx": "ef79849cef769d219ffa179f2af92066916efac443838462d0d2d5b95be72ee2",
       "artifacts/clinicflow/src/auth/DemoLogin.tsx": "fa4d5692d2d9b6c9d97c2a007bde2c838aef8883036822e1814371c6b613e126",
       "artifacts/clinicflow/src/auth/PasswordFlows.tsx": "b5b08d0149b94e8e85a170e4974581556879eeb6115f135b7b5c8e603a690125",
       "artifacts/clinicflow/src/auth/PatientLogin.tsx": "1efe3eabe0c6ae6c705c139fb0c3a4511e25820da1c6de7c806a7e990b115ad0",
@@ -22163,10 +22296,10 @@
       "artifacts/clinicflow/src/auth/security-notifications.render.test.mjs": "416ebcf3f844bbcf16c33a27966c0c820def5e71f9b401de22cb671258b37007",
       "artifacts/clinicflow/src/auth/session-lifecycle.test.mjs": "6578340f326eecdbd9da0942825412b5fa11d8a9210e5e7093064aac023c85ae",
       "artifacts/clinicflow/src/branding.ts": "3f1678ecf3d1e12c2bf0a56046a19cb97653dab421280411c2d469804b88098b",
-      "artifacts/clinicflow/src/clinic.tsx": "7c57ae6088134acff6580d03148afed6334fe0f2716fb41120a5c69dda4ece87",
+      "artifacts/clinicflow/src/clinic.tsx": "5f95210604df3c179aa3d03e2b0adcacebb2773b7ef4df2626d0331e4c1640df",
       "artifacts/clinicflow/src/compact-ui.css": "bebbec430e4c3c32ace45d7c7be3547194673e6a7fa1368a58fa119dabff3ef8",
-      "artifacts/clinicflow/src/compact-workspace.css": "4bf4fc7ba473df07363aab38384c3db251abd9d5bb4400cd1b0cfa804d9a9ac7",
-      "artifacts/clinicflow/src/components/AccessRules.tsx": "b66c999c5ef0c60139e4974a3e8a6e9b5692bfc538be4359e19df078af7af76e",
+      "artifacts/clinicflow/src/compact-workspace.css": "2d1da65c61719154122923972b3d3c475979b0cc5b67a0a597fc2c5b0a1b54e9",
+      "artifacts/clinicflow/src/components/AccessRules.tsx": "5e0f698fa818d6b4aa8edddec44b36c77d9e9b350a3fb604a5f844d77845afff",
       "artifacts/clinicflow/src/components/ActionLabel.tsx": "aba6ffdd5769e59cb5c673828d41df1e9c4212361a7178f5a452907bfa44ea82",
       "artifacts/clinicflow/src/components/AddressFields.tsx": "ae5ff6cc9447023280b18b136ec80460ed4a299325846bea329e223a5293941b",
       "artifacts/clinicflow/src/components/AdminListing.tsx": "000d06d4274ee7e013609da4df808afa80cab7759b1187eb830ec35fef5f4857",
@@ -22185,12 +22318,12 @@
       "artifacts/clinicflow/src/components/ClinicRegistrationComplete.tsx": "b2074cd69bd23635e9451165b813b4b884c568ba06586b3444ceeae1f901e186",
       "artifacts/clinicflow/src/components/ClinicRegistrationHours.tsx": "0e1987d436e4867c48b994ce2d00b863b7156f71444971b0ddf8c5042985e464",
       "artifacts/clinicflow/src/components/ClinicRegistrationWizard.tsx": "78902e30a036626fa61c97cd06570b082a034d467347901db5a9e8684d27c3b7",
-      "artifacts/clinicflow/src/components/ClinicSettings.tsx": "1b5945acd7b5e5da52f8418c316855393b2b397a742c3622d2420fc155d40d24",
+      "artifacts/clinicflow/src/components/ClinicSettings.tsx": "8655b23939cb4f9b49a7e0e1e91f2ec8f16ab5fca24d99b06c6b8896306f5dcb",
       "artifacts/clinicflow/src/components/CommunicationSettings.tsx": "1e1adf3b2fa8ea27fd3ab253d1829593fed22947b00eb1269f6ff89f0d93b8e1",
-      "artifacts/clinicflow/src/components/CommunicationUsage.tsx": "bcf10cdde522ab78b085bca4c486e2ee7155e0fae25e16e301d6ea2dd79e29b4",
+      "artifacts/clinicflow/src/components/CommunicationUsage.tsx": "1c37657bf03ffcc65aa692985f374f0a752f57f33945fc100f721880aecd7692",
       "artifacts/clinicflow/src/components/ConfirmDialog.tsx": "91a1ff4d691f7118d9eb7574fda868059ce7a8dd35c8f702248678132c78f10d",
       "artifacts/clinicflow/src/components/CustomRolePermissions.tsx": "09d9c9381d729aabf53404f7c07c516262eca2e3fcf4ef9e9f367b7da9f02dfb",
-      "artifacts/clinicflow/src/components/CustomRoles.tsx": "0d32f2a38afe6dc2d692646d8a077ddf4e7c129106189dbed5bb23cb9fbe879b",
+      "artifacts/clinicflow/src/components/CustomRoles.tsx": "4e3abaddcbcc733a1b0c01b9f07b9fa817adf7fc1b896f8deed569175e9bf14f",
       "artifacts/clinicflow/src/components/DateFormatInput.test.mjs": "c4f6cd0c8253fcdf76d432db47c5f3f29db443720bbd650a11d4bb2b48b95398",
       "artifacts/clinicflow/src/components/DateFormatInput.tsx": "33f2c8f33245a9a533354ff774c749abd13d3f4f51d265cfb3b9d57bb4522cfd",
       "artifacts/clinicflow/src/components/DateRangeInput.tsx": "1535b82d73bcbcd4caaec921ede6aa1feb59877d7ba98fca0be96f83f66f6542",
@@ -22209,7 +22342,7 @@
       "artifacts/clinicflow/src/components/FilterNames.tsx": "f6b481ef2fe3dbc7319aecee852ba345bd68ddfc25f5c5c9c38259b9b25f66ad",
       "artifacts/clinicflow/src/components/FormActions.tsx": "b2566f307b7d658bbe4270c78f3e3d2fb557890f79043dfd578237a57d08552f",
       "artifacts/clinicflow/src/components/FormField.tsx": "1af830378c162af7d18646db87431ef9aa9cbf6c1c8a3afaae149815e61cce3b",
-      "artifacts/clinicflow/src/components/FormSection.tsx": "1aedff135df6dd5eecfe4467d151b8b1082214e5dd00a8f8eada0b32cf3d5c72",
+      "artifacts/clinicflow/src/components/FormSection.tsx": "d95203a9e344f6c8323d1bd695af7b022a77bf0aaae842cebdc657972120385f",
       "artifacts/clinicflow/src/components/FormTabs.tsx": "b94c70c228c7007667609844717af6ef9fb1fb69a40a2708fc84b5cf8cf69689",
       "artifacts/clinicflow/src/components/GuestBooking.tsx": "8af54a8c061c3f067458c3412a8f6736faa654e9d0391b3ac14e83da9c509ae5",
       "artifacts/clinicflow/src/components/GuestClinicFinder.tsx": "c1ad5f8193c0977a1ce72f63f7e73f4aef2cb582e7370210338ea213415942cf",
@@ -22222,7 +22355,8 @@
       "artifacts/clinicflow/src/components/IntegrationEditor.tsx": "1125f90d6c1bff66dbf66da0c061f1ad640c4ed7cbce8aaa995154f7c6a976b1",
       "artifacts/clinicflow/src/components/IntegrationSettings.tsx": "151a75107abe23d327c7b9902bd7cc5e84bbee504a00a44d16b507f69e66bbba",
       "artifacts/clinicflow/src/components/LinkedScheduleControls.tsx": "15a200bbde01fa5de33ed5bcc35e0bad76f7980a46806afad886869539773fda",
-      "artifacts/clinicflow/src/components/ListingControls.tsx": "a37494525736d4a77ec35c906748b8b548c8291e366822701a68d5a14c62a10d",
+      "artifacts/clinicflow/src/components/ListingControls.tsx": "7542481805f588ae2c282e6d5f66760050323c06059ad8469e5d049a022fab69",
+      "artifacts/clinicflow/src/components/ListingRegion.tsx": "10069a78219e87a006348ebbb33c8554ce3ef1fa8ced90dbcda5bc4dcd36cb6e",
       "artifacts/clinicflow/src/components/ListingViewControls.tsx": "24c9bdd810cf53ff21009e21394b2338823a0d03273bc0e1b09629982bc0a79a",
       "artifacts/clinicflow/src/components/LiveSearchInput.tsx": "7cec57af0fd861f0769903cd42668d96a3a95df322f6641e96a8f65d8355dfe2",
       "artifacts/clinicflow/src/components/LoadingButton.tsx": "5bd52f60a5568ec6558ae45a4ed72ed04a1097d67bd7e5f8eb2de2e69ccc6cec",
@@ -22231,13 +22365,15 @@
       "artifacts/clinicflow/src/components/LookupReadiness.tsx": "06daea5265ae7634bfb66e711e89bb379c1441475601e97dc53aa8b5f7a56c43",
       "artifacts/clinicflow/src/components/NotificationEventAccordion.tsx": "03b54a270381b3bd5fe1373a68846d8e324afd3b5757ebb9942ec8f703b546df",
       "artifacts/clinicflow/src/components/NotificationInfo.tsx": "0321f9b437fecc1d17f513df544efbdde34a7476dadd210d59b86b474b363c3a",
-      "artifacts/clinicflow/src/components/NotificationLogs.tsx": "504f632d49ac4df8be66175da4b2757f3191d9751357a3acbe83e9cc3d10fccd",
+      "artifacts/clinicflow/src/components/NotificationLogs.tsx": "cf54ba6419894f5eaeb405042c1a62f0b11fe556a3a4b11d8182fea5e48e9691",
       "artifacts/clinicflow/src/components/NotificationSmsSettings.tsx": "5276b569ec1d6a2eb13cbe9089cf571c1c977938e609f53158e02a6830dcb1b7",
-      "artifacts/clinicflow/src/components/NotificationTemplatesPage.tsx": "a2753eb10ad8147801574efd96606f29c0724f1dd2fad520d03a3514a9135ae8",
+      "artifacts/clinicflow/src/components/NotificationTemplatesPage.tsx": "2d1c4e05e20c1d71eaa1cf7ff14fcb657a1f1c83ee0d6ed851afad3a62bd96d4",
       "artifacts/clinicflow/src/components/NotificationsPanel.tsx": "223262e81a73d9623d45cf8ec7cd9c16e2c000dc0152719432039b0446e45abc",
       "artifacts/clinicflow/src/components/OverflowText.tsx": "c8efe55c069e3cd0b8dd8e56e6e60397c8d699fc692e0117eac21e88b1e9d2f6",
       "artifacts/clinicflow/src/components/OwnedClinicInformation.tsx": "2a0f29352bfb3d99bf2d0b3b5c4515dacd252beb8bf21bac9cd8184b50f56a85",
       "artifacts/clinicflow/src/components/PageDescription.tsx": "51588c845261d2dee9fe776228880fe259fe0a3b7dbf0d84f07fd1ace5aea066",
+      "artifacts/clinicflow/src/components/PageHeader.tsx": "0e57415d33b92233f772d9f32f231df2ff7fe86a6623949c34402f88f57e5708",
+      "artifacts/clinicflow/src/components/PageTitleContext.tsx": "867cf59512fcc8cd2b8b055ab5c0287c0a61870ceaf74934396ba55bfb5d4254",
       "artifacts/clinicflow/src/components/PasswordInput.tsx": "8a2f9d317083ece268a092b22ffec57041d27ac5204c82da2abe0a76f8e367ae",
       "artifacts/clinicflow/src/components/PatientActivity.tsx": "17da8c0faf1b8cfc048cdb8dba8c2428711b76c58c0c77cdee21d3ce46ede4cd",
       "artifacts/clinicflow/src/components/PatientDetailsDrawer.tsx": "80a27b46cdf2bee7ce90b6b7140156dbe38622f2bb4f696be580e586543058d4",
@@ -22248,7 +22384,7 @@
       "artifacts/clinicflow/src/components/PinLocalities.tsx": "b79f18db9ab3a3103db3bd2abe9c53ac939f2e48cf26989f2bd32de06bb4089d",
       "artifacts/clinicflow/src/components/PublicClinicBookingQr.tsx": "640eb0ed7ac6bf24249b8f9451df7960db8a3b32650fe06e1129799ca8908fee",
       "artifacts/clinicflow/src/components/PublicClinicLive.tsx": "011802e5667d045943b9a14a5eb8d5c7a5c206d7d9c3d08269f8a0c0094289cf",
-      "artifacts/clinicflow/src/components/PublicClinicPage.tsx": "ad7a48ec76badd7dd09bf92fa6a32fe071dbc67f3e56ff0218bf8eeedc4386cf",
+      "artifacts/clinicflow/src/components/PublicClinicPage.tsx": "9834cb6a92b7bb46b8ed3ef4c21f2b8f31e29013a4313adb57280a82b14d27d4",
       "artifacts/clinicflow/src/components/PublicHeader.tsx": "b3b953126b6bef61bdf848aa02afbce81539363e1b79a5b25c8c624abe553e01",
       "artifacts/clinicflow/src/components/RecordDetails.tsx": "220aa016772b3dbf07f69b4e8e5f0e3e5a11b9565f1135390ee81e4bf28e353f",
       "artifacts/clinicflow/src/components/ReportChart.tsx": "589dd3dcf0cb3dd34b9f6a70ef7a0ca5a974bace06a22da43734ba285fd74384",
@@ -22268,7 +22404,7 @@
       "artifacts/clinicflow/src/components/StaffDeletionReview.tsx": "98e8b85b2fa0229847489328db99037960438874c9b8d8e6ee135a96f037fc59",
       "artifacts/clinicflow/src/components/StatusSwitch.tsx": "f5cefb4f2f0c14eb7516ef04df45f405b420f89246d0635f4a99b154b467d569",
       "artifacts/clinicflow/src/components/SuggestionInput.tsx": "01b5db077e919f16d6d0c6b51628b6026343901ec5c12149253c62446518fbe3",
-      "artifacts/clinicflow/src/components/SystemUsers.tsx": "0e1089a61f95231ff971c975c1db904e00cf0f59556a090d05826e3601a56e5d",
+      "artifacts/clinicflow/src/components/SystemUsers.tsx": "866c644dc659b695fa54c66ec045e8e9fcddef82b2432ab2f2684a5da9f16696",
       "artifacts/clinicflow/src/components/TabIcon.tsx": "9ca3a8308342287e0063602dcf5273f2ac25ee92e0e93e70e551bd8442fed171",
       "artifacts/clinicflow/src/components/TableColumns.tsx": "99f162e62795e0ff92c3d70ec6224d97a6ec6f712415f37112bc6875a062dbdd",
       "artifacts/clinicflow/src/components/TemplateDrawerFields.tsx": "05498f6acdfe375d9b01d5a55ccc5054ff2aeecdc1d115215379b6a9d09a27b5",
@@ -22291,12 +22427,13 @@
       "artifacts/clinicflow/src/components/app-dialog.css": "613269cc2e6f2cc2a1288a273187efb2f689e6db6adf4f793d279f77cf952104",
       "artifacts/clinicflow/src/components/appointments/.appointment-details-3952.test-bundle.mjs": "0586006bea43c6b42cad67fa57861f101560e197a76e05cdb6a3f08f87ee4e4b",
       "artifacts/clinicflow/src/components/appointments/.visit-contact-2159.test-bundle.css": "09aacc9d0f08b3e17ea75caa8303a9bcb047f32e6cf58c826b9e01ecd49d1069",
-      "artifacts/clinicflow/src/components/appointments/AppointmentBookingTab.tsx": "f2408a0690878e68ee04191142230c9772f8e5a137319b9aa3889f0d41d9a38a",
+      "artifacts/clinicflow/src/components/appointments/AppointmentBookingTab.tsx": "65d7a5525704fe1bcf001c95e9aaee0f4d04c094c0a18e3c9d77bc1fb48dc1ac",
       "artifacts/clinicflow/src/components/appointments/AppointmentCalendar.tsx": "39ce2af8bb4dcad4307059ec5025d0c9a82737ea09b875e736c658b313987003",
-      "artifacts/clinicflow/src/components/appointments/AppointmentDetails.tsx": "f6ac1841a2561771f6bdfba7e63d5c90bd42cc8b3abc14f48bd029516f876344",
-      "artifacts/clinicflow/src/components/appointments/AppointmentRows.tsx": "1e40e9a88cc1a9a67619ed22790700b77078d994f9062c67fe7d14c003c90c25",
+      "artifacts/clinicflow/src/components/appointments/AppointmentDetails.tsx": "3434e6b4fd65f1cc62d3a645c56234ec1051bada305f2f8f1d3ef25f8ff68134",
+      "artifacts/clinicflow/src/components/appointments/AppointmentRows.tsx": "ab0994a1702eea21acc24db3e0c3d31e8e378ad1c80d0908a89b04d452f754ca",
       "artifacts/clinicflow/src/components/appointments/AppointmentTicket.tsx": "1e7c6a59acc61b380f535ab023205c86db7066cee9503248c1e45c066e7d3f5a",
-      "artifacts/clinicflow/src/components/appointments/BulkAppointments.tsx": "cc0c911c02e16139d25bc750a2e07cd716c089bd50710245e0fdcddb078496a3",
+      "artifacts/clinicflow/src/components/appointments/AppointmentViewSelector.tsx": "a883ae3edf5040ac23a724b2bede1a859b7681e8bef12d4492a15af3f9c08439",
+      "artifacts/clinicflow/src/components/appointments/BulkAppointments.tsx": "c6ad9323dee6d3f89ea07f668a2d9852d2da8f6f1a2a0e10c3b047847f9d7235",
       "artifacts/clinicflow/src/components/appointments/CalendarDayPanel.tsx": "7e8756284b9ebfac9d03522785ffeb3b10db16b276b5a845241ba8adf121a1f2",
       "artifacts/clinicflow/src/components/appointments/FilteredAppointmentExport.tsx": "a2ba4bf1a93f108e891275a51508a8b4c541aad222664f22093f0ebbcf12ed35",
       "artifacts/clinicflow/src/components/appointments/MovementForm.tsx": "177907e340b6ebfd1460a5cd89e1a181bb29c73aeca4b34314c0a8b9810721d3",
@@ -22306,8 +22443,8 @@
       "artifacts/clinicflow/src/components/appointments/VisitRangePicker.tsx": "f2073b3ff2c0746ebf74a649b15b81fb63f8139c9b94124e355d2c985fdab1a5",
       "artifacts/clinicflow/src/components/appointments/booking-draft-guard.ts": "dcd866d891c4acd31c60a9a81627e0b7652887e47cbeb50c2d2e8f6452ef7386",
       "artifacts/clinicflow/src/components/appointments/booking-drafts.ts": "40283e33ea92dba2489f7b7477bc45acc66cc590166df961c2e42205e2255cc9",
-      "artifacts/clinicflow/src/components/appointments/booking-tab.css": "158ce6f4345170fbe1a869902c1e46cbfa82dfb38b8afec28631ce2eb24d8a2f",
-      "artifacts/clinicflow/src/components/appointments/booking-tab.test.mjs": "b3da3d397306f3a075899c431b572f24a567df1acbb790346976fce4a7664430",
+      "artifacts/clinicflow/src/components/appointments/booking-tab.css": "061d51ce2ee972fc504f57bdc5fc7f71984b8def35061b55ba9d8678f11bb45a",
+      "artifacts/clinicflow/src/components/appointments/booking-tab.test.mjs": "3bb0252203500512520ab0d38bcd84a9cf0185ca240559972a67b340592c9644",
       "artifacts/clinicflow/src/components/appointments/confirmation-email.ts": "6b7298eaf41bb9fec4ee747bfa8a3c31627536ddcdd3ef9d07c487ec86b992b5",
       "artifacts/clinicflow/src/components/appointments/filtered-export.test.mjs": "bb8b22cfb0638ea322bf50b7a5c625ec886d492c5c273950ed47298f973f0ade",
       "artifacts/clinicflow/src/components/appointments/filtered-export.ts": "784e0c7772c5e88a4a4e3ff6bf6b70f7f86005445b2f8ad61179ebdc510dbc69",
@@ -22317,9 +22454,9 @@
       "artifacts/clinicflow/src/components/appointments/refresh.ts": "d27044bcbab9bb33dd49dce07ef5ca29a16619574635f248311e6e77c68caaad",
       "artifacts/clinicflow/src/components/appointments/ticket-actions.tsx": "7f23d4137794deeed6200241124bf791e96088ce6504b9be86a35dba6e6c1d44",
       "artifacts/clinicflow/src/components/appointments/ticket-export.ts": "733dd6d58e452d9a8ca17e76fed8664f6ab88b9542d5bd9f76d2804ae0d10ce7",
-      "artifacts/clinicflow/src/components/appointments/uniform-layout.test.mjs": "682560232b51e0f18570c9b227896c74ccab7f5689d2b0bd66cc299e78643001",
+      "artifacts/clinicflow/src/components/appointments/uniform-layout.test.mjs": "6230a2401f739c7dcb6394e1ed532c61d9b49661f00bdd191e602616766fbf21",
       "artifacts/clinicflow/src/components/appointments/visit-contact.test.mjs": "e4d7c93a295fc86a6f41f388e3353f3ba69c279f0d7b0c3ad6e3b7123ffe38ed",
-      "artifacts/clinicflow/src/components/appointments/visit-range.css": "d58875cf6ee53893878140fbc47213e20214189849eadf9f3b091656760adbff",
+      "artifacts/clinicflow/src/components/appointments/visit-range.css": "a1916bb4b72fefdf9889b45731de58e5079b5425ebfb88ccd93de360d5b78e5b",
       "artifacts/clinicflow/src/components/booking-mail-outcomes.test.mjs": "52536d65ec7bb87f53e2287d9c6a62d0038246997dbb08aea34769047c3eda3b",
       "artifacts/clinicflow/src/components/booking/BookingDiscovery.tsx": "92b4b229cbcaa579e7971b10fcc9f817c849e88550c696f76f5500330b65b8b0",
       "artifacts/clinicflow/src/components/booking/BookingScheduleSetup.tsx": "cafb12ce82fe24a4527ab7b23c84e7f4f46d91772b1c5133c271c24b2b8b5bc5",
@@ -22338,7 +22475,7 @@
       "artifacts/clinicflow/src/components/booking/session-selection.ts": "a168b21762c3cb1a1dd2993f6700a9b200a56bce381d371cac3103de9b275f32",
       "artifacts/clinicflow/src/components/booking/use-booking-contact.ts": "70914b3747541cb3345dcce6b870e105425ca7f8c4d83760eb0e3298ca0a056b",
       "artifacts/clinicflow/src/components/clinic-display.css": "40863684c8baaef2493beaa404bc27e2b473b070db5db58e3a7dad5176507e38",
-      "artifacts/clinicflow/src/components/clinic-listing-toolbar.css": "ca96291e3dabf8c15a8f39d3ccb39d9bc8041d87b51b5a720764f052227635bd",
+      "artifacts/clinicflow/src/components/clinic-listing-toolbar.css": "65e15367560e3215be9477ed128c7e399d7710f063182578ddb163880c259690",
       "artifacts/clinicflow/src/components/clinic-metadata.test.mjs": "3f597163439b04a604ae773177ea746dbdff1753a2f9535e112c0c33620ad773",
       "artifacts/clinicflow/src/components/clinic-navigation.test.mjs": "e7882d7fa3e048d0773b5e7c717f07764be3364dd40bad3c8e2c029a3b696e9c",
       "artifacts/clinicflow/src/components/clinic-registration.css": "e1793d4a37943a4b4d14cdc278133756617bf7877cb8e9ff027bdb6cf1eaffca",
@@ -22346,7 +22483,7 @@
       "artifacts/clinicflow/src/components/clinical-branches.test.mjs": "82b4b4ea808f29e9b98a394d593c709d40d5526d0ffebf70be19e260b869b42d",
       "artifacts/clinicflow/src/components/clinical-branches.ts": "3773683a72c2e03366479d63d89eedbdf4c6eb061930672c7ae80d497c6eb5dc",
       "artifacts/clinicflow/src/components/communication-usage.css": "bff38fbab864d2c14e663bb8275be429291adb0014390c5dd1f4062225de7f4d",
-      "artifacts/clinicflow/src/components/communication-usage.test.mjs": "59d97104d5acb5b4cb60a5e477efa0ca688d5d753e65caffffcbb335e07599eb",
+      "artifacts/clinicflow/src/components/communication-usage.test.mjs": "88796ae25906432a95116c83bf16ec425ce3f08bad658d88ee9717fdb0792038",
       "artifacts/clinicflow/src/components/communication.css": "65e9bc1f1e548d7dca1db77e04c5ac8ed6938ff14f14bc8115cb06b0bc394609",
       "artifacts/clinicflow/src/components/compact-listing.css": "36cc547c0ba7c3f12f3c95a35248286950d64c11aaffd27db23ed6fa6cbee7fe",
       "artifacts/clinicflow/src/components/compact-listing.test.mjs": "0f2d0ca97c1009fbe1ca8f23d57d0779c467fd40da0ef5b4f7115388c22b7d8b",
@@ -22383,7 +22520,9 @@
       "artifacts/clinicflow/src/components/integration-settings.test.mjs": "b546a1baef34a85c63bc85feb58e33e5d17802f22a4dfb8e10092cde9b2c2de3",
       "artifacts/clinicflow/src/components/keep-in-touch-settings.test.mjs": "bb82b43e06ef4684eedb9badcd4ed8dc6b4156fcef38d5e96505247dbf8ab3c5",
       "artifacts/clinicflow/src/components/linked-schedules-ui.test.mjs": "27856cb1538914e4a65f910fcc183d8c444953730487a2aaa4c2e38c02741eb6",
-      "artifacts/clinicflow/src/components/listing-controls-render.mjs": "44296c3491e51ce10020492c3d8bf4d1a4875ded381c43a2e99b5c9d7faaea33",
+      "artifacts/clinicflow/src/components/listing-controls-render.mjs": "668ab32a364f466987108457cb6c1cebb3343302615bf9d94df4418d53cd8ffa",
+      "artifacts/clinicflow/src/components/listing-region.css": "e89d28d2a74bb3950cebb5de2f74bde946a2a0668123b2e7e9de86ec3c7ce3e6",
+      "artifacts/clinicflow/src/components/listing-region.test.mjs": "d61cca82f4954ba264c775ff5074f0e81e9fd7f387bef028b972dbaad2df445c",
       "artifacts/clinicflow/src/components/listing-view-controls.css": "460c4f71463af44c51fb604088c14ad614493d77e93a72e73eaa5fb669eb1f34",
       "artifacts/clinicflow/src/components/live-search-state.test.mjs": "de0c9d4a71a3beaa8918ae14893b21ebbe2f083a2b372403034e03f9ae64b0d3",
       "artifacts/clinicflow/src/components/live-search-state.ts": "5590f65daaca96a617bec068a8c101b03454573523abc5cb899e3a862972582c",
@@ -22392,7 +22531,7 @@
       "artifacts/clinicflow/src/components/lookup-loading.test.mjs": "8c4aa09da987d936acb4551fefb3aaaa1bb1e7f3176c0f0c181f0d7e3bc3c479",
       "artifacts/clinicflow/src/components/native-validity.test.mjs": "f243d06522ae1f6ee2a86788931504603f128952e9fc65cdaa6f700d402f7b99",
       "artifacts/clinicflow/src/components/native-validity.ts": "346bd773083830446b2f8f9bd900b9611cd98cb15712a4e8a8a80a9920330635",
-      "artifacts/clinicflow/src/components/notification-logs.test.mjs": "a235c0023eb72bff7e6606472ec4be1b386b29777ddd30673f2a6a995379e812",
+      "artifacts/clinicflow/src/components/notification-logs.test.mjs": "ec2c1154c6c92b56a3b262e6d61c1433029139f8fbd32009a70fb59537a1ba9e",
       "artifacts/clinicflow/src/components/notification-page.css": "7f20bd0bf00d89d716d2fb59621714b21a090dad06f49f995993efc0f70a5366",
       "artifacts/clinicflow/src/components/notification-settings.css": "791671156bd373e5d669b9235f271d5b7f4612b00a6d0bd29279f06eeae751f5",
       "artifacts/clinicflow/src/components/onboarding-resource.test.mjs": "179f15ff611879886d2b3fbe91616db41f0cf819f0d9f142f387a1f02bc03387",
@@ -22408,8 +22547,8 @@
       "artifacts/clinicflow/src/components/public-directory-navigation.test.mjs": "2b6ec379eb7e446a81c779558845d98ed28f5c32d266a2428d0c84917c77c110",
       "artifacts/clinicflow/src/components/public-header.css": "da727bfb51415142ac7ee93399a62a0f3db3f869394b4d32ccc6f7ae78dedfc7",
       "artifacts/clinicflow/src/components/queue/DurationEditor.tsx": "afff4cb2f40ff22c3cf936414105dcb9fa5c852dd3faef7ed8ba3e2a2db302ec",
-      "artifacts/clinicflow/src/components/queue/GuestRequests.tsx": "6fee3e998fa467822fa83a763b3e96973a14f4908e8a0f9ab464c18ee412fe12",
-      "artifacts/clinicflow/src/components/queue/SessionQueue.tsx": "13b33a9aae270da51927d4d604646504185415f4904f0a23cffb23962a1e4ac4",
+      "artifacts/clinicflow/src/components/queue/GuestRequests.tsx": "dcc129a035238f5d32a313c8828270e9437600fc011df7ef364737a5ab96c1c2",
+      "artifacts/clinicflow/src/components/queue/SessionQueue.tsx": "c0782c4b4d994335e39014b98a47b3848f3f120a7c91a3892a55724913c9c1c5",
       "artifacts/clinicflow/src/components/queue/SessionSelector.tsx": "2f25aa836e39e504799d0f0e3a0c9b73e477202a8fba4242f2942738f1659ca9",
       "artifacts/clinicflow/src/components/queue/StatusTabs.tsx": "4ee3aaccfc1fc037870e79fdd898fd488b6da55f06440348517e0fc7ef35c52f",
       "artifacts/clinicflow/src/components/queue/queue-layout.test.mjs": "ede39e820837946bf7e80c3b0caff807e360816885767a50bc8beb85513dc7ad",
@@ -22422,9 +22561,9 @@
       "artifacts/clinicflow/src/components/registration-review.test.mjs": "4412b2b8ff62b16637b545d44daf66c943d8b5d91a6ec1a620c5dfff7c1986f5",
       "artifacts/clinicflow/src/components/relation-validity.ts": "39aaf6d516b9dd72f89341d8cfefda0b60fbc8e68e82474cb73b30ec3f1e41bb",
       "artifacts/clinicflow/src/components/reports/ReportKpis.tsx": "d0e227f00e6014a2a1444d1380dc552aa3cb6d3d75fd7491ef14aedbefbfbd89",
-      "artifacts/clinicflow/src/components/reports/ReportTemplates.tsx": "21d438b380f93c67938513e9e57514c5b65f164c51aa6509dcb785160edbf60c",
+      "artifacts/clinicflow/src/components/reports/ReportTemplates.tsx": "3fd746fd92fb9ab992ed505a2e3e3e1a7da3f37c21ecacec2009fead4c1589b5",
       "artifacts/clinicflow/src/components/reports/ReportTrendPanel.tsx": "ffab7b5e9433593d44a8b241f6c3402f461342e916dac0cacabcea1b21a9a738",
-      "artifacts/clinicflow/src/components/reports/ReportsDashboard.tsx": "792a05cedccc39a6fa4f7a5c3a8e59442ab6715863067d9802a0ed267f8d58fa",
+      "artifacts/clinicflow/src/components/reports/ReportsDashboard.tsx": "4953765bd3c1cc6227117d7bedd4eae5272ef0ef97c236dbf00ba3c6b3dcae32",
       "artifacts/clinicflow/src/components/reports/ReportsWorkspace.tsx": "8a89c815ca5cc99165e20510e332a020442a06253ed1407e79d688f5505e2a3d",
       "artifacts/clinicflow/src/components/reports/report-model.ts": "7ac1f734c8f06b4bf4b2c05e90a22a3bb6fc7d7a83728394cf04d6f65f549b84",
       "artifacts/clinicflow/src/components/reports/reports.css": "4d641255e83bb6899532934eb6d5a5106a4ede9ca51c52ad6e74ffb20cc93eb6",
@@ -22475,14 +22614,14 @@
       "artifacts/clinicflow/src/components/suggestion-input.test.mjs": "1003039dd192a68abb9b189e9d74b9b21e92702408c8fd911c0538c850bc09f1",
       "artifacts/clinicflow/src/components/system-standard.test.mjs": "964aba095924b079cf0f60b9b99e223b22c19fb4aeff1a48f6c32377712ab70e",
       "artifacts/clinicflow/src/components/system-users.test.mjs": "ffaa6722a6c28a31120727f9a5ebc5c333595595ae44ade202120f155465f15e",
-      "artifacts/clinicflow/src/components/tab-presentation.css": "106d7a7ffd0478a638a0e682c428a827d5da4045a6c41ca3873867e86bf77f9d",
-      "artifacts/clinicflow/src/components/tab-presentation.test.mjs": "364589c263afbd20c66f2e0459296c0f755cef1a53dcaf47d7bab9de3632383c",
+      "artifacts/clinicflow/src/components/tab-presentation.css": "815a37982d7937bf760a44f0d0dc1c403a38ff15ca1a65b2582c588d570ea993",
+      "artifacts/clinicflow/src/components/tab-presentation.test.mjs": "f4d8a9f2409e3771893bcc5962d036713f2977efe4440106476392a1f788297b",
       "artifacts/clinicflow/src/components/table-collisions.test.mjs": "7180f57c1d8ec2700585e3c95b8bb42c440a2424b03bd245881fffc74a41b7af",
       "artifacts/clinicflow/src/components/tabs-a11y.test.mjs": "52e8e89b78ad739df7e26b4183d0869bcdcfcc31235a4b8cbc5bb66dad83bd6c",
       "artifacts/clinicflow/src/components/template-drawer-fields.test.mjs": "e3aea8e95ac11c9169d9a7670385bed6c1ce834c8f2220b2ebadbf873e5440e7",
-      "artifacts/clinicflow/src/components/tickets/ArrivalGuidance.tsx": "569fb9ec0e17f83a274ab3de6e01746ed9cff049ef27d39010e52e8071eedc14",
+      "artifacts/clinicflow/src/components/tickets/ArrivalGuidance.tsx": "9a1fa6c376d7059f85d597e18dbdc8b2b7cfc1852f26d66c825a5100d4df8116",
       "artifacts/clinicflow/src/components/tickets/LiveTicketPage.tsx": "c9f331ac0f8760c53b702547eae95a9c059e473163e2fbea7a54947ee20039d9",
-      "artifacts/clinicflow/src/components/tickets/VisitTicket.tsx": "b0652566f598028fad3bf50f6495014a6f1a6b27de16b70183190e27b1618509",
+      "artifacts/clinicflow/src/components/tickets/VisitTicket.tsx": "1e7944dd19229f842c2b9e904ff6b50c9c2fea8b09ec9477eded95713de9fe62",
       "artifacts/clinicflow/src/components/tickets/live-ticket.css": "01497144052f7fdd2ff3726a15dd7169b9c33612972c4dcb6f5da5e916887ba7",
       "artifacts/clinicflow/src/components/tickets/ticket-model.ts": "ee717292dad8f9c32723115c46a20d087e42c730cf34e53591f16f3cc04221e6",
       "artifacts/clinicflow/src/components/tickets/ticket-pdf.ts": "1cb22f263d699ac2aa54d195739f3113b8c1af6fb2dc41dbc0f30b9753012e30",
@@ -22546,8 +22685,8 @@
       "artifacts/clinicflow/src/components/ui/toggle.tsx": "5800d2099224ef90892e8c1d972d2a0964391c33cd43d7f5c6abf5cd42e023e1",
       "artifacts/clinicflow/src/components/ui/tooltip.tsx": "859a41b38c23b80fef5bc76c3a6f9a22518faf1328f5903a1e7adc17d2b2a5f6",
       "artifacts/clinicflow/src/components/uniform-controls.test.mjs": "d320862b3de444e8b35e67c0473664da599a943e3428cab6f540fc75cd1023cc",
-      "artifacts/clinicflow/src/components/uniformity.css": "618e549cab67ddcb5f72d12917242939a8edf1b9cb757a1439d05d2c144b99e1",
-      "artifacts/clinicflow/src/components/uniformity.test.mjs": "8a5112eb6a7b320794299f6ba7207754c9c1f5cc4dfe1ea6cc68777dd4eb13a9",
+      "artifacts/clinicflow/src/components/uniformity.css": "02a7e31fd673900a30d8ce43613fe5c14d971b54084a93cb0fa76b4c85e2015a",
+      "artifacts/clinicflow/src/components/uniformity.test.mjs": "e34f7d9490eab7248d885eb2715470c7e3a7c2a1d6e82ee6584e574f43baa754",
       "artifacts/clinicflow/src/components/useNotificationManagement.ts": "66a0c9c69ad7ed33346ba72132dfe4fd75eff428b7b087296a8ccac43c7ca18a",
       "artifacts/clinicflow/src/components/weekly-day-rows.css": "c30e9b2e74e0900dc9be77993fd8c85ed306b0e866d09cf514fc884eb8136a4d",
       "artifacts/clinicflow/src/components/workspace-branch.css": "389a4c7e6fdef8560ff15215aeeae02e44c78177e94498c358557483474d79ef",
@@ -22568,7 +22707,7 @@
       "artifacts/clinicflow/src/hooks/use-lookup-search.ts": "a7436d6a25f469ba33cce469517024cbfb76ab576bda72c0777f9b41c9b6bf8f",
       "artifacts/clinicflow/src/hooks/use-mobile.tsx": "82bff42ff087bd5dc90a5d17609cc428b8688de92d1333073a839af5ad3c9cbd",
       "artifacts/clinicflow/src/hooks/use-toast.ts": "862a0a2d8bb2aae32237cc904045ba04b77cbca45cbcc91779c40f5a573e3b4b",
-      "artifacts/clinicflow/src/index.css": "8d6982c6a74b0ed378da9e2a9992dc158bfc94fb1fbf8d08ac0716145ec9ccb9",
+      "artifacts/clinicflow/src/index.css": "052a48ee7eee380f7c8db207e0301f96ef65a160ef70be558a5921a142a1c6b4",
       "artifacts/clinicflow/src/lib/address.test.mjs": "c7f4a92cd5d49fa9fea41db6d7df7c537b5eaa3ff62a64c2a45c33b9415b02d5",
       "artifacts/clinicflow/src/lib/address.ts": "bf356139c60d974dddeaf7acaa55c85d821b749a87bf7727e0081a16bc807bcc",
       "artifacts/clinicflow/src/lib/api.ts": "b504cd757163ee063ea6f911b7a8e4482e4338b326ffa1bae45f8d05d3579bcf",
@@ -22668,16 +22807,16 @@
       "artifacts/clinicflow/src/lib/visit-range.ts": "3f221972df0dc62e67b8f68cb53b71fea8f076daa00d05013e42aa85674b3736",
       "artifacts/clinicflow/src/lib/workspace-branch.ts": "819868cfb91865d5bbe832b993e19004b083ab8ec8469611a4ea47808bc77447",
       "artifacts/clinicflow/src/lib/workspace-preferences.ts": "5a968ad83f24b155ca89554d745685709637f82b78459c8560e7fefa23242f05",
-      "artifacts/clinicflow/src/listing-ux.test.mjs": "14cd07365be0c90f85d58f30ee1d4efb6a47f613f01334618662fdf053ef045f",
+      "artifacts/clinicflow/src/listing-ux.test.mjs": "5fc3924208c1beae3ca7049f9b6f27e00f47308d68d277748c5e0a651e2f4cf8",
       "artifacts/clinicflow/src/main.tsx": "6272a50b515e72eccb89af68e524bad3e1d6672c1e9da1b9f36435b617e2a5a7",
       "artifacts/clinicflow/src/pages/not-found.tsx": "6aaea7a7125024440020566f3a14fde4f65149b1fd21f68c6a437b193e88c642",
-      "artifacts/clinicflow/src/resources.tsx": "df144a90cbc9771d2666c9ce6517d47d6a6ba34246f8e4a261437e9100487a86",
+      "artifacts/clinicflow/src/resources.tsx": "2f65b91a192ffe4df334d99b01f4122456455b5fba53670d3a993bb5ec1146c9",
       "artifacts/clinicflow/src/staff-account.test.mjs": "91b7e9af9b45f2eded68e5563c65c27539b3b0dde4fb8983ca9942da5e9f7ef3",
       "artifacts/clinicflow/src/staff-controls.test.mjs": "c182e69095222e6a889b86bd1530651dc8bca086e12251db7b4742fd58fd76f5",
       "artifacts/clinicflow/src/staff-controls.ts": "9fe65c66510ae280be390f6db0d734ca1a88b9ae8e4b0459be192efa13bf8ed2",
       "artifacts/clinicflow/src/staff-input.test.mjs": "739ce07e704b9fcb9bc1522b6e71b79099c727c89b154dd7202ce98b6c661bd8",
       "artifacts/clinicflow/src/staff-input.ts": "0334df247b0452af0f51d986d0f0682fb312f5094e2ffdab14043ddc047b14bb",
-      "artifacts/clinicflow/src/staff-list.css": "46cb2a7c10df8c69ebd91c0f5a4cc43fd950123c6886478966408c6376a5f753",
+      "artifacts/clinicflow/src/staff-list.css": "dac8496e264124efd24aa607bdd33e9caf9d31d3ce27f7fb31dcae613a72ec8c",
       "artifacts/clinicflow/src/test/compact-css-exceptions.mjs": "260becb6b631f6065e7b1891b3af421f18110848b799ff127e5a899b53885352",
       "artifacts/clinicflow/src/test/load-module.mjs": "0bbe7bdf795382fc3e3dcc83cda1bf7bb97e9ca4a946a3a2a31835ff9f5e82e3",
       "artifacts/clinicflow/src/workspace-style-tokens.test.mjs": "c8f1d98f7039e00460fe346ab323f938cc56b5ba1a2b39fbdf6b089e7651bc64",
@@ -22687,16 +22826,18 @@
       "artifacts/clinicflow/workspace-regression/CompactUiFixture.tsx": "67a2479b59e3f1a14ebf9ec6c1e6124414435ad5d217a0ab8cd83fd4f26259d0",
       "artifacts/clinicflow/workspace-regression/DropdownWorkspaceFixture.tsx": "3115d638cdbce96beb305c33305ec5903def6c146b3c897cf600ed545fc4589c",
       "artifacts/clinicflow/workspace-regression/FormControlFixture.tsx": "1b902c822e1ff80cc799add1b67e51e086c1c01238ac379e557ab03e5ac2ad88",
+      "artifacts/clinicflow/workspace-regression/HeaderPaginationFixture.tsx": "56d2e812e28c3ebcc957ef20b369b236a8a62853fb27b0ba9fcce9788178a13d",
       "artifacts/clinicflow/workspace-regression/OnboardingFixture.tsx": "a68e1ebb3d70800f93e325b9109a5246c6a0542796e363a4ac242a65627b5f20",
       "artifacts/clinicflow/workspace-regression/RegistrationFixture.tsx": "b83667df9d262abc5508c883d758e07fbd77fb3c61ae36766c43e115b1b90631",
       "artifacts/clinicflow/workspace-regression/RescheduleFixture.tsx": "2b12defb60c67e4b841219830911e0885cd2487b9d27fbacbe69b2f9ff864bef",
       "artifacts/clinicflow/workspace-regression/SelectorFixture.tsx": "9c5ee52ce9d96d36280cbb5f2c667cd0a791be63389ada7f62d73df5a9f2be2a",
       "artifacts/clinicflow/workspace-regression/StaffVerificationFixture.tsx": "973359488db050a0b0c23a739c4742a2efbddbee84559ee985ed17f405098af7",
-      "artifacts/clinicflow/workspace-regression/TabPresentationFixture.tsx": "ff1a1a5754656af027e84189a789137a141b5fbe1c7cd7c952a13ceb91ef89aa",
+      "artifacts/clinicflow/workspace-regression/TabPresentationFixture.tsx": "72f0654ae71731ade39b147016da438079745dc2b9716cc1cc29459b07920784",
       "artifacts/clinicflow/workspace-regression/doctor-visual-audit.mjs": "4106e9380da14bddfcb13f93be8dbd1c11f62ba5511c05e5f222e9a6a3c6de5b",
       "artifacts/clinicflow/workspace-regression/evidence-setup.mjs": "3d50a56821b53f2c8aaad14e78c076f2870b11327617546c79bb881a53eb5211",
+      "artifacts/clinicflow/workspace-regression/header-pagination.config.ts": "1fe16be95025112f80f814a5bca37f8c221da9c7f475b0bc224f1773f85ae392",
       "artifacts/clinicflow/workspace-regression/index.html": "6c777dbe4d9a0af028ac6b7c38cf64caf8df3f01b5e4d3dc424f81091dff9eb3",
-      "artifacts/clinicflow/workspace-regression/main.tsx": "ddb7bb66d010ee518432837ee94fd2ecba16cf184a71e75a8a131facb508657c",
+      "artifacts/clinicflow/workspace-regression/main.tsx": "74967a3d3082a9215541c7807f05cfb589c25296b73b97af58d61e18e28d6820",
       "artifacts/clinicflow/workspace-regression/playwright.config.ts": "9e5442a826a79533d5db47e80542190954cad8e067757b5501bc1eaf0e398294",
       "artifacts/clinicflow/workspace-regression/registration-evidence.md": "0022180cb09f3287672e9af2f07e529bc72351b4386107f131891e1d0fabce33",
       "artifacts/clinicflow/workspace-regression/staff-type.focused.config.ts": "fbda67ac9ba4f3c1ae6bd1e5e0b2f9028c0159af55261c0ec34b7f49174443d3",
@@ -22711,14 +22852,16 @@
       "artifacts/clinicflow/workspace-regression/tests/doctor-context.spec.ts": "2a0f070d90ccdeb87c4c4b269b748f5cba1be80a6372f42f66f6cf1de6cfac37",
       "artifacts/clinicflow/workspace-regression/tests/dropdown-readiness.spec.ts": "8934eeb64f59e8368b066d037f706c443763b8a2e4a5c997f39493b55ca5700b",
       "artifacts/clinicflow/workspace-regression/tests/form-presentation.spec.ts": "2d3ca01cb4f86ea12b6a543337f4be4e722fcba51a6c75800a833269eadf2e2e",
+      "artifacts/clinicflow/workspace-regression/tests/header-consumers.spec.ts": "b048d3632d2d595067b1561f3e2f62403d452676a2089e1c0b1923ae966679b4",
+      "artifacts/clinicflow/workspace-regression/tests/header-pagination.spec.ts": "192fdf8dbce50d620708c05de4395883615157944f56f01b6f5895c30aa13967",
       "artifacts/clinicflow/workspace-regression/tests/onboarding.spec.ts": "7ff1e7842346cb940205af422147be372a8ddd089c663cd8a77d03e98738505c",
       "artifacts/clinicflow/workspace-regression/tests/patient-registration.spec.ts": "aac9eb62d0c69b5f9732b595458c677463310266e94ebe0605d5a778fb7aa6f9",
       "artifacts/clinicflow/workspace-regression/tests/public-metadata.spec.ts": "eda50ee3fe2c449b8a88912a05e8153bcdb9806c4990162cc97583041db29569",
       "artifacts/clinicflow/workspace-regression/tests/selector-names.spec.ts": "7cb36074e34fb47d28b3c0eded8900f620a8ba446df7510f9e37e5aa86ffcf2e",
       "artifacts/clinicflow/workspace-regression/tests/staff-type-toolbar.spec.ts": "82e94c5fd903fe1af2b7619ca407ec4cca7813c76783256371ef4ec5f79b595b",
-      "artifacts/clinicflow/workspace-regression/tests/tab-presentation.spec.ts": "7fe166e163f34c925886f2cd4f206ab1ab989a2fc8a398146c96fd26b0d12625",
+      "artifacts/clinicflow/workspace-regression/tests/tab-presentation.spec.ts": "b7f9ff5527a6c072c78fce60591383add55baed8d7b874e6d262713b0263fd80",
       "artifacts/clinicflow/workspace-regression/tests/users-administration.spec.ts": "4bde2f896d36d9cc301442cb2fc6f767b63bbfa1834cb05618dc330103981834",
-      "artifacts/clinicflow/workspace-regression/tests/workspace.spec.ts": "70e0b8eec6568213c9e4fcf33469af1fdc2163146a0cec80b01086236482528c",
+      "artifacts/clinicflow/workspace-regression/tests/workspace.spec.ts": "315e8e0267394304f70e5f86636f05b808b150aa19142434036511e595ae484a",
       "artifacts/clinicflow/workspace-regression/vite.config.ts": "b361c57127cc4df876b7a857403db346da3f8ec94e83e27ee81d398e237c7da9",
       "artifacts/clinicflow/workspace-regression/workspace.css": "d84bc227f63295788ca6a005a84d6a0fc7dc22d0ff6bbae1c8713ea3aed80a10",
       "docs/functional-completion-acceptance.md": "70009d53dedd2eecc918e68d0305603274270ec3c0e5009ce60288ddb1098149",
@@ -22728,7 +22871,7 @@
       "lib/api-client-react/src/generated/api.ts": "d3a76e6ede2f1ea265b6da4ba2ce81192bef6043198534d1beedcce4e48ee892",
       "lib/api-client-react/src/index.ts": "76134147f44de095856b1bb65a7a5b4034e400b01677b3bca0d10fe06da91dfb",
       "lib/api-client-react/tsconfig.json": "a00fda842228e3478705abcf2c76d9641f5d6263cd5d2df0b613d5379088ad73",
-      "lib/api-zod/package.json": "061f7c49c2f5ca6c4a84f6b2cfbdc188358d2eb052c6635df691ea19f69fa540",
+      "lib/api-zod/package.json": "c4a4fadee4053f1ac53d3a0659bdabb01ca4a6492522a56df7c9b1b159a77559",
       "lib/api-zod/src/generated/api.ts": "de7d6820c22ffb89a40913fef132d59ae0514738811144abe2d7932a9e14dba6",
       "lib/api-zod/src/generated/types/apiError.ts": "a06ed8ea0a65abe54608eb4e7fce9f681883128ab7042f61ecac462b0072644b",
       "lib/api-zod/src/generated/types/appointment.ts": "c7266a26d9da5d4c4860274c5b7da379c33cff6b57c303aaecdaed0914ef2677",
@@ -23186,13 +23329,14 @@
       "lib/api-zod/src/notification-variable-contract.ts": "5f670aa4dae6ec435bceccc5d1e43ed213b04a340da6c7505bc1446a240bcf70",
       "lib/api-zod/src/public-page.ts": "d378a15dd95a13c1e35ad955390d317d84950374feea218cdfb3f7c4ef6e8931",
       "lib/api-zod/src/public-website.ts": "c870239b7319e357dc1a55766432885bcc882159b8ce84acc1dc9458920d731e",
+      "lib/api-zod/src/ticket-directions.ts": "d3a000fe1b241135fe7269dcaa4b5a196834e2dc75485dbbab35f42cdac421a7",
       "lib/api-zod/tsconfig.json": "fc5855171d6c0423ae2d28f33c3355dc0fd9bd253764eca930293f6eecc20f36",
       "lib/public-pages/package.json": "f64db6675f17fcd103b05e9b8932cde20f85e551b158ea0c6bac7b80547e4809",
       "lib/public-pages/src/index.ts": "00dfff9aff297eedfeb09be7dde300885d198901ff92fb025407412ab2e5178a",
       "lib/public-pages/src/render.ts": "c7acbb5d22eeb9fe228ad92145688ac864cb28027446eecbf1c58481baa97a3a",
       "lib/public-pages/src/server.ts": "c37abe3cf3e63107b6152ad2fdb299a6706d1062de7b879848afdfa677b88b91",
       "lib/public-pages/tsconfig.json": "fa0269015875e682db53e48eccc277fb63d71143931bc52432a1d4fca94a8e45",
-      "package.json": "d622eafa6cbaece5ff15d9e0e31b03b78afae858fdce27b93d82289e2b9e160d",
+      "package.json": "4706f93395172893f84f2a8a39cbe5e6f720cde44744c41382ad66f66331cd7b",
       "pnpm-lock.yaml": "a1d64efe183274b0f4419bfbad79e3c0d4e697f9738705ecda2d793b14c75302",
       "pnpm-workspace.yaml": "af95a83cbd0b798367e2d5ea967391ea2d9195e076709e626d1dbe7bfa819aad",
       "reports/digiq-master-checklist-137.md": "27b531a40562eebbf88ce8f6eb54e7094aaa5cb756467c1b032d151c5856d50f",

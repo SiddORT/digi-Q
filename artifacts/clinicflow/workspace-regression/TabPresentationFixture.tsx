@@ -11,6 +11,7 @@ import { PatientDetailsDrawer } from "../src/components/PatientDetailsDrawer";
 import { NotificationsPanel } from "../src/components/NotificationsPanel";
 import { WorkspaceSearch } from "../src/components/WorkspaceSearch";
 import { useTabIds } from "../src/lib/tabs-a11y";
+import { AppointmentViewSelector } from "../src/components/appointments/AppointmentViewSelector";
 
 function Sample({ group }: { group: typeof inventory.groups[number] }) {
   const [active, select] = useState(0);
@@ -33,6 +34,7 @@ export function TabPresentationFixture() {
   const [patient, setPatient] = useState(false);
   const [weeks, setWeeks] = useState([buildWeek([]), buildWeek([])]);
   const [active, setActive] = useState("last");
+  const [mode, setMode] = useState<"list"|"calendar">("list");
   const longTabs: WorkspaceTab[] = [{id:"first",label:"First",icon:"details"},{id:"long",label:"A deliberately long section label with a descriptive name",icon:"details"},{id:"last",label:"Last section",icon:"history"}];
   const samples = <>{inventory.groups.filter(g=>g.id!=="owner-locations").map(group=><Sample key={group.id} group={group}/>)}<div data-tab-sample="long"><WorkspaceTabs tabs={longTabs} area={active} onSelect={setActive} label="Long labels"/></div>
     <WorkspaceTabs tabs={longTabs} area="first" onSelect={()=>{}} label="Rejected selection"/>
@@ -43,6 +45,7 @@ export function TabPresentationFixture() {
     <button type="button" onClick={()=>setOverlay("drawer")}>Open tab drawer</button>
     <button type="button" onClick={()=>setPatient(true)}>Open real patient drawer</button>
     <NotificationsPanel/><WorkspaceSearch navigation={["patients","appointments","staff","clinics","branches","availability","reports","audit"]} role="admin" page="patients" userId="tab-fixture"/>
+    <section data-tab-sample="appointment-layout"><h2>Real appointment view selector</h2><div className="appointment-display-navigation"><AppointmentViewSelector mode={mode} onSelect={setMode}/></div></section>
     {samples}
     <section data-tab-sample="owner-locations" className="clinic-registration"><h2>Real owner location tabs; weekday accordions stay unchanged</h2><OwnerWeeklySessions branches={[{name:"Central clinic location",hours:[]},{name:"Long location name supplied by an owner — never interpreted as an icon",hours:[]}]} weeks={weeks} onChange={setWeeks} preferences={{timezone:"Asia/Kolkata",timeFormat:"24h"}}/></section>
     <AppDialog open={!!overlay} onClose={()=>setOverlay(null)} variant={overlay==="drawer"?"drawer":undefined} title="Tab presentation overlay">{samples}</AppDialog>

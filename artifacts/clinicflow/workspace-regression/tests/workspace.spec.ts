@@ -876,7 +876,14 @@ for (const listingPage of compactPages) {
     await page.getByTestId("button-reset-columns").click();
     await page.getByRole("dialog",{name:"Columns",exact:true}).getByRole("button",{name:"Done",exact:true}).click();
     if(listingPage.path==="/api/appointments"){
+      const layout=page.getByRole("group",{name:"Appointment layout",exact:true});
+      await expect(layout.getByRole("tab")).toHaveCount(0);
+      await expect(page.getByTestId("button-mode-list")).toHaveAttribute("aria-pressed","true");
+      await expect(page.getByTestId("button-mode-list")).toHaveCSS("background-color","rgb(233, 241, 255)");
       await page.getByTestId("button-mode-calendar").click();
+      await expect(page.getByTestId("button-mode-calendar")).toHaveAttribute("aria-pressed","true");
+      await expect(page.getByTestId("button-mode-calendar")).toHaveCSS("background-color","rgb(233, 241, 255)");
+      expect((await layout.boundingBox())!.width).toBeLessThan(260);
       await expect(page.getByRole("region",{name:"Appointment calendar",exact:true})).toBeVisible();
       await expect(columns).toBeVisible();
       const month=await page.getByTestId("text-calendar-month").innerText();
@@ -884,6 +891,7 @@ for (const listingPage of compactPages) {
       await expect(page.getByTestId("text-calendar-month")).not.toHaveText(month);
       await expect(page.getByTestId("button-toggle-quick-filters")).toHaveCount(0);
       await page.getByTestId("button-mode-list").click();
+      await expect(page.getByTestId("button-mode-list")).toHaveAttribute("aria-pressed","true");
       await expect(page.getByTestId("appointment-appointment-1")).toBeVisible();
       await expect(page.getByTestId("link-page-book-appointment")).toHaveAttribute("href","/admin/book");
     }

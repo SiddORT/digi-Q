@@ -4,7 +4,8 @@
 
 See [tab presentation coverage](tab-presentation-coverage.md) and
 [`tab-inventory.json`](tab-inventory.json) for the approved reference, all 17
-genuine-tab groups, source role/entry-point matrix, shared presentation owner,
+genuine-tab groups plus the approved List / Calendar view selector, source
+role/entry-point matrix, shared presentation owner,
 responsive/hover/focus/disabled/error evidence and regression results. This
 supersedes historical tab appearance/status-only wording, not panel contents
 or queue filters. Presentation fixtures, real component fixtures, signed-out

@@ -542,19 +542,18 @@ ol.booking-steps { list-style: none; margin-left: 0; padding-left: 0; flex-wrap:
   .workspace .list-header .lh-search-row .lh-search{flex:0 1 480px;min-width:280px}
   .workspace .list-header .lh-search-row>.lh-tools,.workspace .list-header .lh-search-row>.lh-table-tools{margin-left:auto}
 }
-.workspace .list-header :is(.filter-toggle,.filter-clear,.button,.appt-mode>button){min-height:var(--control-md)}
+.workspace .list-header :is(.filter-toggle,.filter-clear,.button){min-height:var(--control-md)}
 .lh-filters-summary{display:none}
 @media (max-width:767px){
   .lh-filters-summary{display:flex;align-items:center;gap:var(--space-2);width:100%;min-height:var(--control-lg);padding:0 var(--space-3);border:1px solid hsl(var(--border));border-radius:var(--radius-control);background:var(--dq-surface);font-weight:600;color:var(--ink)}
   .lh-filters-summary-hint{margin-left:auto;font-weight:500;color:var(--dq-blue)}
-  .workspace .list-header :is(.filter-toggle,.filter-clear,.button,.appt-mode>button,.vrp-icon),.workspace :is(.row-actions button,.row-actions a,.pagination button){min-height:var(--control-lg);min-width:var(--control-lg)}
+  .workspace .list-header :is(.filter-toggle,.filter-clear,.button,.vrp-icon),.workspace :is(.row-actions button,.row-actions a,.pagination button){min-height:var(--control-lg);min-width:var(--control-lg)}
   /* One sticky editor footer, clear of the home indicator and the on-screen keyboard. */
   .app-dialog-body .form-footer.form-actions{padding-bottom:max(var(--space-3),env(safe-area-inset-bottom));background:var(--dq-surface);box-shadow:0 -1px 0 hsl(var(--border))}
   .app-dialog-body{scroll-padding-bottom:96px}
   .form-actions :is(button,.button){min-height:var(--control-lg)}
 }
-/* Clear distinction: primary = filled blue; selected tab = navy underline on surface; error = red outline + text. */
-.appt-mode>button[aria-pressed="true"]{color:var(--navy);box-shadow:inset 0 -2px 0 var(--dq-blue);background:var(--dq-surface)}
+/* Error = red outline + text; selected tabs are owned by tab-presentation.css. */
 [aria-invalid="true"]{border-color:var(--feedback-error-fg,#8f1f18);box-shadow:0 0 0 1px var(--feedback-error-fg,#8f1f18)}
 @media (max-width:767px){
   /* Page-level editors (settings, templates, onboarding, booking): the form's single footer sticks, clear of safe area; focused fields scroll above it. */

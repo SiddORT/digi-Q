@@ -53,9 +53,12 @@ This refines the existing branding; it is not a new design system.
   it as plain text. History headings use plain `th` so they match the main table.
   Booking tab: Ticket & QR and the live ticket strip share the right column.
 - Existing genuine tabs use the approved icon-and-label strip reference in
-  `attached_assets/image_1793026842063.png`; `tab-inventory.json` records owners,
+  Booking / Details / History in the appointment accordion (including
+  `attached_assets/Screenshot_2026-10-27_at_1.17.45_PM_1793087268804.png`); `tab-inventory.json` records owners,
   callers and exclusions. This supersedes older status-only tab guidance, not
   queue status filters' group/pressed semantics. Panels and navigation stay unchanged.
+  Appointment List / Calendar explicitly shares this presentation at intrinsic
+  toolbar width, retaining its group/pressed semantics, not becoming tabs.
 - Check 390×844, 768px tablet, 1024×640, 1366×768, wide desktop and 200% zoom.
   Assert child/text bounds, not just page overflow. Check sticky footer overlap,
   popup edges, long labels, keyboard scrolling and short-height dialogs.

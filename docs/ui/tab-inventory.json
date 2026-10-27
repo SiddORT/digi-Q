@@ -20,10 +20,13 @@
     {"id":"patient-drawer","owner":"components/PatientDetailsDrawer.tsx","primitive":"direct","labels":["Timeline","Activity","Documents"],"icons":["timeline","activity","documents"],"roles":["permitted patient viewers"],"entryPoints":["Patients row details action","patient detail linked drawer"],"context":"drawer","case":"tab-presentation.spec.ts"},
     {"id":"owner-locations","owner":"components/schedule/OwnerWeeklySessions.tsx","primitive":"direct","labels":["Location names (dynamic, fallback Location N)"],"icons":["locations"],"roles":["registering consulting owner"],"entryPoints":["/register-clinic consulting-owner custom scheduling","/onboarding owner schedule","admin Clinic Admin registration with consulting owner"],"context":"onboarding; >1 location only; nested WeeklyDraftDays accordions stay accordions","case":"tab-presentation.spec.ts"}
   ],
+  "viewSelectors": [
+    {"id":"appointment-layout","owner":"components/appointments/AppointmentViewSelector.tsx","consumer":"clinic.tsx:Appointments","primitive":"group / pressed buttons","labels":["List","Calendar"],"icons":["List","CalendarDays"],"roles":["superAdmin","clinicAdmin","doctor","receptionist","patient"],"entryPoints":["Appointments listing toolbar for every permitted role"],"context":"intrinsic-width toolbar, presentation only","case":"tab-presentation.spec.ts; workspace.spec.ts appointment layout"}
+  ],
   "excluded": [
     "components/queue/StatusTabs.tsx: group of pressed queue status filters, untouched",
     "Staff Type dropdown; ordinary links/sidebar/breadcrumbs",
-    "List/calendar switches and appointment mode selectors; filters and binary toggles",
+    "Other view switches and appointment mode selectors; filters and binary toggles (Appointment List / Calendar explicitly included above)",
     "Registration wizard progress, accordions, day copy controls, report chart/group selectors",
     "Retired .tabs/.tab and .clinic-settings-tabs CSS without genuine current JSX callers"
   ]

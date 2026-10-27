@@ -55,6 +55,25 @@ test("one tab-only style owner, distinct error/attention and decorative icons",(
   assert.doesNotMatch(read("components/queue/StatusTabs.tsx"),/dq-tab|TabIcon/);
   // A single :not list keeps the old .workspace button:not(.button) specificity.
   // Adding a second :not would also override unrelated switch/accordion sizing.
-  assert.match(read("compact-workspace.css"),/\.workspace button:not\(\.button,\[role=tab\]\)\{/);
+  assert.match(read("compact-workspace.css"),/\.workspace button:not\(\.button,\.dq-tab,\[role=tab\]\)\{/);
   assert.doesNotMatch(read("compact-workspace.css"),/button:not\(\.button\):not\(\[role=tab\]\)/);
+});
+test("appointment view buttons share tab presentation, not tab semantics or legacy pressed rules",()=>{
+  const selector=read("components/appointments/AppointmentViewSelector.tsx");
+  assert.match(selector,/dq-tabs dq-tabs-intrinsic/);
+  assert.match(selector,/role="group" aria-label="Appointment layout"/);
+  assert.equal((selector.match(/aria-pressed=/g)||[]).length,2);
+  assert.equal((selector.match(/className="dq-tab"/g)||[]).length,2);
+  assert.doesNotMatch(selector,/role="tab|aria-selected|tabIndex/);
+  const css=read("components/tab-presentation.css");
+  assert.match(css,/\.dq-tabs\.dq-tabs-intrinsic.*width:max-content/);
+  assert.match(css,/\.dq-tabs-intrinsic > \.dq-tab \{ flex:0 0 auto/);
+  assert.match(css,/:not\(:disabled,\[aria-selected=true\],\[data-state=active\],\[aria-pressed=true\]\):hover/);
+  assert.match(css,/:is\(\[aria-selected=true\],\[data-state=active\],\[aria-pressed=true\]\)/);
+  for(const file of ["components/uniformity.css","components/appointments/visit-range.css","clinic.tsx"])
+    assert.doesNotMatch(read(file),/appt-mode/);
+  assert.match(read("clinic.tsx"),/<AppointmentViewSelector mode=\{mode\}/);
+  assert.match(read("clinic.tsx"),/if\(next==="calendar"\)setCalMonth\(monthStart\(from\|\|visitToday\)\);setMode\(next\)/);
+  assert.equal(inventory.viewSelectors.length,1);
+  assert.equal(inventory.viewSelectors[0].id,"appointment-layout");
 });

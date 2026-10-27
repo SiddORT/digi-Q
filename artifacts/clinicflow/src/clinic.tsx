@@ -27,7 +27,7 @@ import { postOnboardingDestination } from "./auth/patient-access-links";
 import { Link, Redirect, useLocation, useSearch } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@workspace/api-client-react";
-import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2, Stethoscope, Settings, LogOut, ChevronRight, ArrowUpRight, Clock3, Check, Menu, PanelLeftClose, PanelLeftOpen, X, QrCode, List, SlidersHorizontal, FileText, UserRound, Plus, ArrowUpDown, ArrowUp, ArrowDown, Download } from "lucide-react";
+import { Activity, LayoutDashboard, CalendarDays, Users as UsersIcon, Building2, Stethoscope, Settings, LogOut, ChevronRight, ArrowUpRight, Clock3, Check, Menu, PanelLeftClose, PanelLeftOpen, X, QrCode, SlidersHorizontal, FileText, UserRound, Plus, ArrowUpDown, ArrowUp, ArrowDown, Download } from "lucide-react";
 import { Logo } from "./App";
 import { WorkspaceNav, navLabel } from "./components/WorkspaceNav";
 import { clinicLandingDestination, clinicWorkspaceHref } from "./lib/clinic-navigation";
@@ -77,6 +77,7 @@ import { DateRangeInput } from "./components/DateRangeInput";
 import { rangeError } from "./lib/date-picker-logic";
 import { isPatientBookingConfirmation } from "./lib/patient-booking-notice";
 import { AppointmentCalendar } from "./components/appointments/AppointmentCalendar";
+import { AppointmentViewSelector } from "./components/appointments/AppointmentViewSelector";
 import { monthStart, monthEnd } from "./lib/visit-range";
 import { FilteredAppointmentExport } from "./components/appointments/FilteredAppointmentExport";
 import { CalendarDayPanel } from "./components/appointments/CalendarDayPanel";
@@ -411,7 +412,7 @@ export function Appointments({role}:{role:string}){
   <CareLookup kind="doctors" publicAccess={isPatient} label="Doctor" value={ownDoctorId||draft.doctorId} onChange={value=>updateDraft({doctorId:value})} disabled={!draft.clinicId||identity.data?.user?.role==="doctor"} params={{clinicId:draft.clinicId,branchId:draft.branchId||undefined}}/>
   {draft.from&&draft.from===draft.to&&draft.branchId&&(ownDoctorId||draft.doctorId)&&<SessionSelector selection={{...draftSessionSelection,sessionId:draftSessionId||draftSessionSelection.sessionId,setSessionId:setDraftSessionId}}/>}
   </>}><SearchInput value={search} onChange={setSearch} placeholder="Search appointments…" label="Search Appointments" suggestions={q.error?[]:listingSuggestions(q.data?.items,a=>({id:a.id,label:a.patientName,description:[a.doctorName,formatDate(a.date,a)].filter(Boolean).join(" · "),value:a.reference}))} loading={q.isFetching} error={q.error?friendlyError(q.error,"load"):null} onRetry={()=>void q.refetch()} total={q.data?.total} settledQuery={debounced} scopeKey={JSON.stringify({...params,search:undefined,page:undefined})}/></FilterBar>
-  <div className="appointment-display-navigation"><div className="appt-mode" role="group" aria-label="Appointment layout"><button type="button" aria-pressed={mode==="list"} onClick={()=>setMode("list")} data-testid="button-mode-list"><List size={14} aria-hidden/> List</button><button type="button" aria-pressed={mode==="calendar"} onClick={()=>{setCalMonth(monthStart(from||visitToday));setMode("calendar");}} data-testid="button-mode-calendar"><CalendarDays size={14} aria-hidden/> Calendar</button></div>{q.dataUpdatedAt>0&&<HelpTip label="Last Updated" icon={<Clock3 size={15} aria-hidden="true"/>} text={`Updated ${formatConfiguredTimestamp(new Date(q.dataUpdatedAt),timezone,{},selectedClinic.data as Partial<DateTimePreferences>|undefined)}`}/>}</div>
+  <div className="appointment-display-navigation"><AppointmentViewSelector mode={mode} onSelect={next=>{if(next==="calendar")setCalMonth(monthStart(from||visitToday));setMode(next);}}/>{q.dataUpdatedAt>0&&<HelpTip label="Last Updated" icon={<Clock3 size={15} aria-hidden="true"/>} text={`Updated ${formatConfiguredTimestamp(new Date(q.dataUpdatedAt),timezone,{},selectedClinic.data as Partial<DateTimePreferences>|undefined)}`}/>}</div>
   {(mode==="calendar"||!q.data?.items.length)&&columnsSlot&&createPortal(fallbackColumns.settings,columnsSlot)}
   <ErrorNotice error={q.error}/>{freshness.stale&&!q.isLoading&&<p className="notice" role="alert">Offline or stale appointment data. Mutations are disabled until refreshed. <button onClick={()=>q.refetch()}>Refresh Appointments</button></p>}{q.error&&<button onClick={()=>q.refetch()}>Retry Appointments</button>}
   {mode==="calendar"?<div className={`appt-cal-layout${calDay?" has-day":""}`}><AppointmentCalendar month={calMonth} today={visitToday} selected={calDay} onMonthChange={setCalMonth} onDrill={setCalDay} params={{search:debounced||undefined,status:status||undefined,clinicId:clinicId||undefined,branchId:branchId||undefined,doctorId:ownDoctorId||doctorId||undefined}}/>{calDay&&<CalendarDayPanel date={calDay} today={visitToday} root={role} canBook filters={{search:debounced,status,clinicId,branchId,doctorId:ownDoctorId||doctorId}} onClose={()=>setCalDay("")} onOpenList={()=>{setFrom(calDay);setTo(calDay);setPage(1);setMode("list");setCalDay("");}}/>}</div>:

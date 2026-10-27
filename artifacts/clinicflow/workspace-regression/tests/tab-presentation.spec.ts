@@ -19,7 +19,7 @@ async function mount(page: Page) {
 async function geometry(strip: Locator, touch: boolean) {
   return strip.evaluate((el, touch) => {
     const rect=el.getBoundingClientRect();
-    const tabs=Array.from(el.querySelectorAll<HTMLElement>(':scope > [role="tab"]'));
+    const tabs=Array.from(el.querySelectorAll<HTMLElement>(':scope > .dq-tab'));
     return {width:rect.width, client:el.clientWidth, scroll:el.scrollWidth, y:tabs.map(t=>t.getBoundingClientRect().top), defects:tabs.flatMap(t=>{
       const box=t.getBoundingClientRect(), css=getComputedStyle(t);
       const icon=t.querySelector("svg"), ib=icon?.getBoundingClientRect();
@@ -53,6 +53,32 @@ for(const viewport of [{width:390,height:844},{width:768,height:768},{width:1024
       await expect(selected.locator("svg")).toHaveCSS("color",await selected.evaluate(el=>getComputedStyle(el).color));
       measurements.push({id:group.id,...result});
     }
+    const selector=page.getByRole("group",{name:"Appointment layout",exact:true});
+    await selector.scrollIntoViewIfNeeded();
+    const viewGeometry=await geometry(selector,viewport.width<768);
+    expect(viewGeometry.defects).toEqual([]);
+    expect(viewGeometry.width).toBeLessThan(260);
+    expect(viewGeometry.scroll).toBeLessThanOrEqual(viewGeometry.client+1);
+    for(const button of await selector.getByRole("button").all())
+      await expect(button).toHaveCSS("flex-grow","0");
+    const list=selector.getByRole("button",{name:"List",exact:true});
+    const calendar=selector.getByRole("button",{name:"Calendar",exact:true});
+    await calendar.hover();await expect(calendar).toHaveCSS("background-color","rgb(241, 246, 253)");
+    await list.hover();await expect(list).toHaveCSS("background-color","rgb(233, 241, 255)");
+    await list.focus();await page.keyboard.press("Tab");
+    await expect(calendar).toBeFocused();await expect(calendar).toHaveCSS("outline-width","2px");
+    await page.keyboard.press("Enter");
+    await expect(calendar).toHaveAttribute("aria-pressed","true");
+    await expect(calendar).toHaveCSS("background-color","rgb(233, 241, 255)");
+    await expect(calendar).toHaveCSS("color",await page.locator('[data-tab-sample="appointment"] [aria-selected=true]').evaluate(el=>getComputedStyle(el).color));
+    await expect(calendar).toHaveCSS("border-bottom-width","2px");
+    await expect(calendar).toHaveCSS("box-shadow","none");
+    await expect(list).toHaveAttribute("aria-pressed","false");
+    await page.keyboard.press("Shift+Tab");await expect(list).toBeFocused();
+    await page.keyboard.press("Space");await expect(list).toHaveAttribute("aria-pressed","true");
+    await expect(selector.getByRole("tab")).toHaveCount(0);
+    measurements.push({id:"appointment-layout",...viewGeometry});
+    await page.screenshot({path:info.outputPath("appointment-view-selector.png")});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     expect(writes).toEqual([]);
     await info.attach("geometry.json",{body:JSON.stringify(measurements,null,2),contentType:"application/json"});
