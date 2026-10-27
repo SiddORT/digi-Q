@@ -63,7 +63,7 @@
 - [Reports product scope](reports-product-scope.md) — live dashboard plus reusable templates; clinic/doctor performance, reschedules and communication usage breakdowns.
 - [Concise information density](concise-information-density.md) — one brief introduction across all pages and links; optional details in adjacent info help, consequential warnings visible.
 - [Owner booking recovery](owner-booking-recovery.md) — explicit same-account, approved-location recovery; preserve administrative drafts and distinguish local checks from hosted repair.
-- [Browser fixture identity](browser-fixture-module-identity.md) — live Vite component fixtures must share dependency identities and isolate query-state scenarios.
+- [Browser fixture fidelity](browser-fixture-module-identity.md) — live Vite fixtures need shared dependency identities, isolated query state and explicit source scanning for lazy UI styles.
 - [Template publication boundary](template-publication-test-boundary.md) — unfinished optional tests must not block wording publication or weaken shared input validation.
 - [Email visual references](email-reference-boundary.md) — booking/OTP images guide appearance, not event variables, security links, message meaning or delivery authorization.
 - [Booking edit revisions](booking-edit-revisions.md) — contact/notes concurrency must not advance lifecycle notification eligibility or recapture automatic messages.

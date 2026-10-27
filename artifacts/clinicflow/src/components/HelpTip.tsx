@@ -22,15 +22,49 @@ type ChildProps = {
 };
 
 /** Tooltip rendered in a body portal, positioned against the anchor with flip + viewport clamp. */
-function Bubble({ anchor, text, id, onEnter, onLeave }: { anchor: RefObject<HTMLSpanElement | null>; text: string; id?: string; onEnter: () => void; onLeave: () => void }) {
+function Bubble({ anchor, text, id, onEnter, onLeave, onUnavailable }: { anchor: RefObject<HTMLSpanElement | null>; text: string; id?: string; onEnter: () => void; onLeave: () => void; onUnavailable: () => void }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   useLayoutEffect(() => {
     const place = () => {
       const a = anchor.current, b = ref.current;
       if (!a || !b) return;
-      const r = a.getBoundingClientRect(), w = b.offsetWidth, h = b.offsetHeight, m = 8, gap = 6;
+      const r = a.getBoundingClientRect(), m = 8, gap = 6;
       const vw = document.documentElement.clientWidth, vh = window.innerHeight;
+      // Opt-in only: booking help must stay below its tabs and inside the visible
+      // listing viewport, not above sticky headings or over a neighbouring row.
+      const boundary = a.closest("[data-tooltip-boundary]");
+      if (boundary) {
+        const region = boundary.getBoundingClientRect();
+        let left = Math.max(m, region.left), right = Math.min(vw - m, region.right);
+        let top = Math.max(m, region.top), bottom = Math.min(vh - m, region.bottom);
+        for (let parent = a.parentElement; parent; parent = parent.parentElement) {
+          const style = getComputedStyle(parent), rect = parent.getBoundingClientRect();
+          if (/(auto|scroll|hidden|clip)/.test(style.overflowX)) {
+            left = Math.max(left, rect.left + parent.clientLeft);
+            right = Math.min(right, rect.left + parent.clientLeft + parent.clientWidth);
+          }
+          if (/(auto|scroll|hidden|clip)/.test(style.overflowY)) {
+            top = Math.max(top, rect.top + parent.clientTop);
+            bottom = Math.min(bottom, rect.top + parent.clientTop + parent.clientHeight);
+          }
+        }
+        const table = a.closest(".appt-table");
+        for (const head of table?.querySelectorAll(":scope >table>thead>tr>th") || []) {
+          const rect = head.getBoundingClientRect();
+          if (getComputedStyle(head).position === "sticky" && rect.bottom > top && rect.top < bottom) top = rect.bottom;
+        }
+        if (right - left < 40 || r.left < left - 1 || r.right > right + 1 || r.top < top || r.bottom > bottom) {
+          onUnavailable(); return;
+        }
+        b.style.maxWidth = `${Math.min(280, right - left)}px`;
+        const w = b.offsetWidth, h = b.offsetHeight;
+        const y = r.top - h - gap >= top ? r.top - h - gap : r.bottom + gap;
+        if (y + h > bottom) { onUnavailable(); return; }
+        setPos({ top: y, left: Math.max(left, Math.min(right - w, r.left + r.width / 2 - w / 2)) });
+        return;
+      }
+      const w = b.offsetWidth, h = b.offsetHeight;
       let top = r.top - h - gap;
       if (top < m) top = r.bottom + gap <= vh - h - m ? r.bottom + gap : Math.max(m, Math.min(vh - h - m, r.bottom + gap));
       const left = Math.max(m, Math.min(vw - w - m, r.left + r.width / 2 - w / 2));
@@ -78,11 +112,18 @@ export function HelpTip({ text, children, icon, label }: HelpTipProps) {
     const down = (e: PointerEvent) => { if (e.target instanceof Element && e.target.closest(".helptip-bubble")) return; if (ref.current && !ref.current.contains(e.target as Node)) close(); };
     window.addEventListener("keydown", key, true);
     document.addEventListener("pointerdown", down);
-    return () => { window.removeEventListener("keydown", key, true); document.removeEventListener("pointerdown", down); };
+    // Bounded help is dismissed by any scrolling (including horizontal listing
+    // scrolling). Its always-present accessible description remains available.
+    const bounded = !!ref.current?.closest("[data-tooltip-boundary]");
+    if (bounded) window.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("keydown", key, true); document.removeEventListener("pointerdown", down);
+      if (bounded) window.removeEventListener("scroll", close, true);
+    };
   }, [open]);
   useEffect(() => () => { window.clearTimeout(timer.current); window.clearTimeout(leaveTimer.current); }, []);
 
-  const bubble = open ? <Bubble anchor={ref} text={text} onEnter={cancelLeave} onLeave={leave} /> : null;
+  const bubble = open ? <Bubble anchor={ref} text={text} onEnter={cancelLeave} onLeave={leave} onUnavailable={close} /> : null;
   // Touch browsers may emit compatibility mouseenter after an outside tap. Only
   // real hover pointers may reopen help; keyboard focus and tap toggling stay separate.
   const hoverProps = {

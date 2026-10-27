@@ -40,6 +40,7 @@
 @media(max-width:600px){.appt-sum-context{grid-template-columns:minmax(0,1fr);gap:8px}.appt-sum-context>div{border-left:0;padding:0}.appt-booking-strip>div+div{border-left:0;padding-left:0}}
 @media(max-width:600px){.workspace tr.row-expansion .appt-detail dl.appt-sum-context{grid-template-columns:minmax(0,1fr);gap:8px}}
 .appt-booking-side{display:grid;gap:var(--space-3);align-content:start;min-width:0}
+.appt-booking-side .vt{width:100%;max-width:none;margin-inline:0}
 .appt-booking-side .appt-booking-strip{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 @media(max-width:600px){.appt-booking-side .appt-booking-strip{grid-template-columns:minmax(0,1fr)}}
 .appt-detail .appt-history-table>thead>tr>th{height:44px;line-height:1.6;white-space:normal;vertical-align:middle}

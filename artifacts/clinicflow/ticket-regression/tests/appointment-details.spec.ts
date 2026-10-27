@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { mkdir, writeFile } from "node:fs/promises";
 
 const qrUrl = "https://tickets.example.invalid/check-in/private-detail-fixture";
 const first = {
@@ -80,6 +81,163 @@ async function mount(page: Page, surface = "", linked = false, initial: Partial<
 const details = (page: Page) => page.getByTestId("appointment-details");
 const tab = (page: Page, name: string) => details(page).getByRole("tab", { name, exact: true });
 
+for (const width of [1024, 1440, 820, 390]) {
+  test(`ticket layering in the complete application at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 640 });
+    const state = await mount(page, "application");
+    Object.assign(state.appointment, {
+      canEditBooking: true, bookingMobile: "+919876543210",
+      notes: "UnbrokenLongNote".repeat(60) + "\n" + "Full readable notes.\n".repeat(40),
+    });
+    await page.getByTestId("button-expand-appointment-appointment-1").click();
+    await expect(page.getByAltText("Personal visit QR")).toBeVisible();
+    await page.getByTestId("appointment-ticket").evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+    const geometry = await page.getByTestId("section-detail-booking-layout").evaluate(el => {
+      const box = (selector: string) => {
+        const r = el.querySelector(selector)!.getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height, bottom: r.bottom };
+      };
+      const scroll = el.closest(".appt-table")!;
+      const header = scroll.querySelector("thead th")!;
+      return {
+        booking: box('[data-testid="section-detail-booking"]'),
+        ticket: box('[data-testid="section-detail-ticket"]'),
+        card: box(".vt"), info: box('[data-testid="ticket-information"]'),
+        columns: getComputedStyle(el.querySelector(".appt-booking-cards")!).gridTemplateColumns,
+        header: { position: getComputedStyle(header).position, background: getComputedStyle(header).backgroundColor },
+        scroll: { height: scroll.clientHeight, width: scroll.clientWidth, total: scroll.scrollWidth },
+      };
+    });
+    await testInfo.attach("initial-geometry", { body: JSON.stringify(geometry, null, 2), contentType: "application/json" });
+    await page.screenshot({ path: `generated-artifacts/appointment-layering/${width}-corrected.png` });
+    expect(Math.abs(geometry.card.x - geometry.info.x)).toBeLessThan(1);
+    expect(Math.abs(geometry.card.width - geometry.info.width)).toBeLessThan(1);
+    expect(geometry.info.y - geometry.ticket.bottom).toBeGreaterThanOrEqual(0);
+    expect(geometry.info.y - geometry.ticket.bottom).toBeLessThanOrEqual(16);
+    if (width >= 1024) {
+      expect(Math.abs(geometry.ticket.y - geometry.booking.y)).toBeLessThan(1);
+      expect(geometry.ticket.x).toBeGreaterThan(geometry.booking.x);
+      expect(geometry.info.bottom).toBeLessThan(geometry.booking.bottom);
+    } else {
+      expect(geometry.ticket.y).toBeGreaterThanOrEqual(geometry.booking.bottom);
+    }
+    const notes = page.getByTestId("text-detail-notes");
+    expect(await notes.evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+    await expect(notes).toHaveCSS("font-size", "14px");
+    if (width > 640) {
+      await expect(page.locator(".appt-table>table>thead>tr>th.col-patient")).toHaveCSS("position", "sticky");
+      // Constrain the actual listing scrollport, not a simplified ticket fixture.
+      // ListingRegion currently grows naturally; this also covers nested consumers
+      // with a height limit, matching the reported short UAT listing viewport.
+      await page.locator(".appt-table").evaluate(el => { (el as HTMLElement).style.maxHeight = "360px"; });
+      await positionDirections(page);
+    } else {
+      await page.getByTestId("button-get-directions").scrollIntoViewIfNeeded();
+    }
+    const directions = page.getByTestId("button-get-directions");
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await directions.evaluate(el => (el as HTMLElement).focus({ preventScroll: true }));
+    await expect(page.locator(".helptip-bubble")).toHaveText("Get Directions");
+    const tooltip = await boundedHelpGeometry(page);
+    expect(tooltip.inside).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+    const point = (await directions.boundingBox())!;
+    await page.mouse.move(point.x + point.width / 2, point.y + point.height / 2);
+    await expect(page.locator(".helptip-bubble")).toHaveText("Get Directions");
+    await page.locator(".helptip-bubble").evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+    await page.screenshot({ path: `generated-artifacts/appointment-layering/${width}-help.png` });
+    if (width > 640) {
+      // A real scroll dismisses even focused help; reopening behind headings is
+      // prohibited. Hit-testing proves the header, not the ticket, receives input.
+      await page.locator(".appt-table").evaluate(el => { el.scrollTop += 100; });
+      await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+      const layers = await page.locator(".appt-table").evaluate(el => {
+        const head = el.querySelector(":scope >table>thead")!, r = head.querySelector("th.col-patient")!.getBoundingClientRect();
+        const view = el.getBoundingClientRect();
+        const hits = [];
+        for (let x = view.left + 8; x < view.right - 8; x += 20) {
+          const hit = document.elementFromPoint(x, r.top + r.height / 2);
+          hits.push({ ok: !!hit?.closest("th"), hit: hit?.tagName, cls: hit?.className, x });
+        }
+        return {
+          hits, scrollTop: el.scrollTop, scrollLeft: el.scrollLeft,
+          // Pinned/select cells retain their approved white surface; other
+          // headings retain pale blue. Both must be fully opaque, never a wash.
+          opaque: [...head.querySelectorAll("th")].every(th => {
+            const color = getComputedStyle(th).backgroundColor;
+            return /^rgb\(/.test(color) || /,\s*1\)$/.test(color);
+          }),
+          header: r.toJSON(), ticket: el.querySelector(".vt")!.getBoundingClientRect().toJSON(),
+        };
+      });
+      expect(layers.hits.every(hit => hit.ok)).toBe(true);
+      expect(layers.opaque).toBe(true);
+      expect(layers.scrollTop).toBeGreaterThan(0);
+      await page.screenshot({ path: `generated-artifacts/appointment-layering/${width}-scrolled.png` });
+      await positionDirections(page);
+      await directions.evaluate(el => { (el as HTMLElement).blur(); });
+      await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+      await directions.evaluate(el => (el as HTMLElement).focus({ preventScroll: true }));
+      await expect(page.locator(".helptip-bubble")).toBeVisible();
+      const horizontal = await page.locator(".appt-table").evaluate(el => {
+        el.scrollLeft = el.scrollLeft ? 0 : el.scrollWidth;
+        return el.scrollWidth > el.clientWidth;
+      });
+      if (width < 1440) expect(horizontal).toBe(true);
+      if (horizontal) await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+      else await page.keyboard.press("Escape"); // The wide default view fits without horizontal scrolling.
+      await page.screenshot({ path: `generated-artifacts/appointment-layering/${width}-horizontal.png` });
+      await testInfo.attach("scroll-layers", { body: JSON.stringify(layers, null, 2), contentType: "application/json" });
+      await mkdir("generated-artifacts/appointment-layering", { recursive: true });
+      await writeFile(`generated-artifacts/appointment-layering/${width}-geometry.json`, JSON.stringify({ geometry, tooltip, layers }, null, 2));
+      await page.locator(".appt-table").evaluate(el => { el.scrollTop = 0; el.scrollLeft = 0; });
+    }
+    // Protected tabs remain operable, and portal dialogs/menus still escape the
+    // expansion's local stacking context.
+    await tab(page, "Details").click();
+    await expect(page.getByTestId("button-copy-reference")).toBeVisible();
+    await tab(page, "History").click();
+    await expect(page.getByRole("table", { name: "Appointment history" })).toBeVisible();
+    await tab(page, "Booking").click();
+    await page.getByTestId("button-edit-booking").click();
+    await expect(page.getByRole("dialog", { name: "Edit Booking Details" })).toBeVisible();
+    await page.screenshot({ path: `generated-artifacts/appointment-layering/${width}-editor.png` });
+    await page.getByTestId("button-cancel-booking").click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByTestId("section-detail-ticket-column").screenshot({ path: `generated-artifacts/appointment-layering/${width}-ticket-and-status.png` });
+    await page.getByTestId("menu-appointment-1").click();
+    await expect(page.getByRole("menu")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.getByTestId("button-expand-appointment-appointment-2").click();
+    await expect(page.getByTestId("text-detail-ticket-unavailable")).toBeVisible();
+    await expect(page.getByTestId("ticket-information")).toHaveCount(0);
+  });
+}
+
+/** Reveal the anchor just below opaque sticky headings without Playwright's
+ * auto-scroll changing the reproduction or hiding a horizontal overlap. */
+async function positionDirections(page: Page) {
+  await page.locator(".appt-table").evaluate(el => {
+    el.scrollLeft = 0;
+    const anchor = el.querySelector('[data-testid="button-get-directions"]')!.getBoundingClientRect();
+    const head = el.querySelector(":scope >table>thead>tr>th.col-patient")!.getBoundingClientRect();
+    el.scrollTop += anchor.top - head.bottom - 10;
+  });
+}
+
+async function boundedHelpGeometry(page: Page) {
+  return page.locator(".helptip-bubble").evaluate(el => {
+    const tip = el.getBoundingClientRect();
+    const region = document.querySelector("[data-tooltip-boundary]")!.getBoundingClientRect();
+    const scroll = document.querySelector(".appt-table")!.getBoundingClientRect();
+    const head = document.querySelector(".appt-table>table>thead>tr>th.col-patient")!;
+    const top = getComputedStyle(head).position === "sticky" ? head.getBoundingClientRect().bottom : 0;
+    return { tip: tip.toJSON(), region: region.toJSON(), scroll: scroll.toJSON(), top,
+      inside: tip.top >= Math.max(0, region.top, scroll.top, top) && tip.bottom <= Math.min(innerHeight, region.bottom, scroll.bottom) && tip.left >= Math.max(0, region.left, scroll.left) && tip.right <= Math.min(innerWidth, region.right, scroll.right) };
+  });
+}
+
 for (const width of [1366, 820, 390]) {
   test(`actual application tree retains appointment composition at ${width}px`, async ({ page }) => {
     test.setTimeout(30000);
@@ -158,6 +316,42 @@ test("Details reference failure feedback stays usable without a ticket", async (
 
 test.describe("touch reference access", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  test("directions help stays bounded on touch and keeps its location action", async ({ page }) => {
+    const state = await mount(page, "application");
+    state.appointment.notes = "";
+    await page.getByTestId("button-expand-appointment-appointment-1").tap();
+    const directions = page.getByTestId("button-get-directions");
+    await directions.scrollIntoViewIfNeeded();
+    await page.evaluate(() => {
+      (window as any).fixtureDirections = [];
+      window.open = ((url: string) => { (window as any).fixtureDirections.push(url); return null; }) as typeof window.open;
+    });
+    await directions.tap();
+    await expect(page.locator(".helptip-bubble")).toHaveText("Get Directions");
+    expect((await boundedHelpGeometry(page)).inside).toBe(true);
+    expect(await page.evaluate(() => (window as any).fixtureDirections)).toEqual([expect.stringContaining("Fictional")]);
+    await page.screenshot({ path: "generated-artifacts/appointment-layering/390-touch-help.png" });
+    await page.evaluate(() => window.scrollBy(0, 80));
+    await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+  });
+
+  test("missing directions retain accessible touch and keyboard help", async ({ page }) => {
+    const state = await mount(page, "application");
+    state.appointment.branchAddress = "";
+    await page.getByTestId("button-expand-appointment-appointment-1").tap();
+    const wrapper = page.getByTestId("button-get-directions").locator("..");
+    await wrapper.scrollIntoViewIfNeeded();
+    await wrapper.tap();
+    await expect(page.locator(".helptip-bubble")).toContainText("no saved address");
+    expect((await boundedHelpGeometry(page)).inside).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".helptip-bubble")).toHaveCount(0);
+    await wrapper.blur();
+    await wrapper.focus();
+    await expect(page.locator(".helptip-bubble")).toContainText("no saved address");
+    await expect(wrapper).toHaveAttribute("aria-describedby", /.+/);
+  });
+
   test("token explains Details copying and Details is accessible without hover", async ({ page }) => {
     await mount(page, "rows");
     await page.getByTestId("text-token-appointment-1").tap();

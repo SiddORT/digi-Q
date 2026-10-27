@@ -34,7 +34,7 @@ export function AppointmentBookingTab({ appointment: a }: { appointment: api.App
   const blocked = freshness.stale || !online || live.isFetching || !!live.error;
   const queueFresh = useFreshWorkspace(queue.dataUpdatedAt, !!queue.error);
   const presence = queue.data?.presence;
-  return <div className="appt-booking" data-testid="section-detail-booking-layout">
+  return <div className="appt-booking" data-tooltip-boundary data-testid="section-detail-booking-layout">
     <div className="appt-booking-cards">
       <section className="appt-detail-block appt-booking-card" data-testid="section-detail-booking" aria-labelledby={`bk-h-${a.id}`}>
         <div className="appt-card-head"><h4 id={`bk-h-${a.id}`}>Booking Details</h4><BookingEditor appointment={a} blocked={freshness.stale || !online || !!live.error} /></div>

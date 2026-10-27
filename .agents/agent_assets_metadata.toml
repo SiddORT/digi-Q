@@ -484,3 +484,17 @@ mtime_ms = 1792999538993
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/3ddced13-1ab6-47e0-afa9-d9b1a146dee4/60b32ee6-a42d-47fd-8431-1106c0a3a7d9"
 storage_version_token = "1792999559081084"
 content_type = "text/html"
+
+[[outputs]]
+id = "riInVnNDS3h1Q48-DKcUK"
+uri = "file://generated-artifacts/appointment-layering/evidence.html"
+type = "html"
+title = "Appointment ticket layering — local evidence"
+description = "Corrected screenshots and geometry at reference, desktop, tablet and phone sizes. Fictional local data; hosted UAT unchanged."
+logical_id = "839e94aa-d3db-4460-818c-d9ba8df2fa60"
+content_hash = "sha256:ab358ac3b990257d922ddc12d57fda0c2e347c456fbcb9c258da792097708dc0"
+size = 825028
+mtime_ms = 1793102223142
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:fce40b3a-c256-43dd-b589-43400e5aa32b/839e94aa-d3db-4460-818c-d9ba8df2fa60/aab4743d-6638-476c-9499-8a6e5f77252c"
+storage_version_token = "1793102241419773"
+content_type = "text/html"
